@@ -59,5 +59,18 @@ class Person_Attribute_Model extends ATTR_ORM {
     }
     return true;
   }
-
+  
+  /**
+   * Get the list of known system functions for person attributes, each with a title and description
+   * of their usage.
+   * @return array List of the system known functions that a person attribute can have.
+   */
+  public function get_system_functions() {
+    return array(
+      'linked_location_id' => array(
+        'title'=>'Linked location',
+        'description'=>'A multi-value integer attribute which links the person to a site they regularly record at.'
+      )
+    );
+  }
 }
