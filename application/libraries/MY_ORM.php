@@ -1278,7 +1278,7 @@ class ORM extends ORM_Core {
         // loop to find the custom attributes embedded in the table fields
         $multiValueData=array();
         foreach ($this->submission['fields'] as $field => $content) {
-          if (preg_match('/^'.$this->attrs_field_prefix.'\:/', $field)) {
+          if (preg_match('/^'.$this->attrs_field_prefix.':[\d]+(:([\d]+)?(:[^:]*)?)?$/', $field)) {
             $value = $content['value'];
             // Attribute name is of form tblAttr:attrId:valId:uniqueIdx
             $arr = explode(':', $field);
