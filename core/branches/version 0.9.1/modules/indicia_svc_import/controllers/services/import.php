@@ -182,7 +182,13 @@ class Import_Controller extends Service_Base_Controller {
       // Following helps for files from Macs
       ini_set('auto_detect_line_endings',1);
       // create the file pointer, plus one for errors
-      $handle = fopen ($csvTempFile, "r");      
+      $handle = fopen ($csvTempFile, "r");
+      if (!isset($metadata['isUtf8'])) {
+        fseek($handle, 0);
+        $BOMCheck=fread($handle, 3);
+        // Flag if this file has a UTF8 BOM at the start
+        $metadata['isUtf8'] = $BOMCheck===chr(0xEF) . chr(0xBB) . chr(0xBF);
+      }
       $errorHandle = $this->_get_error_file_handle($csvTempFile, $handle);
       $count=0;
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : false);
@@ -210,8 +216,8 @@ class Import_Controller extends Service_Base_Controller {
             if (isset($data[$index])) {
               // '<Please select>' is a value fixed in import_helper::model_field_options
               if ($attr != '<Please select>' && $data[$index]!=='') {
-                // Add the data to the record save array
-                $saveArray[$attr] = utf8_encode($data[$index]);
+                // Add the data to the record save array. Utf8 encode if file does not have UTF8 BOM.
+                $saveArray[$attr] = $metadata['isUtf8'] ? $data[$index] : utf8_encode($data[$index]);
               }
             } else {
               // This is one of our static fields at the end
