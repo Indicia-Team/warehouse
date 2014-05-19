@@ -104,8 +104,6 @@ class Occurrence_Model extends ORM
       'external_key',
       'zero_abundance',
       'last_verification_check_date',
-      'last_verification_check_taxa_taxon_list_id',
-      'last_verification_check_version',
       'training',
       'sensitivity_precision'
     );
