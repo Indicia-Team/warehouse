@@ -1097,7 +1097,7 @@ class XMLReportReader_Core implements ReportReader
    * @param array $providedParams The array of provided parameters which will be modified.
    * @param string $from The deprecated parameter name which will be swapped from.
    * @param string $from The new parameter name which will be use instead.
-   * "param boolean $string Set to true if a text parameter so quotes can be added to the in clause
+   * @param boolean $string Set to true if a text parameter so quotes can be added to the in clause
    */
   private function convertDeprecatedParam(&$providedParams, $from, $to, $string=false) {
     $quote = $string ? "'" : '';
