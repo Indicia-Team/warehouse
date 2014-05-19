@@ -115,7 +115,7 @@ class spatial_ref {
       if (method_exists($system, 'is_valid'))
         return (bool) call_user_func("$system::is_valid", $sref);
       else 
-        throw new Exception("The spatial reference system $sref is not recognised.");
+        throw new Exception("The spatial reference system $sref is not recognised.", 4001);
     }
   }
 	
@@ -320,7 +320,7 @@ class spatial_ref {
   {
     $results = self::process_lat_long($sref);
     if ($results === false)
-      throw new Exception('lat_long_to_wkt passed invalid latitude/longitude - '.$sref);
+      throw new Exception('lat_long_to_wkt passed invalid latitude/longitude - '.$sref, 4001);
     $wkt = 'POINT('.$results['long'].' '.$results['lat'].')';
     return $wkt;
   }
