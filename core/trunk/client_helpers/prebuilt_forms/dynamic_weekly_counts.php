@@ -312,7 +312,7 @@ class iform_dynamic_weekly_counts extends iform_dynamic_sample_occurrence {
       throw new exception('The occurrence attribute configured for the survey associated with this form must be an integer.');
     $speciesList = data_entry_helper::get_population_data(array(
       'table'=>'cache_taxa_taxon_list',
-      'extraParams' => array('taxon_list_id'=>$args['list_id'], 'preferred'=>'t') + $auth['read']
+      'extraParams' => array('taxon_list_id'=>$args['list_id'], 'preferred'=>'t', 'orderby'=>'taxonomic_sort_order') + $auth['read']
     ));
     foreach ($speciesList as $species) {
       $name=empty($species['default_common_name']) ? '<em>' . $species['preferred_taxon'] . '</em>' : $species['default_common_name'];
