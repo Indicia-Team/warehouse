@@ -62,15 +62,15 @@ class Data_cleaner_Controller extends Service_Base_Controller {
     else {
       $db = new Database();
       // Create an empty template table
-      $db->query("select * into temporary occlist from cache_occurrences limit 0;");
+      $db->query("select * into temporary occdelta from cache_occurrences limit 0;");
       try {
-        $this->prepareOcclist($db, $sample, $occurrences);
+        $this->prepareOccdelta($db, $sample, $occurrences);
         $r = $this->runRules($db);
-        $db->query('drop table occlist');
+        $db->query('drop table occdelta');
         $this->content_type = 'Content-Type: application/json';
         $this->response = json_encode($r);
       } catch (Exception $e) {
-        $db->query('drop table occlist');
+        $db->query('drop table occdelta');
         $this->response = "Query failed";
         error::log_error('Error occurred calling verification rule service', $e);
       }
@@ -79,10 +79,10 @@ class Data_cleaner_Controller extends Service_Base_Controller {
   }
   
   /**
-   * Fills the temporary table called occlist, which contains details of each proposed record to 
+   * Fills the temporary table called occdelta, which contains details of each proposed record to 
    * verify.
    */
-  private function prepareOccList($db, $sample, $occurrences) {
+  private function prepareOccdelta($db, $sample, $occurrences) {
     $website_id=$this->website_id;
     $srid=kohana::config('sref_notations.internal_srid');
     $last_sref='';
@@ -107,11 +107,11 @@ class Data_cleaner_Controller extends Service_Base_Controller {
       $date_start=$vd[0];
       $date_end=$vd[1];
       $date_type=$vd[2];
-      $db->query("insert into occlist (website_id, survey_id, date_start, date_end, date_type, public_entered_sref, entered_sref_system, public_geom, taxa_taxon_list_id)
+      $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_entered_sref, entered_sref_system, public_geom, taxa_taxon_list_id)
           values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type', '$sref', '$sref_system', st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
     }
     // patch in some extra details about the taxon required for each cache entry
-    $db->query("update occlist o set taxon_meaning_id=ttl.taxon_meaning_id, taxon=ttl.taxon, taxa_taxon_list_external_key=ttl.external_key ".
+    $db->query("update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxon=ttl.taxon, taxa_taxon_list_external_key=ttl.external_key ".
         "from list_taxa_taxon_lists ttl where ttl.id=o.taxa_taxon_list_id");
   }
   
@@ -136,11 +136,12 @@ class Data_cleaner_Controller extends Service_Base_Controller {
         // queries can override the error message field.
         $ruleErrorField = isset($query['errorMsgField']) ? $query['errorMsgField'] : $errorField;
         $errorMsgSuffix = isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '';
-        $sql = 'select distinct co.taxa_taxon_list_id, '.$ruleErrorField.$errorMsgSuffix.' as message from occlist co';
+        $sql = 'select distinct co.taxa_taxon_list_id, '.$ruleErrorField.$errorMsgSuffix.' as message from occdelta co';
         if (isset($query['joins']))
           $sql .= "\n" . $query['joins'];
+        $sql .= "\nwhere co.verification_checks_enabled=true";
         if (isset($query['where']))
-          $sql .= "\nwhere " . $query['where'];
+          $sql .= "\nand " . $query['where'];
         // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
         $messages = $db->query($sql)->result_array(false);
         $r = $r + $messages;

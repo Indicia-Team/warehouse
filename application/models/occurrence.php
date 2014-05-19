@@ -75,8 +75,8 @@ class Occurrence_Model extends ORM
   public function validate(Validation $array, $save = false) {
     if ($save) 
       $this->logDeterminations($array);
-    if (empty($this->submission['fields']['record_status']) && $this->wantToUpdateMetadata) {
-      // If we update an occurrence but don't set the verification state, revert it to 
+    if (empty($this->submission['fields']['record_status']) && empty($this->submission['fields']['release_status']) && $this->wantToUpdateMetadata) {
+      // If we update an occurrence but don't set the verification or release state, revert it to 
       // completed/awaiting verification.
       $array->verified_by_id=null;
       $array->verified_on=null;
@@ -104,8 +104,6 @@ class Occurrence_Model extends ORM
       'external_key',
       'zero_abundance',
       'last_verification_check_date',
-      'last_verification_check_taxa_taxon_list_id',
-      'last_verification_check_version',
       'training',
       'sensitivity_precision'
     );

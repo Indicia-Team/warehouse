@@ -19,51 +19,21 @@ function data_cleaner_extend_data_services() {
   );
 }
 
-/**
- * Hook into the task scheduler to run the rules against new records on the system.
- */
-function data_cleaner_scheduled_task() {
-  $db = new Database();
-  $rules = data_cleaner::get_rules();
-  $count = data_cleaner_get_occurrence_list($db);
-  try {
-    if ($count>0) {
-      data_cleaner_cleanout_old_messages($rules, $db);
-      data_cleaner_run_rules($rules, $db);
-      data_cleaner_update_occurrence_metadata($db);
-      data_cleaner_set_cache_fields($db);
-    }    
-    $db->query('drop table occlist');
-  } catch (Exception $e) {
-    $db->query('drop table occlist');
-    throw $e;
-  }
+function data_cleaner_metadata() {
+  return array(
+    'requires_occurrences_delta'=>TRUE
+  );
 }
 
 /**
- * Build a temporary table with the list of occurrences we will process, so that we have
- * consistency if changes are happening concurrently. Uses cache_occurrences as a template for this
- * as the columns it contains are most likely to be useful in the rule checks.
- * @param type $db 
+ * Hook into the task scheduler to run the rules against new records on the system.
  */
-function data_cleaner_get_occurrence_list($db) {
-  $query = 'select co.*, now() as timepoint into temporary occlist 
-from cache_occurrences co
-join occurrences o on o.id=co.id
-inner join samples s on s.id=o.sample_id and s.deleted=false
-left join samples sp on sp.id=s.parent_id and sp.deleted=false
-inner join websites w on w.id=o.website_id and w.deleted=false and w.verification_checks_enabled=true
-where o.deleted=false and o.record_status not in (\'I\',\'V\',\'R\',\'D\')
-and (o.last_verification_check_taxa_taxon_list_id<>o.taxa_taxon_list_id
-or o.updated_on>o.last_verification_check_date
-or s.updated_on>o.last_verification_check_date
-or sp.updated_on>o.last_verification_check_date
-or o.last_verification_check_date is null) limit 200';
-  $db->query($query);
-  $r = $db->query('select count(*) as count from occlist')->result_array(false);
-  kohana::log('alert', "Data cleaning {$r[0]['count']} record(s)");
-  echo "Data cleaning {$r[0]['count']} record(s).<br/>";
-  return $r[0]['count'];
+function data_cleaner_scheduled_task($timestamp, $db, $endtime) {
+  $rules = data_cleaner::get_rules();
+  data_cleaner_cleanout_old_messages($rules, $db);
+  data_cleaner_run_rules($rules, $db);
+  data_cleaner_update_occurrence_metadata($db, $endtime);
+  data_cleaner_set_cache_fields($db);
 }
 
 
@@ -78,18 +48,19 @@ function data_cleaner_cleanout_old_messages($rules, $db) {
   foreach ($rules as $rule) {
     if (!in_array($rule['plugin'], $modulesDone)) {
       // mark delete any previous occurrence comments for this plugin for taxa we are rechecking
-      $query = 'update occurrence_comments oc
+      $query = "update occurrence_comments oc
         set deleted=true
-        from occlist
-        where oc.occurrence_id=occlist.id
-        and oc.generated_by=\''.$rule['plugin'].'\'';
+        from occdelta o
+        where oc.occurrence_id=o.id and o.record_status not in ('I','V','R','D')
+        and oc.generated_by='$rule[plugin]'";
       $db->query($query);
-      // and cleanup the notifications generated previously
+      // and cleanup the notifications generated previously for verifications and auto-checks
       $query = "delete 
         from notifications
-        using occlist o 
-        where source='Verifications and comments'
-        and linked_id = o.id";
+        using occdelta o 
+        where source='Verifications and comments' and source_type in ('V','A')
+        and linked_id = o.id 
+        and o.record_status not in ('I','V','R','D')";
       $db->query($query);
       $modulesDone[]=$rule['plugin'];
     }
@@ -119,11 +90,12 @@ function data_cleaner_run_rules($rules, $db) {
       $sql = "insert into occurrence_comments (comment, created_by_id, created_on,
       updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required$subtypeField) 
   select distinct $ruleErrorField$errorMsgSuffix, 1, now(), 1, now(), co.id, true, '$rule[plugin]', $implies_manual_check_required$subtypeValue
-  from occlist co";
+  from occdelta co";
       if (isset($query['joins']))
         $sql .= "\n" . $query['joins'];
       if (isset($query['where']))
         $sql .= "\nwhere " . $query['where'];
+      $sql .= "\n and co.record_status not in ('I','V','R','D')";
       // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
       try {
         $count += $db->query($sql)->count();
@@ -145,14 +117,13 @@ function data_cleaner_run_rules($rules, $db) {
  * Update the metadata associated with each occurrence so we know the rules have been run.
  * @param type $db Kohana database instance.
  */
-function data_cleaner_update_occurrence_metadata($db) { 
+function data_cleaner_update_occurrence_metadata($db, $endtime) { 
   // Note we use the information from the point when we started the process, in case
   // any changes have happened in the meanwhile which might otherwise be missed.
-  $query = 'update occurrences o
-set last_verification_check_date=occlist.timepoint, 
-    last_verification_check_taxa_taxon_list_id=occlist.taxa_taxon_list_id
-from occlist
-where occlist.id=o.id';
+  $query = "update occurrences o
+set last_verification_check_date='$endtime'
+from occdelta
+where occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')";
   $db->query($query);
 }
 
@@ -163,20 +134,20 @@ function data_cleaner_set_cache_fields($db) {
   if (in_array(MODPATH.'cache_builder', Kohana::config('config.modules'))) {
     $query = "update cache_occurrences co
 set data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end
-from occlist
-join occurrences o on o.id=occlist.id
+from occdelta
+join occurrences o on o.id=occdelta.id
 join (
       select o.id, o.last_verification_check_date, 
         array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ') as info
       from occurrences o
-      join occlist on occlist.id=o.id
+      join occdelta on occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')
             left join occurrence_comments oc 
             on oc.occurrence_id=o.id 
             and oc.implies_manual_check_required=true 
             and oc.deleted=false
       group by o.id, o.last_verification_check_date
     ) sub on sub.id=o.id
-where occlist.id=co.id";
+where occdelta.id=co.id and occdelta.record_status not in ('I','V','R','D')";
   $db->query($query);
   }
 }
