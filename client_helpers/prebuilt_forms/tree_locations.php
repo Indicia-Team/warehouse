@@ -295,6 +295,7 @@ class iform_tree_locations {
    */
   public static function get_form($args, $node, $response=null) {
     global $user;
+    data_entry_helper::$helpTextPos = 'before';
     $checks=self::check_prerequisites();
     $args = self::getArgDefaults($args);
     if ($checks!==true)
@@ -340,24 +341,26 @@ class iform_tree_locations {
       self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
       $found=false;
       foreach($settings['tree_attributes'] as $idx => $attr) {
-        if (strcasecmp($attr['caption'], 'Assigned Recorder')===0) {
+        if (strcasecmp($attr['caption'], 'Recorder Name')===0) {
           data_entry_helper::$javascript .= "indiciaData.assignedRecorderID = ".$attr['attributeId'].";\n";
           $found=true;
           break;
         }
       }      
       if (!$found)
-        return 'This form is designed to be used with the "Assigned Recorder" attribute setup for Tree locations in the survey, or the "Allow users to be assigned to locations" option unticked.';
+        return 'This form is designed to be used with the "Recorder Name" attribute setup for Tree locations in the survey, or the "Allow users to be assigned to locations" option unticked.';
     }
     // TBD data drive
-    $definitions = array(array("attr"=>"111", "term"=>"WD", "target"=>"112", "title"=>"You must pick the dominant species from this drop down list when the WD (Dominant Species) checkbox is set."),
-                         array("attr"=>"111", "term"=>"WP", "target"=>"113", "title"=>"You must enter a date in this field when the WP (Planted Date) checkbox is set."));
+    $definitions = array(array("attr"=>"111", "term"=>"WD", "target"=>"112", "required"=>true, "title"=>"You must pick the dominant species from this drop down list when the WD (Dominant Species) checkbox is set."),
+                         array("attr"=>"111", "term"=>"WP", "target"=>"113", "required"=>false, "title"=>"If known, you may enter the year that the woodland was planted in when the WP (Planted Date) checkbox is set."));
     $common = "var check_attrs = function(){\n";
-    data_entry_helper::$javascript .= "var checkbox_changed_base = function(changedSelector, targetSelector){
+    data_entry_helper::$javascript .= "var checkbox_changed_base = function(changedSelector, targetSelector, required){
+  $(changedSelector).closest('span').find('label.inline-error').remove();
+  $(changedSelector).closest('span').find('.ui-state-error').removeClass('ui-state-error');
   $(changedSelector).closest('span').find('label.error').remove();
   $(changedSelector).closest('span').find('.error').removeClass('error');
   if($(changedSelector).attr('checked'))
-    $(targetSelector).addClass('required').closest('span').show();
+    $(targetSelector).addClass(required ? 'required' : 'notrequired').closest('span').show();
   else {
     $(targetSelector).removeClass('required').val('').closest('span').hide();
   }
@@ -365,7 +368,7 @@ class iform_tree_locations {
 var check_attr_def = [];
 check_attrs = function(){
   for(var i=0; i<check_attr_def.length; i++){
-    checkbox_changed_base(check_attr_def[i][0], check_attr_def[i][1]);
+    checkbox_changed_base(check_attr_def[i][0], check_attr_def[i][1], check_attr_def[i][2]);
   }
 }\n";
     foreach($definitions as $defn){
@@ -376,10 +379,11 @@ check_attrs = function(){
     tgt.next('br').remove();
     var span = $('<span/>');
     $(elem).closest('span').append(span);
-    span.append(tgt).append('<span class=\"deh-required\">*</span>');
+    span.append(tgt);".
+    ($defn["required"] ? "\n    span.append('<span class=\"deh-required\">*</span>');" : "")."
     tgt.attr('title','".$defn["title"]."');
-    $(elem).change(function(e){checkbox_changed_base(e.target, '#locAttr\\\\:".$defn["target"]."');});
-    check_attr_def.push([elem, '#locAttr\\\\:".$defn["target"]."']);
+    $(elem).change(function(e){checkbox_changed_base(e.target, '#locAttr\\\\:".$defn["target"]."', ".($defn["required"] ? "true" : "false").");});
+    check_attr_def.push([elem, '#locAttr\\\\:".$defn["target"]."', ".($defn["required"] ? "true" : "false")."]);
   }
 });\n";
     }
@@ -406,22 +410,20 @@ check_attrs = function(){
       ));
       foreach($trees as $tree) {
         $id = $tree['id'];
-        data_entry_helper::$javascript .= "indiciaData.trees[$id] = {'id':'".$tree['id']."','name':'".$tree['name']."','geom':'".$tree['centroid_geom']."','sref':'".$tree['centroid_sref']."','system':'".$tree['centroid_sref_system']."'};\n";
+        data_entry_helper::$javascript .= "indiciaData.trees[$id] = {'id':'".$tree['id']."','name':'".str_replace("'","\'",$tree['name'])."','geom':'".$tree['centroid_geom']."','sref':'".$tree['centroid_sref']."','system':'".$tree['centroid_sref_system']."'};\n";
         $settings['trees'][$id]=$tree;
       }
     }
     $r = '<div id="controls">';
     $headerOptions = array('tabs'=>array('#site-details'=>lang::get('Site Details')));
+    $tabOptions = array('divId'=>'controls', 'style'=>'Tabs');
     if ($settings['locationId']) {
-      $headerOptions['tabs']['#site-trees'] = lang::get('Site Trees');
+      $headerOptions['tabs']['#site-trees'] = lang::get('Tree Details');
+      $tabOptions['active']='#site-trees';
     }
-    if (count($headerOptions['tabs'])) {
-      $r .= data_entry_helper::tab_header($headerOptions);
-      data_entry_helper::enable_tabs(array(
-          'divId'=>'controls',
-          'style'=>'Tabs'
-      ));
-    }
+    $r .= data_entry_helper::tab_header($headerOptions);
+    data_entry_helper::enable_tabs($tabOptions);
+    
     $settings['treeSampleMethod'] = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('TreeInitialRegistration'));
     // TODO put in error check, add in $arg driving of text value
     $settings['treeSampleMethod'] = $settings['treeSampleMethod'][0];
@@ -429,6 +431,8 @@ check_attrs = function(){
     $r .= self::get_site_tab($auth, $args, $settings);
     if ($settings['locationId']) {
       $r .= self::get_site_trees_tab($auth, $args, $settings);
+      data_entry_helper::enable_validation('tree-form');
+      data_entry_helper::setup_jquery_validation_js();
     }
     $r .= '</div>'; // controls    
     data_entry_helper::enable_validation('input-form');
@@ -460,7 +464,7 @@ check_attrs = function(){
     data_entry_helper::$javascript .= "indiciaData.visitURL = \"".($args['visit_path'] . (strpos($args['visit_path'], '?') === false ? '?' : '&') . "new=1&location_id=")."\";\n";
     $r .= '<a id="visit_link" style="display:none;" href="" target="_blank" />';
     if ($settings['locationId'])
-      data_entry_helper::$javascript .= "var first=true;\njQuery.each(indiciaData.trees, function(idx, tree) {\n  if(first) selectTree(tree.id, true);  \nfirst=false\n});\nif(first) insertTree();\n";
+      data_entry_helper::$onload_javascript .= "var first=true;\njQuery.each(indiciaData.trees, function(idx, tree) {\n  if(first) selectTree(tree.id, true);  \nfirst=false\n});\nif(first) insertTree();\n";
     return $r;
   }
   
@@ -505,11 +509,11 @@ check_attrs = function(){
     $r .= data_entry_helper::sref_and_system(array(
       'fieldname' => 'location:centroid_sref',
       'geomFieldname' => 'location:centroid_geom',
-      'label' => 'Site Central Grid Ref.',
+      'label' => 'Site Central Grid Ref',
       'systems' => array('4326'=>'4326'),
       'class' => 'required',
       'disabled' => ' readonly="readonly" ',
-      'helpText' => lang::get('This is filled in automatically when the site is drawn on the map.')
+      'helpText' => lang::get('The following field is filled in automatically when the site is drawn on the map.')
     ));
     $r .= '<input type="hidden" name="location:boundary_geom" id="imp-boundary-geom" value="' .
     		data_entry_helper::$entity_to_load['location:boundary_geom'] . '"/>';
@@ -530,18 +534,15 @@ check_attrs = function(){
         'readAuth' => $auth['read']
       ));
     }
-    $help = lang::get('The following controls are in the top right of the map:<br/>'.
-          '1) Navigation Control. After selecting this control you can tool navigate around the map by dragging.<br/>'.
-          '2) Draw Site Control. After selecting this control you can draw a new shape for the site by clicking on the map to draw the shape, and then double clicking on the last vertex to finish. This will replace any previously drawn site outline. Should you wish to change the site outline afterwards, you can use the Modify Site Tool above.<br/>'.
-          '3) Modify Site Control. After selecting this control you can change the shape of a previously drawn site. To do this, after selecting this tool, click on the site on the map: this will add grab points (circles) to the boundary, one at each vertex and one at the midpoint of each side. You can then click and drag these points to change the shape of the site. Placing the mouse over a vertex and pressing the "Delete" button on your keyboard will remove that vertex.');
+    $help = '<p>'.lang::get('Draw your site by selecting the appropriate tool in the top right of the map').':</p>'.
+            '<ol><li>'.lang::get('Navigation Tool. This allows you to navigate around the map by dragging.').'</li>'.
+                '<li>'.lang::get('Draw Site Tool. This tool allows you to draw your site on the map. Click on the map to start drawing, and click each time you wish to fix a point on the outline of your site.  <b>Double click the last fixed point to finish drawing</b>. Double clicking will replace any previously drawn site outline.').'</li>'.
+                '<li>'.lang::get('Modify Site Tool. This tool allows you to change the shape of a previously drawn site. Click on the existing site outline to add grab points (circles) along it. You can then click and drag these points to change the shape of the site. To remove a fixed point, hover your mouse over the point and press the "Delete" button on your keyboard.').'</li></ol>';
     if ($args['allow_user_assignment']) {
       if ($settings['canAllocUser'])
-        $help .= '<br/><br/>'.lang::get('You, as a scheme administrator, have the option of changing who the site is assigned to, using control under the map. If you so wish, the site may be assigned to more than one person at a time.');
-      else if (!$settings['locationId'])
-        $help .= '<br/><br/>'.lang::get('This site will be automatically allocated to you.');
+        $help .= '<p>'.lang::get('You, as a scheme administrator, have the option of changing who the site is assigned to, using control under the map. If you so wish, the site may be assigned to more than one person at a time.').'</p>';
     }
-    $help .= '<br/><br/>'.lang::get('REMEMBER: after changing anything on this page you must save it using the Save button at the bottom of this page.');
-    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
+    $r .= '<div class="page-notice ui-state-highlight ui-corner-all">'.$help.'</div>';
     if(isset($args['maxPrecision']) && $args['maxPrecision'] != ''){
       $options['clickedSrefPrecisionMax'] = $args['maxPrecision'];
     }
@@ -555,9 +556,9 @@ check_attrs = function(){
     $options['autoFillInCentroid']=true;
     $options['initialFeatureWkt']=false;
     $options['initialBoundaryWkt']=data_entry_helper::$entity_to_load['location:boundary_geom'];
-    $options['hintModifyFeature']=lang::get('Modify Site Control.');
-    $options['hintDrawPolygonHint']=lang::get('Draw Site Control.');
-    $options['hintNavigation']=lang::get('Navigation Control.');
+    $options['hintModifyFeature']=lang::get('Modify Site Tool.');
+    $options['hintDrawPolygonHint']=lang::get('Draw Site Tool.');
+    $options['hintNavigation']=lang::get('Navigation Tool.');
     $options['searchDisplaysPoint']=false;
     
     // with multiple maps can't use built in method on tabshow, so do here...
@@ -592,8 +593,6 @@ jQuery(jQuery('#site-details').parent()).bind('tabsshow', mapTabHandler);\n";
       $r .= '<button type="button" class="indicia-button right" id="delete-site">'.lang::get('Delete').'</button>' ;
     $r .='</form>';
     $r .= '</div>'; // site-details
-    // This must go after the map panel, so it has created its toolbar
-    data_entry_helper::$onload_javascript .= "$('#current-tree').change(selectTree);\n";
     if($settings['locationId']) {
       $treeIDs = array();
       foreach($settings['trees'] as $id=>$tree)
@@ -618,11 +617,12 @@ $('#delete-site').click(deleteSite);
     global $indicia_templates;
   	$r = '<div id="site-trees" class="ui-helper-clearfix">';
     $r .= '<form method="post" id="tree-form" action="'.self::$ajaxFormUrl.'">';
-  	$help = lang::get('Select a tree from the list of trees for this site by either:<br/>1) clicking on the button, or<br/>2) choosing the query tool and clicking on the point.<br/>'.
-    		'The Remove Tree button will remove the tree completely, reducing the number of trees by one. '.
-    		'To add a new tree, press the Add Tree button.'.
-  			'<br/><br/>REMEMBER: after changing any tree information on this page (including adding a new tree, but excluding removing a tree), you must save it using the Save button at the bottom of this page.');
-    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
+    $help = '<p>'.lang::get('To add a tree, click on the "Add Tree" button. You can then use the map\'s Location Tool to select the approximate location of your tree on the map. A new tree will then appear on the map.').'</p>'.
+            '<p>'.lang::get('To select a tree from the existing list of trees at this site you can either:').'</p>'.
+            '<ol><li>'.lang::get('Click on the button for the tree you wish to view, or').'</li>'.
+            '<li>'.lang::get('Use the map\'s Query Tool to click on the tree you wish to view on the map.').'</li></ol>'.
+            '<p>'.lang::get('To remove a tree, first select the tree you wish to remove, then click on the "Remove Tree" button. It will remove the current tree you are viewing completely.').'</p>';
+    $r .= '<div class="ui-state-highlight page-notice ui-corner-all">'.$help.'</div>';
     $r .=  self::tree_selector($settings);
     $r .= '<input type="button" value="'.lang::get('Remove Tree').'" class="remove-tree form-button right" title="'.lang::get('Completely remove the highlighted tree. The total number of tree will be reduced by one. The form will be reloaded after the tree is deleted.').'">';
     $r .= '<input type="button" value="'.lang::get('Add Tree').'" class="insert-tree form-button right" title="'.lang::get('This inserts an extra tree.').'">';
@@ -638,12 +638,6 @@ $('#delete-site').click(deleteSite);
     		'label' => lang::get('Tree ID'),
     		'class' => 'control-width-4 required'
     ));
-    $r .= data_entry_helper::text_input(array(
-    		'fieldname' => 'location:external_key',
-    		'label' => lang::get('External ID'),
-    		'class' => 'control-width-4',
-    		'helpText' => lang::get('Enter any reference ID used for this tree in other systems, e.g. Treezilla')
-    ));
     $systems = array();
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) {
@@ -654,16 +648,33 @@ $('#delete-site').click(deleteSite);
     		'fieldname' => 'location:centroid_sref',
     		'geomid' => 'imp-geom-tree',
     		'geomFieldname' => 'location:centroid_geom',
-    		'label' => 'Grid Ref.',
+    		'label' => 'Grid Ref',
             'labelClass'=>'auto',
     		'class' => 'required',
-    		'helpText' => lang::get('You can also click on the map to set the central grid reference.')
+    		'helpText' => lang::get('You can also click on the map to set the grid reference. If directly entering the coordinates from a GPS device, set the format to "Lat/Long" first. To enter an OS Grid square, choose the "OSGB" or "OSIE" formats.')
     );
+    data_entry_helper::$javascript .= "
+$('#imp-sref-tree').attr('title',
+    '".lang::get("When directly entering coordinates as a GPS Lat/Long, the format is flexible. ".
+                  "The figures may be entered as decimal degrees (e.g. 56.532), degrees and decimal minutes (e.g. 56:31.92), or degrees, minutes and decimal seconds (e.g. 56:31:55.2). ".
+                  "The degrees minutes and seconds must all be separated by a colon (:). ".
+                  "The direction letter can be placed at the start or the end of the number (e.g. N56.532 or 56.532N), and it can be upper or lower case, but by convention you should use upper case. ".
+                  "There should be no spaces between the numbers and the letter. ".
+                  "You can mix the formats of the Latitude and Longitude, provided they each follow the previous guidelines and a space separates them (e.g. N56.532 2:30W).")."  ".
+    lang::get("When directly entering a OSGB reference, this should take the format of 2 letters followed by an even number of digits (e.g. NT274628). ".
+                  "The letters specify the 100km grid square, the first half of the numbers are the Easting, and the second half the Northing. ".
+                  "The size of the square is determined by the number of digits entered: each pair reduces the square size by a factor of 10 - 8 numbers will give a 10m square. ".
+                  "There should be no spaces between any of the characters. ".
+                  "The letters may be upper or lower case, but by convention you should use upper case.")."  ".
+    lang::get("When directly entering a OSIE reference, this should take the format of 1 letter followed by an even number of digits (e.g. J081880). ".
+                  "The letter specifies the 100km grid square, the first half of the numbers are the Easting, and the second half the Northing. ".
+                  "The size of the square is determined by the number of digits entered: each pair reduces the square size by a factor of 10 - 8 numbers will give 10m square. ".
+                  "There should be no spaces between any of the characters. ".
+                  "The letter may be upper or lower case, but by convention you should use upper case.")."');\n";
     if (count($systems) >= 1) {
       // Keep the two controls on the same line
       $srefOptions['suffixTemplate']='nosuffix';
       $srefOptions['requiredsuffixTemplate']='requirednosuffix';
-      unset($srefOptions['helpText']);
     }
     // Output the sref control
     $r .= data_entry_helper::sref_textbox($srefOptions);
@@ -671,8 +682,7 @@ $('#delete-site').click(deleteSite);
     		'id' => 'imp-sref-system-tree',
     		'fieldname' => 'location:centroid_sref_system',
     		'class' => 'required',
-    		'systems' => $systems,
-    		'helpText' => lang::get('You can also click on the map to set the central grid reference.')
+    		'systems' => $systems
     );
     // Output the system control
     if (count($systems) < 2) {
@@ -686,7 +696,7 @@ $('#delete-site').click(deleteSite);
     }
     $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'" />';
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'" />';
-    $r .= '<input type="hidden" name="sample:id" value="" id="tree-location-id" />';
+    $r .= '<input type="hidden" name="sample:id" value="" />';
     // this sample will reference the location id.
     if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
       // Date has 4 digit year first (ISO style) - convert date to expected output format
@@ -763,6 +773,7 @@ $('#delete-site').click(deleteSite);
     $options = helper_base::explode_lines_key_value_pairs($args['attrOptions']);
     self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
     $r .= get_attribute_html($settings['tree_attributes'], $args, $ctrlOptions, '', $attrSpecificOptions);
+    
     $r .= '</fieldset>';
     $r .= "</div>" .
     		'<div class="right" style="width: '.(isset($args['percent_width']) ? $args['percent_width'] : 50).'%">';
@@ -793,8 +804,11 @@ $('#delete-site').click(deleteSite);
     $options['srefId']='imp-sref-tree';
     $options['geomId']='imp-geom-tree';
     $options['srefSystemId']='imp-sref-system-tree';
-    $help = lang::get('Use the Point control to position the tree on the map by clicking on the point then click on the map to position (or reposition) it.');
-    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
+    $help = '<p>'.lang::get('Add your trees using the appropriate tools in the top right of the map').':</p>'.
+            '<ol><li>'.lang::get('Navigation Tool.').'</li>'.
+                '<li>'.lang::get('Query Tool. This tool allows you to click on a tree on the map to view its tree details.').'</li>'.
+                '<li>'.lang::get('Location Tool. This tool allows you to select the approximate location of a new tree on your site map. You can also reposition existing trees by first clicking on the tree and then clicking on its new location on the map.').'</li></ol>';
+    $r .= '<div class="ui-state-highlight page-notice ui-corner-all">'.$help.'</div>';
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= data_entry_helper::file_box(/* array_merge( */array(
     		'table'=>'location_medium',
@@ -804,12 +818,18 @@ $('#delete-site').click(deleteSite);
     )/*, $options)*/);
     $r .= "</div>"; // right
     $r .= '<div class="follow_on_block" style="clear:both;">';
+    $r .= get_attribute_html($settings['tree_attributes'], $args, $ctrlOptions, 'Lower Block', $attrSpecificOptions);
+    data_entry_helper::$javascript .= "
+$('#fieldset-optional-external-sc').prepend(\"".lang::get('If you choose to record this tree for one of the citizen science projects below, please submit the tree ID used for that scheme.')."\");
+";
     $r .= data_entry_helper::textarea(array(
     		'id'=>'location-comment',
     		'fieldname'=>'location:comment',
-    		'label'=>lang::get("Additional information")))."<br />";
+    		'label'=>lang::get("Additional information"),
+    		'labelClass'=>'autowidth'))."<br />";
     $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" id="submit-tree" />';
     $r .= '</div></form></div>';
+    data_entry_helper::$onload_javascript .= "$('#current-tree').change(selectTree);\n";
     return $r;
   }
 

@@ -11,7 +11,6 @@ clearTree = function() {
   $('#tree-location-id').attr('disabled',true).val('');
   // parent_id, location_type_id, website_id stay the same
   $('#tree-form [name=location\\:name]').val('');
-  $('#tree-form [name=location\\:external_key]').val('');
   $('#tree-form [name=location\\:comment]').val('');
   $('#locations-website-website-id').removeAttr('disabled');
   $('#imp-sref-tree,#imp-geom-tree').val(''); // leave the system unchanged.
@@ -72,11 +71,12 @@ loadTreeAttributes = function(tree){
             attrname = 'locAttr:'+attr.location_attribute_id+':'+attr.id;
             // Ignore Heirarchy select at moment.
             // special handling for checking radios: note ids are not same as names.
+            var checkboxes = $('#tree-form input:checkbox[name=locAttr\\:'+attr.location_attribute_id+'],input:checkbox[name=locAttr\\:'+attr.location_attribute_id+'\\[\\]]');
             if ($('input:radio#locAttr\\:'+attr.location_attribute_id+'\\:0').length>0) {
               $('#tree-form [id^=locAttr\\:'+attr.location_attribute_id+'\\:]').attr('name',attrname);
               $('#tree-form [id^=locAttr\\:'+attr.location_attribute_id+'\\:]').filter('[value='+attr.raw_value+']').attr('checked', true);
-            } else if ((checkboxes = $('#tree-form input:checkbox[name=locAttr\\:'+attr.location_attribute_id+'],input:checkbox[name=locAttr\\:'+attr.location_attribute_id+'\\[\\]]').filter('[value='+attr.raw_value+']')).length>0) {
-              checkboxes.attr('name',attrname).attr('checked', true).before('<input class="multiselect" type="hidden" name="'+attrname+'" value="" />');
+            } else if (checkboxes.length > 0) {
+              checkboxes.filter('[value='+attr.raw_value+']').attr('name',attrname).attr('checked', true).before('<input class="multiselect" type="hidden" name="'+attrname+'" value="" />');
             } else {              
               $('#tree-form #locAttr\\:'+attr.location_attribute_id).val(attr.raw_value).attr('name',attrname);
             }
@@ -96,7 +96,6 @@ loadTreeDetails = function(location_id) {
             function(data) {
               // TODO confirm location type & parent_id
               $('form#tree-form [name=location\\:name]').val(data[0].name);
-              $('form#tree-form [name=location\\:external_key]').val(data[0].external_key);
               $('form#tree-form [name=location\\:centroid_geom]').val(data[0].centroid_geom);
               $('form#tree-form [name=location\\:centroid_sref]').val(data[0].centroid_sref);
               $('form#tree-form [name=location\\:centroid_sref_system]').val(data[0].centroid_sref_system);
@@ -133,7 +132,7 @@ loadTreeDetails = function(location_id) {
     	// TODO add error check
               $.each(data, function(idx, file) {
                 var existing, uniqueId, thumbnailfilepath, div, count;
-                div = $('#container-location_image-default')[0]; // TODO add error check.
+                div = $('#container-location_medium-default')[0]; // TODO add error check.
                 count = $('.filelist .photo img').length;
                 uniqueId = 'existing-image-'+count;
                 existing = div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, uniqueId)
@@ -156,6 +155,10 @@ loadTreeDetails = function(location_id) {
                            .replace(/\{imagewidth\}/g, div.settings.imageWidth)
                            .replace(/\{captionField\}/g, div.settings.table + ':caption:' + count)
                            .replace(/\{captionValue\}/g, file.caption===null?'':file.caption.replace(/\"/g, '&quot;'))
+                           .replace(/\{typeValue\}/g, file.media_type_id)
+                           .replace(/\{typeField\}/g, div.settings.table + ':media_type_id:' + count)
+                           .replace(/\{typeNameValue\}/g, file.media_type)
+                           .replace(/\{typeNameField\}/g, div.settings.table + ':media_type:' + count)
                            .replace(/\{pathField\}/g, div.settings.table + ':path:' + count)
                            .replace(/\{pathValue\}/g, file.path)
                            .replace(/\{deletedField\}/g, div.settings.table + ':deleted:' + count)
@@ -234,7 +237,7 @@ selectTree = function(tree, doFeature) {
     }
     indiciaData.mapdiv.map.editLayer.redraw();
   }
-  if (indiciaData.currentTree!==tree) {
+  if (indiciaData.currentTree!=tree) {
     loadTreeDetails(tree);
     indiciaData.currentTree=tree;
   }
@@ -278,7 +281,7 @@ deleteTrees = function(treeIDs) {
 deleteTree = function(tree) {
   var data;
   $('.remove-tree').addClass('waiting-button');
-  // if it has been saved, delete any subsamples lodged against it.
+  // if it has been saved, delete any samples lodged against it.
   if(typeof indiciaData.trees[tree] !== "undefined"){
     $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/sample?location_id=" + tree +
             "&mode=json&view=detail&callback=?&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce, 
@@ -331,9 +334,8 @@ insertTree = function() {
   confirmSelectTree('new', true, true); 
 };
 
+var errorPos = null;
 $(document).ready(function() {
-
-  var doingSelection=false; 
   
   $('#tree-form').ajaxForm({
     async: false,
@@ -341,11 +343,15 @@ $(document).ready(function() {
     beforeSubmit:   function(data, obj, options){
       $('#tree-form').find('label.error').remove();
       $('#tree-form').find('.error').removeClass('error');
+      $('#tree-form').find('label.inline-error').remove();
+      $('#tree-form').find('.ui-state-error').removeClass('ui-state-error');
       var valid = true;
-      if (!jQuery('#tree-form input').valid()) { valid = false; }
-      if (!jQuery('#tree-form select').valid()) { valid = false; }
+      var validator = $('#tree-form').validate({});
+      validator.settings.ignoreTitle = true; // some of the 
+      if (!$('#tree-form input').valid()) { valid = false; }
+      if (!$('#tree-form select').valid()) { valid = false; }
       if(!valid)
-        alert('An validation error has occurred with the data you have entered: this has been highlighted. Please correct this then attempt to resubmit.');
+        alert('A validation error has occurred with the data you have entered: Please correct the highlighted error then attempt to resubmit.');
       return valid;
     },
     complete: function() {
@@ -371,13 +377,15 @@ $(document).ready(function() {
         var sample_id = data.outer_id;
         var occurrence_id = data.struct.children[0].id;
         var isnew = $('#tree-form [name=location\\:id]').attr('disabled');
+        if(typeof isnew == 'undefined') isnew=false;
         $('#tree-form [name=location\\:id]').removeAttr('disabled').val(location_id);
         $('#locations-website-website-id').attr('disabled',true);
         $('#tree-form [name=sample\\:id]').removeAttr('disabled').val(sample_id);
         $('#tree-form [name=occurrence\\:id]').removeAttr('disabled').val(occurrence_id);
         if(typeof indiciaData.trees[location_id] == 'undefined') {
-          indiciaData.trees[location_id] = {'id':location_id, 'name':$('#tree-form [name=location\\:name]').val()};
+          indiciaData.trees[location_id] = {'id':location_id};
         }
+        indiciaData.trees[location_id].name = $('#tree-form [name=location\\:name]').val();
 //        indiciaData.trees[location_id].sref = $('#imp-sref-tree').val();
 //        indiciaData.trees[location_id].system = $('#imp-sref-system-tree').val();
         $('#tree-select li.selected').html($('#tree-form [name=location\\:name]').val()).attr('id','tree-'+location_id).removeClass('missing');
@@ -385,6 +393,7 @@ $(document).ready(function() {
         selectedFeature.attributes.id = location_id;
         selectedFeature.layer.redraw();
         treeDetailsChanged = false;
+        indiciaData.currentTree = location_id;
         // need to reset the attribute fields: could have saved a new attribute or cleared an old one.
         loadTreeAttributes(location_id);
         $('.filelist .deleted-value[value=t]').closest('.photo').remove();
@@ -392,7 +401,7 @@ $(document).ready(function() {
         var buttons =  { 
             "Yes: Create Visit Now": function() {
                   dialog.dialog('close');
-                  $('#visit_link').attr('href', indiciaData.visitURL+location_id+(isnew?'&date='+first_date:''));
+                  $('#visit_link').attr('href', indiciaData.visitURL+location_id+(isnew?'&date='+first_date:'')+'&no_referer=1');
                   $('#visit_link').each(function(idex,elem){elem.click();});
                 },
             "No Thanks":  function() {
@@ -518,7 +527,7 @@ $(document).ready(function() {
       });
       div.map.editLayer.addFeatures(f);
       // select the feature for any tree that is currently selected.
-      var current = $('#tree-select li.selected').attr('id').split('-');
+/*      var current = $('#tree-select li.selected').attr('id').split('-');
       if(current.length==2 && typeof indiciaData.selectFeature !== "undefined"){
         current=current[current.length-1];
         if(indiciaData.selectFeature.layer.selectedFeatures.length > 0)
@@ -530,10 +539,10 @@ $(document).ready(function() {
             selectedFeature = feature;
           }
         });
-      } else {
+      } else { */
         indiciaData.mapdiv.map.editLayer.clickControl.deactivate();
         indiciaData.selectFeature.activate();
-      }
+//      }
 
       function featureChangeEvent(evt) {
         if (evt.feature.attributes.type == 'clickPoint') {

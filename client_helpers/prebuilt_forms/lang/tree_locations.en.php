@@ -34,7 +34,7 @@ $custom_terms = array(
   'Canopy 2'=>'Canopy Measure (2)',
   'Canopy 3'=>'Canopy Measure (3)',
   'Canopy 4'=>'Canopy Measure (4)',
-  'Understory Trees'=>'Number of Trees in Understory area',
-  'Young Understory Trees'=>'Number of Young Trees in Understory area',
-  'Young Coppice Understory Trees'=>'Number of Young Coppice in Understory area'
+  'Understorey Trees'=>'Number of Trees in Understorey area',
+  'Young Understorey Trees'=>'Number of Young Trees in Understorey area',
+  'Young Coppice Understorey Trees'=>'Number of Young Coppice in Understorey area'
 );
