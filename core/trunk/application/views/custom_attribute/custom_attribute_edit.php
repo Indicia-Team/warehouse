@@ -62,11 +62,20 @@ This page allows you to specify a new or edit an existing custom attribute for <
   <?php endif; ?>
   <li><label for="data_type">Data Type</label> <script
     type="text/javascript">
+function showHideTermlistLink() {
+  if ($('#termlist_id').val()!=='' && $('#data_type').val()==='L') {
+    $("#termlist-link").show();
+  } else {
+    $("#termlist-link").hide();
+  }
+}
+
 function toggleOptions(data_type)
 {
   var enable_list = [];
   var disable_list = [];
   $('select#termlist_id').attr('disabled', 'disabled');
+  $("#termlist-link").hide();
   switch(data_type) {
     case "T": // text
       enable_list = ['valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_time'];
@@ -75,7 +84,7 @@ function toggleOptions(data_type)
     case "L": // Lookup List
       $('select#termlist_id').attr('disabled', '');
       enable_list = ['valid_required'];
-      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_digit','valid_integer','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_time'];
+      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_digit','valid_integer','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_time'];      
       break;
     case "I": // Integer
         enable_list = ['valid_required','valid_digit','valid_integer','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value'];
@@ -97,7 +106,6 @@ function toggleOptions(data_type)
     default:
       disable_list = ['valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_digit','valid_integer','valid_time'];
       break;
-
   };
   $.each(enable_list, function(i, item) {
     $('#li_'+item).show();
@@ -105,13 +113,17 @@ function toggleOptions(data_type)
   $.each(disable_list, function(i, item) {
     $('#li_'+item).hide();
   });
-
+  showHideTermlistLink();
 };
 <?php
   if ($disabled_input == 'NO') {
 ?>
 $(document).ready(function() {
   toggleOptions($('select#data_type').attr('value'));
+  $('#termlist_id').change(function(e) {
+    $("#termlist-link").attr('href', '<?php echo url::site().'termlist/edit/'; ?>'+$('#termlist_id').val());
+    showHideTermlistLink();
+  });
 });
 <?php
   }
@@ -155,7 +167,11 @@ $(document).ready(function() {
       echo '>'.$termlist->title.'</option>';
     }
     ?>
-  </select> <?php echo html::error_message($model->getError($model->object_name.':termlist_id')); ?>
+  </select> 
+  <?php 
+  echo html::error_message($model->getError($model->object_name.':termlist_id')); 
+  echo '<a id="termlist-link" target="_blank" href="">edit in new tab</a>';
+  ?>
   </li>
   <li><label class="wide" for="multi_value">Allow Multiple Values</label>
   <?php echo form::checkbox($model->object_name.':multi_value', TRUE, (html::initial_value($values, $model->object_name.':multi_value') == 't'), 'class="vnarrow" '.$enabled ) ?>
