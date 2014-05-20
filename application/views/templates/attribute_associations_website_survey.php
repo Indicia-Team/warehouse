@@ -11,7 +11,7 @@ foreach ($websites as $website) {
                             'website_id' => $website->id,
                             'restrict_to_survey_id IS' => null,
                             'deleted' => 'f'))->find();
-
+  
   echo '<div class="ui-corner-all ui-widget"><div class="ui-corner-all ui-widget-header">'.$website->title.'</div><ol><li><label for="website_'.$website->id.'" class="wide" >'.$website->title.': non survey specific</label>';
   echo form::checkbox('website_'.$website->id, TRUE, $webrec->loaded, 'class="vnarrow"');
   echo "</li>";
@@ -23,6 +23,9 @@ foreach ($websites as $website) {
                             'deleted'=>'f'))->find();
     echo '<li><label for="website_'.$website->id.'_'.$survey->id.'" class="wide" >'.$website->title.':'.$survey->title.'</label>';
     echo form::checkbox('website_'.$website->id.'_'.$survey->id, TRUE, $webrec->loaded, 'class="vnarrow"');
+    if ($webrec->loaded) {
+      echo '<a target="_blank" href="'.url::site().'attribute_by_survey/edit/'.$webrec->id.'?type='.strtolower($other_data['name']).'">edit survey specific settings in another tab</a>';
+    }
     echo "</li>";
   }
   echo '</ol></div>';
