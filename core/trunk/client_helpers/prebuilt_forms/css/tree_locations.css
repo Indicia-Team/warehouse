@@ -8,7 +8,9 @@ label {
 }
 /* line 13, sass/sectioned_transects_edit_transect.scss */
 .helpText {
-  margin-left: 144px;
+  margin-left: 0px;
+  margin-top: 10px;
+  margin-bottom: -2px;
 }
 #imp-sref {
   background: #c0c0c0;
@@ -193,4 +195,18 @@ label {
 .olControlEditingToolbar div.olButton {
     float: left;
 }
+
+.control-box nobr {
+  display:inline-block;
+}
+
+legend  {
+	font-weight: bold;
+}
+
+label.autowidth {
+	min-width:160px;
+	width: auto;
+}
+
 
