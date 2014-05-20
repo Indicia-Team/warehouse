@@ -452,6 +452,13 @@ class Scheduled_Tasks_Controller extends Controller {
     //Make sure the cache_builder runs first as some other modules depend on the cache_occurrences table
     if (array_key_exists('cache_builder', $sortedPlugins))
       $sortedPlugins = array('cache_builder' => $sortedPlugins['cache_builder']) + $sortedPlugins;
+    //Make sure the verifier notification emails run last as the emails are sent out based on the results of other modules such as
+    //notifications generated
+    if (array_key_exists('verifier_notification_emails', $sortedPlugins)) {
+      $temp=$sortedPlugins['verifier_notification_emails'];
+      unset($sortedPlugins['verifier_notification_emails']);
+      $sortedPlugins['verifier_notification_emails']=$temp;
+    }
     // Now go through timestamps in order of time since they were run
     foreach ($sortedPlugins as $plugin=>$timestamp) {
       // allow the list of scheduled plugins we are running to be controlled from the URL parameters.
