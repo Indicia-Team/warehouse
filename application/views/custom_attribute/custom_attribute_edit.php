@@ -63,6 +63,7 @@ This page allows you to specify a new or edit an existing custom attribute for <
   <li><label for="data_type">Data Type</label> <script
     type="text/javascript">
 function showHideTermlistLink() {
+  $("#termlist-link").attr('href', '<?php echo url::site().'termlist/edit/'; ?>'+$('#termlist_id').val());
   if ($('#termlist_id').val()!=='' && $('#data_type').val()==='L') {
     $("#termlist-link").show();
   } else {
@@ -121,7 +122,6 @@ function toggleOptions(data_type)
 $(document).ready(function() {
   toggleOptions($('select#data_type').attr('value'));
   $('#termlist_id').change(function(e) {
-    $("#termlist-link").attr('href', '<?php echo url::site().'termlist/edit/'; ?>'+$('#termlist_id').val());
     showHideTermlistLink();
   });
 });
