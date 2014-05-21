@@ -18,7 +18,7 @@
   <params>
     <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
     <param name="source_types" display="Source Types" 
-        description="Comma separated list of source types with each item single quoted, or blank to allow all. Options are 'T' (trigger), 'C' (comment), 'V' (verification), 'A' (automated record check), 'S' (species alert), 'VT' (verification task), 'AC' (achievement)." datatype="text">
+        description="Comma separated list of source types with each item single quoted, or blank to allow all. Options are 'T' (trigger), 'C' (comment), 'V' (verification), 'A' (automated record check), 'S' (species alert), 'VT' (verification task), 'AC' (achievement)." datatype="text[]">
       <join>
         JOIN notifications n2 on n2.id=n.id and n2.source_type in (#source_types#)
       </join>

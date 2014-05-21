@@ -9,7 +9,7 @@
     where tt.id in (#layer_ids#)
   </query>
   <params>
-    <param name="layer_ids" datatype="string"/>
+    <param name="layer_ids" datatype="integer[]"/>
   </params>
   <columns>
     <column name="name" display="Name" sql="t.term"/>

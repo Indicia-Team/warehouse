@@ -35,7 +35,7 @@
     <param name="ownLocality" display="My locality only?" datatype="checkbox">
       <join value="1">JOIN index_locations_samples lfilter ON lfilter.sample_id=o.sample_id and lfilter.location_id=#location_id#</join>  
     </param>
-    <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text" emptyvalue="0"/>
+    <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="integer[]" emptyvalue="0"/>
     <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
       <join value="1">JOIN taxon_groups tgfilter ON tgfilter.id=o.taxon_group_id AND ('#taxon_groups#'='0' OR tgfilter.id IN (#taxon_groups#))</join>
     </param>

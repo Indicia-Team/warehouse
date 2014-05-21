@@ -1,12 +1,17 @@
 <report
-    title="Remote Download"
-    description="Report suitable for downloading data into remote systems, such as via Indicia2Recorder."
+    title="Occurrences Download 2 with parent sample"
+    description="Report suitable for downloading data, compatible with the explore report parameters. Uses sample attributes from the parent sample."
 >
   <query website_filter_field="co.website_id">
   SELECT #columns#
   FROM cache_occurrences co
   JOIN occurrences o on o.id=co.id AND o.deleted=false
-  JOIN samples s on s.id=o.sample_id AND s.deleted=false
+  JOIN samples sc on sc.id=o.sample_id AND sc.deleted=false
+  JOIN samples s on s.id=sc.parent_id and s.deleted=false
+  LEFT JOIN (index_locations_samples ils
+    JOIN locations l on l.id=ils.location_id
+    JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id AND ctt.term='Vice County'
+  ) on ils.sample_id=co.sample_id
   LEFT JOIN (occurrence_attribute_values det_full_val
     JOIN occurrence_attributes det_full on det_full.id=det_full_val.occurrence_attribute_id and det_full.deleted=false and det_full.system_function='det_full_name'
   ) ON det_full_val.occurrence_id=co.id AND det_full_val.deleted=false
@@ -23,7 +28,6 @@
   #joins#
   WHERE #sharing_filter# 
   AND co.record_status not in ('I','T') AND (#ownData#=1 OR co.record_status not in ('D','R'))
-  AND (#ownData#=0 OR CAST(co.created_by_id AS character varying)='#currentUser#')
   #idlist#
   </query>
   <order_bys>
@@ -53,7 +57,9 @@
     </param>
     <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter tco.' datatype='idlist' fieldname='co.id' alias='occurrence_id' />
 	  <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
-    <param name="ownData" display="My data only?" datatype="checkbox" />
+    <param name="ownData" display="My data only?" datatype="checkbox">
+      <where>co.created_by_id=#currentUser#</where>
+    </param>
     <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
         population_call='direct:location:id:name' />
     <param name="ownLocality" display="My locality only?" datatype="checkbox">
@@ -70,7 +76,7 @@
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='co.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
-    <column name='recordkey' display='RecordKey' sql="co.id" datatype="text" />
+    <column name='recordkey' display='RecordKey' sql="'iBRC' || co.id" datatype="text" />
     <column name='source' display='Source' sql="w.title || ' | ' || co.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='case when o.sensitivity_precision is null then co.sample_id else null end' datatype='integer' />
     <column name='taxon' display='Species' 
@@ -97,11 +103,12 @@
     else case length(replace(s.entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(s.entered_sref, ' ', '')))/2) end
   end" 
         datatype="text" />
+    <column name="vicecounty" display="ViceCounty" sql="array_to_string(array_agg(l.name), ', ')" datatype="text" aggregate="true" />        
     <column name='date_start' sql='co.date_start' visible='false' />
     <column name='date_end' sql='co.date_end' visible='false' />
     <column name='date_type' sql='co.date_type' visible='false' />
     <column name='date' display='Date' datatype='date' />
-    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt;' END || co.recorders" datatype="text" />
+    <column name='recorder' display='Recorder' sql="co.recorders" datatype="text" />
     <column name='determiner' display='Determiner' datatype="text" 
       sql="CASE WHEN det_full_val.text_value IS NULL THEN 
         CASE WHEN det_last_val.text_value IS NULL THEN NULL ELSE det_last_val.text_value || COALESCE(', ' || det_first_val.text_value, '') END
@@ -114,14 +121,9 @@
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(co.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='certainty' sql="CASE co.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
     <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->
-    <column name='recorder_person_id' sql="case when co.recorders = p.surname || ', ' || p.first_name 
-        or co.recorders = p.first_name || ' ' || p.surname 
-        or recorders = 'me' 
-        or recorders = 'myself' then cast(p.id as varchar(20)) else 'unknown' end" />
-    <column name='determiner_person_id' sql="case 
-        when coalesce(det_first_val.text_value || ' ' || det_last_val.text_value, det_full_val.text_value) = p.first_name || ' ' || p.surname 
-        or coalesce(det_last_val.text_value || ', ' || det_first_val.text_value, det_full_val.text_value) = p.surname || ', ' || p.first_name 
-        or det_full_val.text_value = 'myself'
-        or det_full_val.text_value = 'me' then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='recorder_person_id' sql="case when co.recorders = p.surname || ', ' || p.first_name or co.recorders = p.first_name || ' ' || p.surname then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='determiner_person_id' sql="case when co.recorders = det_last_val.text_value || ', ' || det_first_val.text_value 
+        or co.recorders = det_first_val.text_value || ' ' || det_last_val.text_value 
+        or co.recorders = det_full_val.text_value then cast(p.id as varchar(20)) else 'unknown' end" />
   </columns>
 </report>
