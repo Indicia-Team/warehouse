@@ -6,6 +6,13 @@
     SELECT #columns# 
     FROM locations l
       LEFT JOIN locations_websites lw ON lw.location_id=l.id 
+      --Normal users do not have access to deactivated sites
+      LEFT JOIN (locations ldeactivated 
+        JOIN location_attribute_values lavdeactivated ON lavdeactivated.location_id=ldeactivated.id 
+          AND lavdeactivated.location_attribute_id=#deactivate_site_attribute_id#
+          AND lavdeactivated.deleted=false 
+          AND lavdeactivated.int_value=1
+      ) ON st_intersects(ldeactivated.boundary_geom, l.centroid_geom) and ldeactivated.deleted=false and #admin_mode#=0
       JOIN termlists_terms tt ON tt.id = l.location_type_id
       JOIN terms t ON t.id = tt.term_id 
       #joins#
@@ -15,6 +22,7 @@
       AND l.deleted = false AND tt.deleted = false
       AND t.deleted = false 
       AND (l.location_type_id = (#site_type_id#) OR l.location_type_id = (#sub_site_type_id#))
+      AND ldeactivated.id is null
   </query>
   <params>
     <param name="count_unit_type_id" datatype="integer">
@@ -25,18 +33,39 @@
         JOIN terms tLCU ON tLCU.id = ttLCU.term_id 
         --Use COALESCE with boundary_geom as first priority as a geometry could be intersecting whilst the centroid is outside the intersection if it is partially intersecting
         ON st_intersects(l.boundary_geom, COALESCE(LCU.boundary_geom,LCU.centroid_geom)) 
-          AND LCU.location_type_id = (#count_unit_type_id#)           
+          AND LCU.location_type_id = (#count_unit_type_id#)   
       </join>
     </param>
+    <param name="clean_url" datatype="string"/>
+    <param name="information_sheet_url" datatype="string"/>
+    <param name="homepage_url" datatype="string"/>
+    --Note that you need to include front and trailing slashes for this e.g. '/cudi/live/'
+    <param name="drupal_installation_folder" datatype="string"/>
+    <param name="deactivate_site_attribute_id" datatype="integer"/>
     <param name="site_type_id" datatype="integer"/>
     <param name="sub_site_type_id" datatype="integer"/>
     --Only intersect the centroid for child locations otherwise the parent location is returned as well, as the boundaries would intersect each other
-    <param name="parent_id" datatype="integer" default="">    
+    <param name="parent_id" datatype="integer[]" default="">    
       <join>JOIN locations lp on st_intersects(lp.boundary_geom, l.centroid_geom) and lp.id in (#parent_id#)</join>
     </param>
+    <param name="admin_mode" datatype="integer"/>
   </params>
   <columns>
-    <column name="name" display="Site/Sub-Site" sql="l.name" in_count="true"/>
-    <column name="count_units" display="Count Units" sql="array_to_string(array_agg(LCU.name), ', ')" aggregate="true" />
+    <column name="name" display="Site/Sub-Site" sql="
+    case '#clean_url#'
+      WHEN '1'
+        THEN '&lt;a href=&quot;'||#drupal_installation_folder#||#homepage_url#||'?id='||l.id||'&quot;&gt;' || l.name
+      ELSE
+        '&lt;a href=&quot;'||#drupal_installation_folder#||'?q='||#homepage_url#||'&amp;id='||l.id||'&quot;&gt;' || l.name
+    END
+" in_count="true" />
+    <column name="count_units" display="Count Units" sql="
+    case '#clean_url#'
+      WHEN '1'
+        THEN array_to_string(array_agg('&lt;a href=&quot;'||#drupal_installation_folder#||#information_sheet_url#||'?id='||lcu.id||'&quot;&gt;' || LCU.name), ', ')
+      ELSE
+        array_to_string(array_agg('&lt;a href=&quot;'||#drupal_installation_folder#||'?q='||#information_sheet_url#||'&amp;id='||lcu.id||'&quot;&gt;' || LCU.name), ', ')
+    END
+" aggregate="true" />
   </columns>
 </report>

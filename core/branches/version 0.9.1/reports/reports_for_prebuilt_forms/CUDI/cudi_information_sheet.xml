@@ -1,32 +1,51 @@
   <report
     title="Cudi Information Sheet"
-    description="List of details of a Count Unit which has a given location_id."
+    description="List of details of a Count Unit which has a given location id (id)."
 >
   <query website_filter_field="lw.website_id">
     SELECT #columns# 
     FROM locations l
-      LEFT JOIN locations_websites lw ON lw.location_id=l.id 
-      LEFT JOIN location_attribute_values lav on lav.location_id=l.id
-      JOIN location_attributes la on la.id=lav.location_attribute_id
-        AND (la.id = #alternative_1_attr_id# OR la.id = #alternative_2_attr_id# OR la.id = #country_attr_id# OR la.id = #habitat_attr_id#)
-      #joins#
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id
+      LEFT JOIN location_attribute_values Alt1 ON Alt1.location_id = l.id AND Alt1.location_attribute_id = #alternative_1_attr_id#
+      LEFT JOIN location_attribute_values Alt2 ON Alt2.location_id = l.id AND Alt2.location_attribute_id = #alternative_2_attr_id#  
+      LEFT JOIN location_attribute_values country ON country.location_id = l.id AND country.location_attribute_id = #country_attr_id# 
+      LEFT JOIN termlists_terms ttCountry on ttCountry.id = country.int_value
+      LEFT JOIN terms tCountry on tCountry.id = ttCountry.term_id
+      LEFT JOIN location_attribute_values habitat ON habitat.location_id = l.id AND habitat.location_attribute_id = #habitat_attr_id# 
+      LEFT JOIN termlists_terms ttHab on ttHab.id = habitat.int_value
+      LEFT JOIN terms tHab on tHab.id = ttHab.term_id
+      LEFT JOIN location_attribute_values offReason ON offReason.location_id = l.id AND offReason.location_attribute_id = #official_reason_for_change_attr_id#
+      LEFT JOIN locations pl ON st_intersects(COALESCE(pl.boundary_geom,pl.centroid_geom), COALESCE(l.boundary_geom,l.centroid_geom)) AND pl.location_type_id=#site_location_type_id#
+      LEFT JOIN location_attribute_values LorganiserR ON LorganiserR.location_id = pl.id AND LorganiserR.location_attribute_id = #loc_org_reg_attr_id# 
+      LEFT JOIN termlists_terms ttLocal on ttLocal.id = LorganiserR.int_value
+      LEFT JOIN terms tLocal on tLocal.id = ttLocal.term_id
     WHERE 1=1
       #filters#
       AND #website_filter# AND l.deleted = false
       AND lw.deleted = false
-      AND l.id = #location_id#
+      AND l.id = #id#
        
   </query>
   <params>
-    <param name="location_id" datatype="integer" emptyvalue='-1'/>
+    <param name="id" datatype="integer" emptyvalue='-1'/>
     <param name="alternative_1_attr_id" datatype="integer"/>
     <param name="alternative_2_attr_id" datatype="integer"/>
     <param name="country_attr_id" datatype="integer"/>
     <param name="habitat_attr_id" datatype="integer"/>
+    <param name="official_reason_for_change_attr_id" datatype="integer"/>
+    <param name="site_location_type_id" datatype="integer"/>
+    <param name="loc_org_reg_attr_id" datatype="integer"/>
   </params>
   <columns>
-    <column name="name" display="Count Unit Name" sql="l.name" in_count="true"/>  
-    <column name="alternative_1" display="Alternative Name 1" sql="lav.text_value" in_count="true"/> 
-    <column name="abbreviation" display="Abbreviation" sql="l.code" in_count="true"/>
+    <column name="name" display="Count Unit Name" sql="l.name"/>  
+    <column name="alternative_1" display="Alternative Name 1" sql="Alt1.text_value"/> 
+    <column name="alternative_2" display="Alternative Name 2" sql="Alt2.text_value"/>
+    <column name="abbreviation" display="Abbreviation" sql="l.code"/>
+    <column name="parent_location_name" display="Parent Location" sql="pl.name"/>
+    <column name="country" display="Country" sql="tCountry.term" />
+    <column name="centroid" display="Country" sql="l.centroid_sref" />
+    <column name="habitat" display="Habitat" sql="tHab.term" />
+    <column name="local_organiser_region" display="Local Organiser Region" sql="tLocal.term" />   
+    <column name="official_reason_for_change" display="Official Reason for Change" sql="offReason.text_value" />
   </columns>
 </report>

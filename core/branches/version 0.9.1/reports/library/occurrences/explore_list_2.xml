@@ -32,7 +32,7 @@
     <param name="ownLocality" display="My locality only?" datatype="checkbox">
       <join value="1">JOIN locations lfilter ON st_intersects(coalesce(lfilter.boundary_geom, lfilter.centroid_geom), o.public_geom) AND lfilter.id=#location_id#</join>  
     </param>
-    <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="text"/>
+    <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="integer[]"/>
     <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
       <where value="1">o.taxon_group_id IN (#taxon_groups#)</where>
     </param>

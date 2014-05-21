@@ -42,7 +42,7 @@
     <column name='sample_id' visible='false' sql='case when occ.sensitivity_precision is null then o.sample_id else null end' datatype='integer' />
     <column name='taxon' display='Species' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
-      sql="o.preferred_taxon" datatype='text' />
+      sql="o.preferred_taxon" datatype='species' />
     <column name='common' display='Common name' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
       sql="o.default_common_name" datatype='text' />

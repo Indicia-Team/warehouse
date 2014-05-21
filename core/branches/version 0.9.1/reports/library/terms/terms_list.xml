@@ -22,7 +22,7 @@
     <param name="termlist_external_key" display="Termlist External Key" default="" >
       <where>tl.external_key='#termlist_external_key#'</where>
     </param>
-    <param name="terms" display="List of Terms" default="" >
+    <param name="terms" display="List of Terms" default="" datatype="text[]">
       <where>t.term in (#terms#)</where>
     </param>
   </params>

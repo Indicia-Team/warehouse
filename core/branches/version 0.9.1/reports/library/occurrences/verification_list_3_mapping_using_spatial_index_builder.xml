@@ -52,10 +52,10 @@
         population_call='direct:location:id:name'>
       <join>JOIN index_locations_samples lfilter ON lfilter.sample_id=o.sample_id and lfilter.location_id=#expertise_location#</join>
     </param>
-    <param name="expertise_taxon_groups" display="Taxon Group Expertise" description="List of taxon group IDs which the user has expertise in" datatype="text">
+    <param name="expertise_taxon_groups" display="Taxon Group Expertise" description="List of taxon group IDs which the user has expertise in" datatype="integer[]">
       <join>JOIN taxon_groups tg ON tg.id=o.taxon_group_id AND tg.id IN (#expertise_taxon_groups#)</join>
     </param>
-    <param name='expertise_surveys' display='Survey IDs list' description='Comma separated list of surveys IDs to include' datatype='text'>
+    <param name='expertise_surveys' display='Survey IDs list' description='Comma separated list of surveys IDs to include' datatype='integer[]'>
       <join>JOIN surveys su on su.id=o.survey_id and su.deleted=false and su.id in (#expertise_surveys#)</join>  
     </param>
     <param name="website" default="">

@@ -12,10 +12,12 @@
       --Note that we need to check lLatestChild.parent_id=#count_unit_id# here as the parent boundary and first child are created at exactly the same time and we don't want to return both
       LEFT JOIN locations lLatestChild on lLatestChild.id in 
                 (select max(id) from locations where parent_id=#count_unit_id# AND deleted=false AND location_type_id=#count_unit_boundary_location_type_id#) 
+      LEFT JOIN location_attribute_values lavStartDate on lavStartDate.location_id = l.id AND lavStartDate.location_attribute_id = #boundary_start_date_attribute_id#
+      LEFT JOIN location_attribute_values lavEndDate on lavEndDate.location_id = l.id AND lavEndDate.location_attribute_id = #boundary_end_date_attribute_id#
     WHERE (
       --Assume latest boundary is the preferred one if preferred not set yet
       ((l.id = COALESCE(lav.int_value,lLatestChild.id)) 
-      OR (l.created_by_id=#current_user_id# and l.location_type_id=#count_unit_boundary_location_type_id# and l.created_on > (select created_on from locations where id = COALESCE(lav.int_value,lLatestChild.id)))) 
+      OR (l.created_by_id=#current_user_id# and l.location_type_id=#count_unit_boundary_location_type_id# and l.created_on > (select updated_on from locations where id = COALESCE(lav.int_value,lLatestChild.id)))) 
       OR (#admin_role#=1 AND l.location_type_id=#count_unit_boundary_location_type_id#))
       AND l.deleted = false AND #website_filter# AND l.parent_id=#count_unit_id#
     ORDER BY l.id desc
@@ -26,10 +28,16 @@
     <param name="preferred_boundary_attribute_id" datatype="integer"/>
     <param name="count_unit_id" datatype="integer"/>
     <param name="count_unit_boundary_location_type_id" datatype="integer"/>
+    <param name="boundary_start_date_attribute_id" datatype="integer"/>
+    <param name="boundary_end_date_attribute_id" datatype="integer"/>
   </params>
   <columns>
     <column name="id" display="ID" sql="l.id"/>
-    <column name="created_on" display="Created On" sql="l.created_on"/>
-    <column name="updated_on" display="Updated On" sql="l.updated_on"/>
+    <column name="start_date" display="Start Date" sql="lavStartDate.date_start_value"/>
+    --Note that lavEndDate.date_start_value here is not a typo We are storing these dates as seperate attributes,
+    --but in the database each attribute has support for two dates. So each attribute has the same date saved
+    --in start and end date as we aren't using two dates for each attribute. So we could put start_date or end_date here
+    --and it wouldn't matter 
+    <column name="end_date" display="End Date" sql="lavEndDate.date_start_value"/>
   </columns>
 </report>

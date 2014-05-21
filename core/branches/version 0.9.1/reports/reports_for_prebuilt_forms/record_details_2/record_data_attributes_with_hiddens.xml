@@ -144,7 +144,7 @@
   </order_bys>
   <params>
     <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
-    <param name='attrs' display='Attributes' description='CSV list of attributes to include or exclude. Lowercase.' datatype='text' />
+    <param name='attrs' display='Attributes' description='CSV list of attributes to include or exclude. Lowercase.' datatype='text[]' />
     <param name='testagainst' display='Test against' description='Test for fields to include or exclude using the caption or the system function of the custom attribute' 
         datatype='lookup' lookup_values='caption:Caption,system_function:System Function, e.g. email' />
     <param name='operator' display='Include or exclude' description="Do you want to include only the list of attributes you've defined, or exclude them?" 
