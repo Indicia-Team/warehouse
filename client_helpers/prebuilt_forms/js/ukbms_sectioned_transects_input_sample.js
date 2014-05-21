@@ -54,23 +54,19 @@ function getTotal(cell) {
   jQuery(table).find('td.col-total.col-'+colidx).html(total);
 }
 
-function addSpeciesToGrid(occurrenceSpecies, taxonList, speciesTableSelector, force, tabIDX){
+function addSpeciesToGrid(taxonList, speciesTableSelector, force, tabIDX){
   // this function is given a list of species from the occurrences and if they are in the taxon list
   // adds them to a table in the order they are in that taxon list
   // any that are left are swept up by another function.
   jQuery.each(taxonList, function(idx, species) {
-    var found = force;
-    if(!found){
-      jQuery.each(occurrenceSpecies, function(idx, occ){
-        // taxonList may or may not be preferred
-        // Occ has both a ttl_id and a preferred
-        if(occ['processed']!==true && occ['taxon_meaning_id']===species['taxon_meaning_id'])
-          found=true;
-      });
-    }
-    if (found) {
+    var include = force;
+    jQuery.each(indiciaData.existingOccurrences, function(idx, occ){
+      // taxonList may or may not be preferred, Occ has both a ttl_id and a preferred
+      if(occ['taxon_meaning_id'] === species['taxon_meaning_id'])
+        include = !occ['processed'];
+    });
+    if (include)
       addGridRow(species, speciesTableSelector, true, tabIDX);
-    }
   });
 }
 
@@ -135,6 +131,7 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
   row.find('.count-input').keydown(count_keydown).focus(count_focus).change(input_change).blur(input_blur);
   row.find('input.non-count-input').keydown(count_keydown).focus(count_focus).change(input_change).blur(input_blur);
   row.find('select.non-count-input').focus(count_focus).change(select_change);
+  indiciaData.existingOccurrences[':' + species.taxon_meaning_id] = {'processed' : true, 'taxon_meaning_id' : ''+species.taxon_meaning_id};
 }
 
 function smp_keydown(evt) {
@@ -353,7 +350,7 @@ function loadSpeciesList() {
   // note that when added from the list, the ttlid is the preferred one, but if added from the autocomplete it may/probably
   // will not be.
   var list = indiciaData.startWithCommonSpecies ? indiciaData.speciesList1SubsetList : indiciaData.speciesList1List;
-  addSpeciesToGrid(indiciaData.existingOccurrences, list, 'table#transect-input1', true, 1);
+  addSpeciesToGrid(list, 'table#transect-input1', true, 1);
   // get all taxon meanings recorded on this transect
   var process2 = function () {
     var process3 = function () {
@@ -382,7 +379,7 @@ function loadSpeciesList() {
                 'data': TaxonData,
                 'dataType': 'jsonp',
                 'success': function(data) {
-              addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input4', indiciaData.speciesList4Force, 4);
+              addSpeciesToGrid(data, 'table#transect-input4', indiciaData.speciesList4Force, 4);
               // copy across the col totals
               jQuery.each(indiciaData.sections, function(idx, section) {
                 jQuery('table#transect-input4 tfoot .col-total.col-'+(idx+1)).html(typeof section.total['table#transect-input4']==="undefined" ? 0 : section.total['table#transect-input4']);
@@ -416,7 +413,7 @@ function loadSpeciesList() {
               'data': TaxonData,
               'dataType': 'jsonp',
               'success': function(data) {
-            addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input3', indiciaData.speciesList3Force, 3);
+            addSpeciesToGrid(data, 'table#transect-input3', indiciaData.speciesList3Force, 3);
             // copy across the col totals
             jQuery.each(indiciaData.sections, function(idx, section) {
               jQuery('table#transect-input3 tfoot .col-total.col-'+(idx+1)).html(typeof section.total['table#transect-input3']==="undefined" ? 0 : section.total['table#transect-input3']);
@@ -451,7 +448,7 @@ function loadSpeciesList() {
             'data': TaxonData,
             'dataType': 'jsonp',
             'success': function(data) {
-          addSpeciesToGrid(indiciaData.existingOccurrences, data, 'table#transect-input2', indiciaData.speciesList2Force, 2);
+          addSpeciesToGrid(data, 'table#transect-input2', indiciaData.speciesList2Force, 2);
           // copy across the col totals
           jQuery.each(indiciaData.sections, function(idx, section) {
             jQuery('table#transect-input2 tfoot .col-total.col-'+(idx+1)).html(typeof section.total['table#transect-input2']==="undefined" ? 0 : section.total['table#transect-input2']);
