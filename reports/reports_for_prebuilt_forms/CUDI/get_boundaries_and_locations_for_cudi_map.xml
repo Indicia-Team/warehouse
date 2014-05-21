@@ -39,10 +39,10 @@
 
   </query>
   <params>
-    <param name="location_id" datatype="integer" emptyvalue="-1">
+    <param name="location_id" datatype="integer[]" emptyvalue="-1">
       <where>l.id in (#location_id#)</where>
     </param>
-    <param name="location_type_id" datatype="integer" emptyvalue="-1">
+    <param name="location_type_id" datatype="integer[]" emptyvalue="-1">
       <where>l.location_type_id in (#location_type_id#)</where>
     </param>
     <param name="parent_id" datatype="integer" emptyvalue="-1">

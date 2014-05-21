@@ -21,7 +21,7 @@
     <order_by>l.name ASC</order_by>
   </order_bys>
   <params>
-    <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' datatype="text" emptyvalue="0"/>
+    <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' datatype="integer[]" emptyvalue="0"/>
     <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
     <param name="parent_id" display="Parent location ID" description="The ID of the parent location to filter for" datatype="integer" >
       <join>JOIN locations lp on lp.id=#parent_id# and st_intersects(lp.boundary_geom, l.boundary_geom)</join>

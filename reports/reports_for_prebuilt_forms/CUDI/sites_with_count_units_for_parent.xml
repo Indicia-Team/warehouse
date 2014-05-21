@@ -45,7 +45,7 @@
     <param name="site_type_id" datatype="integer"/>
     <param name="sub_site_type_id" datatype="integer"/>
     --Only intersect the centroid for child locations otherwise the parent location is returned as well, as the boundaries would intersect each other
-    <param name="parent_id" datatype="integer" default="">    
+    <param name="parent_id" datatype="integer[]" default="">    
       <join>JOIN locations lp on st_intersects(lp.boundary_geom, l.centroid_geom) and lp.id in (#parent_id#)</join>
     </param>
     <param name="admin_mode" datatype="integer"/>

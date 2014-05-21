@@ -17,7 +17,7 @@
       AND l.deleted = false AND #website_filter# and l.location_type_id in (#location_type_ids#)
   </query>
   <params>
-    <param name="location_type_ids" datatype="string"/>
+    <param name="location_type_ids" datatype="integer[]"/>
     <param name="location_id" datatype="integer"/>
   </params>
   <columns>
