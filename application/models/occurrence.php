@@ -401,9 +401,9 @@ class Occurrence_Model extends ORM
    */
   public function fixed_values_form() {
     $srefs = array();
-    $systems = spatial_ref::system_metadata();
-    foreach ($systems as $code=>$metadata) 
-      $srefs[] = "$code:".$metadata['title'];
+    $systems = spatial_ref::system_list();
+    foreach ($systems as $code=>$title) 
+      $srefs[] = "$code:$title";
     return array(
       'website_id' => array( 
         'display'=>'Website', 
