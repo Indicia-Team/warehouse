@@ -808,7 +808,7 @@ class XMLReportReader_Core implements ReportReader
               array('value'=>'', 'operator'=>'', 'sql'=>"o.location_name ilike '%#location_name#%'")
             )
         ),      
-        'location_list' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location IDs', 
+        'location_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Location IDs', 
             'description'=>'Comma separated list of location IDs',
             'joins' => array(
               array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
@@ -816,7 +816,7 @@ class XMLReportReader_Core implements ReportReader
                   "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), #sample_geom_field#)")
             )
         ),
-        'indexed_location_list' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Location IDs (indexed)', 
+        'indexed_location_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Location IDs (indexed)', 
             'description'=>'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
             'joins' => array(
               array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id and #alias:ils#.location_id #indexed_location_list_op# (#indexed_location_list#)")
@@ -979,31 +979,31 @@ class XMLReportReader_Core implements ReportReader
               array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#implicit_group_id#")
             )
         ),
-        'website_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Website IDs", 
+        'website_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Website IDs", 
             'description'=>'Comma separated list of IDs',
             'wheres' => array(
                array('value'=>'', 'operator'=>'', 'sql'=>"o.website_id #website_list_op# (#website_list#)")
             )
         ),
-        'survey_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Survey IDs", 
+        'survey_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Survey IDs", 
             'description'=>'Comma separated list of IDs',
             'wheres' => array(
                array('value'=>'', 'operator'=>'', 'sql'=>"o.survey_id #survey_list_op# (#survey_list#)")
             )
         ),
-        'input_form_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Input forms", 
+        'input_form_list' => array('datatype'=>'text[]', 'default'=>'', 'display'=>"Input forms", 
             'description'=>'Comma separated list of input form paths',
             'wheres' => array(
                array('value'=>'', 'operator'=>'', 'sql'=>"o.input_form #input_form_list_op# (#input_form_list#)")
             )
         ),
-        'taxon_group_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon Group IDs", 
+        'taxon_group_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Taxon Group IDs", 
             'description'=>'Comma separated list of IDs',
             'wheres' => array(
                array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_group_id in (#taxon_group_list#)")
             )
         ),
-        'taxa_taxon_list_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxa taxon list IDs", 
+        'taxa_taxon_list_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Taxa taxon list IDs", 
             'description'=>'Comma separated list of preferred IDs',
             'wheres' => array(
               array('value'=>'', 'operator'=>'', 'sql'=>"o.taxa_taxon_list_external_key in (#taxa_taxon_list_list#)")
@@ -1019,7 +1019,7 @@ class XMLReportReader_Core implements ReportReader
     join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
   ) select '''' || array_to_string(array_agg(distinct external_key::varchar), ''',''') || '''' from q"
         ),
-        'taxon_meaning_list' => array('datatype'=>'string', 'default'=>'', 'display'=>"Taxon meaning IDs", 
+        'taxon_meaning_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Taxon meaning IDs", 
             'description'=>'Comma separated list of taxon meaning IDs',
             'wheres' => array(
               array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_meaning_id in (#taxon_meaning_list#)")

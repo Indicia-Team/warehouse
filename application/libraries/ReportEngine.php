@@ -682,11 +682,29 @@ class ReportEngine {
             $query = $this->mergeAttrListParam($query, 'person', $value);
           else {
             // sanitise
-            if ($paramDefs[$name]['datatype']==='text' || $paramDefs[$name]['datatype']==='string')
+            if ($paramDefs[$name]['datatype']==='text' || $paramDefs[$name]['datatype']==='string') {
               // ensure value is escaped for apostrophes
               $value = pg_escape_string($value);
+            }
+            elseif ($paramDefs[$name]['datatype']==='text[]' || $paramDefs[$name]['datatype']==='string[]') {
+              // array check on text parameter values
+              if (strlen($value)) {
+                $arr = str_getcsv($value, ",", "'");
+                foreach ($arr as &$item) 
+                  $item = pg_escape_string($item);
+                $value = "'" . implode("','", $arr) . "'";
+              }
+            }
             elseif (($paramDefs[$name]['datatype']==='integer' || $paramDefs[$name]['datatype']==='float') && !is_numeric($value))
               throw new exception('Invalid numeric parameter value');
+            elseif (($paramDefs[$name]['datatype']==='integer[]' || $paramDefs[$name]['datatype']==='float[]')) {
+              // array check on numeric parameter values
+              $arr = explode(',', $value);
+              foreach ($arr as $item) {
+                if (!is_numeric($item))
+                  throw new exception('Invalid numeric array parameter value');
+              }
+            }
             $query = preg_replace("/#$name#/", $value, $query);
           }
         }

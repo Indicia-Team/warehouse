@@ -22,11 +22,11 @@
       <where>('#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
     <param name="website_exclusions" display="List of website IDs to exclude" default=""
-        description="Because some website owners don't like league tables, this allows them to be excluded by providing a comma separated list of IDs" datatype="text">
+        description="Because some website owners don't like league tables, this allows them to be excluded by providing a comma separated list of IDs" datatype="integer[]">
       <where>o.website_id not in (#website_exclusions#)</where>
     </param>
     <param name="user_exclusions" display="List of user IDs to exclude" 
-        description="Allows special case user IDs to be excluded by providing a comma separated list of warehouse user IDs." datatype="text" default="1" >
+        description="Allows special case user IDs to be excluded by providing a comma separated list of warehouse user IDs." datatype="integer[]" default="1" >
       <where>o.created_by_id not in (#user_exclusions#)</where>
     </param>
     <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating the current user." datatype="text" />

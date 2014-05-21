@@ -73,7 +73,7 @@
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
     <column name='date' display='Date' datatype='date' />
-    <column name='taxon' display='Species name' sql="o.preferred_taxon" datatype='text' />
+    <column name='taxon' display='Species name' sql="o.preferred_taxon" datatype='species' />
     <column name='number_seen' display='Number seen' sql='coalesce(count_val.text_value, count_val_term.term, count_val.int_value::varchar)' datatype='text' />
   </columns>
 </report>

@@ -53,7 +53,7 @@
     <param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' >
       <where>s.location_id=#location_id#</where>
     </param>
-    <param name='location_list' display='Location List' description='Enter a comma separated list of location IDs' datatype='text' default='' >
+    <param name='location_list' display='Location List' description='Enter a comma separated list of location IDs' datatype='integer[]' default='' >
       <where>s.location_id IN (#location_list#)</where>
     </param>
   </params>

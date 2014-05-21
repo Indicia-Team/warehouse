@@ -52,10 +52,10 @@
         population_call='direct:location:id:name'>
         <join>JOIN locations lexpert ON st_intersects(lexpert.boundary_geom, s.geom) AND lexpert.id=#expertise_location#</join>  
     </param>
-    <param name="expertise_taxon_groups" display="Taxon Group Expertise" description="List of taxon group IDs which the user has expertise in" datatype="text">
+    <param name="expertise_taxon_groups" display="Taxon Group Expertise" description="List of taxon group IDs which the user has expertise in" datatype="integer[]">
       <where value="1">o.taxon_group_id IN (#expertise_taxon_groups#)</where>
     </param>
-    <param name='expertise_surveys' display='Survey IDs list' description='Comma separated list of surveys IDs to include' datatype='text'>
+    <param name='expertise_surveys' display='Survey IDs list' description='Comma separated list of surveys IDs to include' datatype='integer[]'>
       <where value="1">o.survey_id IN (#expertise_surveys#)</where>
     </param>
     <param name="website" default="">

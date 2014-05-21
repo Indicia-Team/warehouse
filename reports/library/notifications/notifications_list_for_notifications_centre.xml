@@ -33,7 +33,7 @@
     </param>
     <!-- parameter for user configurable source types on edit tab. -->
     <param name="source_types" display="Source Types" 
-        description="Comma separated list of source types with each item single quoted, or blank to allow all." datatype="text" default=''>
+        description="Comma separated list of source types with each item single quoted, or blank to allow all." datatype="text[]" default=''>
       <wheres>
         <where>n.source_type in (#source_types#)</where>
       </wheres>

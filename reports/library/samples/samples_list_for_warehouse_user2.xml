@@ -41,7 +41,7 @@
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
             population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:sample_methods,termlist_id=' >
-      <join>JOIN JOIN termlists_terms ttl1 ON ttl1.id=s.sample_method_id
+      <join>JOIN termlists_terms ttl1 ON ttl1.id=s.sample_method_id
       INNER JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id and ttl2.id=#sample_method_id#
       </join>
     </param>
