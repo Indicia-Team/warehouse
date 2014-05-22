@@ -32,6 +32,14 @@ require_once('dynamic_sample_occurrence.php');
 
 class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
 
+  public static function get_perms($nid, $args) {
+    $perms = array();
+    if(isset($args['permission_name']) && $args['permission_name']!='') $perms[] = $args['permission_name'];
+    if(isset($args['edit_permission']) && $args['edit_permission']!='') $perms[] = $args['edit_permission'];
+    if(isset($args['ro_permission'])   && $args['ro_permission']!='')   $perms[] = $args['ro_permission'];
+    return $perms;
+  }
+
   /** 
    * Return the form metadata.
    * @return string The definition of the form.
