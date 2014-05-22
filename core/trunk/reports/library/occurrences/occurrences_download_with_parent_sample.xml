@@ -50,7 +50,7 @@
   <columns>
     <column name='occurrence_id' display='ID' sql='co.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='source' display='Source' sql="w.title || ' | ' || co.survey_title" datatype="text" />
-    <column name='sample_id' visible='false' sql='case when o.sensitivity_precision is null then co.sample_id else null end' datatype='integer' />
+    <column name='sample_id' visible='false' sql='case when co.sensitivity_precision is null then co.sample_id else null end' datatype='integer' />
     <column name='taxon' display='Species' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
       sql="co.preferred_taxon" datatype='text' />
@@ -62,7 +62,7 @@
     <column name='taxa_taxon_list_id' visible='false' sql='co.taxa_taxon_list_id' datatype='integer' />
     <column name='record_comment' display='Comment' sql="o.comment" datatype="text" />
     <column name='location_name' display='Site name' sql='co.location_name' datatype='text' />
-    <column name='entered_sref' display='Grid Ref' sql="case when o.sensitivity_precision is null then co.public_entered_sref else 'Sensitive' end" datatype='text' />
+    <column name='entered_sref' display='Grid Ref' sql="case when co.sensitivity_precision is null and co.privacy_precision is null then co.public_entered_sref else 'Sensitive' end" datatype='text' />
     <column name='date_start' sql='co.date_start' visible='false' />
     <column name='date_end' sql='co.date_end' visible='false' />
     <column name='date_type' sql='co.date_type' visible='false' />

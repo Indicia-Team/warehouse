@@ -622,7 +622,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       date_start=s.date_start, 
       date_end=s.date_end, 
       date_type=s.date_type,
-      public_entered_sref=case when o.confidential=true or o.sensitivity_precision is not null then null else 
+      public_entered_sref=case when o.confidential=true or o.sensitivity_precision or s.privacy_precision is not null then null else 
         case 
           when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
             abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
@@ -641,7 +641,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
         end
       end,
       entered_sref_system=case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-      public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, o.sensitivity_precision,
+      public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, o.sensitivity_precision, s.privacy_precision,
           case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
       sample_method=tmethod.term,
       taxa_taxon_list_id=cttl.id, 
@@ -664,7 +664,8 @@ $config['occurrences']['update'] = "update cache_occurrences co
         when certainty.sort_order <200 then 'L'
         else 'U'
       end,
-      location_name=case when o.confidential=true or o.sensitivity_precision is not null then null else coalesce(l.name, s.location_name) end,
+      location_name=case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null 
+          then null else coalesce(l.name, s.location_name) end,
       recorders = s.recorder_names,
       verifier = pv.surname || ', ' || pv.first_name,
       verified_on = o.verified_on,
@@ -674,6 +675,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       input_form=s.input_form,
       data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end,
       sensitivity_precision=o.sensitivity_precision,
+      privacy_precision=s.privacy_precision,
       group_id=s.group_id
     from occurrences o
     #join_needs_update#
@@ -715,12 +717,12 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
-      verifier, verified_on, images, training, location_id, input_form, sensitivity_precision, group_id
+      verifier, verified_on, images, training, location_id, input_form, sensitivity_precision, privacy_precision, group_id
     )
   select distinct on (o.id) o.id, o.record_status, o.release_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
     s.date_start, s.date_end, s.date_type,
-    case when o.confidential=true or o.sensitivity_precision is not null then null else 
+    case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else 
       case 
         when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
           abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
@@ -739,7 +741,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       end
     end as public_entered_sref,
     case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end as entered_sref_system,
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, o.sensitivity_precision,
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, o.sensitivity_precision, s.privacy_precision,
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end) as public_geom,
     tmethod.term as sample_method,
     cttl.id as taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id, cttl.taxonomic_sort_order, 
@@ -751,7 +753,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
         when certainty.sort_order <200 then 'L'
         else 'U'
     end,
-    case when o.confidential=true or o.sensitivity_precision is not null then null else coalesce(l.name, s.location_name) end,
+    case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null 
+        then null else coalesce(l.name, s.location_name) end,
     s.recorder_names,
     pv.surname || ', ' || pv.first_name,
     o.verified_on,
@@ -760,6 +763,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     s.location_id,
     s.input_form,
     o.sensitivity_precision,
+    s.privacy_precision,
     s.group_id
   from occurrences o
   left join cache_occurrences co on co.id=o.id
