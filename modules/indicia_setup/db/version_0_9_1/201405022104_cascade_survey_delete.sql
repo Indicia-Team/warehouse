@@ -10,6 +10,8 @@ END;
 $BODY$
    LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS survey_delete_trigger ON surveys;
+
 CREATE TRIGGER survey_delete_trigger
    AFTER UPDATE
    ON surveys
