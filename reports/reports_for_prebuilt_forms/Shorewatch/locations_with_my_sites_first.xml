@@ -20,7 +20,7 @@
         <param name="my_sites_person_attr_id" display="Person preferred sites attribute Id" description="Person preferred sites attribute Id" datatype="integer"/>
         <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" emptyvalue="-1"/>
         <param name="location_type_ids" display="Location Type ID" description="Warehouse Ids for the location types you 
-            want to limit the report to." datatype="text" emptyvalue='-1'/>
+            want to limit the report to." datatype="integer[]" emptyvalue='-1'/>
       </params>
       <columns>
         <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
