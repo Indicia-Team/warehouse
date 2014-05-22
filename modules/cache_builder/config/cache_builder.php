@@ -622,7 +622,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       date_start=s.date_start, 
       date_end=s.date_end, 
       date_type=s.date_type,
-      public_entered_sref=case when o.confidential=true or o.sensitivity_precision or s.privacy_precision is not null then null else 
+      public_entered_sref=case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else 
         case 
           when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
             abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
