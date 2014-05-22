@@ -39,7 +39,7 @@
 	<param name='closed_attr_id' display='Sample Attribute ID for Closed flag: ' description='ID of sample_attribute for sample closed flag' datatype='int' />
     <param name="use_location_list" display="Restrict to Location List" description="Restrict query to Locations included in location list."
             	datatype='lookup' lookup_values='NO:NO,YES:YES' />
-    <param name='locations' display='Location ID list (set to -1 if not being used): ' description='Comma separated list of IDs of locations to restrict query to' datatype='text' />
+    <param name='locations' display='Location ID list (set to -1 if not being used): ' description='Comma separated list of IDs of locations to restrict query to' datatype='integer[]' />
   </params>
   <columns>
     <column name='id' display='ID' />
