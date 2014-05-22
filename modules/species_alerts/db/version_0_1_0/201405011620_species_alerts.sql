@@ -38,6 +38,9 @@ BEGIN
   CONSTRAINT fk_species_alerts_updater FOREIGN KEY (updated_by_id)
         REFERENCES users (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT fk_species_alerts_taxon_meaning FOREIGN KEY (taxon_meaning_id)
+        REFERENCES taxon_meanings (id) MATCH SIMPLE
+        ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT taxon_meaning_or_external_key 
 	CHECK (taxon_meaning_id IS NOT NULL or external_key IS NOT NULL)
   );
