@@ -38,7 +38,7 @@
     </param>
     <param name='default_input_form' default='' />
     <param name='exclude_sensitive' default='' datatype='boolean' display='Exclude sensitive records' description='Exclude sensitive records?'>
-      <where>o.sensitivity_precision is null</where>
+      <where>o.sensitivity_precision is null and o.privacy_precision is null</where>
     </param>
   </params>
   <columns>

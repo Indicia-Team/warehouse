@@ -30,7 +30,7 @@
   </params>
   <columns>
     <column name='recorder' display='Recorder name' sql="o.recorders" datatype="text" />
-    <column name='location_name' display='Site name' sql="case when occ.sensitivity_precision is null then o.location_name else 'Sensitive. Lat long is approximate.' end" datatype='text' />
+    <column name='location_name' display='Site name' sql="case when occ.sensitivity_precision is null and s.privacy_precision is null then o.location_name else 'Sensitive. Lat long is approximate.' end" datatype='text' />
     <column name='entered_sref' display='Grid Ref' 
     sql="CASE 
     WHEN lower(o.entered_sref_system)='#sref_system#' THEN o.public_entered_sref

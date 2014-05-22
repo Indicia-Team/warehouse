@@ -88,7 +88,7 @@
     <column name='taxonversionkey' display='TaxonVersionKey' sql='co.taxa_taxon_list_external_key' datatype="text" />
     <column name='taxa_taxon_list_id' visible='false' sql='co.taxa_taxon_list_id' datatype='integer' />
     <column name='record_comment' display='Comment' sql="o.comment" datatype="text" />
-    <column name='location_name' display='Site name' sql="case when o.sensitivity_precision is null then co.location_name else 'Sensitive. Lat long is approximate.' end" datatype='text' />
+    <column name='location_name' display='Site name' sql="case when o.sensitivity_precision is null and s.privacy_precision then co.location_name else 'Sensitive. Lat long is approximate.' end" datatype='text' />
     <column name='entered_sref' display='Grid Ref' sql="case s.entered_sref_system when '4326' then co.public_entered_sref else replace(co.public_entered_sref, ' ', '') end" datatype='text' />
     <column name='lat' display='Latitude' sql="substring(st_astext(st_transform(st_centroid(co.public_geom), 4326)) from E'POINT\\(.+ (.+)\\)')" datatype="text" />
     <column name='long' display='Longitude' sql="substring(st_astext(st_transform(st_centroid(co.public_geom), 4326)) from E'POINT\\((.+) ')" datatype="text" />
