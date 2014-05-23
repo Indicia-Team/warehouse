@@ -1960,6 +1960,48 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
     self::_cacheResponse($cacheFile, array('output' => $toCache), $cacheOpts);
   }
   
+  /** 
+   * Wrapped up handler for a cached call to the data or reporting services.
+   * @param string $request Request URL.
+   * @param array $options Control options, which may include a caching option and/or cachePerUser
+   * option.
+   */
+  protected static function _get_cached_services_call($request, $options) {
+    $cacheLoaded = false;
+    // allow use of the legacy nocache parameter.
+    if (isset($options['nocache']) && $options['nocache']===true)
+      $options['caching'] = false;
+    $useCache = !self::$nocache && !isset($_GET['nocache']) && !empty($options['caching']) && $options['caching'];
+    if ($useCache && $options['caching']!=='store') {
+      // Get the URL params, so we know what the unique thing is we are caching
+      $query=parse_url(parent::$base_url.$request, PHP_URL_QUERY);
+      parse_str($query, $cacheOpts);
+      unset($cacheOpts['auth_token']);
+      unset($cacheOpts['nonce']);
+      if (isset($options['cachePerUser']) && !$options['cachePerUser']) 
+        unset($cacheOpts['user_id']);
+      $cacheTimeOut = self::_getCacheTimeOut($options);
+      $cacheFolder = self::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
+      $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
+      $response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts);
+      if ($response!==false)
+        $cacheLoaded = true;
+    }
+    if (!isset($response) || $response===false)
+      $response = self::http_post(parent::$base_url.$request, null);
+    $r = json_decode($response['output'], true);
+    if (!is_array($r)) {
+      $response['request'] = $request;
+      throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
+    }
+    // Only cache valid responses and when not already cached
+    if ($useCache && !isset($r['error']) && !$cacheLoaded)
+      self::_cacheResponse($cacheFile, $response, $cacheOpts);
+    self::_purgeCache();
+    self::_purgeImages();
+    return $r;
+  }
+  
   /**
    * Protected function to fetch a validated timeout value from passed in options array.
    *
@@ -2021,7 +2063,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
     $wantToCache = $timeout!==false;
     $haveFile = $file && is_file($file);
     $fresh = $haveFile && filemtime($file) >= (time() - $timeout);
-    $randomSurvival = $random && (rand(1, self::$cache_chance_refresh_file)!=1);
+    $randomSurvival = $random && (rand(1, self::$cache_chance_refresh_file)!==1);
     if ($wantToCache && $haveFile && ($fresh || $randomSurvival)) {
       $response = array();
       $handle = fopen($file, 'rb');
