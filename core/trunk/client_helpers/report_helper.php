@@ -1800,7 +1800,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * the same copy of the report. Generally you should only use this on reports that are non-user specific.
    * </li>
    * </ul>
-
+   *
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
    * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
    */
@@ -1857,34 +1857,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
       // a link must be proxied as can be used client-site 
       return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
     }
-    else {
-      if (isset($options['caching']) && $options['caching'] && $options['caching'] !== 'store') {
-        // Get the URL params, so we know what the unique thing is we are caching
-        $query=parse_url(parent::$base_url.$request, PHP_URL_QUERY);
-        parse_str($query, $cacheOpts);
-        unset($cacheOpts['auth_token']);
-        unset($cacheOpts['nonce']);
-        if (isset($options['cachePerUser']) && !$options['cachePerUser']) 
-          unset($cacheOpts['user_id']);
-        $cacheTimeOut = self::_getCacheTimeOut($options);
-        $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
-        $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);        
-        $response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts);
-      }
-      // no need to proxy the request, as coming from server-side
-      if (!isset($response) || $response===false) {
-        $response = self::http_post(parent::$base_url.$request, null);
-      }
-      $decoded = json_decode($response['output'], true);
-      if (!is_array($decoded))
-        return array('error'=>print_r($response, true));
-      else {
-        if (isset($options['caching']) && $options['caching']) { 
-          self::_cacheResponse($cacheFile, $response, $cacheOpts);
-        }
-        return $decoded;
-      }
-    }
+    return self::_get_cached_services_call($request, $options);    
   }
 
   /**

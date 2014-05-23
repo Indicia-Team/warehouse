@@ -5019,9 +5019,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * view - use to specify which database view to load for an entity (e.g. list, detail, gv or cache).
    * Defaults to list.
    * </li>
-   * <li><b>nocache</b><br/>
-   * Optional, if set to true then the results will always be loaded from the warehouse not
-   * from the local cache.
+   * <li><b>caching</b>
+   * If true, then the response will be cached and the cached copy used for future calls. Default true.
+   * If 'store' then although the response is not fetched from a cache, the response will be stored in the cache for possible
+   * later use. Replaces the legacy nocache parameter.
    * </li>
    * <li><b>sharing</b><br/>
    * Optional. Set to verification, reporting, peer_review, moderation or data_flow to request
@@ -5034,13 +5035,15 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   public static function get_population_data($options) {
     if (isset($options['report']))
       $serviceCall = 'report/requestReport?report='.$options['report'].'.xml&reportSource=local&mode=json';
-    elseif (isset($options['table']))
+    elseif (isset($options['table'])) {
       $serviceCall = 'data/'.$options['table'].'?mode=json';
-    $request = parent::$base_url."index.php/services/$serviceCall";
+      if (isset($options['columns']))
+        $serviceCall .= '&columns='.$options['columns'];
+    }
+    $request = "index.php/services/$serviceCall";
     if (array_key_exists('extraParams', $options)) {
       // make a copy of the extra params
       $params = array_merge($options['extraParams']);
-      $cacheOpts = array();
       // process them to turn any array parameters into a query parameter for the service call
       $filterToEncode = array('where'=>array(array()));
       $otherParams = array();
@@ -5052,59 +5055,18 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           $otherParams[$param] = $value;
         else
           $filterToEncode['where'][0][$param] = $value;
-        // implode array parameters (for IN clauses) in the cache options, since we need a single depth array
-        $cacheOpts[$param]= is_array($value) ? implode('|',$value) : $value;
       }
       // use advanced querying technique if we need to
       if (isset($filterToEncode['in']))
         $request .= '&query='.urlencode(json_encode($filterToEncode)).'&'.self::array_to_query_string($otherParams, true);
       else
         $request .= '&'.self::array_to_query_string($options['extraParams'], true);
-    } else
-      $cacheOpts = array();
-    if (isset($options['report']))
-      $cacheOpts['report'] = $options['report'];
-    else {
-      $cacheOpts['table'] = $options['table'];
-      if (isset($options['columns'])) {
-        $cacheOpts['columns']=$options['columns'];
-        $request .= '&columns='.$options['columns'];
-      }
     }
-    $cacheOpts['indicia_website_id'] = self::$website_id;
-    if (isset($options['sharing'])) {
-      $cacheOpts['sharing']=$options['sharing'];
+    if (isset($options['sharing'])) 
       $request .= '&sharing='.$options['sharing'];
-    }
-    /* If present 'auth_token' and 'nonce' are ignored as these are session dependant. */
-    if (array_key_exists('auth_token', $cacheOpts)) {
-      unset($cacheOpts['auth_token']);
-    }
-    if (array_key_exists('nonce', $cacheOpts)) {
-      unset($cacheOpts['nonce']);
-    }
-    if (self::$nocache || isset($_GET['nocache']) || (isset($options['nocache']) && $options['nocache'])) {
-      $cacheFile = false;
-      $response = self::http_post($request, null);
-    }
-    else {
-      $cacheTimeOut = self::_getCacheTimeOut($options);
-      $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
-      $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
-      if (!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
-        $response = self::http_post($request, null);
-    }
-    $r = json_decode($response['output'], true);
-    if (!is_array($r)) {
-      $response['request'] = $request;
-      throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
-    }
-    // Only cache valid responses
-    if (!isset($r['error']))
-      self::_cacheResponse($cacheFile, $response, $cacheOpts);
-    self::_purgeCache();
-    self::_purgeImages();
-    return $r;
+    if (!isset($options['caching']))
+      $options['caching'] = true; // default
+    return self::_get_cached_services_call($request, $options);
   }
 
   /**
