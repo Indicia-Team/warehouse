@@ -281,7 +281,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     }
     // get a copy of the new row template
     var extraParams, newRow = $('tr#'+gridId + '-scClonableRow').clone(true), selectorId, speciesSelector, 
-        oldName, oldId, ctrl;
+        attrVal, ctrl;
     // build an auto-complete control for selecting the species to add to the bottom of the grid.
     // The next line gets a unique id for the autocomplete.
     selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
@@ -291,13 +291,17 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     // Replace the tags in the row template with a unique row ID
     $.each($(newRow).children(), function(i, cell) {
       $.each($(cell).find('*'), function(idx, child) {
-        oldName = $(child).attr('name');
-        if (typeof oldName !== "undefined" && oldName.indexOf('-idx-') !== -1) {
+        attrVal = $(child).attr('name');
+        if (typeof attrVal !== "undefined" && attrVal.indexOf('-idx-') !== -1) {
           $(child).attr('name', $(child).attr('name').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
         }
-        oldId = $(child).attr('id');
-        if (typeof oldId !== "undefined" && oldId.indexOf('-idx-') !== -1) {
+        attrVal = $(child).attr('id');
+        if (typeof attrVal !== "undefined" && attrVal.indexOf('-idx-') !== -1) {
           $(child).attr('id', $(child).attr('id').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+        }
+        attrVal = $(child).attr('for');
+        if (typeof attrVal !== "undefined" && attrVal.indexOf('-idx-') !== -1) {
+          $(child).attr('for', $(child).attr('for').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
         }
       });
     });
