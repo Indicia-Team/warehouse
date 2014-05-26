@@ -1423,14 +1423,14 @@ $('.ui-state-default').live('mouseout', function() {
               } else
                 $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
             }
-            if (!self::$indiciaFnsDone) {
-              $libraries .= '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n";
-              self::$indiciaFnsDone = true;
-            }
           }
           // Record the resource as being dumped, so we don't do it again.
           array_push(self::$dumped_resources, $resource);
         }
+      }
+      if (!self::$indiciaFnsDone) {
+        $libraries .= '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n";
+        self::$indiciaFnsDone = true;
       }
     }
     return $stylesheets.$libraries;
