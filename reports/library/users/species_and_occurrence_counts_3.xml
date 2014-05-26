@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Species &amp; occurrence counts by user 3" description="Lists users and the number of species and occurrences entered by each of them, with simple date filters.">
+      <query website_filter_field="o.website_id">
+      SELECT #columns#
+      FROM cache_occurrences o
+      JOIN users u on u.id=o.created_by_id and u.id&lt;&gt;1
+      JOIN people p on p.id=u.person_id and p.deleted=false
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter#
+      AND o.zero_abundance='f'
+      </query>
+  <params>
+    <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
+        population_call="direct:survey:id:title">
+      <where>o.survey_id=#survey_id#</where>
+    </param>
+    <param name="date_range" display="Show league for" datatype="lookup" lookup_values="all:All time,year:Last year,month:Last month,week:Last week" emptyvalue="all">
+      <where operator="equal" value="year">o.cache_created_on &gt; now()-'1 year'::interval</where>
+      <where operator="equal" value="month">o.cache_created_on &gt; now()-'1 month'::interval</where>
+      <where operator="equal" value="week">o.cache_created_on &gt; now()-'1 week'::interval</where>
+    </param>
+    <param name="website_exclusions" display="List of website IDs to exclude" default=""
+        description="Because some website owners don't like league tables, this allows them to be excluded by providing a comma separated list of IDs" datatype="integer[]">
+      <where>o.website_id not in (#website_exclusions#)</where>
+    </param>
+    <param name="user_exclusions" display="List of user IDs to exclude" 
+        description="Allows special case user IDs to be excluded by providing a comma separated list of warehouse user IDs." datatype="integer[]" default="1" >
+      <where>o.created_by_id not in (#user_exclusions#)</where>
+    </param>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating the current user." datatype="text" />
+  </params>
+      <order_bys>
+            <order_by>taxa DESC</order_by>
+      </order_bys>
+      <columns>
+            <column name="id" visible="false" display="User ID" sql="u.id" datatype="integer" in_count="true"/>
+            <column name="name" display="Name" sql="p.surname || case when p.first_name is null or p.first_name='' or p.first_name=p.surname then '' else ', ' || p.first_name end" datatype="text" />
+            <column name="me" visible="false" sql="case cast(u.id as character varying) when '#currentUser#' then 'me' else 'other' end" datatype="text|" />
+            <column name="taxa" display="No. of Species" sql="count(DISTINCT o.taxon_meaning_id)" datatype="integer" aggregate="true" />
+            <column name="occurrences" display="No. of Records" sql="count(DISTINCT o.id)" datatype="integer" aggregate="true" />
+            <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT o.taxon_group_id)" datatype="integer" aggregate="true" />
+      </columns>
+</report>
