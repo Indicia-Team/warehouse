@@ -45,7 +45,7 @@ function decodePostcode(addressField) {
             $('#imp-sref').attr('value', place.lat + ', ' + place.lng);
             $('#imp-sref-system').attr('value', '4326'); // SRID for WGS84 lat long
             $('#imp-sref').change();
-          }          
+          }
         }
     );
   } else {
@@ -64,7 +64,7 @@ function usePointFromPostcode(postcode, callbackFunction) {
       success: function(data) {
         var done=false;
         $.each(data.results, function() {
-          if ($.inArray('postcode', this.types)) {
+          if ($.inArray('postal_code', this.types)!==-1) {
             callbackFunction(this);
             done=true;
             return false;
