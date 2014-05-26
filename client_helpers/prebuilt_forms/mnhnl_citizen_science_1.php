@@ -155,13 +155,6 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'Sample Attributes'
         ),
         array(
-          'name'=>'contact_attr_id',
-          'caption'=>'Contactable Attribute ID',
-          'description'=>'Indicia ID for the sample attribute that if the user has opted in for being contacted regarding this record.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(
           'name'=>'abundance_attr_id',
           'caption'=>'Abundance Attribute ID',
           'description'=>'Indicia ID for the occurrence attribute that records the approximate abundance.',
