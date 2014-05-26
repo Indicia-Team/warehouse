@@ -1139,11 +1139,6 @@ $('#$escaped').change(function(e) {
   */
   public static function georeference_lookup($options) {
     $options = self::check_options($options);
-    if (($options['driver']==='geoplanet' && empty(self::$geoplanet_api_key)) ||
-        ($options['driver']==='google_places' && empty(self::$google_api_key))) {
-      // can't use place search without the driver API key
-      return 'The georeference lookup control requires an API key configured for the place search API in use.<br/>';
-    }
     global $indicia_templates;
     $options = array_merge(array(
       'id' => 'imp-georef-search',
@@ -1153,6 +1148,11 @@ $('#$escaped').change(function(e) {
       'public' => false,
       'autoCollapseResults' => false
     ), $options);
+    if (($options['driver']==='geoplanet' && empty(self::$geoplanet_api_key)) ||
+        ($options['driver']==='google_places' && empty(self::$google_api_key))) {
+      // can't use place search without the driver API key
+      return 'The georeference lookup control requires an API key configured for the place search API in use.<br/>';
+    }    
     self::add_resource('indiciaMapPanel');
     // dynamically build a resource to link us to the driver js file.
     self::$required_resources[] = 'georeference_default_'.$options['driver'];
@@ -2281,7 +2281,7 @@ $('#$escaped').change(function(e) {
       $options['default']=$options['defaultSystem'];
     }
     // Output the system control
-    if (array_key_exists('systems', $options) && count($options['systems']) == 1) {
+    if (array_key_exists('systems', $options) && count($options['systems']) === 1) {
       // Hidden field for the system
       $keys = array_keys($options['systems']);
       $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$options['fieldname']."\" value=\"".$keys[0]."\" />\n";
@@ -2919,7 +2919,14 @@ $('#$escaped').change(function(e) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
       $grid .= '<table class="'.implode(' ', $classlist).'" id="'.$options['id'].'">';
-      $grid .= self::get_species_checklist_header($options, $occAttrs);
+      $onlyImages = true;
+      if ($options['mediaTypes']) {
+        foreach($options['mediaTypes'] as $mediaType) {
+          if (substr($mediaType, 0, 6)!=='Image:') 
+            $onlyImages=false;
+        }
+      }
+      $grid .= self::get_species_checklist_header($options, $occAttrs, $onlyImages);
       $rows = array();
       $imageRowIdxs = array();
       $taxonCounter = array();
@@ -2942,11 +2949,6 @@ $('#$escaped').change(function(e) {
       // track if there is a row we are editing in this grid
       $hasEditedRecord = false;
       if ($options['mediaTypes']) {
-        $onlyImages = true;
-        foreach($options['mediaTypes'] as $mediaType) {
-          if (substr($mediaType, 0, 6)!=='Image:') 
-            $onlyImages=false;
-        }
         $mediaBtnLabel = lang::get($onlyImages ? 'add images' : 'add media');
         $mediaBtnClass = 'sc' . $onlyImages ? 'Image' : 'Media' . 'Link';
       }
@@ -3808,9 +3810,10 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    * Retrieve the grid header row for the species checklist grid control.
    * @param array $options Control options array.
    * @param array $occAttrs Array of custom attributes included in the grid.
+   * @param bool $onlyImages True if only image media types are available to upload
    * @return string Html for the <thead> element.
    */
-  public static function get_species_checklist_header($options, $occAttrs) {
+  public static function get_species_checklist_header($options, $occAttrs, $onlyImages) {
     $r = '';
     $visibleColIdx = 0;
     if ($options['header']) {
@@ -3842,7 +3845,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
           $r .= self::get_species_checklist_col_header($options['id']."-sensitivity-$i", lang::get('Sensitivity'), $visibleColIdx, $options['colWidths']) ;
         }
         if (count($options['mediaTypes'])) {
-          $r .= self::get_species_checklist_col_header($options['id']."-images-$i", lang::get('Add media'), $visibleColIdx, $options['colWidths']) ;
+          $r .= self::get_species_checklist_col_header($options['id']."-images-$i", lang::get($onlyImages ? 'Add photos' : 'Add media'), $visibleColIdx, $options['colWidths']) ;
         }
       }
       $r .= '</tr></thead>';
@@ -4012,6 +4015,10 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         'previousRowColumnsToInclude' => '',
         'editTaxaNames' => false,
         'sticky' => true,
+        'includeSpeciesGridLinkPage' => false,
+        'speciesGridPageLinkUrl' => '',
+        'speciesGridPageLinkParameter' => '',
+        'speciesGridPageLinkTooltip' => '',
         // legacy - occurrenceImages means just local image support
         'mediaTypes' => !empty($options['occurrenceImages']) && $options['occurrenceImages'] ?
             array('Image:Local') : array()

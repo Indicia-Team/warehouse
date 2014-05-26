@@ -296,7 +296,7 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
       $tabalias = 'tab-'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $r .= "<div id=\"$tabalias\">\n";
       //We only want to show the single species message to the user if they have selected the option and we are in single species mode.
-      //We also want to only show it on the species tab otherwise in 'All one page' mode it will appear multple times.
+      //We also want to only show it on the species tab otherwise in 'All one page' mode it will appear multiple times.
       if (isset($args['single_species_message']) && $args['single_species_message'] && $tabalias=='tab-species' && isset($singleSpeciesLabel))
         $r .= '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get('You are submitting a record of {1}', $singleSpeciesLabel).'</div>';
       // For wizard include the tab title as a header.
