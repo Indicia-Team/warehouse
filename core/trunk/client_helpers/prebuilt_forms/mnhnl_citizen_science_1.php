@@ -306,17 +306,20 @@ class iform_mnhnl_citizen_science_1 {
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('first name'),
         'fieldname'=>'smpAttr:'.$args['first_name_attr_id'],
-        'class'=>'control-width-4'
+        'class'=>'control-width-4',
+        'validation'=>'required'
       ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('surname'),
         'fieldname'=>'smpAttr:'.$args['surname_attr_id'],
-        'class'=>'control-width-4'
+        'class'=>'control-width-4',
+        'validation'=>'required'
       ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('email'),
         'fieldname'=>'smpAttr:'.$args['email_attr_id'],
-        'class'=>'control-width-4'
+        'class'=>'control-width-4',
+        'validation'=>'required'
       ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('phone number'),
