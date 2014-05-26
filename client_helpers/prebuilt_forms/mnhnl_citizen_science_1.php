@@ -471,11 +471,6 @@ class iform_mnhnl_citizen_science_1 {
         'fieldname'=>'sample:comment',
         'class'=>'wide',
     ));
-    $r .= '<div class="footer">'.data_entry_helper::checkbox(array(
-        'label'=>lang::get('happy for contact'),
-        'labelClass'=>'auto',
-        'fieldname'=>'smpAttr:'.$args['contact_attr_id']
-    )).'</div>';
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls',
