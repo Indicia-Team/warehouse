@@ -757,6 +757,9 @@ jQuery(document).ready(function($) {
           }
           // merge in the filter
           grid[0].settings.extraParams = $.extend({}, grid[0].settings.origParams, filterDef);
+          if ($('#filter\\:sharing').length>0) {
+            grid[0].settings.extraParams.sharing = codeToSharingTerm($('#filter\\:sharing').val());
+          }
           // reload the report grid
           grid.ajaxload();
           if (grid[0].settings.linkFilterToMap) {
