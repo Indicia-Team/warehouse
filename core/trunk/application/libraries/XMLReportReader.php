@@ -403,8 +403,12 @@ class XMLReportReader_Core implements ReportReader
     }
     // Add the non-aggregated fields to the end of the query. Leave a token so that the query processor
     // can add more, e.g. if there are custom attribute columns, and also has a suitable place for a HAVING clause.
-    if (count($sql)>0)
-      $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys#';
+    if (count($sql)>0) {
+      if (strpos($this->query, '#group_bys#')===FALSE)
+        $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys#';
+      else
+        $this->query = str_replace('#group_bys#', "GROUP BY " . implode(', ', $sql) . '#group_bys#', $this->query);
+    }
   }
 
   /**
