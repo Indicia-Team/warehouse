@@ -475,7 +475,7 @@ class report_helper extends helper_base {
           if (isset($options['rowClass']))
             $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);
           $classes=implode(' ',$classes);
-          $rowClass = empty($classes) ? '' : "class=\"$classes\" ";
+          $rowClass = empty($classes) ? '' : " class=\"$classes\"";
           $tr = '';
           $rowInProgress=true;
         }
@@ -555,7 +555,7 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
         }
         if ($rowIdx % $options['galleryColCount']==$options['galleryColCount']-1) {
           $rowInProgress=false;
-          $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
+          $tbody .= str_replace(array('{class}','{rowId}','{rowTitle}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
         }
         $altRowClass = empty($altRowClass) ? $options['altRowClass'] : '';
         $outputCount++;
@@ -577,7 +577,7 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
         $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
     } else {
       $tbody .= '<tr><td></td></tr>';
-      $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array('','','','<td></td>'), $indicia_templates['report-tbody-tr']);
+      $tbody .= str_replace(array('{class}','{rowId}','{rowTitle}','{content}'), array('','','','<td></td>'), $indicia_templates['report-tbody-tr']);
     }
     $tbody = str_replace('{content}', $tbody, $indicia_templates['report-tbody']);
     $r .= str_replace(array('{class}', '{content}'), array(' class="'.$options['class'].'"', "$thead\n$tbody\n$tfoot"), $indicia_templates['report-table'])."\n";
