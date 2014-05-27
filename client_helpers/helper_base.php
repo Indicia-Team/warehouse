@@ -1981,7 +1981,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
       if (isset($options['cachePerUser']) && !$options['cachePerUser']) 
         unset($cacheOpts['user_id']);
       $cacheTimeOut = self::_getCacheTimeOut($options);
-      $cacheFolder = self::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
+      $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
       $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
       $response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts);
       if ($response!==false)
