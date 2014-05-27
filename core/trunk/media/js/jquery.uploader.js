@@ -167,13 +167,13 @@ var checkSubmitInProgress = function () {
   $.fn.uploader = function(options) {
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
-    var opts = $.extend({}, $.fn.uploader.defaults, options), html5OK=false;
+    var opts = $.extend({}, $.fn.uploader.defaults, options), html5OK=true;
     
     if (/Firefox[\/\s](\d+\.\d+)/.test(navigator.userAgent)){ //test for Firefox/x.x or Firefox x.x (ignoring remaining digits);
       var ffversion=new Number(RegExp.$1); // capture x.x portion and store as a number
-      if (ffversion>=3.5) {
+      if (ffversion<3.5) {
         // Browser is FF3.5+, so Html5 is a good runtime as HTML5 resize only works on FF3.5+. 
-        html5OK = true;
+        html5OK = false;
       }
     } 
     if (!html5OK) {
