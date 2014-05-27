@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Species counts league position for records, with standard params" description="Retrieves your position in the league table for count of records.">
+  <query website_filter_field="o.website_id" standard_params="true">
+    SELECT * FROM (
+      SELECT #columns#
+      FROM people p
+      JOIN users u ON u.person_id=p.id AND u.deleted=false AND u.id&lt;&gt;1
+      JOIN cache_occurrences o ON o.created_by_id=u.id
+        #filters#
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter#
+      AND p.deleted=false
+      #group_bys#
+    ) AS sub WHERE id=#user_id#
+  </query>
+  <order_bys>
+    <order_by>value DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="user_id" display="User ID" description="Warehouse ID of user to retrieve league position for" datatype="integer" />
+  </params>
+  <columns>
+        <column name="id" visible="false" sql="u.id" />
+        <column name="position" display="League position" sql="row_number() over (order by count(*) desc)" aggregate="true" />
+        <column name="value" display="No. of records"  sql="count(*)" aggregate="true" />
+  </columns>
+</report>  
