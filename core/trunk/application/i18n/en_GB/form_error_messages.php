@@ -15,6 +15,10 @@ $lang = array (
   'comment' => Array (
     'required' => 'Please provide a comment.',
   ),
+  'count' => Array (
+    'required' => 'Count cannot be blank.',
+    'digit' => 'This must be a valid whole number.',
+  ),  
   'data_type' => Array (
     'required' => 'The data type must be supplied.',
   ),
@@ -119,6 +123,9 @@ $lang = array (
   'sample_id' => Array (
     'required' => 'The sample must be supplied.',
   ),
+  'success_message' => Array (
+    'required' => 'The success message cannot be blank.',
+  ),  
   'surname' => Array (
     'required' => 'The surname cannot be blank.',
     'length' => 'The surname must be between 1 and 30 letters.',
@@ -172,7 +179,8 @@ $lang = array (
     'required' => 'The title cannot be blank.',
     'standard_text' => 'Only standard characters are allowed.',
     'length' => 'The title supplied is too long.', // note that the title name is used for fields which are of different max lengths, so can't be more specific
-    'default' => 'Invalid input.',
+    'unique' => 'This title must be unique.',
+    'default' => 'Invalid input.',  
   ),
   'url' => Array (
     'required' => 'The website URL cannot be blank.',
