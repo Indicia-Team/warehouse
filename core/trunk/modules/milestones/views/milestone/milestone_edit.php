@@ -26,7 +26,7 @@ require_once(DOCROOT.'client_helpers/prebuilt_forms/includes/report_filters.php'
 if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
-<form class="iform" id="milestones-form"action="<?php echo url::site(); ?>milestone/save" method="post">
+<form class="iform" id="milestones-form"action="<?php echo url::site().'milestone/save/'.$this->uri->argument(1).'?filter_id='.$_GET['filter_id']; ?>" method="post">
 <fieldset>
 <legend>Milestone details</legend>
 <?php
