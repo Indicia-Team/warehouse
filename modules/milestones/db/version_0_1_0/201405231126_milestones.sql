@@ -78,8 +78,6 @@ BEGIN
   CONSTRAINT fk_milestone_awards_user FOREIGN KEY (user_id)
         REFERENCES users (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT uq_milestone_awards_milestone_user
-    UNIQUE(milestone_id,user_id),
   CONSTRAINT fk_milestones_creator FOREIGN KEY (created_by_id)
         REFERENCES users (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION,
