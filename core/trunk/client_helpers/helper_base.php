@@ -535,6 +535,7 @@ class helper_base extends helper_config {
    * <li>jqplot_bar</li>
    * <li>jqplot_pie</li>
    * <li>jqplot_category_axis_renderer</li>
+   * <li>jqplot_canvas_axis_label_renderer</li>
    * <li>jqplot_trendline</li>
    * <li>reportgrid</li>
    * <li>tabs</li>
@@ -627,6 +628,7 @@ class helper_base extends helper_config {
         'jqplot_bar' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
         'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
+        'jqplot_canvas_axis_label_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.canvasTextRenderer.min.js', self::$js_path.'jqplot/plugins/jqplot.canvasAxisLabelRenderer.min.js')),
         'jqplot_trendline' => array('javascript'=>array(self::$js_path.'jqplot/plugins/jqplot.trendline.min.js')),
         'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js', self::$js_path.'json2.js')),
         'reportfilters' => array('deps' => array('reportgrid'), 'stylesheets' => array(self::$css_path."report-filters.css"), 'javascript' => array(self::$js_path.'reportFilters.js')),
