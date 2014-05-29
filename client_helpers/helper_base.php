@@ -2165,7 +2165,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
         }
       }
       // sort the file array by date, oldest first
-      usort($files, array('data_entry_helper', 'DateCmp'));
+      usort($files, array('helper_base', 'DateCmp'));
       // iterate files, ignoring the number of files we allow in the cache without caring.
       for ($i=0; $i<count($files)-$allowedFileCount; $i++) {
         // if we have reached a file that is not old enough to expire, don't go any further

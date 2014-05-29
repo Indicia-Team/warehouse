@@ -6269,7 +6269,10 @@ if (errors$uniq.length>0) {
           self::$entity_to_load = $_POST;
           if (isset($response['code'])) {
             switch ($response['code']) {
-              case 2003: hostsite_show_message(lang::get('The data could not be saved.'), 'error');
+              case 2003: if (function_exists('hostsite_show_message')) 
+                hostsite_show_message(lang::get('The data could not be saved.'), 'error');
+              else
+                $r .= "<div class=\"ui-widget ui-corner-all ui-state-highlight page-notice\">" . lang::get('The data could not be saved.') . "</div>\n";
             }
           }
         } else {

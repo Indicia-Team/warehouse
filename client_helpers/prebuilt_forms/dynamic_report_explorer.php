@@ -328,7 +328,6 @@ class iform_dynamic_report_explorer extends iform_dynamic {
         'sharing'=>$sharing,
         'readAuth' => $auth['read'],
         'dataSource'=> $options['dataSource'],
-        'reportGroup'=>'dynamic',
         'rememberParamsReportGroup'=>'dynamic',
         'clickableLayersOutputMode'=>'report',
         'rowId'=>'occurrence_id',

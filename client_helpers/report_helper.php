@@ -928,7 +928,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li><b>height</b><br/>
   * Chart height in pixels.</li>
   * <li><b>width</b><br/>
-  * Chart width in pixels.</li>
+  * Chart width in pixels or as a percentage followed by a % symbol.</li>
   * <li><b>chartType</b><br/>
   * Currently supports line, bar or pie.</li>
   * <li><b>rendererOptions</b><br/>
@@ -982,7 +982,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * @link http://www.jqplot.com/docs/files/plugins/jqplot-pieRenderer-js.html
   * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
   */
-  public static function report_chart($options) { 
+  public static function report_chart($options) {
     if (empty($options['rendererOptions']))
       $options['rendererOptions'] = array();
     if (empty($options['legendOptions']))
