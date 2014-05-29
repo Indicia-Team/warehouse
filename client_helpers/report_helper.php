@@ -1107,8 +1107,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $options['axesOptions']['xaxis']['renderer'] = '$.jqplot.CategoryAxisRenderer';
       $options['axesOptions']['xaxis']['ticks'] = $xLabelsForSeries;
     }
+    if (isset($options['axesOptions']['yaxis']) && isset($options['axesOptions']['yaxis']['label'])) {
+      $options['axesOptions']['yaxis']['labelRenderer'] = '$.jqplot.CanvasAxisLabelRenderer';
+    }
     // We need to fudge the json so the renderer class is not a string
-    $opts[] = str_replace('"$.jqplot.CategoryAxisRenderer"', '$.jqplot.CategoryAxisRenderer',
+    $opts[] = str_replace(array('"$.jqplot.CategoryAxisRenderer"','"$.jqplot.CanvasAxisLabelRenderer"'), array('$.jqplot.CategoryAxisRenderer','$.jqplot.CanvasAxisLabelRenderer'),
         'axes:'.json_encode($options['axesOptions']));
 
     // Finally, dump out the Javascript with our constructed parameters
@@ -1173,6 +1176,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
     if (isset($options['xLabels'])) {
       self::add_resource('jqplot_category_axis_renderer');
+    }
+    if (isset($options['axesOptions']['yaxis']) && isset($options['axesOptions']['yaxis']['label'])) {
+      self::add_resource('jqplot_canvas_axis_label_renderer');
     }
   }
 
