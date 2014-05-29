@@ -649,7 +649,7 @@ var simple_tooltip;
           if (matchString===currentMapRequest) {
             // start the load of the next batch
             if (offset+BATCH_SIZE<recordCount) {
-              _internalMapRecords(div, request, offset+BATCH_SIZE, async, recordCount);
+              _internalMapRecords(div, request, offset+BATCH_SIZE, callback, recordCount);
             }
             // whilst that is loading, put the dots on the map
             var features=[];
