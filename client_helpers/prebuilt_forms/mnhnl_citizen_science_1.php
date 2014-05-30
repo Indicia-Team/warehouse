@@ -311,6 +311,7 @@ class iform_mnhnl_citizen_science_1 {
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('email'),
         'fieldname'=>'smpAttr:'.$args['email_attr_id'],
+        'helpText'=>lang::get('Your email address may be used to contact you in regard to this record, but will not be used for any other purpose.'),
         'class'=>'control-width-4',
         'validation'=>'required'
       ));
