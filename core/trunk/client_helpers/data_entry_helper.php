@@ -3011,7 +3011,7 @@ $('#$escaped').change(function(e) {
         $hasEditedRecord = $hasEditedRecord || $editedRecord;
         // Verified records can be flagged with an icon
         $status = self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:record_status"];
-        if (preg_match('/[VQR]/', $status)) {
+        if (preg_match('/[VDR]/', $status)) {
           $img = false;
           switch ($status) {
             case 'V' : $img = 'ok'; $statusLabel = 'verified'; break;
