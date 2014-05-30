@@ -1646,14 +1646,14 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       return;
     }
     // Set up the indicia templates for taxon labels according to options, as long as the template has been left at it's default state
-    if ($indicia_templates['taxon_label'] == '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority} '.
+    if ($indicia_templates['taxon_label'] == '<div class="biota"><span class="nobreak sci binomial"><em class="taxon-name">{taxon}</em></span> {authority} '.
         '<span class="nobreak vernacular">{common}</span></div>') {
       // always include the searched name
       $php = '$r="";'."\n".
           'if ("{language}"=="lat" || "{language_iso}"=="lat") {'."\n".
-          '  $r = "<em>{taxon}</em>";'."\n".
+          '  $r = "<em class=\'taxon-name\'>{taxon}</em>";'."\n".
           '} else {'."\n".
-          '  $r = "{taxon}";'."\n".
+          '  $r = "<span class=\'taxon-name\'>{taxon}</span>";'."\n".
           '}'."\n";
       // This bit optionally adds '- common' or '- latin' depending on what was being searched
       if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {

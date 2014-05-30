@@ -3009,6 +3009,21 @@ $('#$escaped').change(function(e) {
         $editedRecord = isset($_GET['occurrence_id']) && $_GET['occurrence_id']==$existing_record_id;
         $editClass = $editedRecord ? ' edited-record ui-state-highlight' : '';
         $hasEditedRecord = $hasEditedRecord || $editedRecord;
+        // Verified records can be flagged with an icon
+        $status = self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:record_status"];
+        if (preg_match('/[VQR]/', $status)) {
+          $img = false;
+          switch ($status) {
+            case 'V' : $img = 'ok'; $statusLabel = 'verified'; break;
+            case 'D' : $img = 'dubious'; $statusLabel = 'queried'; break;
+            case 'R' : $img = 'cancel'; $statusLabel = 'rejected'; break;
+          }
+          if ($img) {
+            $label = lang::get($statusLabel);
+            $title = lang::get('This record has been {1}. Changing it will mean that it will need to be rechecked by an expert.', $label);
+            $firstCell .= "<img alt=\"$label\" title=\"$title\" src=\"{$imgPath}nuvola/$img-16px.png\">";
+          }
+        }
         $row .= str_replace(array('{content}','{colspan}','{editClass}','{tableId}','{idx}'), 
             array($firstCell,$colspan,$editClass,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
         $row .= self::species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options);
@@ -3759,6 +3774,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
             }
           }
           self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':present'] = $occurrence['taxa_taxon_list_id'];
+          self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':record_status'] = $occurrence['record_status'];
           self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
           self::$entity_to_load['sc:'.$idx.':'.$occurrence['id'].':occurrence:sensitivity_precision'] = $occurrence['sensitivity_precision'];
           // Warning. I observe that, in cases where more than one occurrence is loaded, the following entries in 
