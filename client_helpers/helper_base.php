@@ -111,7 +111,7 @@ $indicia_templates = array(
   'loading_block_end' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       "document.write('</div>');\n".
       "/* ]]> */</script>",
-  'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority} '.
+  'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em class="taxon-name">{taxon}</em></span> {authority} '.
       '<span class="nobreak vernacular">{common}</span></div>',
   'treeview_node' => '<span>{caption}</span>',
   'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
