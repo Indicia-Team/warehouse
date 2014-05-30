@@ -489,7 +489,7 @@ class report_helper extends helper_base {
           $classes=array();
           if ($options['sendOutputToMap'] && isset($field['mappable']) && ($field['mappable']==='true' || $field['mappable']===true)) {
             $data = json_encode($row + array('type'=>'linked'));
-            $addFeaturesJs.= "div.addPt(features, ".$data.", '".$field['fieldname']."', {\"type\":\"circle\"}".
+            $addFeaturesJs.= "div.addPt(features, ".$data.", '".$field['fieldname']."', {}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
@@ -618,8 +618,16 @@ $('.update-input').focus(function(evt) {
 ";
     }
     if ($options['sendOutputToMap']) {
-      self::addFeaturesLoadingJs($addFeaturesJs, '', '{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', 
-          '', '', $options['zoomMapToOutput']);
+      $strokeWidthFn = "getstrokewidth: function(feature) {
+        var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
+          strokeWidth=(width===0) ? 1 : %d - (width / feature.layer.map.getResolution());
+        return (strokeWidth<%d) ? %d : strokeWidth;
+      }";
+      self::addFeaturesLoadingJs($addFeaturesJs, 'OpenLayers.Util.extend(OpenLayers.Feature.Vector.style[\'default\'], '.
+          '{"strokeColor":"#0000ff","fillColor":"#3333cc","fillOpacity":0.6,"strokeWidth":"${getstrokewidth}"})', 
+          '{"strokeColor":"#ff0000","fillColor":"#ff0000","fillOpacity":0.6,"strokeWidth":"${getstrokewidth}"}', 
+          ', {context: { '.sprintf($strokeWidthFn, 9, 2, 2).' }}', 
+          ', {context: { '.sprintf($strokeWidthFn, 10, 3, 3).' }}', $options['zoomMapToOutput']);
     }
     // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
     // In which case we don't need to output anything.
