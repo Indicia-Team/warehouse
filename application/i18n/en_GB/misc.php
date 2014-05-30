@@ -19,7 +19,8 @@ $lang = array
   'notification_subject'=>'Messages from %s',
   'notification_intro'=>'Here are your latest messages from %s',
   'then' => 'then',
-  'model_import' => '%s import'
+  'model_import' => '%s import',
+  'recheck_verification'=>"This record's verification status needs to be rechecked as it has been edited."
 );
 
 ?>
