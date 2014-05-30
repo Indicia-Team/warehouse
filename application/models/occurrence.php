@@ -30,6 +30,8 @@
  */
 class Occurrence_Model extends ORM
 {
+  protected $requeuedForVerification = false;
+  
   protected $has_many=array(
     'occurrence_attribute_values',
     'determinations'
@@ -75,12 +77,13 @@ class Occurrence_Model extends ORM
   public function validate(Validation $array, $save = false) {
     if ($save) 
       $this->logDeterminations($array);
-    if (empty($this->submission['fields']['record_status']) && empty($this->submission['fields']['release_status']) && $this->wantToUpdateMetadata) {
-      // If we update an occurrence but don't set the verification or release state, revert it to 
-      // completed/awaiting verification.
+    if ($this->id && preg_match('/[RDV]/', $this->record_status) && empty($this->submission['fields']['record_status']) && 
+        empty($this->submission['fields']['release_status']) && $this->wantToUpdateMetadata) {
+      // If we update a processed occurrence but don't set the verification or release state, revert it to completed/awaiting verification.
       $array->verified_by_id=null;
       $array->verified_on=null;
       $array->record_status='C';
+      $this->requeuedForVerification=true;
     }
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
@@ -382,6 +385,22 @@ class Occurrence_Model extends ORM
       }
     }
     parent::preSubmit();
+  }
+  
+  /**
+   * If this occurrence record status was reset after an edit, then log a comment.
+   */
+  public function postSubmit($isInsert) {
+    if ($this->requeuedForVerification && !$isInsert) {
+      $data = array(
+        'occurrence_id'=>$this->id,
+        'comment'=>kohana::lang('misc.recheck_verification'),
+        'auto_generated'=>'t'
+      );
+      $comment = ORM::factory('occurrence_comment');
+      $comment->validate(new Validation($data), true);
+    }
+    return true;
   }
  
   /**
