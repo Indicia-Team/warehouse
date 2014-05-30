@@ -942,6 +942,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * 'seriesOptions' => array(array('label'=>'My first series','label'=>'My 2nd series'))<br/>
   * For more information see links below.
   * </li>
+  * <li><b>seriesColors</b><br/>
+  * JSON array of CSS colour specifications for each consecutive data point in the series. 
+  * </li>
   * <li><b>axesOptions</b><br/>
   * For line and bar charts, associative array of options to pass to the jqplot axes. For example:<br/>
   * 'axesOptions' => array('yaxis'=>array('min' => 0, 'max' => '3', 'tickInterval' => 1))<br/>
@@ -985,10 +988,6 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   public static function report_chart($options) {
     if (empty($options['rendererOptions']))
       $options['rendererOptions'] = array();
-    if (empty($options['legendOptions']))
-      $options['legendOptions'] = array();
-    if (empty($options['seriesOptions']))
-      $options['seriesOptions'] = array();
     if (empty($options['axesOptions']))
       $options['axesOptions'] = array();
     $standardReportOptions = self::get_report_grid_options($options);   
@@ -1017,8 +1016,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
     self::check_for_jqplot_plugins($options);
     $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['rendererOptions'])."}";
-    $opts[] = 'legend:'.json_encode($options['legendOptions']);
-    $opts[] = 'series:'.json_encode($options['seriesOptions']);
+    $optsToCopyThrough = array('legend'=>'legendOptions', 'series'=>'seriesOptions', 'seriesColors'=>'seriesColors');
+    foreach ($optsToCopyThrough as $key=>$settings) {
+      if (!empty($options[$settings]))
+        $opts[] = "$key:".json_encode($options[$settings]);
+    }
     // make yValues, xValues, xLabels and dataSources into arrays of the same length so we can treat single and multi-series the same
     $yValues = is_array($options['yValues']) ? $options['yValues'] : array($options['yValues']);
     $dataSources = is_array($options['dataSource']) ? $options['dataSource'] : array($options['dataSource']);
@@ -1170,9 +1172,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
    * @param Array $options Chart control's options array
    */
   private static function check_for_jqplot_plugins($options) {
-    foreach($options['seriesOptions'] as $series) {
-      if (isset($series['trendline']))
-        self::add_resource('jqplot_trendline');
+    if (!empty($options['seriesOptions'])) {
+      foreach($options['seriesOptions'] as $series) {
+        if (isset($series['trendline']))
+          self::add_resource('jqplot_trendline');
+      }
     }
     if (isset($options['xLabels'])) {
       self::add_resource('jqplot_category_axis_renderer');
