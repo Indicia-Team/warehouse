@@ -8,6 +8,7 @@
       LEFT JOIN locations_websites lw on lw.location_id=plot.id AND lw.deleted=false
       LEFT JOIN termlists_terms ttPlotType on ttPlotType.id = plot.location_type_id
       LEFT JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
+      LEFT JOIN location_attribute_values lav on lav.location_attribute_id=#plot_number_attr_id# AND lav.location_id=plot.id
     WHERE (plot.parent_id = #square_id#)
     AND #website_filter# AND plot.deleted=false
   </query>
@@ -15,10 +16,19 @@
     <order_by>plot.id</order_by>
   </order_bys>
   <params>
-    <param name="square_id" display="Todo" datatype="integer"/>
+    <param name="plot_number_attr_id" display="Id of the plot number attribute" datatype="integer" default="0"/>
+    <param name="square_id" display="Square id to get plots for" datatype="integer"/>
   </params>
   <columns>
     <column name='id' display='Plot ID' sql="plot.id" datatype='integer' visible="false" in_count="true"/>
-    <column name='name' display='Plot Name' sql="'Plot at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') '" datatype='text' />
+    <column name='name' display='Plot Name' sql="
+      case 
+        when lav.text_value IS null
+      then
+        'Plot at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') '
+      else 
+        'Plot ' || lav.text_value || ' at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') '
+      end
+    " datatype='text'/>
   </columns>
 </report>
