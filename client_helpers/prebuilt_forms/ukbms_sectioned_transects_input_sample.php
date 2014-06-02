@@ -205,6 +205,23 @@ class iform_ukbms_sectioned_transects_input_sample {
           'group'=>'Species'
         ),
         array(
+          'name' => 'start_list',
+          'caption' => 'Start with species list',
+          'description' => 'Preselect which species list to polulate the first species grid with.',
+          'type'=>'select',
+          'options' => array(
+            'full' => 'Full species list',
+            'common' => 'Common species list',
+            'here' => 'Previous species recorded at this location',
+            'mine' => 'Previous species recorded by user'
+            // no filled entry, will always do this, plue "here" as a minimum
+          ),
+          'required' => true,
+          'default' => 'full',
+          'group' => 'Species'
+        ),
+/*
+        array(
           'name' => 'start_with_common_species',
           'caption' => 'Start with common species',
           'description' => 'Tick this box to preselect the common species list rather than the all species list.',
@@ -212,7 +229,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'required' => false,
           'default' => false,
           'group' => 'Species'
-        ),
+        ), */
         array(
           'name'=>'species_tab_2',
           'caption'=>'Species Tab 2 Title',
@@ -1067,12 +1084,17 @@ class iform_ukbms_sectioned_transects_input_sample {
         'divId'=>'tabs',
         'style'=>'Tabs'
     ));
-    $commonSelected = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'selected="selected"' : '';
+    $listSelected = isset($args['start_list']) ? $args['start_list'] : 'full';
+//    $commonSelected = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'selected="selected"' : '';
     // will assume that first table is based on abundance count, so do totals
     $r .= '<div id="grid1">'.
-          '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').
-              '</option><option value="common"'.$commonSelected.'>'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').
-              '</option><option value="mine">'.lang::get('Species I have recorded').'</option><option value="filled">'.lang::get('Species with data').'</option></select>'.
+          '<label for="listSelect">'.lang::get('Use species list').' :</label>'.
+          '<select id="listSelect">'.
+            '<option value="full"'.($listSelected == 'full' ? ' selected="selected"' : '').'>'.lang::get('All species').'</option>'.
+            '<option value="common"'.($listSelected == 'common' ? ' selected="selected"' : '').'>'.lang::get('Common species').'</option>'.
+            '<option value="here"'.($listSelected == 'here' ? ' selected="selected"' : '').'>'.lang::get('Species known at this site').'</option>'.
+            '<option value="mine"'.($listSelected == 'mine' ? ' selected="selected"' : '').'>'.lang::get('Species I have recorded').'</option>'.
+          '</select>'.
           '<span id="listSelectMsg"></span>';
     $r .= '<table id="transect-input1" class="ui-widget species-grid"><thead class="table-header">';
     $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
@@ -1156,8 +1178,8 @@ class iform_ukbms_sectioned_transects_input_sample {
         $first = false;
       }
       data_entry_helper::$javascript .= "];\n";
-      $swc = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'true' : 'false';
-      data_entry_helper::$javascript .= "indiciaData.startWithCommonSpecies=$swc;\n";
+//      $swc = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'true' : 'false';
+      data_entry_helper::$javascript .= "indiciaData.startList='".$listSelected."';\n";
     }
 
     $allTaxonMeaningIdsAtTransect = data_entry_helper::get_population_data(array(

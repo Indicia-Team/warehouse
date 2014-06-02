@@ -793,6 +793,9 @@ var simple_tooltip;
         div.settings.orderby = colName;
         // Change sort to this column [DESC?]
         // reload the data
+        document.cookie='clientReportSort-'+div.settings.id+'='+div.settings.sortdir+':'+div.settings.orderby;
+        // cookie expires when browser closed, i.e. when current session ends. Due to way nodes record the path, need to specifiy
+        // grid id in cookie name, otherwise it is shared across nodes if you use a single name.
         load(div, false);
       });
 
