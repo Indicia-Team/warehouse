@@ -349,8 +349,7 @@ function loadSpeciesList() {
   // to the first grid it appears in.
   // note that when added from the list, the ttlid is the preferred one, but if added from the autocomplete it may/probably
   // will not be.
-  var list = indiciaData.startWithCommonSpecies ? indiciaData.speciesList1SubsetList : indiciaData.speciesList1List;
-  addSpeciesToGrid(list, 'table#transect-input1', true, 1);
+  addSpeciesToGrid(indiciaData.speciesList1List, 'table#transect-input1', true, 1); // need to populate all the entries on front: could have one not on common list
   // get all taxon meanings recorded on this transect
   var process2 = function () {
     var process3 = function () {
@@ -468,8 +467,6 @@ function loadSpeciesList() {
   // the other 2 grids are to be populated with rows (blank or otherwise) by whatever has been recorded at this site previously.
   // Have to have existing meaning ids rloaded and list 1 completed first.
   process2();
-  if (!indiciaData.startWithCommonSpecies)
-    jQuery('#taxonLookupControlContainer').hide();
   jQuery('#listSelect').change(function(evt) {
     jQuery('#taxonLookupControlContainer').show();
     jQuery('#listSelectMsg').empty().append('Please Wait...');
@@ -632,6 +629,43 @@ function loadSpeciesList() {
     }
     jQuery('#listSelectMsg').empty();
   });
+  
+  switch(indiciaData.startList){
+    case 'full':
+        jQuery('#taxonLookupControlContainer').hide();
+        break;
+    case 'common':
+        for(var i=indiciaData.speciesList1List.length-1; i>=0; i--){
+          var row = jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']);
+          if(row.length > 0 && row.find('input').not(':hidden').not('[value=]').length == 0) { // first filter out rows with data filled in.
+            var foundInList = false;
+            for(var j=0; j<indiciaData.speciesList1SubsetList.length; j++)
+              if(indiciaData.speciesList1List[i]['taxon_meaning_id'] == indiciaData.speciesList1SubsetList[j]['taxon_meaning_id'])
+                foundInList = true;
+            if(!foundInList)
+              jQuery(row).remove();
+          }
+        }
+        redo_alt_row('table#transect-input1');
+        break;
+    case 'here':
+        for(var i=indiciaData.speciesList1List.length-1; i>=0; i--){
+          var row = jQuery('#row-'+indiciaData.speciesList1List[i]['taxon_meaning_id']);
+          if(row.length > 0 && row.find('input').not(':hidden').not('[value=]').length == 0) { // first filter out rows with data filled in.
+            var foundInList = false;
+            for(var j=0; j<indiciaData.allTaxonMeaningIdsAtTransect.length; j++)
+              if(indiciaData.speciesList1List[i]['taxon_meaning_id'] == indiciaData.allTaxonMeaningIdsAtTransect[j])
+                foundInList = true;
+            if(!foundInList)
+              jQuery(row).remove();
+          }
+        }
+        redo_alt_row('table#transect-input1');
+        break;
+    case 'mine':
+        jQuery('#listSelect').change();
+        break;
+  }
 
   jQuery('.smp-input').keydown(smp_keydown).change(input_change).blur(input_blur).focus(count_focus);
 

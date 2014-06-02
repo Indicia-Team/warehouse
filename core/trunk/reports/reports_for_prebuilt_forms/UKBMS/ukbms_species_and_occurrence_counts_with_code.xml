@@ -54,5 +54,6 @@
             <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT ttl.taxon_meaning_id)" aggregate="true" datatype="integer" />
             <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT tx.taxon_group_id)" aggregate="true" datatype="integer" />
             <column name="code" display="Code" sql="l.code" datatype="text" />
+            <column name="geom" sql="l.centroid_geom" datatype="text" />
       </columns>
 </report>

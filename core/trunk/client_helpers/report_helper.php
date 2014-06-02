@@ -430,8 +430,29 @@ class report_helper extends helper_base {
     $tfoot .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
-      $footer = str_replace(array('{rootFolder}', '{currentUrl}', '{sep}'),
-          array($rootFolder, $currentUrl['path'], strpos($rootFolder, '?')===FALSE ? '?' : '&'), $options['footer']);
+      $footer = str_replace(array('{rootFolder}',
+                '{currentUrl}',
+                '{sep}',
+                '{warehouseRoot}',
+                '{geoserverRoot}',
+                '{nonce}',
+                '{auth}',
+                '{iUserID}',
+                '{website_id}'),
+          array($rootFolder,
+                $currentUrl['path'],
+                strpos($rootFolder, '?')===FALSE ? '?' : '&',
+                self::$base_url,
+                self::$geoserver_url,
+                'nonce='.$options['readAuth']['nonce'],
+                'auth_token='.$options['readAuth']['auth_token'],
+                (function_exists('hostsite_get_user_field') ? hostsite_get_user_field('indicia_user_id') : ''),
+                self::$website_id
+          ), $options['footer']);
+      // Merge in any references to the parameters sent to the report: could extend this in the future to pass in the extraParams
+      foreach($currentParamValues as $key=>$param){
+        $footer = str_replace(array('{'.$key.'}'), array($param), $footer);
+      }
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
     if (isset($options['downloadLink']) && $options['downloadLink'] && (count($records)>0 || $options['ajax'])) {
@@ -1915,14 +1936,16 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
     $orderbyKey = 'orderby' . (isset($options['id']) ? '-'.$options['id'] : '');
     $sortdirKey = 'sortdir' . (isset($options['id']) ? '-'.$options['id'] : '');
     $pageKey = 'page' . (isset($options['id']) ? '-'.$options['id'] : '');
+    $cookiename = "clientReportSort".(isset($options['id']) ? '-'.$options['id'] : '');
+    $clientReportSort = isset($_COOKIE[$cookiename]) ? explode(':',$_COOKIE[$cookiename],2) : false;
     return array(
       'orderby' => array(
         'name' => $orderbyKey,
-        'value' => isset($_GET[$orderbyKey]) ? $_GET[$orderbyKey] : null
+        'value' => isset($_GET[$orderbyKey]) ? $_GET[$orderbyKey] : ($clientReportSort ? $clientReportSort[1] : null)
       ),
       'sortdir' => array(
         'name' => $sortdirKey,
-        'value' => isset($_GET[$sortdirKey]) ? $_GET[$sortdirKey] : null
+        'value' => isset($_GET[$sortdirKey]) ? $_GET[$sortdirKey] : ($clientReportSort ? $clientReportSort[0] : null)
       ),
       'page' => array(
         'name' => $pageKey,
@@ -2850,8 +2873,8 @@ update_controls();
     for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
       $tableNumberHeaderRow.= '<td class="week">'.$i.'</td>';
       $tableDateHeaderRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
-      $downloadNumberHeaderRow.= '%2C'.$i;
-      $downloadDateHeaderRow.= '%2C'.$firstWeek_date->format('d/m/Y');
+      $downloadNumberHeaderRow.= ','.$i;
+      $downloadDateHeaderRow.= ','.$firstWeek_date->format('d/m/Y');
       $chartNumberLabels[] = "".$i;
       $chartDateLabels[] = $firstWeek_date->format('M-d');
       $fullDates[$i] = $firstWeek_date->format('d/m/Y');
@@ -2965,9 +2988,9 @@ update_controls();
     self::report_calendar_summary_initLoc1($minWeekNo, $maxWeekNo, $weekList);
     if($count>0) $locationArray = self::report_calendar_summary_initLoc2($minWeekNo, $maxWeekNo, $locationSamples[$records[0]['location_id']]);
     $warnings .= '<span style="display:none;">Number of records processed : '.$count.' : '.date(DATE_ATOM).'</span>'."\n";
-    $downloadList = 'Location%2C'.
-          ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? lang::get('Week Number').'%2C' : '').
-          lang::get('Week Commencing').'%2C'.lang::get('Species').'%2C'.lang::get('Type').'%2C'.lang::get('Value').'%0A';
+    $downloadList = 'Location,'.
+          ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? lang::get('Week Number').',' : '').
+          lang::get('Week Commencing').','.lang::get('Species').','.lang::get('Type').','.lang::get('Value')."\n";
     foreach($records as $idex => $record){
       // If the taxon has changed
       if(($lastTaxonID && $lastTaxonID!=$record[$options['rowGroupID']]) ||
@@ -3341,7 +3364,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       if($options['includeRawData']){
         $thClass = $options['thClass'];
         $rawDataDownloadGrid="";
-        $rawDataDownloadList='Location%2C'.(($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number') ? 'Week%20Number%2C' : '').'Date%2CSpecies%2CCount%0A';
+        $rawDataDownloadList='Location,'.(($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number') ? 'Week Number,' : '')."Date,Species,Count\n";
         $r .= "\n<table id=\"".$options['tableID']."-raw\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
         $r .= "\n<thead class=\"$thClass\">";
         // raw data headers: %Sun, mean temp, Date, Week Number, Location?
@@ -3352,32 +3375,32 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $rawDataDownloadGrid .= "Week";
           foreach($rawArray as $idx => $rawColumn){
             $r .= '<td class="week">'.$rawColumn['weekno'].'</td>';
-            $rawDataDownloadGrid .= '%2C'.$rawColumn['weekno'];
+            $rawDataDownloadGrid .= ','.$rawColumn['weekno'];
           }
           if($options['includeTableTotalColumn']){
             $r.= '<td class="total-column"></td>';
-            $rawDataDownloadGrid .= '%2C';
+            $rawDataDownloadGrid .= ',';
           }
         }
         $r .= '</tr><tr><td>Date</td>';
-        $rawDataDownloadGrid .= '%0ADate';
+        $rawDataDownloadGrid .= "\nDate";
         $rawTotalRow = "";
         $rawDataDownloadGridTotalRow = "";
         $rawGrandTotal = 0;
         foreach($rawArray as $idx => $rawColumn){
           $this_date = date_create(str_replace('/','-',$rawColumn['date'])); // prevents day/month ordering issues
           $r .= '<td class="week">'.$this_date->format('M').'<br/>'.$this_date->format('d').'</td>';
-          $rawDataDownloadGrid .= '%2C'.$this_date->format('d/m/Y');
+          $rawDataDownloadGrid .= ','.$this_date->format('d/m/Y');
           $rawTotalRow .= '<td>'.$rawColumn['total'].'</td>';
-          $rawDataDownloadGridTotalRow .= '%2C'.$rawColumn['total'];
+          $rawDataDownloadGridTotalRow .= ','.$rawColumn['total'];
           $rawGrandTotal += $rawColumn['total'];
         }
         if($options['includeTableTotalColumn']){
           $r.= '<td class="total-column">Total</td>';
-          $rawDataDownloadGrid .= '%2CTotal';
+          $rawDataDownloadGrid .= ',Total';
         }
         $r .= "</tr>";
-        $rawDataDownloadGrid .= '%0A';
+        $rawDataDownloadGrid .= "\n";
         // don't include links in download
         if(isset($options['linkURL']) && $options['linkURL']!= ''){
           $r .= '<tr><td>Sample Links</td>';
@@ -3400,14 +3423,14 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
             $rawDataDownloadGrid .= '"'.$caption.'"';
             foreach($rawArray as $dateIndex => $rawData) {
               $r.= '<td>'.$rawData['avgFields'][$field].'</td>';
-              $rawDataDownloadGrid .= '%2C'.$rawData['avgFields'][$field];
+              $rawDataDownloadGrid .= ','.$rawData['avgFields'][$field];
             }
             if($options['includeTableTotalColumn']){
               $r.= '<td class="total-column"></td>';
-              $rawDataDownloadGrid .= '%2C';
+              $rawDataDownloadGrid .= ',';
             }
             $r .= "</tr>";
-            $rawDataDownloadGrid .= '%0A';
+            $rawDataDownloadGrid .= "\n";
             $altRow=!$altRow;
           }
         }
@@ -3421,26 +3444,26 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
               if(isset($rawColumn['counts'][$seriesID])) {
                 $r.= '<td>'.$rawColumn['counts'][$seriesID].'</td>';
                 $total += $rawColumn['counts'][$seriesID];
-                $rawDataDownloadGrid .= '%2C'.$rawColumn['counts'][$seriesID];
+                $rawDataDownloadGrid .= ','.$rawColumn['counts'][$seriesID];
                 $locations = array();
                 if(count($rawColumn['samples'])>0)
                   foreach($rawColumn['samples'] as $sample)
                     $locations[$sample['location_name']]=true;
                 $this_date = date_create(str_replace('/','-',$rawColumn['date'])); // prevents day/month ordering issues
                 $rawDataDownloadList .= '"'.implode(': ',array_keys($locations)).'"'.
-                     ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? '%2C'.$rawColumn['weekno'] : '').
-                     '%2C'.$this_date->format('d/m/Y').'%2C"'.$seriesLabels[$seriesID].'"%2C'.$rawColumn['counts'][$seriesID].'%0A';
+                     ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? ','.$rawColumn['weekno'] : '').
+                     ','.$this_date->format('d/m/Y').',"'.$seriesLabels[$seriesID].'",'.$rawColumn['counts'][$seriesID]."\n";
               } else {
                 $r.= '<td></td>';
-                $rawDataDownloadGrid .= '%2C';
+                $rawDataDownloadGrid .= ',';
               }
             }
             if($options['includeTableTotalColumn']){
               $r.= '<td class="total-column">'.$total.'</td>';
-              $rawDataDownloadGrid .= '%2C'.$total;
+              $rawDataDownloadGrid .= ','.$total;
             }
             $r .= "</tr>";
-            $rawDataDownloadGrid .= '%0A';
+            $rawDataDownloadGrid .= "\n";
             $altRow=!$altRow;
           }
         }
@@ -3448,7 +3471,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $r.= '<tr class="totalrow"><td>Total</td>'.$rawTotalRow.
             ($options['includeTableTotalColumn'] ? '<td>'.$rawGrandTotal.'</td>' : '').'</tr>';
           $rawDataDownloadGrid .= 'Total'.$rawDataDownloadGridTotalRow.
-            ($options['includeTableTotalColumn'] ? '%2C'.$rawGrandTotal : '').'%0A';
+            ($options['includeTableTotalColumn'] ? ','.$rawGrandTotal : '')."\n";
         }
         $r .= "</tbody></table>\n";
       }
@@ -3462,8 +3485,8 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         		                                          ($options['includeEstimatesData'] ? '<td class="estimates">Total with<br />estimates</td>' : '')
         		                                         :'').'</tr>';
         $summaryDataDownloadGrid .= 'Week'.$downloadNumberHeaderRow.($options['includeTableTotalColumn']
-        		                                         ?($options['includeSummaryData'] ? '%2CTotal' : '')
-        		                                         :'').'%0A';
+        		                                         ?($options['includeSummaryData'] ? ',Total' : '')
+        		                                         :'')."\n";
       }
       if($options['tableHeaders'] != 'number'){
         $r .= '<tr><td>'.lang::get('Date').'</td>'.$tableDateHeaderRow.($options['includeTableTotalColumn']
@@ -3474,8 +3497,8 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         		                                          ($options['includeEstimatesData'] ? '<td>Total with<br />estimates</td>' : ''))
         		                                         :'').'</tr>';
         $summaryDataDownloadGrid .= lang::get('Date').$downloadDateHeaderRow.($options['includeTableTotalColumn']
-        		                                         ? ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? '%2C' : '%2CTotal')
-        		                                         :'').'%0A';
+        		                                         ? ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? ',' : ',Total')
+        		                                         :'')."\n";
       }
       $estimateDataDownloadGrid = $summaryDataDownloadGrid;
       $r.= "</thead>\n";
@@ -3501,8 +3524,8 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $estimateDataDownloadGrid .= '"'.$seriesLabels[$seriesID].'"';
           for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
             $r.= '<td>';
-            $summaryDataDownloadGrid .= '%2C';
-            $estimateDataDownloadGrid .= '%2C';
+            $summaryDataDownloadGrid .= ',';
+            $estimateDataDownloadGrid .= ',';
             if(isset($summaryRow[$i])){
               $summaryValue = $summaryRow[$i]['forcedZero'] ? 0 : ($summaryRow[$i]['hasData'] ? $summaryRow[$i]['summary'] : '');
               $class = '';
@@ -3533,16 +3556,16 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           if($options['includeTableTotalColumn']){
             if($options['includeSummaryData']) {
               $r.= '<td class="total-column">'.$total.'</td>';
-              $summaryDataDownloadGrid .= '%2C'.$total;
+              $summaryDataDownloadGrid .= ','.$total;
             }
             if($options['includeEstimatesData']) {
               $r.= '<td class="total-column estimates">'.$estimatesTotal.'</td>';
-              $estimateDataDownloadGrid .= '%2C'.$estimatesTotal;
+              $estimateDataDownloadGrid .= ','.$estimatesTotal;
             }
           }
           $r .= "</tr>";
-          $summaryDataDownloadGrid .= '%0A';
-          $estimateDataDownloadGrid .= '%0A';
+          $summaryDataDownloadGrid .= "\n";
+          $estimateDataDownloadGrid .= "\n";
           $altRow=!$altRow;
         }
       }
@@ -3553,28 +3576,28 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $summaryDataDownloadGrid .= '"'.lang::get('Total (Summary)').'"';
           for($i= $minWeekNo; $i <= $maxWeekNo; $i++) {
             $r .= '<td>'.$totalRow[$i].'</td>';
-            $summaryDataDownloadGrid .= '%2C'.$totalRow[$i];
+            $summaryDataDownloadGrid .= ','.$totalRow[$i];
           }
           if($options['includeTableTotalColumn']) {
             $r .= '<td class="total-column grand-total">'.$grandTotal.'</td>'.($options['includeEstimatesData'] ? '<td class="estimates"></td>' : '');
-            $summaryDataDownloadGrid .= '%2C'.$grandTotal;
+            $summaryDataDownloadGrid .= ','.$grandTotal;
           }
           $r .= "</tr>";
-          $summaryDataDownloadGrid .= '%0A';
+          $summaryDataDownloadGrid .= "\n";
         }
         if($options['includeEstimatesData']){
           $r .= "<tr class=\"totalrow estimates\"><td>".lang::get('Total inc Estimates').'</td>';
           $estimateDataDownloadGrid .= '"'.lang::get('Total').'"';
           for($i= $minWeekNo; $i <= $maxWeekNo; $i++) {
             $r.= '<td>'.$totalEstimatesRow[$i].'</td>';
-            $estimateDataDownloadGrid .= '%2C'.$totalEstimatesRow[$i];
+            $estimateDataDownloadGrid .= ','.$totalEstimatesRow[$i];
           }
           if($options['includeTableTotalColumn']) {
             $r .= ($options['includeSummaryData'] ? '<td></td>' : '').'<td class="total-column grand-total estimates">'.$estimatesGrandTotal.'</td>';
-            $estimateDataDownloadGrid .= '%2C'.$estimatesGrandTotal;
+            $estimateDataDownloadGrid .= ','.$estimatesGrandTotal;
           }
           $r .= "</tr>";
-          $estimateDataDownloadGrid .= '%0A';
+          $estimateDataDownloadGrid .= "\n";
         }
       }
       $r .= "</tbody></table>\n";
@@ -3582,18 +3605,46 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       $downloads="";
 
       $timestamp = (isset($options['includeReportTimeStamp']) && $options['includeReportTimeStamp'] ? '_'.date('YmdHis') : '');
-
+      // No need for saved reports to be atomic events. Will be purged automatically.
+      global $base_url;
+      $cacheFolder = data_entry_helper::$cache_folder ? data_entry_helper::$cache_folder : data_entry_helper::relative_client_helper_path() . 'cache/';
       if($options['includeRawData']){
-        if($options['includeRawGridDownload']) $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'rawDataGrid'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$rawDataDownloadGrid).'"><button type="button">Raw Grid Data</button></a></th>'."\n";
-        if($options['includeRawListDownload']) $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'rawDataList'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$rawDataDownloadList).'"><button type="button">Raw List Data</button></a></th>'."\n";
+        if($options['includeRawGridDownload']) {
+          $cacheFile = $options['downloadFilePrefix'].'rawDataGrid'.$timestamp.'.csv';
+          $handle = fopen($cacheFolder.$cacheFile, 'wb');
+          fwrite($handle, $rawDataDownloadGrid);
+          fclose($handle);
+          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Raw Grid Data</button></a></th>'."\n";
+        }
+        if($options['includeRawListDownload']) {
+          $cacheFile = $options['downloadFilePrefix'].'rawDataList'.$timestamp.'.csv';
+          $handle = fopen($cacheFolder.$cacheFile, 'wb');
+          fwrite($handle, $rawDataDownloadList);
+          fclose($handle);
+          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Raw List Data</button></a></th>'."\n";
+        }
       }
-      if($options['includeSummaryData'] && $options['includeSummaryGridDownload'])
-        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'summaryDataGrid'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$summaryDataDownloadGrid).'"><button type="button">Summary Grid Data</button></a></th>'."\n";
-      if($options['includeEstimatesData'] && $options['includeEstimatesGridDownload'])
-        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'estimateDataGrid'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$estimateDataDownloadGrid).'"><button type="button">Estimate Grid Data</button></a></th>'."\n";
-      if(($options['includeSummaryData'] || $options['includeEstimatesData']) && $options['includeListDownload'])
-        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'dataList'.$timestamp.'.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$downloadList).'"><button type="button">List Data</button></a></th>'."\n";
-//      $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" '.($downloads == '' ? 'style="display:none"' : '').'><thead class="ui-widget-header"><tr>'.
+      if($options['includeSummaryData'] && $options['includeSummaryGridDownload']) {
+        $cacheFile = $options['downloadFilePrefix'].'summaryDataGrid'.$timestamp.'.csv';
+        $handle = fopen($cacheFolder.$cacheFile, 'wb');
+        fwrite($handle, $summaryDataDownloadGrid);
+        fclose($handle);
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Summary Grid Data</button></a></th>'."\n";
+      }
+      if($options['includeEstimatesData'] && $options['includeEstimatesGridDownload']) {
+        $cacheFile = $options['downloadFilePrefix'].'estimateDataGrid'.$timestamp.'.csv';
+        $handle = fopen($cacheFolder.$cacheFile, 'wb');
+        fwrite($handle, $estimateDataDownloadGrid);
+        fclose($handle);
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Estimate Grid Data</button></a></th>'."\n";
+      }
+      if(($options['includeSummaryData'] || $options['includeEstimatesData']) && $options['includeListDownload']) {
+        $cacheFile = $options['downloadFilePrefix'].'dataList'.$timestamp.'.csv';
+        $handle = fopen($cacheFolder.$cacheFile, 'wb');
+        fwrite($handle, $downloadList);
+        fclose($handle);
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">List Data</button></a></th>'."\n";
+      }
       $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" ><thead class="ui-widget-header"><tr>'.
             ($downloads == '' ? '' : '<th class="downloads-table-label">Downloads</th>'.$downloads).
             "</tr></thead></table>\n";
@@ -3781,13 +3832,13 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     foreach($locationArray as $weekno => $data){
       if($taxonID !== null){ // don't include lines for the sample only entries
         if($data['hasData']) {
-          $download .= '"'.$thisLocation.'"%2C'.
-            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.'%2C' : '').
-            $weekList[$weekno].'%2C'.$taxon.'%2C'.lang::get('Actual').'%2C'.$data['summary'].'%0A';
+          $download .= '"'.$thisLocation.'",'.
+            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.',' : '').
+            $weekList[$weekno].','.$taxon.','.lang::get('Actual').','.$data['summary']."\n";
         } else if($options['includeEstimatesData'] && $data['hasEstimates']){
-          $download .= '"'.$thisLocation.'"%2C'.
-            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.'%2C' : '').
-            $weekList[$weekno].'%2C'.$taxon.'%2C'.lang::get('Estimate').'%2C'.$data['estimates'].'%0A';
+          $download .= '"'.$thisLocation.'",'.
+            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.',' : '').
+            $weekList[$weekno].','.$taxon.','.lang::get('Estimate').','.$data['estimates']."\n";
         }
       }
       if(isset($summaryArray[$taxonID])) {
