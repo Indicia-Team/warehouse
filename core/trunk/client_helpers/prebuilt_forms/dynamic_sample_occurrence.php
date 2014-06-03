@@ -976,18 +976,25 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // Set the sample attribute fieldnames as for a new record
     foreach($attributes as $attributeKey => $attributeValue){
       if ($attributeValue['multi_value'] == 't') {
-        // Set the attribute fieldname to the attribute id plus brackets for multi-value attributes
-       $attributes[$attributeKey]['fieldname'] = $attributeValue['id'] . '[]';
-       foreach($attributeValue['default'] as $defaultKey => $defaultValue) {
-         // Set the fieldname in the defaults array to the attribute id plus brackets as well
-         $attributes[$attributeKey]['default'][$defaultKey]['fieldname'] = $attributeValue['id'] . '[]';
+         // Set the attribute fieldname to the attribute id plus brackets for multi-value attributes
+        $attributes[$attributeKey]['fieldname'] = $attributeValue['id'] . '[]';
+        foreach($attributeValue['default'] as $defaultKey => $defaultValue) {
+          //Fixed a problem with a checkbox_group that the client reported as not saving after cloning. The problem is the value field was also including the fieldname which was
+          //preventing save, so I have removed the fieldname from the defaults list here. I don't have time to test all the scenarios for this, so to be safe I have just made it
+          //so the fix is only applied to the checkbox_group, if we find there are problems with other types of multi-value control then this check can be removed, but as we only
+          //have one reported issue and I can't test all the scenarios I have left in this checkbox_group check to avoid breaking existing code that I can't test.
+          if (isset($attributeValue['control_type']) && $attributeValue['control_type']==='checkbox_group')
+            unset($attributes[$attributeKey]['default'][$defaultKey]['fieldname']);
+          // Set the fieldname in the defaults array to the attribute id plus brackets as well
+          else
+           $attributes[$attributeKey]['default'][$defaultKey]['fieldname'] = $attributeValue['id'] . '[]';        
        }
       } else {
         // Set the attribute fieldname to the attribute id for single values
         $attributes[$attributeKey]['fieldname'] = $attributeValue['id'];
       }
     }
-    
+
     // Now load the occurrences and their attributes.
     // @todo: Convert to occurrences media capabilities.
     $loadImages = $args['occurrence_images'];
