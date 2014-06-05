@@ -1,4 +1,11 @@
 <?php
+
+function species_alerts_extend_data_services() {
+  return array(
+    'species_alerts'=>array()
+  );
+}
+
 /*
  * Scheduled task for generating species alerts, scans occdelta for any new occurrences matching species alert records and then
  * generates a notification for each match
