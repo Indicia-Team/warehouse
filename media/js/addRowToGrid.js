@@ -373,7 +373,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       $(e.target).parent().remove();
       taxonNameBeforeUserEdit = $(taxonCell).html();
       // first span should contain the name as it was entered
-      taxonTextBeforeUserEdit = $(taxonCell).text().split(' - ')[0];
+      taxonTextBeforeUserEdit = $(taxonCell).find('.taxon-name').text();
       //add the autocomplete cell
       $(taxonCell).append(speciesAutocomplete);
       //Adjust the size of the taxon cell to take up its full allocation of space
