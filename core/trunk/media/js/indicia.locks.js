@@ -314,8 +314,7 @@
       }
       if (typeof $.fn.autocomplete!=="undefined") {
         $('input[id*=' + escControlId + '\\:]').filter(
-            '.ac_input, .ui-autocomplete').attr('readonly', 'readonly').attr(
-            'disabled', 'disabled').addClass('locked-control');
+            '.ac_input, .ui-autocomplete').attr('readonly', 'readonly').attr('disabled', 'disabled').addClass('locked-control');
       }
       if (srefId!==null && mapDiv!==null && escControlId===srefId) {
         $(mapDiv).before('<div id="mapLockMask" style="position: absolute;"/>');
@@ -469,29 +468,15 @@
       // install the submit handler for the lockable forms to enable any locked
       // controls for submission
       $('form:has(span.locked-icon, span.unlocked-icon)').submit(function(event) {
-        // if the form has no id, set one so we can use the id to select its
-        // locked controls
-        var form = this;
-        var formIdAdded = false;
-        if (!form.id) {
-          form.id = 'tempId-5x667vvfd';
-          formIdAdded = true;
-        }
-        var escFormId = esc4jq(form.id);
-        // select all locked controls in this form and enable them
-        $('#' + escFormId + ' span.locked-icon').each(
-                function(n) {
-              var span = this;
-              var escId = esc4jq(span.id);
-              var escControlId = escId.replace('_lock', '');
-              $('#' + escControlId).removeAttr('disabled').filter(
-                  '.hasDatepicker').datepicker('enable');
-              $('input[id*=' + escControlId + '\\:]').filter(
-                  '.ac_input, .ui-autocomplete').removeAttr('disabled');
-            });
-        if (formIdAdded) {
-          form.id = '';
-        }
+        // select all locked controls in this form and enable them so that they post
+        $(this).find('*').removeAttr('disabled');
+        $(this).find('span.locked-icon').each(function() {
+          var span = this;
+          var escId = esc4jq(span.id);
+          var escControlId = escId.replace('_lock', '');
+          $('#' + escControlId).removeAttr('disabled').filter('.hasDatepicker').datepicker('enable');
+          $('input[id*=' + escControlId + '\\:]').filter('.ac_input, .ui-autocomplete').removeAttr('disabled');
+        });
       });
       if (typeof mapInitialisationHooks !== 'undefined') {
         mapInitialisationHooks.push(function(div) {
