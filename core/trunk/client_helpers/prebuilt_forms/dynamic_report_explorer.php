@@ -461,7 +461,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
     if (!empty($args['param_presets'])) {
       $params = data_entry_helper::explode_lines_key_value_pairs($args['param_presets']);
       foreach ($params as $key=>$val) {
-        $options["filter-$key"]=$val;
+        if (!isset($options["filter-$key"]))
+          $options["filter-$key"]=$val;
       }
     }
     foreach ($options as $key=>&$value) {
