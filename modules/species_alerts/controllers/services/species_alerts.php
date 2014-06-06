@@ -49,6 +49,8 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       $userDetails=user_identifier::get_user_id($userIdentificationData, $_GET["website_id"]);  
       //Store the species alert for the user (which is either a new or existing user as determined by get_user_id)
       self::store_species_alert($userDetails);
+      //Automatically register the user to receive email notifications
+      self::store_user_email_notification_setting($userDetails);
     } 
     catch (Exception $e) {
       $this->handle_error($e);
@@ -90,6 +92,37 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     //Fill in the Created/Updated data fields in the record row
     $alertRecordSubmissionObj->set_metadata($alertRecordSubmissionObj);
     $alertRecordSubmissionObj->save();
+  }
+  
+  /*
+   * Automatically register the user to receive notification emails when they register for species alerts
+   */
+  private function store_user_email_notification_setting($userDetails) {
+    //Get configuration for which source types to add if possible
+    try {
+      $sourceTypes = kohana::config('species_alerts.register_for_notification_emails_source_types');
+    } catch (exception $e) {
+      $sourceTypes=array('T','C','V','A','S','VT','AC','M');
+    }
+    if (empty($sourceTypes))
+      $sourceTypes=array('T','C','V','A','S','VT','AC','M');
+    //Add a notification email setting for each configured source type
+    foreach ($sourceTypes as $sourceType) {
+      $notificationSettingSubmissionObj = ORM::factory('user_email_notification_setting');
+      $notificationSettingSubmissionObj->user_id=$userDetails['userId'];
+      $notificationSettingSubmissionObj->notification_source_type=$sourceType;
+      //Species alerts default to hourly
+      if ($sourceType==='S')
+        $notificationSettingSubmissionObj->notification_frequency='IH';
+      else
+        $notificationSettingSubmissionObj->notification_frequency='D';
+      $notificationSettingSubmissionObj->set_metadata($notificationSettingSubmissionObj);
+      try {
+      $notificationSettingSubmissionObj->save();
+      } catch (exception $e) {
+        echo "Unable to register the user for email notifications, perhaps that module is not installed?";
+      }
+    }
   }
   
   /*
