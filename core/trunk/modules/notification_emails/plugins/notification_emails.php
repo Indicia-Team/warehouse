@@ -111,6 +111,20 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
   if (empty($notificationsToSendEmailsFor)) {
     echo 'There are no email notification jobs to run at the moment.</br>';
   } else {
+    //Get address to send emails from.
+    $email_config=array();
+    //Try and get from configuration file if possible
+    try {
+      $email_config['address']=kohana::config('notification_emails.email_sender_address');
+      //Handle config file not present
+    } catch (Exception $e) {
+      $email_config = Kohana::config('email');
+    }
+    //Handle also if config file present but option is not
+    if (!isset($email_config['address'])) {
+      echo 'Email address not provided in email configuration or email_sender_address configuration option not provided. I cannot send any emails without a sender address.</br>';
+      return false;;
+    }
     $emailSentCounter=0;
     //All the notifications that need to be sent in an email are grouped by user, as we cycle through the notifications then we can track who the user was for the previous notification.
     //When this user id then changes, we know we need to start building an new email to a new user.
@@ -124,7 +138,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
         if (!empty($subscriptionSettingsPageUrl)&&!empty($warehouseUrl)) {
           $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.$warehouseUrl.'">Click here to update your subscription settings.</a></br></br>';
         }
-        send_out_user_email($db,$emailContent,$previousUserId,$notificationIds);
+        send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
         $emailSentCounter++;
         //As we just sent out a an email, we can start building a new one.
         $emailContent=start_building_new_email($notificationToSendEmailsFor);
@@ -147,7 +161,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     if (!empty($subscriptionSettingsPageUrl)&&!empty($warehouseUrl)) {
       $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.$warehouseUrl.'">Click here to update your subscription settings.</a></br></br>';
     }
-    send_out_user_email($db,$emailContent,$previousUserId,$notificationIds);
+    send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
     $emailSentCounter++;
     //Save the maximum notification id against the jobs we are going to run now, so we know that we have done the notifications up to that id and next time the jobs are run
     //they only need to work with notifications later than that id.
@@ -225,17 +239,12 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
 /*
  * Actually send the email to the uer
  */
-function send_out_user_email($db,$emailContent,$userId,$notificationIds) {
+function send_out_user_email($db,$emailContent,$userId,$notificationIds,$email_config) {
   $cc=null;
   $swift = email::connect();
   // Use a transaction to allow us to prevent the email sending and marking of notification as done
   // getting out of step
   try {
-    $email_config = Kohana::config('email');
-    if (!isset($email_config['address'])) {
-      echo 'Email address not provided in email configuration', 'error';
-      return;
-    }
     //Get the user's email address from the people table
     $userResults = $db->
         select('people.email_address')
