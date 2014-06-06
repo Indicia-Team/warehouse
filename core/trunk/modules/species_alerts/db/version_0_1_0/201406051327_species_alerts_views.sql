@@ -14,7 +14,7 @@ END;
 
 BEGIN
   CREATE OR REPLACE VIEW gv_species_alerts AS 
-    SELECT sp.id as "ID", u.username as "Username", sp.alert_on_entry as "Alert On Entry", sp.alert_on_verify as "Alert On Verify", l.name as "Location Name", w.title AS "Website Title", sp.external_key as "External Key", sp.taxon_meaning_id as "Taxon Meaning Id"
+    SELECT sp.id, u.id as user_id, u.username, sp.alert_on_entry, sp.alert_on_verify, l.name as location_name, w.title AS website, sp.external_key, sp.taxon_meaning_id
       FROM species_alerts sp
       JOIN users u on u.id=sp.user_id
       JOIN locations l on l.id=sp.location_id
