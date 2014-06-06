@@ -1538,10 +1538,6 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
             jqElement.removeClass('ui-state-error');
           }
         },
-        submitHandler: function(f){
-          $('form input[type=submit]').attr('disabled', 'disabled');
-          f.submit();
-        },
         invalidHandler: ".$indicia_templates['invalid_handler_javascript'].",
         messages: ".json_encode(self::$validation_messages).",".
         // Do not place errors if 'message' not in validation_mode
@@ -1704,6 +1700,10 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
   */
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
+    // prevent double submission of the form
+    self::$javascript .= "$('#$form_id').submit(function() {
+  $('form input[type=submit]').attr('disabled', 'disabled');
+});\n";
     self::add_resource('validation');
   }
   
