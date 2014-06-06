@@ -100,7 +100,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
   $frequencyToRunString = substr($frequencyToRunString, 0, -1);
   //Get all the notifications where the source_type is listed as needing running today and the notification id is later than the last notification that was sent by that job
   $notificationsToSendEmailsFor = $db->query("
-    SELECT n.id,n.user_id, n.source_type, n.source, n.data, u.username
+    SELECT distinct n.id,n.user_id, n.source_type, n.source, n.data, u.username
     FROM notifications n
       JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND unf.notification_frequency in (".$frequencyToRunString.") AND unf.deleted='f'
       JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL)
@@ -139,6 +139,8 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
           $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.$warehouseUrl.'">Click here to update your subscription settings.</a></br></br>';
         }
         send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
+        //Used to acknowledge the notifications in an email if an email send is successful, once email send attempt has been made we can reset the list ready for the next email.
+        $notificationIds=array();
         $emailSentCounter++;
         //As we just sent out a an email, we can start building a new one.
         $emailContent=start_building_new_email($notificationToSendEmailsFor);
@@ -167,12 +169,6 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     //they only need to work with notifications later than that id.
     //Also set the date/time the job was run
     update_last_run_metadata($db, $frequenciesToRun);
-    //All notifications that have been sent out in an email are considered to be acknowledged
-    $db
-      ->set('acknowledged', 't')
-      ->from('notifications')
-      ->in('id', $notificationIds)
-      ->update();
     if ($emailSentCounter==0)
       echo 'No new notification emails have been sent.</br>';
     elseif ($emailSentCounter==1)
@@ -254,25 +250,30 @@ function send_out_user_email($db,$emailContent,$userId,$notificationIds,$email_c
         ->limit(1)
         ->get();
       
-      $defaultEmailSubject='You have new notifications.';
-      try {
-        $emailSubject=kohana::config('notification_emails.email_subject');
-        //Handle config file not present
-      } catch (Exception $e) {
-        $emailSubject=$defaultEmailSubject;
-      }
-      if (empty($emailSubject))
-        $emailSubject=$defaultEmailSubject;
-      
-      $message = new Swift_Message($emailSubject, $emailContent,
-                                   'text/html');
-      $recipients = new Swift_RecipientList();
-      $recipients->addTo($userResults[0]->email_address);
-      // send the email
-      $swift->send($message, $recipients, $email_config['address']);
-      kohana::log('info', 'Email notification sent to '. $userResults[0]->email_address);        
+    $defaultEmailSubject='You have new notifications.';
+    try {
+      $emailSubject=kohana::config('notification_emails.email_subject');
+      //Handle config file not present
+    } catch (Exception $e) {
+      $emailSubject=$defaultEmailSubject;
+    }
+    if (empty($emailSubject))
+      $emailSubject=$defaultEmailSubject;
+
+    $message = new Swift_Message($emailSubject, $emailContent,
+                                 'text/html');
+    $recipients = new Swift_RecipientList();
+    $recipients->addTo($userResults[0]->email_address);
+    // send the email
+    $swift->send($message, $recipients, $email_config['address']);
+    kohana::log('info', 'Email notification sent to '. $userResults[0]->email_address); 
+    //All notifications that have been sent out in an email are considered to be acknowledged
+    $db
+      ->set('acknowledged', 't')
+      ->from('notifications')
+      ->in('id', $notificationIds)
+      ->update();
   } catch (Exception $e) {
-    // Email not sent, so undo marking of notification as complete.
     $db->rollback();
     throw $e;
   }
