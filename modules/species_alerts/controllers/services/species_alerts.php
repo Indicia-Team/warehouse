@@ -24,6 +24,7 @@
 /**
  * Class providing species_alerts web services.
  */
+require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 class Species_alerts_Controller extends Data_Service_Base_Controller {
   /*
    * Web service function that gets called and then passes onto a function to store the species_alert in the database.
@@ -49,8 +50,19 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       $userDetails=user_identifier::get_user_id($userIdentificationData, $_GET["website_id"]);  
       //Store the species alert for the user (which is either a new or existing user as determined by get_user_id)
       self::store_species_alert($userDetails);
-      //Automatically register the user to receive email notifications
-      self::store_user_email_notification_setting($userDetails);
+      //Automatically register the user to receive email notifications if they have never had any settings at all
+      try {
+        $readAuth = data_entry_helper::get_read_auth(0-$userDetails['userId'], kohana::config('indicia.private_key'));
+        $freqSettingsData = data_entry_helper::get_report_data(array(
+          'dataSource'=>'library/user_email_notification_settings/user_email_notification_settings_inc_deleted',
+          'readAuth'=>$readAuth,
+          'extraParams'=>array('user_id' => $userDetails['userId'])
+          ));
+        if (empty($freqSettingsData))
+          self::store_user_email_notification_setting($userDetails);
+      } catch (exception $e) {
+        kohana::log('debug', "Unable to register user ".$userDetails['userId']." for email notifications, perhaps that module is not installed?.");
+      } 
     } 
     catch (Exception $e) {
       $this->handle_error($e);
@@ -117,11 +129,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       else
         $notificationSettingSubmissionObj->notification_frequency='D';
       $notificationSettingSubmissionObj->set_metadata($notificationSettingSubmissionObj);
-      try {
       $notificationSettingSubmissionObj->save();
-      } catch (exception $e) {
-        echo "Unable to register the user for email notifications, perhaps that module is not installed?";
-      }
     }
   }
   
