@@ -32,7 +32,7 @@ function notification_emails_extend_orm() {
 
 function notification_emails_extend_data_services() {
   return array(
-    'user_email_notification_settings'=>array()
+    'user_email_notification_settings'=>array('allow_full_access'=>true)
   );
 }
 
