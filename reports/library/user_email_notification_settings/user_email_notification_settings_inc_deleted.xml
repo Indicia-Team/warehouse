@@ -1,0 +1,20 @@
+<report
+    title="User Email Notification Settings List Including Deleted Items."
+    description="Example Use - List includes deleted items as the system needs to know when a user has never had any items so that it makes the default
+        records for a user when they login. If they have deleted records it means they have some items previously but have deliberately removed their
+        own settings, so we wouldn't want to automatically create some more in that situation. (The reason why the defaults are not just created
+        when the user is created, is their warehouse user id which is needed is only created when they first login to Drupal)"
+>
+  <query>
+    SELECT #columns#
+    FROM user_email_notification_settings uens  
+    WHERE uens.user_id = #user_id#
+  </query>  
+  <params>
+    <param name='user_id' display='User Id' datatype='integer' />
+  </params>  
+  <columns>
+    <column name="id" sql="uens.id" />  
+  </columns>
+</report>
+
