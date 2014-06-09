@@ -105,7 +105,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
       JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND unf.notification_frequency in (".$frequencyToRunString.") AND unf.deleted='f'
       JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL)
       JOIN users u ON u.id = n.user_id
-    WHERE n.acknowledged = 'f'
+    WHERE n.email_sent = 'f'
     ORDER BY n.user_id, u.username, n.id
   ")->result_array(false);
   if (empty($notificationsToSendEmailsFor)) {
@@ -139,7 +139,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
           $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.$warehouseUrl.'">Click here to update your subscription settings.</a></br></br>';
         }
         send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
-        //Used to acknowledge the notifications in an email if an email send is successful, once email send attempt has been made we can reset the list ready for the next email.
+        //Used to mark the notifications in an email if an email send is successful, once email send attempt has been made we can reset the list ready for the next email.
         $notificationIds=array();
         $emailSentCounter++;
         //As we just sent out a an email, we can start building a new one.
@@ -154,7 +154,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
         $emailContent.= "</br>Data</br>";
         $emailContent.= unparseData($notificationToSendEmailsFor['data'])."</br></br>";
       }
-      //Log the notification id so we know that this will have to be set to acknowledged (emailed notifications are considered acknowledged)
+      //Log the notification id so we know that this will have to be set to email_sent in the database for the notification
       $notificationIds[]=$notificationToSendEmailsFor['id'];
       //Update the user_id tracker as we cycle through the notifications
       $previousUserId=$notificationToSendEmailsFor['user_id'];
@@ -267,10 +267,17 @@ function send_out_user_email($db,$emailContent,$userId,$notificationIds,$email_c
     // send the email
     $swift->send($message, $recipients, $email_config['address']);
     kohana::log('info', 'Email notification sent to '. $userResults[0]->email_address); 
-    //All notifications that have been sent out in an email are considered to be acknowledged
+    //All notifications that have been sent out in an email are marked so we don't resend them
+    $db
+      ->set('email_sent', 'true')
+      ->from('notifications')
+      ->in('id', $notificationIds)
+      ->update();
+    //As Verifier Tasks need to be actioned, we don't auto acknowledge them
     $db
       ->set('acknowledged', 't')
       ->from('notifications')
+      ->where("source_type != 'VT'")
       ->in('id', $notificationIds)
       ->update();
   } catch (Exception $e) {
