@@ -72,11 +72,13 @@ function loop_through_filters_and_create_notifications($filters) {
   foreach ($filters as $filterIdx=>$filter) {  
     $params = json_decode($filter['definition'],true);
     try {
-      //Get the report data for all new occurrences that match the filter.
-      //Use the filter as the params
-      $data[$filterIdx]=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
-        //If records are returned and we haven't already created a notification for that user then continue
-        if ($data[$filterIdx]['content']['records'][0]['count'] > 0  && !in_array($filter['user_id'],$alreadyCreatedNotification)) {
+      // don't run the filter unless we we haven't already created a notification for that user 
+      if (!in_array($filter['user_id'],$alreadyCreatedNotification) {
+        //Get the report data for all new occurrences that match the filter.
+        //Use the filter as the params
+        $data[$filterIdx]=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+        //If records are returned then continue
+        if ($data[$filterIdx]['content']['records'][0]['count'] > 0) {
           //Save the new notification
           $notificationObj = ORM::factory('notification');
           $notificationObj->source='you have new records to verify';
@@ -93,7 +95,7 @@ function loop_through_filters_and_create_notifications($filters) {
           $notificationCounter++;
           $alreadyCreatedNotification[]=$filter['user_id'];
         }
-      
+      }
     } catch (Exception $e) {
       echo $e->getMessage();
       error::log_error('Error occurred when creating verification notifications based on new occurrences and user\'s filters.', $e);
