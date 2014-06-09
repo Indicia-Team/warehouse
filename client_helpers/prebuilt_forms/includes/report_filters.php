@@ -40,8 +40,11 @@ class filter_what extends filter_base {
    * Define the HTML required for this filter's UI panel.
    */
   public function get_controls($readAuth, $options) {
-    $r = "<p id=\"what-filter-instruct\">".lang::get('You can filter by species group (first tab), a selection of individual species (second tab) or the level within the taxonomic hierarchy (third tab).')."</p>\n".
-        '<div id="what-tabs">'."\n";
+    $r='';
+    //There is only one tab when running on the Warehouse.
+    if (!isset($options['runningOnWarehouse']) || $options['runningOnWarehouse']==false)
+      $r .= "<p id=\"what-filter-instruct\">".lang::get('You can filter by species group (first tab), a selection of individual species (second tab) or the level within the taxonomic hierarchy (third tab).')."</p>\n";
+    $r .= '<div id="what-tabs">'."\n";
     // data_entry_helper::tab_header breaks inside fancybox. So output manually.
     $r .= '<ul class="ui-helper-hidden">' .
         '<li id="species-group-tab-tab"><a href="#species-group-tab" rel="address:species-group-tab"><span>Species groups</span></a></li>' .
