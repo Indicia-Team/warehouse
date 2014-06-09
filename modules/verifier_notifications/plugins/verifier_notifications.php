@@ -55,9 +55,11 @@ function loop_through_filters_and_create_notifications($db, $filters) {
   //Supply a config of which websites to take into account.
   try {
     $website_ids=kohana::config('verifier_notifications.website_ids');
+    $from=kohana::config('verifier_notifications.from');
   //Handle config file not present
   } catch (Exception $e) {
     $website_ids=array();
+    $from='system';
   }
   //handle if config file present but option is not supplied
   if (empty($website_ids))
@@ -89,7 +91,7 @@ function loop_through_filters_and_create_notifications($db, $filters) {
           //Use VT "Verifier Task" notification typeas we are informing the verifier that they need to perform a task.
           $notificationObj->source_type='VT'; 
           $notificationObj->data=json_encode(
-            array('username'=>$filter['username'],
+            array('username'=>$from,
                   'comment'=>'You have records to verify.',
                   'auto_generated'=>'t'));
           $notificationObj->save();
