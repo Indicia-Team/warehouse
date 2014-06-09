@@ -312,7 +312,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $existingCount = 0;
     $newCount = 0;
     // loop through the names
-
+    
     foreach($all_names as $name) {
       $data = $name->as_array();
       if (in_array($data['taxon_id'], $existingTaxa))
@@ -331,7 +331,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     }
     if (isset($prefId))
       echo $prefId;
-    elseif ($newCount===0)
+    elseif ($existingCount>0)
       echo 'The taxon already exists in the list.';
     elseif ($newCount>0)
       echo 'The taxon already exists in the list but some names were missing, so they have '.
