@@ -114,7 +114,7 @@ $filterPanelHTML .= report_filter_panel($readAuth, array(
   'allowSave' => false,
   'embedInExistingForm' => true,
   'runningOnWarehouse' => true,
-  'website_id' => html::initial_value($values, 'milestone:website_id')
+  'website_id' => html::initial_value($values, 'milestone:website_id') ? html::initial_value($values, 'milestone:website_id') : $values['website_id']
 ), $this->uri->argument(1), $hiddenStuff);
 // fields to auto-create a filter record for this group's defined set of records
 $filterPanelHTML .= data_entry_helper::hidden_text(array('fieldname'=>'filter:id' ,'default'=>html::initial_value($values, 'filter:id')));
