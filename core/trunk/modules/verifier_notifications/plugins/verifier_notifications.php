@@ -27,7 +27,7 @@
 function verifier_notifications_scheduled_task($last_run_date, $db) {
   //Get all filters where the user for the filter does not already have an unacknowledged 'you have new records to verify' notification 
   $filters = get_filters_without_existing_notification($db);
-  loop_through_filters_and_create_notifications($filters);
+  loop_through_filters_and_create_notifications($db, $filters);
 }
 
 /*
@@ -50,7 +50,7 @@ function get_filters_without_existing_notification($db) {
  * For each filter that returns at least one new occurrence and doesn't already have an outstanding verification notification for a user,
  * create a new notification
  */
-function loop_through_filters_and_create_notifications($filters) {
+function loop_through_filters_and_create_notifications($db, $filters) {
   $report = 'library/occdelta/filterable_occdelta_count';
   //Supply a config of which websites to take into account.
   try {
@@ -62,8 +62,9 @@ function loop_through_filters_and_create_notifications($filters) {
   //handle if config file present but option is not supplied
   if (empty($website_ids))
     $website_ids=array();
-  //Supply 1 as the user id to give the code maximum privileges
-  $reportEngine = new ReportEngine($website_ids, 1);
+  //Supply 1 as the user id to give the code maximum privileges. Also force the main database connection 
+  //to allow access to the temporary occdelta table.
+  $reportEngine = new ReportEngine($website_ids, 1, $db);
   //When creating notifications keep a track of user's we have created notifications for, this allows us to 
   //avoid creating multiple notifications per user without having to check the database.
   $alreadyCreatedNotification=array();
@@ -76,9 +77,9 @@ function loop_through_filters_and_create_notifications($filters) {
       if (!in_array($filter['user_id'],$alreadyCreatedNotification)) {
         //Get the report data for all new occurrences that match the filter.
         //Use the filter as the params
-        $data[$filterIdx]=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+        $output=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
         //If records are returned then continue
-        if ($data[$filterIdx]['content']['records'][0]['count'] > 0) {
+        if ($output['content']['records'][0]['count'] > 0) {
           //Save the new notification
           $notificationObj = ORM::factory('notification');
           $notificationObj->source='verifier_notifications';
