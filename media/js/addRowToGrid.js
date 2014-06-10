@@ -129,7 +129,30 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       var inputs = $(this).closest('table').find(':input:visible');
       // timeout necessary to allow keyup to occur on correct control
       setTimeout(function() {
-        inputs.eq(inputs.index(ctrl) + deltaX).focus();
+        $newInput = inputs.eq(inputs.index(ctrl) + deltaX);
+        if ($newInput.length > 0) {
+          // If we have not reached the end of the table
+          newInput = $newInput[0];
+          // If we have move to a new input which is a text box, select contents so it
+          // can be overwritten.
+          isTextbox = newInput.nodeName.toLowerCase() === 'input' && $newInput.attr('type') === 'text'
+          if (isTextbox){
+            if (typeof newInput.selectionStart !== 'undefined') {
+              newInput.selectionStart = 0;
+              newInput.selectionEnd = newInput.value.length;
+            }
+            else {
+              // Internet Explorer before version 9
+              var inputRange = newInput.createTextRange();
+              // Move start of range to beginning of input
+              inputRange.moveStart('character', -newInput.value.length);
+              // Move end of range to end of input
+              inputRange.moveEnd('character', newInput.value.length);
+              inputRange.select();
+            }
+          }
+          $newInput.focus();
+      }
       }, 200);
       evt.preventDefault();
       // see https://bugzilla.mozilla.org/show_bug.cgi?id=291082 - preventDefault bust in FF
