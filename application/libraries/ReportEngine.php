@@ -89,12 +89,20 @@ class ReportEngine {
    */
   private $customAttributeCaptions = array();
 
-  public function __construct($websiteIds = null, $userId = null)
+  /**
+   * Constructor
+   * @param array $websiteIds List of websites you are loading the report for. Normally a single, but can be a list
+   * when logged in on the warehouse.
+   * @param integer $userId ID of the user loading the report
+   * @param $db object Database object to run the report. Default null, which will create a new connection using the report
+   * user configuration
+   */
+  public function __construct($websiteIds = null, $userId = null, $db = null)
   {
     $this->websiteIds = $websiteIds;
     $this->userId = $userId;
     $this->localReportDir = Kohana::config('indicia.localReportDir');
-    $this->reportDb = new Database('report');
+    $this->reportDb = $db === null ? new Database('report') : $db;
   }
   
   /** 
