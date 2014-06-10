@@ -35,7 +35,8 @@ class user_identifier {
    * <li><strong>first_name</strong/><br/>
    * Optional. First name of the user, enabling a new user account to be created on the warehouse.</li>
    * <li><strong>cms_user_id</strong/><br/>
-   * Required. User ID from the client website's login system.</li>
+   * Optional. User ID from the client website's login system. Allows existing records to be linked to the created account when migrating from a 
+   * CMS user ID based authentication to Easy Login based authentication.</li>
    * <li><strong>warehouse_user_id</strong/><br/>
    * Optional. Where a user ID is already known but a new identifier is being provided (e.g. an email switch), provide the warehouse user ID.</li>
    * <li><strong>force</strong/><br/>
@@ -79,11 +80,6 @@ class user_identifier {
       throw new Exception('Error: identifiers parameter not of correct format');
     if (empty($request['surname']))
       throw new exception('Call to get_user_id requires a surname in the GET or POST data.');
-    // We don't need a website_id in the request as the authentication data contains it, but
-    // we do need to know the cms_user_id so that we can ensure any previously recorded data for
-    // this user is attributed correctly to the warehouse user.
-    if (!isset($request['cms_user_id']) || !$request['cms_user_id'])
-      throw new exception('Call to get_user_id requires a cms_user_id in the GET or POST data.');
     $userPersonObj = new stdClass();
     $userPersonObj->db = new Database();
     if (!empty($request['warehouse_user_id'])) {
@@ -178,7 +174,7 @@ class user_identifier {
       $attrsToReturn[$attr['caption']]=$attr['value'];
     // If allocating a new user ID, then update the created_by_id for all records that were created by this cms_user_id. This 
     // takes ownership of the records.
-    if (empty($request['warehouse_user_id']))
+    if (empty($request['warehouse_user_id']) && !empty($request['cms_user_id']))
       postgreSQL::setOccurrenceCreatorByCmsUser($websiteId, $userId, $request['cms_user_id'], $userPersonObj->db);
     return array(
       'userId'=>$userId,

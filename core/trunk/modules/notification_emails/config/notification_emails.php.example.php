@@ -22,8 +22,6 @@
  
 $config['email_subject']='You have new notifications.';
 $config['how_to_address_username']='I hope you are having a good day';
-$config['subscription_settings_url']='http://localhost/indicia/subscription_settings.php';
-$config['warehouse_url']='http://localhost/indicia';
 $config['top_of_email_body']='You have the following new notifications.';
 $config['email_sender_address']='unique@abcdefg.com';
 ?>

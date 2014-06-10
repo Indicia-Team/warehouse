@@ -42,9 +42,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       //Also pass through these fields so if a new user is required then the system can fill in the database details
       self::string_validate_mandatory('surname');
       $userIdentificationData['surname']=$_GET["surname"];
-      $userIdentificationData['first_name']=$_GET["first_name"];       
-      self::int_key_validate_mandatory('cms_user_id');
-      $userIdentificationData['cms_user_id']=$_GET["cms_user_id"];
+      $userIdentificationData['first_name']=$_GET["first_name"];
       self::int_key_validate_mandatory('website_id');
       //Call existing user identifier code that will tell us whether a user with the same email address already exists in the database
       $userDetails=user_identifier::get_user_id($userIdentificationData, $_GET["website_id"]);  
@@ -57,7 +55,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
           'dataSource'=>'library/user_email_notification_settings/user_email_notification_settings_inc_deleted',
           'readAuth'=>$readAuth,
           'extraParams'=>array('user_id' => $userDetails['userId'])
-          ));
+        ));
         if (empty($freqSettingsData))
           self::store_user_email_notification_setting($userDetails);
       } catch (exception $e) {
@@ -79,9 +77,9 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     //No need to validate as the user_id comes from get_user_id
     $alertRecordSubmissionObj->user_id=$userDetails['userId'];   
     //Region to receive alerts for.
-    //Need to validate as value is mandatory and comes directly from the get.
-    self::int_key_validate_mandatory('location_id');
-    $alertRecordSubmissionObj->location_id=$_GET['location_id'];
+    self::int_key_validate('location_id');
+    if (!empty($_GET['location_id']))
+      $alertRecordSubmissionObj->location_id=$_GET['location_id'];
     //Already checked this has been filled in so don't need to do this again
     $alertRecordSubmissionObj->website_id=$_GET['website_id'];
     //At least one of this must be supplied to identifiy the taxon
@@ -130,6 +128,15 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
         $notificationSettingSubmissionObj->notification_frequency='D';
       $notificationSettingSubmissionObj->set_metadata($notificationSettingSubmissionObj);
       $notificationSettingSubmissionObj->save();
+    }
+  }
+  
+  /*
+   * Check that a supplied table key is at least 1 and is a number. Key can be empty
+   */
+  private function int_key_validate($keyToValidate) {
+    if (!empty($_GET[$keyToValidate]) && (!ctype_digit($_GET[$keyToValidate]) || intval($_GET[$keyToValidate])<1)) {
+      throw new Exception($keyToValidate.' has not been supplied as an integer greater than 0.');
     }
   }
   

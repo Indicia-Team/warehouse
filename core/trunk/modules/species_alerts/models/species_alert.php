@@ -39,9 +39,9 @@ class Species_Alert_Model extends ORM {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('user_id', 'required');
-    $array->add_rules('location_id', 'required');
+    $array->add_rules('required');
     $array->add_rules('external_key', 'length[1,50]');
-    $this->unvalidatedFields = array('deleted');
+    $this->unvalidatedFields = array('deleted','location_id');
     return parent::validate($array, $save);
   }
 }
