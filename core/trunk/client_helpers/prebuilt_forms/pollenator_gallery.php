@@ -3488,14 +3488,14 @@ jQuery('#fo-delete-insect-form').ajaxForm({
 				// blank out insect in gallery search insect list.
 				jQuery('.filter-insect-container').filter('[occID='+insect_alert_object.insect_id+']').each(function(idx, insect){
 					searchResults.features[jQuery(insect).attr('index')].attributes.deleted= true;
-					jQuery(insect).css('background-color','#FF0000');
+					jQuery(insect).children().css('background-color','#FF0000').css('height','');
 					jQuery(insect).find('.determination-flag,.insect-image,.display-button').remove();
 				});
 				// remove insect from gallery search collection insect photoreel.
 				jQuery('.collection-photoreel .thumb').filter('[occID='+insect_alert_object.insect_id+']').remove();
 				// no need to blank out insect in collection insect list as the collection is refetched when it is redisplayed.
 				// return to filter search or collection page
-				if(jQuery('.collection-insect-container').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').length > 0) {
+				if(jQuery('.collection-insect-container').filter('[occID='+insect_alert_object.insect_id+']').length > 0) {
 					jQuery('#fo-collection-button').click();
 				} else {
 					jQuery('#fo-filter-button').click();
