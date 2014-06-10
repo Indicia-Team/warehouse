@@ -23,4 +23,6 @@
 // The following configuration should hold the list of website IDs which host a verification portal and 
 // where the verifiers should be automatically notified of incoming records.
 $config['website_ids']=array(2,3);
+// Name to appear in the "From" field for the notifications
+$config['from']='iRecord';
 ?>
