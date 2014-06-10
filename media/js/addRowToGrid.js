@@ -630,13 +630,15 @@ function SetHtmlIdsOnSubspeciesChange(subSpeciesId) {
 //to work with in selectors we want to use. So we just need to grab the class that starts 'sc'.
 function getScClassForColumnCellInput(input) {
   //get the class for the cell
-  var classesArray = jQuery(input).attr('class').split(/\s+/),
+  var classesArray = jQuery(input).attr('class').split(/\s+/);
     //for our purposes we are only interested in the classes beginning sc
-    theInputClass =  classesArray.filter(function(value) {
-      if (value.substr(0,2)=='sc')
-        return value;
+  var theInputClass = new Array();  
+  jQuery.each(classesArray, function(index, value){
+    if (value.substr(0,2) === 'sc') {
+      theInputClass.push(value);
+    }
     });
-  if (theInputClass.length>0) {
+  if (theInputClass.length > 0) {
     return theInputClass[0];
   } 
   else {
