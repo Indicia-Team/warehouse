@@ -1,0 +1,17 @@
+<report
+    title="Return a count of items from the occdelta table. Report can be supplied a filter from the filters table"
+    description="Return count of records in the occdata database table. Report also supports filters. Occdelta holds a list of recently changed occurrence records."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    SELECT #columns#
+    FROM occdelta o
+      #agreements_join#
+      #joins#
+    WHERE 1=1 AND
+    #sharing_filter#
+    #idlist#
+  </query>
+  <columns>
+    <column name='count' display='Count' sql="count(o.id)" datatype="integer" aggregate="true"/>
+  </columns>
+</report>
