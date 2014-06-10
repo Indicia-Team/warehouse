@@ -57,9 +57,10 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
    * A keyboard event handler for the grid.
    */
   keyHandler = function(evt) {
-    var rows, row, rowIndex, cells, cell, cellIndex, caretPos, ctrl = this, deltaX = 0, deltaY = 0,
+    var rows, row, rowIndex, cells, cell, cellIndex, ctrl = this, deltaX = 0, deltaY = 0,
       isTextbox=this.nodeName.toLowerCase() === 'input' && $(this).attr('type') === 'text',
-      isSelect = this.nodeName.toLowerCase() === 'select';
+      isSelect = this.nodeName.toLowerCase() === 'select',
+      newInput, $newInput, selStart, selLength, selEnd;
     if ((evt.keyCode >= 37 && evt.keyCode <= 40) || evt.keyCode === 9) {
       rows = $(this).parents('tbody').children();
       row = $(this).parents('tr')[0];
@@ -68,14 +69,21 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       cell = $(this).parents('td')[0];
       cellIndex = cells.index(cell);
       if (isTextbox) {
+        // Determine the current caret/selection position.
         if (typeof this.selectionStart !== 'undefined') {
-          caretPos = this.selectionStart;
-        } else {  // Internet Explorer before version 9
-          var inputRange = this.createTextRange();
+          selStart = this.selectionStart;
+          selEnd = this.selectionEnd;
+          selLength = selEnd - selStart;
+        } 
+        else {  
+          // Internet Explorer before version 9
+          var inputRange = document.selection.createRange().duplicate();
+          selLength = inputRange.text.length;
           // Move selection start to 0 position
           inputRange.moveStart('character', -this.value.length);
-          // The caret position is selection length
-          caretPos = inputRange.text.length;
+          // The end position is now the lenght of the range.
+          selEnd = inputRange.text.length;
+          selStart = selEnd - selLength;
         }
       }
     }
@@ -84,22 +92,26 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         // tab direction depends on shift key and occurs irrespective of caret
         deltaX = evt.shiftKey ? -1 : 1;
         break;
-      case 37: // left. Caret must be at left of text in the box
-        if (!isTextbox || caretPos === 0) {
+      case 37: 
+        // left. Caret must be at left of text with nothing selected
+        if (!isTextbox || (selStart === 0 && selLength === 0)) {
           deltaX = -1;
         }
         break;
-      case 38: // up. Doesn't work in select as this changes the value
+      case 38: 
+        // up. Doesn't work in select as this changes the value
         if (!isSelect && rowIndex > 0) {
           deltaY = -1;
         }
         break;
-      case 39: // right
-        if (!isTextbox || caretPos >= $(this).val().length) {
+      case 39: 
+        // right. Caret must be at right of text 
+        if (!isTextbox || selStart >= this.value.length ) {
           deltaX = 1;
         }
         break;
-      case 40: // down. Doesn't work in select as this changes the value
+      case 40: 
+        // down. Doesn't work in select as this changes the value
         if (!isSelect && rowIndex < rows.length-1) {
           deltaY = 1;
         }
