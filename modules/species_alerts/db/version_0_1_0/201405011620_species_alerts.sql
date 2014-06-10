@@ -12,7 +12,7 @@ BEGIN
   user_id integer NOT NULL, 
   alert_on_entry boolean NOT NULL DEFAULT false,
   alert_on_verify boolean NOT NULL DEFAULT false, 
-  location_id integer NOT NULL,
+  location_id integer,
   website_id integer NOT NULL,
   external_key character varying(50),
   taxon_meaning_id integer,

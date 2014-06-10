@@ -28,7 +28,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
     FROM occdelta od
       JOIN occurrences o ON o.id = od.id
       JOIN species_alerts sa ON 
-        od.location_id=sa.location_id
+        (sa.location_id IS NULL OR od.location_id=sa.location_id)
         AND 
           (sa.taxon_meaning_id = od.taxon_meaning_id
           OR

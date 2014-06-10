@@ -23,8 +23,8 @@ class subscription_settings {
   private function get_page_configuration() {
     $configuration['frequencies']=array('NONE'=>'NONE', 'IH'=>'Immediate/Hourly','D'=>'Daily','W'=>'Weekly');
     $configuration['sourceTypes']=array('T'=>'Trigger','C'=>'Comment','V'=>'Verification','A'=>'Automated Record Check','S'=>'Species Alert','VT'=>'Verifier Task','AC'=>'Achievement','M'=>'Milestone');
-    $configuration['cssPath']='/Applications/MAMP/htdocs/indicia/media/css/default_site.css';
-    $configuration['dataEntryHelperPath']='/Applications/MAMP/htdocs/indicia/client_helpers/data_entry_helper.php';
+    $configuration['cssPath']='media/css/default_site.css';
+    $configuration['dataEntryHelperPath']='client_helpers/data_entry_helper.php';
     $configuration['privateKey']='Indicia';
     return $configuration;
   }

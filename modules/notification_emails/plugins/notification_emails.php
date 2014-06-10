@@ -76,21 +76,7 @@ function get_frequencies_to_run_now($db) {
  * Send out the notification emails
  */
 function runEmailNotificationJobs($db, $frequenciesToRun) {
-  //Get the URL of the page that will appear as a link in the email to the subscription page. This is provided in the config by the user.
-  //Also get the warehouse url configuration which is then passed onto the subscription page to use.
-  $noSubscriptionSettingsLinkOrWarehouseLinkMessage='The subscription link url or warehouse url has not been provided in the configuration file. The link will not appear in notification emails that are sent out.
-      Please specify both subscription_settings_url and warehouse_url options.</br>';
-  try {
-    $subscriptionSettingsPageUrl=kohana::config('notification_emails.subscription_settings_url');
-    $warehouseUrl=kohana::config('notification_emails.warehouse_url');
-    //Handle config file not present
-  } catch (Exception $e) {
-    echo $noSubscriptionSettingsLinkOrWarehouseLinkMessage;
-  }
-  //Handle if config file present but option is not
-  if (empty($subscriptionSettingsPageUrl)||empty($warehouseUrl))
-    echo $noSubscriptionSettingsLinkOrWarehouseLinkMessage;
-  
+  $subscriptionSettingsPageUrl = url::base() . '/subscription_settings.php';
   $frequencyToRunString='';
   //Gather all the notification frequency jobs we need to run into a set ready to pass into sql
   foreach ($frequenciesToRun as $frequencyToRunArray) {
@@ -135,9 +121,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
       //This user is not the first user but we have detected that it is not the same user we added a notification to the email for last time,
       //this means we need to send out the previous user's email and start building a new email
       if ($notificationToSendEmailsFor['user_id']!=$previousUserId && $previousUserId!=0) {      
-        if (!empty($subscriptionSettingsPageUrl)&&!empty($warehouseUrl)) {
-          $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.$warehouseUrl.'">Click here to update your subscription settings.</a></br></br>';
-        }
+        $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a></br></br>';
         send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
         //Used to mark the notifications in an email if an email send is successful, once email send attempt has been made we can reset the list ready for the next email.
         $notificationIds=array();
@@ -160,9 +144,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
       $previousUserId=$notificationToSendEmailsFor['user_id'];
     }
     //if we have run out of notifications to send we will have finished going around the loop, so we just need to send out the last email whatever happens
-    if (!empty($subscriptionSettingsPageUrl)&&!empty($warehouseUrl)) {
-      $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.$warehouseUrl.'">Click here to update your subscription settings.</a></br></br>';
-    }
+    $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a></br></br>';
     send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
     $emailSentCounter++;
     //Save the maximum notification id against the jobs we are going to run now, so we know that we have done the notifications up to that id and next time the jobs are run
