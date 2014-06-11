@@ -85,6 +85,7 @@
           echo '{"jsonrpc" : "2.0", "error" : {"code": 101, "message": "Failed to open input stream."}, "id" : "id"}';
           return;
         }
+        fclose($in);
         fclose($out);
         unlink($_FILES['file']['tmp_name']);
       } else {
