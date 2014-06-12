@@ -252,7 +252,7 @@ class iform_wildflower_count {
     return $r;
   }
   
-  private static function load_top_sample_attrs($auth, $args, $sampleId=null) {
+  protected static function load_top_sample_attrs($auth, $args, $sampleId=null) {
     $attrOpts = array(     
        'valuetable'=>'sample_attribute_value'
        ,'attrtable'=>'sample_attribute'
@@ -272,7 +272,7 @@ class iform_wildflower_count {
     return $sorted;
   }
   
-  private static function get_hiddens($args, $auth) {
+  protected static function get_hiddens($args, $auth) {
     $r = $auth['write'];
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
     $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'"/>';
@@ -281,7 +281,7 @@ class iform_wildflower_count {
     return $r;
   }
   
-  private static function tab_your_square($args, $auth, $attrs) {
+  protected static function tab_your_square($args, $auth, $attrs) {
     $r = '<fieldset class="ui-corner-all" >';
     $r .= '<legend>Place on map</legend>';
     $r .= '<div class="two columns"><div class="column">';
@@ -361,7 +361,7 @@ class iform_wildflower_count {
     return $r;
   }
   
-  private static function tab_your_plots($args, $auth) {
+  protected static function tab_your_plots($args, $auth) {
     $r = data_entry_helper::date_picker(array(
       'label' => 'Date of visit',
       'fieldname' => 'sample:date',
@@ -377,7 +377,7 @@ class iform_wildflower_count {
     return $r;
   }
   
-  private static function output_habitats_block($title, $prefix, $auth, $args) {
+  protected static function output_habitats_block($title, $prefix, $auth, $args) {
     global $indicia_templates;
     static $existingSubSamples;
     
@@ -477,7 +477,7 @@ class iform_wildflower_count {
     return $r;
   }
   
-  private static function tab_species($args, $auth, $offset, $limit) {
+  protected static function tab_species($args, $auth, $offset, $limit) {
     $r = '<p>Please select the percentage cover of each species that is present in each plot from the list below.</p>';
     global $indicia_templates;
     $indicia_templates['taxon_label']='<div class="biota nobreak"><span class="vernacular">{common}</span>'.
@@ -494,6 +494,7 @@ class iform_wildflower_count {
             'offset'=>$offset, 'orderby'=>'taxonomic_sort_order', 'sortdir'=>'ASC', 'view'=>'detail'),
         'occAttrClasses'=>array('coverage'),
         'speciesNameFilterMode'=>'preferred',
+        'language'=>'eng',
         // prevent multiple hits to the db - the first grid can load all the species data
         'useLoadedExistingRecords' => $offset>0
     )); 
@@ -505,7 +506,7 @@ class iform_wildflower_count {
     return $r;
   }
   
-  private static function tab_other_species($args, $auth) {
+  protected static function tab_other_species($args, $auth) {
     $r = '';
     $indicia_templates['taxon_label']='<div class="biota nobreak"><span class="vernacular">{common}</span>'.
     		'<br/><span class="sci binomial"><em>{taxon}</em></span> {authority}</div>';
@@ -519,6 +520,7 @@ class iform_wildflower_count {
         'class'=>'checklist',
         'survey_id' => $args['survey_id'],
         'extraParams'=>$extraParams,
+        'language'=>'eng',
         'occAttrClasses'=>array('coverage'),
         // don't reload species from the 3 main input grids
         'reloadExtraParams'=>array('taxon_list_id'=>$args['other_list_id']),
@@ -604,7 +606,7 @@ class iform_wildflower_count {
    * @param type $haystack Array to search, e.g. $_POST
    * @return boolean True if the attribute is in the array
    */
-  private function array_attr_exists($needle, $haystack) {
+  protected function array_attr_exists($needle, $haystack) {
     // quick match on new attributes (no value ID yet)
     if (array_key_exists($needle, $haystack))
       return true;
