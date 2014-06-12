@@ -36,7 +36,7 @@
   END 
   FROM detail_termlists_terms tt
   LEFT JOIN samples sX ON (sX.parent_id = #this#.id and sX.deleted='f' AND EXISTS (SELECT 1 from sample_attribute_values sav2 where sav2.sample_attribute_id = #target_species_attr# and sav2.int_value= tt.meaning_id and sav2.sample_id=sX.id and sav2.deleted='f'))
-  WHERE tt.termlist_id = #target_species_termlist#)::text, '[{}\x22]', '', 'g'))" display='Target species'/>
+  WHERE tt.termlist_id = #target_species_termlist#)::text, '[{}\x22\x5c]', '', 'g'))" display='Target species'/>
     <tabColumn name='comment' display='Conditions comment'/>
     <subTable tablename="locations" > // allow deleted Sites!
       <subTable tablename="locations" parentKey="parent_id" where="#this#.deleted = FALSE" join="LEFT OUTER" >
