@@ -72,6 +72,13 @@ class iform_mnhnl_bird_transect_walks {
     );
   }
 
+  public static function get_perms($nid, $args) {
+  	$perms = array();
+  	if(isset($args['permission_name']) && $args['permission_name']!='') $perms[] = $args['permission_name'];
+  	if(isset($args['edit_permission']) && $args['edit_permission']!='') $perms[] = $args['edit_permission'];
+  	return $perms;
+  }
+
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -83,6 +90,13 @@ class iform_mnhnl_bird_transect_walks {
     return array_merge(
       iform_map_get_map_parameters(),
       array(
+        array(
+          'name'=>'edit_permission',
+          'caption'=>'Permission required for editing other people\'s data',
+          'description'=>'Set to the name of a permission which is required in order to be able to edit other people\'s data.',
+          'type'=>'text_input',
+          'default'=>'indicia data admin'
+        ),
       array(
         'name'=>'survey_id',
         'caption'=>'Survey ID',
