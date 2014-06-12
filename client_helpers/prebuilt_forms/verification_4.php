@@ -428,9 +428,11 @@ idlist=';
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
+    iform_load_helpers(array('data_entry_helper', 'map_helper', 'report_helper'));
+    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     //Clear Verifier Tasks automatically when they open the screen if the option is set.
     if ($args['clear_verification_task_notifications']&&hostsite_get_user_field('indicia_user_id'))
-      self::clear_verifier_task_notifications($args['website_id'],$args['password']);  
+      self::clear_verifier_task_notifications($auth);
     // set some defaults, applied when upgrading from a form configured on a previous form version.
     if (empty($args['email_subject_send_to_recorder']))
       $args['email_subject_send_to_recorder'] = 'Record of %taxon% requires confirmation (ID:%id%)';
@@ -453,16 +455,14 @@ idlist=';
     }
     if (function_exists('drupal_add_js'))
       drupal_add_js('misc/collapse.js');
-    iform_load_helpers(array('data_entry_helper', 'map_helper', 'report_helper'));
     // fancybox for popup comment forms etc
     data_entry_helper::add_resource('fancybox');
     data_entry_helper::add_resource('validation');
     global $user, $indicia_templates;
     $indicia_user_id=self::get_indicia_user_id($args);
-    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-    data_entry_helper::$js_read_tokens = $readAuth;
+    data_entry_helper::$js_read_tokens = $auth['read'];
     // Find a list of websites we are allowed verify
-    $websiteIds = iform_get_allowed_website_ids($readAuth, 'verification');
+    $websiteIds = iform_get_allowed_website_ids($auth['read'], 'verification');
     if (function_exists('module_exists') && module_exists('easy_login')) {
       if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_location')===false)
         $args['param_presets'].="\nexpertise_location={profile_location_expertise}";
@@ -473,7 +473,7 @@ idlist=';
     }
     $args['sharing']='verification';
     $opts = array_merge(
-        iform_report_get_report_options($args, $readAuth),
+        iform_report_get_report_options($args, $auth['read']),
         array(
           'id' => 'verification-grid',
           'reportGroup' => 'verification',
@@ -492,14 +492,14 @@ idlist=';
           '<li><a href="#" class="trust-tool">Recorder\'s trust settings</a></li><li><a href="#" class="edit-record">Edit record</a></li></ul>'.
           '<input type="checkbox" class="check-row no-select" style="display: none" value="{occurrence_id}" /></div>'
     );
-    $params = self::report_filter_panel($args, $readAuth);
+    $params = self::report_filter_panel($args, $auth['read']);
     $opts['zoomMapToOutput']=false;
     $grid = report_helper::report_grid($opts);
     $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $params),
-        self::get_template_with_map($args, $readAuth, $opts['extraParams'], $opts['paramDefaults']));
+        self::get_template_with_map($args, $auth['read'], $opts['extraParams'], $opts['paramDefaults']));
     $link = data_entry_helper::get_reload_link_parts();
     global $user;
-    data_entry_helper::$js_read_tokens = $readAuth;
+    data_entry_helper::$js_read_tokens = $auth['read'];
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.userId = "'.$indicia_user_id."\";\n";
@@ -578,8 +578,7 @@ idlist=';
    * When the user opens the Verification screen, clear any notifications of source_type VT (Verifier Task).
    * This method is only run if the user has configured the page to run with this behaviour.
    */
-  private static function clear_verifier_task_notifications($website_id,$password) {
-    $auth = data_entry_helper::get_read_write_auth($website_id, $password);
+  private static function clear_verifier_task_notifications($auth) {
     //Using 'submission_list' and 'entries' allows us to specify several top-level submissions to the system
     //i.e. we need to be able to submit several notifications.
     $submission['submission_list']['entries'] = array();
@@ -602,7 +601,7 @@ idlist=';
       //Submit the stucture for processing
       $response = data_entry_helper::forward_post_to('save', $submission, $auth['write_tokens']);
       if (!is_array($response) || !array_key_exists('success', $response))
-        drupal_set_message(print_r($response,true));        
+        drupal_set_message(print_r($response,true));
     }
   }
 
