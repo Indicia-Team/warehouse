@@ -609,6 +609,8 @@ class XMLReportReader_Core implements ReportReader
   private function buildAttributeQuery($attributes)
   {
     $parentSingular = inflector::singular($this->tables[$attributes->parentTableIndex]['tablename']);
+    if($parentSingular == 'cache_occurrence')
+      $parentSingular = 'occurrence';
     // This processing assumes some properties of the attribute tables - eg columns the data is stored in and deleted columns
     $query = "SELECT vt.".$parentSingular."_id as main_id,
       vt.text_value, vt.float_value, vt.int_value, vt.date_start_value, vt.date_end_value, vt.date_type_value,
