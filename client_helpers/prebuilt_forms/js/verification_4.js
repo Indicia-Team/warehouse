@@ -419,11 +419,12 @@ var saveComment, saveVerifyComment;
   }
 
   $(document).ready(function () {
-    //Use jQuery to add a button to the top of the verification page. Use this button to access the popup
-    //which allows you to verify all trusted records or all records.
-    var verifyGridButton = '<input type="button" value="Verify grid" class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>', 
+    //Use jQuery to add button to the top of the verification page. Use the first button to access the popup
+    //which allows you to verify all trusted records or all records. The second enabled multiple record verification checkboxes
+    var verifyGridButtons = '<input type="button" value="Verify grid" class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>'+
+        '<input type="button" value="Verify ticklist" id="btn-multiple" title="Select this tool to tick off a list of records and action all of the ticked records in one go"/>',
         trustedHtml;
-    $('#filter-build').after(verifyGridButton);
+    $('#filter-build').after(verifyGridButtons);
     $('#verify-grid-trusted').click(function() {
       trustedHtml = '<div class="grid-verify-popup" style="width: 550px"><h2>Verify all grid data</h2>'+
                     '<p>This facility allows you to verify entire sets of records in one step. Before using this '+
@@ -783,9 +784,15 @@ var saveComment, saveVerifyComment;
         $('#row' + occurrence_id + ' .check-row').attr('checked', true);
         $('.check-row').show();
         $('#btn-multiple').addClass('active');
+        $('#verify-buttons-inner label').html('With ticked records:');
+        $('#btn-multiple').val('Verify single records');
+        $('#btn-multiple').after($('#verify-buttons-inner'));
       } else {
         $('.check-row').hide();
         $('#btn-multiple').removeClass('active');
+        $('#verify-buttons-inner label').html('Set status:')
+        $('#btn-multiple').val('Verify ticklist');
+        $('#verify-buttons').append($('#verify-buttons-inner'));
       }
     });
 

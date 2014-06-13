@@ -50,13 +50,8 @@ ul.gallery li {
   @include sassy-button("simple", 4px, 11px, $query-color, darken($query-color, 20%), white, raised);
 }
 
-#btn-multiple {
-  @include sassy-button("simple", 4px, 11px, $default-color, darken($default-color, 20%), white, raised);
-  @include sassy-button-style("push", $default-color);
-}
-
 #btn-multiple.active {
-  @include sassy-button-style("inset", darken($default-color, 30%))
+  @include box-shadow(yellow 0px 0px 10px);
 }
 
 #comment-text {
