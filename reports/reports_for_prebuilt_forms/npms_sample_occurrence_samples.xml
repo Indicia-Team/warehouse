@@ -6,11 +6,10 @@
   <query>
     WITH samples1 AS (
       SELECT s.id as sample_id1,
-        COALESCE(l.name, s.location_name) as location_name,
+        COALESCE(l.name, s.location_name, s.entered_sref) as location_name,
         s.date_start,
         s.date_end,
-        s.date_type,
-        (select count(*) from occurrences o where o.sample_id = s.id and o.deleted = FALSE) as num_occurrences
+        s.date_type
       FROM samples s
       LEFT JOIN locations l ON l.id = s.location_id
       JOIN sample_attribute_values sav ON sav.sample_id = s.id AND sav.sample_attribute_id = #s1AttrID# AND sav.int_value = 0
@@ -43,9 +42,8 @@
   </params>
   <columns>
     <column name='sample_id1' display='ID' />
-    <column name='location_name' display='Site name' />
+    <column name='location_name' display='Location' />
     <column name='date' display='Date' />
-    <column name='num_occurrences' display='# Occurrences' />
     <column name='sample_id2' visible='false' />
   </columns>
 </report>
