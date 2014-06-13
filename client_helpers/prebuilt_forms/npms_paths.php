@@ -567,7 +567,9 @@ class iform_npms_paths extends iform_wildflower_count {
     $indicia_templates['check_or_radio_group'] = $template;
     $indicia_templates['label'] = $labelTemplate;
     $r .= '</tbody></table>';
-    if (isset($thisSubSample)) {
+    //In mode close, we want the form to act as if it is a new record even though it is showing existing data, so 
+    //we don't want the system to know about existing sample/sub-sample IDs at the point of save.
+    if (isset($thisSubSample) && self::$mode !==  self::MODE_CLONE) {
       $r .= '<input type="hidden" name="'.$prefix.'_sample_id" value="'.$thisSubSample['sample_id'].'" />';
     }
     $r .= '</fieldset>';
