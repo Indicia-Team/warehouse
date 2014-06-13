@@ -291,7 +291,7 @@ class iform_npms_paths extends iform_wildflower_count {
   
   /**
    * Override function to add the report parameter for the ID of the custom attribute which holds the linked sample.
-   * Depends upon a report existing that uses the parameter e.g. pss_sample_occurrence_samples
+   * Depends upon a report existing that uses the parameter e.g. npms_sample_occurrence_samples
    */
   protected static function getSampleListGrid($args, $node, $auth, $attributes) {
     global $user;
@@ -360,7 +360,7 @@ class iform_npms_paths extends iform_wildflower_count {
   
   /**
    * Override function to include actions to add or edit the linked sample
-   * Depends upon a report existing, e.g. pss_sample_occurrence_samples, that 
+   * Depends upon a report existing, e.g. npms_sample_occurrence_samples, that 
    * returns the fields done1 and done2 where
    * done1 is true if there is no second sample linked to the first and
    * done2 is true when there is a second sample.
