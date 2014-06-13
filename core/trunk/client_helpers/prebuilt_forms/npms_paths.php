@@ -261,7 +261,6 @@ class iform_npms_paths extends iform_wildflower_count {
         '#species_1'=>'Species Page 1',
         '#species_2'=>'Species Page 2',
         '#species_3'=>'Species Page 3',
-        '#species_other'=>'Other Species'
       )));
       $r .= '<div id="your-square">';
       $r .= self::get_hiddens($args, $auth);
@@ -272,22 +271,61 @@ class iform_npms_paths extends iform_wildflower_count {
       $r .= self::tab_your_plots($args, $auth['read']);
       $r .= '</div>'; // your-plots (now called Your Paths, the old Wildflower form was Your Plots)
       $r .= '<div id="species_1">';
-      $r .= self::tab_species($args, $auth, 0, 34);
+      $r .= self::tab_species($args, $auth, 0, 34, 1);
       $r .= '</div>'; // species-1
       $r .= '<div id="species_2">';
-      $r .= self::tab_species($args, $auth, 34, 34);
+      $r .= self::tab_species($args, $auth, 34, 34, 2);
       $r .= '</div>'; // species-2
       $r .= '<div id="species_3">';
-      $r .= self::tab_species($args, $auth, 68, 34);
-      $r .= '</div>'; // species-3
-      $r .= '<div id="species_other">';
-      $r .= self::tab_other_species($args, $auth);
+      $r .= self::tab_species($args, $auth, 68, 34, 3);
       $r .= '</div>'; // species-3
       $r .= '</div>'; // tabs
       $r .= '</form>';
     }
     return $r;
   }
+  
+  /*
+   * Override the function from the original wildflower form. As the original form had the Submit button on the Other Species tab
+   * and the new form has it on the Species 3 tab, this has needed some rework. 
+   */
+  protected static function tab_species($args, $auth, $offset, $limit, $tabNum) {
+    $r = '<p>Please select the percentage cover of each species that is present in each plot from the list below.</p>';
+    global $indicia_templates;
+    $indicia_templates['taxon_label']='<div class="biota nobreak"><span class="vernacular">{common}</span>'.
+    		'<br/><span class="sci binomial"><em>{taxon}</em></span> {authority}</div>';
+    $r .= data_entry_helper::species_checklist(array(
+        'id'=>"species-$offset",
+        'label'=>'Species',
+        'listId'=>$args['list_id'],
+        'columns'=>2,
+        'rowInclusionCheck'=>'hasData',
+        'class'=>'checklist',
+        'survey_id' => $args['survey_id'],
+        'extraParams'=>$auth['read'] + array('taxon_list_id' => $args['list_id'], 'limit'=>$limit, 
+            'offset'=>$offset, 'orderby'=>'taxonomic_sort_order', 'sortdir'=>'ASC', 'view'=>'detail'),
+        'occAttrClasses'=>array('coverage'),
+        'speciesNameFilterMode'=>'preferred',
+        'language'=>'eng',
+        // prevent multiple hits to the db - the first grid can load all the species data
+        'useLoadedExistingRecords' => $offset>0
+    )); 
+    //If the last tab, then use a submit button, otherwise we have Previous/Next Step
+    if ($tabNum===3) {
+      $r .= '<p class="highlight">'.lang::get('Please review all tabs of the form before submitting the survey.').'</p>';
+      $r .= data_entry_helper::wizard_buttons(array(
+        'divId' => 'tabs',
+        'page'  => 'last',
+        'captionSave'));
+    } else {
+      $r .= data_entry_helper::wizard_buttons(array(
+        'divId' => 'tabs',
+        'page'  => 'middle'
+      ));
+    }
+    return $r;
+  }
+  
   
   /**
    * Override function to add the report parameter for the ID of the custom attribute which holds the linked sample.
