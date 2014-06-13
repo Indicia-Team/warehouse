@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Records counts league with standard params" description="An event (date and survey) filtered league table of record counts by warehouse user.">
+  <query website_filter_field="o.website_id">
+    SELECT #columns#
+    FROM cache_occurrences o             
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+    #filters#
+    AND o.recorders IS NOT NULL
+  </query>
+  <order_bys>
+    <order_by>value DESC</order_by>
+  </order_bys>
+  <params>
+  </params>
+  <columns>
+        <column name="name" display="Recorder" sql="o.recorders" />
+        <column name="value" display="No. of Species"  sql="COUNT(o.id)" aggregate="true"/>
+  </columns>
+</report>  
