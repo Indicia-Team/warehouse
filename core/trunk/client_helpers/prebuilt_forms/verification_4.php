@@ -374,7 +374,7 @@ idlist=';
     $r .= '<button type="button" id="btn-reject">'.lang::get('Reject').'</button>';
     $r .= '<button type="button" id="btn-query">'.lang::get('Query').'</button>';
     $r .= '</div></div>';
-    $r .= '<br/><label>Contact:</label>';
+    $r .= '<label>Contact:</label>';
     $r .= '<button type="button" id="btn-email-expert" class="default-button">'.lang::get('Another expert').'</button>';
     $r .= '<button type="button" id="btn-email-recorder" class="default-button">'.lang::get('Recorder').'</button>';
     $r .= '</div>';

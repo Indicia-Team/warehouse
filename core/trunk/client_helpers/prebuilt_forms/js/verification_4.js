@@ -787,12 +787,16 @@ var saveComment, saveVerifyComment;
         $('#verify-buttons-inner label').html('With ticked records:');
         $('#btn-multiple').val('Verify single records');
         $('#btn-multiple').after($('#verify-buttons-inner'));
+        $('#verify-buttons-inner button').removeAttr('disabled');
       } else {
         $('.check-row').hide();
         $('#btn-multiple').removeClass('active');
         $('#verify-buttons-inner label').html('Set status:')
         $('#btn-multiple').val('Verify ticklist');
         $('#verify-buttons').append($('#verify-buttons-inner'));
+        if (currRec === null) {
+          $('#verify-buttons-inner button').attr('disabled', 'disabled');
+        }
       }
     });
 
