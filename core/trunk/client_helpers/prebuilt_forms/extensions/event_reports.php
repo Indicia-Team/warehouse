@@ -245,8 +245,13 @@ class extension_event_reports {
     return self::league_table($auth, $args, $options, 'library/locations/filterable_species_counts_league', $label);
   }
   
+  public static function records_by_location_league($auth, $args, $tabalias, $options, $path) {
+    $label = empty($options['label']) ? 'Location' : $options['label'];
+    return self::league_table($auth, $args, $options, 'library/locations/filterable_record_counts_league', $label);
+  }
+  
   /**
-   * Outputs a league table of the recorders.  
+   * Outputs a league table of the recorders ordered by species (taxon) count  
    *
    * @param array $auth Authorisation tokens.
    * @param array $args Form arguments (the settings on the form edit tab).
@@ -262,6 +267,12 @@ class extension_event_reports {
     $label = empty($options['label']) ? 'Recorders' : $options['label'];
     $groupby = isset($options['groupByRecorderName']) && $options['groupByRecorderName'] ? 'recorder_name' : 'users';
     return self::league_table($auth, $args, $options, "library/$groupby/filterable_species_counts_league", $label);  
+  }
+  
+  public static function records_by_recorders_league($auth, $args, $tabalias, $options, $path) { 
+    $label = empty($options['label']) ? 'Recorders' : $options['label'];
+    $groupby = isset($options['groupByRecorderName']) && $options['groupByRecorderName'] ? 'recorder_name' : 'users';
+    return self::league_table($auth, $args, $options, "library/$groupby/filterable_record_counts_league", $label);  
   }
   
   private static function league_table($auth, $args, $options, $report, $label) { 
