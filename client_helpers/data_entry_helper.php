@@ -3010,18 +3010,21 @@ $('#$escaped').change(function(e) {
         $editClass = $editedRecord ? ' edited-record ui-state-highlight' : '';
         $hasEditedRecord = $hasEditedRecord || $editedRecord;
         // Verified records can be flagged with an icon
-        $status = self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:record_status"];
-        if (preg_match('/[VDR]/', $status)) {
-          $img = false;
-          switch ($status) {
-            case 'V' : $img = 'ok'; $statusLabel = 'verified'; break;
-            case 'D' : $img = 'dubious'; $statusLabel = 'queried'; break;
-            case 'R' : $img = 'cancel'; $statusLabel = 'rejected'; break;
-          }
-          if ($img) {
-            $label = lang::get($statusLabel);
-            $title = lang::get('This record has been {1}. Changing it will mean that it will need to be rechecked by an expert.', $label);
-            $firstCell .= "<img alt=\"$label\" title=\"$title\" src=\"{$imgPath}nuvola/$img-16px.png\">";
+        //Do an isset check as the npms_paths form for example uses the species checklist, but doesn't use an entity_to_load
+        if (isset(self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:record_status"])) {
+          $status = self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:record_status"];
+          if (preg_match('/[VDR]/', $status)) {
+            $img = false;
+            switch ($status) {
+              case 'V' : $img = 'ok'; $statusLabel = 'verified'; break;
+              case 'D' : $img = 'dubious'; $statusLabel = 'queried'; break;
+              case 'R' : $img = 'cancel'; $statusLabel = 'rejected'; break;
+            }
+            if ($img) {
+              $label = lang::get($statusLabel);
+              $title = lang::get('This record has been {1}. Changing it will mean that it will need to be rechecked by an expert.', $label);
+              $firstCell .= "<img alt=\"$label\" title=\"$title\" src=\"{$imgPath}nuvola/$img-16px.png\">";
+            }
           }
         }
         $row .= str_replace(array('{content}','{colspan}','{editClass}','{tableId}','{idx}'), 
