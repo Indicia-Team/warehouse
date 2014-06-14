@@ -606,7 +606,7 @@ class iform_wildflower_count {
    * @param type $haystack Array to search, e.g. $_POST
    * @return boolean True if the attribute is in the array
    */
-  protected function array_attr_exists($needle, $haystack) {
+  protected static function array_attr_exists($needle, $haystack) {
     // quick match on new attributes (no value ID yet)
     if (array_key_exists($needle, $haystack))
       return true;

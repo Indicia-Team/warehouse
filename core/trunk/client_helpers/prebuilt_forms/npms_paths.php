@@ -271,13 +271,13 @@ class iform_npms_paths extends iform_wildflower_count {
       $r .= self::tab_your_plots($args, $auth['read']);
       $r .= '</div>'; // your-plots (now called Your Paths, the old Wildflower form was Your Plots)
       $r .= '<div id="species_1">';
-      $r .= self::tab_species($args, $auth, 0, 34, 1);
+      $r .= self::tab_species_npms_paths($args, $auth, 0, 34, 1);
       $r .= '</div>'; // species-1
       $r .= '<div id="species_2">';
-      $r .= self::tab_species($args, $auth, 34, 34, 2);
+      $r .= self::tab_species_npms_paths($args, $auth, 34, 34, 2);
       $r .= '</div>'; // species-2
       $r .= '<div id="species_3">';
-      $r .= self::tab_species($args, $auth, 68, 34, 3);
+      $r .= self::tab_species_npms_paths($args, $auth, 68, 34, 3);
       $r .= '</div>'; // species-3
       $r .= '</div>'; // tabs
       $r .= '</form>';
@@ -289,7 +289,7 @@ class iform_npms_paths extends iform_wildflower_count {
    * Override the function from the original wildflower form. As the original form had the Submit button on the Other Species tab
    * and the new form has it on the Species 3 tab, this has needed some rework. 
    */
-  protected static function tab_species($args, $auth, $offset, $limit, $tabNum) {
+  protected static function tab_species_npms_paths($args, $auth, $offset, $limit, $tabNum) {
     $r = '<p>Please select the percentage cover of each species that is present in each plot from the list below.</p>';
     global $indicia_templates;
     $indicia_templates['taxon_label']='<div class="biota nobreak"><span class="vernacular">{common}</span>'.
