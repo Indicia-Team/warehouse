@@ -450,6 +450,7 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
   }  
   
   protected static function get_tab_content($auth, $args, $tab, $tabContent, $tabalias, &$attributes, &$hasControls) {
+    drupal_set_message('running tab content');
     // cols array used if we find | splitters
     $cols = array();
     $defAttrOptions = array('extraParams'=>$auth['read']);
@@ -477,7 +478,7 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
           // ignore empty lines
           if (trim($tabContent[$i])!=='') {
             $option = explode('=', substr($tabContent[$i],1), 2);
-            if ($option[1]==='false')
+            if (!isset($option[1])||$option[1]==='false')
               $options[$option[0]]=FALSE;
             else {
               $options[$option[0]]=json_decode($option[1], TRUE);
