@@ -32,16 +32,18 @@ require_once('dynamic_sample_occurrence.php');
 
 class iform_npms_sample_occurrence extends iform_dynamic_sample_occurrence {
   public static function get_parameters() {    
-    return array(
+    return array_merge(
       parent::get_parameters(),
       array(
-        'name'=>'survey_1_attr',
-        'caption'=>'Survey 1 attribute ID',
-        'description'=>'The sample attribute ID that will store the ID of survey 1.',
-        'type'=>'string',
-        'groupd'=>'Other IForm Parameters',
-        'required'=>true
-      ),
+        array(
+          'name'=>'survey_1_attr',
+          'caption'=>'Survey 1 attribute ID',
+          'description'=>'The sample attribute ID that will store the ID of survey 1.',
+          'type'=>'string',
+          'groupd'=>'Other IForm Parameters',
+          'required'=>true
+        ),
+      )
     ); 
   }
 
