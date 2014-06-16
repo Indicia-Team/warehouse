@@ -554,7 +554,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     'allowLoad' => true,
     'allowSave' => true,
     'redirect_on_success' => '',
-    'presets' => array('my-records', 'my-queried-rejected-records', 'my-groups', 'my-locality', 'my-groups-locality')
+    'presets' => array('my-records', 'my-queried-rejected-records', 'my-pending-records', 'my-verified-records', 'my-groups', 'my-locality', 'my-groups-locality')
   ), $options);
   //If in the warehouse we don't need to worry about the iform master list.
   if (function_exists('variable_get'))
@@ -584,6 +584,14 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
         case 'my-queried-rejected-records':
           if (hostsite_get_user_field('id'))
             $title = lang::get('My rejected or queried records'); 
+          break;
+        case 'my-pending-records':
+          if (hostsite_get_user_field('id'))
+            $title = lang::get('My pending verification records'); 
+          break;
+        case 'my-verified-records':
+          if (hostsite_get_user_field('id'))
+            $title = lang::get('My verified records'); 
           break;
         case 'my-groups':
           if (hostsite_get_user_field('taxon_groups'))
