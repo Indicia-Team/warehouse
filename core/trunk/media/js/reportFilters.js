@@ -866,6 +866,12 @@ jQuery(document).ready(function($) {
         case 'my-queried-rejected-records':
           def = "{\"quality\":\"DR\",\"my_records\":1}";
           break;
+        case 'my-pending-records':
+          def = "{\"quality\":\"P\",\"my_records\":1}";
+          break;
+        case 'my-verified-records':
+          def = "{\"quality\":\"V\",\"my_records\":1}";
+          break;
         case 'my-groups':
           def = "{\"quality\":\"all\",\"my_records\":0,\"taxon_group_list\":"+indiciaData.userPrefsTaxonGroups+"}";
           break;
