@@ -593,6 +593,8 @@ class iform_npms_paths extends iform_wildflower_count {
     }    
     foreach($coverageAttrs as $idx => $attr) {
       $r .= '<tr><td><label>'.$attr['caption'].'</label></td>';
+        //unset the attribute caption as we have already drawn it
+        unset($attr['caption']);
         $r .= data_entry_helper::outputAttribute($attr, array('extraParams'=>$auth, 'suffixTemplate'=>'nosuffix'));
       $r .= '<td>';
       if (isset($otherInfoAttrs[$idx])) {
