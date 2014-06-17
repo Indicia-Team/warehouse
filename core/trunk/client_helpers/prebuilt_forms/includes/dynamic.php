@@ -450,7 +450,6 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
   }  
   
   protected static function get_tab_content($auth, $args, $tab, $tabContent, $tabalias, &$attributes, &$hasControls) {
-    drupal_set_message('running tab content');
     // cols array used if we find | splitters
     $cols = array();
     $defAttrOptions = array('extraParams'=>$auth['read']);
