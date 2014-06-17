@@ -24,6 +24,8 @@
  *
  * @package	Client
  */
+global $custom_terms;
+
 $custom_terms = array_merge($custom_terms, array(
 	'LANG_Add_Sample' => 'Add New Sample',
   'LANG_Add_Sample_Single' => 'Add Single Occurrence',
@@ -38,5 +40,4 @@ $custom_terms = array_merge($custom_terms, array(
     'list of attributes configured for the survey on the warehouse or that a function hostsite_get_user_field exists and returns' .
     'their Indicia User ID. This allows records to be tagged against the user. ' .
     'Alternatively you can tick the box "Skip initial grid of data" in the "User Interface" section of the Edit page for the form.'
-)
-);
+));
