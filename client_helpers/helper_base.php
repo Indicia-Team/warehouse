@@ -1702,7 +1702,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
     self::$validated_form_id = $form_id;
     // prevent double submission of the form
     self::$javascript .= "$('#$form_id').submit(function(e) {
-  if (typeof indiciaData.formSubmitted==='undefined') {
+  if (typeof indiciaData.formSubmitted==='undefined' || !indiciaData.formSubmitted) {
     indiciaData.formSubmitted=true;
   } else {
     e.preventDefault();
