@@ -19,6 +19,7 @@
 var checkSubmitInProgress = function () {
   if ($('.file-box .progress').length!==0) {
     alert('Please wait till your images have finished uploading before submitting the form.');
+    indiciaData.formSubmitted = false;
     return false;
   }
   return true;
