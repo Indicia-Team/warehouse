@@ -338,8 +338,8 @@ var checkSubmitInProgress = function () {
               .replace(/\{filename\}/g, $.inArray(ext, indiciaData.uploadFileTypes.Image)>-1 ? div.settings.msgPhoto : div.settings.msgFile)
               .replace(/\{imagewidth\}/g, div.settings.imageWidth)
           );
-          // change the file name to be unique
-          file.name=plupload.guid()+'.'+ext;
+          // change the file name to be unique & lowercase, since the warehouse lowercases files
+          file.name=(plupload.guid()+'.'+ext).toLowerCase();
           $('#' + file.id + ' .progress-bar').progressbar ({value: 0});
           var msg='Resizing...';
           if (div.settings.resizeWidth===0 || div.settings.resizeHeight===0 || typeof div.uploader.features.jpgresize === "undefined") {
