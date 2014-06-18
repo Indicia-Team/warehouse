@@ -94,6 +94,14 @@ class iform_dynamic_location_splash_squares extends iform_dynamic_location {
           'captionField'=>'term',
           'group'=>'Splash Squares Page Setup'
         ),
+        array(
+          'name'=>'show_grid_system_selector',
+          'caption'=>'Show selection drop-down for grid system?',
+          'description'=>'Allow the user to select the grid system? Useful if you want to support more than one system such as OSGB and OSIE.',
+          'type'=>'boolean',
+          'default'=>false,
+          'group'=>'Splash Squares Page Setup'
+        ),
       )
     );
     return $retVal;
@@ -107,7 +115,8 @@ class iform_dynamic_location_splash_squares extends iform_dynamic_location {
     $r = parent::get_form($args, $node);
     //The system page configuration includes a setting to set the default spatial reference system to British National Grid, but
     //we also need to hide the field so the user cannot change it.
-    data_entry_helper::$javascript .= "$('#imp-sref-system').hide();";
+    if ($args['show_grid_system_selector']==false)
+      data_entry_helper::$javascript .= "$('#imp-sref-system').hide();";
     return $r;
   }
   
@@ -154,12 +163,14 @@ class iform_dynamic_location_splash_squares extends iform_dynamic_location {
       );
       $squareViceCountyData = data_entry_helper::get_report_data($reportOptions);
       //Build up a comma seperate list of vice counties if the square interects more than one.
-      $squareViceCountyDataForDatabase = '';
+      $squareViceCountyDataForDatabase = ''; 
       foreach ($squareViceCountyData as $squareViceCounty) {
-        $squareViceCountyDataForDatabase .= $squareViceCounty['name'].', ';
+        if (isset($squareViceCounty['name']))
+          $squareViceCountyDataForDatabase .= $squareViceCounty['name'].', ';
       }
       //Chop off the last comma and space
-      $squareViceCountyDataForDatabase = substr($squareViceCountyDataForDatabase, 0, -2);
+      if (!empty($squareViceCountyDataForDatabase))
+        $squareViceCountyDataForDatabase = substr($squareViceCountyDataForDatabase, 0, -2);
       //Save the custom attribute which holds the vice counties.
       if (!empty($squareViceCountyData[0]['name'])) {
         $s['subModels'][] = array(
