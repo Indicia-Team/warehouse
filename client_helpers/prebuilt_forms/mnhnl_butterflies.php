@@ -289,28 +289,28 @@ deleteSurvey = function(sampleID){
     $auth = array('read'=>$readAuth);
     if(!$isAdmin) return('');
     if(!$retTabs) return array('#downloads' => lang::get('Reports'));
-    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
-    $ObserverIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Observer');
+    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
+    $ObserverIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Observer', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$ObserverIdAttr) return lang::get('This form must be used with a survey that has the Observer sample attribute associated with it.');
-    $MonthIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'MNHNL Month');
+    $MonthIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'MNHNL Month', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$MonthIdAttr) return lang::get('This form must be used with a survey that has the MNHNL Month sample attribute associated with it.');
-    $NumInMonthIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Number In Month');
+    $NumInMonthIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Number In Month', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$NumInMonthIdAttr) return lang::get('This form must be used with a survey that has the Number In Month sample attribute associated with it.');
-    $StartTimeIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Start time');
+    $StartTimeIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Start time', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$StartTimeIdAttr) return lang::get('This form must be used with a survey that has the Start time sample attribute associated with it.');
-    $EndTimeIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'End time');
+    $EndTimeIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'End time', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$EndTimeIdAttr) return lang::get('This form must be used with a survey that has the End time sample attribute associated with it.');
-    $TempIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Temperature');
+    $TempIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Temperature', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$TempIdAttr) return lang::get('This form must be used with a survey that has the Temperature sample attribute associated with it.');
-    $WindIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Wind force');
+    $WindIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Wind force', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$WindIdAttr) return lang::get('This form must be used with a survey that has the Wind force sample attribute associated with it.');
-    $CloudIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Cloud cover');
+    $CloudIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Cloud cover', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$CloudIdAttr) return lang::get('This form must be used with a survey that has the Cloud cover sample attribute associated with it.');
-    $HabitatIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Habitat type');
+    $HabitatIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Habitat type', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$HabitatIdAttr) return lang::get('This form must be used with a survey that has the Habitat type sample attribute associated with it.');
-    $NoObsIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'No observation');
+    $NoObsIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'No observation', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$NoObsIdAttr) return lang::get('This form must be used with a survey that has the No observation sample attribute associated with it.');
-    $ReliabilityIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Survey reliability');
+    $ReliabilityIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Survey reliability', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$ReliabilityIdAttr) return lang::get('This form must be used with a survey that has the Survey reliability sample attribute associated with it.');
 
     return  '<div id="downloads" >
@@ -336,11 +336,11 @@ deleteSurvey = function(sampleID){
       // Return a login link that takes you back to this form when done.
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
     }
-    $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID');
+    $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID sample attribute associated with it.');
-    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
+    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$userNameAttr) return lang::get('This form must be used with a survey that has the CMS Username sample attribute associated with it.');
-    $observerAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Observer');
+    $observerAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Observer', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$observerAttr) return lang::get('This form must be used with a survey that has the Observer sample attribute associated with it.');
         
     if (isset($args['grid_report']))
