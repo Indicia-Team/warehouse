@@ -1014,6 +1014,8 @@ class ReportEngine {
       $uniqueId = $usingCaptions ? preg_replace('/\W/', '_', strtolower($attr->caption)) : $id;
       // create the fields required in the SQL. First the attribute ID. 
       $alias = preg_replace('/\_value$/', '', "attr_id_$type"."_$uniqueId");
+      $rootIdAttr = inflector::plural($type).'_id_field';
+      $rootId = $this->reportReader->$rootIdAttr;      
       if ($attr->multi_value==='t')
         $query = str_replace('#fields#', ", (select array_to_string(array_agg(mv$alias.id), ', ')
   from {$type}_attribute_values mv$alias 
@@ -1027,8 +1029,6 @@ class ReportEngine {
       $this->attrColumns[$alias] = array(
         'visible' => 'false'
       );
-      $rootIdAttr = inflector::plural($type).'_id_field';
-      $rootId = $this->reportReader->$rootIdAttr;
       // then the attribute data col(s).
       foreach($cols as $col=>$suffix) {
         $alias = preg_replace('/\_value$/', '', "attr_$type"."_$uniqueId");
