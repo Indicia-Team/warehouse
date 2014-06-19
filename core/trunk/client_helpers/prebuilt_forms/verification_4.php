@@ -644,11 +644,7 @@ idlist=';
     $details_report = empty($node->params['record_details_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data' : $node->params['record_details_report'];
     $attrs_report = empty($node->params['record_attrs_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data_attributes' : $node->params['record_attrs_report'];
     iform_load_helpers(array('report_helper'));
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     $options = array(
       'dataSource' => $details_report,
       'readAuth' => $readAuth,
@@ -760,11 +756,7 @@ idlist=';
   }
 
   public static function ajax_images($website_id, $password) {
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     echo self::get_images($readAuth);
   }
 
@@ -793,11 +785,7 @@ idlist=';
   }
 
   public static function ajax_comments($website_id, $password) {
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     echo self::get_comments($readAuth);
   }
 
@@ -836,11 +824,7 @@ idlist=';
   }
 
   public static function ajax_imagesAndComments($website_id, $password) {
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     header('Content-type: application/json');
     echo json_encode(array(
       'images' => self::get_images($readAuth),
@@ -888,11 +872,7 @@ idlist=';
    */
   public static function ajax_experience($website_id, $password, $node) {
     iform_load_helpers(array('report_helper'));
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     $data = report_helper::get_report_data(array(
       'dataSource' => 'library/totals/user_experience_for_record',
       'readAuth' => $readAuth,
@@ -978,11 +958,7 @@ WHERE vuser_id.value=".$_GET['user_id']);
    */
   public static function ajax_phenology($website_id, $password) {
     iform_load_helpers(array('report_helper'));
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     $extraParams = array(
       'external_key'=>(empty($_GET['external_key']) || $_GET['external_key']==='null') ? '' : $_GET['external_key'],
       'taxon_meaning_id'=>(empty($_GET['external_key']) || $_GET['external_key']==='null') ? $_GET['taxon_meaning_id'] : '',
