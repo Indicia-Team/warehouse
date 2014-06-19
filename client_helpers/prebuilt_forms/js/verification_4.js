@@ -45,8 +45,7 @@ var saveComment, saveVerifyComment;
     // make it clear things are loading
     $('#chart-div').css('opacity',0.15);
     rowRequest = $.getJSON(
-      indiciaData.ajaxUrl + '/details/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id +
-        '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+      indiciaData.ajaxUrl + '/details/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
       null,
       function (data) {
         // refind the row, as $(tr) sometimes gets obliterated.
@@ -58,11 +57,9 @@ var saveComment, saveVerifyComment;
         if ($row.parents('tbody').length !== 0) {
           // point the image and comments tabs to the correct AJAX call for the selected occurrence.
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('images'), indiciaData.ajaxUrl + '/images/' + 
-              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token);
+              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('comments'), indiciaData.ajaxUrl + '/comments/' + 
-              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token);
+              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           // reload current tabs
           $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
           $('#record-details-toolbar *').removeAttr('disabled');
@@ -214,8 +211,7 @@ var saveComment, saveVerifyComment;
       if (email.type === 'recordCheck') {
         // ensure images are loaded
         $.ajax({
-          url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+          url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
           async: false,
           dataType: 'json',
           success: function (response) {
@@ -237,8 +233,7 @@ var saveComment, saveVerifyComment;
     //Send an email
     // use an AJAX call to get the server to send the email
     $.post(
-      indiciaData.ajaxUrl + '/email' + urlSep +
-        'nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+      indiciaData.ajaxUrl + '/email' + urlSep,
       email,
       function (response) {
         if (response === 'OK') {
@@ -334,8 +329,7 @@ var saveComment, saveVerifyComment;
         else {
           $.get(
             indiciaData.ajaxUrl + '/experience/' + indiciaData.nid + urlSep +
-                'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id +
-                '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+                'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id,
             null,
             function (data) {
               $('#experience-div').html(data);
@@ -346,8 +340,7 @@ var saveComment, saveVerifyComment;
         $.getJSON(
           indiciaData.ajaxUrl + '/phenology/' + indiciaData.nid + urlSep +
               'external_key=' + currRec.extra.taxon_external_key +
-              '&taxon_meaning_id=' + currRec.extra.taxon_meaning_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+              '&taxon_meaning_id=' + currRec.extra.taxon_meaning_id,
           null,
           function (data) {
             $('#chart-div').empty();
