@@ -720,7 +720,8 @@ class ReportEngine {
       elseif (isset($this->customAttributes[$name])) {
         // request includes a custom attribute column being used as a filter.
         $field=$this->customAttributes[$name]['field'];
-        $query = str_replace('#filters#', "AND $field=$value\n#filters#", $query);
+        $quote = !empty($this->customAttributes[$name]['string']) ? "'" : '';
+        $query = str_replace('#filters#', "AND $field=$quote$value$quote\n#filters#", $query);
       }
       elseif (isset($this->reportReader->filterableColumns[$name])) {
         $field = $this->reportReader->filterableColumns[$name]['sql'];
@@ -928,7 +929,7 @@ class ReportEngine {
       if (!isset($sysfuncsList[$attr->system_function])) {
         $sysfuncsList[$attr->system_function] = array('fields'=>array(), 'data_types'=>array());
       }
-      if ($attr->data_type=='L') {
+      if ($attr->data_type=='L' && $attr->multi_value==='f') {
         // lookups need an extra join and a different output field alias
         $query = str_replace('#joins#', $join." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
         $sysfuncsList[$attr->system_function]['fields'][] = "ltt$id.term";
@@ -1054,7 +1055,8 @@ class ReportEngine {
           'display' => $attr->caption.$suffix
         );
         // the first column is normally used as the filter.
-        $filterCol = $col;
+        if (!isset($filterField))
+          $filterField = $field;
       }
       // add a column to set the caption for vague date processed columns
       if ($attr->data_type=='V') {
@@ -1079,12 +1081,18 @@ class ReportEngine {
         $this->attrColumns["attr_$type"."_term_$uniqueId"] = array(
           'display' => $attr->caption.' term'
         );
+        $this->customAttributes["attr_$type"."_term_$uniqueId"] = array(
+          'field' => $field,
+          'string' => true
+        );
       }
       // keep a list of the custom attribute columns with a link to the fieldname to filter against, if this column
       // gets used in a filter
       $this->customAttributes["attr_$type"."_$uniqueId"] = array(
-        'field' => "$type$id.$filterCol"
+        'field' => $filterField
       );
+      if ($attr->multi_value==='t')
+        $this->customAttributes["attr_$type"."_$uniqueId"]['string']=true;
       // if we know an attribute caption, we want to be able to lookup the ID.
       $this->customAttributeCaptions["$type:".$attr->caption] = $id;
     }
