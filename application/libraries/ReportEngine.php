@@ -720,8 +720,8 @@ class ReportEngine {
       elseif (isset($this->customAttributes[$name])) {
         // request includes a custom attribute column being used as a filter.
         $field=$this->customAttributes[$name]['field'];
-        $quote = !empty($this->customAttributes[$name]['string']) ? "'" : '';
-        $query = str_replace('#filters#', "AND $field=$quote$value$quote\n#filters#", $query);
+        $value = !empty($this->customAttributes[$name]['string']) ? "'" . pg_escape_string($value) . "'" : $value;
+        $query = str_replace('#filters#', "AND $field=$value\n#filters#", $query);
       }
       elseif (isset($this->reportReader->filterableColumns[$name])) {
         $field = $this->reportReader->filterableColumns[$name]['sql'];
@@ -1055,8 +1055,10 @@ class ReportEngine {
           'display' => $attr->caption.$suffix
         );
         // the first column is normally used as the filter.
-        if (!isset($filterField))
+        if (!isset($filterField)) {
           $filterField = $field;
+          $filterFieldIsString = preg_match('/[TDV]/', $attr->data_type);
+        }
       }
       // add a column to set the caption for vague date processed columns
       if ($attr->data_type=='V') {
@@ -1091,7 +1093,7 @@ class ReportEngine {
       $this->customAttributes["attr_$type"."_$uniqueId"] = array(
         'field' => $filterField
       );
-      if ($attr->multi_value==='t')
+      if ($attr->multi_value==='t' || $filterFieldIsString)
         $this->customAttributes["attr_$type"."_$uniqueId"]['string']=true;
       // if we know an attribute caption, we want to be able to lookup the ID.
       $this->customAttributeCaptions["$type:".$attr->caption] = $id;
