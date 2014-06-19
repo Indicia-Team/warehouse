@@ -861,7 +861,7 @@ class ReportEngine {
    */
   private function mergeAttrListParam($query, $type, $attrList) {
     $this->reportDb
-        ->select('distinct a.id, a.data_type, a.caption, a.validation_rules, a.system_function')
+        ->select('distinct a.id, a.data_type, a.caption, a.validation_rules, a.system_function, a.multi_value')
         ->from("{$type}_attributes as a");
     if ($this->websiteIds)
       $this->reportDb
@@ -1014,22 +1014,42 @@ class ReportEngine {
       $uniqueId = $usingCaptions ? preg_replace('/\W/', '_', strtolower($attr->caption)) : $id;
       // create the fields required in the SQL. First the attribute ID. 
       $alias = preg_replace('/\_value$/', '', "attr_id_$type"."_$uniqueId");
-      $query = str_replace('#fields#', ", $type$id.id as $alias#fields#", $query);
-      // this field should also be inserted into any group by part of the query
-      $query = str_replace('#group_bys#', ", $type$id.id#group_bys#", $query);
+      if ($attr->multi_value==='t')
+        $query = str_replace('#fields#', ", (select array_to_string(array_agg(mv$alias.id), ', ')
+  from {$type}_attribute_values mv$alias 
+  where mv$alias.{$type}_id=$rootId and mv$alias.{$type}_attribute_id=$id) as $alias#fields#", $query);
+      else {
+        $query = str_replace('#fields#', ", $type$id.id as $alias#fields#", $query);
+        // this field should also be inserted into any group by part of the query
+        $query = str_replace('#group_bys#', ", $type$id.id#group_bys#", $query);
+      }
       // hide the ID column
       $this->attrColumns[$alias] = array(
-        'visible' => 'false',
+        'visible' => 'false'
       );
+      $rootIdAttr = inflector::plural($type).'_id_field';
+      $rootId = $this->reportReader->$rootIdAttr;
       // then the attribute data col(s).
       foreach($cols as $col=>$suffix) {
         $alias = preg_replace('/\_value$/', '', "attr_$type"."_$uniqueId");
         // vague date cols need to distinguish the different column types.
         if ($attr->data_type=='V') 
           $alias += $col;
+        elseif ($attr->data_type=='L') {
+          // main output column for lookups is an ID column
+          $suffix .= ' term ID';
+        }
         // use the #fields# token in the SQL to work out where to put the field, plus #group_bys# for any grouping
-        $query = str_replace('#fields#', ", $type$id.$col as $alias#fields#", $query);
-        $query = str_replace('#group_bys#', ", $type$id.$col#group_bys#", $query);
+        if ($attr->multi_value==='t')
+          // multivalue so use a subquery, no need to group by
+          $field="(select array_to_string(array_agg(mv$alias.$col), ', ')
+  from {$type}_attribute_values mv$alias 
+  where mv$alias.{$type}_id=$rootId and mv$alias.{$type}_attribute_id=$id)";
+        else {
+          $field = "$type$id.$col";
+          $query = str_replace('#group_bys#', ", $type$id.$col#group_bys#", $query);
+        }
+        $query = str_replace('#fields#', ", $field as $alias#fields#", $query);
         $this->attrColumns[$alias] = array(
           'display' => $attr->caption.$suffix
         );
@@ -1044,12 +1064,20 @@ class ReportEngine {
       }
       // lookups need special processing for additional joins
       elseif ($attr->data_type=='L') {
-        $query = str_replace('#joins#', $join." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
         $alias = preg_replace('/\_value$/', '', "attr_$type"."_term_$uniqueId");
-        $query = str_replace('#fields#', ", ltt$id.term as $alias#fields#", $query);
-        $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
+        if ($attr->multi_value==='f') {
+          $query = str_replace('#joins#', $join." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);       
+          $query = str_replace('#fields#', ", ltt$id.term as $alias#fields#", $query);
+          $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
+        } else {
+          $field="(select array_to_string(array_agg(term{$alias}.term), ', ')
+  from {$type}_attribute_values mv$alias 
+  join ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." term{$alias} on term{$alias}.id=mv$alias.int_value
+  where mv$alias.{$type}_id=$rootId and mv$alias.{$type}_attribute_id=$id)";
+          $query = str_replace('#fields#', ", $field as $alias#fields#", $query);
+        }
         $this->attrColumns["attr_$type"."_term_$uniqueId"] = array(
-          'display' => $attr->caption
+          'display' => $attr->caption.' term'
         );
       }
       // keep a list of the custom attribute columns with a link to the fieldname to filter against, if this column
@@ -1066,17 +1094,21 @@ class ReportEngine {
    * Adds the join required for a custom attribute to the query.
    */
   private function addJoinForAttr(&$query, $type, $attr, $forceOuter) {
-    $id = $attr->id;
-    // can only use an inner join for definitely required fields. If they are required
-    // only at the per-survey level, we must use left joins as the survey could vary per record.
-    $join = (strpos($attr->validation_rules, 'required')===false || $forceOuter) ? 'LEFT JOIN' : 'JOIN';
-    // find out what alias and field name the query uses for the table & field we need to join to
-    // (samples.id, occurrences.id or locations.id).
-    $rootIdAttr = inflector::plural($type).'_id_field';
-    $rootId = $this->reportReader->$rootIdAttr;
-    // construct a join to the attribute values table so we can get the value out.
-    $query = str_replace('#joins#', "$join ".$type."_attribute_values $type$id ON $type$id.".$type."_id=$rootId AND $type$id.".$type."_attribute_id=$id AND $type$id.deleted=false\n #joins#", $query);
-    return $join;
+    if ($attr->multi_value==='f') {
+      $id = $attr->id;
+      // can only use an inner join for definitely required fields. If they are required
+      // only at the per-survey level, we must use left joins as the survey could vary per record.
+      $join = (strpos($attr->validation_rules, 'required')===false || $forceOuter) ? 'LEFT JOIN' : 'JOIN';
+      // find out what alias and field name the query uses for the table & field we need to join to
+      // (samples.id, occurrences.id or locations.id).
+      $rootIdAttr = inflector::plural($type).'_id_field';
+      $rootId = $this->reportReader->$rootIdAttr;
+      // construct a join to the attribute values table so we can get the value out.
+      $query = str_replace('#joins#', "$join ".$type."_attribute_values $type$id ON $type$id.".$type."_id=$rootId AND $type$id.".$type."_attribute_id=$id AND $type$id.deleted=false\n #joins#", $query);
+      return $join;
+    } else
+      // multi-values are handled by subqueries so no join required
+      return '';
   }
   
   /**
