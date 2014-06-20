@@ -206,6 +206,14 @@ class iform_npms_paths extends iform_wildflower_count {
         'groupd'=>'Other IForm Parameters',
         'required'=>true
       ),
+      array(
+        'name'=>'species_tab_instruction',
+        'caption'=>'Species Tab Insturction',
+        'description'=>'Override the default text that appears near to the top of each species tab which gives the user instructions about the tab.',
+        'type'=>'string',
+        'groupd'=>'Other IForm Parameters',
+        'required'=>false,
+      ),
     );
   }
   
@@ -286,11 +294,16 @@ class iform_npms_paths extends iform_wildflower_count {
   }
   
   /*
-   * Override the function from the original wildflower form. As the original form had the Submit button on the Other Species tab
+   * New function to replace the one on the original wildflower form. The original form had the Submit button on the Other Species tab
    * and the new form has it on the Species 3 tab, this has needed some rework. 
    */
   protected static function tab_species_npms_paths($args, $auth, $offset, $limit, $tabNum) {
-    $r = '<p>Please select the percentage cover of each species that is present in each plot from the list below.</p>';
+    $r='';
+    //Get user configured instruction if it is available.
+    if (!empty($args['species_tab_instruction']))
+      $r .= '<p>'.$args['species_tab_instruction'].'</p>';
+    else
+      $r .= '<p>Please select the percentage cover of each species that is present in each plot from the list below.</p>';
     global $indicia_templates;
     $indicia_templates['taxon_label']='<div class="biota nobreak"><span class="vernacular">{common}</span>'.
     		'<br/><span class="sci binomial"><em>{taxon}</em></span> {authority}</div>';
