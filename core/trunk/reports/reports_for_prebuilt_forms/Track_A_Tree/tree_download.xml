@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Track-a-Tree : Data Download Report" description="Details of all sites, trees and visits. To be used to download all the data for analysis.">
+  <params>
+    <param name='top_type_id' display='Top Level Location Type ID' description='Select the location_type_id for the top level locations.' datatype="lookup"
+        population_call="report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id="/>
+    <param name='website_id' display='Website' description='Select the website to return data for' datatype='lookup'
+        population_call='direct:website:id:title'/>
+    <param name='survey_id' display='Survey' description='Select the survey to return data for' datatype='lookup'
+        population_call='direct:survey:id:title'/>
+    <param name='registration_sample_method' display='Registration Sample Method' description='Select the registration sample method.' datatype='text' />
+    <param name='visit_sample_method_id' display='Visit Sample Method' description='Select the visit sample method.' datatype='lookup'
+        population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+  </params>
+  <table tablename="locations_websites" where="#this#.website_id=#website_id#" >
+    <subTable tablename="locations" where="#this#.location_type_id=#top_type_id# and #this#.deleted = FALSE" >
+      <tabColumn name='id' display='Site Indicia Location ID' />
+      <tabColumn name='name' display='Site Name' />
+      <tabColumn name='centroid_sref' display='Site Central Grid Ref' />
+      <attributes separator='|' />
+      <subTable tablename="locations" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
+        <tabColumn name='id' display='Tree Indicia Location ID' />
+        <tabColumn name='name' display='Tree ID' />
+        <tabColumn name='centroid_sref' display='Tree Grid Ref' />
+        <tabColumn name='comment' display='Tree Additional Information' />
+        <attributes separator='|' />
+        <subTable tablename="cache_occurrences" parentKey="id" where="#this#.sample_method = '#registration_sample_method#'">
+          <tabColumn name='id' display='Tree Selection Indicia Occurrence ID' />
+          <tabColumn name='date_start' display='Tree Selection Date' />
+          <tabColumn name='taxon' display='Tree Species' />
+          <attributes separator='|' />
+        </subTable>
+        <subTable tablename="samples" parentKey="id" where="#this#.deleted = FALSE and #this#.sample_method_id = #visit_sample_method_id# " >
+          <tabColumn name='id' display='Visit Indicia Sample ID' />
+          <tabColumn name='date_start' display='Visit Date' />
+          <tabColumn name='comment' display='Visit Field Diary' />
+          <attributes separator='|' />
+          <subTable tablename="cache_occurrences" parentKey="id" >
+            <tabColumn name='id' display='Taxon Specific Visit Indicia Occurrence ID' />
+            <tabColumn name='taxon' display='Taxon' />
+            <attributes separator='|' />
+          </subTable>
+        </subTable>
+      </subTable>
+    </subTable>
+  </table>
+</report>
