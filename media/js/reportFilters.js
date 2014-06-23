@@ -147,7 +147,7 @@ jQuery(document).ready(function($) {
           $( "#what-tabs" ).tabs("select", 1);
           $( "#what-tabs" ).tabs("option", "active", 1);
           $( "#what-tabs" ).tabs("option", "disabled", [0]);
-          $('input#taxon_group_list\\:search\\:title').unsetExtraParams('query');
+          $('input#taxon_group_list\\:search\\:q').unsetExtraParams('query');
           $('#species-tab .context-instruct').show();
         } else {
           $('#what-filter-instruct').show();
@@ -155,7 +155,7 @@ jQuery(document).ready(function($) {
           $( "#what-tabs" ).tabs("select", 0);
           $( "#what-tabs" ).tabs("option", "active", 0);
           if (context && context.taxon_group_list) {
-            $('input#taxon_group_list\\:search\\:title').setExtraParams({"query":'{"in":{"id":['+context.taxon_group_list+']}}'});
+            $('input#taxon_group_list\\:search\\:q').setExtraParams({"idlist":context.taxon_group_list});
             $('#species-group-tab .context-instruct').show();
           }
         }
