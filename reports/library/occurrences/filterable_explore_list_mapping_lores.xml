@@ -12,8 +12,6 @@
   #idlist#
   </query>
   <params>
-    <param name="smpattrs" display="Sample attribute list" description="Comma separated list of sample attribute IDs to include" datatype="smpattrs" />
-    <param name="occattrs" display="Occurrence attribute list" description="Comma separated list of occurrence attribute IDs to include" datatype="occattrs" />
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
     <param name="sq_size" display="Grid square size" description="Specify either 1000, 2000 or 10000 for the grid square resolution as 1km, 2km or 10km grid" datatype="integer">
       <joins>
