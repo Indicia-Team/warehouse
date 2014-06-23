@@ -20,12 +20,51 @@ var reply;
 var createNotifications;
 
 (function ($) {
+  var currentFilter = '';
+  
+  function setCurrentFilter() {
+    var label='Acknowledge all your notifications';
+    currentFilter = $('#notifications-notifications-grid-source_filter').val();
+    if (currentFilter!=='all' && currentFilter!=='') {
+      label += ' for '
+      if (currentFilter==='record_cleaner') {
+        label += 'Record Cleaner';
+      } else {
+        label += $('#notifications-notifications-grid-source_filter option:selected').html().toLowerCase();
+      }
+    }
+    $('#remove-all').val(label);
+  }
+  
+  $(document).ready(function() {
+    setCurrentFilter();
+  });
+  
+  $('#run-report').click(function() {
+    setCurrentFilter();
+  });
+  
   //Setup confirmation for Remove Notifications buttons.
   //If user elects to continue, set the hidden field that indicates
   //they want to continue with the removal.
   acknowledge_all_notifications = function(id) { 
-    if ($('#notifications-' + id + ' tr').not('thead tr').not('tfoot tr').length>0) {
-      var confirmation = confirm('Are you sure you want to acknowledge all notifications in this list?');
+    var visibleCount = $('#notifications-' + id + ' tbody tr').length,
+        recordCount = indiciaData.reports.notifications_notifications_grid.grid_notifications_notifications_grid[0].settings.recordCount;
+    if (currentFilter!=='' && visibleCount>0) {
+      var msg='Are you sure you want to acknowledge all your notifications';
+      if (currentFilter!=='all' && currentFilter!=='') {
+        msg += ' for '
+        if (currentFilter==='record_cleaner') {
+          msg += 'Record Cleaner';
+        } else {
+          msg += $('#notifications-notifications-grid-source_filter option:selected').html().toLowerCase();
+        }
+      }
+      msg += '?';
+      if (recordCount > visibleCount) {
+        msg += ' This will affect all pages of the notifications list, not just the visible page.';
+      }
+      var confirmation = confirm(msg);
       if (confirmation) { 
         $('.remove-notifications').val(1); 
       } else {
@@ -53,15 +92,9 @@ var createNotifications;
           alert(JSON.stringify(response));
         } else {
           //reload grid after notification is deleted
-          if (indiciaData.reports.notifications_system) {
-            indiciaData.reports.notifications_system.grid_notifications_system.removeRecordsFromPage(1);
-            indiciaData.reports.notifications_system.grid_notifications_system.reload();
-          }
-          if (indiciaData.reports.notifications_user) {
-            indiciaData.reports.notifications_user.grid_notifications_user.removeRecordsFromPage(1);
-            indiciaData.reports.notifications_user.grid_notifications_user.reload();
-          }
-          $('tr#row'+id).remove();
+          indiciaData.reports.notifications_notifications_grid.grid_notifications_notifications_grid.removeRecordsFromPage(1);
+          indiciaData.reports.notifications_notifications_grid.grid_notifications_notifications_grid.reload(true);
+//          $('tr#row'+id).remove();
         }
       },
       'json'

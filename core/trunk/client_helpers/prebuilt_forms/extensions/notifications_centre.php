@@ -107,7 +107,7 @@ class extension_notifications_centre {
         //called remove-notifications is set. We can check for this when the 
         //page reloads and then call the remove notifications code.    
         if (!empty($_POST['remove-notifications']) && $_POST['remove-notifications']==1)
-          self::build_notifications_removal_submission($_POST, $user_id, $options);
+          self::build_notifications_removal_submission($user_id, $options);
       }
       self::$initialised = true;
     }
@@ -139,13 +139,12 @@ class extension_notifications_centre {
   /**
    * Build a submission that the system can understand that includes the notifications we
    * want to remove.
-   * @param type $_POST
    * @param type $auth
    * @param integer $user_id
    * @param array $options
    * 
    */
-  private static function build_notifications_removal_submission($_POST, $user_id,$options) {
+  private static function build_notifications_removal_submission($user_id,$options) {
     // rebuild the auth token since this is a reporting page but we need to submit data.
     $auth = data_entry_helper::get_read_write_auth(variable_get('indicia_website_id', ''), variable_get('indicia_password', ''));
     //Using 'submission_list' and 'entries' allows us to specify several top-level submissions to the system
@@ -210,7 +209,7 @@ class extension_notifications_centre {
    */
   private static function remove_all_button($options) {
     $title = empty($options['title']) ? lang::get('shown') : lang::get($options['title']);
-    return "<input onclick=\"return acknowledge_all_notifications('".$options['id']."')\" type=\"submit\" ".
+    return "<input id=\"remove-all\" onclick=\"return acknowledge_all_notifications('".$options['id']."')\" type=\"submit\" ".
         "class=\"indicia-button\" value=\"".lang::get('Acknowledge all {1} notifications', $title)."\"/>\n";
   }
   
