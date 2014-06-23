@@ -1,3 +1,4 @@
+a
 <?php
 
 /**
@@ -73,24 +74,28 @@ class filter_what extends filter_base {
       $r .= '<ul class="inline"><li>' . implode('</li><li>', $myGroupNames) . '</li></ul>';      
       $r .= '<h3>' . lang::get('Build a list of groups') . '</h3>';
     }
+    //Warehouse doesn't have master taxon list, so only need warning when not running on warehouse
+    if (empty($options['taxon_list_id']) && (!isset($options['runningOnWarehouse'])||$options['runningOnWarehouse']==false)) {
+      throw new exception('Please specify a @taxon_list_id option in the page configuration.');
+    }
     $r .= '<p>' . lang::get('Search for and build a list of species groups to include') . '</p>' .
         ' <div class="context-instruct messages warning">' . lang::get('Please note that your access permissions are limiting the groups available to choose from.') . '</div>';
-    $r .= data_entry_helper::sub_list(array(      
+    if (empty($options['taxon_list_id']))
+      $extraParams = $readAuth;
+    else
+      $extraParams = $readAuth + array('taxon_list_id'=>$options['taxon_list_id']);
+    $r .= data_entry_helper::sub_list(array(
       'fieldname' => 'taxon_group_list',
-      'table' => 'taxon_group',
+      'report' => 'library/taxon_groups/taxon_groups_used_in_checklist',
       'captionField' => 'title',
       'valueField' => 'id',
-      'extraParams' => $readAuth,
+      'extraParams' => $extraParams,
       'addToTable' => false
     ));
     $r .= "</div>\n";
     $r .= '<div id="species-tab">' . "\n";
     $r .= '<p>' . lang::get('Search for and build a list of species to include') . '</p>' .
         ' <div class="context-instruct messages warning">' . lang::get('Please note that your access permissions will limit the records returned to the species you are allowed to see.') . '</div>';
-    //Warehouse doesn't have master taxon list, so only need warning when not running on warehouse
-    if (empty($options['taxon_list_id']) && (!isset($options['runningOnWarehouse'])||$options['runningOnWarehouse']==false)) {
-      $r .= '<p>Please specify a @taxon_list_id option in the page configuration.</p>';
-    }
     $subListOptions = array(      
       'fieldname' => 'taxa_taxon_list_list',
       'table' => 'cache_taxa_taxon_list',
