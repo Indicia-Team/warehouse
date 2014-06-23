@@ -893,7 +893,7 @@ div.note-fail, p.note-fail {
   position:absolute;
   opacity: 0.9;
   background: url(../images/ajax-loader2.gif) no-repeat center center #fff;
-  z-index: 10000;
+  z-index: 1000;
 }
 
 .autocomplete-select {
