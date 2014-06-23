@@ -1,3 +1,5 @@
+
+
 /*
  * Autocomplete - jQuery plugin 1.0.2
  *
@@ -453,7 +455,7 @@ $.Autocompleter = function(input, options) {
         dataType: options.dataType,
         url: options.url,
         data: $.extend({
-          q: encodeURIComponent(simplify(lastWord(term))),
+          q: simplify(lastWord(term)),
           limit: options.max+1
         }, extraParams),
         success: function(data) {
