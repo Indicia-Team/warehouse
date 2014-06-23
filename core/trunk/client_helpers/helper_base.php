@@ -1981,10 +1981,11 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
     $useCache = !self::$nocache && !isset($_GET['nocache']) && !empty($options['caching']) && $options['caching'];
     if ($useCache && $options['caching']!=='store') {
       // Get the URL params, so we know what the unique thing is we are caching
-      $query=parse_url(parent::$base_url.$request, PHP_URL_QUERY);
-      parse_str($query, $cacheOpts);
+      $parsedURL=parse_url(parent::$base_url.$request);
+      parse_str($parsedURL["query"], $cacheOpts);
       unset($cacheOpts['auth_token']);
       unset($cacheOpts['nonce']);
+      $cacheOpts['path']=$parsedURL['path'];
       if (isset($options['cachePerUser']) && !$options['cachePerUser']) 
         unset($cacheOpts['user_id']);
       $cacheTimeOut = self::_getCacheTimeOut($options);
