@@ -85,8 +85,8 @@ class filter_what extends filter_base {
       $extraParams = $readAuth + array('taxon_list_id'=>$options['taxon_list_id']);
     $r .= data_entry_helper::sub_list(array(
       'fieldname' => 'taxon_group_list',
-      'report' => 'library/taxon_groups/taxon_groups_used_in_checklist',
-      'captionField' => 'title',
+      'report' => 'library/taxon_groups/taxon_groups_used_in_checklist_lookup',
+      'captionField' => 'q',
       'valueField' => 'id',
       'extraParams' => $extraParams,
       'addToTable' => false
