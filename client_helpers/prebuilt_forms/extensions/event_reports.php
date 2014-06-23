@@ -60,7 +60,9 @@ class extension_event_reports {
       array(
         'dataSource' => "library/locations/filterable_{$type}_counts_mappable",
         'featureDoubleOutlineColour' => '#f7f7f7',
-        'rowId' => 'id'
+        'rowId' => 'id',
+        'caching' => true,
+        'cachePerUser' => false
       ),
       $options
     );
@@ -90,7 +92,9 @@ class extension_event_reports {
       iform_report_get_report_options($args, $auth['read']),
       array(
         'dataSource' => 'library/totals/filterable_species_occurrence_image_counts',
-        'autoParamsForm' => false
+        'autoParamsForm' => false,
+        'caching' => true,
+        'cachePerUser' => false
       ),
       $options
     );
@@ -129,7 +133,9 @@ class extension_event_reports {
           '<div class="gallery-item status-{record_status} certainty-{certainty} ">'.
           '<a class="fancybox" href="{imageFolder}{media}"><img src="{imageFolder}thumb-{media}" title="{taxon}" alt="{taxon}"/><br/>{formatted}</a></div>')),
         'limit' => 10,
-        'autoParamsForm' => false
+        'autoParamsForm' => false,
+        'caching' => true,
+        'cachePerUser' => false
       ),
       $options
     );
@@ -165,7 +171,9 @@ class extension_event_reports {
           '<li style="font-size: {font_size}px">{recorders}</li>')),
         'footer' => '</ul>',
         'limit' => 15,
-        'autoParamsForm' => false
+        'autoParamsForm' => false,
+        'caching' => true,
+        'cachePerUser' => false
       ),
       $options
     );
@@ -201,7 +209,9 @@ class extension_event_reports {
           '<li style="font-size: {font_size}px">{species}</li>')),
         'footer' => '</ul>',
         'limit' => 15,
-        'autoParamsForm' => false
+        'autoParamsForm' => false,
+        'caching' => true,
+        'cachePerUser' => false
       ),
       $options
     );
@@ -245,7 +255,9 @@ class extension_event_reports {
           'dataLabels' => 'label',
           'dataLabelPositionFactor' => 1
         ),
-        'autoParamsForm' => false
+        'autoParamsForm' => false,
+        'caching' => true,
+        'cachePerUser' => false
       ),
       $options
     );
@@ -261,7 +273,7 @@ class extension_event_reports {
   
   public static function records_by_location_league($auth, $args, $tabalias, $options, $path) {
     $label = empty($options['label']) ? 'Location' : $options['label'];
-    return self::league_table($auth, $args, $options, 'library/locations/filterable_record_counts_league', $label);
+    return self::league_table($auth, $args, $options, 'library/locations/filterable_record_counts_league', $label, 'Records');
   }
   
   /**
@@ -299,17 +311,19 @@ class extension_event_reports {
   public static function records_by_recorders_league($auth, $args, $tabalias, $options, $path) { 
     $label = empty($options['label']) ? 'Recorders' : $options['label'];
     $groupby = isset($options['groupByRecorderName']) && $options['groupByRecorderName'] ? 'recorder_name' : 'users';
-    return self::league_table($auth, $args, $options, "library/$groupby/filterable_record_counts_league", $label);  
+    return self::league_table($auth, $args, $options, "library/$groupby/filterable_record_counts_league", $label, 'Records');  
   }
   
-  private static function league_table($auth, $args, $options, $report, $label) { 
+  private static function league_table($auth, $args, $options, $report, $label, $countOf='Species') { 
     iform_load_helpers(array('report_helper'));
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
         'dataSource' => $report,
         'limit' => 20,
-        'autoParamsForm' => false
+        'autoParamsForm' => false,
+        'caching' => true,
+        'cachePerUser' => false
       ),
       $options
     );
@@ -318,7 +332,7 @@ class extension_event_reports {
     $reportOptions['extraParams']['limit']=$reportOptions['limit'];
     $rows = report_helper::get_report_data($reportOptions);
     $r = self::output_title($options);
-    $r .= "<table class=\"league\"><thead><th>Pos</th><th>$label</th><th>Species</th></thead><tbody>";
+    $r .= "<table class=\"league\"><thead><th>Pos</th><th>$label</th><th>$countOf</th></thead><tbody>";
     if (count($rows)) {
       $pos = 1;
       $lastVal = $rows[0]['value'];
@@ -362,6 +376,7 @@ class extension_event_reports {
       array(
         'dataSource' => $report,
         'autoParamsForm' => false
+        // no caching by default
       ),
       $options
     );
@@ -369,8 +384,8 @@ class extension_event_reports {
       $reportOptions['extraParams']['training'] = 'true';
     $reportOptions['extraParams']['user_id'] = $userId;
     $rows = report_helper::get_report_data($reportOptions);
-    $r = self::output_title($options);
     if (count($rows)) {
+      $r = self::output_title($options);
       $r .= '<div>';
       $r .= '<div class="totals">'.lang::get('Position {1}', $rows[0]['position']).'</div>';
       $r .= '<div class="totals">'.lang::get('{1} species', $rows[0]['value']).'</div>';
