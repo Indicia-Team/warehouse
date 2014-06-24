@@ -52,7 +52,11 @@ var clear_map_features, plot_type_dropdown_change;
           control.activate();
         }
       }); 
-      if (indiciaData.pssMode && $('#location\\:location_type_id option:selected').text()!='linear' && $('#location\\:location_type_id option:selected').text()!='Vertical') {
+      //Only PSS (NPMS) square plots should be drawn so the click point is in the middle of the plot, otherwise the south-west corner is used.
+      //Check that the word linear or vertical does not appear in the selected plot type when setting the clickMiddleOfPlot option.
+      if (indiciaData.pssMode 
+          && ($('#location\\:location_type_id option:selected').text().toLowerCase().indexOf('linear')===-1) 
+          && ($('#location\\:location_type_id option:selected').text().toLowerCase().indexOf('vertical')===-1)) {
         //Rectangular PSS plots have the grid reference in the middle of the plot
         indiciaData.clickMiddleOfPlot=true;
       } 
