@@ -1025,7 +1025,7 @@ $('.ui-state-default').live('mouseout', function() {
     
     $fieldPrefix=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '');
     $ctrlOptions = array(
-      'label' => $info['display'],
+      'label' => lang::get($info['display']),
       'helpText' => $options['helpText'] ? $info['description'] : '', // note we can't fit help text in the toolbar versions of a params form
       'fieldname' => $fieldPrefix.$key,
       'nocache' => isset($options['nocache']) && $options['nocache']      
