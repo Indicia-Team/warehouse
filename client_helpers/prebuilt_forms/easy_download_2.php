@@ -477,12 +477,12 @@ class iform_easy_download_2 {
     );
     $surveys = data_entry_helper::get_population_data(array(
       'table'=>'survey',
-      'extraParams'=>$readAuth,
-      'sharing'=>$_GET['sharing_type']
+      'extraParams'=>$readAuth + array('view'=>'detail', 'orderby'=>'website,title'),
+      'sharing'=>self::expand_sharing_mode($_GET['sharing_type'])
     ));
     $r = array();
     foreach ($surveys as $survey) 
-      $r[$survey['id']]=$survey['title'];
+      $r["survey-$survey[id]"]="$survey[website] &gt; $survey[title]";
     echo json_encode($r);
   }
   
