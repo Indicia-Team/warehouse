@@ -105,7 +105,7 @@ class filter_what extends filter_base {
     );
     //Use all taxa in the warehouse as there isn't an iform master list so don't need the taxon list id param
     if (isset($options['taxon_list_id']))
-      array_merge(array('taxon_list_id' => $options['taxon_list_id']),$subListOptions['extraParams']);
+      $subListOptions['extraParams'] = array_merge(array('taxon_list_id' => $options['taxon_list_id']),$subListOptions['extraParams']);
     $r .= data_entry_helper::sub_list($subListOptions);
     $r .= "</div>\n";
     $r .= "<div id=\"rank-tab\">\n";
@@ -562,7 +562,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   ), $options);
   //If in the warehouse we don't need to worry about the iform master list.
   if (function_exists('variable_get'))
-    array_merge(array('taxon_list_id' =>variable_get('iform_master_checklist_id', 0)),$options);
+    $options=array_merge(array('taxon_list_id' =>variable_get('iform_master_checklist_id', 0)),$options);
   $options['sharing'] = report_filters_sharing_code_to_full_term($options['sharing']);
   $options['sharingCode'] = report_filters_full_term_to_sharing_code($options['sharing']);
   if (!preg_match('/^(reporting|peer_review|verification|data_flow|moderation)$/', $options['sharing']))
