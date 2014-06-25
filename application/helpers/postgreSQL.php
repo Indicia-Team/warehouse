@@ -67,7 +67,7 @@ class postgreSQL {
     // note this query excludes user 1 from the notifications (admin user) as they are records which don't
     // have a warehouse user ID. Also excludes any previous notifications of this exact source for this user.
     // ID difficulty notifications only passed through for level 3 and above.
-    return $db->query("select case when oc.auto_generated=true then 'A' when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
+    return $db->query("select distinct on (o.id) case when oc.auto_generated=true then 'A' when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
         co.id, co.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
         o.verified_on, co.public_entered_sref, oc.comment, oc.auto_generated, oc.generated_by, o.record_status, o.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
         case when oc.auto_generated=true then oc.generated_by else 'oc_id:' || oc.id::varchar end as source_detail, 't' as record_owner           
