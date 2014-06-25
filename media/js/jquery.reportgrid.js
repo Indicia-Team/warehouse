@@ -160,8 +160,10 @@ var simple_tooltip;
           if (typeof action.url !== "undefined") {
             var link = action.url, linkParams=[];
             row.rootFolder = div.settings.rootFolder;
-            if (div.settings.pathParam !== '' && link.indexOf('?'+div.settings.pathParam+'=') === -1) {
-              //if there is a path param but it is not in the link already then add it to the rootFolder
+            if (div.settings.pathParam !== '' &&
+                link.indexOf('?'+div.settings.pathParam+'=') === -1 &&
+                row.rootFolder.indexOf('?'+div.settings.pathParam+'=') === -1) {
+              //if there is a path param but it is not in either the link or the rootfolder already then add it to the rootFolder
               row.rootFolder += '?'+div.settings.pathParam+'=';
             }
             if (link.substr(0, 12).toLowerCase()!=='{rootfolder}' && link.substr(0, 12).toLowerCase()!=='{currenturl}'
