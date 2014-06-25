@@ -104,7 +104,7 @@ class import_helper extends helper_base {
       $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
       $r = '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get('import_settings_instructions')."</div>\n".
           "<form method=\"post\" id=\"entry_form\" action=\"$reloadpath\" class=\"iform\">\n".
-          "<fieldset><legend>Import Settings</legend>\n";
+          "<fieldset><legend>".lang::get('Import Settings')."</legend>\n";
       $formArray = json_decode($response['output'], true);
       if (!is_array($formArray)) {
         if (class_exists('kohana')) {
@@ -236,10 +236,11 @@ class import_helper extends helper_base {
       '<p>'.lang::get('column_mapping_instructions').'</p>'.
       '<div class="ui-helper-clearfix import-mappings-table"><table class="ui-widget ui-widget-content">'.
       '<thead class="ui-widget-header">'.
-      "<tr><th>Column in CSV File</th><th>Maps to attribute</th>";
+      "<tr><th>".lang::get('Column in CSV File')."</th><th>".lang::get('Maps to attribute')."</th>";
     if (self::$rememberingMappings) {
       $r .= "<th id='remember-all-header' name='remember-all-header'>".lang::get('Remember choice?').
-         "<br/><input type='checkbox' name='RememberAll' id='RememberAll' value='1' title='Tick all boxes to remember every column mapping next time you import.'$checkedRememberAll/></th>";
+         "<br/><input type='checkbox' name='RememberAll' id='RememberAll' value='1' title='".
+         lang::get('Tick all boxes to remember every column mapping next time you import.')."'$checkedRememberAll/></th>";
       self::$javascript .= "$('#RememberAll').change(function() {
   if (this.checked) {
    $(\".rememberField\").attr(\"checked\",\"checked\")
