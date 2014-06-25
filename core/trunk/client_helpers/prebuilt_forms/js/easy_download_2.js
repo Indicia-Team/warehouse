@@ -56,6 +56,7 @@ var setAvailableDownloadFilters;
           // @todo i18n
           $('select#survey_id').append('<option value="">&lt;All&gt;</option>');
           $.each(data, function(id, title) {
+            id = id.replace(/^survey-/, '');
             $('select#survey_id').append('<option value="'+id+'">'+title+'</option>');
           });
         
