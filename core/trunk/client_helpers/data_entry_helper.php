@@ -140,7 +140,7 @@ class data_entry_helper extends helper_base {
   * Optional. CSS class names to add to the control.</li>
   * <li><b>table</b><br/>
   * Optional. Table name to get data from for the autocomplete options.</li>
-  * <li><b>table</b><br/>
+  * <li><b>report</b><br/>
   * Optional. Report name to get data from for the autocomplete options. If specified then the table option is ignored.</li>
   * <li><b>captionField</b><br/>
   * Required. Field to draw values to show in the control from.</li>
@@ -5137,7 +5137,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['blankText'] = lang::get($options['blankText']);
         $options['items'] = str_replace(
             array('{value}', '{caption}', '{selected}'),
-            array('', htmlentities($options['blankText'])), $indicia_templates[$options['itemTemplate']]
+            array('', htmlentities($options['blankText'], ENT_COMPAT | ENT_HTML401, "UTF-8")), $indicia_templates[$options['itemTemplate']]
         ).(isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n");;
       }
       $options['items'] .= implode((isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n"), $lookupItems);

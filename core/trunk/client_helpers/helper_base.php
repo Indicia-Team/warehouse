@@ -1065,7 +1065,7 @@ $('.ui-state-default').live('mouseout', function() {
       $ctrlOptions = array_merge($ctrlOptions, array(
         'valueField'=>$popOpts[2],
         'captionField'=>$popOpts[3],
-        'blankText'=>'<'.lang::get('please select').'>',
+        'blankText'=>'<please select>',
         'extraParams'=>$options['readAuth'] + $extras
       ));
       if ($popOpts[0]=='direct')
@@ -1702,11 +1702,13 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
     self::$validated_form_id = $form_id;
     // prevent double submission of the form
     self::$javascript .= "$('#$form_id').submit(function(e) {
-  if (typeof indiciaData.formSubmitted==='undefined' || !indiciaData.formSubmitted) {
-    indiciaData.formSubmitted=true;
-  } else {
-    e.preventDefault();
-    return false;
+  if (typeof $('#$form_id').valid === 'undefined' || $('#$form_id').valid()) {
+    if (typeof indiciaData.formSubmitted==='undefined' || !indiciaData.formSubmitted) {
+      indiciaData.formSubmitted=true;
+    } else {
+      e.preventDefault();
+      return false;
+    }
   }
 });\n";
     self::add_resource('validation');
