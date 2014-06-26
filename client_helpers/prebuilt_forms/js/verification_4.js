@@ -108,10 +108,10 @@ var saveComment, saveVerifyComment;
    * Post an object containing occurrence form data into the Warehouse. Updates the
    * visual indicators of the record's status.
    */
-  function postOccurrence(occ) {
+  function postVerification(occ) {
     var status = occ['occurrence:record_status'], id=occ['occurrence:id'];
     $.post(
-      indiciaData.ajaxFormPostUrl,
+      indiciaData.ajaxFormPostUrl.replace('occurrence', 'single_verify'),
       occ,
       function () {
         $('#row' + id + ' td:first div, #details-tab td').removeClass('status-V');
@@ -293,12 +293,11 @@ var saveComment, saveVerifyComment;
     data = {
       'website_id': indiciaData.website_id,
       'occurrence:id': occId,
-      'occurrence:verified_by_id': indiciaData.userId,
+      'user_id': indiciaData.userId,
       'occurrence:record_status': status,
-      'occurrence_comment:comment': comment,
-      'occurrence_comment:person_name': indiciaData.username
+      'occurrence_comment:comment': comment
     };
-    postOccurrence(data);
+    postVerification(data);
   }
 
   saveVerifyComment=function() {
