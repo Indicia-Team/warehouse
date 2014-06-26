@@ -60,10 +60,52 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $db->from('occurrences')->set(array('record_status'=>'V', 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
           'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
       echo count($ids);
-      $db->from('cache_occurrences')->set(array('record_status'=>'V', 'cache_updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+      // since we bypass ORM here for performance, update the cache_occurrences table.
+      $db->from('cache_occurrences')->set(array('record_status'=>'V', 'verified_on'=>date('Y-m-d H:i:s'), 'cache_updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
     } catch (Exception $e) {
       echo $e->getMessage();
       error::log_error('Exception during bulk verify', $e);
+    }
+  }
+  
+  /**
+   * Provides the services/data_utils/single_verify service. This takes an occurrence:id, occurrence:record_status, user_id (the verifier)
+   * and optional occurrence_comment:comment in the $_POST data and updates the record. This is provided as a more optimised
+   * alternative to using the normal data services calls.
+   */
+  public function single_verify() {
+    if (empty($_POST['occurrence:id']) || !preg_match('/^\d+$/', $_POST['occurrence:id']))
+      echo 'occurrence:id not supplied or invalid';
+    elseif (empty($_POST['occurrence:record_status']) || ($_POST['occurrence:record_status'] !== 'V' && $_POST['occurrence:record_status'] !== 'D' && $_POST['occurrence:record_status'] !== 'R'))
+      echo 'occurrence:record_status not supplied or invalid';
+    else try {
+      $db = new Database();
+      $this->authenticate('write');
+      $websites = $this->website_id ? array($this->website_id) : null;
+      $db->from('occurrences')
+          ->set(array('record_status'=>$_POST['occurrence:record_status'], 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
+          'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))
+          ->where('id', $_POST['occurrence:id'])
+          ->update();
+      // since we bypass ORM here for performance, update the cache_occurrences table.
+      $db->from('cache_occurrences')
+          ->set(array('record_status'=>$_POST['occurrence:record_status'], 'verified_on'=>date('Y-m-d H:i:s'), 'cache_updated_on'=>date('Y-m-d H:i:s')))
+          ->where('id', $_POST['occurrence:id'])
+          ->update();
+      if (!empty($_POST['occurrence_comment:comment'])) {
+        $db->insert('occurrence_comments', array(
+              'occurrence_id'=>$_POST['occurrence:id'],
+              'comment'=>$_POST['occurrence_comment:comment'],
+              'created_by_id'=>$this->user_id,
+              'created_on'=>date('Y-m-d H:i:s'),
+              'updated_by_id'=>$this->user_id,
+              'updated_on'=>date('Y-m-d H:i:s')
+          ));
+      }
+      echo 'OK';
+    } catch (Exception $e) {
+      echo $e->getMessage();
+      error::log_error('Exception during single record verify', $e);
     }
   }
 
