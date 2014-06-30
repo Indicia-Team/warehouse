@@ -920,15 +920,15 @@ class XMLReportReader_Core implements ReportReader
             ),
             'joins' => array(
               array('value'=>'T', 'operator'=>'equal', 'sql'=>
-  "LEFT JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id
+  "LEFT JOIN index_locations_samples #alias:ilstrust# on #alias:ilstrust#.sample_id=o.sample_id
   JOIN user_trusts #alias:ut# on (#alias:ut#.survey_id=o.survey_id
       OR #alias:ut#.taxon_group_id=o.taxon_group_id
-      OR (#alias:ut#.location_id=#alias:ils#.location_id or #alias:ut#.location_id is null)
+      OR (#alias:ut#.location_id=#alias:ilstrust#.location_id or #alias:ut#.location_id is null)
     )
     AND #alias:ut#.deleted=false
     AND ((o.survey_id = #alias:ut#.survey_id) or (#alias:ut#.survey_id is null and (#alias:ut#.taxon_group_id is not null or #alias:ut#.location_id is not null)))
     AND ((o.taxon_group_id = #alias:ut#.taxon_group_id) or (#alias:ut#.taxon_group_id is null and (#alias:ut#.survey_id is not null or #alias:ut#.location_id is not null)))
-    AND ((#alias:ils#.location_id = #alias:ut#.location_id) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
+    AND ((#alias:ilstrust#.location_id = #alias:ut#.location_id) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
     AND o.created_by_id = #alias:ut#.user_id")
             )
         ),
