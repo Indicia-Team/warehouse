@@ -47,7 +47,7 @@ function notification_emails_scheduled_task($last_run_date, $db) {
   if (!empty($frequenciesToRun[0])) {
     runEmailNotificationJobs($db,$frequenciesToRun); 
   } else {
-    echo 'There are no email notification jobs to run at the moment.</br>';
+    echo 'There are no email notification jobs to run at the moment.<br/>';
   }
 }
 
@@ -76,7 +76,7 @@ function get_frequencies_to_run_now($db) {
  * Send out the notification emails
  */
 function runEmailNotificationJobs($db, $frequenciesToRun) {
-  $subscriptionSettingsPageUrl = url::base() . '/subscription_settings.php';
+  $subscriptionSettingsPageUrl = url::base() . 'subscription_settings.php';
   $frequencyToRunString='';
   //Gather all the notification frequency jobs we need to run into a set ready to pass into sql
   foreach ($frequenciesToRun as $frequencyToRunArray) {
@@ -86,29 +86,32 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
   $frequencyToRunString = substr($frequencyToRunString, 0, -1);
   //Get all the notifications where the source_type is listed as needing running today and the notification id is later than the last notification that was sent by that job
   $notificationsToSendEmailsFor = $db->query("
-    SELECT distinct n.id,n.user_id, n.source_type, n.source, n.data, u.username
+    SELECT distinct n.id,n.user_id, n.source_type, n.source, n.data, u.username, coalesce(p.first_name, u.username) as name_to_use
     FROM notifications n
       JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND unf.notification_frequency in (".$frequencyToRunString.") AND unf.deleted='f'
       JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL)
-      JOIN users u ON u.id = n.user_id
-    WHERE n.email_sent = 'f'
-    ORDER BY n.user_id, u.username, n.id
+      JOIN users u ON u.id = n.user_id AND u.deleted=false
+      JOIN people p ON p.id = u.person_id AND p.deleted=false
+    WHERE n.email_sent = 'f' AND n.source_type<>'T'
+    ORDER BY n.user_id, u.username, n.source_type, n.id
   ")->result_array(false);
   if (empty($notificationsToSendEmailsFor)) {
-    echo 'There are no email notification jobs to run at the moment.</br>';
+    echo 'There are no email notification jobs to run at the moment.<br/>';
   } else {
     //Get address to send emails from.
     $email_config=array();
     //Try and get from configuration file if possible
     try {
       $email_config['address']=kohana::config('notification_emails.email_sender_address');
+      $systemName = kohana::config('notification_emails.system_name');
       //Handle config file not present
     } catch (Exception $e) {
       $email_config = Kohana::config('email');
+      $systemName = 'System generated';
     }
     //Handle also if config file present but option is not
     if (!isset($email_config['address'])) {
-      echo 'Email address not provided in email configuration or email_sender_address configuration option not provided. I cannot send any emails without a sender address.</br>';
+      echo 'Email address not provided in email configuration or email_sender_address configuration option not provided. I cannot send any emails without a sender address.<br/>';
       return false;;
     }
     $emailSentCounter=0;
@@ -117,34 +120,62 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     $previousUserId=0;
     $notificationIds=array();
     $emailContent=start_building_new_email($notificationsToSendEmailsFor[0]);
+    $currentType = '';
+    $sourceTypes=array('S'=>'Species alerts','C'=>'Comments on your records','V'=>'Verification of your records','A'=>'Record Cleaner results for your records',
+        'VT'=>'Incoming records for you to verify','M'=>'Milestones and achievements you\'ve attained');
+    $recordStatus = array('T' => 'Test', 'I' => 'Data entry in progress', 'C' => 'Pending verification', 'R' => 'Rejected', 'D' => 'Queried', 'V' => 'Verified', 'S' => 'Awaiting response');
+    $dataFieldsToOutput = array('username'=>'From', 'occurrence_id'=>'Record ID', 'comment'=>'Message', 'record_status'=>'Record status');
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
       //This user is not the first user but we have detected that it is not the same user we added a notification to the email for last time,
       //this means we need to send out the previous user's email and start building a new email
       if ($notificationToSendEmailsFor['user_id']!=$previousUserId && $previousUserId!=0) {      
-        $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a></br></br>';
+        $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
         send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
         //Used to mark the notifications in an email if an email send is successful, once email send attempt has been made we can reset the list ready for the next email.
         $notificationIds=array();
         $emailSentCounter++;
         //As we just sent out a an email, we can start building a new one.
         $emailContent=start_building_new_email($notificationToSendEmailsFor);
+        $currentType = '';
       } 
-      //For every notification, we must add it to the email
-      $emailContent.= "ID: ".$notificationToSendEmailsFor['id']."</br>";
-      $emailContent.= "Notification Source Type: ".$notificationToSendEmailsFor['source_type']."</br>";
-      if (!empty($notificationToSendEmailsFor['source']))
-        $emailContent.= "Notification Source: ".$notificationToSendEmailsFor['source']."</br>";
       if (!empty($notificationToSendEmailsFor['data'])) {
-        $emailContent.= "</br>Data</br>";
-        $emailContent.= unparseData($notificationToSendEmailsFor['data'])."</br></br>";
+        $record = json_decode($notificationToSendEmailsFor['data'], true);
+        // Output a header for the group of notifications of the same type
+        if ($currentType!==$notificationToSendEmailsFor['source_type']) {
+          if ($currentType!=='')
+            $emailContent .= '</tbody></table>';
+          $currentType=$notificationToSendEmailsFor['source_type'];
+          $emailContent .= '<h2>'.$sourceTypes[$currentType].'</h2>';
+          $emailContent .= '<table><thead>';
+          foreach ($dataFieldsToOutput as $field=>$caption) {
+            if (isset($record[$field])) 
+              $emailContent .= "<th>$caption</th>";
+          }
+          $emailContent .= '</thead><tbody>';
+        }
+        $emailContent .= '<tr>';
+        foreach ($dataFieldsToOutput as $field=>$caption) {
+          if (isset($record[$field])) { 
+            if ($field==='username' && ($record[$field]==='admin' || $record[$field]==='system'))
+              $record[$field] = $systemName;
+            elseif ($field==='occurrence_id')
+              $record[$field] = 'Record ID ' . $record[$field];
+            elseif ($field==='record_status') 
+              $record[$field] = $recordStatus[$record[$field]];
+            $emailContent .= '<td style="padding-right: 1em;">'.$record[$field].'</td>';
+          }
+        }
+        $emailContent .= '</tr>';
       }
       //Log the notification id so we know that this will have to be set to email_sent in the database for the notification
       $notificationIds[]=$notificationToSendEmailsFor['id'];
       //Update the user_id tracker as we cycle through the notifications
       $previousUserId=$notificationToSendEmailsFor['user_id'];
     }
+    if ($currentType!=='')
+      $emailContent .= '</tbody></table>';
     //if we have run out of notifications to send we will have finished going around the loop, so we just need to send out the last email whatever happens
-    $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a></br></br>';
+    $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
     send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
     $emailSentCounter++;
     //Save the maximum notification id against the jobs we are going to run now, so we know that we have done the notifications up to that id and next time the jobs are run
@@ -152,11 +183,11 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     //Also set the date/time the job was run
     update_last_run_metadata($db, $frequenciesToRun);
     if ($emailSentCounter==0)
-      echo 'No new notification emails have been sent.</br>';
+      echo 'No new notification emails have been sent.<br/>';
     elseif ($emailSentCounter==1)
-      echo '1 new notification email has been sent.</br>';
+      echo '1 new notification email has been sent.<br/>';
     else 
-      echo $emailSentCounter.' new notification emails have been sent.</br>';
+      echo $emailSentCounter.' new notification emails have been sent.<br/>';
   }
 }
 
@@ -165,19 +196,19 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
  */
 function start_building_new_email($notificationToSendEmailsFor) {
   //How do we address the user at the start of the email e.g. Dear user, To user, How is your day going user?
-  //Get this from config if available
+  //Get this from config if available  
   $defaultUserAddress='Dear';
   try {
     $emailContent=kohana::config('notification_emails.how_to_address_username');
     //Handle config file not present
   } catch (Exception $e) {
-    $emailContent=$defaultUserAddress;
+    $emailContent='<p>' . $defaultUserAddress;
   }
   //Handle if config file present but option is not
   if (empty($emailContent)) {
     $emailContent=$defaultUserAddress;
   }
-  $emailContent .= ' '.$notificationToSendEmailsFor['username'].', </br></br>';
+  $emailContent .= ' '.$notificationToSendEmailsFor['name_to_use'].', </p>';
   //Some description before the list of notifications
   $defaultTopOfEmailBody='You have the following new notifications.';
   try {
@@ -190,7 +221,7 @@ function start_building_new_email($notificationToSendEmailsFor) {
   if (empty($topOfEmailBody))
     $topOfEmailBody=$defaultTopOfEmailBody;
   
-  $emailContent.=$topOfEmailBody.'</br></br>';
+  $emailContent.="<p>$topOfEmailBody.</p>";
   return $emailContent;
 }
 
@@ -266,20 +297,5 @@ function send_out_user_email($db,$emailContent,$userId,$notificationIds,$email_c
     $db->rollback();
     throw $e;
   }
-}
-
-/**
- * Converts data stored in the notifications table into an HTML grid.
- */
-function unparseData($data) {
-  $struct = json_decode($data, true);
-  $r = "<table><tbody>\n";
-  foreach ($struct as $title=>$record) {
-    $r .= '<tr><td>';
-    $r .= $title.': '.$record;
-    $r .= "</td></tr>\n";
-  }
-  $r .= "</tbody>\n</table>\n";
-  return $r;
 }
 ?>
