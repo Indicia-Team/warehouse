@@ -112,10 +112,10 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     try {
       $sourceTypes = kohana::config('species_alerts.register_for_notification_emails_source_types');
     } catch (exception $e) {
-      $sourceTypes=array('T','C','V','A','S','VT','AC','M');
+      $sourceTypes=array('T','C','V','A','S','VT','M');
     }
     if (empty($sourceTypes))
-      $sourceTypes=array('T','C','V','A','S','VT','AC','M');
+      $sourceTypes=array('T','C','V','A','S','VT','M');
     //Add a notification email setting for each configured source type
     foreach ($sourceTypes as $sourceType) {
       $notificationSettingSubmissionObj = ORM::factory('user_email_notification_setting');
