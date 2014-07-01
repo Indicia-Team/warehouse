@@ -20,6 +20,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
  
+$config['system_name']='iRecord';
 $config['email_subject']='You have new notifications.';
 $config['how_to_address_username']='I hope you are having a good day';
 $config['top_of_email_body']='You have the following new notifications.';
