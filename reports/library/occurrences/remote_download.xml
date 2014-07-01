@@ -72,7 +72,7 @@
     <column name='occurrence_id' display='ID' sql='co.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='recordkey' display='RecordKey' sql="co.id" datatype="text" />
     <column name='source' display='Source' sql="w.title || ' | ' || co.survey_title" datatype="text" />
-    <column name='sample_id' visible='false' sql='case when co.sensitivity_precision is null and co.privacy_precision then co.sample_id else null end' datatype='integer' />
+    <column name='sample_id' visible='false' sql='case when co.sensitivity_precision is null and co.privacy_precision is null then co.sample_id else null end' datatype='integer' />
     <column name='taxon' display='Species' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
       sql="co.preferred_taxon" datatype='text' />
