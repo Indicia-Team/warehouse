@@ -12,7 +12,7 @@
       <params>
         <param name='taxon_list_id' display='Taxon List' description='Select the taxon list to find taxon groups for' datatype='lookup'
             query='SELECT id, title as caption FROM taxon_lists' population_call='direct:taxon_list:id:title' />
-        <param name='idlist' display='List of IDs' description='List of taxon group IDS to limit search to' datatype='text[]'>
+        <param name='idlist' display='List of IDs' description='List of taxon group IDS to limit search to' datatype='text[]' default=''>
           <where>cttl.taxon_group_id in (#idlist#)</where>
         </param>
       </params>
