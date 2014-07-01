@@ -45,7 +45,7 @@
     <column name='images' display='Images' sql='o.images' img='true' />
     <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" datatype="text" />
     <column name='pass' visible='false' sql="CASE WHEN o.data_cleaner_info='pass' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
-    <column name='fails' display='Check' template="{pass}{fails}"
+    <column name='fails' display='Auto check' template="{pass}{fails}"
         sql="case when o.data_cleaner_info is not null and o.data_cleaner_info&lt;&gt;'pass' then 
             replace(replace(replace(replace(o.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;') 
         end"
