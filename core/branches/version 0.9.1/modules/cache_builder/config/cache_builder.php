@@ -136,7 +136,7 @@ $config['taxa_taxon_lists']['get_changed_items_query']="
       union
       select ttl.id, ttl.deleted or ttlpref.deleted or tpref.deleted or lpref.deleted or tg.deleted
       from taxa_taxon_lists ttl
-      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id
+      join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred=true and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
       join taxa tpref on tpref.id=ttlpref.taxon_id
       join languages lpref on lpref.id=tpref.language_id
       join taxon_groups tg on tg.id=tpref.taxon_group_id
@@ -174,13 +174,13 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
     #join_needs_update#
-    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' and ttlpref.taxon_list_id=ttl.taxon_list_id
-    join taxa t on t.id=ttl.taxon_id 
-    join languages l on l.id=t.language_id 
-    join taxa tpref on tpref.id=ttlpref.taxon_id 
-    join taxon_groups tg on tg.id=tpref.taxon_group_id
-    join languages lpref on lpref.id=tpref.language_id
-    left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id
+    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
+    join taxa t on t.id=ttl.taxon_id and t.deleted=false
+    join languages l on l.id=t.language_id and l.deleted=false
+    join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
+    join taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
+    join languages lpref on lpref.id=tpref.language_id and lpref.deleted=false
+    left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id and tcommon.deleted=false
     where cttl.id=ttl.id";
 
 $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
@@ -203,17 +203,17 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       tpref.external_key, ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
       now(), now(), ttl.allow_data_entry
     from taxon_lists tl
-    join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
+    join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id and ttl.deleted=false
     left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
-    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' and ttlpref.taxon_list_id=ttl.taxon_list_id
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
-    join languages l on l.id=t.language_id and l.deleted=false
-    join taxa tpref on tpref.id=ttlpref.taxon_id 
-    join taxon_groups tg on tg.id=tpref.taxon_group_id
-    join languages lpref on lpref.id=tpref.language_id
-    left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id
+    join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
+    join taxa t on t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
+    join languages l on l.id=t.language_id and l.deleted=false and l.deleted=false
+    join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
+    join taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
+    join languages lpref on lpref.id=tpref.language_id and lpref.deleted=false
+    left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id and tcommon.deleted=false
     #join_needs_update#
-    where cttl.id is null";
+    where cttl.id is null and tl.deleted=false";
 
 $config['taxa_taxon_lists']['join_needs_update']='join needs_update_taxa_taxon_lists nu on nu.id=ttl.id';
 $config['taxa_taxon_lists']['key_field']='ttl.id';
@@ -225,16 +225,16 @@ with recursive q as (
       t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
   from cache_taxa_taxon_lists ttl1  
   join cache_taxa_taxon_lists ttl2 on ttl2.external_key=ttl1.external_key and ttl2.taxon_list_id=#master_list_id#
-  join taxa_taxon_lists ttl2raw on ttl2raw.id=ttl2.id
-  join taxa t on t.id=ttl2raw.taxon_id and t.deleted=false
-  join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false 
+  join taxa_taxon_lists ttl2raw on ttl2raw.id=ttl2.id and ttl2raw.deleted=false
+  join taxa t on t.id=ttl2raw.taxon_id and t.deleted=false and t.deleted=false
+  join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
   join needs_update_taxa_taxon_lists nu on nu.id=ttl1.id
   union all
   select ttl.id, q.child_id, q.child_taxon, ttl.parent_id, t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
   from q
-  join taxa_taxon_lists ttl on ttl.id=q.parent_id
-  join taxa t on t.id=ttl.taxon_id and t.deleted=false
-  join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false 
+  join taxa_taxon_lists ttl on ttl.id=q.parent_id and ttl.deleted=false
+  join taxa t on t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
+  join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
 ) select distinct * into temporary rankupdate from q;
 
 update cache_taxa_taxon_lists cttl
