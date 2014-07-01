@@ -1,6 +1,27 @@
 <?php
 
-/*
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Milestones
+ * @subpackage Plugins
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
+ */
+
+/**
  * Add Milestones tab to the websites edit page.
  */
 function milestones_extend_ui() {
@@ -22,13 +43,16 @@ function milestones_extend_orm() {
   ));
 }
 
+/**
+ * Hook to data services to allow milestones to be exposed.
+ */
 function milestones_extend_data_services() {
   return array(
     'milestones'=>array()
   );
 }
 
-/*
+/**
  * Get a list of distinct user/website combinations and the occurrence/taxon count milestones that each combination will need testing for 
  * (these are milestones associated with each website where the milestone has not been
  * awarded yet for that user)
@@ -51,7 +75,7 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
   return $usersWebsiteCombos;
 }
 
-/*
+/**
  * Get a list of distinct user/website combinations and the media count milestones that each combination will need testing for 
  * (these are milestones associated with each website where the milestone has not been
  * awarded yet for that user)
@@ -77,7 +101,7 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
   return $usersWebsiteCombos;
 }
 
-/*
+/**
  * When the scheduled task is run, we need to send a notification to all users who have passed a new milestone
  */
 function milestones_scheduled_task($last_run_date, $db) {
@@ -155,10 +179,12 @@ function milestones_scheduled_task($last_run_date, $db) {
     echo $notificationCount.' new milestone notifications have been created.</br>';
 }
 
-//Send the notification to say the award has been made.
+/**
+ * Send the notification to say the award has been made.
+ */
 function create_milestone_reached_notification($milestoneToCheck) {
   $notificationObj = ORM::factory('notification');
-  $notificationObj->source='Milestone Awarded';
+  $notificationObj->source='milestones';
   $notificationObj->triggered_on=date("Ymd H:i:s");
   $notificationObj->user_id=$milestoneToCheck['created_by_id'];
   $notificationObj->source_type='M'; 
