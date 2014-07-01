@@ -19,5 +19,7 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-$config['register_for_notification_emails_source_types']=array('T','C','V','A','S','VT','AC','M');
+$config['register_for_notification_emails_source_types']=array('T','C','V','A','S','VT','M');
+// Name to appear in the "From" field for the notifications
+$config['from']='system';
 ?>

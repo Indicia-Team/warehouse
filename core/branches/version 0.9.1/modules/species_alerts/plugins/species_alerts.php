@@ -27,8 +27,9 @@ function species_alerts_scheduled_task($last_run_date, $db) {
       u.username as username
     FROM occdelta od
       JOIN occurrences o ON o.id = od.id
+      LEFT JOIN index_locations_samples ils on ils.sample_id=o.sample_id
       JOIN species_alerts sa ON 
-        (sa.location_id IS NULL OR od.location_id=sa.location_id)
+        (sa.location_id IS NULL OR sa.location_id=ils.location_id)
         AND 
           (sa.taxon_meaning_id = od.taxon_meaning_id
           OR
@@ -57,34 +58,44 @@ function create_notifications($newOccDataForSpeciesAlert) {
   //For any new occurrence record which has a matching species alert record, we need to generate a notification for the user
   foreach ($newOccDataForSpeciesAlert as $speciesAlertOccurrenceData) {
     if ($speciesAlertOccurrenceData['record_status']=='V'&&$speciesAlertOccurrenceData['cud']=='U')
-      $commentText = "Species Alert: The record ".$speciesAlertOccurrenceData['taxon']." at ".$speciesAlertOccurrenceData['entered_sref']." on ".date("Y\/m\/d",strtotime($speciesAlertOccurrenceData['created_on']))." has been verified.<br\/>";
-    if ($speciesAlertOccurrenceData['cud']=='C') 
-      $commentText = "Species Alert: The record ".$speciesAlertOccurrenceData['taxon']." at ".$speciesAlertOccurrenceData['entered_sref']." on ".date("Y\/m\/d",strtotime($speciesAlertOccurrenceData['created_on']))." has been created.<br\/>";
-    if (!empty($commentText)) {
-      $notificationObj = ORM::factory('notification');
-      $notificationObj->source='species alerts';
-      $notificationObj->acknowledged='false';
-      $notificationObj->triggered_on=date("Ymd H:i:s");
-      $notificationObj->user_id=$speciesAlertOccurrenceData['alerted_user_id'];
-      $notificationObj->source_type='S';
-      $notificationObj->linked_id=$speciesAlertOccurrenceData['occurrence_id'];
-      $notificationObj->data=
-      json_encode(
-        array(
-          'username'=>$speciesAlertOccurrenceData['username'],
-          'occurrence_id'=>$speciesAlertOccurrenceData['occurrence_id'],         
-          'comment'=>$commentText,
-          'taxon'=>$speciesAlertOccurrenceData['taxon'],
-          'date'=>date("Y\/m\/d",strtotime($speciesAlertOccurrenceData['created_on'])),
-          'entered_sref'=>$speciesAlertOccurrenceData['entered_sref'],
-          'auto_generated'=>'t',
-          'record_status'=>$speciesAlertOccurrenceData['record_status'],
-          'updated on'=>date("Y-m-d H:i:s",strtotime($speciesAlertOccurrenceData['updated_on']))
-        )
-      );
-      $notificationObj->save();
-      $notificationCounter++;
+      $action = 'verified';
+    elseif ($speciesAlertOccurrenceData['cud']=='C') 
+      $action = 'entered';
+    else 
+      continue;
+    $sref = $speciesAlertOccurrenceData['entered_sref'];
+    if (empty($sref))
+      $sref='*sensitive*';
+    $commentText = "A record of $speciesAlertOccurrenceData[taxon] at $sref on ".
+        date("Y\/m\/d",strtotime($speciesAlertOccurrenceData['created_on']))." has been $action.<br\/>";
+    try {
+      $from = kohana::config('species_alerts.from');
+    } catch (Exception $e) {
+      $from = 'system';
     }
+    $notificationObj = ORM::factory('notification');
+    $notificationObj->source='species alerts';
+    $notificationObj->acknowledged='false';
+    $notificationObj->triggered_on=date("Ymd H:i:s");
+    $notificationObj->user_id=$speciesAlertOccurrenceData['alerted_user_id'];
+    $notificationObj->source_type='S';
+    $notificationObj->linked_id=$speciesAlertOccurrenceData['occurrence_id'];
+    $notificationObj->data=
+    json_encode(
+      array(
+        'username'=>$from,
+        'occurrence_id'=>$speciesAlertOccurrenceData['occurrence_id'],         
+        'comment'=>$commentText,
+        'taxon'=>$speciesAlertOccurrenceData['taxon'],
+        'date'=>date("Y\/m\/d",strtotime($speciesAlertOccurrenceData['created_on'])),
+        'entered_sref'=>$speciesAlertOccurrenceData['entered_sref'],
+        'auto_generated'=>'t',
+        'record_status'=>$speciesAlertOccurrenceData['record_status'],
+        'updated on'=>date("Y-m-d H:i:s",strtotime($speciesAlertOccurrenceData['updated_on']))
+      )
+    );
+    $notificationObj->save();
+    $notificationCounter++;
   }
   if ($notificationCounter==0)
     echo 'No new Species Alert notifications have been created.</br>';
