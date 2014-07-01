@@ -6,7 +6,7 @@ BEGIN
 success := FALSE;
 
 BEGIN
-COMMENT ON COLUMN notifications.source_type IS 'Defines the type of source of this notification, as described in the source. Value can be T (= trigger), C (= comment), V (= verification), A (= automated record check), S (= species alert), VT (= verifier task), AC (= achievement), M (= milestone). When constraint is altered, update user_email_notification_settings.notification_source_type to match.';
+COMMENT ON COLUMN notifications.source_type IS 'Defines the type of source of this notification, as described in the source. Value can be T (= trigger), C (= comment), V (= verification), A (= automated record check), S (= species alert), VT (= verifier task), M (= milestone). When constraint is altered, update user_email_notification_settings.notification_source_type to match.';
 END;
 
 BEGIN
@@ -28,7 +28,7 @@ BEGIN
         REFERENCES users (id) MATCH SIMPLE
         ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT chk_notification_source_type 
-    CHECK (notification_source_type::text = 'T'::bpchar::text OR notification_source_type ::text = 'V'::bpchar::text OR notification_source_type::text = 'C'::bpchar::text OR notification_source_type::text = 'A'::bpchar::text OR notification_source_type::text = 'S'::bpchar::text OR notification_source_type::text = 'VT'::bpchar::text OR notification_source_type::text = 'AC'::bpchar::text OR notification_source_type::text = 'M'::bpchar::text),
+    CHECK (notification_source_type::text = 'T'::bpchar::text OR notification_source_type ::text = 'V'::bpchar::text OR notification_source_type::text = 'C'::bpchar::text OR notification_source_type::text = 'A'::bpchar::text OR notification_source_type::text = 'S'::bpchar::text OR notification_source_type::text = 'VT'::bpchar::text OR notification_source_type::text = 'M'::bpchar::text),
   CONSTRAINT chk_notification_frequency 
     CHECK (notification_frequency::text = 'IH'::bpchar::text OR notification_frequency::text = 'D'::bpchar::text OR notification_frequency::text = 'W'::bpchar::text),
   CONSTRAINT fk_user_email_notification_settings_creator FOREIGN KEY (created_by_id)
@@ -45,7 +45,7 @@ EXCEPTION
 COMMENT ON TABLE user_email_notification_settings
   IS 'Contains data relating to how often emails are sent to users with information about new notifications';
 COMMENT ON COLUMN user_email_notification_settings.user_id IS 'User the frequency setting applies to.';
-COMMENT ON COLUMN user_email_notification_settings.notification_source_type IS 'The notification type the setting relates to, as described in the notification Source Type. Value can be T (= trigger), C (= comment), V (= verification), A (= automated record check), S (= species alert), VT (= verifier task), AC (= achievement), M (= milestone). Needs updating when notification.source_type constraint is altered.';
+COMMENT ON COLUMN user_email_notification_settings.notification_source_type IS 'The notification type the setting relates to, as described in the notification Source Type. Value can be T (= trigger), C (= comment), V (= verification), A (= automated record check), S (= species alert), VT (= verifier task), M (= milestone). Needs updating when notification.source_type constraint is altered.';
 COMMENT ON COLUMN user_email_notification_settings.notification_frequency IS 'Defines the frequency of the emails. Value can be IH (= immediate/hourly), D (= daily), W (= weekly)';
 COMMENT ON COLUMN user_email_notification_settings.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN user_email_notification_settings.created_by_id IS 'Foreign key to the users table (creator).';
@@ -102,3 +102,10 @@ $func$;
 SELECT f_add_user_email_notification_settings();
 
 DROP FUNCTION f_add_user_email_notification_settings();
+
+insert into user_email_notification_frequency_last_runs (notification_frequency, last_max_notification_id, last_run_date)
+values ('IH', (select max(id) from notifications), now());
+insert into user_email_notification_frequency_last_runs (notification_frequency, last_max_notification_id, last_run_date)
+values ('D', (select max(id) from notifications), now());
+insert into user_email_notification_frequency_last_runs (notification_frequency, last_max_notification_id, last_run_date)
+values ('W', (select max(id) from notifications), now());
