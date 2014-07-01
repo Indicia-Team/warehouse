@@ -1,3 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Email notification settings</title>
+<style>
+body { font-family: Verdana, Geneva, sans-serif; }
+form {
+  max-width: 1200px;
+  margin: auto;
+}
+td, th {
+  border: solid silver 1px;
+  padding: 0.2em 0.8em;
+}
+form label {
+  width: 400px !important;
+}
+fieldset {
+  margin: 1em 0;
+}
+legend {
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
 <form method="POST">
 <?php
 //If there is a POST, then the user has saved, so process this
@@ -22,10 +51,10 @@ if (!empty($_POST)) {
 class subscription_settings {
   private function get_page_configuration() {
     $configuration['frequencies']=array('NONE'=>'NONE', 'IH'=>'Immediate/Hourly','D'=>'Daily','W'=>'Weekly');
-    $configuration['sourceTypes']=array('T'=>'Trigger','C'=>'Comment','V'=>'Verification','A'=>'Automated Record Check','S'=>'Species Alert','VT'=>'Verifier Task','AC'=>'Achievement','M'=>'Milestone');
+    $configuration['sourceTypes']=array('S'=>'Species alerts','C'=>'Comments on your records','V'=>'Verification of your records','A'=>'Record Cleaner results for your records','VT'=>'Incoming records for you to verify','M'=>'Milestones and achievements you\'ve attained');
+    $configuration['privateKey']='Indicia';
     $configuration['cssPath']='media/css/default_site.css';
     $configuration['dataEntryHelperPath']='client_helpers/data_entry_helper.php';
-    $configuration['privateKey']='Indicia';
     return $configuration;
   }
 
@@ -34,12 +63,13 @@ class subscription_settings {
     $configuration = self::get_page_configuration();
     $cssPath=$configuration['cssPath'];
     $dataEntryHelperPath=$configuration['dataEntryHelperPath'];
-    ?><style>
-    <?php include $cssPath;
+    echo "<style>\n";
+    include $cssPath;
+    echo "</style>\n";
     require_once $dataEntryHelperPath;?>
-    </style>
     <h1>Notification Email Settings</h1>
-    <i>Use the following boxes to select how often you would like to receive emails containing details of new notifications. You can select a different frequency depending on the notification type.</br></br><?php
+    <fieldset><legend>Email digest frequencies</legend>
+    Use the following boxes to select how often you would like to receive emails containing details of new notifications. You can select a different frequency depending on the notification type.</br></br><?php
     
     
     $frequencies = $configuration['frequencies'];
@@ -54,9 +84,9 @@ class subscription_settings {
       $notificationEmailSettingSorted[$notificationEmailSetting['notification_source_type']]=array($notificationEmailSetting['id'],$notificationEmailSetting['notification_frequency']);
     }
     //Loop through each notification source type available and create a drop-down so that the user can select the frequency they want.
-    foreach ($sourceTypes as $sourceType=>$SourceTypeFullName) {
+    foreach ($sourceTypes as $sourceType=>$sourceTypeFullName) {
       $selectSettings=array(
-        'label' => 'Notification Type "'.$sourceType.'" - "'.$SourceTypeFullName.'"',
+        'label' => $sourceTypeFullName,
         'lookupValues' =>$frequencies,
       );    
       //If there is existing data then set a default for the select drop-downs
@@ -70,6 +100,7 @@ class subscription_settings {
       }
       echo data_entry_helper::select($selectSettings);
     }
+    echo "</fieldset>\n";
   }
 
   /*
@@ -85,49 +116,40 @@ class subscription_settings {
       'table' => 'species_alert',
       'extraParams' => $auth['read'] + $extraParams,
     ));
-
     //Create a grid
     if (!empty($speciesAlertData)) {
-      ?></br><i>Select the checkbox against any species alert settings you want to remove your subscription for.</i></br></br>
+      ?><fieldset><legend>Species alerts</legend>
+      <p>Select the checkbox against any species alert settings you want to remove your subscription for.</p>
       <table><?php
       ?><tr><?php
       //Draw the column headers
-      foreach ($speciesAlertData[0] as $headerName=>$speciesAlertColumnData) {?>
-        <th>
-        <?php 
-        if ($headerName==='id')
-          $headerName='ID';
-        if ($headerName==='user_id')
-          $headerName='User ID';
-        if ($headerName==='username')
-          $headerName='Username';
-        if ($headerName==='alert_on_entry')
-          $headerName='Alert On Entry';
-        if ($headerName==='alert_on_verify')
-          $headerName='Alert On Verify';
-        if ($headerName==='location_name')
-          $headerName='Location Name';
-        if ($headerName==='website')
-          $headerName='Website';
-        if ($headerName==='external_key')
-          $headerName='External Key';
-        if ($headerName==='taxon_meaning_id')
-          $headerName='Taxon Meaning ID';
-        echo $headerName; 
-        
-        ?>
-        </th><?php
+      $wantCols = array('alert_on_entry','alert_on_verify','preferred_taxon','default_common_name','location_name');
+      foreach ($speciesAlertData[0] as $headerName=>$speciesAlertColumnData) {
+        if (in_array($headerName, $wantCols)) {
+          echo '<th>';
+          $headerName = str_replace('Id', 'ID', ucwords(str_replace('_', ' ', $headerName)));
+          echo $headerName; 
+          echo "</th>\n";
+        }
       }    
       ?></tr><?php
       //Create a row for each species alert item related to the user
       foreach ($speciesAlertData as $speciesAlertItem) {
-        ?><tr><?php
-        foreach ($speciesAlertItem as $speciesAlertColumnData) { ?>
-          <td><?php echo $speciesAlertColumnData; ?></td><?php 
-        }?>
-      <td><input id="remove:<?php echo $speciesAlertItem['id']?>" name="remove:<?php echo $speciesAlertItem['id']?>" type="checkbox"></td>
-      </tr><?
-      }?></table><?php
+        echo '<tr>';
+        foreach ($speciesAlertItem as $field => $speciesAlertColumnData) {
+          if (in_array($field, $wantCols)) {
+            switch ($speciesAlertColumnData) {
+              case 't': $speciesAlertColumnData = 'Yes'; break;
+              case 'f': $speciesAlertColumnData = 'No'; break;
+              case '': $speciesAlertColumnData = '-'; break;
+            }
+            echo "<td>$speciesAlertColumnData</td>";
+          }
+        }
+        echo "<td><input id=\"remove:$speciesAlertItem[id]\" name=\"remove:$speciesAlertItem[id]\" type=\"checkbox\"></td>";
+        echo "</tr>";
+      }
+      ?></table></fieldset><?php
     }
   }
 
@@ -292,3 +314,5 @@ class subscription_settings {
   }
 }
 ?>
+</body>
+</html>
