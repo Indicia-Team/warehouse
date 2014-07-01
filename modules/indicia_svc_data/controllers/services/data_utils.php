@@ -83,19 +83,20 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $db = new Database();
       $this->authenticate('write');
       $websites = $this->website_id ? array($this->website_id) : null;
-      $delta = array('record_status'=>$_POST['occurrence:record_status'], 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
-          'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s'));
-      if (!empty($_POST['occurrence:taxa_taxon_list_id']))
-        $delta['taxa_taxon_list_id'] = $_POST['occurrence:taxa_taxon_list_id'];
-      $db->from('occurrences')
-          ->set($delta)
-          ->where('id', $_POST['occurrence:id'])
-          ->update();
-      // since we bypass ORM here for performance, update the cache_occurrences table.
-      $db->from('cache_occurrences')
-          ->set(array('record_status'=>$_POST['occurrence:record_status'], 'verified_on'=>date('Y-m-d H:i:s'), 'cache_updated_on'=>date('Y-m-d H:i:s')))
-          ->where('id', $_POST['occurrence:id'])
-          ->update();
+      if (!empty($_POST['occurrence:taxa_taxon_list_id'])) {
+        $this->redetermineRecord();
+      } else {
+        $db->from('occurrences')
+            ->set(array('record_status'=>$_POST['occurrence:record_status'], 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
+                'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))
+            ->where('id', $_POST['occurrence:id'])
+            ->update();
+        // since we bypass ORM here for performance, update the cache_occurrences table.
+        $db->from('cache_occurrences')
+            ->set(array('record_status'=>$_POST['occurrence:record_status'], 'verified_on'=>date('Y-m-d H:i:s'), 'cache_updated_on'=>date('Y-m-d H:i:s')))
+            ->where('id', $_POST['occurrence:id'])
+            ->update();
+      }
       if (!empty($_POST['occurrence_comment:comment'])) {
         $db->insert('occurrence_comments', array(
               'occurrence_id'=>$_POST['occurrence:id'],
@@ -112,7 +113,27 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       error::log_error('Exception during single record verify', $e);
     }
   }
-
+  
+  /**
+   * Redetermining a record is different to a normal verification update, since we use ORM to ensure that 
+   * the record is fully updated including keeping an audit trail of determinations. Note that although this might 
+   * seem simpler than the non-ORM method, it is slower.
+   */
+  private function redetermineRecord() {
+    $occ = ORM::factory('occurrence', $_POST['occurrence:id']);
+    $occ->set_submission_data(array_merge($occ->as_array(), array(
+      'taxa_taxon_list_id' => $_POST['occurrence:taxa_taxon_list_id'],
+      'record_status' => $_POST['occurrence:record_status'],
+      'verified_by_id' => $this->user_id,
+      'verified_on' => date('Y-m-d H:i:s')
+    )));
+    if (!$occ->submit()) {
+      foreach($occ->getAllErrors() as $key=>$value) {
+        kohana::log('debug', 'Error in single record verify: '.$tc->object_name.':'.$key.'='.$value);
+      }
+      throw new exception('Error in single record submit');
+    }
+  }
 }
  
  
