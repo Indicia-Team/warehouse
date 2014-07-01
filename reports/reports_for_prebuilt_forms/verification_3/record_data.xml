@@ -6,6 +6,7 @@
   select #columns#
   from cache_occurrences co
   join occurrences o on o.id=co.id and o.deleted=false
+  join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   join samples s on s.id=o.sample_id and s.deleted=false
   left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
   left join locations l on l.id=s.location_id and l.deleted=false
@@ -41,6 +42,7 @@
     <column name='survey_title' display='Sample:Survey' sql='co.survey_title' />
     <column name='taxon_external_key' visible="false" sql='co.taxa_taxon_list_external_key' />
     <column name='taxon_meaning_id' visible="false" sql='co.taxon_meaning_id' />
+    <column name='taxon_list_id' visible="false" sql='cttl.taxon_list_id' />
     <column name='record_status' visible="false" sql='o.record_status' />
     <column name='zero_abundance' visible="false" sql='co.zero_abundance' />
     <column name='wkt' visible="false" sql='st_astext(coalesce(s.geom, l.centroid_geom))' />
