@@ -60,18 +60,28 @@ echo data_entry_helper::text_input(array(
   'default'=> html::initial_value($values, 'milestone:title')
 ));
 
+echo data_entry_helper::select(array(
+  'label' => 'Milestone associated with',
+  'fieldname' => 'milestone:entity',
+  'lookupValues' =>array('T'=>'Species or taxa', 'O'=>'Records', 'M'=>'Media/photos'),
+  'default'=>html::initial_value($values, 'milestone:entity'),
+  'helpText'=>'Are you targetting a total count of species, records or media/photos for this milestone?'
+));
+
 echo data_entry_helper::text_input(array(
   'label'=>'Count',
   'fieldname'=>'milestone:count',
   'class'=>'control-width-2',
-  'default'=> html::initial_value($values, 'milestone:count')
+  'default'=> html::initial_value($values, 'milestone:count'),
+  'helpText' => 'What is the target number that must be reached to hit the milestone?'
 ));
 
-echo data_entry_helper::select(array(
-  'label' => 'Milestone associated with',
-  'fieldname' => 'milestone:entity',
-  'lookupValues' =>array('T'=>'Taxa', 'O'=>'Occurrence', 'M'=>'Media'),
-  'default'=>html::initial_value($values, 'milestone:entity')
+echo data_entry_helper::textarea(array(
+  'label'=>'Success message',
+  'fieldname'=>'milestone:success_message',
+  'class'=>'control-width-6',
+  'default'=>html::initial_value($values, 'milestone:success_message'),
+  'helpText' => 'This message will be sent to the user on reaching the milestone as a notification.'
 ));
 
 //The filter title is actually generated using the milestone title we enter. There are issues with using the built-in validator to detect duplicate titles because the filter supermodel is validated
@@ -107,7 +117,7 @@ $('#milestones-form').submit(function() {
 });\n";
 
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-$filterPanelHTML = '';
+$filterPanelHTML = '<h3>Specify the filter used to define which records count</h3>';
 $hiddenPopupDivs='';
 $filterPanelHTML .= report_filter_panel($readAuth, array(
   'allowLoad'=>false,
@@ -122,13 +132,6 @@ $filterPanelHTML .= '<input type="hidden" name="filter:title" id="filter-title-v
 $filterPanelHTML .= '<input type="hidden" name="filter:definition" id="filter-def-val"/>';
 $filterPanelHTML .= '<input type="hidden" name="filter:sharing" value="R"/>';
 echo $filterPanelHTML;
-
-echo data_entry_helper::textarea(array(
-  'label'=>'Success message',
-  'fieldname'=>'milestone:success_message',
-  'class'=>'control-width-6',
-  'default'=>html::initial_value($values, 'milestone:success_message')
-));
 
 echo html::form_buttons(html::initial_value($values, 'milestone:id')!=null, false, false);
 data_entry_helper::$dumped_resources[] = 'jquery';
