@@ -71,7 +71,8 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   /**
    * Provides the services/data_utils/single_verify service. This takes an occurrence:id, occurrence:record_status, user_id (the verifier)
    * and optional occurrence_comment:comment in the $_POST data and updates the record. This is provided as a more optimised
-   * alternative to using the normal data services calls.
+   * alternative to using the normal data services calls. If occurrence:taxa_taxon_list_id is supplied then a redetermination will 
+   * get triggered.
    */
   public function single_verify() {
     if (empty($_POST['occurrence:id']) || !preg_match('/^\d+$/', $_POST['occurrence:id']))
@@ -82,9 +83,12 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $db = new Database();
       $this->authenticate('write');
       $websites = $this->website_id ? array($this->website_id) : null;
+      $delta = array('record_status'=>$_POST['occurrence:record_status'], 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
+          'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s'));
+      if (!empty($_POST['occurrence:taxa_taxon_list_id']))
+        $delta['taxa_taxon_list_id'] = $_POST['occurrence:taxa_taxon_list_id'];
       $db->from('occurrences')
-          ->set(array('record_status'=>$_POST['occurrence:record_status'], 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
-          'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))
+          ->set($delta)
           ->where('id', $_POST['occurrence:id'])
           ->update();
       // since we bypass ORM here for performance, update the cache_occurrences table.
