@@ -143,7 +143,6 @@ class iform_subscribe_species_alert {
       ));
     }
     $form .= "<fieldset><legend>".lang::get('Alert criteria').":</legend>\n";
-    self::build_grid_autocomplete_function($args);
     $form .= data_entry_helper::species_autocomplete(array(
       'label' => lang::get('Alert species'),
       'helpText' => lang::get('Select the species you are interested in receiving alerts in relation to.'),
@@ -180,36 +179,6 @@ class iform_subscribe_species_alert {
     $map = map_helper::map_panel($mapOptions);
     global $indicia_templates;
     return str_replace(array('{col-1}', '{col-2}'), array($form, $map), $indicia_templates['two-col-50']);
-  } 
-  
-  /**
-   * Build a PHP function  to format the species added to the grid according to the form parameters
-   * autocomplete_include_both_names and autocomplete_include_taxon_group.
-   */
-  protected static function build_grid_autocomplete_function() {
-    global $indicia_templates;
-    $db = data_entry_helper::get_species_lookup_db_definition(true);
-    // get local vars for the array
-    extract($db);
-
-    $fn = "function(item) { \n".
-        "  var r;\n".
-        "  if (item.$colLanguage!==null && item.$colLanguage.toLowerCase()==='$valLatinLanguage') {\n".
-        "    r = '<em>'+item.$colTaxon+'</em>';\n".
-        "  } else {\n".
-        "    r = '<span>'+item.$colTaxon+'</span>';\n".
-        "  }\n";
-    $fn .= "  if (item.preferred==='t' && item.$colCommon!=item.$colTaxon && item.$colCommon) {\n".
-        "    r += ' - ' + item.$colCommon;\n".
-        "  } else if (item.preferred='f' && item.$colPreferred!=item.$colTaxon && item.$colPreferred) {\n".
-        "    r += ' - <em>' + item.$colPreferred + '</em>';\n".
-        "  }\n";
-    $fn .= "  r += '<br/><strong>' + item.taxon_group + '</strong>'\n";
-    // Close the function
-    $fn .= "  return r;\n".
-        "}\n";
-    // Set it into the indicia templates
-    $indicia_templates['format_species_autocomplete_fn'] = $fn;
   }
   
   private static function subscribe($args, $auth) {
