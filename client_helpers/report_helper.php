@@ -1122,10 +1122,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           }
         }
         // pie charts receive click information with the pie segment label. Bar charts receive the bar index.
-        if ($options['chartType']==='pie')
-          $jsData[$row['name']] = $row;
-        else
-          $jsData[] = $row;
+        if (isset($options['linkToReportPath'])) {
+          if ($options['chartType']==='pie')
+            $jsData[$row['name']] = $row;
+          else
+            $jsData[] = $row;
+        }
       }  
       // each series will occupy an entry in $seriesData
       $seriesData[] = $values;
