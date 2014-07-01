@@ -2491,41 +2491,35 @@ $('#$escaped').change(function(e) {
   /**
    * A version of the autocomplete control preconfigured for species lookups.
    * The output of this control can be configured using the following templates: 
-   * <ul>
-   * <li><b>autocomplete</b></br>
-   * Defines a hidden input and a visible input, to hold the underlying database ID and to 
-   * allow input and display of the text search string respectively.
-   * </li>
-   * <li><b>autocomplete_javascript</b></br>
-   * Defines the JavaScript which will be inserted onto the page in order to activate the 
-   * autocomplete control.
-   * </li>
-   * </ul>
+   * * **autocomplete** - Defines a hidden input and a visible input, to hold the underlying database ID and to 
+   *   allow input and display of the text search string respectively.
+   * * **autocomplete_javascript** - Defines the JavaScript which will be inserted onto the page in order to 
+   *   activate the autocomplete control.
+   * 
    * @param type $options Array of configuration options with the following possible entries.
-   * <ul>
-   * <li><b>cacheLookup</b>
-   * Defaults to false. Set to true to lookup species against cache_taxon_searchterms rather than detail_taxa_taxon_lists.
-   * </li>
-   * <li><b>speciesNameFilterMode</b><br/>
-   * Optional. Method of filtering the available species names (both for initial population into the grid and additional rows). Options are
-   *   preferred - only preferred names
-   *   currentLanguage - only names in the language identified by the language option are included
-   *   excludeSynonyms - all names except synonyms (non-preferred latin names) are included.
-   * </li>
-   * <li><b>extraParams</b>
-   * Should contain the read authorisation array and taxon_list_id to filter against. 
-   * </li>
-   * <li><b>warnIfNoMatch</b>
-   * Should the autocomplete control warn the user if they leave the control whilst searching
-   * and then nothing is matched? Default true.
-   * </li>
-   * </ul>
+   * * **cacheLookup** - Defaults to true. If true, uses cache_taxon_searchterms for species name lookup
+   *   rather than detail_taxa_taxon_lists. The former is faster and tolerates punctuation and spacing errors, 
+   *   but the available data to lookup against may not be up to date if the cache tables are not populated.
+   * * **speciesIncludeBothNames** - include both latin and common names. Default false.
+   * * **speciesIncludeTaxonGroup** - include the taxon group for each shown name. Default false.
+   * * **speciesIncludeIdDiff** - include identification difficulty icons. Default true.
+   * * **speciesNameFilterMode** - Optional. Method of filtering the available species names (both for 
+   * * initial population into the grid and additional rows). Options are
+   *   * preferred - only preferred names
+   *   * currentLanguage - only names in the language identified by the language option are included
+   *   * excludeSynonyms - all names except synonyms (non-preferred latin names) are included.
+   * * **extraParams** - Should contain the read authorisation array and taxon_list_id to filter against. 
+   * * **warnIfNoMatch** - Should the autocomplete control warn the user if they leave the control whilst 
+   *   searching and then nothing is matched? Default true.
+   * 
    * @return string Html for the species autocomplete control.
    */   
   public static function species_autocomplete($options) {
     global $indicia_templates;
     if (!isset($options['cacheLookup']))
-      $options['cacheLookup']=false;
+      $options['cacheLookup']=true;
+    if (empty($indicia_templates['format_species_autocomplete_fn']))
+      self::build_species_autocomplete_item_function($options);
     $db = data_entry_helper::get_species_lookup_db_definition($options['cacheLookup']);
     // get local vars for the array
     extract($db);
@@ -2536,7 +2530,7 @@ $('#$escaped').change(function(e) {
       'captionField'=>$colSearch,
       'captionFieldInEntity'=>'taxon',
       'valueField'=>$colId,
-      'formatFunction'=>$indicia_templates['format_species_autocomplete_fn'],
+      'formatFunction'=>empty($indicia_templates['format_species_autocomplete_fn']) ? $indicia_templates['taxon_label'] : $indicia_templates['format_species_autocomplete_fn'],
       'simplify'=>$options['cacheLookup'] ? 'true' : 'false'
     ), $options);
     if (isset($duplicateCheckFields))
@@ -2552,6 +2546,60 @@ $('#$escaped').change(function(e) {
       $options['defaultCaption']=$r[0]['taxon'];
     }
     return self::autocomplete($options);
+  }
+  
+  /**
+   * Builds a JavaScript function to format the species shown in the species autocomplete.
+   * 
+   * @param array $options Options array with the following entries:
+   * * **cacheLookup** - Used cached version of lookup tables for better performance. Default true.
+   * * **speciesIncludeBothNames** - include both latin and common names. Default false.
+   * * **speciesIncludeTaxonGroup** - include the taxon group for each shown name. Default false.
+   * * **speciesIncludeIdDiff** - include identification difficulty icons. Default true.
+   */
+  public static function build_species_autocomplete_item_function($options) {
+    global $indicia_templates;
+    $options = array_merge(array(
+      'cacheLookup' => true,
+      'speciesIncludeBothNames' => false,
+      'speciesIncludeTaxonGroup' => false,
+      'speciesIncludeIdDiff' => true
+    ), $options);
+    // always include the searched name. In this JavaScript we need to behave slightly differently
+    // if using the cached as opposed to the standard versions of taxa_taxon_list.
+    $db = data_entry_helper::get_species_lookup_db_definition($options['cacheLookup']);
+    // get local vars for the array
+    extract($db);
+
+    $fn = "function(item) { \n".
+        "  var r;\n".
+        "  if (item.$colLanguage!==null && item.$colLanguage.toLowerCase()==='$valLatinLanguage') {\n".
+        "    r = '<em>'+item.$colTaxon+'</em>';\n".
+        "  } else {\n".
+        "    r = '<span>'+item.$colTaxon+'</span>';\n".
+        "  }\n";
+    // This bit optionally adds '- common' or '- latin' depending on what was being searched
+    if ($options['speciesIncludeBothNames']) {
+      $fn .= "  if (item.preferred==='t' && item.$colCommon!=item.$colTaxon && item.$colCommon) {\n".
+        "    r += ' - ' + item.$colCommon;\n".
+        "  } else if (item.preferred='f' && item.$colPreferred!=item.$colTaxon && item.$colPreferred) {\n".
+        "    r += ' - <em>' + item.$colPreferred + '</em>';\n".
+        "  }\n";
+    }
+    // this bit optionally adds the taxon group
+    if ($options['speciesIncludeTaxonGroup'])
+      $fn .= "  r += '<br/><strong>' + item.taxon_group + '</strong>'\n";
+    if ($options['speciesIncludeIdDiff'])
+    $fn .= "  if (item.identification_difficulty && item.identification_difficulty>1) {\n" . 
+        "    item.icon = ' <span class=\"item-icon id-diff id-diff-'+item.identification_difficulty+" .
+        "      '\" data-diff=\"'+item.identification_difficulty+'\" data-rule=\"'+item.id_diff_verification_rule_id+'\"></span>';\n" .
+        "    r += item.icon;\n" .
+        "  }\n";
+    // Close the function
+    $fn .= "  return r;\n".
+        "}\n";
+    // Set it into the indicia templates
+    $indicia_templates['format_species_autocomplete_fn'] = $fn;
   }
 
  /**
@@ -5137,7 +5185,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['blankText'] = lang::get($options['blankText']);
         $options['items'] = str_replace(
             array('{value}', '{caption}', '{selected}'),
-            array('', htmlentities($options['blankText'], ENT_COMPAT | ENT_HTML401, "UTF-8")), $indicia_templates[$options['itemTemplate']]
+            array('', htmlentities($options['blankText'], ENT_COMPAT, "UTF-8")), $indicia_templates[$options['itemTemplate']]
         ).(isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n");;
       }
       $options['items'] .= implode((isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n"), $lookupItems);

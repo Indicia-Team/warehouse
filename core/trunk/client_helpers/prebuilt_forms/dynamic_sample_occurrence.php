@@ -379,6 +379,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
               'used during development or when there is a specific need to reflect taxa that have only '.
               'just been added to the list.',
           'type'=>'checkbox',
+          'default' => true,
           'required'=>false,
           'group'=>'Species',
           'siteSpecific'=>false
@@ -639,8 +640,19 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_form_html($args, $auth, $attributes) { 
     group_authorise_form($args, $auth['read']);
-    // We always want an autocomplete formatter function for species lookups..
-    call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
+    // We always want an autocomplete formatter function for species lookups. The form implementation can 
+    // specify its own if required
+    if (method_exists(self::$called_class, 'build_grid_autocomplete_function'))
+      call_user_func(array(self::$called_class, 'build_grid_autocomplete_function'), $args);
+    else {
+      $opts = array(
+        'cacheLookup' => $args['cache_lookup'],
+        'speciesIncludeBothNames' => $args['species_include_both_names'],
+        'speciesIncludeTaxonGroup' => $args['species_include_taxon_group'],
+        'speciesIncludeIdDiff' => $args['species_include_id_diff']
+      );
+      data_entry_helper::build_species_autocomplete_item_function($opts);
+    }
     global $remembered;
     $remembered = isset($args['remembered']) ? $args['remembered'] : '';
     if (empty(data_entry_helper::$entity_to_load['sample:group_id']) && !empty($_GET['group_id']))
@@ -1597,49 +1609,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     // default is no species name filter.
     return false;
-  }
-
-  /**
-   * Build a PHP function  to format the species added to the grid according to the form parameters
-   * autocomplete_include_both_names and autocomplete_include_taxon_group.
-   */
-  protected static function build_grid_autocomplete_function($args) {
-    global $indicia_templates;
-    // always include the searched name. In this JavaScript we need to behave slightly differently
-    // if using the cached as opposed to the standard versions of taxa_taxon_list.
-    $db = data_entry_helper::get_species_lookup_db_definition($args['cache_lookup']);
-    // get local vars for the array
-    extract($db);
-
-    $fn = "function(item) { \n".
-        "  var r;\n".
-        "  if (item.$colLanguage!==null && item.$colLanguage.toLowerCase()==='$valLatinLanguage') {\n".
-        "    r = '<em>'+item.$colTaxon+'</em>';\n".
-        "  } else {\n".
-        "    r = '<span>'+item.$colTaxon+'</span>';\n".
-        "  }\n";
-    // This bit optionally adds '- common' or '- latin' depending on what was being searched
-    if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
-      $fn .= "  if (item.preferred==='t' && item.$colCommon!=item.$colTaxon && item.$colCommon) {\n".
-        "    r += ' - ' + item.$colCommon;\n".
-        "  } else if (item.preferred='f' && item.$colPreferred!=item.$colTaxon && item.$colPreferred) {\n".
-        "    r += ' - <em>' + item.$colPreferred + '</em>';\n".
-        "  }\n";
-    }
-    // this bit optionally adds the taxon group
-    if (isset($args['species_include_taxon_group']) && $args['species_include_taxon_group'])
-      $fn .= "  r += '<br/><strong>' + item.taxon_group + '</strong>'\n";
-    if (!isset($args['species_include_id_diff']) || $args['species_include_id_diff'])
-    $fn .= "  if (item.identification_difficulty && item.identification_difficulty>1) {\n" . 
-        "    item.icon = ' <span class=\"item-icon id-diff id-diff-'+item.identification_difficulty+" .
-        "      '\" data-diff=\"'+item.identification_difficulty+'\" data-rule=\"'+item.id_diff_verification_rule_id+'\"></span>';\n" .
-        "    r += item.icon;\n" .
-        "  }\n";
-    // Close the function
-    $fn .= "  return r;\n".
-        "}\n";
-    // Set it into the indicia templates
-    $indicia_templates['format_species_autocomplete_fn'] = $fn;
   }
 
   /**
