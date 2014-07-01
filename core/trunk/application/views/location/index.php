@@ -27,6 +27,6 @@ echo $grid;
 <input type="submit" value="New location" class="ui-corner-all ui-state-default button" />
 </form>
 <br />
-<?php echo $upload_csv_form ?> 
-<?php echo $upload_shp_form ?>
+<?php echo $upload_csv_form; ?> 
+<?php echo $upload_shp_form; ?>
 
