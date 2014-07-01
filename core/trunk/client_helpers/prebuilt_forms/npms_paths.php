@@ -316,7 +316,7 @@ class iform_npms_paths extends iform_wildflower_count {
         'class'=>'checklist',
         'survey_id' => $args['survey_id'],
         'extraParams'=>$auth['read'] + array('taxon_list_id' => $args['list_id'], 'limit'=>$limit, 
-            'offset'=>$offset, 'orderby'=>'taxonomic_sort_order', 'sortdir'=>'ASC', 'view'=>'detail'),
+            'offset'=>$offset, 'orderby'=>'common', 'sortdir'=>'ASC', 'view'=>'detail'),
         'occAttrClasses'=>array('coverage'),
         'speciesNameFilterMode'=>'preferred',
         'language'=>'eng',
