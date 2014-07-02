@@ -92,7 +92,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
       JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL)
       JOIN users u ON u.id = n.user_id AND u.deleted=false
       JOIN people p ON p.id = u.person_id AND p.deleted=false
-    WHERE n.email_sent = 'f' AND n.source_type<>'T'
+    WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f'
     ORDER BY n.user_id, u.username, n.source_type, n.id
   ")->result_array(false);
   if (empty($notificationsToSendEmailsFor)) {
