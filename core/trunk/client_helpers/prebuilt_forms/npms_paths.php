@@ -65,6 +65,22 @@ class iform_npms_paths extends iform_wildflower_count {
         'group' => 'User Interface',
         'default' => 'reports_for_prebuilt_forms/dynamic_sample_occurrence_samples'
       ),
+      array( 
+        'name' => 'num_species_tabs',
+        'caption' => 'Number of Species Tabs',
+        'description' => 'The number of species tabs. This number combined with the Number of Species Per Tab option needs to be 
+            large enough to accommodate all the species in the species list. If no number is provided then the system assumes 3 tabs.',
+        'type'=>'string',
+        'group' => 'User Interface',
+      ),  
+      array( 
+        'name' => 'num_species_per_tab',
+        'caption' => 'Number of Species Per Tab',
+        'description' => 'The number of species to appear on each species tab. This number combined with the Number of Species Tabs option needs to be 
+            large enough to accommodate all the species in the species list. If no number is provided then the system assumes 34 species per tab.',
+        'type'=>'string',
+        'group' => 'User Interface',
+      ),  
       array(
           'name'=>'survey_id',
           'caption'=>'Survey',
@@ -263,13 +279,27 @@ class iform_npms_paths extends iform_wildflower_count {
       $r .= '<form method="post" action="" id="entry-form">';
       $r .= '<div id="tabs">';
       data_entry_helper::enable_tabs(array('divId'=>'tabs','navButtons'=>true)); 
-      $r .= data_entry_helper::tab_header(array('tabs'=>array(
+      //User needs to set configuration options for the number of species tabs they want and the
+      //number of species to appear on each tab. The user needs to make sure this will result in enough
+      //space to display all the required species from the species list.
+      if (!empty($args['num_species_tabs']))
+        $numSpeciesTabs=$args['num_species_tabs'];
+      else 
+        $numSpeciesTabs=3;
+      if (!empty($args['num_species_per_tab']))
+        $numSpeciesPerTab=$args['num_species_per_tab'];
+      else 
+        $numSpeciesPerTab=34;
+      $tabsArray=array(
         '#your-square'=>'Find Place',
         '#your-plots'=>'Your Path',
-        '#species_1'=>'Species Page 1',
-        '#species_2'=>'Species Page 2',
-        '#species_3'=>'Species Page 3',
-      )));
+      );
+      //Tell the system that it needs to display the number of tabs specified by the user
+      for ($i=0; $i<$numSpeciesTabs; $i++) {
+        $tabNum=$i+1;
+        $tabsArray=array_merge($tabsArray,array('#species_'.$tabNum=>'Species Page '.$tabNum));
+      }
+      $r .= data_entry_helper::tab_header(array('tabs'=>$tabsArray));
       $r .= '<div id="your-square">';
       $r .= self::get_hiddens($args, $auth);
       $r .= self::getFirstTabAdditionalContent($args, $auth);
@@ -278,15 +308,14 @@ class iform_npms_paths extends iform_wildflower_count {
       $r .= '<div id="your-plots">';
       $r .= self::tab_your_plots($args, $auth['read']);
       $r .= '</div>'; // your-plots (now called Your Paths, the old Wildflower form was Your Plots)
-      $r .= '<div id="species_1">';
-      $r .= self::tab_species_npms_paths($args, $auth, 0, 34, 1);
-      $r .= '</div>'; // species-1
-      $r .= '<div id="species_2">';
-      $r .= self::tab_species_npms_paths($args, $auth, 34, 34, 2);
-      $r .= '</div>'; // species-2
-      $r .= '<div id="species_3">';
-      $r .= self::tab_species_npms_paths($args, $auth, 68, 34, 3);
-      $r .= '</div>'; // species-3
+      //Create the html for each species tab.
+      for ($i=0; $i<$numSpeciesTabs; $i++) {
+        $tabNum=$i+1;
+        $speciesStartIndex=$numSpeciesPerTab*$i;
+        $r .= '<div id="species_'.$tabNum.'">';
+        $r .= self::tab_species_npms_paths($args, $auth, $speciesStartIndex,$numSpeciesPerTab, $tabNum,$numSpeciesTabs);
+        $r .= '</div>'; // species-1
+      }
       $r .= '</div>'; // tabs
       $r .= '</form>';
     }
@@ -295,9 +324,9 @@ class iform_npms_paths extends iform_wildflower_count {
   
   /*
    * New function to replace the one on the original wildflower form. The original form had the Submit button on the Other Species tab
-   * and the new form has it on the Species 3 tab, this has needed some rework. 
+   * and the new form has it on the final (numbered) species tab. 
    */
-  protected static function tab_species_npms_paths($args, $auth, $offset, $limit, $tabNum) {
+  protected static function tab_species_npms_paths($args, $auth, $offset, $limit, $tabNum,$numSpeciesTabs) {
     $r='';
     //Get user configured instruction if it is available.
     if (!empty($args['species_tab_instruction']))
@@ -324,7 +353,7 @@ class iform_npms_paths extends iform_wildflower_count {
         'useLoadedExistingRecords' => $offset>0
     )); 
     //If the last tab, then use a submit button, otherwise we have Previous/Next Step
-    if ($tabNum===3) {
+    if ($tabNum==$numSpeciesTabs) {
       $r .= '<p class="highlight">'.lang::get('Please review all tabs of the form before submitting the survey.').'</p>';
       $r .= data_entry_helper::wizard_buttons(array(
         'divId' => 'tabs',
