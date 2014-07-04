@@ -563,7 +563,7 @@ mapLocationSelectedHooks = [];
      } else if (div.settings.click_zoom) {
         // Optional zoom in after clicking when helpDiv not in use.
         var bounds = div.map.editLayer.features[0].geometry.getBounds();
-        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
+        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer*2);
         if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
           // if showing something small, don't zoom in too far
           div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
@@ -2227,7 +2227,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     msgSrefSystemNotSet: 'The spatial reference system is not set.',
     msgReplaceBoundary: 'Would you like to replace the existing boundary with the new one?',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
-    maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
+    maxZoomBuffer: 0.33, //margin around feature when relocating to gridref or initialFeatureWkt
     drawObjectType: 'boundary',
 
     //options for OpenLayers. Feature. Vector. style

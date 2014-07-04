@@ -92,6 +92,11 @@ jQuery(document).ready(function($) {
             groups.push(group);
           });
         }
+        if (typeof indiciaData.filter.def.higher_taxa_taxon_list_names!=="undefined") {
+          $.each(indiciaData.filter.def.higher_taxa_taxon_list_names, function(idx, taxon) {
+            taxa.push(taxon);
+          });
+        }
         if (typeof indiciaData.filter.def.taxa_taxon_list_names!=="undefined") {
           $.each(indiciaData.filter.def.taxa_taxon_list_names, function(idx, taxon) {
             taxa.push(taxon);
@@ -113,10 +118,13 @@ jQuery(document).ready(function($) {
         // don't send unnecessary stuff
         delete indiciaData.filter.def['taxon_group_list:search'];
         delete indiciaData.filter.def['taxon_group_list:search:title'];
+        delete indiciaData.filter.def['higher_taxa_taxon_list_list:search'];
+        delete indiciaData.filter.def['higher_taxa_taxon_list_list:search:taxon'];
         delete indiciaData.filter.def['taxa_taxon_list_list:search'];
         delete indiciaData.filter.def['taxa_taxon_list_list:search:taxon'];
         // reset the list of group names and species
         indiciaData.filter.def.taxon_group_names={};
+        indiciaData.filter.def.higher_taxa_taxon_list_names={};
         indiciaData.filter.def.taxa_taxon_list_names={};
         // if nothing selected, clean up the def
         if ($('input[name=taxon_group_list\\[\\]]').length===0) {
@@ -125,6 +133,14 @@ jQuery(document).ready(function($) {
           // store the list of names in the def, though not used for the report they save web service hits later
           $.each($('input[name=taxon_group_list\\[\\]]'), function(idx, ctrl) {
             indiciaData.filter.def.taxon_group_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
+          });
+        }
+        if ($('input[name=higher_taxa_taxon_list_list\\[\\]]').length===0) {
+          indiciaData.filter.def.higher_taxa_taxon_list_list='';
+        } else {
+          // store the list of names in the def, though not used for the report they save web service hits later
+          $.each($('input[name=higher_taxa_taxon_list_list\\[\\]]'), function(idx, ctrl) {
+            indiciaData.filter.def.higher_taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
         if ($('input[name=taxa_taxon_list_list\\[\\]]').length===0) {
@@ -141,23 +157,27 @@ jQuery(document).ready(function($) {
         }
       },
       loadForm:function(context) {
-        if (context && context.taxa_taxon_list_list) {
-          // got a species level context. So may as well disable the group level tab, it won't be useful.
-          $('#what-filter-instruct').hide();
-          $( "#what-tabs" ).tabs("select", 1);
-          $( "#what-tabs" ).tabs("option", "active", 1);
-          $( "#what-tabs" ).tabs("option", "disabled", [0]);
-          $('input#taxon_group_list\\:search\\:q').unsetExtraParams('query');
+        var firstTab = 0, i, disabled = [];
+        // got a families or species level context. So may as well disable the less specific tabs as they won't be useful.
+        if (context && context.higher_taxa_taxon_list_list) {
+          firstTab = 1;
+          disabled = [0];
+          $('#families-tab .context-instruct').show();
+        }
+        else if (context && context.taxa_taxon_list_list) {
+          firstTab = 2;
+          disabled = [0, 1];
           $('#species-tab .context-instruct').show();
-        } else {
-          $('#what-filter-instruct').show();
-          $( "#what-tabs" ).tabs('enable', 0);
-          $( "#what-tabs" ).tabs("select", 0);
-          $( "#what-tabs" ).tabs("option", "active", 0);
-          if (context && context.taxon_group_list) {
-            $('input#taxon_group_list\\:search\\:q').setExtraParams({"idlist":context.taxon_group_list});
-            $('#species-group-tab .context-instruct').show();
-          }
+        }
+        $("#what-tabs").tabs("option", "disabled", disabled);
+        $( "#what-tabs" ).tabs("select", firstTab);
+        $( "#what-tabs" ).tabs("option", "active", firstTab);
+        if (context && context.taxon_group_list) {
+          $('input#taxon_group_list\\:search\\:q').setExtraParams({"idlist":context.taxon_group_list});
+          $('#species-group-tab .context-instruct').show();
+        }
+        else {
+          $('input#taxon_group_list\\:search\\:q').unsetExtraParams('query');
         }
         // need to load the sub list control for taxon groups.
         $('#taxon_group_list\\:sublist').children().remove();
@@ -165,6 +185,13 @@ jQuery(document).ready(function($) {
           $.each(indiciaData.filter.def.taxon_group_names, function(id, name) {
             $('#taxon_group_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name + 
                 '<input type="hidden" value="' + id + '" name="taxon_group_list[]"/></li>');
+          });
+        }
+        $('#higher_taxa_taxon_list_list\\:sublist').children().remove();
+        if (typeof indiciaData.filter.def.higher_taxa_taxon_list_names!=="undefined") {
+          $.each(indiciaData.filter.def.higher_taxa_taxon_list_names, function(id, name) {
+            $('#higher_taxa_taxon_list_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name + 
+                '<input type="hidden" value="' + id + '" name="higher_taxa_taxon_list_list[]"/></li>');
           });
         }
         $('#taxa_taxon_list_list\\:sublist').children().remove();
@@ -176,6 +203,7 @@ jQuery(document).ready(function($) {
         }
         // these auto-disable on form submission
         $('#taxon_group_list\\:search\\:title').removeAttr('disabled');
+        $('#higher_taxa_taxon_list_list\\:search\\:taxon').removeAttr('disabled');
         $('#taxa_taxon_list_list\\:search\\:taxon').removeAttr('disabled');
       }
     },
@@ -574,19 +602,25 @@ jQuery(document).ready(function($) {
     });
   });
   
-  // Ensure that only one of species and species groups are picked on the what filter
-  $('#taxa_taxon_list_list\\:search\\:taxon').keypress(function(e) {
-    if (e.which===13) {
-      $('#taxon_group_list\\:sublist').children().remove();
-    }
+  // Ensure that only one of families, species and species groups are picked on the what filter
+  var taxonSelectionMethods=['higher_taxa_taxon_list_list', 'taxa_taxon_list_list', 'taxon_group_list'];
+  var keep = function(toKeep) {    
+    $.each(taxonSelectionMethods, function() {
+      if (this!==toKeep) {
+        $('#'+this+'\\:sublist').children().remove();
+      }
+    });
+  };
+  $.each(taxonSelectionMethods, function() {
+    $('#'+this+'\\:search\\:taxon').keypress(function(e) {
+      if (e.which===13) {
+        keep(this);
+      }
+    });
+    $('#'+this+'\\:add').click(function() {
+      keep(this);
+    });
   });
-  $('#taxa_taxon_list_list\\:add').click(function() {$('#taxon_group_list\\:sublist').children().remove();});
-  $('#taxon_group_list\\:search\\:title').keypress(function(e) {
-    if (e.which===13) {
-      $('#taxa_taxon_list_list\\:sublist').children().remove();
-    }
-  });
-  $('#taxon_group_list\\:add').click(function() {$('#taxa_taxon_list_list\\:sublist').children().remove();});
   
   function loadSites(filter, idToSelect) {
     $.ajax({
@@ -740,7 +774,10 @@ jQuery(document).ready(function($) {
     }
   }
   
-  applyFilterToReports = function() {
+  applyFilterToReports = function(reload) {
+    if (typeof reload==="undefined") {
+      reload=true;
+    }
     applyContextLimits();
     var filterDef = $.extend({}, indiciaData.filter.def);
     delete filterDef.taxon_group_names;
@@ -760,10 +797,12 @@ jQuery(document).ready(function($) {
           if ($('#filter\\:sharing').length>0) {
             grid[0].settings.extraParams.sharing = codeToSharingTerm($('#filter\\:sharing').val()).replace(' ', '_');
           }
-          // reload the report grid
-          grid.ajaxload();
-          if (grid[0].settings.linkFilterToMap) {
-            grid.mapRecords(grid[0].settings.mapDataSource, grid[0].settings.mapDataSourceLoRes);
+          if (reload) {
+            // reload the report grid
+            grid.ajaxload();
+            if (grid[0].settings.linkFilterToMap && typeof indiciaData.mapdiv!=="undefined") {
+              grid.mapRecords(grid[0].settings.mapDataSource, grid[0].settings.mapDataSourceLoRes);
+            }
           }
         });
       });
