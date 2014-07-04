@@ -272,7 +272,25 @@ function send_out_user_email($db,$emailContent,$userId,$notificationIds,$email_c
     }
     if (empty($emailSubject))
       $emailSubject=$defaultEmailSubject;
-
+    //When configured, add a link on the email to the notifications page
+    try {
+      $notificationsLinkUrl = kohana::config('notification_emails.notifications_page_url');
+    }
+    //If there is a problem getting the link configuration, then do nothing at all, we can just ignore the link.
+    catch (exception $e) {
+    }
+    if (!empty($notificationsLinkUrl)) {
+      try {
+        $notificationsLinkText=kohana::config('notification_emails.notifications_page_url_text');
+      }
+      //Leave variable as empty if exception, then the next "if" statement can pick up empty variable.
+      //This works better as it still works if the variable is empty but no exception has been generated (e.g an empty option has been provided by user).
+      catch (exception $e) {
+      }
+      if (empty($notificationsLinkText))
+        $notificationsLinkText='Click here to go your notifications page.';
+      $emailContent .= '<a href="'.$notificationsLinkUrl.'">'.$notificationsLinkText.'</a></br>';
+    }   
     $message = new Swift_Message($emailSubject, $emailContent,
                                  'text/html');
     $recipients = new Swift_RecipientList();
