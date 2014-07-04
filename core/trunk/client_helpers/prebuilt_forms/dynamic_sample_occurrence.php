@@ -85,7 +85,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   public static function get_parameters() {
     $retVal = array_merge(
-      parent::get_parameters(),
+        parent::get_parameters(),
       array(
         array(
           'name'=>'emailShow',
@@ -1969,7 +1969,27 @@ else
     else 
       return "[zero abundance] control cannot be included in form when in grid entry mode.";
   }
-
+  
+  /*
+   * A checkbox which when selected will set the record to having a Pending release_status. This is useful if (for instance) an
+   * untrained user wishes to have their worked checked.
+   * Note that unlike most other controls this will always be unchecked when the screen loads (even in edit mode). This means the user must select the checkbox to apply the override otherwise the release status is left untouched.
+   */
+  protected static function get_control_pendingreleasecheckbox($auth, $args, $tabalias, $options) {
+    if (empty($options['label']))
+      $options['label']='Always override Release Status to be P (pending release)?';
+    $r = '<div><input id="pending_release_status" type="checkbox" name="occurrence:release_status" value="">'.$options['label'].'</div>';
+    data_entry_helper::$javascript .= "
+    $('#pending_release_status').change(function() {
+      if ($('#pending_release_status').is(':checked')) {
+        $('#pending_release_status').val('P');
+      } else {
+        $('#pending_release_status').val('');
+      }
+    });";
+    return $r;
+  }
+  
   /**
    * Handles the construction of a submission array from a set of form values.
    * @param array $values Associative array of form data values.
