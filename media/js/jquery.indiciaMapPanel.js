@@ -53,7 +53,7 @@ mapLocationSelectedHooks = [];
      */
     function addPt(features, record, wktCol, opts, id) {
       if (record[wktCol]===null) 
-        throw new exception('No feature wkt to add');
+        return;
       // if an int supplied instead of a geom, this must be an index into the indiciaData.geoms array.
       if (!isNaN(record[wktCol])) {
         record[wktCol] = indiciaData.geoms[record[wktCol]];
