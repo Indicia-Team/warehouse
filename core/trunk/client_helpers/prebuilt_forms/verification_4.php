@@ -326,11 +326,7 @@ idlist=';
 
   private static function get_template_with_map($args, $readAuth, $extraParams, $paramDefaults) {
     $r = '<div id="outer-with-map" class="ui-helper-clearfix">';
-    $r .= '<div id="grid" class="left" style="width:65%">{paramsForm}{grid}';
-    // Insert a button to verify all visible, only available if viewing the clean records.
-    if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
-      $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
-    $r .= '</div>';
+    $r .= '<div id="grid" class="left" style="width:65%">{paramsForm}{grid}</div>';
     $r .= '<div id="map-and-record" class="right" style="width: 34%"><div id="summary-map">';
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
@@ -369,10 +365,25 @@ idlist=';
     $r .= '<div id="record-details-toolbar">';
     $r .= '<div id="verify-buttons">';
     $r .= '<div id="verify-buttons-inner">';
-    $r .= '<label>Set status:</label>';
-    $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
-    $r .= '<button type="button" id="btn-reject">'.lang::get('Reject').'</button>';
-    $r .= '<button type="button" id="btn-query">'.lang::get('Query').'</button>';
+    $r .= '<label>'.lang::get('Actions:').'</label>';
+    $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
+    $r .= '<button type="button" id="btn-verify" title="'.lang::get('Verify').'"><img width="18" height="18" src="'.$imgPath.'nuvola/ok-16px.png"/></button>';
+    $r .= '<button type="button" id="btn-edit-verify" title="'.lang::get('Edit determination then verify').'"><img width="18" height="18" src="'.$imgPath.'nuvola/package_editors-16px.png"/>' .
+        '<img width="18" height="18" src="'.$imgPath.'nuvola/ok-16px.png"/></button>';
+    $r .= '<button type="button" id="btn-reject" title="'.lang::get('Reject').'"><img width="18" height="18" src="'.$imgPath.'nuvola/cancel-16px.png"/></button>';
+    $r .= '<button type="button" id="btn-query" title="'.lang::get('Query').'"><img width="18" height="18" src="'.$imgPath.'nuvola/dubious-16px.png"/></button>';
+    $r .= '<div id="redet-dropdown-ctnr" style="display: none"><div id="redet-dropdown">';
+    $r .= data_entry_helper::species_autocomplete(array(
+      'fieldname' => 'redet',
+      'label' => lang::get('New determination'),
+      'labelClass' => 'auto',
+      'helpText' => lang::get('Enter a new determination for this record before verifying it. The previous determination will be stored with the record.'),
+      'cacheLookup' => true,
+      'extraParams' => $readAuth + array('taxon_list_id' => 1),
+      'speciesIncludeBothNames' => true,
+      'speciesIncludeTaxonGroup' => true
+    ));
+    $r .= '</div></div>';
     $r .= '</div></div>';
     $r .= '<label>Contact:</label>';
     $r .= '<button type="button" id="btn-email-expert" class="default-button">'.lang::get('Another expert').'</button>';
@@ -723,6 +734,7 @@ idlist=';
     $extra['recorder_email'] = $email;
     $extra['taxon_group'] = $record['taxon_group'];
     $extra['taxon_group_id'] = $record['taxon_group_id'];
+    $extra['taxon_list_id'] = $record['taxon_list_id'];
     $extra['localities'] = $record['localities'];
     $extra['locality_ids'] = $record['locality_ids'];
     header('Content-type: application/json');
