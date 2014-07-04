@@ -1680,10 +1680,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $selStyleFns = ", {context: {\n    $selStyleFns\n  }}";
         if ($options['ajax']) {
           self::$javascript .= "mapInitialisationHooks.push(function(div) {\n".
-            "  if (typeof indiciaData.reports!==\"undefined\") {\n" .
+            "  var wantToMap = typeof indiciaData.filter==='undefined' || typeof indiciaData.filter.def.indexed_location_id==='undefined';\n" .
+            "  if (wantToMap && typeof indiciaData.reports!==\"undefined\") {\n" .
             "    $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
-            "      grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."');\n" .
-            "      return false;\n" . // only need the first grid to draw the map. 
+            "      if (grid[0].settings.linkFilterToMap) {\n" .
+            "        grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."');\n" .
+            "        return false;\n" . // only need the first grid to draw the map. 
+            "      }\n" .
             "    });\n" .
             "  }\n";
           if ($options['dataSourceLoRes']) {
