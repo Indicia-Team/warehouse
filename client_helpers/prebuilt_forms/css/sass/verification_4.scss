@@ -10,6 +10,8 @@ $hover-color: #ffffcc;
 $selected-color: #027AC6;
 $header-font-color: #027AC6;
 $selected-font-color: #ffffff;
+$verify-button-width: 16%;
+$verify-button-margin: 4%;
 
 #verification-grid {
   height: 650px;
@@ -38,17 +40,32 @@ ul.gallery li {
   background: none;
 }
 
-#btn-verify, #btn-verify-all {
-  @include sassy-button("simple", 4px, 11px, $verify-color, darken($verify-color, 20%), white, raised);
+#verify-buttons {
+  button {    
+    width: $verify-button-width;
+    margin-right: $verify-button-margin;
+    margin-bottom: 2px;
+    box-sizing: border-box;
+  }
+  button:nth-child(5) {
+    margin-right: 0;
+  }
+  button img {
+    margin: 0 1px;
+  }
+  button img:nth-child(2) {
+    margin-left: 0;
+  }
 }
 
-#btn-reject {
-  @include sassy-button("simple", 4px, 11px, $reject-color, darken($reject-color, 20%), white, raised);
+#btn-email-expert, #btn-email-recorder {
+  width: $verify-button-width * 2 + $verify-button-margin;
 }
 
-#btn-query {
-  @include sassy-button("simple", 4px, 11px, $query-color, darken($query-color, 20%), white, raised);
+#btn-email-expert {
+  margin-right: $verify-button-margin;
 }
+
 
 #btn-multiple.active {
   @include box-shadow(yellow 0px 0px 10px);
@@ -61,17 +78,19 @@ ul.gallery li {
 
 .popup-form {
   width: 500px;
-  @include blueprint-form-layout;
-  @include blueprint-form-sizes(360px, 360px);
-  @include blueprint-inline-form;
+  @include blueprint-form;
+  @include blueprint-form-sizes(485px, 485px);
 
   label {
-    width: 120px;
+    display: block;
     &.error {
       width: auto;
       margin: 0 0 0 120px;
       line-height: 1em;
     }
+  }
+  .helpText {
+    margin-left: 0;
   }
   .warning {
     line-height: 1.2em;
@@ -105,8 +124,10 @@ ul.gallery li {
 }
 
 #record-details-toolbar {
+  padding: 2px;
+  border: solid silver 2px;
   label {
-    width: 70px;
+    width: 20%;
   }
 }
 

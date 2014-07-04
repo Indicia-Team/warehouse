@@ -4,7 +4,7 @@ var saveComment, saveVerifyComment;
   "use strict";
   
   var rowRequest=null, occurrence_id = null, currRec = null, urlSep, validator, speciesLayers = [], 
-      trustsCounter, multimode=false, email = {to:'', subject:'', body:'', type:''};
+      trustsCounter, multimode=false, email = {to:'', subject:'', body:'', type:''}, redetermining=false;
       
   mapInitialisationHooks.push(function(div) {
     // nasty hack to fix a problem where these layers get stuck and won't reload after pan/zoom on IE & Chrome
@@ -297,6 +297,9 @@ var saveComment, saveVerifyComment;
       'occurrence:record_status': status,
       'occurrence_comment:comment': comment
     };
+    if (redetermining && $('#redet').val()!=='') {
+      data['occurrence:taxa_taxon_list_id'] = $('#redet').val();
+    }
     postVerification(data);
   }
 
@@ -363,19 +366,38 @@ var saveComment, saveVerifyComment;
     }
   }
 
-  function setStatus(status) {
-    var helpText='';
+  function setStatus(status, redetermine) {
+    if (typeof redetermine==="undefined") 
+      redetermine = false;
+    var helpText='', html;
     if (multimode && $('.check-row:checked').length>1) {
       helpText='<p class="warning">'+indiciaData.popupTranslations.multipleWarning+'</p>';
     }
-    $.fancybox('<fieldset class="popup-form">' +
-          '<legend>' + indiciaData.popupTranslations.title.replace('{1}', indiciaData.popupTranslations[status]) + '</legend>' +
-          '<label>Comment:</label><textarea id="verify-comment" rows="5" cols="80"></textarea><br />' +
+    html = '<fieldset class="popup-form">' +
+          '<legend>' + indiciaData.popupTranslations.title.replace('{1}', indiciaData.popupTranslations[status]) + '</legend>';
+    if (redetermine) {
+      html += '<div id="redet-dropdown-popup-ctnr"></div>';
+      $('#redet\\:taxon').setExtraParams({"taxon_list_id": currRec.extra.taxon_list_id});
+    }
+    html += '<label class="auto">Comment:</label><textarea id="verify-comment" rows="5" cols="80"></textarea><br />' +
           helpText +
           '<input type="hidden" id="set-status" value="' + status + '"/>' +
           '<button type="button" class="default-button" onclick="saveVerifyComment();">' +
               indiciaData.popupTranslations.save.replace('{1}', indiciaData.popupTranslations['verb' + status]) + '</button>' +
-          '</fieldset>');
+          '</fieldset>'
+    $.fancybox(html, {
+      "onCleanup" : function() {
+        $('#redet-dropdown').appendTo($('#redet-dropdown-ctnr'));
+      }
+    });
+    // store for future reference
+    redetermining = redetermine;
+    if (redetermine) {
+      // move taxon input box onto the form
+      $('#redet').val('');
+      $('#redet\\:taxon').val('');
+      $('#redet-dropdown').appendTo($('#redet-dropdown-popup-ctnr'));
+    }
   }
 
   mapInitialisationHooks.push(function (div) {
@@ -760,6 +782,10 @@ var saveComment, saveVerifyComment;
     $('#btn-verify').click(function () {
       setStatus('V');
     });
+    
+    $('#btn-edit-verify').click(function () {
+      setStatus('V', true);
+    });
 
     $('#btn-reject').click(function () {
       setStatus('R');
@@ -776,6 +802,7 @@ var saveComment, saveVerifyComment;
         $('#row' + occurrence_id + ' .check-row').attr('checked', true);
         $('.check-row').show();
         $('#btn-multiple').addClass('active');
+        $('#btn-edit-verify').hide();
         $('#verify-buttons-inner label').html('With ticked records:');
         $('#btn-multiple').val('Verify single records');
         $('#btn-multiple').after($('#verify-buttons-inner'));
@@ -783,6 +810,7 @@ var saveComment, saveVerifyComment;
       } else {
         $('.check-row').hide();
         $('#btn-multiple').removeClass('active');
+        $('#btn-edit-verify').show();
         $('#verify-buttons-inner label').html('Set status:')
         $('#btn-multiple').val('Verify ticklist');
         $('#verify-buttons').append($('#verify-buttons-inner'));

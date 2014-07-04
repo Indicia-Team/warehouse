@@ -1680,7 +1680,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $selStyleFns = ", {context: {\n    $selStyleFns\n  }}";
         if ($options['ajax']) {
           self::$javascript .= "mapInitialisationHooks.push(function(div) {\n".
-            "  var wantToMap = typeof indiciaData.filter==='undefined' || typeof indiciaData.filter.def.indexed_location_id==='undefined';\n" .
+            "  var wantToMap = typeof indiciaData.filter==='undefined' || typeof indiciaData.filter.def.indexed_location_id==='undefined' || indiciaData.filter.def.indexed_location_id==='';\n" .
             "  if (wantToMap && typeof indiciaData.reports!==\"undefined\") {\n" .
             "    $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
             "      if (grid[0].settings.linkFilterToMap) {\n" .

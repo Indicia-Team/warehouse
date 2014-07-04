@@ -41,14 +41,17 @@ class filter_what extends filter_base {
    */
   public function get_controls($readAuth, $options) {
     $r='';
+    $familySortOrder = empty($options['familySortOrder']) ? 180 : $options['familySortOrder'];
     //There is only one tab when running on the Warehouse.
     if (!isset($options['runningOnWarehouse']) || $options['runningOnWarehouse']==false)
-      $r .= "<p id=\"what-filter-instruct\">".lang::get('You can filter by species group (first tab), a selection of individual species (second tab) or the level within the taxonomic hierarchy (third tab).')."</p>\n";
+      $r .= "<p id=\"what-filter-instruct\">".lang::get('You can filter by species group (first tab), a selection of families or other higher taxa (second tab), '.
+          'a selection of genera or species (third tab) or the level within the taxonomic hierarchy (fourth tab).')."</p>\n";
     $r .= '<div id="what-tabs">'."\n";
     // data_entry_helper::tab_header breaks inside fancybox. So output manually.
     $r .= '<ul class="ui-helper-hidden">' .
         '<li id="species-group-tab-tab"><a href="#species-group-tab" rel="address:species-group-tab"><span>Species groups</span></a></li>' .
-        '<li id="species-tab-tab"><a href="#species-tab" rel="address:species-tab"><span>Species and other taxa</span></a></li>' . 
+        '<li id="families-tab-tab"><a href="#families-tab" rel="address:families-tab"><span>Families and other higher taxa</span></a></li>' . 
+        '<li id="species-tab-tab"><a href="#species-tab" rel="address:species-tab"><span>Species and lower taxa</span></a></li>' . 
         '<li id="rank-tab-tab"><a href="#rank-tab" rel="address:rank-tab"><span>Level</span></a></li>' .
         '</ul>';
     $r .= '<div id="species-group-tab">' . "\n";
@@ -92,15 +95,31 @@ class filter_what extends filter_base {
       'addToTable' => false
     ));
     $r .= "</div>\n";
+    $r .= '<div id="families-tab">' . "\n";
+    $r .= '<p>' . lang::get('Search for and build a list of families or other higher taxa to include') . '</p>' .
+        ' <div class="context-instruct messages warning">' . lang::get('Please note that your access permissions will limit the records returned to the species you are allowed to see.') . '</div>';
+    $subListOptions = array(      
+      'fieldname' => 'higher_taxa_taxon_list_list',
+      'table' => 'cache_taxa_taxon_list',
+      'captionField' => 'taxon',
+      'valueField' => 'id',
+      'extraParams' => $readAuth + array('preferred' => 't', 'query' => '{"where":["taxon_rank_sort_order%3C%3D'.$familySortOrder.'"]}'),
+      'addToTable' => false
+    );
+    //Use all taxa in the warehouse as there isn't an iform master list so don't need the taxon list id param
+    if (isset($options['taxon_list_id']))
+      $subListOptions['extraParams'] = array_merge(array('taxon_list_id' => $options['taxon_list_id']),$subListOptions['extraParams']);
+    $r .= data_entry_helper::sub_list($subListOptions);
+    $r .= "</div>\n";
     $r .= '<div id="species-tab">' . "\n";
-    $r .= '<p>' . lang::get('Search for and build a list of species to include') . '</p>' .
+    $r .= '<p>' . lang::get('Search for and build a list of species or genera to include.') . '</p>' .
         ' <div class="context-instruct messages warning">' . lang::get('Please note that your access permissions will limit the records returned to the species you are allowed to see.') . '</div>';
     $subListOptions = array(      
       'fieldname' => 'taxa_taxon_list_list',
       'table' => 'cache_taxa_taxon_list',
       'captionField' => 'taxon',
       'valueField' => 'id',
-      'extraParams' => $readAuth + array('preferred' => 't'),
+      'extraParams' => $readAuth + array('preferred' => 't', 'query' => '{"where":["taxon_rank_sort_order%3E'.$familySortOrder.'"]}'),
       'addToTable' => false
     );
     //Use all taxa in the warehouse as there isn't an iform master list so don't need the taxon list id param
@@ -859,7 +878,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     report_helper::$onload_javascript .= "if ($('#select-filter').val()) {\n".
         "  loadFilter($('#select-filter').val(), $getParams);\n" .
         "} else {\n".
-        "  applyFilterToReports(true);\n".
+        "  applyFilterToReports(false);\n".
         "}\n";
   }
   return $r;
