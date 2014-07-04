@@ -1025,6 +1025,26 @@ class XMLReportReader_Core implements ReportReader
     join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
   ) select '''' || array_to_string(array_agg(distinct external_key::varchar), ''',''') || '''' from q"
         ),
+        // version of the above optimised for searching for higher taxa
+        'higher_taxa_taxon_list_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Higher taxa taxon list IDs", 
+            'description'=>'Comma separated list of preferred IDs. Optimised for searches at family level or higher',
+            'joins' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"join cache_taxa_taxon_lists cttlhigher on cttlhigher.id=o.preferred_taxa_taxon_list_id")
+            ),
+            'wheres' => array(
+              array('value'=>'', 'operator'=>'', 'sql'=>"cttlhigher.family_taxa_taxon_list_id in (#higher_taxa_taxon_list_list#)")
+            ),
+            'preprocess' => // faster than embedding this query in the report            
+  "with recursive q as ( 
+    select id, family_taxa_taxon_list_id 
+    from cache_taxa_taxon_lists t 
+    where id in (#higher_taxa_taxon_list_list#) 
+    union all 
+    select tc.id, tc.family_taxa_taxon_list_id
+    from q 
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
+  ) select array_to_string(array_agg(distinct family_taxa_taxon_list_id::varchar), ',') from q"
+        ),
         'taxon_meaning_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Taxon meaning IDs", 
             'description'=>'Comma separated list of taxon meaning IDs',
             'wheres' => array(
