@@ -45,8 +45,9 @@ class Milestone_Model extends ORM {
     $array->add_rules('count', 'required','digit');
     $array->add_rules('entity', 'required');
     $array->add_rules('filter_id', 'required');
-    $array->add_rules('success_message', 'length[1,100]','required');
+    $array->add_rules('success_message', 'required');
     $array->add_rules('website_id', 'required');  
+    $array->add_rules('awarded_by', 'required');
     $this->unvalidatedFields = array('deleted');
     return parent::validate($array, $save);
   }
