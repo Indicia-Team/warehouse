@@ -128,9 +128,10 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
       //This user is not the first user but we have detected that it is not the same user we added a notification to the email for last time,
       //this means we need to send out the previous user's email and start building a new email
-      if ($notificationToSendEmailsFor['user_id']!=$previousUserId && $previousUserId!=0) {      
-        $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
-        send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
+      if ($notificationToSendEmailsFor['user_id']!=$previousUserId && $previousUserId!==0) {
+        if ($currentType!=='')
+          $emailContent .= '</tbody></table>';
+        send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl);
         //Used to mark the notifications in an email if an email send is successful, once email send attempt has been made we can reset the list ready for the next email.
         $notificationIds=array();
         $emailSentCounter++;
@@ -175,8 +176,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     if ($currentType!=='')
       $emailContent .= '</tbody></table>';
     //if we have run out of notifications to send we will have finished going around the loop, so we just need to send out the last email whatever happens
-    $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
-    send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
+    send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl);
     $emailSentCounter++;
     //Save the maximum notification id against the jobs we are going to run now, so we know that we have done the notifications up to that id and next time the jobs are run
     //they only need to work with notifications later than that id.
@@ -248,7 +248,8 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
 /*
  * Actually send the email to the uer
  */
-function send_out_user_email($db,$emailContent,$userId,$notificationIds,$email_config) {
+function send_out_user_email($db, $emailContent, $userId, $notificationIds, $email_config, $subscriptionSettingsPageUrl) {
+  $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
   $cc=null;
   $swift = email::connect();
   // Use a transaction to allow us to prevent the email sending and marking of notification as done
@@ -272,7 +273,25 @@ function send_out_user_email($db,$emailContent,$userId,$notificationIds,$email_c
     }
     if (empty($emailSubject))
       $emailSubject=$defaultEmailSubject;
-
+    //When configured, add a link on the email to the notifications page
+    try {
+      $notificationsLinkUrl = kohana::config('notification_emails.notifications_page_url');
+    }
+    //If there is a problem getting the link configuration, then do nothing at all, we can just ignore the link.
+    catch (exception $e) {
+    }
+    if (!empty($notificationsLinkUrl)) {
+      try {
+        $notificationsLinkText=kohana::config('notification_emails.notifications_page_url_text');
+      }
+      //Leave variable as empty if exception, then the next "if" statement can pick up empty variable.
+      //This works better as it still works if the variable is empty but no exception has been generated (e.g an empty option has been provided by user).
+      catch (exception $e) {
+      }
+      if (empty($notificationsLinkText))
+        $notificationsLinkText='Click here to go your notifications page.';
+      $emailContent .= '<a href="'.$notificationsLinkUrl.'">'.$notificationsLinkText.'</a></br>';
+    }   
     $message = new Swift_Message($emailSubject, $emailContent,
                                  'text/html');
     $recipients = new Swift_RecipientList();
