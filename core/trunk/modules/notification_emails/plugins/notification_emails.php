@@ -249,7 +249,7 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
  * Actually send the email to the uer
  */
 function send_out_user_email($db, $emailContent, $userId, $notificationIds, $email_config, $subscriptionSettingsPageUrl) {
-  $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
+  $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$userId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
   $cc=null;
   $swift = email::connect();
   // Use a transaction to allow us to prevent the email sending and marking of notification as done
