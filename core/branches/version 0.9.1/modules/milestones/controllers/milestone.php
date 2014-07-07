@@ -31,6 +31,7 @@ class Milestone_Controller extends Gridview_Base_Controller {
     $this->columns = array(
       'id'          => '',
       'title'       => '',
+      'awarded_by'  => ''
     );
     $this->set_website_access('admin');
   }

@@ -63,7 +63,7 @@ function milestones_extend_data_services() {
  */
 function get_user_website_combinations_with_unawarded_milestones_for_changed_occurrences($db) {
   $usersWebsiteCombos = $db->query("
-    SELECT DISTINCT co.created_by_id, co.website_id, u.username, f.id,f.definition, m.id as milestone_id, m.count as count, m.entity as milestone_entity, m.success_message as success_message
+    SELECT DISTINCT co.created_by_id, co.website_id, u.username, f.id,f.definition, m.id as milestone_id, m.count, m.awarded_by, m.entity as milestone_entity, m.success_message
     FROM cache_occurrences co
     JOIN system s on (co.cache_created_on > s.last_scheduled_task_check or co.verified_on > s.last_scheduled_task_check) AND s.name = 'milestones'
     JOIN milestones m on m.website_id=co.website_id and m.deleted=false AND (m.entity = 'T' OR m.entity='O')
@@ -190,7 +190,8 @@ function create_milestone_reached_notification($milestoneToCheck) {
   $notificationObj->source_type='M'; 
   $notificationObj->data=json_encode(
     array('comment'=>$milestoneToCheck['success_message'],
-          'auto_generated'=>'t'));
+          'auto_generated'=>'t',
+          'username'=>$milestoneToCheck['awarded_by']));
   $notificationObj->save();
 
   //Save that the Milestone has been awarded so users are not awarded more than once.
