@@ -155,13 +155,6 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'Sample Attributes'
         ),
         array(
-          'name'=>'contact_attr_id',
-          'caption'=>'Contactable Attribute ID',
-          'description'=>'Indicia ID for the sample attribute that if the user has opted in for being contacted regarding this record.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(
           'name'=>'abundance_attr_id',
           'caption'=>'Abundance Attribute ID',
           'description'=>'Indicia ID for the occurrence attribute that records the approximate abundance.',
@@ -306,17 +299,21 @@ class iform_mnhnl_citizen_science_1 {
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('first name'),
         'fieldname'=>'smpAttr:'.$args['first_name_attr_id'],
-        'class'=>'control-width-4'
+        'class'=>'control-width-4',
+        'validation'=>'required'
       ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('surname'),
         'fieldname'=>'smpAttr:'.$args['surname_attr_id'],
-        'class'=>'control-width-4'
+        'class'=>'control-width-4',
+        'validation'=>'required'
       ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('email'),
         'fieldname'=>'smpAttr:'.$args['email_attr_id'],
-        'class'=>'control-width-4'
+        'helpText'=>lang::get('email_explain'),
+        'class'=>'control-width-4',
+        'validation'=>'required'
       ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('phone number'),
@@ -475,11 +472,6 @@ class iform_mnhnl_citizen_science_1 {
         'fieldname'=>'sample:comment',
         'class'=>'wide',
     ));
-    $r .= '<div class="footer">'.data_entry_helper::checkbox(array(
-        'label'=>lang::get('happy for contact'),
-        'labelClass'=>'auto',
-        'fieldname'=>'smpAttr:'.$args['contact_attr_id']
-    )).'</div>';
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls',

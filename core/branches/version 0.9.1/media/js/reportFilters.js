@@ -23,7 +23,7 @@ var loadFilter, loadFilterUser, applyFilterToReports;
 jQuery(document).ready(function($) {
   "use strict";
   indiciaData.filter = {"def":{},"id":null,"title":null};
-  var saving=false, applyFilterNow;
+  var saving=false, filterOverride={};
   
   function disableIfPresent(context, fields, ctrlIds) {
     var disable=false;
@@ -92,6 +92,11 @@ jQuery(document).ready(function($) {
             groups.push(group);
           });
         }
+        if (typeof indiciaData.filter.def.higher_taxa_taxon_list_names!=="undefined") {
+          $.each(indiciaData.filter.def.higher_taxa_taxon_list_names, function(idx, taxon) {
+            taxa.push(taxon);
+          });
+        }
         if (typeof indiciaData.filter.def.taxa_taxon_list_names!=="undefined") {
           $.each(indiciaData.filter.def.taxa_taxon_list_names, function(idx, taxon) {
             taxa.push(taxon);
@@ -103,16 +108,23 @@ jQuery(document).ready(function($) {
         if (taxa.length>0) {
           r.push(taxa.join(', '));
         }
+        if (typeof indiciaData.filter.def.taxon_rank_sort_order_combined!=="undefined" && 
+            indiciaData.filter.def.taxon_rank_sort_order_combined!=="") {
+          r.push($("#level-label").text() + ' ' + $("#taxon_rank_sort_order_op option:selected").text() + ' ' + $("#taxon_rank_sort_order_combined option:selected").text());
+        }
         return r.join('<br/>');
       },
       applyFormToDefinition:function() {
         // don't send unnecessary stuff
         delete indiciaData.filter.def['taxon_group_list:search'];
         delete indiciaData.filter.def['taxon_group_list:search:title'];
+        delete indiciaData.filter.def['higher_taxa_taxon_list_list:search'];
+        delete indiciaData.filter.def['higher_taxa_taxon_list_list:search:taxon'];
         delete indiciaData.filter.def['taxa_taxon_list_list:search'];
         delete indiciaData.filter.def['taxa_taxon_list_list:search:taxon'];
         // reset the list of group names and species
         indiciaData.filter.def.taxon_group_names={};
+        indiciaData.filter.def.higher_taxa_taxon_list_names={};
         indiciaData.filter.def.taxa_taxon_list_names={};
         // if nothing selected, clean up the def
         if ($('input[name=taxon_group_list\\[\\]]').length===0) {
@@ -123,6 +135,14 @@ jQuery(document).ready(function($) {
             indiciaData.filter.def.taxon_group_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
+        if ($('input[name=higher_taxa_taxon_list_list\\[\\]]').length===0) {
+          indiciaData.filter.def.higher_taxa_taxon_list_list='';
+        } else {
+          // store the list of names in the def, though not used for the report they save web service hits later
+          $.each($('input[name=higher_taxa_taxon_list_list\\[\\]]'), function(idx, ctrl) {
+            indiciaData.filter.def.higher_taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
+          });
+        }
         if ($('input[name=taxa_taxon_list_list\\[\\]]').length===0) {
           indiciaData.filter.def.taxa_taxon_list_list='';
         } else {
@@ -131,25 +151,33 @@ jQuery(document).ready(function($) {
             indiciaData.filter.def.taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
+        // because the rank sort order key includes both the sort order and rank ID, clean this up for the actual filter
+        if (typeof indiciaData.filter.def.taxon_rank_sort_order_combined!=="undefined") {
+          indiciaData.filter.def.taxon_rank_sort_order = indiciaData.filter.def.taxon_rank_sort_order_combined.split(':')[0];
+        }
       },
       loadForm:function(context) {
-        if (context && context.taxa_taxon_list_list) {
-          // got a species level context. So may as well disable the group level tab, it won't be useful.
-          $('#what-filter-instruct').hide();
-          $( "#what-tabs" ).tabs("select", 1);
-          $( "#what-tabs" ).tabs("option", "active", 1);
-          $( "#what-tabs" ).tabs("option", "disabled", [0]);
-          $('input#taxon_group_list\\:search\\:title').unsetExtraParams('query');
+        var firstTab = 0, i, disabled = [];
+        // got a families or species level context. So may as well disable the less specific tabs as they won't be useful.
+        if (context && context.higher_taxa_taxon_list_list) {
+          firstTab = 1;
+          disabled = [0];
+          $('#families-tab .context-instruct').show();
+        }
+        else if (context && context.taxa_taxon_list_list) {
+          firstTab = 2;
+          disabled = [0, 1];
           $('#species-tab .context-instruct').show();
-        } else {
-          $('#what-filter-instruct').show();
-          $( "#what-tabs" ).tabs('enable', 0);
-          $( "#what-tabs" ).tabs("select", 0);
-          $( "#what-tabs" ).tabs("option", "active", 0);
-          if (context && context.taxon_group_list) {
-            $('input#taxon_group_list\\:search\\:title').setExtraParams({"query":'{"in":{"id":['+context.taxon_group_list+']}}'});
-            $('#species-group-tab .context-instruct').show();
-          }
+        }
+        $("#what-tabs").tabs("option", "disabled", disabled);
+        $( "#what-tabs" ).tabs("select", firstTab);
+        $( "#what-tabs" ).tabs("option", "active", firstTab);
+        if (context && context.taxon_group_list) {
+          $('input#taxon_group_list\\:search\\:q').setExtraParams({"idlist":context.taxon_group_list});
+          $('#species-group-tab .context-instruct').show();
+        }
+        else {
+          $('input#taxon_group_list\\:search\\:q').unsetExtraParams('query');
         }
         // need to load the sub list control for taxon groups.
         $('#taxon_group_list\\:sublist').children().remove();
@@ -157,6 +185,13 @@ jQuery(document).ready(function($) {
           $.each(indiciaData.filter.def.taxon_group_names, function(id, name) {
             $('#taxon_group_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name + 
                 '<input type="hidden" value="' + id + '" name="taxon_group_list[]"/></li>');
+          });
+        }
+        $('#higher_taxa_taxon_list_list\\:sublist').children().remove();
+        if (typeof indiciaData.filter.def.higher_taxa_taxon_list_names!=="undefined") {
+          $.each(indiciaData.filter.def.higher_taxa_taxon_list_names, function(id, name) {
+            $('#higher_taxa_taxon_list_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name + 
+                '<input type="hidden" value="' + id + '" name="higher_taxa_taxon_list_list[]"/></li>');
           });
         }
         $('#taxa_taxon_list_list\\:sublist').children().remove();
@@ -168,6 +203,7 @@ jQuery(document).ready(function($) {
         }
         // these auto-disable on form submission
         $('#taxon_group_list\\:search\\:title').removeAttr('disabled');
+        $('#higher_taxa_taxon_list_list\\:search\\:taxon').removeAttr('disabled');
         $('#taxa_taxon_list_list\\:search\\:taxon').removeAttr('disabled');
       }
     },
@@ -376,20 +412,18 @@ jQuery(document).ready(function($) {
         
       },
       loadFilter: function() {
-        if (indiciaData.filter.def.searchArea && indiciaData.mapdiv) {
-          var parser = new OpenLayers.Format.WKT(), feature = parser.read(indiciaData.filter.def.searchArea);
-          if (indiciaData.mapdiv.map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
-            feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
-          }
-          if (indiciaData.mapdiv) {
+        if (typeof indiciaData.mapdiv!=="undefined") {
+          if (indiciaData.filter.def.searchArea) {
+            var parser = new OpenLayers.Format.WKT(), feature = parser.read(indiciaData.filter.def.searchArea);
+            if (indiciaData.mapdiv.map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
+              feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+            }
             indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
-          } else {
-            mapInitialisationHooks.push(function() {indiciaData.mapdiv.map.editLayer.addFeatures([feature]);});            
+          } else if (indiciaData.filter.def.location_id) {
+            indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.location_id);
+          } else if (indiciaData.filter.def.indexed_location_id) {
+            indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.indexed_location_id);
           }
-        } else if (indiciaData.filter.def.location_id) {
-          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.location_id);
-        } else if (indiciaData.filter.def.indexed_location_id) {
-          indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.indexed_location_id);
         }
       }
     },
@@ -415,7 +449,8 @@ jQuery(document).ready(function($) {
     occurrence_id:{
       getDescription:function() {
         if (indiciaData.filter.def.occurrence_id) {
-          return $('#occurrence_id_op option[value='+indiciaData.filter.def.occurrence_id_op.replace(/[<=>]/g, "\\$&")+']').html()
+          var op = typeof indiciaData.filter.def.occurrence_id_op==="undefined" ? '=' : indiciaData.filter.def.occurrence_id_op.replace(/[<=>]/g, "\\$&");
+          return $('#occurrence_id_op option[value='+op+']').html()
               + ' ' + indiciaData.filter.def.occurrence_id;
         } else {
           return '';
@@ -567,19 +602,25 @@ jQuery(document).ready(function($) {
     });
   });
   
-  // Ensure that only one of species and species groups are picked on the what filter
-  $('#taxa_taxon_list_list\\:search\\:taxon').keypress(function(e) {
-    if (e.which===13) {
-      $('#taxon_group_list\\:sublist').children().remove();
-    }
+  // Ensure that only one of families, species and species groups are picked on the what filter
+  var taxonSelectionMethods=['higher_taxa_taxon_list_list', 'taxa_taxon_list_list', 'taxon_group_list'];
+  var keep = function(toKeep) {    
+    $.each(taxonSelectionMethods, function() {
+      if (this!==toKeep) {
+        $('#'+this+'\\:sublist').children().remove();
+      }
+    });
+  };
+  $.each(taxonSelectionMethods, function() {
+    $('#'+this+'\\:search\\:taxon').keypress(function(e) {
+      if (e.which===13) {
+        keep(this);
+      }
+    });
+    $('#'+this+'\\:add').click(function() {
+      keep(this);
+    });
   });
-  $('#taxa_taxon_list_list\\:add').click(function() {$('#taxon_group_list\\:sublist').children().remove();});
-  $('#taxon_group_list\\:search\\:title').keypress(function(e) {
-    if (e.which===13) {
-      $('#taxa_taxon_list_list\\:sublist').children().remove();
-    }
-  });
-  $('#taxon_group_list\\:add').click(function() {$('#taxa_taxon_list_list\\:sublist').children().remove();});
   
   function loadSites(filter, idToSelect) {
     $.ajax({
@@ -733,7 +774,10 @@ jQuery(document).ready(function($) {
     }
   }
   
-  applyFilterToReports = function(applyNow) {
+  applyFilterToReports = function(reload) {
+    if (typeof reload==="undefined") {
+      reload=true;
+    }
     applyContextLimits();
     var filterDef = $.extend({}, indiciaData.filter.def);
     delete filterDef.taxon_group_names;
@@ -750,10 +794,13 @@ jQuery(document).ready(function($) {
           }
           // merge in the filter
           grid[0].settings.extraParams = $.extend({}, grid[0].settings.origParams, filterDef);
-          if (applyNow) {
+          if ($('#filter\\:sharing').length>0) {
+            grid[0].settings.extraParams.sharing = codeToSharingTerm($('#filter\\:sharing').val()).replace(' ', '_');
+          }
+          if (reload) {
             // reload the report grid
             grid.ajaxload();
-            if (grid[0].settings.linkFilterToMap) {
+            if (grid[0].settings.linkFilterToMap && typeof indiciaData.mapdiv!=="undefined") {
               grid.mapRecords(grid[0].settings.mapDataSource, grid[0].settings.mapDataSourceLoRes);
             }
           }
@@ -787,7 +834,7 @@ jQuery(document).ready(function($) {
         }
       });
     });
-    applyFilterToReports(true);
+    applyFilterToReports();
     $.each(indiciaData.reports, function(i, group) {
       $.each(group, function(j, grid) {
         // reload the report grid
@@ -827,12 +874,12 @@ jQuery(document).ready(function($) {
   }
   
   function filterLoaded(data) {
-    indiciaData.filter.def = JSON.parse(data[0].definition);
+    indiciaData.filter.def = $.extend(JSON.parse(data[0].definition), filterOverride);
     indiciaData.filter.id = data[0].id;
     delete indiciaData.filter.filters_user_id;
     indiciaData.filter.title = data[0].title;
     $('#filter\\:title').val(data[0].title);
-    applyFilterToReports(applyFilterNow);
+    applyFilterToReports();
     $('#filter-reset').removeClass('disabled');
     $('#filter-delete').removeClass('disabled');
     $('#active-filter-label').html('Active filter: '+data[0].title);
@@ -847,8 +894,8 @@ jQuery(document).ready(function($) {
     }      
   }
   
-  loadFilter = function(id, applyNow) {
-    applyFilterNow = applyNow;
+  loadFilter = function(id, getParams) {
+    filterOverride = getParams;
     if ($('#standard-params .header span.changed:visible').length===0 || confirm(indiciaData.lang.ConfirmFilterChangedLoad)) {
       var def=false;
       switch (id) {
@@ -857,6 +904,12 @@ jQuery(document).ready(function($) {
           break;
         case 'my-queried-rejected-records':
           def = "{\"quality\":\"DR\",\"my_records\":1}";
+          break;
+        case 'my-pending-records':
+          def = "{\"quality\":\"P\",\"my_records\":1}";
+          break;
+        case 'my-verified-records':
+          def = "{\"quality\":\"V\",\"my_records\":1}";
           break;
         case 'my-groups':
           def = "{\"quality\":\"all\",\"my_records\":0,\"taxon_group_list\":"+indiciaData.userPrefsTaxonGroups+"}";
@@ -875,8 +928,7 @@ jQuery(document).ready(function($) {
           dataType: "json",
           url: indiciaData.read.url + 'index.php/services/data/filter/' + id,
           data: 'mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?',
-          success: filterLoaded,
-          async: applyFilterNow // if not applying the filter, then we are expecting immediate load so that something else can apply the filter in a moment
+          success: filterLoaded
         });
       }
     }
@@ -893,38 +945,28 @@ jQuery(document).ready(function($) {
     return code;
   }
   
-  loadFilterUser = function(id, applyNow) {
-    if ($('#standard-params .header span.changed:visible').length===0 || confirm(indiciaData.lang.ConfirmFilterChangedLoad)) {
-      $.ajax({
-        dataType: "json",
-        url: indiciaData.read.url + 'index.php/services/data/filters_user/' + id,
-        data: 'mode=json&view=list&auth_token='+indiciaData.read.auth_token+'&nonce='+indiciaData.read.nonce+'&callback=?',
-        success: function(data) {
-          indiciaData.filter.def = JSON.parse(data[0].filter_definition);
-          indiciaData.filter.id = data[0].filter_id;
-          indiciaData.filter.filters_user_id = id;
-          indiciaData.filter.title = data[0].filter_title;
-          $('#filter\\:title').val(data[0].filter_title);
-          $('#filter\\:description').val(data[0].filter_description);
-          $('#filter\\:sharing').val(data[0].filter_sharing);
-          $('#sharing-type-label').html(codeToSharingTerm(data[0].filter_sharing));
-          $('#filters_user\\:user_id\\:person_name').val(data[0].person_name);
-          $('#filters_user\\:user_id').val(data[0].user_id);
-          applyFilterToReports(applyNow);
-          $('#filter-reset').removeClass('disabled');
-          $('#filter-delete').removeClass('disabled');
-          $('#active-filter-label').html('Active filter: '+data[0].filter_title);
-          updateFilterDescriptions();
-          $('#standard-params .header span.changed').hide();
-          // can't delete a filter you didn't create.
-          if (data[0].filter_created_by_id===indiciaData.user_id) {
-            $('#filter-delete').show();
-          } else {
-            $('#filter-delete').hide();
-          }
-        },
-        async: applyNow // if not applying the filter, then we are expecting immediate load so that something else can apply the filter in a moment
-      });
+  loadFilterUser = function(fu, getParams) {
+    indiciaData.filter.def = $.extend(JSON.parse(fu.filter_definition), getParams);
+    indiciaData.filter.id = fu.filter_id;
+    indiciaData.filter.filters_user_id = fu.id;
+    indiciaData.filter.title = fu.filter_title;
+    $('#filter\\:title').val(fu.filter_title);
+    $('#filter\\:description').val(fu.filter_description);
+    $('#filter\\:sharing').val(fu.filter_sharing);
+    $('#sharing-type-label').html(codeToSharingTerm(fu.filter_sharing));
+    $('#filters_user\\:user_id\\:person_name').val(fu.person_name);
+    $('#filters_user\\:user_id').val(fu.user_id);
+    applyFilterToReports();
+    $('#filter-reset').removeClass('disabled');
+    $('#filter-delete').removeClass('disabled');
+    $('#active-filter-label').html('Active filter: '+fu.filter_title);
+    updateFilterDescriptions();
+    $('#standard-params .header span.changed').hide();
+    // can't delete a filter you didn't create.
+    if (fu.filter_created_by_id===indiciaData.user_id) {
+      $('#filter-delete').show();
+    } else {
+      $('#filter-delete').hide();
     }
   };
   
@@ -986,7 +1028,7 @@ jQuery(document).ready(function($) {
   });
 
   $('#filter-apply').click(function() {
-    loadFilter($('#select-filter').val(), true);
+    loadFilter($('#select-filter').val(), {});
   });  
   
   $('#filter-reset').click(function() {
@@ -1076,14 +1118,14 @@ jQuery(document).ready(function($) {
     if (typeof paneObjList[pane].applyFormToDefinition!=="undefined") {
       paneObjList[pane].applyFormToDefinition();
     }
-    applyFilterToReports(true);
+    applyFilterToReports();
     updateFilterDescriptions();
     $.fancybox.close();
   });
   
   var saveFilter = function() {
     if (saving) {
-      exit;
+      return;
     }
     if ($.trim($('#filter\\:title').val())==='') {
       alert('Please provide a name for your filter.');
@@ -1138,7 +1180,7 @@ jQuery(document).ready(function($) {
           var handled = false;
           if (typeof data.errors!=="undefined") {
             $.each(data.errors, function(key, msg) {
-              if (key==='filter:general' && msg.indexOf('uc_filter_name')>-1) {
+              if (msg.indexOf('duplicate')>-1) {
                 if (confirm(indiciaData.lang.FilterExistsOverwrite)) {
                   // need to load the existing filter to get it's ID, then resave
                   $.getJSON(indiciaData.read.url + 'index.php/services/data/filter?created_by_id='+indiciaData.user_id+'&title='+

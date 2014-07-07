@@ -268,6 +268,15 @@ class iform_dynamic_report_explorer extends iform_dynamic {
   protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
     return '';
   }
+  
+  /**
+   * Override the get_form to fetch our own auth tokens. This skips the write auth as it is unnecessary, 
+   * which makes the tokens cachable therefore faster. It does mean that $auth['write'] will not be available.
+   */
+  public static function get_form($args, $node) {
+    self::$auth = array('read' => data_entry_helper::get_read_auth($args['website_id'], $args['password']));
+    return parent::get_form($args, $node);
+  }
  
   /**
    * Retrieves a [params] control, containing the report parameters.
@@ -319,7 +328,6 @@ class iform_dynamic_report_explorer extends iform_dynamic {
         'sharing'=>$sharing,
         'readAuth' => $auth['read'],
         'dataSource'=> $options['dataSource'],
-        'reportGroup'=>'dynamic',
         'rememberParamsReportGroup'=>'dynamic',
         'clickableLayersOutputMode'=>'report',
         'rowId'=>'occurrence_id',
@@ -341,6 +349,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
       $options
     );
     $olOptions = iform_map_get_ol_options($args);
+    if ($args['interface']!=='one_page')
+      $options['tabDiv'] = $tabalias;
     $r .= map_helper::map_panel($options, $olOptions);
     return $r;
   }
@@ -451,7 +461,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
     if (!empty($args['param_presets'])) {
       $params = data_entry_helper::explode_lines_key_value_pairs($args['param_presets']);
       foreach ($params as $key=>$val) {
-        $options["filter-$key"]=$val;
+        if (!isset($options["filter-$key"]))
+          $options["filter-$key"]=$val;
       }
     }
     foreach ($options as $key=>&$value) {
@@ -460,7 +471,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
     if ($options['allowSave'] && !function_exists('iform_ajaxproxy_url'))
       return 'The AJAX Proxy module must be enabled to support saving filters. Set @allowSave=false to disable this in the [standard params] control.';
     if (!function_exists('hostsite_get_user_field') || !hostsite_get_user_field('indicia_user_id'))
-      return 'The standard params module requires Easy Login.';
+      // if not logged in and linked to warehouse, we can't use standard params functionality like saving, so...
+      return '';
     $r = report_filter_panel($auth['read'], $options, $args['website_id'], $hiddenStuff);
     return $r . $hiddenStuff;
   }

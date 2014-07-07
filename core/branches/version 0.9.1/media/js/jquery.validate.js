@@ -826,7 +826,7 @@ $.extend($.validator, {
 	},
 
 	metadataRules: function(element) {
-		if (!$.metadata) return {};
+		if (!$.metadata || !$.data(element.form, 'validator')) return {};
 
 		var meta = $.data(element.form, 'validator').settings.meta;
 		return meta ?
@@ -837,9 +837,9 @@ $.extend($.validator, {
 	staticRules: function(element) {
 		var rules = {};
 		var validator = $.data(element.form, 'validator');
-		if (validator.settings.rules) {
-			rules = $.validator.normalizeRule(validator.settings.rules[element.name]) || {};
-		}
+    if (typeof validator!=="undefined" && validator.settings.rules) {
+      rules = $.validator.normalizeRule(validator.settings.rules[element.name]) || {};
+    }
 		return rules;
 	},
 

@@ -57,9 +57,10 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
    * A keyboard event handler for the grid.
    */
   keyHandler = function(evt) {
-    var rows, row, rowIndex, cells, cell, cellIndex, caretPos, ctrl = this, deltaX = 0, deltaY = 0,
+    var rows, row, rowIndex, cells, cell, cellIndex, ctrl = this, deltaX = 0, deltaY = 0,
       isTextbox=this.nodeName.toLowerCase() === 'input' && $(this).attr('type') === 'text',
-      isSelect = this.nodeName.toLowerCase() === 'select';
+      isSelect = this.nodeName.toLowerCase() === 'select',
+      newInput, $newInput, selStart, selLength, selEnd;
     if ((evt.keyCode >= 37 && evt.keyCode <= 40) || evt.keyCode === 9) {
       rows = $(this).parents('tbody').children();
       row = $(this).parents('tr')[0];
@@ -68,14 +69,21 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       cell = $(this).parents('td')[0];
       cellIndex = cells.index(cell);
       if (isTextbox) {
+        // Determine the current caret/selection position.
         if (typeof this.selectionStart !== 'undefined') {
-          caretPos = this.selectionStart;
-        } else {  // Internet Explorer before version 9
-          var inputRange = this.createTextRange();
+          selStart = this.selectionStart;
+          selEnd = this.selectionEnd;
+          selLength = selEnd - selStart;
+        } 
+        else {  
+          // Internet Explorer before version 9
+          var inputRange = document.selection.createRange().duplicate();
+          selLength = inputRange.text.length;
           // Move selection start to 0 position
           inputRange.moveStart('character', -this.value.length);
-          // The caret position is selection length
-          caretPos = inputRange.text.length;
+          // The end position is now the lenght of the range.
+          selEnd = inputRange.text.length;
+          selStart = selEnd - selLength;
         }
       }
     }
@@ -84,22 +92,26 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
         // tab direction depends on shift key and occurs irrespective of caret
         deltaX = evt.shiftKey ? -1 : 1;
         break;
-      case 37: // left. Caret must be at left of text in the box
-        if (!isTextbox || caretPos === 0) {
+      case 37: 
+        // left. Caret must be at left of text with nothing selected
+        if (!isTextbox || (selStart === 0 && selLength === 0)) {
           deltaX = -1;
         }
         break;
-      case 38: // up. Doesn't work in select as this changes the value
+      case 38: 
+        // up. Doesn't work in select as this changes the value
         if (!isSelect && rowIndex > 0) {
           deltaY = -1;
         }
         break;
-      case 39: // right
-        if (!isTextbox || caretPos >= $(this).val().length) {
+      case 39: 
+        // right. Caret must be at right of text 
+        if (!isTextbox || selStart >= this.value.length ) {
           deltaX = 1;
         }
         break;
-      case 40: // down. Doesn't work in select as this changes the value
+      case 40: 
+        // down. Doesn't work in select as this changes the value
         if (!isSelect && rowIndex < rows.length-1) {
           deltaY = 1;
         }
@@ -117,7 +129,30 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       var inputs = $(this).closest('table').find(':input:visible');
       // timeout necessary to allow keyup to occur on correct control
       setTimeout(function() {
-        inputs.eq(inputs.index(ctrl) + deltaX).focus();
+        $newInput = inputs.eq(inputs.index(ctrl) + deltaX);
+        if ($newInput.length > 0) {
+          // If we have not reached the end of the table
+          newInput = $newInput[0];
+          // If we have move to a new input which is a text box, select contents so it
+          // can be overwritten.
+          isTextbox = newInput.nodeName.toLowerCase() === 'input' && $newInput.attr('type') === 'text'
+          if (isTextbox){
+            if (typeof newInput.selectionStart !== 'undefined') {
+              newInput.selectionStart = 0;
+              newInput.selectionEnd = newInput.value.length;
+            }
+            else {
+              // Internet Explorer before version 9
+              var inputRange = newInput.createTextRange();
+              // Move start of range to beginning of input
+              inputRange.moveStart('character', -newInput.value.length);
+              // Move end of range to end of input
+              inputRange.moveEnd('character', newInput.value.length);
+              inputRange.select();
+            }
+          }
+          $newInput.focus();
+      }
       }, 200);
       evt.preventDefault();
       // see https://bugzilla.mozilla.org/show_bug.cgi?id=291082 - preventDefault bust in FF
@@ -281,7 +316,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     }
     // get a copy of the new row template
     var extraParams, newRow = $('tr#'+gridId + '-scClonableRow').clone(true), selectorId, speciesSelector, 
-        oldName, oldId, ctrl;
+        attrVal, ctrl;
     // build an auto-complete control for selecting the species to add to the bottom of the grid.
     // The next line gets a unique id for the autocomplete.
     selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
@@ -291,13 +326,17 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     // Replace the tags in the row template with a unique row ID
     $.each($(newRow).children(), function(i, cell) {
       $.each($(cell).find('*'), function(idx, child) {
-        oldName = $(child).attr('name');
-        if (typeof oldName !== "undefined" && oldName.indexOf('-idx-') !== -1) {
+        attrVal = $(child).attr('name');
+        if (typeof attrVal !== "undefined" && attrVal.indexOf('-idx-') !== -1) {
           $(child).attr('name', $(child).attr('name').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
         }
-        oldId = $(child).attr('id');
-        if (typeof oldId !== "undefined" && oldId.indexOf('-idx-') !== -1) {
+        attrVal = $(child).attr('id');
+        if (typeof attrVal !== "undefined" && attrVal.indexOf('-idx-') !== -1) {
           $(child).attr('id', $(child).attr('id').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+        }
+        attrVal = $(child).attr('for');
+        if (typeof attrVal !== "undefined" && attrVal.indexOf('-idx-') !== -1) {
+          $(child).attr('for', $(child).attr('for').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
         }
       });
     });
@@ -369,7 +408,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       $(e.target).parent().remove();
       taxonNameBeforeUserEdit = $(taxonCell).html();
       // first span should contain the name as it was entered
-      taxonTextBeforeUserEdit = $(taxonCell).text().split(' - ')[0];
+      taxonTextBeforeUserEdit = $(taxonCell).find('.taxon-name').text();
       //add the autocomplete cell
       $(taxonCell).append(speciesAutocomplete);
       //Adjust the size of the taxon cell to take up its full allocation of space
@@ -626,13 +665,15 @@ function SetHtmlIdsOnSubspeciesChange(subSpeciesId) {
 //to work with in selectors we want to use. So we just need to grab the class that starts 'sc'.
 function getScClassForColumnCellInput(input) {
   //get the class for the cell
-  var classesArray = jQuery(input).attr('class').split(/\s+/),
+  var classesArray = jQuery(input).attr('class').split(/\s+/);
     //for our purposes we are only interested in the classes beginning sc
-    theInputClass =  classesArray.filter(function(value) {
-      if (value.substr(0,2)=='sc')
-        return value;
+  var theInputClass = new Array();  
+  jQuery.each(classesArray, function(index, value){
+    if (value.substr(0,2) === 'sc') {
+      theInputClass.push(value);
+    }
     });
-  if (theInputClass.length>0) {
+  if (theInputClass.length > 0) {
     return theInputClass[0];
   } 
   else {

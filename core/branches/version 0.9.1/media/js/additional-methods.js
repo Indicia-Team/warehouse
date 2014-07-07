@@ -55,7 +55,7 @@ jQuery.validator.addMethod("ziprange", function(value, element) {
 
 jQuery.validator.addMethod("integer", function(value, element) {
 	return this.optional(element) || /^-?\d+$/.test(value);
-}, "A positive or negative non-decimal number please");
+}, "A whole number please");
 // Requires a minimum figure grid reference
 jQuery.validator.addMethod("mingridref", function(value, element, params) {
   // note the 2nd part of this allows a non-grid ref through.

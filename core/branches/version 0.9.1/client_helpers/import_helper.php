@@ -104,7 +104,7 @@ class import_helper extends helper_base {
       $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
       $r = '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get('import_settings_instructions')."</div>\n".
           "<form method=\"post\" id=\"entry_form\" action=\"$reloadpath\" class=\"iform\">\n".
-          "<fieldset><legend>Import Settings</legend>\n";
+          "<fieldset><legend>".lang::get('Import Settings')."</legend>\n";
       $formArray = json_decode($response['output'], true);
       if (!is_array($formArray)) {
         if (class_exists('kohana')) {
@@ -222,28 +222,33 @@ class import_helper extends helper_base {
       if ($json===false) {
         if (!hostsite_set_user_field('import_field_mappings', '[]'))
           self::$rememberingMappings=false;
-      } else
-        $savedFieldMappings=json_decode($json, true);
+      } else {
+        $json=trim($json);
+        $savedFieldMappings=json_decode(trim($json), true);
+      }
     } else
       // host does not support user profiles, so we can't remember mappings
       self::$rememberingMappings=false;
-    //  if the user checked the Remember All checkbox, save it in a variable  
-    if (isset($savedFieldMappings['RememberAll']))
-      $checked['RememberAll']='checked';
+    //  if the user checked the Remember All checkbox need to remember this setting
+    $checkedRememberAll=isset($savedFieldMappings['RememberAll']) ? ' checked="checked"' : '';;
 
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadpath\" class=\"iform\">\n".
       '<p>'.lang::get('column_mapping_instructions').'</p>'.
       '<div class="ui-helper-clearfix import-mappings-table"><table class="ui-widget ui-widget-content">'.
       '<thead class="ui-widget-header">'.
-      "<tr><th>Column in CSV File</th><th>Maps to attribute</th>";
-    if (self::$rememberingMappings) 
+      "<tr><th>".lang::get('Column in CSV File')."</th><th>".lang::get('Maps to attribute')."</th>";
+    if (self::$rememberingMappings) {
       $r .= "<th id='remember-all-header' name='remember-all-header'>".lang::get('Remember choice?').
-         "<br/><input type='checkbox' name='RememberAll' id='RememberAll' value='1' title='Tick all boxes to remember every column mapping next time you import.' {$checked['RememberAll']} onclick='
-           if (this.checked) {
-             $(\".rememberField\").attr(\"checked\",\"checked\")
-           } else {
-             $(\".rememberField\").removeAttr(\"checked\")
-           }'/></th>";
+         "<br/><input type='checkbox' name='RememberAll' id='RememberAll' value='1' title='".
+         lang::get('Tick all boxes to remember every column mapping next time you import.')."'$checkedRememberAll/></th>";
+      self::$javascript .= "$('#RememberAll').change(function() {
+  if (this.checked) {
+   $(\".rememberField\").attr(\"checked\",\"checked\")
+  } else {
+   $(\".rememberField\").removeAttr(\"checked\")
+  }
+});\n";
+    }
     $r .= '</tr></thead><tbody>';
     foreach ($columns as $column) {
       $colFieldName = preg_replace('/[^A-Za-z0-9]/', '_', $column);
@@ -556,14 +561,14 @@ class import_helper extends helper_base {
       //need a version of the caption without "Lookup existing record" as we ignore that for matching.
       $strippedScreenCaption = str_replace(" (lookup existing record)","",$translatedCaption);
       $fieldname=str_replace(array('fk_','_id'), array('',''), $fieldname);
-      unset($option);     
+      unset($option);
       // Skip the metadata fields
       if (!in_array($fieldname, $skipped)) {
-        $selected = false;             
+        $selected = false;
         //get user's saved settings, last parameter is 2 as this forces the system to explode into a maximum of two segments.
         //This means only the first occurrence for the needle is exploded which is desirable in the situation as the field caption
         //contains colons in some situations.
-        if (isset($savedFieldMappings[$column])) {
+        if (!empty($savedFieldMappings[$column]) && $savedFieldMappings[$column]!=='<Not imported>') {
           $savedData = explode(':',$savedFieldMappings[$column],2);
           $savedSectionHeading = $savedData[0];
           $savedMainCaption = $savedData[1];
@@ -644,6 +649,7 @@ class import_helper extends helper_base {
   * @return array Depending on the mode, we either are interested in the $selected value or the $itWasSaved value.
   */ 
   private static function auto_detection_rules($column, $defaultCaption, $strippedScreenCaption, $prefix, $labelList, $itWasSaved, $saveDetectedMode) {
+    $column=trim($column);
     /*
     * This is an array of drop-down options with a list of possible column headings the system will use to match against that option.
     * The key is in the format heading:option, all lowercase e.g. occurrence:comment 
@@ -700,11 +706,11 @@ class import_helper extends helper_base {
   * @return string HTMl string 
   */
   private static function items_to_draw_once_per_import_column($r, $column, $itWasSaved, $savedFieldMappings, $multiMatch) {
-    $checked[$column] = ($itWasSaved[$column] == 1 || isset($savedFieldMappings['RememberAll'])) ? 'checked' : '';
+    $checked = ($itWasSaved[$column] == 1 || isset($savedFieldMappings['RememberAll'])) ? ' checked="checked"' : '';
     $optionID = str_replace(" ", "", $column).'Normal';
     $r = "<option value=\"&lt;Not imported&gt;\">&lt;".lang::get('Not imported').'&gt;</option>'.$r.'</optgroup>';
     if (self::$rememberingMappings) 
-      $r .= "<td class=\"centre\"><input type='checkbox' name='$column.Remember' class='rememberField'id='$column.Remember' value='1' {$checked[$column]} onclick='
+      $r .= "<td class=\"centre\"><input type='checkbox' name='$column.Remember' class='rememberField'id='$column.Remember' value='1'$checked onclick='
       if (!this.checked) {
         $(\"#RememberAll\").removeAttr(\"checked\");
       }' 

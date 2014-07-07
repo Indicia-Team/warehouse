@@ -214,6 +214,9 @@ class iform_dynamic {
       if (($mode === self::MODE_EXISTING || $mode === self::MODE_EXISTING_RO || $mode === self::MODE_CLONE) && is_null(data_entry_helper::$entity_to_load)) { 
         // only load if not in error situation. 
         call_user_func_array(array(self::$called_class, 'getEntity'), array(&$args, $auth));
+        // when editing, no need to step through all the pages to save a change.
+        if ($mode === self::MODE_EXISTING)
+          $args['save_button_below_all_pages']=true;
       }
       // attributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
       $attributes = (method_exists(self::$called_class, 'getAttributes'))
@@ -268,6 +271,22 @@ class iform_dynamic {
           'style'=>$args['interface'],
           'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
       ));
+    } else {
+      // ensure client side validation is activated if requested on single page forms. This is done in the enable_tabs bit above.
+      // This is useful if we have custom client side validation.
+      if (isset(data_entry_helper::$validated_form_id)) {
+        data_entry_helper::$javascript .= "
+$('#".data_entry_helper::$validated_form_id."').submit(function() {
+  var tabinputs = $('#".data_entry_helper::$validated_form_id."').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive');
+  var tabtaxoninputs = $('#".data_entry_helper::$validated_form_id." .scTaxonCell').find('input,select').not(':disabled');
+  if ((tabinputs.length>0 && !tabinputs.valid()) || (tabtaxoninputs.length>0 && !tabtaxoninputs.valid())) {
+    alert('".lang::get('Before you can save the data on this form, some of the values in the input boxes need checking. '.
+            'These have been highlighted on the form for you.')."');
+    return false;
+  }
+  return true;
+});\n";
+      }
     }
     // Output the dynamic tab content
     $pageIdx = 0;
@@ -277,9 +296,9 @@ class iform_dynamic {
       $tabalias = 'tab-'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $r .= "<div id=\"$tabalias\">\n";
       //We only want to show the single species message to the user if they have selected the option and we are in single species mode.
-      //We also want to only show it on the species tab otherwise in 'All one page' mode it will appear multple times.
+      //We also want to only show it on the species tab otherwise in 'All one page' mode it will appear multiple times.
       if (isset($args['single_species_message']) && $args['single_species_message'] && $tabalias=='tab-species' && isset($singleSpeciesLabel))
-        $r .= '<div class="page-notice ui-state-highlight ui-corner-all">You are submitting a record of '."$singleSpeciesLabel</div>";
+        $r .= '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get('You are submitting a record of {1}', $singleSpeciesLabel).'</div>';
       // For wizard include the tab title as a header.
       if ($args['interface']=='wizard') {
         $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
@@ -458,7 +477,7 @@ class iform_dynamic {
           // ignore empty lines
           if (trim($tabContent[$i])!=='') {
             $option = explode('=', substr($tabContent[$i],1), 2);
-            if ($option[1]==='false')
+            if (!isset($option[1])||$option[1]==='false')
               $options[$option[0]]=FALSE;
             else {
               $options[$option[0]]=json_decode($option[1], TRUE);
@@ -646,12 +665,8 @@ class iform_dynamic {
   /** 
    * Get the location search control.
    */
-  Protected static function get_control_placesearch($auth, $args, $tabalias, $options) {
+  protected static function get_control_placesearch($auth, $args, $tabalias, $options) {
     $georefOpts = iform_map_get_georef_options($args, $auth['read']);
-    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key)) {
-      // can't use place search without the driver API key
-      return 'The form structure includes a [place search] control but needs a geoplanet api key.<br/>';
-    }
     return data_entry_helper::georeference_lookup(array_merge(
       $georefOpts,
       $options

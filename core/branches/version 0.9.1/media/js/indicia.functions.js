@@ -62,5 +62,20 @@ if (typeof window.indiciaData==="undefined") {
       }
     }
   };
+  
+  /** 
+   * jQuery UI 1.10 replaced option.selected with option.active. Use this function to allow non-version specific
+   * code.
+   */
+  indiciaFns.activeTab = function(tabs, index) {
+    var version=$.ui.version.split('.'), 
+        propname=(version[0]==='1' && version[1]<10) ? 'selected' : 'active';
+    if (typeof index==="undefined") {
+      return tabs.tabs('option', propname);
+    }
+    else {
+      return tabs.tabs('option', propname, index);
+    }
+  };
 
 }) (jQuery);

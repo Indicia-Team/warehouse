@@ -172,11 +172,11 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
     // get the CMS User ID attribute so we can filter the grid to this user
     if ($user->uid===0)
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
-    $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID');
+    $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can be tagged against their creator.');
-    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
+    $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$userNameAttr) return lang::get('This form must be used with a survey that has the CMS User Name attribute associated with it so records can be tagged against their creator.');
-    $passageAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Passage');
+    $passageAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Passage', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$passageAttr) return lang::get('This form must be used with a survey that has the Passage attribute associated with it.');    
       
     if (isset($args['grid_report'])) $reportName = $args['grid_report'];
@@ -230,7 +230,7 @@ deleteSurvey = function(sampleID){
     global $indicia_templates;
     $countAttr = iform_mnhnl_getAttrID($auth, $args, 'occurrence','Count');
     if (!$countAttr) return lang::get('This form must be used with a survey that has the Count Occurrence attribute associated with it.');
-    $noObAttr = iform_mnhnl_getAttrID($auth, $args, 'sample','No observation');
+    $noObAttr = iform_mnhnl_getAttrID($auth, $args, 'sample','No observation', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
     if (!$noObAttr) return lang::get('This form must be used with a survey that has the No observation Sample attribute associated with it.');
 
     data_entry_helper::$javascript .= "

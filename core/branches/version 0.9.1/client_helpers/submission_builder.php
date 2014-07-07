@@ -153,7 +153,7 @@ class submission_builder extends helper_config {
    */
   public static function wrap($array, $entity, $field_prefix=null)
   {
-    if (array_key_exists('save-site-flag', $array) && $array['save-site-flag']==='1')
+    if (array_key_exists('save-site-flag', $array) && $array['save-site-flag']==='1' && $entity==='sample')
       self::create_personal_site($array);
     // Initialise the wrapped array
     $sa = array(
@@ -178,8 +178,9 @@ class submission_builder extends helper_config {
           // This should be a field in the model.
           // Add a new field to the save array
           $sa['fields'][$key] = array('value' => $value);
-        } elseif ($attrEntity && (strpos($key, "$attrEntity:")===0)) {
-          // custom attribute data can also go straight into the submission for the "master" table. Array data might need 
+        } elseif ($attrEntity && (strpos($key, "$attrEntity:")===0) && substr_count($key, ':')<4) {
+          // Skip fields smpAttr:atrrId:attrValId:uniqueIdx:controlname because :controlname indicates this is the extra control used for autocomplete, not the data to post.
+          // Custom attribute data can also go straight into the submission for the "master" table. Array data might need 
           // special handling to link it to existing database records.
           if (is_array($value) && count($value)>0) {
             // The value is an array
@@ -357,7 +358,7 @@ class submission_builder extends helper_config {
       $parts = explode(".",$file['name']);
       $fext = array_pop($parts);
       // Generate a file id to store the image as
-      $destination = time().rand(0,1000).".".$fext;
+      $destination = time().rand(0,1000).".".strtolower($fext);
       $uploadpath = dirname($_SERVER['SCRIPT_FILENAME']).'/'.(isset(parent::$indicia_upload_path) ? parent::$indicia_upload_path : 'upload/');
       if (move_uploaded_file($file['tmp_name'], $uploadpath.$destination)) {
         // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
@@ -373,7 +374,6 @@ class submission_builder extends helper_config {
     // Build sub-models for the media files. Don't post to the warehouse until after validation success. This 
     // also moves any simple uploaded files to the interim image upload folder.
     $media = data_entry_helper::extract_media_data($values, $modelName.'_medium', true, true);
-    
     foreach ($media as $item) {
       $wrapped = self::wrap($item, $modelName.'_medium');      
       $modelWrapped['subModels'][] = array(

@@ -336,7 +336,6 @@ myTerms_change();
         data_entry_helper::$entity_to_load['sample:created_by_id'] !== ($userID = hostsite_get_user_field('indicia_user_id')))) {
       $userID = 1;
     }
-    $userID = 2;
     
     data_entry_helper::$javascript .= "
 deleteSurvey = function(sampleID){

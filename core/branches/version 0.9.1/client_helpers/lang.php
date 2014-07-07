@@ -42,6 +42,8 @@ class lang {
    * These replacements should be already utf8 encoded.
    */
   public static function get($key) {
+    if (isset($_GET['notranslate']))
+      return "[$key]";
     global $default_terms;
     global $custom_terms;
     $output='';
