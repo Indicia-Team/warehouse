@@ -100,14 +100,6 @@ COMMENT ON COLUMN milestone_awards.updated_by_id IS 'Foreign key to the users ta
 COMMENT ON COLUMN milestone_awards.deleted IS 'Has this record been deleted?';
 END;
 
-
-BEGIN
-  CREATE OR REPLACE VIEW gv_milestones AS 
-    SELECT m.id, m.title, m.count,m.entity,m.website_id,m.filter_id
-      FROM milestones m
-    WHERE m.deleted = false;
-END;
-
 END;
 $func$;
 
