@@ -17,14 +17,9 @@
  * A driver to provide OSGB specific functions.
  */
 
-// Check IndiciaData setup, in case we are the first JS file to load
-if (typeof indiciaData==="undefined") {
-  indiciaData={onloadFns: []};
-}
 if (typeof indiciaData.srefHandlers==="undefined") {
   indiciaData.srefHandlers={};
 }
-
 
 indiciaData.srefHandlers['osgb'] = {
 

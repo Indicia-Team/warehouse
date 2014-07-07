@@ -19,14 +19,9 @@
  * shown from the default of 3.
  */
 
-// Check IndiciaData setup, in case we are the first JS file to load
-if (typeof indiciaData==="undefined") {
-  indiciaData={onloadFns: []};
-}
 if (typeof indiciaData.srefHandlers==="undefined") {
   indiciaData.srefHandlers={};
 }
-
 
 indiciaData.srefHandlers['4326'] = {
 

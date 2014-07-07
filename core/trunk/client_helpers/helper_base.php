@@ -1431,7 +1431,7 @@ $('.ui-state-default').live('mouseout', function() {
         }
       }
       if (!self::$indiciaFnsDone) {
-        $libraries .= '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n";
+        $libraries = '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n".$libraries;
         self::$indiciaFnsDone = true;
       }
     }
