@@ -61,7 +61,7 @@ echo data_entry_helper::text_input(array(
 ));
 
 echo data_entry_helper::select(array(
-  'label' => 'Milestone associated with',
+  'label' => 'Count what?',
   'fieldname' => 'milestone:entity',
   'lookupValues' =>array('T'=>'Species or taxa', 'O'=>'Records', 'M'=>'Media/photos'),
   'default'=>html::initial_value($values, 'milestone:entity'),
@@ -82,6 +82,14 @@ echo data_entry_helper::textarea(array(
   'class'=>'control-width-6',
   'default'=>html::initial_value($values, 'milestone:success_message'),
   'helpText' => 'This message will be sent to the user on reaching the milestone as a notification.'
+));
+
+echo data_entry_helper::text_input(array(
+  'label'=>'Awarded by',
+  'fieldname'=>'milestone:awarded_by',
+  'class'=>'control-width-6',
+  'default'=> html::initial_value($values, 'milestone:awarded_by'),
+  'helpText' => 'Which organisation is awarding the milestone? This will appear in the from field for the notification sent to the recorder.'
 ));
 
 //The filter title is actually generated using the milestone title we enter. There are issues with using the built-in validator to detect duplicate titles because the filter supermodel is validated
@@ -124,6 +132,7 @@ $filterPanelHTML .= report_filter_panel($readAuth, array(
   'allowSave' => false,
   'embedInExistingForm' => true,
   'runningOnWarehouse' => true,
+  'taxon_list_id' => kohana::config('cache_builder_variables.master_list_id'),
   'website_id' => html::initial_value($values, 'milestone:website_id') ? html::initial_value($values, 'milestone:website_id') : $values['website_id']
 ), $this->uri->argument(1), $hiddenStuff);
 // fields to auto-create a filter record for this group's defined set of records
@@ -137,7 +146,7 @@ echo html::form_buttons(html::initial_value($values, 'milestone:id')!=null, fals
 data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';
 data_entry_helper::$dumped_resources[] = 'fancybox';
-data_entry_helper::enable_validation('milestone-edit');
+data_entry_helper::enable_validation('milestones-form');
 data_entry_helper::link_default_stylesheet();
 echo data_entry_helper::dump_javascript();
 ?>
