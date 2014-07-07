@@ -189,6 +189,13 @@ class iform_data_services {
         'sharing'=>'data_flow',
         'siteSpecific'=>true
       ),
+       array(
+        'name'=>'taxon_group_ids',
+        'caption'=>'Taxon Group IDs',
+        'description'=>'Select the Taxon Group IDs seperated by comma, or leave blank.',
+        'type'=>'text_input',
+        'required'=>false,
+      ),
       array(
         'name'=>'report_csv',
         'caption'=>'CSV download format report',
@@ -203,7 +210,7 @@ class iform_data_services {
         'description'=>'Additional parameters to provide to the report when doing a CSV download. One per line, param=value format.',
         'type'=>'textarea',
         'required'=>false,
-        'default'=>"smpattrs=\noccattrs=\n"
+        'default'=>"smpattrs=\noccattrs=\nupdated_from=\nupdated_to=\n"
       ),
       array(
         'name'=>'report_tsv',
@@ -219,7 +226,7 @@ class iform_data_services {
         'description'=>'Additional parameters to provide to the report when doing a TSV download. One per line, param=value format.',
         'type'=>'textarea',
         'required'=>false,
-        'default'=>"smpattrs=\noccattrs=\n"
+        'default'=>"smpattrs=\noccattrs=\nupdated_from=\nupdated_to=\n"
       ),
       array(
         'name'=>'report_kml',
@@ -236,7 +243,7 @@ class iform_data_services {
         'description'=>'Additional parameters to provide to the report when doing a KML download. One per line, param=value format.',
         'type'=>'textarea',
         'required'=>false,
-        'default'=>"smpattrs=\noccattrs=\n"
+        'default'=>"smpattrs=\noccattrs=\nupdated_from=\nupdated_to=\n"
       ),
       array(
         'name'=>'report_gpx',
@@ -253,7 +260,7 @@ class iform_data_services {
         'description'=>'Additional parameters to provide to the report when doing a GPX download. One per line, param=value format.',
         'type'=>'textarea',
         'required'=>false,
-        'default'=>"smpattrs=\noccattrs=\n"
+        'default'=>"smpattrs=\noccattrs=\nupdated_from=\nupdated_to=\n"
       ),
       array(
         'name'=>'report_nbn',
@@ -269,7 +276,7 @@ class iform_data_services {
         'description'=>'Additional parameters to provide to the report when doing an NBN download. One per line, param=value format.',
         'type'=>'textarea',
         'required'=>false,
-        'default'=>"smpattrs=\noccattrs=\n"
+        'default'=>"smpattrs=\noccattrs=\nupdated_from=\nupdated_to=\n"
       ),
       array(
         'name'=>'limit',
@@ -393,23 +400,23 @@ class iform_data_services {
   
   /**
    * Performs the download.
+   * URL arguments date_from, date_to, survey_list, format, download-type
    * @global array $indicia_templates
    * @param type $args
    * @param type $node
    */
   private static function do_data_services_download($args, $node) {
-    //URL arguments date_from, date_to, survey_list, format, download-type
-    
     iform_load_helpers(array('report_helper'));
     
+    // default data format JSON
     if (!array_key_exists('format', $_GET)){
-      $format = 'json';
-    } else {
-      $format = $_GET['format']; 
-    }
+      $_GET['format'] = 'json';
+    } 
+    $format = $_GET['format']; 
     
+    // download type set to Reporting by default
     if (!array_key_exists('download-type', $_GET)){
-      $_GET['download-type']='D';   
+      $_GET['download-type']='R';   
     } 
     
     $isCustom = preg_match('/^custom-(\d+)$/', $_GET['format'], $matches);
@@ -431,8 +438,12 @@ class iform_data_services {
           $additionalParamText = $args["report_params_$format"];
       }
     }
-    $params = self::build_params($args);
-    $params = array_merge($params, get_options_array_with_user_data($additionalParamText));
+    
+    //Getting the form params first and then allowing the user to
+    //overwrite then through $args
+    require_once('includes/user.php');
+    $params = get_options_array_with_user_data($additionalParamText);
+    $params = array_merge($params, self::build_params($args));
     $conn = iform_get_connection_details($node);
     
     global $indicia_templates;
@@ -480,7 +491,6 @@ class iform_data_services {
    * @throws exception Thrown if requested download type not allowed for this user.
    */
   private static function build_params($args) {
-    require_once('includes/user.php');
     $availableTypes = self::get_download_types($args, data_entry_helper::$js_read_tokens);
     if (!array_key_exists($_GET['download-type'], $availableTypes))
       throw new exception('Selected download type not authorised');
@@ -516,13 +526,24 @@ class iform_data_services {
         self::apply_filter_to_params($filterData, $_GET['download-subfilter'], '', $params);
       }
     }
+
     if (!empty($_GET['survey_id']))
       $params['survey_list']=$_GET['survey_id'];
+    //overwrite user setting if survey_id is selected in form settings
+    if (!empty($args['survey_id']))
+      $params['survey_list']=$args['survey_id'];
     $datePrefix = (!empty($_GET['date_type']) && $_GET['date_type']!=='recorded') ? "$_GET[date_type]_" : '';
     if (!empty($_GET['date_from']) && $_GET['date_from']!==lang::get('Click here'))
       $params[$datePrefix.'date_from']=$_GET['date_from'];
     if (!empty($_GET['date_to']) && $_GET['date_to']!==lang::get('Click here'))
       $params[$datePrefix.'date_to']=$_GET['date_to'];
+    if (!empty($_GET['updated_from']) && $_GET['updated_from']!==lang::get('Click here'))
+      $params[$datePrefix.'updated_from']=$_GET['updated_from'];
+    if (!empty($_GET['updated_to']) && $_GET['updated_to']!==lang::get('Click here'))
+      $params[$datePrefix.'updated_to']=$_GET['updated_to'];
+    //if(!empty($args['taxon_group_ids']))
+    $params[$datePrefix.'taxon_group_ids'] = $args['taxon_group_ids'];
+    
     return $params;
   }
   
