@@ -1,0 +1,27 @@
+<report
+    title="Filterable occurrences count per user/website combination."
+    description="Return a count of occurrences the user has created on a given website. Report can be supplied a filter from the filters table."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    SELECT #columns#
+    FROM cache_occurrences o
+      #agreements_join#
+      #joins#
+    WHERE 
+      1=1 
+    AND
+      o.website_id=#website_id# 
+    AND 
+      o.created_by_id=#user_id#
+    AND
+      #sharing_filter#
+      #idlist#
+  </query>
+  <params>
+    <param name="user_id" display="User Id" description="User Id" datatype="text" />
+    <param name="website_id" display="Website Id" description="Website Id" datatype="text" />
+  </params>
+  <columns>
+    <column name="count" display="Count" sql="count(o.id)" datatype="integer" aggregate="true"/>
+  </columns>
+</report>
