@@ -649,6 +649,7 @@ var flowerTaxa = [";
 		$first=false;
 	}
     data_entry_helper::$javascript .= "];\nvar insectTaxa = [";
+    // full list so no allow_data_entry
     $extraParams['taxon_list_id'] = $args['insect_list_id'];
     $species_data_def['extraParams']=$extraParams;
     $taxa = data_entry_helper::get_population_data($species_data_def);
@@ -1088,10 +1089,10 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		} else {
 			$r .= '		<input type="hidden" name="determination:determination_type" value="A" />';
 		}
+		//  <span id="insect-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>
 		$r .= '		<div class="id-tool-group">
           <input type="hidden" name="determination:taxon_details" />
           <span id="insect-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>
-		  <span id="insect-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>
  	      <p id="insect_taxa_list" class="taxa_list"></p>
  	    </div>
  	    <div class="id-specified-group">
@@ -2365,6 +2366,7 @@ flowerIDstruc = {
 	type: 'flower',
 	mainForm: 'form#fo-new-flower-id-form',
 	timeOutTimer: null,
+	poll: true,
 	pollTimer: null,
 	pollFile: '',
 	invokeURL: '".$args['ID_tool_flower_url']."',
@@ -2452,7 +2454,8 @@ toolPoller = function(toolStruct){
 pollReset = function(toolStruct){
 	clearTimeout(toolStruct.timeOutTimer);
 	clearTimeout(toolStruct.pollTimer);
-	jQuery('#'+toolStruct.type+'-id-cancel').hide();
+	if(toolStruct.poll)
+		jQuery('#'+toolStruct.type+'-id-cancel').hide();
 	jQuery('#'+toolStruct.type+'-id-button').show();
 	toolStruct.pollFile='';
 	toolStruct.timeOutTimer = null;
@@ -2465,16 +2468,22 @@ idButtonPressed = function(toolStruct){
 	jQuery(toolStruct.mainForm+' [name=determination\\:taxon_details]').val('');
 	jQuery('#'+toolStruct.type+'_taxa_list').empty();
 	jQuery(toolStruct.mainForm+' [name=determination\\:taxa_taxon_list_id]').val('');
-	jQuery('#'+toolStruct.type+'-id-cancel').show();
-	jQuery('#'+toolStruct.type+'-id-button').hide();
+	if(toolStruct.poll) {
+		jQuery('#'+toolStruct.type+'-id-cancel').show();
+		jQuery('#'+toolStruct.type+'-id-button').hide();
+	}
 	var d = new Date;
 	var s = d.getTime();
 	toolStruct.pollFile = '".session_id()."_'+s.toString()
-	clearTimeout(toolStruct.timeOutTimer);
-	clearTimeout(toolStruct.pollTimer);
+	if(toolStruct.poll) {
+		clearTimeout(toolStruct.timeOutTimer);
+		clearTimeout(toolStruct.pollTimer);
+	}
 	window.open(toolStruct.invokeURL+toolStruct.pollFile,'','');
-	toolStruct.pollTimer = setTimeout('toolPoller('+toolStruct.name+');', ".$args['ID_tool_poll_interval'].");
-	toolStruct.timeOutTimer = setTimeout('toolReset('+toolStruct.name+');', ".$args['ID_tool_poll_timeout'].");
+	if(toolStruct.poll) {
+		toolStruct.pollTimer = setTimeout('toolPoller('+toolStruct.name+');', ".$args['ID_tool_poll_interval'].");
+		toolStruct.timeOutTimer = setTimeout('toolReset('+toolStruct.name+');', ".$args['ID_tool_poll_timeout'].");
+	}
 };
 jQuery('#flower-id-button').click(function(){
 	idButtonPressed(flowerIDstruc);
@@ -2517,6 +2526,7 @@ insectIDstruc = {
 	type: 'insect',
 	mainForm: 'form#fo-new-insect-id-form',
 	timeOutTimer: null,
+	poll: false,
 	pollTimer: null,
 	pollFile: '',
 	invokeURL: '".$args['ID_tool_insect_url']."',
@@ -2529,10 +2539,11 @@ insectIDstruc = {
 jQuery('#insect-id-button').click(function(){
 	idButtonPressed(insectIDstruc);
 });
-jQuery('#insect-id-cancel').click(function(){
+/* jQuery('#insect-id-cancel').click(function(){
 	pollReset(insectIDstruc);
 });
-jQuery('#insect-id-cancel').hide();
+jQuery('#insect-id-cancel').hide(); */
+
 jQuery('form#fo-new-insect-id-form select[name=determination\\:taxa_taxon_list_id]').change(function(){
 	pollReset(insectIDstruc);
 	taxonChosen(insectIDstruc);
@@ -3488,14 +3499,14 @@ jQuery('#fo-delete-insect-form').ajaxForm({
 				// blank out insect in gallery search insect list.
 				jQuery('.filter-insect-container').filter('[occID='+insect_alert_object.insect_id+']').each(function(idx, insect){
 					searchResults.features[jQuery(insect).attr('index')].attributes.deleted= true;
-					jQuery(insect).css('background-color','#FF0000');
+					jQuery(insect).children().css('background-color','#FF0000').css('height','');
 					jQuery(insect).find('.determination-flag,.insect-image,.display-button').remove();
 				});
 				// remove insect from gallery search collection insect photoreel.
 				jQuery('.collection-photoreel .thumb').filter('[occID='+insect_alert_object.insect_id+']').remove();
 				// no need to blank out insect in collection insect list as the collection is refetched when it is redisplayed.
 				// return to filter search or collection page
-				if(jQuery('.collection-insect-container').filter('[occID='+form.find('[name=determination\\:occurrence_id]').val()+']').length > 0) {
+				if(jQuery('.collection-insect-container').filter('[occID='+insect_alert_object.insect_id+']').length > 0) {
 					jQuery('#fo-collection-button').click();
 				} else {
 					jQuery('#fo-filter-button').click();

@@ -45,6 +45,9 @@ class iform_report_calendar_summary {
   /* This is the URL parameter used to pass the location_id filter through */
   private static $locationKey = 'locationID';
   
+  /* This is the URL parameter used to pass the location_type_id filter through */
+  private static $locationTypeKey = 'locationType';
+  
   /* This is the URL parameter used to pass the year filter through */
   private static $yearKey = 'year';
 
@@ -53,7 +56,10 @@ class iform_report_calendar_summary {
   
   /* This is the URL parameter used to pass the download filter through */
   private static $downloadKey = 'downloads';
-  
+
+  // internal key, not used on URL: maps the location_id to the survey_id.
+  private static $SurveyKey = 'survey_id';
+
   private static $removableParams = array();
   
   private static $siteUrlParams = array();
@@ -234,21 +240,17 @@ class iform_report_calendar_summary {
         array(
           'name'=>'userSpecificLocationLookUp',
           'caption'=>'Make location list user specific',
-          'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user the CMS User ID location attribute.',
+          'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user using the CMS User ID location attribute.',
           'type'=>'boolean',
           'default' => true,
           'required' => false,
           'group' => 'Controls'
         ),
         array(
-          'name'=>'locationTypeFilter',
-          'caption'=>'Restrict locations to type',
-          'description'=>'Retrict the locations in the user specific location filter to a particular location type. The CMS User ID attribute must be defined for this location type or all location types.',
-          'type'=>'select',
-          'table'=>'termlists_term',
-          'captionField'=>'term',
-          'valueField'=>'id',
-          'extraParams'=>array('termlist_external_key'=>'indicia:location_types'),
+          'name'=>'locationTypesFilter',
+          'caption'=>'Restrict locations to types',
+          'description'=>'Implies a location type selection control. Comma separated list of the location types to be included in the control. Retricts the locations in the user specific location filter to the selected location type. The CMS User ID attribute must be defined for all location types selected or all location types.',
+          'type'=>'string',
           'default' => false,
           'required' => false,
           'group' => 'Controls'
@@ -444,7 +446,16 @@ class iform_report_calendar_summary {
           'default' => 'csv',
           'group' => 'Downloads'
         ),
-
+        array(
+          'name'=>'includeFilenameTimestamps',
+          'caption'=>'Include Timestamp in Filename',
+          'description'=>'Include a Timestamp (YYYYMMDDHHMMSS) in the download filenames.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Downloads'
+        ),
+      		
         array(
           'name'=>'weekstart',
           'caption'=>'Start of week definition',
@@ -940,12 +951,40 @@ class iform_report_calendar_summary {
   // The report helper does the conversion from CMS to Easy Login ID if appropriate, so the user_id passed into the
   // report helper is always the CMS one.
   // Locations are always assigned by a CMS user ID attribute, not by who created them.
-  
+
+  private static function set_up_survey($args, $readAuth)
+  {
+    $siteUrlParams = self::get_site_url_params();
+    $presets = get_options_array_with_user_data($args['param_presets']);
+    if(isset($presets['survey_id']))
+      self::$siteUrlParams[self::$SurveyKey]=$presets['survey_id'];
+    if(isset($args['locationTypesFilter']) && $args['locationTypesFilter']!=""){
+      $types = explode(',',$args['locationTypesFilter']);
+      $types1=array();
+      $types2=array();
+      foreach($types as $type){
+        $parts = explode(':',$type);
+        $types1[] = $parts[0];
+        $types2[] = $parts;
+      }
+      $terms = self::get_sorted_termlist_terms(array('read'=>$readAuth), 'indicia:location_types', $types1);
+      $default = $siteUrlParams[self::$locationTypeKey]['value'] == '' ? $terms[0]['id'] : $siteUrlParams[self::$locationTypeKey]['value'];
+      self::$siteUrlParams[self::$locationTypeKey]['value'] = $default;
+      for($i = 0; $i < count($terms); $i++){
+        if($terms[$i]['id'] == $default && count($types2[$i])>1 && $types2[$i][1]!='') {
+          self::$siteUrlParams[self::$SurveyKey] = $types2[$i][1];
+        }
+      }
+  	}
+  	return isset(self::$siteUrlParams[self::$SurveyKey]);
+  }
+
   private static function location_control($args, $readAuth, $node, &$options)
   {
   	// note that when in user specific mode it returns the list currently assigned to the user: it does not give 
   	// locations which the user previously recorded data against, but is no longer allocated to.
     global $user;
+    $ctrl = '';
     $siteUrlParams = self::get_site_url_params();
     // loctools is not appropriate here as it is based on a node, for which this is a very simple one, invoking other nodes for the sample creation
     if(!isset($args['includeLocationFilter']) || !$args['includeLocationFilter'])
@@ -969,22 +1008,46 @@ class iform_report_calendar_summary {
             'dataSource' => 'library/locations/locations_list_exclude_sensitive');
     $allowSensitive = empty($args['sensitivityLocAttrId']) ||
         (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
-    if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
-      $locationListArgs['extraParams']['location_type_id'] = $args['locationTypeFilter'];
     if(!empty($args['sensitivityLocAttrId']))
       $locationListArgs['extraParams']['locattrs'] = $args['sensitivityLocAttrId']; // if we have a sensitive attribute, may want to change the template to highlight them.
-    $presets = get_options_array_with_user_data($args['param_presets']);
-    if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-    	return(lang::get('Location control: survey_id missing from presets.'));
     $attrArgs = array(
     		'valuetable'=>'location_attribute_value',
     		'attrtable'=>'location_attribute',
     		'key'=>'location_id',
     		'fieldprefix'=>'locAttr',
     		'extraParams'=>$readAuth,
-    		'survey_id'=>$presets['survey_id']);
-    if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
-    	$attrArgs['location_type_id'] = $args['locationTypeFilter'];
+    		'survey_id'=>self::$siteUrlParams[self::$SurveyKey]);
+    
+    if(isset($args['locationTypesFilter']) && $args['locationTypesFilter']!=""){
+      $types = explode(',',$args['locationTypesFilter']);
+      $types1=array();
+      $types2=array();
+      foreach($types as $type){
+        $parts = explode(':',$type);
+        $types1[] = $parts[0];
+        $types2[] = $parts;
+      }
+      $terms = self::get_sorted_termlist_terms(array('read'=>$readAuth), 'indicia:location_types', $types1);      
+      $attrArgs['location_type_id'] = $siteUrlParams[self::$locationTypeKey]['value'];
+      if(count($types)>1){
+        $lookUpValues = array();
+        foreach($terms as $termDetails){
+          $lookUpValues[$termDetails['id']] = $termDetails['term'];
+        }
+        // if location is predefined, can not change unless a 'managerPermission'
+        $ctrlid='calendar-location-type-'.$node->nid;
+        $ctrl .= data_entry_helper::select(array(
+                 'label' => lang::get('Site Type'),
+                 'id' => $ctrlid,
+                 'fieldname' => 'location_type_id',
+                 'lookupValues' => $lookUpValues,
+                 'default' => $siteUrlParams[self::$locationTypeKey]['value']
+        )).'</th><th>';
+        self::set_up_control_change($ctrlid, self::$locationTypeKey, array());
+      	$options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $lookUpValues[$siteUrlParams[self::$locationTypeKey]['value']]).'_';
+      }
+    }
+    
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $locationList = array();
     
@@ -1009,7 +1072,7 @@ class iform_report_calendar_summary {
       if (isset($attrList['error'])) return $attrList['error'];
       if(count($attrList)===0) {
       	$options['downloadFilePrefix'] .= 'NS_';
-      	return(lang::get('[No sites allocated.]'));
+      	return($ctrl.lang::get('[No sites allocated.]'));
       }
       $locationIDList=array();
       foreach($attrList as $attr)
@@ -1026,7 +1089,7 @@ class iform_report_calendar_summary {
       $description="All branch sites";
       if(count(self::$branchLocationList)===0) {
         $options['downloadFilePrefix'] .= 'NS_';
-        return(lang::get('[No sites allocated.]'));
+        return($ctrl.lang::get('[No sites allocated.]'));
       }
       $locationListArgs['extraParams']['idlist'] = implode(',', self::$branchLocationList);
       $locationList = report_helper::get_report_data($locationListArgs);
@@ -1038,19 +1101,20 @@ class iform_report_calendar_summary {
       $locationListArgs['extraParams']['idlist'] = '';
       // get my sites, including sensitive sites.
       $cmsAttr=extract_cms_user_attr($locationAttributes,false);
-      if(!$cmsAttr) return lang::get('Location control: CMS User ID Attribute missing from locations.');
-      $attrListArgs=array(// 'nocache'=>true,
-      		'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
-      				'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
-      				$readAuth),
-      		'table'=>'location_attribute_value');
-      $attrList = data_entry_helper::get_population_data($attrListArgs);
-      if (isset($attrList['error'])) return $attrList['error'];
-      if(count($attrList)>0) {
-        $locationIDList=array();
-        foreach($attrList as $attr)
-          $locationIDList[] = $attr['location_id'];
-        $locationListArgs['extraParams']['idlist'] = implode(',', $locationIDList);
+      if($cmsAttr) {
+        $attrListArgs=array(// 'nocache'=>true,
+            'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
+                'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
+                $readAuth),
+            'table'=>'location_attribute_value');
+        $attrList = data_entry_helper::get_population_data($attrListArgs);
+        if (isset($attrList['error'])) return $attrList['error'];
+        if(count($attrList)>0) {
+          $locationIDList=array();
+          foreach($attrList as $attr)
+            $locationIDList[] = $attr['location_id'];
+          $locationListArgs['extraParams']['idlist'] = implode(',', $locationIDList);
+        }
       }
       // Next add Branch Sites.
       if(count(self::$branchLocationList)>0)
@@ -1086,7 +1150,7 @@ class iform_report_calendar_summary {
     }
     natcasesort($sort);
     $ctrlid='calendar-location-select-'.$node->nid;
-    $ctrl='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
+    $ctrl .='<label for="'.$ctrlid.'" class="location-select-label">'.lang::get('Filter by site').
           ': </label><select id="'.$ctrlid.'" class="location-select">'.
           '<option value="" class="location-select-option" '.($siteUrlParams[self::$locationKey]['value']=='' ? 'selected="selected" ' : '').'>'.$description.'</option>';
     if($siteUrlParams[self::$locationKey]['value']=='')
@@ -1100,7 +1164,7 @@ class iform_report_calendar_summary {
       if($siteUrlParams[self::$locationKey]['value']==$id)
         $options['downloadFilePrefix'] .= preg_replace('/[^A-Za-z0-9]/i', '', $name).'_';
     }
-    $ctrl.='</select>';
+    $ctrl .='</select>';
     self::set_up_control_change($ctrlid, self::$locationKey, array());
     return $ctrl;
   }
@@ -1108,7 +1172,7 @@ class iform_report_calendar_summary {
   private static function _getCacheFileName($userID)
   {
     /* If timeout is not set, we're not caching */
-  	$path = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
+  	$path = data_entry_helper::$cache_folder ? data_entry_helper::$cache_folder : data_entry_helper::relative_client_helper_path() . 'cache/';
     if(!is_dir($path) || !is_writeable($path)) return false;
     return $path.'cache_'.data_entry_helper::$website_id.'_CMS_User_List_'.$userID;
   }
@@ -1158,7 +1222,7 @@ class iform_report_calendar_summary {
       return '';
     // if the user is changed then we must reset the location
     $siteUrlParams = self::get_site_url_params();
-    var_dump($siteUrlParams);
+    // var_dump($siteUrlParams);
     $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'] == "branch" ? '' : $siteUrlParams[self::$userKey]['value'];
     $userList=array();
     if (function_exists('module_exists') && module_exists('easy_login') && function_exists('hostsite_get_user_field')) {
@@ -1192,12 +1256,9 @@ class iform_report_calendar_summary {
           }
         }
        } else {
-        // need to scan param_presets for survey_id.
-        $presets = get_options_array_with_user_data($args['param_presets']);
-        if(!isset($presets['survey_id']) || $presets['survey_id']=='') return(lang::get('User control: survey_id missing from presets.'));
         if (function_exists('module_exists') && module_exists('easy_login')) {
           $sampleArgs=array(// 'nocache'=>true,
-            'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id'], 'survey_id'=>$presets['survey_id']), $readAuth),
+            'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id'], 'survey_id'=>self::$siteUrlParams[self::$SurveyKey]), $readAuth),
             'table'=>'sample','columns'=>'created_by_id');
           $sampleList = data_entry_helper::get_population_data($sampleArgs);
           if (isset($sampleList['error'])) return $sampleList['error'];
@@ -1235,7 +1296,7 @@ class iform_report_calendar_summary {
             'key'=>'sample_id',
             'fieldprefix'=>'smpAttr',
             'extraParams'=>$readAuth,
-            'survey_id'=>$presets['survey_id']);
+            'survey_id'=>self::$siteUrlParams[self::$SurveyKey]);
           if(isset($args['userLookUpSampleMethod']) && $args['userLookUpSampleMethod']!="") {
             $sampleMethods = helper_base::get_termlist_terms(array('read'=>$readAuth), 'indicia:sample_methods', array(trim($args['userLookUpSampleMethod'])));
             $attrArgs['sample_method_id']=$sampleMethods[0]['id'];
@@ -1331,6 +1392,10 @@ class iform_report_calendar_summary {
         self::$locationKey => array(
           'name' => self::$locationKey,
           'value' => isset($_GET[self::$locationKey]) ? $_GET[self::$locationKey] : ''
+        ),
+        self::$locationTypeKey => array(
+          'name' => self::$locationTypeKey,
+          'value' => isset($_GET[self::$locationTypeKey]) ? $_GET[self::$locationTypeKey] : ''
         ),
         self::$yearKey => array(
               'name' => self::$yearKey,
@@ -1429,7 +1494,18 @@ jQuery('#".$ctrlid."').change(function(){
         return $r;
     }
   }
-  
+
+  public static function get_sorted_termlist_terms($auth, $key, $filter){
+    $terms = helper_base::get_termlist_terms($auth, $key, $filter);
+    $retVal = array();
+    foreach($filter as $f) {
+      foreach($terms as $term) {
+        if($f == $term['term']) $retVal[] = $term;
+      }
+    }
+    return $retVal;
+  }
+    
   /**
    * Return the Indicia form code
    * @param array $args Input parameters.
@@ -1443,9 +1519,15 @@ jQuery('#".$ctrlid."').change(function(){
     if(!$logged_in) {
       return('<p>'.lang::get('Please log in before attempting to use this form.').'</p>');
     }
+    // can't really do this automatically: better to give warning
+    if(isset($args['locationTypeFilter'])) {
+      return('<p>'.lang::get('Please contact the site administrator. This version of the form uses a different method of specifying the location types.').'</p>');
+    }
+    
     iform_load_helpers(array('report_helper'));
     $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
-    // survey_id should be set in param_presets $args entry. This is then fetched by iform_report_get_report_options 
+    if(!self::set_up_survey($args, $auth))
+      return(lang::get('set_up_survey returned false: survey_id missing from presets or location_type definition.'));
     $reportOptions = self::get_report_calendar_options($args, $auth);
     $reportOptions['id']='calendar-summary-'.$node->nid;
     if (!empty($args['removable_params']))
@@ -1488,9 +1570,6 @@ jQuery('#".$ctrlid."').change(function(){
     $reportOptions['location_list'] = array();
     // for a branch user, we have an allowed list of locations for which we can link to the sample.
     self::$branchLocationList = array();
-    $presets = get_options_array_with_user_data($args['param_presets']);
-    if(!isset($presets['survey_id']) || $presets['survey_id']=='')
-      return(lang::get('Survey_id missing from presets.'));
     if(isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission'])) {
       // Get list of locations attached to this user via the branch cms user id attribute
       // first need to scan param_presets for survey_id..
@@ -1500,13 +1579,14 @@ jQuery('#".$ctrlid."').change(function(){
       		'key'=>'location_id',
       		'fieldprefix'=>'locAttr',
       		'extraParams'=>$auth,
-      		'survey_id'=>$presets['survey_id']);
-      if(isset($args['locationTypeFilter']) && $args['locationTypeFilter']!="")
-      	$attrArgs['location_type_id'] = $args['locationTypeFilter'];
+      		'survey_id'=>self::$siteUrlParams[self::$SurveyKey]);
+      if(isset($args['locationTypesFilter']) && $args['locationTypesFilter']!=""){
+        $attrArgs['location_type_id'] = self::$siteUrlParams[self::$locationTypeKey]['value'];
+      }
       $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
       $cmsAttr= self::extract_attr($locationAttributes, $args['branchFilterAttribute']);
       if(!$cmsAttr)
-         return(lang::get('Branch Manager location list lookup: missing Branch allocation attribute : ').$args['branchFilterAttribute']);
+         return(lang::get('Branch Manager location list lookup: missing Branch allocation attribute').' {'.print_r($attrArgs,true).'} : '.$args['branchFilterAttribute']);
       $attrListArgs=array(// 'nocache'=>true,
       			'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
       					'location_attribute_id'=>$cmsAttr['attributeId'], 'raw_value'=>$user->uid),
@@ -1535,7 +1615,7 @@ jQuery('#".$ctrlid."').change(function(){
     $retVal .= "\n<table id=\"controls-table\" class=\"ui-widget ui-widget-content ui-corner-all controls-table\"><thead class=\"ui-widget-header\"><tr>";
     $retVal .= self::date_control($args, $auth, $node, $reportOptions);
     $retVal .= '<th>'.self::user_control($args, $auth, $node, $reportOptions).'</th>';
-    $retVal .= '<th>'.self::location_control($args, $auth, $node, $reportOptions).'</th>';
+    $retVal .= '<th>'.self::location_control($args, $auth, $node, $reportOptions).'</th>'; // note this includes the location_type control if needed
     $siteUrlParams = self::get_site_url_params();
     if (!empty($args['removable_params'])) {      
       foreach(self::$removableParams as $param=>$caption) {
@@ -1578,6 +1658,17 @@ jQuery('#".$ctrlid."').change(function(){
         self::set_up_control_change('downloadParam', self::$downloadKey, array(), true);
       }
     }
+    if(self::$siteUrlParams[self::$locationTypeKey]['value'] == '') {
+      if(isset($args['locationTypesFilter']) && $args['locationTypesFilter']!="" ){
+        $types = explode(',',$args['locationTypesFilter']);
+        $terms = self::get_sorted_termlist_terms(array('read'=>$auth), 'indicia:location_types', array($types[0]));
+        $reportOptions['extraParams']['location_type_id'] = $terms[0]['id'];
+      }
+    } else
+      $reportOptions['extraParams']['location_type_id'] = self::$siteUrlParams[self::$locationTypeKey]['value'];
+    
+    $reportOptions['includeReportTimeStamp']=isset($args['includeFilenameTimestamps']) && $args['includeFilenameTimestamps'];
+    
     $retVal.= '</tr></thead></table>';
     $reportOptions['highlightEstimates']=true;
     $retVal .= report_helper::report_calendar_summary($reportOptions);
@@ -1612,12 +1703,13 @@ jQuery('#".$ctrlid."').change(function(){
           $downloadOptions['caption' ]=$args['Download'.$i.'Caption'];
           $downloadOptions['dataSource']=$args['download_report_'.$i];
           $downloadOptions['filename']=$reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download'.$i.'Caption']);
+          $downloadOptions['filename'] .= (isset($reportOptions['includeReportTimeStamp']) && $reportOptions['includeReportTimeStamp'] ? '_'.date('YmdHis') : '');
           if(isset($args['download_report_'.$i.'_format'])) $downloadOptions['format']=$args['download_report_'.$i.'_format'];
           data_entry_helper::$javascript .="\nif(jQuery('#downloads-table th').length==0)\n  jQuery('#downloads-table thead tr').append('<th class=\"downloads-table-label\">".lang::get("Downloads")."</th>');\njQuery('#downloads-table thead tr').append('".report_helper::report_download_link($downloadOptions)."');\n";
         }
       }
     }
-
+    
     return $retVal;
   }
 

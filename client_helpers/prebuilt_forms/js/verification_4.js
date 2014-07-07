@@ -4,7 +4,7 @@ var saveComment, saveVerifyComment;
   "use strict";
   
   var rowRequest=null, occurrence_id = null, currRec = null, urlSep, validator, speciesLayers = [], 
-      trustsCounter, multimode=false, email = {to:'', subject:'', body:'', type:''};
+      trustsCounter, multimode=false, email = {to:'', subject:'', body:'', type:''}, redetermining=false;
       
   mapInitialisationHooks.push(function(div) {
     // nasty hack to fix a problem where these layers get stuck and won't reload after pan/zoom on IE & Chrome
@@ -45,8 +45,7 @@ var saveComment, saveVerifyComment;
     // make it clear things are loading
     $('#chart-div').css('opacity',0.15);
     rowRequest = $.getJSON(
-      indiciaData.ajaxUrl + '/details/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id +
-        '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+      indiciaData.ajaxUrl + '/details/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
       null,
       function (data) {
         // refind the row, as $(tr) sometimes gets obliterated.
@@ -58,13 +57,11 @@ var saveComment, saveVerifyComment;
         if ($row.parents('tbody').length !== 0) {
           // point the image and comments tabs to the correct AJAX call for the selected occurrence.
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('images'), indiciaData.ajaxUrl + '/images/' + 
-              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token);
+              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('comments'), indiciaData.ajaxUrl + '/comments/' + 
-              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token);
+              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           // reload current tabs
-          $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
+          $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
           $('#record-details-toolbar *').removeAttr('disabled');
           showTab();
           // remove any wms layers for species or the gateway data
@@ -111,10 +108,10 @@ var saveComment, saveVerifyComment;
    * Post an object containing occurrence form data into the Warehouse. Updates the
    * visual indicators of the record's status.
    */
-  function postOccurrence(occ) {
+  function postVerification(occ) {
     var status = occ['occurrence:record_status'], id=occ['occurrence:id'];
     $.post(
-      indiciaData.ajaxFormPostUrl,
+      indiciaData.ajaxFormPostUrl.replace('occurrence', 'single_verify'),
       occ,
       function () {
         $('#row' + id + ' td:first div, #details-tab td').removeClass('status-V');
@@ -125,9 +122,9 @@ var saveComment, saveVerifyComment;
         $('#row' + id + ' td:first div, #details-tab td.status').addClass('status-' + status);
         var text = indiciaData.statusTranslations[status], nextRow;
         $('#details-tab td.status').html(text);
-        if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details' ||
-            indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'comments') {
-          $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
+        if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'details' ||
+            indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'comments') {
+          $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
         }
         if (indiciaData.autoDiscard) {
           nextRow = $('#row' + id).next();
@@ -214,8 +211,7 @@ var saveComment, saveVerifyComment;
       if (email.type === 'recordCheck') {
         // ensure images are loaded
         $.ajax({
-          url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+          url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
           async: false,
           dataType: 'json',
           success: function (response) {
@@ -237,8 +233,7 @@ var saveComment, saveVerifyComment;
     //Send an email
     // use an AJAX call to get the server to send the email
     $.post(
-      indiciaData.ajaxUrl + '/email' + urlSep +
-        'nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+      indiciaData.ajaxUrl + '/email' + urlSep,
       email,
       function (response) {
         if (response === 'OK') {
@@ -298,12 +293,14 @@ var saveComment, saveVerifyComment;
     data = {
       'website_id': indiciaData.website_id,
       'occurrence:id': occId,
-      'occurrence:verified_by_id': indiciaData.userId,
+      'user_id': indiciaData.userId,
       'occurrence:record_status': status,
-      'occurrence_comment:comment': comment,
-      'occurrence_comment:person_name': indiciaData.username
+      'occurrence_comment:comment': comment
     };
-    postOccurrence(data);
+    if (redetermining && $('#redet').val()!=='') {
+      data['occurrence:taxa_taxon_list_id'] = $('#redet').val();
+    }
+    postVerification(data);
   }
 
   saveVerifyComment=function() {
@@ -325,24 +322,27 @@ var saveComment, saveVerifyComment;
 
   function showTab() {
     if (currRec !== null) {
-      if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details') {
+      if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'details') {
         $('#details-tab').html(currRec.content);
-      } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'experience') {
-        $.get(
-          indiciaData.ajaxUrl + '/experience/' + indiciaData.nid + urlSep +
-              'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
-          null,
-          function (data) {
-            $('#experience-div').html(data);
-          }
-        );
-      } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'phenology') {
+      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'experience') {
+        if (currRec.extra.created_by_id==='1') {
+          $('#experience-div').html('No experience information available. This record does not have the required information for other records by the same recorder to be extracted.');
+        } 
+        else {
+          $.get(
+            indiciaData.ajaxUrl + '/experience/' + indiciaData.nid + urlSep +
+                'occurrence_id=' + occurrence_id + '&user_id=' + currRec.extra.created_by_id,
+            null,
+            function (data) {
+              $('#experience-div').html(data);
+            }
+          );
+        }
+      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'phenology') {
         $.getJSON(
           indiciaData.ajaxUrl + '/phenology/' + indiciaData.nid + urlSep +
               'external_key=' + currRec.extra.taxon_external_key +
-              '&taxon_meaning_id=' + currRec.extra.taxon_meaning_id +
-              '&nonce=' + indiciaData.read.nonce + '&auth_token=' + indiciaData.read.auth_token,
+              '&taxon_meaning_id=' + currRec.extra.taxon_meaning_id,
           null,
           function (data) {
             $('#chart-div').empty();
@@ -356,7 +356,7 @@ var saveComment, saveVerifyComment;
             $('#chart-div').css('opacity',1);
           }
         );
-      } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'images') {
+      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'images') {
         $('#images-tab a.fancybox').fancybox();
       }
       // make it clear things are loading
@@ -366,19 +366,38 @@ var saveComment, saveVerifyComment;
     }
   }
 
-  function setStatus(status) {
-    var helpText='';
+  function setStatus(status, redetermine) {
+    if (typeof redetermine==="undefined") 
+      redetermine = false;
+    var helpText='', html;
     if (multimode && $('.check-row:checked').length>1) {
       helpText='<p class="warning">'+indiciaData.popupTranslations.multipleWarning+'</p>';
     }
-    $.fancybox('<fieldset class="popup-form">' +
-          '<legend>' + indiciaData.popupTranslations.title.replace('{1}', indiciaData.popupTranslations[status]) + '</legend>' +
-          '<label>Comment:</label><textarea id="verify-comment" rows="5" cols="80"></textarea><br />' +
+    html = '<fieldset class="popup-form">' +
+          '<legend>' + indiciaData.popupTranslations.title.replace('{1}', indiciaData.popupTranslations[status]) + '</legend>';
+    if (redetermine) {
+      html += '<div id="redet-dropdown-popup-ctnr"></div>';
+      $('#redet\\:taxon').setExtraParams({"taxon_list_id": currRec.extra.taxon_list_id});
+    }
+    html += '<label class="auto">Comment:</label><textarea id="verify-comment" rows="5" cols="80"></textarea><br />' +
           helpText +
           '<input type="hidden" id="set-status" value="' + status + '"/>' +
           '<button type="button" class="default-button" onclick="saveVerifyComment();">' +
               indiciaData.popupTranslations.save.replace('{1}', indiciaData.popupTranslations['verb' + status]) + '</button>' +
-          '</fieldset>');
+          '</fieldset>'
+    $.fancybox(html, {
+      "onCleanup" : function() {
+        $('#redet-dropdown').appendTo($('#redet-dropdown-ctnr'));
+      }
+    });
+    // store for future reference
+    redetermining = redetermine;
+    if (redetermine) {
+      // move taxon input box onto the form
+      $('#redet').val('');
+      $('#redet\\:taxon').val('');
+      $('#redet-dropdown').appendTo($('#redet-dropdown-popup-ctnr'));
+    }
   }
 
   mapInitialisationHooks.push(function (div) {
@@ -414,16 +433,17 @@ var saveComment, saveVerifyComment;
   }
 
   $(document).ready(function () {
-    //Use jQuery to add a button to the top of the verification page. Use this button to access the popup
-    //which allows you to verify all trusted records.
-    var verifyAllTrustedButton = '<input type="button" value="..." class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>', 
+    //Use jQuery to add button to the top of the verification page. Use the first button to access the popup
+    //which allows you to verify all trusted records or all records. The second enabled multiple record verification checkboxes
+    var verifyGridButtons = '<input type="button" value="Verify grid" class="default-button verify-grid-trusted tools-btn" id="verify-grid-trusted"/>'+
+        '<input type="button" value="Verify ticklist" id="btn-multiple" title="Select this tool to tick off a list of records and action all of the ticked records in one go"/>',
         trustedHtml;
-    $('#filter-build').after(verifyAllTrustedButton);
+    $('#filter-build').after(verifyGridButtons);
     $('#verify-grid-trusted').click(function() {
-      trustedHtml = '<div class="grid-verify-popup" style="width: 550px"><h2>Verify sets of records</h2>'+
+      trustedHtml = '<div class="grid-verify-popup" style="width: 550px"><h2>Verify all grid data</h2>'+
                     '<p>This facility allows you to verify entire sets of records in one step. Before using this '+
                     'facility, you should filter the grid so that only the records you want to verify are listed. '+
-                    'You can then choose to either verify the entire set of records from all pages of the grid '+
+                    'You can then choose to either verify the entire set of records from <em>all pages of the grid</em> '+
                     'or you can verify only those records where the recorder is trusted based on the record\'s '+
                     'survey, taxon group and location. Before using the latter method of verification, set up the recorders '+
                     'you wish to trust using the ... button next to each record.</p>';
@@ -526,8 +546,8 @@ var saveComment, saveVerifyComment;
       else {
         // verifier can verify anywhere
         if (currRec.extra.locality_ids!=='') {
-          popupHtml += '<label>Trust will be applied to records from locality:</label><br/>'+
-              '<label><input type="radio" name="trust-location" value="all"> All </label><br/>';
+          popupHtml += '<label>Trust will be applied to records from locality:</label>'+
+              '<label><input type="radio" name="trust-location" value="all"> All </label>';
           // the record could intersect multiple locality boundaries. So can choose which...
           var locationIds = currRec.extra.locality_ids.split('|'), locations = currRec.extra.localities.split('|');
           // can choose to trust all localities or record's location
@@ -762,6 +782,10 @@ var saveComment, saveVerifyComment;
     $('#btn-verify').click(function () {
       setStatus('V');
     });
+    
+    $('#btn-edit-verify').click(function () {
+      setStatus('V', true);
+    });
 
     $('#btn-reject').click(function () {
       setStatus('R');
@@ -778,9 +802,21 @@ var saveComment, saveVerifyComment;
         $('#row' + occurrence_id + ' .check-row').attr('checked', true);
         $('.check-row').show();
         $('#btn-multiple').addClass('active');
+        $('#btn-edit-verify').hide();
+        $('#verify-buttons-inner label').html('With ticked records:');
+        $('#btn-multiple').val('Verify single records');
+        $('#btn-multiple').after($('#verify-buttons-inner'));
+        $('#verify-buttons-inner button').removeAttr('disabled');
       } else {
         $('.check-row').hide();
         $('#btn-multiple').removeClass('active');
+        $('#btn-edit-verify').show();
+        $('#verify-buttons-inner label').html('Set status:')
+        $('#btn-multiple').val('Verify ticklist');
+        $('#verify-buttons').append($('#verify-buttons-inner'));
+        if (currRec === null) {
+          $('#verify-buttons-inner button').attr('disabled', 'disabled');
+        }
       }
     });
 
@@ -845,6 +881,7 @@ var saveComment, saveVerifyComment;
               if (!data[i].location_name) {
                 textMessage = textMessage.substring(0, textMessage.length - 2);
               }
+              textMessage += '<br/>&nbsp;&nbsp;- trust was setup by ' + data[i].trusted_by;
               textMessage += ' <a class="default-button existingTrustRemoveButton" id="deleteTrust-' +
                   data[i].trust_id + '" >Remove</a><br/>';
               if(data.length>1) {

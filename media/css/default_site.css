@@ -409,8 +409,23 @@ td.row-buttons img {
   padding: 0;
 }
 
-.ui-tabs .ui-tabs-nav li {
+.ui-tabs .ui-tabs-nav li, .control-box li {
   list-style-type: none;
+}
+
+.control-box li {
+  background: none;
+}
+
+.control-box li * {
+  margin: 0 0.5em;
+}
+
+.control-box.inline li {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
 }
 
 .species-checklist-select-species {
@@ -676,6 +691,14 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
     background-position: -175px -23px;
 }
 
+div.olControlEditingToolbar .olControlFullscreenItemInactive {
+    background-position: -200px 0px;
+}
+
+div.olControlEditingToolbar .olControlFullscreenItemActive {
+    background-position: -200px -23px;
+}
+
 .delete-file {
   float: right;
 }
@@ -870,7 +893,7 @@ div.note-fail, p.note-fail {
   position:absolute;
   opacity: 0.9;
   background: url(../images/ajax-loader2.gif) no-repeat center center #fff;
-  z-index: 10000;
+  z-index: 1000;
 }
 
 .autocomplete-select {

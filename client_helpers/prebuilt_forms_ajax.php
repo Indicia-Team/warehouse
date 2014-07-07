@@ -44,6 +44,8 @@ echo form_helper::prebuilt_form_params_form(array(
   'readAuth' => $readAuth,
   'expandFirst' => true
 ));
+data_entry_helper::$dumped_resources[] = 'jquery';
+data_entry_helper::$dumped_resources[] = 'jquery_ui';
 echo form_helper::dump_javascript(true);
 
 ?>

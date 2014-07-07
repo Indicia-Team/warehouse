@@ -36,7 +36,7 @@ class iform_sectioned_transects_edit_transect {
    * @var int Contains the id of the location attribute used to store the CMS user ID.
    */
   protected static $cmsUserAttrId;
-  private static $cmsUserList = null;
+  protected static $cmsUserList = null;
   
   /**
    * @var int Contains the id of the location attribute used to store the CMS user ID.
@@ -46,8 +46,8 @@ class iform_sectioned_transects_edit_transect {
   /**
    * @var string The Url to post AJAX form saves to.
    */
-  private static $ajaxFormUrl = null;
-  private static $ajaxFormSampleUrl = null;
+  protected static $ajaxFormUrl = null;
+  protected static $ajaxFormSampleUrl = null;
   
   /** 
    * Return the form metadata. 
@@ -237,7 +237,7 @@ class iform_sectioned_transects_edit_transect {
     return $args;
   }
 
-  private static function extract_attr(&$attributes, $caption, $unset=true) {
+  protected static function extract_attr(&$attributes, $caption, $unset=true) {
   	$found=false;
   	foreach($attributes as $idx => $attr) {
   		if (strcasecmp($attr['caption'], $caption)===0) { // should this be untranslated?
@@ -460,7 +460,7 @@ class iform_sectioned_transects_edit_transect {
     return $r;
   }
   
-  private static function check_prerequisites() {
+  protected static function check_prerequisites() {
     // check required modules installed
     if (isset($_POST['enable'])) {
       module_enable(array('iform_ajaxproxy'));
@@ -615,7 +615,7 @@ $('#delete-transect').click(deleteSurvey);
     return $r;
   }
   
-  private static function get_your_route_tab($auth, $args, $settings) {
+  protected static function get_your_route_tab($auth, $args, $settings) {
     $r = '<div id="your-route" class="ui-helper-clearfix">';
     $olOptions = iform_map_get_ol_options($args);
     $options = iform_map_get_map_options($args, $auth['read']);
@@ -670,7 +670,7 @@ $('#delete-transect').click(deleteSurvey);
     return $r;  
   }
   
-  private static function get_section_details_tab($auth, $args, $settings) {
+  protected static function get_section_details_tab($auth, $args, $settings) {
     $r = '<div id="section-details" class="ui-helper-clearfix">';
     $r .= '<form method="post" id="section-form" action="'.self::$ajaxFormUrl.'">';
     $r .= '<fieldset><legend>'.lang::get('Section Details').'</legend>';
@@ -730,7 +730,7 @@ $('#delete-transect').click(deleteSurvey);
   /**
    * If the user has permissions, then display a control so that they can specify the list of users associated with this site.
    */
-  private static function get_user_assignment_control($readAuth, $cmsUserAttr, $args) {
+  protected static function get_user_assignment_control($readAuth, $cmsUserAttr, $args) {
     if(self::$cmsUserList == null) {
       $query = db_query("select uid, name from {users} where name <> '' order by name");
       $users = array();
@@ -772,7 +772,7 @@ $('#delete-transect').click(deleteSurvey);
     return $r;
   }
 
-  private static function get_branch_assignment_control($readAuth, $branchCmsUserAttr, $args, $settings) {
+  protected static function get_branch_assignment_control($readAuth, $branchCmsUserAttr, $args, $settings) {
     if(!$branchCmsUserAttr) return '<span style="display:none;">No branch location attribute</span>'; // no attribute so don't display
     if(self::$cmsUserList == null) {
       $query = db_query("select uid, name from {users} where name <> '' order by name");

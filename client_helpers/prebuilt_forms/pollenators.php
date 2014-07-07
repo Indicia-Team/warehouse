@@ -570,6 +570,7 @@ document.write("<div class=\"poll-loading-hide\">");
 		$first=false;
 	}
     data_entry_helper::$javascript .= "];\nvar insectTaxa = [";
+    // full list : no allow_data_entry filter.
     $extraParams['taxon_list_id'] = $args['insect_list_id'];
     $species_data_def['extraParams']=$extraParams;
 	$taxa = data_entry_helper::get_population_data($species_data_def);
@@ -1276,6 +1277,7 @@ flowerIDstruc = {
 	type: 'flower',
 	selector: '#cc-2-flower-identify',
 	mainForm: 'form#cc-2-floral-station',
+	poll: true,
 	timeOutTimer: null,
 	pollTimer: null,
 	pollFile: '',
@@ -1363,7 +1365,8 @@ toolPoller = function(toolStruct){
 pollReset = function(toolStruct){
 	clearTimeout(toolStruct.timeOutTimer);
 	clearTimeout(toolStruct.pollTimer);
-	jQuery('#'+toolStruct.type+'-id-cancel').hide();
+	if(toolStruct.poll)
+		jQuery('#'+toolStruct.type+'-id-cancel').hide();
 	jQuery('#'+toolStruct.type+'-id-button').show();
 	jQuery('#'+toolStruct.type+'-id-button').data('toolRetValues', []);
 	jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:taxon_details]').val('');
@@ -1380,16 +1383,22 @@ idButtonPressed = function(toolStruct){
 	jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:taxon_details]').val('');
 	jQuery('#'+toolStruct.type+'_taxa_list').empty();
 	jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:taxa_taxon_list_id]').val('');
-	jQuery('#'+toolStruct.type+'-id-cancel').show();
-	jQuery('#'+toolStruct.type+'-id-button').hide();
+	if(toolStruct.poll) {
+		jQuery('#'+toolStruct.type+'-id-cancel').show();
+		jQuery('#'+toolStruct.type+'-id-button').hide();
+	}
 	var d = new Date;
 	var s = d.getTime();
 	toolStruct.pollFile = '".session_id()."_'+s.toString()
-	clearTimeout(toolStruct.timeOutTimer);
-	clearTimeout(toolStruct.pollTimer);
+	if(toolStruct.poll) {
+		clearTimeout(toolStruct.timeOutTimer);
+		clearTimeout(toolStruct.pollTimer);
+	}
 	window.open(toolStruct.invokeURL+toolStruct.pollFile,'','');
-	toolStruct.pollTimer = setTimeout('toolPoller('+toolStruct.name+');', ".$args['ID_tool_poll_interval'].");
-	toolStruct.timeOutTimer = setTimeout('toolReset('+toolStruct.name+');', ".$args['ID_tool_poll_timeout'].");
+	if(toolStruct.poll) {
+		toolStruct.pollTimer = setTimeout('toolPoller('+toolStruct.name+');', ".$args['ID_tool_poll_interval'].");
+		toolStruct.timeOutTimer = setTimeout('toolReset('+toolStruct.name+');', ".$args['ID_tool_poll_timeout'].");
+	}
 };
 jQuery('#flower-id-button').click(function(){
 	idButtonPressed(flowerIDstruc);
@@ -2074,7 +2083,6 @@ jQuery('.mod-button').click(function() {
           <input type="hidden" id="insect:taxon_details" name="insect:taxon_details" />
           <input type="hidden" name="insect:determination_type" value="A" />  
 		  <label for="insect-id-button">'.lang::get('LANG_Insect_ID_Key_label').' :</label><span id="insect-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>
-		  <span id="insect-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>
  	      <p id="insect_taxa_list"></p> 
  	    </div>
  	    <div class="id-later-group">
@@ -2151,6 +2159,7 @@ insectIDstruc = {
 	type: 'insect',
 	selector: '#cc-4-insect-identify',
 	mainForm: '#cc-4-main-form',
+	poll: false,
 	timeOutTimer: null,
 	pollTimer: null,
 	pollFile: '',
@@ -2163,10 +2172,12 @@ insectIDstruc = {
 jQuery('#insect-id-button').click(function(){
 	idButtonPressed(insectIDstruc);
 });
-jQuery('#insect-id-cancel').click(function(){
+
+/* jQuery('#insect-id-cancel').click(function(){
 	pollReset(insectIDstruc);
 });
-jQuery('#insect-id-cancel').hide();
+jQuery('#insect-id-cancel').hide(); */
+
 jQuery('#cc-4-insect-identify select[name=insect\\:taxa_taxon_list_id]').change(function(){
 	pollReset(insectIDstruc);
 	taxonChosen(insectIDstruc);

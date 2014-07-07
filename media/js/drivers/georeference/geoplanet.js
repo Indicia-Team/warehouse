@@ -23,7 +23,7 @@ var Georeferencer;
 (function ($) {
   Georeferencer = function(mapdiv, callback) {
     var settings = mapdiv.georefOpts;
-    if (settings.geoplanet_api_key===undefined || settings.geoplanet_api_key.length===0) {
+    if (settings.geoplanet_api_key.length===0) {
       alert('Incorrect configuration - Geoplanet API Key not specified.');
       throw('Incorrect configuration - Geoplanet API Key not specified.');
     }
@@ -79,5 +79,5 @@ jQuery.fn.indiciaMapPanel.georeferenceDriverSettings = {
   georefPreferredArea : 'gb',
   georefCountry : 'United Kingdom',
   georefLang : 'en-EN',
-  geoPlanetApiKey: ''
+  geoplanet_api_key: ''
 };

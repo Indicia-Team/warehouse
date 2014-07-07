@@ -38,6 +38,7 @@ $indicia_templates = array(
       "document.write('{content}');".
       "/* ]]> */</script>\n",
   'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
+  'toplabel' => '<label data-for="{id}"{labelClass}>{label}:</label>'."\n",
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
   'nullsuffix' => "",
@@ -87,8 +88,8 @@ $indicia_templates = array(
   'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{items}</select>',
   'listbox_item' => '<option value="{value}"{selected} >{caption}</option>',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
-  'check_or_radio_group' => '<span {class}>{items}</span>',
-  'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',
+  'check_or_radio_group' => '<ul {class} id="{id}">{items}</ul>',
+  'check_or_radio_group_item' => '<li><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked}{title} {disabled}/><label for="{itemId}">{caption}</label></li>',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>",
   'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
     "document.write('<input type=\"text\" id=\"imp-georef-search\"{class} />{searchButton}');\n".
@@ -110,7 +111,7 @@ $indicia_templates = array(
   'loading_block_end' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       "document.write('</div>');\n".
       "/* ]]> */</script>",
-  'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority} '.
+  'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em class="taxon-name">{taxon}</em></span> {authority} '.
       '<span class="nobreak vernacular">{common}</span></div>',
   'treeview_node' => '<span>{caption}</span>',
   'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
@@ -256,7 +257,16 @@ if ($("#{escapedId} option").length===0) {
   'report_download_link' => '<div class="report-download-link"><a href="{link}">{caption}</a></div>',
   'verification_panel' => '<div id="verification-panel">{button}<div class="messages" style="display: none"></div></div>',
   'two-col-50' => '<div class="two columns"><div class="column">{col-1}</div><div class="column">{col-2}</div></div>',
-  'loading_overlay' => '<div class="loading-overlay"></div>'
+  'loading_overlay' => '<div class="loading-overlay"></div>',
+  'report-table' => '<table{class}>{content}</table>',
+  'report-thead' => '<thead{class}>{content}</thead>',
+  'report-thead-tr' => '<tr{class}{title}>{content}</tr>',
+  'report-thead-th' => '<th>{content}</th>',
+  'report-tbody' => '<tbody>{content}</tbody>',
+  'report-tbody-tr' => '<tr{class}{rowId}{rowTitle}>{content}</tr>',
+  'report-tbody-td' => '<td{class}>{content}</td>',
+  
+    
 );
 
 
@@ -316,6 +326,11 @@ class helper_base extends helper_config {
   public static $images_path = null;
   
   /**
+   * @var string Path to Indicia cache folder. Defaults to client_helpers/cache.
+   */
+  public static $cache_folder = false;
+  
+  /**
    * @var string Path to proxy script for calls to the warehouse (optional, allows the warehouse to sit behind a firewall only accessible
    * from the server).
    */
@@ -347,6 +362,18 @@ class helper_base extends helper_config {
    * @var boolean Setting to completely disable loading from the cache
    */
   public static $nocache = false;
+  
+ /**
+   * @var integer On average, every 1 in $interim_image_chance_purge times the Warehouse is called for data, all interim images
+   * older than $interim_image_expiry seconds will be deleted. These are images that should have uploaded to the warehouse but the form was not
+   * finally submitted.
+   */
+  public static $interim_image_chance_purge=100;
+
+  /**
+   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
+   */
+  public static $interim_image_expiry=14400;
 
   /**
    * List of methods used to report a validation failure. Options are message, message, hint, icon, colour, inline.
@@ -410,7 +437,7 @@ class helper_base extends helper_config {
    * cached but older than the cache timeout, the cached data will be refreshed. This introduces a random element to
    * cache refreshes so that no single form load event is responsible for refreshing all cached content.
    */
-  public static $cache_chance_refresh_file=5;
+  public static $cache_chance_refresh_file=10;
 
   /**
    * @var integer On average, every 1 in $cache_chance_purge times the Warehouse is called for data, all files
@@ -428,6 +455,11 @@ class helper_base extends helper_config {
    * @var array A place to keep data and settings for Indicia code, to avoid using globals.
    */
   public static $data = array();
+  
+  /**
+   * @var string Google API key. Placed here rather than helper_config.php, as only recently introduced. 
+   */
+  public static $google_api_key = '';
 
   /**
    * @var Boolean indicates if any form controls have specified the lockable option.
@@ -478,8 +510,7 @@ class helper_base extends helper_config {
    * <li>addrowtogrid</li>
    * <li>indiciaMapPanel</li>
    * <li>indiciaMapEdit</li>
-   * <li>georeference_google_search_api</li>
-   * <li>google_search</li>
+   * <li>postcode_search</li>
    * <li>locationFinder</li>
    * <li>createPersonalSites</li>
    * <li>autocomplete</li>
@@ -495,7 +526,6 @@ class helper_base extends helper_config {
    * <li>googlemaps</li>
    * <li>multimap</li>
    * <li>virtualearth</li>
-   * <li>google_search</li>
    * <li>fancybox</li>
    * <li>treeBrowser</li>
    * <li>defaultStylesheet</li>
@@ -505,6 +535,7 @@ class helper_base extends helper_config {
    * <li>jqplot_bar</li>
    * <li>jqplot_pie</li>
    * <li>jqplot_category_axis_renderer</li>
+   * <li>jqplot_canvas_axis_label_renderer</li>
    * <li>jqplot_trendline</li>
    * <li>reportgrid</li>
    * <li>tabs</li>
@@ -570,10 +601,7 @@ class helper_base extends helper_config {
         'addrowtogrid' => array('deps' => array('validation'), 'javascript' => array(self::$js_path."addRowToGrid.js")),
         'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui', 'jquery_cookie'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
         'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
-        // this resource is required for the georeferencer which dynamically constructs the resource name depending on the driver selected.
-        'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi")),
-        // For any other usage of google search, e.g. postcode textbox
-        'google_search' => array('deps' =>array('georeference_google_search_api'), 'javascript' => array(self::$js_path."google_search.js")),
+        'postcode_search' => array('javascript' => array(self::$js_path."postcode_search.js")),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
         'createPersonalSites' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path."createPersonalSites.js")),
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
@@ -600,6 +628,7 @@ class helper_base extends helper_config {
         'jqplot_bar' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
         'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
+        'jqplot_canvas_axis_label_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.canvasTextRenderer.min.js', self::$js_path.'jqplot/plugins/jqplot.canvasAxisLabelRenderer.min.js')),
         'jqplot_trendline' => array('javascript'=>array(self::$js_path.'jqplot/plugins/jqplot.trendline.min.js')),
         'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js', self::$js_path.'json2.js')),
         'reportfilters' => array('deps' => array('reportgrid'), 'stylesheets' => array(self::$css_path."report-filters.css"), 'javascript' => array(self::$js_path.'reportFilters.js')),
@@ -725,12 +754,13 @@ $('.ui-state-default').live('mouseout', function() {
     // Do the POST and then close the session
     $response = curl_exec($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE); 
+    $curlErrno = curl_errno($session);
     // Check for an error, or check if the http response was not OK.
-    if (curl_errno($session) || $httpCode!==200) {
+    if ($curlErrno || $httpCode != 200) {
       if ($output_errors) {
         echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>URL:'.$url.'<br/>';
-        if (curl_errno($session)) {
-          echo 'Error number: '.curl_errno($session).'<br/>';
+        if ($curlErrno) {
+          echo 'Error number: '.$curlErrno.'<br/>';
           echo 'Error message: '.curl_error($session).'<br/>';
         }
         echo "Server response<br/>";
@@ -738,14 +768,14 @@ $('.ui-state-default').live('mouseout', function() {
       }
       $return = array(
           'result'=>false,
-          'output'=> curl_errno($session) ? curl_error($session) : $response,
-          'errno'=>curl_errno($session),
-          'status'=>$httpCode
+          'output' => $curlErrno ? curl_error($session) : $response,
+          'errno' => $curlErrno,
+          'status' => $httpCode
       );
     } else {
       $arr_response = explode("\r\n\r\n",$response);
       // last part of response is the actual data
-      $return = array('result'=>true,'output'=>array_pop($arr_response));
+      $return = array('result' => true,'output' => array_pop($arr_response));
     }
     curl_close($session);
     return $return;
@@ -995,7 +1025,7 @@ $('.ui-state-default').live('mouseout', function() {
     
     $fieldPrefix=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '');
     $ctrlOptions = array(
-      'label' => $info['display'],
+      'label' => lang::get($info['display']),
       'helpText' => $options['helpText'] ? $info['description'] : '', // note we can't fit help text in the toolbar versions of a params form
       'fieldname' => $fieldPrefix.$key,
       'nocache' => isset($options['nocache']) && $options['nocache']      
@@ -1025,10 +1055,17 @@ $('.ui-state-default').live('mouseout', function() {
           $extras[$extraItem[0]] = $extraItem[1];
         }
       }
+      // allow local page configuration to apply extra restrictions on the return values: e.g. only return some location_types from the termlist
+      if(isset($options['param_lookup_extras']) && isset($options['param_lookup_extras'][$key])){
+        foreach($options['param_lookup_extras'][$key] as $param => $value)
+          // direct table access can handle 'in' statements, reports can't.
+          $extras[$param] = ($popOpts[0]=='direct' ? $value : (is_array($value) ? implode(',',$value) : $value));
+          // $extras[$param] = $value;
+      }
       $ctrlOptions = array_merge($ctrlOptions, array(
         'valueField'=>$popOpts[2],
         'captionField'=>$popOpts[3],
-        'blankText'=>'<'.lang::get('please select').'>',
+        'blankText'=>'<please select>',
         'extraParams'=>$options['readAuth'] + $extras
       ));
       if ($popOpts[0]=='direct')
@@ -1265,13 +1302,21 @@ $('.ui-state-default').live('mouseout', function() {
   */
   public static function get_read_auth($website_id, $password) {
     self::$website_id = $website_id; /* Store this for use with data caching */
-    $postargs = "website_id=$website_id";
-    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);
-    $nonce = $response['output'];
-    return array(
-        'auth_token' => sha1("$nonce:$password"),
-        'nonce' => $nonce
-    );
+    // Keep a non-random cache for 10 minutes. It MUST be shorter than the normal cache lifetime so this expires more frequently.
+    $r = self::cache_get(array('readauth-wid'=>$website_id), 600, false);
+    if ($r===false) {
+      $postargs = "website_id=$website_id";
+      $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);
+      $nonce = $response['output'];
+      $r = array(
+          'auth_token' => sha1("$nonce:$password"),
+          'nonce' => $nonce
+      );
+      self::cache_set(array('readauth-wid'=>$website_id), json_encode($r));
+    } 
+    else
+      $r = json_decode($r, true);
+    return $r;
   }
 
 /**
@@ -1380,14 +1425,14 @@ $('.ui-state-default').live('mouseout', function() {
               } else
                 $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
             }
-            if (!self::$indiciaFnsDone) {
-              $libraries .= '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n";
-              self::$indiciaFnsDone = true;
-            }
           }
           // Record the resource as being dumped, so we don't do it again.
           array_push(self::$dumped_resources, $resource);
         }
+      }
+      if (!self::$indiciaFnsDone) {
+        $libraries = '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n".$libraries;
+        self::$indiciaFnsDone = true;
       }
     }
     return $stylesheets.$libraries;
@@ -1410,6 +1455,7 @@ $('.ui-state-default').live('mouseout', function() {
 indiciaData.imagesPath='" . self::$images_path . "';
 indiciaData.warehouseUrl='" . self::$base_url . "';
 indiciaData.windowLoaded=false;
+indiciaData.jQuery = jQuery; //saving the current version of jQuery
 ";
       if (self::$js_read_tokens) {
         if (!empty(parent::$warehouse_proxy))
@@ -1459,6 +1505,7 @@ indiciaData.windowLoaded=false;
     if (self::$validated_form_id) {
       global $indicia_templates;
       self::$javascript .= "
+      
         var validator = $('#".self::$validated_form_id."').validate({
         ignore: \":hidden,.inactive\",
         errorClass: \"".$indicia_templates['error_class']."\",
@@ -1541,9 +1588,11 @@ indiciaData.windowLoaded=false;
         $error = self::check_errors($options['fieldname'], true);
       }
     }
-    // Add a hint to the control if there is an error and this option is set
-    if ($error && in_array('hint', $options['validation_mode'])) {
-      $options['title'] = 'title="'.$error.'"';
+    // Add a hint to the control if there is an error and this option is set, or a hint option
+    if (($error && in_array('hint', $options['validation_mode'])) || isset($options['hint'])) {
+      $hint = ($error && in_array('hint', $options['validation_mode'])) ? array($error) : array();
+      if(isset($options['hint'])) $hint[] = $options['hint'];
+      $options['title'] = 'title="'.implode(' : ',$hint).'"';
     } else {
       $options['title'] = '';
     }
@@ -1598,7 +1647,7 @@ indiciaData.windowLoaded=false;
               array_key_exists('inputId', $options) ? $options['inputId'] : $options['id'],
               array_key_exists('labelClass', $options) ? ' class="'.$options['labelClass'].'"' : '',
           ),
-          $indicia_templates['label']
+          isset($options['labelTemplate']) ? $indicia_templates[$options['labelTemplate']] : $indicia_templates['label']
       );
     }
     // Output the main control
@@ -1651,14 +1700,17 @@ indiciaData.windowLoaded=false;
   */
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
-    //Only submit once if the user clicks submit button several times
-    self::$javascript .= '
-    $("'.self::$validated_form_id.'").submit(function() {
-      $(this).submit(function() {
-        return false;
-      });
-      return true;
-    });';
+    // prevent double submission of the form
+    self::$javascript .= "$('#$form_id').submit(function(e) {
+  if (typeof $('#$form_id').valid === 'undefined' || $('#$form_id').valid()) {
+    if (typeof indiciaData.formSubmitted==='undefined' || !indiciaData.formSubmitted) {
+      indiciaData.formSubmitted=true;
+    } else {
+      e.preventDefault();
+      return false;
+    }
+  }
+});\n";
     self::add_resource('validation');
   }
   
@@ -1886,38 +1938,85 @@ indiciaData.windowLoaded=false;
   
   /**
    * Utility function for external access to the iform cache.
+   * 
    * @param array $cacheOpts Options array which defines the cache "key", i.e. the unique set of options being cached.
    * @param integer $cacheTimeout Timeout in seconds, if overriding the default cache timeout.
+   * @param boolean $random Should a random element be introduced to prevent simultaneous expiry of multiple
+   * caches? Default true.
    * @return mixed String read from the cache, or false if not read.
    */   
-  public function cache_get($cacheOpts, $cacheTimeout=false) {
+  public static function cache_get($cacheOpts, $cacheTimeout=false, $random=true) {
     if (!$cacheTimeout)
-      $cacheTimeout = self::_getCacheTimeOut($options);
-    $cacheFolder = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
-    $cacheFile = data_entry_helper::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
-    $r = data_entry_helper::_getCachedResponse($cacheFile, $cacheTimeout, $cacheOpts);
+      $cacheTimeout = self::_getCacheTimeOut(array());
+    $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
+    $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
+    $r = self::_getCachedResponse($cacheFile, $cacheTimeout, $cacheOpts, $random);
     return $r === false ? $r : $r['output'];
   }
   
   /**
-   * Utility function for external writes to the iform cache. 
+   * Utility function for external writes to the iform cache.
+   *   
    * @param array $cacheOpts Options array which defines the cache "key", i.e. the unique set of options being cached.
    * @param string $toCache String data to cache.
    * @param integer $cacheTimeout Timeout in seconds, if overriding the default cache timeout.
    */   
-  public function cache_set($cacheOpts, $toCache, $cacheTimeout=false) {
+  public static function cache_set($cacheOpts, $toCache, $cacheTimeout=false) {
     if (!$cacheTimeout)
-      $cacheTimeout = self::_getCacheTimeOut($options);
-    $cacheFolder = data_entry_helper::relative_client_helper_path() . (isset(data_entry_helper::$cache_folder) ? data_entry_helper::$cache_folder : 'cache/');
-    $cacheFile = data_entry_helper::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
+      $cacheTimeout = self::_getCacheTimeOut(array());
+    $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
+    $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
     self::_cacheResponse($cacheFile, array('output' => $toCache), $cacheOpts);
   }
   
+  /** 
+   * Wrapped up handler for a cached call to the data or reporting services.
+   * @param string $request Request URL.
+   * @param array $options Control options, which may include a caching option and/or cachePerUser
+   * option.
+   */
+  protected static function _get_cached_services_call($request, $options) {
+    $cacheLoaded = false;
+    // allow use of the legacy nocache parameter.
+    if (isset($options['nocache']) && $options['nocache']===true)
+      $options['caching'] = false;
+    $useCache = !self::$nocache && !isset($_GET['nocache']) && !empty($options['caching']) && $options['caching'];
+    if ($useCache && $options['caching']!=='store') {
+      // Get the URL params, so we know what the unique thing is we are caching
+      $parsedURL=parse_url(parent::$base_url.$request);
+      parse_str($parsedURL["query"], $cacheOpts);
+      unset($cacheOpts['auth_token']);
+      unset($cacheOpts['nonce']);
+      $cacheOpts['path']=$parsedURL['path'];
+      if (isset($options['cachePerUser']) && !$options['cachePerUser']) 
+        unset($cacheOpts['user_id']);
+      $cacheTimeOut = self::_getCacheTimeOut($options);
+      $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
+      $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
+      $response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts);
+      if ($response!==false)
+        $cacheLoaded = true;
+    }
+    if (!isset($response) || $response===false)
+      $response = self::http_post(parent::$base_url.$request, null);
+    $r = json_decode($response['output'], true);
+    if (!is_array($r)) {
+      $response['request'] = $request;
+      throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
+    }
+    // Only cache valid responses and when not already cached
+    if ($useCache && !isset($r['error']) && !$cacheLoaded)
+      self::_cacheResponse($cacheFile, $response, $cacheOpts);
+    self::_purgeCache();
+    self::_purgeImages();
+    return $r;
+  }
+  
   /**
-   * Protected function to fetch a validated timeout value from passed in options array
-   * @param array $options Options array with the following possibilities:<ul>
-   * <li><b>cachetimeout</b><br/>
-   * Optional. The length in seconds before the cache times out and is refetched.</li></ul>
+   * Protected function to fetch a validated timeout value from passed in options array.
+   *
+   * @param array $options Options array with the following possibilities:
+   * * **cachetimeout** - Optional. The length in seconds before the cache times out and is refetched.
    * @return Timeout in number of seconds, else FALSE if data is not to be cached.
    */
   protected static function _getCacheTimeOut($options)
@@ -1960,17 +2059,22 @@ indiciaData.windowLoaded=false;
 
   /**
    * Protected function to return the cached data stored in the specified local file.
+   * 
    * @param string $file Cache file to be used, includes path
    * @param number $timeout - will be false if no caching to take place
    * @param array $options Options array : contents used to confirm what this data is.
+   * @param boolean $random Should a random element be introduced to prevent simultaneous expiry of multiple
+   * caches? Default true.
    * @return array equivalent of call to http_post, else FALSE if data is not to be cached.
    */
-  protected static function _getCachedResponse($file, $timeout, $options)
+  protected static function _getCachedResponse($file, $timeout, $options, $random=true)
   {
     // Note the random element, we only timeout a cached file sometimes.
-    if (($timeout && $file && is_file($file) &&
-        (rand(1, self::$cache_chance_refresh_file)!=1 || filemtime($file) >= (time() - $timeout)))
-    ) {
+    $wantToCache = $timeout!==false;
+    $haveFile = $file && is_file($file);
+    $fresh = $haveFile && filemtime($file) >= (time() - $timeout);
+    $randomSurvival = $random && (rand(1, self::$cache_chance_refresh_file)!==1);
+    if ($wantToCache && $haveFile && ($fresh || $randomSurvival)) {
       $response = array();
       $handle = fopen($file, 'rb');
       if(!$handle) return false;
@@ -2014,6 +2118,95 @@ indiciaData.windowLoaded=false;
       rename($file.getmypid(),$file);
     }
   }
+  
+  /**
+   * Helper function to clear the Indicia cache files.
+   */
+  public static function clear_cache() {
+    $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
+    if(!$dh = @opendir($cacheFolder)) {
+      return;
+    }
+    while (false !== ($obj = readdir($dh))) {
+      if($obj != '.' && $obj != '..')
+        @unlink($cacheFolder . '/' . $obj);
+    }
+    closedir($dh);
+  }
+
+  /**
+   * Internal function to ensure old cache files are purged periodically.
+   */
+  protected static function _purgeCache() {
+    $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
+    self::purgeFiles(self::$cache_chance_purge, $cacheFolder, self::$cache_timeout * 5, self::$cache_allowed_file_count);
+  }
+
+  /**
+   * Internal function to ensure old image files are purged periodically.
+   */
+  protected static function _purgeImages() {
+    $interimImageFolder = self::relative_client_helper_path() . (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
+    self::purgeFiles(self::$cache_chance_purge, $interimImageFolder, self::$interim_image_expiry);
+  }
+
+  /**
+   * Performs a periodic purge of cached files.
+   * @param integer $chanceOfPurge Indicates the chance of a purge happening. 1 causes a purge
+   * every time the function is called, 10 means there is a 1 in 10 chance, etc.
+   * @param string $folder Path to the folder to purge cache files from.
+   * @param integer $timeout Age of files in seconds before they will be considered for
+   * purging.
+   * @param integer $allowedFileCount Number of most recent files to not bother purging
+   * from the cache.
+   */
+  private static function purgeFiles($chanceOfPurge, $folder, $timeout, $allowedFileCount=0) {
+    // don't do this every time.
+    if (rand(1, $chanceOfPurge)===1) {
+      // First, get an array of files sorted by date
+      $files = array();
+      $dir =  opendir($folder);
+      if ($dir) {
+        while ($filename = readdir($dir)) {
+          if ($filename == '.' || $filename == '..' || is_dir($filename))
+            continue;
+          $lastModified = filemtime($folder . $filename);
+          $files[] = array($folder .$filename, $lastModified);
+        }
+      }
+      // sort the file array by date, oldest first
+      usort($files, array('helper_base', 'DateCmp'));
+      // iterate files, ignoring the number of files we allow in the cache without caring.
+      for ($i=0; $i<count($files)-$allowedFileCount; $i++) {
+        // if we have reached a file that is not old enough to expire, don't go any further
+        if ($files[$i][1] > (time() - $timeout)) {
+          break;
+        }
+        // clear out the old file
+        if (is_file($files[$i][0]))
+          unlink($files[$i][0]);
+      }
+    }
+  }
+  
+    
+  /**
+   * A custom PHP sorting function which uses the 2nd element in the compared array to 
+   * sort by. The sorted array normally contains a list of files, with the first element
+   * of each array entry being the file path and the second the file date stamp.
+   * @param int $a Datestamp of the first file to compare.
+   * @param int $b Datestamp of the second file to compare.
+   */
+  private static function DateCmp($a, $b)
+  {
+    if ($a[1]<$b[1])
+      $r = -1;
+    else if ($a[1]>$b[1])
+      $r = 1;
+    else $r=0;
+    return $r;
+  }
+
 }
 
 /**

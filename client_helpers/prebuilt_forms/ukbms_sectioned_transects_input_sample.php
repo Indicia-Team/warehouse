@@ -205,6 +205,23 @@ class iform_ukbms_sectioned_transects_input_sample {
           'group'=>'Species'
         ),
         array(
+          'name' => 'start_list',
+          'caption' => 'Start with species list',
+          'description' => 'Preselect which species list to polulate the first species grid with.',
+          'type'=>'select',
+          'options' => array(
+            'full' => 'Full species list',
+            'common' => 'Common species list',
+            'here' => 'Previous species recorded at this location',
+            'mine' => 'Previous species recorded by user'
+            // no filled entry, will always do this, plue "here" as a minimum
+          ),
+          'required' => true,
+          'default' => 'full',
+          'group' => 'Species'
+        ),
+/*
+        array(
           'name' => 'start_with_common_species',
           'caption' => 'Start with common species',
           'description' => 'Tick this box to preselect the common species list rather than the all species list.',
@@ -212,7 +229,7 @@ class iform_ukbms_sectioned_transects_input_sample {
           'required' => false,
           'default' => false,
           'group' => 'Species'
-        ),
+        ), */
         array(
           'name'=>'species_tab_2',
           'caption'=>'Species Tab 2 Title',
@@ -748,6 +765,8 @@ class iform_ukbms_sectioned_transects_input_sample {
       $site = $site[0];
       $r .= '<input type="hidden" name="sample:location_id" value="'.$locationId.'"/>';
       $r .= '<input type="hidden" name="sample:entered_sref" value="'.$site['centroid_sref'].'"/>';
+      if(in_array($site['centroid_sref_system'], array('osgb','osie')))
+        $site['centroid_sref_system'] = strtoupper($site['centroid_sref_system']);
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="'.$site['centroid_sref_system'].'"/>';
     }
     if ($locationId && (isset(data_entry_helper::$entity_to_load['sample:id']) || isset($_GET['site']))) {
@@ -756,12 +775,8 @@ class iform_ukbms_sectioned_transects_input_sample {
     } else {
       // Output only the locations for this website and transect type. Note we load both transects and sections, just so that
       // we always use the same warehouse call and therefore it uses the cache.
-      $typeTerms = array(
-        empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term'],
-        empty($args['section_type_term']) ? 'Section' : $args['section_type_term']
-      );
-      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', $typeTerms);
-      $siteParams = $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id']);
+      $locationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
+      $siteParams = $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationType[0]['id']);
       if ((!isset($args['user_locations_filter']) || $args['user_locations_filter']) &&
           (!isset($args['managerPermission']) || !user_access($args['managerPermission']))) {
         $siteParams += array('locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid);
@@ -1040,9 +1055,12 @@ class iform_ukbms_sectioned_transects_input_sample {
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute[".($idx+1)."] = $attr;\n";
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl[".($idx+1)."] = jQuery('".(str_replace("\n","",$ctrl))."');\n";
     }
+    
+    // Fetch the sections
+    $sectionLocationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['section_type_term']) ? 'Section' : $args['section_type_term']));
     $sections = data_entry_helper::get_population_data(array(
       'table' => 'location',
-      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f'),
+      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f','location_type_id'=>$sectionLocationType[0]['id']),
       'nocache' => true
     ));
     usort($sections, "ukbms_stis_sectionSort");
@@ -1066,12 +1084,17 @@ class iform_ukbms_sectioned_transects_input_sample {
         'divId'=>'tabs',
         'style'=>'Tabs'
     ));
-    $commonSelected = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'selected="selected"' : '';
+    $listSelected = isset($args['start_list']) ? $args['start_list'] : 'full';
+//    $commonSelected = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'selected="selected"' : '';
     // will assume that first table is based on abundance count, so do totals
     $r .= '<div id="grid1">'.
-          '<label for="listSelect">'.lang::get('Use species list').' :</label><select id="listSelect"><option value="full">'.lang::get('All species').
-              '</option><option value="common"'.$commonSelected.'>'.lang::get('Common species').'</option><option value="here">'.lang::get('Species known at this site').
-              '</option><option value="mine">'.lang::get('Species I have recorded').'</option><option value="filled">'.lang::get('Species with data').'</option></select>'.
+          '<label for="listSelect">'.lang::get('Use species list').' :</label>'.
+          '<select id="listSelect">'.
+            '<option value="full"'.($listSelected == 'full' ? ' selected="selected"' : '').'>'.lang::get('All species').'</option>'.
+            '<option value="common"'.($listSelected == 'common' ? ' selected="selected"' : '').'>'.lang::get('Common species').'</option>'.
+            '<option value="here"'.($listSelected == 'here' ? ' selected="selected"' : '').'>'.lang::get('Species known at this site').'</option>'.
+            '<option value="mine"'.($listSelected == 'mine' ? ' selected="selected"' : '').'>'.lang::get('Species I have recorded').'</option>'.
+          '</select>'.
           '<span id="listSelectMsg"></span>';
     $r .= '<table id="transect-input1" class="ui-widget species-grid"><thead class="table-header">';
     $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
@@ -1155,8 +1178,8 @@ class iform_ukbms_sectioned_transects_input_sample {
         $first = false;
       }
       data_entry_helper::$javascript .= "];\n";
-      $swc = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'true' : 'false';
-      data_entry_helper::$javascript .= "indiciaData.startWithCommonSpecies=$swc;\n";
+//      $swc = isset($args['start_with_common_species']) && $args['start_with_common_species'] ? 'true' : 'false';
+      data_entry_helper::$javascript .= "indiciaData.startList='".$listSelected."';\n";
     }
 
     $allTaxonMeaningIdsAtTransect = data_entry_helper::get_population_data(array(
@@ -1337,14 +1360,14 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
     if(isset($args["sensitiveAttrID"]) && $args["sensitiveAttrID"] != "" && isset($args["sensitivityPrecision"]) && $args["sensitivityPrecision"] != "") {
-      $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
+      $locationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
       $site_attributes = data_entry_helper::getAttributes(array(
             'valuetable'=>'location_attribute_value'
             ,'attrtable'=>'location_attribute'
             ,'key'=>'location_id'
             ,'fieldprefix'=>'locAttr'
             ,'extraParams'=>$auth['read'] + array('id'=>$args["sensitiveAttrID"])
-            ,'location_type_id'=>$locationTypes[0]['id']
+            ,'location_type_id'=>$locationType[0]['id']
             ,'survey_id'=>$args['survey_id']
             ,'id' => $parentLocId // location ID
       ));
@@ -1888,6 +1911,8 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
         ));
         $site = $site[0];
         $values['sample:entered_sref'] = $site['centroid_sref'];
+        if(in_array($site['centroid_sref_system'], array('osgb','osie')))
+          $site['centroid_sref_system'] = strtoupper($site['centroid_sref_system']);
         $values['sample:entered_sref_system'] = $site['centroid_sref_system'];
       }
       // Build the subsamples

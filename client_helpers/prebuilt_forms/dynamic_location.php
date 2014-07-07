@@ -204,12 +204,16 @@ class iform_dynamic_location extends iform_dynamic {
     //other than being a visual cue to zoom to.
     data_entry_helper::$javascript .= "
 mapInitialisationHooks.push(function(mapdiv) {
-  var feature, geom=OpenLayers.Geometry.fromWKT({$loc[boundary_geom]});
-
+  var feature, geom;
+  if ('".$loc['boundary_geom']."') {
+    geom=OpenLayers.Geometry.fromWKT('".$loc['boundary_geom']."');
+  } else {
+    geom=OpenLayers.Geometry.fromWKT('".$loc['centroid_geom']."');
+  }
   if (indiciaData.mapdiv.map.projection.getCode() != indiciaData.mapdiv.indiciaProjection.getCode()) {
       geom.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
   }
-  feature = new OpenLayers.Feature.Vector(geom);
+  feature = new OpenLayers.Feature.Vector(geom);   
   feature.attributes.type = 'zoomToBoundary';
   indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
   mapdiv.map.zoomToExtent(feature.geometry.bounds);
@@ -259,8 +263,10 @@ mapInitialisationHooks.push(function(mapdiv) {
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
-    // If a drawing tool is on the map we can support boundaries.
+    // If a drawing tool is on the map we can support boundaries or if automatic plot creation is enabled.
     $boundaries = false;
+    if (!empty($options['clickForPlot']) && $options['clickForPlot']==true)
+      $boundaries = true;     
     foreach ($options['standardControls'] as $ctrl) {
       if (substr($ctrl, 0, 4)==='draw') {
         $boundaries = true;
@@ -279,9 +285,13 @@ mapInitialisationHooks.push(function(mapdiv) {
     $r = '';
     $r .= data_entry_helper::map_panel($options, $olOptions);
     // Add a geometry hidden field for boundary support
-    if ($boundaries) 
-      $r .= '<input type="hidden" name="location:boundary_geom" id="imp-boundary-geom" value="' .
-          data_entry_helper::$entity_to_load['location:boundary_geom'] . '"/>';
+    if ($boundaries) {
+      if (!empty(data_entry_helper::$entity_to_load['location:boundary_geom'])) 
+        $impBoundaryGeomVal=data_entry_helper::$entity_to_load['location:boundary_geom'];
+      else 
+        $impBoundaryGeomVal='';   
+      $r .= '<input type="hidden" name="location:boundary_geom" id="imp-boundary-geom" value="'.$impBoundaryGeomVal.'"/>';
+    }
     return $r;
   }
 
@@ -487,6 +497,25 @@ mapInitialisationHooks.push(function(mapdiv) {
                                                   'urlParams' => array('location_id'=>'{id}'),
                                                   'visibility_field' => 'editable'))
     ));
+  }
+  
+  /** 
+   * Override the default submit buttons to add a delete button where appropriate.
+   */
+  protected static function getSubmitButtons($args) {
+    $r = '';
+    if (!empty(data_entry_helper::$entity_to_load['location:id'])) {
+      // use a button here, not input, as Chrome does not post the input value
+      $r .= '<button type="submit" class="indicia-button" id="delete-button" name="delete-button" value="delete" >'.lang::get('Delete')."</button>\n";
+      data_entry_helper::$javascript .= "$('#delete-button').click(function(e) {
+        if (!confirm(\"Are you sure you want to delete this location?\")) {
+          e.preventDefault();
+          return false;
+        }
+      });\n";
+    }
+    $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Submit')."\" />\n";
+    return $r;
   }
   
 }

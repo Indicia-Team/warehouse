@@ -19,6 +19,7 @@
 var checkSubmitInProgress = function () {
   if ($('.file-box .progress').length!==0) {
     alert('Please wait till your images have finished uploading before submitting the form.');
+    indiciaData.formSubmitted = false;
     return false;
   }
   return true;
@@ -167,13 +168,13 @@ var checkSubmitInProgress = function () {
   $.fn.uploader = function(options) {
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
-    var opts = $.extend({}, $.fn.uploader.defaults, options), html5OK=false;
+    var opts = $.extend({}, $.fn.uploader.defaults, options), html5OK=true;
     
     if (/Firefox[\/\s](\d+\.\d+)/.test(navigator.userAgent)){ //test for Firefox/x.x or Firefox x.x (ignoring remaining digits);
       var ffversion=new Number(RegExp.$1); // capture x.x portion and store as a number
-      if (ffversion>=3.5) {
+      if (ffversion<3.5) {
         // Browser is FF3.5+, so Html5 is a good runtime as HTML5 resize only works on FF3.5+. 
-        html5OK = true;
+        html5OK = false;
       }
     } 
     if (!html5OK) {
@@ -337,8 +338,8 @@ var checkSubmitInProgress = function () {
               .replace(/\{filename\}/g, $.inArray(ext, indiciaData.uploadFileTypes.Image)>-1 ? div.settings.msgPhoto : div.settings.msgFile)
               .replace(/\{imagewidth\}/g, div.settings.imageWidth)
           );
-          // change the file name to be unique
-          file.name=plupload.guid()+'.'+ext;
+          // change the file name to be unique & lowercase, since the warehouse lowercases files
+          file.name=(plupload.guid()+'.'+ext).toLowerCase();
           $('#' + file.id + ' .progress-bar').progressbar ({value: 0});
           var msg='Resizing...';
           if (div.settings.resizeWidth===0 || div.settings.resizeHeight===0 || typeof div.uploader.features.jpgresize === "undefined") {
@@ -377,7 +378,7 @@ var checkSubmitInProgress = function () {
           alert(div.settings.msgUploadError + ' ' + resp[0].error.message);
         } else {
           filepath = div.settings.destinationFolder + file.name;
-          uniqueId = $('.filelist .media-wrapper').length;
+          uniqueId = $('.filelist .media-wrapper').length - $('.filelist .progress').length;
           fileType = $.inArray(filepath.split('.').pop().toLowerCase(), indiciaData.uploadFileTypes.Audio)===-1 ? 'Image' : 'Audio';
           if (fileType==='Image') {
             tmpl = div.settings.file_box_uploaded_imageTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;

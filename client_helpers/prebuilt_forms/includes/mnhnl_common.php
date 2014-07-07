@@ -445,11 +445,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   if($args['locationMode']!='parent') { // this includes multi as well (see above)
     // can't call the protested control function
     $georefOpts = iform_map_get_georef_options($args, $auth['read']);
-    // can't use place search without the driver API key
-    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
-      $retVal .= '<p>The form structure includes a [place search] control but needs a geoplanet api key.</p>';
-    else
-      $retVal .=  data_entry_helper::georeference_lookup($georefOpts);
+    $retVal .=  data_entry_helper::georeference_lookup($georefOpts);
     $mapOptions['searchLayer']=true;
     $mapOptions['searchUpdatesSref']=false;
     $mapOptions['searchDisplaysPoint']=false;
@@ -3969,12 +3965,12 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force, $loctyp
     data_entry_helper::$javascript .= "\ncanEditExistingSites = ".($force ? "true" : "false").";\n";
     return;
   }
-  $isAdmin = user_access('edit_permission');
+  $isAdmin = user_access($args['edit_permission']);
   if($isAdmin) {
   	data_entry_helper::$javascript .= "\ncanEditExistingSites = true;\n";
     return;
   }
-  $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID');
+  $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID', isset($args['sample_method_id'])&&$args['sample_method_id']!="" ? $args['sample_method_id'] : false);
   if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID sample attribute associated with it so records can be tagged against their creator.');
   if(count($locList)==0){
     $location_list_args=array(

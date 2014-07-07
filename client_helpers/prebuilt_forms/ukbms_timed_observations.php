@@ -454,11 +454,7 @@ class iform_ukbms_timed_observations {
     // [place search]
     $georefOpts = iform_map_get_georef_options($args, $auth['read']);
     $georefOpts['label'] = lang::get('Search for Place on Map');
-    // can't use place search without the driver API key
-    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
-      $r .= '<span style="display: none;">The form structure includes a place search but needs a geoplanet api key.</span>';
-    else
-      $r .= data_entry_helper::georeference_lookup($georefOpts);
+    $r .= data_entry_helper::georeference_lookup($georefOpts);
     // [map]
     $options = iform_map_get_map_options($args, $auth['read']);
     if (!empty(data_entry_helper::$entity_to_load['sample:wkt'])) {

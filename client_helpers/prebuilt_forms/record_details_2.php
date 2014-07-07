@@ -226,6 +226,9 @@ Record ID',
    */
   protected static function get_control_recorddetails($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
+    $options = array_merge(array(
+      'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data_attributes_with_hiddens'
+    ), $options);
     $fields=helper_base::explode_lines($args['fields']);
     $fieldsLower=helper_base::explode_lines(strtolower($args['fields']));
     //Draw the Record Details, but only if they aren't requested as hidden by the administrator
@@ -236,6 +239,7 @@ Record ID',
       'occurrence_id'=>'Record ID',
       'taxon'=>'Species',
       'preferred_taxon'=>'Preferred species name',
+      'taxonomy'=>'Taxonomy',
       'survey_title'=>'Survey',
       'recorder'=>'Recorder',
       'inputter'=>'Input by',
@@ -255,6 +259,12 @@ Record ID',
       if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field]))
         $details_report .= str_replace(array('{caption}','{value}'), array($caption, self::$record[$field]), $attrsTemplate);      
     }
+    $created = date('jS F Y \a\t H:i', strtotime(self::$record['created_on']));
+    $updated = date('jS F Y \a\t H:i', strtotime(self::$record['updated_on']));
+    $dateInfo = lang::get('Entered on {1}', $created);
+    if ($created!==$updated)
+      $dateInfo .= lang::get(' and last updated on {1}', $updated);
+    $details_report .= str_replace(array('{caption}','{value}'), array(lang::get('Submission date'), $dateInfo), $attrsTemplate);
     $details_report .= '</div>';
     
     if (!self::$record['sensitivity_precision']) {
@@ -262,7 +272,7 @@ Record ID',
       $attrs_report = report_helper::freeform_report(array(
         'readAuth' => $auth['read'],
         'class'=>'record-details-fields ui-helper-clearfix',
-        'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data_attributes_with_hiddens',
+        'dataSource'=>$options['dataSource'],
         'bands'=>array(array('content'=>$attrsTemplate)),
         'extraParams'=>array(
           'occurrence_id'=>$_GET['occurrence_id'],
@@ -318,14 +328,15 @@ Record ID',
       $options['galleryColCount'] = 3;
     }  
 
-    return '<h3>Photos</h3>'.report_helper::report_grid(array(
+    return '<h3>Photos and media</h3>'.report_helper::report_grid(array(
       'readAuth' => $auth['read'],
       'dataSource'=>'occurrence_image',
       'itemsPerPage' => $options['itemsPerPage'],
       'columns' => array(
         array(
           'fieldname' => 'path',
-          'template' => '<div class="gallery-item"><a class="fancybox" href="{imageFolder}{path}"><img src="{imageFolder}thumb-{path}" title="{caption}" alt="{caption}"/><br/>{caption}</a></div>'
+          'template' => '<div class="gallery-item">{path}<br/>{caption}</div>',
+          'img'=>true
         )
       ),
       //mode direct means the datasource is a table instead of a report
@@ -334,9 +345,10 @@ Record ID',
       'includeAllColumns' => false,
       'headers' => false,
       'galleryColCount' => $options['galleryColCount'],
+      'pager' => false,
       'extraParams' => array(
         'occurrence_id'=>$_GET['occurrence_id'],
-        'sharing'=>'reporting'
+        'sharing'=>'reporting'        
       ),
       'ajax' => true
     ));

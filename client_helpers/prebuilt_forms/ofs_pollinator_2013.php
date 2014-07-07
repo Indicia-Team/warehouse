@@ -182,8 +182,9 @@ $('.control-box').each(function(idx,elem){
   				,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       );
       $attributes = data_entry_helper::getAttributes($attrOptions);
+      $occAttrCaptions = array();
       // Get the attribute and control information required to build the custom occurrence attribute columns
-      data_entry_helper::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
+      data_entry_helper::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs, $occAttrCaptions);
       $grid = "\n";
       // No look up list -> no cloneable row
       $grid .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
@@ -192,7 +193,7 @@ $('.control-box').each(function(idx,elem){
       for ($i=0; $i<$options['columns']; $i++) {
         $grid .= self::get_species_checklist_col_header($options['id']."-species-$i", lang::get('species_checklist.species'), $visibleColIdx, $options['colWidths'], '', '');
         $grid .= self::get_species_checklist_col_header($options['id']."-present-$i", lang::get('species_checklist.present'), $visibleColIdx, $options['colWidths'], 'display:none', '');
-        foreach ($occAttrs as $idx=>$a){
+        foreach ($occAttrCaptions as $idx=>$a){
           $filename = preg_replace('/\s+/', '-', strtolower($a));
           $grid .= self::get_species_checklist_col_header($options['id']."-attr$idx-$i", lang::get($a), $visibleColIdx, $options['colWidths'], '',
                    $base.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/ofs_pollinator/'.$filename.'.png') ;
@@ -226,10 +227,10 @@ $('.control-box').each(function(idx,elem){
           self::dump_one_row(6, $taxonRows[6], $taxalist, $taxonRows, $occAttrControls, $attributes, $options).'</tr>';
       $txnID=7;
       if(count($taxonRows)>$txnID){
-        $grid .= '<tr class="top"><td class="dot-right"><b>?</b></td><td></td>'.
-                 '<td class="scTaxonCell">Unknown Other?</td>'.
+        $grid .= '<tr class="top"><td class="dot-right"><strong>Other or Unknown</strong></td><td>Record here if you know what it is, or put \'Unknown\'</td>'.
+                 '<td class="scTaxonCell scComment"><input type="text" value="" name="sc:'.$options['id'].'-'.$txnID.'::comment" id="sc:'.$options['id'].'-'.$txnID.'::comment"></td>'.
                  '<td style="display:none" class="scPresenceCell"><input type="hidden" value="'.$taxonRows[$txnID]["ttlId"].'" id="sc:'.$options['id'].'-'.$txnID.'::present" name="sc:'.$options['id'].'-'.$txnID.'::present"></td>'.
-                 '<td class="scOccAttrCell ui-widget-content scComment" colspan="'.count($attributes).'"><input type="text" value="" name="sc:'.$options['id'].'-'.$txnID.'::comment" id="sc:'.$options['id'].'-'.$txnID.'::comment"></td></tr>';
+                 self::addAttributeCols($occAttrControls, $attributes, $options, 7);
       }
       $grid .= "</tbody>\n</table>\n";
       $grid .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
@@ -254,7 +255,6 @@ $('.control-box').each(function(idx,elem){
   {
     global $indicia_templates;
   	$ttlId = $rowIds['ttlId'];
-  	$colIdx = (int)floor($rowIdx / count($taxonRows));
   	// Find the taxon in our preloaded list data that we want to output for this row
   	$taxonIdx = 0;
   	while ($taxonIdx < count($taxalist) && $taxalist[$taxonIdx]['id'] != $ttlId) {
@@ -276,13 +276,19 @@ $('.control-box').each(function(idx,elem){
   	// Now create the table cell to contain this.
   	$row = '';
   	$row .= str_replace(array('{content}','{colspan}','{tableId}','{idx}'),
-  			array($firstCell,'',$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
-  	$row .= "\n<td class=\"scPresenceCell\" headers=\"$options[id]-present-$colIdx\" style=\"display:none\">";
+  			array($firstCell,'',$options['id'],$txIdx), $indicia_templates['taxon_label_cell']);
+  	$row .= "\n<td class=\"scPresenceCell\" headers=\"$options[id]-present-$txIdx\" style=\"display:none\">";
   	$fieldname = "sc:$options[id]-$txIdx:$existing_record_id:present";
   	$row .= "<input type=\"hidden\" name=\"$fieldname\" id=\"$fieldname\" value=\"$taxon[id]\"/>";
   	$row .= "</td>";
-  	$idx = 0;
-  	foreach ($occAttrControls as $attrId => $control) {
+    $row .= self::addAttributeCols($occAttrControls, $attributes, $options, $txIdx);
+  	return $row;
+  }
+  
+  private static function addAttributeCols($occAttrControls, $attributes, $options, $txIdx) {
+    global $indicia_templates;
+    $idx = 0;
+    foreach ($occAttrControls as $attrId => $control) {
   		$existing_value='';
   		$valId=false;
   		// no existing record, so use a default control ID which excludes the existing record ID.
@@ -312,14 +318,14 @@ $('.control-box').each(function(idx,elem){
   			$oc = str_replace("class='", "class='ui-state-error ", $oc);
   			$oc .= $error;
   		}
-  		$headers = $options['id']."-attr$attrId-$colIdx";
+  		$headers = $options['id']."-attr$attrId-$txIdx";
   		$class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['untranslatedCaption']);
   		$class = $class . 'Cell';
   		$row .= str_replace(array('{label}', '{class}', '{content}', '{headers}'), array(lang::get($attributes[$attrId]['caption']), $class, $oc, $headers),
   				$indicia_templates[$options['attrCellTemplate']]);
   		$idx++;
   	}
-  	return $row;
+    return $row;
   }
 
   private static function species_checklist_implode_rows($rows, $imageRowIdxs) {
@@ -343,6 +349,9 @@ $('.control-box').each(function(idx,elem){
   private static function get_species_checklist_taxa_list($options, &$taxonRows) {
     // load the species names that should be initially included in the grid
     $options['extraParams']['orderby'] = 'taxonomic_sort_order';
+    if (isset($options['listId']) && !empty($options['listId'])) 
+      // Apply the species list to the filter
+      $options['extraParams']['taxon_list_id']=$options['listId'];
     $taxalist = data_entry_helper::get_population_data($options);
   	foreach ($taxalist as $taxon) {
   		// create a list of the rows we are going to add to the grid, with the preloaded species names linked to them

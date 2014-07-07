@@ -96,7 +96,8 @@ function iform_map_get_map_parameters() {
       'description'=>'Select the preset base layers that are available for the map. When using Google map layers, please ensure you adhere to the '.
           '<a href="http://code.google.com/apis/maps/terms.html">Google Maps/Google Earth APIs Terms of Service</a>. When using the Bing map layers, '.
           'please ensure that you read and adhere to the <a href="http://www.microsoft.com/maps/product/terms.html">Bing Maps terms of use</a>. '.
-          'The Microsoft Virtual Earth layer is now mapped to the Bing Aerial layer so is provided for backwards compatibility only.',
+          'The Microsoft Virtual Earth layer is now mapped to the Bing Aerial layer so is provided for backwards compatibility only. You can '.
+          'sort the layers into the order you require by dragging and dropping the layer labels.',
       'type'=>'list',
       'options' => array(
         'google_physical' => 'Google Physical',
@@ -110,6 +111,7 @@ function iform_map_get_map_parameters() {
         'osm' => 'OpenStreetMap',
         'osm_th' => 'OpenStreetMap Tiles@Home'
       ),
+      'sortable'=>true,
       'group'=>'Base Map Layers',
       'required'=>false
     ),
@@ -166,7 +168,7 @@ function iform_map_get_map_parameters() {
       'name' => 'standard_controls',
       'caption' => 'Controls to add to map',
       'description' => 'List of map controls, one per line. Select from layerSwitcher, zoomBox, panZoom, panZoomBar, drawPolygon, drawPoint, drawLine, '.
-         'hoverFeatureHighlight, clearEditLayer, modifyFeature, graticule. If using a data entry form and you add drawPolygon or drawLine controls then your '.
+         'hoverFeatureHighlight, clearEditLayer, modifyFeature, graticule, fullscreen. If using a data entry form and you add drawPolygon or drawLine controls then your '.
          'form will support recording against polygons and lines as well as grid references and points.',
       'type' => 'textarea',
       'group'=>'Other Map Settings',
@@ -227,7 +229,7 @@ function iform_map_get_georef_parameters() {
       'default'=>'geoplanet',
       'options' => array(
         'geoplanet' => 'Yahoo! GeoPlanet (all round place search)',
-        'google_search_api' => 'Google AJAX Search API (works well with postcodes or for places near the preferred area). Note this API is deprecated and may not be supported in future.',
+        'google_places' => 'Google Places API text search.',
         'geoportal_lu' => 'ACT Geoportal Luxembourg (for places in Luxumbourg)',
         'indicia_locations' => 'Search the Indicia locations list.'
       ),
@@ -328,11 +330,15 @@ function iform_map_zoom_to_location($locationId, $readAuth) {
   );
   $response = data_entry_helper::get_population_data($getPopDataOpts);
   $geom = $response[0]['boundary_geom'] ? $response[0]['boundary_geom'] : $response[0]['centroid_geom'];
+  iform_map_zoom_to_geom($geom, lang::get('{1} boundary', $response[0]['name']));
+}
+
+function iform_map_zoom_to_geom($geom, $name, $restrict=false) {
   // Note, since the following moves the map, we want it to be the first mapInitialisationHook
   data_entry_helper::$javascript .= "
 mapInitialisationHooks.unshift(function(mapdiv) {
   var parser, feature, loclayer = new OpenLayers.Layer.Vector(
-    '".lang::get('My Preferred Locality')."',
+    '".$name."',
     {'sphericalMercator': true, displayInLayerSwitcher: true}
   );
   parser = new OpenLayers.Format.WKT();
@@ -349,11 +355,19 @@ mapInitialisationHooks.unshift(function(mapdiv) {
     }
     else {
       // Set the default view to show the feature we are loading
-      //mapdiv.map.zoomToExtent(bounds, true);
-      mapdiv.map.setCenter(bounds.getCenterLonLat(), mapdiv.map.getZoomForExtent(bounds));
-    }  
+      mapdiv.map.zoomToExtent(bounds, true);
+    }
   }
-  mapdiv.map.addLayer(loclayer);
+  ";
+  if ($restrict) {
+    // restrict extent and zoom in if being asked to do so
+    data_entry_helper::$javascript .= "mapdiv.map.setOptions({restrictedExtent: bounds});
+    if (mapdiv.map.getZoomForExtent(bounds)>mapdiv.map.getZoom()) {
+      mapdiv.map.zoomTo(mapdiv.map.getZoomForExtent(bounds));
+    }
+  ";
+  }
+      data_entry_helper::$javascript .= "mapdiv.map.addLayer(loclayer);
 });\n";
 }
 

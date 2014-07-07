@@ -182,6 +182,7 @@ class map_helper extends helper_base {
   *    modifyFeature - a tool for selecting a feature on the map edit layer then editing the vertices of the feature.
   *    selectFeature - a tool for selecting a feature on the map edit layer.
   *    hoverFeatureHighlight - highlights the feature on the map edit layer which is under the mouse cursor position.
+  *    fullscreen - add a button allowing the map to be shown in full screen mode.
   * Default is layerSwitcher, panZoom and graticule.
   * </li>
   * <li><b>initialFeatureWkt</b><br/>
@@ -236,7 +237,11 @@ class map_helper extends helper_base {
   * <li><b>graticuleProjection</b><br/>
   * EPSG code (including EPSG:) for the projection used for the graticule (grid overlay).</li>
   * <li><b>graticuleBounds</b><br/>
-  * Array of the bounding box coordinates for the graticule(W,S,E,N).</li>
+  * Array of the bounding box coordinates for the graticule(W,S,E,N) in the coordinate system of the graticule.</li>
+  * <li><b>graticuleIntervals</b><br/>
+  * A list of possible graticule widths in the coordinate system of the graticule.</li>
+  * <li><b>graticuleIntervalColours</b><br/>
+  * A list of possible graticule CSS colours corresponding to each graticule width.</li>
   * <li><b>rememberPos</b><br/>
   * Set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin. As this feature
   * requires cookies, you should notify your users in compliance with European cookie law if you use this option.</li>
@@ -395,10 +400,10 @@ class map_helper extends helper_base {
       if (isset($options['tabDiv'])) {
         $divId = preg_replace('/[^a-zA-Z0-9]/', '', $options['divId']);
         $javascript .= "var mapTabHandler = function(event, ui) { \n";
-        $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."' && typeof indiciaData.mapdiv !== 'undefined') {\n";
+        $javascript .= "  if (typeof indiciaData.mapdiv !== 'undefined' && $(indiciaData.mapdiv).parents('#'+ui.panel.id).length) {\n";
         $javascript .= "    indiciaData.mapdiv.map.updateSize();\n";
         $javascript .= "  }\n\n};\n";
-        $javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', mapTabHandler);\n";
+        $javascript .= "$($('#".$options['tabDiv']."').parent()).bind('tabsshow', mapTabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;

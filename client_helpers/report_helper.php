@@ -182,8 +182,9 @@ class report_helper extends helper_base {
   *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
   *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the
   *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, {input_form}
-  *     (provided it is returned by the report) to represent the path to the form that created the record, and
-  *      {imageFolder} for the image upload folder. Because the javascript may pass the field values as parameters to functions,
+  *      (provided it is returned by the report) to represent the path to the form that created the record, {imageFolder} for the image 
+  *      upload folder and {sep} to specify either a ? or & between the URL and the first query parameter, depending on whether 
+  *      {rootFolder} already contains a ?. Because the javascript may pass the field values as parameters to functions,
   *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or
   *      -escape-dblquote to the fieldname for quote escaping, or -escape-htmlquote/-escape-htmldblquote for escaping quotes in HTML
   *      attributes. For example this would be valid in the action javascript: foo("{bar-escape-dblquote}");
@@ -326,6 +327,10 @@ class report_helper extends helper_base {
   */
   public static function report_grid($options) {
     global $indicia_templates;
+    /*$indicia_templates['report-table']='{content}';
+    $indicia_templates['report-tbody']='{content}';
+    $indicia_templates['report-tbody-tr']='{content}';
+    $indicia_templates['report-tbody-td']='<div style="border: solid red 1px">{content}</div>';*/
     self::add_resource('fancybox');
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     $options = self::get_report_grid_options($options);
@@ -344,9 +349,12 @@ class report_helper extends helper_base {
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
     $thClass = $options['thClass'];
     $r .= $indicia_templates['loading_overlay'];
-    $r .= "\n<table class=\"".$options['class']."\">";
+    $r .= "\n";
+    $thead = '';
+    $tbody = '';
+    $tfoot = '';
     if ($options['headers']!==false) {
-      $r .= "\n<thead class=\"$thClass\"><tr>\n";
+      //$thead .= "\n<thead class=\"$thClass\">\n";
       // build a URL with just the sort order bit missing, so it can be added for each table heading link
       $sortUrl = $pageUrl . ($sortAndPageUrlParams['page']['value'] ?
           $sortAndPageUrlParams['page']['name'].'='.$sortAndPageUrlParams['page']['value'].'&' :
@@ -365,7 +373,7 @@ class report_helper extends helper_base {
           if (empty($field['display']) && empty($field['fieldname']))
             $caption='';
           else
-            $caption = lang::get(empty($field['display']) ? $field['fieldname'] : $field['display']);
+            $caption = empty($field['display']) ? $field['fieldname'] : lang::get($field['display']);
           if (isset($field['fieldname']) && !(isset($field['img']) && $field['img']=='true')) {
             if (empty($field['orderby'])) $field['orderby']=$field['fieldname'];
             $sortLink = $sortUrl.$sortAndPageUrlParams['orderby']['name'].'='.$field['orderby'];
@@ -384,17 +392,17 @@ class report_helper extends helper_base {
             $fieldId = '';
             $captionLink=$caption;
           }
-          $r .= "<th$fieldId class=\"$thClass$orderStyle\">$captionLink</th>\n";
+          $thead .= "<th$fieldId class=\"$thClass$orderStyle\">$captionLink</th>\n";
           if (isset($field['datatype']) && !empty($caption)) {
             switch ($field['datatype']) {
               case 'text':
-                $title=lang::get("$caption text begins with ... search. Use * as a wildcard.");
+                $title=lang::get("{1} text begins with ... search. Use * as a wildcard.", $caption);
                 break;
               case 'date':
-                $title=lang::get("$caption search. Search for an exact date or use a vague<br/> date such as a year to select a range of dates.");
+                $title=lang::get("{1} search. Search for an exact date or use a vague date such as a year to select a range of dates.", $caption);
                 break;
-              default: $title=lang::get("$caption search. Either enter an exact number, use >, >=, <, or <= before the number to filter for ".
-                      "$caption more or less than your search value, or enter a range such as 1000-2000.");
+              default: $title=lang::get("{1} search. Either enter an exact number, use >, >=, <, or <= before the number to filter for ".
+                      "{1} more or less than your search value, or enter a range such as 1000-2000.", $caption);
             }
             $title = htmlspecialchars(lang::get('Type here to filter.').' '.$title);
             //The filter's input id includes the grid id ($options['id']) in its id as there maybe more than one grid and we need to make the id unique.
@@ -404,10 +412,11 @@ class report_helper extends helper_base {
             $filterRow .= '<th></th>';
         }
       }
-      $r .= "</tr>";
-      if ($wantFilterRow)
-        $r .= "<tr class=\"filter-row\" title=\"".lang::get('Use this row to filter the grid')."\">$filterRow</tr>\n";
-      $r .= "</thead>\n";
+      $thead = str_replace(array('{class}','{title}','{content}'), array('','',$thead), $indicia_templates['report-thead-tr']);
+      if ($wantFilterRow && (!isset($options["forceNoFilterRow"]) || !$options["forceNoFilterRow"]))
+        $thead .= str_replace(array('{class}','{title}','{content}'), 
+            array(' class="filter-row"','title="'.lang::get('Use this row to filter the grid').'"',$filterRow), $indicia_templates['report-thead-tr']);
+      $thead = str_replace(array('{class}', '{content}'), array(" class=\"$thClass\"", $thead), $indicia_templates['report-thead']);
     }
     $currentUrl = self::get_reload_link_parts();
     // automatic handling for Drupal clean urls.
@@ -417,12 +426,33 @@ class report_helper extends helper_base {
     if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
       $currentUrl['path'] = $currentUrl['path'].'?q='.$currentUrl['params']['q'];
     }
-    $r .= '<tfoot>';
-    $r .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
+    $tfoot .= '<tfoot>';
+    $tfoot .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
-      $footer = str_replace(array('{rootFolder}', '{currentUrl}'),
-          array($rootFolder, $currentUrl['path']), $options['footer']);
+      $footer = str_replace(array('{rootFolder}',
+                '{currentUrl}',
+                '{sep}',
+                '{warehouseRoot}',
+                '{geoserverRoot}',
+                '{nonce}',
+                '{auth}',
+                '{iUserID}',
+                '{website_id}'),
+          array($rootFolder,
+                $currentUrl['path'],
+                strpos($rootFolder, '?')===FALSE ? '?' : '&',
+                self::$base_url,
+                self::$geoserver_url,
+                'nonce='.$options['readAuth']['nonce'],
+                'auth_token='.$options['readAuth']['auth_token'],
+                (function_exists('hostsite_get_user_field') ? hostsite_get_user_field('indicia_user_id') : ''),
+                self::$website_id
+          ), $options['footer']);
+      // Merge in any references to the parameters sent to the report: could extend this in the future to pass in the extraParams
+      foreach($currentParamValues as $key=>$param){
+        $footer = str_replace(array('{'.$key.'}'), array($param), $footer);
+      }
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
     if (isset($options['downloadLink']) && $options['downloadLink'] && (count($records)>0 || $options['ajax'])) {
@@ -431,9 +461,8 @@ class report_helper extends helper_base {
       $extraFooter .= '<div class="right">'.self::report_download_link($downloadOpts).'</div>';
     }
     if (!empty($extraFooter))
-      $r .= '<tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr>';
-    $r .= '</tfoot>';
-    $r .= "<tbody>\n";
+      $tfoot .= '<tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr>';
+    $tfoot .= '</tfoot>';
     $altRowClass = '';
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
@@ -452,6 +481,7 @@ class report_helper extends helper_base {
         // Put some extra useful paths into the row data, so it can be used in the templating
         $row = array_merge($row, array(
             'rootFolder'=>$rootFolder,
+            'sep'=>strpos($rootFolder, '?')===FALSE ? '?' : '&',
             'imageFolder'=>$imagePath,
             // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
             // the url is being rewritten.
@@ -466,8 +496,8 @@ class report_helper extends helper_base {
           if (isset($options['rowClass']))
             $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);
           $classes=implode(' ',$classes);
-          $class = empty($classes) ? '' : "class=\"$classes\" ";
-          $r .= "<tr $class$rowId$rowTitle>";
+          $rowClass = empty($classes) ? '' : " class=\"$classes\"";
+          $tr = '';
           $rowInProgress=true;
         }
         // decode any data in columns that are defined as containing JSON
@@ -480,11 +510,25 @@ class report_helper extends helper_base {
           $classes=array();
           if ($options['sendOutputToMap'] && isset($field['mappable']) && ($field['mappable']==='true' || $field['mappable']===true)) {
             $data = json_encode($row + array('type'=>'linked'));
-            $addFeaturesJs.= "div.addPt(features, ".$data.", '".$field['fieldname']."', {\"type\":\"circle\"}".
+            $addFeaturesJs.= "div.addPt(features, ".$data.", '".$field['fieldname']."', {}".
                 (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
-            continue; // skip this column as marked invisible
+            continue; // skip this column as marked invisible          
+          if (isset($field['img']) && $field['img']=='true' && !empty($row[$field['fieldname']])) {
+            $imgs = explode(',', $row[$field['fieldname']]);
+            $value='';
+            $imgclass=count($imgs)>1 ? 'multi' : 'single';
+            foreach($imgs as $img) {
+              if (preg_match('/^http(s)?:\/\/(www\.)?(?P<site>[a-z]+)/', $img, $matches)) {
+                // http, means an external file
+                $value .= "<a href=\"$img\" class=\"social-icon $matches[site]\"></a>";
+              } else {
+                $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath"."thumb-$img\" /></a>";
+              }
+            }
+            $row[$field['fieldname']] = $value;
+          }
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row, $pathParam);
             $classes[]='actions';
@@ -528,24 +572,11 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
             $class = ' class="'.implode(' ', $classes).'"';
           else
             $class = '';
-          if (isset($field['img']) && $field['img']=='true' && !empty($value)) {
-            $imgs = explode(',',$value);
-            $value='';
-            $imgclass=count($imgs)>1 ? 'multi' : 'single';
-            foreach($imgs as $img) {
-              if (preg_match('/^http(s)?:\/\/(www\.)?(?P<site>[a-z]+)/', $img, $matches)) {
-                // http, means an external file
-                $value .= "<a href=\"$img\" class=\"social-icon $matches[site]\"></a>";
-              } else {
-                $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath"."thumb-$img\" /></a>";
-              }
-            }
-          }
-          $r .= "<td$class>$value</td>\n";
+          $tr .= str_replace(array('{class}','{content}'), array($class, $value), $indicia_templates['report-tbody-td']);
         }
         if ($rowIdx % $options['galleryColCount']==$options['galleryColCount']-1) {
           $rowInProgress=false;
-          $r .= '</tr>';
+          $tbody .= str_replace(array('{class}','{rowId}','{rowTitle}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
         }
         $altRowClass = empty($altRowClass) ? $options['altRowClass'] : '';
         $outputCount++;
@@ -564,11 +595,13 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
         }
       }
       if ($rowInProgress)
-        $r .= '</tr>';
+        $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
     } else {
-      $r .= '<tr><td></td></tr>';
+      $tbody .= '<tr><td></td></tr>';
+      $tbody .= str_replace(array('{class}','{rowId}','{rowTitle}','{content}'), array('','','','<td></td>'), $indicia_templates['report-tbody-tr']);
     }
-    $r .= "</tbody></table>\n";
+    $tbody = str_replace('{content}', $tbody, $indicia_templates['report-tbody']);
+    $r .= str_replace(array('{class}', '{content}'), array(' class="'.$options['class'].'"', "$thead\n$tbody\n$tfoot"), $indicia_templates['report-table'])."\n";
     if($haveUpdates){
       self::$javascript .= "
 function checkErrors(data) {
@@ -606,8 +639,16 @@ $('.update-input').focus(function(evt) {
 ";
     }
     if ($options['sendOutputToMap']) {
-      self::addFeaturesLoadingJs($addFeaturesJs, '', '{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', 
-          '', '', $options['zoomMapToOutput']);
+      $strokeWidthFn = "getstrokewidth: function(feature) {
+        var width=feature.geometry.getBounds().right - feature.geometry.getBounds().left,
+          strokeWidth=(width===0) ? 1 : %d - (width / feature.layer.map.getResolution());
+        return (strokeWidth<%d) ? %d : strokeWidth;
+      }";
+      self::addFeaturesLoadingJs($addFeaturesJs, 'OpenLayers.Util.extend(OpenLayers.Feature.Vector.style[\'default\'], '.
+          '{"strokeColor":"#0000ff","fillColor":"#3333cc","fillOpacity":0.6,"strokeWidth":"${getstrokewidth}"})', 
+          '{"strokeColor":"#ff0000","fillColor":"#ff0000","fillOpacity":0.6,"strokeWidth":"${getstrokewidth}"}', 
+          ', {context: { '.sprintf($strokeWidthFn, 9, 2, 2).' }}', 
+          ', {context: { '.sprintf($strokeWidthFn, 10, 3, 3).' }}', $options['zoomMapToOutput']);
     }
     // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
     // In which case we don't need to output anything.
@@ -623,6 +664,7 @@ $('.update-input').focus(function(evt) {
         $warehouseUrl = parent::$warehouse_proxy;
       else
         $warehouseUrl = parent::$base_url;
+      $rootFolder = self::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
       self::$javascript .= "
 if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
 if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
@@ -639,7 +681,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   url: '$warehouseUrl',
   reportGroup: '$options[reportGroup]',
   autoParamsForm: '$options[autoParamsForm]',
-  rootFolder: '" . self::getRootFolder() . "',
+  rootFolder: '" . $rootFolder . "',
   imageFolder: '" . self::get_uploaded_image_folder() . "',
   currentUrl: '$currentUrl[path]',
   rowId: '" . (isset($options['rowId']) ? $options['rowId'] : '') . "',
@@ -915,7 +957,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li><b>height</b><br/>
   * Chart height in pixels.</li>
   * <li><b>width</b><br/>
-  * Chart width in pixels.</li>
+  * Chart width in pixels or as a percentage followed by a % symbol.</li>
   * <li><b>chartType</b><br/>
   * Currently supports line, bar or pie.</li>
   * <li><b>rendererOptions</b><br/>
@@ -928,6 +970,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * For line and bar charts, associative array of options to pass to the jqplot series. For example:<br/>
   * 'seriesOptions' => array(array('label'=>'My first series','label'=>'My 2nd series'))<br/>
   * For more information see links below.
+  * </li>
+  * <li><b>seriesColors</b><br/>
+  * JSON array of CSS colour specifications for each consecutive data point in the series. 
   * </li>
   * <li><b>axesOptions</b><br/>
   * For line and bar charts, associative array of options to pass to the jqplot axes. For example:<br/>
@@ -969,13 +1014,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * @link http://www.jqplot.com/docs/files/plugins/jqplot-pieRenderer-js.html
   * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
   */
-  public static function report_chart($options) { 
+  public static function report_chart($options) {
     if (empty($options['rendererOptions']))
       $options['rendererOptions'] = array();
-    if (empty($options['legendOptions']))
-      $options['legendOptions'] = array();
-    if (empty($options['seriesOptions']))
-      $options['seriesOptions'] = array();
     if (empty($options['axesOptions']))
       $options['axesOptions'] = array();
     $standardReportOptions = self::get_report_grid_options($options);   
@@ -1004,8 +1045,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
     self::check_for_jqplot_plugins($options);
     $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['rendererOptions'])."}";
-    $opts[] = 'legend:'.json_encode($options['legendOptions']);
-    $opts[] = 'series:'.json_encode($options['seriesOptions']);
+    $optsToCopyThrough = array('legend'=>'legendOptions', 'series'=>'seriesOptions', 'seriesColors'=>'seriesColors');
+    foreach ($optsToCopyThrough as $key=>$settings) {
+      if (!empty($options[$settings]))
+        $opts[] = "$key:".json_encode($options[$settings]);
+    }
     // make yValues, xValues, xLabels and dataSources into arrays of the same length so we can treat single and multi-series the same
     $yValues = is_array($options['yValues']) ? $options['yValues'] : array($options['yValues']);
     $dataSources = is_array($options['dataSource']) ? $options['dataSource'] : array($options['dataSource']);
@@ -1078,10 +1122,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           }
         }
         // pie charts receive click information with the pie segment label. Bar charts receive the bar index.
-        if ($options['chartType']==='pie')
-          $jsData[$row['name']] = $row;
-        else
-          $jsData[] = $row;
+        if (isset($options['linkToReportPath'])) {
+          if ($options['chartType']==='pie')
+            $jsData[$row['name']] = $row;
+          else
+            $jsData[] = $row;
+        }
       }  
       // each series will occupy an entry in $seriesData
       $seriesData[] = $values;
@@ -1094,8 +1140,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $options['axesOptions']['xaxis']['renderer'] = '$.jqplot.CategoryAxisRenderer';
       $options['axesOptions']['xaxis']['ticks'] = $xLabelsForSeries;
     }
+    if (isset($options['axesOptions']['yaxis']) && isset($options['axesOptions']['yaxis']['label'])) {
+      $options['axesOptions']['yaxis']['labelRenderer'] = '$.jqplot.CanvasAxisLabelRenderer';
+    }
     // We need to fudge the json so the renderer class is not a string
-    $opts[] = str_replace('"$.jqplot.CategoryAxisRenderer"', '$.jqplot.CategoryAxisRenderer',
+    $opts[] = str_replace(array('"$.jqplot.CategoryAxisRenderer"','"$.jqplot.CanvasAxisLabelRenderer"'), array('$.jqplot.CategoryAxisRenderer','$.jqplot.CanvasAxisLabelRenderer'),
         'axes:'.json_encode($options['axesOptions']));
 
     // Finally, dump out the Javascript with our constructed parameters
@@ -1154,12 +1203,17 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
    * @param Array $options Chart control's options array
    */
   private static function check_for_jqplot_plugins($options) {
-    foreach($options['seriesOptions'] as $series) {
-      if (isset($series['trendline']))
-        self::add_resource('jqplot_trendline');
+    if (!empty($options['seriesOptions'])) {
+      foreach($options['seriesOptions'] as $series) {
+        if (isset($series['trendline']))
+          self::add_resource('jqplot_trendline');
+      }
     }
     if (isset($options['xLabels'])) {
       self::add_resource('jqplot_category_axis_renderer');
+    }
+    if (isset($options['axesOptions']['yaxis']) && isset($options['axesOptions']['yaxis']['label'])) {
+      self::add_resource('jqplot_canvas_axis_label_renderer');
     }
   }
 
@@ -1626,10 +1680,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $selStyleFns = ", {context: {\n    $selStyleFns\n  }}";
         if ($options['ajax']) {
           self::$javascript .= "mapInitialisationHooks.push(function(div) {\n".
-            "  if (typeof indiciaData.reports!==\"undefined\") {\n" .
+            "  var wantToMap = typeof indiciaData.filter==='undefined' || typeof indiciaData.filter.def.indexed_location_id==='undefined' || indiciaData.filter.def.indexed_location_id==='';\n" .
+            "  if (wantToMap && typeof indiciaData.reports!==\"undefined\") {\n" .
             "    $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
-            "      grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."');\n" .
-            "      return false;\n" . // only need the first grid to draw the map. 
+            "      if (grid[0].settings.linkFilterToMap) {\n" .
+            "        grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."');\n" .
+            "        return false;\n" . // only need the first grid to draw the map. 
+            "      }\n" .
             "    });\n" .
             "  }\n";
           if ($options['dataSourceLoRes']) {
@@ -1787,7 +1844,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * the same copy of the report. Generally you should only use this on reports that are non-user specific.
    * </li>
    * </ul>
-
+   *
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
    * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
    */
@@ -1844,34 +1901,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
       // a link must be proxied as can be used client-site 
       return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
     }
-    else {
-      if (isset($options['caching']) && $options['caching'] && $options['caching'] !== 'store') {
-        // Get the URL params, so we know what the unique thing is we are caching
-        $query=parse_url(parent::$base_url.$request, PHP_URL_QUERY);
-        parse_str($query, $cacheOpts);
-        unset($cacheOpts['auth_token']);
-        unset($cacheOpts['nonce']);
-        if (isset($options['cachePerUser']) && !$options['cachePerUser']) 
-          unset($cacheOpts['user_id']);
-        $cacheTimeOut = self::_getCacheTimeOut($options);
-        $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
-        $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);        
-        $response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts);
-      }
-      // no need to proxy the request, as coming from server-side
-      if (!isset($response) || $response===false) {
-        $response = self::http_post(parent::$base_url.$request, null);
-      }
-      $decoded = json_decode($response['output'], true);
-      if (!is_array($decoded))
-        return array('error'=>print_r($response, true));
-      else {
-        if (isset($options['caching']) && $options['caching']) { 
-          self::_cacheResponse($cacheFile, $response, $cacheOpts);
-        }
-        return $decoded;
-      }
-    }
+    return self::_get_cached_services_call($request, $options);    
   }
 
   /**
@@ -1911,14 +1941,16 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
     $orderbyKey = 'orderby' . (isset($options['id']) ? '-'.$options['id'] : '');
     $sortdirKey = 'sortdir' . (isset($options['id']) ? '-'.$options['id'] : '');
     $pageKey = 'page' . (isset($options['id']) ? '-'.$options['id'] : '');
+    $cookiename = "clientReportSort".(isset($options['id']) ? '-'.$options['id'] : '');
+    $clientReportSort = isset($_COOKIE[$cookiename]) ? explode(':',$_COOKIE[$cookiename],2) : false;
     return array(
       'orderby' => array(
         'name' => $orderbyKey,
-        'value' => isset($_GET[$orderbyKey]) ? $_GET[$orderbyKey] : null
+        'value' => isset($_GET[$orderbyKey]) ? $_GET[$orderbyKey] : ($clientReportSort ? $clientReportSort[1] : null)
       ),
       'sortdir' => array(
         'name' => $sortdirKey,
-        'value' => isset($_GET[$sortdirKey]) ? $_GET[$sortdirKey] : null
+        'value' => isset($_GET[$sortdirKey]) ? $_GET[$sortdirKey] : ($clientReportSort ? $clientReportSort[0] : null)
       ),
       'page' => array(
         'name' => $pageKey,
@@ -2143,7 +2175,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       }
       $class=(isset($action['class'])) ? ' '.$action['class'] : '';
       if (isset($action['img'])) {
-        $img=str_replace(array('{rootFolder}'), array(self::getRootfolder()), $action['img']);
+        $rootFolder = self::getRootfolder();
+        $img=str_replace(array('{rootFolder}', '{sep}'), array($rootFolder, strpos($rootFolder, '?')===FALSE ? '?' : '&'), $action['img']);
         $content = '<img src="'.$img.'" title="'.$action['caption'].'" />';
       } elseif (isset($action['caption']))
         $content = $action['caption'];
@@ -2231,15 +2264,17 @@ if (typeof mapSettingsHooks!=='undefined') {
         $cookieData=array();
       if (!empty($cookieData[$options['rememberParamsReportGroup']]))
         $cookieParams = $cookieData[$options['rememberParamsReportGroup']];
-        // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
-        $ignoreParamNames = array();
-        foreach($options['paramsToExclude'] as $param)
-          $ignoreParamNames[$options['reportGroup']."-$param"] = '';
-        $cookieParams = array_diff_key($cookieParams, $ignoreParamNames);       
-        $providedParams = array_merge(
-          $cookieParams,
-          $providedParams
-        );
+        if (is_array($cookieParams)) {
+          // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
+          $ignoreParamNames = array();
+          foreach($options['paramsToExclude'] as $param)
+            $ignoreParamNames[$options['reportGroup']."-$param"] = '';
+          $cookieParams = array_diff_key($cookieParams, $ignoreParamNames);       
+          $providedParams = array_merge(
+            $cookieParams,
+            $providedParams
+          );
+        }
     }
     if (!empty($options['rememberParamsReportGroup'])) {
       // need to store the current set of saved params. These need to be merged into an array to go in
@@ -2342,6 +2377,30 @@ if (typeof mapSettingsHooks!=='undefined') {
     if (isset($response['parameterRequest'])) {
       return '<p>Internal Error: Report request parameters not set up correctly.<br />'.(print_r($response,true)).'<p>';
     }
+    data_entry_helper::$javascript .= "
+var pageURI = \"".$_SERVER['REQUEST_URI']."\";
+function rebuild_page_url(oldURL, overrideparam, overridevalue, removeparam) {
+  var parts = oldURL.split('?');
+  var params = [];
+  if(overridevalue!=='') params.push(overrideparam+'='+overridevalue);
+  if(parts.length > 1) {
+    var oldparams = parts[1].split('&');
+    for(var i = 0; i < oldparams.length; i++){
+      var bits = oldparams[i].split('=');
+      if(bits[0] != overrideparam && removeparam.indexOf(bits[0])<0) params.push(oldparams[i]);
+    }
+  }
+  var retVal = parts[0]+(params.length > 0 ? '?'+(params.join('&')) : '');
+  return retVal;
+};
+function update_controls(){
+  $('#year-control-previous').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."-1,[]));
+  $('#year-control-next').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."+1,[]));
+  // user and location ids are dealt with in the main form. their change functions look a pageURI
+};
+update_controls();
+";
+    
     // convert records to a date based array so it can be used when generating the grid.
     $records = $response['records'];
     $dateRecords=array();
@@ -2819,8 +2878,8 @@ update_controls();
     for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
       $tableNumberHeaderRow.= '<td class="week">'.$i.'</td>';
       $tableDateHeaderRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
-      $downloadNumberHeaderRow.= '%2C'.$i;
-      $downloadDateHeaderRow.= '%2C'.$firstWeek_date->format('d/m/Y');
+      $downloadNumberHeaderRow.= ','.$i;
+      $downloadDateHeaderRow.= ','.$firstWeek_date->format('d/m/Y');
       $chartNumberLabels[] = "".$i;
       $chartDateLabels[] = $firstWeek_date->format('M-d');
       $fullDates[$i] = $firstWeek_date->format('d/m/Y');
@@ -2934,9 +2993,9 @@ update_controls();
     self::report_calendar_summary_initLoc1($minWeekNo, $maxWeekNo, $weekList);
     if($count>0) $locationArray = self::report_calendar_summary_initLoc2($minWeekNo, $maxWeekNo, $locationSamples[$records[0]['location_id']]);
     $warnings .= '<span style="display:none;">Number of records processed : '.$count.' : '.date(DATE_ATOM).'</span>'."\n";
-    $downloadList = 'Location%2C'.
-          ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? lang::get('Week Number').'%2C' : '').
-          lang::get('Week Commencing').'%2C'.lang::get('Species').'%2C'.lang::get('Type').'%2C'.lang::get('Value').'%0A';
+    $downloadList = 'Location,'.
+          ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? lang::get('Week Number').',' : '').
+          lang::get('Week Commencing').','.lang::get('Species').','.lang::get('Type').','.lang::get('Value')."\n";
     foreach($records as $idex => $record){
       // If the taxon has changed
       if(($lastTaxonID && $lastTaxonID!=$record[$options['rowGroupID']]) ||
@@ -3068,16 +3127,7 @@ update_controls();
    }
    if(jQuery('#outputFormat').val() != 'table')
      replot();
-});\n".
-(isset($options['outputSource']) ?
-"$('#outputSource').val('".$options['outputSource']."').change();\n" :
-"if($('#viewDataEstimates').length > 0){
-    $('#outputSource').val('estimates').change();
-} else if($('#viewSummaryData').length > 0){
-    $('#outputSource').val('summary').change();
-} else {
-    $('#outputSource').val('raw').change();
-}\n");
+});\n";
     	} else $r .= '<input type="hidden" id="outputSource" name="outputSource" value="'.
            ($options['includeRawData'] ? "raw" : 
                ($options['includeSummaryData'] ? "summary" : "estimates")).'"/>';
@@ -3101,8 +3151,7 @@ update_controls();
         replot();
         break;
   }
-});
-jQuery('[name=outputFormat]').change();\n";
+});\n";
     	} else if(isset($options['simultaneousOutput']) && $options['simultaneousOutput']) {
     		// for combined format its fairly obvious what it is, so no need to add text.
             $r .= '<input type="hidden" id="outputFormat" name="outputFormat" value="both"/>';
@@ -3195,7 +3244,9 @@ jQuery('[name=outputFormat]').change();\n";
       // Finally, dump out the Javascript with our constructed parameters.
       // width stuff is a bit weird, but jqplot requires a fixed width, so this just stretches it to fill the space.
       data_entry_helper::$javascript .= "\nvar plots = [];
+var replotActive = true;
 function replot(){
+  if(!replotActive) return;
   // there are problems with the coloring of series when added to a plot: easiest just to completely redraw.
   var max=0;
   var type = jQuery('#outputSource').val();
@@ -3254,9 +3305,6 @@ function replot(){
         $r .= "</span></fieldset>\n";
         // Known issue: jqplot considers the min and max of all series when drawing on the screen, even those which are not displayed
         // so replotting doesn't scale to the displayed series!
-        if($format['chart']['display']){
-          data_entry_helper::$javascript .= "replot();\n";
-        }
         data_entry_helper::$javascript .= "
 // above done due to need to ensure get around field caching on browser refresh.
 setSeriesURLParam = function(){
@@ -3321,7 +3369,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       if($options['includeRawData']){
         $thClass = $options['thClass'];
         $rawDataDownloadGrid="";
-        $rawDataDownloadList='Location%2C'.(($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number') ? 'Week%20Number%2C' : '').'Date%2CSpecies%2CCount%0A';
+        $rawDataDownloadList='Location,'.(($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number') ? 'Week Number,' : '')."Date,Species,Count\n";
         $r .= "\n<table id=\"".$options['tableID']."-raw\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
         $r .= "\n<thead class=\"$thClass\">";
         // raw data headers: %Sun, mean temp, Date, Week Number, Location?
@@ -3332,32 +3380,32 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $rawDataDownloadGrid .= "Week";
           foreach($rawArray as $idx => $rawColumn){
             $r .= '<td class="week">'.$rawColumn['weekno'].'</td>';
-            $rawDataDownloadGrid .= '%2C'.$rawColumn['weekno'];
+            $rawDataDownloadGrid .= ','.$rawColumn['weekno'];
           }
           if($options['includeTableTotalColumn']){
             $r.= '<td class="total-column"></td>';
-            $rawDataDownloadGrid .= '%2C';
+            $rawDataDownloadGrid .= ',';
           }
         }
         $r .= '</tr><tr><td>Date</td>';
-        $rawDataDownloadGrid .= '%0ADate';
+        $rawDataDownloadGrid .= "\nDate";
         $rawTotalRow = "";
         $rawDataDownloadGridTotalRow = "";
         $rawGrandTotal = 0;
         foreach($rawArray as $idx => $rawColumn){
           $this_date = date_create(str_replace('/','-',$rawColumn['date'])); // prevents day/month ordering issues
           $r .= '<td class="week">'.$this_date->format('M').'<br/>'.$this_date->format('d').'</td>';
-          $rawDataDownloadGrid .= '%2C'.$this_date->format('d/m/Y');
+          $rawDataDownloadGrid .= ','.$this_date->format('d/m/Y');
           $rawTotalRow .= '<td>'.$rawColumn['total'].'</td>';
-          $rawDataDownloadGridTotalRow .= '%2C'.$rawColumn['total'];
+          $rawDataDownloadGridTotalRow .= ','.$rawColumn['total'];
           $rawGrandTotal += $rawColumn['total'];
         }
         if($options['includeTableTotalColumn']){
           $r.= '<td class="total-column">Total</td>';
-          $rawDataDownloadGrid .= '%2CTotal';
+          $rawDataDownloadGrid .= ',Total';
         }
         $r .= "</tr>";
-        $rawDataDownloadGrid .= '%0A';
+        $rawDataDownloadGrid .= "\n";
         // don't include links in download
         if(isset($options['linkURL']) && $options['linkURL']!= ''){
           $r .= '<tr><td>Sample Links</td>';
@@ -3380,14 +3428,14 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
             $rawDataDownloadGrid .= '"'.$caption.'"';
             foreach($rawArray as $dateIndex => $rawData) {
               $r.= '<td>'.$rawData['avgFields'][$field].'</td>';
-              $rawDataDownloadGrid .= '%2C'.$rawData['avgFields'][$field];
+              $rawDataDownloadGrid .= ','.$rawData['avgFields'][$field];
             }
             if($options['includeTableTotalColumn']){
               $r.= '<td class="total-column"></td>';
-              $rawDataDownloadGrid .= '%2C';
+              $rawDataDownloadGrid .= ',';
             }
             $r .= "</tr>";
-            $rawDataDownloadGrid .= '%0A';
+            $rawDataDownloadGrid .= "\n";
             $altRow=!$altRow;
           }
         }
@@ -3401,26 +3449,26 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
               if(isset($rawColumn['counts'][$seriesID])) {
                 $r.= '<td>'.$rawColumn['counts'][$seriesID].'</td>';
                 $total += $rawColumn['counts'][$seriesID];
-                $rawDataDownloadGrid .= '%2C'.$rawColumn['counts'][$seriesID];
+                $rawDataDownloadGrid .= ','.$rawColumn['counts'][$seriesID];
                 $locations = array();
                 if(count($rawColumn['samples'])>0)
                   foreach($rawColumn['samples'] as $sample)
                     $locations[$sample['location_name']]=true;
                 $this_date = date_create(str_replace('/','-',$rawColumn['date'])); // prevents day/month ordering issues
                 $rawDataDownloadList .= '"'.implode(': ',array_keys($locations)).'"'.
-                     ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? '%2C'.$rawColumn['weekno'] : '').
-                     '%2C'.$this_date->format('d/m/Y').'%2C"'.$seriesLabels[$seriesID].'"%2C'.$rawColumn['counts'][$seriesID].'%0A';
+                     ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? ','.$rawColumn['weekno'] : '').
+                     ','.$this_date->format('d/m/Y').',"'.$seriesLabels[$seriesID].'",'.$rawColumn['counts'][$seriesID]."\n";
               } else {
                 $r.= '<td></td>';
-                $rawDataDownloadGrid .= '%2C';
+                $rawDataDownloadGrid .= ',';
               }
             }
             if($options['includeTableTotalColumn']){
               $r.= '<td class="total-column">'.$total.'</td>';
-              $rawDataDownloadGrid .= '%2C'.$total;
+              $rawDataDownloadGrid .= ','.$total;
             }
             $r .= "</tr>";
-            $rawDataDownloadGrid .= '%0A';
+            $rawDataDownloadGrid .= "\n";
             $altRow=!$altRow;
           }
         }
@@ -3428,7 +3476,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $r.= '<tr class="totalrow"><td>Total</td>'.$rawTotalRow.
             ($options['includeTableTotalColumn'] ? '<td>'.$rawGrandTotal.'</td>' : '').'</tr>';
           $rawDataDownloadGrid .= 'Total'.$rawDataDownloadGridTotalRow.
-            ($options['includeTableTotalColumn'] ? '%2C'.$rawGrandTotal : '').'%0A';
+            ($options['includeTableTotalColumn'] ? ','.$rawGrandTotal : '')."\n";
         }
         $r .= "</tbody></table>\n";
       }
@@ -3442,8 +3490,8 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         		                                          ($options['includeEstimatesData'] ? '<td class="estimates">Total with<br />estimates</td>' : '')
         		                                         :'').'</tr>';
         $summaryDataDownloadGrid .= 'Week'.$downloadNumberHeaderRow.($options['includeTableTotalColumn']
-        		                                         ?($options['includeSummaryData'] ? '%2CTotal' : '')
-        		                                         :'').'%0A';
+        		                                         ?($options['includeSummaryData'] ? ',Total' : '')
+        		                                         :'')."\n";
       }
       if($options['tableHeaders'] != 'number'){
         $r .= '<tr><td>'.lang::get('Date').'</td>'.$tableDateHeaderRow.($options['includeTableTotalColumn']
@@ -3454,8 +3502,8 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         		                                          ($options['includeEstimatesData'] ? '<td>Total with<br />estimates</td>' : ''))
         		                                         :'').'</tr>';
         $summaryDataDownloadGrid .= lang::get('Date').$downloadDateHeaderRow.($options['includeTableTotalColumn']
-        		                                         ? ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? '%2C' : '%2CTotal')
-        		                                         :'').'%0A';
+        		                                         ? ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? ',' : ',Total')
+        		                                         :'')."\n";
       }
       $estimateDataDownloadGrid = $summaryDataDownloadGrid;
       $r.= "</thead>\n";
@@ -3481,8 +3529,8 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $estimateDataDownloadGrid .= '"'.$seriesLabels[$seriesID].'"';
           for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
             $r.= '<td>';
-            $summaryDataDownloadGrid .= '%2C';
-            $estimateDataDownloadGrid .= '%2C';
+            $summaryDataDownloadGrid .= ',';
+            $estimateDataDownloadGrid .= ',';
             if(isset($summaryRow[$i])){
               $summaryValue = $summaryRow[$i]['forcedZero'] ? 0 : ($summaryRow[$i]['hasData'] ? $summaryRow[$i]['summary'] : '');
               $class = '';
@@ -3513,16 +3561,16 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           if($options['includeTableTotalColumn']){
             if($options['includeSummaryData']) {
               $r.= '<td class="total-column">'.$total.'</td>';
-              $summaryDataDownloadGrid .= '%2C'.$total;
+              $summaryDataDownloadGrid .= ','.$total;
             }
             if($options['includeEstimatesData']) {
               $r.= '<td class="total-column estimates">'.$estimatesTotal.'</td>';
-              $estimateDataDownloadGrid .= '%2C'.$estimatesTotal;
+              $estimateDataDownloadGrid .= ','.$estimatesTotal;
             }
           }
           $r .= "</tr>";
-          $summaryDataDownloadGrid .= '%0A';
-          $estimateDataDownloadGrid .= '%0A';
+          $summaryDataDownloadGrid .= "\n";
+          $estimateDataDownloadGrid .= "\n";
           $altRow=!$altRow;
         }
       }
@@ -3533,49 +3581,97 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $summaryDataDownloadGrid .= '"'.lang::get('Total (Summary)').'"';
           for($i= $minWeekNo; $i <= $maxWeekNo; $i++) {
             $r .= '<td>'.$totalRow[$i].'</td>';
-            $summaryDataDownloadGrid .= '%2C'.$totalRow[$i];
+            $summaryDataDownloadGrid .= ','.$totalRow[$i];
           }
           if($options['includeTableTotalColumn']) {
             $r .= '<td class="total-column grand-total">'.$grandTotal.'</td>'.($options['includeEstimatesData'] ? '<td class="estimates"></td>' : '');
-            $summaryDataDownloadGrid .= '%2C'.$grandTotal;
+            $summaryDataDownloadGrid .= ','.$grandTotal;
           }
           $r .= "</tr>";
-          $summaryDataDownloadGrid .= '%0A';
+          $summaryDataDownloadGrid .= "\n";
         }
         if($options['includeEstimatesData']){
           $r .= "<tr class=\"totalrow estimates\"><td>".lang::get('Total inc Estimates').'</td>';
           $estimateDataDownloadGrid .= '"'.lang::get('Total').'"';
           for($i= $minWeekNo; $i <= $maxWeekNo; $i++) {
             $r.= '<td>'.$totalEstimatesRow[$i].'</td>';
-            $estimateDataDownloadGrid .= '%2C'.$totalEstimatesRow[$i];
+            $estimateDataDownloadGrid .= ','.$totalEstimatesRow[$i];
           }
           if($options['includeTableTotalColumn']) {
             $r .= ($options['includeSummaryData'] ? '<td></td>' : '').'<td class="total-column grand-total estimates">'.$estimatesGrandTotal.'</td>';
-            $estimateDataDownloadGrid .= '%2C'.$estimatesGrandTotal;
+            $estimateDataDownloadGrid .= ','.$estimatesGrandTotal;
           }
           $r .= "</tr>";
-          $estimateDataDownloadGrid .= '%0A';
+          $estimateDataDownloadGrid .= "\n";
         }
       }
       $r .= "</tbody></table>\n";
       $r .= "</div>";
       $downloads="";
+
+      $timestamp = (isset($options['includeReportTimeStamp']) && $options['includeReportTimeStamp'] ? '_'.date('YmdHis') : '');
+      // No need for saved reports to be atomic events. Will be purged automatically.
+      global $base_url;
+      $cacheFolder = data_entry_helper::$cache_folder ? data_entry_helper::$cache_folder : data_entry_helper::relative_client_helper_path() . 'cache/';
       if($options['includeRawData']){
-        if($options['includeRawGridDownload']) $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'rawDataGrid.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$rawDataDownloadGrid).'"><button type="button">Raw Grid Data</button></a></th>'."\n";
-        if($options['includeRawListDownload']) $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'rawDataList.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$rawDataDownloadList).'"><button type="button">Raw List Data</button></a></th>'."\n";
+        if($options['includeRawGridDownload']) {
+          $cacheFile = $options['downloadFilePrefix'].'rawDataGrid'.$timestamp.'.csv';
+          $handle = fopen($cacheFolder.$cacheFile, 'wb');
+          fwrite($handle, $rawDataDownloadGrid);
+          fclose($handle);
+          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Raw Grid Data</button></a></th>'."\n";
+        }
+        if($options['includeRawListDownload']) {
+          $cacheFile = $options['downloadFilePrefix'].'rawDataList'.$timestamp.'.csv';
+          $handle = fopen($cacheFolder.$cacheFile, 'wb');
+          fwrite($handle, $rawDataDownloadList);
+          fclose($handle);
+          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Raw List Data</button></a></th>'."\n";
+        }
       }
-      if($options['includeSummaryData'] && $options['includeSummaryGridDownload'])
-        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'summaryDataGrid.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$summaryDataDownloadGrid).'"><button type="button">Summary Grid Data</button></a></th>'."\n";
-      if($options['includeEstimatesData'] && $options['includeEstimatesGridDownload'])
-        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'estimateDataGrid.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$estimateDataDownloadGrid).'"><button type="button">Estimate Grid Data</button></a></th>'."\n";
-      if(($options['includeSummaryData'] || $options['includeEstimatesData']) && $options['includeListDownload'])
-        $downloads .= '<th><a download="'.$options['downloadFilePrefix'].'dataList.csv" href="data:application/csv;charset=utf-8,'.str_replace(array(' ','"'),array('%20','%22'),$downloadList).'"><button type="button">List Data</button></a></th>'."\n";
-//      $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" '.($downloads == '' ? 'style="display:none"' : '').'><thead class="ui-widget-header"><tr>'.
+      if($options['includeSummaryData'] && $options['includeSummaryGridDownload']) {
+        $cacheFile = $options['downloadFilePrefix'].'summaryDataGrid'.$timestamp.'.csv';
+        $handle = fopen($cacheFolder.$cacheFile, 'wb');
+        fwrite($handle, $summaryDataDownloadGrid);
+        fclose($handle);
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Summary Grid Data</button></a></th>'."\n";
+      }
+      if($options['includeEstimatesData'] && $options['includeEstimatesGridDownload']) {
+        $cacheFile = $options['downloadFilePrefix'].'estimateDataGrid'.$timestamp.'.csv';
+        $handle = fopen($cacheFolder.$cacheFile, 'wb');
+        fwrite($handle, $estimateDataDownloadGrid);
+        fclose($handle);
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Estimate Grid Data</button></a></th>'."\n";
+      }
+      if(($options['includeSummaryData'] || $options['includeEstimatesData']) && $options['includeListDownload']) {
+        $cacheFile = $options['downloadFilePrefix'].'dataList'.$timestamp.'.csv';
+        $handle = fopen($cacheFolder.$cacheFile, 'wb');
+        fwrite($handle, $downloadList);
+        fclose($handle);
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">List Data</button></a></th>'."\n";
+      }
       $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" ><thead class="ui-widget-header"><tr>'.
             ($downloads == '' ? '' : '<th class="downloads-table-label">Downloads</th>'.$downloads).
             "</tr></thead></table>\n";
       $warnings .= '<span style="display:none;">Output table complete : '.date(DATE_ATOM).'</span>'."\n";
     }
+    // Set up initial view: only want to replot once as that can be very intensive.
+    data_entry_helper::$javascript .= "replotActive = false;\n";
+    if($userPicksSource) {
+      data_entry_helper::$javascript .= (isset($options['outputSource']) ?
+          "$('#outputSource').val('".$options['outputSource']."').change();\n" :
+          "if($('#viewDataEstimates').length > 0){\n  $('#outputSource').val('estimates').change();\n".
+          "} else if($('#viewSummaryData').length > 0){\n  $('#outputSource').val('summary').change();\n".
+          "} else {\n  $('#outputSource').val('raw').change();\n}\n");
+    }
+    if($userPicksFormat) {
+      data_entry_helper::$javascript .= "jQuery('[name=outputFormat]').change();\n";
+    }
+    data_entry_helper::$javascript .= "replotActive = true;\n";
+    if($format['chart']['display']){
+    	data_entry_helper::$javascript .= "replot();\n";
+    }
+    
     if(count($summaryArray)==0)
       $r .= '<p>'.lang::get('No data returned for this period.').'</p>';
     $warnings .= '<span style="display:none;">Finish report_calendar_summary : '.date(DATE_ATOM).'</span>'."\n";
@@ -3741,13 +3837,13 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
     foreach($locationArray as $weekno => $data){
       if($taxonID !== null){ // don't include lines for the sample only entries
         if($data['hasData']) {
-          $download .= '"'.$thisLocation.'"%2C'.
-            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.'%2C' : '').
-            $weekList[$weekno].'%2C'.$taxon.'%2C'.lang::get('Actual').'%2C'.$data['summary'].'%0A';
+          $download .= '"'.$thisLocation.'",'.
+            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.',' : '').
+            $weekList[$weekno].','.$taxon.','.lang::get('Actual').','.$data['summary']."\n";
         } else if($options['includeEstimatesData'] && $data['hasEstimates']){
-          $download .= '"'.$thisLocation.'"%2C'.
-            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.'%2C' : '').
-            $weekList[$weekno].'%2C'.$taxon.'%2C'.lang::get('Estimate').'%2C'.$data['estimates'].'%0A';
+          $download .= '"'.$thisLocation.'",'.
+            ($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number' ? $weekno.',' : '').
+            $weekList[$weekno].','.$taxon.','.lang::get('Estimate').','.$data['estimates']."\n";
         }
       }
       if(isset($summaryArray[$taxonID])) {

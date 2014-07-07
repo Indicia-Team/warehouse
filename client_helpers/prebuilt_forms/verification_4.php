@@ -277,6 +277,15 @@ class iform_verification_4 {
           'description'=>'Path to page used to show a list of records, e.g. when clicking on the record counts on the Experience tab',
           'type'=>'string',
           'required' => 'false'
+        ),
+        array(
+          'name'=>'clear_verification_task_notifications',
+          'caption'=>'Clear verification task notifications?',
+          'description'=>'Automatically clear any verification task notifications when the user opens the verification screen.',
+          'type'=>'boolean',
+          'group'=>'Notification Settings',
+          'default' => false,
+          'required' => 'false'
         )
       )
     );
@@ -317,11 +326,7 @@ idlist=';
 
   private static function get_template_with_map($args, $readAuth, $extraParams, $paramDefaults) {
     $r = '<div id="outer-with-map" class="ui-helper-clearfix">';
-    $r .= '<div id="grid" class="left" style="width:65%">{paramsForm}{grid}';
-    // Insert a button to verify all visible, only available if viewing the clean records.
-    if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
-      $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
-    $r .= '</div>';
+    $r .= '<div id="grid" class="left" style="width:65%">{paramsForm}{grid}</div>';
     $r .= '<div id="map-and-record" class="right" style="width: 34%"><div id="summary-map">';
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
@@ -358,12 +363,29 @@ idlist=';
     $r .= self::instructions('grid on the left');
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';
-    $r .= '<label>Set status:</label>';
-    $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
-    $r .= '<button type="button" id="btn-reject">'.lang::get('Reject').'</button>';
-    $r .= '<button type="button" id="btn-query">'.lang::get('Query').'</button>';
-    $r .= '<button type="button" id="btn-multiple" title="'.lang::get('Select this tool to tick off a list of records and action all of the ticked records in one go').'">'.lang::get('Select records').'</button>';
-    $r .= '<br/><label>Contact:</label>';
+    $r .= '<div id="verify-buttons">';
+    $r .= '<div id="verify-buttons-inner">';
+    $r .= '<label>'.lang::get('Actions:').'</label>';
+    $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
+    $r .= '<button type="button" id="btn-verify" title="'.lang::get('Verify').'"><img width="18" height="18" src="'.$imgPath.'nuvola/ok-16px.png"/></button>';
+    $r .= '<button type="button" id="btn-edit-verify" title="'.lang::get('Edit determination then verify').'"><img width="18" height="18" src="'.$imgPath.'nuvola/package_editors-16px.png"/>' .
+        '<img width="18" height="18" src="'.$imgPath.'nuvola/ok-16px.png"/></button>';
+    $r .= '<button type="button" id="btn-reject" title="'.lang::get('Reject').'"><img width="18" height="18" src="'.$imgPath.'nuvola/cancel-16px.png"/></button>';
+    $r .= '<button type="button" id="btn-query" title="'.lang::get('Query').'"><img width="18" height="18" src="'.$imgPath.'nuvola/dubious-16px.png"/></button>';
+    $r .= '<div id="redet-dropdown-ctnr" style="display: none"><div id="redet-dropdown">';
+    $r .= data_entry_helper::species_autocomplete(array(
+      'fieldname' => 'redet',
+      'label' => lang::get('New determination'),
+      'labelClass' => 'auto',
+      'helpText' => lang::get('Enter a new determination for this record before verifying it. The previous determination will be stored with the record.'),
+      'cacheLookup' => true,
+      'extraParams' => $readAuth + array('taxon_list_id' => 1),
+      'speciesIncludeBothNames' => true,
+      'speciesIncludeTaxonGroup' => true
+    ));
+    $r .= '</div></div>';
+    $r .= '</div></div>';
+    $r .= '<label>Contact:</label>';
     $r .= '<button type="button" id="btn-email-expert" class="default-button">'.lang::get('Another expert').'</button>';
     $r .= '<button type="button" id="btn-email-recorder" class="default-button">'.lang::get('Recorder').'</button>';
     $r .= '</div>';
@@ -419,6 +441,11 @@ idlist=';
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
+    iform_load_helpers(array('data_entry_helper', 'map_helper', 'report_helper'));
+    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+    //Clear Verifier Tasks automatically when they open the screen if the option is set.
+    if ($args['clear_verification_task_notifications']&&hostsite_get_user_field('indicia_user_id'))
+      self::clear_verifier_task_notifications($auth);
     // set some defaults, applied when upgrading from a form configured on a previous form version.
     if (empty($args['email_subject_send_to_recorder']))
       $args['email_subject_send_to_recorder'] = 'Record of %taxon% requires confirmation (ID:%id%)';
@@ -441,16 +468,14 @@ idlist=';
     }
     if (function_exists('drupal_add_js'))
       drupal_add_js('misc/collapse.js');
-    iform_load_helpers(array('data_entry_helper', 'map_helper', 'report_helper'));
     // fancybox for popup comment forms etc
     data_entry_helper::add_resource('fancybox');
     data_entry_helper::add_resource('validation');
     global $user, $indicia_templates;
     $indicia_user_id=self::get_indicia_user_id($args);
-    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-    data_entry_helper::$js_read_tokens = $readAuth;
+    data_entry_helper::$js_read_tokens = $auth['read'];
     // Find a list of websites we are allowed verify
-    $websiteIds = iform_get_allowed_website_ids($readAuth, 'verification');
+    $websiteIds = iform_get_allowed_website_ids($auth['read'], 'verification');
     if (function_exists('module_exists') && module_exists('easy_login')) {
       if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_location')===false)
         $args['param_presets'].="\nexpertise_location={profile_location_expertise}";
@@ -461,7 +486,7 @@ idlist=';
     }
     $args['sharing']='verification';
     $opts = array_merge(
-        iform_report_get_report_options($args, $readAuth),
+        iform_report_get_report_options($args, $auth['read']),
         array(
           'id' => 'verification-grid',
           'reportGroup' => 'verification',
@@ -480,14 +505,14 @@ idlist=';
           '<li><a href="#" class="trust-tool">Recorder\'s trust settings</a></li><li><a href="#" class="edit-record">Edit record</a></li></ul>'.
           '<input type="checkbox" class="check-row no-select" style="display: none" value="{occurrence_id}" /></div>'
     );
-    $params = self::report_filter_panel($args, $readAuth);
+    $params = self::report_filter_panel($args, $auth['read']);
     $opts['zoomMapToOutput']=false;
     $grid = report_helper::report_grid($opts);
     $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $params),
-        self::get_template_with_map($args, $readAuth, $opts['extraParams'], $opts['paramDefaults']));
+        self::get_template_with_map($args, $auth['read'], $opts['extraParams'], $opts['paramDefaults']));
     $link = data_entry_helper::get_reload_link_parts();
     global $user;
-    data_entry_helper::$js_read_tokens = $readAuth;
+    data_entry_helper::$js_read_tokens = $auth['read'];
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.userId = "'.$indicia_user_id."\";\n";
@@ -561,6 +586,37 @@ idlist=';
     return $r;
 
   }
+    
+  /*
+   * When the user opens the Verification screen, clear any notifications of source_type VT (Verifier Task).
+   * This method is only run if the user has configured the page to run with this behaviour.
+   */
+  private static function clear_verifier_task_notifications($auth) {
+    //Using 'submission_list' and 'entries' allows us to specify several top-level submissions to the system
+    //i.e. we need to be able to submit several notifications.
+    $submission['submission_list']['entries'] = array();
+    $submission['id']='notification';
+    $notifications = data_entry_helper::get_population_data(array(
+      'table' => 'notification',
+      'extraParams' => $auth['read'] + array('acknowledged' => 'f', 'user_id'=>hostsite_get_user_field('indicia_user_id'),
+          'query' => json_encode(array('in' => array('source_type' => array('VT'))))),
+      'nocache' => true
+    ));
+    
+    if (count($notifications)>0) {
+      //Setup the structure we need to submit.
+      foreach ($notifications as $notification) { 
+        $data['id']='notification';
+        $data['fields']['id']['value'] = $notification['id'];
+        $data['fields']['acknowledged']['value'] = 't';
+        $submission['submission_list']['entries'][] = $data;
+      }
+      //Submit the stucture for processing
+      $response = data_entry_helper::forward_post_to('save', $submission, $auth['write_tokens']);
+      if (!is_array($response) || !array_key_exists('success', $response))
+        drupal_set_message(print_r($response,true));
+    }
+  }
 
   /**
    * Use the mapping from Drupal to Indicia users to get the Indicia user ID for the current logged in Drupal user.
@@ -599,11 +655,7 @@ idlist=';
     $details_report = empty($node->params['record_details_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data' : $node->params['record_details_report'];
     $attrs_report = empty($node->params['record_attrs_report']) ? 'reports_for_prebuilt_forms/verification_3/record_data_attributes' : $node->params['record_attrs_report'];
     iform_load_helpers(array('report_helper'));
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     $options = array(
       'dataSource' => $details_report,
       'readAuth' => $readAuth,
@@ -682,6 +734,7 @@ idlist=';
     $extra['recorder_email'] = $email;
     $extra['taxon_group'] = $record['taxon_group'];
     $extra['taxon_group_id'] = $record['taxon_group_id'];
+    $extra['taxon_list_id'] = $record['taxon_list_id'];
     $extra['localities'] = $record['localities'];
     $extra['locality_ids'] = $record['locality_ids'];
     header('Content-type: application/json');
@@ -715,11 +768,7 @@ idlist=';
   }
 
   public static function ajax_images($website_id, $password) {
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     echo self::get_images($readAuth);
   }
 
@@ -748,11 +797,7 @@ idlist=';
   }
 
   public static function ajax_comments($website_id, $password) {
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     echo self::get_comments($readAuth);
   }
 
@@ -791,11 +836,7 @@ idlist=';
   }
 
   public static function ajax_imagesAndComments($website_id, $password) {
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     header('Content-type: application/json');
     echo json_encode(array(
       'images' => self::get_images($readAuth),
@@ -843,11 +884,7 @@ idlist=';
    */
   public static function ajax_experience($website_id, $password, $node) {
     iform_load_helpers(array('report_helper'));
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     $data = report_helper::get_report_data(array(
       'dataSource' => 'library/totals/user_experience_for_record',
       'readAuth' => $readAuth,
@@ -858,7 +895,7 @@ idlist=';
       if ($row['v_total']===0) {
         $r .= '<p>This recorder has not recorded this ' + $row['type'] + ' before.</p>';
       } else {
-        $r .= '<p>Records of ' . $row['what'] . '<p>';
+        $r .= '<h3>Records of ' . $row['what'] . '</h3>';
         $r .= '<table><thead><th></th><th>Last 3 months</th><th>Last year</th><th>All time</th></thead>';
         $r .= '<tbody>';
         $r .= '<tr class="verified"><th>Verified</th><td>' . self::records_link($row, 'v_3months', $node) . '</td><td>' . 
@@ -894,27 +931,33 @@ WHERE vuser_id.value=".$_GET['user_id']);
   private static function records_link($row, $value, $node) {
     if (!empty($node->params['view_records_report_path']) && !empty($_GET['user_id'])) {
       $tokens = explode('_', $value);
-      $params = array('dynamic-ownGroups'=>0,'dynamic-recent'=>0,'dynamic-user_filter'=>$_GET['user_id']);
+      $params = array(
+          'filter-date_age' => '', 
+          'filter-indexed_location_list' => '', 
+          'filter-taxon_group_list' => '', 
+          'filter-user_id' => $_GET['user_id'], 
+          'filter-my_records' => 1
+      );
       switch ($tokens[0]) {
         case 'r' : 
-          $params['dynamic-record_status'] = 'R';
+          $params['filter-quality'] = 'R';
           break;
         case 'v' :
-          $params['dynamic-record_status'] = 'V';
+          $params['filter-quality'] = 'V';
           break;
       }
       switch ($tokens[1]) {
         case '3months' :
-          $params['dynamic-input_date_from'] = date('Y-m-d', strToTime('3 months ago'));
+          $params['filter-date_age'] = '3 months';
           break;
         case '1year' :
-          $params['dynamic-input_date_from'] = date('Y-m-d', strToTime('1 year ago'));
+          $params['filter-date_age'] = '1 year';
           break;
       }
       if ($row['type']==='species')
-        $params['dynamic-taxon_meaning_id'] = $row['what_id'];
+        $params['filter-taxon_meaning_list'] = $row['what_id'];
       else
-        $params['dynamic-taxon_group_id'] = $row['what_id'];
+        $params['filter-taxon_group_list'] = $row['what_id'];
       return l($row[$value], $node->params['view_records_report_path'], 
           array('attributes'=>array('target' => '_blank'), 'query'=>$params));
       
@@ -927,11 +970,7 @@ WHERE vuser_id.value=".$_GET['user_id']);
    */
   public static function ajax_phenology($website_id, $password) {
     iform_load_helpers(array('report_helper'));
-    // Auth should be passed from JS to save regenerating it
-    $readAuth = array(
-      'nonce' => $_GET['nonce'],
-      'auth_token' => $_GET['auth_token']
-    );
+    $readAuth = report_helper::get_read_auth($website_id, $password);
     $extraParams = array(
       'external_key'=>(empty($_GET['external_key']) || $_GET['external_key']==='null') ? '' : $_GET['external_key'],
       'taxon_meaning_id'=>(empty($_GET['external_key']) || $_GET['external_key']==='null') ? $_GET['taxon_meaning_id'] : '',

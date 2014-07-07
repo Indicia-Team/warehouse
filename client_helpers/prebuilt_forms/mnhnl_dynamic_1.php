@@ -32,6 +32,14 @@ require_once('dynamic_sample_occurrence.php');
 
 class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
 
+  public static function get_perms($nid, $args) {
+    $perms = array();
+    if(isset($args['permission_name']) && $args['permission_name']!='') $perms[] = $args['permission_name'];
+    if(isset($args['edit_permission']) && $args['edit_permission']!='') $perms[] = $args['edit_permission'];
+    if(isset($args['ro_permission'])   && $args['ro_permission']!='')   $perms[] = $args['ro_permission'];
+    return $perms;
+  }
+
   /** 
    * Return the form metadata.
    * @return string The definition of the form.
@@ -69,7 +77,7 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
   
   protected static function get_form_html($args, $auth, $attributes) {
     if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
-  		$squares = iform_loctools_listlocations($node);
+  		$squares = iform_loctools_listlocations(self::$node);
   		if($squares != "all" && count($squares)==0)
   			return lang::get('Error: You do not have any squares allocated to you. Please contact your manager.');
   	}
@@ -101,4 +109,41 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
       '<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>' : '');
   }
   
+  /*
+   * Hide a control if a user is not a member of a particular group.
+   * 
+   * $options Options array with the following possibilities:<ul>
+   * <li><b>controlId</b><br/>
+   * The control to hide. ID used as a jQuery selector.</li>
+   * <li><b>groupId</b><br/>
+   * Group to check the user is a member of.</li>
+   */
+  protected static function get_control_hideControlForNonGroupMembers($auth, $args, $tabalias, $options) {
+    iform_load_helpers(array('report_helper'));
+    $currentUserId=hostsite_get_user_field('indicia_user_id');
+    if (empty($options['controlId'])) {
+      drupal_set_message('The option to hide a control based on group has been specified, but no option to indicate which control has been provided.');
+      return false;
+    }
+    if (empty($options['groupId'])) {
+      drupal_set_message('The option to hide a control based on group has been specified, but no group id has been provided.');
+      return false;
+    }
+    $reportOptions = array(
+      'dataSource'=>'library/groups/group_members',
+      'readAuth'=>$auth['read'],
+      'mode'=>'report',
+      'extraParams' => array('group_id'=>$options['groupId'])
+    );
+    $usersInGroup = report_helper::get_report_data($reportOptions);
+    //Check all members in the group, if the current user is a member, then there is no need to hide the control.
+    $userFoundInGroup=false;
+    foreach ($usersInGroup as $userInGroup) {
+      //User role must be Member so that we don't show the control for administrators
+      if ($userInGroup['id']===$currentUserId && $userInGroup['role']==='Member')
+        $userFoundInGroup=true;
+    }
+    if ($userFoundInGroup!==true)
+      data_entry_helper::$javascript .= "$('#".$options['controlId']."').parent().hide();\n";
+  } 
 }

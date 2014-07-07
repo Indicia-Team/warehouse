@@ -68,8 +68,7 @@ function iform_report_get_minimal_report_parameters() {
       'type' => 'textarea',
       'required' => false,
       'group'=>'Report Settings'
-    ), 
-      array(
+    ), array(
       'name' => 'items_per_page',
       'caption' => 'Items per page',
       'description' => 'Maximum number of rows shown on each page of the table',
@@ -102,6 +101,17 @@ function iform_report_get_report_parameters() {
           'output'=>'Output only - the params form will be output elsewhere.',
         ),
         'default' => 'default',
+        'group'=>'Report Settings'
+      ), array(
+        'name' => 'param_lookup_extras',
+        'caption' => 'Params Lookup Extras',
+        'description' => 'When a report parameter is a lookup, the option allows the setting of the extras that get sent to the warehouse to generate the list. '.
+      		             'For example it would allow a restriction to be placed on the list of location type terms in a select, rather than showing the full set, '.
+      		             'some of which may not be appropriate in this instance. Format is paraKey:extraField=values. The values can be comma separated list, '.
+      		             'but when used with a report (rather than a direct table), the report must be able to handle it as a single string. Care should be '.
+      		             'taken with string values - depending on the report, they may need to be delimited by single inverted commas.',
+        'type' => 'textarea',
+        'required' => false,
         'group'=>'Report Settings'
       ), array(
         'name' => 'report_group',
@@ -181,6 +191,27 @@ function iform_report_get_report_options($args, $readAuth) {
   $presets = get_options_array_with_user_data($args['param_presets']);
   $defaults = get_options_array_with_user_data($args['param_defaults']);
   $ignores = isset($args['param_ignores']) ? helper_base::explode_lines($args['param_ignores']) : array();
+  $param_lookup_extras = array();
+  if(isset($args['param_lookup_extras'])) {
+    $paramlx = helper_base::explode_lines($args['param_lookup_extras']);
+    foreach ($paramlx as $param) {
+      if (!empty($param)) {
+        $tokens = explode(':', $param, 2);
+        if (count($tokens)==2) {
+          $tokens2 = explode('=', $tokens[1], 2);
+          if (count($tokens2)==2) {
+            if(!isset($param_lookup_extras[$tokens[0]])) $param_lookup_extras[$tokens[0]] = array();
+            $param_lookup_extras[$tokens[0]][$tokens2[0]]=explode(',', $tokens2[1]);
+          } else {
+            throw new Exception('One of the param_lookup_extras defined for this page are not of the form key:param=value[,value...] : '.$param.'. (No equals)');
+          }
+        } else {
+            throw new Exception('One of the param_lookup_extras defined for this page are not of the form key:param=value[,value...] : '.$param.'. (No colon)');
+        }
+      }
+    }
+  } else $param_lookup_extras = array();
+  	
   // default columns behaviour is to just include anything returned by the report
   $columns = array();
   // this can be overridden
@@ -190,7 +221,7 @@ function iform_report_get_report_options($args, $readAuth) {
     'id' => 'report-grid',
     'reportGroup' => isset($args['report_group']) ? $args['report_group'] : '',
     'rememberParamsReportGroup' => isset($args['remember_params_report_group']) ? $args['remember_params_report_group'] : '',
-    'dataSource' => $args['report_name'],
+    'dataSource' => isset($args['report_name']) ? $args['report_name'] : '',
     'mode' => 'report',
     'readAuth' => $readAuth,
     'columns' => $columns,
@@ -198,6 +229,7 @@ function iform_report_get_report_options($args, $readAuth) {
     'extraParams' => $presets,
     'paramDefaults' => $defaults,
     'ignoreParams' => $ignores,
+    'param_lookup_extras' => $param_lookup_extras,
     'galleryColCount' => isset($args['gallery_col_count']) ? $args['gallery_col_count'] : 1,
     'headers' => isset($args['gallery_col_count']) && $args['gallery_col_count']>1 ? false : true,
     'paramsInMapToolbar'=>isset($args['params_in_map_toolbar']) ? $args['params_in_map_toolbar'] : false    
