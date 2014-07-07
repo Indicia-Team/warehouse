@@ -183,10 +183,12 @@ class filter_when extends filter_base {
     $r .= data_entry_helper::date_picker(array(
       'label'=>lang::get('Records from'),
       'fieldname'=>'date_from',
+      'allowFuture' => true
     ));
     $r .= data_entry_helper::date_picker(array(
       'label'=>lang::get('Records to'),
       'fieldname'=>'date_to',
+      'allowFuture' => true
     ));
     $r .= '</fieldset>';
     $r .= '<fieldset class="exclusive" id="age"><legend>'.lang::get('Or, specify a maximum age for the records to include').'</legend>';
