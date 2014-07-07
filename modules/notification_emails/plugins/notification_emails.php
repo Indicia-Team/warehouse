@@ -128,9 +128,10 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
       //This user is not the first user but we have detected that it is not the same user we added a notification to the email for last time,
       //this means we need to send out the previous user's email and start building a new email
-      if ($notificationToSendEmailsFor['user_id']!=$previousUserId && $previousUserId!=0) {      
-        $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
-        send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
+      if ($notificationToSendEmailsFor['user_id']!=$previousUserId && $previousUserId!==0) {
+        if ($currentType!=='')
+          $emailContent .= '</tbody></table>';
+        send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl);
         //Used to mark the notifications in an email if an email send is successful, once email send attempt has been made we can reset the list ready for the next email.
         $notificationIds=array();
         $emailSentCounter++;
@@ -175,8 +176,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     if ($currentType!=='')
       $emailContent .= '</tbody></table>';
     //if we have run out of notifications to send we will have finished going around the loop, so we just need to send out the last email whatever happens
-    $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
-    send_out_user_email($db,$emailContent,$previousUserId,$notificationIds,$email_config);
+    send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl);
     $emailSentCounter++;
     //Save the maximum notification id against the jobs we are going to run now, so we know that we have done the notifications up to that id and next time the jobs are run
     //they only need to work with notifications later than that id.
@@ -248,7 +248,8 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
 /*
  * Actually send the email to the uer
  */
-function send_out_user_email($db,$emailContent,$userId,$notificationIds,$email_config) {
+function send_out_user_email($db, $emailContent, $userId, $notificationIds, $email_config, $subscriptionSettingsPageUrl) {
+  $emailContent.='<a href="'.$subscriptionSettingsPageUrl.'?user_id='.$previousUserId.'&warehouse_url='.url::base().'">Click here to update your subscription settings.</a><br/><br/>';
   $cc=null;
   $swift = email::connect();
   // Use a transaction to allow us to prevent the email sending and marking of notification as done
