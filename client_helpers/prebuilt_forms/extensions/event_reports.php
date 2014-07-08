@@ -268,12 +268,12 @@ class extension_event_reports {
   
   public static function species_by_location_league($auth, $args, $tabalias, $options, $path) {
     $label = empty($options['label']) ? 'Location' : $options['label'];
-    return self::league_table($auth, $args, $options, 'library/locations/filterable_species_counts_league', $label);
+    return self::league_table($auth, $args, $options, 'locations', 'filterable_species_counts_league', $label);
   }
   
   public static function records_by_location_league($auth, $args, $tabalias, $options, $path) {
     $label = empty($options['label']) ? 'Location' : $options['label'];
-    return self::league_table($auth, $args, $options, 'library/locations/filterable_record_counts_league', $label, 'Records');
+    return self::league_table($auth, $args, $options, 'locations', 'filterable_record_counts_league', $label, 'Records');
   }
   
   /**
@@ -291,8 +291,8 @@ class extension_event_reports {
    */
   public static function species_by_recorders_league($auth, $args, $tabalias, $options, $path) { 
     $label = empty($options['label']) ? 'Recorders' : $options['label'];
-    $groupby = isset($options['groupByRecorderName']) && $options['groupByRecorderName'] ? 'recorder_name' : 'users';
-    return self::league_table($auth, $args, $options, "library/$groupby/filterable_species_counts_league", $label);  
+    $entity = isset($options['groupByRecorderName']) && $options['groupByRecorderName'] ? 'recorder_name' : 'users';
+    return self::league_table($auth, $args, $options, $entity, 'filterable_species_counts_league', $label);  
   }
   
   /**
@@ -310,16 +310,20 @@ class extension_event_reports {
    */
   public static function records_by_recorders_league($auth, $args, $tabalias, $options, $path) { 
     $label = empty($options['label']) ? 'Recorders' : $options['label'];
-    $groupby = isset($options['groupByRecorderName']) && $options['groupByRecorderName'] ? 'recorder_name' : 'users';
-    return self::league_table($auth, $args, $options, "library/$groupby/filterable_record_counts_league", $label, 'Records');  
+    $entity = isset($options['groupByRecorderName']) && $options['groupByRecorderName'] ? 'recorder_name' : 'users';
+    return self::league_table($auth, $args, $options, $entity, 'filterable_record_counts_league', $label, 'Records');  
   }
   
-  private static function league_table($auth, $args, $options, $report, $label, $countOf='Species') { 
+  private static function league_table($auth, $args, $options, $entity, $report, $label, $countOf='Species') { 
     iform_load_helpers(array('report_helper'));
+    if ($entity==='users')
+      $indiciaUserId=hostsite_get_user_field('indicia_user_id');
+    elseif ($entity==='locations')
+      $userLocationId=hostsite_get_user_field('location');
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => $report,
+        'dataSource' => "library/$entity/$report",
         'limit' => 20,
         'autoParamsForm' => false,
         'caching' => true,
@@ -341,7 +345,11 @@ class extension_event_reports {
           $pos = $idx+1; // +1 because zero indexed $idx
           $lastVal = $row['value'];
         }
-        $r .= "<tr><td>$pos</td><td>{$row[name]}</td><td>{$row[value]}</td></tr>\n";
+        $class='';
+        if (($entity==='users' && $indiciaUserId==$row['id']) 
+            || ($entity==='locations' && $userLocationId==$row['id']))
+          $class=' class="ui-state-highlight"';
+        $r .= "<tr$class><td>$pos</td><td>{$row[name]}</td><td>{$row[value]}</td></tr>\n";
       }
     } else {
       $r .= '<td colspan="3">' . lang::get('No results yet') . '</td>';
