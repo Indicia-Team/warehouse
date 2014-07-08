@@ -633,6 +633,20 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     );
     return $retVal;
   }
+  /** 
+   * Declare the list of permissions we've got set up to pass to the CMS' permissions code.
+   * @param int $nid Node ID, not used
+   * @param array $args Form parameters array, used to extract the defined permissions.
+   * @return array List of distinct permissions.
+   */
+  public static function get_perms($nid, $args) {
+    $perms = array();
+    if (!empty($args['edit_permission']))
+      $perms[] = $args['edit_permission'];
+    if (!empty($args['ro_permission']))
+      $perms[] = $args['ro_permission'];
+    return $perms;
+  }
   
   /**
    * Override get_form_html so we can store the remembered argument in a global, to make
