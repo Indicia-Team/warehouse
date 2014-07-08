@@ -104,7 +104,7 @@ class iform_mobile_sample_occurrence {
       ]
    * @var array
    */
-  private $pages_array = array();
+  protected $pages_array = array();
 
   /**
    * Return the form metadata.
@@ -628,7 +628,7 @@ EOD
 
     /**
    * Return the generated form output.
-   * @return Form HTML.
+   * @return string Form HTML.
    */
   public static function get_form($args, $node) {
     iform_load_helpers(array('mobile_entry_helper'));
@@ -729,9 +729,9 @@ EOD
 
   /**
    * Assembles the different bits of the form html in to the final item
-   * @global type $remembered
+   * @global string $remembered
    * @param array $args The form settings.
-   * @param type $auth Authorisation to access the warehouse.
+   * @param array $auth Authorisation to access the warehouse.
    * @param array $attributes Definition of custom attributes from warehouse.
    * @return string The form html.
    */
@@ -815,7 +815,7 @@ EOD
     $content = array();
     if(!empty($form_inputs)){
       //build page content & initiate child pages
-      foreach($form_inputs as $name => $section){
+      foreach(array_values($form_inputs) as $section){
         foreach($section as $element){
           //'get_control_ + CONTROLLER NAME' function call
           $func = get_user_func(self::$called_class, $element['method']);
@@ -941,9 +941,9 @@ EOD
    * Get authorisation tokens to update the Warehouse, plus any other hidden
    * form inputs.
    * @param array $args The form settings.
-   * @param type $auth Authorisation to access the warehouse.
+   * @param array $auth Authorisation to access the warehouse.
    * @param array $attributes Definition of custom attributes from warehouse.
-   * @return type
+   * @return string
    */
   protected static function renderHiddenInputs($args, $auth) {
     // Authorisation tokens.
@@ -981,9 +981,9 @@ EOD
    * Construct html represented by the Form Structure argument and the warehouse
    * attribute configuration. The inputs are grouped on 'tabs'.
    * @param array $args The form settings.
-   * @param type $auth Authorisation to access the warehouse.
+   * @param array $auth Authorisation to access the warehouse.
    * @param array $attributes Definition of custom attributes from warehouse.
-   * @return type
+   * @return string
    */
   protected static function renderTabs($tabs, $args, $auth) {
     $tabHtml = array();
@@ -1115,7 +1115,7 @@ EOD
    * Overridable function to retrieve the HTML to appear below the dynamically
    * constructed form, which by default is the closure of the HTML form for data
    * submission
-   * @param type $args
+   * @param string $args
    */
   protected static function renderFooter($args) {
     $r = '';
@@ -1129,8 +1129,8 @@ EOD
    * The top level of form structure are called tabs.
    * Finds the list of all tab names that are going to be required, either by
    * the form structure, or by custom attributes.
-   * @param type $strucText The form structure texy.
-   * @param type $attrTabs Tabs required by custom attributes.
+   * @param array $strucText The form structure texy.
+   * @param array $attrTabs Tabs required by custom attributes.
    * @return array Returns an array of tab arrays where each tab array
    * contains the tab name, alias and an array of all the components in the form
    * structure to be placed in that tab.
@@ -1312,15 +1312,6 @@ EOD
     $args['defaults'] = $result;
   }
 
-  /**
-   * Overridable method to get the buttons to include for form submission. Might
-   * be overridden to include a delete button for example.
-   */
-  protected static function getSubmitButtons($args) {
-    return '<input type="submit" class="indicia-button" id="save-button" value="'
-      .lang::get('Submit') . "\" />\n";
-  }
-
   protected static function getReloadPath () {
     $reload = data_entry_helper::get_reload_link_parts();
     unset($reload['params']['sample_id']);
@@ -1369,23 +1360,6 @@ EOD
 
     return $button;
 
-  }
-
-  /**
-   * Parses an options array to extract the attribute specific option settings,
-   * e.g. smpAttr:4|caption=Habitat etc.
-   */
-  private static function get_attr_specific_options($options) {
-    $attrOptions = array();
-    foreach ($options as $option => $value) {
-      $regex = '/^(?P<controlname>[a-z][a-z][a-z]Attr:[0-9]*)\|(?P<option>.*)$/';
-      if (preg_match($regex, $option, $matches)) {
-        if (!isset($attrOptions[$matches['controlname']]))
-          $attrOptions[$matches['controlname']] = array();
-        $attrOptions[$matches['controlname']][$matches['option']] = $value;
-      }
-    }
-    return $attrOptions;
   }
 
   /**
@@ -1497,7 +1471,7 @@ EOD
 
   /**
    * Returns a control for picking a single species
-   * @global type $indicia_templates
+   * @global array $indicia_templates
    * @param array $auth Read authorisation tokens
    * @param array $args Form configuration
    * @param array $extraParams Extra parameters pre-configured with taxon and
@@ -1519,7 +1493,6 @@ EOD
       $helpText = isset($options['taxonGroupSelectHelpText']) ?
               $options['taxonGroupSelectHelpText'] :
               'Choose which species group you want to pick a species from.';
-      $default='';
       if (!empty(data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id'])) {
         // need to find the default value
         $ttlid = data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id'];
@@ -1585,8 +1558,7 @@ EOD
 
     // obtain table to query and hence fields to use
     $db = data_entry_helper::get_species_lookup_db_definition($args['cache_lookup']);
-    // get local vars for the array
-    extract($db);
+
 
     if ($ctrl!=='species_autocomplete') {
       // The species autocomplete has built in support for the species name
@@ -1598,11 +1570,12 @@ EOD
             $species_ctrl_opts['extraParams'],
             data_entry_helper::get_species_names_filter($species_ctrl_opts));
       }
+
       // for controls which don't know how to do the lookup, we need to tell them
       $species_ctrl_opts = array_merge(array(
-        'table' => $tblTaxon,
-        'captionField' => $colTaxon,
-        'valueField' => $colId,
+        'table' => $db['tblTaxon'],
+        'captionField' => $db['colTaxon'],
+        'valueField' => $db['colId'],
       ), $species_ctrl_opts);
     }
     // if using something other than an autocomplete, then set the caption
@@ -1613,11 +1586,11 @@ EOD
             isset($args['species_include_both_names']) &&
             $args['species_include_both_names']) {
       if ($args['species_names_filter'] === 'all')
-        $indicia_templates['species_caption'] = "{{$colTaxon}}";
+        $indicia_templates['species_caption'] = "{{$db['colTaxon']}}";
       elseif ($args['species_names_filter'] === 'language')
-        $indicia_templates['species_caption'] = "{{$colTaxon}} - {{$colPreferred}}";
+        $indicia_templates['species_caption'] = "{{$db['colTaxon']}} - {{$db['colPreferred']}}";
       else
-        $indicia_templates['species_caption'] = "{{$colTaxon}} - {{$colCommon}}";
+        $indicia_templates['species_caption'] = "{{$db['colTaxon']}} - {{$db['colCommon']}}";
       $species_ctrl_opts['captionTemplate'] = 'species_caption';
     }
 
@@ -1951,7 +1924,7 @@ EOD
  * Utility function  to see if a method exists in the given class.
  * @param string $class the class containing the method
  * @param string $method the name of the method
- * @return Either a function name suitable for passing to call_user_func or
+ * @return string Either a function name suitable for passing to call_user_func or
  * FALSE if the method does not exist.
  */
 function get_user_func($class, $method){
