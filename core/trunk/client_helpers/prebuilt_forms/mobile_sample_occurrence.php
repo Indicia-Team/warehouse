@@ -628,6 +628,8 @@ EOD
 
     /**
    * Return the generated form output.
+   * @param array $args The form settings.
+   * @param array $node
    * @return string Form HTML.
    */
   public static function get_form($args, $node) {
@@ -638,10 +640,6 @@ EOD
 
   // Convert parameter, $args['defaults'], into structured array.
     self::parse_defaults($args);
-    // Supply parameters that may be missing after form upgrade.
-    $func = get_user_func(self::$called_class, 'getArgDefaults');
-    if ($func)
-      $args = call_user_func($func, $args);
 
     // Check permissions to access form.
     $func = get_user_func(self::$called_class, 'enforcePermissions');
@@ -730,10 +728,10 @@ EOD
   /**
    * Assembles the different bits of the form html in to the final item
    * @global string $remembered
+   * @param array $structure
    * @param array $args The form settings.
    * @param array $auth Authorisation to access the warehouse.
-   * @param array $attributes Definition of custom attributes from warehouse.
-   * @return string The form html.
+   * @return string $r The form html.
    */
   protected static function renderForm($structure, $args, $auth) {
     // Store the list of fields in the form whose values will be remembered from
@@ -783,6 +781,7 @@ EOD
    * @param array $form_inputs The configuration.
    * @param array $args The form settings.
    * @param array $auth Authorisation to access the warehouse.
+   * @return string
    */
   public function renderPages($form_inputs, $args, $auth){
     //generate pages into $pages_array
@@ -929,6 +928,7 @@ EOD
    * constructed form,
    * which by default is an HTML form for data submission
    * @param array $args The form settings.
+   * @return string
    */
   protected static function renderHeader($args) {
     $r = "";
@@ -942,7 +942,6 @@ EOD
    * form inputs.
    * @param array $args The form settings.
    * @param array $auth Authorisation to access the warehouse.
-   * @param array $attributes Definition of custom attributes from warehouse.
    * @return string
    */
   protected static function renderHiddenInputs($args, $auth) {
@@ -980,9 +979,9 @@ EOD
   /**
    * Construct html represented by the Form Structure argument and the warehouse
    * attribute configuration. The inputs are grouped on 'tabs'.
+   * @param array $tabs
    * @param array $args The form settings.
    * @param array $auth Authorisation to access the warehouse.
-   * @param array $attributes Definition of custom attributes from warehouse.
    * @return string
    */
   protected static function renderTabs($tabs, $args, $auth) {
@@ -1116,6 +1115,7 @@ EOD
    * constructed form, which by default is the closure of the HTML form for data
    * submission
    * @param string $args
+   * @return string
    */
   protected static function renderFooter($args) {
     $r = '';
@@ -1420,6 +1420,11 @@ EOD
 
   /**
    * Error logging code for the page in single species mode
+   * @param $auth
+   * @param $args
+   * @param $filterLines
+   * @param $response
+   * @throws exception
    */
   protected static function get_single_species_logging(
           $auth, $args, $filterLines, $response) {
@@ -1452,6 +1457,11 @@ EOD
   /**
    * Get the control for species input, either a grid or a single species input
    * control.
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_species(
     $auth, $args, $tabAlias, $options) {
@@ -1611,6 +1621,8 @@ EOD
    * Function to map from the species_names_filter argument to the
    * speciesNamesFilterMode required by the checklist grid. For legacy reasons
    * they don't quite match.
+   * @param $args
+   * @return bool|string
    */
   protected static function getSpeciesNameFilterMode($args) {
     if (isset($args['species_names_filter'])) {
@@ -1628,6 +1640,11 @@ EOD
 
   /**
    * Get the sample comment control
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_samplecomment(
           $auth, $args, $tabAlias, $options) {
@@ -1663,6 +1680,11 @@ EOD
 
   /**
    * Get the sample photo control
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_samplephoto(
           $auth, $args, $tabAlias, $options) {
@@ -1676,6 +1698,11 @@ EOD
 
   /**
    * Get the block of custom attributes at the species (occurrence) level
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_speciesattributes(
           $auth, $args, $tabAlias, $options) {
@@ -1704,8 +1731,13 @@ EOD
   }
 
   /**
- * Get the date control.
- */
+  * Get the date control.
+  * @param $auth
+  * @param $args
+  * @param $tabAlias
+  * @param $options
+  * @return string
+  */
   protected static function get_control_date(
     $auth, $args, $tabAlias, $options) {
 
@@ -1741,6 +1773,11 @@ EOD
 
   /**
    * Get the location name control.
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_locationname(
           $auth, $args, $tabAlias, $options) {
@@ -1753,6 +1790,13 @@ EOD
 
   /**
    * Get an occurrence attribute control.
+   */
+  /**
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_smpattr(
           $auth, $args, $tabAlias, $options) {
@@ -1768,6 +1812,11 @@ EOD
 
   /**
    * Get an occurrence attribute control.
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_occattr(
           $auth, $args, $tabAlias, $options) {
@@ -1783,6 +1832,11 @@ EOD
 
   /**
    * Get the photos control
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_photos(
           $auth, $args, $tabAlias, $options) {
@@ -1791,6 +1845,11 @@ EOD
 
   /**
    * Get the recorder names control
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_recordernames(
           $auth, $args, $tabAlias, $options) {
@@ -1803,6 +1862,11 @@ EOD
 
   /**
    * Get the sensitivity control
+   * @param $auth
+   * @param $args
+   * @param $tabAlias
+   * @param $options
+   * @return string
    */
   protected static function get_control_sensitivity(
           $auth, $args, $tabAlias, $options) {
@@ -1855,24 +1919,12 @@ EOD
     return array('mobile_sample_occurrence.css');
   }
 
-
-  /**
-   * When a form version is upgraded introducing new parameters, old forms will
-   * not get the defaults for the parameters unless the Edit and Save button is
-   * clicked. So, apply some defaults to keep those old forms working.
-   */
-  protected static function getArgDefaults($args) {
-    return $args;
-  }
-
   /**
    * Provides a control for inputting photos against the record, when in single
    * record mode.
    *
-   * @param array $readAuth Read authorisation tokens
    * @param array $options Options array for the control.
-   * @param string $tabAlias ID of the tab's div if this is being loaded onto a
-   * div.
+   * @return string
    */
   protected static function occurrence_photo_input($options) {
     $defaults = array(
@@ -1883,11 +1935,16 @@ EOD
     return data_entry_helper::image_upload($opts);
   }
 
+
   /**
    * Parses the options provided to a control in the user interface definition
    * and splits the options which apply to the entire control (@label=Grid Ref)
    * from ones which apply to a specific custom attribute
    * (smpAttr:3|label=Quantity).
+   *
+   * @param $options
+   * @param $ctrlOptions
+   * @param $attrSpecificOptions
    */
   protected static function parseForAttrSpecificOptions($options, &$ctrlOptions,
           &$attrSpecificOptions) {
