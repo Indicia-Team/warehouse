@@ -24,9 +24,10 @@ $(document).ready(function($) {
     }
   }
   var tabHandler = function(event, ui) {
-    showTab(ui.panel.id);
+    var panel = ui.newPanel[0] || ui.panel;
+    showTab(panel.id);
   };
-  $('#summary-tabs').bind('tabsshow', tabHandler);
+  indiciaFns.bindTabsActivate($('#summary-tabs'), tabHandler);
   $('#user_trust\\:user_id').change(function() {
     showTab($('#summary-tabs .ui-tabs-panel:not(.ui-tabs-hide)')[0].id);
   });

@@ -775,10 +775,8 @@ var saveComment, saveVerifyComment;
       }
     });
 
-    $('#record-details-tabs').bind('tabsshow', function () {
-      showTab();
-    });
-
+    indiciaFns.bindTabsActivate($('#record-details-tabs'), showTab);
+    
     $('#btn-verify').click(function () {
       setStatus('V');
     });

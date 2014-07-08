@@ -77,5 +77,25 @@ if (typeof window.indiciaData==="undefined") {
       return tabs.tabs('option', propname, index);
     }
   };
+  
+  /** 
+   * jQuery UI 1.10 replaced the show event with activate. Use this function to allow non-version specific
+   * code to bind to this event
+   */
+  indiciaFns.bindTabsActivate = function(tabs, fn) {
+    var version=$.ui.version.split('.'), 
+        evtname=(version[0]==='1' && version[1]<10) ? 'tabsshow' : 'tabsactivate';
+    return tabs.bind(evtname, fn);
+  };
+  
+  /** 
+   * jQuery UI 1.10 replaced the show event with activate. Use this function to allow non-version specific
+   * code to unbind from this event
+   */
+  indiciaFns.unbindTabsActivate = function(tabs, fn) {
+    var version=$.ui.version.split('.'), 
+        evtname=(version[0]==='1' && version[1]<10) ? 'tabsshow' : 'tabsactivate';
+    return tabs.unbind(evtname, fn);
+  };
 
 }) (jQuery);

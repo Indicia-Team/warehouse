@@ -529,7 +529,7 @@ mapInitialisationHooks.push(function (div) {
       $r .= "<div class=\"mnhnl-btw-mappanel\">\n".(data_entry_helper::map_panel($options, $olOptions))."</div>\n";
 
       data_entry_helper::$javascript .= "
-$('#controls').bind('tabsshow', function(event, ui) {
+indiciaFns.bindTabsActivate($('#controls'), function(event, ui) {
   var y = $('.mnhnl-btw-datapanel:visible').outerHeight(true) + $('.mnhnl-btw-datapanel:visible').position().top;
   if(y < $('.mnhnl-btw-mappanel').outerHeight(true)+ $('.mnhnl-btw-mappanel').position().top){
     y = $('.mnhnl-btw-mappanel').outerHeight(true)+ $('.mnhnl-btw-mappanel').position().top;
@@ -1392,16 +1392,14 @@ var selected = indiciaFns.activeTab($('#controls'));
 if(selected != 1){
     locationLayer.map.editLayer.clickControl.deactivate();
 }
-$('#controls').bind('tabsshow', function(event, ui) {
-        if(ui.index == 1)
-        {
-         locationLayer.map.editLayer.clickControl.activate();
-        }
-        else
-        {
-         locationLayer.map.editLayer.clickControl.deactivate();
-        }
-    }
+indiciaFns.bindTabsActivate($('#controls'), function(event, ui) {
+  if(ui.index == 1) {
+    locationLayer.map.editLayer.clickControl.activate();
+  }
+  else {
+    locationLayer.map.editLayer.clickControl.deactivate();
+  }
+}
 );
 activateAddList = 1;
 thisOccID = ".$thisOccID.";

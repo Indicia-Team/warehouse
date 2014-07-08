@@ -1261,7 +1261,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
     }
   }
 };
-jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', speciesMapTabHandler);\n";
+indiciaFns.bindTabsActivate(jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()), speciesMapTabHandler);\n";
       // move the cloneable table outside the form, so allowing the validation to ignore it.
       data_entry_helper::$javascript .= "var cloneableDiv = $('<div style=\"display: none;\">');
 cloneableDiv.append($('#".$options['id']."-scClonable'));

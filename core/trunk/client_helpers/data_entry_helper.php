@@ -1065,9 +1065,9 @@ $('#$escaped').change(function(e) {
             "var uploaderTabHandler = function(event, ui) { \n".
             "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ".
         $javascript.
-            "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', uploaderTabHandler);\n".
+            "    indiciaFns.unbindTabsActivate($($('#".$options['tabDiv']."').parent()), uploaderTabHandler);\n".
             "  }\n};\n".
-            "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', uploaderTabHandler);\n";
+            "indiciaFns.bindTabsActivate($($('#".$options['tabDiv']."').parent()), uploaderTabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;

@@ -1315,7 +1315,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     }
   }
 };
-jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTabHandler);\n";
+indiciaFns.bindTabsActivate(jQuery(jQuery('#".$options["tabDiv"]."').parent()), speciesMapTabHandler);\n";
     } else // enable validation on the comments form in order to include the simplified ajax queuing for the autocomplete.
       data_entry_helper::enable_validation('notes_form');
 
@@ -1471,7 +1471,7 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id']) && $arg
     }
     // Do an AJAX population of the grid rows.
     data_entry_helper::$javascript .= "loadSpeciesList();
-jQuery('#tabs').bind('tabsshow', function(event, ui) {
+indiciaFns.bindTabsActivate(jQuery('#tabs'), function(event, ui) {
     var target = ui.panel;
     // first get rid of any previous tables
     jQuery('table.sticky-header').remove();
