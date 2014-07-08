@@ -691,7 +691,7 @@ jQuery('.remove-sgnewrow').live('click', function() {
   thisRow.remove();
   resetSpeciesGridHeader();
 });
-jQuery(jQuery('#species').parent()).bind('tabsshow', function(e, ui){
+indiciaFns.bindTabsActivate(jQuery(jQuery('#species').parent()), function(e, ui){
   if (ui.panel.id=='species') {
     resetSpeciesGridHeader();
   }
@@ -1039,10 +1039,10 @@ setCommentWidth = function(){
 conditionsTabHandler = function(e, ui){
   if (ui.panel.id=='conditions') {
     setCommentWidth();
-    jQuery(jQuery('#conditions').parent()).unbind('tabsshow', conditionsTabHandler);
+    indiciaFns.unbindTabsActivate(jQuery(jQuery('#conditions').parent()), conditionsTabHandler);
   }
 }
-jQuery(jQuery('#conditions').parent()).bind('tabsshow', conditionsTabHandler);
+indiciaFns.bindTabsActivate(jQuery(jQuery('#conditions').parent()), conditionsTabHandler);
 ";
     
     return $ret;

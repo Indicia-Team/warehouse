@@ -452,7 +452,7 @@ $(document).ready(function() {
         };
       }
       copy_over_sites();
-      $('.ui-tabs').bind('tabsshow', function(event, ui) {
+      indiciaFns.bindTabsActivate($('.ui-tabs'), function(event, ui) {
         function _extendBounds(bounds, buffer) {
             var dy = (bounds.top-bounds.bottom) * buffer;
             var dx = (bounds.right-bounds.left) * buffer;
@@ -463,7 +463,7 @@ $(document).ready(function() {
             return bounds;
         }
 
-        var div, target = ui.panel;
+        var div, target = ui.newPanel[0] || ui.panel;
         if((div = $('#'+target.id+' #trees-map')).length > 0){
           copy_over_sites();
           div = div[0];

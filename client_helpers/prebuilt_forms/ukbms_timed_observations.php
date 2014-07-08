@@ -805,7 +805,7 @@ mapInitialisationHooks.push(function(mapdiv) {
     }
     // Do an AJAX population of the grid rows.
     data_entry_helper::$javascript .= "loadSpeciesList();
-jQuery('#tabs').bind('tabsshow', function(event, ui) {
+indiciaFns.bindTabsActivate(jQuery('#tabs'), function(event, ui) {
     var target = ui.panel;
     // first get rid of any previous tables
     jQuery('table.sticky-header').remove();

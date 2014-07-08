@@ -571,7 +571,7 @@ check_attrs = function(){
     map.zoomToExtent(layerBounds);
   }
 };
-jQuery(jQuery('#site-details').parent()).bind('tabsshow', mapTabHandler);\n";
+indiciaFns.bindTabsActivate(jQuery(jQuery('#site-details').parent()), mapTabHandler);\n";
     // Insert this script at the beginning, because it must be done before the tabs are initialised or the
     // first tab cannot fire the event
     data_entry_helper::$javascript = $javascript . data_entry_helper::$javascript;
