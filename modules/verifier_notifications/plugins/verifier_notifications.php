@@ -19,28 +19,69 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
- 
+global $notificationSourceType;
+global $notificationSource;
+global $notificationComment;
+global $sharingFilter;
+global $noNotificationsCreatedMessage;
+global $oneNotificationCreatedMessage;
+global $multipleNotificationsCreatedMessage;
+
+//Module sends out VT (verifier tasks) by default, but can also be setup to send PT (Pending Record Tasks)
+//notifications which alert users when they have records at release_status "P" (pending) to check. Example use - 
+//If a mentor needs to check the records of a student then that student's records can be set to "P" release status.
+//This module can then pick up these records and automatically send the notifications to the mentor.
+try {
+  $ptModeConfig = kohana::config('verifier_notifications.use_pending_check_mode');
+} catch (Exception $e) {
+}
+if (isset($ptModeConfig) && $ptModeConfig===true) 
+  $mode = 'PT';
+else 
+  $mode = 'VT';
+
+if ($mode==='PT') {
+  $notificationSourceType = kohana::config('verifier_notifications.use_pending_check_mode');
+  $notificationSourceType = 'PT';
+  $notificationSource = 'pending_record_check_notifications';
+  $notificationComment='You have pending records to check.';
+  $sharingFilter='M';
+  $noNotificationsCreatedMessage='No new pending record check notifications have been created.';
+  $oneNotificationCreatedMessage='new pending record check notification has been created.';
+  $multipleNotificationsCreatedMessage='new pending record check notifications have been created.';
+} else {
+  $notificationSourceType = 'VT';
+  $notificationSource = 'verifier_notifications';
+  $notificationComment= 'You have records to verify.';
+  $sharingFilter='V';
+  $noNotificationsCreatedMessage='No new verification notifications have been created.';
+  $oneNotificationCreatedMessage='new verification notification has been created.';
+  $multipleNotificationsCreatedMessage='new verification notifications have been created.';
+}
+
 /*
- * Scheduled task that is called to create a new 'you have new records to verify' notification for every user who doesn't already have
- * an outstanding notification and who is associated with a filter that has returned some new occurrences
+ * Scheduled task that is called to create a new VT/PT notification for every user who doesn't already have
+ * an outstanding notification of that type and who is associated with a filter that has returned some new occurrences
  */
 function verifier_notifications_scheduled_task($last_run_date, $db) {
-  //Get all filters where the user for the filter does not already have an unacknowledged 'you have new records to verify' notification 
+  //Get all filters where the user for the filter does not already have an unacknowledged VT/PT notification 
   $filters = get_filters_without_existing_notification($db);
   loop_through_filters_and_create_notifications($db, $filters);
 }
 
 /*
- * Get all filters where the user for the filter does not already have an unacknowledged 'you have new records to verify' notification 
+ * Get all filters where the user for the filter does not already have an unacknowledged VT/PT notification 
  */
 function get_filters_without_existing_notification($db) {
+  global $notificationSourceType;
+  global $sharingFilter;
   $filters = $db
     ->select('f.id,f.definition,fu.user_id,u.username')
     ->from('filters f')
     ->join('filters_users as fu','fu.filter_id','f.id')
     ->join('users as u','u.id','fu.user_id')
-    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='VT' and n.acknowledged=false)", '', 'LEFT')
-    ->where(array('f.sharing'=>'V', 'f.defines_permissions'=>'t','n.id'=>null,
+    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='".$notificationSourceType."' and n.acknowledged=false)", '', 'LEFT')
+    ->where(array('f.sharing'=>$sharingFilter, 'f.defines_permissions'=>'t','n.id'=>null,
                   'f.deleted'=>'f','fu.deleted'=>'f','u.deleted'=>'f'))
     ->get()->result_array(FALSE);
   return $filters;
@@ -51,6 +92,13 @@ function get_filters_without_existing_notification($db) {
  * create a new notification
  */
 function loop_through_filters_and_create_notifications($db, $filters) {
+  global $noNotificationsCreatedMessage;
+  global $oneNotificationCreatedMessage;
+  global $multipleNotificationsCreatedMessage;
+  global $notificationSourceType;
+  global $notificationSource;
+  global $notificationComment;
+
   $report = 'library/occdelta/filterable_occdelta_count';
   //Supply a config of which websites to take into account.
   try {
@@ -84,15 +132,15 @@ function loop_through_filters_and_create_notifications($db, $filters) {
         if ($output['content']['records'][0]['count'] > 0) {
           //Save the new notification
           $notificationObj = ORM::factory('notification');
-          $notificationObj->source='verifier_notifications';
+          $notificationObj->source=$notificationSource;
           $notificationObj->acknowledged='false';
           $notificationObj->triggered_on=date("Ymd H:i:s");
           $notificationObj->user_id=$filter['user_id'];
-          //Use VT "Verifier Task" notification typeas we are informing the verifier that they need to perform a task.
-          $notificationObj->source_type='VT'; 
+          //Use VT "Verifier Task" or PT "Pending Record Task" notification type as we are informing the verifier that they need to perform a task.
+          $notificationObj->source_type=$notificationSourceType; 
           $notificationObj->data=json_encode(
             array('username'=>$from,
-                  'comment'=>'You have records to verify.',
+                  'comment'=>$notificationComment,
                   'auto_generated'=>'t'));
           $notificationObj->save();
           $notificationCounter++;
@@ -101,15 +149,16 @@ function loop_through_filters_and_create_notifications($db, $filters) {
       }
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Error occurred when creating verification notifications based on new occurrences and user\'s filters.', $e);
+      error::log_error('Error occurred when creating notifications based on new occurrences and user\'s filters.', $e);
     }
   }
+  //Display message to show how many notifications were created.
   if ($notificationCounter==0)
-    echo 'No new verification notifications have been created.</br>';
+    echo $noNotificationsCreatedMessage.'</br>';
   elseif ($notificationCounter==1)
-    echo $notificationCounter.' new verification notification has been created.</br>';
+    echo $notificationCounter.' '.$oneNotificationCreatedMessage.'</br>';
   else 
-    echo $notificationCounter.' new verification notifications have been created.</br>';
+    echo $notificationCounter.' '.$multipleNotificationsCreatedMessage.'</br>';
 }
 
 /*
