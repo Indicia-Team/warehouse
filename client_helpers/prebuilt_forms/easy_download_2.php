@@ -638,27 +638,27 @@ class iform_easy_download_2 {
   public static function get_perms($nid, $args) {
     $perms = array();
     if (!empty($args['download_all_users_reporting']))
-      $perms[$args['download_all_users_reporting']]='';
+      $perms[] = $args['download_all_users_reporting'];
     if (!empty($args['reporting_type_permission']))
-      $perms[$args['reporting_type_permission']]='';
+      $perms[] = $args['reporting_type_permission'];
     if (!empty($args['peer_review_type_permission']))
-      $perms[$args['peer_review_type_permission']]='';
+      $perms[] = $args['peer_review_type_permission'];
     if (!empty($args['verification_type_permission']))
-      $perms[$args['verification_type_permission']]='';
+      $perms[] = $args['verification_type_permission'];
     if (!empty($args['data_flow_type_permission']))
-      $perms[$args['data_flow_type_permission']]='';
+      $perms[] = $args['data_flow_type_permission'];
     if (!empty($args['moderation_type_permission']))
-      $perms[$args['moderation_type_permission']]='';
+      $perms[] = $args['moderation_type_permission'];
     if (!empty($args['csv_format_permission']))
-      $perms[$args['csv_format_permission']]='';
+      $perms[] = $args['csv_format_permission'];
     if (!empty($args['tsv_format_permission']))
-      $perms[$args['tsv_format_permission']]='';
+      $perms[] = $args['tsv_format_permission'];
     if (!empty($args['kml_format_permission']))
-      $perms[$args['kml_format_permission']]='';
+      $perms[] = $args['kml_format_permission'];
     if (!empty($args['gpx_format_permission']))
-      $perms[$args['gpx_format_permission']]='';  
+      $perms[] = $args['gpx_format_permission'];  
     if (!empty($args['nbn_format_permission']))
-      $perms[$args['nbn_format_permission']]='';
+      $perms[] = $args['nbn_format_permission'];
     if (!empty($args['custom_formats'])) {
       $customFormats = json_decode($args['custom_formats'], true);
       foreach ($customFormats as $idx=>$format) {
