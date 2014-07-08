@@ -26,24 +26,80 @@ require_once('data_entry_helper.php');
 
 global $indicia_templates;
 
+$indicia_templates['jqmPage'] = $indicia_templates['jqmPageElement'] = <<<'EOD'
+     <div data-role="{role}" {attr}>{content}</div>
+EOD;
+
+$indicia_templates['jqmBackButton'] = <<<'EOD'
+  <a href='{href}' data-rel='back'>{caption}</a>
+EOD;
+
+$indicia_templates['jqmNumberInput'] = <<<'EOD'
+<table {class}>
+  <tr {class}>
+    <td {class}>
+     <label for="{name}"><b>{caption}</b></label>
+    </td><td>
+     <input type="number" name="{fieldname}" id="{id}" min="1" max="50" value="{value}">
+    </td>
+  </tr>
+</table>
+EOD;
+
+$indicia_templates['jqmDate'] = <<<'EOD'
+  <input id="{id}" name="{fieldname}" type="date" value="{default}">
+EOD;
+
+$indicia_templates['jqmCheckbox'] = <<<'EOD'
+    <label><input type="checkbox" data-iconpos="{data-iconpos}" id="{id}"
+    name="{fieldname}" value="{value}">{caption}</label>
+EOD;
+
 $indicia_templates['jqmLeftButton'] = <<<'EOD'
-     <a {class} href="{href}"
+     <a {class} href="{href}" data-role="button"
        data-direction="reverse" data-icon="arrow-l">
        {caption}
      </a>
 EOD;
+
+//TODO: clean this up. May be move to client side templating.
+$indicia_templates['jqmLocation'] = <<<'EOD'
+<div data-role="tabs" id="location">
+  <div data-role="navbar">
+  <input id="imp-sref" name="sample:entered_sref" type="text" value="0">
+  <input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="4326">
+    <ul>
+      <li><a href="#gps" data-ajax="false" class="ui-btn-active">GPS</a></li>
+      <li><a href="#map" data-ajax="false">Map</a></li>
+      <li><a href="#gref" data-ajax="false">Grid Ref</a></li>
+    </ul>
+
+  </div>
+  <div id="gps" class="ui-body-d ui-content">
+    <input type="button" value="Try again">
+  </div>
+  <div id="map" class="ui-body-d ui-content">
+    <div id="map-canvas" style="width: 100vw; height: 50vh;"></div>
+  </div>
+  <div id="gref" class="ui-body-d ui-content">
+  </div>
+</div>
+EOD;
+
 $indicia_templates['jqmRightButton'] = <<<'EOD'
-     <a {class} href="{href}"
+     <a {class} href="{href}" data-role="button"
        data-icon="arrow-r" data-iconpos="right">
        {caption}
      </a>
 EOD;
+
 $indicia_templates['jqmControlSubmitButton'] = <<<'EOD'
-   <div align="right">
-     <input id ="entry-form-submit" style="width:200px" type="button" 
-      data-icon="check" data-theme="b" value="Submit" data-iconpos="right">
+   <div align="{align}">
+     <input id="{id}" type="button" value="{caption}"
+      data-icon="check" data-theme="b"  data-iconpos="right">
    </div>
 EOD;
+
 $indicia_templates['jqmSubmitButton'] = <<<'EOD'
      <input id="{id}" type="submit" {class}
        data-icon="check" data-iconpos="right"
@@ -104,13 +160,15 @@ class mobile_entry_helper extends data_entry_helper {
   *
   * @return string HTML to insert into the page for the date picker control.
   */
-  public static function date_now($options) {
+  public static function date_now($options, $hidden = NULL) {
+    $r = "";
     $options = self::check_options($options);
     $options = array_merge(array(
       'fieldname' => 'sample:date',
-      'default' => '',
+      'default' => '0'
     ), $options);
     $id = (isset($options['id'])) ? $options['id'] : $options['fieldname'];
+    $options['id'] = $id;
     $id = self::jq_esc($id);
     
     // JavaScript to obtain the date value;
@@ -130,7 +188,11 @@ class mobile_entry_helper extends data_entry_helper {
     ";
     
     // HTML which will accept the date value
-    $r .= self::hidden_text($options);
+    if (is_null($hidden) || $hidden){
+      $r .= self::hidden_text($options);
+    } else {
+      $r .= data_entry_helper::apply_template('jqmDate', $options);
+    }
     return $r;
   }
   
@@ -169,7 +231,9 @@ class mobile_entry_helper extends data_entry_helper {
   * system controls.
   */
 
-  public static function sref_now($options) {
+  public static function sref_now($options, $hidden = NULL) {
+    $r = "";
+
     $options = array_merge(array(
       'id' => 'imp-sref',
       'fieldname' => 'sample:entered_sref',
@@ -224,12 +288,16 @@ class mobile_entry_helper extends data_entry_helper {
     
     // HTML which will accept the sref value
     // $r = '<p id="sref">Replace this with the sref.</p>';
-    $r .= self::sref_hidden($options);
-    $r .= self::hidden_text(array(
-      'fieldname' => 'smpAttr:' . $options['accuracy_attr'],
-      'id' => 'sref_accuracy',
-      'default' => '-1'
-    ));
+    if(is_null($hidden) || $hidden ){
+      $r .= self::sref_hidden($options);
+      $r .= self::hidden_text(array(
+        'fieldname' => 'smpAttr:' . $options['accuracy_attr'],
+        'id' => 'sref_accuracy',
+        'default' => '-1'
+      ));
+    } else {
+      $r .= self::apply_template('jqmLocation', NULL);
+    }
     
     return $r;
   }
@@ -514,8 +582,9 @@ EOD;
       $r .= self::apply_template('jqmRightButton', $options);
     } else {
       // Add a save button on the right.
-      $options['class'] = "ui-btn-right";
       $options['caption'] = lang::get($options['captionSave']);
+      $options['id'] = "entry-form-submit";
+      $options['align'] = "right";
       $r .= self::apply_template('jqmControlSubmitButton', $options);
     }
     $r .= '</div>';   
@@ -702,4 +771,5 @@ EOD;
     }
     return $r;
   }
+
 }

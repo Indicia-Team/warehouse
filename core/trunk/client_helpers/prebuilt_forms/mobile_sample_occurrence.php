@@ -26,9 +26,9 @@
  * https://drupal.org/project/jquerymobile. This should be configured with
  * libraries
  *    jQuery >= 1.8, as required by jQuery Mobile,
- *    jQuery Mobiel <= 1.3, as required by the sub page plugin 
+ *    jQuery Mobile <= 1.3, as required by the sub page plugin
  * This also requires the mobile_indicia theme.
- * 
+ *
  * @package    Client
  * @subpackage PrebuiltForms
  */
@@ -37,6 +37,12 @@ require_once('includes/map.php');
 require_once('includes/user.php');
 require_once('includes/language_utils.php');
 require_once('includes/form_generation.php');
+
+//JQM constants
+define("JQM_HEADER", "header");
+define("JQM_CONTENT", "content");
+define("JQM_FOOTER", "footer");
+define("JQM_ATTR", "attr");
 
 /**
  * Store remembered field settings, since these need to be accessed from a hook
@@ -49,7 +55,7 @@ class iform_mobile_sample_occurrence {
 
   // Hold the single species name to be shown on the page to the user.
   protected static $singleSpeciesName;
-  
+
   // The node id upon which this form appears.
   protected static $node;
 
@@ -75,6 +81,32 @@ class iform_mobile_sample_occurrence {
   protected static $occAttrs;
 
   /**
+   * The list of JQM pages in a structured array.
+   *
+   * ATTR
+   *
+   * Array element format:
+   *  ATTR => [],
+      CONTENT => [
+                  HEADER =>  [
+                               ATTR => [],
+                               CONTENT => []
+                             ],
+                  CONTENT => [
+                               ATTR => [],
+                               CONTENT => []
+                             ],
+                  FOOTER =>  [
+                               ATTR => [],
+                               CONTENT => []
+                             ]
+                  ]
+      ]
+   * @var array
+   */
+  private $pages_array = array();
+
+  /**
    * Return the form metadata.
    * @return string The definition of the form.
    */
@@ -98,6 +130,19 @@ class iform_mobile_sample_occurrence {
     $retVal = array_merge(
       array(
         array(
+          'name'=>'interface',
+          'caption'=>'Interface Style Option',
+          'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
+              'wizard pages or having all controls on a single page.',
+          'type'=>'select',
+          'options' => array(
+              'tabs' => 'Tabs',
+              'one_page' => 'All One Page'
+          ),
+          'group' => 'User Interface',
+          'default' => 'tabs'
+        ),
+        array(
           'name' => 'attribute_termlist_language_filter',
           'caption' => 'Internationalise lookups',
           'type' => 'boolean',
@@ -105,8 +150,8 @@ class iform_mobile_sample_occurrence {
           'required' => false,
           'group' => 'User Interface',
           'description' => <<<'EOD'
-            In lookup custom attribute controls, use the language associated 
-            with the current user account to filter to show only the terms in 
+            In lookup custom attribute controls, use the language associated
+            with the current user account to filter to show only the terms in
             that language.
 EOD
         ),
@@ -119,7 +164,7 @@ EOD
           'valueField' => 'id',
           'siteSpecific' => true,
           'description' => <<<'EOD'
-            The survey that data will be posted into and that defines custom 
+            The survey that data will be posted into and that defines custom
             attributes
 EOD
         ),
@@ -147,7 +192,7 @@ EOD
             matches a field in the users profile, these are hidden. Check this
             box to show these fields. Always show these fields if they are
             required at the warehouse unless the profile module is enabled,
-            <em>copy field values from user profile</em> is selected and the 
+            <em>copy field values from user profile</em> is selected and the
             fields are required in the profile.
 EOD
         ),
@@ -158,10 +203,10 @@ EOD
           'default' => false,
           'required' => false,
           'group' => 'User Interface',
-          // Note that we can't test Drupal module availability whilst loading 
+          // Note that we can't test Drupal module availability whilst loading
           // this form for a new iform, using Ajax. So in this case we show the
           // control even though it is not usable (the help text explains the
-          // module requirement).          
+          // module requirement).
           'visible' => !function_exists('module_exists') ||
                  (module_exists('profile') && substr(VERSION, 0, 1) == '6') ||
                  (module_exists('field') && substr(VERSION, 0, 1) == '7'),
@@ -219,7 +264,7 @@ EOD
             control. You can change any of the control options for an individual
             custom attribute control in a grid by putting @control|option=value
             on the subsequent line(s). For example, if a control is for
-            occAttr:4 then you can set its default value by specifying 
+            occAttr:4 then you can set its default value by specifying
             @occAttr:4|default=7 on the line after the [species]
             <br/>
             If you want to specify a custom template for a grid\'s species label
@@ -257,7 +302,7 @@ EOD
             control provides a quick way to output all occurrence custom
             attributes plus photo and sensitivity input controls and outputs all
             attributes irrespective of the form block or tab. For finer control
-            of the output, see the [occAttr:n], [photos] and [sensitivity] 
+            of the output, see the [occAttr:n], [photos] and [sensitivity]
             controls.
             <br/>
             "&nbsp;&nbsp;<strong>[date]</strong> - a sample must always have a
@@ -328,7 +373,7 @@ EOD
             @label=Abundance would set the untranslated label of a control to
             Abundance. Where the option value is an array, use valid JSON to
             encode the value. For example an array of strings could be passed
-            as @occAttrClasses=["class1","class2"] or a keyed array as 
+            as @occAttrClasses=["class1","class2"] or a keyed array as
             @extraParams={"preferred":"true","orderby":"term"}. Other common
             options include helpText (set to a piece of additional text to
             display alongside the control) and class (to add css classes to the
@@ -337,21 +382,21 @@ EOD
             <strong>[*]</strong> is used to make a placeholder for putting any
             custom attributes that should be inserted into the current tab. When
             this option is used, you can change any of the control options for
-            an individual custom attribute control by putting 
+            an individual custom attribute control by putting
             @control|option=value on the subsequent line(s). For example, if a
             control is for smpAttr:4 then you can update it's label by
             specifying @smpAttr:4|label=New Label on the line after the [*]. You
             can also set an option for all the controls output by the [*] block
-            by specifying @option=value as for non-custom controls, e.g. set 
+            by specifying @option=value as for non-custom controls, e.g. set
             @label=My label to define the same label for all controls in this
             custom attribute block. You can define the value for a control using
             the standard replacement tokens for user data, namely {user_id},
-            {username}, {email} and {profile_*}; replace * in the latter to 
+            {username}, {email} and {profile_*}; replace * in the latter to
             construct an existing profile field name. For example you could set
             the default value of an email input using @smpAttr:n|default={email}
             where n is the attribute ID.
             <br/>
-            <strong>[smpAttr:<i>n</i>]</strong> is used to insert a particular 
+            <strong>[smpAttr:<i>n</i>]</strong> is used to insert a particular
             custom sample attribute identified by its ID number
             <br/>
             <strong>[occAttr:<i>n</i>]</strong> is used to insert a particular
@@ -360,7 +405,7 @@ EOD
             output the whole lot.
             <br/>
             <strong>?help text?</strong> is used to define help text to add to
-            the tab, e.g. ?Enter the name of the site.? 
+            the tab, e.g. ?Enter the name of the site.?
             <br/>
             <strong>|</strong> is used insert a split so that controls before
             the split go into a left column and controls after the split go into
@@ -393,7 +438,7 @@ EOD
           'group' => 'Species',
           'siteSpecific' => true,
           'helpText' => <<<'EOD'
-            The species list that species can be selected from. This list is 
+            The species list that species can be selected from. This list is
             pre-populated into the grid when doing grid based data entry, or
             provides the list which a species can be picked from when doing
             single occurrence data entry.
@@ -408,7 +453,7 @@ EOD
           'siteSpecific' => false,
           'helpText' => <<<'EOD'
             Tick this box to select to use a cached version of the
-            lookup list when searching for extra species names to add to the 
+            lookup list when searching for extra species names to add to the
             grid, or set to false to use the live version (default). The latter
             is slower and places more load on the warehouse so should only be
             used during development or when there is a specific need to reflect
@@ -470,7 +515,7 @@ EOD
           'default' => false,
           'group' => 'Species',
           'description' => <<<'EOD'
-            Should an input box be present for a comment against each 
+            Should an input box be present for a comment against each
             occurrence?
 EOD
         ),
@@ -533,7 +578,7 @@ EOD
           'default' => 'all',
           'group' => 'Species',
           'description' => <<<'EOD'
-            Select the filter to apply to the species names which are available 
+            Select the filter to apply to the species names which are available
             to choose from.
 EOD
         ),
@@ -580,7 +625,7 @@ EOD
     );
     return $retVal;
   }
-  
+
     /**
    * Return the generated form output.
    * @return Form HTML.
@@ -590,24 +635,24 @@ EOD
     data_entry_helper::$website_id = $args['website_id'];
     self::$node = $node;
     self::$called_class = 'iform_' . $node->iform;
-    
+
   // Convert parameter, $args['defaults'], into structured array.
     self::parse_defaults($args);
     // Supply parameters that may be missing after form upgrade.
     $func = get_user_func(self::$called_class, 'getArgDefaults');
-    if ($func) 
+    if ($func)
       $args = call_user_func($func, $args);
-    
+
     // Check permissions to access form.
     $func = get_user_func(self::$called_class, 'enforcePermissions');
     if ($func) {
-      if(call_user_func($func) && 
-              !user_access('IForm n'.$node->nid.' admin') && 
+      if(call_user_func($func) &&
+              !user_access('IForm n'.$node->nid.' admin') &&
               !user_access('IForm n'.$node->nid.' user')) {
         return lang::get('LANG_no_permissions');
       }
     }
-    
+
     // Get authorisation tokens to update and read from the Warehouse. We allow
     // child classes to generate this first if subclassed.
     if (self::$auth)
@@ -617,28 +662,28 @@ EOD
               $args['website_id'], $args['password']);
       self::$auth = $auth;
     }
-    
+
     // Load custom attribute definitions from warehouse.
     self::loadSmpAttrs($auth['read'], $args['survey_id']);
     self::loadOccAttrs($auth['read'], $args['survey_id']);
-      
+
     // Build a structured array describing the form.
     // Attribute definitions on the warehouse may specify some tabs.
-    $attrTabs = get_attribute_tabs(self::$smpAttrs);  
+    $attrTabs = get_attribute_tabs(self::$smpAttrs);
     // They are combined with those in the Form Structure.
     $tabs = self::structureTabs($args['structure'], $attrTabs);
     // A second pass organises the content within the tabs
     $structure = self::structureTabsContent($tabs);
-    
+
     // Render the form
     $func = self::$called_class . '::renderForm';
-    $r = call_user_func($func, $structure, $args, $auth);      
+    $r = call_user_func($func, $structure, $args, $auth);
 
     return $r;
   }
-  
+
   /**
-   * Load the list of sample attributes into a static variable. 
+   * Load the list of sample attributes into a static variable.
    * By maintaining a single list of attributes we can track which have already
    * been output.
    * @param array $readAuth Read authorisation tokens.
@@ -646,7 +691,7 @@ EOD
    */
   protected static function loadSmpAttrs($readAuth, $surveyId) {
     if (!isset(self::$smpAttrs)) {
-      $attrArgs = array(   
+      $attrArgs = array(
         'valuetable' => 'sample_attribute_value',
         'attrtable' => 'sample_attribute',
         'fieldprefix' => 'smpAttr',
@@ -660,9 +705,9 @@ EOD
       self::$smpAttrs = data_entry_helper::getAttributes($attrArgs, false);
     }
   }
-  
+
   /**
-   * Load the list of occurrence attributes into a static variable. 
+   * Load the list of occurrence attributes into a static variable.
    * By maintaining a single list of attributes we can track which have already
    * been output.
    * @param array $readAuth Read authorisation tokens.
@@ -681,7 +726,7 @@ EOD
       self::$occAttrs = data_entry_helper::getAttributes($attrArgs, false);
     }
   }
-  
+
   /**
    * Assembles the different bits of the form html in to the final item
    * @global type $remembered
@@ -690,12 +735,12 @@ EOD
    * @param array $attributes Definition of custom attributes from warehouse.
    * @return string The form html.
    */
-  protected static function renderForm($structure, $args, $auth) { 
+  protected static function renderForm($structure, $args, $auth) {
     // Store the list of fields in the form whose values will be remembered from
-    // one use to the next. 
+    // one use to the next.
     global $remembered;
     $remembered = isset($args['remembered']) ? $args['remembered'] : '';
-    
+
     // Output the header html.
     $r = call_user_func(array(self::$called_class, 'renderHeader'), $args);
 
@@ -705,32 +750,193 @@ EOD
     $r .= $func ? call_user_func_array($func, $params) : '';
 
     // Output form structure html.
-    $func = get_user_func(self::$called_class, 'renderTabs');
+    switch($args['interface']){
+        case 'tabs':
+            $func = get_user_func(self::$called_class, 'renderTabs');
+            break;
+        case 'one_page':
+            $func = get_user_func(self::$called_class, 'renderPages');
+            break;
+        case 'wizard':
+        default:
+            echo 'ERROR: Interface style unknown.';
+    }
+
     $params = array($structure, $args, $auth);
     $r .= $func ? call_user_func_array($func, $params) : '';
-    
+
     // Ouput footer html.
     $func = get_user_func(self::$called_class, 'renderFooter');
     $r .= $func ? call_user_func($func, $args) : '';
-    
+
     $func = get_user_func(self::$called_class, 'link_species_popups');
     $r .= $func ? call_user_func($func, $args) : '';
-    
-    return $r;    
+
+    return $r;
+  }
+
+
+  /**
+   * Renders the configured indicia form into HTML JQM pages.
+   *
+   *
+   * @param array $form_inputs The configuration.
+   * @param array $args The form settings.
+   * @param array $auth Authorisation to access the warehouse.
+   */
+  public function renderPages($form_inputs, $args, $auth){
+    //generate pages into $pages_array
+    self::generatePages($form_inputs, $args, $auth);
+
+    //render pages into HTML
+    global $pages_array;
+    $r = '';
+    foreach($pages_array as $page){
+      $r .= self::renderOnePage($page);
+    }
+    return $r;
+  }
+
+  /**
+   * Generates JQM pages array which can be then passed to render or further
+   * modify.
+   *
+   * By calling 'get_control_ + CONTROLLER NAME' functions it creates initial
+   * JQM page with the form inputs (form input elements and if needed parallel
+   * JQM pages with specified inputs).
+   *
+   * @param array $form_inputs The configuration.
+   * @param array $args The form settings.
+   * @param array $auth Authorisation to access the warehouse.
+   */
+  protected static function generatePages($form_inputs, $args, $auth){
+
+    //generate form content
+    $content = array();
+    if(!empty($form_inputs)){
+      //build page content & initiate child pages
+      foreach($form_inputs as $name => $section){
+        foreach($section as $element){
+          //'get_control_ + CONTROLLER NAME' function call
+          $func = get_user_func(self::$called_class, $element['method']);
+          if($func) {
+              $options = $element['options'];
+              $content[] = call_user_func($func, $auth, $args, "", $options);
+          }
+        }
+      }
+    }
+
+    //create blank JQM page and attach new content
+    $page = self::getFixedBlankPage();
+    $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT][] = "<h1></h1>";
+    $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT] = $content;
+
+    //submit button
+    $options = array();
+    $options['id'] = "entry-form-submit";
+    $options['align'] = "right";
+    $options['caption'] = "Save";
+
+    $page[JQM_CONTENT][JQM_FOOTER][JQM_CONTENT][] =
+      mobile_entry_helper::apply_template('jqmControlSubmitButton', $options);
+
+    //add to pages array
+    self::push_pages_array($page);
+  }
+
+  /**
+   * Adds a JQM page into the global pages_array's beginning.
+   */
+  protected static function push_pages_array($page){
+    global $pages_array;
+    if(!empty($pages_array)){
+      array_unshift($pages_array, $page);
+    } else{
+      $pages_array[] = $page;
+    }
+  }
+
+    /**
+     * Renders JQM page's array into HTML code.
+     */
+    protected static function renderOnePage($page){
+        $attr = $content = "";
+
+        //build attributes
+        foreach($page[JQM_ATTR] as $attribute => $value){
+            $attr .= $attribute . '="' . $value .'"';
+        }
+
+        //build content
+        foreach($page[JQM_CONTENT] as $role => $element){
+            $element_content = implode('', $element[JQM_CONTENT]);
+            $element_attr = "";
+            foreach($element[JQM_ATTR] as $attribute => $value){
+                $element_attr .= $attribute . '="' . $value .'"';
+            }
+
+            //put content together
+            $options = array();
+            $options['role'] = $role;
+            $options[JQM_ATTR] = $element_attr;
+            $options[JQM_CONTENT] = $element_content;
+            $content .= mobile_entry_helper::apply_template('jqmPage', $options);
+        }
+
+        //put it all together
+        $options = array();
+        $options['role'] = 'page';
+        $options[JQM_ATTR] = $attr;
+        $options[JQM_CONTENT] = $content;
+        $r = mobile_entry_helper::apply_template('jqmPage', $options);
+
+        return $r;
+    }
+
+  /**
+   * Returns a blank JQM page with fixed Header and Footer and generic default
+   * back button.
+   * @return array
+   */
+  protected static function getFixedBlankPage(){
+    $options = array();
+    $options['href'] = '#';
+    $options['caption'] = 'Back';
+    $back_button = mobile_entry_helper::apply_template('jqmBackButton', $options);
+
+    return [
+      JQM_ATTR => array(),
+      JQM_CONTENT => [
+        JQM_HEADER => [
+          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_CONTENT => array($back_button)
+        ],
+        JQM_CONTENT => [
+          JQM_ATTR => array(),
+          JQM_CONTENT => array()
+        ],
+        JQM_FOOTER => [
+          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_CONTENT => array()
+        ]
+      ]
+    ];
   }
 
   /**
    * Overridable function to retrieve the HTML to appear above the dynamically
-   * constructed form, 
+   * constructed form,
    * which by default is an HTML form for data submission
    * @param array $args The form settings.
    */
   protected static function renderHeader($args) {
+    $r = "";
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
     return $r;
   }
-  
+
   /**
    * Get authorisation tokens to update the Warehouse, plus any other hidden
    * form inputs.
@@ -746,28 +952,28 @@ EOD
             . $args['website_id'] . '" />' . PHP_EOL;
     $r .= '<input type="hidden" id="survey_id" name="survey_id" value="'
             . $args['survey_id'] . '" />' . PHP_EOL;
-    
+
     // Sample method
     if (!empty($args['sample_method_id'])) {
       $r .= '<input type="hidden" name="sample:sample_method_id" value="'
               . $args['sample_method_id'] . '"/>' . PHP_EOL;
     }
-    
+
     // Check if Record Status is included as a control. If not, then add it as
     // a hidden.
     $arr = helper_base::explode_lines($args['structure']);
     if (!in_array('[record status]', $arr)) {
-      $value = isset($args['defaults']['occurrence:record_status']) ? 
+      $value = isset($args['defaults']['occurrence:record_status']) ?
               $args['defaults']['occurrence:record_status'] : 'C';
       $r .= '<input type="hidden" id="occurrence:record_status" '
               . 'name="occurrence:record_status" value="'
               . $value . '" />' . PHP_EOL;
     }
-    
+
     // User profile fields such as username, id etc.
     $exists = isset(data_entry_helper::$entity_to_load['sample:id']);
     $r .= get_user_profile_hidden_inputs(self::$smpAttrs, $args, $exists, $auth['read']);
-    
+
     return $r;
   }
 
@@ -807,7 +1013,7 @@ EOD
       $r .= '<div data-role="header" data-position="fixed">' . PHP_EOL;
       $r .= '<a href="#" data-rel="back" data-icon="arrow-l" ';
       $r .= 'data-iconpos="left">Back</a>' . PHP_EOL;
-      
+
       $r .= '<h2>' . $tab . '</h2>' . PHP_EOL;
 
       $r .= '
@@ -816,27 +1022,27 @@ EOD
                var accuracy = jQuery(\'#sref_accuracy\').val();
                makePopup(\'<center><h2>GPS</h2></center><h3><b>Your coordinates:</b> \' + coords + \'</h3><h3><b>Accuracy:</b> \' + accuracy + \'m</h3> \');
                jQuery(\'#app-popup\').popup().popup(\'open\');" style="display:none; width: 27px; height: 27px; padding:4px;">
-          <div style="width: 3px; height: 3px; background: transparent; box-shadow: 
+          <div style="width: 3px; height: 3px; background: transparent; box-shadow:
               12px   6px   #518b41,12px   12px  #518b41,  12px  15px  #518b41 ,
               12px   21px  #518b41,  12px  18px  #518b41,  12px   9px  #518b41 ,
-              15px   12px  #518b41 ,18px   12px  #518b41 ,24px   12px  #518b41,  
+              15px   12px  #518b41 ,18px   12px  #518b41 ,24px   12px  #518b41,
               9px  12px   #518b41,  6px  12px  #518b41,   0px   12px  #518b41 ,
-              12px   0px   #518b41,  12px   24px   #518b41,  3px   12px  #518b41,  
-              3px   9px   #518b41,  6px   6px   #518b41,  12px  3px   #518b41,  
-              9px   3px   #518b41,  15px  3px   #518b41 , 21px   12px   #518b41 , 
-              21px  9px   #518b41,  18px  6px   #518b41,  3px   15px  #518b41,  
-              6px   18px  #518b41,  9px   21px  #518b41,  15px  21px    #518b41,  
+              12px   0px   #518b41,  12px   24px   #518b41,  3px   12px  #518b41,
+              3px   9px   #518b41,  6px   6px   #518b41,  12px  3px   #518b41,
+              9px   3px   #518b41,  15px  3px   #518b41 , 21px   12px   #518b41 ,
+              21px  9px   #518b41,  18px  6px   #518b41,  3px   15px  #518b41,
+              6px   18px  #518b41,  9px   21px  #518b41,  15px  21px    #518b41,
               18px  18px  #518b41,  21px  15px  #518b41, 18px 3px #518b41,
               21px 6px #518b41, 6px 3px #518b41, 3px 6px #518b41, 18px 21px #518b41,
               21px 18px #518b41,6px 21px #518b41,3px 18px #518b41;">
          </div>
        </a>' . PHP_EOL;
       $r .= '</div>' . PHP_EOL;
-      $r .= '<div role="main" class="ui-content">' . PHP_EOL;	
-      $r .= $tabContent;   
+      $r .= '<div role="main" class="ui-content">' . PHP_EOL;
+      $r .= $tabContent;
       $r .= "</div>\n";
-     
-      // Add any buttons required in a jQM footer 
+
+      // Add any buttons required in a jQM footer
       if(count($tabHtml) == 1){
         $prev = '';
         $next = '';
@@ -857,14 +1063,14 @@ EOD
         'prev' => $prev,
         'next' => $next,
       ));
-      
+
       $pageIdx++;
       // End of jQM page.
-      $r .= "</div>\n";      
+      $r .= "</div>\n";
     }
    return $r;
-  }  
-  
+  }
+
   protected static function renderOneTabContent($auth, $args, $tab, $tabContent,
           $tabalias, &$hasControls) {
 
@@ -901,44 +1107,44 @@ EOD
           $r .= $component;
       }
     }
-    
+
     return $r;
   }
-  
+
   /**
    * Overridable function to retrieve the HTML to appear below the dynamically
    * constructed form, which by default is the closure of the HTML form for data
    * submission
-   * @param type $args 
+   * @param type $args
    */
   protected static function renderFooter($args) {
     $r = '';
     if(!empty(data_entry_helper::$validation_errors)){
       $r .= data_entry_helper::dump_remaining_errors();
-    }   
+    }
     return $r;
   }
-  
+
   /**
    * The top level of form structure are called tabs.
    * Finds the list of all tab names that are going to be required, either by
-   * the form structure, or by custom attributes. 
+   * the form structure, or by custom attributes.
    * @param type $strucText The form structure texy.
    * @param type $attrTabs Tabs required by custom attributes.
    * @return array Returns an array of tab arrays where each tab array
-   * contains the tab name, alias and an array of all the components in the form 
+   * contains the tab name, alias and an array of all the components in the form
    * structure to be placed in that tab.
    */
-  protected static function structureTabs($strucText, $attrTabs) {    
+  protected static function structureTabs($strucText, $attrTabs) {
     $strucArray = helper_base::explode_lines($strucText);
     // An array to contain the tabs defined in $structure.
     $strucTabs = array();
     // The name of the current tab
     $name = '-';
-    
+
     // A tab in the form structurre appears as =tabname=.
     $regexTab = '/^=[A-Za-z0-9, \'\-\*\?]+=$/';
-    
+
     // Loop through the lines of the form structure
     foreach ($strucArray as $component) {
       $component = trim($component);
@@ -955,7 +1161,7 @@ EOD
           $strucTabs[$name][] = $component;
       }
     }
-    
+
     // If any additional tabs are required by attributes, add them to the
     // position marked by a dummy tab named *.
     // First get rid of any tabs already in the structure
@@ -966,9 +1172,9 @@ EOD
         unset($attrTabs[$attrTabname]);
       }
     }
-    
-    // Now we have a list of form structure tabs, with the position of the 
-    // $attrTabs marked by *. So join it all together. 
+
+    // Now we have a list of form structure tabs, with the position of the
+    // $attrTabs marked by *. So join it all together.
     $allTabs = array();
     foreach($strucTabs as $strucTabname => $strucTabContent) {
       if ($strucTabname == '*') {
@@ -983,7 +1189,7 @@ EOD
 
   /**
    * Takes the output from structureTabs and structures the elements within
-   * each tab. 
+   * each tab.
    * @param array $tabs The array of tabs with unstructured content.
    * @return array Returns an array of tab names
    * with each element containing a structured array of all the components in
@@ -991,15 +1197,15 @@ EOD
    */
   protected static function structureTabsContent($tabs) {
     $structure = array();
-    foreach($tabs as $name => $content) {        
+    foreach($tabs as $name => $content) {
       $structure[$name] = self::structureOneTabContent($content);
     }
     return $structure;
-  } 
-  
+  }
+
   /**
    * Takes the output from structureTabs and structures the elements within
-   * one tab. 
+   * one tab.
    * @param array $tabContent The array of tabs with unstructured content.
    * @return array Returns an array of components
    * with each control component containing a structured array of all the
@@ -1010,14 +1216,14 @@ EOD
     $structure = array();
     // An index of our current position in the structure
     $i = -1;
-    
+
     // Help in the form structurre appears as ?help text?.
     $regexHelp = '/\A\?[^�]*\?\z/';
     // A control in the form structurre appears as [control].
     $regexCtrl = '/\A\[[^�]*\]\z/';
     // An attribute control in the form appears as [attr:id]
     $regexAttrCtrl = '/^\[(?P<attrType>[a-zA-Z]+):(?P<attrId>[0-9]+)\]/';
-    
+
     // Loop through the lines of the form structure for this tab
     foreach ($tabContent as $component) {
       if (preg_match($regexHelp, $component) === 1) {
@@ -1034,9 +1240,9 @@ EOD
             'type' => 'wildctrl',
             'options' => array(),
             'attropts' => array());
-        
+
         $i++;
-      } 
+      }
       elseif (preg_match($regexAttrCtrl, $component, $matches) === 1) {
         // Found a control component of type '[smpAttr:n] or [occAttr:n]'
         $value = substr($component, 1, -1);
@@ -1049,7 +1255,7 @@ EOD
             'method' => $method,
             'options' => array('attrId' => $matches['attrId']));
         $i++;
-      } 
+      }
       elseif (preg_match($regexCtrl, $component) === 1) {
         // Found a component of type '[control]'
         $value = substr($component, 1, -1);
@@ -1063,7 +1269,7 @@ EOD
             'options' => array(),
             'attropts' => array());
         $i++;
-      } 
+      }
       elseif(substr($component, 0, 1) == '@') {
         // Found a control option. Trim the '@' symbol.
         $component = substr($component, 1);
@@ -1094,15 +1300,15 @@ EOD
       }
     }
     return $structure;
-  } 
-  
+  }
+
   /**
    * Convert the unstructured textarea of default values into a structured array.
    */
     protected static function parse_defaults(&$args) {
     $result=array();
     if (isset($args['defaults']))
-      $result = helper_base::explode_lines_key_value_pairs($args['defaults']);     
+      $result = helper_base::explode_lines_key_value_pairs($args['defaults']);
     $args['defaults'] = $result;
   }
 
@@ -1112,7 +1318,7 @@ EOD
    */
   protected static function getSubmitButtons($args) {
     return '<input type="submit" class="indicia-button" id="save-button" value="'
-      .lang::get('Submit') . "\" />\n";    
+      .lang::get('Submit') . "\" />\n";
   }
 
   protected static function getReloadPath () {
@@ -1133,14 +1339,36 @@ EOD
     return $reloadPath;
   }
 
-  /** 
+  /**
    * Get the spatial reference control.
    * Defaults to sample:entered_sref. Supply $options['fieldname'] for
    * submission to other database fields.
    */
   protected static function get_control_spatialreference(
           $auth, $args, $tabalias, $options) {
-    return mobile_entry_helper::sref_now($options);
+    if($args['interface'] === 'tabs'){
+      return mobile_entry_helper::sref_now($options, true);
+    }
+
+    $id = 'sref';
+    $caption = 'GPS';
+
+    //generate a new page
+    $page = self::getFixedBlankPage();
+    $page[JQM_ATTR]['id'] = $id;
+    $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT][] = "<h1>" . $caption . "</h1>";
+    $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] =
+      mobile_entry_helper::sref_now($options, false);
+    self::push_pages_array($page);
+
+    $options = array();
+    $options['class'] = '';
+    $options['href'] = '#' . $id;
+    $options['caption'] = $caption;
+    $button = mobile_entry_helper::apply_template('jqmRightButton', $options);
+
+    return $button;
+
   }
 
   /**
@@ -1159,20 +1387,20 @@ EOD
     }
     return $attrOptions;
   }
-  
+
   /**
    * The species filter can be taken from the edit tab or overridden by a URL
    * filter. This method determines the filter to be used.
    * @param array $args Form arguments
    * @return array List of items to filter against, e.g. species names or
    * meaning IDs.
-   */  
+   */
   protected static function get_species_filter($args) {
     // we must have a filter field specified in order to apply a filter
     if (!empty($args['taxon_filter_field'])) {
       // if URL params are enabled and we have one, then this is the top
       // priority filter to apply
-      if (!empty($_GET['taxon']) && $args['use_url_taxon_parameter'])  
+      if (!empty($_GET['taxon']) && $args['use_url_taxon_parameter'])
         // convert commas to newline, so url provided filters are the same
         // format as those on the edit tab, also allowing for url encoding.
         return explode(',', urldecode($_GET['taxon']));
@@ -1183,7 +1411,7 @@ EOD
     // default - no filter to apply
     return array();
   }
-  
+
   /**
    * Get the species data for the page in single species mode
    */
@@ -1215,7 +1443,7 @@ EOD
     self::get_single_species_logging($auth, $args, $filterLines, $response);
     return $response;
   }
-    
+
   /**
    * Error logging code for the page in single species mode
    */
@@ -1240,23 +1468,23 @@ EOD
     // If our filter returns nothing at all, we log it, we return string
     // 'no matches' which the system then uses to clear the filter
     if (count($response) == 0) {
-      if (function_exists('watchdog')) 
+      if (function_exists('watchdog'))
         watchdog('missing sp.', 'No matches were found when using the '
           . 'filter \'' . $args['taxon_filter_field'] . '\'. '
-          . 'The filter was passed the following value(s)' . $filters); 
+          . 'The filter was passed the following value(s)' . $filters);
     }
   }
-    
+
   /**
    * Get the control for species input, either a grid or a single species input
    * control.
    */
   protected static function get_control_species(
-          $auth, $args, $tabAlias, $options) {
+    $auth, $args, $tabAlias, $options) {
     if (!isset($args['cache_lookup']) ||
-            ($args['species_ctrl'] !== 'autocomplete')) {
+      ($args['species_ctrl'] !== 'autocomplete')) {
       // Default for old form configurations or when not using an autocomplete
-      $args['cache_lookup']=false; 
+      $args['cache_lookup']=false;
     }
     // The filter can be a URL or on the edit tab, so do the processing to work
     // out the filter to use.
@@ -1284,12 +1512,12 @@ EOD
     $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ?
             $args['list_id'] : $args['extra_list_id'];
 
-    // Add a txon group selector if that option was chosen
+    // Add a taxon group selector if that option was chosen
     if (isset($options['taxonGroupSelect']) && $options['taxonGroupSelect']) {
       $label = isset($options['taxonGroupSelectLabel']) ?
               $options['taxonGroupSelectLabel'] : 'Species Group';
       $helpText = isset($options['taxonGroupSelectHelpText']) ?
-              $options['taxonGroupSelectHelpText'] : 
+              $options['taxonGroupSelectHelpText'] :
               'Choose which species group you want to pick a species from.';
       $default='';
       if (!empty(data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id'])) {
@@ -1299,7 +1527,7 @@ EOD
           'table' => 'cache_taxa_taxon_list',
           'extraParams' => $auth['read'] +  array('id' => $ttlid)
         ));
-        data_entry_helper::$entity_to_load['taxon_group_id'] = 
+        data_entry_helper::$entity_to_load['taxon_group_id'] =
                 $species[0]['taxon_group_id'];
       }
       $r .= data_entry_helper::select(array(
@@ -1321,7 +1549,7 @@ EOD
       $options['parentControlLabel'] = lang::get($label);
       $options['filterField'] = 'taxon_group_id';
     }
-    
+
     // Set up options for control
     $options['speciesNameFilterMode'] = self::getSpeciesNameFilterMode($args);
     $ctrl = $args['species_ctrl'] === 'autocomplete' ?
@@ -1336,7 +1564,7 @@ EOD
         'cacheLookup'=>$args['cache_lookup']
     ), $options);
     if (isset($species_ctrl_opts['extraParams'])) {
-      $species_ctrl_opts['extraParams'] = 
+      $species_ctrl_opts['extraParams'] =
             array_merge($extraParams, $species_ctrl_opts['extraParams']);
     }
     else {
@@ -1345,21 +1573,21 @@ EOD
     $species_ctrl_opts['extraParams'] = array_merge(array(
         'view' => 'detail', //required for hierarchical select to get parent id
         'orderby' => 'taxonomic_sort_order',
-        'sortdir' => 'ASC' 
+        'sortdir' => 'ASC'
     ), $species_ctrl_opts['extraParams']);
-    
+
     if (!empty($args['taxon_filter'])) {
       // applies to autocompletes
       $species_ctrl_opts['taxonFilterField'] = $args['taxon_filter_field'];
-      $species_ctrl_opts['taxonFilter'] = 
+      $species_ctrl_opts['taxonFilter'] =
               helper_base::explode_lines($args['taxon_filter']);
     }
 
-    // obtain table to query and hence fields to use     
+    // obtain table to query and hence fields to use
     $db = data_entry_helper::get_species_lookup_db_definition($args['cache_lookup']);
     // get local vars for the array
     extract($db);
-    
+
     if ($ctrl!=='species_autocomplete') {
       // The species autocomplete has built in support for the species name
       // filter. For other controls we need to apply the species name filter to
@@ -1367,7 +1595,7 @@ EOD
       if (!empty($species_ctrl_opts['taxonFilter']) ||
               $options['speciesNameFilterMode']) {
         $species_ctrl_opts['extraParams'] = array_merge(
-            $species_ctrl_opts['extraParams'], 
+            $species_ctrl_opts['extraParams'],
             data_entry_helper::get_species_names_filter($species_ctrl_opts));
       }
       // for controls which don't know how to do the lookup, we need to tell them
@@ -1378,7 +1606,7 @@ EOD
       ), $species_ctrl_opts);
     }
     // if using something other than an autocomplete, then set the caption
-    // template to include the appropriate names. Autocompletes use a JS 
+    // template to include the appropriate names. Autocompletes use a JS
     // function instead.
     global $indicia_templates;
     if ($ctrl!=='autocomplete' &&
@@ -1400,7 +1628,7 @@ EOD
            . '/upload/thumb-{image_path}" alt="Image of {caption}" width="80" />'
            . '</div><span>{caption}</span>';
     }
-    
+
     // Dynamically generate the species selection control required.
     $r .= call_user_func(array('mobile_entry_helper', $ctrl), $species_ctrl_opts);
     return $r;
@@ -1424,16 +1652,40 @@ EOD
     return false;
   }
 
-  
+
   /**
    * Get the sample comment control
    */
   protected static function get_control_samplecomment(
           $auth, $args, $tabAlias, $options) {
-    return data_entry_helper::textarea(array_merge(array(
-      'fieldname' => 'sample:comment',
-      'label'=>lang::get('Overall Comment')
-    ), $options));
+    if($args['interface'] === 'tabs'){
+      return data_entry_helper::textarea(array_merge(array(
+        'fieldname' => 'sample:comment',
+        'label'=>lang::get('Overall Comment')
+      ), $options));
+    }
+
+    $id = 'comment';
+    $caption = 'Comment';
+
+    //generate a new page
+    $page = self::getFixedBlankPage();
+    $page[JQM_ATTR]['id'] = $id;
+    $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT][] = "<h1>" . $caption . "</h1>";
+    $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] =
+      data_entry_helper::textarea(array_merge(array(
+        'fieldname' => 'sample:comment'
+      ), $options));
+
+    self::push_pages_array($page);
+
+    $options = array();
+    $options['class'] = '';
+    $options['href'] = '#' . $id;
+    $options['caption'] = $caption;
+
+    $button = mobile_entry_helper::apply_template('jqmRightButton', $options);
+    return $button;
   }
 
   /**
@@ -1465,7 +1717,7 @@ EOD
         'additionalControls' => $sensitivity_controls
       ));
     }
-    $r .= 
+    $r .=
       get_attribute_html(self::$occAttrs, $args, $ctrlOptions, '', $attrSpecificOptions);
     if ($args['occurrence_comment'])
       $r .= data_entry_helper::textarea(array(
@@ -1479,15 +1731,39 @@ EOD
   }
 
   /**
-   * Get the date control.
-   */
+ * Get the date control.
+ */
   protected static function get_control_date(
-          $auth, $args, $tabAlias, $options) {
-    return mobile_entry_helper::date_now(array_merge(array(
-      'fieldname' => 'sample:date',
-      'default' => isset($args['defaults']['sample:date']) ?
-        $args['defaults']['sample:date'] : ''
-    ), $options));
+    $auth, $args, $tabAlias, $options) {
+
+    //Tabs
+    if($args['interface'] === 'tabs'){
+      return mobile_entry_helper::date_now(array_merge(array(
+        'fieldname' => 'sample:date',
+        'default' => isset($args['defaults']['sample:date']) ?
+            $args['defaults']['sample:date'] : ''
+      ), $options), true);
+    }
+
+    //One Page
+    $id = 'date';
+    $caption = 'Date';
+
+    //generate a new page
+    $page = self::getFixedBlankPage();
+    $page[JQM_ATTR]['id'] = $id;
+    $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT][] = "<h1>" . $caption . "</h1>";
+    $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] =
+      mobile_entry_helper::date_now($options, false);
+    self::push_pages_array($page);
+
+    $options = array();
+    $options['class'] = '';
+    $options['href'] = '#' . $id;
+    $options['caption'] = $caption;
+
+    $button = mobile_entry_helper::apply_template('jqmRightButton', $options);
+    return $button;
   }
 
   /**
@@ -1501,7 +1777,7 @@ EOD
       'class' => 'control-width-5'
     ), $options));
   }
-  
+
   /**
    * Get an occurrence attribute control.
    */
@@ -1516,7 +1792,7 @@ EOD
     }
     return "Sample attribute $attribName not found.";
   }
-  
+
   /**
    * Get an occurrence attribute control.
    */
@@ -1531,7 +1807,7 @@ EOD
     }
     return "Occurrence attribute $attribName not found.";
   }
-  
+
   /**
    * Get the photos control
    */
@@ -1551,7 +1827,7 @@ EOD
     ), $options));
   }
 
-  
+
   /**
    * Get the sensitivity control
    */
@@ -1559,17 +1835,17 @@ EOD
           $auth, $args, $tabAlias, $options) {
     $ctrlOptions = array('extraParams'=>$auth['read']);
     $attrSpecificOptions = array();
-    
+
     self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
 
     $sensitivity_controls = get_attribute_html(
       self::$occAttrs, $args, $ctrlOptions, 'sensitivity', $attrSpecificOptions);
-    
+
     return data_entry_helper::sensitivity_input(array(
       'additionalControls' => $sensitivity_controls
     ));
   }
-  
+
   /**
    * Handles the construction of a submission array from a set of form values.
    * @param array $values Associative array of form data values.
@@ -1585,13 +1861,13 @@ EOD
     // Can't call getGridMode in this context as we might not have the $_GET
     // value to indicate grid
     if (isset($values['speciesgridmapmode']))
-      $submission = 
+      $submission =
         data_entry_helper::build_sample_subsamples_occurrences_submission($values);
     else if (isset($values['gridmode']))
-      $submission = 
+      $submission =
         data_entry_helper::build_sample_occurrences_list_submission($values);
     else
-      $submission = 
+      $submission =
         data_entry_helper::build_sample_occurrence_submission($values);
     return($submission);
   }
@@ -1615,7 +1891,7 @@ EOD
   protected static function getArgDefaults($args) {
     return $args;
   }
-  
+
   /**
    * Provides a control for inputting photos against the record, when in single
    * record mode.
@@ -1633,8 +1909,8 @@ EOD
     $opts = array_merge($defaults, $options);
     return data_entry_helper::image_upload($opts);
   }
-  
-  /** 
+
+  /**
    * Parses the options provided to a control in the user interface definition
    * and splits the options which apply to the entire control (@label=Grid Ref)
    * from ones which apply to a specific custom attribute
@@ -1651,13 +1927,13 @@ EOD
           $attrSpecificOptions[$optionId[0]]=array();
         }
         $attrSpecificOptions[$optionId[0]][$optionId[1]] = $value;
-      } 
+      }
       else {
         $ctrlOptions[$option] = $value;
       }
     }
   }
-  
+
   /**
    * A hook function to setup remembered fields whose values are stored in a cookie.
    */
