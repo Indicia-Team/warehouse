@@ -217,6 +217,13 @@ class iform_sectioned_transects_edit_transect {
             ),
             'default'=>'parent',
             'group'=>'Transects Editor Settings'
+          ), array(
+            'name'=>'always_show_section_details',
+            'caption'=>'Always show the Section Details tab',
+            'description'=>'If ticked, then the section details tab is shown allowing the section map reference to be set, even when there are no attributes.',
+            'type'=>'checkbox',
+            'group'=>'Transects Editor Settings',
+            'required'=>false
           )
         )
     );
@@ -233,6 +240,7 @@ class iform_sectioned_transects_edit_transect {
     if (!isset($args['allow_user_assignment'])) $args['allow_user_assignment'] = true;
     if (!isset($args['managerPermission'])) $args['managerPermission'] = '';
     if (!isset($args['branch_assignment_permission'])) $args['branch_assignment_permission'] = '';
+    if (!isset($args['always_show_section_details'])) $args['always_show_section_details'] = false;
     
     return $args;
   }
@@ -411,7 +419,7 @@ class iform_sectioned_transects_edit_transect {
     $headerOptions = array('tabs'=>array('#site-details'=>lang::get('Site Details')));
     if ($settings['locationId']) {
       $headerOptions['tabs']['#your-route'] = lang::get('Your Route');
-      if(count($settings['section_attributes']) > 0)
+      if ($args['always_show_section_details'] || count($settings['section_attributes']) > 0)
         $headerOptions['tabs']['#section-details'] = lang::get('Section Details');
     }
     if (count($headerOptions['tabs'])) {
@@ -425,7 +433,7 @@ class iform_sectioned_transects_edit_transect {
     $r .= self::get_site_tab($auth, $args, $settings);
     if ($settings['locationId']) {
       $r .= self::get_your_route_tab($auth, $args, $settings);
-      if(count($settings['section_attributes']) > 0)
+      if ($args['always_show_section_details'] || count($settings['section_attributes']) > 0)
         $r .= self::get_section_details_tab($auth, $args, $settings);
     }
     $r .= '</div>'; // controls    
