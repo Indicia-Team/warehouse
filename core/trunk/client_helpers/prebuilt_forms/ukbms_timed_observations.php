@@ -446,7 +446,7 @@ class iform_ukbms_timed_observations {
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" />';
-    $r .= '<a href="'.$args['my_obs_page'].'" class="button">'.lang::get('Cancel').'</a>';
+    $r .= '<a href="'.$args['my_obs_page'].'" class="button ui-state-default ui-corner-all">'.lang::get('Cancel').'</a>';
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       $r .= '<button id="delete-button" type="button" class="ui-state-default ui-corner-all" />'.lang::get('Delete').'</button>';
     $r .= "</div>"; // left
