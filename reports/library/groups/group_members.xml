@@ -22,6 +22,8 @@
     <column name="groups_user_id" display="Groups user ID" visible="false" sql="gu.id" datatype="integer" /> 
     <column name="name" display="Name" sql="p.surname || ', ' || p.first_name" datatype="text" />
     <column name="role" display="Role" sql="case when gu.administrator=true then 'Administrator' when gu.id is not null and gu.pending=false then 'Member' when gu.id is not null and gu.pending=true then 'Awaiting approval' else 'Non-member' end" datatype="text" />
-   <column name="pending" visible="false" sql="gu.pending" datatype="boolean" /> 
+    <column name="pending" visible="false" sql="gu.pending" datatype="boolean" /> 
+    <column name="member" visible="false" sql="NOT gu.administrator" datatype="boolean" /> 
+    <column name="administrator" visible="false" sql="gu.administrator" datatype="boolean" /> 
   </columns>
 </report>
