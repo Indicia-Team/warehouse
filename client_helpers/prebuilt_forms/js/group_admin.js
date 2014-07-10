@@ -1,5 +1,6 @@
 var approveMember;
 var removeMember;
+var toggleRole;
 
 (function ($) {
   "use strict";
@@ -45,5 +46,31 @@ var removeMember;
         'json'
       );
     }
+  };
+  
+  toggleRole=function(id, name, makeRole) {
+    var setAdministrator;
+    if (makeRole==='administrator') {
+      setAdministrator = true;
+    } else {
+      setAdministrator = false;
+    }
+    var data = {
+      'website_id': indiciaData.website_id,
+      'groups_user:id': id,
+      'groups_user:administrator': setAdministrator
+    };
+    $.post(
+      indiciaData.ajaxFormPostUrl,
+      data,
+      function (data) {
+        if (typeof data.error === "undefined") {
+          indiciaData.reports.report_output.grid_report_output.reload();
+        } else {
+          alert(data.error);
+        }
+      },
+      'json'
+    );    
   };
 })(jQuery);

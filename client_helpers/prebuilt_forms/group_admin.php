@@ -57,6 +57,31 @@ class iform_group_admin {
         'group' => 'Other IForm Parameters',
         'required'=>false
       ),
+      array(
+        'name'=>'allow_role_toggle',
+        'caption'=>'Allow users role to be altered',
+        'description'=>'Show an icon next to each user to allow their role to be toggled between administrator and member?',
+        'type'=>'boolean',
+        'default' => false,
+        'group' => 'Other IForm Parameters',
+        'required'=>false
+      ),
+      array(
+        'name'=>'member_role_name',
+        'caption'=>'Member role name',
+        'description'=>'On screen name to give to the member role (e.g. student).',
+        'type'=>'string',
+        'group' => 'Other IForm Parameters',
+        'required'=>false
+      ),
+      array(
+        'name'=>'admin_role_name',
+        'caption'=>'Administrator role name',
+        'description'=>'On screen name to give to the administrator role (e.g. mentor).',
+        'type'=>'string',
+        'group' => 'Other IForm Parameters',
+        'required'=>false
+      ),
     );
   }
   
@@ -82,6 +107,14 @@ class iform_group_admin {
     report_helper::$javascript .= "indiciaData.website_id=$args[website_id];\n";
     report_helper::$javascript .= "indiciaData.group_id=$group[id];\n";
     report_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url(null, 'groups_user')."\";\n";
+    if (!empty($args['admin_role_name']))
+      $adminRoleOnScreenName=$args['admin_role_name'];
+    else 
+      $adminRoleOnScreenName='administrator';
+    if (!empty($args['member_role_name']))
+      $memberRoleOnScreenName=$args['member_role_name'];
+    else 
+      $memberRoleOnScreenName='member';
     //Setup actions column
     $actions = 
     array(
@@ -91,10 +124,27 @@ class iform_group_admin {
         'visibility_field'=>'pending'
       ),            
     );
+    if ($adminRoleOnScreenName==='administrator')
+      $caption='Set user to be an '.$adminRoleOnScreenName;
+    else
+      $caption='Set user to be a '.$adminRoleOnScreenName;
+    //Only allow toggle of user's role if page is configured to allow this.
+    if (isset($args['allow_role_toggle']) && $args['allow_role_toggle']==true) {
+      $actions[] = array(
+        'caption'=>$caption,
+        'javascript'=>'toggleRole({groups_user_id},\'{name}\',\'administrator\');',
+        'visibility_field'=>'member'
+      );
+      $actions[] = array(
+        'caption'=>'Set user to be a '.$memberRoleOnScreenName,
+        'javascript'=>'toggleRole({groups_user_id},\'{name}\',\'member\');',
+        'visibility_field'=>'administrator'
+      );
+    }
     //Only allow removal of users if page is configured to allow this.
     if (isset($args['allow_remove']) && $args['allow_remove']==true)
       $actions[] = array(
-        'caption'=>'Remove member',
+        'caption'=>'Remove from group',
         'javascript'=>'removeMember({groups_user_id},\'{name}\');',
       );
     $r = report_helper::report_grid(array(
