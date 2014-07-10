@@ -1,4 +1,5 @@
 var approveMember;
+var removeMember;
 
 (function ($) {
   "use strict";
@@ -23,4 +24,26 @@ var approveMember;
     );
   };
 
+  removeMember=function(id, name) {
+    if (confirm('Do you really want to remove "' + name + '" from the group?')) { 
+      var data = {
+        'website_id': indiciaData.website_id,
+        'groups_user:id': id,
+        'groups_user:deleted': 't'
+      };
+      $.post(
+        indiciaData.ajaxFormPostUrl,
+        data,
+        function (data) {
+          if (typeof data.error === "undefined") {
+            alert('Member removed');
+            indiciaData.reports.report_output.grid_report_output.reload();
+          } else {
+            alert(data.error);
+          }
+        },
+        'json'
+      );
+    }
+  };
 })(jQuery);

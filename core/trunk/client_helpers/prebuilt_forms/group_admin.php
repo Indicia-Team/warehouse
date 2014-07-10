@@ -48,6 +48,15 @@ class iform_group_admin {
    */
   public static function get_parameters() {   
     return array(
+      array(
+        'name'=>'allow_remove',
+        'caption'=>'Allow users to be removed from the group',
+        'description'=>'Show an icon next to each user to allow them to be removed from the group?',
+        'type'=>'boolean',
+        'default' => false,
+        'group' => 'Other IForm Parameters',
+        'required'=>false
+      ),
     );
   }
   
@@ -73,6 +82,21 @@ class iform_group_admin {
     report_helper::$javascript .= "indiciaData.website_id=$args[website_id];\n";
     report_helper::$javascript .= "indiciaData.group_id=$group[id];\n";
     report_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url(null, 'groups_user')."\";\n";
+    //Setup actions column
+    $actions = 
+    array(
+      array(
+        'caption'=>'Approve member',
+        'javascript'=>'approveMember({groups_user_id});',
+        'visibility_field'=>'pending'
+      ),            
+    );
+    //Only allow removal of users if page is configured to allow this.
+    if (isset($args['allow_remove']) && $args['allow_remove']==true)
+      $actions[] = array(
+        'caption'=>'Remove member',
+        'javascript'=>'removeMember({groups_user_id},\'{name}\');',
+      );
     $r = report_helper::report_grid(array(
       'dataSource'=>'library/groups/group_members',
       'readAuth'=>$auth['read'],
@@ -80,13 +104,7 @@ class iform_group_admin {
       'columns'=>array(
         array(
           'display'=>lang::get('Actions'),
-          'actions'=>array(
-            array(
-              'caption'=>'Approve member',
-              'javascript'=>'approveMember({groups_user_id});',
-              'visibility_field'=>'pending'
-            )
-          )
+          'actions'=>$actions
         )
       )
     ));
