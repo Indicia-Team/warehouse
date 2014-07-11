@@ -1437,9 +1437,10 @@ class ORM extends ORM_Core {
         // Boolean
         $vf = 'int_value';
         if (!empty($value)) {
-          if ($value == 'FALSE' || $value == 'F' || $value == 'false' || $value == 'f' || $value == 'NO' || $value == 'no' || $value == 'n' || $value == 'off') {
+          $lower = strtolower($value);
+          if ($lower == 'false' || $lower == 'f' || $lower == 'no' || $lower == 'n' || $lower == 'off') {
             $value = 0;
-          } elseif ($value == 'TRUE' || $value == 'T' || $value == 'true' || $value == 't' || $value == 'YES' || $value == 'yes' || $value == 'y' || $value == 'on') {
+          } elseif ($lower == 'true' || $lower == 't' || $lower == 'yes' || $lower == 'y' || $lower == 'on') {
             $value = 1;
           }
         }
