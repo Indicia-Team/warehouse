@@ -1,0 +1,43 @@
+<report
+    title="Point samples list"
+    description="A list of the point samples (effort and sightings points) for a survey"
+>
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples s
+  JOIN samples tr on tr.id=s.parent_id -- transects
+  JOIN surveys su ON su.id=s.survey_id AND s.deleted=false
+  JOIN cache_termlists_terms ctt on ctt.id=s.sample_method_id
+  #joins#
+  WHERE s.deleted=false AND tr.parent_id = #parent_sample_id#
+  AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>s.id</order_by>
+  </order_bys>
+  <params>
+    <param name="parent_sample_id" display="Survey sample ID" description="Sample ID for the survey" dataype="integer" />
+    <param name="transect_sample_id" display="Transect sample ID" description="Optional sample ID for transect to show" dataype="integer" default="">
+      <where>tr.id=#transect_sample_id#</where>
+    </param>
+    <param name="effort_or_sightings" display="Effort or sightings data" datatype="lookup" lookupValues="ES:Effort and sightings,E:Effort only,S:Sightings only">
+      <wheres>
+        <where operator="equal" value="E">ctt.term='Effort'</where>
+        <where operator="equal" value="S">ctt.term='Sighting'</where>
+      </wheres>
+    </param>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default='' />
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' default='' />
+  </params>
+  <columns>
+    <column name="sample_id" display="ID" sql="s.id" visible="false" datatype="integer" />
+    <column name="transect_id" display="Transect ID" sql="s.parent_id" visible="false" datatype="integer" />
+    <column name='date_start' sql='s.date_start' visible='false' />
+    <column name='date_end' sql='s.date_end' visible='false' />
+    <column name='date_type' sql='s.date_type' visible='false' />
+    <column name='date' display='Date' datatype="date" />
+    <column name='position' display='Position' sql='s.entered_sref' datatype='text' />
+    <column name='type' display='Type' sql='ctt.term' datatype='text' />
+    <column name="geom" display="Geom" visible="false" sql="st_astext(s.geom)" mappable="true" />
+  </columns>
+</report>
