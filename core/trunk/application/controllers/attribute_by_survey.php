@@ -73,7 +73,8 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     $this->template->content->controlfilter = $controlfilter;
     // provide a list of publicly available attributes so existing ones can be added
     $attrs = ORM::factory($this->type.'_attribute')->
-        where(array('public'=>'t','deleted'=>'f'))->find_all();
+        where(array('public'=>'t','deleted'=>'f'))->
+        orderby('caption')->find_all();
     $this->template->content->existingAttrs=$attrs;
   }
   
