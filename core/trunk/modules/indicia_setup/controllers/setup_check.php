@@ -65,20 +65,9 @@ class Setup_Check_Controller extends Template_Controller {
   }
 
   /**
-   * Load the configuration of the demo pages view.
+   * Save the helper_config configuration settings so that the local client_helpers can work.
    */
-  public function config_demo()
-  {
-    $this->template->title = Kohana::lang('setup.demo_configuration');
-    $this->template->content = new View('fixers/config_demo');
-    $this->template->content->error = $this->error;
-    $this->error=null;
-  }
-
-  /**
-   * Save the demo configuration settings.
-   */
-  public function config_demo_save() {
+  public function save_helper_config() {
     $source = dirname(dirname(__file__ )) . '/config_files/_helper_config.php';
     $dest = dirname(dirname(dirname(dirname(__file__)))) . "/client_helpers/helper_config.php";
     try {
@@ -88,10 +77,6 @@ class Setup_Check_Controller extends Template_Controller {
     }
     try {
       $_source_content = file_get_contents($source);
-      // Now save the POST form values into the config file
-      foreach ($_POST as $field => $value) {
-        $_source_content = str_replace("*$field*", $value, $_source_content);
-      }
       $base_url=kohana::config('config.site_domain');
       if (substr($base_url, 0, 4)!='http')
         $base_url = "http://$base_url";
@@ -99,10 +84,6 @@ class Setup_Check_Controller extends Template_Controller {
         $base_url = $base_url.'/';
       $_source_content = str_replace("*base_url*", $base_url, $_source_content);
       file_put_contents($dest, $_source_content);
-      // To get the demo working, we also need to copy over the data_entry_config.php file.
-      $source = dirname(dirname(__file__ )) . '/config_files/_data_entry_config.php';
-      $dest = dirname(dirname(dirname(__file__))) . "/demo/data_entry_config.php";
-      copy($source, $dest);
       url::redirect('setup_check');
     } catch (Exception $e) {
       kohana::log('error', $e->getMessage());
@@ -411,6 +392,9 @@ class Setup_Check_Controller extends Template_Controller {
             Kohana::log("error", "Could not write indicia config file. Please check file write permission rights.");
             return false;
         }
+        
+        // now seems a good time to create the helper config file
+        $this->save_helper_config();
 
         // If write termlist config fails, don't worry as the config test will help the user fix it.
         // TODO: $this->write_termlist_config();
