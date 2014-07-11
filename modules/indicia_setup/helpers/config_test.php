@@ -45,7 +45,6 @@ class config_test {
       self::check_dBase($result, $problems_only);
       self::check_zip($result, $problems_only);
       self::check_dir_permissions($result, $problems_only);
-      self::check_helper($result, $problems_only);
       self::check_email($result, $problems_only);
       // Check db must be the last one
       self::check_db($result, $problems_only);
@@ -346,11 +345,7 @@ class config_test {
       self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'data upload',
           dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers/upload',
           'data to be uploaded',
-          'data cannot be uploaded');          
-      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'demo',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/demo',
-          'the settings for the demo configuration to be stored',
-          'the settings for the demo configuration classes cannot be stored');
+          'data cannot be uploaded');
       self::check_dir_permission($readonly, $good_dirs, $bad_dirs, 'reports',
           dirname(dirname(dirname(dirname(__file__ )))) . '/reports',
           'the report templates to be accessed',
@@ -408,31 +403,6 @@ class config_test {
           "The $folder_name directory at $dir isn't writeable by PHP scripts. This means that $fail.");
     else
       array_push($good_dirs, "The $folder_name directory is $access_str to allow $pass.");
-  }
-
-  /**
-   * Ensure that the client_helpers/helper_config file has been setup.
-   *
-   * @param array $messages List of messages that any information should be appended to.
-   * @param boolean $problems_only Set to true to report only the problems, not the successful
-   * checks. False reports both failures and successes.
-   */
-  private static function check_helper(&$messages, $problems_only) {
-    if (!file_exists(dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers/helper_config.php')) {
-      array_push($messages, array(
-        'title' => 'Demo configuration',
-        'description' => '<p>Configuration options need to be set to allow the demonstration pages provided with this ' .
-            'Warehouse installation to work.</p>',
-        'success' => false,
-        'action' => array('title'=>'Configure Demo Pages', 'link'=>'config_demo')
-      ));
-    } elseif (!$problems_only) {
-      array_push($messages, array(
-        'title' => 'Demo configuration',
-        'description' => '<p>The demonstration pages have been configured.</p>',
-        'success' => true
-      ));
-    }
   }
 
  }
