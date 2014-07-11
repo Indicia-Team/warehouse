@@ -77,7 +77,8 @@ $lang = array (
     'default' => 'This must be a valid number.',
     'maximum' => 'The value specified for this number is too high',
     'minimum' => 'The value specified for this number is too low',
-    'required' => 'The value is required.',
+    'required'=> 'The value is required.',
+    'regex'   => 'Invalid format.'
   ),
   'geom' => array (
     'required' => 'The spatial reference must be supplied.',
