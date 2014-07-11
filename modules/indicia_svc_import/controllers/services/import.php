@@ -245,7 +245,13 @@ class Import_Controller extends Service_Base_Controller {
         $model->set_submission_data($saveArray, true);
         if (($id = $model->submit()) == null) {
           // Record has errors - now embedded in model, so dump them into the error file
-          $errors = implode("\n", array_unique($model->getAllErrors()));
+          $errors = array();
+          foreach($model->getAllErrors() as $field=>$msg) {
+            $fldTitle = array_search($field, $metadata['mappings']);
+            $fldTitle = $fldTitle ? $fldTitle : $field;
+            $errors[] = "$fldTitle: $msg";
+          }
+          $errors = implode("\n", array_unique($errors));
           $data[] = $errors;
           $data[] = $count + $offset + 1; // 1 for header
           fputcsv($errorHandle, $data);
