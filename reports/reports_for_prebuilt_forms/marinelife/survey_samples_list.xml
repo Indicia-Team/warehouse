@@ -1,0 +1,39 @@
+<report
+    title="Survey samples list"
+    description="A list of the parent samples (= a ferry crossing)"
+>
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples s
+  JOIN locations l ON l.id=s.location_id AND l.deleted=false
+  JOIN surveys su ON su.id=s.survey_id AND s.deleted=false
+  LEFT JOIN samples tr ON tr.parent_id=s.id AND tr.deleted=false
+  LEFT JOIN samples pt ON pt.parent_id=tr.id AND pt.deleted=false
+  LEFT JOIN occurrences o ON o.sample_id=pt.id AND o.deleted=false
+  #joins#
+  WHERE s.deleted=false AND s.parent_id is null
+  AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>s.date_start, l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="user_id" display="User id" description="Person who entered the data" dataype="integer" />
+    <param name="survey_list" display="Survey IDs" description="Comma separated list of survey IDs" datatype="integer[]">
+      <where>s.survey_id in (#survey_list#)</where>
+    </param>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default='' />
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' default='' />
+  </params>
+  <columns>
+    <column name="sample_id" display="ID" sql="s.id" visible="false" datatype="integer" />
+    <column name="location_id" display="Location ID" sql="l.id" visible="false" datatype="integer" />
+    <column name="location_name" display="Survey title" sql="l.name" datatype="text" />
+    <column name='date_start' sql='s.date_start' visible='false' />
+    <column name='date_end' sql='s.date_end' visible='false' />
+    <column name='date_type' sql='s.date_type' visible='false' />
+    <column name='date' display='Date' datatype="date" />
+    <column name="geom" display="Geom" visible="false" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" mappable="true" />
+    <column name='sightings' display='Sightings' sql="count(o.id)" datatype="integer" aggregate="true" />
+  </columns>
+</report>

@@ -1,0 +1,28 @@
+<report
+    title="Locations list"
+    description="A general purpose list of locations."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+  LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+  JOIN cache_termlists_terms ctt ON ctt.id=l.location_type_id AND ctt.term='Cetacean survey route'
+  LEFT JOIN samples s on s.location_id=l.id
+  #joins#
+  WHERE l.deleted=false
+  AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="locattrs" display="Location attribute list" description="Comma separated list of location attribute IDs to include" datatype="locattrs" />
+  </params>
+  <columns>
+    <column name="location_id" display="ID" sql="l.id" datatype="integer" />
+    <column name="name" display="Name" sql="l.name" datatype="text" />
+    <column name="last_surveyed_date" display="Last surveyed on" sql="max(s.date_start)" aggregate="true" datatype="date" />
+    <column name="can_delete" visible="false" sql="max(s.date_start) is null" aggregate="true" />
+    <column name="geom" display="Geom" visible="false" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" mappable="true" />
+  </columns>
+</report>

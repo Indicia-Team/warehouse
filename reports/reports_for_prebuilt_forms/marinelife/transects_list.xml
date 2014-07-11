@@ -1,0 +1,28 @@
+<report
+    title="Transects list"
+    description="A list of the transects for a survey"
+>
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples tr -- transects
+  JOIN surveys su ON su.id=tr.survey_id AND tr.deleted=false
+  JOIN sample_attribute_values ref on ref.sample_id=tr.id and ref.deleted=false and ref.sample_attribute_id=#transect_id_attr_id#
+  JOIN sample_attribute_values tp on tp.sample_id=tr.id and tp.deleted=false and tp.sample_attribute_id=#sample_type_attr_id#
+  JOIN cache_termlists_terms ttype on ttype.id=tp.int_value
+  #joins#
+  WHERE tr.deleted=false AND tr.parent_id = #parent_sample_id#
+  AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>tr.id</order_by>
+  </order_bys>
+  <params>
+    <param name="parent_sample_id" display="Survey sample ID" description="Sample ID for the survey" dataype="integer" />
+    <param name="sample_type_attr_id" display="Sample type attribute ID" description="Attribute ID for the sample type" dataype="integer" />
+    <param name="transect_id_attr_id" display="Transect ID attribute ID" description="Sample attribute ID for the transect ID" datatype="integer" />
+  </params>
+  <columns>
+    <column name="id" display="ID" sql="tr.id" visible="false" datatype="integer" />
+    <column name="caption" display="Caption" sql="ref.text_value || ' - ' || ttype.term" datatype="string" />
+  </columns>
+</report>
