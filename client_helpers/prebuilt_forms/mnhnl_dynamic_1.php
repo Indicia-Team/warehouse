@@ -49,7 +49,8 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
       'title'=>'MNHNL Dynamic 1 - dynamically generated data entry form',
       'category' => 'MNHNL forms',
       'helpLink'=>'http://code.google.com/p/indicia/wiki/TutorialDynamicForm',
-      'description'=>'Derived from the Dynamic Sample Occurrence Form with custom headers and footers.'
+      'description'=>'Derived from the Dynamic Sample Occurrence Form with custom headers and footers.',
+      'supportsGroups'=>true
     );
   }
 
