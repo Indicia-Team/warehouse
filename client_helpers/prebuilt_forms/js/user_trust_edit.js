@@ -24,7 +24,7 @@ $(document).ready(function($) {
     }
   }
   var tabHandler = function(event, ui) {
-    var panel = ui.newPanel[0] || ui.panel;
+    var panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
     showTab(panel.id);
   };
   indiciaFns.bindTabsActivate($('#summary-tabs'), tabHandler);
