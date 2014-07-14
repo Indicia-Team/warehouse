@@ -400,7 +400,7 @@ class map_helper extends helper_base {
       if (isset($options['tabDiv'])) {
         $divId = preg_replace('/[^a-zA-Z0-9]/', '', $options['divId']);
         $javascript .= "var mapTabHandler = function(event, ui) { \n";
-        $javascript .= "  panel = ui.newPanel[0] || ui.panel;\n";
+        $javascript .= "  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];\n";
         $javascript .= "  if (typeof indiciaData.mapdiv !== 'undefined' && $(indiciaData.mapdiv).parents('#'+panel.id).length) {\n";
         $javascript .= "    indiciaData.mapdiv.map.updateSize();\n";
         $javascript .= "  }\n\n};\n";
