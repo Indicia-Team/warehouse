@@ -55,7 +55,7 @@ class extension_splash_extensions {
     //if the error count is above 0 then we know there are problems on the page
     data_entry_helper::$javascript .= "
     $('<span class=\"deh-required\">*</span>').insertAfter('.scGridRef');
-    $('#entry_form').submit(function() {     
+    $('#save-button').click(function(){ 
       if ($('#imp-location').val()==='<Please select>'||$('#squares-select-list').val()==='<Please select>'||
           $('#imp-location').val()===''||$('#squares-select-list').val()==='') {
         alert('Please select a plot before submitting.');
@@ -88,6 +88,7 @@ class extension_splash_extensions {
       }";
     }
     data_entry_helper::$javascript .= "
+      $('#entry_form').submit();
     });";
     
     if (!empty($options['treeGridRefAndEpiphyteMode']) && $options['treeGridRefAndEpiphyteMode']===true) {
