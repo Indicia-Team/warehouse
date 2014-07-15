@@ -2051,18 +2051,16 @@ mapLocationSelectedHooks = [];
           var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled,
           fullscreenchange=function () {
             var fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement;
-            div.map.updateSize();
             if (fullscreenElement) {
               if (typeof indiciaData.origFullscreenWidth==="undefined") {
-                indiciaData.origFullscreenWidth=$(div).css('width');
-                indiciaData.origFullscreenHeight=$(div).css('height');
+                indiciaData.origMapStyle=$(div).attr('style');
               }
               $(div).css('width','100%');
               $(div).css('height','100%');
             } else {
-              $(div).css('width', indiciaData.origFullscreenWidth);
-              $(div).css('height', indiciaData.origFullscreenHeight);
+              $(div).attr('style', indiciaData.origMapStyle);
             }
+            div.map.updateSize();
           };
           if (fullscreenEnabled) {
             document.addEventListener("fullscreenchange", fullscreenchange);
