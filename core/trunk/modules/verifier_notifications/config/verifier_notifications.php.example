@@ -25,9 +25,4 @@
 $config['website_ids']=array(2,3);
 // Name to appear in the "From" field for the notifications
 $config['from']='iRecord';
-//You can override the module so that instead of sending out Verifier Task notifications,
-//the system sends out Pending Record Task (PT) notifications for user's that have 
-//records at release status "P" (pending) to check.
-//This option can be omitted if using standard Verifier Task (VT) functionality.
-$config['use_pending_check_mode']=true;
 ?>
