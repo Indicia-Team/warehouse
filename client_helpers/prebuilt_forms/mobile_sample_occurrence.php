@@ -904,23 +904,23 @@ EOD
     $options['caption'] = 'Back';
     $back_button = mobile_entry_helper::apply_template('jqmBackButton', $options);
 
-    return [
+    return array(
       JQM_ATTR => array(),
-      JQM_CONTENT => [
-        JQM_HEADER => [
+      JQM_CONTENT => array(
+        JQM_HEADER => array(
           JQM_ATTR => array("data-position" => "fixed"),
           JQM_CONTENT => array($back_button)
-        ],
-        JQM_CONTENT => [
+        ),
+        JQM_CONTENT => array(
           JQM_ATTR => array(),
           JQM_CONTENT => array()
-        ],
-        JQM_FOOTER => [
+        ),
+        JQM_FOOTER => array(
           JQM_ATTR => array("data-position" => "fixed"),
           JQM_CONTENT => array()
-        ]
-      ]
-    ];
+        )
+      )
+    );
   }
 
   /**
