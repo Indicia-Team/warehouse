@@ -273,6 +273,14 @@ class iform_my_dot_map {
           'group'=>'Distribution Layer 3',
           'required'=>false
         ),
+        array(
+          'name' => 'add_another_link',
+          'caption' => 'Add another link',
+          'description' => 'If populated, then an "Add another" button will be shown linking to this path. Use replacements #taxon_meaning_id# or ' .
+              '#external_key# to identify the recorded taxon, though note that these will only work if a single taxon was recorded.',
+          'type' => 'textfield',
+          'required'=>false
+        ),
       )
     );
   }
@@ -342,6 +350,17 @@ class iform_my_dot_map {
         }
         $r .= "</tbody></table>\n";
       }
+    }
+    if (!empty($args['add_another_link'])) {
+      $path = $args['add_another_link'];
+      if (count($occurrence)===1) {
+        $path = str_replace(array('#taxon_meaning_id#', '#external_key#'), 
+            array($occurrence[0]['lt2_taxon_meaning_id'], $occurrence[0]['lt7_external_key']), $path);
+        $parts = explode('?', $path, 2);
+        $parts[0] = url($parts[0]);
+        $path = implode('?', $parts);
+      }
+      $r .= '<a class="button" href="'.$path.'">'.lang::get('Add another').'</a><br/>';
     }
     $r .= '<div id="mapandlegend">';
     $r .= map_helper::layer_list(array(
