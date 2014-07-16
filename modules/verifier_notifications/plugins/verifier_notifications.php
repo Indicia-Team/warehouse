@@ -106,9 +106,12 @@ function loop_through_filters_and_create_notifications($db, $filters, $variables
   $notificationCounter=0;
   foreach ($filters as $filterIdx=>$filter) {  
     $extraParams = array('sharing'=>$variables['sharingFilterFullName']);
+    if ($variables['notificationSourceType']==='VT')
+      //Only look for completed record_status, we don't want to pick up V for instance, as these records are already verified
+      $extraParams = array_merge($extraParams,array('record_status'=>'C'));
+    else
     //If we are only interested in detecting Pending records then provide a release_status P parameter, this will
     //override the release_status R parameter that automatically appears in the report.
-    if ($variables['notificationSourceType']==='PT')
       $extraParams = array_merge($extraParams,array('release_status'=>'P'));   
     $params = json_decode($filter['definition'],true) + $extraParams;
     try {
