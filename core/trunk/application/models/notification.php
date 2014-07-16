@@ -43,7 +43,7 @@ class Notification_Model extends ORM {
     $array->add_rules('acknowledged', 'required');
     $array->add_rules('user_id', 'required');
     $array->add_rules('triggered_on', 'required');
-    $this->unvalidatedFields = array('digest_mode','cc');
+    $this->unvalidatedFields = array('digest_mode','cc','linked_id');
     return parent::validate($array, $save);
   }
 }
