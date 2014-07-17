@@ -24,8 +24,7 @@ var Georeferencer;
   Georeferencer = function(mapdiv, callback) {
     var settings = mapdiv.georefOpts;
     if (settings.geoplanet_api_key.length===0) {
-      alert('Incorrect configuration - Geoplanet API Key not specified.');
-      throw('Incorrect configuration - Geoplanet API Key not specified.');
+      return;
     }
 
     this.georeference = function(searchtext) {
