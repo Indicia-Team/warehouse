@@ -6,18 +6,38 @@
       FROM locations l
       LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-      LEFT JOIN cache_occurrences co ON co.created_by_id=#user_id# AND co.created_by_id&lt;&gt;1 
-          AND ST_INTERSECTS(co.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
-          AND NOT ST_TOUCHES(co.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
+      LEFT JOIN (samples s 
+        JOIN cache_occurrences co ON co.created_by_id=#user_id# AND co.created_by_id&lt;&gt;1 and co.sample_id=s.id
+      ) ON s.created_by_id=#user_id# AND s.created_by_id&lt;&gt;1       
       LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
       LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
       #joins#
       WHERE l.deleted=false
       AND #website_filter#
-      AND (l.created_by_id=#user_id# OR u.id IS NOT NULL)
+      AND l.created_by_id=#user_id#
+      AND ST_INTERSECTS(geom, COALESCE(l.boundary_geom, l.centroid_geom))
+      AND NOT ST_TOUCHES(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))  
+      #group_bys#
+    UNION
+      SELECT #columns#
+      FROM locations l
+      LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+      LEFT JOIN (samples s 
+        JOIN cache_occurrences co ON co.created_by_id=#user_id# AND co.created_by_id&lt;&gt;1 and co.sample_id=s.id
+      ) ON s.created_by_id=#user_id# AND s.created_by_id&lt;&gt;1       
+      LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
+      LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
+      #joins#
+      WHERE l.deleted=false
+      AND #website_filter#
+      AND u.id IS NOT NULL
+      AND ST_INTERSECTS(geom, COALESCE(l.boundary_geom, l.centroid_geom))
+      AND NOT ST_TOUCHES(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
+      #group_bys#
       </query>
       <order_bys>
-        <order_by>l.name ASC</order_by>
+        <order_by>name ASC</order_by>
       </order_bys>
       <params>
         <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' datatype="integer[]" emptyvalue="0">
