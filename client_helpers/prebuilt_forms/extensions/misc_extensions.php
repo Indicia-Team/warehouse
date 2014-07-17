@@ -52,9 +52,45 @@ class extension_misc_extensions {
         $button .= "ONCLICK=\"window.location.href='".url($options['buttonLinkPath'])."'\">";
       }
       $button .= '  </FORM>';
-      $button .= '</div></br>';
+      $button .= '</div><br>';
     } else {
       drupal_set_message('A link button has been specified without a link path or button label, please fill in the @buttonLinkPath and @buttonLabel options');
+      $button = '';
+    }   
+    return $button;
+  }
+  
+  /**
+   * General text link control can be placed on pages to link to another page.
+   * $options Options array with the following possibilities:<ul>
+   * <li><b>label</b><br/>
+   * The label that appears on the link. Mandatory</li>
+   * <li><b>linkPath</b><br/>
+   * The page to link to. Mandatory</li>
+   * <li><b>paramNameToPass</b><br/>
+   * The name of a static parameter to pass to the receiving page. Optional but requires paramValueToPass when in use</li>
+   * <li><b>paramValueToPass</b><br/>
+   * The value of the static parameter to pass to the receiving page. e.g. passing a static location_type_id. Optional but requires paramNameToPass when in use</li>
+   * </ul>
+   */
+  public static function text_link($auth, $args, $tabalias, $options, $path) {
+    //Only display a link if the administrator has specified both a label and a link.
+    if (!empty($options['label'])&&!empty($options['linkPath'])) {
+      if (!empty($options['paramNameToPass']) && !empty($options['paramValueToPass']))
+        $paramToPass=array($options['paramNameToPass']=>$options['paramValueToPass']);
+      $button = '<div>';
+      $button .= "  <a ";
+      //Button can still be used without a parameter to pass
+      if (!empty($paramToPass)) {
+        $button .= "href=\"".url($options['linkPath'], array('query'=>$paramToPass))."\">";
+      } else { 
+        $button .= "href=\"".url($options['linkPath'])."\">";
+      }
+      $button .= $options['label'];
+      $button .= '  </a>';
+      $button .= '</div><br>';
+    } else {
+      drupal_set_message('A text link has been specified without a link path or label, please fill in the @linkPath and @label options');
       $button = '';
     }   
     return $button;
