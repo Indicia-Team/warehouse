@@ -144,7 +144,11 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
       if ($userInGroup['id']===$currentUserId && $userInGroup['role']==='Member')
         $userFoundInGroup=true;
     }
-    if ($userFoundInGroup!==true)
+    if ($userFoundInGroup!==true) {
+      //Need to disable as well as parent hide the control. Parnet hide control stops the control and label
+      //from showing on screen. Disable control stops it appearing in the POST and getting submitted.
+      data_entry_helper::$javascript .= "$('#".$options['controlId']."').attr('disabled', true);\n";
       data_entry_helper::$javascript .= "$('#".$options['controlId']."').parent().hide();\n";
+    }
   } 
 }
