@@ -109,7 +109,7 @@ label, form label {
   margin: 4px 0 4px 0;
 }
 
-input, select, textarea, #form-params textarea, .timeEntry_control, 
+input:not([type="submit"]), select, textarea, #form-params textarea, .timeEntry_control, 
     .inline-control, button.inline-control, input.inline-control {
   vertical-align: top;
   margin: 4px 0;
