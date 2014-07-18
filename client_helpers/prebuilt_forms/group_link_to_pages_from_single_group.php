@@ -33,7 +33,6 @@ require_once('includes/groups.php');
 class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_explorer {
   public static function get_parameters() {
     $retVal = array_merge(
-      parent::get_parameters(),
       array(
         array(
           'name'=>'group_id',
