@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<report title="Species &amp; Occurrence Counts by Taxon Group" description="Lists taxon groups and the number of species and occurrences within them. Optional date range and survey filters.">
+<report title="Species &amp; Occurrence Counts by Taxon Group site filter" description="Lists taxon groups and the number of species and occurrences within them. Optional date range and survey filters.">
       <query>
       SELECT tg.title as taxongroup, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
       FROM occurrences o
