@@ -1987,12 +1987,13 @@ else
   /*
    * A checkbox which when selected will set the record to having a Pending release_status. This is useful if (for instance) an
    * untrained user wishes to have their worked checked.
-   * Note that unlike most other controls this will always be unchecked when the screen loads (even in edit mode). This means the user must select the checkbox to apply the override otherwise the release status is left untouched.
+   * Control always defaults to selected.
+   * Note this control has not been tested with and probably won't work with sub-samples mode.
    */
   protected static function get_control_pendingreleasecheckbox($auth, $args, $tabalias, $options) {
     if (empty($options['label']))
       $options['label']='Always override Release Status to be P (pending release)?';
-    $r = '<div><input id="pending_release_status" type="checkbox" name="occurrence:release_status" value="">'.$options['label'].'</div>';
+    $r = '<div><input id="pending_release_status" type="checkbox" checked="checked" name="occurrence:release_status" value="P">'.$options['label'].'</div>';
     data_entry_helper::$javascript .= "
     $('#pending_release_status').change(function() {
       if ($('#pending_release_status').is(':checked')) {
@@ -2022,9 +2023,25 @@ else
       $submission = data_entry_helper::build_sample_occurrences_list_submission($values);
     else
       $submission = data_entry_helper::build_sample_occurrence_submission($values);
+    $submission = self::apply_release_status_to_submodels($values,$submission);
     return($submission);
   }
 
+  /**
+   * If a specific occurrence release status appears in the POST, then it needs to be applied to all occurrence submodels.
+   * For instance if the checkbox is selected to set all the records to pending.
+   */
+  private static function apply_release_status_to_submodels($values,$submission) {
+    if (!empty($values['occurrence:release_status'])) {
+      foreach ($submission['subModels'] as $subModelIdx=>$subModel) {
+        if ($subModel['model']['id']==='occurrence') {
+          $submission['subModels'][$subModelIdx]['model']['fields']['release_status']=array('value'=>'P');
+        }
+      }
+    }
+    return $submission;
+  }
+  
   /**
    * Retrieves a list of the css files that this form requires in addition to the standard
    * Drupal, theme or Indicia ones.
