@@ -501,9 +501,6 @@ class iform_npms_paths extends iform_wildflower_count {
     self::$loadedSampleId = null;
     self::$loadedOccurrenceId = null;
     //Editing so need Mode_Existing
-    if ($_POST&&!is_null(data_entry_helper::$entity_to_load)) {
-      self::$mode = self::MODE_EXISTING;
-    }
     if (!empty($_GET['sample_id']) && $_GET['sample_id']!='{sample_id}'){
       self::$mode = self::MODE_EXISTING;
       self::$loadedSampleId = $_GET['sample_id'];
