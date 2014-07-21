@@ -32,7 +32,23 @@ require_once('includes/groups.php');
  * A page for editing or creating a user group report page.
  */
 class iform_group_home extends iform_dynamic_report_explorer {
-  
+  public static function get_parameters() {
+    $retVal = array_merge(
+      parent::get_parameters(),
+      array(
+        array(
+          'name'=>'release_status_limiter',
+          'caption'=>'Release Status Limiter',
+          'description'=>'Only show records with the specified release status',
+          'type'=>'string',
+          'group' => 'Other Settings',
+          'required'=>false
+        ),
+      )
+    );
+    return $retVal;
+  }
+            
   /** 
    * Return the form metadata.
    * @return array The definition of the form.
@@ -58,6 +74,10 @@ class iform_group_home extends iform_dynamic_report_explorer {
    * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
+    global $base_url;
+    iform_load_helpers(array('data_entry_helper')); 
+    data_entry_helper::$javascript .= "indiciaData.nodeId=".$node->nid.";\n";
+    data_entry_helper::$javascript .= "indiciaData.baseUrl='".$base_url."';\n";
     if (empty($_GET['group_id'])) {
       return 'This page needs a group_id URL parameter.';
     }
@@ -76,9 +96,12 @@ class iform_group_home extends iform_dynamic_report_explorer {
       if ($key)
         $defstring .= "$key=$value\n";
     }
-    $prefix = (empty($_GET['implicit']) || $_GET['implicit']==='true') ? 'implicit_' : ''; 
+    $prefix = (empty($_GET['implicit']) || $_GET['implicit']==='true') ? 'implicit_' : '';     
     // add the group parameters to the preset parameters passed to all reports on this page
     $args['param_presets']=implode("\n", array($args['param_presets'], $defstring, "{$prefix}group_id=".$_GET['group_id']));
+    $args['param_presets'] .= "\n";
+    if (!empty($args['release_status_limiter']))
+      $args['param_presets'] .= 'release_status='.$args['release_status_limiter']."\n";
     return parent::get_form($args, $node);
   }
 
