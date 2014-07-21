@@ -289,9 +289,11 @@ class helper_base extends helper_config {
   public static $website_id = null;
 
   /**
-   * @var Array List of resources that have been identified as required by the controls used. This defines the
-   * JavaScript and stylesheets that must be added to the page. Each entry is an array containing stylesheets and javascript
-   * sub-arrays. This has public access so the Drupal module can perform Drupal specific resource output.
+   * @var Array List of resources that have been identified as required by the 
+   * controls used. This defines the JavaScript and stylesheets that must be 
+   * added to the page. Each entry is an array containing stylesheets and 
+   * javascript sub-arrays. This has public access so the Drupal module can 
+   * perform Drupal specific resource output.
    */
   public static $required_resources=array();
 
@@ -497,12 +499,16 @@ class helper_base extends helper_config {
 
   /**
    * Method to link up the external css or js files associated with a set of code.
-   * This is normally called internally by the control methods to ensure the required files are linked into the page so
-   * does not need to be called directly. However it can be useful when writing custom code that uses one of these standard
-   * libraries such as jQuery. Ensures each file is only linked once.
+   * This is normally called internally by the control methods to ensure the required 
+   * files are linked into the page so does not need to be called directly. However 
+   * it can be useful when writing custom code that uses one of these standard
+   * libraries such as jQuery. 
+   * Ensures each file is only linked once and that dependencies are included
+   * first and in the order given.
    *
    * @param string $resource Name of resource to link. The following options are available:
    * <ul>
+   * <li>indiciaFns</li>
    * <li>jquery</li>
    * <li>openlayers</li>
    * <li>graticule</li>
@@ -549,9 +555,14 @@ class helper_base extends helper_config {
    */
   public static function add_resource($resource)
   {
+    // Ensure indiciaFns is always the first resource added
+    if (!self::$indiciaFnsDone) {
+      self::$indiciaFnsDone = true;
+      self::add_resource('indiciaFns');
+    }
+    $resourceList = self::get_resources();
     // If this is an available resource and we have not already included it, then add it to the list
-    if (array_key_exists($resource, self::get_resources()) && !in_array($resource, self::$required_resources)) {
-      $resourceList = self::get_resources();
+    if (array_key_exists($resource, $resourceList) && !in_array($resource, self::$required_resources)) {
       if (isset($resourceList[$resource]['deps'])) {
         foreach ($resourceList[$resource]['deps'] as $dep) {
           self::add_resource($dep);
@@ -593,6 +604,7 @@ class helper_base extends helper_config {
       if (substr($indicia_theme_path, -1)!=='/')
         $indicia_theme_path .= '/';
       self::$resource_list = array (
+        'indiciaFns' => array('deps' =>array('jquery'), 'javascript' => array(self::$js_path."indicia.functions.js")),
         'jquery' => array('javascript' => array(self::$js_path."jquery.js",self::$js_path."ie_vml_sizzlepatch_2.js")),
         'openlayers' => array('javascript' => array(self::$js_path.(function_exists('iform_openlayers_get_file') ? iform_openlayers_get_file() : "OpenLayers.js"),
             self::$js_path."proj4js.js", self::$js_path."proj4defs.js", self::$js_path."lang/en.js")),
@@ -1417,22 +1429,21 @@ $('.ui-state-default').live('mouseout', function() {
           if (isset($resourceList[$resource]['javascript'])) {
             foreach ($resourceList[$resource]['javascript'] as $j) {
               // if enabling fancybox, link it up
-              if (strpos($j, 'fancybox.')!==false)
+              if (strpos($j, 'fancybox.')!==false) {
                 self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
+              }
               // look out for a condition that this script is IE only.
               if (substr($j, 0, 4)=='[IE]'){
               	$libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
-              } else
+              } 
+              else { 
                 $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
+              }
             }
           }
           // Record the resource as being dumped, so we don't do it again.
           array_push(self::$dumped_resources, $resource);
         }
-      }
-      if (!self::$indiciaFnsDone) {
-        $libraries = '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n".$libraries;
-        self::$indiciaFnsDone = true;
       }
     }
     return $stylesheets.$libraries;
