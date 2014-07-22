@@ -1477,6 +1477,9 @@ mapLocationSelectedHooks = [];
       else {
         _setClickPoint(data, div); // data sref in _getSystem, wkt in indiciaProjection, mapwkt in mapProjection
       }
+      if (typeof indiciaFns.showHideRememberSiteButton!=="undefined") {
+        indiciaFns.showHideRememberSiteButton();
+      }
     };
 
     function clearGridRefHints() {
