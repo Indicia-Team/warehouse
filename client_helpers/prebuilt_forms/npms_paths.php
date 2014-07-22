@@ -322,6 +322,47 @@ class iform_npms_paths extends iform_wildflower_count {
     return $r;
   }
   
+  /**
+   * Handles the construction of a submission array from a set of form values.
+   * @param array $values Associative array of form data values. 
+   * @param array $args iform parameters. 
+   * @return array Submission structure.
+   */
+  public static function get_submission($values, $args) {
+    $subSampleIds=array('path', 'square', 'linear'); 
+    //Need to supply false as the third parameter, this explicitely tells the system that there are no
+    //attributes to check as zero abundance even though we have already given the system the rowInclusionCheck=hasData option
+    //which tells the system that only species with data should be considered as an occurrence.
+    //If we don't do this, the system will always create an occurrence for every species, even if the Paths checkbox is off.
+    $submission = data_entry_helper::build_sample_occurrences_list_submission($values, true, false);
+    // Now because it is not standard, we need to attach the sub-samples for each plot.
+    // First, extract the attributes for each subsample into their own arrays.    
+    $subSamples=array();
+    foreach ($values as $key=>$value) {
+      if (strpos($key,':')) {
+        $parts = explode(':', $key);        
+        if (in_array($parts[0], $subSampleIds)) {          
+          $subSamples[$parts[0]][substr($key, strlen($parts[0])+1)] = $value;
+        }
+      }
+    }
+    // Now wrap each of the subsample arrays and attach them to the main submission.
+    foreach ($subSamples as $prefix => $s) {
+      if (isset($values[$prefix.'_sample_id']))
+        $s['sample:id']=$values[$prefix.'_sample_id'];
+      // specify some default values
+      $s['sample:entered_sref_system']=$values['sample:entered_sref_system'];
+      $s['sample:entered_sref']=$values['sample:entered_sref'];
+      $s['sample:geom']=$values['sample:geom'];
+      $s['sample:date']=$values['sample:date'];
+      $s['sample:survey_id']=$values['survey_id'];
+      $s['location_name']=$prefix;
+      $wrapped = submission_builder::wrap_with_attrs($s, 'sample', $prefix);
+      $submission['subModels'][]=array('fkId'=>'parent_id', 'model'=>$wrapped);
+    }
+    return($submission);
+  }
+  
   /*
    * New function to replace the one on the original wildflower form. The original form had the Submit button on the Other Species tab
    * and the new form has it on the final (numbered) species tab. 
