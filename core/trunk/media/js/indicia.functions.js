@@ -116,10 +116,10 @@ $(document).ready(function($) {
     }, 
     detectInput = function() {
       window.onbeforeunload = confirmOnPageExit;
-      $(iform).find('input').unbind('change', detectInput);
+      $(iform).find(':input').unbind('change', detectInput);
     }
     // any data input, need to confirm if navigating away
-    $(iform).find('input').bind('change', detectInput);
+    $(iform).find(':input').bind('change', detectInput);
     $(iform).submit(function() {
       // allowed to leave page on form submit
       window.onbeforeunload = null;
