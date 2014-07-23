@@ -311,8 +311,10 @@ class helper_base extends helper_config {
   public static $js_read_tokens=null;
 
   /**
-   * @var string Path to Indicia JavaScript folder. If not specified, then it is calculated from the Warehouse $base_url.
-   * This path should be a full path on the server (starting with '/' exluding the domain).
+   * @var string Path to Indicia JavaScript folder. If not specified, then it is
+   * calculated from the Warehouse $base_url.
+   * This path should be a full path on the server (starting with '/' exluding 
+   * the domain and ending with '/').
    */
   public static $js_path = null;
 
