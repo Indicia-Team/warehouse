@@ -372,7 +372,7 @@ var checkSubmitInProgress = function () {
         $('#' + file.id + ' .progress').remove();
         // check the JSON for errors
         var resp = eval('['+response.response+']'), filepath, uniqueId,
-           tmpl, fileType;
+           tmpl, fileType, mediaTypeId;
         if (resp[0].error) {
           $('#' + file.id).remove();
           alert(div.settings.msgUploadError + ' ' + resp[0].error.message);
@@ -385,6 +385,17 @@ var checkSubmitInProgress = function () {
           } else {
             tmpl = div.settings.file_box_uploaded_audioTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
           }
+          
+          if ("mediaTypeTermIdLookup" in indiciaData) {
+            // Backwards compatibility test. Property only exists if 
+            // data_entry_helper::add_link_popup has set it.
+            mediaTypeId = indiciaData.mediaTypeTermIdLookup[fileType + ':Local'];
+          }
+          else {
+            // If no value is supplied, warehouse defaults to Image:Local
+            mediaTypeId = '';
+          }
+          
           // Show the uploaded file, and also set the mini-form values to contain the file details.
           $('#' + file.id + ' .media-wrapper').html(tmpl
                 .replace(/\{id\}/g, file.id)
@@ -396,7 +407,7 @@ var checkSubmitInProgress = function () {
                 .replace(/\{pathField\}/g, div.settings.table + ':path:' + uniqueId)
                 .replace(/\{pathValue\}/g, '')
                 .replace(/\{typeField\}/g, div.settings.table + ':media_type_id:' + uniqueId)
-                .replace(/\{typeValue\}/g, indiciaData.mediaTypeTermIdLookup[fileType + ':Local'])
+                .replace(/\{typeValue\}/g, mediaTypeId)
                 .replace(/\{typeNameField\}/g, div.settings.table + ':media_type:' + uniqueId)
                 .replace(/\{typeNameValue\}/g, fileType + ':Local')
                 .replace(/\{deletedField\}/g, div.settings.table + ':deleted:' + uniqueId)
