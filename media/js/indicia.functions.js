@@ -99,3 +99,30 @@ if (typeof window.indiciaData==="undefined") {
   };
 
 }) (jQuery);
+
+$(document).ready(function($) {
+  if ($('form input[name=website_id]').length>0) {
+    var iform=$('form input[name=website_id]').parents('form'),
+    confirmOnPageExit = function (e) {
+      // If we haven't been passed the event get the window.event
+      e = e || window.event;
+      var message = 'Are you sure you want to navigate away from this page? You will lose any data you have entered.';
+      // For IE6-8 and Firefox prior to version 4
+      if (e) {
+        e.returnValue = message;
+      }
+      // For Chrome, Safari, IE8+ and Opera 12+
+      return message;
+    }, 
+    detectInput = function() {
+      window.onbeforeunload = confirmOnPageExit;
+      $(iform).find('input').unbind('change', detectInput);
+    }
+    // any data input, need to confirm if navigating away
+    $(iform).find('input').bind('change', detectInput);
+    $(iform).submit(function() {
+      // allowed to leave page on form submit
+      window.onbeforeunload = null;
+    });
+  }
+});
