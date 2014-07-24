@@ -19,7 +19,7 @@
   </order_bys>
   <params>
     <param name="user_id" display="User id" description="Person who entered the data" dataype="integer" />
-    <param name="survey_list" display="Survey IDs" description="Comma separated list of survey IDs" datatype="integer[]">
+    <param name="survey_list" display="Survey IDs" description="Comma separated list of survey IDs" datatype="integer[]" default="" >
       <where>s.survey_id in (#survey_list#)</where>
     </param>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default='' />

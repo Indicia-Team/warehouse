@@ -1,0 +1,24 @@
+<report
+    title="Get last effort"
+    description="Retrives the last effort data for a sighting, having entered the time."
+>
+  <query>
+  SELECT sav.sample_attribute_id, coalesce(sav.int_value::varchar, sav.float_value::varchar, sav.text_value) as val
+  FROM sample_attribute_values sav
+  WHERE sample_id in (
+    SELECT s.id
+    FROM samples s
+    JOIN sample_attribute_values sav ON sav.sample_id=s.id
+    WHERE sav.text_value&lt;'#time#'
+    AND s.parent_id=#parent_sample_id# 
+    ORDER BY sav.text_value DESC
+    LIMIT 1
+  )
+  AND sav.sample_attribute_id not in (#exclusions#)
+  </query>
+  <params>
+    <param name="parent_sample_id" display="Parent sample ID" description="Sample ID for the parent sample" dataype="integer" />
+    <param name="time" display="Time" description="Time of sighting" dataype="text" />
+    <param name="exclusions" display="Excluded sample attribute IDs" dataype="integer[]" />
+  </params>
+</report>

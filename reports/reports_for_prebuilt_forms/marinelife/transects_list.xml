@@ -23,6 +23,6 @@
   </params>
   <columns>
     <column name="id" display="ID" sql="tr.id" visible="false" datatype="integer" />
-    <column name="caption" display="Caption" sql="ref.text_value || ' - ' || ttype.term" datatype="string" />
+    <column name="caption" display="Caption" sql="ref.int_value::varchar || ' - ' || ttype.term" datatype="string" />
   </columns>
 </report>
