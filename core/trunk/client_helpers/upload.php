@@ -35,7 +35,12 @@
   // Max .part file age in seconds
   $maxFileAge = 5 * 3600; 
 
-  // Create target dir
+  // Check fileinfo extension is installed
+  if (!extension_loaded('fileinfo')) {
+    die('{"jsonrpc" : "2.0", "error" : {"code": 111, "message": "The fileinfo extension must be enabled by the website administrator in php.ini."}, "id" : "id"}');
+  }
+  
+// Create target dir
   if (!file_exists($targetDir)) {
     @mkdir($targetDir);
   }
@@ -140,7 +145,7 @@ if ($cleanupTargetDir) {
   
 // Check if file has been uploaded
   if (!$chunks || $chunk == $chunks - 1) {
-    // Check MIME type of file  
+    // Check MIME type of file    
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mimeType = finfo_file($finfo, "{$filePath}.part");  
     finfo_close($finfo);
