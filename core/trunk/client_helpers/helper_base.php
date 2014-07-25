@@ -368,16 +368,41 @@ class helper_base extends helper_config {
   public static $nocache = false;
   
  /**
-   * @var integer On average, every 1 in $interim_image_chance_purge times the Warehouse is called for data, all interim images
-   * older than $interim_image_expiry seconds will be deleted. These are images that should have uploaded to the warehouse but the form was not
-   * finally submitted.
-   */
-  public static $interim_image_chance_purge=100;
+  * @var integer On average, every 1 in $interim_image_chance_purge times the 
+  * Warehouse is called for data, all interim images older than $interim_image_expiry 
+  * seconds will be deleted. These are images that should have uploaded to the 
+  * warehouse but the form was not finally submitted.
+  */
+  public static $interim_image_chance_purge = 100;
 
   /**
-   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
+   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse 
+   * is called for data which is
    */
-  public static $interim_image_expiry=14400;
+  public static $interim_image_expiry = 14400;
+  
+  /**
+   * @var array Contains elements for each media type that can be uploaded. Each
+   * element is an array of allowed file extensions for that media type. Used
+   * for filtering files to upload on client side. File extensions must be in 
+   * lower case. Each entry should have its mime type included in 
+   * $upload_mime_types.
+   */
+  public static $upload_file_types = array(
+    'image' => array('jpg', 'gif', 'png', 'jpeg'),
+    'audio' => array('mp3', 'wav')
+  );
+
+  /**
+   * @var array Contains elements for each media type that can be uploaded. Each
+   * element is an array of the allowed mime subtypes for that media type. Used
+   * for testing uploaded files. Each entry in $upload_file_types should have
+   * its mime type in this list.
+   */
+  public static $upload_mime_types = array(
+    'image' => array('jpeg', 'gif', 'png'),
+    'audio' => array('mpeg', 'x-wav')
+  );
 
   /**
    * List of methods used to report a validation failure. Options are message, message, hint, icon, colour, inline.
