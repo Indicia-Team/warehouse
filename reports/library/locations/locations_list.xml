@@ -23,7 +23,8 @@
     l.location_type_id,
     tinput.term as location_type,
     l.centroid_sref,
-    l.centroid_sref_system
+    l.centroid_sref_system, 
+    st_astext(coalesce(l.boundary_geom, l.centroid_geom)) as geom
   </field_sql>
   <order_bys>
     <order_by>l.name ASC</order_by>
