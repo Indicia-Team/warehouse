@@ -792,7 +792,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $sitesJs = array();
       foreach ($availableSites as $site) {
         $sitesLookup[$site['location_id']]=$site['name'];
-        $sitesJs[$site['location_id']] = $site;
+        $sitesJs[$site['location_id']] = array('centroid_sref'=>$site['centroid_sref'], 'centroid_sref_system'=>$site['centroid_sref_system']);
       }
       // bolt in branch locations. Don't assume that branch list is superset of normal sites list.
       // Only need to do if not a manager - they have already fetched the full list anyway.

@@ -374,17 +374,10 @@ class iform_ukbms_timed_observations {
     		'nocache' => true));
     // convert the report data to an array for the lookup, plus one to pass to the JS so it can keep the map updated
     $sitesLookup = array();
-    $sitesIds = array();
     $sitesJs = array();
     foreach ($availableSites as $site) {
       $sitesLookup[$site['location_id']]=$site['name'];
-      $sitesIds[] = $site['location_id'];
-    }
-    $sites = data_entry_helper::get_population_data(array(
-        'table'=>'location',
-        'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'id'=>$sitesIds,'view'=>'detail')));
-    foreach ($sites as $site) {
-      $sitesJs[$site['id']] = $site;
+      $sitesJs[$site['location_id']] = array('geom' => $site['geom']);
     }
     data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
     if ($locationId) {
