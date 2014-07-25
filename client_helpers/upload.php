@@ -36,8 +36,12 @@
   $maxFileAge = 5 * 3600; 
 
   // Create target dir
-  if (!file_exists($targetDir))
+  if (!file_exists($targetDir)) {
     @mkdir($targetDir);
+  }
+  if (!file_exists($targetDir)) {
+    die('{"jsonrpc" : "2.0", "error" : {"code": 105, "message": "Failed to create upload directory."}, "id" : "id"}');
+  }
   
   // Get a file name
   if (isset($_REQUEST["name"])) {
@@ -45,21 +49,35 @@
   } elseif (!empty($_FILES)) {
     $fileName = $_FILES["file"]["name"];
   } else {
-    $fileName = uniqid("file_");
+    die('{"jsonrpc" : "2.0", "error" : {"code": 106, "message": "File has no name."}, "id" : "id"}');
   }
   // Clean the fileName for security reasons
   $fileName = preg_replace('/[^\w\._]+/', '', $fileName);
-
+  
+  // Test file extension is one of the allowed types
+  $fileNameParts = explode('.', $fileName);
+  if (count($fileNameParts) < 2) {
+    die('{"jsonrpc" : "2.0", "error" : {"code": 107, "message": "File name has no extension."}, "id" : "id"}');
+  }
+  $extension = strtolower(array_pop($fileNameParts));
+  $extensionFound = false;
+  foreach(data_entry_helper::$upload_file_types as $mediaTypeFiles) {
+    if (in_array($extension, $mediaTypeFiles)) {
+      $extensionFound = true;
+      break;
+    }
+  }
+  if (!$extensionFound) {
+    die('{"jsonrpc" : "2.0", "error" : {"code": 108, "message": "File type not allowed."}, "id" : "id"}');
+  }
+  
+ 
   // Chunking might be enabled
   $chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
   $chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
 
   $filePath  = $targetDir . DIRECTORY_SEPARATOR . $fileName;
 
-  if (!file_exists($targetDir)) {
-    echo '{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to create upload directory."}, "id" : "id"}';
-    return;
-  }
   
 // Remove old temp files
 if ($cleanupTargetDir) {
@@ -122,6 +140,21 @@ if ($cleanupTargetDir) {
   
 // Check if file has been uploaded
   if (!$chunks || $chunk == $chunks - 1) {
+    // Check MIME type of file  
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, "{$filePath}.part");  
+    finfo_close($finfo);
+    if (!$mimeType) {
+      unlink("{$filePath}.part");
+      die('{"jsonrpc" : "2.0", "error" : {"code": 110, "message": "File type not known."}, "id" : "id"}'); 
+    }
+    list($mediaType, $mimeSubType) = split('/', $mimeType);
+    if (!in_array($mimeSubType, data_entry_helper::$upload_mime_types[$mediaType], true)) {
+      unlink("{$filePath}.part");
+      die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "File type not allowed."}, "id" : "id"}'); 
+    }
+
+    // File appears to be valid.
     // Strip the temp .part suffix off
     rename("{$filePath}.part", $filePath);
   }

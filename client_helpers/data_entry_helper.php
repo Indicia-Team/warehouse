@@ -909,6 +909,10 @@ $('#$escaped').change(function(e) {
   * <li><b>maxFileCount</b><br/>
   * Maximum number of files to allow upload for. Defaults to 4. Set to false to allow unlimited files.
   * </li>
+  * <li><b>maxUploadSize</b><br/>
+  * Maximum file size to allow in bytes. This limits file selection. PHP settings on 
+  * server may limit upload. 
+  * </li>
   * <li><b>autoupload</b><br/>
   * Defaults to true. If false, then a button is displayed which the user must click to initiate upload of the files
   * currently in the queue.
@@ -999,6 +1003,7 @@ $('#$escaped').change(function(e) {
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '4M'),
       'codeGenerated' => 'all',
       'mediaTypes' => array('Image:Local'),
+      'fileTypes' => (object)self::$upload_file_types,
       'imgPath' => empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path,
       'addBtnCaption' => lang::get('Add {1}'),
       'msgPhoto' => lang::get('photo'),
@@ -1039,7 +1044,7 @@ $('#$escaped').change(function(e) {
       // Just pass the options array through
       $idx = 0;
       foreach($options as $option=>$value) {
-        if (is_array($value)) {
+        if (is_array($value) || is_object($value)) {
           $value = json_encode($value);
         }
         else

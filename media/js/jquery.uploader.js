@@ -33,8 +33,9 @@ var checkSubmitInProgress = function () {
 
 
 (function($) {
-  // When adding a link to a remote resource, the oembed protocol is used to fetch the HTML to display for the
-  // external resource. Use the noembed service to guarantee jsonp support and a consistent response.
+  // When adding a link to a remote resource, the oembed protocol is used to 
+  // fetch the HTML to display for the external resource. Use the noembed 
+  // service to guarantee jsonp support and a consistent response.
   var noembed = function(div, id, url, requestId, typename, isNew, caption) {
     var duplicate = false;
     // Check for duplicate links to the same resource
@@ -88,6 +89,7 @@ var checkSubmitInProgress = function () {
       }
     });
   };
+  
   indiciaData.mediaTypes = {
     "Audio:SoundCloud" : {
       "regex":/^http(s)?:\/\/(www.)?soundcloud.com\//
@@ -113,10 +115,6 @@ var checkSubmitInProgress = function () {
     "Video:Vimeo" : {
       "regex":/^http:\/\/vimeo.com\//
     }
-  };
-  indiciaData.uploadFileTypes = {
-    "Image":["jpg","gif","png","jpeg"],  
-    "Audio":["mp3","wav"]
   };
   
   var currentDiv;
@@ -186,6 +184,7 @@ var checkSubmitInProgress = function () {
       alert('The file_box control requires a jsPath setting to operate correctly. It should point to the URL '+
           'path of the media/js folder.');
     }
+    
     return this.each(function() {
       var uploadSelectBtn='', linkSelectBtn='', id=Math.floor((Math.random())*0x10000), tokens,
           hasLocalFiles = false, hasLinks = false, div=this, fileTypes=[], caption=opts.msgPhoto, linkTypes=[];
@@ -195,9 +194,9 @@ var checkSubmitInProgress = function () {
         if (tokens[1]==='Local') {
           hasLocalFiles = true;
           if (tokens[0]==='Image') {
-            fileTypes.push(indiciaData.uploadFileTypes.Image.join(','));
+            fileTypes.push(opts.fileTypes.image.join(','));
           } else if (tokens[0]==='Audio') {
-            fileTypes.push(indiciaData.uploadFileTypes.Audio.join(','));
+            fileTypes.push(opts.fileTypes.audio.join(','));
             caption=opts.msgFile;
           }
         } else {
@@ -271,7 +270,7 @@ var checkSubmitInProgress = function () {
             uniqueId = 'link-' + requestId;
         if (file.media_type.match(/:Local$/)) {
           origfilepath = div.settings.finalImageFolder + file.path;
-          ext=file.path.split('.').pop().toLowerCase();
+          ext = file.path.split('.').pop().toLowerCase();
           existing = div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, uniqueId)
               .replace(/\{filename\}/g, file.media_type.match(/^Audio:/) ? div.settings.msgFile : div.settings.msgPhoto)
               .replace(/\{imagewidth\}/g, div.settings.imageWidth);       
@@ -289,7 +288,7 @@ var checkSubmitInProgress = function () {
               thumbnailfilepath = div.settings.finalImageFolderThumbs + file.path;
             }
           }
-          if ($.inArray(ext, indiciaData.uploadFileTypes.Audio)===-1) {
+          if ($.inArray(ext, div.settings.fileTypes.audio) === -1) {
             tmpl = div.settings.file_box_uploaded_imageTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
           } else {
             tmpl = div.settings.file_box_uploaded_audioTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
@@ -335,7 +334,7 @@ var checkSubmitInProgress = function () {
         $.each(files, function(i, file) {
           ext=file.name.split('.').pop();
           $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, file.id)
-              .replace(/\{filename\}/g, $.inArray(ext, indiciaData.uploadFileTypes.Image)>-1 ? div.settings.msgPhoto : div.settings.msgFile)
+              .replace(/\{filename\}/g, $.inArray(ext, div.settings.fileTypes.image) > -1 ? div.settings.msgPhoto : div.settings.msgFile)
               .replace(/\{imagewidth\}/g, div.settings.imageWidth)
           );
           // change the file name to be unique & lowercase, since the warehouse lowercases files
@@ -379,11 +378,11 @@ var checkSubmitInProgress = function () {
         } else {
           filepath = div.settings.destinationFolder + file.name;
           uniqueId = $('.filelist .media-wrapper').length - $('.filelist .progress').length;
-          fileType = $.inArray(filepath.split('.').pop().toLowerCase(), indiciaData.uploadFileTypes.Audio)===-1 ? 'Image' : 'Audio';
+          fileType = $.inArray(filepath.split('.').pop().toLowerCase(), div.settings.fileTypes.audio) === -1 ? 'Image' : 'Audio';
           if (fileType==='Image') {
-            tmpl = div.settings.file_box_uploaded_imageTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
+            tmpl = div.settings.file_box_uploaded_imageTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
           } else {
-            tmpl = div.settings.file_box_uploaded_audioTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
+            tmpl = div.settings.file_box_uploaded_audioTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
           }
           
           if ("mediaTypeTermIdLookup" in indiciaData) {
@@ -514,5 +513,7 @@ jQuery.fn.uploader.defaults = {
   uploadScript : 'upload.php',
   destinationFolder : '',
   runtimes : 'html5,flash,silverlight,html4',
-  mediaTypes : ["Image:Local"]
+  mediaTypes : ["Image:Local"],
+  fileTypes : {image : ["jpg", "gif", "png", "jpeg"], 
+               audio : ["mp3", "wav"]}
 };
