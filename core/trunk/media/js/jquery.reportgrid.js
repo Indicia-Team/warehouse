@@ -334,6 +334,12 @@ var simple_tooltip;
           if (clearExistingRows) {
             tbody.children().remove();
           }
+          if (typeof rows.error!=="undefined") {
+            div.loading=false;
+            if ($.support.cssFloat) {$(div).find(".loading-overlay").hide();}
+            alert('The report did not load correctly.');
+            return;
+          }
           if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined") {
             map=indiciaData.reportlayer.map;
             indiciaData.mapdiv.removeAllFeatures(indiciaData.reportlayer, 'linked');
@@ -446,6 +452,7 @@ var simple_tooltip;
 
         },
         error: function() {
+          div.loading=false;
           if ($.support.cssFloat) {$(div).find(".loading-overlay").hide();}
           alert('The report did not load correctly.');
         }
