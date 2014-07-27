@@ -22,7 +22,7 @@
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} certainty-{certainty} record-id'&gt;{occurrence_id}&lt;/div&gt;" datatype="integer" />
     <column name='source' display='Source' datatype="text" 
-        sql="w.title || ' | ' || case when left(o.survey_title, length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
+        sql="w.title || ' | ' || case when substring(o.survey_title from 1 for length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
     <column name='taxon' display='Species' datatype="species" sql="o.preferred_taxon" />
     <column name='common' display='Common Name' datatype="text" sql="o.default_common_name" />
