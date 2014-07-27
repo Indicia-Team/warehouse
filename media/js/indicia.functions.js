@@ -100,7 +100,7 @@ if (typeof window.indiciaData==="undefined") {
 
 }) (jQuery);
 
-$(document).ready(function($) {
+jQuery(document).ready(function($) {
   if ($('form input[name=website_id]').length>0) {
     var iform=$('form input[name=website_id]').parents('form'),
     confirmOnPageExit = function (e) {
