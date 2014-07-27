@@ -611,14 +611,14 @@ jQuery(document).ready(function($) {
       }
     });
   };
-  $.each(taxonSelectionMethods, function() {
+  $.each(taxonSelectionMethods, function(idx, method) {
     $('#'+this+'\\:search\\:taxon').keypress(function(e) {
       if (e.which===13) {
-        keep(this);
+        keep(method);
       }
     });
     $('#'+this+'\\:add').click(function() {
-      keep(this);
+      keep(method);
     });
   });
   
