@@ -124,7 +124,7 @@ class iform_group_join {
   
   private static function abort($msg, $args) {
     hostsite_show_message($msg);
-    if (!empty($args['groups_page_path']))
+    if (!empty($_GET['group_id']) && !empty($args['groups_page_path']))
       hostsite_goto_page($args['groups_page_path']);  
   }
   
