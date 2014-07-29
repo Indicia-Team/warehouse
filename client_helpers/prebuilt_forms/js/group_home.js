@@ -92,7 +92,8 @@ jQuery(document).ready(function($) {
       postToServer(occurrenceComment, 'occurrence_comment');
       //The data column on the notification includes lots of information about the occurrence, collect this information to put into the database.
       var dataJson = {
-        'occurrence_id':id,
+        'occurrence_id':id.toString(),
+        'username':indiciaData.currentUsername,
         'comment':$('#occurrence-comment').val(),
         'date':date,
         'entered_sref':entered_sref,
