@@ -117,8 +117,13 @@ class extension_notifications_centre {
    * Return the actual grid code.
    */
   private static function notifications_grid($auth, $options, $website_id, $user_id) {
+    iform_load_helpers(array('report_helper'));
+    //$sourceType is a user provided option for the grid to preload rather than the user selecting from the filter drop-down.
+    //When the source types are provided like this, the filter drop-down is not displayed.
     //There can be more than one sourcetype, this is supplied as a comma seperated list and needs putting into an array
     $sourceType=empty($options['sourceType']) ? array() : explode(',',$options['sourceType']);
+    if (!empty($sourceType))
+      report_helper::$javascript .= "indiciaData.preloaded_source_types = '".$options['sourceType']."';\n";  
     //reload path to current page
     $reloadPath = self::getReloadPath ();
     $r='';
@@ -163,8 +168,8 @@ class extension_notifications_centre {
     $extraParams['source_filter']=empty($_POST['source-filter']) ? 'all' : $_POST['source-filter'];
     //Get the source types to remove from a hidden field if the user has configured the page
     //to use a user specified option to specify exactly what kind of notifications to display
-    if (!empty($_POST['source_types'])) 
-      $sourceTypesToClearFromConfig = explode(',', $_POST['source_types']);
+    if (!empty($options['sourceType'])) 
+      $sourceTypesToClearFromConfig = explode(',', $options['sourceType']);
     //Place quotes around the source type letters for the report to accept as strings
     if (!empty($sourceTypesToClearFromConfig)) {
       if (array_key_exists(0,$sourceTypesToClearFromConfig) && !empty($sourceTypesToClearFromConfig[0])) {
