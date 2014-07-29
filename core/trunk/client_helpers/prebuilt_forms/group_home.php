@@ -75,9 +75,11 @@ class iform_group_home extends iform_dynamic_report_explorer {
    */
   public static function get_form($args, $node, $response=null) {
     global $base_url;
+    global $user;
     iform_load_helpers(array('data_entry_helper')); 
     data_entry_helper::$javascript .= "indiciaData.nodeId=".$node->nid.";\n";
     data_entry_helper::$javascript .= "indiciaData.baseUrl='".$base_url."';\n";
+    data_entry_helper::$javascript .= "indiciaData.currentUsername='".$user->name."';\n";
     if (empty($_GET['group_id'])) {
       return 'This page needs a group_id URL parameter.';
     }
