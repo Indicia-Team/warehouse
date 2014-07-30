@@ -31,6 +31,8 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class Import_Controller extends Service_Base_Controller {
 
+  private $submissionStruct;
+
   /**
    * Controller function that provides a web service services/import/get_import_settings/model.
    * @return string JSON Parameters form details for this model, or empty string if no parameters form required.
@@ -204,7 +206,7 @@ class Import_Controller extends Service_Base_Controller {
         // skip rows to allow for the last file position
         fseek($handle, $filepos);
       $model = ORM::Factory($_GET['model']);
-      $submissionStruct = $model->get_submission_structure();
+      $this->submissionStruct = $model->get_submission_structure();
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
         $count++;
         $index = 0;
@@ -232,7 +234,7 @@ class Import_Controller extends Service_Base_Controller {
         }
         if (!empty($saveArray['website_id'])) {
           // automatically join to the website if relevant
-          if (isset($submissionStruct['joinsTo']) && in_array('websites', $submissionStruct['joinsTo'])) {
+          if (isset($this->submissionStruct['joinsTo']) && in_array('websites', $this->submissionStruct['joinsTo'])) {
             $saveArray['joinsTo:website:'.$saveArray['website_id']]=1;
           }
         }
@@ -314,11 +316,10 @@ class Import_Controller extends Service_Base_Controller {
    * containing several occurrences in a single sample can repeat the sample details but only one sample gets created.
    */
   private function checkForSameSupermodel(&$saveArray, $model) {
-    $submissionStruct = $model->get_submission_structure();
     $updatedPreviousCsvSupermodelDetails = array();
-    if (isset($submissionStruct['superModels'])) {
+    if (isset($this->submissionStruct['superModels'])) {
       // loop through the supermodels
-      foreach($submissionStruct['superModels'] as $modelName=>$modelDetails) {
+      foreach($this->submissionStruct['superModels'] as $modelName=>$modelDetails) {
         // meaning models do not get shared across rows - we always generate a new meaning ID.
         if ($modelName=='taxon_meaning' || $modelName=='meaning') 
           continue;
@@ -357,11 +358,10 @@ class Import_Controller extends Service_Base_Controller {
   * in the next record.
   */
   private function captureSupermodelIds($model) {
-    $submissionStruct = $model->get_submission_structure();
-    if (isset($submissionStruct['superModels'])) {
+    if (isset($this->submissionStruct['superModels'])) {
       $array = $model->as_array();
       // loop through the supermodels
-      foreach($submissionStruct['superModels'] as $modelName=>$modelDetails) {
+      foreach($this->submissionStruct['superModels'] as $modelName=>$modelDetails) {
         $id = $modelName . '_id';
         // Expect that the fk field is called fkTable_id (e.g. if the super model is called sample, then
         // the field should be sample_id). If it is not, then we revert to using ORM to find the ID, which 
