@@ -571,7 +571,7 @@ class extension_splash_extensions {
       }
     });\n";
     //Do not allow submission if there is no plot set
-    data_entry_helper::$javascript .= "$('#entry_form').submit(function() { if (!$('#imp-boundary-geom').val()) {alert('Please select a plot type and create a plot before continuing.'); return false; }});\n";
+    data_entry_helper::$javascript .= '$("#save-button").click(function() { if (!$("#imp-boundary-geom").val()) {alert("Please select a plot type and create a plot before continuing."); return false; } else { $("#entry_form").submit(); }});';
   }
 }
 ?>
