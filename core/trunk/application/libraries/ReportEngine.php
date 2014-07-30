@@ -864,12 +864,15 @@ class ReportEngine {
     $this->reportDb
         ->select('distinct a.id, a.data_type, a.caption, a.validation_rules, a.system_function, a.multi_value')
         ->from("{$type}_attributes as a");
-    if ($this->websiteIds)
+    if ($this->websiteIds) {
+      $websiteIds = implode(',', $this->websiteIds);
       $this->reportDb
           ->join("{$type}_attributes_websites as aw", "aw.{$type}_attribute_id", 'a.id')
-          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id')
-          ->in('wa.to_website_id', $this->websiteIds)
-          ->where(array('wa.provide_for_'.$this->sharingMode=>'t', 'aw.deleted' => 'f'));
+          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id', 'LEFT')          
+          ->where("(wa.to_website_id in ($websiteIds) or wa.to_website_id is null)")
+          ->where("(wa.provide_for_{$this->sharingMode}='t' or wa.provide_for_{$this->sharingMode} is null)")
+          ->where(array('aw.deleted' => 'f'));
+    }
     $ids = array();
     $captions = array();
     $sysfuncs = array();
