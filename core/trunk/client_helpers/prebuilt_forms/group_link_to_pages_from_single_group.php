@@ -45,9 +45,9 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_e
         array(
           'name'=>'instructions_configuration',
           'caption'=>'Link Names And Instructions Configuration',
-          'description'=>'Link names are always displayed in the order they are specified for the group, this configuration does '.
-            'not alter ordering. For each title you wish to specify instructions for, simply type the title inside square brackets [] '.
-            'and then type the instruction to appear on the following lines e.g.<br>
+          'description'=>
+            'For each title you wish to specify instructions for, simply type the title inside square brackets [] '.
+            'and then type the instruction to appear on the following lines (Note that titles without instructions are also allowed) e.g.<br>
             [Group Administration]<br>
             This link takes you to a page where the recording group can be setup.<br>
             [Group Records]<br>
@@ -87,23 +87,28 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_e
   public static function get_form($args, $node, $response=null) {
     if (empty($args['group_id']))
       drupal_set_message('Please specify a group_id in the page configuration.');
+    if (empty($args['instructions_configuration']))
+      drupal_set_message('Please provide a page configuration in the User Interface options.');
     //Only perform if the user has specified an instruction to appear under each page like.
     if (!empty($args['instructions_configuration'])) {
       $configuration = data_entry_helper::explode_lines($args['instructions_configuration']);
       $key='';
       $description='';
+      //Keep track of the ordering of the titles
+      $titleNumber=0;
       //For each configured line we need to find all the descriptions and store them against the page titles in an array
       foreach ($configuration as $configLineNum => $configurationLine) {
         //If line is a link title (specified inside square brackets)
         if ($configurationLine[0]==='[' && substr($configurationLine, -1) == ']') {
           //If this isn't the first title, then we need to store the description for the previous title into an
-          //array. The array key is the name of the page link.
+          //array. The key is a number representing the order of the titles in the configuration, the sub array key is the name of the page link.
           if (!empty($key)) {
-            $titleDescriptions[$key]=$description;
+            $titleDescriptions[$titleNumber]=array($key=>$description);
             $description='';
           }
-          //Get the next array key we will use from the specified page link title. Chop the square brackets of the ends.
+          //Get the next array key we will use from the specified page link title. Chop the square brackets off the ends.
           $key = substr($configurationLine, 1, -1);
+          $titleNumber++;
         } else {
           //If the line does not use square brackets then we know it is part of the description/instruction. We do an 
           //append as the instruction might span several lines.
@@ -111,7 +116,7 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_e
         }
       }
       //For the last description we still need to save it to the array.
-      $titleDescriptions[$key]=$description;
+      $titleDescriptions[$titleNumber]=array($key=>$description);
       $description='';
     }
     $r='';
@@ -137,25 +142,33 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_e
         $groupTitle = $groupDataItem['title'];
       }
     }
+    //Need to add a break at the front of the list of pages links, as the first item is lacking this,
+    //but the others have it.
+    $pageLinks='<br>'.$pageLinks;
     //All the page links come out of the database in one cluster. Explode these so we have each link separately
     $explodedPageLinks = explode('</a>',$pageLinks);
-    foreach ($explodedPageLinks as &$pageLink) {
-      //Each page link is a html link, we just want the plain name
-      $plainPageLink=strip_tags($pageLink);
-      //If the user has specified an instruction/description for the page link, then display the instruction in the lines following the link
-      //using italics.
-      if (isset($titleDescriptions[$plainPageLink])) {  
-        $pageLink = '<h3>'.$pageLink.'</a></h3><i>'.$titleDescriptions[$plainPageLink].'</i>';
-      } else {
-        $pageLink = '<h3>'.$pageLink.'</a></h3>';
+    $pageLinkHtml='';
+    //Go through all the page links to display
+    foreach ($titleDescriptions as $titleDescArr) {
+      foreach ($explodedPageLinks as &$pageLink) {
+        //Each page link is a html link, we just want the plain name
+        $plainPageLink=strip_tags($pageLink);
+        //If the user has specified an instruction/description for the page link, then display the instruction in the lines following the link
+        //using italics. 
+        if (array_key_exists($plainPageLink,$titleDescArr)) {  
+          if (!empty($titleDescArr[$plainPageLink])) {
+            $pageLinkHtml .= '<h3>'.$pageLink.'</a></h3><i>'.$titleDescArr[$plainPageLink].'</i>';
+          } else {
+            $pageLinkHtml .= '<h3>'.$pageLink.'</a></h3>';
+          }
+        }
       }
     }
-    //Display all the links on the page
-    $pageLinks = implode('<br>',$explodedPageLinks);
+
     $r = '<div><h2>'.$groupTitle.' Links'.'</h2><br>';
     $r .= str_replace(array('{rootFolder}','{sep}'),
-        array($rootFolder, strpos($rootFolder, '?')===FALSE ? '?' : '&'), $pageLinks); 
-    $r .= '</div>';
+        array($rootFolder, strpos($rootFolder, '?')===FALSE ? '?' : '&'), $pageLinkHtml); 
+    $r .= '</div><br>';
     return $r;
   }
 }
