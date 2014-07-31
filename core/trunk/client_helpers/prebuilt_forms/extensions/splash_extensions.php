@@ -569,6 +569,16 @@ class extension_splash_extensions {
         $('#locAttr\\\\:'+indiciaData.plotWidthAttrId).val('');
         $('#locAttr\\\\:'+indiciaData.plotLengthAttrId).val('');
       }
+    });
+    //Don't use $(document).ready as that fires before the indiciaData.mapdiv is setup
+    $(window).load(function() {
+      if ($('#location\\\\:location_type_id').val()) {
+        plot_type_dropdown_change();
+      } else {
+        indiciaData.plotWidthLength='';
+        $('#locAttr\\\\:'+indiciaData.plotWidthAttrId).val('');
+        $('#locAttr\\\\:'+indiciaData.plotLengthAttrId).val('');
+      }
     });\n";
     //Do not allow submission if there is no plot set
     data_entry_helper::$javascript .= '$("#save-button").click(function() { if (!$("#imp-boundary-geom").val()) {alert("Please select a plot type and create a plot before continuing."); return false; } else { $("#entry_form").submit(); }});';
