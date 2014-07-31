@@ -1844,7 +1844,11 @@ mapLocationSelectedHooks = [];
                       parser = new OpenLayers.Format.WKT();
                       feature = parser.read(r.wkt);
                       r.wkt = feature.geometry.transform(proj, div.map.projection).toString();
-                      ghost=_showWktFeature(div, r.wkt, div.map.editLayer, null, true, 'ghost', false);
+                      //If this line is used, it breaks the roation handles on the plots without
+                      //actually having any other effect as far as I can tell.
+                      if (!div.settings.clickForPlot) {                     
+                        ghost=_showWktFeature(div, r.wkt, div.map.editLayer, null, true, 'ghost', false);
+                      }
                     }
                   } else if (parseInt(_getSystem())==_getSystem()) {
                     // also draw a selection ghost if using a point ref system we can simply transform client-side
