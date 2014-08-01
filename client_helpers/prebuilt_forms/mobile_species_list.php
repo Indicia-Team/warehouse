@@ -28,10 +28,61 @@
  * @todo Provide form description in this comment block.
  * @todo Rename the form class to iform_...
  */
- 
+require_once("mobile_sample_occurrence.php");
+
+global $list_templates;
+$list_templates['gallery'] = <<<'EOD'
+      <div class="gallery" id="{gallery_id}" style="display:none">
+           {gallery}
+      </div>
+EOD;
+$list_templates['list_entry'] = <<<'EOD'
+      <li data-corners="false" data-shadow="false" data-iconshadow="true"
+      data-wrapperels="div" data-icon="arrow-r" data-iconpos="right" data-theme="c">
+        <a href="{href}">
+          <img src="{pic}">
+          <h3>{name}</h3>
+          <p>{caption}</p>
+        </a>
+        <a href="{form_href}" data-icon="action" data-ajax="false">Record</a>
+      </li>
+EOD;
+$list_templates['gallery_link'] = '<div class="ui-btn-right"
+data-role="controlgroup" data-type="horizontal"><a href="#" onclick="app.navigation.galleries[\'{gallery_id}\'].show(0)"' .
+  'data-icon="eye" data-iconpos="notext" data-role="button">Gallery</a></div>';
+
+$list_templates['picture_link'] = '<a href="{url}"><img src="{url}" /></a>';
+
+
 class iform_mobile_species_list{
 
-  
+
+  /**
+   * The list of JQM pages in a structured array.
+   *
+   * ATTR
+   *
+   * Array element format:
+   *  ATTR => [],
+      CONTENT => [
+        HEADER =>  [
+          ATTR => [],
+          CONTENT => []
+          ],
+        CONTENT => [
+          ATTR => [],
+          CONTENT => []
+          ],
+        FOOTER =>  [
+          ATTR => [],
+          CONTENT => []
+          ]
+        ]
+      ]
+   * @var array
+   */
+  protected $pages_array = array();
+
   /** 
    * Return the form metadata. Note the title of this method includes the name of the form file. This ensures
    * that if inheritance is used in the forms, subclassed forms don't return their parent's form definition.
@@ -53,8 +104,14 @@ class iform_mobile_species_list{
    * @todo: Implement this method
    */
   public static function get_parameters() {
-     
-     $species = array(
+     return array(
+        array(
+          'name' => 'form_path',
+          'caption' => 'Form Path',
+          'description' => 'Path to the form where the species recording is linked.',
+          'type' => 'textfield',
+          'required' => TRUE
+        ),
         array(
           'name' => 'species',
           'caption' => 'Species list',
@@ -71,6 +128,7 @@ class iform_mobile_species_list{
                   "mapping": {
                       "name":{"type":"str", "title": "name", "required":"true"},
                       "taxon":{"type":"str", "title": "taxon", "required":"true"},
+                      "taxon_id":{"type":"str", "title": "taxon id", "required":"true"},
                       "pic":{"type":"str", "title": "pic", "required":"true"},
                       "content":{"type":"map", "title":"content", 
                                  "mapping":{description:{"type":"str", "title":"description"},
@@ -109,8 +167,6 @@ class iform_mobile_species_list{
               </center>'
           )
         );
-     
-     return $species;
   }
   
   /**
@@ -124,100 +180,77 @@ class iform_mobile_species_list{
    * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
+    global $pages_array;
+    global $list_templates;
+    iform_load_helpers(array('mobile_entry_helper'));
 
-    $list = '<div id="tab" data-role="page" data-url="tab">';
-    
-    $list_entry_template = '<li data-corners="false" data-shadow="false" data-iconshadow="true" data-wrapperels="div" data-icon="arrow-r" data-iconpos="right" data-theme="c">
-                              <a href="{href}">
-                                 <img src="{pic}">
-                                 <h3>{name}</h3>
-                                 <p>{caption}</p>
-                               </a>
-                               <a href="app/form" onclick="Code.photoSwipe(\'a\', \'{gallery_id}\');" data-icon="action"> AAA</a>
-                            </li>';
-    $species_page_template = '<div id="{id}" data-role="page" data-url="{id}">
-                                <header data-role="header" role="banner" >
-                                    <a href="#" data-rel="back" data-icon="arrow-l" data-iconpos="left" data-role="button" >Back</a>
-                                    <h1 role="heading" aria-level="1">{name}</h1>       
-                                    <a href="#" onclick="Code.photoSwipe(\'a\', \'#{gallery_id}\');Code.PhotoSwipe.Current.show(0)" data-icon="eye"  data-role="button">Gallery</a>
-                                </header>
-                                <div data-role="content">
-                                   <div class="gallery" id="{gallery_id}" style="display:none">
-                                    {gallery}
-                                   </div>
-                                   <center>
-                                    <img src="{pic}" >
-                                   </center>
-                                  {content}
-                                </div>
-                                <footer data-role="footer"></footer>
-                              </div>';
-    $picture_link_template = '<a href="{url}"><img src="{url}" /></a>';
-    
- 
+    //generate list page
     $args['species']= str_replace("\r\n", "", $args['species']);
     $species = json_decode($args['species'], true);
-    
-    $list .= '<ul data-role="listview" data-split-icon="gear" data-split-theme="d"> ';
+
+    $list = '<ul data-role="listview" data-split-icon="gear" data-split-theme="d"> ';
     foreach ($species as $entry){
         $id = '#' . str_replace(" ", "_", $entry['name']);
-        $list .= str_replace( array('{name}','{href}','{caption}', '{pic}'), array($entry['name'], $id, $entry['taxon'], $entry['pic']), $list_entry_template);
+        $form_href = $args['form_path'] . '?taxon=' . $entry['taxon_id'];
+        $list .= str_replace( array('{name}','{href}','{caption}', '{pic}', '{form_href}'),
+          array($entry['name'], $id, $entry['taxon'], $entry['pic'], $form_href),
+          $list_templates['list_entry']);
     }
     $list .= '</ul>';
-    $list .= '</div>';
-    
+
+    $caption = "List";
+    $caption = "<h1 id='" . $caption . "_heading'>" . $caption . "</h1>";
+    $page = static::getFixedBlankPage("list", $caption);
+    $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] = $list;
+    $pages_array[] = $page;
+
     //creating species specific pages
     foreach ($species as $entry){
         $id = str_replace(" ", "_", $entry['name']);
         $gallery_id = $id . "_gallery";
         $gallery = "";
-        
+
         $content_keys = array('{taxon}', '{description}', '{distribution}', '{habitat}');
         $content_args = array($entry['taxon'], $entry['content']['description'], $entry['content']['distribution'], $entry['content']['habitat']);
         $content = str_replace($content_keys, $content_args, $args['content']);
             
         //creating gallery
-        if (key_exists('gallery', $entry)){
+        if (array_key_exists('gallery', $entry)){
           foreach ($entry['gallery'] as $gallery_pic){
-            $gallery .= str_replace('{url}', $gallery_pic, $picture_link_template); 
+            $gallery .= str_replace('{url}', $gallery_pic, $list_templates['picture_link']);
           } 
         }
-        
-        $list .= str_replace(array('{id}', '{name}', '{gallery_id}', '{gallery}', '{content}', '{pic}'), array($id, $entry['name'], $gallery_id, $gallery, $content, $entry['pic']), $species_page_template);
+        //todo: add _ instead of spaces in id
+        $caption = "<h1 id='" . $entry['name'] . "_heading'>" . $entry['name'] . "</h1>";
+        $page = static::getFixedBlankPage($id, $caption);
+
+        //header
+        $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT][] = str_replace('{gallery_id}',
+          $gallery_id, $list_templates['gallery_link']);
+
+        //content
+        $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] = str_replace(array('{gallery_id}', '{gallery}'),
+          array($gallery_id, $gallery), $list_templates['gallery']);
+
+        $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] = '<center><img src="' .
+         $entry['pic'] . '"></center>';
+        $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] = $content;
+        $pages_array[] = $page;
     }
-    
-    
-    
 
+    //render pages
+    $r = "";
+    foreach($pages_array as $cur_page){
+      $r .= static::renderOnePage($cur_page);
+    }
 
-    return $list;
+    return $r;
   }
-  
-  /**
-   * Optional. Handles the construction of a submission array from a set of form values. 
-   * Can be ommitted when the prebuilt form does not submit data via a form post.
-   * For example, the following represents a submission structure for a simple
-   * sample and 1 occurrence submission.
-   * return data_entry_helper::build_sample_occurrence_submission($values);
-   * @param array $values Associative array of form data values. 
-   * @param array $args iform parameters. 
-   * @return array Submission structure.
-   * @todo: Implement or remove this method
-   */
-  public static function get_submission($values, $args) {
-        
+  public static function renderOnePage($page){
+    return iform_mobile_sample_occurrence::renderOnePage($page);
   }
-  
-  /**
-   * Optional method to override the page that is redirected to after a successful save operation.
-   * This allows the destination to be chosen dynamically.
-   * @param array $values Associative array of form data values. 
-   * @param array $args iform parameters. 
-   * @return string Destination URL.
-   * @todo: Implement or remove this method
-   */
-  public static function get_redirect_on_success($values, $args) {
-        
-  }  
 
+  public static function getFixedBlankPage($id, $caption){
+    return iform_mobile_sample_occurrence::get_blank_page($id, $caption);
+  }
 }

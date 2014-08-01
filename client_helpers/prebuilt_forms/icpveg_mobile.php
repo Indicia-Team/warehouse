@@ -41,6 +41,53 @@ class iform_icpveg_mobile extends iform_mobile_sample_occurrence {
       'default' => $default_value,
     ), $options));
   }
+
+  /**
+   * Returns a blank JQM page with fixed Header and Footer and generic default
+   * back button.
+   * @return array
+   */
+  public static function get_blank_page($id = NULL, $caption = NULL){
+    //back button
+    $options = array();
+    $options['href'] = '#';
+    $options['caption'] = 'Back';
+    $options['icon'] = 'arrow-l';
+    $options['iconpos'] = 'left';
+    $back_button = mobile_entry_helper::apply_template('jqmBackButton', $options);
+
+    //gps button
+    $options = array();
+    $options['onclick'] = "app.navigation.gpsPopup()";
+    $options['href'] = "#";
+    $options['id'] = "";
+    $options['class'] = "geoloc_icon";
+    $options['icon'] = "location";
+    $options['iconpos'] = "notext";
+    $gps_button = mobile_entry_helper::apply_template(
+      'jqmButton', $options
+    );
+
+    return array(
+      JQM_ATTR => array('id' => $id),
+      JQM_CONTENT => array(
+        JQM_HEADER => array(
+          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_CONTENT => array($back_button, $caption, $gps_button)
+        ),
+        JQM_CONTENT => array(
+          JQM_ATTR => array(),
+          JQM_CONTENT => array()
+        ),
+        JQM_FOOTER => array(
+          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_CONTENT => array()
+        )
+      )
+    );
+  }
+
+
   
 }
 

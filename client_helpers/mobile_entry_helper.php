@@ -25,90 +25,111 @@
 require_once('data_entry_helper.php');
 
 global $indicia_templates;
-
+$indicia_templates['suffix'] = ""; // no need for extra </br> better to use css
+$indicia_templates['form'] = <<<'EOD'
+  <form method="{method}" enctype="multipart/form-data" id="{id}"
+  action="{action}" data-ajax="false">{content}</form>
+EOD;
+$indicia_templates['auth'] = <<<'EOD'
+  <input id="appname" name="appname" type="hidden" value="{appname}">
+  <input id="appsecret" name="appsecret" type="hidden" value="{appsecret}">
+EOD;
 $indicia_templates['jqmPage'] = $indicia_templates['jqmPageElement'] = <<<'EOD'
      <div data-role="{role}" {attr}>{content}</div>
 EOD;
-
-$indicia_templates['jqmBackButton'] = <<<'EOD'
-  <a href='{href}' data-rel='back'>{caption}</a>
-EOD;
-
 $indicia_templates['jqmNumberInput'] = <<<'EOD'
 <table {class}>
   <tr {class}>
     <td {class}>
-     <label for="{name}"><b>{caption}</b></label>
+     <b>{caption}</b>
     </td><td>
-     <input type="number" name="{fieldname}" id="{id}" min="1" max="50" value="{value}">
+     <input type="number" name="{fieldname}" id="{id}"
+     min="1" max="50" value="{value}" data-role="none" {class}>
     </td>
   </tr>
 </table>
 EOD;
-
 $indicia_templates['jqmDate'] = <<<'EOD'
+  <div class="info-message"><p>Please enter the date of the recording.</p></div>
   <input id="{id}" name="{fieldname}" type="date" value="{default}">
 EOD;
-
 $indicia_templates['jqmCheckbox'] = <<<'EOD'
     <label><input type="checkbox" data-iconpos="{data-iconpos}" id="{id}"
     name="{fieldname}" value="{value}">{caption}</label>
 EOD;
-
+$indicia_templates['jqmButton'] = <<<'EOD'
+  <a href="{href}" id="{id}" data-role="button" onclick="{onclick}"
+  data-icon="{icon}" {class} data-iconpos="{iconpos}">{caption}</a>
+EOD;
+$indicia_templates['jqmBackButton'] = <<<'EOD'
+  <a href='{href}' data-rel='back' data-role="button" data-icon="{icon}"
+  data-iconpos="{iconpos}">{caption}</a>
+EOD;
 $indicia_templates['jqmLeftButton'] = <<<'EOD'
      <a {class} href="{href}" data-role="button"
        data-direction="reverse" data-icon="arrow-l">
        {caption}
      </a>
 EOD;
-
-//TODO: clean this up. May be move to client side templating.
-$indicia_templates['jqmLocation'] = <<<'EOD'
-<div data-role="tabs" id="location">
-  <div data-role="navbar">
-  <input id="imp-sref" name="sample:entered_sref" type="text" value="0">
-  <input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="4326">
-    <ul>
-      <li><a href="#gps" data-ajax="false" class="ui-btn-active">GPS</a></li>
-      <li><a href="#map" data-ajax="false">Map</a></li>
-      <li><a href="#gref" data-ajax="false">Grid Ref</a></li>
-    </ul>
-
-  </div>
-  <div id="gps" class="ui-body-d ui-content">
-    <input type="button" value="Try again">
-  </div>
-  <div id="map" class="ui-body-d ui-content">
-    <div id="map-canvas" style="width: 100vw; height: 50vh;"></div>
-  </div>
-  <div id="gref" class="ui-body-d ui-content">
-  </div>
-</div>
-EOD;
-
-$indicia_templates['jqmRightButton'] = <<<'EOD'
-     <a {class} href="{href}" data-role="button"
-       data-icon="arrow-r" data-iconpos="right">
-       {caption}
-     </a>
-EOD;
-
 $indicia_templates['jqmControlSubmitButton'] = <<<'EOD'
    <div align="{align}">
      <input id="{id}" type="button" value="{caption}"
       data-icon="check" data-theme="b"  data-iconpos="right">
    </div>
 EOD;
-
+//TODO: clean this up. May be move to client side templating.
+$indicia_templates['jqmLocation'] = <<<'EOD'
+<input id="imp-sref" name="sample:entered_sref" type="text"
+    placeholder="Enter Latitude, Longitude or use tools below">
+  <input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="4326">
+  <input type="hidden" id="sref_accuracy" name="smpAttr:273" value="-1">
+<div data-role="tabs" id="sref-opts">
+  <div data-role="navbar">
+    <ul>
+      <li><a href="#gps" data-ajax="false" class="ui-btn-active">GPS</a></li>
+      <li><a href="#map" data-ajax="false">Map</a></li>
+      <li><a href="#gref" data-ajax="false">Grid Ref</a></li>
+    </ul>
+  </div>
+  <div id="gps" class="ui-body-d ui-content">
+    <div class="info-message" id="gps-start-message">
+      <p>We will try to determine your location
+      using the inbuilt phone GPS.</p><p> Please make sure you have turned the phone's
+      geolocation on and are well away from large objects.</br> e.g. <i>trees, buildings </i></p>
+    </div>
+    <input type="button" id="gps-start-button" onclick="app.geoloc.start()" value="Locate">
+  </div>
+  <div id="map" class="ui-body-d ui-content">
+      <div class="info-message">
+        <p>Please tap on the map to select your location. </p>
+      </div>
+      <div id="map-canvas" style="width:100%; height: 400px;"></div>
+  </div>
+  <div id="gref" class="ui-body-d ui-content">
+      <div class="info-message">
+        <p>Please provide a GB Grid Reference.
+        </br> e.g. <i>"TQ 28170 77103"</i></p>
+      </div>
+      <input type="text" id="grid-ref" placeholder="Grid Reference"/>
+      <input type="button"
+        onclick="app.geoloc.translateGridRef('#grid-ref', '#imp-sref')"
+        value="Translate"/>
+  </div>
+</div>
+EOD;
+$indicia_templates['jqmRightButton'] = <<<'EOD'
+     <a {class} href="{href}" id="{id}" data-role="button"
+       data-icon="arrow-r" data-iconpos="right">
+       {caption}
+     </a>
+EOD;
 $indicia_templates['jqmSubmitButton'] = <<<'EOD'
      <input id="{id}" type="submit" {class}
        data-icon="check" data-iconpos="right"
        value="{caption}" />
 EOD;
-
 // Do not display an indicator that the field is required.
 $indicia_templates['requirednosuffix'] = "\n";
-
 $indicia_templates['check_or_radio_group_item'] = <<<'EOD'
     <input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"
       {class}{checked} {disabled}/>
@@ -237,54 +258,8 @@ class mobile_entry_helper extends data_entry_helper {
     $options = array_merge(array(
       'id' => 'imp-sref',
       'fieldname' => 'sample:entered_sref',
-      'defaultSys' => '4326',
-      'gps_accuracy_limit' => 100,
+      'defaultSys' => '4326'
     ), $options);
-    $id = self::jq_esc($options['id']);
-
-    // JavaScript to obtain the sref value;
-    self::$javascript .= "
-//    (function ($) {
-  indiciaData.GPS_ACCURACY_LIMIT = " . $options['gps_accuracy_limit'] . "; //meters
-  
-  if(!navigator.geolocation) {
-        // Early return if geolocation not supported.
-        makePopup('<div style=\"padding:10px 20px;\"><center><h2>Geolocation is not supported by your browser.</h2></center></div>');   
-        jQuery('#app-popup').popup();
-        jQuery('#app-popup').popup('open');
-        return;
-      }
-      
-      // Callback if geolocation succeeds.
-      var counter = 0;
-      function success(position) {
-        var latitude  = position.coords.latitude;
-        var longitude = position.coords.longitude;
-        var accuracy = position.coords.accuracy;
-        $('#$id').attr('value', latitude + ', ' + longitude);
-        $('#sref_accuracy').attr('value', accuracy);
-        if (accuracy < indiciaData.GPS_ACCURACY_LIMIT){
-            navigator.geolocation.clearWatch(indiciaData.gps_running_id);
-            $('.geoloc_icon').css('display', '');
-        }
-      };
-      
-      // Callback if geolocation fails.
-      function error(error) {
-        console.log('Geolocation error.');
-      };
-      
-      // Geolocation options.
-      var options = {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 120000
-      };
-      // Request geolocation.
-      indiciaData.gps_running_id = navigator.geolocation.watchPosition(success, error, options);
-
-//    }) (jqm);
-    ";
     
     // HTML which will accept the sref value
     // $r = '<p id="sref">Replace this with the sref.</p>';
@@ -523,7 +498,7 @@ EOD;
   /**
   * Insert buttons which, when clicked, displays the next or previous tab.
   * Insert this inside the tab divs on each tab you want to have a next or 
-   * previous button, excluding the last tab.
+  * previous button, excluding the last tab.
   * The output of this control can be configured using the following templates: 
   * <ul>
   * <li><b>jqmLeftButton</b></br>
