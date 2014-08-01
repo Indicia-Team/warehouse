@@ -169,56 +169,6 @@ EOD
 EOD
         ),
         array(
-          'name' => 'emailShow',
-          'caption' => 'Show email field even if logged in',
-          'type' => 'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'User Interface',
-          'description' => <<<'EOD'
-            If the survey requests an email address, it is sent implicitly for
-            logged in users. Check this box to show it explicitly.
-EOD
-        ),
-        array(
-          'name' => 'nameShow',
-          'caption' => 'Show user profile fields even if logged in',
-          'type' => 'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'User Interface',
-          'description' => <<<'EOD'
-            If the survey requests first name and last name or any field which
-            matches a field in the users profile, these are hidden. Check this
-            box to show these fields. Always show these fields if they are
-            required at the warehouse unless the profile module is enabled,
-            <em>copy field values from user profile</em> is selected and the
-            fields are required in the profile.
-EOD
-        ),
-        array(
-          'name' => 'copyFromProfile',
-          'caption' => 'Copy field values from user profile',
-          'type' => 'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'User Interface',
-          // Note that we can't test Drupal module availability whilst loading
-          // this form for a new iform, using Ajax. So in this case we show the
-          // control even though it is not usable (the help text explains the
-          // module requirement).
-          'visible' => !function_exists('module_exists') ||
-                 (module_exists('profile') && substr(VERSION, 0, 1) == '6') ||
-                 (module_exists('field') && substr(VERSION, 0, 1) == '7'),
-          'description' => <<<'EOD'
-            Copy any matching fields from the user\'s profile into the fields
-            with matching names in the sample data. This works for fields
-            defined in the Drupal Profile module (version 6) or Fields module
-            (version 7) which must be enabled to use this feature. Applies
-            whether fields are shown or not.
-EOD
-        ),
-        array(
           'name' => 'structure',
           'caption' => 'Form Structure',
           'type' => 'textarea',
@@ -246,9 +196,10 @@ EOD
               "=*=",
           'group' => 'User Interface',
           'description' => <<<'EOD'
+            <details class="helpText"><summary>Information about Form Structure</summary><p>
             Define the structure of the form. Each component goes on a new line
             and is nested inside the previous component where appropriate. The
-            following types of component can be specified.
+            following types of component can be specified.</p>
             <br/>
             <strong>=page name=</strong> is used to specify the name of an app
             page. (Alpha-numeric characters only)
@@ -412,19 +363,7 @@ EOD
             a right column.
             <br/>
             <strong>all else</strong> is copied to the output html so you can
-            add structure for styling.
-EOD
-        ),
-        array(
-          'name' => 'edit_taxa_names',
-          'caption' => 'Include option to edit entered taxa',
-          'type' => 'checkbox',
-          'default' => false,
-          'required' => false,
-          'group' => 'User Interface',
-          'description' => <<<'EOD'
-            Include an icon to allow taxa to be edited after they has been
-            entered into the species grid.
+            add structure for styling.</details>
 EOD
         ),
         array(
@@ -480,20 +419,6 @@ EOD
 EOD
         ),
         array(
-          'name' => 'species_include_both_names',
-          'caption' => 'Include both names in species controls and added rows',
-          'type' => 'boolean',
-          'required' => false,
-          'group' => 'Species',
-          'description' => <<<'EOD'
-            When using a species grid with the ability to add new rows, the
-            autocomplete control by default shows just the searched taxon name
-            in the drop down. Set this to include both the latin and common
-            names, with the searched one first. This also controls the label
-            when adding a new taxon row into the grid.
-EOD
-        ),
-        array(
           'name' => 'species_include_taxon_group',
           'caption' => 'Include taxon group name in species autocomplete and '
             . 'added rows',
@@ -505,62 +430,6 @@ EOD
             autocomplete control by default shows just the searched taxon name
             in the drop down. Set this to include the taxon group title. This
             also controls the label when adding a new taxon row into the grid.
-EOD
-        ),
-        array(
-          'name' => 'occurrence_comment',
-          'caption' => 'Occurrence Comment',
-          'type' => 'boolean',
-          'required' => false,
-          'default' => false,
-          'group' => 'Species',
-          'description' => <<<'EOD'
-            Should an input box be present for a comment against each
-            occurrence?
-EOD
-        ),
-        array(
-          'name' => 'occurrence_sensitivity',
-          'caption' => 'Occurrence Sensitivity',
-          'type' => 'boolean',
-          'required' => false,
-          'default' => false,
-          'group' => 'Species',
-          'description' => <<<'EOD'
-            Should a control be present for sensitivity of each record?  This
-            applies when using grid entry mode or when using the [species
-            attributes] control to output all the occurrence related input
-            controls automatically. The [sensitivity] control outputs a
-            sensitivity input control independently of this setting.
-EOD
-        ),
-        array(
-          'name' => 'occurrence_images',
-          'caption' => 'Occurrence Images',
-          'type' => 'boolean',
-          'required' => false,
-          'default' => false,
-          'group' => 'Species',
-          'description' => <<<'EOD'
-            Should occurrences allow images to be uploaded? This applies when
-            using grid entry mode or when using the [species attributes]
-            control to output all the occurrence related input controls
-            automatically. The [photos] control outputs a photos input control
-            independently of this setting.
-EOD
-        ),
-        array(
-          'name' => 'single_species_message',
-          'caption' => 'Include a message stating which species you are '
-            . 'recording in single species mode?',
-          'type' => 'boolean',
-          'required' => false,
-          'default' => false,
-          'group' => 'Species',
-          'description' => <<<'EOD'
-            Message which displays the species you are recording against in
-            single species mode. When selected, this will automatically be
-            displayed where applicable.
 EOD
         ),
         array(
@@ -583,42 +452,45 @@ EOD
 EOD
         ),
         array(
-          'name' => 'sample_method_id',
-          'caption' => 'Sample Method',
-          'type' => 'select',
-          'table' => 'termlists_term',
-          'captionField' => 'term',
-          'valueField' => 'id',
-          'extraParams' => array(
-              'termlist_external_key' => 'indicia:sample_methods'
-              ),
+          'name' => 'mobileauth',
+          'group' => 'Mobile Authentication',
+          'caption' => 'Use mobile auth',
+          'type' => 'checkbox',
           'required' => false,
-          'helpText' => 'The sample method that will be used for created samples.'
-        ),
-        array(
-          'name' => 'defaults',
-          'caption' => 'Default Values',
-          'type' => 'textarea',
-          'default' => 'occurrence:record_status=C',
           'description' => <<<'EOD'
-            Supply default values for each field as required. On each line,
-            enter fieldname=value. For custom attributes, the fieldname is the
-            untranslated caption. For other fields, it is the model and
-            fieldname, e.g. occurrence.record_status. For date fields, use
-            today to dynamically default to today\'s date. NOTE, currently
-            only supports occurrence:record_status and sample:date but will be
-            extended in future.
+          Select if the mobile application should use mobile auth module for
+          authenticating the record and submitting it to the warehouse.
 EOD
         ),
         array(
-          'name' => 'remembered',
-          'caption' => 'Remembered Fields',
-          'type' => 'textarea',
+          'name' => 'appname',
+          'group' => 'Mobile Authentication',
+          'caption' => 'Application name',
+          'type' => 'textfield',
           'required' => false,
           'description' => <<<'EOD'
-            Supply a list of field names that should be remembered in a cookie,
-            saving re-inputting them if they are likely to repeat. For greater
-            flexibility use the @lockable=true option on each control instead.
+          For authentication with iform mobile auth module.
+EOD
+        ),
+        array(
+          'name' => 'appsecret',
+          'group' => 'Mobile Authentication',
+          'caption' => 'Application secret',
+          'type' => 'textfield',
+          'required' => false,
+          'description' => <<<'EOD'
+          For authentication with iform mobile auth module.
+EOD
+        ),
+        array(
+          'name' => 'mobileauthpath',
+          'group' => 'Mobile Authentication',
+          'caption' => 'Mobile auth path',
+          'type' => 'textfield',
+          'required' => false,
+          'description' => <<<'EOD'
+          Select a path for mobile auth module to send the records to. If blank,
+          will use a default 'mobile/submit'.
 EOD
         ),
       )
@@ -651,13 +523,13 @@ EOD
       }
     }
 
-    // Get authorisation tokens to update and read from the Warehouse. We allow
+    // Else add authorisation tokens to update and read from the Warehouse. We allow
     // child classes to generate this first if subclassed.
     if (self::$auth)
       $auth = self::$auth;
     else {
       $auth = data_entry_helper::get_read_write_auth(
-              $args['website_id'], $args['password']);
+        $args['website_id'], $args['password']);
       self::$auth = $auth;
     }
 
@@ -667,62 +539,34 @@ EOD
 
     // Build a structured array describing the form.
     // Attribute definitions on the warehouse may specify some tabs.
-    $attrTabs = get_attribute_tabs(self::$smpAttrs);
+    $attrForm = get_attribute_tabs(self::$smpAttrs);
     // They are combined with those in the Form Structure.
-    $tabs = self::structureTabs($args['structure'], $attrTabs);
+    $form = self::structureForm($args['structure'], $attrForm);
     // A second pass organises the content within the tabs
-    $structure = self::structureTabsContent($tabs);
+    $structure = self::structureFormContent($form);
 
     // Render the form
-    $func = self::$called_class . '::renderForm';
-    $r = call_user_func($func, $structure, $args, $auth);
+    $renderedForm = self::renderForm($structure, $args, $auth);
 
-    return $r;
-  }
+    $options = array(); //build options for form template
+    $options['content'] = $renderedForm;
 
-  /**
-   * Load the list of sample attributes into a static variable.
-   * By maintaining a single list of attributes we can track which have already
-   * been output.
-   * @param array $readAuth Read authorisation tokens.
-   * @param integer $surveyId ID of the survey to load sample attributes for.
-   */
-  protected static function loadSmpAttrs($readAuth, $surveyId) {
-    if (!isset(self::$smpAttrs)) {
-      $attrArgs = array(
-        'valuetable' => 'sample_attribute_value',
-        'attrtable' => 'sample_attribute',
-        'fieldprefix' => 'smpAttr',
-        'extraParams' => $readAuth,
-        'survey_id' => $surveyId
-      );
-      if (!empty($args['sample_method_id'])) {
-        // Select only the custom attributes that are for this sample method.
-        $attrOpts['sample_method_id'] = $args['sample_method_id'];
+    //use mobile authentication
+    if($args['mobileauth'] == 1){
+      if(!empty($args['mobileauthpath'])){
+        $options['action'] = $args['mobileauthpath'];
+      } else {
+        $options['action'] = 'mobile/submit';
       }
-      self::$smpAttrs = data_entry_helper::getAttributes($attrArgs, false);
+    } else {
+      //no mobile authentication
+      $options['action'] = ""; //use default action
     }
-  }
+    $options['id'] = 'entry_form';
+    $options['method'] = 'post';
 
-  /**
-   * Load the list of occurrence attributes into a static variable.
-   * By maintaining a single list of attributes we can track which have already
-   * been output.
-   * @param array $readAuth Read authorisation tokens.
-   * @param integer $surveyId ID of the survey to load occurrence attributes for.
-   */
-  protected static function loadOccAttrs($readAuth, $surveyId) {
-    if (!isset(self::$occAttrs)) {
-      $attrArgs = array(
-         'valuetable' => 'occurrence_attribute_value',
-         'attrtable' => 'occurrence_attribute',
-         'key' => 'occurrence_id',
-         'fieldprefix' => 'occAttr',
-         'extraParams' => $readAuth,
-         'survey_id' => $surveyId
-      );
-      self::$occAttrs = data_entry_helper::getAttributes($attrArgs, false);
-    }
+    //output form
+    return mobile_entry_helper::apply_template('form', $options);
   }
 
   /**
@@ -747,21 +591,10 @@ EOD
     $params = array($args, $auth);
     $r .= $func ? call_user_func_array($func, $params) : '';
 
-    // Output form structure html.
-    switch($args['interface']){
-        case 'tabs':
-            $func = get_user_func(self::$called_class, 'renderTabs');
-            break;
-        case 'one_page':
-            $func = get_user_func(self::$called_class, 'renderPages');
-            break;
-        case 'wizard':
-        default:
-            echo 'ERROR: Interface style unknown.';
-    }
-
-    $params = array($structure, $args, $auth);
-    $r .= $func ? call_user_func_array($func, $params) : '';
+    //Output the jqm pages
+    static::generatePages($structure, $args, $auth);
+    global $pages_array;
+    $r .= static::renderPages($pages_array);
 
     // Ouput footer html.
     $func = get_user_func(self::$called_class, 'renderFooter');
@@ -771,156 +604,6 @@ EOD
     $r .= $func ? call_user_func($func, $args) : '';
 
     return $r;
-  }
-
-
-  /**
-   * Renders the configured indicia form into HTML JQM pages.
-   *
-   *
-   * @param array $form_inputs The configuration.
-   * @param array $args The form settings.
-   * @param array $auth Authorisation to access the warehouse.
-   * @return string
-   */
-  public function renderPages($form_inputs, $args, $auth){
-    //generate pages into $pages_array
-    self::generatePages($form_inputs, $args, $auth);
-
-    //render pages into HTML
-    global $pages_array;
-    $r = '';
-    foreach($pages_array as $page){
-      $r .= self::renderOnePage($page);
-    }
-    return $r;
-  }
-
-  /**
-   * Generates JQM pages array which can be then passed to render or further
-   * modify.
-   *
-   * By calling 'get_control_ + CONTROLLER NAME' functions it creates initial
-   * JQM page with the form inputs (form input elements and if needed parallel
-   * JQM pages with specified inputs).
-   *
-   * @param array $form_inputs The configuration.
-   * @param array $args The form settings.
-   * @param array $auth Authorisation to access the warehouse.
-   */
-  protected static function generatePages($form_inputs, $args, $auth){
-
-    //generate form content
-    $content = array();
-    if(!empty($form_inputs)){
-      //build page content & initiate child pages
-      foreach(array_values($form_inputs) as $section){
-        foreach($section as $element){
-          //'get_control_ + CONTROLLER NAME' function call
-          $func = get_user_func(self::$called_class, $element['method']);
-          if($func) {
-              $options = $element['options'];
-              $content[] = call_user_func($func, $auth, $args, "", $options);
-          }
-        }
-      }
-    }
-
-    //create blank JQM page and attach new content
-    $page = self::getFixedBlankPage();
-    $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT][] = "<h1></h1>";
-    $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT] = $content;
-
-    //submit button
-    $options = array();
-    $options['id'] = "entry-form-submit";
-    $options['align'] = "right";
-    $options['caption'] = "Save";
-
-    $page[JQM_CONTENT][JQM_FOOTER][JQM_CONTENT][] =
-      mobile_entry_helper::apply_template('jqmControlSubmitButton', $options);
-
-    //add to pages array
-    self::push_pages_array($page);
-  }
-
-  /**
-   * Adds a JQM page into the global pages_array's beginning.
-   */
-  protected static function push_pages_array($page){
-    global $pages_array;
-    if(!empty($pages_array)){
-      array_unshift($pages_array, $page);
-    } else{
-      $pages_array[] = $page;
-    }
-  }
-
-    /**
-     * Renders JQM page's array into HTML code.
-     */
-    protected static function renderOnePage($page){
-        $attr = $content = "";
-
-        //build attributes
-        foreach($page[JQM_ATTR] as $attribute => $value){
-            $attr .= $attribute . '="' . $value .'"';
-        }
-
-        //build content
-        foreach($page[JQM_CONTENT] as $role => $element){
-            $element_content = implode('', $element[JQM_CONTENT]);
-            $element_attr = "";
-            foreach($element[JQM_ATTR] as $attribute => $value){
-                $element_attr .= $attribute . '="' . $value .'"';
-            }
-
-            //put content together
-            $options = array();
-            $options['role'] = $role;
-            $options[JQM_ATTR] = $element_attr;
-            $options[JQM_CONTENT] = $element_content;
-            $content .= mobile_entry_helper::apply_template('jqmPage', $options);
-        }
-
-        //put it all together
-        $options = array();
-        $options['role'] = 'page';
-        $options[JQM_ATTR] = $attr;
-        $options[JQM_CONTENT] = $content;
-        $r = mobile_entry_helper::apply_template('jqmPage', $options);
-
-        return $r;
-    }
-
-  /**
-   * Returns a blank JQM page with fixed Header and Footer and generic default
-   * back button.
-   * @return array
-   */
-  protected static function getFixedBlankPage(){
-    $options = array();
-    $options['href'] = '#';
-    $options['caption'] = 'Back';
-    $back_button = mobile_entry_helper::apply_template('jqmBackButton', $options);
-
-    return array(
-      JQM_ATTR => array(),
-      JQM_CONTENT => array(
-        JQM_HEADER => array(
-          JQM_ATTR => array("data-position" => "fixed"),
-          JQM_CONTENT => array($back_button)
-        ),
-        JQM_CONTENT => array(
-          JQM_ATTR => array(),
-          JQM_CONTENT => array()
-        ),
-        JQM_FOOTER => array(
-          JQM_ATTR => array("data-position" => "fixed"),
-          JQM_CONTENT => array()
-        )
-      )
-    );
   }
 
   /**
@@ -945,17 +628,25 @@ EOD
    * @return string
    */
   protected static function renderHiddenInputs($args, $auth) {
-    // Authorisation tokens.
-    $r = $auth['write'];
+    $r = "";
+    // If mobile authentication enabled then add appname and appsecret.
+    // Else - Authorisation tokens.
+    if($args['mobileauth'] == 1){
+      $r .= mobile_entry_helper::apply_template('auth', array(
+        'appname' => $args['appname'], 'appsecret' => $args['appsecret']));
+    } else {
+      $r .= $auth['write'];
+    }
+
     $r .= '<input type="hidden" id="website_id" name="website_id" value="'
-            . $args['website_id'] . '" />' . PHP_EOL;
+      . $args['website_id'] . '" />' . PHP_EOL;
     $r .= '<input type="hidden" id="survey_id" name="survey_id" value="'
-            . $args['survey_id'] . '" />' . PHP_EOL;
+      . $args['survey_id'] . '" />' . PHP_EOL;
 
     // Sample method
     if (!empty($args['sample_method_id'])) {
       $r .= '<input type="hidden" name="sample:sample_method_id" value="'
-              . $args['sample_method_id'] . '"/>' . PHP_EOL;
+        . $args['sample_method_id'] . '"/>' . PHP_EOL;
     }
 
     // Check if Record Status is included as a control. If not, then add it as
@@ -963,10 +654,10 @@ EOD
     $arr = helper_base::explode_lines($args['structure']);
     if (!in_array('[record status]', $arr)) {
       $value = isset($args['defaults']['occurrence:record_status']) ?
-              $args['defaults']['occurrence:record_status'] : 'C';
+        $args['defaults']['occurrence:record_status'] : 'C';
       $r .= '<input type="hidden" id="occurrence:record_status" '
-              . 'name="occurrence:record_status" value="'
-              . $value . '" />' . PHP_EOL;
+        . 'name="occurrence:record_status" value="'
+        . $value . '" />' . PHP_EOL;
     }
 
     // User profile fields such as username, id etc.
@@ -977,14 +668,85 @@ EOD
   }
 
   /**
-   * Construct html represented by the Form Structure argument and the warehouse
-   * attribute configuration. The inputs are grouped on 'tabs'.
+   * Generates JQM pages array which can be then passed to renderPages or further
+   * modification.
+   *
+   * By calling 'get_control_ + CONTROLLER NAME' functions it creates form inputs
+   * (form input elements and if needed parallel JQM pages with specified inputs).
+   *
+   * Depending on the form interface the user has selected, the inputs will be
+   * structured into Tabs or One Page display.
+   *
+   * @param $structure
+   * @param $args
+   * @param $auth
+   */
+  protected static function generatePages($structure, $args, $auth){
+    // Output form structure html.
+    switch($args['interface']){
+      case 'tabs':
+        static::generateTabs($structure, $args, $auth);
+        break;
+      case 'one_page':
+        //generate pages into $pages_array
+        static::generateOnePage($structure, $args, $auth);
+        break;
+      case 'wizard':
+      default:
+        echo 'ERROR: Interface style unknown.';
+    }
+
+  }
+
+  /**
+   * Generates JQM pages array structuring the form into a One Page interface.
+   *
+   * @param $content
+   */
+  protected static function generateOnePage($structure, $args, $auth){
+    //create blank JQM page and attach new content
+    $page = static::get_main_page("record");
+    //get the content
+    $content = static::renderOnePageContent($structure, $args, $auth);
+    $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT] = $content;
+
+      //add to pages array
+    static::unshift_pages_array($page);
+}
+  /**
+   * Renders one page content.
+   * @param array $form_inputs The configuration.
+   * @param array $args The form settings.
+   * @param array $auth Authorisation to access the warehouse.
+   */
+  protected static function renderOnePageContent($structure, $args, $auth){
+    //generate form content
+    $content = array();
+    if(!empty($structure)){
+      //build page content & initiate child pages
+      foreach(array_values($structure) as $section){
+        foreach($section as $element){
+          //'get_control_ + CONTROLLER NAME' function call
+          $func = get_user_func(self::$called_class, $element['method']);
+          if($func) {
+            $options = $element['options'];
+            $content[] = call_user_func($func, $auth, $args, "", $options);
+          }
+        }
+      }
+    }
+    return $content;
+  }
+
+  /**
+   * Generates JQM pages array structuring the form into a One Page interface.
+   *
    * @param array $tabs
    * @param array $args The form settings.
    * @param array $auth Authorisation to access the warehouse.
    * @return string
    */
-  protected static function renderTabs($tabs, $args, $auth) {
+  protected static function generateTabs($tabs, $args, $auth) {
     $tabHtml = array();
     $tabaliases = array();
     foreach ($tabs as $tab => $tabContent) {
@@ -995,7 +757,7 @@ EOD
       // get a machine readable alias for the heading, if we are showing tabs
       $tabalias = 'tab-' . preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $html = '';
-      $html .= self::renderOneTabContent(
+      $html .= static::renderOneTabContent(
               $auth, $args, $tab, $tabContent, $tabalias, $hasControls);
       if (!empty($html) && $hasControls) {
         $tabHtml[$tab] = $html;
@@ -1005,41 +767,11 @@ EOD
 
     // Output the dynamic tab content
     $pageIdx = 0;
-    $r = '';
     foreach ($tabHtml as $tab => $tabContent) {
       $tabalias = $tabaliases[$pageIdx];
-      $r .= '<div id="' . $tabalias . '" data-role="page">' . PHP_EOL;
-      $r .= '<div data-role="header" data-position="fixed">' . PHP_EOL;
-      $r .= '<a href="#" data-rel="back" data-icon="arrow-l" ';
-      $r .= 'data-iconpos="left">Back</a>' . PHP_EOL;
-
-      $r .= '<h2>' . $tab . '</h2>' . PHP_EOL;
-
-      $r .= '
-        <a href="#" class="geoloc_icon" onclick="
-               var coords = jQuery(\'#imp-sref\').val();
-               var accuracy = jQuery(\'#sref_accuracy\').val();
-               makePopup(\'<center><h2>GPS</h2></center><h3><b>Your coordinates:</b> \' + coords + \'</h3><h3><b>Accuracy:</b> \' + accuracy + \'m</h3> \');
-               jQuery(\'#app-popup\').popup().popup(\'open\');" style="display:none; width: 27px; height: 27px; padding:4px;">
-          <div style="width: 3px; height: 3px; background: transparent; box-shadow:
-              12px   6px   #518b41,12px   12px  #518b41,  12px  15px  #518b41 ,
-              12px   21px  #518b41,  12px  18px  #518b41,  12px   9px  #518b41 ,
-              15px   12px  #518b41 ,18px   12px  #518b41 ,24px   12px  #518b41,
-              9px  12px   #518b41,  6px  12px  #518b41,   0px   12px  #518b41 ,
-              12px   0px   #518b41,  12px   24px   #518b41,  3px   12px  #518b41,
-              3px   9px   #518b41,  6px   6px   #518b41,  12px  3px   #518b41,
-              9px   3px   #518b41,  15px  3px   #518b41 , 21px   12px   #518b41 ,
-              21px  9px   #518b41,  18px  6px   #518b41,  3px   15px  #518b41,
-              6px   18px  #518b41,  9px   21px  #518b41,  15px  21px    #518b41,
-              18px  18px  #518b41,  21px  15px  #518b41, 18px 3px #518b41,
-              21px 6px #518b41, 6px 3px #518b41, 3px 6px #518b41, 18px 21px #518b41,
-              21px 18px #518b41,6px 21px #518b41,3px 18px #518b41;">
-         </div>
-       </a>' . PHP_EOL;
-      $r .= '</div>' . PHP_EOL;
-      $r .= '<div role="main" class="ui-content">' . PHP_EOL;
-      $r .= $tabContent;
-      $r .= "</div>\n";
+      $caption = "<h1>" . $tab . "</h1>";
+      $page = static::get_blank_page($tabalias, $caption);
+      $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] = $tabContent;
 
       // Add any buttons required in a jQM footer
       if(count($tabHtml) == 1){
@@ -1058,18 +790,28 @@ EOD
         $prev = '#' . $tabaliases[$pageIdx - 1];
         $next = '#' . $tabaliases[$pageIdx + 1];
       }
-      $r .= mobile_entry_helper::wizard_buttons(array(
+
+      $page[JQM_CONTENT][JQM_FOOTER][JQM_CONTENT][] = mobile_entry_helper::wizard_buttons(array(
         'prev' => $prev,
         'next' => $next,
       ));
 
       $pageIdx++;
-      // End of jQM page.
-      $r .= "</div>\n";
+      static::push_pages_array($page);
     }
-   return $r;
   }
 
+  /**
+   * Renders one tab content.
+   *
+   * @param $auth
+   * @param $args
+   * @param $tab
+   * @param $tabContent
+   * @param $tabalias
+   * @param $hasControls
+   * @return string
+   */
   protected static function renderOneTabContent($auth, $args, $tab, $tabContent,
           $tabalias, &$hasControls) {
 
@@ -1111,6 +853,62 @@ EOD
   }
 
   /**
+   * Renders the configured indicia form into HTML JQM pages.
+   *
+   *
+   * @param array $form_inputs The configuration.
+   * @param array $args The form settings.
+   * @param array $auth Authorisation to access the warehouse.
+   * @return string
+   */
+  public static function renderPages($pages_array){
+    //render pages into HTML
+    $r = '';
+    foreach($pages_array as $page){
+      $r .= static::renderOnePage($page);
+    }
+    return $r;
+  }
+
+
+  /**
+   * Renders JQM page's array into HTML.
+   */
+  public static function renderOnePage($page){
+    $attr = $content = "";
+
+    //build attributes
+    foreach($page[JQM_ATTR] as $attribute => $value){
+      $attr .= $attribute . '="' . $value .'"';
+    }
+
+    //build content
+    foreach($page[JQM_CONTENT] as $role => $element){
+      $element_content = implode('', $element[JQM_CONTENT]);
+      $element_attr = "";
+      foreach($element[JQM_ATTR] as $attribute => $value){
+        $element_attr .= $attribute . '="' . $value .'"';
+      }
+
+      //put content together
+      $options = array();
+      $options['role'] = $role;
+      $options[JQM_ATTR] = $element_attr;
+      $options[JQM_CONTENT] = $element_content;
+      $content .= mobile_entry_helper::apply_template('jqmPage', $options);
+    }
+
+    //put it all together
+    $options = array();
+    $options['role'] = 'page';
+    $options[JQM_ATTR] = $attr;
+    $options[JQM_CONTENT] = $content;
+    $r = mobile_entry_helper::apply_template('jqmPage', $options);
+
+    return $r;
+  }
+
+  /**
    * Overridable function to retrieve the HTML to appear below the dynamically
    * constructed form, which by default is the closure of the HTML form for data
    * submission
@@ -1135,7 +933,7 @@ EOD
    * contains the tab name, alias and an array of all the components in the form
    * structure to be placed in that tab.
    */
-  protected static function structureTabs($strucText, $attrTabs) {
+  protected static function structureForm($strucText, $attrTabs) {
     $strucArray = helper_base::explode_lines($strucText);
     // An array to contain the tabs defined in $structure.
     $strucTabs = array();
@@ -1158,7 +956,7 @@ EOD
       } else {
         // Found some other component so add it to the array for the tab that
         // it occurs on.
-          $strucTabs[$name][] = $component;
+        $strucTabs[$name][] = $component;
       }
     }
 
@@ -1195,7 +993,7 @@ EOD
    * with each element containing a structured array of all the components in
    * the form structure to be placed in that tab.
    */
-  protected static function structureTabsContent($tabs) {
+  protected static function structureFormContent($tabs) {
     $structure = array();
     foreach($tabs as $name => $content) {
       $structure[$name] = self::structureOneTabContent($content);
@@ -1230,16 +1028,16 @@ EOD
         // Found a component of type '?help text?'
         $value = substr($component, 1, -1);
         $structure[] = array(
-            'type' => 'help',
-            'value' => $value);
+          'type' => 'help',
+          'value' => $value);
         $i++;
       }
       elseif ($component == '[*]') {
         // Found a control wild card component
         $structure[] = array(
-            'type' => 'wildctrl',
-            'options' => array(),
-            'attropts' => array());
+          'type' => 'wildctrl',
+          'options' => array(),
+          'attropts' => array());
 
         $i++;
       }
@@ -1250,10 +1048,10 @@ EOD
         $method = 'get_control_';
         $method .= strtolower($matches['attrType']);
         $structure[] = array(
-            'type' => 'control',
-            'name' => $value,
-            'method' => $method,
-            'options' => array('attrId' => $matches['attrId']));
+          'type' => 'control',
+          'name' => $value,
+          'method' => $method,
+          'options' => array('attrId' => $matches['attrId']));
         $i++;
       }
       elseif (preg_match($regexCtrl, $component) === 1) {
@@ -1263,11 +1061,11 @@ EOD
         $method = 'get_control_';
         $method .= preg_replace('/[^a-zA-Z0-9]/', '', $value);
         $structure[] = array(
-            'type' => 'control',
-            'name' => $value,
-            'method' => $method,
-            'options' => array(),
-            'attropts' => array());
+          'type' => 'control',
+          'name' => $value,
+          'method' => $method,
+          'options' => array(),
+          'attropts' => array());
         $i++;
       }
       elseif(substr($component, 0, 1) == '@') {
@@ -1280,7 +1078,7 @@ EOD
 
         if (strtolower($optValue) === 'false') {
           // Convert a value of false to a boolean
-            $optValue = FALSE;
+          $optValue = FALSE;
         }
         else {
           // Attempt to JSON decode all other values.
@@ -1302,33 +1100,9 @@ EOD
     return $structure;
   }
 
-  /**
-   * Convert the unstructured textarea of default values into a structured array.
-   */
-    protected static function parse_defaults(&$args) {
-    $result=array();
-    if (isset($args['defaults']))
-      $result = helper_base::explode_lines_key_value_pairs($args['defaults']);
-    $args['defaults'] = $result;
-  }
-
-  protected static function getReloadPath () {
-    $reload = data_entry_helper::get_reload_link_parts();
-    unset($reload['params']['sample_id']);
-    unset($reload['params']['occurrence_id']);
-    unset($reload['params']['location_id']);
-    unset($reload['params']['new']);
-    unset($reload['params']['newLocation']);
-    $reloadPath = $reload['path'];
-    if(count($reload['params'])) {
-      // decode params prior to encoding to prevent double encoding.
-      foreach ($reload['params'] as $key => $param) {
-        $reload['params'][$key] = urldecode($param);
-      }
-      $reloadPath .= '?'.http_build_query($reload['params']);
-    }
-    return $reloadPath;
-  }
+  ##########################
+  #### CONTROL FUNCTIONS ###
+  ##########################
 
   /**
    * Get the spatial reference control.
@@ -1343,115 +1117,23 @@ EOD
 
     $id = 'sref';
     $caption = 'GPS';
+    $caption = "<h1>" . $caption . "</h1>";
 
     //generate a new page
-    $page = self::getFixedBlankPage();
-    $page[JQM_ATTR]['id'] = $id;
-    $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT][] = "<h1>" . $caption . "</h1>";
+    $page = static::get_blank_page($id, $caption);
     $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] =
       mobile_entry_helper::sref_now($options, false);
-    self::push_pages_array($page);
+    static::unshift_pages_array($page);
 
     $options = array();
     $options['class'] = '';
+    $options['id'] = "sref-button";
     $options['href'] = '#' . $id;
     $options['caption'] = $caption;
     $button = mobile_entry_helper::apply_template('jqmRightButton', $options);
 
     return $button;
 
-  }
-
-  /**
-   * The species filter can be taken from the edit tab or overridden by a URL
-   * filter. This method determines the filter to be used.
-   * @param array $args Form arguments
-   * @return array List of items to filter against, e.g. species names or
-   * meaning IDs.
-   */
-  protected static function get_species_filter($args) {
-    // we must have a filter field specified in order to apply a filter
-    if (!empty($args['taxon_filter_field'])) {
-      // if URL params are enabled and we have one, then this is the top
-      // priority filter to apply
-      if (!empty($_GET['taxon']) && $args['use_url_taxon_parameter'])
-        // convert commas to newline, so url provided filters are the same
-        // format as those on the edit tab, also allowing for url encoding.
-        return explode(',', urldecode($_GET['taxon']));
-      elseif (!empty($args['taxon_filter']))
-        // filter is provided on the edit tab
-        return helper_base::explode_lines($args['taxon_filter']);
-    }
-    // default - no filter to apply
-    return array();
-  }
-
-  /**
-   * Get the species data for the page in single species mode
-   */
-  protected static function get_single_species_data($auth, $args, $filterLines) {
-    //The form is configured for filtering by taxon name, meaning id or external
-    // key. If there is only one specified, then the form cannot display a
-    // species checklist, as there is no point. So, convert our preferred taxon
-    // name, meaning ID or external_key to find the preferred taxa_taxon_list_id
-    // from the selected checklist
-    if (empty($args['list_id']))
-      throw new exception(lang::get('Please configure the Initial Species List '
-        . 'parameter to define which list the species to record is selected '
-        . 'from.'));
-    $filter = array(
-      'preferred' => 't',
-      'taxon_list_id'=>$args['list_id']
-    );
-    if ($args['taxon_filter_field']=='preferred_name') {
-      $filter['taxon']=$filterLines[0];
-    } else {
-      $filter[$args['taxon_filter_field']]=$filterLines[0];
-    }
-    $options = array(
-      'table' => 'taxa_taxon_list',
-      'extraParams' => $auth['read'] + $filter
-    );
-    $response =data_entry_helper::get_population_data($options);
-    // Call code that handles the error logs
-    self::get_single_species_logging($auth, $args, $filterLines, $response);
-    return $response;
-  }
-
-  /**
-   * Error logging code for the page in single species mode
-   * @param $auth
-   * @param $args
-   * @param $filterLines
-   * @param $response
-   * @throws exception
-   */
-  protected static function get_single_species_logging(
-          $auth, $args, $filterLines, $response) {
-    //Go through each filter line and add commas between the values so it looks
-    // nice in the log
-    $filters = implode(', ', $filterLines);
-    // If only one filter is supplied but more than one match is found, we can't
-    // continue as we don't know which one to match against.
-    if (count($response) > 1 &&
-            count($filterLines) == 1 &&
-            empty($response['error']) &&
-            function_exists('watchdog')) {
-      watchdog('indicia', 'Multiple matches have been found when using the '
-        . 'filter \'' . $args['taxon_filter_field'] . '\'. '
-        . 'The filter was passed the following value(s)' . $filters);
-      throw new exception(lang::get('This form is setup for single species '
-        . 'recording, but more than one species matching the criteria exists '
-        . 'in the list.'));
-    }
-    // If our filter returns nothing at all, we log it, we return string
-    // 'no matches' which the system then uses to clear the filter
-    if (count($response) == 0) {
-      if (function_exists('watchdog'))
-        watchdog('missing sp.', 'No matches were found when using the '
-          . 'filter \'' . $args['taxon_filter_field'] . '\'. '
-          . 'The filter was passed the following value(s)' . $filters);
-    }
   }
 
   /**
@@ -1659,18 +1341,17 @@ EOD
     $caption = 'Comment';
 
     //generate a new page
-    $page = self::getFixedBlankPage();
-    $page[JQM_ATTR]['id'] = $id;
-    $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT][] = "<h1>" . $caption . "</h1>";
+    $page = static::get_blank_page($id, "<h1>" . $caption . "</h1>");
     $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] =
       data_entry_helper::textarea(array_merge(array(
         'fieldname' => 'sample:comment'
       ), $options));
 
-    self::push_pages_array($page);
+    static::unshift_pages_array($page);
 
     $options = array();
     $options['class'] = '';
+    $options['id'] = "comment-button";
     $options['href'] = '#' . $id;
     $options['caption'] = $caption;
 
@@ -1755,15 +1436,15 @@ EOD
     $caption = 'Date';
 
     //generate a new page
-    $page = self::getFixedBlankPage();
-    $page[JQM_ATTR]['id'] = $id;
-    $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT][] = "<h1>" . $caption . "</h1>";
+    $caption = "<h1>" . $caption . "</h1>";
+    $page = static::get_blank_page($id, $caption);
     $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] =
       mobile_entry_helper::date_now($options, false);
-    self::push_pages_array($page);
+    static::unshift_pages_array($page);
 
     $options = array();
     $options['class'] = '';
+    $options['id'] = "date-button";
     $options['href'] = '#' . $id;
     $options['caption'] = $caption;
 
@@ -1790,8 +1471,6 @@ EOD
 
   /**
    * Get an occurrence attribute control.
-   */
-  /**
    * @param $auth
    * @param $args
    * @param $tabAlias
@@ -1844,7 +1523,7 @@ EOD
   }
 
   /**
-   * Get the recorder names control
+   * Get the recorder names control.
    * @param $auth
    * @param $args
    * @param $tabAlias
@@ -1861,7 +1540,7 @@ EOD
 
 
   /**
-   * Get the sensitivity control
+   * Get the sensitivity control.
    * @param $auth
    * @param $args
    * @param $tabAlias
@@ -1884,42 +1563,6 @@ EOD
   }
 
   /**
-   * Handles the construction of a submission array from a set of form values.
-   * @param array $values Associative array of form data values.
-   * @param array $args iform parameters.
-   * @return array Submission structure.
-   */
-  public static function get_submission($values, $args) {
-    // Any remembered fields need to be made available to the hook function
-    // outside this class.
-    global $remembered;
-    $remembered = isset($args['remembered']) ? $args['remembered'] : '';
-    // default for forms setup on old versions is grid - list of occurrences
-    // Can't call getGridMode in this context as we might not have the $_GET
-    // value to indicate grid
-    if (isset($values['speciesgridmapmode']))
-      $submission =
-        data_entry_helper::build_sample_subsamples_occurrences_submission($values);
-    else if (isset($values['gridmode']))
-      $submission =
-        data_entry_helper::build_sample_occurrences_list_submission($values);
-    else
-      $submission =
-        data_entry_helper::build_sample_occurrence_submission($values);
-    return($submission);
-  }
-
-  /**
-   * Retrieves a list of the css files that this form requires in addition to
-   * the standard Drupal, theme or Indicia ones.
-   *
-   * @return array List of css files to include for this form.
-   */
-  public static function get_css() {
-    return array('mobile_sample_occurrence.css');
-  }
-
-  /**
    * Provides a control for inputting photos against the record, when in single
    * record mode.
    *
@@ -1934,7 +1577,6 @@ EOD
     $opts = array_merge($defaults, $options);
     return data_entry_helper::image_upload($opts);
   }
-
 
   /**
    * Parses the options provided to a control in the user interface definition
@@ -1964,6 +1606,140 @@ EOD
     }
   }
 
+  ##########################
+  #### HELPER FUNCTIONS ####
+  ##########################
+
+  /**
+   * Adds a JQM page into the global pages_array's beginning.
+   */
+  protected static function unshift_pages_array($page){
+    global $pages_array;
+    if(!empty($pages_array)){
+      array_unshift($pages_array, $page);
+    } else{
+      $pages_array[] = $page;
+    }
+  }
+
+  /**
+   * Adds a JQM page into the global pages_array's beginning.
+   */
+  protected static function push_pages_array($page){
+    global $pages_array;
+    $pages_array[] = $page;
+  }
+
+  /**
+   * Returns the main form's JQM page.
+   * Only called when using One Page interface.
+   * back button.
+   * @return array
+   */
+  public static function get_main_page($id = NULL){
+    $caption = "<h1 id='" . $id . "_heading'></h1>";
+    $page = static::get_blank_page($id, $caption);
+
+    //submit button
+    $options = array();
+    $options['id'] = "entry-form-submit";
+    $options['align'] = "right";
+    $options['caption'] = "Save";
+
+    $page[JQM_CONTENT][JQM_FOOTER][JQM_CONTENT][] =
+      mobile_entry_helper::apply_template('jqmControlSubmitButton', $options);
+
+    return $page;
+  }
+
+  /**
+   * Returns a blank JQM page with fixed Header and Footer and generic default
+   * back button.
+   * @return array
+   */
+  public static function get_blank_page($id = NULL, $caption = NULL){
+    //back button
+    $options = array();
+    $options['href'] = '#';
+    $options['caption'] = 'Back';
+    $options['icon'] = 'arrow-l';
+    $options['iconpos'] = 'left';
+    $back_button = mobile_entry_helper::apply_template('jqmBackButton', $options);
+
+    return array(
+      JQM_ATTR => array('id' => $id),
+      JQM_CONTENT => array(
+        JQM_HEADER => array(
+          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_CONTENT => array($back_button, $caption)
+        ),
+        JQM_CONTENT => array(
+          JQM_ATTR => array(),
+          JQM_CONTENT => array()
+        ),
+        JQM_FOOTER => array(
+          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_CONTENT => array()
+        )
+      )
+    );
+  }
+
+  /**
+   * Retrieves a list of the css files that this form requires in addition to
+   * the standard Drupal, theme or Indicia ones.
+   *
+   * @return array List of css files to include for this form.
+   */
+  public static function get_css() {
+    return array('mobile_sample_occurrence.css');
+  }
+
+  /**
+   * Load the list of sample attributes into a static variable.
+   * By maintaining a single list of attributes we can track which have already
+   * been output.
+   * @param array $readAuth Read authorisation tokens.
+   * @param integer $surveyId ID of the survey to load sample attributes for.
+   */
+  protected static function loadSmpAttrs($readAuth, $surveyId) {
+    if (!isset(self::$smpAttrs)) {
+      $attrArgs = array(
+        'valuetable' => 'sample_attribute_value',
+        'attrtable' => 'sample_attribute',
+        'fieldprefix' => 'smpAttr',
+        'extraParams' => $readAuth,
+        'survey_id' => $surveyId
+      );
+      if (!empty($args['sample_method_id'])) {
+        // Select only the custom attributes that are for this sample method.
+        $attrOpts['sample_method_id'] = $args['sample_method_id'];
+      }
+      self::$smpAttrs = data_entry_helper::getAttributes($attrArgs, false);
+    }
+  }
+
+  /**
+   * Load the list of occurrence attributes into a static variable.
+   * By maintaining a single list of attributes we can track which have already
+   * been output.
+   * @param array $readAuth Read authorisation tokens.
+   * @param integer $surveyId ID of the survey to load occurrence attributes for.
+   */
+  protected static function loadOccAttrs($readAuth, $surveyId) {
+    if (!isset(self::$occAttrs)) {
+      $attrArgs = array(
+        'valuetable' => 'occurrence_attribute_value',
+        'attrtable' => 'occurrence_attribute',
+        'key' => 'occurrence_id',
+        'fieldprefix' => 'occAttr',
+        'extraParams' => $readAuth,
+        'survey_id' => $surveyId
+      );
+      self::$occAttrs = data_entry_helper::getAttributes($attrArgs, false);
+    }
+  }
+
   /**
    * A hook function to setup remembered fields whose values are stored in a cookie.
    */
@@ -1975,6 +1751,151 @@ EOD
     }
   }
 
+  /**
+   * Convert the unstructured textarea of default values into a structured array.
+   */
+  protected static function parse_defaults(&$args) {
+    $result=array();
+    if (isset($args['defaults']))
+      $result = helper_base::explode_lines_key_value_pairs($args['defaults']);
+    $args['defaults'] = $result;
+  }
+
+  protected static function getReloadPath () {
+    $reload = data_entry_helper::get_reload_link_parts();
+    unset($reload['params']['sample_id']);
+    unset($reload['params']['occurrence_id']);
+    unset($reload['params']['location_id']);
+    unset($reload['params']['new']);
+    unset($reload['params']['newLocation']);
+    $reloadPath = $reload['path'];
+    if(count($reload['params'])) {
+      // decode params prior to encoding to prevent double encoding.
+      foreach ($reload['params'] as $key => $param) {
+        $reload['params'][$key] = urldecode($param);
+      }
+      $reloadPath .= '?'.http_build_query($reload['params']);
+    }
+    return $reloadPath;
+  }
+
+  /**
+   * Handles the construction of a submission array from a set of form values.
+   * @param array $values Associative array of form data values.
+   * @param array $args iform parameters.
+   * @return array Submission structure.
+   */
+  public static function get_submission($values, $args) {
+    // Any remembered fields need to be made available to the hook function
+    // outside this class.
+    global $remembered;
+    $remembered = isset($args['remembered']) ? $args['remembered'] : '';
+    // default for forms setup on old versions is grid - list of occurrences
+    // Can't call getGridMode in this context as we might not have the $_GET
+    // value to indicate grid
+    if (isset($values['speciesgridmapmode']))
+      $submission =
+        data_entry_helper::build_sample_subsamples_occurrences_submission($values);
+    else if (isset($values['gridmode']))
+      $submission =
+        data_entry_helper::build_sample_occurrences_list_submission($values);
+    else
+      $submission =
+        data_entry_helper::build_sample_occurrence_submission($values);
+    return($submission);
+  }
+
+  /**
+   * The species filter can be taken from the edit tab or overridden by a URL
+   * filter. This method determines the filter to be used.
+   * @param array $args Form arguments
+   * @return array List of items to filter against, e.g. species names or
+   * meaning IDs.
+   */
+  protected static function get_species_filter($args) {
+    // we must have a filter field specified in order to apply a filter
+    if (!empty($args['taxon_filter_field'])) {
+      // if URL params are enabled and we have one, then this is the top
+      // priority filter to apply
+      if (!empty($_GET['taxon']) && $args['use_url_taxon_parameter'])
+        // convert commas to newline, so url provided filters are the same
+        // format as those on the edit tab, also allowing for url encoding.
+        return explode(',', urldecode($_GET['taxon']));
+      elseif (!empty($args['taxon_filter']))
+        // filter is provided on the edit tab
+        return helper_base::explode_lines($args['taxon_filter']);
+    }
+    // default - no filter to apply
+    return array();
+  }
+
+  /**
+   * Get the species data for the page in single species mode
+   */
+  protected static function get_single_species_data($auth, $args, $filterLines) {
+    //The form is configured for filtering by taxon name, meaning id or external
+    // key. If there is only one specified, then the form cannot display a
+    // species checklist, as there is no point. So, convert our preferred taxon
+    // name, meaning ID or external_key to find the preferred taxa_taxon_list_id
+    // from the selected checklist
+    if (empty($args['list_id']))
+      throw new exception(lang::get('Please configure the Initial Species List '
+        . 'parameter to define which list the species to record is selected '
+        . 'from.'));
+    $filter = array(
+      'preferred' => 't',
+      'taxon_list_id'=>$args['list_id']
+    );
+    if ($args['taxon_filter_field']=='preferred_name') {
+      $filter['taxon']=$filterLines[0];
+    } else {
+      $filter[$args['taxon_filter_field']]=$filterLines[0];
+    }
+    $options = array(
+      'table' => 'taxa_taxon_list',
+      'extraParams' => $auth['read'] + $filter
+    );
+    $response =data_entry_helper::get_population_data($options);
+    // Call code that handles the error logs
+    self::get_single_species_logging($auth, $args, $filterLines, $response);
+    return $response;
+  }
+
+  /**
+   * Error logging code for the page in single species mode
+   * @param $auth
+   * @param $args
+   * @param $filterLines
+   * @param $response
+   * @throws exception
+   */
+  protected static function get_single_species_logging(
+    $auth, $args, $filterLines, $response) {
+    //Go through each filter line and add commas between the values so it looks
+    // nice in the log
+    $filters = implode(', ', $filterLines);
+    // If only one filter is supplied but more than one match is found, we can't
+    // continue as we don't know which one to match against.
+    if (count($response) > 1 &&
+      count($filterLines) == 1 &&
+      empty($response['error']) &&
+      function_exists('watchdog')) {
+      watchdog('indicia', 'Multiple matches have been found when using the '
+        . 'filter \'' . $args['taxon_filter_field'] . '\'. '
+        . 'The filter was passed the following value(s)' . $filters);
+      throw new exception(lang::get('This form is setup for single species '
+        . 'recording, but more than one species matching the criteria exists '
+        . 'in the list.'));
+    }
+    // If our filter returns nothing at all, we log it, we return string
+    // 'no matches' which the system then uses to clear the filter
+    if (count($response) == 0) {
+      if (function_exists('watchdog'))
+        watchdog('missing sp.', 'No matches were found when using the '
+          . 'filter \'' . $args['taxon_filter_field'] . '\'. '
+          . 'The filter was passed the following value(s)' . $filters);
+    }
+  }
 }
 
 /**
