@@ -966,7 +966,6 @@ class Data_Controller extends Data_Service_Base_Controller {
     $request=array_merge($_GET, $_POST);
     foreach ($request as $param => $value)
     {
-      $value = urldecode($value);
       switch ($param)
       {
         case 'sortdir':
