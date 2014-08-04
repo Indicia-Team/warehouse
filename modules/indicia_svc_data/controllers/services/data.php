@@ -681,6 +681,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     if (isset($this->extensionOpts) && (!isset($this->extensionOpts['readOnly']) || $this->extensionOpts['readOnly']!==true))
       $this->allow_updates[] = $entity;
+    //Allow modules to provide an option when extending data services to allow tables without website ids to be written to
+    if (isset($this->extensionOpts['allow_full_access'])&&$this->extensionOpts['allow_full_access']==1)
+      $this->allow_full_access[] = $entity;
     return $extensions;
   }
 
