@@ -285,6 +285,7 @@ class extension_notifications_centre {
         array('fieldname'=>'data','json'=>true,
             'template'=>'<div class="type-{source_type}"><div class="status-{record_status}"></div></div><div class="note-type-{source_type}">{comment}</div>'.
             '<div class="comment-from helpText" style="margin-left: 34px; display: block;">from {username} on {triggered_date}</div>', 'display'=>'Message'),
+        array('fieldname'=>'occurrence_id'),
         array('actions'=>$availableActions),
         array('fieldname'=>'triggered_date', 'visible' => false)
       ),
