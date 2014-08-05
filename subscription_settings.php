@@ -29,23 +29,27 @@ legend {
 <body>
 <form method="POST">
 <?php
-//If there is a POST, then the user has saved, so process this
-if (!empty($_POST)) {
-  $response = subscription_settings::build_submission();
-  $decodedResponse=json_decode($response);
-  if (isset($decodedResponse->error)) {   
-    ?><h2>A problem seems to have occurred, the response from the server is as follows:</h2><?php
-    echo print_r($response,true);
-    ?><form><input type=button value="Return To Subscription Settings Screen" onClick="window.location = document.URL;"></form><?php
-  } else {
-    ?><h2>Your Subscription Changes Have Been Saved</h2><?php
-    ?><form><input type=button value="Return To Subscription Settings Screen" onClick="window.location = document.URL;"></form><?php
-  }
+if (empty($_GET['user_id']) || empty($_GET['warehouse_url'])) {
+  echo '<p>Invalid link</p>';
 } else {
-  echo subscription_settings::notificationEmailSettings();
-  echo subscription_settings::speciesAlertSettings(); ?>
-  <input type="submit"value="Save Changes">
-  </form><?php
+  //If there is a POST, then the user has saved, so process this
+  if (!empty($_POST)) {
+    $response = subscription_settings::build_submission();
+    $decodedResponse=json_decode($response);
+    if (isset($decodedResponse->error)) {   
+      ?><h2>A problem seems to have occurred, the response from the server is as follows:</h2><?php
+      echo print_r($response,true);
+      ?><form><input type=button value="Return To Subscription Settings Screen" onClick="window.location = document.URL;"></form><?php
+    } else {
+      ?><h2>Your Subscription Changes Have Been Saved</h2><?php
+      ?><form><input type=button value="Return To Subscription Settings Screen" onClick="window.location = document.URL;"></form><?php
+    }
+  } else {
+    echo subscription_settings::notificationEmailSettings();
+    echo subscription_settings::speciesAlertSettings(); ?>
+    <input type="submit"value="Save Changes">
+    </form><?php
+  }
 }
 
 class subscription_settings {
