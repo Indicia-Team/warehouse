@@ -36,7 +36,7 @@ class iform_mobile_dragonfly_list extends iform_mobile_species_list {
       JQM_ATTR => array('id' => $id),
       JQM_CONTENT => [
         JQM_HEADER => [
-          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_ATTR => array("data-position" => "fixed", "data-tap-toggle" => "false"),
           JQM_CONTENT => array($back_button, $caption)
         ],
         JQM_CONTENT => [
@@ -44,7 +44,7 @@ class iform_mobile_dragonfly_list extends iform_mobile_species_list {
           JQM_CONTENT => array()
         ],
         JQM_FOOTER => [
-          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_ATTR => array("data-position" => "fixed", "data-tap-toggle" => "false"),
           JQM_CONTENT => array()
         ]
       ]
