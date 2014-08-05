@@ -124,7 +124,7 @@ class iform_dragonfly_mobile extends iform_mobile_sample_occurrence {
       JQM_ATTR => array('id' => $id),
       JQM_CONTENT => array(
         JQM_HEADER => array(
-          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_ATTR => array("data-position" => "fixed", "data-tap-toggle" => "false"),
           JQM_CONTENT => array($back_button, $caption)
         ),
         JQM_CONTENT => array(
@@ -132,7 +132,7 @@ class iform_dragonfly_mobile extends iform_mobile_sample_occurrence {
           JQM_CONTENT => array()
         ),
         JQM_FOOTER => array(
-          JQM_ATTR => array("data-position" => "fixed"),
+          JQM_ATTR => array("data-position" => "fixed", "data-tap-toggle" => "false"),
           JQM_CONTENT => array()
         )
       )
