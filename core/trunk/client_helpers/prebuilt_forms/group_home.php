@@ -44,6 +44,15 @@ class iform_group_home extends iform_dynamic_report_explorer {
           'group' => 'Other Settings',
           'required'=>false
         ),
+        array(
+          'name'=>'hide_standard_param_filter',
+          'caption'=>'Hide filter in standard_params control?',
+          'description'=>'Hide the filter displayed when the standard_params control is specified. Still allows
+            standard params such as the release_status_limiter to be used with the report.',
+          'type'=>'boolean',
+          'required'=>false,
+          'group' => 'Other Settings',
+        ),
       )
     );
     return $retVal;
@@ -104,6 +113,8 @@ class iform_group_home extends iform_dynamic_report_explorer {
     $args['param_presets'] .= "\n";
     if (!empty($args['release_status_limiter']))
       $args['param_presets'] .= 'release_status='.$args['release_status_limiter']."\n";
+    if (!empty($args['hide_standard_param_filter']))
+      data_entry_helper::$javascript .= "$('#standard-params').hide();\n";
     return parent::get_form($args, $node);
   }
 
