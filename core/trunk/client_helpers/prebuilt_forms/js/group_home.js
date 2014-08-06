@@ -70,7 +70,7 @@ jQuery(document).ready(function($) {
     $('#occurrence-comment-save-button').click(function(){ 
       //Trim white space
       if (!$('#occurrence-comment').val().trim()) {
-        alert('Please fill an occurrence comment before saving.'); 
+        alert('Please enter an occurrence comment before saving.'); 
         return false;
       } else {
         $('#occurrence-comment-form').submit(occurrence_comment_submit(id, "'" + date + "'" , "'" + entered_sref + "'" , "'" + record_status + "'",created_by_id));
