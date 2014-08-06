@@ -693,13 +693,7 @@ class helper_base extends helper_config {
    */
   public static function link_default_stylesheet() {
     // make buttons highlight when hovering over them
-    self::$javascript .= "
-$('.ui-state-default').live('mouseover', function() {
-  $(this).addClass('ui-state-hover');
-});
-$('.ui-state-default').live('mouseout', function() {
-  $(this).removeClass('ui-state-hover');
-});\n";
+    self::$javascript .=  "indiciaFns.enableHoverEffect();\n";
     self::$default_styles = true;
   }
 
