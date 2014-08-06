@@ -38,7 +38,7 @@ class Filter_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
     $array->add_rules('definition', 'required');
-    $array->add_rules('sharing', 'required', 'chars[R,V,D]');
+    $array->add_rules('sharing', 'required', 'chars[R,V,D,M]');
     $this->unvalidatedFields = array('description', 'public', 'defines_permissions');
     return parent::validate($array, $save);
   }
