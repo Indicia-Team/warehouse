@@ -28,6 +28,23 @@ if (typeof window.indiciaData==="undefined") {
   "use strict";
 
   /**
+   * Enable buttons hover Effect. Since jQuery 1.7 the 'live' function has been
+   * deprecated and 'on' function should be used. Use this function to allow
+   * non-version specific code.
+   */
+  indiciaFns.enableHoverEffect = function(){
+      var version=$.fn.jquery.split('.'),
+          funcname=(version[0]==='1' && version[1]<7) ? 'live' : 'on';
+
+      $('.ui-state-default')[funcname]('mouseover', function() {
+          $(this).addClass('ui-state-hover');
+      });
+      $('.ui-state-default')[funcname]('mouseout', function() {
+          $(this).removeClass('ui-state-hover');
+      });
+  };
+  
+  /**
    * Method to attach to the hover event of an id difficulty warning icon. The icon should have 
    * data-rule and data-diff attributes, pointing to to the rule ID and id difficulty level
    * respectively.
