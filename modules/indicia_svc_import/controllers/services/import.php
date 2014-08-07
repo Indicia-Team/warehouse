@@ -190,6 +190,9 @@ class Import_Controller extends Service_Base_Controller {
         $BOMCheck=fread($handle, 3);
         // Flag if this file has a UTF8 BOM at the start
         $metadata['isUtf8'] = $BOMCheck===chr(0xEF) . chr(0xBB) . chr(0xBF);
+        // rewind if we didn't just read the UTF8 BOM
+        if (!$metadata['isUtf8'])
+          fseek($handle, 0);
       }
       $errorHandle = $this->_get_error_file_handle($csvTempFile, $handle);
       $count=0;
