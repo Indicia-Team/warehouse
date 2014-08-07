@@ -14,6 +14,7 @@
  */
 
 (function($) {
+var    overSelectList = false;
   
 $.fn.extend({
   autocomplete: function(urlOrData, options) {
@@ -114,9 +115,11 @@ $.Autocompleter = function(input, options) {
     $input.blur(function() {
       //Make sure the select list is already displayed before we hide it onBlur, if we don't do this, if the user is focussed
       //in the input box and clicks the arrow to expand the list, then it is hidden straight away as soon as it opens.
+  if (overSelectList!==true) {
       if (select.visible()) {
         //Delay the hide list slightly otherwise the select list is hidden before a click on it is processed
         window.setTimeout(hideList, 200);
+      }
       }
     });
     btn.click(function() {
@@ -711,6 +714,8 @@ $.Autocompleter.Select = function (options, input, select, config) {
       element.css("width", options.width);
       
     needsInit = false;
+  //Prevent select list from being closed while using scroll bar
+  $(".ac_results").hover(function(event) {overSelectList=true; event.stopPropagation();},function(event) {overSelectList=false;$("#"+input.id).focus();});
   } 
   
   function target(event) {
