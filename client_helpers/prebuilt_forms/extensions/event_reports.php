@@ -407,7 +407,7 @@ class extension_event_reports {
    * @params array $options Options array passed to the current extension control.
    * @return string Heading HTML or empty string.
    */
-  private function output_title($options) {
+  private static function output_title($options) {
     return empty($options['title']) ? '' : "<h3>$options[title]</h3>\n";
   }
 }
