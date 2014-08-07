@@ -1028,7 +1028,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           break;
         case 'query':
           // A fix for a bug in data_entry_helper where the query passed in the getAttributes method is double urlencoded.
-          if (substr($value, 0, 2)==='%7B') 
+          if (substr($value, 0, 3)==='%7B') 
             $value = urldecode($value);
           $this->apply_query_def_to_db($value);
           break;
