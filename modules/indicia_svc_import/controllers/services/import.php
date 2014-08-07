@@ -33,8 +33,15 @@ class Import_Controller extends Service_Base_Controller {
 
   private $submissionStruct;
 
+    /**
+     * @var array Parent model field details from the previous row. Allows us to efficiently use the same sample for
+     * multiple occurrences etc.
+     */
+    private $previousCsvSupermodel;
+
   /**
    * Controller function that provides a web service services/import/get_import_settings/model.
+   * @param string $model Singular name of the model entity to check.
    * @return string JSON Parameters form details for this model, or empty string if no parameters form required.
    */
   public function get_import_settings($model) {
@@ -49,6 +56,7 @@ class Import_Controller extends Service_Base_Controller {
    * Controller function that returns the list of importable fields for a model.
    * Accepts optional $_GET parameters for the website_id and survey_id, which limit the available
    * custom attribute fields as appropriate.
+   * @param string $model Singular name of the model entity to check.
    * @return string JSON listing the fields that can be imported.
    */
   public function get_import_fields($model) {
@@ -63,6 +71,7 @@ class Import_Controller extends Service_Base_Controller {
    * Controller function that returns the list of required fields for a model.
    * Accepts optional $_GET parameters for the website_id and survey_id, which limit the available
    * custom attribute fields as appropriate.
+   * @param string $model Singular name of the model entity to check.
    * @return string JSON listing the fields that are required.
    */
   public function get_required_fields($model) {
@@ -394,7 +403,9 @@ class Import_Controller extends Service_Base_Controller {
    * During a csv upload, this method is called to retrieve a resource handle to a file that can 
    * contain errors during the upload. The file is created if required, and the headers from the 
    * uploaded csv file (referred to by handle) are copied into the first row of the new error file
-   * allong with a header for the problem description and row number.
+   * along with a header for the problem description and row number.
+   * @param string $csvTempFile File name of the imported CSV file.
+   * @param resource $handle File handle
    * @return resource The error file's handle.
    */
   private function _get_error_file_handle($csvTempFile, $handle) {
@@ -412,5 +423,3 @@ class Import_Controller extends Service_Base_Controller {
   }
 
 }
-
-?>
