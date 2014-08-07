@@ -56,6 +56,14 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_e
           'group' => 'User Interface',
           'required'=>false
         ),
+        array(
+          'name'=>'no_group_found_message',
+          'caption'=>'Message displayed when user is not group member',
+          'description'=>'When the user is not a group member there are no links to display, display this message instead. Supports html.',
+          'type'=>'textarea',
+          'group' => 'User Interface',
+          'required'=>false
+        ),
       )
     );
     return $retVal;
@@ -134,8 +142,15 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_e
     $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
     $rootFolder = helper_base::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
     
-    $groupsData = data_entry_helper::get_report_data($reportOptions);
-    
+    $groupsData = data_entry_helper::get_report_data($reportOptions);    
+    if (empty($groupsData)) {
+      if (!empty($args['no_group_found_message'])) {
+        $r = '<div>'.$args['no_group_found_message'].'</div>';
+      } else {
+        $r = '<div>'.'Sorry, you do not appear to be a member of this group so there are no links to display.'.'</div>';
+      }
+      return $r;
+    }
     foreach ($groupsData as $groupDataItem) {
       if ($groupDataItem['id']==$args['group_id']) {
         $pageLinks = $groupDataItem['pages'];
