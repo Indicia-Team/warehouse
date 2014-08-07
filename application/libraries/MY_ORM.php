@@ -1124,6 +1124,7 @@ class ORM extends ORM_Core {
     } elseif ($required) {
       $this->db->like($attr_entity.'s.validation_rules', '%required%');
     }
+    $this->db->orderby($attr_entity.'s.caption', 'ASC');
     return $this->db->get()->result_array(true);
   }
 
