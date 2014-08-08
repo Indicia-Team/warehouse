@@ -494,7 +494,7 @@ class ORM extends ORM_Core {
   
   /**
    * Overridden if this model type can create new instances from data supplied in its caption format. 
-   * @return integer, the id of the first matching record with the supplied caption or 0 if no match.
+   * @return integer The id of the first matching record with the supplied caption or 0 if no match.
    */
   protected function findByCaption($caption) {
     return 0;
@@ -646,7 +646,7 @@ class ORM extends ORM_Core {
     $return = $this->createParentRecords() && $return;
     // No point doing any more if the parent records did not post
     if ($return) {
-      $this->preSubmit();      
+      $this->preSubmit();
       $this->removeUnwantedFields();
       $return = $this->validateAndSubmit();
       $return = $this->checkRequiredAttributes() ? $return : null;
@@ -1003,7 +1003,7 @@ class ORM extends ORM_Core {
       {
         // Old way of submitting attribute values but still supported - attributes are stored in a metafield. Find the ones we actually have a value for
         // Provided for backwards compatibility only
-        foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr) {
+        foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $attr) {
           if ($attr['fields']['value']) {
             array_push($got_values, $attr['fields'][$this->object_name.'_attribute_id']);
           }
@@ -1299,13 +1299,13 @@ class ORM extends ORM_Core {
             }
             if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef)) 
               return false;
+            }
           }
-        }
         // delete any old values from a mult-value attribute. No need to worry for inserting new records.
         if (!$isInsert && !empty($multiValueData)) {
           // If we did any multivalue updates for existing records, then any attributes whose values were not included in the submission must be removed.
           // We may have more than one multivalue field in the record, each of a different type
-          foreach ($multiValueData as $attr => $spec) {
+          foreach ($multiValueData as $spec) {
             switch ($spec['attrDef']->data_type) {
               case 'I': 
               case 'L':
@@ -1337,7 +1337,7 @@ class ORM extends ORM_Core {
    * called metafields. This code is used to provide backwards compatibility with this submission format.
    */
   protected function createAttributesFromMetafields() {
-    foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr)
+    foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $attr)
     {
       $value = $attr['fields']['value'];
       if ($value != '') {
@@ -1466,12 +1466,12 @@ class ORM extends ORM_Core {
             return false;
           }
         }
+        break;
       default:
         // Integer
         $vf = 'int_value';
         break;
-    }    
-
+    }
     if ($vf != null) {
       $attrValueModel->$vf = $value;
       // Test that ORM accepted the new value - it will reject if the wrong data type for example. 
@@ -1493,6 +1493,7 @@ class ORM extends ORM_Core {
     }
     // set metadata   
     $exactMatches = array_intersect_assoc($oldValues, $attrValueModel->as_array());
+    // which fields do we have in the submission?
     $fieldsWithValuesInSubmission = array_intersect_key($oldValues, $attrValueModel->as_array());
     // Hook to the owning entity (the sample, location, taxa_taxon_list or occurrence)
     $thisFk = $this->object_name.'_id';
@@ -1500,15 +1501,16 @@ class ORM extends ORM_Core {
     // and hook to the attribute
     $attrFk = $this->object_name.'_attribute_id';
     $attrValueModel->$attrFk = $attrId;
+    // we'll update metadata only if at least one of the fields have changed
     $wantToUpdateAttrMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
     if (!$wantToUpdateAttrMetadata)
       $attrValueModel->wantToUpdateMetadata=false;
     try {
-      $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()));
+      $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()), true);
     } catch (Exception $e) {
-        $v=false;
-        $this->errors[$fieldId]=$e->getMessage();
-        error::log_error('Exception during validation', $e);
+      $v=false;
+      $this->errors[$fieldId]=$e->getMessage();
+      error::log_error('Exception during validation', $e);
     }
     if (!$v) {
       foreach($attrValueModel->errors as $key=>$value) {
@@ -1548,7 +1550,7 @@ class ORM extends ORM_Core {
           ->where(array('id'=>$attrId))
           ->get()->result_array();
       if (count($attr)===0) 
-        throw new Exception("Invalid $type attribute ID $attrId");
+        throw new Exception("Invalid $attrType attribute ID $attrId");
       $this->cache->set($cacheId, $attr[0]);
       return $attr[0];
     } else
@@ -1566,7 +1568,7 @@ class ORM extends ORM_Core {
 
   /**
    * Accessor for children.
-   * @return The children in this model or an empty string.
+   * @return string The children in this model or an empty string.
    */
   public function getChildren() {
     if (isset($this->ORM_Tree_children)) {
@@ -1619,8 +1621,8 @@ class ORM extends ORM_Core {
    * Converts any fk_* fields in a save array into the fkFields structure ready to be looked up.
    * [occ|smp|loc|psn]Attr:fk_* are looked up in createAttributeRecord()
    *
-   * @param $submission Submission containing the foreign key field definitions to convert
-   * @param $saveArray Original form data being wrapped, which can contain filters to operate against the lookup table 
+   * @param $submission array Submission containing the foreign key field definitions to convert
+   * @param $saveArray array Original form data being wrapped, which can contain filters to operate against the lookup table
    * of the form fkFilter:table:field=value.
    */
   private function getFkFields($submission, $saveArray) {
@@ -1795,5 +1797,3 @@ class ORM extends ORM_Core {
   }
   
 }
-
-?>
