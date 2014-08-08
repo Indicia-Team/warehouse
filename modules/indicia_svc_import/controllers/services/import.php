@@ -33,11 +33,11 @@ class Import_Controller extends Service_Base_Controller {
 
   private $submissionStruct;
 
-    /**
-     * @var array Parent model field details from the previous row. Allows us to efficiently use the same sample for
-     * multiple occurrences etc.
-     */
-    private $previousCsvSupermodel;
+  /**
+   * @var array Parent model field details from the previous row. Allows us to efficiently use the same sample for
+   * multiple occurrences etc.
+   */
+  private $previousCsvSupermodel;
 
   /**
    * Controller function that provides a web service services/import/get_import_settings/model.
@@ -178,13 +178,7 @@ class Import_Controller extends Service_Base_Controller {
     // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of 
     // this bulk operation
     $cache= Cache::instance();
-    $this->previousCsvSupermodel = $cache->get(basename($_GET['uploaded_csv']).'previousSupermodel');    
-    if (!$this->previousCsvSupermodel) {
-      $this->previousCsvSupermodel = array(
-        'id'=>array(),
-        'details'=>array()
-      );
-    }
+    $this->getPreviousRowSupermodel($cache);
     // enable caching of things like language lookups
     ORM::$cacheFkLookups = true;
     // make sure the file still exists
@@ -194,15 +188,7 @@ class Import_Controller extends Service_Base_Controller {
       ini_set('auto_detect_line_endings',1);
       // create the file pointer, plus one for errors
       $handle = fopen ($csvTempFile, "r");
-      if (!isset($metadata['isUtf8'])) {
-        fseek($handle, 0);
-        $BOMCheck=fread($handle, 3);
-        // Flag if this file has a UTF8 BOM at the start
-        $metadata['isUtf8'] = $BOMCheck===chr(0xEF) . chr(0xBB) . chr(0xBF);
-        // rewind if we didn't just read the UTF8 BOM
-        if (!$metadata['isUtf8'])
-          fseek($handle, 0);
-      }
+      $this->checkIfUtf8($metadata, $handle);
       $errorHandle = $this->_get_error_file_handle($csvTempFile, $handle);
       $count=0;
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : false);
@@ -392,7 +378,9 @@ class Import_Controller extends Service_Base_Controller {
     $metadataFile = DOCROOT . "upload/" . str_replace('.csv','-metadata.txt', $csvTempFile);
     if (file_exists($metadataFile)) {      
       $metadataHandle = fopen($metadataFile, "r");
-      return json_decode(fgets($metadataHandle), true); 
+      $metadata = fgets($metadataHandle);
+      fclose($metadataHandle);
+      return json_decode($metadata, true);
     } else {
       // no previous file, so create default new metadata      
       return array('mappings'=>array(), 'settings'=>array(), 'errorCount'=>0);
@@ -409,6 +397,8 @@ class Import_Controller extends Service_Base_Controller {
    * @return resource The error file's handle.
    */
   private function _get_error_file_handle($csvTempFile, $handle) {
+    // move the file to the beginning, so we can load the first row of headers.
+    fseek($handle, 0);
     $errorFile = str_replace('.csv','-errors.csv',$csvTempFile);
     $needHeaders = !file_exists($errorFile);
     $errorHandle = fopen($errorFile, "a");
@@ -420,6 +410,40 @@ class Import_Controller extends Service_Base_Controller {
       fputcsv($errorHandle, $headers);
     }
     return $errorHandle;
+  }
+
+  /**
+   * Runs at the start of each batch of rows. Checks if the previous imported row defined a supermodel. If so, we'll load
+   * it from the Kohana cache. This allows us to determine if the new row can link to the same supermodel or not. An example
+   * would be linking several occurrences to the same sample.
+   * @param $cache
+   */
+  private function getPreviousRowSupermodel($cache)
+  {
+    $this->previousCsvSupermodel = $cache->get(basename($_GET['uploaded_csv']) . 'previousSupermodel');
+    if (!$this->previousCsvSupermodel) {
+      $this->previousCsvSupermodel = array(
+          'id' => array(),
+          'details' => array()
+      );
+    }
+  }
+
+  /**
+   * Checks if there is a byte order marker at the beginning of the file (BOM). If so, sets this information in the $metadata.
+   * Rewinds the file to the beginning.
+   * @param $metadata
+   * @param $handle
+   * @return mixed
+   */
+  private function checkIfUtf8(&$metadata, $handle)
+  {
+    if (!isset($metadata['isUtf8'])) {
+      fseek($handle, 0);
+      $BOMCheck = fread($handle, 3);
+      // Flag if this file has a UTF8 BOM at the start
+      $metadata['isUtf8'] = $BOMCheck === chr(0xEF) . chr(0xBB) . chr(0xBF);
+    }
   }
 
 }
