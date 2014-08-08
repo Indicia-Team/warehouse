@@ -122,4 +122,3 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION f_clone_survey(integer, integer, integer) OWNER TO indicia_user;
