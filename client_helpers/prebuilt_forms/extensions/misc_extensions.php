@@ -143,5 +143,40 @@ class extension_misc_extensions {
     }
     data_entry_helper::$javascript .= "indiciaData.userFields['$options[fieldName]']=$val;\n" ;
   }
+  
+  public static function data_entry_helper_control($auth, $args, $tabalias, $options, $path) {
+    $ctrl = $options['control'];
+    if (isset($options['extraParams']))
+      $options['extraParams'] = $auth['read'] + $options['extraParams'];
+    return data_entry_helper::$ctrl($options);
+  }
+  
+  /**
+   * Adds a Drupal breadcrumb to the page.
+   * Pass a parameter called @options, containing an associative array of paths and captions.
+   * The paths can contain replacements wrapped in # characters which will be replaced by the $_GET
+   * parameter of the same name.
+   */
+  public static function breadcrumb($auth, $args, $tabalias, $options, $path) {
+    if (!isset($options['path']))
+      return 'Please set an array of entries in the @path option';
+    $breadcrumb[] = l('Home', '<front>');
+    foreach ($options['path'] as $path => $caption) {
+      $parts = explode('?', $path, 2);
+      $parts[0] = url($parts[0]);
+      if (count($parts)>1) {
+        foreach ($_REQUEST as $key=>$value) {
+          // GET parameters can be used as replacements.
+          $parts[1] = str_replace("#$key#", $value, $parts[1]);
+        }
+      }
+      $path = implode('?', $parts);
+      // don't use Drupal l function as a it messes with query params
+      $caption = lang::get($caption);
+      $breadcrumb[] = "<a href=\"$path\">$caption</a>";
+    }
+    $breadcrumb[] = drupal_get_title();
+    drupal_set_breadcrumb($breadcrumb);
+  }
 }
 ?>
