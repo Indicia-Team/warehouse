@@ -99,10 +99,6 @@ class extension_notifications_centre {
         else
           self::$dataServicesUrl = data_entry_helper::$base_url."index.php/services/data";
         report_helper::$javascript .= "indiciaData.data_services_url = '".self::$dataServicesUrl."';\n";
-        // include the JavaScript file
-        $jsPath = iform_client_helpers_path().'prebuilt_forms/extensions/notifications_centre.js';
-        drupal_add_js($jsPath);
-        
         //If the user clicks the Remove Notifications submit button, then a hidden field
         //called remove-notifications is set. We can check for this when the 
         //page reloads and then call the remove notifications code.    
