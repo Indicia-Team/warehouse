@@ -2262,7 +2262,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       // guard against a corrupt cookie
       if (!is_array($cookieData)) 
         $cookieData=array();
-      if (!empty($cookieData[$options['rememberParamsReportGroup']]))
+      if (!empty($cookieData[$options['rememberParamsReportGroup']])) {
         $cookieParams = $cookieData[$options['rememberParamsReportGroup']];
         if (is_array($cookieParams)) {
           // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
@@ -2275,6 +2275,7 @@ if (typeof mapSettingsHooks!=='undefined') {
             $providedParams
           );
         }
+      }
     }
     if (!empty($options['rememberParamsReportGroup'])) {
       // need to store the current set of saved params. These need to be merged into an array to go in
