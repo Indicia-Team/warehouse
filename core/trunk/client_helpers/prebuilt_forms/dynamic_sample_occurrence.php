@@ -926,9 +926,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     
     // Load the sample record
     if (self::$loadedSampleId) {
-      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId, 'detail', false, true);
       if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) 
         data_entry_helper::load_existing_record($auth['read'], 'sample', data_entry_helper::$entity_to_load['sample:parent_id']);
+      data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId, 'detail', false, true);
     }
     
     // Ensure that if we are used to load a different survey's data, then we get the correct survey attributes. We can change args
@@ -1089,6 +1089,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if (!empty($args['defaults']['occurrence:release_status']))
       $r .= '<input type="hidden" id="occurrence:release_status" name="occurrence:release_status" value="' . $args['defaults']['occurrence:release_status'] . '" />' . PHP_EOL;
     $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['sample:id']), $auth['read']);
+    if ($args['multiple_occurrence_mode']==='multi')
+      $r .= '<input type="hidden" value="true" name="gridmode" />';
     return $r;
   }
 
@@ -1485,10 +1487,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args, $options);
     if (self::$mode == self::MODE_CLONE)
       $species_ctrl_opts['useLoadedExistingRecords'] = true;
-    // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
-    // then output the grid control
-    return '<input type="hidden" value="true" name="gridmode" />'.
-        data_entry_helper::species_checklist($species_ctrl_opts);
+    data_entry_helper::species_checklist($species_ctrl_opts);
   }
 
   /**
