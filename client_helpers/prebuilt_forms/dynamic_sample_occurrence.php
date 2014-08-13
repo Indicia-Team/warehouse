@@ -1486,8 +1486,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
     call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args, $options);
     if (self::$mode == self::MODE_CLONE)
-      $species_ctrl_opts['useLoadedExistingRecords'] = true;
-    data_entry_helper::species_checklist($species_ctrl_opts);
+      $species_ctrl_opts['useLoadedExistingRecords'] = true;   
+    return data_entry_helper::species_checklist($species_ctrl_opts);
   }
 
   /**
