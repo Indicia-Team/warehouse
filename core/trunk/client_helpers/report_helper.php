@@ -116,7 +116,7 @@ class report_helper extends helper_base {
     $options = array_merge(array(
       'caption' => lang::get('Download this report'), 
       'format' => 'csv',
-      'itemsPerPage' => 10000
+      'itemsPerPage' => 20000
     ), $options);
     $options = self::get_report_grid_options($options);
     $options['linkOnly'] = true;
@@ -2262,12 +2262,12 @@ if (typeof mapSettingsHooks!=='undefined') {
         $cookieData=array();
       if (!empty($cookieData[$options['rememberParamsReportGroup']])) {
         $cookieParams = $cookieData[$options['rememberParamsReportGroup']];
-        if (is_array($cookieParams)) {
+        if (isset($cookieParams) && is_array($cookieParams)) {
           // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
           $ignoreParamNames = array();
           foreach($options['paramsToExclude'] as $param)
             $ignoreParamNames[$options['reportGroup']."-$param"] = '';
-          $cookieParams = array_diff_key($cookieParams, $ignoreParamNames);       
+          $cookieParams = array_diff_key($cookieParams, $ignoreParamNames);
           $providedParams = array_merge(
             $cookieParams,
             $providedParams
