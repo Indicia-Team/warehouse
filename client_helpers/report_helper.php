@@ -2077,11 +2077,9 @@ if (typeof mapSettingsHooks!=='undefined') {
           $actionCols[] = $col;
         }
         $idx++;
-        // datatype of column always defined in the server XML report file. Copy into the col def
-        if (isset($col['fieldname']) && array_key_exists($col['fieldname'], $response['columns'])) {
-          if (isset($response['columns'][$col['fieldname']]['datatype']))
-            $col['datatype']=$response['columns'][$col['fieldname']]['datatype'];
-        }
+        //Make sure all the information relating to the columns are used from the report response, such as the display name
+        if (isset($col['fieldname']) && array_key_exists($col['fieldname'], $response['columns']))
+          $col = array_merge($response['columns'][$col['fieldname']],$col);
       }
       if ($options['includeAllColumns']) {
         foreach ($response['columns'] as $resultField => $value) {
