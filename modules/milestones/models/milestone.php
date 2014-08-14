@@ -33,6 +33,7 @@ class Milestone_Model extends ORM {
   
   protected $belongs_to = array(
     'filter',
+    'group',
     'created_by'=>'user',
     'updated_by'=>'user'
   );
@@ -48,7 +49,7 @@ class Milestone_Model extends ORM {
     $array->add_rules('success_message', 'required');
     $array->add_rules('website_id', 'required');  
     $array->add_rules('awarded_by', 'required');
-    $this->unvalidatedFields = array('deleted');
+    $this->unvalidatedFields = array('group_id','deleted');
     return parent::validate($array, $save);
   }
   
