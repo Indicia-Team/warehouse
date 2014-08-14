@@ -76,6 +76,14 @@ echo data_entry_helper::text_input(array(
   'helpText' => 'What is the target number that must be reached to hit the milestone?'
 ));
 
+echo data_entry_helper::text_input(array(
+  'label'=>'Group ID',
+  'fieldname'=>'milestone:group_id',
+  'class'=>'control-width-2',
+  'default'=> html::initial_value($values, 'milestone:group_id'),
+  'helpText' => 'Optional ID of the recording group associated with the milestone, only users that are members of this group will receive the milestone award.'
+));
+
 echo data_entry_helper::textarea(array(
   'label'=>'Success message',
   'fieldname'=>'milestone:success_message',

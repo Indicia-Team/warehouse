@@ -70,7 +70,8 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
     LEFT JOIN milestone_awards ma on ma.milestone_id = m.id AND ma.user_id=co.created_by_id  AND ma.deleted=false
     JOIN filters f on f.id=m.filter_id
     JOIN users u on u.id=co.created_by_id
-    WHERE ma.id IS null
+    LEFT JOIN groups_users gu on gu.group_id=m.group_id AND gu.user_id=u.id AND gu.deleted=false
+    WHERE ma.id IS null AND (m.group_id is null OR gu.id is not null)
     ")->result_array(false);
   return $usersWebsiteCombos;
 }
@@ -88,7 +89,7 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
  */
 function get_user_website_combinations_with_unawarded_milestones_for_changed_occ_media($db) {
   $usersWebsiteCombos = $db->query("
-    SELECT DISTINCT om.created_by_id, co.website_id, u.username, f.id,f.definition, m.id as milestone_id, m.count as count, m.entity as milestone_entity, m.success_message as success_message
+    SELECT DISTINCT om.created_by_id, co.website_id, u.username, f.id,f.definition, m.id as milestone_id, m.count as count, m.awarded_by, m.entity as milestone_entity, m.success_message as success_message
     FROM cache_occurrences co
     JOIN occurrence_media om on om.occurrence_id=co.id AND om.deleted=false
     JOIN system s on (om.created_on > s.last_scheduled_task_check or co.verified_on > s.last_scheduled_task_check) AND s.name = 'milestones'
@@ -96,7 +97,8 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
     LEFT JOIN milestone_awards ma on ma.milestone_id = m.id AND ma.user_id=om.created_by_id AND ma.deleted=false
     JOIN filters f on f.id=m.filter_id
     JOIN users u on u.id=co.created_by_id
-    WHERE ma.id IS null
+    LEFT JOIN groups_users gu on gu.group_id=m.group_id AND gu.user_id=u.id AND gu.deleted=false
+    WHERE ma.id IS null AND (m.group_id is null OR gu.id is not null)
     ")->result_array(false);
   return $usersWebsiteCombos;
 }
