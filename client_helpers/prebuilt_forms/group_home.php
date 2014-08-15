@@ -37,14 +37,6 @@ class iform_group_home extends iform_dynamic_report_explorer {
       parent::get_parameters(),
       array(
         array(
-          'name'=>'release_status_limiter',
-          'caption'=>'Release Status Limiter',
-          'description'=>'Only show records with the specified release status',
-          'type'=>'string',
-          'group' => 'Other Settings',
-          'required'=>false
-        ),
-        array(
           'name'=>'hide_standard_param_filter',
           'caption'=>'Hide filter in standard_params control?',
           'description'=>'Hide the filter displayed when the standard_params control is specified. Still allows
@@ -114,8 +106,6 @@ class iform_group_home extends iform_dynamic_report_explorer {
     // add the group parameters to the preset parameters passed to all reports on this page
     $args['param_presets']=implode("\n", array($args['param_presets'], $defstring, "{$prefix}group_id=".$_GET['group_id']));
     $args['param_presets'] .= "\n";
-    if (!empty($args['release_status_limiter']))
-      $args['param_presets'] .= 'release_status='.$args['release_status_limiter']."\n";
     if (!empty($args['hide_standard_param_filter']))
       data_entry_helper::$javascript .= "$('#standard-params').hide();\n";
     return parent::get_form($args, $node);
