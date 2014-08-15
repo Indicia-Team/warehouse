@@ -43,17 +43,34 @@ jQuery(document).ready(function($) {
   verify_record = function(id) {
     var confirmation = confirm('Do you really want to verify the record with id '+id+'?');
     if (confirmation) { 
-      var s = {
-        "website_id":indiciaData.website_id,
-        "occurrence:id":id,
-        "occurrence:release_status":"R",
-        "occurrence:record_status":"V"
-      };
-      postToServer(s, 'occurrence');
+      verify_reject_post_to_server(id, "V",indiciaData.verifiedTranslation); 
     } else {
       return false;
     }
 	}
+  
+  //Reject a record.
+  //Can be called from the action column configuration on the edit tab.
+  reject_record = function(id) {
+    var confirmation = confirm('Do you really want to reject the record with id '+id+'?');
+    if (confirmation) { 
+      verify_reject_post_to_server(id, "R",indiciaData.rejectedTranslation);  
+    } else {
+      return false;
+    }
+	}
+  
+  verify_reject_post_to_server = function(id,record_status,comment) {
+    var s = {
+      "website_id":indiciaData.website_id,
+      "occurrence:id":id,
+      "occurrence:record_status":record_status,
+      "occurrence:release_status":"R",
+      'user_id': indiciaData.userId,
+      'occurrence_comment:comment': comment
+    };
+    postToServer(s, 'occurrence');
+  }
   
   //Add an occurrence comment.
   //Can be called from the action column configuration on the edit tab.
