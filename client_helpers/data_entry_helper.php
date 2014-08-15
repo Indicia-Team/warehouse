@@ -965,6 +965,9 @@ $('#$escaped').change(function(e) {
   * <li><b>button</b></br>
   * Template for the buttons used.
   * </li>
+  * <li><b>readAuth</b><br/>
+  * Optional. Read authentication tokens for the Indicia warehouse if using the 
+  * add_link_popup.</li>
   * </ul>
   *
   * @todo select file button pointer overriden by the flash shim
