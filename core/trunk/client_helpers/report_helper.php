@@ -515,7 +515,7 @@ class report_helper extends helper_base {
           }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
             continue; // skip this column as marked invisible          
-          if (isset($field['img']) && $field['img']=='true' && !empty($row[$field['fieldname']])) {
+          if (isset($field['img']) && $field['img']=='true' && !empty($row[$field['fieldname']]) && !isset($field['template'])) {
             $imgs = explode(',', $row[$field['fieldname']]);
             $value='';
             $imgclass=count($imgs)>1 ? 'multi' : 'single';
