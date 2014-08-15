@@ -34,11 +34,6 @@
   $cleanupTargetDir = true; 
   // Max .part file age in seconds
   $maxFileAge = 5 * 3600; 
-
-  // Check fileinfo extension is installed
-  if (!extension_loaded('fileinfo')) {
-    die('{"jsonrpc" : "2.0", "error" : {"code": 111, "message": "The fileinfo extension must be enabled by the website administrator in php.ini."}, "id" : "id"}');
-  }
   
 // Create target dir
   if (!file_exists($targetDir)) {
@@ -145,18 +140,20 @@ if ($cleanupTargetDir) {
   
 // Check if file has been uploaded
   if (!$chunks || $chunk == $chunks - 1) {
-    // Check MIME type of file    
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, "{$filePath}.part");  
-    finfo_close($finfo);
-    if (!$mimeType) {
-      unlink("{$filePath}.part");
-      die('{"jsonrpc" : "2.0", "error" : {"code": 110, "message": "File type not known."}, "id" : "id"}'); 
-    }
-    list($mediaType, $mimeSubType) = split('/', $mimeType);
-    if (!in_array($mimeSubType, data_entry_helper::$upload_mime_types[$mediaType], true)) {
-      unlink("{$filePath}.part");
-      die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "File type not allowed."}, "id" : "id"}'); 
+    if (function_exists('finfo_open')) {
+      // Check MIME type of file    
+      $finfo = finfo_open(FILEINFO_MIME_TYPE);
+      $mimeType = finfo_file($finfo, "{$filePath}.part");  
+      finfo_close($finfo);
+      if (!$mimeType) {
+        unlink("{$filePath}.part");
+        die('{"jsonrpc" : "2.0", "error" : {"code": 110, "message": "File type not known."}, "id" : "id"}'); 
+      }
+      list($mediaType, $mimeSubType) = split('/', $mimeType);
+      if (!in_array($mimeSubType, data_entry_helper::$upload_mime_types[$mediaType], true)) {
+        unlink("{$filePath}.part");
+        die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "File type not allowed."}, "id" : "id"}'); 
+      }
     }
 
     // File appears to be valid.
