@@ -6469,6 +6469,12 @@ if (errors$uniq.length>0) {
     } elseif ($fullInfo) {
       $r .= '<li>Success: PHP version is '.phpversion().'.</li>';
     }
+    if (!function_exists('finfo_open')) {
+      $r .= '<li class="ui-state-error">Warning: The Fileinfo PHP library is not installed on the server. Although it is not mandatory, installing this module is recommended as it prevents '.
+          'upload of malicious files masquerading as image files.</li>';
+    } elseif ($fullInfo) {
+      $r .= '<li>Success: PHP Fileinfo extension is installed.</li>';
+    }
     // Test cUrl library installed
     if (!function_exists('curl_exec')) {
       $r .= '<li class="ui-state-error">Warning: The cUrl PHP library is not installed on the server and is required for communication with the Indicia Warehouse.</li>';
