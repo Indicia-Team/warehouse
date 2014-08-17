@@ -30,12 +30,17 @@ jQuery(document).ready(function($) {
   //Set the release_status of an occurrence to released.
   //Can be called from the action column configuration on the edit tab.
 	release_record = function(id) {
-	  var s = {
-		"website_id":indiciaData.website_id,
-		"occurrence:id":id,
-		"occurrence:release_status":"R"
-	  };
-	  postToServer(s, 'occurrence');
+    var confirmation = confirm('Do you really want to release the record with id '+id+'?');
+	  if (confirmation) { 
+      var s = {
+      "website_id":indiciaData.website_id,
+      "occurrence:id":id,
+      "occurrence:release_status":"R"
+      };
+      postToServer(s, 'occurrence');
+    } else {
+      return false;
+    }
 	}
   
   //Verify a record.
