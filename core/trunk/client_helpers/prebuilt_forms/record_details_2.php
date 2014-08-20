@@ -335,7 +335,7 @@ Record ID',
       'columns' => array(
         array(
           'fieldname' => 'path',
-          'template' => '<div class="gallery-item">{path}<br/>{caption}</div>',
+          'template' => '<div class="gallery-item"><a href="{imageFolder}{path}" class="fancybox single"><img src="{imageFolder}thumb-{path}" /></a><br/>{caption}</div>',
           'img'=>true
         )
       ),
