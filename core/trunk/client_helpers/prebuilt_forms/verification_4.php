@@ -677,7 +677,10 @@ idlist=';
         // is this a new heading?
         if (!isset($data[$caption[0]]))
           $data[$caption[0]]=array();
-        $data[$caption[0]][] = array('caption'=>$caption[1], 'value'=>$record[$col]);
+        $val = ($col==='record_status') ? self::statusLabel($record[$col]) : $record[$col];
+        if ($record['zero_abundance']==='t')
+          $val .= '<br/>' . lang::get('This is a record indicating absence.');        
+        $data[$caption[0]][] = array('caption'=>$caption[1], 'value'=>$val);
       }
       if ($col==='email' && !empty($record[$col])) 
         $email=$record[$col];
@@ -693,18 +696,13 @@ idlist=';
     $reportData = report_helper::get_report_data($options);
     foreach ($reportData as $attribute) {
       if (!empty($attribute['value'])) {
-        if (!isset($data[$attribute['attribute_type']]))
-          $data[$attribute['attribute_type']]=array();
-        $data[$attribute['attribute_type']][] = array('caption'=>$attribute['caption'], 'value'=>$attribute['value']);
+        if (!isset($data[$attribute['attribute_type'] . ' attributes']))
+          $data[$attribute['attribute_type'] . ' attributes']=array();
+        $data[$attribute['attribute_type'] . ' attributes'][] = array('caption'=>$attribute['caption'], 'value'=>$attribute['value']);
       }
     }
 
-    $r = "<table>\n";
-    $r .= '<tr><td class="caption">'.lang::get('Status').'</td><td class="status status-'.$record['record_status'].'">';
-    $r .= self::statusLabel($record['record_status']);
-    if ($record['zero_abundance']==='t')
-      $r .= '<br/>' . lang::get('This is a record indicating absence.');
-    $r .= "</td></tr>\n";
+    $r = "<table class=\"report-grid\">\n";
     foreach($data as $heading=>$items) {
       $r .= "<tr><td colspan=\"2\" class=\"header\">$heading</td></tr>\n";
       foreach ($items as $item) {
