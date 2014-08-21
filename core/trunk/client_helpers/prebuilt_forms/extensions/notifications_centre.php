@@ -238,12 +238,14 @@ class extension_notifications_centre {
       }
     };\n
     "; 
-    
+    $urlParams=array('occurrence_id'=>'{occurrence_id}');
+    if (!empty($_GET['group_id']))
+      $urlParams['group_id']=$_GET['group_id'];
     $availableActions = 
       array(
-        array('caption'=>lang::get('Edit this record'), 'class'=>'edit-notification', 'url'=>'{rootFolder}{editing_form}', 'urlParams'=>array('occurrence_id'=>'{occurrence_id}'),
+        array('caption'=>lang::get('Edit this record'), 'class'=>'edit-notification', 'url'=>'{rootFolder}{editing_form}', 'urlParams'=>$urlParams,
               'img'=>$imgPath.'nuvola/package_editors-22px.png', 'visibility_field'=>'editable_flag'),
-        array('caption'=>lang::get('View this record'), 'class'=>'view-notification', 'url'=>'{rootFolder}{viewing_form}', 'urlParams'=>array('occurrence_id'=>'{occurrence_id}'),
+        array('caption'=>lang::get('View this record'), 'class'=>'view-notification', 'url'=>'{rootFolder}{viewing_form}', 'urlParams'=>$urlParams,
               'img'=>$imgPath.'nuvola/find-22px.png', 'visibility_field'=>'viewable_flag' ),
         array('caption'=>lang::get('Mark as read'), 'javascript'=>'remove_message({notification_id});',
               'img'=>$imgPath.'nuvola/kmail-22px.png'));
