@@ -973,7 +973,7 @@ class XMLReportReader_Core implements ReportReader
         'group_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"ID of a group to filter to the members of",
             'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
             'joins' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#group_id#")
+              array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#group_id# and #alias:gu#.deleted=false")
             ),
             'wheres' => array(
               array('value'=>'', 'operator'=>'', 'sql'=>"o.group_id=#group_id#")
