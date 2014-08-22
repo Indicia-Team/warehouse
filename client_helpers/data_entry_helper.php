@@ -3008,7 +3008,9 @@ $('#$escaped').change(function(e) {
         $mediaBtnLabel = lang::get($onlyImages ? 'add images' : 'add media');
         $mediaBtnClass = 'sc' . $onlyImages ? 'Image' : 'Media' . 'Link';
       }
+      drupal_set_message('running3');
       foreach ($taxonRows as $txIdx => $rowIds) {
+        drupal_set_message('running44');
         $ttlId = $rowIds['ttlId'];
         $loadedTxIdx = isset($rowIds['loadedTxIdx']) ? $rowIds['loadedTxIdx'] : -1;
         $existing_record_id = isset($rowIds['occId']) ? $rowIds['occId'] : false;
@@ -3019,8 +3021,12 @@ $('#$escaped').change(function(e) {
         while ($taxonIdx < count($taxalist) && $taxalist[$taxonIdx]['id'] != $ttlId) {
           $taxonIdx += 1;
         }
+        drupal_set_message('running 551239');
+        drupal_set_message($taxonIdx);
+        drupal_set_message(count($taxalist));
         if ($taxonIdx >= count($taxalist)) 
           continue; // next taxon, as this one was not found in the list
+        drupal_set_message('running 111');
         $taxon = $taxalist[$taxonIdx];
         // If we are using the sub-species column then when the taxon has a parent (=species) this goes in the
         // first column and we put the subsp in the second column in a moment.
@@ -3028,7 +3034,7 @@ $('#$escaped').change(function(e) {
           $firstColumnTaxon=$taxon['parent'];
         else
           $firstColumnTaxon=$taxon;
-        // map field names if using a cached lookup
+        // map field names if using a cached lookup       
         if ($options['cacheLookup']) 
           $firstColumnTaxon = $firstColumnTaxon + array(
             'preferred_name' => $firstColumnTaxon['preferred_taxon'],
@@ -3041,6 +3047,7 @@ $('#$escaped').change(function(e) {
         // Now create the table cell to contain this.
         $colspan = isset($options['lookupListId']) && $options['rowInclusionCheck']!='alwaysRemovable' ? ' colspan="2"' : '';
         $row = '';
+        drupal_set_message('running 666');
         // Add a delete button if the user can remove rows, add an edit button if the user has the edit option set, add a page link if user has that option set.
         if ($options['rowInclusionCheck']=='alwaysRemovable') {
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
@@ -3317,7 +3324,7 @@ $('#$escaped').change(function(e) {
         $r .= '<div id="'.$options['id'].'-blocks">'.
             self::get_subsample_per_row_hidden_inputs().
             '</div>';
-      }
+      }     
       if ($hasEditedRecord) {
         self::$javascript .= "$('#$options[id] tbody tr').hide();\n";
         self::$javascript .= "$('#$options[id] tbody tr td.edited-record').parent().show();\n";
@@ -3328,8 +3335,11 @@ $('#$escaped').change(function(e) {
   $('#$options[id] tbody tr').show(); 
   $(e.currentTarget).hide();
 });\n";
-        self::$onload_javascript .= "var tabscontrols = $('#controls').tabs();
-tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);\n";
+        self::$onload_javascript .= "
+if ($('#$options[id]').parents('.ui-tabs-panel').length) {
+  var tabscontrols = $('#controls').tabs();
+  tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);
+}\n";
       }
       if ($options['mediaTypes']) {
         $r .= self::add_link_popup($options);
