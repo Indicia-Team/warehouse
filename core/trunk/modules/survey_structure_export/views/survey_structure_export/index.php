@@ -4,7 +4,7 @@ echo data_entry_helper::textarea(array(
   'label'=>'Exported survey structure',
   'fieldname'=>'export survey structure',
   'class'=>'control-width-6',
-  'helpText' => 'Copy this text to the clipboard. You can then paste it into another survey to clone the attributes.',
+  'helpText' => 'Copy this text to the clipboard. You can then paste it into another survey on this or another warehouse to clone the attributes.',
   'default' => $export
 ));
 ?>
