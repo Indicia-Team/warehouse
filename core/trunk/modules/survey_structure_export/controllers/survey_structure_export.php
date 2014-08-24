@@ -25,10 +25,20 @@
  */
 class Survey_structure_export_Controller extends Indicia_Controller {
 
+  /**
+   * @var array Holds a list of log messages describing the results of an import.
+   */
   private $log=array();
   
+  /**
+   * @var integer The user's ID.
+   */
   private $userId;
   
+  /**
+   * @const SQL_FETCH_ALL_SAMPLE_ATTRS Query definition which retrieves all the sample attribute details for a survey 
+   * ID in preparation for export.
+   */
   const SQL_FETCH_ALL_SAMPLE_ATTRS = "select 	a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules, a.multi_value, a.public, a.applies_to_recorder, a.system_function,
           sm.term as aw_restrict_to_sample_method_id_term, aw.validation_rules as aw_validation_rules, aw.weight as aw_weight, aw.control_type_id as aw_control_type_id, 
           aw.website_id as aw_website_id, aw.default_text_value as aw_default_text_value, aw.default_float_value as aw_default_float_value, aw.default_int_value as aw_default_int_value, 
@@ -51,17 +61,27 @@ class Survey_structure_export_Controller extends Indicia_Controller {
           aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value,
           fsb1.name, fsb1.weight, fsb2.name, fsb2.weight
         order by fsb1.weight, fsb2.weight, aw.weight";
- 
-  const SQL_FIND_SAMPLE_ATTRS = "select a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules, a.multi_value, a.public, a.applies_to_recorder, a.system_function,
+
+  /**
+   * @const SQL_FIND_ATTRS Query definition which searches for an existing attribute which matches the 
+   * definition of one being imported. Uses an array aggregation to get details of all terms which must be manually
+   * tested after running the query, since PostgreSQL does not support aggregates in the where clause.
+   */        
+  const SQL_FIND_ATTRS = "select a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function{extraFields}, 
 	max(t.termlist_title) as termlist_title, 
 	array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
-from sample_attributes a
+from type_attributes a
 left join cache_termlists_terms t on t.termlist_id=a.termlist_id
 left join cache_termlists_terms tp on tp.id=t.parent_id
 where a.deleted=false
 {where}
-group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules, a.multi_value, a.public, a.applies_to_recorder, a.system_function";
+group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function{extraFields}";
 
+  /**
+   * @const SQL_FIND_TERMLIST Query definition which searches for an existing termlist which matches the 
+   * definition of one being imported. Uses an array aggregation to get details of all terms which must be manually
+   * tested after running the query, since PostgreSQL does not support aggregates in the where clause.
+   */ 
   const SQL_FIND_TERMLIST = "select t.termlist_id, t.termlist_title, 
       array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
     from cache_termlists_terms t
@@ -77,25 +97,26 @@ group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules
   }
   
   /**
-   * Controller action for the export tab content. Display the export page.
+   * Controller action for the export tab content. Displays the view containing a block of 
+   * exportable content as well as a textarea into which exports from elsewhere can be pasted.
    */
   public function index() {
     $this->view = new View('survey_structure_export/index');
     $this->view->surveyId=$this->uri->last_segment();
-    //Get the attribute data (including termlists) associated with the survey ready to export
+    // Get the attribute data (including termlists) associated with the survey ready to export
     $export = $this->getSurveyAttributes($this->view->surveyId);
     $this->view->export = json_encode($export);
     $this->template->content = $this->view;
   }
  
   /**
-   * Perform the import
+   * Controller action called when Save clicked. Perform the import when text has been pasted into the import text area.
    */
   public function save() {
     $surveyId = $_POST['survey_id'];
     try {
       $importData = json_decode($_POST['import_survey_structure'], true);
-      $this->doImport($importData,$_POST['survey_id']);
+      $this->doImport($importData, $_POST['survey_id']);
       $this->template->title = 'Import Complete';
       $this->view = new View('survey_structure_export/import_complete');
       $this->view->log = $this->log;
@@ -109,10 +130,10 @@ group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules
       $this->template->content = $this->view;
     }
     $survey = $this->db
-      ->select('website_id, title')
-      ->from('surveys')
-      ->where(array('id'=>$surveyId))
-      ->get()->result_array(FALSE);
+        ->select('website_id, title')
+        ->from('surveys')
+        ->where(array('id'=>$surveyId))
+        ->get()->result_array(FALSE);
     $this->surveyTitle = $survey[0]['title'];
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $this->page_breadcrumbs[] = html::anchor('survey/edit/'.$surveyId, $this->surveyTitle);
@@ -120,12 +141,10 @@ group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules
   }
 
   /**
-   * Call the methods required to do the import.
+   * Import a pasted definition of a set of custom attributes.
    *
-   * @param array $importData
+   * @param array $importData The array definition of the attributes to import.
    * @param int $surveyId The ID of the survey in the database we are importing into.
-   * @todo Is the load of existing data scalable? Does it just load data available to
-   * the website for the current survey?
    */
   public function doImport($importData, $surveyId) {
     if (isset($_SESSION['auth_user']))
@@ -140,12 +159,20 @@ group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules
       }
     }
     foreach($importData['smpAttrs'] as $importAttrDef) {
-      $this->processSampleAttribute($importAttrDef);
+      $this->processAttribute('sample', $importAttrDef, array('applies_to_location', 'applies_to_recorder'));
     }
   }
   
-  private function processSampleAttribute($importAttrDef) {
-    $this->log[] = 'Processing sample attribute: '.$importAttrDef['caption'];
+  /**
+   * Handles the import of a single occurrence or sample custom attribute.
+   *
+   * @param string $type occurrence or sample.
+   * @param array $importAttrDef Definition of the attribute in an array, as retrieved from the imported
+   * data.
+   * @param array $extraFields List of non-standard fields in this attributes database table.
+   */
+  private function processAttribute($type, $importAttrDef, $extraFields) {
+    $this->log[] = "Processing $type attribute: $importAttrDef[caption]";
     // fetch possible matches based on the following SQL field matches
     $fieldsToMatch = array(
       'caption'=>'a.caption', 
@@ -155,6 +182,14 @@ group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules
       'public'=>'a.public', 
       'system_function'=>'a.system_function'
     );
+    // Depending on the type of attribute (occurrence or sample), there might be some additional fields to match. 
+    // We also need these in a string suitable for adding to the SQL select and group by clauses.
+    $extras = ''; 
+    foreach ($extraFields as $field) {
+      $fieldsToMatch[$field] = "a.$field";
+      $extras .= ", a.$field";
+    }
+    // build the where clause required to do the match to see if an existing attribute meets our needs
     $where = '';
     foreach ($fieldsToMatch as $field => $fieldsql) {
       if ($importAttrDef[$field]==='' || $importAttrDef[$field]===null)
@@ -162,34 +197,36 @@ group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules
       else
         $where .= "and $fieldsql='$importAttrDef[$field]' ";
     }
-    $possibleMatches = $this->db->query(str_replace('{where}', $where, self::SQL_FIND_SAMPLE_ATTRS))->result_array(FALSE);
+    $query = str_replace(array('{where}', '{extraFields}'), array($where, $extras), self::SQL_FIND_ATTRS);
+    $possibleMatches = $this->db->query($query)->result_array(FALSE);
     // we now have one or more possible matching attributes. Strip out any that don't match the aggregated termlist data. 
-    $existingSmpAttrs = array();
+    $existingAttrs = array();
     foreach ($possibleMatches as $possibleMatch) {
       // additional checks that can't be done in SQL because aggregates don't work in SQL where clauses.  
       if ($possibleMatch['termlist_title']===$importAttrDef['termlist_title'] && $possibleMatch['terms']===$importAttrDef['terms'])
-        $existingSmpAttrs[] = $possibleMatch;
+        $existingAttrs[] = $possibleMatch;
     }
-    $this->log[] = 'Matching attributes: '.count($existingSmpAttrs);
-    if (count($existingSmpAttrs)===0)
-      $this->createSampleAttr($importAttrDef);
-    elseif (count($existingSmpAttrs)===1)
-      $this->linkSampleAttr($importAttrDef, $existingSmpAttrs[0]);
+    $this->log[] = 'Matching attributes: '.count($existingAttrs);
+    if (count($existingAttrs)===0)
+      $this->createAttr($type, $importAttrDef, $extraFields);
+    elseif (count($existingAttrs)===1)
+      $this->linkSampleAttr($importAttrDef, $existingAttrs[0]);
     else
-      $this->linkToOneOfSampleAttrs($importAttrDef, $existingSmpAttrs);
+      $this->linkToOneOfSampleAttrs($importAttrDef, $existingAttrs);
   }
   
-  private function createSampleAttr($attrDef) {
-    $sa = ORM::factory('sample_attribute');
+  private function createAttr($type, $attrDef, $extraFields) {
     $array=array(
       'caption' => $attrDef['caption'],
       'data_type' => $attrDef['data_type'],
-      'applies_to_location' => $attrDef['applies_to_location'],
       'validation_rules' => $attrDef['validation_rules'],
       'multi_value' => $attrDef['multi_value'],
       'public' => $attrDef['public'],
       'system_function' => $attrDef['system_function']
     );
+    // Depending on if it is an occurrence or sample attribute there might be extra fields to copy
+    foreach ($extraFields as $field) 
+      $array[$field] = $attrDef[$field];
     // Lookups need to link to or create a termlist
     if ($attrDef['data_type'] === 'L') {
       // Find termlists with the same name
@@ -210,12 +247,13 @@ group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules
         return;
       }
     }
-    $sa->set_submission_data($array);
-    if (!$sa->submit()) 
-      $this->log[] = "Error creating sample attribute for $attrDef[caption]";
+    $a = ORM::factory("{$type}_attribute");
+    $a->set_submission_data($array);
+    if (!$a->submit()) 
+      $this->log[] = "Error creating $type attribute for $attrDef[caption]";
     else {
-      $this->log[] = "Created attribute $attrDef[caption]";
-      $this->linkSampleAttr($attrDef, $sa->as_array());
+      $this->log[] = "Created $type attribute $attrDef[caption]";
+      $this->linkAttr($type, $attrDef, $a->as_array());
     }
   }
   
@@ -229,7 +267,6 @@ group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules
     if (!$tl->submit()) 
       $this->log[] = "Error creating termlist $attrDef[termlist_title] for $attrDef[caption]";
     else {
-      $this->log[] = "Created termlist $attrDef[termlist_title] for $attrDef[caption]";
       // now we need to create the terms required by the termlist. Split the terms string into individual terms.
       $terms = explode('**', $attrDef['terms']);
       foreach ($terms as $term) {
@@ -239,33 +276,35 @@ group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules
         $term[2] = empty($term[2]) ? 'null' : $term[2];
         $this->db->query("select insert_term('$term[0]', '$term[1]', $term[2], {$tl->id}, null);");
       }
+      $this->log[] = "Todo: support for term parents";
     }
     return $tl->id;
   }
   
-  private function linkSampleAttr($importAttrDef, $existingAttr) {
-    $saw = ORM::factory('sample_attributes_website')->where(array('sample_attribute_id'=>$existingAttr['id'], 'restrict_to_survey_id'=>$_POST['survey_id']))->find();
-    if ($saw->loaded)
+  private function linkAttr($type, $importAttrDef, $existingAttr) {
+    $aw = ORM::factory("{$type}_attributes_website")->where(array("{$type}_attribute_id"=>$existingAttr['id'], 'restrict_to_survey_id'=>$_POST['survey_id']))->find();
+    if ($aw->loaded)
       $this->log[] = 'An attribute similar to this is already link to the survey - no action taken.';
     else {
       // Need to create a link in sample_attributes_websites to link the existing attribute to the survey
-      $saw->sample_attribute_id=$existingAttr['id'];
-      $saw->website_id=$importAttrDef['aw_website_id'];
-      $saw->restrict_to_survey_id=$_POST['survey_id'];
-      $saw->validation_rules=$importAttrDef['aw_validation_rules'];
-      $saw->weight=$importAttrDef['aw_weight'];
-      $saw->control_type_id=$importAttrDef['aw_control_type_id'];
-      $saw->default_text_value=$importAttrDef['aw_default_text_value'];
-      $saw->default_float_value=$importAttrDef['aw_default_float_value'];
-      $saw->default_int_value=$importAttrDef['aw_default_int_value'];
-      $saw->default_date_start_value=$importAttrDef['aw_default_date_start_value'];
-      $saw->default_date_end_value=$importAttrDef['aw_default_date_end_value'];
-      $saw->default_date_type_value=$importAttrDef['aw_default_date_type_value'];
-      $saw->form_structure_block_id=$this->getFormStructureBlockId($importAttrDef);
-      $saw->created_on=date("Ymd H:i:s");
-      $saw->created_by_id=$this->userId;
-      if (!$saw->save()) {
-        $this->log[] = "Error creating a sample attributes website record to associate $attrDef[caption].";
+      $fkName = "{$type}_attribute_id";
+      $aw->$fkName=$existingAttr['id'];
+      $aw->website_id=$importAttrDef['aw_website_id'];
+      $aw->restrict_to_survey_id=$_POST['survey_id'];
+      $aw->validation_rules=$importAttrDef['aw_validation_rules'];
+      $aw->weight=$importAttrDef['aw_weight'];
+      $aw->control_type_id=$importAttrDef['aw_control_type_id'];
+      $aw->default_text_value=$importAttrDef['aw_default_text_value'];
+      $aw->default_float_value=$importAttrDef['aw_default_float_value'];
+      $aw->default_int_value=$importAttrDef['aw_default_int_value'];
+      $aw->default_date_start_value=$importAttrDef['aw_default_date_start_value'];
+      $aw->default_date_end_value=$importAttrDef['aw_default_date_end_value'];
+      $aw->default_date_type_value=$importAttrDef['aw_default_date_type_value'];
+      $aw->form_structure_block_id=$this->getFormStructureBlockId($importAttrDef);
+      $aw->created_on=date("Ymd H:i:s");
+      $aw->created_by_id=$this->userId;
+      if (!$aw->save()) {
+        $this->log[] = "Error creating $type attributes website record to associate $attrDef[caption].";
       }
     }
   }
