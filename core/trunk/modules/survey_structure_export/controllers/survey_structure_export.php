@@ -36,6 +36,11 @@ class Survey_structure_export_Controller extends Indicia_Controller {
   private $userId;
   
   /**
+   * @var integer The ID of the website we are importing into.
+   */
+  private $website_id;
+  
+  /**
    * @const SQL_FETCH_ALL_SAMPLE_ATTRS Query definition which retrieves all the sample attribute details for a survey 
    * ID in preparation for export.
    */
@@ -43,8 +48,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
           sm.term as aw_restrict_to_sample_method_id_term, aw.validation_rules as aw_validation_rules, aw.weight as aw_weight, aw.control_type_id as aw_control_type_id, 
           aw.website_id as aw_website_id, aw.default_text_value as aw_default_text_value, aw.default_float_value as aw_default_float_value, aw.default_int_value as aw_default_int_value, 
           aw.default_date_start_value as aw_default_date_start_value, aw.default_date_end_value as aw_default_date_end_value, aw.default_date_type_value as aw_default_date_type_value,
-          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight,
-          max(t.termlist_title) as termlist_title, 
+          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight, t.termlist_title as termlist_title, 
           array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
         from sample_attributes a
         join sample_attributes_websites aw on aw.sample_attribute_id=a.id and aw.deleted=false
@@ -59,7 +63,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
           sm.term, aw.validation_rules, aw.weight, aw.control_type_id, 
           aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value, 
           aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value,
-          fsb1.name, fsb1.weight, fsb2.name, fsb2.weight
+          fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
         order by fsb1.weight, fsb2.weight, aw.weight";
   
   /**
@@ -70,8 +74,7 @@ class Survey_structure_export_Controller extends Indicia_Controller {
           aw.validation_rules as aw_validation_rules, aw.weight as aw_weight, aw.control_type_id as aw_control_type_id, 
           aw.website_id as aw_website_id, aw.default_text_value as aw_default_text_value, aw.default_float_value as aw_default_float_value, aw.default_int_value as aw_default_int_value, 
           aw.default_date_start_value as aw_default_date_start_value, aw.default_date_end_value as aw_default_date_end_value, aw.default_date_type_value as aw_default_date_type_value,
-          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight,
-          max(t.termlist_title) as termlist_title, 
+          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight, t.termlist_title as termlist_title, 
           array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
         from occurrence_attributes a
         join occurrence_attributes_websites aw on aw.occurrence_attribute_id=a.id and aw.deleted=false
@@ -85,23 +88,27 @@ class Survey_structure_export_Controller extends Indicia_Controller {
           aw.validation_rules, aw.weight, aw.control_type_id, 
           aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value, 
           aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value,
-          fsb1.name, fsb1.weight, fsb2.name, fsb2.weight
+          fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
         order by fsb1.weight, fsb2.weight, aw.weight";
 
   /**
    * @const SQL_FIND_ATTRS Query definition which searches for an existing attribute which matches the 
    * definition of one being imported. Uses an array aggregation to get details of all terms which must be manually
-   * tested after running the query, since PostgreSQL does not support aggregates in the where clause.
+   * tested after running the query, since PostgreSQL does not support aggregates in the where clause. The order by
+   * clause puts any attributes already used by this website at the top.
    */        
   const SQL_FIND_ATTRS = "select a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function{extraFields}, 
-	max(t.termlist_title) as termlist_title, 
+	t.termlist_title as termlist_title, aw.website_id,
 	array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
 from {type}_attributes a
 left join cache_termlists_terms t on t.termlist_id=a.termlist_id
 left join cache_termlists_terms tp on tp.id=t.parent_id
+left join {type}_attributes_websites aw on aw.{type}_attribute_id=a.id and aw.deleted=false and aw.website_id={websiteId}
 where a.deleted=false
+and (a.public=true or aw.id is not null)
 {where}
-group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function{extraFields}";
+group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function, t.termlist_title, aw.website_id{extraFields}
+order by aw.website_id is null, aw.website_id={websiteId}";
 
   /**
    * @const SQL_FIND_TERMLIST Query definition which searches for an existing termlist which matches the 
@@ -140,6 +147,12 @@ group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.publ
    */
   public function save() {
     $surveyId = $_POST['survey_id'];
+    $survey = $this->db
+        ->select('website_id, title')
+        ->from('surveys')
+        ->where(array('id'=>$surveyId))
+        ->get()->result_array(FALSE);
+    $this->website_id=$survey[0]['website_id'];
     try {
       $importData = json_decode($_POST['import_survey_structure'], true);
       $this->doImport($importData, $_POST['survey_id']);
@@ -155,11 +168,6 @@ group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.publ
                            'Please make sure the import data is valid. More information can be found in the warehouse logs.';
       $this->template->content = $this->view;
     }
-    $survey = $this->db
-        ->select('website_id, title')
-        ->from('surveys')
-        ->where(array('id'=>$surveyId))
-        ->get()->result_array(FALSE);
     $this->surveyTitle = $survey[0]['title'];
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $this->page_breadcrumbs[] = html::anchor('survey/edit/'.$surveyId, $this->surveyTitle);
@@ -226,7 +234,9 @@ group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.publ
       else
         $where .= "and $fieldsql='$importAttrDef[$field]' ";
     }
-    $query = str_replace(array('{type}', '{where}', '{extraFields}'), array($type, $where, $extras), self::SQL_FIND_ATTRS);
+    
+    $query = str_replace(array('{type}', '{where}', '{extraFields}', '{websiteId}'), 
+        array($type, $where, $extras, $this->website_id), self::SQL_FIND_ATTRS);
     $possibleMatches = $this->db->query($query)->result_array(FALSE);
     // we now have one or more possible matching attributes. Strip out any that don't match the aggregated termlist data. 
     $existingAttrs = array();
@@ -238,10 +248,10 @@ group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.publ
     $this->log[] = 'Matching attributes: '.count($existingAttrs);
     if (count($existingAttrs)===0)
       $this->createAttr($type, $importAttrDef, $extraFields);
-    elseif (count($existingAttrs)===1)
+    else 
+      // Because the find query puts the attributes already used by this website at the top, we 
+      // can use $existingAttrs[0] to link to safely.
       $this->linkAttr($type, $importAttrDef, $existingAttrs[0]);
-    else
-      $this->linkToOneOfAttrs($type, $importAttrDef, $existingAttrs);
   }
   
   /**
@@ -341,6 +351,15 @@ group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.publ
     return $tl->id;
   }
   
+  /**
+   * Link an attribute to the survey by checking a sample_attributes_websites or occurrence_attributes_websites
+   * record exists and if not then creates it.
+   * 
+   * @param string $type Type of attribute we are working on, occurrence or sample.
+   * @param array $attrDef Definition of the attribute as defined by the imported data.
+   * @param array $existingAttr The array definition of the attribute to link, which must 
+   * already exist.
+   */
   private function linkAttr($type, $importAttrDef, $existingAttr) {
     $aw = ORM::factory("{$type}_attributes_website")->where(array("{$type}_attribute_id"=>$existingAttr['id'], 'restrict_to_survey_id'=>$_POST['survey_id']))->find();
     if ($aw->loaded)
@@ -360,7 +379,7 @@ group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.publ
       $aw->default_date_start_value=$importAttrDef['aw_default_date_start_value'];
       $aw->default_date_end_value=$importAttrDef['aw_default_date_end_value'];
       $aw->default_date_type_value=$importAttrDef['aw_default_date_type_value'];
-      $aw->form_structure_block_id=$this->getFormStructureBlockId($importAttrDef);
+      $aw->form_structure_block_id=$this->getFormStructureBlockId($type, $importAttrDef);
       $aw->created_on=date("Ymd H:i:s");
       $aw->created_by_id=$this->userId;
       if ($type==='sample' && !empty($importAttrDef['aw_restrict_to_sample_method_id_term'])) {
@@ -382,22 +401,61 @@ group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.publ
   /**
    * Given an attribute import definition, work out if the correct form structure blocks are already available
    * and return the appropriate ID. If not already available then the form structure blocks are created.
+   * 
+   * @todo Should probably use the database agnostic query builder here.
+   * @param string $type Type of attribute we are working on, occurrence or sample.
+   * @param array $attrDef Definition of the attribute as defined by the imported data.
+   * @return integer The form structure block ID to link this attribute to.
    */
-  private function getFormStructureBlockId($attrDef) {
-    // @todo form_structure_blocks
-    $this->log[] = 'Form structure block links not yet implemented';
-    return null;
+  private function getFormStructureBlockId($type, $attrDef) {
+    $type = ($type==='sample') ? 'S' : 'O';
+    $query = "select fsb1.id
+        from form_structure_blocks fsb1
+        left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id
+        where fsb1.name='$attrDef[fsb1_name]' and fsb1.survey_id=$_POST[survey_id] and fsb1.type='$type'\n";
+    if (empty($attrDef['fsb2_name']))
+      $query .= 'and fsb2.id is null';
+    else
+      $query .= "and fsb2.name='$attrDef[fsb2_name]' and fsb2.survey_id=$_POST[survey_id] and fsb2.type='$type'";
+    $matches = $this->db->query($query)->result_array(FALSE);
+    if (count($matches))
+      // Matching form structure block exists
+      return $matches[0]['id'];
+    else {
+      // Need to create the form structure block. 
+      $parentId=false;
+      if (!empty($attrDef['fsb2_name'])) {
+        // If we have a parent block, find an existing one or create a new one as appropriate
+        $matches = $this->db->query("select id from form_structure_blocks
+            where name='$attrDef[fsb2_name]' and survey_id=$_POST[survey_id] and parent_id is null")->result_array(FALSE);
+        if (count($matches))
+          $parent_id=$matches[0]['id'];
+        else {
+          $parent = ORM::factory('form_structure_block');
+          $parent->name=$attrDef['fsb2_name'];
+          $parent->survey_id=$_POST['survey_id'];
+          $parent->type=$type;
+          $parent->weight=$attrDef['fsb2_weight'];
+          $parent->save();
+          $parent_id=$parent->id;
+        }
+      }
+      // now create the child
+      $child = ORM::factory('form_structure_block');
+      $child->name=$attrDef['fsb1_name'];
+      $child->survey_id=$_POST['survey_id'];
+      $child->type=$type;
+      $child->weight=$attrDef['fsb1_weight'];
+      if ($parent_id)
+        $child->parent_id=$parent_id;
+      $child->save();
+      return $child->id;
+    }
   }
   
-  private function linkToOneOfAttrs($attrDefs) {
-    // @todo linkToOneOfAttrs
-    // Need to look through the list to see if one of them is already in use by this website.
-    // If so, then use it, if not, then go for the first.
-    $this->log[] = 'Link to one of a list of sample attributes not implemented';
-  }
- 
   /**
    * Retrieves the data for a list of attributes associated with a given survey.
+   * 
    * @param type $surveyId
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
