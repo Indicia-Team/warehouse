@@ -39,7 +39,7 @@ form.cmxform legend {
   font-weight: bold;
 }
 
-form label {
+form.iform label {
   display: inline-block;
   line-height: 1.8;
   vertical-align: top;
