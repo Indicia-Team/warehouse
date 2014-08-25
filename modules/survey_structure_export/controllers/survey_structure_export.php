@@ -408,6 +408,8 @@ order by aw.website_id is null, aw.website_id={websiteId}";
    * @return integer The form structure block ID to link this attribute to.
    */
   private function getFormStructureBlockId($type, $attrDef) {
+    if (empty($attrDef['fsb1_name']))
+      return null;
     $type = ($type==='sample') ? 'S' : 'O';
     $query = "select fsb1.id
         from form_structure_blocks fsb1
@@ -423,21 +425,22 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       return $matches[0]['id'];
     else {
       // Need to create the form structure block. 
-      $parentId=false;
+      $parent=false;
       if (!empty($attrDef['fsb2_name'])) {
         // If we have a parent block, find an existing one or create a new one as appropriate
         $matches = $this->db->query("select id from form_structure_blocks
             where name='$attrDef[fsb2_name]' and survey_id=$_POST[survey_id] and parent_id is null")->result_array(FALSE);
-        if (count($matches))
-          $parent_id=$matches[0]['id'];
-        else {
-          $parent = ORM::factory('form_structure_block');
+        $parent = ORM::factory('form_structure_block')->where(array(
+          'name' => $attrDef['fsb2_name'],
+          'survey_id' => $_POST['survey_id'],
+          'parent_id' => null
+        ));
+        if (!$parent->loaded) {
           $parent->name=$attrDef['fsb2_name'];
           $parent->survey_id=$_POST['survey_id'];
           $parent->type=$type;
           $parent->weight=$attrDef['fsb2_weight'];
           $parent->save();
-          $parent_id=$parent->id;
         }
       }
       // now create the child
@@ -446,8 +449,8 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       $child->survey_id=$_POST['survey_id'];
       $child->type=$type;
       $child->weight=$attrDef['fsb1_weight'];
-      if ($parent_id)
-        $child->parent_id=$parent_id;
+      if ($parent)
+        $child->parent_id=$parent->id;
       $child->save();
       return $child->id;
     }
