@@ -119,7 +119,7 @@ if (typeof window.indiciaData==="undefined") {
 
 jQuery(document).ready(function($) {
   if ($('form input[name=website_id]').length>0) {
-    var iform=$('form input[name=website_id]').parents('form'),
+    var iform=$('form input[name=auth_token]').parents('form'),
     confirmOnPageExit = function (e) {
       // If we haven't been passed the event get the window.event
       e = e || window.event;
