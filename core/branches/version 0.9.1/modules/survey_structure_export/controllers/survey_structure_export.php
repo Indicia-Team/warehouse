@@ -24,96 +24,138 @@
  * Controller class for the survey structure export plugin module.
  */
 class Survey_structure_export_Controller extends Indicia_Controller {
+
   /**
-   * List of tables supported by the exporter. The order of the array should be in top
-   * down order of processing. Each table name contains a sub array with metadata detailing the
-   * joins to follow upwards from the table plus the joins to follow downwards.
-   * @var array 
+   * @var array Holds a list of log messages describing the results of an import.
    */
-  private $tableMetadata = array(
-    'surveys' => array(
-      'referredToBy' => array(
-        'sample_attributes_websites'=>'restrict_to_survey_id',
-        'occurrence_attributes_websites'=>'restrict_to_survey_id'
-      ),
-    ),
-    'sample_attributes_websites'=>array(
-      'refersTo' => array('sample_attributes'=>'sample_attribute_id', 'termlists_terms'=>'restrict_to_sample_method_id')    
-    ),
-    'sample_attributes' => array(
-      'refersTo' => array('termlists'=>'termlist_id')
-    ),
-    'occurrence_attributes_websites'=>array(
-      'refersTo' => array('occurrence_attributes'=>'occurrence_attribute_id')    
-    ),
-    'occurrence_attributes' => array(
-      'refersTo' => array('termlists'=>'termlist_id')
-    ),
-    'termlists' => array(
-      'referredToBy' => array('termlists_terms'=>'termlist_id')
-    ),
-    'termlists_terms' => array(
-      'refersTo' => array('terms'=>'term_id')
-    ),
-    'terms' => array(
-      'refersTo' => array('languages'=>'language_id')
-    ),
-    'languages' => array()
-  );
+  private $log=array();
   
   /**
-   * A simple list of table names, autopopulated from the metadata array.
-   * @var array
+   * @var integer The user's ID.
    */
-  private $tableNames = array();
+  private $userId;
   
   /**
-   * An array of hash data used during the building of the hash information for a dataset.
-   * @var array
+   * @var integer The ID of the website we are importing into.
    */
-  private $hashWorkingData = array();
+  private $website_id;
   
   /**
-   * The import survey's title. Use a default until we know better.
-   * @var string 
+   * @const SQL_FETCH_ALL_SAMPLE_ATTRS Query definition which retrieves all the sample attribute details for a survey 
+   * ID in preparation for export.
    */
-  private $surveyTitle = 'This survey';
+  const SQL_FETCH_ALL_SAMPLE_ATTRS = "select a.caption, a.data_type, a.applies_to_location, a.validation_rules, a.multi_value, a.public, a.applies_to_recorder, a.system_function,
+          sm.term as aw_restrict_to_sample_method_id_term, aw.validation_rules as aw_validation_rules, aw.weight as aw_weight, aw.control_type_id as aw_control_type_id, 
+          aw.website_id as aw_website_id, aw.default_text_value as aw_default_text_value, aw.default_float_value as aw_default_float_value, aw.default_int_value as aw_default_int_value, 
+          aw.default_date_start_value as aw_default_date_start_value, aw.default_date_end_value as aw_default_date_end_value, aw.default_date_type_value as aw_default_date_type_value,
+          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight, t.termlist_title as termlist_title, 
+          array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
+        from sample_attributes a
+        join sample_attributes_websites aw on aw.sample_attribute_id=a.id and aw.deleted=false
+        left join cache_termlists_terms t on t.termlist_id=a.termlist_id
+        left join cache_termlists_terms tp on tp.id=t.parent_id
+        left join cache_termlists_terms sm on sm.id=aw.restrict_to_sample_method_id
+        left join form_structure_blocks fsb1 on fsb1.id=aw.form_structure_block_id and fsb1.survey_id=aw.restrict_to_survey_id
+        left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id and fsb2.survey_id=aw.restrict_to_survey_id
+        where a.deleted=false
+        {where}
+        group by a.id, a.caption, a.data_type, a.applies_to_location, a.validation_rules, a.multi_value, a.public, a.applies_to_recorder, a.system_function,
+          sm.term, aw.validation_rules, aw.weight, aw.control_type_id, 
+          aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value, 
+          aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value,
+          fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
+        order by fsb1.weight, fsb2.weight, aw.weight";
   
   /**
-   * An output log.
-   * @var array
+   * @const SQL_FETCH_ALL_OCCURRENCE_ATTRS Query definition which retrieves all the occurrence attribute details for a survey 
+   * ID in preparation for export.
    */
-  private $log = array();
-  
- 
+  const SQL_FETCH_ALL_OCCURRENCE_ATTRS = "select 	a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function,
+          aw.validation_rules as aw_validation_rules, aw.weight as aw_weight, aw.control_type_id as aw_control_type_id, 
+          aw.website_id as aw_website_id, aw.default_text_value as aw_default_text_value, aw.default_float_value as aw_default_float_value, aw.default_int_value as aw_default_int_value, 
+          aw.default_date_start_value as aw_default_date_start_value, aw.default_date_end_value as aw_default_date_end_value, aw.default_date_type_value as aw_default_date_type_value,
+          fsb1.name as fsb1_name, fsb1.weight as fsb1_weight, fsb2.name as fsb2_name, fsb2.weight as fsb2_weight, t.termlist_title as termlist_title, 
+          array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
+        from occurrence_attributes a
+        join occurrence_attributes_websites aw on aw.occurrence_attribute_id=a.id and aw.deleted=false
+        left join cache_termlists_terms t on t.termlist_id=a.termlist_id
+        left join cache_termlists_terms tp on tp.id=t.parent_id
+        left join form_structure_blocks fsb1 on fsb1.id=aw.form_structure_block_id and fsb1.survey_id=aw.restrict_to_survey_id
+        left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id and fsb2.survey_id=aw.restrict_to_survey_id
+        where a.deleted=false
+        {where}
+        group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function,
+          aw.validation_rules, aw.weight, aw.control_type_id, 
+          aw.website_id, aw.default_text_value, aw.default_float_value, aw.default_int_value, 
+          aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value,
+          fsb1.name, fsb1.weight, fsb2.name, fsb2.weight, t.termlist_title
+        order by fsb1.weight, fsb2.weight, aw.weight";
+
+  /**
+   * @const SQL_FIND_ATTRS Query definition which searches for an existing attribute which matches the 
+   * definition of one being imported. Uses an array aggregation to get details of all terms which must be manually
+   * tested after running the query, since PostgreSQL does not support aggregates in the where clause. The order by
+   * clause puts any attributes already used by this website at the top.
+   */        
+  const SQL_FIND_ATTRS = "select a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function{extraFields}, 
+	t.termlist_title as termlist_title, aw.website_id,
+	array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
+from {type}_attributes a
+left join cache_termlists_terms t on t.termlist_id=a.termlist_id
+left join cache_termlists_terms tp on tp.id=t.parent_id
+left join {type}_attributes_websites aw on aw.{type}_attribute_id=a.id and aw.deleted=false and aw.website_id={websiteId}
+where a.deleted=false
+and (a.public=true or aw.id is not null)
+{where}
+group by a.id, a.caption, a.data_type, a.validation_rules, a.multi_value, a.public, a.system_function, t.termlist_title, aw.website_id{extraFields}
+order by aw.website_id is null, aw.website_id={websiteId}";
+
+  /**
+   * @const SQL_FIND_TERMLIST Query definition which searches for an existing termlist which matches the 
+   * definition of one being imported. Uses an array aggregation to get details of all terms which must be manually
+   * tested after running the query, since PostgreSQL does not support aggregates in the where clause.
+   */ 
+  const SQL_FIND_TERMLIST = "select t.termlist_id, t.termlist_title, 
+      array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
+    from cache_termlists_terms t
+    left join cache_termlists_terms tp on tp.id=t.parent_id
+    where {where}
+    group by t.termlist_id, t.termlist_title";
+    
   /**
    * Constructor.
    */
   public function __construct() {
     parent::__construct();
-    $this->tableNames = array_keys($this->tableMetadata);
   }
   
   /**
-   * Controller action for the export tab content. Display the export page.
+   * Controller action for the export tab content. Displays the view containing a block of 
+   * exportable content as well as a textarea into which exports from elsewhere can be pasted.
    */
   public function index() {
     $this->view = new View('survey_structure_export/index');
     $this->view->surveyId=$this->uri->last_segment();
-    //Get the attribute data (including termlists) associated with the survey ready to export
-    $export = $this->getDatabaseData($this->view->surveyId);
+    // Get the attribute data (including termlists) associated with the survey ready to export
+    $export = $this->getSurveyAttributes($this->view->surveyId);
     $this->view->export = json_encode($export);
     $this->template->content = $this->view;
   }
  
   /**
-   * Perform the import
+   * Controller action called when Save clicked. Perform the import when text has been pasted into the import text area.
    */
   public function save() {
     $surveyId = $_POST['survey_id'];
+    $survey = $this->db
+        ->select('website_id, title')
+        ->from('surveys')
+        ->where(array('id'=>$surveyId))
+        ->get()->result_array(FALSE);
+    $this->website_id=$survey[0]['website_id'];
     try {
       $importData = json_decode($_POST['import_survey_structure'], true);
-      $this->doImport($importData,$_POST['survey_id']);
+      $this->doImport($importData, $_POST['survey_id']);
       $this->template->title = 'Import Complete';
       $this->view = new View('survey_structure_export/import_complete');
       $this->view->log = $this->log;
@@ -126,383 +168,306 @@ class Survey_structure_export_Controller extends Indicia_Controller {
                            'Please make sure the import data is valid. More information can be found in the warehouse logs.';
       $this->template->content = $this->view;
     }
+    $this->surveyTitle = $survey[0]['title'];
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $this->page_breadcrumbs[] = html::anchor('survey/edit/'.$surveyId, $this->surveyTitle);
     $this->page_breadcrumbs[] = $this->template->title;
   }
 
   /**
-   * Call the methods required to do the import.
+   * Import a pasted definition of a set of custom attributes.
    *
-   * @param array $importData
+   * @param array $importData The array definition of the attributes to import.
    * @param int $surveyId The ID of the survey in the database we are importing into.
-   * @todo Is the load of existing data scalable? Does it just load data available to
-   * the website for the current survey?
    */
   public function doImport($importData, $surveyId) {
-    //Get the data from the database before the import is done. Otherwise we can't do duplicate comparisons with it.
-    $existingData = $this->getDatabaseData(null);
-    //We need to get the website_id for the survey we are importing into so we can add it to the rows we are adding for tables
-    //that support it
-    $survey = $this->db
-      ->select('website_id, title')
-      ->from('surveys')
-      ->where(array('id'=>$surveyId))
-      ->get()->result_array(FALSE);
-    print_r($survey);
-    $surveyWebsiteId = $survey[0]['website_id'];
-    $this->surveyTitle = $survey[0]['title'];
-    //Create the hashes for the data we are importing and also the existing data in the database.
-    //This is allows us to detect duplicates if hashes match.
-    $importHashes = $this->getHashes($importData);
-    $existingHashes = $this->getHashes($existingData);
-    //Cycle through each table and do the import.
-    //The mappings variable is an array of table arrays. The table array keys are the old ids from the import data and
-    //the values are the new ids in the databases. This array is created by the importTable method as it does its work.
-    $idMappings = array();
-    // process the tables backwards, so we do the leaf tables first
-    $tables = array_reverse($this->tableNames);
-    foreach ($tables as $tableName)
-      if (!empty($importData[$tableName])) 
-        $this->importTable($importData[$tableName], $tableName, $importHashes, $existingHashes, $idMappings, $surveyWebsiteId);
-    //We need to fix any columns which are self-referencing (such as parent_id) as this can only be done after 
-    //the import is finished.
-    //Note we are not importing the parent_id from the termlists table, so the only
-    //parent_id column to fix is from termlists_terms
-    $this->fixSelfReferencingIds($importData, $idMappings, 'termlists_terms', 'parent_id');
-  }
- 
- 
-  /**
-   *
-   * @param array $importData The data to be imported, as decoded from the JSON string.
-   * @param string $tableName Name of table we are importing
-   * @param array $importHashes The hash codes for the rows in the import data
-   * @param array $existingHashes The hash codes for the rows in the existing database data
-   * @param array $idMappings An array of arrays. There is an array for each table processed so far.
-   * In each table array, the keys are the ids for the items in the import data. The values are the new ids in the database.
-   * So the value is either a new row id, or for duplicates if is an existing row id.
-   * @param id $surveyWebsiteId The id of the website for the survey we are importing into
-   */
-  public function importTable($recordData, $tableName, $importHashes, $existingHashes, &$idMappings, $surveyWebsiteId) {
-    $newMeaningIds = array();
-    foreach($recordData as $rowData) {
-      if ($existingHashRowId = array_search($importHashes[$tableName][$rowData['id']], $existingHashes[$tableName])) {
-        $idMappings[$tableName][$rowData['id']] = $existingHashRowId;
-      }
+    if (isset($_SESSION['auth_user']))
+      $this->userId = $_SESSION['auth_user']->id;
+    else {
+      global $remoteUserId;
+      if (isset($remoteUserId))
+        $this->userId = $remoteUserId;
       else {
-        //If we don't find a duplicate, then we add a new row to the database and note the new id.
-        $idMappings[$tableName][$rowData['id']] =  $this->importRow($tableName, $rowData, $idMappings, $surveyWebsiteId, $newMeaningIds);
-        $this->log[] = "Creating new row in $tableName for ID ".$idMappings[$tableName][$rowData['id']];
-      } 
-    }
-  }
- 
-  /**
-   *
-   * @param string $tableName The table name of the row to be imported.
-   * @param integer $rowToAdd The row to add.
-   * @param array $idMappings An array telling us the ids from the import data against the new ids of any rows already added.
-   * @param integer $surveyWebsiteId The website_id of the survey we are importing into.
-   * @param array $newMeaningIds An array holding the meaning ids we have added with the old id as the key.
-   * This means that if we add two items that used to have the same meaning id, we can give them the same new
-   * meaning id as well. 
-   * 
-   * @return integer The id of a newly generated row.
-   */
-  public function importRow($tableName, $rowToAdd, $idMappings, $surveyWebsiteId, &$newMeaningIds) {
-    //add updated by/created by info
-    $this->setMetadata($rowToAdd, $tableName);
-    //Point any lookups at new lookup values created when we add data to the database.
-    if (!empty($this->tableMetadata[$tableName]['refersTo'])) {
-      foreach ($this->tableMetadata[$tableName]['refersTo'] as $fkTable=>$fkColumn) {
-        if (!empty($rowToAdd[$fkColumn]))
-          $rowToAdd[$fkColumn] = $idMappings[$fkTable][$rowToAdd[$fkColumn]];
+        $defaultUserId = Kohana::config('indicia.defaultPersonId');
+        $this->userId = ($defaultUserId ? $defaultUserId : 1);
       }
     }
-
-    //Meanings are a special case as we always have a new meaning unless we have already added a new meaning
-    //that is equivalent to the old meaning id (meanings are a special case because the table only consists of an id)
-    if ($tableName==='termlists_terms') {
-      //If we have already added a new meaning that is equivalent to the old meaning id, then use it
-      if (!empty($newMeaningIds) && array_key_exists($rowToAdd['meaning_id'],$newMeaningIds)) {
-        $rowToAdd['meaning_id']=$newMeaningIds[$rowToAdd['meaning_id']];
-      } else {
-        $meaningToAdd= array();
-        //When we add a meaning, we need to generate a new id ouselves and manually add it to the database.
-        //This is different to normal because we only have an id column and we aren't allowed add an
-        //empty row to the database.
-        $meaningToAdd['id'] = $this->db->query("SELECT nextval('meanings_id_seq'::regclass)")
-        ->current()->nextval;
-        //Save the new meaning id against the old id.
-        $newMeaningIds[$rowToAdd['meaning_id']] = $meaningToAdd['id'];
-        //Set the meaning_id of the termlists_term we are adding to the new meaning id
-        $rowToAdd['meaning_id'] = $meaningToAdd['id'];
-        
-        $this->db
-        ->from('meanings')
-        ->set($meaningToAdd)
-        ->insert(); 
-      }
+    foreach($importData['smpAttrs'] as $importAttrDef) {
+      $this->processAttribute('sample', $importAttrDef, array('applies_to_location', 'applies_to_recorder'));
     }
-    if ($tableName==='sample_attributes_websites'||$tableName==='occurrence_attributes_websites'||$tableName==='termlists')
-      $rowToAdd['website_id'] = $surveyWebsiteId;
-
-    unset($rowToAdd['id']);
-    $insert = $this->db
-      ->from($tableName)
-      ->set($rowToAdd)
-      ->insert();
-    return $insert->insert_id();
+    foreach($importData['occAttrs'] as $importAttrDef) {
+      $this->processAttribute('occurrence', $importAttrDef, array());
+    }
   }
   
   /**
+   * Handles the import of a single occurrence or sample custom attribute.
+   *
+   * @param string $type occurrence or sample.
+   * @param array $importAttrDef Definition of the attribute in an array, as retrieved from the imported
+   * data.
+   * @param array $extraFields List of non-standard fields in this attributes database table.
+   */
+  private function processAttribute($type, $importAttrDef, $extraFields) {
+    $this->log[] = "Processing $type attribute: $importAttrDef[caption]";
+    // fetch possible matches based on the following SQL field matches
+    $fieldsToMatch = array(
+      'caption'=>'a.caption', 
+      'data_type'=>'a.data_type', 
+      'validation_rules'=>'a.validation_rules',  
+      'multi_value'=>'a.multi_value',  
+      'public'=>'a.public', 
+      'system_function'=>'a.system_function'
+    );
+    // Depending on the type of attribute (occurrence or sample), there might be some additional fields to match. 
+    // We also need these in a string suitable for adding to the SQL select and group by clauses.
+    $extras = ''; 
+    foreach ($extraFields as $field) {
+      $fieldsToMatch[$field] = "a.$field";
+      $extras .= ", a.$field";
+    }
+    // build the where clause required to do the match to see if an existing attribute meets our needs
+    $where = '';
+    foreach ($fieldsToMatch as $field => $fieldsql) {
+      if ($importAttrDef[$field]==='' || $importAttrDef[$field]===null)
+        $where .= "and coalesce($fieldsql, '')='$importAttrDef[$field]' ";
+      else
+        $where .= "and $fieldsql='$importAttrDef[$field]' ";
+    }
+    
+    $query = str_replace(array('{type}', '{where}', '{extraFields}', '{websiteId}'), 
+        array($type, $where, $extras, $this->website_id), self::SQL_FIND_ATTRS);
+    $possibleMatches = $this->db->query($query)->result_array(FALSE);
+    // we now have one or more possible matching attributes. Strip out any that don't match the aggregated termlist data. 
+    $existingAttrs = array();
+    foreach ($possibleMatches as $possibleMatch) {
+      // additional checks that can't be done in SQL because aggregates don't work in SQL where clauses.  
+      if ($possibleMatch['termlist_title']===$importAttrDef['termlist_title'] && $possibleMatch['terms']===$importAttrDef['terms'])
+        $existingAttrs[] = $possibleMatch;
+    }
+    if (count($existingAttrs)===0)
+      $this->createAttr($type, $importAttrDef, $extraFields);
+    else 
+      // Because the find query puts the attributes already used by this website at the top, we 
+      // can use $existingAttrs[0] to link to safely.
+      $this->linkAttr($type, $importAttrDef, $existingAttrs[0]);
+  }
+  
+  /**
+   * Create a sample or occurrence custom attribute.
+   * 
+   * @param string $type Type of custom attribute, sample or occurrence.
+   * @param array $attrDef Definition of the attribute in an array, as retrieved from the imported
+   * data.
+   * @param array $extraFields List of non-standard fields in this attributes database table.
+   * @return type
+   */
+  private function createAttr($type, $attrDef, $extraFields) {
+    $array=array(
+      'caption' => $attrDef['caption'],
+      'data_type' => $attrDef['data_type'],
+      'validation_rules' => $attrDef['validation_rules'],
+      'multi_value' => $attrDef['multi_value'],
+      'public' => $attrDef['public'],
+      'system_function' => $attrDef['system_function']
+    );
+    // Depending on if it is an occurrence or sample attribute there might be extra fields to copy
+    foreach ($extraFields as $field) 
+      $array[$field] = $attrDef[$field];
+    // Lookups need to link to or create a termlist
+    if ($attrDef['data_type'] === 'L') {
+      // Find termlists with the same name that are available to this website?
+      $possibleMatches = $this->db->query(
+          str_replace('{where}', "t.termlist_title='$attrDef[termlist_title]' and (t.website_id=$attrDef[aw_website_id] or t.website_id is null)", 
+          self::SQL_FIND_TERMLIST)
+      )->result_array(FALSE);
+      // Now double check that the found termlist(s) have the same set of terms we are expecting.
+      $termlists = array();
+      foreach ($possibleMatches as $possibleMatch) {
+        if ($possibleMatch['terms'] === $attrDef['terms'])
+          $termlists[] = $possibleMatch;
+      }
+      // Do we have any matching termlists?
+      if (count($termlists)>=1) 
+        // use the existing termlist to provide terms for the new custom attribute
+        $array['termlist_id'] = $termlists[0]['termlist_id'];
+      else {
+        // create a new termlist for the new custom attribute
+        $array['termlist_id'] = $this->createTermlist($attrDef);
+      }
+    }
+    $a = ORM::factory("{$type}_attribute");
+    $a->set_submission_data($array);
+    if (!$a->submit()) 
+      $this->log[] = "Error creating $type attribute for $attrDef[caption]";
+    else {
+      $this->log[] = "Created $type attribute $attrDef[caption]";
+      $this->linkAttr($type, $attrDef, $a->as_array());
+    }
+  }
+  
+  /**
+   * Create a new termlist and populate it with the terms required for a new lookup 
+   * custom attribute.
+   * 
+   * @param array $attrDef Definition of the attribute as defined by the imported data.
+   * @return integer Returns the database ID of the created termist.
+   */
+  private function createTermlist($attrDef) {
+    $tl = ORM::factory('termlist');
+    $tl->set_submission_data(array(
+      'title' => $attrDef['termlist_title'],
+      'description' => "Terms for the $attrDef[caption] attribute",
+      'website_id' => $attrDef['aw_website_id']
+    ));
+    if (!$tl->submit()) 
+      $this->log[] = "Error creating termlist $attrDef[termlist_title] for $attrDef[caption]";
+    else {
+      // now we need to create the terms required by the termlist. Split the terms string into individual terms.
+      $terms = explode('**', $attrDef['terms']);
+      foreach ($terms as $term) {
+        // the tokens defining the term are separated by pipes. 
+        $term = explode('|', $term);
+        // sanitise the sort order
+        $term[2] = empty($term[2]) ? 'null' : $term[2];
+        $this->db->query("select insert_term('$term[0]', '$term[1]', $term[2], {$tl->id}, null);");
+      }
+      // Now re-iterate through the terms and set the term parents
+      foreach ($terms as $term) {
+        // the tokens defining the term are separated by pipes. 
+        $term = explode('|', $term);
+        if (!empty($term[3])) {
+          $this->db->query("update termlists_terms tlt set parent_id=tltp.id 
+            from terms t, termlists_terms tltp
+            join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$term[2]'
+            where tlt.termlist_id={tl->id} and t.id=tlt.term_id and t.deleted=false and t.term='$term[0]' 
+            and tltp.termlist_id=tlt.termlist_id and tltp.deleted=false");
+        }
+      }
+      $this->log[] = "Created termlist $attrDef[termlist_title]";
+    }
+    return $tl->id;
+  }
+  
+  /**
+   * Link an attribute to the survey by checking a sample_attributes_websites or occurrence_attributes_websites
+   * record exists and if not then creates it.
+   * 
+   * @param string $type Type of attribute we are working on, occurrence or sample.
+   * @param array $attrDef Definition of the attribute as defined by the imported data.
+   * @param array $existingAttr The array definition of the attribute to link, which must 
+   * already exist.
+   */
+  private function linkAttr($type, $importAttrDef, $existingAttr) {
+    $aw = ORM::factory("{$type}_attributes_website")->where(array("{$type}_attribute_id"=>$existingAttr['id'], 'restrict_to_survey_id'=>$_POST['survey_id']))->find();
+    if ($aw->loaded)
+      $this->log[] = 'An attribute similar to this is already link to the survey - no action taken.';
+    else {
+      // Need to create a link in sample_attributes_websites to link the existing attribute to the survey
+      $fkName = "{$type}_attribute_id";
+      $aw->$fkName=$existingAttr['id'];
+      $aw->website_id=$importAttrDef['aw_website_id'];
+      $aw->restrict_to_survey_id=$_POST['survey_id'];
+      $aw->validation_rules=$importAttrDef['aw_validation_rules'];
+      $aw->weight=$importAttrDef['aw_weight'];
+      $aw->control_type_id=$importAttrDef['aw_control_type_id'];
+      $aw->default_text_value=$importAttrDef['aw_default_text_value'];
+      $aw->default_float_value=$importAttrDef['aw_default_float_value'];
+      $aw->default_int_value=$importAttrDef['aw_default_int_value'];
+      $aw->default_date_start_value=$importAttrDef['aw_default_date_start_value'];
+      $aw->default_date_end_value=$importAttrDef['aw_default_date_end_value'];
+      $aw->default_date_type_value=$importAttrDef['aw_default_date_type_value'];
+      $aw->form_structure_block_id=$this->getFormStructureBlockId($type, $importAttrDef);
+      $aw->created_on=date("Ymd H:i:s");
+      $aw->created_by_id=$this->userId;
+      if ($type==='sample' && !empty($importAttrDef['aw_restrict_to_sample_method_id_term'])) {
+        $sm = $this->db->query("select id from cache_termlists_terms "
+            . "where termlist_title='Sample methods' and term='$importAttrDef[aw_restrict_to_sample_method_id_term]'")->result_array(FALSE);
+        if (count($sm)===0) {
+          $this->db->query("select insert_term('$importAttrDef[aw_restrict_to_sample_method_id_term]', 'eng', null, null, 'indicia:sample_methods');");
+        } else {
+          $aw->restrict_to_sample_method_id = $sm[0]['id'];
+        }
+          
+      }
+      if (!$aw->save()) {
+        $this->log[] = "Error creating $type attributes website record to associate $attrDef[caption].";
+      }
+    }
+  }
+  
+  /**
+   * Given an attribute import definition, work out if the correct form structure blocks are already available
+   * and return the appropriate ID. If not already available then the form structure blocks are created.
+   * 
+   * @todo Should probably use the database agnostic query builder here.
+   * @param string $type Type of attribute we are working on, occurrence or sample.
+   * @param array $attrDef Definition of the attribute as defined by the imported data.
+   * @return integer The form structure block ID to link this attribute to.
+   */
+  private function getFormStructureBlockId($type, $attrDef) {
+    if (empty($attrDef['fsb1_name']))
+      return null;
+    $type = ($type==='sample') ? 'S' : 'O';
+    $query = "select fsb1.id
+        from form_structure_blocks fsb1
+        left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id
+        where fsb1.name='$attrDef[fsb1_name]' and fsb1.survey_id=$_POST[survey_id] and fsb1.type='$type'\n";
+    if (empty($attrDef['fsb2_name']))
+      $query .= 'and fsb2.id is null';
+    else
+      $query .= "and fsb2.name='$attrDef[fsb2_name]' and fsb2.survey_id=$_POST[survey_id] and fsb2.type='$type'";
+    $matches = $this->db->query($query)->result_array(FALSE);
+    if (count($matches))
+      // Matching form structure block exists
+      return $matches[0]['id'];
+    else {
+      // Need to create the form structure block. 
+      $parent=false;
+      if (!empty($attrDef['fsb2_name'])) {
+        // If we have a parent block, find an existing one or create a new one as appropriate
+        $matches = $this->db->query("select id from form_structure_blocks
+            where name='$attrDef[fsb2_name]' and survey_id=$_POST[survey_id] and parent_id is null")->result_array(FALSE);
+        $parent = ORM::factory('form_structure_block')->where(array(
+          'name' => $attrDef['fsb2_name'],
+          'survey_id' => $_POST['survey_id'],
+          'parent_id' => null
+        ));
+        if (!$parent->loaded) {
+          $parent->name=$attrDef['fsb2_name'];
+          $parent->survey_id=$_POST['survey_id'];
+          $parent->type=$type;
+          $parent->weight=$attrDef['fsb2_weight'];
+          $parent->save();
+        }
+      }
+      // now create the child
+      $child = ORM::factory('form_structure_block');
+      $child->name=$attrDef['fsb1_name'];
+      $child->survey_id=$_POST['survey_id'];
+      $child->type=$type;
+      $child->weight=$attrDef['fsb1_weight'];
+      if ($parent)
+        $child->parent_id=$parent->id;
+      $child->save();
+      return $child->id;
+    }
+  }
+  
+  /**
+   * Retrieves the data for a list of attributes associated with a given survey.
    * 
    * @param type $surveyId
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
    */
-  public function getDatabaseData($id=null) {
-    $data = array();
-    $startTable = $this->tableNames[0];
-    if ($id) {
-      $rows = $this->db->select('*')
-              ->from($startTable)
-              ->where('id', $id)
-              ->get()->result_array(FALSE);
-      $this->loadDataAndRecurse($startTable, $rows, $data);
-    } else {
-      // as we are not loading from a specific top level record, go to the next level and get all the records.
-      $linkedTables = array();
-      if (isset($this->tableMetadata[$startTable]['referredToBy']))
-        $linkedTables += array_keys($this->tableMetadata[$startTable]['referredToBy']);
-      if (isset($this->tableMetadata[$startTable]['refersTo']))
-        $linkedTables += array_keys($this->tableMetadata[$startTable]['refersTo']);
-      foreach($linkedTables as $table) {
-        $rows = $this->db->select('*')
-                ->from($table)
-                ->get()->result_array(FALSE);
-        $this->loadDataAndRecurse($table, $rows, $data);
-      }
-    }
-    // if loading a specific ID, then we can drop the specific record we loaded as it is not
-    // part of the import/export process. I.e. we don't actually export/import the survey record, 
-    // just the stuff it contains.
-    unset($data[$this->tableNames[0]]);
-    return $data;
+  public function getSurveyAttributes($id) {
+    $smpAttrs = $this->db->query(str_replace('{where}', "and aw.restrict_to_survey_id=$id", self::SQL_FETCH_ALL_SAMPLE_ATTRS))->result_array(FALSE);
+    $occAttrs = $this->db->query(str_replace('{where}', "and aw.restrict_to_survey_id=$id", self::SQL_FETCH_ALL_OCCURRENCE_ATTRS))->result_array(FALSE);
+    return array(
+      'smpAttrs'=>$smpAttrs,
+      'occAttrs'=>$occAttrs
+    );
   }
   
-  /**
-   * Takes the rows for a table, loads them into the data array, and recurses into 
-   * any foreign key dependencies the table may have so we end up with a complete set
-   * of export data.
-   * @param string $table
-   * @param array $rows
-   * @param array $data
-   * @return type 
-   */
-  public function loadDataAndRecurse($table, $rows, &$data) {
-    if (!empty($rows)) {
-      if (!isset($data[$table]))
-        $data[$table] = array();
-      $references = $this->tableMetadata[$table];
-      foreach($rows as $row) {
-        $data[$table][$row['id']] = $this->stripUnwantedFields($table, $row);
-        if (isset($references['referredToBy'])) {
-          foreach($references['referredToBy'] as $fktable => $fk) {
-            $referredToByRows = $this->db->select('*')
-              ->from($fktable)
-              ->where($fk, $row['id'])
-              ->get()->result_array(FALSE);
-            $this->loadDataAndRecurse($fktable, $referredToByRows, $data);
-          } 
-        }
-        if (isset($references['refersTo'])) {
-          foreach($references['refersTo'] as $fktable => $fk) {
-            $refersToRows = $this->db->select('*')
-              ->from($fktable)
-              ->where('id', $row[$fk])
-              ->get()->result_array(FALSE);
-            $this->loadDataAndRecurse($fktable, $refersToRows, $data);
-          }
-
-        }
-      }
-    }
-  }
-  
-  /**
-   * Removes the fields we don't want for a table export from the row data array.
-   * @param type $table
-   * @param type $row 
-   */
-  private function stripUnwantedFields($table, $row) {
-    unset($row['created_by_id']);
-    unset($row['updated_by_id']);
-    unset($row['created_on']);
-    unset($row['updated_on']);
-    unset($row['deleted']);
-    switch ($table) {
-      case 'surveys':
-        unset($row['owner_id']);  
-        break;
-    }
-    return $row;
-  }
-  
-  /**
-   * We drill through all the tables and create hashes of the row data. We can then detect duplicates between the
-   * import data and existing data by comparing these hashes.
-   * 
-   * @param array $data The database data we are going to collect hashes for
-   * @return array $unifiedHashData An array of table arrays. Each table array key is the id of the database row, the value is the hash
-   */
-  public function getHashes($data) {
-    // reset the hash working data
-    $this->hashWorkingData = array($this->tableNames[0] => array());
-    // start drilling into the data. Note we don't bother getting hashes for the first
-    // table as that's the one we are importing into - so we can't compare with anything.
-    // So we use the references from the first table to work out where else to start
-    $linkedTables = array();
-    if (isset($this->tableMetadata[$this->tableNames[0]]['referredToBy']))
-      $linkedTables += array_keys($this->tableMetadata[$this->tableNames[0]]['referredToBy']);
-    if (isset($this->tableMetadata[$this->tableNames[0]]['refersTo']))
-      $linkedTables += array_keys($this->tableMetadata[$this->tableNames[0]]['refersTo']);
-    foreach($linkedTables as $table) {
-      foreach(array_keys($data[$table]) as $id) {
-        $this->recurseToGetHashes($data, $table, $id);
-      }
-    }
-    
-    return $this->hashWorkingData;
-  }
-  
-  public function recurseToGetHashes($data, $table, $id) {
-    $row = $data[$table][$id];
-    $references = $this->tableMetadata[$table];
-    if (isset($references['referredToBy'])) {
-      foreach($references['referredToBy'] as $fkTable => $fk) {
-        // find the rows that refer to this record
-        foreach($data[$fkTable] as $fkId => $fkRow) {
-          if ($fkRow[$fk] === $row['id']) {
-            // include the hash in the parent row data, so that the hash uniquely reflects the children
-            $data[$table][$id]["hash-$fkTable-$fk-$fkId"] = $this->recurseToGetHashes($data, $fkTable, $fkId);
-          }
-        }
-      }
-    }
-    if (isset($references['refersTo'])) {
-      foreach($references['refersTo'] as $fkTable => $fk) {
-        if (!empty($row[$fk])) {
-          // find the records referred to by this row
-          $joinFound = false;
-          foreach($data[$fkTable] as $fkId => $fkRow) {
-            if ($fkRow['id'] === $row[$fk]) {
-              // include the hash in the parent row data, so that the hash uniquely reflects the children
-              $data[$table][$id]["hash-$fkTable-$fk-$fkId"] = $this->recurseToGetHashes($data, $fkTable, $fkId);
-              $joinFound = true;
-              break;
-            }
-          }
-          if (!$joinFound)
-            // big problem
-            throw new exception("Could not find join for $fkTable id=".$row[$fk]);
-        }
-      }
-    }
-    $this->hashWorkingData[$table][$id] = md5(serialize($this->prepareHashRow($data[$table][$id], $table)));
-    return $this->hashWorkingData[$table][$id];
-  }
-  
-  /**
-   * Prepare a row's data for hashing.
-   * 
-   * We create a hash of different data rows to make it easier to compare
-   * the data we are importing to existing data. This means we avoid
-   * importing duplicate rows. When we create a hash for a row, there are id, fk 
-   * and date metadata columns we don't want included in the hash. This is 
-   * because we can still have a duplicate if the lookup id numbers between the 
-   * data items we are comparing are different just because the record came from 
-   * a different server.
-   * @param array $row Row we are processing
-   * @param string $tableName
-   * $return array Version of the row ready for hashing
-   */
-  public function prepareHashRow($row, $tableName) {
-    foreach($row as $field => $value) {
-      // skip id, created_on, updated_on etc.
-      if (preg_match('/^(^hash)(.*_)?id$/', $field) || preg_match('/^.*_on$/', $field))
-        unset($row[$field]);  
-    }
-    return $row;
-  }
-
-  /**
-   * After we have done the import, if there are any columns that reference other rows in the same table (e.g parent_id) then
-   * we need to import all the data from the table before we can correct the IDs to point at the new rows.
-   *
-   * @param array $importData
-   * @param array $idMappings An array of table arrays. Each table array has keys which are the old IDs from the table from the import
-   * data. The values are the new ids for those rows.
-   * @param string $tableToFix Name of the table we are going to fix
-   * @param string $columnToFix Name of the column we are going to fix
-   */
-  public function fixSelfReferencingIds($importData, $idMappings, $tableToFix, $columnToFix) {
-    //Go through each row in the table
-    foreach ($importData[$tableToFix] as $dataRow) {
-      //Only continue if there is a value in the column to fix
-      if (!empty($dataRow[$columnToFix])) {
-        //Only continue if there is a new lookup for the old value
-        if (array_key_exists($dataRow[$columnToFix],$idMappings[$tableToFix])) {
-          //We don't want to update any rows which are duplicates of existing rows
-          //as this would overwrite anything already in the columnToFix.
-          //Programmer note, do not change this to !== as it won't work
-          if ($dataRow['id'] != $idMappings[$tableToFix][$dataRow['id']]) {
-            //Set the lookup to the id for the new row 
-            $dataToUpdate[$columnToFix] = $idMappings[$tableToFix][$dataRow[$columnToFix]];
-            //get created/updated values for the row
-            $this->setMetadata($dataToUpdate, $tableToFix);
-            //we are doing an update of data already in the database so we don't need created_on or created_by_id
-            unset($dataToUpdate['created_on']);
-            unset($dataToUpdate['created_by_id']);
-            $updateId = $idMappings[$tableToFix][$dataRow['id']];
-
-            $this->db
-              ->from($tableToFix)
-              ->set($dataToUpdate)
-              ->where(array('id'=>$updateId))
-              ->update(); 
-          }
-        }
-      }
-    }
-  }
-
-  /**Method that adds a created by, created date, updated by, updated date to a row of data
-     we are going to add/update to the database.
-   * @param array $row A row of data we are adding/updating to the database.
-   * @param string $tableName The name of the table we are adding the row to. We need this as the
-   * attribute_websites tables don't have updated by and updated on fields.
-   */
-  public function setMetadata(&$row=null, $tableName=null) {
-    if (isset($_SESSION['auth_user']))
-      $userId = $_SESSION['auth_user']->id;
-    else {
-      global $remoteUserId;
-      if (isset($remoteUserId))
-        $userId = $remoteUserId;
-      else {
-        $defaultUserId = Kohana::config('indicia.defaultPersonId');
-        $userId = ($defaultUserId ? $defaultUserId : 1);
-      }
-    }
-    $row['created_on'] = date("Ymd H:i:s");
-    $row['created_by_id'] = $userId;
-    //attribute websites tables don't have updated by/date details columns so we need a special case not to set them
-    if ($tableName!=='sample_attributes_websites'&&$tableName!=='occurrence_attributes_websites') {
-      $row['updated_on'] = date("Ymd H:i:s");
-      $row['updated_by_id'] = $userId;
-    }
-  }
 }
-?>
