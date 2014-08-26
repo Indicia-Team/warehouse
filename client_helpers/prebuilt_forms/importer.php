@@ -118,11 +118,20 @@ class iform_importer {
           $presets['survey_id'] = $surveys[0];
       }
     }
-    $r = import_helper::importer(array(
-      'model' => $model,
-      'auth' => $auth,
-      'presetSettings' => $presets
-    ));
+    try {
+      $r = import_helper::importer(array(
+        'model' => $model,
+        'auth' => $auth,
+        'presetSettings' => $presets
+      ));
+    } catch (Exception $e) {
+      hostsite_show_message($e->getMessage(), 'warning');
+      $reload = import_helper::get_reload_link_parts();
+      unset($reload['params']['total']);
+      unset($reload['params']['uploaded_csv']);
+      $reloadpath = $reload['path'] . '?' . import_helper::array_to_query_string($reload['params']);
+      $r = "<p>".lang::get('Would you like to ')."<a href=\"$reloadpath\">".lang::get('import another file?')."</a></p>";
+    }
     return $r;
   }
 
