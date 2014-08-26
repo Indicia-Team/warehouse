@@ -1111,28 +1111,29 @@ EOD
    */
   protected static function get_control_spatialreference(
           $auth, $args, $tabalias, $options) {
-    if($args['interface'] === 'tabs'){
-      return mobile_entry_helper::sref_now($options, true);
-    }
-
-    $id = 'sref';
-    $caption = 'GPS';
-    $caption = "<h1>" . $caption . "</h1>";
-
-    //generate a new page
-    $page = static::get_blank_page($id, $caption);
-    $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] =
-      mobile_entry_helper::sref_now($options, false);
-    static::unshift_pages_array($page);
-
-    $options = array();
-    $options['class'] = '';
-    $options['id'] = "sref-button";
-    $options['href'] = '#' . $id;
-    $options['caption'] = $caption;
-    $button = mobile_entry_helper::apply_template('jqmRightButton', $options);
-
-    return $button;
+//    if($args['interface'] === 'tabs'){
+    //Todo: might need to add JS auto loading on start, rather than manually
+    return mobile_entry_helper::sref_now($options, true);
+//    }
+//
+//    $id = 'sref';
+//    $caption = 'GPS';
+//    $caption = "<h1>" . $caption . "</h1>";
+//
+//    //generate a new page
+//    $page = static::get_blank_page($id, $caption);
+//    $page[JQM_CONTENT][JQM_CONTENT][JQM_CONTENT][] =
+//      mobile_entry_helper::sref_now($options, false);
+//    static::unshift_pages_array($page);
+//
+//    $options = array();
+//    $options['class'] = '';
+//    $options['id'] = "sref-button";
+//    $options['href'] = '#' . $id;
+//    $options['caption'] = $caption;
+//    $button = mobile_entry_helper::apply_template('jqmRightButton', $options);
+//
+//    return $button;
 
   }
 
