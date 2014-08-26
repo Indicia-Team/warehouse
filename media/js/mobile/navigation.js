@@ -76,28 +76,11 @@ app.navigation = (function(m, $){
      */
     //todo: clean
     m.goRecord = function(delay) {
-        etTimeout(function() {
+        setTimeout(function() {
             $.mobile.changePage(Drupal.settings.mobileIformStartPath + '/form');
         }, delay);
     };
 
-    /**
-     *
-     */
-    m.makeGalleries = function(){
-        this.galleries = {};
-
-        $('.gallery').each(function(index, value){
-            //todo: make cleaner
-            app.navigation.galleries[value.id] =  $('#' + value.id + ' a').photoSwipe({
-                jQueryMobile: true,
-                loop: false,
-                enableMouseWheel: false,
-                enableKeyboard: false
-            });
-        });
-
-    };
 
     return m;
 }(app.navigation || {}, app.$ || jQuery));

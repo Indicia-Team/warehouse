@@ -33,6 +33,36 @@ function startManifestDownload(id, src){
 }
 
 /**
+ * Initialises and returns a variable.
+ * @param name
+ * @returns {*}
+ */
+function varInit(name){
+    var name_array = name.split('.');
+    window[name_array[0]] = window[name_array[0]] || {};
+    var variable = window[name_array[0]];
+
+    //iterate through the namespaces
+    for(var i = 1; i < name_array.length; i++){
+        if(variable[name_array[i]] !== 'object'){
+            //overwrite if it is not an object
+            variable[name_array[i]] = {};
+        }
+        variable = variable[name_array[i]];
+    }
+    return variable;
+}
+
+function objClone(obj) {
+    if (null == obj || "object" != typeof obj) return obj;
+    var copy = obj.constructor();
+    for (var attr in obj) {
+        if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
+    }
+    return copy;
+}
+
+/**
  * FROM: http://kylestechnobabble.blogspot.co.uk/2013/08/easy-way-to-enable-disable-hide-jquery.html
  * USAGE:
  * $('MyTabSelector').disableTab(0);        // Disables the first tab
