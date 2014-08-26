@@ -8,6 +8,7 @@ app = (function(m, $){
     m.TRUE = 1;
     m.FALSE = 0;
     m.ERROR = -1;
+    m.router = new $.mobile.Router();
 
     m.initialise = function(){
             _log('App initialised.');
@@ -33,13 +34,17 @@ app = (function(m, $){
                             if (navigator.onLine) {
                                 //Online
                                 _log("DEBUG: SUBMIT - online");
-                                app.io.submitForm('entry_form');
-
+                                var onSaveSuccess = function(savedFormId){
+                                    //#2 Post the form
+                                    app.io.sendSavedForm(savedFormId);
+                                };
+                                //#1 Save the form first
+                                app.storage.saveForm('#entry_form', onSaveSuccess);
                             } else {
                                 //Offline
                                 _log("DEBUG: SUBMIT - offline");
                                 $.mobile.loading('show');
-                                if (app.storage.saveForm() == 1){
+                                if (app.storage.saveForm('#entry_form') > 0){
                                     $(document).trigger('app.submitRecord.save');
                                 } else {
                                     $(document).trigger('app.submitRecord.error');

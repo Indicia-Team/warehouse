@@ -111,8 +111,16 @@ app.geoloc = (function(m, $){
             app.geoloc.set(latitude, longitude, accuracy);
             _log("GPS - setting accuracy of " + accuracy + " meters" );
             if (accuracy < app.geoloc.GPS_ACCURACY_LIMIT){
-                navigator.geolocation.clearWatch(app.geoloc.id);
                 _log("GPS - Success! Accuracy of " + accuracy + " meters");
+                navigator.geolocation.clearWatch(app.geoloc.id);
+
+                //save in storage
+                var location = {'lat' : latitude,
+                    'lon' : longitude,
+                    'acc' : accuracy};
+
+                app.settings('location', location);
+
                 $(document).trigger('app.geoloc.lock.ok');
             }
         }
@@ -124,187 +132,28 @@ app.geoloc = (function(m, $){
         $(document).trigger('app.geoloc.lock.error');
     };
 
+    /**
+     * @param lat
+     * @param lon
+     * @param acc
+     */
+
     m.set = function(lat, lon, acc){
         this.latitude = lat;
         this.longitude = lon;
         this.accuracy = acc;
+    };
 
-        $('#imp-sref').val(lat + ', ' + lon);
-        $('#sref_accuracy').val(acc);
+    m.get = function(){
+        return {
+            'lat' : this.latitude,
+            'lon' : this.longitude,
+            'acc' : this.accuracy
+        }
     };
 
     m.getAccuracy = function(){
         return this.accuracy;
-    };
-
-    /**
-     * Mapping
-     */
-    m.initializeMap = function() {
-        _log("initialising map");
-        //todo: add checking
-        var mapCanvas = $('#map-canvas')[0];
-        var mapOptions = {
-            zoom: 5,
-            center: new google.maps.LatLng(57.686988, -14.763319),
-            zoomControl: true,
-            zoomControlOptions: {
-                style: google.maps.ZoomControlStyle.SMALL
-            },
-            panControl: false,
-            linksControl: false,
-            streetViewControl: false,
-            overviewMapControl: false,
-            scaleControl: false,
-            rotateControl: false,
-            mapTypeControl: true,
-            mapTypeControlOptions: {
-                style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR
-            },
-            styles: [
-                {"featureType": "landscape",
-                    "stylers": [
-                        {"hue": "#FFA800"},
-                        {"saturation": 0},
-                        {"lightness": 0},
-                        {"gamma": 1}
-                    ]
-                },
-                {"featureType": "road.highway",
-                    "stylers": [
-                        {"hue": "#53FF00"},
-                        {"saturation": -73},
-                        {"lightness": 40},
-                        {"gamma": 1}
-                    ]
-                },
-                {"featureType": "road.arterial",
-                    "stylers": [
-                        {"hue": "#FBFF00"},
-                        {"saturation": 0},
-                        {"lightness": 0},
-                        {"gamma": 1}
-                    ]
-                },
-                {"featureType": "road.local",
-                    "stylers": [
-                        {"hue": "#00FFFD"},
-                        {"saturation": 0},
-                        {"lightness": 30},
-                        {"gamma": 1}
-                    ]
-                },
-                {"featureType": "water",
-                    "stylers": [
-                        {"saturation": 43},
-                        {"lightness": -11},
-                        {"hue": "#0088ff"}
-                    ]
-                },
-                {"featureType": "poi",
-                    "stylers": [
-                        {"hue": "#679714"},
-                        {"saturation": 33.4},
-                        {"lightness": -25.4},
-                        {"gamma": 1}
-                    ]
-                }
-            ]
-        };
-        this.map = new google.maps.Map(mapCanvas ,mapOptions);
-        var marker = new google.maps.Marker({
-            position: new google.maps.LatLng(-25.363, 131.044),
-            map: app.geoloc.map,
-            icon: 'http://maps.google.com/mapfiles/marker_green.png',
-            draggable:true
-        });
-        marker.setVisible(false);
-
-        var update_timeout = null; //to clear changing of marker on double click
-        google.maps.event.addListener(this.map, 'click', function(event) {
-            //have to wait for double click
-            update_timeout = setTimeout(function () {
-                var latLng = event.latLng;
-                marker.setPosition(latLng);
-                marker.setVisible(true);
-                app.geoloc.set(latLng.lat(), latLng.lng(), 1);
-            }, 200);
-        });
-
-        //removes single click action
-        google.maps.event.addListener(this.map, 'dblclick', function(event) {
-            clearTimeout(update_timeout);
-        });
-
-        google.maps.event.addListener(marker, 'dragend', function(){
-            var latLng = marker.getPosition();
-            app.geoloc.set(latLng.lat(), latLng.lng(), 1);
-        });
-
-        //Set map centre
-        if(this.latitude != null && this.longitude != null){
-            var latLong = new google.maps.LatLng(this.latitude, this.longitude);
-            app.geoloc.map.setCenter(latLong);
-            app.geoloc.map.setZoom(15);
-        } else if (navigator.geolocation) {
-            //Geolocation
-            var options = {
-                enableHighAccuracy: true,
-                maximumAge: 60000,
-                timeout: 5000
-            };
-
-            navigator.geolocation.getCurrentPosition(function(position) {
-                var latLng = new google.maps.LatLng(position.coords.latitude,
-                    position.coords.longitude);
-                app.geoloc.map.setCenter(latLng);
-                app.geoloc.map.setZoom(15);
-            }, null, options);
-        }
-
-        this.fixTabMap("#sref-opts", '#map');
-
-        //todo: create event
-        $('#sref-opts').enableTab(1);
-    };
-
-    /**
-     * Fix one tile rendering in jQuery tabs
-     * @param tabs
-     * @param mapTab
-     */
-    m.fixTabMap = function(tabs, mapTab){
-        $(tabs).on("tabsactivate.googleMap", function(event, ui){
-                //check if this is a map tab
-                if(ui['newPanel']['selector'] == mapTab){
-                    google.maps.event.trigger( app.geoloc.map, 'resize' );
-                    if(app.geoloc.latitude != null && app.geoloc.longitude != null){
-                        var latLong = new google.maps.LatLng(app.geoloc.latitude,
-                            app.geoloc.longitude);
-
-                        app.geoloc.map.setCenter(latLong);
-                        app.geoloc.map.setZoom(15);
-                    }
-                    $(tabs).off("tabsactivate.googleMap");
-                }
-            }
-        );
-    };
-
-    /**
-     *
-     * @param sref
-     * @param gref
-     */
-    m.translateGridRef = function(gref, sref){
-        var val = $(gref).val();
-        var gridref = OsGridRef.parse(val);
-        if(!isNaN(gridref.easting) && !isNaN(gridref.northing)){
-            var latLon = OsGridRef.osGridToLatLon(gridref);
-            $(sref).val(latLon.lat + ', ' + latLon.lon);
-        }
-        //todo: set accuracy dependant on Gref
-
     };
 
     return m;

@@ -1,8 +1,34 @@
 app = app || {};
 app.storage = (function(m, $){
-    m.FORM_COUNT_KEY = "form_count";
-    m.FORM_KEY = "form_";
-    m.PIC_KEY = "_pic_";
+    m.FORM_COUNT = "form_count";
+    m.FORM = "form_";
+    m.PIC = "_pic_";
+
+    m.totalFormFiles = 0;
+
+    m.FORMS = "forms";
+    m.FORMS_DATA = "data";
+    m.FORMS_FILES = "files";
+    m.FORMS_SETTINGS = "settings";
+    m.FORMS_LASTID = "lastId";
+
+    m.totalFormFiles = 0;
+
+    /**
+     *
+     * @returns {*}
+     */
+    m.init = function(){
+        var forms = m.get(m.FORMS);
+        if (forms == null){
+            forms = {};
+            forms[m.FORMS_SETTINGS] = {};
+            forms[m.FORMS_SETTINGS][m.FORMS_LASTID] = 0;
+            m.set(m.FORMS, forms);
+            return forms;
+        }
+        return null;
+    };
 
     m.hasSpace = function(size){
         return localStorageHasSpace(size);
@@ -36,117 +62,104 @@ app.storage = (function(m, $){
     };
 
     /*
-     * Saves the form
-     * Returns 1 if save is successful, else 0 if error.
+     * Saves the form.
+     * Returns the savedFormId of the saved form, otherwise an app.ERROR.
      */
-    m.saveForm = function() {
+    m.saveForm = function(formId, onSuccess){
         _log("FORM.");
-        var input_array = [];
-        var input_key = {};
-        var name, value, type, id, needed;
+        var forms = m.get(m.FORMS);
+        if (forms == null) forms = m.init();
+
+        //get new form ID
+        var savedFormId = ++forms[m.FORMS_SETTINGS][m.FORMS_LASTID];
 
         //INPUTS
-        //TODO: add support for all input cases; use switch
-        //TODO: do not hardcode the form's name
-        var pic_count = 0;
-        var file_storage_status = 1; //if localStorage has little space it becomes 0
-        var form = $('form');
-        form.find('input').each(function(index, input) {
-            name = $(input).attr("name");
-            value = $(input).attr('value');
-            type = $(input).attr('type');
-            id = $(input).attr('id');
-            needed = true; //if the input is empty, no need to send it
+        var form = $(formId);
+        var onSaveAllFilesSuccess = function(files_array){
+            //get all the inputs/selects/textboxes into array
+            var form_array = m.saveFormData(form);
 
-            if ($(input).attr('type') == "checkbox") {
-                //checkbox
-                if(!$(input).is(":checked"))
-                    needed = false;
-            } else if (type == "text"){
-                //text
-                value = $(input).val();
+            //merge files and the rest of the inputs
+            form_array = form_array.concat(files_array);
 
-            } else if (type == "radio"){
-                //radio
-                if(!$(input).is(":checked"))
-                    needed = false;
-            } else if (type == "file" && id != null) {
-                //file
-                var key = Date.now() + "_" + $(input).val().replace("C:\\fakepath\\", "");
-                value = key;
-                var file = $(input).prop("files")[0];
-                app.storage.saveFile(key, file);
+            _log("FORM - saving the form into storage");
+            try{
+                forms[savedFormId] = form_array;
+                m.set(m.FORMS, forms);
+            } catch (e){
+                _log("FORM - ERROR while saving the form");
+                _log(e);
+                return app.ERROR;
             }
-            if (needed){
-                input_array.push({
-                    "name" : name,
-                    "value" : value,
-                    "type" : type
+            if(onSuccess != null){
+                onSuccess(savedFormId);
+            }
+        };
+
+        m.saveAllFiles(form, onSaveAllFilesSuccess);
+        return app.TRUE;
+    };
+
+    /**
+     * Saves all the files in the provided form.
+     * @param form
+     * @param onSaveAllFilesSuccess
+     */
+    m.saveAllFiles = function(form, onSaveAllFilesSuccess){
+        //init files creation
+        var files = [];
+        form.find('input').each(function(index, input) {
+            if ($(input).attr('type') == "file" && input.files.length > 0) {
+                files.push({
+                    'file' : $(input).prop("files")[0],
+                    'input_field_name' : $(input).attr("name"),
                 });
             }
         });
 
-        //return if unsuccessful file saving
-        if (file_storage_status == 0){
-            return 0;
+        //recursive calling to save all the images
+        saveAllFilesRecursive(files, null);
+        function saveAllFilesRecursive(files, files_array){
+            files_array = files_array || [];
+
+            //recursive files saving
+            if(files.length > 0){
+                var file_info = files.pop();
+                //get next file in file array
+                var file = file_info['file'];
+                var value = Date.now() + "_" + file['name'];
+                var name = file_info['input_field_name'];
+
+                //recursive saving of the files
+                var onSaveSuccess = function(){
+                    files_array.push({
+                        "name" : name,
+                        "value" : value,
+                        "type" : 'file'
+                    });
+                    saveAllFilesRecursive(files, files_array, onSaveSuccess);
+                };
+                m.saveFile(value, file, onSaveSuccess);
+            } else {
+                onSaveAllFilesSuccess(files_array);
+            }
         }
-
-        //TEXTAREAS
-        form.find('textarea').each(function(index, textarea) {
-            name = $(textarea).attr('name');
-            value = $(textarea).val();
-            type = "textarea";
-
-            input_array.push({
-                "name" : name,
-                "value" : value,
-                "type" : type
-            });
-        });
-
-
-        //SELECTS
-        form.find("select").each(function(index, select) {
-            name = $(select).attr('name');
-            value = $(select).find(":selected").val();
-            type = "select";
-
-            input_array.push({
-                "name" : name,
-                "value" : value,
-                "type" : type
-            });
-        });
-
-        //form counter
-        var form_count = this.get(this.FORM_COUNT_KEY);
-        if (form_count != null) {
-            _log("FORM - incrementing form counter");
-            this.set(this.FORM_COUNT_KEY, ++form_count);
-        } else {
-            _log("FORM - setting up form counter for the first time");
-            form_count = 1;
-            this.set(this.FORM_COUNT_KEY, form_count);
-        }
-
-        input_array_string = input_array;
-        _log("FORM - saving the form into storage");
-        try{
-            this.set(this.FORM_KEY + form_count, input_array_string);
-        } catch (e){
-            _log("FORM - ERROR while saving the form");
-            _log(e);
-            return 0;
-        }
-
-        return 1;
     };
 
-    m.saveFile = function(key, file){
+    /**
+     * Transforms and resizes an image file into a string and saves it in the
+     * storage.
+     * @param key
+     * @param file
+     * @param onSaveSuccess
+     * @returns {number}
+     */
+    m.saveFile = function(key, file, onSaveSuccess){
         if (file != null) {
             _log("FORM - working with " + file.name);
-            if (!app.storage.hasSpace(file.size)){
-                return file_storage_status = 0;
+            //todo: not to hardcode the size
+            if (!app.storage.hasSpace(file.size/4)){
+                return file_storage_status = app.ERROR;
             }
 
             var reader = new FileReader();
@@ -183,6 +196,7 @@ app.storage = (function(m, $){
                             + (shrinked.length / 1024) + "KB)" );
 
                         app.storage.set(key,  shrinked); //stores the image to localStorage
+                        onSaveSuccess();
                     }
                     catch (e) {
                         _log("FORM - saving file in storage failed: " + e);
@@ -196,7 +210,111 @@ app.storage = (function(m, $){
         }
     };
 
+    /**
+     * Formats all form data (appart from files) into a form_array that it returns.
+     * @param form
+     * @returns {Array}
+     */
+    m.saveFormData = function(form) {
+        //extract form data
+        var form_array = [];
+        var name, value, type, id, needed;
 
+        form.find('input').each(function(index, input) {
+            name = $(input).attr("name");
+            value = $(input).attr('value');
+            type = $(input).attr('type');
+            id = $(input).attr('id');
+            needed = true; //if the input is empty, no need to send it
+
+            switch(type){
+                case "checkbox":
+                    needed = $(input).is(":checked");
+                    break;
+                case "text":
+                    value = $(input).val();
+                    break;
+                case "radio":
+                    needed = $(input).is(":checked");
+                    break;
+                case "button":
+                case "file":
+                    needed = false;
+                    //do nothing as the files are all saved
+                    break;
+                case "hidden":
+                    break;
+                default:
+                    _log("Error, unknown input type: " + type);
+                    break;
+            }
+
+            if (needed){
+                if(value != ""){
+                    form_array.push({
+                        "name" : name,
+                        "value" : value,
+                        "type" : type
+                    });
+                }
+            }
+        });
+
+        //TEXTAREAS
+        form.find('textarea').each(function(index, textarea) {
+            name = $(textarea).attr('name');
+            value = $(textarea).val();
+            type = "textarea";
+
+            if(value != ""){
+                form_array.push({
+                    "name" : name,
+                    "value" : value,
+                    "type" : type
+                });
+            }
+        });
+
+        //SELECTS
+        form.find("select").each(function(index, select) {
+            name = $(select).attr('name');
+            value = $(select).find(":selected").val();
+            type = "select";
+
+            if(value != ""){
+                form_array.push({
+                    "name" : name,
+                    "value" : value,
+                    "type" : type
+                });
+            }
+        });
+
+        return form_array;
+    };
+
+    /**
+     * Removes a saved form from the storage.
+     * @param formStorageId
+     */
+    m.removeSavedForm = function(formStorageId){
+        if(formStorageId == null) return;
+
+        _log("SEND - cleaning up");
+        var forms = m.get(m.FORMS);
+
+        //clean files
+        var input = {};
+        for (var i = 0; i < forms[formStorageId].length; i++){
+            input = forms[formStorageId][i];
+            if(input['type'] == 'file'){
+                app.storage.remove(input['value']);
+            }
+        }
+        //remove form and save
+        delete forms[formStorageId];
+        app.storage.set(m.FORMS, forms);
+    };
 
     /*
      * Checks if it is possible to store some sized data in localStorage.
