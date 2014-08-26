@@ -6886,34 +6886,7 @@ if (errors$uniq.length>0) {
         case 'F':
           if (!isset($ctrl))
             $ctrl='text_input';
-          if (!empty($item['system_function']) && $item['system_function']==='group_id') {
-            $attrLookupOptions = array_merge(array(
-              'report'=>'library/groups/groups_list',
-              'nocache'=>true
-            ), $attrOptions);
-            $attrLookupOptions['extraParams']=array_merge(array(
-              'currentUser'=> hostsite_get_user_field('indicia_user_id'),
-              'userFilterMode'=>'member'
-            ), $attrLookupOptions['extraParams']);
-            $groupsList = self::get_population_data($attrLookupOptions);
-            $groupsArr = array();
-            $privateGroups = array();
-            foreach ($groupsList as $group) {
-              $groupsArr[$group['id']] = $group['title'];
-              if ($group['private_records']==='t')
-                $privateGroups[] = $group['id'];
-            }
-            self::$javascript .= "indiciaData.privateGroups=".json_encode($privateGroups).";
-$('#".str_replace(':', '\\\\:', $attrOptions['id'])."').change(function(evt) {
-  $('#occurrence\\\\:release_status').val($.inArray($(evt.currentTarget).val(), indiciaData.privateGroups) ? 'U' : 'R');
-});
-";
-            
-            $attrOptions['lookupValues'] = $groupsArr;
-            $output=self::select($attrOptions);
-            $output.="<input id=\"occurrence:release_status\" name=\"occurrence:release_status\" type=\"hidden\" value=\"R\">\n";
-          } else
-            $output = self::$ctrl($attrOptions);
+          $output = self::$ctrl($attrOptions);
           break;
         case 'Boolean':
         case 'B':
