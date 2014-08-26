@@ -245,7 +245,6 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       if ($possibleMatch['termlist_title']===$importAttrDef['termlist_title'] && $possibleMatch['terms']===$importAttrDef['terms'])
         $existingAttrs[] = $possibleMatch;
     }
-    $this->log[] = 'Matching attributes: '.count($existingAttrs);
     if (count($existingAttrs)===0)
       $this->createAttr($type, $importAttrDef, $extraFields);
     else 
@@ -293,7 +292,6 @@ order by aw.website_id is null, aw.website_id={websiteId}";
         // use the existing termlist to provide terms for the new custom attribute
         $array['termlist_id'] = $termlists[0]['termlist_id'];
       else {
-        $this->log[] = "Creating new termlist.";
         // create a new termlist for the new custom attribute
         $array['termlist_id'] = $this->createTermlist($attrDef);
       }
