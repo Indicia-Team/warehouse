@@ -59,7 +59,7 @@ $indicia_templates['jqmCheckbox'] = <<<'EOD'
 EOD;
 $indicia_templates['jqmButton'] = <<<'EOD'
   <a href="{href}" id="{id}" data-role="button" onclick="{onclick}"
-  data-icon="{icon}" {class} data-iconpos="{iconpos}">{caption}</a>
+  data-icon="{icon}" {class} data-iconpos="{iconpos}" {data-prefetch}>{caption}</a>
 EOD;
 $indicia_templates['jqmBackButton'] = <<<'EOD'
   <a href='{href}' data-rel='back' data-role="button" data-icon="{icon}"
@@ -76,46 +76,6 @@ $indicia_templates['jqmControlSubmitButton'] = <<<'EOD'
      <input id="{id}" type="button" value="{caption}"
       data-icon="check" data-theme="b"  data-iconpos="right">
    </div>
-EOD;
-//TODO: clean this up. May be move to client side templating.
-$indicia_templates['jqmLocation'] = <<<'EOD'
-<input id="imp-sref" name="sample:entered_sref" type="text"
-    placeholder="Enter Latitude, Longitude or use tools below">
-  <input type="hidden" id="imp-sref-system" name="sample:entered_sref_system" value="4326">
-  <input type="hidden" id="sref_accuracy" name="smpAttr:273" value="-1">
-<div data-role="tabs" id="sref-opts">
-  <div data-role="navbar">
-    <ul>
-      <li><a href="#gps" data-ajax="false" class="ui-btn-active">GPS</a></li>
-      <li><a href="#map" data-ajax="false">Map</a></li>
-      <li><a href="#gref" data-ajax="false">Grid Ref</a></li>
-    </ul>
-  </div>
-  <div id="gps" class="ui-body-d ui-content">
-    <div class="info-message" id="gps-start-message">
-      <p>We will try to determine your location
-      using the inbuilt phone GPS.</p><p> Please make sure you have turned the phone's
-      geolocation on and are well away from large objects.</br> e.g. <i>trees, buildings </i></p>
-    </div>
-    <input type="button" id="gps-start-button" onclick="app.geoloc.start()" value="Locate">
-  </div>
-  <div id="map" class="ui-body-d ui-content">
-      <div class="info-message">
-        <p>Please tap on the map to select your location. </p>
-      </div>
-      <div id="map-canvas" style="width:100%; height: 400px;"></div>
-  </div>
-  <div id="gref" class="ui-body-d ui-content">
-      <div class="info-message">
-        <p>Please provide a GB Grid Reference.
-        </br> e.g. <i>"TQ 28170 77103"</i></p>
-      </div>
-      <input type="text" id="grid-ref" placeholder="Grid Reference"/>
-      <input type="button"
-        onclick="app.geoloc.translateGridRef('#grid-ref', '#imp-sref')"
-        value="Translate"/>
-  </div>
-</div>
 EOD;
 $indicia_templates['jqmRightButton'] = <<<'EOD'
      <a {class} href="{href}" id="{id}" data-role="button"
@@ -271,7 +231,7 @@ class mobile_entry_helper extends data_entry_helper {
         'default' => '-1'
       ));
     } else {
-      $r .= self::apply_template('jqmLocation', NULL);
+      $r .= self::sref_textbox($options);
     }
     
     return $r;

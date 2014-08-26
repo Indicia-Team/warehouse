@@ -73,13 +73,27 @@ class iform_dragonfly_mobile extends iform_mobile_sample_occurrence {
   public static function get_main_page($id = NULL){
     $caption = "<h1 id='" . $id . "_heading'></h1>";
     $page = static::get_blank_page($id, $caption);
+
+    //overwrite the Back button icon
+    $options = array();
+    $options['href'] = '#';
+    $options['caption'] = 'Back';
+    $options['icon'] = 'home';
+    $options['iconpos'] = 'notext';
+    $back_button = "<div class='ui-btn-left' data-role='controlgroup'
+        data-type='horizontal'>";
+    $back_button .= mobile_entry_helper::apply_template('jqmBackButton', $options);
+    $back_button .= "</div>";
+    $page[JQM_CONTENT][JQM_HEADER][JQM_CONTENT] = array($back_button, $caption);
+
     $gps =  mobile_entry_helper::apply_template('jqmButton', array(
       'id' => 'sref-top-button',
-      'href' => '#sref',
+      'href' => 'helpers#sref',
       'caption' => 'GPS',
       'class' => '',
       'icon' => 'location',
-      'iconpos' => 'notext'));
+      'iconpos' => 'notext',
+      'data-prefetch' => 'data-prefetch'));
     $date = mobile_entry_helper::apply_template('jqmButton', array(
       'id' => 'date-top-button',
       'href' => '#date',
