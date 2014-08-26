@@ -78,7 +78,8 @@ abstract class ATTR_ORM extends Valid_ORM {
    * @return integer Id of the attribute.
    */
   protected function validateAndSubmit() {
-    if ($this->submission['metaFields']['disabled_input']['value']=='YES') {
+    if (isset($this->submission['metaFields']) && isset($this->submission['metaFields']['disabled_input']) &&
+        $this->submission['metaFields']['disabled_input']['value']=='YES') {
       $this->find($this->submission['fields']['id']['value']);
       return $this->id;
     } else {
