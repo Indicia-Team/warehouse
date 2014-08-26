@@ -146,6 +146,7 @@ class iform_group_send_invites {
    * @todo Integrate with notifications for logged in users.
    */
   private static function sendInvites($args, $auth) {
+    global $user;
     $emails = helper_base::explode_lines($_POST['invitee_emails']);
     // first task is to populate the groups_invitations table
     $base = uniqid();
@@ -174,6 +175,7 @@ class iform_group_send_invites {
           'headers' => array(
             'MIME-Version' => '1.0',
             'Content-type' => 'text/html; charset=iso-8859-1',
+            'From' => $user->mail
           )
       );
       $mimeheaders = array();
