@@ -608,11 +608,11 @@ class import_helper extends helper_base {
             $subOptionList = explode(':', $labelListHeading[$column.$heading]);
             $foundDuplicate=false;
             foreach ($subOptionList as $subOption) {
-              if ($labelList[$subOption] > 1) {
+              if (isset($labelList[$subOption]) && $labelList[$subOption] > 1) {
                 $theID = $idColumn.'Duplicate';
                 $foundDuplicate = true;
               }
-              if ($labelList[$subOption] == 1 and $foundDuplicate == false)
+              if (isset($labelList[$subOption]) && $labelList[$subOption] == 1 and $foundDuplicate == false)
                 $theID = $idColumn.'Normal';
             }
           }
