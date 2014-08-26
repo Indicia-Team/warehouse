@@ -49,7 +49,8 @@ class Group_Model extends ORM {
     $this->unvalidatedFields = array('code', 'description', 'from_date','to_date','private_records',
         'filter_id', 'joining_method', 'deleted', 'implicit_record_inclusion', 'view_full_precision');
     // has the private records flag changed?
-    $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) && $this->submission['fields']['private_records']!==$this->private_records;
+    $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) && 
+        $this->submission['fields']['private_records']!==$this->private_records;
     return parent::validate($array, $save);
   }
   
@@ -61,9 +62,8 @@ class Group_Model extends ORM {
       $status = $this->private_records==='1' ? 'U' : 'R';
       $sql="update #table# o
 set release_status='$status'
-from sample_attribute_values sav 
-join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.deleted=false and sa.system_function='group_id'
-where sav.deleted=false and sav.sample_id=o.sample_id and sav.int_value=$this->id";
+from samples s
+where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
       $this->db->query(str_replace('#table#', 'occurrences', $sql));
       $this->db->query(str_replace('#table#', 'cache_occurrences', $sql));
     }
