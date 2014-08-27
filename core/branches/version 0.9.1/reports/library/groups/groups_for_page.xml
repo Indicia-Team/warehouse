@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Groups for page" description="Lists groups available to a user that are linked to a given page.">
+  <query website_filter_field="g.website_id">
+    SELECT #columns#
+    FROM groups g
+    JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#
+    JOIN group_pages gp ON gp.group_id=g.id AND gp.deleted=false AND (gp.administrator=false OR gu.administrator=true)
+        AND gp.path = '#path#'
+    JOIN cache_termlists_terms gt on gt.id=g.group_type_id
+    #joins#
+    WHERE g.deleted = false
+    AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>g.title</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" emptyvalue="0"/>
+    <param name="group_type_id" display="Group Type" description="Limit the report to a certain type of group" datatype="lookup"
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:group_types,termlist_id='
+            default="">
+      <where>g.group_type_id=#group_type_id#</where>
+    </param>
+    <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. an organisation which parents a list of projects)."
+        datatype="text" default="">
+      <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>      
+    </param>
+    <param name="path" display="Linked page path" description="Path to the page the group must be linked to" />
+  </params>
+  <columns>
+    <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
+    <column name="title" display="Name" sql="g.title" datatype="text" />
+    <column name="description" display="Description" sql="g.description" datatype="text" />
+    <column name="group_type" display="Group type" sql="gt.term" datatype="text" />
+  </columns>
+</report>
