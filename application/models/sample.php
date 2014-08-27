@@ -195,5 +195,55 @@ class Sample_Model extends ORM_Tree
     return ('Sample on '.$this->date.' at '.$this->entered_sref);
   }
 
+  /**
+   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   */
+  public function fixed_values_form() {
+    $srefs = array();
+    $systems = spatial_ref::system_list();
+    foreach ($systems as $code=>$title) 
+      $srefs[] = "$code:$title";
+    return array(
+      'website_id' => array( 
+        'display'=>'Website', 
+        'description'=>'Select the website to import records into.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:website:id:title' 
+      ),
+      'survey_id' => array(
+        'display'=>'Survey', 
+        'description'=>'Select the survey to import records into.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:survey:id:title',
+        'linked_to'=>'website_id',
+        'linked_filter_field'=>'website_id'
+      ),
+      'sample:entered_sref_system' => array(
+        'display'=>'Spatial Ref. System', 
+        'description'=>'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
+            'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.', 
+        'datatype'=>'lookup',
+        'lookup_values'=>implode(',', $srefs)
+      )
+    );
+  }
+  
+  /**
+   * Post submit, use the sample's group.private_records to set the occurrence release status.
+   */
+  public function postSubmit($isInsert) {
+    if ($this->group_id) {
+      $group = $this->db->select('id')->from('groups')
+          ->where(array('id' => $this->group_id, 'private_records'=>'t', 'deleted'=>'f'))->get()->result_array();
+      if (count($group)) {
+        // This sample is associated with a group that does not release its records. So ensure the release_status flag 
+        // is set.
+        $this->db->update('occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
+        $this->db->update('cache_occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
+      }
+    }
+    return true;
+  }
+  
 }
 ?>
