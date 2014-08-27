@@ -228,5 +228,22 @@ class Sample_Model extends ORM_Tree
     );
   }
   
+  /**
+   * Post submit, use the sample's group.private_records to set the occurrence release status.
+   */
+  public function postSubmit($isInsert) {
+    if ($this->group_id) {
+      $group = $this->db->select('id')->from('groups')
+          ->where(array('id' => $this->group_id, 'private_records'=>'t', 'deleted'=>'f'))->get()->result_array();
+      if (count($group)) {
+        // This sample is associated with a group that does not release its records. So ensure the release_status flag 
+        // is set.
+        $this->db->update('occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
+        $this->db->update('cache_occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
+      }
+    }
+    return true;
+  }
+  
 }
 ?>
