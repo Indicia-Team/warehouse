@@ -1369,8 +1369,10 @@ $('#$escaped').change(function(e) {
       toselect=tree.pop();
       $.each(thisselect.find('option'), function(idx, option) {
         if ($(option).val()===toselect) {
-          $(option).attr('selected',true);
-          thisselect.trigger('change');
+          if (!$(option).attr('selected')) {
+            $(option).attr('selected',true);
+            thisselect.trigger('change');
+          }
         }
       });
       thisselect = thisselect.next();
