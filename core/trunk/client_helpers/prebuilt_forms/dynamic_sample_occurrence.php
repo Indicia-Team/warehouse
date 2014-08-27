@@ -44,6 +44,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static $loadedOccurrenceId;
   protected static $group = false;
   
+  protected static $availableForGroups = false;
+  
   /**
    * The list of attributes loaded for occurrences. Keep a class level variable, so that we can track the ones we have already
    * emitted into the form globally.
@@ -708,6 +710,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $mode = (isset($args['no_grid']) && $args['no_grid']) ? self::MODE_NEW : self::MODE_GRID;
     self::$loadedSampleId = null;
     self::$loadedOccurrenceId = null;
+    self::$availableForGroups = $node->available_for_groups;
     if ($_POST) {
       if(!array_key_exists('website_id', $_POST)) {
         // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrupt the data by accident
@@ -1074,11 +1077,42 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     if (!empty(data_entry_helper::$entity_to_load['sample:group_id'])) {
       $r .= "<input type=\"hidden\" id=\"group_id\" name=\"sample:group_id\" value=\"".data_entry_helper::$entity_to_load['sample:group_id']."\" />\n";
+      // If the group does not release it's records, set the release_status flag
+      if (self::$group['private_records']==='t')
+        $r .= "<input type=\"hidden\" id=\"occurrence:release_status\" name=\"occurrence:release_status\" value=\"U\" />\n";
       if (empty(data_entry_helper::$entity_to_load['sample:group_title'])) {
         data_entry_helper::$entity_to_load['sample:group_title'] = self::$group['title'];
       }
       $msg=empty(self::$loadedSampleId) ? 'This form will be posted to the <strong>{1}</strong> group.' : 'This form was posted to the <strong>{1}</strong> group.';
       $r .= '<p>' . lang::get($msg, data_entry_helper::$entity_to_load['sample:group_title']) . '</p>';
+    } elseif (self::$availableForGroups && !isset(data_entry_helper::$entity_to_load['sample:id'])) {
+      // Group enabled form being used to add new records, but no group specified in URL path, so give 
+      // the user a chance to pick from their list of possible groups for this form.
+      // Get the list of possible groups they might be posting into using this form. To do this we need the page
+      // path without the initial leading /.
+      $reload = data_entry_helper::get_reload_link_parts();
+      $reload['path'] = preg_replace('/^\//', '', $reload['path']);
+      $possibleGroups = data_entry_helper::get_report_data(array(
+        'dataSource'=>'library/groups/groups_for_page',
+        'readAuth'=>$auth['read'],
+        'extraParams'=>array(
+            'currentUser' => hostsite_get_user_field('indicia_user_id'),
+            'path' => $reload['path']
+        )
+      ));
+      // Output a drop down so they can select the appropriate group.
+      if (count($possibleGroups)) {
+        $options = array('' => lang::get('Ad-hoc records not attached to a specific group'));
+        foreach ($possibleGroups as $group) {
+          $options[$group['id']] = "$group[group_type]: $group[title]";
+        }
+        $r .= data_entry_helper::select(array(
+          'label' => lang::get('Record destination'),
+          'helpText' => lang::get('Choose whether to post your records into a group that you belong to.'),
+          'fieldname' => 'sample:group_id',
+          'lookupValues' => $options
+        ));
+      }
     }
     // Check if Record Status is included as a control. If not, then add it as a hidden.
     $arr = helper_base::explode_lines($args['structure']);
@@ -1912,7 +1946,6 @@ else
    * @return string HTML for the control.
    */
   protected static function get_control_recordernames($auth, $args, $tabAlias, $options) {
-    iform_load_helpers(array('data_entry_helper'));
     //We don't need to touch the control in edit mode. Make the current user's name the default in add mode if the user has selected that option.
     if (empty($_GET['sample_id']) && !empty($options['defaultToCurrentUser'])&& $options['defaultToCurrentUser']==true) {
       $defaultUserData = data_entry_helper::get_report_data(array(
