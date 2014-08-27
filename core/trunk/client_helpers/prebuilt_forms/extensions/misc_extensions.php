@@ -163,17 +163,20 @@ class extension_misc_extensions {
     $breadcrumb[] = l('Home', '<front>');
     foreach ($options['path'] as $path => $caption) {
       $parts = explode('?', $path, 2);
-      $parts[0] = url($parts[0]);
+      $options = array();
       if (count($parts)>1) {
         foreach ($_REQUEST as $key=>$value) {
           // GET parameters can be used as replacements.
           $parts[1] = str_replace("#$key#", $value, $parts[1]);
         }
+        $query = array();
+        parse_str($parts[1], $query);
+        $options['query'] = $query;
       }
-      $path = implode('?', $parts);
+      $path = $parts[0];
       // don't use Drupal l function as a it messes with query params
       $caption = lang::get($caption);
-      $breadcrumb[] = "<a href=\"$path\">$caption</a>";
+      $breadcrumb[] = l($caption, $path, $options);
     }
     $breadcrumb[] = drupal_get_title();
     drupal_set_breadcrumb($breadcrumb);
