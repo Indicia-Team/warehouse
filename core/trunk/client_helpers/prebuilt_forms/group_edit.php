@@ -104,9 +104,25 @@ class iform_group_edit {
         'required'=>false
       ),
       array(
+        'name'=>'include_sensitivity_controls',
+        'caption'=>'Include sensitive records options',
+        'description'=>'Include the options for controlling viewing of sensitive records within the group?',
+        'type'=>'checkbox',
+        'default'=>true,
+        'required'=>false
+      ),
+      array(
         'name'=>'include_report_filter',
         'caption'=>'Include report filter',
         'description'=>'Include the optional panel for defining a report filter?',
+        'type'=>'checkbox',
+        'default'=>true,
+        'required'=>false
+      ),
+      array(
+        'name'=>'include_linked_pages',
+        'caption'=>'Include linked pages',
+        'description'=>'Include the optional panel for defining a data entry and reporting pages linked to this group?',
         'type'=>'checkbox',
         'default'=>true,
         'required'=>false
@@ -158,6 +174,29 @@ class iform_group_edit {
         'type'=>'textarea',
         'default'=>'{"":"what,where,when","Advanced":"source,quality"}',
         'required'=>false
+      ),
+      array(
+        'name' => 'default_linked_pages',
+        'caption' => 'Default linked pages',
+        'description' => "Create a list of pages you would like to be added to each group's page list as a default starting point.",
+        'type' => 'jsonwidget',
+        'schema' => '
+{
+  "type":"seq",
+  "title":"Pages list",
+  "sequence":
+  [
+    {
+      "type":"map",
+      "title":"Page",
+      "mapping": {
+        "path": {"type":"str","desc":"Path to the page which should be a group-enabled Indicia page."},
+        "caption": {"type":"str","desc":"Caption to display for this page."},
+        "administrator": {"type":"bool","desc":"Tick if this page is only for administrator use."}
+      }
+    }
+  ]
+}'
       )
     );
   }
@@ -178,7 +217,9 @@ class iform_group_edit {
     $args=array_merge(array(
       'include_code'=>false,
       'include_dates'=>false,
+      'include_sensitivity_controls'=>true,
       'include_report_filter'=>true,
+      'include_linked_pages'=>true,
       'include_private_records'=>false,
       'include_administrators'=>false,
       'include_members'=>false, 
@@ -238,12 +279,14 @@ class iform_group_edit {
     }
     $r .= self::joinMethodsControl($args);
     $r .= self::inclusionMethodControl($args);
-    $r .= data_entry_helper::checkbox(array(
-      'label' => lang::get('Show records at full precision'),
-      'fieldname' => 'group:view_full_precision',
-      'helpText' => lang::get('Any sensitive records added to the system are normally shown blurred to a lower grid reference precision. If this box '.
-          'is checked, then group members can see sensitive records explicitly posted into the group at full precision. USE ONLY FOR GROUPS WITH RESTRICTED MEMBERSHIP.')
-    ));
+    if ($args['include_sensitivity_controls']) {
+      $r .= data_entry_helper::checkbox(array(
+        'label' => lang::get('Show records at full precision'),
+        'fieldname' => 'group:view_full_precision',
+        'helpText' => lang::get('Any sensitive records added to the system are normally shown blurred to a lower grid reference precision. If this box '.
+            'is checked, then group members can see sensitive records explicitly posted into the group at full precision. USE ONLY FOR GROUPS WITH RESTRICTED MEMBERSHIP.')
+      ));
+    }
     $r .= data_entry_helper::textarea(array(
       'label' => ucfirst(lang::get('{1} description', self::$groupType)),
       'fieldname' => 'group:description',
@@ -292,34 +335,51 @@ $('#entry_form').submit(function() {
   }
   
   private static function formsBlock($args, $auth, $node) {
-    $r = '<fieldset><legend>' . lang::get('Group pages') . '</legend>';
-    $r .= '<p>' . lang::get('LANG_Pages_Instruct') . '</p>';
-    $pages = self::getAvailablePages(empty($_GET['group_id']) ? null : $_GET['group_id']);
-    $r .= data_entry_helper::complex_attr_grid(array(
-      'fieldname' => 'group:pages[]',
-      'columns' => array(
-        array(
-          'label' => 'Form',
-          'datatype' => 'lookup',
-          'lookupValues' => $pages,
-          'validation' => array('unique')
-        ), array(
-          'label' => 'Link caption',
-          'datatype' => 'text'
-        ), array(
-          'label' => 'Who can access the page?',
-          'datatype' => 'lookup',
-          'lookupValues' => array(
-            'f' => 'Available to all group members',
-            't' => 'Available only to group admins',
-          ),
-          'default' => 'f'
-        )
-      ), 
-      'default' => self::getGroupPages($args, $auth),
-      'defaultRows' => min(3, count($pages))
-    ));
-    $r .= '</fieldset>';
+    $r = '';
+    if ($args['include_linked_pages']) {
+      $r = '<fieldset><legend>' . lang::get('{1} pages', ucfirst(self::$groupType)) . '</legend>';
+      $r .= '<p>' . lang::get('LANG_Pages_Instruct') . '</p>';
+      $pages = self::getAvailablePages(empty($_GET['group_id']) ? null : $_GET['group_id']);
+      if (empty($_GET['group_id'])) {
+        $default = array();
+        if (isset($args['default_linked_pages'])) {
+          $defaultPages = json_decode($args['default_linked_pages'], true);          
+          foreach ($defaultPages as $page) {
+            $page['administrator'] = (isset($page['administrator']) && $page['administrator']) ? 't' : 'f';
+            if (!isset($page['caption']))
+              $page['caption'] = $page['path'];
+            $default[] = array('fieldname' => "group+:pages:", 'default'=>json_encode(array($page['path'], $page['caption'], $page['administrator'])));
+          }
+        }
+      }
+      else
+        $default = self::getGroupPages($args, $auth);
+      $r .= data_entry_helper::complex_attr_grid(array(
+        'fieldname' => 'group:pages[]',
+        'columns' => array(
+          array(
+            'label' => 'Form',
+            'datatype' => 'lookup',
+            'lookupValues' => $pages,
+            'validation' => array('unique')
+          ), array(
+            'label' => 'Link caption',
+            'datatype' => 'text'
+          ), array(
+            'label' => 'Who can access the page?',
+            'datatype' => 'lookup',
+            'lookupValues' => array(
+              'f' => 'Available to all group members',
+              't' => 'Available only to group admins',
+            ),
+            'default' => 'f'
+          )
+        ), 
+        'default' => $default,
+        'defaultRows' => min(3, count($pages))
+      ));
+      $r .= '</fieldset>';
+    }
     return $r;
   }
   
@@ -364,8 +424,6 @@ $('#entry_form').submit(function() {
    * Retrieve the pages linked to this group from the database.
    */
   private static function getGroupPages($args, $auth) {
-    if (empty($_GET['group_id']))
-      return null;
     $pages = data_entry_helper::get_population_data(array(
       'table' => 'group_page',
       'extraParams' => $auth['read'] + array('group_id'=>$_GET['group_id']),
@@ -476,7 +534,7 @@ $('#entry_form').submit(function() {
         'fieldname'=>'groups_user:admin_user_id',
         'label' => ucfirst(lang::get('{1} administrators', self::$groupType)),
         'table'=>'user',
-        'captionField'=>'person_name',
+        'captionField'=>'name_and_email',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
         'helpText'=>lang::get('Search for users to make administrators of this group by typing a few characters of their surname. If you don\'t '.
@@ -490,7 +548,7 @@ $('#entry_form').submit(function() {
         'fieldname'=>'groups_user:user_id',
         'label' => lang::get('Other {1} members', self::$groupType),
         'table'=>'user',
-        'captionField'=>'person_name',
+        'captionField'=>'name_and_email',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
         'helpText'=>lang::get('Search for users to give membership to by typing a few characters of their surname'),
@@ -498,7 +556,7 @@ $('#entry_form').submit(function() {
         'class' => $class
       ));
     }
-    if (data_entry_helper::$validation_errors['groups_user:general']) {
+    if (!empty(data_entry_helper::$validation_errors['groups_user:general'])) {
       global $indicia_templates;
       $fieldname = $args['include_administrators'] ? 'groups_user:admin_user_id' :
           ($args['include_members'] ? 'groups_user:user_id' : '');
