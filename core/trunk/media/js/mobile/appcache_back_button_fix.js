@@ -4,8 +4,8 @@
  * 
  * Set up the URL replacements so that the id of the page is matched with the new URL 
  * of the back buttons it contains. The use of wild cards is possible eg.
-  
-   BACK_BUTTON_URLS = {
+
+ backButtonUrls = {
   'app-*':'home',
   'app-examples':'home',
   'tab-location':'home' 
@@ -13,31 +13,18 @@
 
 */
 
-var BACK_BUTTON_URLS = {
-  'tab-location'  :  'home',
-  'tab-species'  :  'tab-location',
-  'tab-photograph'  :  'tab-species',
-  'tab-injury'  :  'tab-photograph',
-  'tab-weather'  :  'tab-injury',
-  'tab-pollution'  :  'tab-weather',
-  'app-examples-*' : 'examples',
-  'app-symptoms-*' : 'symptoms',
-  'app-other-causes-*' : 'other-causes',
-  'app-*' :  'home'
-};
-
 /*
  * Fixes back buttons for specific page
  */
-function fixPageBackButtons(page_id){
+function fixPageBackButtons(page_id, backButtonUrls){
   console.log('FIXING: back buttons ( ' + page_id + ')');
 
   var url = "";
   //check if in array
-  for (var regex in BACK_BUTTON_URLS){
+  for (var regex in backButtonUrls){
     var re = new RegExp(regex, "i");
     if(re.test(page_id)){
-      url = BACK_BUTTON_URLS[regex];
+      url = backButtonUrls[regex];
       break;
     } 
   }
@@ -53,12 +40,6 @@ function fixPageBackButtons(page_id){
     jQuery(button).attr('href', url);   
   });
 }
-
-jQuery(document).on('pagecreate', function(event, ui) {
-     if (browserDetect('Chrome')){
-       fixPageBackButtons(event.target.id);
-     }
-});
 
 /************ END BACK BUTTON FIX ****************************************************/
 
@@ -85,9 +66,5 @@ function browserDetect(browser){
         } 
         return false;
     }
-
-    if (navigator.userAgent.indexOf(browser) > -1){
-      return true;
-    }
-    return false;
+    return (navigator.userAgent.indexOf(browser) > -1);
 }
