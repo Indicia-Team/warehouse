@@ -22,7 +22,8 @@ function loadScript(src) {
     document.body.appendChild(script);
 }
 
-function startManifestDownload(id, src){
+function startManifestDownload(id, files_no, src){
+    src = Drupal.settings.basePath + src + '?base_path=' + Drupal.settings.basePath + '&files=' + files_no;
     var appCacheFrame = jQuery('#' + id).get(0);
     if (appCacheFrame) {
         appCacheFrame.contentWindow.applicationCache.update();
