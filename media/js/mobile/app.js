@@ -1,6 +1,6 @@
 app = (function(m, $){
         //GLOBALS
-    m.PATH = "";
+    m.HOME = "";
     m.DEBUG = false;
     m.$ = $;
 

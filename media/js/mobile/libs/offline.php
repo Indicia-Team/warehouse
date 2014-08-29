@@ -12,64 +12,65 @@ $FONT_SIZE = 20;
 <html manifest="<?=$base_path ?>/manifest.appcache">
 <head>
   <title>offline.html</title>
-  <script src="http://localhost/drupal/sites/all/modules/jquery_update/replace/jquery/1.7/jquery.min.js?v=1.7.1"></script>
+  <script src="<?=$base_path ?>/sites/all/modules/jquery_update/replace/jquery/1.10/jquery.min.js"></script>
   <script type="text/javascript">
     var lastUpdate = 0;
-    var TIME_DIFF = 500; //ms
+    var TIME_DIFF = 100; //ms
     var files_total = <?=$FILES?>;
     var max = 1.0;
 
     $(document).ready(function($) {
       var file = -1;
-      $(window.applicationCache).on('cached downloading updateready checking progress error noupdate', function(e) {
-        var message = '';
-        switch (e.type) {
-          case 'error':
-            message = "Error";
-            jQuery('path').css('fill', 'red');
-            break;
-          case 'cached':
-          case 'updateready':
-            message = "Finished";
-            break;
-          case 'checking':
-            jQuery('path').css('fill', '#339933');
-            message = "Checking";
-            break;
-          case 'noupdate':
-            message = "No update";
-            break;
-          case 'downloading':
-          case 'progress':
-            var progress = ++file / files_total;
-            if(progress >= max) {
-              progress = max;
+      $(window.applicationCache).on('cached downloading updateready checking progress error noupdate',
+        function(e) {
+          //make a delayed output
+          var delay = 0;
+          var date = new Date();
+          var now = date.getTime();
+          if(lastUpdate != 0){
+            lastUpdate = lastUpdate + TIME_DIFF;
+            delay = lastUpdate - now;
+            if(delay < 0){
+              delay = 0;
+              lastUpdate = now;
             }
-            message = parseInt(progress * 100) + "%";
-            break;
-        }
-
-        //make a delayed output
-        var delay = 0;
-        var date = new Date();
-        var now = date.getTime();
-        if(lastUpdate != 0){
-          lastUpdate = lastUpdate + TIME_DIFF;
-          delay = lastUpdate - now;
-          if(delay < 0){
-            delay = 0;
+          } else {
             lastUpdate = now;
           }
-        } else {
-          lastUpdate = now;
-        }
 
-        setTimeout(function(){
-          drawProgress(progress);
-          document.getElementById("mytext").textContent = message;
-        }, delay);
+          setTimeout(function(){
+            var message = '';
+            switch (e.type) {
+              case 'error':
+                message = "Error";
+                jQuery('path').css('fill', 'red');
+                break;
+              case 'cached':
+              case 'updateready':
+                message = "Finished";
+                break;
+              case 'checking':
+                jQuery('path').css('fill', '#339933');
+                message = "Checking";
+                break;
+              case 'noupdate':
+                message = "No update";
+                break;
+              case 'downloading':
+              case 'progress':
+                var progress = ++file / files_total;
+                if(progress >= max) {
+                  progress = max;
+                }
+                message = parseInt(progress * 100) + "%";
+                break;
+            }
 
-      });
+            drawProgress(progress);
+            document.getElementById("mytext").textContent = message;
+          }, delay);
+
+        });
     });
 
     function drawProgress(percent){

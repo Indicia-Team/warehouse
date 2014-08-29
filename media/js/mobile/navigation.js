@@ -67,7 +67,7 @@ app.navigation = (function(m, $){
     m.go = function(delay, path) {
         setTimeout(function() {
             path = (path == undefined) ? "" : path;
-            window.location = app.PATH + path;
+            window.location = Drupal.settings.BasePath + app.HOME + path;
         }, delay);
     };
 
