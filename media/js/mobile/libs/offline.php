@@ -9,7 +9,7 @@ $FONT_SIZE = 20;
 ?>
 
 <!DOCTYPE HTML>
-<html manifest="<?=$base_path ?>/manifest.appcache">
+<html manifest="<?=$base_path ?>manifest.appcache">
 <head>
   <title>offline.html</title>
   <script src="<?=$base_path ?>sites/all/modules/jquery_update/replace/jquery/1.10/jquery.min.js"></script>
