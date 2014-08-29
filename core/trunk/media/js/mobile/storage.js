@@ -57,8 +57,8 @@ app.storage = (function(m, $){
      *
      * @param item
      */
-    m.tmpRemove = function(item){
-        return sessionStorage.removeItem(item);
+    m.remove = function(item){
+        return localStorage.removeItem(item);
     };
 
     /**
