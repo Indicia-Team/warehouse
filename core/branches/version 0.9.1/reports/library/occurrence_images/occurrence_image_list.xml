@@ -33,7 +33,7 @@
     cttl.preferred_taxon as taxon,
     cttl.default_common_name  as  common,
     coalesce(cttl.default_common_name, cttl.preferred_taxon)  as  species,
-    cttl.taxon_group,
+    cttl.taxon_group as  taxon_group,
     o.zero_abundance
   </field_sql>
   <order_bys>
