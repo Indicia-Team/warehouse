@@ -57,8 +57,35 @@ app.storage = (function(m, $){
      *
      * @param item
      */
-    m.remove = function(item){
-        return localStorage.removeItem(item);
+    m.tmpRemove = function(item){
+        return sessionStorage.removeItem(item);
+    };
+
+    /**
+     *
+     * @param item
+     */
+    m.tmpGet = function(item){
+        var data = sessionStorage.getItem(item);
+        data = JSON.parse(data);
+        return data;
+    };
+
+    /**
+     *
+     * @param item
+     */
+    m.tmpSet = function(item, data){
+        data = JSON.stringify(data);
+        return sessionStorage.setItem(item, data);
+    };
+
+    /**
+     *
+     * @param item
+     */
+    m.tmpRemove = function(item){
+        return sessionStorage.removeItem(item);
     };
 
     /*
