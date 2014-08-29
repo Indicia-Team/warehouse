@@ -12,7 +12,7 @@ $FONT_SIZE = 20;
 <html manifest="<?=$base_path ?>/manifest.appcache">
 <head>
   <title>offline.html</title>
-  <script src="<?=$base_path ?>/sites/all/modules/jquery_update/replace/jquery/1.10/jquery.min.js"></script>
+  <script src="<?=$base_path ?>sites/all/modules/jquery_update/replace/jquery/1.10/jquery.min.js"></script>
   <script type="text/javascript">
     var lastUpdate = 0;
     var TIME_DIFF = 100; //ms
