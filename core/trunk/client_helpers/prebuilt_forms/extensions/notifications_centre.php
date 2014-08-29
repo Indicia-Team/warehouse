@@ -178,6 +178,9 @@ class extension_notifications_centre {
     if (!empty($options['sourceTypes']))
       // this disables the param for picking a single source type
       $extraParams['source_filter'] = 'all';
+    // respect training mode
+    if (hostsite_get_user_field('training')) 
+      $extraParams['training'] = 'true';
     $notifications = data_entry_helper::get_report_data(array(
       'dataSource'=>'library/notifications/notifications_list_for_notifications_centre',
       'readAuth'=>$auth['read'],
