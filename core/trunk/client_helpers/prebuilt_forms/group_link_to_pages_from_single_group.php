@@ -20,7 +20,7 @@
  * @link  http://code.google.com/p/indicia/
  */
 
-require_once('dynamic_report_explorer.php');
+require_once('includes/dynamic.php');
 require_once('includes/groups.php');
 
 /**
@@ -30,7 +30,7 @@ require_once('includes/groups.php');
  * @subpackage PrebuiltForms
  * A page for listing a series of links to the pages related to a particular group.
  */
-class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_explorer {
+class iform_group_link_to_pages_from_single_group extends iform_dynamic {
   public static function get_parameters() {
     $retVal = array_merge(
       array(
@@ -80,6 +80,11 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_e
       'description'=>'Display a list of page links on a page for a single reporting group.',
       'supportsGroups'=>true
     );
+  }
+  
+  //Override as we don't want to execute this
+  protected static function getFirstTabAdditionalContent($args, $auth, &$attributes) {
+    return '';
   }
   
   /**
@@ -184,6 +189,7 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic_report_e
     $r .= str_replace(array('{rootFolder}','{sep}'),
         array($rootFolder, strpos($rootFolder, '?')===FALSE ? '?' : '&'), $pageLinkHtml); 
     $r .= '</div><br>';
+    $r .= parent::get_form($args, $node, $response=null);
     return $r;
   }
 }
