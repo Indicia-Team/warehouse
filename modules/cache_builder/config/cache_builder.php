@@ -586,6 +586,12 @@ $config['occurrences']['get_changed_items_query'] = "
     join samples sp on sp.id=s.parent_id
     where sp.updated_on>'#date#' 
     union
+    select o.id, false
+    from occurrences o
+    join samples s on s.id=o.sample_id
+    join locations l on l.id=s.location_id
+    where l.updated_on>'#date#' 
+    union
     select o.id, su.deleted 
     from occurrences o
     join samples s on s.id=o.sample_id
