@@ -881,7 +881,7 @@ class ReportEngine {
     foreach($attrList as $attr) {
       if (is_numeric($attr))
         $ids[] = $attr;                 // an attribute ID
-      elseif ($attr==='#all_survey_attrs' && !empty($this->providedParams['survey_list']))
+      elseif ($attr==='#all_survey_attrs' && (!empty($this->providedParams['survey_list']) || !empty($this->providedParams['survey_id'])))
         $allSurveyAttrs=true;           // requesting all attributes for a single selected survey
       elseif (substr($attr, 0, 1)==='#') 
         $sysfuncs[] = substr($attr, 1); // a system function
@@ -890,7 +890,10 @@ class ReportEngine {
     }
     if ($allSurveyAttrs) {
       // a request for all attrs in a selected survey can take precedence over the rest.
-      $this->reportDb->in('aw.restrict_to_survey_id', explode(',', $this->providedParams['survey_list']));
+      if (!empty($this->providedParams['survey_list']))
+        $this->reportDb->in('aw.restrict_to_survey_id', explode(',', $this->providedParams['survey_list']));
+      else
+        $this->reportDb->where('aw.restrict_to_survey_id', $this->providedParams['survey_id']);
       // always exclude email & cms_user_id to keep it private
       $this->reportDb->notin('system_function', array('email','cms_user_id'));
     } else {
