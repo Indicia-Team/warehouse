@@ -6,16 +6,9 @@ app.io = (function(m, $){
      */
     m.sendAllSavedForms = function() {
         if (navigator.onLine) {
-
             //todo: might need to improve the iteration of the forms
             var forms = app.storage.get(app.storage.FORMS);
-            var keys = Object.keys(forms);
-            var key = null;
-            for (var i=0; i < keys.length; i++){
-                if (key != app.storage.FORMS_SETTINGS){
-                    break;
-                }
-            }
+            var key = Object.keys(forms)[0]; //getting the first one of the array
             if (key != null) {
                 $.mobile.loading('show');
                 _log("Sending form: " + key);
@@ -50,39 +43,13 @@ app.io = (function(m, $){
      */
     m.sendSavedForm = function(formStorageId, onSuccess, onError, onSend) {
         _log("SEND - creating the form.");
-        var data = new m.getSavedForm(formStorageId);
+        var data = new app.storage.getSavedForm(formStorageId);
         var form = {
             'data': data,
             'formStorageId' : formStorageId
         };
 
         this.postForm(form, onSuccess, onError, onSend)
-    };
-
-    m.getSavedForm = function(formStorageId){
-        var data = new FormData();
-
-        //Extract data from storage
-        var forms = app.storage.get(app.storage.FORMS);
-        var input_array = forms[formStorageId];
-        for (var k = 0; k < input_array.length; k++) {
-            if (input_array[k].type == "file") {
-                var pic_file = app.storage.get(input_array[k].value);
-                if (pic_file != null) {
-                    _log("SEND - attaching '" + input_array[k].value + "' to " + input_array[k].name);
-                    var type = pic_file.split(";")[0].split(":")[1];
-                    var extension = type.split("/")[1];
-                    data.append(input_array[k].name, dataURItoBlob(pic_file, type), "pic." + extension);
-                } else {
-                    _log("SEND - " + input_array[k].value + " is " + pic_file);
-                }
-            } else {
-                var name = input_array[k].name;
-                var value = input_array[k].value;
-                data.append(name, value);
-            }
-        }
-        return data;
     };
 
     /*
@@ -188,7 +155,7 @@ app.io = (function(m, $){
             req.send(JSON.stringify(this.data));
         } else {
             //get
-            req.open('GET', url, true)
+            req.open('GET', url, true);
             req.send();
         }
     };
