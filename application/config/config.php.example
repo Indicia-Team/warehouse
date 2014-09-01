@@ -134,5 +134,6 @@ $config['modules'] = array
          MODPATH.'sref_utm',              // UTM grid notation
          MODPATH.'demo',                  // Demo and test pages
          MODPATH.'cache_builder',         // build a cache for performance reporting
-         MODPATH.'spatial_index_builder'  // index of location occurrence overlaps
+         MODPATH.'spatial_index_builder', // index of location occurrence overlaps
+         MODPATH.'data_cleaner'           // automatic record checks
 );
