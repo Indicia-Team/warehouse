@@ -9,7 +9,7 @@ app.storage = (function(m, $){
     m.FORMS = "forms";
     m.FORMS_DATA = "data";
     m.FORMS_FILES = "files";
-    m.FORMS_SETTINGS = "settings";
+    m.FORMS_SETTINGS = "formSettings";
     m.FORMS_LASTID = "lastId";
 
     m.totalFormFiles = 0;
@@ -19,13 +19,12 @@ app.storage = (function(m, $){
      * @returns {*}
      */
     m.init = function(){
-        var forms = m.get(m.FORMS);
-        if (forms == null){
-            forms = {};
-            forms[m.FORMS_SETTINGS] = {};
-            forms[m.FORMS_SETTINGS][m.FORMS_LASTID] = 0;
-            m.set(m.FORMS, forms);
-            return forms;
+        var formSettings = m.get(m.FORMS_SETTINGS);
+        if (formSettings == null){
+            formSettings = {};
+            formSettings[m.FORMS_LASTID] = 0;
+            m.set(m.FORMS_SETTINGS, formSettings);
+            return formSettings;
         }
         return null;
     };
@@ -98,7 +97,8 @@ app.storage = (function(m, $){
         if (forms == null) forms = m.init();
 
         //get new form ID
-        var savedFormId = ++forms[m.FORMS_SETTINGS][m.FORMS_LASTID];
+        var formSettings = m.get(m.FORMS_SETTINGS);
+        var savedFormId = ++formSettings[m.FORMS_LASTID];
 
         //INPUTS
         var form = $(formId);
@@ -113,6 +113,7 @@ app.storage = (function(m, $){
             try{
                 forms[savedFormId] = form_array;
                 m.set(m.FORMS, forms);
+                m.set(m.FORMS_SETTINGS, formSettings);
             } catch (e){
                 _log("FORM - ERROR while saving the form");
                 _log(e);
@@ -139,7 +140,7 @@ app.storage = (function(m, $){
             if ($(input).attr('type') == "file" && input.files.length > 0) {
                 files.push({
                     'file' : $(input).prop("files")[0],
-                    'input_field_name' : $(input).attr("name"),
+                    'input_field_name' : $(input).attr("name")
                 });
             }
         });
@@ -318,6 +319,44 @@ app.storage = (function(m, $){
         });
 
         return form_array;
+    };
+
+    m.getAllSavedForms = function(){
+        var formatedForms = [];
+        var forms = app.storage.get(app.storage.FORMS);
+        var keys = Object.keys(forms);
+
+        for(var i = 0; i < keys.length; i++){
+            formatedForms.push(this.getSavedForm(keys[i]));
+        }
+
+        return formatedForms;
+    };
+
+    m.getSavedForm = function(formStorageId){
+        var data = new FormData();
+
+        //Extract data from storage
+        var forms = app.storage.get(app.storage.FORMS);
+        var input_array = forms[formStorageId];
+        for (var k = 0; k < input_array.length; k++) {
+            if (input_array[k].type == "file") {
+                var pic_file = app.storage.get(input_array[k].value);
+                if (pic_file != null) {
+                    _log("SEND - attaching '" + input_array[k].value + "' to " + input_array[k].name);
+                    var type = pic_file.split(";")[0].split(":")[1];
+                    var extension = type.split("/")[1];
+                    data.append(input_array[k].name, dataURItoBlob(pic_file, type), "pic." + extension);
+                } else {
+                    _log("SEND - " + input_array[k].value + " is " + pic_file);
+                }
+            } else {
+                var name = input_array[k].name;
+                var value = input_array[k].value;
+                data.append(name, value);
+            }
+        }
+        return data;
     };
 
     /**
