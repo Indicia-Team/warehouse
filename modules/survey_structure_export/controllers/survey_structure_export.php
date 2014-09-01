@@ -304,7 +304,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
     $a = ORM::factory("{$type}_attribute");
     $a->set_submission_data($array);
     if (!$a->submit()) 
-      $this->log[] = "Error creating $type attribute for $attrDef[caption]";
+      throw new exception("Error creating $type attribute for $attrDef[caption]");
     else {
       $this->log[] = "Created $type attribute $attrDef[caption]";
       $this->linkAttr($type, $attrDef, $a->as_array());
@@ -326,7 +326,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       'website_id' => $attrDef['aw_website_id']
     ));
     if (!$tl->submit()) 
-      $this->log[] = "Error creating termlist $attrDef[termlist_title] for $attrDef[caption]";
+      throw new exception("Error creating termlist $attrDef[termlist_title] for $attrDef[caption]");
     else {
       // now we need to create the terms required by the termlist. Split the terms string into individual terms.
       $terms = explode('**', $attrDef['terms']);
@@ -396,7 +396,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
           
       }
       if (!$aw->save()) {
-        $this->log[] = "Error creating $type attributes website record to associate $attrDef[caption].";
+        throw new exception("Error creating $type attributes website record to associate $attrDef[caption].");
       }
     }
   }
