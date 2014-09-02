@@ -79,12 +79,7 @@ class Sample_Attribute_Model extends ATTR_ORM {
         'title' => 'Biotope',
         'friendly'=>'Habitat',
         'description'=>'A text or lookup attribute where the value describes the biotope (often described as the habitat) of the sample.'
-      ),
-      'group_id' => array(
-        'title' => 'Group ID',
-        'description' => 'The ID of a group (e.g. recording group or organisation) this sample\'s records are associated with. Set to Integer data type.'
       )
-      
     );
   }
 
