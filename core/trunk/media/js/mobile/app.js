@@ -8,10 +8,41 @@ app = (function(m, $){
     m.TRUE = 1;
     m.FALSE = 0;
     m.ERROR = -1;
-    m.router = new $.mobile.Router();
 
+
+    /*
+        Events from.
+        http://jqmtricks.wordpress.com/2014/03/26/jquery-mobile-page-events/
+     */
+    m.pageEvents = [
+        'pagebeforechange',
+        'pagecontainerbeforetransition',
+        'pagecontainerbeforehide',
+        'pagecontainerbeforeshow',
+        'pagecontainertransition',
+        'pagecontainerhide',
+        'pagecontainershow',
+        'pagebeforecreate',
+        'pagecreate'
+    ];
+
+    /**
+     * Init function
+     */
     m.initialise = function(){
             _log('App initialised.');
+
+            //Bind JQM page events with page controller handlers
+            $(document).on(app.pageEvents.join(' '), function (e, data) {
+                var event = e.type;
+                var id = e.target.id || data.toPage[0].id;
+                var controller = app.controller[id];
+
+                //if page has controller and it has an event handler
+                if (controller && controller[event]) {
+                    controller[event](e, data);
+                }
+            });
         };
 
         /*
@@ -39,12 +70,12 @@ app = (function(m, $){
                                     app.io.sendSavedForm(savedFormId);
                                 };
                                 //#1 Save the form first
-                                app.storage.saveForm('#entry_form', onSaveSuccess);
+                                app.form.save('#entry_form', onSaveSuccess);
                             } else {
                                 //Offline
                                 _log("DEBUG: SUBMIT - offline");
                                 $.mobile.loading('show');
-                                if (app.storage.saveForm('#entry_form') > 0){
+                                if (app.form.save('#entry_form') > 0){
                                     $(document).trigger('app.submitRecord.save');
                                 } else {
                                     $(document).trigger('app.submitRecord.error');

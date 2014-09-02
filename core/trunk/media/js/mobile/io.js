@@ -6,8 +6,7 @@ app.io = (function(m, $){
      */
     m.sendAllSavedForms = function() {
         if (navigator.onLine) {
-            //todo: might need to improve the iteration of the forms
-            var forms = app.storage.get(app.storage.FORMS);
+            var forms = app.form.getAllSaved();
             var key = Object.keys(forms)[0]; //getting the first one of the array
             if (key != null) {
                 $.mobile.loading('show');
@@ -16,7 +15,7 @@ app.io = (function(m, $){
                     var formStorageId = this.callback_data.formStorageId;
                     _log("SEND - form ajax (success): " + formStorageId);
 
-                    app.storage.removeSavedForm(formStorageId);
+                    app.form.removeSaved(formStorageId);
                     $(document).trigger('app.form.sentall.success');
                     app.io.sendAllSavedForms();
                 };
@@ -43,7 +42,7 @@ app.io = (function(m, $){
      */
     m.sendSavedForm = function(formStorageId, onSuccess, onError, onSend) {
         _log("SEND - creating the form.");
-        var data = new app.storage.getSavedForm(formStorageId);
+        var data = new app.form.getSavedData(formStorageId);
         var form = {
             'data': data,
             'formStorageId' : formStorageId
@@ -89,7 +88,7 @@ app.io = (function(m, $){
         var formStorageId = this.callback_data.formStorageId;
         _log("SEND - form ajax (success): " + formStorageId);
 
-        app.storage.removeSavedForm(formStorageId);
+        app.form.removeSaved(formStorageId);
         $(document).trigger('app.form.sent.success', [data]);
     };
 
