@@ -1,0 +1,43 @@
+<report
+    title="Attribute values for subsamples"
+    description="Return the attribute value data for a set of subsamples based on a parent sample ID."
+>
+<query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM samples s
+    JOIN sample_attribute_values sav ON sav.sample_id=s.id AND sav.deleted=false
+    JOIN sample_attributes sa on sa.id = sav.sample_attribute_id AND sa.deleted=false
+    LEFT JOIN cache_termlists_terms ctt on ctt.id=sav.int_value AND sa.data_type='L'
+  WHERE s.parent_id=#parent_sample_id#
+  AND s.deleted=false
+</query>
+<params>
+  <param name='parent_sample_id' display='Parent sample ID' datatype='integer' 
+      description='ID of the parent sample to load values for' />
+</params>
+<columns>
+  <column name='id' display='ID' sql='sav.id' datatype='integer'/>
+  <column name='sample_id' display='Sample  Id' sql='s.id' datatype='integer' />
+  <column name='sample_attribute_id' display='Sample Attribute Id' sql='sa.id' datatype='integer' />
+  <column name='data_type' display='Data Type' sql="sa.data_type" datatype="text" />
+  <column name='value' display='Sample Attribute Value' sql="
+          CASE sa.data_type
+            WHEN 'T'::bpchar THEN sav.text_value
+            WHEN 'L'::bpchar THEN sav.int_value::character varying::text
+            WHEN 'I'::bpchar THEN sav.int_value::character varying::text
+            WHEN 'B'::bpchar THEN sav.int_value::character varying::text
+            WHEN 'F'::bpchar THEN sav.float_value::character varying::text
+            WHEN 'D'::bpchar THEN sav.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (sav.date_start_value::character varying::text || ' - '::text) || sav.date_end_value::character varying::text
+            ELSE NULL::text
+          END" />
+  <column name='value_text' display='Sample Attribute Value Text Value' sql='sav.text_value' datatype='text' />
+  <column name='value_int' display='Sample Attribute Value Int Value' sql='sav.int_value' datatype='int' />
+  <column name='value_float' display='Sample Attribute Value Float Value' sql='sav.float_value' datatype='float' />
+  <column name='value_date_start' sql='sav.date_start_value' visible='false' />
+  <column name='value_date_end' sql='sav.date_end_value' visible='false' />
+  <column name='value_date_type' sql='sav.date_type_value' visible='false' />
+  <column name='date' display='Date' />
+  <column name='term' display='Term' sql="ctt.term" />
+</columns>
+</report>
