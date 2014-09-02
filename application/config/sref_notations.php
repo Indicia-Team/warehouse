@@ -30,6 +30,7 @@ defined('SYSPATH') or die('No direct script access.');
 $config['sref_notations'] = array
 (
   '4326' =>'Latitude and Longitude (WGS84)',
+  '4277' =>'Latitude and Longitude (OSGB36)',
   '2169' =>'Gauss Luxembourg',
   '27572'=>'NTF (Paris) / Lambert zone II'
 );
@@ -41,6 +42,7 @@ $config['internal_srid']=900913;
 $config['roundings'] = array
 (
   '4326'=>5,
+  '4277'=>5,
   '2169'=>0
 );
 
@@ -53,6 +55,7 @@ $config['roundings'] = array
 //  Postfix_NSEW - use NSEW at end of number
 $config['lat_long_systems'] = array
 (
-  '4326' => array('default_output' => 'D', 'indicator' => 'Postfix_NSEW')
+  '4326' => array('default_output' => 'D', 'indicator' => 'Postfix_NSEW'),
+  '4277' => array('default_output' => 'D', 'indicator' => 'Postfix_NSEW')
 );
 ?>
