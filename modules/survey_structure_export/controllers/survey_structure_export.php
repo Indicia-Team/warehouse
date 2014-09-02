@@ -371,7 +371,10 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       // Need to create a link in sample_attributes_websites to link the existing attribute to the survey
       $fkName = "{$type}_attribute_id";
       $aw->$fkName=$existingAttr['id'];
-      $aw->website_id=$importAttrDef['aw_website_id'];
+      
+      
+      
+      $aw->website_id=$this->website_id;
       $aw->restrict_to_survey_id=$_POST['survey_id'];
       $aw->validation_rules=$importAttrDef['aw_validation_rules'];
       $aw->weight=$importAttrDef['aw_weight'];
