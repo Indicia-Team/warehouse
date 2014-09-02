@@ -283,7 +283,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
     if ($attrDef['data_type'] === 'L') {
       // Find termlists with the same name that are available to this website?
       $possibleMatches = $this->db->query(
-          str_replace('{where}', "t.termlist_title='$attrDef[termlist_title]' and (t.website_id=$attrDef[aw_website_id] or t.website_id is null)", 
+          str_replace('{where}', "t.termlist_title='$attrDef[termlist_title]' and (t.website_id={$this->website_id} or t.website_id is null)", 
           self::SQL_FIND_TERMLIST)
       )->result_array(FALSE);
       // Now double check that the found termlist(s) have the same set of terms we are expecting.
@@ -323,7 +323,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
     $tl->set_submission_data(array(
       'title' => $attrDef['termlist_title'],
       'description' => "Terms for the $attrDef[caption] attribute",
-      'website_id' => $attrDef['aw_website_id']
+      'website_id' => $this->website_id
     ));
     if (!$tl->submit()) 
       throw new exception("Error creating termlist $attrDef[termlist_title] for $attrDef[caption]");
