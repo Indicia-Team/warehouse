@@ -88,7 +88,7 @@ class iform_dragonfly_mobile extends iform_mobile_sample_occurrence {
 
     $gps =  mobile_entry_helper::apply_template('jqmButton', array(
       'id' => 'sref-top-button',
-      'href' => 'helpers#sref',
+      'href' => 'sref',
       'caption' => 'GPS',
       'class' => '',
       'icon' => 'location',
