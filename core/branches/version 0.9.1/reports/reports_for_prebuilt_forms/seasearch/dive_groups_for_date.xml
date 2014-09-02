@@ -1,0 +1,23 @@
+<report
+    title="Dive groups for date"
+    description="Gets the list of known dive groups for a given date."
+>
+  <query website_filter_field="" training_filter_field="" >
+  SELECT #columns#
+  FROM samples s
+  JOIN surveys su on su.id=s.survey_id AND su.deleted=false
+  JOIN sample_attribute_values sav on sav.sample_id=s.id and sav.sample_attribute_id=#group_attr_id# and sav.deleted=false
+  #joins#
+  WHERE #sharing_filter#
+  #idlist#
+  </query>
+  <params>
+    <param name="date" display="Date" description="Date of the dive to filter against" dataype="date">
+      <where>s.date_start='#date#'</where>
+    </param>
+    <param name="group_attr_id" display="Group attribute ID" description="Sample attribute ID for the dive group or survey" dataype="integer" />
+  </params>
+  <columns>
+    <column name="group_name" sql="sav.text_value" in_count="true" distinct_on="true" />
+  </columns>
+</report>

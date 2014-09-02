@@ -1,0 +1,25 @@
+<report
+    title="List of subsamples"
+    description="Returns details of all subsamples within a parent sample."
+>
+<query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples s
+  JOIN surveys su ON su.id=s.survey_id AND su.deleted=false
+  WHERE s.parent_id=#parent_sample_id#
+  AND s.deleted=false
+</query>
+<params>
+  <param name='parent_sample_id' display='Parent sample ID' datatype='integer' 
+      description='ID of the parent sample to load values for' />
+</params>
+<columns>
+  <column name='id' display='ID' sql='s.id' datatype='integer'/>
+  <column name='entered_sref' display='Map ref' sql='s.entered_sref' datatype='string'/>
+  <column name='entered_sref_system' display='Map ref system' sql='s.entered_sref_system' datatype='string'/>
+  <column name='date_start' sql='s.date_start' visible='false' />
+  <column name='date_end' sql='s.date_end' visible='false' />
+  <column name='date_type' sql='s.date_type' visible='false' />
+  <column name='date' display='Date' datatype="date" />
+</columns>
+</report>
