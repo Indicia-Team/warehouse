@@ -178,6 +178,10 @@ class extension_notifications_centre {
     if (!empty($options['sourceTypes']))
       // this disables the param for picking a single source type
       $extraParams['source_filter'] = 'all';
+    //Only include notifications associated with a set of recording group ids if option is supplied.
+    if (!empty($options['groupIds'])) {
+      $extraParams['group_ids'] = $options['groupIds'];
+    }
     // respect training mode
     if (hostsite_get_user_field('training')) 
       $extraParams['training'] = 'true';
@@ -271,6 +275,9 @@ class extension_notifications_centre {
       // source filter drop down.
       $extraParams['source_filter'] = 'all';
     }
+    //Only include notifications associated with a set of recording group ids if option is supplied.
+    if (!empty($options['groupIds']))
+      $extraParams['group_ids'] = $options['groupIds'];
     $r .= report_helper::report_grid(array(
       'id'=>'notifications-'.$options['id'],
       'readAuth' => $auth['read'],
