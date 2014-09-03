@@ -821,7 +821,7 @@ $('#$escaped').change(function(e) {
       if ($options['showButton']) {
         $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
         $imgPath .= 'nuvola/date-16px.png';
-        if ($options['buttonText']) {
+        if (!empty($options['buttonText'])) {
           $buttonText = $options['buttonText'];
         } else {
           $buttonText = $options['allowVagueDates'] ? lang::get('To enter an exact date, click here. To enter a vague date, type it into the text box') : lang::get('Click here to pick a date');
@@ -3794,7 +3794,9 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         }
       }
       if($useSubSamples){
-      	$extraParams += $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
+        // switch to loading from the parent sample ID if available...
+      	$sampleId = empty(self::$entity_to_load['sample:parent_id']) ? $sampleId : self::$entity_to_load['sample:parent_id'];
+      	$extraParams += $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );      	
       	if($subSampleMethodID != '')
       		$extraParams['sample_method_id'] = $subSampleMethodID;
       	$subSamples = data_entry_helper::get_population_data(array(
