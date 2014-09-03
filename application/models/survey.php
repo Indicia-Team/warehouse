@@ -45,7 +45,8 @@ class Survey_Model extends ORM_Tree {
     $this->unvalidatedFields = array(
       'description',
       'deleted',
-      'parent_id'
+      'parent_id',
+      'owner_id'
     );
     return parent::validate($array, $save);
   }
