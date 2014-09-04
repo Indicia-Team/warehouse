@@ -7,6 +7,7 @@
     FROM notifications n
       LEFT JOIN cache_occurrences o ON o.id=n.linked_id AND (n.source='Verifications and comments' OR n.source_type='S')
       LEFT JOIN cache_occurrences coFilter ON n.linked_id=coFilter.id
+      LEFT JOIN samples s on s.id = o.sample_id
       #joins#
     WHERE n.acknowledged=false
       and n.user_id=#user_id#  
@@ -42,6 +43,12 @@
     <param name="default_edit_page_path" display="Default edit page path" description="The default page that the notification edit link goes to if the input_form is blank and the user has rights to perform the edit" datatype="text"/>
     <param name="view_record_page_path" display="View record page path" description="The default page that the notification view link goes to if the user has rights to view the record" datatype="text"/>
     <param name="website_id" display="Website Id for the occurrence record." datatype="integer"/>
+    <param name="group_ids" display="Group Ids" 
+        description="Comma separated list of groups ids, or blank to allow all. Only notifications associated with these group ids will be displayed." datatype="text" default=''>
+      <wheres>
+        <where>s.group_id in (#group_ids#)</where>
+      </wheres>
+    </param>
   </params>
   <columns>
     <column name="notification_id" visible="false" sql="n.id" />
