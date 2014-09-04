@@ -3794,8 +3794,6 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         }
       }
       if($useSubSamples){
-        // switch to loading from the parent sample ID if available...
-      	$sampleId = empty(self::$entity_to_load['sample:parent_id']) ? $sampleId : self::$entity_to_load['sample:parent_id'];
       	$extraParams += $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );      	
       	if($subSampleMethodID != '')
       		$extraParams['sample_method_id'] = $subSampleMethodID;
