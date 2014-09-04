@@ -383,8 +383,6 @@ function iform_map_get_ol_options($args) {
   } else {
     $opts = array();
   }
-  if (!isset($opts['theme']))
-    $opts['theme'] = data_entry_helper::$js_path . 'theme/default/style.css';
   return $opts;
 }
 

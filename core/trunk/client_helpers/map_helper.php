@@ -264,7 +264,7 @@ class map_helper extends helper_base {
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
   */
-  public static function map_panel($options, $olOptions=null) {
+  public static function map_panel($options, $olOptions=array()) {
     if (!$options) {
       return '<div class="error">Form error. No options supplied to the map_panel method.</div>';
     } else {
@@ -378,9 +378,10 @@ class map_helper extends helper_base {
       if (isset(self::$bing_api_key))
         $jsoptions['bing_api_key'] = self::$bing_api_key;
       $json=substr(json_encode($jsoptions), 0, -1).$json_insert.'}';
-      if ($olOptions) {
-        $json .= ','.json_encode($olOptions);
-      }
+      $olOptions = array_merge(array(
+        'theme' => self::$js_path . 'theme/default/style.css'
+      ), $olOptions);
+      $json .= ','.json_encode($olOptions);
       $javascript = '';
       $mapSetupJs = '';
       if (isset($options['setupJs'])) {
