@@ -21,5 +21,6 @@
   <column name='date_end' sql='s.date_end' visible='false' />
   <column name='date_type' sql='s.date_type' visible='false' />
   <column name='date' display='Date' datatype="date" />
+  <column name='comment' display='Comment' sql='s.comment' datatype="text" />
 </columns>
 </report>
