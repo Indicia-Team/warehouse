@@ -389,14 +389,13 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       $aw->created_on=date("Ymd H:i:s");
       $aw->created_by_id=$this->userId;
       if ($type==='sample' && !empty($importAttrDef['aw_restrict_to_sample_method_id_term'])) {
-        $sm = $this->db->query("select id from cache_termlists_terms "
-            . "where termlist_title='Sample methods' and term='$importAttrDef[aw_restrict_to_sample_method_id_term]'")->result_array(FALSE);
+        $sm = $this->db->query("select id from list_termlists_terms "
+            . "where termlist='Sample methods' and term='$importAttrDef[aw_restrict_to_sample_method_id_term]'")->result_array(FALSE);
         if (count($sm)===0) {
           $this->db->query("select insert_term('$importAttrDef[aw_restrict_to_sample_method_id_term]', 'eng', null, null, 'indicia:sample_methods');");
         } else {
           $aw->restrict_to_sample_method_id = $sm[0]['id'];
         }
-          
       }
       if (!$aw->save()) {
         throw new exception("Error creating $type attributes website record to associate $attrDef[caption].");
