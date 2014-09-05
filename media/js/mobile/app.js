@@ -15,27 +15,63 @@ app = (function(m, $){
         http://jqmtricks.wordpress.com/2014/03/26/jquery-mobile-page-events/
      */
     m.pageEvents = [
-        'pagebeforechange',
+        'pagebeforecreate',
+        'pagecreate',
+        'pagecontainerbeforechange ',
         'pagecontainerbeforetransition',
         'pagecontainerbeforehide',
-        'pagecontainerbeforeshow',
-        'pagecontainertransition',
         'pagecontainerhide',
+        'pagecontainerbeforeshow',
         'pagecontainershow',
-        'pagebeforecreate',
-        'pagecreate'
+        'pagecontainertransition',
+        'pagecontainerchange',
+        'pagecontainerchangefailed',
+        'pagecontainerbeforeload',
+        'pagecontainerload',
+        'pagecontainerloadfailed',
+        'pagecontainerremove'
     ];
 
     /**
      * Init function
      */
     m.initialise = function(){
-            _log('App initialised.');
+        _log('App initialised.');
 
-            //Bind JQM page events with page controller handlers
-            $(document).on(app.pageEvents.join(' '), function (e, data) {
-                var event = e.type;
-                var id = e.target.id || data.toPage[0].id;
+        //todo: needs tidying up
+        //Bind JQM page events with page controller handlers
+        $(document).on(app.pageEvents.join(' '), function (e, data) {
+            var event = e.type;
+            var id = null;
+            switch(event){
+                case 'pagecreate':
+                case 'pagecontainerbeforechange':
+                    id = data.prevPage != null ? data.prevPage[0].id : e.target.id;
+                    break;
+
+                case 'pagebeforecreate':
+                    id = e.target.id;
+                    break;
+
+                case 'pagecontainershow':
+                case 'pagecontainerbeforetransition':
+                case 'pagecontainerbeforehide':
+                case 'pagecontainerbeforeshow':
+                case 'pagecontainertransition':
+                case 'pagecontainerhide':
+                case 'pagecontainerchangefailed':
+                case 'pagecontainerchange':
+                    id = data.toPage[0].id;
+                    break;
+
+                case 'pagecontainerbeforeload':
+                case 'pagecontainerload':
+                case 'pagecontainerloadfailed':
+                default:
+                    break;
+            }
+
+              //  var ihd = e.target.id || data.toPage[0].id;
                 var controller = app.controller[id];
 
                 //if page has controller and it has an event handler

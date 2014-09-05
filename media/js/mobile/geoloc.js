@@ -14,6 +14,9 @@ app.geoloc = (function(m, $){
     m.id = 0;
     m.map = null;
 
+    /**
+     *
+     */
     m.start = function(){
         switch (this.run()){
             case app.TRUE:
@@ -32,6 +35,10 @@ app.geoloc = (function(m, $){
         }
     };
 
+    /**
+     *
+     * @returns {*}
+     */
     m.run = function(){
         // Early return if geolocation not supported.
         if(!navigator.geolocation) {
@@ -57,6 +64,7 @@ app.geoloc = (function(m, $){
 
     /*
      * Validates the current GPS lock quality
+     * @returns {*}
      */
     m.validate = function(){
         var accuracy = this.getAccuracy();
@@ -74,6 +82,9 @@ app.geoloc = (function(m, $){
         }
     };
 
+    /**
+     *
+     */
     m.watchPosition = function(){
         // Geolocation options.
         var options = {
@@ -86,6 +97,10 @@ app.geoloc = (function(m, $){
             this.onError, options);
     };
 
+    /**
+     *
+     * @param position
+     */
     m.onSuccess = function(position) {
         //timeout
         var current_time = new Date().getTime();
@@ -115,9 +130,11 @@ app.geoloc = (function(m, $){
                 navigator.geolocation.clearWatch(app.geoloc.id);
 
                 //save in storage
-                var location = {'lat' : latitude,
+                var location = {
+                    'lat' : latitude,
                     'lon' : longitude,
-                    'acc' : accuracy};
+                    'acc' : accuracy
+                };
 
                 app.settings('location', location);
 
@@ -137,13 +154,16 @@ app.geoloc = (function(m, $){
      * @param lon
      * @param acc
      */
-
     m.set = function(lat, lon, acc){
         this.latitude = lat;
         this.longitude = lon;
         this.accuracy = acc;
     };
 
+    /**
+     *
+     * @returns {{lat: *, lon: *, acc: *}}
+     */
     m.get = function(){
         return {
             'lat' : this.latitude,
@@ -152,6 +172,10 @@ app.geoloc = (function(m, $){
         }
     };
 
+    /**
+     *
+     * @returns {*}
+     */
     m.getAccuracy = function(){
         return this.accuracy;
     };
