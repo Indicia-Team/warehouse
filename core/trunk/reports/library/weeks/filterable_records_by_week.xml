@@ -14,7 +14,8 @@
   </order_bys>  
   <columns>
     <column name="week" display="Weeks ago" sql="weeks.no" in_count="true" orderby="weekdate" />
-    <column name="weekdate" visible="false" sql="date_trunc('week', CURRENT_DATE - (weeks.no*7))" />
+    <column name="weekdate" visible="false" sql="to_char(date_trunc('week', CURRENT_DATE - (weeks.no*7)), 'YYYY-MM-DD')" />
+    <column name="weekenddate" visible="false" sql="to_char(date_trunc('week', CURRENT_DATE - (weeks.no*7)) + '6 days'::interval, 'YYYY-MM-DD')" />
     <column name="processed" display="Processed records" sql="count(case when record_status in ('V','R','D') then o.id else null end)" aggregate="true" />
     <column name="total" display="Total" sql="count(distinct o.id)" aggregate="true" />
   </columns>
