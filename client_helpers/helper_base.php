@@ -158,7 +158,7 @@ $indicia_templates = array(
       }
       $('input#{escaped_id}').change();
     });\r\n",
-  'sub_list' => '<div id="{id}:box" class="control-box wide"><div {class}>'."\n".
+  'sub_list' => '<div id="{id}:box" class="control-box wide"><div>'."\n".
     '<div>'."\n".
     '{panel_control} <input id="{id}:add" type="button" value="'.lang::get('add').'" />'."\n".
     '</div>'."\n".

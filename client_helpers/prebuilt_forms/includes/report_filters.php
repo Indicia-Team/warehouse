@@ -314,7 +314,8 @@ class filter_where extends filter_base {
         'initial_zoom'=>$initialZoom,
         'width'=>'100%',
         'height'=>400,
-        'standardControls'=>array('layerSwitcher','panZoomBar','drawPolygon','drawLine','drawPoint','clearEditLayer')
+        'standardControls'=>array('layerSwitcher','panZoomBar','drawPolygon','drawLine','drawPoint','clearEditLayer'),
+        'readAuth' => $readAuth
       ));
       $indicia_templates['jsWrap'] = $oldwrap;
     } 
