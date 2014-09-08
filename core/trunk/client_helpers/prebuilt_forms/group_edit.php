@@ -83,8 +83,8 @@ class iform_group_edit {
             'without explicit member approval. If you allow only one joining method, then the group creator will not need '.
             'to pick one so the options control will be hidden on the edit form.',
         'type'=>'textarea',
-        'default'=>"P=Anyone can join without needing approval\nR=Anyone can request membership but administrator must approve\n" .
-            "I=Membership by invite only\nA=Administrator will set up the members manually",
+        'default'=>"P=Anyone can join without needing approval\nR=Anyone can request to join but a group administrator must approve their membership\n" .
+            "I=The group is closed and membership is by invite only\nA=Administrator will set up the members manually",
         'required'=>true
       ),
       array(
@@ -176,6 +176,20 @@ class iform_group_edit {
         'required'=>false
       ),
       array(
+        'name' => 'indexed_location_type_ids',
+        'caption'=>'Indexed location types',
+        'description'=>'Comma separated list of location type IDs that are available for selection as a filter boudary, where the location type is indexed.',
+        'type'=>'text_input',
+        'required'=>false
+      ),
+      array(
+        'name' => 'other_location_type_ids',
+        'caption'=>'Other location types',
+        'description'=>'Comma separated list of location type IDs that are available for selection as a filter boudary, where the location type is not indexed.',
+        'type'=>'text_input',
+        'required'=>false
+      ),
+      array(
         'name' => 'default_linked_pages',
         'caption' => 'Default linked pages',
         'description' => "Create a list of pages you would like to be added to each group's page list as a default starting point.",
@@ -224,6 +238,8 @@ class iform_group_edit {
       'include_administrators'=>false,
       'include_members'=>false, 
       'filter_types' => '{"":"what,where,when","Advanced":"source,quality"}',
+      'indexed_location_type_ids' => '',
+      'other_location_type_ids' => '',
       'data_inclusion_mode' => 'choose'
     ), $args);
     $args['filter_types']=json_decode($args['filter_types'], true);
@@ -237,6 +253,7 @@ class iform_group_edit {
         return 'This form should be called with a from_group_id parameter to define the parent when creating a new group';
     }
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
+    $r .= '<fieldset><legend>' . lang::get('Fill in details of your recording group below') . '</legend>';
     $r .= $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= data_entry_helper::hidden_text(array('fieldname'=>'group:id'));
@@ -254,7 +271,7 @@ class iform_group_edit {
       'label' => lang::get('{1} name', ucfirst(self::$groupType)),
       'fieldname'=>'group:title',
       'validation'=>array('required'),
-      'class'=>'control-width-5',
+      'class'=>'control-width-6',
       'helpText'=>lang::get('Provide the full title of the {1}', self::$groupType)
     ));
     if ($args['include_code'])
@@ -264,6 +281,12 @@ class iform_group_edit {
         'class'=>'control-width-4',
         'helpText'=>lang::get('Provide a code or abbreviation identifying the {1}', self::$groupType)
       ));
+    $r .= data_entry_helper::textarea(array(
+      'label' => ucfirst(lang::get('{1} description', self::$groupType)),
+      'fieldname' => 'group:description',
+      'helpText' => lang::get('Description and notes about the {1} which will be shown in the {1} listing pages to help other users find your group.', self::$groupType),
+      'class' => 'control-width-6'
+    ));
     if (empty($args['group_type'])) {
       $r .= data_entry_helper::select(array(
         'label' => lang::get('Group type'),
@@ -278,7 +301,6 @@ class iform_group_edit {
       ));
     }
     $r .= self::joinMethodsControl($args);
-    $r .= self::inclusionMethodControl($args);
     if ($args['include_sensitivity_controls']) {
       $r .= data_entry_helper::checkbox(array(
         'label' => lang::get('Show records at full precision'),
@@ -287,11 +309,6 @@ class iform_group_edit {
             'is checked, then group members can see sensitive records explicitly posted into the group at full precision. USE ONLY FOR GROUPS WITH RESTRICTED MEMBERSHIP.')
       ));
     }
-    $r .= data_entry_helper::textarea(array(
-      'label' => ucfirst(lang::get('{1} description', self::$groupType)),
-      'fieldname' => 'group:description',
-      'helpText' => lang::get('Description and notes about the {1} which will be shown in the {1} listing pages.', self::$groupType)
-    ));
     $r .= self::dateControls($args);
     if ($args['include_private_records']) {
       $r .= data_entry_helper::checkbox(array(
@@ -307,7 +324,11 @@ class iform_group_edit {
             lang::get('You are about to release the records belonging to this group. Do not proceed unless you intend to do this!').'</p>';
     }
     $r .= self::memberControls($args, $auth);
+    $r .= '</fieldset>';
     $r .= self::reportFilterBlock($args, $auth, $hiddenPopupDivs);
+    $r .= self::inclusionMethodControl($args);
+    if ($args['include_report_filter'] || $hasFilterChoiceControl)   
+      $r .= '</fieldset>';
     $r .= self::formsBlock($args, $auth, $node);
     // auto-insert the creator as an admin of the new group, unless the admins are manually specified
     if (!$args['include_administrators'] && empty($_GET['group_id']))
@@ -450,10 +471,9 @@ $('#entry_form').submit(function() {
       $r .= '<input type="hidden" name="group:joining_method" value="'.$methods[0].'"/>';
     } else {
       $r .= data_entry_helper::radio_group(array(
-        'label' => ucfirst(lang::get('{1} membership', self::$groupType)),
+        'label' => ucfirst(lang::get('How users join this {1}', self::$groupType)),
         'fieldname' => 'group:joining_method',
         'lookupValues' => $joinMethods,
-        'helpText' => lang::get('Select how users join this group'),
         'sep' => '<br/>',
         'validation'=>array('required')
       ));
@@ -467,8 +487,9 @@ $('#entry_form').submit(function() {
    * @param array $args Form configuration arguments
    * @return string HTML to output
    */
-  private static function inclusionMethodControl($args) {    
+  private static function inclusionMethodControl($args) {
     $r = '';
+    $visibleOutput = false;
     switch ($args['data_inclusion_mode']) {
       case 'implicit':
         $implicit = 't';
@@ -480,20 +501,23 @@ $('#entry_form').submit(function() {
         ));
         break;
       default: 
-        $r = data_entry_helper::select(array(
+        $extra = $args['include_sensitivity_controls'] ? 'Note that some functionality such as allowing group members to view sensitive records '.
+              'at full record precision depends on records being explicitly posted into the group. ' : '';
+        $r = '<fieldset><legend>' . lang::get('How to post records to the group') . '</legend>';
+        $r .= '<p>This option defines whether members will be expected to use the group\'s recording forms to choose to post records into the group, or whether '.
+              'records are automatically included in the group\'s data if the recorder belongs to the group and the record is of interest to the group as defined by the filter ' .
+              'above, e.g. the record is of the right species group and/or geographic area for the group. ' . $extra . 'If you choose to require records to be explicitly posted into the '.
+              'group then make sure that you select at least 1 data entry form in the <strong>Recording group pages</strong> section below so that group members have a means to '.
+              'post records into the group.</p>';
+        $r .= data_entry_helper::select(array(
           'fieldname' => 'group:implicit_record_inclusion',
-          'label' => 'How should records be included?',
+          'label' => 'Records are included in the group if',
           'lookupValues' => array(
-            't' => 'Records are included for all group members, as long as they are of interest to the group as defined below',
-            'f' => 'Records are only included in the group if explicitly posted to the group'
-          ),
-          'helpText' => 'This option defines whether members will be expected to use the group\'s recording forms to choose to post records into the group, or whether '.
-              'records are automatically included in the group\'s data if the recorder belongs to the group and the record is of interest to the group, i.e. the record '.
-              'is of the right species group and/or geographic area for the group. Note that some functionality such as allowing group members to view sensitive records '.
-              'at full record precision depends on records being explicitly posted into the group. If you choose to require records to be explicitly posted into the '.
-              'group, then make sure that you select at least 1 data entry form in the <strong>Group pages</strong> section below so that group members have a means to '.
-              'post records into the group.'
+            't' => 'they match the filter defined above',
+            'f' => 'they were recorded on a group data entry form'
+          )
         ));
+        $r .' </fieldset>';
     }
     return $r;
   }
@@ -528,8 +552,10 @@ $('#entry_form').submit(function() {
    */
   private static function memberControls($args, $auth) {
     $r = '';
-    $class = empty(data_entry_helper::$validation_errors['groups_user:general']) ? '' : 'ui-state-error';
+    $class = empty(data_entry_helper::$validation_errors['groups_user:general']) ? 'control-width-5' : 'ui-state-error control-width-5';
     if ($args['include_administrators']) {
+      global $user;
+      $me = hostsite_get_user_field('last_name') . ', ' . hostsite_get_user_field('first_name') . ' (' . $user->mail . ')';
       $r .= data_entry_helper::sub_list(array(
         'fieldname'=>'groups_user:admin_user_id',
         'label' => ucfirst(lang::get('{1} administrators', self::$groupType)),
@@ -537,10 +563,13 @@ $('#entry_form').submit(function() {
         'captionField'=>'name_and_email',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
-        'helpText'=>lang::get('Search for users to make administrators of this group by typing a few characters of their surname. If you don\'t '.
-            'add any administrators then you will be automatically assigned as the group admin.'),
+        'helpText'=>lang::get('Search for additional users to make administrators of this group by typing a few characters of their surname ' .
+            'then selecting their name from the list of suggestions and clicking the Add button.'),
         'addToTable'=>false,
-        'class' => $class
+        'class' => $class,
+        'default' => array(
+          array('fieldname' => 'groups_user:admin_user_id[]', 'default'=>hostsite_get_user_field('indicia_user_id'), 'caption'=>$me)
+        )
       ));
     }
     if ($args['include_members']) {
@@ -551,7 +580,8 @@ $('#entry_form').submit(function() {
         'captionField'=>'name_and_email',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
-        'helpText'=>lang::get('Search for users to give membership to by typing a few characters of their surname'),
+        'helpText'=>lang::get('Search for users to give membership to by typing a few characters of their surname ' .
+            'then selecting their name from the list of suggestions and clicking the Add button'),
         'addToTable'=>false,
         'class' => $class
       ));
@@ -577,13 +607,17 @@ $('#entry_form').submit(function() {
     $r = '';
     $hiddenPopupDivs='';
     if ($args['include_report_filter']) {
-      $r .= '<fieldset><legend>' . lang::get('Records that are of interest to the {1}', lang::get(ucfirst(self::$groupType))) . '</legend>';
-      $r .= '<p>' . lang::get('LANG_Filter_Instruct') . '</p>';
+      $r .= '<fieldset><legend>' . lang::get('Records that are of interest to the {1}', lang::get(self::$groupType)) . '</legend>';
+      $r .= '<p>' . lang::get('LANG_Filter_Instruct', lang::get(self::$groupType)) . '</p>';
+      $indexedLocationTypeIds = explode(',', $args['indexed_location_type_ids']);
+      $otherLocationTypeIds = explode(',', $args['other_location_type_ids']);
       $r .= report_filter_panel($auth['read'], array(
         'allowLoad'=>false,
         'allowSave' => false,
         'filterTypes' => $args['filter_types'],
-        'embedInExistingForm' => true
+        'embedInExistingForm' => true,
+        'indexedLocationTypeIds' => $indexedLocationTypeIds,
+        'otherLocationTypeIds' => $otherLocationTypeIds
       ), $args['website_id'], $hiddenPopupDivs);
       // fields to auto-create a filter record for this group's defined set of records
       $r .= data_entry_helper::hidden_text(array('fieldname'=>'filter:id'));

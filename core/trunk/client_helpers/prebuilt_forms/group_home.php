@@ -94,7 +94,7 @@ class iform_group_home extends iform_dynamic_report_explorer {
       'extraParams'=>self::$auth['read'] + array('id'=>$_GET['group_id'], 'view'=>'detail')
     ));
     $group = $group[0];
-    hostsite_set_page_title($group['title']);
+    hostsite_set_page_title("$group[title]: {$node->title}");
     $def = json_decode($group['filter_definition'], true);
     $defstring='';
     // reconstruct this as a string to feed into dynamic report explorer
