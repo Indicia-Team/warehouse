@@ -36,7 +36,7 @@ BEGIN
     END IF;
   END IF;
   IF sys IS NULL THEN
-    SELECT INTO sref_metadata sys, treat_srid_as_x_y_metres FROM spatial_systems WHERE code=lower(sref_system);
+    SELECT INTO sref_metadata srid, treat_srid_as_x_y_metres FROM spatial_systems WHERE code=lower(sref_system);
     IF COALESCE(sref_metadata.treat_srid_as_x_y_metres, false) THEN
       sys = sref_metadata.srid::varchar;
     ELSE
