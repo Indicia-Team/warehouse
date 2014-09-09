@@ -647,7 +647,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
         end
       end,
       entered_sref_system=case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-      public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, o.sensitivity_precision, s.privacy_precision,
+      public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
           case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
       sample_method=tmethod.term,
       taxa_taxon_list_id=cttl.id, 
@@ -747,7 +747,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       end
     end as public_entered_sref,
     case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end as entered_sref_system,
-    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, o.sensitivity_precision, s.privacy_precision,
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end) as public_geom,
     tmethod.term as sample_method,
     cttl.id as taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id, cttl.taxonomic_sort_order, 
