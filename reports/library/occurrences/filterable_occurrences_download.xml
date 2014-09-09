@@ -73,6 +73,8 @@
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
     <column name='date' display='Date' datatype='date' />
+    <column name='input_date' sql='occ.created_on' display='Input on date' datatype='date' />
+    <column name='last_edit_date' sql='occ.updated_on' display='Last edited on date' datatype='date' />
     <column name='recorder' display='Recorder' sql="o.recorders" datatype="text" />
     <column name='determiner' display='Determiner' datatype="text" 
       sql="CASE WHEN det_full_val.text_value IS NULL THEN 
