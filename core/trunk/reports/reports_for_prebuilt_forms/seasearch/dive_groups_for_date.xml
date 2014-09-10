@@ -18,6 +18,6 @@
     <param name="group_attr_id" display="Group attribute ID" description="Sample attribute ID for the dive group or survey" dataype="integer" />
   </params>
   <columns>
-    <column name="group_name" sql="sav.text_value" in_count="true" distinct_on="true" />
+    <column name="group_name" sql="sav.text_value" in_count="true" distincton="true" />
   </columns>
 </report>
