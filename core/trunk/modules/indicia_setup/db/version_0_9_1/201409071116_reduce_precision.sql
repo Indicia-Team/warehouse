@@ -61,6 +61,7 @@ DECLARE x float;
 DECLARE y float;
 DECLARE sys varchar;
 DECLARE srid integer;
+DECLARE sref_metadata record;
 BEGIN
   IF confidential = true OR reduce_to_precision IS NOT NULL THEN
     precisionM = CASE
@@ -79,6 +80,7 @@ BEGIN
         ELSE sys::integer
       END;
       IF srid<>900913 THEN
+        SELECT INTO sref_metadata spatial_systems.srid, treat_srid_as_x_y_metres FROM spatial_systems WHERE code=lower(sref_system);
         geom = st_transform(st_centroid(geom_in), sref_metadata.srid);
       ELSE
         geom = st_centroid(geom_in);
