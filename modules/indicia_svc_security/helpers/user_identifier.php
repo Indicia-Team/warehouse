@@ -332,6 +332,10 @@ class user_identifier {
         );
         $new->validate(new Validation($data), true);
         self::checkErrors($new);
+        // If the identifier is an email address, store this against the person record since it is
+        // their most recently updated email.
+        if ($identifier->type==='email') 
+          $userPersonObj->db->update('people', array('email_address'=>$identifier->identifier), array('id'=>$userPersonObj->person_id));
       }
     }    
   }
@@ -413,7 +417,7 @@ class user_identifier {
         $values["allow_share_for_$task"]=(in_array($task, $preventShares) ? 'f' : 't');
       }
       // update their user record.
-      $userPersonObj->db->update('users', $values, array('id'=>$userId));    
+      $userPersonObj->db->update('users', $values, array('id'=>$userId));
     }
   }
   
