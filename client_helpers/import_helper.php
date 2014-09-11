@@ -153,6 +153,7 @@ class import_helper extends helper_base {
    * @param array $options Options array passed to the import control.
    */
   private static function upload_mappings_form($options) {
+    ini_set('auto_detect_line_endings',1);
     if (!file_exists($_SESSION['uploaded_file']))
       return lang::get('upload_not_available');
     self::add_resource('jquery_ui');
