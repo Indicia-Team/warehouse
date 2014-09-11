@@ -151,7 +151,7 @@ class user_identifier {
         $userPersonObj->person_id = $existingUsers[$userId][0]['person_id'];
       }
       if (!isset($userId)) {
-        $resolution = self::resolveMultipleUsers($identifiers, $existingUsers);        
+        $resolution = self::resolveMultipleUsers($identifiers, $existingUsers, $userPersonObj);        
         // response could be a list of possible users to match against, or a single user ID.
         if (isset($resolution['possibleMatches'])) {
           echo json_encode($resolution);
@@ -464,7 +464,7 @@ class user_identifier {
    * can consider the best action. If force=merge then users_to_merge can be set to an array of user IDs that the
    * merge applies to.
    */
-  private static function resolveMultipleUsers($identifiers, $existingUsers,$userPersonObj) {
+  private static function resolveMultipleUsers($identifiers, $existingUsers, $userPersonObj) {
     if (isset($_REQUEST['force'])) {
       if ($_REQUEST['force']==='split') {
         $uid = self::findBestFit($identifiers, $existingUsers);
