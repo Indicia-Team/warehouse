@@ -109,10 +109,12 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
   private function get_server_list() {
     $session = curl_init(kohana::config('data_cleaner.servers'));
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
     $r = array();
     $response = curl_exec($session);
     if (curl_errno($session)) {
-      $this->session->set_flash('flash_info', 'The list of verification rule servers could not be retrieved from the internet.');
+      $this->session->set_flash('flash_info', 'The list of verification rule servers could not be retrieved from the internet. ' .
+          'More information is avaailable in the server logs.');
       kohana::log('error', 'Error occurred when retrieving list of verification rule servers. '.curl_error($session));
       return array();
     }
@@ -163,7 +165,8 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         $ruleFiles[] = array(
           'file'=>$file->__toString(),
           'source_url'=>$zipfile['name'],
-          'display'=>basename($zipfile['name']).' '.$relativePath
+          'display'=>basename($zipfile['name']).' '.$relativePath,
+          'path'=>preg_replace('/^[\/]/', '', str_replace('\\', '/', $relativePath))
         );
       }
     }
@@ -226,7 +229,8 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
         $ruleFiles[] = array(
           'file'=>$file->__toString(),
           'source_url'=>$path['source_url'],
-          'display'=>$path['title'].$relativePath
+          'display'=>$path['title'].$relativePath,
+          'path'=>preg_replace('/^[\/]/', '', str_replace('\\', '/', $relativePath))
         );
       }
     }
@@ -253,18 +257,19 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     if ($curl_loops++ >= $curl_max_loops)
     {
       $curl_loops = 0;
-      throw new exception('error', "cUrl request to $server resulted in too many redirections");
+      throw new exception("cUrl request to $server resulted in too many redirections");
     }
 
     $session = curl_init($server);
     curl_setopt($session, CURLOPT_HEADER, true);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
     $files = array();
     $response=curl_exec($session);
     if (curl_errno($session)) {
       kohana::log('error', 'cUrl error : '.curl_errno($session));
       kohana::log('error', 'cUrl message : '.curl_error($session));
-      throw new exception('error', "cUrl request to $server failed");
+      throw new exception("cUrl request to $server failed");
     }
     $http_code = curl_getinfo($session, CURLINFO_HTTP_CODE);
     // did we get a redirect response?
@@ -273,7 +278,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       preg_match('/Location:(.*?)\n/', $response, $matches);
       $url = @parse_url(trim(array_pop($matches)));
       if (!$url) 
-        throw new exception('error', "Redirect from $server failed");
+        throw new exception("Redirect from $server failed");
       $last_url = parse_url(curl_getinfo($session, CURLINFO_EFFECTIVE_URL));
       if (!$url['scheme'])
       $url['scheme'] = $last_url['scheme'];
@@ -320,10 +325,14 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       // str_replace used here for spaces in file names, I would have thought urlencode would work but apparently not...
       $session = curl_init(str_replace(' ','%20',$sourcefile));
       curl_setopt($session, CURLOPT_FILE, $fh);
+      curl_setopt($session, CURLOPT_HEADER, false);
+      curl_setopt($session, CURLOPT_FOLLOWLOCATION, true);
+      curl_setopt($session, CURLOPT_SSL_VERIFYPEER, false);
       curl_exec($session);
       if (curl_errno($session)) 
         throw new exception("Error downloading zip file $sourcefile: ".curl_error($session));
       curl_close($session);
+      fclose($fh);
     }
     $zip = new ZipArchive;
     $res = $zip->open($zipFile);
@@ -378,7 +387,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     }
     $filecontent = fread($resource,1000000);
     $settings = data_cleaner::parse_test_file($filecontent);
-    $this->read_rule_content($settings, basename($filepath), $cacheArr['files'][$totaldone]['source_url']);
+    $this->read_rule_content($settings, $cacheArr['files'][$totaldone]['path'], $cacheArr['files'][$totaldone]['source_url']);
     return $cacheArr['files'][$totaldone]['display'];
   }
   

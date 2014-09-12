@@ -80,7 +80,11 @@ class Verification_rule_Model extends ORM {
     // find existing or new verification rule record. Empty string stored in db as null.
     if (empty($source_url))
       $source_url=null;  
-    $this->where(array('source_url'=>$source_url, 'source_filename'=>$filename))->find();
+    $this->where(array('source_url'=>$source_url, 'source_filename'=>$filename, 'deleted'=>'f'))->find();
+    // because in a previous version the filename got stored without the path, look for existing rules
+    // to overwrite so we don't end up with duplicate rules.
+    if ($this->id===0)
+      $this->where(array('source_url'=>$source_url, 'source_filename'=>basename($filename), 'deleted'=>'f'))->find();
     if (isset($metadata['shortname']))
       $title = $metadata['shortname'];
     else {
