@@ -79,7 +79,7 @@ class import_helper extends helper_base {
     $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
     $r = '<form action="'.$reloadpath.'" method="post" enctype="multipart/form-data">';
-    $r .= '<label for="id">'.lang::get('Select file to upload').':</label>';
+    $r .= '<label for="id">'.lang::get('Select *.csv (comma separated values) file to upload').':</label>';
     $r .= '<input type="file" name="upload" id="upload"/>';
     $r .= '<input type="Submit" value="'.lang::get('Upload').'"></form>';
     return $r;
