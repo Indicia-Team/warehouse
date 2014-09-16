@@ -89,6 +89,16 @@ class iform_dynamic {
           'group' => 'User Interface'
         ),
         array(
+          'name'=>'force_next_previous',
+          'caption'=>'Next/previous buttons shown in tab mode?',
+          'description'=>'Should the wizard style Next & Previous buttons be shown even when in tab mode? This option does '.
+              'not apply when the option "Submit button below all pages" is set.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
+        array(
           'name'=>'clientSideValidation',
           'caption'=>'Client Side Validation',
           'description'=>'Enable client side validation of controls using JavaScript.',
@@ -269,7 +279,8 @@ class iform_dynamic {
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
           'style'=>$args['interface'],
-          'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
+          'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true,
+          'navButtons' => isset($args['force_next_previous']) && $args['force_next_previous']
       ));
     } else {
       // ensure client side validation is activated if requested on single page forms. This is done in the enable_tabs bit above.
@@ -307,7 +318,7 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
       if (isset($args['verification_panel']) && $args['verification_panel'] && $pageIdx==count($tabHtml)-1)
         $r .= data_entry_helper::verification_panel(array('readAuth'=>$auth['read'], 'panelOnly'=>true));
       // Add any buttons required at the bottom of the tab   
-      if ($args['interface']=='wizard') {
+      if ($args['interface']==='wizard' || ($args['interface']==='tabs' && isset($args['force_next_previous']) && $args['force_next_previous'])) {
         $r .= data_entry_helper::wizard_buttons(array(
           'divId'=>'controls',
           'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabHtml)-1) ? 'last' : 'middle'),

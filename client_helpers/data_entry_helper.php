@@ -5509,80 +5509,33 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function enable_tabs($options) {
-    // A jquery selector for the element which must be at the top of the page when moving to the next page. Could be the progress bar or the
-    // tabbed div itself.
-    if (isset($options['progressBar']) && $options['progressBar']==true)
-      $topSelector = '.wiz-prog';
-    else
-      $topSelector = '#'.$options['divId'];
+    // apply defaults
+    $options = array_merge(array(
+      'style' => 'tabs',
+      'progressBar' => false
+    ), $options);
+    if (!isset($options['navButtons']))
+      $options['navButtons'] = $options['style']==='wizard';
     // Only do anything if the id of the div to be tabified is specified
-    if (array_key_exists('divId', $options)) {
+    if (!empty($options['divId'])) {
+      // A jquery selector for the element which must be at the top of the page when moving to the next page. 
+      // Could be the progress bar or the tabbed div itself.
+      $topSelector = $options['progressBar'] ? '.wiz-prog' : '#'.$options['divId'];        
       $divId = $options['divId'];
       // Scroll to the top of the page. This may be required if subsequent tab pages are longer than the first one, meaning the
-        // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
+      // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
       // drags the scroll bar while the page is loading.
       self::$javascript .= "scroll(0,0);\n";
 
       // Client-side validation only works on active tabs so validate on tab change
-      if (isset($options['style']) && $options['style']=='wizard' || 
-          isset($options['navButtons']) && $options['navButtons']) {
+      if ($options['navButtons']) {
         //Add javascript for moving through wizard
-        self::$javascript .= "\n$('.tab-submit').click(function() {\n";
-        self::$javascript .= "  var current=indiciaFns.activeTab($('#$divId'));\n";
-        self::validate_inputs_on_current_tab();
-        // If all is well, submit.
-        self::$javascript .= "      var form = $(this).parents('form:first');
-        form.submit();
-      });";
-        self::$javascript .= "\n$('.tab-next').click(function() {\n";
-        self::$javascript .= "  var current=indiciaFns.activeTab($('#$divId'));\n";
-        self::validate_inputs_on_current_tab('Before going to the next step, some of the values in the input boxes on this step need checking. '.
-            'They have been highlighted on the form for you.');
-        // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so
-        // it forces it into view. This helps a lot when the tabs vary in height.
-        self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
-  $(a).click();
-  scrollTopIntoView('$topSelector');
-});";
-        self::$javascript .= "\n$('.tab-prev').click(function() {
-  var current=indiciaFns.activeTab($('#$divId')),
-      a = $('ul.ui-tabs-nav a')[current-1];
-  $(a).click();
-  scrollTopIntoView('$topSelector');
-});\n";
-      } else {
-        //Add javascript for changing tabs
-        if (isset(self::$validated_form_id)) {
-          self::$javascript .= "\n
-$('#$divId').tabs({
-  select: function(event, ui) {
-    var isValid,
-      prev = indiciaFns.activeTab($(this)),
-      panel = $('.ui-tabs-panel', this).eq(prev);
-    if ($('.species-grid', panel).length != 0) {
-      var clonableRow = $('.species-grid .scClonableRow', panel),
-           display = clonableRow.css('display'),
-           current=indiciaFns.activeTab($('#$divId'));
-      ".
-      //leaving a panel with a species table so hide the clonable row to prevent trying to validate it, unless they've started inputting
-      // a taxon name already. We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
-      // So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
-      "clonableRow.css('display', 'none');
-       var taxonInputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled'),
-           validationResultTaxon = (taxonInputs.length > 0 ) ? taxonInputs.valid() : true,
-           validationResult = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive,:file').valid();
-      ;
-      isValid = (validationResultTaxon && validationResult)===1 ? true : false;
-      //restore the clonable row
-      clonableRow.css('display', display);
-    } else {
-      isValid = $('#". self::$validated_form_id ."').valid();
-    }
-    return isValid;
-  }
-});\n";
-        }
+        self::$javascript .= "setupTabsNextPreviousButtons('$divId', '$topSelector');\n";
       }
+      //Add javascript for validation on changing tabs and linking the wizard submit button to form submit
+      self::$javascript .= "setupTabsBeforeActivate('$divId');\n";
+      self::$javascript .= "indiciaData.langErrorsOnTab = '".lang::get('Before continuing, some of the values in the input ' .
+          'boxes on this page need checking. They have been highlighted on the form for you.')."';\n";
 
       // We put this javascript into $late_javascript so that it can come after the other controls.
       // This prevents some obscure bugs - e.g. OpenLayers maps cannot be centered properly on hidden
@@ -5614,26 +5567,6 @@ if (errors$uniq.length>0) {
       data_entry_helper::$javascript .= "wizardProgressIndicator({divId:'$divId'});\n";
     } else {
       data_entry_helper::add_resource('tabs');
-    }
-  }
-  
-  /**
-   * Validates the inputs on the current tab and prevents going to the next tab if not all valid.
-   * @param string $msg Message to display if a failure to validate occurs
-   */
-  private static function validate_inputs_on_current_tab($msg='') {
-    // Use a selector to find the inputs and selects on the current tab and validate them.
-    if (isset(self::$validated_form_id)) {
-      //We handle taxon cells seperately. They are excluded from validation in tabinputs as they have no name.
-      //So we need to include them seperately as they are an exception to the rule that the item should not be included in validation if it has no name.
-      self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select,textarea').not(':disabled,[name=],.scTaxonCell,.inactive');\n";
-      self::$javascript .= "  var tabtaxoninputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') .scTaxonCell').find('input,select').not(':disabled');\n";
-      self::$javascript .= "  if ((tabinputs.length>0 && !tabinputs.valid()) ||
-                                  (tabtaxoninputs.length>0 && !tabtaxoninputs.valid())) {\n";
-      if ($msg)
-        self::$javascript .= "    alert('".lang::get($msg)."');\n";
-      self::$javascript .= "    return;\n";
-      self::$javascript .= "  }\n";
     }
   }
 

@@ -1732,6 +1732,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
   */
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
+    self::$javascript .= "indiciaData.validatedFormId = '" . self::$validated_form_id . "';\n";
     // prevent double submission of the form
     self::$javascript .= "$('#$form_id').submit(function(e) {
   if (typeof $('#$form_id').valid === 'undefined' || $('#$form_id').valid()) {

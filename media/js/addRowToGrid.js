@@ -41,17 +41,6 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
   hook_species_checklist_new_row = [];
   
   var resetSpeciesText;
-  /*
-   * Validator makes sures user cannot enter junk into the taxon cell and continue with submit
-   */
-  jQuery.validator.addMethod('speciesMustBeFilled',
-            function(value, element) {
-              var presenceCellInput = $(element).parents('tr:first').find('.scPresenceCell').children(':input');
-              if ($(presenceCellInput).val() || !$(element).val()) {
-                return true;
-              }
-            },
-          '');
           
   /*
    * A keyboard event handler for the grid.
