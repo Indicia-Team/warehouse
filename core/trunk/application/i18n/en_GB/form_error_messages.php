@@ -5,6 +5,9 @@ $lang = array (
     'length' => 'The address must be a maximum of 200 characters in length.',
     'default' => 'Invalid input.',
   ),
+  'awarded_by' => Array (
+    'required' => 'Please specify the organisation awarding this milestone',
+  ),
   'caption' => Array (
     'required' => 'The caption cannot be blank.',
   ),
