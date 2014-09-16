@@ -122,6 +122,11 @@ class Import_Controller extends Service_Base_Controller {
       {
         kohana::log('error', 'Validation errors uploading file '. $_FILES['media_upload']['name']);
         kohana::log('error', print_r($_FILES->errors('form_error_messages'), true));
+        foreach ($_FILES as $file) {
+          if (!empty($file['error'])) {
+            kohana::log('error', 'PHP reports file upload error: ' . $this->codeToMessage($file['error']));
+          }
+        }
         Throw new ValidationError('Validation error', 2004, $_FILES->errors('form_error_messages'));
       }
     }
@@ -146,6 +151,36 @@ class Import_Controller extends Service_Base_Controller {
     self::internal_cache_upload_metadata($metadata);
     echo "OK";
   }
+  
+  private function codeToMessage($code) {
+    switch ($code) {
+      case UPLOAD_ERR_INI_SIZE:
+        $message = "The uploaded file exceeds the upload_max_filesize directive in php.ini";
+        break;
+      case UPLOAD_ERR_FORM_SIZE:
+        $message = "The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form";
+        break;
+      case UPLOAD_ERR_PARTIAL:
+        $message = "The uploaded file was only partially uploaded";
+        break;
+      case UPLOAD_ERR_NO_FILE:
+        $message = "No file was uploaded";
+        break;
+      case UPLOAD_ERR_NO_TMP_DIR:
+        $message = "Missing a temporary folder";
+        break;
+      case UPLOAD_ERR_CANT_WRITE:
+        $message = "Failed to write file to disk";
+        break;
+      case UPLOAD_ERR_EXTENSION:
+        $message = "File upload stopped by extension";
+        break;
+      default:
+        $message = "Unknown upload error";
+        break;
+    }
+      return $message;
+  } 
   
   /**
    * Saves a set of metadata for an upload to a file, so it can persist across requests.
