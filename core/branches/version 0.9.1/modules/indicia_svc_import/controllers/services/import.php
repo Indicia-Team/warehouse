@@ -31,8 +31,17 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class Import_Controller extends Service_Base_Controller {
 
+  private $submissionStruct;
+
+  /**
+   * @var array Parent model field details from the previous row. Allows us to efficiently use the same sample for
+   * multiple occurrences etc.
+   */
+  private $previousCsvSupermodel;
+
   /**
    * Controller function that provides a web service services/import/get_import_settings/model.
+   * @param string $model Singular name of the model entity to check.
    * @return string JSON Parameters form details for this model, or empty string if no parameters form required.
    */
   public function get_import_settings($model) {
@@ -47,6 +56,7 @@ class Import_Controller extends Service_Base_Controller {
    * Controller function that returns the list of importable fields for a model.
    * Accepts optional $_GET parameters for the website_id and survey_id, which limit the available
    * custom attribute fields as appropriate.
+   * @param string $model Singular name of the model entity to check.
    * @return string JSON listing the fields that can be imported.
    */
   public function get_import_fields($model) {
@@ -61,6 +71,7 @@ class Import_Controller extends Service_Base_Controller {
    * Controller function that returns the list of required fields for a model.
    * Accepts optional $_GET parameters for the website_id and survey_id, which limit the available
    * custom attribute fields as appropriate.
+   * @param string $model Singular name of the model entity to check.
    * @return string JSON listing the fields that are required.
    */
   public function get_required_fields($model) {
@@ -111,6 +122,11 @@ class Import_Controller extends Service_Base_Controller {
       {
         kohana::log('error', 'Validation errors uploading file '. $_FILES['media_upload']['name']);
         kohana::log('error', print_r($_FILES->errors('form_error_messages'), true));
+        foreach ($_FILES as $file) {
+          if (!empty($file['error'])) {
+            kohana::log('error', 'PHP reports file upload error: ' . $this->codeToMessage($file['error']));
+          }
+        }
         Throw new ValidationError('Validation error', 2004, $_FILES->errors('form_error_messages'));
       }
     }
@@ -135,6 +151,36 @@ class Import_Controller extends Service_Base_Controller {
     self::internal_cache_upload_metadata($metadata);
     echo "OK";
   }
+  
+  private function codeToMessage($code) {
+    switch ($code) {
+      case UPLOAD_ERR_INI_SIZE:
+        $message = "The uploaded file exceeds the upload_max_filesize directive in php.ini";
+        break;
+      case UPLOAD_ERR_FORM_SIZE:
+        $message = "The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form";
+        break;
+      case UPLOAD_ERR_PARTIAL:
+        $message = "The uploaded file was only partially uploaded";
+        break;
+      case UPLOAD_ERR_NO_FILE:
+        $message = "No file was uploaded";
+        break;
+      case UPLOAD_ERR_NO_TMP_DIR:
+        $message = "Missing a temporary folder";
+        break;
+      case UPLOAD_ERR_CANT_WRITE:
+        $message = "Failed to write file to disk";
+        break;
+      case UPLOAD_ERR_EXTENSION:
+        $message = "File upload stopped by extension";
+        break;
+      default:
+        $message = "Unknown upload error";
+        break;
+    }
+      return $message;
+  } 
   
   /**
    * Saves a set of metadata for an upload to a file, so it can persist across requests.
@@ -167,13 +213,7 @@ class Import_Controller extends Service_Base_Controller {
     // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of 
     // this bulk operation
     $cache= Cache::instance();
-    $this->previousCsvSupermodel = $cache->get(basename($_GET['uploaded_csv']).'previousSupermodel');    
-    if (!$this->previousCsvSupermodel) {
-      $this->previousCsvSupermodel = array(
-        'id'=>array(),
-        'details'=>array()
-      );
-    }
+    $this->getPreviousRowSupermodel($cache);
     // enable caching of things like language lookups
     ORM::$cacheFkLookups = true;
     // make sure the file still exists
@@ -183,12 +223,7 @@ class Import_Controller extends Service_Base_Controller {
       ini_set('auto_detect_line_endings',1);
       // create the file pointer, plus one for errors
       $handle = fopen ($csvTempFile, "r");
-      if (!isset($metadata['isUtf8'])) {
-        fseek($handle, 0);
-        $BOMCheck=fread($handle, 3);
-        // Flag if this file has a UTF8 BOM at the start
-        $metadata['isUtf8'] = $BOMCheck===chr(0xEF) . chr(0xBB) . chr(0xBF);
-      }
+      $this->checkIfUtf8($metadata, $handle);
       $errorHandle = $this->_get_error_file_handle($csvTempFile, $handle);
       $count=0;
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : false);
@@ -204,7 +239,7 @@ class Import_Controller extends Service_Base_Controller {
         // skip rows to allow for the last file position
         fseek($handle, $filepos);
       $model = ORM::Factory($_GET['model']);
-      $submissionStruct = $model->get_submission_structure();
+      $this->submissionStruct = $model->get_submission_structure();
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
         $count++;
         $index = 0;
@@ -232,7 +267,7 @@ class Import_Controller extends Service_Base_Controller {
         }
         if (!empty($saveArray['website_id'])) {
           // automatically join to the website if relevant
-          if (isset($submissionStruct['joinsTo']) && in_array('websites', $submissionStruct['joinsTo'])) {
+          if (isset($this->submissionStruct['joinsTo']) && in_array('websites', $this->submissionStruct['joinsTo'])) {
             $saveArray['joinsTo:website:'.$saveArray['website_id']]=1;
           }
         }
@@ -245,7 +280,13 @@ class Import_Controller extends Service_Base_Controller {
         $model->set_submission_data($saveArray, true);
         if (($id = $model->submit()) == null) {
           // Record has errors - now embedded in model, so dump them into the error file
-          $errors = implode("\n", array_unique($model->getAllErrors()));
+          $errors = array();
+          foreach($model->getAllErrors() as $field=>$msg) {
+            $fldTitle = array_search($field, $metadata['mappings']);
+            $fldTitle = $fldTitle ? $fldTitle : $field;
+            $errors[] = "$fldTitle: $msg";
+          }
+          $errors = implode("\n", array_unique($errors));
           $data[] = $errors;
           $data[] = $count + $offset + 1; // 1 for header
           fputcsv($errorHandle, $data);
@@ -308,11 +349,10 @@ class Import_Controller extends Service_Base_Controller {
    * containing several occurrences in a single sample can repeat the sample details but only one sample gets created.
    */
   private function checkForSameSupermodel(&$saveArray, $model) {
-    $submissionStruct = $model->get_submission_structure();
     $updatedPreviousCsvSupermodelDetails = array();
-    if (isset($submissionStruct['superModels'])) {
+    if (isset($this->submissionStruct['superModels'])) {
       // loop through the supermodels
-      foreach($submissionStruct['superModels'] as $modelName=>$modelDetails) {
+      foreach($this->submissionStruct['superModels'] as $modelName=>$modelDetails) {
         // meaning models do not get shared across rows - we always generate a new meaning ID.
         if ($modelName=='taxon_meaning' || $modelName=='meaning') 
           continue;
@@ -351,11 +391,10 @@ class Import_Controller extends Service_Base_Controller {
   * in the next record.
   */
   private function captureSupermodelIds($model) {
-    $submissionStruct = $model->get_submission_structure();
-    if (isset($submissionStruct['superModels'])) {
+    if (isset($this->submissionStruct['superModels'])) {
       $array = $model->as_array();
       // loop through the supermodels
-      foreach($submissionStruct['superModels'] as $modelName=>$modelDetails) {
+      foreach($this->submissionStruct['superModels'] as $modelName=>$modelDetails) {
         $id = $modelName . '_id';
         // Expect that the fk field is called fkTable_id (e.g. if the super model is called sample, then
         // the field should be sample_id). If it is not, then we revert to using ORM to find the ID, which 
@@ -374,7 +413,9 @@ class Import_Controller extends Service_Base_Controller {
     $metadataFile = DOCROOT . "upload/" . str_replace('.csv','-metadata.txt', $csvTempFile);
     if (file_exists($metadataFile)) {      
       $metadataHandle = fopen($metadataFile, "r");
-      return json_decode(fgets($metadataHandle), true); 
+      $metadata = fgets($metadataHandle);
+      fclose($metadataHandle);
+      return json_decode($metadata, true);
     } else {
       // no previous file, so create default new metadata      
       return array('mappings'=>array(), 'settings'=>array(), 'errorCount'=>0);
@@ -385,10 +426,14 @@ class Import_Controller extends Service_Base_Controller {
    * During a csv upload, this method is called to retrieve a resource handle to a file that can 
    * contain errors during the upload. The file is created if required, and the headers from the 
    * uploaded csv file (referred to by handle) are copied into the first row of the new error file
-   * allong with a header for the problem description and row number.
+   * along with a header for the problem description and row number.
+   * @param string $csvTempFile File name of the imported CSV file.
+   * @param resource $handle File handle
    * @return resource The error file's handle.
    */
   private function _get_error_file_handle($csvTempFile, $handle) {
+    // move the file to the beginning, so we can load the first row of headers.
+    fseek($handle, 0);
     $errorFile = str_replace('.csv','-errors.csv',$csvTempFile);
     $needHeaders = !file_exists($errorFile);
     $errorHandle = fopen($errorFile, "a");
@@ -402,6 +447,38 @@ class Import_Controller extends Service_Base_Controller {
     return $errorHandle;
   }
 
-}
+  /**
+   * Runs at the start of each batch of rows. Checks if the previous imported row defined a supermodel. If so, we'll load
+   * it from the Kohana cache. This allows us to determine if the new row can link to the same supermodel or not. An example
+   * would be linking several occurrences to the same sample.
+   * @param $cache
+   */
+  private function getPreviousRowSupermodel($cache)
+  {
+    $this->previousCsvSupermodel = $cache->get(basename($_GET['uploaded_csv']) . 'previousSupermodel');
+    if (!$this->previousCsvSupermodel) {
+      $this->previousCsvSupermodel = array(
+          'id' => array(),
+          'details' => array()
+      );
+    }
+  }
 
-?>
+  /**
+   * Checks if there is a byte order marker at the beginning of the file (BOM). If so, sets this information in the $metadata.
+   * Rewinds the file to the beginning.
+   * @param $metadata
+   * @param $handle
+   * @return mixed
+   */
+  private function checkIfUtf8(&$metadata, $handle)
+  {
+    if (!isset($metadata['isUtf8'])) {
+      fseek($handle, 0);
+      $BOMCheck = fread($handle, 3);
+      // Flag if this file has a UTF8 BOM at the start
+      $metadata['isUtf8'] = $BOMCheck === chr(0xEF) . chr(0xBB) . chr(0xBF);
+    }
+  }
+
+}
