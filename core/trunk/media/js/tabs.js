@@ -12,9 +12,11 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  */
  
-var wizardProgressIndicator, initTabAddressing, scrollTopIntoView, setupButtons;
+var wizardProgressIndicator, initTabAddressing, scrollTopIntoView, setupButtons, 
+    setupTabsBeforeActivate, setupTabsNextPreviousButtons;
  
 (function ($) {
+  "use strict";
 
 setupButtons = function (tabs, index) {
   var wizList = $("#" + tabs.attr('id') + "-wiz-prog");
@@ -172,5 +174,67 @@ scrollTopIntoView=function(topDiv) {
     $(topDiv)[0].scrollIntoView(true);
   }
 };
+
+
+var validateInputsOnCurrentTab=function(current) {
+  var result=true;
+  if (typeof indiciaData.validatedFormId!=="undefined") {
+    var $currentTab = $('#' + indiciaData.validatedFormId + ' div > .ui-tabs-panel:eq('+current+')'),
+        // find all the inputs that require validation. Note that .inactive excludes all inputs in species grid rows
+        // that are not yet filled in
+        tabinputs = $('input,select,textarea', $currentTab).not(':disabled,[name=],.inactive'),        
+        clonableRowDisplay, $clonableRow;    
+    if (tabinputs.length>0 && !tabinputs.valid()) {
+      alert(indiciaData.langErrorsOnTab);
+      result = false;
+    }
+  }
+  return result;
+}
+
+/**
+ * Method to hook up tabs next and previous button handlers
+ */
+setupTabsNextPreviousButtons=function(divId, topSelector) {
+  var $div=$('#'+divId);
+  
+  function selectTab(relativeIdx) {
+    var current=indiciaFns.activeTab($div),
+        a = $('ul.ui-tabs-nav a', $div)[current+relativeIdx];
+    $(a).click();
+    // scroll top of selected tab into view
+    scrollTopIntoView(topSelector);
+  }
+  
+  $('.tab-prev', $div).click(function() {
+    selectTab(-1);  
+  });  
+  
+  $('.tab-next', $div).click(function() {
+     selectTab(1);
+  });
+  
+  $('.tab-submit', $div).click(function() {
+    var current=indiciaFns.activeTab($div);
+    if (validateInputsOnCurrentTab(current)) {
+      $(this).parents('form:first').submit();
+    }
+  });
+}
+
+/**
+ * Method to hook a beforeActivate to tabs to prevent navigation when controls are not valid
+ */
+setupTabsBeforeActivate=function(divId) {  
+  // jQuery UI version safe beforeActivate handler
+  var version=$.ui.version.split('.'),
+      beforeActivateEvent=(version[0]==='1' && version[1]<9) ? 'select' : 'beforeActivate',
+      opts={},
+      $div=$('#'+divId);
+  opts[beforeActivateEvent]=function(event, ui) {
+    return validateInputsOnCurrentTab(indiciaFns.activeTab($div));
+  };
+  $div.tabs(opts);
+}
 
 }(jQuery));

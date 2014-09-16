@@ -56,11 +56,22 @@ jQuery.validator.addMethod("ziprange", function(value, element) {
 jQuery.validator.addMethod("integer", function(value, element) {
 	return this.optional(element) || /^-?\d+$/.test(value);
 }, "A whole number please");
+
 // Requires a minimum figure grid reference
 jQuery.validator.addMethod("mingridref", function(value, element, params) {
   // note the 2nd part of this allows a non-grid ref through.
 	return this.optional(element) || !(/[a-zA-Z]([a-zA-Z])?[0-9 ]*$/.test(value)) || value.replace(/[^0-9]/g,"").length>=params;
 }, "Please supply at least a {0} figure grid reference");
+
+// Make sure user cannot enter junk into the taxon cell and continue with submit
+jQuery.validator.addMethod('speciesMustBeFilled', function(value, element) {
+  var presenceCellInput = jQuery(element).parents('tr:first').find('.scPresenceCell').children(':input');
+    if (jQuery(presenceCellInput).val() || !jQuery(element).val()) {
+      return true;
+    }
+  },
+  ''
+);
 
 /**
 * Return true, if the value is a valid vehicle identification number (VIN).
