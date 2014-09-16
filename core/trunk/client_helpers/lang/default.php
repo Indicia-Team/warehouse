@@ -85,7 +85,7 @@ $default_terms = array(
   'upload_not_available' => 'The uploaded file is no longer available. Please try uploading again.',
   
   // define the captions for fields in the data dictionary
-  'dd:occurrence:fk_taxa_taxon_list' => 'Species or taxon selected from existing list',
+  'dd:occurrence:fk_taxa_taxon_list' => 'Species or taxon name',
   'dd:sample:entered_sref' => 'Grid ref or other spatial ref',
   'dd:sample:entered_sref_system' => 'Spatial reference system',
   
