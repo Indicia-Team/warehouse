@@ -3269,8 +3269,6 @@ $('#$escaped').change(function(e) {
       $grid .= "\n<tbody>\n";
       if (count($rows)>0) 
         $grid .= self::species_checklist_implode_rows($rows, $imageRowIdxs);
-      else
-        $grid .= "<tr style=\"display: none\"><td></td></tr>\n";
       $grid .= "</tbody>\n</table>\n";
       // in hasData mode, the wrap_species_checklist method must be notified of the different default 
       // way of checking if a row is to be made into an occurrence. This may differ between grids when
