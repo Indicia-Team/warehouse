@@ -676,7 +676,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
         else 'U'
       end,
       location_name=case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null 
-          then null else coalesce(l.name, s.location_name) end,
+          then null else coalesce(l.name, s.location_name, sp.location_name) end,
       recorders = s.recorder_names,
       verifier = pv.surname || ', ' || pv.first_name,
       verified_on = o.verified_on,
@@ -702,6 +702,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       group by o.id, o.last_verification_check_date
     ) sub on sub.id=o.id
     join samples s on s.id=o.sample_id and s.deleted=false
+    left join samples sp on sp.id=s.parent_id and sp.deleted=false
     left join locations l on l.id=s.location_id and l.deleted=false
     join surveys su on su.id=s.survey_id and su.deleted=false
     left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
@@ -765,7 +766,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
         else 'U'
     end,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null 
-        then null else coalesce(l.name, s.location_name) end,
+        then null else coalesce(l.name, s.location_name, sp.location_name) end,
     s.recorder_names,
     pv.surname || ', ' || pv.first_name,
     o.verified_on,
@@ -779,6 +780,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   from occurrences o
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 
+  left join samples sp on sp.id=s.parent_id and sp.deleted=false
   left join locations l on l.id=s.location_id and l.deleted=false
   join surveys su on su.id=s.survey_id 
   left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
