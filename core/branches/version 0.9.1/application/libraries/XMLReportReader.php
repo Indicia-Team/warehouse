@@ -1042,7 +1042,7 @@ class XMLReportReader_Core implements ReportReader
     union all 
     select tc.id, tc.family_taxa_taxon_list_id
     from q 
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.id 
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.id and tc.taxon_rank_sort_order<=180
   ) select array_to_string(array_agg(distinct family_taxa_taxon_list_id::varchar), ',') from q"
         ),
         'taxon_meaning_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Taxon meaning IDs", 
