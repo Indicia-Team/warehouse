@@ -225,9 +225,7 @@ class extension_notifications_centre {
    * Draw the notifications grid.
    */
   private static function get_notifications_html($auth, $sourceType, $website_id, $user_id, $options) {
-    iform_load_helpers(array('report_helper'));
-    $readNonce = $auth['nonce'];
-    $readAuthToken = $auth['auth_token'];      
+    iform_load_helpers(array('report_helper'));    
     $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
     $sendReply = $imgPath."nuvola/mail_send-22px.png";
     $cancelReply = $imgPath."nuvola/mail_delete-22px.png";    
@@ -257,7 +255,7 @@ class extension_notifications_centre {
         array('caption'=>lang::get('Mark as read'), 'javascript'=>'remove_message({notification_id});',
               'img'=>$imgPath.'nuvola/kmail-22px.png'));
     //Only allow replying for 'user' messages.
-    if ($options['allowReply']===true)
+    if (isset($options['allowReply']) && $options['allowReply']===true)
       $availableActions = array_merge($availableActions,array(array('caption'=>lang::get('Reply to this message'), 'img'=>$imgPath.'nuvola/mail_reply-22px.png', 'visibility_field'=>'reply_flag',
           'javascript'=>"indiciaData.reply_to_message(".'{notification_id}'.",".'{occurrence_id}'.");")));
     $extraParams= array(
@@ -278,7 +276,7 @@ class extension_notifications_centre {
     //Only include notifications associated with a set of recording group ids if option is supplied.
     if (!empty($options['groupIds']))
       $extraParams['group_ids'] = $options['groupIds'];
-    $r .= report_helper::report_grid(array(
+    $r = report_helper::report_grid(array(
       'id'=>'notifications-'.$options['id'],
       'readAuth' => $auth['read'],
       'itemsPerPage'=>10,
@@ -298,7 +296,6 @@ class extension_notifications_centre {
         array('fieldname'=>'triggered_date', 'visible' => false)
       ),
     ));
-    //$r .= "<input type=\"submit\" value=\"Get Notifications\"><br>\n";
     return $r;
   }
 
