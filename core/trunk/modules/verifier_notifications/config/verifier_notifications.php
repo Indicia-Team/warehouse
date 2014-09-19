@@ -24,10 +24,10 @@
 // where the verifiers should be automatically notified of incoming records. Each entry consists of
 // a website ID, then name of the website, then the verification page URL path.
 $config['verification_urls'] = array(
-  array('website_id' => 23, 'title' => 'iRecord', 'url' => 'http://www.brc.ac.uk/irecord/verification')
+  array('website_id' => 1, 'title' => 'iRecord', 'url' => 'http://www.brc.ac.uk/irecord/verification')
 );
 // same again but for pending check/moderation tasks
 $config['moderation_urls'] = array(
-  array('website_id' => 23, 'title' => 'iRecord', 'url' => 'http://www.brc.ac.uk/irecord/moderation')
+  array('website_id' => 1, 'title' => 'iRecord', 'url' => 'http://www.brc.ac.uk/irecord/moderation')
 );
 ?>
