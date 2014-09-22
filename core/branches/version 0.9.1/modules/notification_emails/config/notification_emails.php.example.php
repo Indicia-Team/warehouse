@@ -25,4 +25,6 @@ $config['email_subject']='You have new notifications.';
 $config['how_to_address_username']='I hope you are having a good day';
 $config['top_of_email_body']='You have the following new notifications.';
 $config['email_sender_address']='unique@abcdefg.com';
+$config['notifications_page_url']='http://localhost/instant-indicia/my-notifications';
+$config['notifications_page_url_text']='Click for notifications';
 ?>
