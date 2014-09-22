@@ -122,7 +122,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     $emailContent=start_building_new_email($notificationsToSendEmailsFor[0]);
     $currentType = '';
     $sourceTypes=array('S'=>'Species alerts','C'=>'Comments on your records','V'=>'Verification of your records','A'=>'Record Cleaner results for your records',
-        'VT'=>'Incoming records for you to verify','M'=>'Milestones and achievements you\'ve attained');
+        'VT'=>'Incoming records for you to verify','M'=>'Milestones and achievements you\'ve attained', 'PT'=>'Incoming pending records for you to check',);
     $recordStatus = array('T' => 'Test', 'I' => 'Data entry in progress', 'C' => 'Pending verification', 'R' => 'Rejected', 'D' => 'Queried', 'V' => 'Verified', 'S' => 'Awaiting response');
     $dataFieldsToOutput = array('username'=>'From', 'occurrence_id'=>'Record ID', 'comment'=>'Message', 'record_status'=>'Record status');
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
@@ -305,11 +305,11 @@ function send_out_user_email($db, $emailContent, $userId, $notificationIds, $ema
       ->from('notifications')
       ->in('id', $notificationIds)
       ->update();
-    //As Verifier Tasks need to be actioned, we don't auto acknowledge them
+    //As Verifier Tasks, Pending Record Tasks need to be actioned, we don't auto acknowledge them
     $db
       ->set('acknowledged', 't')
       ->from('notifications')
-      ->where("source_type != 'VT'")
+      ->where("source_type != 'VT' AND source_type != 'PT'")
       ->in('id', $notificationIds)
       ->update();
   } catch (Exception $e) {
