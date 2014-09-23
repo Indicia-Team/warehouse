@@ -1,4 +1,4 @@
-var saveComment, saveVerifyComment;
+var saveComment, saveVerifyComment, verificationGridLoaded;
 
 (function ($) {
   "use strict";
@@ -319,6 +319,26 @@ var saveComment, saveVerifyComment;
       postStatusComment(occurrence_id, status, comment);
     }
   };
+
+  // show the list of tickboxes for verifying multiple records quickly
+  function showTicklist() {
+    $('.check-row').attr('checked', false);
+    $('#row' + occurrence_id + ' .check-row').attr('checked', true);
+    $('.check-row').show();
+    $('#btn-multiple').addClass('active');
+    $('#btn-edit-verify').hide();
+    $('#verify-buttons-inner label').html('With ticked records:');
+    $('#btn-multiple').val('Verify single records');
+    $('#btn-multiple').after($('#verify-buttons-inner'));
+    $('#verify-buttons-inner button').removeAttr('disabled');
+  }
+    
+  // Callback for the report grid. Use to fill in the tickboxes if in multiple mode.
+  verificationGridLoaded = function() {
+    if (multimode) {
+      showTicklist();
+    }
+  }
 
   function showTab() {
     if (currRec !== null) {
@@ -796,15 +816,7 @@ var saveComment, saveVerifyComment;
     $('#btn-multiple').click(function() {
       multimode=!multimode;
       if (multimode) {
-        $('.check-row').attr('checked', false);
-        $('#row' + occurrence_id + ' .check-row').attr('checked', true);
-        $('.check-row').show();
-        $('#btn-multiple').addClass('active');
-        $('#btn-edit-verify').hide();
-        $('#verify-buttons-inner label').html('With ticked records:');
-        $('#btn-multiple').val('Verify single records');
-        $('#btn-multiple').after($('#verify-buttons-inner'));
-        $('#verify-buttons-inner button').removeAttr('disabled');
+        showTicklist();
       } else {
         $('.check-row').hide();
         $('#btn-multiple').removeClass('active');
