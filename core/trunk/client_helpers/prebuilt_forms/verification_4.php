@@ -495,7 +495,8 @@ idlist=';
           'paramPrefix'=>'<div class="report-param">',
           'paramSuffix'=>'</div>',
           'sharing'=>'verification',
-          'ajax'=>TRUE
+          'ajax'=>TRUE,
+          'callback' => 'verificationGridLoaded'
         )
     );
     $opts['columns'][] = array(
