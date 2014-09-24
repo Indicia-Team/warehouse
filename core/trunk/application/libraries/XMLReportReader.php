@@ -802,10 +802,10 @@ class XMLReportReader_Core implements ReportReader
         'taxon_rank_sort_order' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Taxon rank',
             'description'=>'Rank of the identified taxon in the taxonomic hierarchy',
             'joins' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"join cache_taxa_taxon_lists cttlsp on cttlsp.id=o.preferred_taxa_taxon_list_id")
+              array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
             ),
             'wheres' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"cttlsp.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
+              array('value'=>'', 'operator'=>'', 'sql'=>"prefcttl.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
             )
         ),
         'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name', 
@@ -950,6 +950,18 @@ class XMLReportReader_Core implements ReportReader
               // The all filter does not need any SQL
             ),
         ),
+        'marine_flag' => array('datatype'=>'lookup', 'default'=>'All', 'display'=>'Marine flag',
+            'description'=>'Marine species filtering?',
+            'lookup_values'=>'A:Include marine and non-marine species,Y:Only marine species,N:Exclude marine species',
+            'joins' => array(
+              array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
+            ),
+            'wheres' => array(
+              array('value'=>'Y', 'operator'=>'equal', 'sql'=>"prefcttl.marine_flag=true"),
+              array('value'=>'N', 'operator'=>'equal', 'sql'=>"(prefcttl.marine_flag is null or prefcttl.marine_flag=false)"),
+              // The all filter does not need any SQL
+            ),
+        ),
         'autochecks' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Automated checks', 
             'description'=>'Filter to only include records that have passed or failed automated checks', 
             'lookup_values'=>'N:Not filtered,F:Include only records that fail checks,P:Include only records which pass checks',
@@ -1029,12 +1041,12 @@ class XMLReportReader_Core implements ReportReader
         'higher_taxa_taxon_list_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Higher taxa taxon list IDs", 
             'description'=>'Comma separated list of preferred IDs. Optimised for searches at family level or higher',
             'joins' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"join cache_taxa_taxon_lists cttlhigher on cttlhigher.id=o.preferred_taxa_taxon_list_id")
+              array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
             ),
             'wheres' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"cttlhigher.family_taxa_taxon_list_id in (#higher_taxa_taxon_list_list#)")
+              array('value'=>'', 'operator'=>'', 'sql'=>"prefcttl.family_taxa_taxon_list_id in (#higher_taxa_taxon_list_list#)")
             ),
-            'preprocess' => // faster than embedding this query in the report            
+            'preprocess' => // faster than embedding this query in the report
   "with recursive q as ( 
     select id, family_taxa_taxon_list_id 
     from cache_taxa_taxon_lists t 
@@ -1050,7 +1062,7 @@ class XMLReportReader_Core implements ReportReader
             'wheres' => array(
               array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_meaning_id in (#taxon_meaning_list#)")
             ),
-            'preprocess' => // faster than embedding this query in the report            
+            'preprocess' => // faster than embedding this query in the report
   "with recursive q as ( 
     select id, taxon_meaning_id 
     from cache_taxa_taxon_lists t 
@@ -1084,7 +1096,8 @@ class XMLReportReader_Core implements ReportReader
         if (isset($providedParams[$param])) {
           if (isset($cfg['joins'])) {
             foreach ($cfg['joins'] as &$join)
-              $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '$1', $join['sql']);
+              if (!empty($join['sql']))
+                $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '$1', $join['sql']);
           }
           $this->params[$param] = $cfg;
         }
@@ -1095,11 +1108,13 @@ class XMLReportReader_Core implements ReportReader
         if (isset($providedParams[$param.'_context'])) {
           if (isset($cfg['joins'])) {
             foreach ($cfg['joins'] as &$join) {
-              // construct a unique alias for any joined tables
-              $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '${1}_context', $join['sql']);
-              // and ensure references to the param value point to the context version
-              $join['sql'] = str_replace("#{$param}_op#", "#{$param}_op_context#", $join['sql']);
-              $join['sql'] = str_replace("#$param#", "#{$param}_context#", $join['sql']);
+              if (!empty($join['sql'])) {
+                // construct a unique alias for any joined tables
+                $join['sql'] = preg_replace('/#alias:([a-z]+)#/', '${1}_context', $join['sql']);
+                // and ensure references to the param value point to the context version
+                $join['sql'] = str_replace("#{$param}_op#", "#{$param}_op_context#", $join['sql']);
+                $join['sql'] = str_replace("#$param#", "#{$param}_context#", $join['sql']);
+              }
             }
           }
           if (isset($cfg['wheres'])) {
