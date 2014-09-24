@@ -9,6 +9,10 @@
     LEFT JOIN group_pages gp ON gp.group_id=g.id AND gp.deleted=false AND (gp.administrator=false OR gu.administrator=true)
     #joins#
     WHERE g.deleted = false
+    AND ( -- user is admin, or group within defined date range
+        (gu.id is not null AND gu.pending=false AND gu.administrator=true) or 
+        (g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval)
+    )
     AND #website_filter#
   </query>
   <order_bys>
