@@ -73,6 +73,7 @@ class ReportEngine {
   private $websiteIds;
   private $userId = null;
   private $sharingMode='reporting';
+  private $doneStandardParamJoins = array();
 
   /**
    * @var array A list of additional columns identified from custom attribute parameters.
@@ -651,6 +652,8 @@ class ReportEngine {
   {
     // Replace each parameter in place
     $paramDefs = $this->reportReader->getParams();
+    // Clear the list of standardised parameter joins so we start afresh
+    $this->doneStandardParamJoins = array();
     // Pre-parse joins defined by parameters, so that join SQL also gets other parameter values
     // inserted
     foreach ($this->providedParams as $name => $value)
@@ -1138,7 +1141,20 @@ class ReportEngine {
           // operator not provided, so default is to join if param not empty (null string passed for empty integers)
           || (empty($joinDef['operator']) && !empty($value) && $value!=="null")) {
         // Join SQL can contain the parameter value as well.
-        $joins[] = str_replace("#$paramName#", $value, $joinDef['sql']);
+        if (!empty($joinDef['sql']))
+          $joins[] = str_replace("#$paramName#", $value, $joinDef['sql']);
+        elseif (!empty($joinDef['standard_join']) && !in_array($joinDef['standard_join'], $this->doneStandardParamJoins)) {
+          // a parameter can reference a standard join, so that several params can share 1 join to a table rather than
+          // join to it multiple times.
+          switch ($joinDef['standard_join']) {
+            case 'prefcttl':
+              $joins[] = "JOIN cache_taxa_taxon_lists prefcttl ON prefcttl.id=o.preferred_taxa_taxon_list_id";
+              break;
+            default:
+              throw new exception("Unrecognised standard join refered to by report parameter: $joinDef[standard_join]");              
+          }
+          $this->doneStandardParamJoins[] = $joinDef['standard_join'];
+        }
       }
     }
     // put the param joins after the #joins# token, as we might insert other joins first that are required by the param joins, 
