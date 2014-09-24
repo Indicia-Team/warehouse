@@ -211,7 +211,14 @@ class iform_group_edit {
     }
   ]
 }'
-      )
+      ),
+      array(
+        'name'=>'groups_page_path',
+        'caption'=>'Path to main groups page',
+        'description'=>'Path to the Drupal page which my groups are listed on.',
+        'type'=>'text_input',
+        'required'=>false
+      ), 
     );
   }
   
@@ -227,6 +234,7 @@ class iform_group_edit {
   public static function get_form($args, $node, $response=null) {
     if (!hostsite_get_user_field('indicia_user_id'))
       return 'Please ensure that you\'ve filled in your surname on your user profile before creating or editing groups.';
+    self::createBreadcrumb($args);
     iform_load_helpers(array('report_helper', 'map_helper'));
     $args=array_merge(array(
       'include_code'=>false,
@@ -530,19 +538,21 @@ $('#entry_form').submit(function() {
   private static function dateControls($args) {
     $r = '';
     if ($args['include_dates']) {
+      $r .= '<p>' . lang::get('If the {1} will only be active for a limited period of time (e.g. an event or bioblitz) ' . 
+          'then please fill in the start and or end date of this period in the controls below. This helps to prevent people joining after '.
+          'the group is no longer active.', self::$groupType) . '</p>';
       $r .= data_entry_helper::date_picker(array(
         'label' => ucfirst(lang::get('{1} active from', self::$groupType)),
-        'fieldname' => 'group:from_Date',
+        'fieldname' => 'group:from_date',
         'suffixTemplate' => 'nosuffix'
       ));
       $r .= data_entry_helper::date_picker(array(
         'label' => lang::get('to'),
-        'fieldname' => 'group:to_Date',
-        'labelClass' => 'auto',
-        'helpText' => lang::get('Specify the period during which the {1} was active.', self::$groupType)
+        'fieldname' => 'group:to_date',
+        'labelClass' => 'auto'
       ));
     }
-    return '';
+    return $r;
   }
   
   /**
@@ -564,7 +574,8 @@ $('#entry_form').submit(function() {
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
         'helpText'=>lang::get('Search for additional users to make administrators of this group by typing a few characters of their surname ' .
-            'then selecting their name from the list of suggestions and clicking the Add button.'),
+            'then selecting their name from the list of suggestions and clicking the Add button. Administrators will need register on this website ' .
+            'before you can add them.'),
         'addToTable'=>false,
         'class' => $class,
         'default' => array(
@@ -581,7 +592,8 @@ $('#entry_form').submit(function() {
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
         'helpText'=>lang::get('Search for users to give membership to by typing a few characters of their surname ' .
-            'then selecting their name from the list of suggestions and clicking the Add button'),
+            'then selecting their name from the list of suggestions and clicking the Add button. Users will need register on this website ' .
+            'before you can add them.'),
         'addToTable'=>false,
         'class' => $class
       ));
@@ -856,6 +868,15 @@ $('#entry_form').submit(function() {
   
   public static function get_perms($nid, $args) {
     return array('IForm groups admin');
+  }
+  
+  private static function createBreadcrumb($args) {
+    if (!empty($args['groups_page_path']) && function_exists('hostsite_set_breadcrumb') && function_exists('drupal_get_normal_path')) {
+      $path = drupal_get_normal_path($args['groups_page_path']);
+      $node = menu_get_object('node', 1, $path);
+      $breadcrumb[$node->title] = $args['groups_page_path'];
+      hostsite_set_breadcrumb($breadcrumb);
+    }
   }
 
 }

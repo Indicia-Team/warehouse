@@ -82,6 +82,21 @@ class iform_group_admin {
         'group' => 'Other IForm Parameters',
         'required'=>false
       ),
+      array(
+        'name'=>'admin_role_name',
+        'caption'=>'Administrator role name',
+        'description'=>'On screen name to give to the administrator role (e.g. mentor).',
+        'type'=>'string',
+        'group' => 'Other IForm Parameters',
+        'required'=>false
+      ),
+      array(
+        'name'=>'groups_page_path',
+        'caption'=>'Path to main groups page',
+        'description'=>'Path to the Drupal page which my groups are listed on.',
+        'type'=>'text_input',
+        'required'=>false
+      ), 
     );
   }
   
@@ -97,6 +112,7 @@ class iform_group_admin {
   public static function get_form($args, $node, $response=null) {
     if (!hostsite_get_user_field('indicia_user_id'))
       return 'Please ensure that you\'ve filled in your surname on your user profile before creating or editing groups.';
+    self::createBreadcrumb($args);
     iform_load_helpers(array('report_helper'));
     report_helper::$website_id=$args['website_id'];
     $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
@@ -159,6 +175,15 @@ class iform_group_admin {
       )
     ));
     return $r;
+  }
+  
+  private static function createBreadcrumb($args) {
+    if (!empty($args['groups_page_path']) && function_exists('hostsite_set_breadcrumb') && function_exists('drupal_get_normal_path')) {
+      $path = drupal_get_normal_path($args['groups_page_path']);
+      $node = menu_get_object('node', 1, $path);
+      $breadcrumb[$node->title] = $args['groups_page_path'];
+      hostsite_set_breadcrumb($breadcrumb);
+    }
   }
   
   /**
