@@ -73,6 +73,7 @@ class ReportEngine {
   private $websiteIds;
   private $userId = null;
   private $sharingMode='reporting';
+  private $doneStandardParamJoins = array();
 
   /**
    * @var array A list of additional columns identified from custom attribute parameters.
@@ -651,6 +652,8 @@ class ReportEngine {
   {
     // Replace each parameter in place
     $paramDefs = $this->reportReader->getParams();
+    // Clear the list of standardised parameter joins so we start afresh
+    $this->doneStandardParamJoins = array();
     // Pre-parse joins defined by parameters, so that join SQL also gets other parameter values
     // inserted
     foreach ($this->providedParams as $name => $value)
@@ -864,12 +867,15 @@ class ReportEngine {
     $this->reportDb
         ->select('distinct a.id, a.data_type, a.caption, a.validation_rules, a.system_function, a.multi_value')
         ->from("{$type}_attributes as a");
-    if ($this->websiteIds)
+    if ($this->websiteIds) {
+      $websiteIds = implode(',', $this->websiteIds);
       $this->reportDb
           ->join("{$type}_attributes_websites as aw", "aw.{$type}_attribute_id", 'a.id')
-          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id')
-          ->in('wa.to_website_id', $this->websiteIds)
-          ->where(array('wa.provide_for_'.$this->sharingMode=>'t', 'aw.deleted' => 'f'));
+          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id', 'LEFT')          
+          ->where("(wa.to_website_id in ($websiteIds) or wa.to_website_id is null)")
+          ->where("(wa.provide_for_{$this->sharingMode}='t' or wa.provide_for_{$this->sharingMode} is null)")
+          ->where(array('aw.deleted' => 'f'));
+    }
     $ids = array();
     $captions = array();
     $sysfuncs = array();
@@ -878,7 +884,7 @@ class ReportEngine {
     foreach($attrList as $attr) {
       if (is_numeric($attr))
         $ids[] = $attr;                 // an attribute ID
-      elseif ($attr==='#all_survey_attrs' && !empty($this->providedParams['survey_list']))
+      elseif ($attr==='#all_survey_attrs' && (!empty($this->providedParams['survey_list']) || !empty($this->providedParams['survey_id'])))
         $allSurveyAttrs=true;           // requesting all attributes for a single selected survey
       elseif (substr($attr, 0, 1)==='#') 
         $sysfuncs[] = substr($attr, 1); // a system function
@@ -887,7 +893,10 @@ class ReportEngine {
     }
     if ($allSurveyAttrs) {
       // a request for all attrs in a selected survey can take precedence over the rest.
-      $this->reportDb->in('aw.restrict_to_survey_id', explode(',', $this->providedParams['survey_list']));
+      if (!empty($this->providedParams['survey_list']))
+        $this->reportDb->in('aw.restrict_to_survey_id', explode(',', $this->providedParams['survey_list']));
+      else
+        $this->reportDb->where('aw.restrict_to_survey_id', $this->providedParams['survey_id']);
       // always exclude email & cms_user_id to keep it private
       $this->reportDb->notin('system_function', array('email','cms_user_id'));
     } else {
@@ -1132,7 +1141,20 @@ class ReportEngine {
           // operator not provided, so default is to join if param not empty (null string passed for empty integers)
           || (empty($joinDef['operator']) && !empty($value) && $value!=="null")) {
         // Join SQL can contain the parameter value as well.
-        $joins[] = str_replace("#$paramName#", $value, $joinDef['sql']);
+        if (!empty($joinDef['sql']))
+          $joins[] = str_replace("#$paramName#", $value, $joinDef['sql']);
+        elseif (!empty($joinDef['standard_join']) && !in_array($joinDef['standard_join'], $this->doneStandardParamJoins)) {
+          // a parameter can reference a standard join, so that several params can share 1 join to a table rather than
+          // join to it multiple times.
+          switch ($joinDef['standard_join']) {
+            case 'prefcttl':
+              $joins[] = "JOIN cache_taxa_taxon_lists prefcttl ON prefcttl.id=o.preferred_taxa_taxon_list_id";
+              break;
+            default:
+              throw new exception("Unrecognised standard join refered to by report parameter: $joinDef[standard_join]");              
+          }
+          $this->doneStandardParamJoins[] = $joinDef['standard_join'];
+        }
       }
     }
     // put the param joins after the #joins# token, as we might insert other joins first that are required by the param joins, 
