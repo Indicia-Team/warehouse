@@ -874,6 +874,7 @@ class ReportEngine {
           ->join("{$entity}_attributes_websites as aw", "aw.{$entity}_attribute_id", 'a.id')
           ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id', 'LEFT')          
           ->where("(wa.to_website_id in ($websiteIds) or wa.to_website_id is null)")
+          ->where("(aw.website_id in ($websiteIds) or aw.website_id is null)")
           ->where("(wa.provide_for_{$this->sharingMode}='t' or wa.provide_for_{$this->sharingMode} is null)")
           ->where(array('aw.deleted' => 'f'));
     }
@@ -935,21 +936,22 @@ class ReportEngine {
   private function processSysfuncAttrs(&$query, $entity, $attrs, $sysfuncs) {
     // first, join in all the attribute tables we need
     $done = array();
-    $sysfuncsList = array();    
+    $sysfuncsList = array();
     foreach($attrs as $attr) {
-      // don't duplicate any attributes as the SQL distinct does not force distinct when loading from a view.
-      if (in_array($attr->id, $done))
+      // Don't duplicate any attributes as the SQL distinct does not force distinct when loading from a view.
+      // Plus, ignore multi-value attributes as too complex to combine with single value attributes.
+      if (in_array($attr->id, $done) || $attr->multi_value==='t')
         continue;
       $id = $attr->id;
       $done[]=$id;
-      $join = $this->addJoinForAttr($query, $entity, $attr, true);
+      $joinType = $this->addJoinForAttr($query, $entity, $attr, true);
       // keep track of the output fields for each system function
       if (!isset($sysfuncsList[$attr->system_function])) {
         $sysfuncsList[$attr->system_function] = array('fields'=>array(), 'data_types'=>array());
       }
-      if ($attr->data_type=='L' && $attr->multi_value==='f') {
+      if ($attr->data_type=='L') {
         // lookups need an extra join and a different output field alias
-        $query = str_replace('#joins#', $join." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$entity$id.int_value\n #joins#", $query);
+        $query = str_replace('#joins#', $joinType." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$entity$id.int_value\n #joins#", $query);
         $sysfuncsList[$attr->system_function]['fields'][] = "ltt$id.term";
         $datatype='text';
       } else {
@@ -989,9 +991,9 @@ class ReportEngine {
         $fieldlist = 'CAST(' . implode(' AS VARCHAR), CAST(', $metadata['fields']) . ' AS VARCHAR)';
       else
         $fieldlist = implode(', ', $metadata['fields']);
-      $query = str_replace('#fields#', ", COALESCE($fieldlist) as $alias#fields#", $query);
+      $query = str_replace('#fields#', ", \nCOALESCE($fieldlist) as $alias#fields#", $query);
       // this field should also be inserted into any group by part of the query
-      $query = str_replace('#group_bys#', ", COALESCE($fieldlist)#group_bys#", $query);
+      $query = str_replace('#group_bys#', ", \nCOALESCE($fieldlist)#group_bys#", $query);
     }
   }
   
@@ -1037,7 +1039,7 @@ class ReportEngine {
         continue;
       $id = $attr->id;
       $done[]=$id;
-      $join = $this->addJoinForAttr($query, $entity, $attr, false);
+      $joinType = $this->addJoinForAttr($query, $entity, $attr, false);
       // find the query column(s) required for the attribute
       $cols = $this->getAttrDataColumns($attr);
       // We use the attribute ID or the attribute caption to create the unique column alias, depending on how it was requested.
@@ -1112,7 +1114,7 @@ class ReportEngine {
       elseif ($attr->data_type=='L') {
         $alias = preg_replace('/\_value$/', '', "attr_$entity"."_term_$uniqueId");
         if ($attr->multi_value==='f') {
-          $query = str_replace('#joins#', $join." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$entity$id.int_value\n #joins#", $query);       
+          $query = str_replace('#joins#', $joinType." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$entity$id.int_value\n #joins#", $query);       
           $query = str_replace('#fields#', ", ltt$id.term as $alias#fields#", $query);
           $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
           $this->customAttributes["attr_$entity"."_term_$uniqueId"] = array(
