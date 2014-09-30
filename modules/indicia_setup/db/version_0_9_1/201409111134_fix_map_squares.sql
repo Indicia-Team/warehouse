@@ -54,7 +54,7 @@ SELECT distinct reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_
 FROM tofix
 join occurrences o on o.id=tofix.id
 join samples s on s.id=o.sample_id
-where tofix.msq_1k_id is null is not null;
+where tofix.msq_1k_id is null;
 
 INSERT INTO map_squares (geom, x, y, size)
 SELECT distinct reduce_precision(s.geom, o.confidential, GREATEST(o.sensitivity_precision, s.privacy_precision, 2000), s.entered_sref_system), 
