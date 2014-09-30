@@ -72,9 +72,10 @@ class iform_group_home extends iform_dynamic_report_explorer {
    * @param array $response When this form is reloading after saving a submission, contains the response from the service call.
    * Note this does not apply when redirecting (in this case the details of the saved object are in the $_GET data).
    * @return Form HTML.
-   * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
+    if (empty($_GET['group_id']))
+      return 'This page needs a group_id URL parameter.';
     global $base_url;
     global $user;
     iform_load_helpers(array('data_entry_helper')); 
@@ -84,9 +85,6 @@ class iform_group_home extends iform_dynamic_report_explorer {
     //Translations for the comment that goes into occurrence_comments when a record is verified or rejected.
     data_entry_helper::$javascript .= 'indiciaData.verifiedTranslation = "'.lang::get('Verified')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.rejectedTranslation = "'.lang::get('Rejected')."\";\n";
-    if (empty($_GET['group_id'])) {
-      return 'This page needs a group_id URL parameter.';
-    }
     self::$auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     group_authorise_form($args, self::$auth['read']);
     $group = data_entry_helper::get_population_data(array(

@@ -252,6 +252,9 @@ mapInitialisationHooks.push(function(mapdiv) {
       $r .= '<input type="hidden" id="location:id" name="location:id" value="' . data_entry_helper::$entity_to_load['location:id'] . '" />' . PHP_EOL;    
     }
     $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['location:id']), $auth['read']);
+    // pass through the group_id if set in URL parameters, so we can save the location against the group
+    if (!empty($_GET['group_id']))
+      $r .= "<input type=\"hidden\" id=\"group_id\" name=\"group_id\" value=\"".$_GET['group_id']."\" />\n";
     return $r;
   }
  
@@ -396,7 +399,7 @@ mapInitialisationHooks.push(function(mapdiv) {
    
     // On first save of a new location, link it to the website.
     // Be careful not to over-write other subModels (e.g. images)
-    if (empty($values['location:id']))
+    if (empty($values['location:id'])) {
       $s['subModels'][] = array(
           'fkId' => 'location_id', 
           'model' => array(
@@ -406,6 +409,18 @@ mapInitialisationHooks.push(function(mapdiv) {
           )
         )
       );
+      // also, on first save we might be linking to a group
+      if (!empty($values['group_id']))
+        $s['subModels'][] = array(
+            'fkId' => 'location_id', 
+            'model' => array(
+              'id' => 'groups_location',
+              'fields' => array(
+                'group_id' => $values['group_id']
+            )
+          )
+        );
+    }
     return $s;
   }
 
