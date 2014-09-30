@@ -1683,10 +1683,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             "  var wantToMap = typeof indiciaData.filter==='undefined' || typeof indiciaData.filter.def.indexed_location_id==='undefined' || indiciaData.filter.def.indexed_location_id==='';\n" .
             "  if (wantToMap && typeof indiciaData.reports!==\"undefined\") {\n" .
             "    $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
-            "      if (grid[0].settings.linkFilterToMap) {\n" .
-            "        grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."');\n" .
-            "        return false;\n" . // only need the first grid to draw the map. 
-            "      }\n" .
+            "      grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."');\n" .
+            "      return false;\n" . // only need the first grid to draw the map.
             "    });\n" .
             "  }\n";
           if ($options['dataSourceLoRes']) {
