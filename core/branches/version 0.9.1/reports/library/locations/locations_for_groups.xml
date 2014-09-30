@@ -1,0 +1,35 @@
+<report
+    title="Locations for groups."
+    description="Returns the list of sites that are linked to a recording group."
+    >
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+  JOIN groups_locations gl on gl.location_id=l.id and gl.deleted=false AND gl.group_id=#group_id#
+  LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+  LEFT JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id
+  #joins#
+  WHERE l.deleted=false 
+  AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="group_id" display="Group ID" description="The group to show locations for" datatype="integer" />
+    <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' datatype="integer[]" default="">
+      <where>l.location_type_id in (#location_type_ids#)</where>
+    </param>
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' default=''/>
+  </params>
+  <columns>
+    <column name='location_id' display='ID' sql="l.id" datatype="integer" />
+    <column name='groups_location_id' display='ID' sql="gl.id" datatype="integer" />
+    <column name='name' display='Name' sql="l.name" datatype="text" />
+    <column name='location_type_id' visible='false' sql="l.location_type_id" datatype="integer" />
+    <column name='location_type' display='Type' sql="ctt.term" datatype="text" />
+    <column name='centroid_sref' display='Map ref' sql="l.centroid_sref" datatype="text" />
+    <column name='centroid_sref_system' visible='false' sql="l.centroid_sref_system" datatype="text" />
+    <column name='geom' visible='false' sql="st_astext(coalesce(boundary_geom, centroid_geom))" datatype="text" mappable="true" />
+  </columns>
+</report>

@@ -63,6 +63,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'filters_user',
       'group',
       'group_page',
+      'groups_location',
       'groups_user',
       'group_invitation',
       'group_relation',
@@ -187,6 +188,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function group_relation()
   {
     $this->handle_call('group_relation');
+  }
+  
+  /**
+  * Provides the /services/data/groups_location service.
+  * Retrieves details of a single groups_location.
+  */
+  public function groups_location()
+  {
+    $this->handle_call('groups_location');
   }
   
   /**
