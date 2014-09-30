@@ -32,7 +32,7 @@ class Group_Model extends ORM {
 
   protected $has_one = array('filter');
       
-  protected $has_and_belongs_to_many = array('users');
+  protected $has_and_belongs_to_many = array('users', 'locations');
   
   protected $has_many = array('group_invitations', 'group_pages');
   

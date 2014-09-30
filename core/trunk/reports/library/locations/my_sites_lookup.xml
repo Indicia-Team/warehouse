@@ -8,16 +8,31 @@
       LEFT JOIN (person_attribute_values pav 
         JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
       ) ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
+      LEFT JOIN (groups_locations gl 
+        JOIN groups g on g.id=gl.group_id and g.deleted=false
+        JOIN groups_users gu on gu.group_id=g.id and gu.user_id=#user_id# and gu.pending=false and gu.deleted=false
+      ) on gl.location_id=l.id and gl.deleted=false
       #joins#
       WHERE l.deleted=false
       AND #website_filter#
-      AND (l.created_by_id=#user_id# OR u.id IS NOT NULL)
+      AND (
+        -- include sites the user created
+        l.created_by_id=#user_id#
+        -- include sites explicitly linked to the user
+        OR u.id IS NOT NULL
+        -- include group sites if we are working within a specific group
+        OR gl.group_id=#group_id#
+        -- include group sites if group not specified but group's don't need to be explicitly posted into the group
+        OR (#group_id#=0 and g.implicit_record_inclusion=true) 
+      )
+      
       </query>
       <order_bys>
         <order_by>l.name ASC</order_by>
       </order_bys>
       <params>
         <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" />
+        <param name="group_id" display="Group ID" description="The recording group we are looking up sites for" datatype="integer" default="0" />
         <param name="q" display="Query" description="Characters to search for" datatype="text" default="">
           <where>l.name ilike '#q#%'</where>
         </param>
