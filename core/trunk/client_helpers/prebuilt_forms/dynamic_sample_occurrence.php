@@ -1802,6 +1802,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       }
       $location_list_args['extraParams']['view']='detail';
       $location_list_args['allowCreate']=true;
+      // pass through the group we are recording in, if any, so we can show group sites
+      if (!empty($_GET['group_id']))
+        $location_list_args['extraParams']['group_id']=$_GET['group_id'];
     }
     if (empty($location_list_args['numValues']))
       // set a relatively high number until we sort out the "more" handling like species autocomplete.
