@@ -67,9 +67,9 @@ and st_y(st_transform(st_centroid(public_geom), 4326)) between -48 and 62
     <column name='datetype' display='DateType' sql='co.date_type' datatype="integer" />
     <column name='sitekey' display='SiteKey' sql='s.location_id' datatype="integer" />
     <column name='sitename' display='SiteName' sql='co.location_name' datatype="text" />
-    <column name='gridreference' display='GridReference' sql="case s.entered_sref_system when '4326' then null else replace(s.entered_sref, ' ', '') end" datatype="text" />
-    <column name='east' display='East' sql="st_x(st_transform(st_centroid(public_geom), case upper(s.entered_sref_system) when 'OSIE' then 29901 when 'OSGB' then 27700 else s.entered_sref_system::int end))" datatype="text" />
-    <column name='north' display='North' sql="st_y(st_transform(st_centroid(public_geom), case upper(s.entered_sref_system) when 'OSIE' then 29901 when 'OSGB' then 27700 else s.entered_sref_system::int end))" datatype="text" />
+    <column name='gridreference' display='GridReference' sql="case when s.entered_sref_system in ('4326', '27700') then null else replace(s.entered_sref, ' ', '') end" datatype="text" />
+    <column name='east' display='East' sql="case when s.entered_sref_system in ('4326', '27700') then st_x(st_transform(st_centroid(public_geom), s.entered_sref_system::int)) else null end" datatype="text" />
+    <column name='north' display='North' sql="case when s.entered_sref_system in ('4326', '27700') then st_y(st_transform(st_centroid(public_geom), s.entered_sref_system::int)) else null end" datatype="text" />
     <column name='projection' display='Projection' 
         sql="case upper(s.entered_sref_system) when '4326' then 'WGS84' when '27700' then 'OSGB36' when 'OSIE' then 'OSI' else upper(s.entered_sref_system) end" 
         datatype="text" />
