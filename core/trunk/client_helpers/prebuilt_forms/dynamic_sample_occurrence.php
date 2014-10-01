@@ -931,8 +931,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if (self::$loadedSampleId) {
       data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId, 'detail', false, true);
       // If there is a parent sample - load it next so the details overwrite the child sample. 
-      if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) 
+      if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) {
         data_entry_helper::load_existing_record($auth['read'], 'sample', data_entry_helper::$entity_to_load['sample:parent_id']);
+        self::$loadedSampleId = data_entry_helper::$entity_to_load['sample:id'];
+      }
     }
     
     // Ensure that if we are used to load a different survey's data, then we get the correct survey attributes. We can change args
