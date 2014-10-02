@@ -1265,6 +1265,10 @@ mapLocationSelectedHooks = [];
           map.editLayer.redraw();
         } else {
           $('#imp-geom').val(geom.toString());
+          map.div.removeAllFeatures(evt.feature.layer, 'clickPoint');
+          if (div.settings.helpDiv) {
+            $('#' + div.settings.helpDiv).html(map.div.settings.hlpCustomPolygon);
+          }
           // as we are not separating the boundary geom, the geom's sref goes in the centroid
           pointToSref(div, geom.getCentroid(), _getSystem(), function(data) {
             if (typeof data.sref !== "undefined") {
@@ -2305,7 +2309,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     hlpImproveResolution1: "{size} square selected. Please click on the map again to provide a more accurate location.",
     hlpImproveResolution2: "Good. {size} square selected.",
     hlpImproveResolution3: "Excellent! {size} square selected. If your position is wrong, either click your actual position again or zoom out until your position comes to view, then retry.",
-    hlpImproveResolutionSwitch: "We've switched to a satellite view to allow you to locate your position even better."
+    hlpImproveResolutionSwitch: "We've switched to a satellite view to allow you to locate your position even better.",
+    hlpCustomPolygon: "Excellent! A custom polygon has been drawn for this record.",
 
 };
 
