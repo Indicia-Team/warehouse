@@ -1,0 +1,30 @@
+<report
+    title="Transects line review"
+    description="Outputs mappable geometries of transect lines for quick and easy review."
+>
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+    FROM samples s
+    JOIN sample_attribute_values gid on gid.sample_id=s.id and gid.sample_attribute_id=21 and gid.deleted=false
+    JOIN sample_attribute_values utc on utc.sample_id=s.id and utc.sample_attribute_id=27 and utc.deleted=false
+    JOIN sample_attribute_values sid on sid.sample_id=s.id and sid.sample_attribute_id=22 and sid.deleted=false
+    JOIN sample_attribute_values tid on tid.sample_id=s.id and tid.sample_attribute_id=24 and tid.deleted=false
+  </query>
+  <order_bys>
+    <order_by>s.date_start, sid.int_value, tid.int_value</order_by>
+  </order_bys>
+  <columns>
+    <column name="groupid" diplay="Group ID" sql="gid.int_value" datatype="integer" />
+    <column name="surveyid" display="Survey ID" sql="sid.int_value" datatype="integer" />
+    <column name='date_start' sql='s.date_start' visible='false' />
+    <column name='date_end' sql='s.date_end' visible='false' />
+    <column name='date_type' sql='s.date_type' visible='false' />
+    <column name='date' display='Date' datatype="date" />
+    <column name="transectid" display="Transect ID" sql="tid.int_value" datatype="integer" />
+    <column name="rowid" visible="false" sql="gid.int_value::varchar || ':' || sid.int_value::varchar || ':' || tid.int_value::varchar" datatype="text" /> 
+    <column name="geom" mappable="true" display="Line geom" visible="false" sql="st_astext(st_makeline(s.geom order by utc.text_value))" aggregate="true" />
+    <column name="points" display="# points" sql="count(distinct s.id)" aggregate="true" />
+    <column name="t_start" display="Start" sql="min(utc.text_value)" aggregate="true" />
+    <column name="t_end" display="End" sql="max(utc.text_value)" aggregate="true" />
+  </columns>
+</report>
