@@ -97,8 +97,10 @@ class iform_group_home extends iform_dynamic_report_explorer {
     $defstring='';
     // reconstruct this as a string to feed into dynamic report explorer
     foreach($def as $key=>$value) {
-      if ($key)
+      if ($key) {
+        $value = is_array($value) ? json_encode($value) : $value;
         $defstring .= "$key=$value\n";
+      }
     }
     $prefix = (empty($_GET['implicit']) || $_GET['implicit']==='true') ? 'implicit_' : '';     
     // add the group parameters to the preset parameters passed to all reports on this page
