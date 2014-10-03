@@ -34,7 +34,6 @@
   <params>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
-    <param name='uploadFolder' display='Image upload folder' description='Image upload folder on the warehouse including the trailing slash' datatype='string' default='' />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
@@ -92,6 +91,5 @@
     <column name='images' display='Images' sql='o.images' img='true' />
     <column name='geom' display='Geometry' sql="st_astext(st_transform(o.public_geom, 4326))" datatype="text" />
     <column name='point_geom' display='Geometry' sql="st_astext(st_transform(st_centroid(o.public_geom), 4326))" datatype="text" />
-    <column name='images' display='Images' sql="case when images is null then null else '#uploadFolder#' || replace(images, ',', ', #uploadFolder#') end"/>
   </columns>
 </report>
