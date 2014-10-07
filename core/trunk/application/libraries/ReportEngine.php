@@ -1179,9 +1179,8 @@ class ReportEngine {
           ($joinDef['operator']==='notequal' && $joinDef['value']!==$value)))
           // operator not provided, so default is to join if param not empty (null string passed for empty integers)
           || (empty($joinDef['operator']) && !empty($value) && $value!=="null")) {
-        // Join SQL can contain the parameter value as well.
         if (!empty($joinDef['sql']))
-          $joins[] = str_replace("#$paramName#", $value, $joinDef['sql']);
+          $joins[] = $joinDef['sql'];
         elseif (!empty($joinDef['standard_join']) && !in_array($joinDef['standard_join'], $this->doneStandardParamJoins)) {
           // a parameter can reference a standard join, so that several params can share 1 join to a table rather than
           // join to it multiple times.
@@ -1219,8 +1218,7 @@ class ReportEngine {
           // operator not provided, so default is to join if param not empty (null string passed for empty integers)
           || (empty($whereDef['operator']) && !empty($value) && $value!=="null")) {
         // Join SQL can contain the parameter value as well.
-        $filter = str_replace("#$paramName#", $value, $whereDef['sql']);
-        $query = str_replace('#filters#', "AND $filter\n#filters#", $query);
+        $query = str_replace('#filters#', "AND $whereDef[sql]\n#filters#", $query);
       }
     }
     return $query;
