@@ -232,7 +232,7 @@ var simple_tooltip;
         pagerContent = pagerContent.replace('{next}', '<span class="pag-next pager-button ui-state-disabled">'+div.settings.langNext+'</span> ');
         pagerContent = pagerContent.replace('{last}', '<span class="pag-last pager-button ui-state-disabled">'+div.settings.langLast+'</span> ');
       }
-
+      
       for (page=Math.max(1, div.settings.offset/div.settings.itemsPerPage-4);
           page<=Math.min(div.settings.offset/div.settings.itemsPerPage+6, Math.ceil(div.settings.recordCount / div.settings.itemsPerPage));
           page += 1) {
@@ -325,11 +325,43 @@ var simple_tooltip;
               feature, geom, map, valueData;
           // if we get a count back, then update the stored count
           if (typeof response.count !== "undefined") {
-            div.settings.recordCount = parseInt(response.count);
             rows = response.records;
           } else {
             rows = response;
           }
+          //The report grid can be configured with a popup that allows the user to remove rows containing particular
+          //data from the grid e.g. if there is a location column, then the user can select to not show rows containing the data East Sussex.
+          if (indiciaData.dataToExclude) {
+            var removedRowsCount=0;
+            var rowsToKeep=[];
+            var keepRow;
+            $.each(rows, function(rowIdx, theRow) {
+              //To start assume we are keeping the data
+              keepRow=true;
+              $.each(indiciaData.dataToExclude, function(exclusionIdx, exclusionData) {
+                //each dataToExclude item contains an array of the database field (such as occurrence_id) and 
+                //the data to exclude (such 6301). If we field for a row that a database field and the data for that field match an
+                //item in the dataToExclude array, then we know to exclude it.
+                if (theRow[exclusionData[0]]==exclusionData[1]) {
+                  keepRow=false;
+                  removedRowsCount++;
+                }
+              });
+              //After testing each row, then if it hasn't been excluded, then keep it.
+              if (keepRow===true) {
+                rowsToKeep.push(theRow);
+              }
+            });
+            rows=rowsToKeep;          
+            if (typeof response.count !== "undefined") {
+              response.records=rows;
+              response.count=response.count-removedRowsCount;
+            }
+          }   
+          if (typeof response.count !== "undefined") {
+            div.settings.recordCount = parseInt(response.count);
+          } 
+          indiciaData.reportGridRecords=rows;
           // clear current grid rows
           if (clearExistingRows) {
             tbody.children().remove();
@@ -487,7 +519,7 @@ var simple_tooltip;
         request += '&wantCount=1';
       }
       // Ask for one more row than we need so we know if the next page link is available
-      if (div.settings.itemsPerPage !== null) {
+      if (div.settings.itemsPerPage !== null && !indiciaData.includePopupFilter) {
         request += '&limit=' + (div.settings.itemsPerPage+1);
       }
       loadGridFrom(div, request, true);
@@ -831,8 +863,8 @@ var simple_tooltip;
           var fieldname = e.target.id.match(new RegExp('^col-filter-(.*)-' + div.id + '$'))[1];
           if ($.trim($(e.target).val())==='') {
             delete div.settings.extraParams[fieldname];
-          } else {
-            div.settings.extraParams[fieldname] = $(e.target).val();
+          } else {      
+            div.settings.extraParams[fieldname] = $(e.target).val();          
           }
           div.settings.offset=0;
           load(div, true);
@@ -842,6 +874,52 @@ var simple_tooltip;
           e.target.hasChanged = false;
         }
       };
+      var popupFilterHtml = '';
+      var dataInColumnCell;
+      //The filter data we show in the fancybox is a distinct version of the data in the column for the grid.
+      //We don't want to show data more than once in the filter list.
+      var dataRowsForFilter;
+      $('.col-popup-filter').click(function(evt) {
+        dataRowsForFilter=[]
+        popupFilterHtml = '';
+        var splitButtonId = $(this).attr('id').split('-');
+        var databaseColumnToGet = splitButtonId[3];
+        //Use a number to make unique checkbox ids, had considered using the data itself to make up the id, but there there
+        //might be problems with special characters.
+        var popupItemCounter=0;
+        //For each record in the grid
+        for (var i=0; i<indiciaData.reportGridRecords.length; i++) {
+          //Get the row data in the column we are interested in
+          dataInColumnCell=indiciaData.reportGridRecords[i][databaseColumnToGet];
+          //Collect any data we haven't already saved, so we have a disinct list of the data
+          if ($.inArray(dataInColumnCell,dataRowsForFilter)===-1) {
+            dataRowsForFilter.push(dataInColumnCell);
+            //Build the html for the fancybox
+            //Use a number to make unique ids/names, so we don't have to worry about special characters in the id and name.
+            popupFilterHtml += '<div>'+dataInColumnCell+'</div><input class=\"popup-filter-checkbox\" id=\"popup-filter-include-'+popupItemCounter+'\" name=\"popup-filter-include-'+popupItemCounter+'\" databaseColumnName=\"'+databaseColumnToGet+'\" databaseData=\"'+dataInColumnCell+'\" type=\"checkbox\" checked=\"checked\"><br>';
+            popupItemCounter++;
+          }
+        }
+        popupFilterHtml += '<input type=\"button\" class=\"apply-popup-filter\" value=\"Apply\">';
+        $.fancybox(popupFilterHtml);
+      })
+      indiciaData.dataToExclude = [];
+      //When the user applies the popup filter
+      var doPopupFilter = function() {
+        //Cycle through each checkbox
+        $('.popup-filter-checkbox').each(function (index, theCheckbox) {
+          //If the checkbox is not checked, then make a note of the data that needs to be excluded.
+          if (!$(theCheckbox).is(':checked')) {
+            indiciaData.dataToExclude.push([$(theCheckbox).attr('databaseColumnName'),$(theCheckbox).attr('databaseData')]);
+          }        
+        });
+        $.fancybox.close();
+        //Reload the grid once the filter is applied
+        load(div, true);
+        if (div.settings.linkFilterToMap && typeof indiciaData.reportlayer!=="undefined") {
+          mapRecords(div);
+        }
+      }       
       $(this).find('th .col-filter').focus(function(e) {
         e.target.hasChanged = false;
       });
@@ -855,7 +933,9 @@ var simple_tooltip;
           doFilter(e);
         }
       });
-
+      $('.apply-popup-filter').live( 'click', function() {
+        doPopupFilter();
+      });
       setupReloadLinks(div);
 
       if (div.settings.rowId) {
