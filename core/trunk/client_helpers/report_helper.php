@@ -293,6 +293,9 @@ class report_helper extends helper_base {
   * <li><b>linkFilterToMap</b>
   * Default true but requires a rowId to be set. If true, then filtering the grid causes the map to also filter.
   * </li>
+  * <li><b>includePopupFilter</b>
+  * Set to true if you want to include a filter in the report header that displays a popup allowing the user to select exactly what data they want to display on the report.
+  * </li>
   * <li><b>zoomMapToOutput</b>
   * Default true. When combined with sendOutputToMap=true, defines that the map will automatically zoom to show the records.
   * </li>
@@ -405,8 +408,18 @@ class report_helper extends helper_base {
                       "{1} more or less than your search value, or enter a range such as 1000-2000.", $caption);
             }
             $title = htmlspecialchars(lang::get('Type here to filter.').' '.$title);
+            //Filter, which when clicked, displays a popup with a series of checkboxes representing a distinct set of data from a column on the report.
+            //The user can then deselect these checkboxes to remove data from the report.
+            if (!empty($options['includePopupFilter'])&&$options['includePopupFilter']===true) {
+              data_entry_helper::$javascript.="indiciaData.includePopupFilter=true;";
+              $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
+              $popupFilterIcon = $imgPath."desc.gif";
+              $popupFilterIconHtml='<img class="col-popup-filter" id="col-popup-filter-'.$field['fieldname'].'-'.$options['id'].'" src="'.$popupFilterIcon.'"  >';
+            }
+            if (empty($popupFilterIconHtml))
+              $popupFilterIconHtml='';
             //The filter's input id includes the grid id ($options['id']) in its id as there maybe more than one grid and we need to make the id unique.
-            $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."-".$options['id']."\"/></th>";
+            $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."-".$options['id']."\"/>$popupFilterIconHtml</th>";//Add a icon for the popup filter
             $wantFilterRow = true;
           } else
             $filterRow .= '<th></th>';
@@ -416,7 +429,7 @@ class report_helper extends helper_base {
       if ($wantFilterRow && (!isset($options["forceNoFilterRow"]) || !$options["forceNoFilterRow"]))
         $thead .= str_replace(array('{class}','{title}','{content}'), 
             array(' class="filter-row"','title="'.lang::get('Use this row to filter the grid').'"',$filterRow), $indicia_templates['report-thead-tr']);
-      $thead = str_replace(array('{class}', '{content}'), array(" class=\"$thClass\"", $thead), $indicia_templates['report-thead']);
+      $thead = str_replace(array('{class}', '{content}'), array(" class=\"$thClass\"", $thead), $indicia_templates['report-thead']);   
     }
     $currentUrl = self::get_reload_link_parts();
     // automatic handling for Drupal clean urls.
@@ -719,7 +732,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       self::$javascript.= "  opts.clickableLayersOutputMode='reportHighlight';\n";
       self::$javascript .= "});\n";
     }
-    if ($options['ajax'] && $options['autoloadAjax']) 
+    if ($options['ajax'] && $options['autoloadAjax'])
       self::$onload_javascript .= "indiciaData.reports.$group.$uniqueName.ajaxload();\n";
     return $r;
   }
