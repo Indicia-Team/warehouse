@@ -147,7 +147,7 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic {
     $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
     $rootFolder = helper_base::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
     
-    $groupsData = data_entry_helper::get_report_data($reportOptions);    
+    $groupsData = data_entry_helper::get_report_data($reportOptions); 
     if (empty($groupsData)) {
       if (!empty($args['no_group_found_message'])) {
         $r = '<div>'.$args['no_group_found_message'].'</div>';
@@ -172,7 +172,7 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic {
     foreach ($titleDescriptions as $titleDescArr) {
       foreach ($explodedPageLinks as &$pageLink) {
         //Each page link is a html link, we just want the plain name
-        $plainPageLink=strip_tags($pageLink);
+        $plainPageLink=trim(strip_tags($pageLink));
         //If the user has specified an instruction/description for the page link, then display the instruction in the lines following the link
         //using italics. 
         if (array_key_exists($plainPageLink,$titleDescArr)) {  
