@@ -767,6 +767,7 @@ idlist=';
   }
 
   public static function ajax_images($website_id, $password) {
+    iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
     echo self::get_images($readAuth);
   }
@@ -796,6 +797,7 @@ idlist=';
   }
 
   public static function ajax_comments($website_id, $password) {
+    iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
     echo self::get_comments($readAuth);
   }
@@ -835,6 +837,7 @@ idlist=';
   }
 
   public static function ajax_imagesAndComments($website_id, $password) {
+    iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
     header('Content-type: application/json');
     echo json_encode(array(
