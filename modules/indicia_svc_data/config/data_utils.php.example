@@ -1,0 +1,41 @@
+<?php
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Modules
+ * @subpackage Data services
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
+ */
+
+$config['actions'] = array(
+  // key will be the URL action, e.g. data_utils/process_ecmc_import
+  'process_ecmc_import' => array(
+    // name of the stored procedure in the database
+    'stored_procedure'=>'f_process_ecmc_import',
+    // list of parameters to pass to the procedure. Parameters can be extracted from the URL commands, either [n] to 
+    // extract an integer or {1} to extract a string. In this example, data_utils/process_ecmc_import/5 will call
+    // select f_process_ecmc_import(6,7,1,150,22,146,5);
+    'parameters' => array(
+      6,
+      7,
+      1,
+      150,
+      22,
+      146,
+      '[1]'
+    )
+  );
+);

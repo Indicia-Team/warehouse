@@ -25,6 +25,55 @@
  * Class providing miscellaneous data utility web services.
  */
 class Data_utils_Controller extends Data_Service_Base_Controller {
+
+  /**
+   * Magic method to allow URLs to be mapped to custom actions defined in configuration and
+   * implemented in stored procedures.
+   */
+  public function __call($name, $arguments) {
+    try {
+      $actions = kohana::config("data_utils.actions");
+      if (empty($actions[$name])) {
+        throw new Exception('Unrecognised action');
+      }
+      $action = $actions[$name];
+      $db = new Database();
+      //$this->authenticate('write');
+      // build the stored procedure params
+      $params = array();
+      foreach ($action['parameters'] as &$param) {
+        if (is_string($param)) {
+          // integer parameters load from URL if config defined like [1]
+          if (preg_match('/^\[(?P<index>\d+)\]$/', $param, $matches)) {
+            if (isset($arguments[$matches['index']-1])) {
+              if (!preg_match('/^\d+$/', $arguments[$matches['index']-1]))
+                throw new exception("Invalid argument at position $matches[index]");
+              $param = $arguments[$matches['index']-1];
+            } 
+            else
+              throw new Exception('Required arguments not provided');
+          }
+          // string parameters load from URL if config defined like {1}
+          elseif (preg_match('/^{(?P<index>\d+)}$/', $param, $matches)) {
+            if (isset($arguments[$matches['index']-1])) {
+              $param =  "'" . pg_escape_string($arguments[$matches['index']-1]) . "'";
+            } 
+            else
+              throw new Exception('Required arguments not provided');
+          }
+          else {
+            // fixed string defined in config
+            $param =  "'" . pg_escape_string($param) . "'";
+          }
+        }
+        // numeric parameters don't need processing or sanitising
+      }
+      $params = implode(', ', $action['parameters']);      
+      print_r($db->query("select $action[stored_procedure]($params);")->result_array(true));
+    } catch (Exception $e) {
+      $this->handle_error($e);
+    }
+  }
   
   /**
    * Provides the services/data_utils/bulk_verify service. This takes a report plus params (json object) in the $_POST
