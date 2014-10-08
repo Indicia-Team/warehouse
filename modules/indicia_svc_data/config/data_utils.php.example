@@ -37,5 +37,5 @@ $config['actions'] = array(
       146,
       '[1]'
     )
-  );
+  )
 );
