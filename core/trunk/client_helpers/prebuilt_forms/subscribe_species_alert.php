@@ -141,6 +141,10 @@ class iform_subscribe_species_alert {
         'fieldname' => 'email',
         'default' => $user->mail
       ));
+      $form .= data_entry_helper::hidden_text(array(
+        'fieldname' => 'user_id',
+        'default' => hostsite_get_user_field('indicia_user_id')
+      ));
     }
     $form .= "<fieldset><legend>".lang::get('Alert criteria').":</legend>\n";
     $form .= data_entry_helper::species_autocomplete(array(
@@ -193,6 +197,10 @@ class iform_subscribe_species_alert {
       'alert_on_entry' => $_POST['alert_on_entry'] ? 't' : 'f',
       'alert_on_verify' => $_POST['alert_on_verify'] ? 't' : 'f'
     );
+    if (!empty($_POST['location_id']))
+      $params['location_id'] = $_POST['location_id'];
+    if (!empty($_POST['user_id']))
+      $params['user_id'] = $_POST['location_id'];
     // We've got a taxa_taxon_list_id in the post data. But, it is better to subscribe via a taxon
     // meaning ID, or even better, the external key.
     $taxon = data_entry_helper::get_population_data(array(
@@ -208,7 +216,14 @@ class iform_subscribe_species_alert {
       $params['taxon_meaning_id'] = $taxon['taxon_meaning_id'];
     $url .= data_entry_helper::array_to_query_string($params, true);
     $result = data_entry_helper::http_post($url);
-    drupal_set_message(print_r($result, true));
+    if ($result['result']) 
+      hostsite_show_message(lang::get('Your subscription has been saved.'));
+    else {
+      hostsite_show_message(lang::get('There was a problem saving your subscription.'));
+      if (function_exists('watchdog')) {
+        watchdog('iform', 'Species alert error on save: '.print_r($result, true));
+      } 
+    }
   }
 
 }
