@@ -154,8 +154,7 @@ class user_identifier {
         $resolution = self::resolveMultipleUsers($identifiers, $existingUsers, $userPersonObj);        
         // response could be a list of possible users to match against, or a single user ID.
         if (isset($resolution['possibleMatches'])) {
-          echo json_encode($resolution);
-          return;
+          return $resolution;
         } else {
           $userId = $resolution['userId'];
           $userPersonObj->person_id = $existingUsers[$userId][0]['person_id'];
