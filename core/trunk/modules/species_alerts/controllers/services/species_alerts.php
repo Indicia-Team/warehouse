@@ -32,34 +32,45 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
   public function register() {
     try {
       $this->authenticate('write');
-      //The decision the system makes on whether to return an existing user id or create a new user is based on the user's email address
-      //so pass this though as the identifier field
-      $emailIdentifierObject = new stdClass();
-      $emailIdentifierObject->type="email";
       self::string_validate_mandatory('email');
-      $emailIdentifierObject->identifier=$_GET["email"];
-      $userIdentificationData['identifiers']=json_encode(array($emailIdentifierObject));
-      //Also pass through these fields so if a new user is required then the system can fill in the database details
       self::string_validate_mandatory('surname');
-      $userIdentificationData['surname']=$_GET["surname"];
-      $userIdentificationData['first_name']=$_GET["first_name"];
       self::int_key_validate_mandatory('website_id');
-      //Call existing user identifier code that will tell us whether a user with the same email address already exists in the database
-      $userDetails=user_identifier::get_user_id($userIdentificationData, $_GET["website_id"]);  
+      self::boolean_validate('alert_on_entry');
+      self::boolean_validate('alert_on_verify');
+      self::int_key_validate('location_id');
+      if (!empty($_GET['user_id']))
+        $userId = $_GET['user_id'];
+      else {
+        // User was not logged in when subscribing, so use their details to find or create a warehouse user id.
+        $emailIdentifierObject = new stdClass();
+        $emailIdentifierObject->type="email";      
+        $emailIdentifierObject->identifier=$_GET["email"];
+        $userIdentificationData['identifiers']=json_encode(array($emailIdentifierObject));
+        //Also pass through these fields so if a new user is required then the system can fill in the database details
+        $userIdentificationData['surname']=$_GET["surname"];
+        $userIdentificationData['first_name']=$_GET["first_name"];      
+        //Call existing user identifier code that will either fetch an existing user for that email, or create a new one.
+        $userDetails=user_identifier::get_user_id($userIdentificationData, $_GET["website_id"]);
+        if (!empty($userDetails['userId']))
+          $userId = $userDetails['userId'];
+        else {
+          $userId = $userDetails['possibleMatches'][0]['user_id'];
+        }
+      }
       //Store the species alert for the user (which is either a new or existing user as determined by get_user_id)
-      self::store_species_alert($userDetails);
+      self::store_species_alert($userId);
       //Automatically register the user to receive email notifications if they have never had any settings at all
       try {
-        $readAuth = data_entry_helper::get_read_auth(0-$userDetails['userId'], kohana::config('indicia.private_key'));
+        $readAuth = data_entry_helper::get_read_auth(0-$userId, kohana::config('indicia.private_key'));
         $freqSettingsData = data_entry_helper::get_report_data(array(
           'dataSource'=>'library/user_email_notification_settings/user_email_notification_settings_inc_deleted',
           'readAuth'=>$readAuth,
-          'extraParams'=>array('user_id' => $userDetails['userId'])
+          'extraParams'=>array('user_id' => $userId)
         ));
         if (empty($freqSettingsData))
-          self::store_user_email_notification_setting($userDetails);
+          self::store_user_email_notification_setting($userId);
       } catch (exception $e) {
-        kohana::log('debug', "Unable to register user ".$userDetails['userId']." for email notifications, perhaps that module is not installed?.");
+        kohana::log('debug', "Unable to register user ".$userId." for email notifications, perhaps that module is not installed?.");
       } 
     } 
     catch (Exception $e) {
@@ -70,14 +81,13 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
   /*
    * Create the Species Alert record to submit and save it to the database
    */
-  private function store_species_alert($userDetails) {
+  private function store_species_alert($userId) {
     $alertRecordSubmissionObj = ORM::factory('species_alert');
     //The user id can be either a new user or exsting user, this has already been sorted out by the get_user_id function, so 
     //by this point we don't care about whether the user is new or existing, we are just dealing with a user id given to us by that function.
     //No need to validate as the user_id comes from get_user_id
-    $alertRecordSubmissionObj->user_id=$userDetails['userId'];   
+    $alertRecordSubmissionObj->user_id=$userId;   
     //Region to receive alerts for.
-    self::int_key_validate('location_id');
     if (!empty($_GET['location_id']))
       $alertRecordSubmissionObj->location_id=$_GET['location_id'];
     //Already checked this has been filled in so don't need to do this again
@@ -88,13 +98,12 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
       $alertRecordSubmissionObj->taxon_meaning_id=$_GET['taxon_meaning_id'];
     if (!empty($_GET['external_key']))
       $alertRecordSubmissionObj->external_key=$_GET['external_key'];
-    self::boolean_validate('alert_on_entry');
+    
     //If boolean isn't supplied just assume as false
     if (!empty($_GET['alert_on_entry']))
       $alertRecordSubmissionObj->alert_on_entry=$_GET['alert_on_entry'];
     else 
       $alertRecordSubmissionObj->alert_on_entry="false";
-    self::boolean_validate('alert_on_verify');
     if (!empty($_GET['alert_on_verify']))
       $alertRecordSubmissionObj->alert_on_verify=$_GET['alert_on_verify'];
     else 
@@ -107,7 +116,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
   /*
    * Automatically register the user to receive notification emails when they register for species alerts
    */
-  private function store_user_email_notification_setting($userDetails) {
+  private function store_user_email_notification_setting($userId) {
     //Get configuration for which source types to add if possible
     try {
       $sourceTypes = kohana::config('species_alerts.register_for_notification_emails_source_types');
@@ -119,7 +128,7 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     //Add a notification email setting for each configured source type
     foreach ($sourceTypes as $sourceType) {
       $notificationSettingSubmissionObj = ORM::factory('user_email_notification_setting');
-      $notificationSettingSubmissionObj->user_id=$userDetails['userId'];
+      $notificationSettingSubmissionObj->user_id=$userId;
       $notificationSettingSubmissionObj->notification_source_type=$sourceType;
       //Species alerts default to hourly
       if ($sourceType==='S')
