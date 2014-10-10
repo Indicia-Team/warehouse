@@ -200,7 +200,7 @@ class iform_subscribe_species_alert {
     if (!empty($_POST['location_id']))
       $params['location_id'] = $_POST['location_id'];
     if (!empty($_POST['user_id']))
-      $params['user_id'] = $_POST['location_id'];
+      $params['user_id'] = $_POST['user_id'];
     // We've got a taxa_taxon_list_id in the post data. But, it is better to subscribe via a taxon
     // meaning ID, or even better, the external key.
     $taxon = data_entry_helper::get_population_data(array(
