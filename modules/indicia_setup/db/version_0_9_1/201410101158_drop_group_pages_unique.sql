@@ -1,0 +1,1 @@
+DROP INDEX idx_groups_pages_path_unique;
