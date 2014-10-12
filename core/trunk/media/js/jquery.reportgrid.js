@@ -361,6 +361,11 @@ var simple_tooltip;
           if (typeof response.count !== "undefined") {
             div.settings.recordCount = parseInt(response.count);
           } 
+          //Get the rows on the grid as they first appear on the page, before any filtering is applied.
+          if (!indiciaData.initialReportGridRecords) {
+            indiciaData.initialReportGridRecords=rows;
+          }
+          //Get records currently on the grid, even after filtering
           indiciaData.reportGridRecords=rows;
           // clear current grid rows
           if (clearExistingRows) {
@@ -407,7 +412,7 @@ var simple_tooltip;
               });
               $.each(div.settings.columns, function(idx, col) {
                 if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" &&
-                    typeof col.mappable!=="undefined" && (col.mappable==="true" || col.mappable===true)) {
+                    typeof col.mappable!=="undefined" && (col.mappable==="true" || col.mappable===true)) {                  
                   geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
                   if (map.projection.getCode() != map.div.indiciaProjection.getCode()) {
                     geom.transform(map.div.indiciaProjection, map.projection);
@@ -625,7 +630,7 @@ var simple_tooltip;
 
     this.reload = function(recount) {
       recount = (typeof recount==="undefined") ? false : recount;
-      $.each($(this), function(idx, div) {
+      $.each($(this), function(idx, div) {      
         load(div, recount);
       });
     };
@@ -879,6 +884,7 @@ var simple_tooltip;
       //The filter data we show in the fancybox is a distinct version of the data in the column for the grid.
       //We don't want to show data more than once in the filter list.
       var dataRowsForFilter;
+      //In column header is optional popup allowing user to filter out data from the grid.
       $('.col-popup-filter').click(function(evt) {
         dataRowsForFilter=[]
         popupFilterHtml = '';
@@ -887,25 +893,49 @@ var simple_tooltip;
         //Use a number to make unique checkbox ids, had considered using the data itself to make up the id, but there there
         //might be problems with special characters.
         var popupItemCounter=0;
-        //For each record in the grid
-        for (var i=0; i<indiciaData.reportGridRecords.length; i++) {
-          //Get the row data in the column we are interested in
-          dataInColumnCell=indiciaData.reportGridRecords[i][databaseColumnToGet];
+        var recordHasBeenExcluded;
+        var checkboxCheckedString;
+        //Cycle through all all the initial records on the grid, this is items
+        //that were on the grid before the popup filter was applied
+        $.each(indiciaData.initialReportGridRecords, function(rowIdx, theInitialRow) {
+          //Assume record has been excluded by the popup filter unless we prove otherwise.
+          recordHasBeenExcluded = true
+          //Loop through all the records on the grid currently.
+          $.each(indiciaData.reportGridRecords, function(rowIdx, currentRow) {
+            //If we find that an item was on the grid when the screen first opened, and
+            //it is still displayed, then we know it hasn't been removed by the popup filter.
+            if (JSON.stringify(currentRow)==JSON.stringify(theInitialRow)) {
+              recordHasBeenExcluded = false;
+            }          
+          });
+          //If the record is excluded by the popup filter, then when the user reopens the popup filter
+          //box, then the checkbox needs to default to be unchecked for that data
+          if (recordHasBeenExcluded===false) {
+            checkboxCheckedString = 'checked=\"checked\"';
+          } else {
+            checkboxCheckedString = '';
+          }
+          //The popup filter box has a checkbox for each distinct data in the grid coloumn we are filtering.
+          //This needs to be from the data initially shown on the grid, as the filter is applied
+          //data is removed on the grid, but we want this data to still be available to the filter
+          //so the user can reselect it.
+          dataInColumnCell=theInitialRow[databaseColumnToGet];
           //Collect any data we haven't already saved, so we have a disinct list of the data
           if ($.inArray(dataInColumnCell,dataRowsForFilter)===-1) {
             dataRowsForFilter.push(dataInColumnCell);
             //Build the html for the fancybox
             //Use a number to make unique ids/names, so we don't have to worry about special characters in the id and name.
-            popupFilterHtml += '<div>'+dataInColumnCell+'</div><input class=\"popup-filter-checkbox\" id=\"popup-filter-include-'+popupItemCounter+'\" name=\"popup-filter-include-'+popupItemCounter+'\" databaseColumnName=\"'+databaseColumnToGet+'\" databaseData=\"'+dataInColumnCell+'\" type=\"checkbox\" checked=\"checked\"><br>';
+            //Data currently shown on the grid has a checkbox that is checked. Data the user has previously removed using the filter needs to have its checkbox unchecked.
+            popupFilterHtml += '<div>'+dataInColumnCell+'</div><input class=\"popup-filter-checkbox\" id=\"popup-filter-include-'+popupItemCounter+'\" name=\"popup-filter-include-'+popupItemCounter+'\" databaseColumnName=\"'+databaseColumnToGet+'\" databaseData=\"'+dataInColumnCell+'\" type=\"checkbox\" '+checkboxCheckedString+'><br>';
             popupItemCounter++;
           }
-        }
+        });
         popupFilterHtml += '<input type=\"button\" class=\"apply-popup-filter\" value=\"Apply\">';
         $.fancybox(popupFilterHtml);
       })
-      indiciaData.dataToExclude = [];
       //When the user applies the popup filter
       var doPopupFilter = function() {
+        indiciaData.dataToExclude=[];
         //Cycle through each checkbox
         $('.popup-filter-checkbox').each(function (index, theCheckbox) {
           //If the checkbox is not checked, then make a note of the data that needs to be excluded.
