@@ -974,7 +974,9 @@ var simple_tooltip;
               //Build the html for the fancybox
               //Use a number to make unique ids/names, so we don't have to worry about special characters in the id and name.
               //Data currently shown on the grid has a checkbox that is checked. Data the user has previously removed using the filter needs to have its checkbox unchecked.
-              popupFilterHtml += '<div>'+dataInColumnCell+'</div><input class=\"popup-filter-checkbox\" id=\"popup-filter-include-'+popupItemCounter+'\" name=\"popup-filter-include-'+popupItemCounter+'\" databaseColumnName=\"'+databaseColumnToGet+'\" databaseData=\"'+dataInColumnCell+'\" type=\"checkbox\" '+checkboxCheckedString+'><br>';
+              if (dataInColumnCell) {
+                popupFilterHtml += '<div>'+dataInColumnCell+'</div><input class=\"popup-filter-checkbox\" id=\"popup-filter-include-'+popupItemCounter+'\" name=\"popup-filter-include-'+popupItemCounter+'\" databaseColumnName=\"'+databaseColumnToGet+'\" databaseData=\"'+dataInColumnCell+'\" type=\"checkbox\" '+checkboxCheckedString+'><br>';
+              }
               popupItemCounter++;
             }
           });
