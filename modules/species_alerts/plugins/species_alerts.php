@@ -28,6 +28,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
     FROM occdelta od
       JOIN occurrences o ON o.id = od.id
       LEFT JOIN index_locations_samples ils on ils.sample_id=o.sample_id
+      JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=o.website_id and iwwa.receive_for_reporting=true
       JOIN species_alerts sa ON 
         (sa.location_id IS NULL OR sa.location_id=ils.location_id)
         AND 
@@ -39,7 +40,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
           OR
           (sa.alert_on_verify='t' AND (od.record_status='V' AND od.cud='U')))
         AND
-          sa.website_id=od.website_id
+          sa.website_id=iwwa.from_website_id
         AND 
           sa.deleted='f'
       JOIN users u ON 
