@@ -299,6 +299,37 @@ var simple_tooltip;
         return {};
       }
     }
+    
+    /*
+     * Function to remove items from a supplied set of rows based on the selections
+     * the user has made on the popup filter page.
+     * Returns an array containing the rows to keep, and also the number of items that have been excluded.
+     */
+    function applyPopupFilterExclusionsToRows(rows) {
+      var removedRowsCount=0;
+      var rowsToKeep=[];
+      var keepRow;
+      $.each(rows, function(rowIdx, theRow) {
+        //To start assume we are keeping the data
+        keepRow=true;
+        if (indiciaData.dataToExclude) {
+          $.each(indiciaData.dataToExclude, function(exclusionIdx, exclusionData) {
+            //each dataToExclude item contains an array of the database field (such as occurrence_id) and 
+            //the data to exclude (such 6301). If we find for a row that the database field and the data for that field match an
+            //item in the dataToExclude array, then we know to exclude it.
+            if (theRow[exclusionData[0]]==exclusionData[1]) {
+              keepRow=false;
+              removedRowsCount++;
+            }
+          });
+        }
+        //After testing each row, then if it hasn't been excluded, then keep it.
+        if (keepRow===true) {
+          rowsToKeep.push(theRow);
+        }
+      });
+      return [rowsToKeep,removedRowsCount];
+    }
 
     function loadGridFrom (div, request, clearExistingRows) {
       // overlay on the body, unless no records yet loaded as body is empty
@@ -330,34 +361,43 @@ var simple_tooltip;
             rows = response;
           }
           //The report grid can be configured with a popup that allows the user to remove rows containing particular
-          //data from the grid e.g. if there is a location column, then the user can select to not show rows containing the data East Sussex.
-          if (indiciaData.dataToExclude) {
-            var removedRowsCount=0;
-            var rowsToKeep=[];
-            var keepRow;
-            $.each(rows, function(rowIdx, theRow) {
-              //To start assume we are keeping the data
-              keepRow=true;
-              $.each(indiciaData.dataToExclude, function(exclusionIdx, exclusionData) {
-                //each dataToExclude item contains an array of the database field (such as occurrence_id) and 
-                //the data to exclude (such 6301). If we field for a row that a database field and the data for that field match an
-                //item in the dataToExclude array, then we know to exclude it.
-                if (theRow[exclusionData[0]]==exclusionData[1]) {
-                  keepRow=false;
-                  removedRowsCount++;
-                }
-              });
-              //After testing each row, then if it hasn't been excluded, then keep it.
-              if (keepRow===true) {
-                rowsToKeep.push(theRow);
-              }
-            });
-            rows=rowsToKeep;          
+          //data from the grid e.g. if there is a location column, then the user can select not to show rows containing the data East Sussex.
+          if (indiciaData.includePopupFilter) {   
+            var applyExclusionsData;
+            var removedRowsCount;
+            applyExclusionsData=applyPopupFilterExclusionsToRows(rows); 
+            rows=applyExclusionsData[0];
+            removedRowsCount=applyExclusionsData[1];
             if (typeof response.count !== "undefined") {
               response.records=rows;
+              //response.count can be included in the response data, however as we applied a filter we 
+              //need to override this.
               response.count=response.count-removedRowsCount;
+            } else {
+              response=rows;
             }
-          }   
+            //We need a second call to the database to return all the data to appear on the grid (the normal call
+            //excludes data from previous pages to the one the user is viewing).
+            //This can probably be done without two database calls, but not without a rewrite, also the second
+            //call is only made if the includePopupFilter option is on.
+            //This call is used to collect data to decide which checkboxes will be in the selected state on the popup, this 
+            //is data that is currently needed for the grid.
+            $.ajax({
+              dataType: "json",
+              url: indiciaData.requestForAllRecords,
+              data: null,
+              success: function(responseForAllRecords) {
+                //Although as are interested in all data to display on the grid, we still need
+                //to apply the filters the user has selected.
+                var applyExclusionsData=applyPopupFilterExclusionsToRows(responseForAllRecords); 
+                responseForAllRecords=applyExclusionsData[0];
+                //Note the difference between "rows" and "responseForAllRecords" is that responseForAllRecords includes more items, as "rows" doesn't include
+                //rows on pages on the grid previous to the one the user is currently viewing.
+                //Note that responseForAllRecords will also never include .count as this is not included in the request
+                indiciaData.allReportGridRecords=responseForAllRecords;
+              }
+            });         
+          } 
           if (typeof response.count !== "undefined") {
             div.settings.recordCount = parseInt(response.count);
           } 
@@ -365,8 +405,6 @@ var simple_tooltip;
           if (!indiciaData.initialReportGridRecords) {
             indiciaData.initialReportGridRecords=rows;
           }
-          //Get records currently on the grid, even after filtering
-          indiciaData.reportGridRecords=rows;
           // clear current grid rows
           if (clearExistingRows) {
             tbody.children().remove();
@@ -519,12 +557,19 @@ var simple_tooltip;
      */
     function load (div, recount) {
       var request = getFullRequestPathWithoutPaging(div, true, true);
-      request += '&offset=' + div.settings.offset;
+      //As the user moves through the report grid, the offset is increased. For the popup filter we need all
+      //records, so grab the request before the offset.
+      if (indiciaData.includePopupFilter) {
+        indiciaData.requestForAllRecords=request;
+      }
       if (recount) {
         request += '&wantCount=1';
       }
+      request += '&offset=' + div.settings.offset;
       // Ask for one more row than we need so we know if the next page link is available
       if (div.settings.itemsPerPage !== null && !indiciaData.includePopupFilter) {
+        //If using a popup filter, we need to return all items from the report so that we can populate the popup.
+        //Normally reords are returned one page at a time.
         request += '&limit=' + (div.settings.itemsPerPage+1);
       }
       loadGridFrom(div, request, true);
@@ -897,39 +942,43 @@ var simple_tooltip;
         var checkboxCheckedString;
         //Cycle through all all the initial records on the grid, this is items
         //that were on the grid before the popup filter was applied
-        $.each(indiciaData.initialReportGridRecords, function(rowIdx, theInitialRow) {
-          //Assume record has been excluded by the popup filter unless we prove otherwise.
-          recordHasBeenExcluded = true
-          //Loop through all the records on the grid currently.
-          $.each(indiciaData.reportGridRecords, function(rowIdx, currentRow) {
-            //If we find that an item was on the grid when the screen first opened, and
-            //it is still displayed, then we know it hasn't been removed by the popup filter.
-            if (JSON.stringify(currentRow)==JSON.stringify(theInitialRow)) {
-              recordHasBeenExcluded = false;
-            }          
+        if (indiciaData.initialReportGridRecords) {
+          $.each(indiciaData.initialReportGridRecords, function(initialRowIdx, theInitialRow) {
+            //Assume record has been excluded by the popup filter unless we prove otherwise.
+            recordHasBeenExcluded = true
+            if (indiciaData.allReportGridRecords) {
+              //Loop through all the records on the grid currently.
+              $.each(indiciaData.allReportGridRecords, function(currentRowIdx, currentRow) {
+                //If we find that an item was on the grid when the screen first opened, and
+                //it is still displayed, then we know it hasn't been removed by the popup filter.
+                if (JSON.stringify(currentRow)==JSON.stringify(theInitialRow)) {
+                  recordHasBeenExcluded = false;
+                }          
+              });
+            }
+            //If the record is excluded by the popup filter, then when the user reopens the popup filter
+            //box, then the checkbox needs to default to be unchecked for that data
+            if (recordHasBeenExcluded===false) {
+              checkboxCheckedString = 'checked=\"checked\"';
+            } else {
+              checkboxCheckedString = '';
+            }
+            //The popup filter box has a checkbox for each distinct data in the grid coloumn we are filtering.
+            //This needs to be from the data initially shown on the grid, as the filter is applied
+            //data is removed on the grid, but we want this data to still be available to the filter
+            //so the user can reselect it.
+            dataInColumnCell=theInitialRow[databaseColumnToGet];
+            //Collect any data we haven't already saved, so we have a disinct list of the data
+            if ($.inArray(dataInColumnCell,dataRowsForFilter)===-1) {
+              dataRowsForFilter.push(dataInColumnCell);
+              //Build the html for the fancybox
+              //Use a number to make unique ids/names, so we don't have to worry about special characters in the id and name.
+              //Data currently shown on the grid has a checkbox that is checked. Data the user has previously removed using the filter needs to have its checkbox unchecked.
+              popupFilterHtml += '<div>'+dataInColumnCell+'</div><input class=\"popup-filter-checkbox\" id=\"popup-filter-include-'+popupItemCounter+'\" name=\"popup-filter-include-'+popupItemCounter+'\" databaseColumnName=\"'+databaseColumnToGet+'\" databaseData=\"'+dataInColumnCell+'\" type=\"checkbox\" '+checkboxCheckedString+'><br>';
+              popupItemCounter++;
+            }
           });
-          //If the record is excluded by the popup filter, then when the user reopens the popup filter
-          //box, then the checkbox needs to default to be unchecked for that data
-          if (recordHasBeenExcluded===false) {
-            checkboxCheckedString = 'checked=\"checked\"';
-          } else {
-            checkboxCheckedString = '';
-          }
-          //The popup filter box has a checkbox for each distinct data in the grid coloumn we are filtering.
-          //This needs to be from the data initially shown on the grid, as the filter is applied
-          //data is removed on the grid, but we want this data to still be available to the filter
-          //so the user can reselect it.
-          dataInColumnCell=theInitialRow[databaseColumnToGet];
-          //Collect any data we haven't already saved, so we have a disinct list of the data
-          if ($.inArray(dataInColumnCell,dataRowsForFilter)===-1) {
-            dataRowsForFilter.push(dataInColumnCell);
-            //Build the html for the fancybox
-            //Use a number to make unique ids/names, so we don't have to worry about special characters in the id and name.
-            //Data currently shown on the grid has a checkbox that is checked. Data the user has previously removed using the filter needs to have its checkbox unchecked.
-            popupFilterHtml += '<div>'+dataInColumnCell+'</div><input class=\"popup-filter-checkbox\" id=\"popup-filter-include-'+popupItemCounter+'\" name=\"popup-filter-include-'+popupItemCounter+'\" databaseColumnName=\"'+databaseColumnToGet+'\" databaseData=\"'+dataInColumnCell+'\" type=\"checkbox\" '+checkboxCheckedString+'><br>';
-            popupItemCounter++;
-          }
-        });
+        }
         popupFilterHtml += '<input type=\"button\" class=\"apply-popup-filter\" value=\"Apply\">';
         $.fancybox(popupFilterHtml);
       })
