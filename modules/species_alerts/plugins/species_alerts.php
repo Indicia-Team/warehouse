@@ -14,21 +14,20 @@ function species_alerts_scheduled_task($last_run_date, $db) {
   //Get all new occurrences from the database that are either new occurrences or verified and match them with species_alert records
   //and return the matches
   $newOccDataForSpeciesAlert = $db->query("
-    SELECT 
+    SELECT DISTINCT
       od.id as occurrence_id,
       od.taxon as taxon,
       od.record_status as record_status,
       od.public_entered_sref as entered_sref,
       od.cud as cud,
       od.record_status as record_status,
-      o.created_on as created_on,
-      o.updated_on as updated_on,
+      od.cache_created_on as created_on,
+      od.cache_updated_on as updated_on,
       sa.user_id as alerted_user_id,
       u.username as username
     FROM occdelta od
-      JOIN occurrences o ON o.id = od.id
-      LEFT JOIN index_locations_samples ils on ils.sample_id=o.sample_id
-      JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=o.website_id and iwwa.receive_for_reporting=true
+      LEFT JOIN index_locations_samples ils on ils.sample_id=od.sample_id
+      JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=od.website_id and iwwa.receive_for_reporting=true
       JOIN species_alerts sa ON 
         (sa.location_id IS NULL OR sa.location_id=ils.location_id)
         AND 
