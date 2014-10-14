@@ -917,10 +917,12 @@ var simple_tooltip;
       //The filter data we show in the fancybox is a distinct version of the data in the column for the grid.
       //We don't want to show data more than once in the filter list.
       var dataRowsForFilter;
+      var initialRowWithoutImage;
+      var currentRowWithoutImage;
       //In column header is optional popup allowing user to filter out data from the grid.
       $('.col-popup-filter').click(function(evt) {
         dataRowsForFilter=[]
-        popupFilterHtml = '';
+        popupFilterHtml = '<div class="popup-filter-options-container">';
         var splitButtonId = $(this).attr('id').split('-');
         var databaseColumnToGet = splitButtonId[3];
         //Use a number to make unique checkbox ids, had considered using the data itself to make up the id, but there there
@@ -932,11 +934,18 @@ var simple_tooltip;
         //that were on the grid before the popup filter was applied
         if (indiciaData.initialReportGridRecords) {
           $.each(indiciaData.initialReportGridRecords, function(initialRowIdx, theInitialRow) {
+            //There is an issue when doing the initialRowWithoutImage/currentRowWithoutImage comparison.
+            //The "images" in the row were automatically being amended in indiciaData.allReportGridRecords to include information about displaying in a fancybox,
+            //This must be automatic somewhere, but was breaking the comparison, so remove images when doing the comparison.
+            initialRowWithoutImage=theInitialRow;
+            delete initialRowWithoutImage.images;
             //Assume record has been excluded by the popup filter unless we prove otherwise.
             recordHasBeenExcluded = true
             if (indiciaData.allReportGridRecords) {
               //Loop through all the records on the grid currently.
               $.each(indiciaData.allReportGridRecords, function(currentRowIdx, currentRow) {
+                currentRowWithoutImage=currentRow;
+                delete currentRow.images;
                 //If we find that an item was on the grid when the screen first opened, and
                 //it is still displayed, then we know it hasn't been removed by the popup filter.
                 if (JSON.stringify(currentRow)==JSON.stringify(theInitialRow)) {
@@ -969,6 +978,7 @@ var simple_tooltip;
             }
           });
         }
+        popupFilterHtml += '</div>';
         popupFilterHtml += '<input type=\"button\" class=\"apply-popup-filter\" value=\"Apply\">';
         $.fancybox(popupFilterHtml);
       })
