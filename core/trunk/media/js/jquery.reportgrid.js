@@ -303,15 +303,19 @@ var simple_tooltip;
     /*
      * Function to remove items from a supplied set of rows based on the selections
      * the user has made on the popup filter page.
-     * Returns an array containing the rows to keep, and also the number of items that have been excluded.
+     * Returns an array containing the rows to keep.
      */
-    function applyPopupFilterExclusionsToRows(rows) {
-      var removedRowsCount=0;
-      var rowsToKeep=[];
+    function applyPopupFilterExclusionsToRows(rows,div) {
+      indiciaData.popupFilteRemovedRowsCount=0;
+      indiciaData.allReportGridRecords=[];
+      var rowsToDisplay=[];
       var keepRow;
+      //Keep a count of each row we have worked on starting from 1.
+      var rowCount=1;
       $.each(rows, function(rowIdx, theRow) {
         //To start assume we are keeping the data
         keepRow=true;
+        //Only need to exclude data if the user has set the option to do so
         if (indiciaData.dataToExclude) {
           $.each(indiciaData.dataToExclude, function(exclusionIdx, exclusionData) {
             //each dataToExclude item contains an array of the database field (such as occurrence_id) and 
@@ -319,16 +323,28 @@ var simple_tooltip;
             //item in the dataToExclude array, then we know to exclude it.
             if (theRow[exclusionData[0]]==exclusionData[1]) {
               keepRow=false;
-              removedRowsCount++;
+              indiciaData.popupFilteRemovedRowsCount++;
             }
           });
         }
         //After testing each row, then if it hasn't been excluded, then keep it.
         if (keepRow===true) {
-          rowsToKeep.push(theRow);
+          //Only display the row itself if it is greater than the offset value. The offset number tells
+          //the system how many rows there are before the report grid page the user is actually viewing.
+          //So If there are 4 items per page, and the user is viewing page 3, then the offset is 8.
+          if (div.settings.offset<rowCount) {
+            rowsToDisplay.push(theRow);
+          }
+          //Note the difference between "rowsToDisplay" and "indiciaData.allReportGridRecords" is that indiciaData.allReportGridRecords includes more items, as "rowsToDisplay" doesn't include
+          //rows on pages on the grid previous to the one the user is currently viewing.
+          //indiciaData.allReportGridRecords is used to display the options on the popup filter, this needs all the items on the
+          //grid regardless of whether they are actually displayed on screen (e.g items on pages previous to the one being viewed).
+          indiciaData.allReportGridRecords.push(theRow);
+          rowCount++;
         }
       });
-      return [rowsToKeep,removedRowsCount];
+      
+      return rowsToDisplay;
     }
 
     function loadGridFrom (div, request, clearExistingRows) {
@@ -363,40 +379,15 @@ var simple_tooltip;
           //The report grid can be configured with a popup that allows the user to remove rows containing particular
           //data from the grid e.g. if there is a location column, then the user can select not to show rows containing the data East Sussex.
           if (indiciaData.includePopupFilter) {   
-            var applyExclusionsData;
-            var removedRowsCount;
-            applyExclusionsData=applyPopupFilterExclusionsToRows(rows); 
-            rows=applyExclusionsData[0];
-            removedRowsCount=applyExclusionsData[1];
+            rows=applyPopupFilterExclusionsToRows(rows,div);
             if (typeof response.count !== "undefined") {
               response.records=rows;
               //response.count can be included in the response data, however as we applied a filter we 
               //need to override this.
-              response.count=response.count-removedRowsCount;
+              response.count=response.count-indiciaData.popupFilteRemovedRowsCount;
             } else {
               response=rows;
-            }
-            //We need a second call to the database to return all the data to appear on the grid (the normal call
-            //excludes data from previous pages to the one the user is viewing).
-            //This can probably be done without two database calls, but not without a rewrite, also the second
-            //call is only made if the includePopupFilter option is on.
-            //This call is used to collect data to decide which checkboxes will be in the selected state on the popup, this 
-            //is data that is currently needed for the grid.
-            $.ajax({
-              dataType: "json",
-              url: indiciaData.requestForAllRecords,
-              data: null,
-              success: function(responseForAllRecords) {
-                //Although as are interested in all data to display on the grid, we still need
-                //to apply the filters the user has selected.
-                var applyExclusionsData=applyPopupFilterExclusionsToRows(responseForAllRecords); 
-                responseForAllRecords=applyExclusionsData[0];
-                //Note the difference between "rows" and "responseForAllRecords" is that responseForAllRecords includes more items, as "rows" doesn't include
-                //rows on pages on the grid previous to the one the user is currently viewing.
-                //Note that responseForAllRecords will also never include .count as this is not included in the request
-                indiciaData.allReportGridRecords=responseForAllRecords;
-              }
-            });         
+            }     
           } 
           if (typeof response.count !== "undefined") {
             div.settings.recordCount = parseInt(response.count);
@@ -557,15 +548,12 @@ var simple_tooltip;
      */
     function load (div, recount) {
       var request = getFullRequestPathWithoutPaging(div, true, true);
-      //As the user moves through the report grid, the offset is increased. For the popup filter we need all
-      //records, so grab the request before the offset.
-      if (indiciaData.includePopupFilter) {
-        indiciaData.requestForAllRecords=request;
-      }
       if (recount) {
         request += '&wantCount=1';
       }
-      request += '&offset=' + div.settings.offset;
+      //If using the popup filter, we don't want to perform any offset until after records are returned and filtered.
+      if (!indiciaData.includePopupFilter)
+        request += '&offset=' + div.settings.offset;
       // Ask for one more row than we need so we know if the next page link is available
       if (div.settings.itemsPerPage !== null && !indiciaData.includePopupFilter) {
         //If using a popup filter, we need to return all items from the report so that we can populate the popup.
@@ -992,7 +980,7 @@ var simple_tooltip;
           //If the checkbox is not checked, then make a note of the data that needs to be excluded.
           if (!$(theCheckbox).is(':checked')) {
             indiciaData.dataToExclude.push([$(theCheckbox).attr('databaseColumnName'),$(theCheckbox).attr('databaseData')]);
-          }        
+          }
         });
         $.fancybox.close();
         //Reload the grid once the filter is applied
