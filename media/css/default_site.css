@@ -776,6 +776,12 @@ span.ind-cancel-icon {
   margin: 0.5em;
 }
 
+.popup-filter-options-container {
+  overflow-y: scroll; 
+  max-height: 400px; 
+  height: 400px
+}
+
 .filter-row {
   background: #e7e7e7;
 }
