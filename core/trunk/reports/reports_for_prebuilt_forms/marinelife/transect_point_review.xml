@@ -1,0 +1,41 @@
+<report
+    title="Transect points review"
+    description="Outputs points of a transect line for quick and easy review."
+>
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+    FROM samples s
+    JOIN sample_attribute_values gid on gid.sample_id=s.id and gid.sample_attribute_id=21 and gid.deleted=false
+    JOIN sample_attribute_values utc on utc.sample_id=s.id and utc.sample_attribute_id=27 and utc.deleted=false
+    JOIN sample_attribute_values sid on sid.sample_id=s.id and sid.sample_attribute_id=22 and sid.deleted=false
+    JOIN sample_attribute_values tid on tid.sample_id=s.id and tid.sample_attribute_id=24 and tid.deleted=false
+    JOIN sample_attribute_values rtv on rtv.sample_id=s.id and rtv.sample_attribute_id=43 and rtv.deleted=false
+    JOIN cache_termlists_terms rt on rt.id=rtv.int_value
+    #filters#
+  </query>
+  <order_bys>
+    <order_by>utc.text_value ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='transect' display='Transect' description='groupId:surveyId:transectId' datatype='text'> 
+      <where>gid.int_value::varchar || ':' || sid.int_value::varchar || ':' || tid.int_value::varchar='#transect#'</where>
+    </param>
+    <param name='survey_id' display='Survey IDs' description='Survey ID to filter to.' datatype='integer' default=''> 
+      <where>s.survey_id=#survey_id#</where>
+    </param>
+    <param name='idlist' display='List of IDs' description='Comma separated list of IDs to filter to.' datatype='integer[]'> 
+      <where>s.id in (#idlist#)</where>
+    </param>
+  </params>
+  <columns>
+    <column name="sampleid" diplay="Sample ID" sql="s.id" visible="false" />
+    <column name="groupid" diplay="Group ID" sql="gid.int_value" visible="false"/>
+    <column name="surveyid" display="Survey ID" sql="sid.int_value" visible="false"/>
+    <column name="recordtype" sql="lower(rt.term)" visible="false"/>
+    <column name='utc' display='UTC time' sql="utc.text_value" />
+    <column name='lat' display='Lat' sql="st_y(st_transform(st_centroid(s.geom), 4326))" />
+    <column name='long' display='Long' sql="st_x(st_transform(st_centroid(s.geom), 4326))" />
+    <column name="transectid" display="Transect ID" sql="tid.int_value" visible="false"/>
+    <column name="geom" mappable="true" display="Point" visible="false" sql="st_astext(s.geom)"/>
+  </columns>
+</report>

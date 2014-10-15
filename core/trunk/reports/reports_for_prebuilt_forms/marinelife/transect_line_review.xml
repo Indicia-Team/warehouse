@@ -5,14 +5,27 @@
   <query website_filter_field="su.website_id">
   SELECT #columns#
     FROM samples s
+    LEFT JOIN occurrences o on o.sample_id=s.id and o.deleted=false
     JOIN sample_attribute_values gid on gid.sample_id=s.id and gid.sample_attribute_id=21 and gid.deleted=false
     JOIN sample_attribute_values utc on utc.sample_id=s.id and utc.sample_attribute_id=27 and utc.deleted=false
     JOIN sample_attribute_values sid on sid.sample_id=s.id and sid.sample_attribute_id=22 and sid.deleted=false
     JOIN sample_attribute_values tid on tid.sample_id=s.id and tid.sample_attribute_id=24 and tid.deleted=false
+    #filters#
   </query>
   <order_bys>
     <order_by>s.date_start, sid.int_value, tid.int_value</order_by>
   </order_bys>
+  <params>
+    <param name='idlist' display='List of IDs' description='Comma separated list of IDs to filter to.' datatype='text[]'> 
+      <where>gid.int_value::varchar || ':' || sid.int_value::varchar || ':' || tid.int_value::varchar in (#idlist#)</where>
+    </param>
+    <param name='survey_id' display='Survey IDs' description='Survey ID to filter to.' datatype='integer' default=''> 
+      <where>s.survey_id=#survey_id#</where>
+    </param>
+    <param name='ecmcgroupid' display='ECMCGroupID' description='Optional filter for the group ID.' datatype='integer' default=''> 
+      <where>gid.int_value=#ecmcgroupid#</where>
+    </param>
+  </params>
   <columns>
     <column name="groupid" diplay="Group ID" sql="gid.int_value" datatype="integer" />
     <column name="surveyid" display="Survey ID" sql="sid.int_value" datatype="integer" />
@@ -21,9 +34,10 @@
     <column name='date_type' sql='s.date_type' visible='false' />
     <column name='date' display='Date' datatype="date" />
     <column name="transectid" display="Transect ID" sql="tid.int_value" datatype="integer" />
-    <column name="rowid" visible="false" sql="gid.int_value::varchar || ':' || sid.int_value::varchar || ':' || tid.int_value::varchar" datatype="text" /> 
+    <column name="rowid" visible="false" sql="gid.int_value::varchar || ':' || sid.int_value::varchar || ':' || tid.int_value::varchar" datatype="text" in_count="true" /> 
     <column name="geom" mappable="true" display="Line geom" visible="false" sql="st_astext(st_makeline(s.geom order by utc.text_value))" aggregate="true" />
     <column name="points" display="# points" sql="count(distinct s.id)" aggregate="true" />
+    <column name="sightings" display="# sightings" sql="count(distinct o.id)" aggregate="true" />
     <column name="t_start" display="Start" sql="min(utc.text_value)" aggregate="true" />
     <column name="t_end" display="End" sql="max(utc.text_value)" aggregate="true" />
   </columns>
