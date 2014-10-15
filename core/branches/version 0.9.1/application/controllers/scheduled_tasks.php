@@ -525,20 +525,35 @@ class Scheduled_Tasks_Controller extends Controller {
         // This scheduled plugin wants to know about the changed occurrences, and the current occdelta table does
         // not contain the records since the correct change point
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
-        $query = "select co.*,
-case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
-greatest(o.updated_on, s.updated_on, sp.updated_on) as timestamp,
-w.verification_checks_enabled
-into temporary occdelta 
-from cache_occurrences co
-join occurrences o on o.id=co.id
-inner join samples s on s.id=o.sample_id and s.deleted=false
+        // This query uses a 2 stage process as it is faster than joining occurrences to cache_occurrences.
+        $query = "select distinct o.id 
+into temporary occlist
+from occurrences o 
+where o.updated_on>'$timestamp' and o.updated_on<='$currentTime'
+union 
+select o.id from occurrences o
+join samples s on s.id=o.sample_id and s.deleted=false
+where s.updated_on>'$timestamp' and s.updated_on<='$currentTime'
+union
+select o.id from occurrences o
+join samples s on s.id=o.sample_id and s.deleted=false
+join samples sp on sp.id=s.parent_id and sp.deleted=false
+where sp.updated_on>'$timestamp' and sp.updated_on<='$currentTime'
+order by id;
+
+select co.*, 
+	case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
+	greatest(o.updated_on, s.updated_on, sp.updated_on) as timestamp,
+	w.verification_checks_enabled
+into temporary occdelta
+from occlist ol
+join occurrences o on o.id=ol.id
+join cache_occurrences co on co.id=o.id
+join samples s on s.id=o.sample_id and s.deleted=false
 left join samples sp on sp.id=s.parent_id and sp.deleted=false
-inner join websites w on w.id=o.website_id and w.deleted=false
-where o.deleted=false
-and ((o.updated_on>'$timestamp' and o.updated_on<='$currentTime')
-or (s.updated_on>'$timestamp' and s.updated_on<='$currentTime')
-or (sp.updated_on>'$timestamp' and sp.updated_on<='$currentTime'))";
+join websites w on w.id=o.website_id and w.deleted=false;
+
+drop table occlist;";
         $this->db->query($query);
         $this->occdeltaStartTimestamp=$timestamp;
         $this->occdeltaEndTimestamp=$currentTime;
