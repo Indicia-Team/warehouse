@@ -497,7 +497,7 @@ idlist=';
           'sharing'=>'verification',
           'ajax'=>TRUE,
           'callback' => 'verificationGridLoaded',
-          'rowClass' => 'status-{record_status} certainty-{certainty} zero-{zero_abundance}'
+          'rowClass' => 'zero-{zero_abundance}'
         )
     );
     $opts['columns'][] = array(
