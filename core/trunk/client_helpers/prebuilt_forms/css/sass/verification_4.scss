@@ -27,6 +27,9 @@ table.report-grid {
     background-color: $selected-color;
     color: white;
   }
+  tr.zero-t {
+    text-decoration: line-through;
+  }
   .nowrap {
     whitespace: nowrap;
   }

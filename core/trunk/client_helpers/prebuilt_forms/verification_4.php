@@ -496,7 +496,8 @@ idlist=';
           'paramSuffix'=>'</div>',
           'sharing'=>'verification',
           'ajax'=>TRUE,
-          'callback' => 'verificationGridLoaded'
+          'callback' => 'verificationGridLoaded',
+          'rowClass' => 'status-{record_status} certainty-{certainty} zero-{zero_abundance}'
         )
     );
     $opts['columns'][] = array(
@@ -679,13 +680,13 @@ idlist=';
         if (!isset($data[$caption[0]]))
           $data[$caption[0]]=array();
         $val = ($col==='record_status') ? self::statusLabel($record[$col]) : $record[$col];
-        if ($record['zero_abundance']==='t')
-          $val .= '<br/>' . lang::get('This is a record indicating absence.');        
         $data[$caption[0]][] = array('caption'=>$caption[1], 'value'=>$val);
       }
       if ($col==='email' && !empty($record[$col])) 
         $email=$record[$col];
     }
+    if ($record['zero_abundance']==='t')
+      $data['Key facts'][] = array('caption'=>lang::get('Absence'), 'value'=> lang::get('This is a record indicating absence.'));
 
     // Do the custom attributes
     $options = array(
