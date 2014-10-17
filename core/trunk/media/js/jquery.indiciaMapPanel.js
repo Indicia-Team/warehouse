@@ -34,6 +34,12 @@ mapGeoreferenceHooks = [];
 mapLocationSelectedHooks = [];
 
 /**
+ * Add functions to this array for them to be called when clicking on the map to set a spatial reference.
+ * Functions will be passed data (click point information) and the map div as parameters.
+ */
+mapClickForSpatialRefHooks = [];
+
+/**
 * Class: indiciaMapPanel
 * JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
 * This code file supports read only maps. A separate plugin will then run on top of this to provide editing support
@@ -381,8 +387,23 @@ mapLocationSelectedHooks = [];
         locChange();
       }
     }
-
-
+    
+    /**
+     * After a click on the map, zoom in to the clicked on point.
+     */
+    function _zoomInToClickPoint(div) {
+      var features=getFeaturesByVal(div.map.editLayer, 'clickPoint', 'type'),
+          bounds = features[0].geometry.getBounds();
+      bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
+      if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+        // if showing something small, don't zoom in too far
+        div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+      }
+      else {
+        // Set the default view to show something triple the size of the grid square
+        div.map.zoomToExtent(bounds);
+      }
+    }
 
     function _getPrecisionHelp(div, value) {
       var helptext = [],info;
@@ -406,17 +427,7 @@ mapLocationSelectedHooks = [];
             }
           });
         }
-        var features=getFeaturesByVal(div.map.editLayer, 'clickPoint', 'type'),
-            bounds = features[0].geometry.getBounds();
-        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
-        if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
-          // if showing something small, don't zoom in too far
-          div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-        }
-        else {
-          // Set the default view to show something triple the size of the grid square
-          div.map.zoomToExtent(bounds);
-        }
+        _zoomInToClickPoint(div);
       }
       return helptext.join(' ');
     }
@@ -490,6 +501,57 @@ mapLocationSelectedHooks = [];
         });
       }
     }
+    
+    function updatePlotAfterMapClick(data, div) {
+      // if adding a plot, select it for modification
+      var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
+        standalone: true,
+        mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
+      });
+      div.map.addControl(modifier);
+      div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
+      modifier.activate();
+      div.map.plotModifier = modifier;
+      div.map.plotModifier.selectFeature(feature);
+    }
+    
+    /**
+     * After clicking on the map, if the option is set, output encouragement and help text to get the
+     * user to specify an accurate map reference. Also zooms the map in to assist this process.
+     */
+    function updateHelpAfterMapClick(data, div) {
+      // Output optional help and zoom in if more precision needed
+      helpitem = _getPrecisionHelp(div, data.sref);
+      if (helpitem !== '') {
+        $('#' + div.settings.helpDiv).html(helpitem);
+      } else {
+        helptext.push(div.settings.hlpClickAgainToCorrect);
+        // Extra help for grid square precision, as long as the precision is not fixed.
+        if (feature.geometry.CLASS_NAME !== 'OpenLayers.Geometry.Point' && 
+            (div.settings.clickedSrefPrecisionMin==='' || div.settings.clickedSrefPrecisionMin !== div.settings.clickedSrefPrecisionMax)) {
+          helptext.push(div.settings.hlpZoomChangesPrecision);
+        }
+        $('#' + div.settings.helpDiv).html(helptext.join(' '));
+      }
+      $('#' + div.settings.helpDiv).show();
+    } 
+    
+    /**
+     * After clicking on the map, if the option is set, zoom the map in to facilitate a more accurate setting
+     * of the position subsequently.
+     */
+    function updateZoomAfterMapClick(data, div) {
+      // Optional zoom in after clicking when helpDiv not in use.
+      _zoomInToClickPoint(div);
+      // Optional switch to satellite layer when using click_zoom
+      if (div.settings.helpToPickPrecisionSwitchAt && data.sref.length >= div.settings.helpToPickPrecisionSwitchAt) {
+        $.each(div.map.layers, function() {
+          if (this.isBaseLayer && this.name.indexOf('Satellite') !== -1 && div.map.baseLayer !== this) {
+            div.map.setBaseLayer(this);
+          }
+        });
+      }
+    }
 
     /**
      * Having clicked on the map, and asked warehouse services to transform this to a WKT,
@@ -531,55 +593,12 @@ mapLocationSelectedHooks = [];
       feature.attributes = {type: "clickPoint"};
       feature.style = new style('default');
       div.map.editLayer.addFeatures([feature]);
-
-      if (div.settings.clickForPlot) {
-        // if adding a plot, select it for modification
-        var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
-          standalone: true,
-          mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
-        });
-        div.map.addControl(modifier);
-        div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
-        modifier.activate();
-        div.map.plotModifier = modifier;
-        div.map.plotModifier.selectFeature(feature);
-      }
-
-      if (div.settings.helpDiv) {
-        // Output optional help and zoom in if more precision needed
-        helpitem = _getPrecisionHelp(div, data.sref);
-        if (helpitem !== '') {
-          $('#' + div.settings.helpDiv).html(helpitem);
-        } else {
-          helptext.push(div.settings.hlpClickAgainToCorrect);
-          // Extra help for grid square precision, as long as the precision is not fixed.
-          if (feature.geometry.CLASS_NAME !== 'OpenLayers.Geometry.Point' && 
-              (div.settings.clickedSrefPrecisionMin==='' || div.settings.clickedSrefPrecisionMin !== div.settings.clickedSrefPrecisionMax)) {
-            helptext.push(div.settings.hlpZoomChangesPrecision);
-          }
-          $('#' + div.settings.helpDiv).html(helptext.join(' '));
-        }
-        $('#' + div.settings.helpDiv).show();
-     } else if (div.settings.click_zoom) {
-        // Optional zoom in after clicking when helpDiv not in use.
-        var bounds = div.map.editLayer.features[0].geometry.getBounds();
-        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer*2);
-        if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
-          // if showing something small, don't zoom in too far
-          div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-        } else {
-          // Set the default view to show something triple the size of the grid square
-          div.map.zoomToExtent(bounds);
-        }
-        // Optional switch to satellite layer when using click_zoom
-        if (div.settings.helpToPickPrecisionSwitchAt && data.sref.length >= div.settings.helpToPickPrecisionSwitchAt) {
-          $.each(div.map.layers, function() {
-            if (this.isBaseLayer && this.name.indexOf('Satellite') !== -1 && div.map.baseLayer !== this) {
-              div.map.setBaseLayer(this);
-            }
-          });
-        }
-      }
+      
+      // Call any code which handles a click to set the spatial reference, e.g. zoom the map in, or set help hints.
+      $.each(mapClickForSpatialRefHooks, function() {
+        this(data, div);
+      });
+      
       showGridRefHints(div);
     }
 
@@ -2148,12 +2167,23 @@ mapLocationSelectedHooks = [];
           }
         });
       }
+      
+      // What extra stuff do we need to do after clicking to set the spatial reference?
+      if (div.settings.clickForPlot) {
+        mapClickForSpatialRefHooks.push(updatePlotAfterMapClick);
+      }
+      if (div.settings.helpDiv) {
+        mapClickForSpatialRefHooks.push(updateHelpAfterMapClick);
+      } else if (div.settings.click_zoom) {
+        mapClickForSpatialRefHooks.push(updateZoomAfterMapClick);
+      }
+      
       _bindControls(this);
       // keep a handy reference
       indiciaData.mapdiv=div;
       // call any post initialisation hooks
-      $.each(mapInitialisationHooks, function(i, fn) {
-        fn(div);
+      $.each(mapInitialisationHooks, function() {
+        this(div);
       });
     });
 
