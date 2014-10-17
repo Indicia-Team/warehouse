@@ -1,22 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <report title="My Sites" description="A list of sites I've created, or added to my list of sites (a custom person attribute).">
-      <query website_filter_field="lw.website_id">
+      <query website_filter_field="" >
       SELECT #columns#
       FROM locations l
       LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
       LEFT JOIN (samples s 
-        JOIN cache_occurrences co ON co.created_by_id=#user_id# AND co.created_by_id&lt;&gt;1 and co.sample_id=s.id
-      ) ON s.created_by_id=#user_id# AND s.created_by_id&lt;&gt;1       
+        JOIN cache_occurrences o ON o.created_by_id=#user_id# AND o.created_by_id&lt;&gt;1 and o.sample_id=s.id
+        AND o.website_id in (#website_ids#)
+      ) ON s.created_by_id=#user_id# 
+          AND s.created_by_id&lt;&gt;1
+          AND ST_INTERSECTS(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
+          AND NOT ST_TOUCHES(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
       LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
       LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
       #joins#
-      WHERE l.deleted=false
-      AND #website_filter#
+      #agreements_join#
+      WHERE (o.id is null or (#sharing_filter#))
+      AND (l.public=true or lw.website_id in (#website_ids#))
+      AND l.deleted=false
       AND l.created_by_id=#user_id#
-      AND ST_INTERSECTS(geom, COALESCE(l.boundary_geom, l.centroid_geom))
-      AND NOT ST_TOUCHES(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))  
+      #filters#      
       #group_bys#
     UNION
       SELECT #columns#
@@ -24,16 +29,21 @@
       LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
       LEFT JOIN (samples s 
-        JOIN cache_occurrences co ON co.created_by_id=#user_id# AND co.created_by_id&lt;&gt;1 and co.sample_id=s.id
-      ) ON s.created_by_id=#user_id# AND s.created_by_id&lt;&gt;1       
+        JOIN cache_occurrences o ON o.created_by_id=#user_id# AND o.created_by_id&lt;&gt;1 and o.sample_id=s.id
+        AND o.website_id in (#website_ids#)
+      ) ON s.created_by_id=#user_id# 
+          AND s.created_by_id&lt;&gt;1
+          AND ST_INTERSECTS(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
+          AND NOT ST_TOUCHES(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
       LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
       LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
       #joins#
-      WHERE l.deleted=false
-      AND #website_filter#
+      #agreements_join#
+      WHERE (o.id is null or (#sharing_filter#))
+      AND (l.public=true or lw.website_id in (#website_ids#))
+      AND l.deleted=false
       AND u.id IS NOT NULL
-      AND ST_INTERSECTS(geom, COALESCE(l.boundary_geom, l.centroid_geom))
-      AND NOT ST_TOUCHES(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
+      #filters#
       #group_bys#
       </query>
       <order_bys>
@@ -50,9 +60,9 @@
       <columns>
         <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
         <column name="name" display="Site Name" sql="l.name" datatype="text" />
-        <column name="occurrences" display="No. of Records" sql="COUNT(DISTINCT co.id)" aggregate="true" datatype="integer" />
-        <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT co.taxon_meaning_id)" aggregate="true" datatype="integer" />
-        <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT co.taxon_group_id)" aggregate="true" datatype="integer" />
+        <column name="occurrences" display="No. of Records" sql="COUNT(DISTINCT o.id)" aggregate="true" datatype="integer" />
+        <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true" datatype="integer" />
+        <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT o.taxon_group_id)" aggregate="true" datatype="integer" />
         <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" />
         <column name="created_by_user" visible="false" sql="CASE l.created_by_id WHEN #user_id# THEN true ELSE false END" />
         <column name="linked_to_user" visible="false" sql="CASE WHEN pav.id IS NOT NULL THEN true ELSE false END" />
