@@ -449,7 +449,9 @@ class Scheduled_Tasks_Controller extends Controller {
     echo '<br/>';
     var_export($sortedPlugins);
     echo '<br/>';    
-    //Make sure the cache_builder runs first as some other modules depend on the cache_occurrences table
+    //Make sure the cache_builder and spatial_index_builders run first as some other modules depend on the cache_occurrences and index_locations_samples tables
+    if (array_key_exists('spatial_index_builder', $sortedPlugins))
+      $sortedPlugins = array('spatial_index_builder' => $sortedPlugins['spatial_index_builder']) + $sortedPlugins;
     if (array_key_exists('cache_builder', $sortedPlugins))
       $sortedPlugins = array('cache_builder' => $sortedPlugins['cache_builder']) + $sortedPlugins;
     //Make sure the verifier notification emails run last as the emails are sent out based on the results of other modules such as
