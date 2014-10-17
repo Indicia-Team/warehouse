@@ -273,10 +273,12 @@ class ReportEngine {
   
   public function record_count() {
     if (isset($this->countQuery) && $this->countQuery!==null) {
-      $count = $this->reportDb->query($this->countQuery)->result_array(FALSE);
-      // query could return no rows, in which case return zero.
-      if(count($count)>0) return $count[0]['count'];
-      return 0;
+      $r = $this->reportDb->query($this->countQuery)->result_array(FALSE);
+      // query could return no rows, in which case return zero. Or multiple if counting several UNIONED queries.
+      $count=0;
+      foreach ($r as $row)
+        $count += $row['count'];
+      return $count;
     } else {
       return false;
     }
@@ -723,7 +725,7 @@ class ReportEngine {
       elseif (isset($this->customAttributes[$name])) {
         // request includes a custom attribute column being used as a filter.
         if ($this->customAttributes[$name]['string'])
-          $value =  "'" . pg_escape_string($value) . "'";;
+          $value =  "'" . pg_escape_string($value) . "'";
         $filter=str_replace('#filtervalue#', $value, $this->customAttributes[$name]['filter']);
         $query = str_replace('#filters#', "AND $filter\n#filters#", $query);
       }
