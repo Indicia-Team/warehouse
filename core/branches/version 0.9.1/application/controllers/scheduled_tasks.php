@@ -449,7 +449,9 @@ class Scheduled_Tasks_Controller extends Controller {
     echo '<br/>';
     var_export($sortedPlugins);
     echo '<br/>';    
-    //Make sure the cache_builder runs first as some other modules depend on the cache_occurrences table
+    //Make sure the cache_builder and spatial_index_builders run first as some other modules depend on the cache_occurrences and index_locations_samples tables
+    if (array_key_exists('spatial_index_builder', $sortedPlugins))
+      $sortedPlugins = array('spatial_index_builder' => $sortedPlugins['spatial_index_builder']) + $sortedPlugins;
     if (array_key_exists('cache_builder', $sortedPlugins))
       $sortedPlugins = array('cache_builder' => $sortedPlugins['cache_builder']) + $sortedPlugins;
     //Make sure the verifier notification emails run last as the emails are sent out based on the results of other modules such as
@@ -526,7 +528,8 @@ class Scheduled_Tasks_Controller extends Controller {
         // not contain the records since the correct change point
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
         // This query uses a 2 stage process as it is faster than joining occurrences to cache_occurrences.
-        $query = "select distinct o.id 
+        $query = "
+select distinct o.id 
 into temporary occlist
 from occurrences o 
 where o.updated_on>'$timestamp' and o.updated_on<='$currentTime'
