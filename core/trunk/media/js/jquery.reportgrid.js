@@ -339,7 +339,7 @@ var simple_tooltip;
           //rows on pages on the grid previous to the one the user is currently viewing.
           //indiciaData.allReportGridRecords is used to display the options on the popup filter, this needs all the items on the
           //grid regardless of whether they are actually displayed on screen (e.g items on pages previous to the one being viewed).
-          indiciaData.allReportGridRecords.push(theRow);
+            indiciaData.allReportGridRecords.push(theRow);
           rowCount++;
         }
       });
@@ -376,6 +376,10 @@ var simple_tooltip;
           } else {
             rows = response;
           }
+          //Get the rows on the grid as they first appear on the page, before any filtering is applied.
+          if (!indiciaData.initialReportGridRecords) {
+            indiciaData.initialReportGridRecords=rows;
+          }
           //The report grid can be configured with a popup that allows the user to remove rows containing particular
           //data from the grid e.g. if there is a location column, then the user can select not to show rows containing the data East Sussex.
           if (indiciaData.includePopupFilter) {   
@@ -392,10 +396,6 @@ var simple_tooltip;
           if (typeof response.count !== "undefined") {
             div.settings.recordCount = parseInt(response.count);
           } 
-          //Get the rows on the grid as they first appear on the page, before any filtering is applied.
-          if (!indiciaData.initialReportGridRecords) {
-            indiciaData.initialReportGridRecords=rows;
-          }
           // clear current grid rows
           if (clearExistingRows) {
             tbody.children().remove();
@@ -711,8 +711,13 @@ var simple_tooltip;
           width   : $(indiciaData.mapdiv).outerWidth(),
           height  : $(indiciaData.mapdiv).outerHeight()
       });
-      $('#map-loading').show();
-      var matchString, feature;
+      $('#map-loading').show();  
+      var matchString, feature, url;
+      if (!indiciaData.includePopupFilter) {  
+        url = request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : '');
+      } else {
+        url = request + (typeof recordCount==="undefined" ? '&wantCount=1' : '');
+      }
       // first call- get the record count
       $.ajax({
         dataType: "json",
@@ -722,6 +727,15 @@ var simple_tooltip;
             recordCount = response.count;
             response = response.records;
           }
+          //Need to apply popup filter to map records as well as the grid.
+          if (indiciaData.includePopupFilter) {   
+            response=applyPopupFilterExclusionsToRows(response,div, true);
+            if (typeof response.count !== "undefined") {
+              //response.count can be included in the response data, however as we applied a filter we 
+              //need to override this.
+              response.count=response.count-indiciaData.popupFilteRemovedRowsCount;
+            }   
+          } 
           // implement a crude way of aborting out of date requests, since jsonp does not support xhr
           // therefore no xhr.abort...&jsonp
           matchString = this.url.replace(/((jsonp\d+)|(jQuery\d+_\d+))/, '?').substring(0, currentMapRequest.length);
@@ -917,8 +931,8 @@ var simple_tooltip;
       //The filter data we show in the fancybox is a distinct version of the data in the column for the grid.
       //We don't want to show data more than once in the filter list.
       var dataRowsForFilter;
-      var initialRowWithoutImage;
-      var currentRowWithoutImage;
+      var initialRowWithoutImageOrGeom;
+      var currentRowWithoutImageOrGeom;
       //In column header is optional popup allowing user to filter out data from the grid.
       $('.col-popup-filter').click(function(evt) {
         dataRowsForFilter=[]
@@ -934,21 +948,24 @@ var simple_tooltip;
         //that were on the grid before the popup filter was applied
         if (indiciaData.initialReportGridRecords) {
           $.each(indiciaData.initialReportGridRecords, function(initialRowIdx, theInitialRow) {
-            //There is an issue when doing the initialRowWithoutImage/currentRowWithoutImage comparison.
+            //There is an issue when doing the initialRowWithoutImageOrGeom/currentRowWithoutImageOrGeom comparison.
             //The "images" in the row were automatically being amended in indiciaData.allReportGridRecords to include information about displaying in a fancybox,
             //This must be automatic somewhere, but was breaking the comparison, so remove images when doing the comparison.
-            initialRowWithoutImage=theInitialRow;
-            delete initialRowWithoutImage.images;
+            initialRowWithoutImageOrGeom=theInitialRow;
+            delete initialRowWithoutImageOrGeom.images;
+            //Also remove the geometry because sometimes the comparison is done with a grid record and sometimes from the map report, the grid lacks the geom
+            delete initialRowWithoutImageOrGeom.geom;
             //Assume record has been excluded by the popup filter unless we prove otherwise.
             recordHasBeenExcluded = true
             if (indiciaData.allReportGridRecords) {
               //Loop through all the records on the grid currently.
               $.each(indiciaData.allReportGridRecords, function(currentRowIdx, currentRow) {
-                currentRowWithoutImage=currentRow;
-                delete currentRow.images;
+                currentRowWithoutImageOrGeom=currentRow;
+                delete currentRowWithoutImageOrGeom.images;
+                delete currentRowWithoutImageOrGeom.geom;
                 //If we find that an item was on the grid when the screen first opened, and
                 //it is still displayed, then we know it hasn't been removed by the popup filter.
-                if (JSON.stringify(currentRow)==JSON.stringify(theInitialRow)) {
+                if (JSON.stringify(currentRowWithoutImageOrGeom)==JSON.stringify(initialRowWithoutImageOrGeom)) {
                   recordHasBeenExcluded = false;
                 }          
               });
