@@ -979,6 +979,8 @@ var simple_tooltip;
           });
         }
         popupFilterHtml += '</div>';
+        popupFilterHtml += '<input type=\"button\" class=\"clear-popup-filter\" value=\"Clear\">';
+        popupFilterHtml += '<input type=\"button\" class=\"select-all-popup-filter\" value=\"Select All\"><br>';
         popupFilterHtml += '<input type=\"button\" class=\"apply-popup-filter\" value=\"Apply\">';
         $.fancybox(popupFilterHtml);
       })
@@ -1014,6 +1016,22 @@ var simple_tooltip;
       });
       $('.apply-popup-filter').live( 'click', function() {
         doPopupFilter();
+      });
+      $('.clear-popup-filter').live( 'click', function() {
+        $('.popup-filter-checkbox').each(function (index, theCheckbox) {
+          //If the checkbox is checked, then deselect it
+          if ($(theCheckbox).is(':checked')) {
+            $(theCheckbox).attr("checked", false);
+          }
+        });
+      });
+      $('.select-all-popup-filter').live( 'click', function() {
+        $('.popup-filter-checkbox').each(function (index, theCheckbox) {
+          //If the checkbox is not checked, then select it
+          if (!$(theCheckbox).is(':checked')) {
+            $(theCheckbox).attr("checked", true);
+          }
+        });
       });
       setupReloadLinks(div);
 
