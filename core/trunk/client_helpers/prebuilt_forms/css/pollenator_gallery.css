@@ -100,8 +100,8 @@ div.olMap { clear:both; }
 #fo-id-buttons,#fo-new-insect-id-buttons,#fo-new-flower-id-buttons,#fo-express-doubt-buttons { background:#f8fdee; }
 
 #fo-insect-addn-info .addn-info-title, #fo-flower-addn-info .addn-info-title{ color:#85c302; border-color:#d5d5d5; font-weight:bold; text-transform:uppercase; display:block; padding-bottom:5px; font-size:0.8em; }
-#fo-insect-addn-info p, #fo-flower-addn-info p { font-size:0.8em; color:#999;}
-#fo-insect-addn-info p span, #fo-flower-addn-info p span { color:#333;}
+#fo-insect-addn-info p, #fo-flower-addn-info p, #fo-new-flower-id p { font-size:0.8em; color:#999;}
+#fo-insect-addn-info p span, #fo-flower-addn-info p span, #fo-new-flower-id p span { color:#333;}
 #fo-insect-addn-info, #fo-flower-addn-info { margin-bottom:20px; }
 #fo-localisation-info,#fo-new-insect-id,#fo-new-flower-id,#fo-express-doubt,#fo-edit-insect-id,#fo-edit-flower-id {
   margin-top:20px;
@@ -318,4 +318,12 @@ input[type="checkbox"] {
 }
 .species-select {
 	width: 600px;
+}
+#flower-species-list, #fo-edit-flower-id-list, #fo-edit-insect-id-list  {
+    font-size: 0.9em;
+}
+#flower-species-list thead, #flower-species-list .autocompleteRow,
+#fo-edit-flower-id-list thead, #fo-edit-flower-id-list .autocompleteRow,
+#fo-edit-insect-id-list thead, #fo-edit-insect-id-list .autocompleteRow {
+    color: #5ca20a;
 }
