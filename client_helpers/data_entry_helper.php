@@ -5512,7 +5512,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'style' => 'tabs',
       'progressBar' => false
     ), $options);
-    if (!isset($options['navButtons']))
+    if (empty($options['navButtons']))
       $options['navButtons'] = $options['style']==='wizard';
     // Only do anything if the id of the div to be tabified is specified
     if (!empty($options['divId'])) {
