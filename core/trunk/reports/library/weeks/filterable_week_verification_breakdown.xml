@@ -3,12 +3,11 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
     select #columns#
     from generate_series(0,52) as weeks(no)
-    left join (occurrences occ 
-      join cache_occurrences o on o.id=occ.id
+    left join (cache_occurrences o
       #agreements_join#
       and #sharing_filter#
-    ) on date_trunc('week', occ.verified_on)=date_trunc('week', CURRENT_DATE - (weeks.no*7))
-      and occ.verified_on is not null
+    ) on date_trunc('week', o.verified_on)=date_trunc('week', CURRENT_DATE - (weeks.no*7))
+      and o.verified_on is not null
     #joins#
     where 1=1
     #idlist#
