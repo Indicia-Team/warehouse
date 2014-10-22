@@ -65,7 +65,7 @@ $indicia_templates = array(
             if (!tabselected) {
               var tp=ctrl.filter('input,select,textarea').closest('.ui-tabs-panel');
               if (tp.length===1) {
-                $(tp).parent().tabs('select',tp.id);
+                indiciaFns.activeTab($(tp).parent(), tp.id);
               }
               tabselected = true;
             }
@@ -1718,7 +1718,11 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
     
     if (!empty($options['label']) && isset($indicia_templates['controlWrap'])) 
       $r = str_replace(array('{control}', '{id}'), array($r, str_replace(':', '-', $options['id'])), $indicia_templates['controlWrap']);
-      
+    if (!empty($options['tooltip'])) {
+      // preliminary support for
+      $id = str_replace(':', '\\\\:', array_key_exists('inputId', $options) ? $options['inputId'] : $options['id']);
+      self::$javascript .= "$('#$id').attr('title', '$options[tooltip]');\n";
+    }
     return $r;
   }
 

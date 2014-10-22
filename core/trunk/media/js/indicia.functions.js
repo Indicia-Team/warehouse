@@ -86,7 +86,12 @@ if (typeof window.indiciaData==="undefined") {
    */
   indiciaFns.activeTab = function(tabs, index) {
     var version=$.ui.version.split('.'), 
-        propname=(version[0]==='1' && version[1]<10) ? 'selected' : 'active';
+        propname;
+    if (version[0]==='1' && version[1]<10) {
+      propname = typeof index==="undefined" ? 'selected' : 'select';
+    } else {
+      propname = 'active';
+    }
     if (typeof index==="undefined") {
       return tabs.tabs('option', propname);
     }
