@@ -942,12 +942,13 @@ var simple_tooltip;
         //Use a number to make unique checkbox ids, had considered using the data itself to make up the id, but there there
         //might be problems with special characters.
         var popupItemCounter=0;
-        var recordHasBeenExcluded;
-        var checkboxCheckedString;
+        var recordHasBeenExcluded,checkboxCheckedString, sortedInitialReportGridRecords;
+        //Need to order the items to appear on the filter popup
+        sortedInitialReportGridRecords = sortPopupFilterItems(databaseColumnToGet);
         //Cycle through all all the initial records on the grid, this is items
         //that were on the grid before the popup filter was applied
-        if (indiciaData.initialReportGridRecords) {
-          $.each(indiciaData.initialReportGridRecords, function(initialRowIdx, theInitialRow) {
+        if (sortedInitialReportGridRecords) {
+          $.each(sortedInitialReportGridRecords, function(initialRowIdx, theInitialRow) {
             //There is an issue when doing the initialRowWithoutImageOrGeom/currentRowWithoutImageOrGeom comparison.
             //The "images" in the row were automatically being amended in indiciaData.allReportGridRecords to include information about displaying in a fancybox,
             //This must be automatic somewhere, but was breaking the comparison, so remove images when doing the comparison.
@@ -1001,6 +1002,42 @@ var simple_tooltip;
         popupFilterHtml += '<input type=\"button\" class=\"apply-popup-filter\" value=\"Apply\">';
         $.fancybox(popupFilterHtml);
       })
+      //Need to sort the items on the popup filter
+      var sortPopupFilterItems = function(databaseColumnToGet) {
+        //Use slice to actually clone the array, otherwise the original array is affected as we work on it.
+        var initialReportGridRecordsToSort=indiciaData.initialReportGridRecords.slice();
+        var sortedColumnItems=[];
+        var sortedInitialReportGridRecords=[];
+        var indexSorted=null;
+        //Firstly place the item from each record row which relate to the column we are filtering
+        //into an array.
+        $.each(initialReportGridRecordsToSort, function(initialRowIdx, theInitialRow) {
+          sortedColumnItems[initialRowIdx]=theInitialRow[databaseColumnToGet];
+        });
+        //Apply the sort
+        sortedColumnItems.sort();
+        //Cycle through the sorted items and then build up a new array of full records that 
+        //honour the sorting in the array of items from the column
+        $.each(sortedColumnItems, function(sortedIdx, sortedItem) {
+          $.each(initialReportGridRecordsToSort, function(initialRowIdx, theInitialRow) {
+            //indexSorted holds the index in the full records(initialReportGridRecordsToSort - unsorted) 
+            //array which matched the item in the sortedColumnItems array we are checking (sortedItem). 
+            //If we have already found a match then indexSorted will be not null so we don't need to do anymore
+            //until we move onto the next sortedItem
+            if (theInitialRow[databaseColumnToGet]==sortedItem && indexSorted===null) {
+              sortedInitialReportGridRecords.push(theInitialRow);
+              //Keep track of items which have already been sorted so we don't attempt to sort again.
+              indexSorted=initialRowIdx;
+            }
+          });
+          //Remove items that have already been sorted.
+          if (indexSorted) {
+            initialReportGridRecordsToSort.splice(indexSorted, 1);
+          }
+          indexSorted=null;
+        });
+        return sortedInitialReportGridRecords;  
+      }
       //When the user applies the popup filter
       var doPopupFilter = function() {
         indiciaData.dataToExclude=[];
