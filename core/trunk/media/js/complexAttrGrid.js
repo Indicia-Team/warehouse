@@ -110,6 +110,7 @@ jQuery(document).ready(function($) {
          attrTypeTag=attrName[0], attrId=attrName[1],
          gridDef=indiciaData['complexAttrGrid-'+attrTypeTag+'-'+attrId];
          $(row).remove();
+    }
         else
 {
       $(row).css('opacity', 0.4);
