@@ -635,6 +635,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     );
     return $retVal;
   }
+
   /** 
    * Declare the list of permissions we've got set up to pass to the CMS' permissions code.
    * @param int $nid Node ID, not used
@@ -647,6 +648,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $perms[] = $args['edit_permission'];
     if (!empty($args['ro_permission']))
       $perms[] = $args['ro_permission'];
+    $perms += parent::get_perms($nid, $args);
     return $perms;
   }
   
