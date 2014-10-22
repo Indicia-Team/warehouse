@@ -104,20 +104,10 @@ jQuery(document).ready(function($) {
     // e.target is the actual thing clicked on inside the tbody
     if ($(e.target).hasClass('ind-delete-icon')) {
       var row=$(e.target).closest('tr')[0];
-      if(gridDef['deleteRows']) {// option to remove rather than disable row when "x" clicked
-         newTarget=$(e.target).closest('table')[0],// find parent table before deleting row
-         attrName=table.id.replace('complex-attr-grid-', '').split('-'),
-         attrTypeTag=attrName[0], attrId=attrName[1],
-         gridDef=indiciaData['complexAttrGrid-'+attrTypeTag+'-'+attrId];
-         $(row).remove();
-    }
-        else
-{
       $(row).css('opacity', 0.4);
       $(row).find('input').css('text-decoration', 'line-through');
       $(row).find('.delete-flag').val('t');
       $(row).find('input').not(':hidden').attr('disabled', true);
-}
       updateUniqueSelects($(e.target).closest('table')[0]);
     }
   });
