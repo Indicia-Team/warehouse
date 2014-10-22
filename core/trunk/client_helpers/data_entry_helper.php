@@ -282,6 +282,7 @@ class data_entry_helper extends helper_base {
       'columns'=>array('x'=>array('label'=>'x','datatype'=>'text','unit'=>'cm','regex'=>'/^[0-9]+$/'),
           'y'=>array('label'=>'y','datatype'=>'lookup','termlist_id'=>'5')),
       'default'=>array(),
+      'deleteRows'=>false,
       'rowCountControl'=>''
     ), $options);
     list($attrTypeTag, $attrId) = explode(':', $options['fieldname']);
@@ -332,7 +333,7 @@ class data_entry_helper extends helper_base {
     // need to unset the variable used in &$def, otherwise it doesn't work in the next iterator.
     unset($def);
     $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows'],
-        'rowCountControl'=>$options['rowCountControl']);
+        'rowCountControl'=>$options['rowCountControl'],'deleteRows'=>$options['deleteRows']);
     self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n"; 
     $r .= "<th rowspan=\"2\"></th></tr><tr>$thRow2</tr></thead>";
     $r .= '<tbody>';
