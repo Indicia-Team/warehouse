@@ -176,7 +176,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
             "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"] ".
             "or a keyed array as @extraParams={\"preferred\":\"true\",\"orderby\":\"term\"}. " .
             "Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
-            "classes to the control such as control-width-3). <br/>".
+            "classes to the control such as control-width-3). Specify @permision=... to create a Drupal permission which you can use to " .
+            "control the visibility of this specific control.<br/>".
             "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. When this option is ".
             "used, you can change any of the control options for an individual custom attribute control by putting @control|option=value on the subsequent line(s). ".
             "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*]. ".
@@ -1785,7 +1786,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_locationautocomplete($auth, $args, $tabAlias, $options) {
     if (isset($options['extraParams'])) {
-      foreach ($options['extraParams'] as $key => &$value)
+      foreach ($options['extraParams'] as &$value)
         $value = apply_user_replacements($value);
     }
 
@@ -1917,9 +1918,9 @@ else
    * Get an occurrence attribute control.
    */
   protected static function get_control_occattr($auth, $args, $tabAlias, $options) {
+    $attribName = 'occAttr:' . $options['ctrlId'];
     if ($args['multiple_occurrence_mode']==='single') {
       self::load_custom_occattrs($auth['read'], $args['survey_id']);
-      $attribName = 'occAttr:' . $options['ctrlId'];
       foreach (self::$occAttrs as $idx => $attr) {
         if ($attr['id'] === $attribName) {
           self::$occAttrs[$idx]['handled'] = true;
