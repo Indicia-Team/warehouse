@@ -214,10 +214,10 @@ setupTabsNextPreviousButtons=function(divId, topSelector) {
      selectTab(1);
   });
   
-  $('.tab-submit', $div).click(function() {
+  $('.tab-submit', $div).parents('form:first').submit(function(e) {
     var current=indiciaFns.activeTab($div);
-    if (validateInputsOnCurrentTab(current)) {
-      $(this).parents('form:first').submit();
+    if (!validateInputsOnCurrentTab(current)) {
+      return false;
     }
   });
 }

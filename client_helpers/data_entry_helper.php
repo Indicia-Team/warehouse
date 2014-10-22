@@ -50,6 +50,10 @@ require_once('submission_builder.php');
  * string.</li>
  * <li><b>helpTextClass</b>
  * Specify helpTextClass to override the class normally applied to control help texts, which defaults to helpText.</li>
+ * <li><b>tooltip</b><br/>
+ * Optional. Defines help text to be displayed as a title for the input control. Display of the control's title is browser
+ * dependent so you might need to enhance this functionality by adding jQuery UI tooltip to the page and calling tooltip()
+ * on the $(document) object.
  * <li><b>prefixTemplate</b>
  * If you need to change the prefix for this control only, set this to refer to the name of an alternate template you
  * have added to the global $indicia_templates array. To change the prefix for all controls, you can update the value of
@@ -2418,13 +2422,18 @@ $('#$escaped').change(function(e) {
     $options = self::check_options($options);
     if ($options['splitLatLong']) {
       // Outputting separate lat and long fields, so we need a few more options
-      $parts = explode(' ',$options['default']);
-      $parts[0] = explode(',', $parts[0]);
+      if (!empty($options['default'])) {
+        preg_match('/^(?P<lat>[^,]*), ?(?P<long>.*)$/', $options['default'], $matches);
+        if (isset($matches['lat']))
+          $options['defaultLat'] = $matches['lat'];
+        if (isset($matches['long']))
+          $options['defaultLong'] = $matches['long'];
+      }
       $options = array_merge(array(
-        'defaultLat' => $parts[0][0],
-        'defaultLong' => $parts[1],
-        'fieldnameLat' => $options['srefField'].'_lat',
-        'fieldnameLong' => $options['srefField'].'_long',
+        'defaultLat' => '',
+        'defaultLong' => '',
+        'fieldnameLat' => $options['fieldname'].'_lat',
+        'fieldnameLong' => $options['fieldname'].'_long',
         'labelLat' => lang::get('Latitude'),
         'labelLong' => lang::get('Longitude'),
         'idLat'=>'imp-sref-lat',
@@ -4134,7 +4143,6 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     else
       // There is no specified list of occurrence attributes, so use all available for the survey
       $attrs = array_keys($attributes);
-    
     foreach ($attrs as $occAttrId) {
       // don't display the grid ID attribute
       if (!empty($options['gridIdAttributeId']) && $occAttrId===$options['gridIdAttributeId'])
@@ -5526,7 +5534,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       self::$javascript .= "scroll(0,0);\n";
 
       // Client-side validation only works on active tabs so validate on tab change
-      if ($options['navButtons']) {
+      if ($options['style']==='wizard' || $options['navButtons']) {
         //Add javascript for moving through wizard
         self::$javascript .= "setupTabsNextPreviousButtons('$divId', '$topSelector');\n";
       }
