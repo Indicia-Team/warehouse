@@ -2082,7 +2082,7 @@ mapClickForSpatialRefHooks = [];
           fullscreenchange=function () {
             var fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement;
             if (fullscreenElement) {
-              if (typeof indiciaData.origFullscreenWidth==="undefined") {
+              if (typeof indiciaData.origMapStyle==="undefined") {
                 indiciaData.origMapStyle=$(div).attr('style');
               }
               $(div).css('width','100%');
@@ -2099,8 +2099,15 @@ mapClickForSpatialRefHooks = [];
             document.addEventListener("msfullscreenchange", fullscreenchange);
             ctrlObj = new OpenLayers.Control.Button({
                 displayClass: "olControlFullscreen", title: div.settings.hintFullscreen, trigger: function() {
-                  var fs = div.requestFullscreen || div.mozRequestFullScreen || div.webkitRequestFullScreen || div.msRequestFullscreen;
-                  fs.call(div);
+                  if ((document.fullscreenElement && document.fullscreenElement !== null) ||    // alternative standard methods
+                      document.mozFullScreen || document.webkitIsFullScreen) {
+                    var cancel=document.exitFullscreen || document.mozCancelFullScreen || webkitExitFullScreen || msExitFullScreen;
+                    cancel.call(document);
+                  } else {
+                    var fs = div.requestFullscreen || div.mozRequestFullScreen || div.webkitRequestFullScreen || div.msRequestFullscreen;
+                    fs.call(div);
+                  }
+
                 }
             });
             toolbarControls.push(ctrlObj);
