@@ -300,7 +300,7 @@ class data_entry_helper extends helper_base {
         if (!empty($def['termlist_id'])) {
           $termlistData = self::get_population_data(array(
             'table'=>'termlists_term',
-            'extraParams'=>$options['extraParams'] + array('termlist_id'=>$def['termlist_id'], 'view'=>'cache')
+            'extraParams'=>$options['extraParams'] + array('termlist_id'=>$def['termlist_id'], 'view'=>'cache', 'orderby'=>isset($def['orderby'])?$def['orderby']:'term')
           ));
           foreach ($termlistData as $term) {
             $minified[] = array($term['id'], $term['term']);
