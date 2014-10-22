@@ -178,6 +178,26 @@ class iform_dynamic {
     return $retVal;
   }
 
+  /**
+   * Declare the list of permissions we've got set up to pass to the CMS' permissions code.
+   * @param int $nid Node ID, not used
+   * @param array $args Form parameters array, used to extract the defined permissions.
+   * @return array List of distinct permissions.
+   */
+  public static function get_perms($nid, $args) {
+    $perms = array();
+    if (!empty($args['structure'])) {
+      // scan for @permission=... in the form structure
+      $structure = data_entry_helper::explode_lines($args['structure']);
+      $permissions = preg_grep('/^@((smp|occ|loc)Attr:\d+|)?permission=/', $structure);
+      foreach ($permissions as $permission) {
+        $parts = explode('=', $permission, 2);
+        $perms[] = array_pop($parts);
+      }
+    }
+    return $perms;
+  }
+
     /**
    * Return the generated form output.
    * @return Form HTML.
@@ -500,6 +520,9 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
               $options['default'] = $_GET[$option[1]];
           }
         }
+        // if @permission specified as an option, then check that the user has access to this control
+        if (!empty($options['permission']) && !user_access($options['permission']))
+          continue;
         $parts = explode('.', str_replace(array('[', ']'), '', $component));
         $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
         if (!empty($args['high_volume']) && $args['high_volume']) {

@@ -37,6 +37,7 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
     if(isset($args['permission_name']) && $args['permission_name']!='') $perms[] = $args['permission_name'];
     if(isset($args['edit_permission']) && $args['edit_permission']!='') $perms[] = $args['edit_permission'];
     if(isset($args['ro_permission'])   && $args['ro_permission']!='')   $perms[] = $args['ro_permission'];
+    $perms += parent::get_perms($nid, $args);
     return $perms;
   }
 
