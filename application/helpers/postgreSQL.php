@@ -53,8 +53,9 @@ class postgreSQL {
       "and sav.deleted=false ".
       "and o.deleted=false ".
       "and o.website_id=$websiteId ".
-      "and sav.int_value=$cmsUserId".
-      "and o.created_by_id<>$userId");
+      "and sav.int_value=$cmsUserId ".
+      "and o.created_by_id<>$userId ".
+      "and o.created_by_id=1");
   }
   
   /** 
@@ -67,40 +68,38 @@ class postgreSQL {
     // note this query excludes user 1 from the notifications (admin user) as they are records which don't
     // have a warehouse user ID. Also excludes any previous notifications of this exact source for this user.
     // ID difficulty notifications only passed through for level 3 and above.
-    return $db->query("select distinct on (o.id) case when oc.auto_generated=true then 'A' when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
-        co.id, co.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
-        o.verified_on, co.public_entered_sref, oc.comment, oc.auto_generated, oc.generated_by, o.record_status, o.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
-        case when oc.auto_generated=true then oc.generated_by else 'oc_id:' || oc.id::varchar end as source_detail, 't' as record_owner           
-      from occurrences o
-      join cache_occurrences co on co.id=o.id
-      left join occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false and oc.created_on>'$last_run_date' and oc.created_by_id<>o.created_by_id
-          and (coalesce(oc.generated_by, '')<>'data_cleaner_identification_difficulty' or coalesce(oc.generated_by_subtype, '') not in ('1','2')) 
-      join users u on u.id=coalesce(oc.created_by_id, o.verified_by_id)
-      left join notifications n on n.linked_id=o.id 
-          and n.source_type=case when oc.auto_generated=true then 'A' when o.verified_on>'$last_run_date' and o.record_status not in ('I','T','C') then 'V' else 'C' end
-          and n.source_detail=case when oc.auto_generated=true then oc.generated_by else 'oc_id:' || oc.id::varchar end
-      where ((o.verified_on>'$last_run_date'
-      and o.record_status not in ('I','T','C'))
+    return $db->query(
+"select distinct on (co.id) case when oc.auto_generated=true then 'A' when co.verified_on>'$last_run_date' and co.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
+        co.id, co.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref,
+        co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.cache_updated_on as updated_on, oc.created_by_id as occurrence_comment_created_by_id,
+        case when oc.auto_generated=true then oc.generated_by else 'oc_id:' || oc.id::varchar end as source_detail, 't' as record_owner
+into temporary records_to_notify
+      from cache_occurrences co
+      left join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date' and oc.created_by_id<>co.created_by_id
+          and (coalesce(oc.generated_by, '')<>'data_cleaner_identification_difficulty' or coalesce(oc.generated_by_subtype, '') not in ('1','2'))
+      where ((co.verified_on>'$last_run_date'
+      and co.record_status not in ('I','T','C'))
       or oc.id is not null)
-      and o.created_by_id<>1
-      and n.id is null
+      and co.created_by_id<>1
     union
-    select distinct 'C' as source_type, co.id, ocprev.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
-        o.verified_on, co.public_entered_sref, oc.comment, oc.auto_generated, oc.generated_by, o.record_status, o.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
-        'oc_id:' || oc.id::varchar as source_detail, case ocprev.created_by_id when o.created_by_id then 't' else 'f' end as record_owner
-      from occurrences o
-      join cache_occurrences co on co.id=o.id
-      join occurrence_comments ocprev on ocprev.occurrence_id=o.id and ocprev.deleted=false and ocprev.created_by_id<>o.created_by_id and ocprev.created_by_id<>1
-      join occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false and oc.created_on>'$last_run_date' and oc.created_by_id<>ocprev.created_by_id
-      join users u on u.id=coalesce(oc.created_by_id, o.verified_by_id)
-      left join notifications n on n.linked_id=o.id 
-          and n.source_type='C' 
-          and n.source_detail='oc_id:' || oc.id::varchar
-      where o.created_by_id<>1 and oc.created_by_id<>1
-      and n.id is null
+    select distinct 'C' as source_type, co.id, ocprev.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref,
+        co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.cache_updated_on as updated_on, oc.created_by_id as occurrence_comment_created_by_id,
+        'oc_id:' || oc.id::varchar as source_detail, case ocprev.created_by_id when co.created_by_id then 't' else 'f' end as record_owner
+      from cache_occurrences co
+      join occurrence_comments ocprev on ocprev.occurrence_id=co.id and ocprev.deleted=false and ocprev.created_by_id<>co.created_by_id and ocprev.created_by_id<>1
+      join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date' and oc.created_by_id<>ocprev.created_by_id
+      where co.created_by_id<>1 and oc.created_by_id<>1
       -- only notify if not the commenter or record owner
-      and ocprev.created_by_id<>oc.created_by_id and ocprev.created_by_id<>o.created_by_id
-      ")->result();
+      and ocprev.created_by_id<>oc.created_by_id and ocprev.created_by_id<>co.created_by_id;
+
+select rn.*, u.username
+from records_to_notify rn
+join occurrences o on o.id=rn.id
+left join notifications n on n.linked_id=o.id 
+          and n.source_type=rn.source_type
+          and n.source_detail=rn.source_detail
+join users u on u.id=coalesce(rn.occurrence_comment_created_by_id, o.verified_by_id)
+where n.id is null;")->result();
   }  
   
   /** 
