@@ -790,7 +790,7 @@ class XMLReportReader_Core implements ReportReader
         'searchArea' => array('datatype'=>'geometry', 'default'=>'', 'display'=>'Boundary',
             'description'=>'Boundary to search within',
             'wheres' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913))")
+              array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_makevalid(st_geomfromtext('#searchArea#',900913)))")
             )
         ),
         'occurrence_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'ID',
