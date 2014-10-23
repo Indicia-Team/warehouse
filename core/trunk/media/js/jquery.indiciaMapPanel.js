@@ -962,8 +962,10 @@ mapClickForSpatialRefHooks = [];
             //on the map (such as drawing boundaries) otheriwise they will continue to show.
             if (clickableVectorLayers.length>0 && this.allowBox) {
               if (this.handlers) {
-                this.handlers.box.deactivate();
+                this.handlers.box.deactivate();            
               }
+              //Remove any popups still being displayed
+              $('.olPopup').remove();
             } 
             //Continue with the deactivation.
             OpenLayers.Control.prototype.deactivate.call(this);
