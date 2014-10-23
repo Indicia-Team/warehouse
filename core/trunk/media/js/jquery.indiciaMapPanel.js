@@ -949,7 +949,7 @@ mapClickForSpatialRefHooks = [];
             clickableVectorLayers.push(this);
           }
         });
-
+        
         clickableWMSLayerNames = clickableWMSLayerNames.join(',');
         // Create a control that can handle both WMS and vector layer clicks.
         var infoCtrl = new OpenLayers.Control({
@@ -957,6 +957,17 @@ mapClickForSpatialRefHooks = [];
           title: div.settings.reportGroup===null ? '' : div.settings.hintQueryDataPointsTool,
           lastclick: {},
           allowBox: clickableVectorLayers.length>0 && div.settings.allowBox===true,
+          deactivate: function() { 
+            //If the map is setup to use popups, then we need to switch off popups when moving to use a different tool icon
+            //on the map (such as drawing boundaries) otheriwise they will continue to show.
+            if (clickableVectorLayers.length>0 && this.allowBox) {
+              if (this.handlers) {
+                this.handlers.box.deactivate();
+              }
+            } 
+            //Continue with the deactivation.
+            OpenLayers.Control.prototype.deactivate.call(this);
+          },
           activate: function() {
             var handlerOptions = {
               'single': true,
@@ -969,8 +980,8 @@ mapClickForSpatialRefHooks = [];
                   this, {done: this.onGetInfo},
                   {boxDivClassName: "olHandlerBoxSelectFeature"}
                 )
-              };
-              this.handlers.box.activate();
+              };             
+             this.handlers.box.activate();
             } else {
               // allow click or bounding box actions
               this.handlers = {click: new OpenLayers.Handler.Click(this, {
@@ -1743,7 +1754,7 @@ mapClickForSpatialRefHooks = [];
         zoom = this.settings.initial_zoom;
       }
       if (center.lon !== null && center.lat !== null) {
-        center = new OpenLayers.LonLat(center.lon, center.lat);
+        center = new OpenLayers.LonLat(center.lon, center.lat);   
       } else {
         center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
         if (div.map.displayProjection.getCode()!=div.map.projection.getCode()) {
@@ -1974,7 +1985,7 @@ mapClickForSpatialRefHooks = [];
             }
           }
         });
-
+        
         div.map.addControl(infoCtrl);
         infoCtrl.activate();
       }
