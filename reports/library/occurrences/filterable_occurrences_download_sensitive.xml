@@ -1,0 +1,99 @@
+<report
+    title="Occurrences Download using standard filters inc. sensitive"
+    description="Report suitable for downloading data, compatible with the standard report filter parameters. Sensitive data returned at full precision so use with caution, e.g. for LRC record download."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN occurrences occ on occ.id=o.id and occ.deleted=false -- to get occurrence comment
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  JOIN samples s on s.id=o.sample_id AND s.deleted=false
+  LEFT JOIN (index_locations_samples ils
+    JOIN locations l on l.id=ils.location_id
+    JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id AND ctt.term='Vice County'
+  ) on ils.sample_id=o.sample_id
+  LEFT JOIN (occurrence_attribute_values det_full_val
+    JOIN occurrence_attributes det_full on det_full.id=det_full_val.occurrence_attribute_id and det_full.deleted=false and det_full.system_function='det_full_name'
+  ) ON det_full_val.occurrence_id=o.id AND det_full_val.deleted=false
+  LEFT JOIN (occurrence_attribute_values det_first_val
+    JOIN occurrence_attributes det_first on det_first.id=det_first_val.occurrence_attribute_id and det_first.deleted=false and det_first.system_function='det_full_name'
+  ) ON det_first_val.occurrence_id=o.id AND det_first_val.deleted=false
+  LEFT JOIN (occurrence_attribute_values det_last_val
+    JOIN occurrence_attributes det_last on det_last.id=det_last_val.occurrence_attribute_id and det_last.deleted=false and det_last.system_function='det_full_name'
+  ) ON det_last_val.occurrence_id=o.id AND det_last_val.deleted=false
+  JOIN websites w on w.id=o.website_id 
+  JOIN users u ON u.id=o.created_by_id
+  JOIN people p ON p.id=u.person_id
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='uploadFolder' display='Image upload folder' description='Image upload folder on the warehouse including the trailing slash' datatype='string' default='' />
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
+    <column name='recordkey' display='RecordKey' sql="'iBRC' || o.id" datatype="text" />
+    <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
+    <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
+    <column name='taxon' display='Species' 
+      template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
+      sql="o.preferred_taxon" datatype='species' />
+    <column name='common' display='Common name' 
+      template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
+      sql="o.default_common_name" datatype='text' />
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
+    <column name='kingdom' display='Kingdom' sql='cttl.kingdom_taxon' datatype='text' />
+    <column name='order' display='Order' sql='cttl.order_taxon' datatype='text' />
+    <column name='family' display='Family' sql='cttl.family_taxon' datatype='text' />
+    <column name='taxonversionkey' display='TaxonVersionKey' sql='o.taxa_taxon_list_external_key' datatype="text" />
+    <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />
+    <column name='record_comment' display='Comment' sql="occ.comment" datatype="text" />
+    <column name='location_name' display='Site name' sql="o.location_name" datatype='text' />
+    <column name='entered_sref' display='Grid Ref' sql="case s.entered_sref_system when '4326' then s.entered_sref else replace(s.entered_sref, ' ', '') end" datatype='text' />
+    <column name='lat' display='Latitude' sql="substring(st_astext(st_transform(st_centroid(o.public_geom), 4326)) from E'POINT\\(.+ (.+)\\)')" datatype="text" />
+    <column name='long' display='Longitude' sql="substring(st_astext(st_transform(st_centroid(o.public_geom), 4326)) from E'POINT\\((.+) ')" datatype="text" />
+    <column name='projection' display='Projection' 
+        sql="case s.entered_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(s.entered_sref_system) end" 
+        datatype="text" />
+    <column name='precision' display='Precision' 
+        sql="case s.entered_sref_system
+    when '4326' then 50 
+    when '27700' then 1
+    else case length(replace(s.entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(s.entered_sref, ' ', '')))/2) end
+  end" 
+        datatype="text" />
+    <column name="vicecounty" display="ViceCounty" sql="array_to_string(array_agg(l.name), ', ')" datatype="text" aggregate="true" />        
+    <column name='date_start' sql='o.date_start' visible='false' />
+    <column name='date_end' sql='o.date_end' visible='false' />
+    <column name='date_type' sql='o.date_type' visible='false' />
+    <column name='date' display='Date' datatype='date' />
+    <column name='input_date' sql='occ.created_on' display='Input on date' datatype='date' />
+    <column name='last_edit_date' sql='occ.updated_on' display='Last edited on date' datatype='date' />
+    <column name='recorder' display='Recorder' sql="o.recorders" datatype="text" />
+    <column name='determiner' display='Determiner' datatype="text" 
+      sql="CASE WHEN det_full_val.text_value IS NULL THEN 
+        CASE WHEN det_last_val.text_value IS NULL THEN NULL ELSE det_last_val.text_value || COALESCE(', ' || det_first_val.text_value, '') END
+      ELSE det_full_val.text_value END" />
+    <column name='verifier' display='Verifier' sql='o.verifier' datatype="text" />
+    <column name='sample_comment' display='Sample comment' sql="s.comment" datatype="text" />
+    <column name='zeroabundance' display='ZeroAbundance' sql='upper(cast (o.zero_abundance as character))' datatype="text" />
+    <column name='record_status' display='State' 
+        sql="CASE o.record_status WHEN 'V' THEN 'Verified' WHEN 'D' THEN 'Queried' WHEN 'R' THEN 'Rejected' WHEN 'I' THEN 'Input still in progress' WHEN 'C' THEN 'Record Submitted' WHEN 'S' THEN 'Awaiting check' ELSE o.record_status END" />
+    <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
+    <column name='certainty' display="Recorder certainty" sql="CASE o.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
+    <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->
+    <column name='recorder_person_id' sql="case when o.recorders = p.surname || ', ' || p.first_name or o.recorders = p.first_name || ' ' || p.surname then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='determiner_person_id' sql="case when o.recorders = det_last_val.text_value || ', ' || det_first_val.text_value 
+        or o.recorders = det_first_val.text_value || ' ' || det_last_val.text_value 
+        or o.recorders = det_full_val.text_value then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='sensitivity_precision' display='Sesnsitivity blur' sql='o.sensitivity_precision' datatype='integer' />
+    <column name='images' display='Images' sql="case when images is null then null else '#uploadFolder#' || replace(images, ',', ', #uploadFolder#') end"/>
+  </columns>
+</report>
