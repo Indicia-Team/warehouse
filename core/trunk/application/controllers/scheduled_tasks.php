@@ -176,7 +176,7 @@ class Scheduled_Tasks_Controller extends Controller {
       ->from('notifications')
       ->where('acknowledged','f')
       ->in('notifications.digest_mode', $digestTypes)
-      ->orderby('notifications.user_id', 'notifications.cc', 'ASC')
+      ->orderby(array('notifications.user_id' => 'ASC', 'notifications.cc' => 'ASC'))
       ->get();
     $nrNotifications = count($notifications);
     if($nrNotifications > 0)
