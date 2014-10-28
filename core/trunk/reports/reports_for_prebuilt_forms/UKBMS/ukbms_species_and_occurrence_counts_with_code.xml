@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="UKBMS specific Species and occurrence counts by site" description="UKBMS specific: Lists locations and the number of species and occurrences within them. This report includes the location code, and relies on the record being input with a link to the site and will not pick up records where the spatial reference is in the site boundary but without a direct reference to the site.">
-      <query website_filter_field='w.id'>
+<report title="UKBMS specific species and occurrence counts by site" description="UKBMS specific: Lists locations and the number of species and occurrences within them. This report includes the location code, and relies on the record being input with a link to the site and will not pick up records where the spatial reference is in the site boundary but without a direct reference to the site.">
+      <query website_filter_field='survey.website_id'>
       WITH RECURSIVE search_samples(top_id, id, location_id, survey_id, date_start, date_end, depth) AS (
         SELECT s.id, s.id, s.location_id, s.survey_id, s.date_start, s.date_end, 1
         FROM samples s
@@ -12,25 +12,18 @@
         WHERE s.parent_id = ss.id AND s.deleted=false
       )
       SELECT #columns#
-      FROM websites w
-      JOIN surveys su on su.website_id=w.id
-      JOIN locations_websites lw ON lw.website_id=w.id and lw.deleted=false
+      FROM surveys su
+      JOIN locations_websites lw ON lw.website_id=su.website_id and lw.deleted=false
       JOIN locations l ON l.id=lw.location_id and l.deleted=false 
         AND (l.code = '' OR l.code IS NULL OR '#blank_code#'!='yes')
-      LEFT JOIN (termlists_terms ttl1
-        JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id and ttl2.deleted=false
-        JOIN terms t ON t.id=ttl2.term_id and t.deleted=false
-      ) ON ttl1.id=l.location_type_id and ttl1.deleted=false
+      LEFT JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id
       LEFT JOIN (search_samples s
-        JOIN occurrences o on o.sample_id=s.id AND o.deleted='f'
-        JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
-        JOIN taxa tx ON tx.id=ttl.taxon_id AND tx.deleted=false
+        JOIN cache_occurrences o on o.sample_id=s.id AND o.zero_abundance='f'
       ) on s.survey_id=su.id AND s.location_id=l.id 
       #joins#
-      WHERE w.deleted=false
+      WHERE su.deleted=false
       AND #website_filter#
-      AND (o.zero_abundance='f' OR o.id IS NULL)
-      AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='' OR t.term='#location_type_id#')
+      AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='' OR ctt.term='#location_type_id#')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       </query>
@@ -51,8 +44,8 @@
             <column name="id" display="ID" sql="l.id" in_count="true" datatype="integer" />
             <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" datatype="text" />
             <column name="occurrences" display="No. of Occurrences" sql="COUNT(DISTINCT o.id)" aggregate="true" datatype="integer" />
-            <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT ttl.taxon_meaning_id)" aggregate="true" datatype="integer" />
-            <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT tx.taxon_group_id)" aggregate="true" datatype="integer" />
+            <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true" datatype="integer" />
+            <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT o.taxon_group_id)" aggregate="true" datatype="integer" />
             <column name="code" display="Code" sql="l.code" datatype="text" />
             <column name="geom" sql="l.centroid_geom" datatype="text" />
       </columns>
