@@ -942,34 +942,39 @@ var simple_tooltip;
         //Use a number to make unique checkbox ids, had considered using the data itself to make up the id, but there there
         //might be problems with special characters.
         var popupItemCounter=0;
-        var recordHasBeenExcluded,checkboxCheckedString, sortedInitialReportGridRecords;
+        var recordHasBeenExcluded,checkboxCheckedString, sortedInitialReportGridRecords,initialRowWithoutImageOrGeomStringified;
+        var gridRecordsWithoutImagesOrGeomStringified=[];
         //Need to order the items to appear on the filter popup
-        sortedInitialReportGridRecords = sortPopupFilterItems(databaseColumnToGet);
+        sortedInitialReportGridRecords = sortPopupFilterItems(databaseColumnToGet);   
+        if (indiciaData.allReportGridRecords) {
+          //Loop through all the records on the grid currently.
+          $.each(indiciaData.allReportGridRecords, function(currentRowIdx, currentRow) {
+            //Stringify the object and remove any data that aren't useful when comparing records, so rows are ready for comparison with
+            //other rows.
+            delete currentRow.images;
+            delete currentRow.geom; 
+            delete currentRow.rootFolder;
+            gridRecordsWithoutImagesOrGeomStringified.push(JSON.stringify(currentRow));
+          });
+        } 
+        
         //Cycle through all all the initial records on the grid, this is items
         //that were on the grid before the popup filter was applied
         if (sortedInitialReportGridRecords) {
           $.each(sortedInitialReportGridRecords, function(initialRowIdx, theInitialRow) {
-            //There is an issue when doing the initialRowWithoutImageOrGeom/currentRowWithoutImageOrGeom comparison.
-            //The "images" in the row were automatically being amended in indiciaData.allReportGridRecords to include information about displaying in a fancybox,
-            //This must be automatic somewhere, but was breaking the comparison, so remove images when doing the comparison.
+            //Stringify the object and remove any data that aren't useful when comparing records, so rows are ready for comparison with
+            //other rows.
             initialRowWithoutImageOrGeom=theInitialRow;
             delete initialRowWithoutImageOrGeom.images;
             //Also remove the geometry because sometimes the comparison is done with a grid record and sometimes from the map report, the grid lacks the geom
             delete initialRowWithoutImageOrGeom.geom;
-            //Assume record has been excluded by the popup filter unless we prove otherwise.
-            recordHasBeenExcluded = true
-            if (indiciaData.allReportGridRecords) {
-              //Loop through all the records on the grid currently.
-              $.each(indiciaData.allReportGridRecords, function(currentRowIdx, currentRow) {
-                currentRowWithoutImageOrGeom=currentRow;
-                delete currentRowWithoutImageOrGeom.images;
-                delete currentRowWithoutImageOrGeom.geom;
-                //If we find that an item was on the grid when the screen first opened, and
-                //it is still displayed, then we know it hasn't been removed by the popup filter.
-                if (JSON.stringify(currentRowWithoutImageOrGeom)==JSON.stringify(initialRowWithoutImageOrGeom)) {
-                  recordHasBeenExcluded = false;
-                }          
-              });
+            delete initialRowWithoutImageOrGeom.rootFolder;
+            initialRowWithoutImageOrGeomStringified=JSON.stringify(initialRowWithoutImageOrGeom);
+            recordHasBeenExcluded = false
+            //If we find a record that was displayed initially when screen first opened is not currently displayed, then
+            //we know it has been excluded by the filter
+            if ($.inArray(initialRowWithoutImageOrGeomStringified,gridRecordsWithoutImagesOrGeomStringified)===-1) {
+              recordHasBeenExcluded = true;
             }
             //If the record is excluded by the popup filter, then when the user reopens the popup filter
             //box, then the checkbox needs to default to be unchecked for that data
