@@ -926,25 +926,18 @@ var simple_tooltip;
           e.target.hasChanged = false;
         }
       };
-      var popupFilterHtml = '';
-      var dataInColumnCell;
-      //The filter data we show in the fancybox is a distinct version of the data in the column for the grid.
-      //We don't want to show data more than once in the filter list.
-      var dataCellsForFilter;//this is data of just the column we are dealing with
-      var dataRowsForFilter; //full rows of data
-      var sortedRowWithoutImageOrGeom;
-      var currentRowWithoutImageOrGeom;
       //In column header is optional popup allowing user to filter out data from the grid.
       $('.col-popup-filter').click(function(evt) {
-        dataCellsForFilter=[];
-        dataRowsForFilter=[]
-        popupFilterHtml = '<div class="popup-filter-options-container">';
+        var dataInColumnCell;
+        var dataCellsForFilter=[];
+        var dataRowsForFilter=[]
+        var popupFilterHtml = '<div class="popup-filter-options-container">';
         var splitButtonId = $(this).attr('id').split('-');
         var databaseColumnToGet = splitButtonId[3];
         //Use a number to make unique checkbox ids, had considered using the data itself to make up the id, but there there
         //might be problems with special characters.
         var popupItemCounter=0;
-        var recordHasBeenExcluded,checkboxCheckedString, sortedInitialReportGridRecords,sortedRowWithoutImageOrGeomStringified;
+        var recordHasBeenExcluded,checkboxCheckedString,sortedRowWithoutImageOrGeom,sortedRowWithoutImageOrGeomStringified;
         var gridRecordsWithoutImagesOrGeomStringified=[];  
         if (indiciaData.allReportGridRecords) {
           //Loop through all the records on the grid currently.
@@ -957,7 +950,6 @@ var simple_tooltip;
             gridRecordsWithoutImagesOrGeomStringified.push(JSON.stringify(currentRow));
           });
         } 
-        
         //Cycle through all all the initial records on the grid, this is items
         //that were on the grid before the popup filter was applied
         if (indiciaData.initialReportGridRecords) {
@@ -976,12 +968,13 @@ var simple_tooltip;
             }
           });
         }
-        var sortedFilterPopupRecords;
         //Need to order the items to appear on the filter popup
-        sortedFilterPopupRecords = sortPopupFilterItems(databaseColumnToGet,dataRowsForFilter); 
+        var recordsToSort=dataRowsForFilter.slice();
+        recordsToSort.sort(sortFilterPopupRecords(databaseColumnToGet));
         //Create the popup html
-        if (sortedFilterPopupRecords) {
-          $.each(sortedFilterPopupRecords, function(itemIdx, theFilterRow) {
+        //Note that recordsToSort has now been sorted
+        if (recordsToSort) {
+          $.each(recordsToSort, function(itemIdx, theFilterRow) {
             //Stringify the object and remove any data that aren't useful when comparing records, so rows are ready for comparison with
             //other rows.
             sortedRowWithoutImageOrGeom=theFilterRow;
@@ -1014,41 +1007,20 @@ var simple_tooltip;
         popupFilterHtml += '<input type=\"button\" class=\"apply-popup-filter\" value=\"Apply\">';
         $.fancybox(popupFilterHtml);
       })
-      //Need to sort the items on the popup filter
-      var sortPopupFilterItems = function(databaseColumnToGet,dataRowsForFilter) {
-        //Use slice to actually clone the array, otherwise the original array is affected as we work on it.
-        var recordsToSort=dataRowsForFilter.slice();
-        var sortedColumnItems=[];
-        var sortedInitialReportGridRecords=[];
-        var indexSorted=null;
-        //Firstly place the item from each record row which relate to the column we are filtering
-        //into an array.
-        $.each(recordsToSort, function(recordIdx, record) {
-          sortedColumnItems[recordIdx]=record[databaseColumnToGet];
-        });
-        //Apply the sort
-        sortedColumnItems.sort();
-        //Cycle through the sorted items and then build up a new array of full records that 
-        //honour the sorting in the array of items from the column
-        $.each(sortedColumnItems, function(sortedIdx, sortedItem) {
-          $.each(recordsToSort, function(recordToSortIdx, recordToSort) {
-            //indexSorted holds the index in the full records(recordsToSort - unsorted) 
-            //array which matched the item in the sortedColumnItems array we are checking (sortedItem). 
-            //If we have already found a match then indexSorted will be not null so we don't need to do anymore
-            //until we move onto the next sortedItem
-            if (recordToSort[databaseColumnToGet]==sortedItem && indexSorted===null) {
-              sortedInitialReportGridRecords.push(recordToSort);
-              //Keep track of items which have already been sorted so we don't attempt to sort again.
-              indexSorted=recordToSortIdx;
-            }
-          });
-          //Remove items that have already been sorted.
-          if (indexSorted) {
-            recordsToSort.splice(indexSorted, 1);
-          }
-          indexSorted=null;
-        });
-        return sortedInitialReportGridRecords;  
+      
+      /*
+       * Sort the items on the popup filter
+       */
+      function sortFilterPopupRecords(property) {
+        var sortOrder = 1;
+        if(property[0] === "-") {
+          sortOrder = -1;
+          property = property.substr(1);
+        }
+        return function (a,b) {
+            var result = (a[property] < b[property]) ? -1 : (a[property] > b[property]) ? 1 : 0;
+            return result * sortOrder;
+        }
       }
       //When the user applies the popup filter
       var doPopupFilter = function() {
