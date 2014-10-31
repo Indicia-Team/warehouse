@@ -5333,13 +5333,17 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $parentControlId = str_replace(':','\\\\:',$options['parentControlId']);
     $escapedId = str_replace(':','\\\\:',$options['id']);
     $fn = preg_replace("/[^A-Za-z0-9]/", "", $options['id'])."_populate";
+    if (!empty(parent::$warehouse_proxy))
+      $base_url = parent::$warehouse_proxy;
+    else
+      $base_url = parent::$base_url;
     if (!empty($options['report'])) {
-      $url = parent::$base_url."index.php/services/report/requestReport";
+      $url = $base_url."index.php/services/report/requestReport";
       $request = "$url?report=".$options['report'].".xml&mode=json&reportSource=local&callback=?";
       $query = $options['filterField'] . '="+$(this).val()+"';
     }
     else {
-      $url = parent::$base_url."index.php/services/data";
+      $url = $base_url."index.php/services/data";
       $request = "$url/".$options['table']."?mode=json&callback=?";
       $inArray = array('val');
       if (!isset($options['filterIncludesNulls']) || $options['filterIncludesNulls'])
