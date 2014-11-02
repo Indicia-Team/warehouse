@@ -2536,14 +2536,19 @@ $('#$escaped').change(function(e) {
    */   
   public static function species_autocomplete($options) {
     global $indicia_templates;
-    if (!isset($options['cacheLookup']))
-      $options['cacheLookup']=true;
+    $options = array_merge(array(
+      'cacheLookup' => true,
+      'selectMode' => false
+    ), $options);
     if (empty($indicia_templates['format_species_autocomplete_fn']))
       self::build_species_autocomplete_item_function($options);
     $db = data_entry_helper::get_species_lookup_db_definition($options['cacheLookup']);
     // get local vars for the array
     extract($db);
-    $options['extraParams']['orderby'] = ($options['cacheLookup']) ? 'searchterm_length,original,preferred_taxon' : 'taxon';
+    if ($options['cacheLookup'])
+      $options['extraParams']['orderby'] = $options['selectMode'] ? 'original,preferred_taxon' : 'searchterm_length,original,preferred_taxon';
+    else
+      $options['extraParams']['orderby'] = 'taxon';
     $options = array_merge(array(
       'fieldname'=>'occurrence:taxa_taxon_list_id',
       'table'=>$tblTaxon,
