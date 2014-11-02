@@ -110,6 +110,8 @@ class ORM extends ORM_Core {
    * @var boolean
    */
   public $wantToUpdateMetadata = true;
+
+  private $attrValModels = array();
   
   /**
    * Constructor allows plugins to modify the data model.
@@ -1383,11 +1385,18 @@ class ORM extends ORM_Core {
     // Create a attribute value, loading the existing value id if it exists, or search for the existing record
     // if not multivalue but no id supplied and not a new record
     // @todo: Optimise attribute saving by using query builder rather than ORM
+    if (!empty($this->attrValModels[$this->object_name])) {
+      $attrValueModel = $this->attrValModels[$this->object_name];
+      $attrValueModel->clear();
+    } else {
+      $attrValueModel=ORM::factory($this->object_name.'_attribute_value');
+      $this->attrValModels[$this->object_name] = $attrValueModel;
+    }
     if ($this->existing && (!is_null($valueId)) && (!$attrDef->multi_value=='f'))
-      $attrValueModel = ORM::factory($this->object_name.'_attribute_value')
-          ->where(array($this->object_name.'_attribute_id'=>$attrId, $this->object_name.'_id'=>$this->id))->find();
-    if (!isset($attrValueModel) || !$attrValueModel->loaded)
-      $attrValueModel = ORM::factory($this->object_name.'_attribute_value', $valueId);
+      $attrValueModel->where(array($this->object_name.'_attribute_id'=>$attrId, $this->object_name.'_id'=>$this->id))->find();
+    if (!$attrValueModel->loaded && !empty($valueId))
+      $attrValueModel->find($valueId);
+    
     $oldValues = array_merge($attrValueModel->as_array());
     $dataType = $attrDef->data_type;
     $vf = null;
