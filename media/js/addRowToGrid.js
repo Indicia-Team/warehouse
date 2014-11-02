@@ -343,13 +343,16 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
     extraParams = {
-      orderby : indiciaData.speciesGrid[gridId].cacheLookup ? 'searchterm_length,original,preferred_taxon' : 'taxon',
       mode : 'json',
       qfield : indiciaData.speciesGrid[gridId].cacheLookup ? 'searchterm' : 'taxon',
       auth_token: readAuth.auth_token,
       nonce: readAuth.nonce,
       taxon_list_id: lookupListId
     };
+    if (indiciaData.speciesGrid[gridId].cacheLookup)
+      extraParams.orderby = indiciaData.speciesGrid[gridId].selectMode ? 'original,preferred_taxon' : 'searchterm_length,original,preferred_taxon';
+    else
+      extraParams.orderby = 'taxon';
     if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") { 
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
       // a custom query on the list id overrides the standard filter..
