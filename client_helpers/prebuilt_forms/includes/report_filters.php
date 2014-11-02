@@ -119,8 +119,8 @@ class filter_what extends filter_base {
       'fieldname' => 'taxa_taxon_list_list',
       'table' => 'cache_taxa_taxon_list',
       'captionField' => 'taxon',
-      'valueField' => 'id',
-      'extraParams' => $readAuth + array('preferred' => 't', 'query' => '{"where":["taxon_rank_sort_order>'.$familySortOrder.'"]}'),
+      'valueField' => 'preferred_taxa_taxon_list_id',
+      'extraParams' => $readAuth + array('query' => '{"where":["taxon_rank_sort_order>'.$familySortOrder.'"]}'),
       'addToTable' => false
     );
     //Use all taxa in the warehouse as there isn't an iform master list so don't need the taxon list id param
