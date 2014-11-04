@@ -31,8 +31,10 @@ $config['sref_notations'] = array
 (
   '4326' =>'Latitude and Longitude (WGS84)',
   '4277' =>'Latitude and Longitude (OSGB36)',
+  '27700' =>'British National Grid Easting/Northing',
   '2169' =>'Gauss Luxembourg',
-  '27572'=>'NTF (Paris) / Lambert zone II'
+  '27572'=>'NTF (Paris) / Lambert zone II',
+  '31370' => 'Belgian Lambert 72'
 );
 
 // Set the internally stored geoms to use spherical mercator projection
