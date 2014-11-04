@@ -220,6 +220,7 @@ class Location_Controller extends Gridview_Base_Controller {
       }
       $view->model = $this->model;
       $view->controllerpath = $this->controllerpath;
+      $view->systems = kohana::config('sref_notations.sref_notations');
       $this->template->content = $view;
       // Setup a breadcrumb
       $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
