@@ -208,8 +208,9 @@ $indicia_templates = array(
     
     'linked_list_javascript' => '
 {fn} = function() {
-  $("#{escapedId}").addClass("ui-state-disabled").html("<option>Loading...</option>");
-  if (!isNaN($(this).val())) { // skip loading for placeholder text
+var placeHolder=" Loading... ";
+  $("#{escapedId}").addClass("ui-state-disabled").html("<option>"+placeHolder+"</option>");
+  if ($(this).val() != placeHolder) { // skip loading for placeholder text
     $.getJSON("{request}&{query}", function(data){
       var $control = $("#{escapedId}"), selected;
       $control.html("");
