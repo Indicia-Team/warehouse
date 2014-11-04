@@ -28,10 +28,11 @@
 <input type='checkbox' class="vnarrow" name="use_parent_code"/>If so, use the code to join to the parent rather than the name?.<br/>
 <label for='SRID' class='wide' >SRID used in Shapefile</label>
 <select id='SRID' name='srid' >
-  <option value="27700">EPSG:27700 British National Grid</option>
-  <option value="4326">EPSG:4326 WGS 84</option>
-  <option value="900913">EPSG:900913 Web Mercator (Google)</option>
-  <option value="2169">EPSG:2169 Luxembourg 1930</option>
+  <?php
+    foreach ($systems as $code=>$system) {
+      echo "<option value=\"$code\">EPSG:$code $system</option>";
+    }
+  ?>
 </select><br/>
 <input type='checkbox' class="vnarrow" name="use_sref_system"/>Select this checkbox when using the boundary above and you wish the centroid to be generated using this sref. If not checked, the centroid will be generated in EPSG:4326 (Lat Long)<br/>
 <label for='type' class='wide' >Location type for all</label>
