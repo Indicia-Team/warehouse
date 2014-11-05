@@ -693,12 +693,28 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         ));
         $geom = $response[0]['boundary_geom'] ? $response[0]['boundary_geom'] : $response[0]['centroid_geom'];  
         iform_map_zoom_to_geom($geom, lang::get('Boundary of {1} for the {2} group', $response[0]['name'], self::$group['title']), true);
+        self::hide_other_boundaries($args);
       }
       elseif (!empty($filterdef->searchArea)) {
         iform_map_zoom_to_geom($filterdef->searchArea, lang::get('Recording area for the {1} group', self::$group['title']), true);
+        self::hide_other_boundaries($args);
       }
+      if (!empty($filterDef->taxon_group_names)) {
+        $args['taxon_filter'] = implode("\n", array_values((array)$filterdef->taxon_group_names));
+        $args['taxon_filter_field']='taxon_group';
+      }
+      // @todo Consider other types of species filter, e.g. family or species list?
     }
     return parent::get_form_html($args, $auth, $attributes);
+  }
+  
+  /**
+   * If zooming to a group site, we don't want to display the user's own profile locality or other map setting location.
+   */
+  private static function hide_other_boundaries(&$args) {
+    $args['remember_pos']=false;
+    unset($args['location_boundary_id']);
+    $args['display_user_profile_location']=false;
   }
 
   /**

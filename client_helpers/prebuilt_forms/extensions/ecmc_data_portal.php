@@ -293,5 +293,16 @@ $('#clone-effort').click(function() {
     return $r;
   }
   
+  public static function points_editor($auth, $args, $tabalias, $options, $path) {
+    if (!empty($_GET['dynamic-transect'])) {
+      $tokens = explode(':', $_GET['dynamic-transect']);
+      hostsite_set_page_title('Review points for transect '.$tokens[2].' of survey '.$tokens[1].' by group '.$tokens[0]);
+    }
+    hostsite_set_breadcrumb(array('Review transect lines'=>'data/review-transect-lines'));
+    data_entry_helper::$javascript .= "mapInitialisationHooks.push(drawPoints);\n";
+    data_entry_helper::$javascript .= "indiciaData.website_id=$args[website_id];\n";
+    data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url(null, 'sample')."\";\n";
+    return '';
+  }
+  
 }
-?>
