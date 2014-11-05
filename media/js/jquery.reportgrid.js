@@ -1102,7 +1102,7 @@ var simple_tooltip;
                 for(var i=1;i<featureArr.length;i++) {
                     extent.extend(featureArr[i].geometry.getBounds());
                 }
-                zoom = indiciaData.reportlayer.map.getZoomForExtent(extent)-2;
+                zoom = Math.min(indiciaData.reportlayer.map.getZoomForExtent(extent)-2, indiciaData.mapdiv.settings.maxZoom);
                 indiciaData.reportlayer.map.setCenter(extent.getCenterLonLat(), zoom);
                 indiciaData.mapdiv.map.events.triggerEvent('moveend');
               }
