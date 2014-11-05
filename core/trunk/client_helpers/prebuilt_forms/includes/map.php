@@ -336,7 +336,7 @@ function iform_map_zoom_to_location($locationId, $readAuth) {
 function iform_map_zoom_to_geom($geom, $name, $restrict=false) {
   // Note, since the following moves the map, we want it to be the first mapInitialisationHook
   data_entry_helper::$javascript .= "
-mapInitialisationHooks.unshift(function(mapdiv) {
+mapInitialisationHooks.push(function(mapdiv) {
   var parser, feature, loclayer = new OpenLayers.Layer.Vector(
     '".$name."',
     {'sphericalMercator': true, displayInLayerSwitcher: true}
@@ -348,6 +348,7 @@ mapInitialisationHooks.unshift(function(mapdiv) {
   loclayer.addFeatures([feature]);
   // Don't zoom to the locality if the map is set to remember last position
   var bounds=feature.geometry.getBounds();
+  mapdiv.map.updateSize();
   if (typeof $.cookie === 'undefined' || mapdiv.settings.rememberPos===false || $.cookie('maplon')===null) {
     if (mapdiv.map.getZoomForExtent(bounds) > mapdiv.settings.maxZoom) {
       // if showing something small, don't zoom in too far

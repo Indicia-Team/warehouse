@@ -1728,7 +1728,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
               }
               $record[$wktCol] = $geomIdx;
               if (!empty($colsToInclude)) {
+                // if limiting the columns, ensure that the geom and row ID are included.
                 $colsToInclude[$wktCol]='';
+                if (!empty($options['rowId']))
+                  $colsToInclude[$options['rowId']]='';
                 $record = array_intersect_key($record, $colsToInclude); 
               }
               $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts" . (empty($options['rowId']) ? '' : ", '" . $record[$options['rowId']] . "'") . ");\n";
@@ -2186,7 +2189,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       if (isset($action['img'])) {
         $rootFolder = self::getRootfolder();
         $img=str_replace(array('{rootFolder}', '{sep}'), array($rootFolder, strpos($rootFolder, '?')===FALSE ? '?' : '&'), $action['img']);
-        $content = '<img src="'.$img.'" title="'.$action['caption'].'" />';
+        $title = empty($action['caption']) ? lang::get('Click to run the action') : $action['caption'];
+        $content = "<img src=\"$img\" title=\"$title\" />";
       } elseif (isset($action['caption']))
         $content = $action['caption'];
       $links[] = "<a class=\"action-button$class\"$href$onclick>".$content.'</a>';

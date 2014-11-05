@@ -304,7 +304,7 @@ class iform_easy_download_2 {
   public static function get_form($args, $node, $response=null) {
     $conn = iform_get_connection_details($node);
     data_entry_helper::$js_read_tokens = data_entry_helper::get_read_auth($conn['website_id'], $conn['password']);
-    if (!empty($_POST))
+    if (!empty($_POST) && !empty($_POST['format']))
       self::do_data_services_download($args, $node);
     // set up a control wrap template, to make it easy to turn them on and off
     global $indicia_templates;

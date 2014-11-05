@@ -728,15 +728,17 @@ $('#entry_form').submit(function() {
    */
   private static function extractUserInfoFromFormValues(&$s, $values, $fieldname, $isAdmin) {
     $count=0;
-    if (!empty($values["groups_user:$fieldname"]) || !empty($existingAdmins)) {
+    if (!empty($values["groups_user:$fieldname"])) {
       if (!isset($s['subModels']))
         $s['subModels']=array();
       if (!empty($values["groups_user:$fieldname"])) {
         foreach($values["groups_user:$fieldname"] as $userId) {
-          $values = array('user_id'=>$userId, 'administrator'=>$isAdmin);
-          $s['subModels'][]=array('fkId' => 'group_id', 
-            'model' => submission_builder::wrap($values, 'groups_user'));
-          $count++;
+          if ($userId) {
+            $values = array('user_id'=>$userId, 'administrator'=>$isAdmin);
+            $s['subModels'][]=array('fkId' => 'group_id', 
+              'model' => submission_builder::wrap($values, 'groups_user'));
+            $count++;
+          }
         }
       }
     }
