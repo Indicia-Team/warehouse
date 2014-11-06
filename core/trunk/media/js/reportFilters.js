@@ -170,8 +170,7 @@ jQuery(document).ready(function($) {
           $('#species-tab .context-instruct').show();
         }
         $("#what-tabs").tabs("option", "disabled", disabled);
-        $( "#what-tabs" ).tabs("select", firstTab);
-        $( "#what-tabs" ).tabs("option", "active", firstTab);
+        indiciaFns.activeTab($( "#what-tabs" ), firstTab);
         if (context && context.taxon_group_list) {
           $('input#taxon_group_list\\:search\\:q').setExtraParams({"idlist":context.taxon_group_list});
           $('#species-group-tab .context-instruct').show();
