@@ -1,0 +1,27 @@
+<report
+    title="Unallocated Squares"
+    description="Map showing monads (squares) where the ones that have a user allocation are shown in a different colour to the ones that don't."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+    LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+    LEFT JOIN person_attribute_values pav on pav.int_value=l.id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
+  WHERE l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#  
+    AND #website_filter# AND l.deleted=false
+  </query>
+  <params>
+    <param name='core_square_type_id' display='Core Square Type Id' description='' datatype='integer'/>
+    <param name='additional_square_type_id' display='Additional Square Type Id' description='' datatype='integer'/>
+    <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
+  </params>
+  <columns> 
+    <column name='id' sql='l.id' datatype='integer' visible='false'/>
+    <column name='count' sql='count(pav.id)' datatype='integer' visible='false' aggregate="true"/>
+    <column name='entered_sref' display='Grid Ref' sql="regexp_replace(l.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' />
+    <column name='gn' visible='false' feature_style="graphicName" sql="'square'" aggregate="true"/>    
+    <column name="sc" visible="false" feature_style="strokeColor" sql="case count(pav.id) when 0 then 'green' else 'red' end" aggregate="true"/>
+    <column name="fc" visible="false" feature_style="fillColor" sql="case count(pav.id) when 0 then 'green' else 'red' end" aggregate="true"/>
+    <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom,l.centroid_geom))" />
+  </columns>
+</report>
