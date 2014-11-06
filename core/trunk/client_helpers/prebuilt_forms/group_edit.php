@@ -54,7 +54,7 @@ class iform_group_edit {
         'name'=>'group_type',
         'caption'=>'Group type',
         'description'=>'Type of group this form will be used to create or edit. Leave blank to let the group creator choose.',
-        'type'=>'select',
+        'type'=>'checkbox_group',
         'table'=>'termlists_term',
         'valueField'=>'id',
         'captionField'=>'term',
@@ -265,11 +265,17 @@ class iform_group_edit {
     $r .= $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= data_entry_helper::hidden_text(array('fieldname'=>'group:id'));
-    if (!empty($args['group_type'])) {
-      $r .= '<input type="hidden" name="group:group_type_id" value="'.$args['group_type'].'"/>';
+    // maintain compatibility with form settings from before group type became multiselect.
+    if (empty($args['group_type']))
+      $args['group_type'] = array();
+    elseif (!is_array($args['group_type']))
+      $args['group_type']=array($args['group_type']);
+    // if a fixed choice of group type, can use a hidden input to put the value in the form.
+    if (count($args['group_type'])===1) {
+      $r .= '<input type="hidden" name="group:group_type_id" value="'.$args['group_type'][0].'"/>';
       $response = data_entry_helper::get_population_data(array(
         'table'=>'termlists_term',
-        'extraParams'=>$auth['read'] + array('id'=>$args['group_type'])
+        'extraParams'=>$auth['read'] + array('id'=>$args['group_type'][0])
       ));
       self::$groupType=strtolower($response[0]['term']);
     }
@@ -295,7 +301,10 @@ class iform_group_edit {
       'helpText' => lang::get('Description and notes about the {1} which will be shown in the {1} listing pages to help other users find your group.', self::$groupType),
       'class' => 'control-width-6'
     ));
-    if (empty($args['group_type'])) {
+    if (count($args['group_type'])!==1) {
+      $params = array('termlist_external_key'=>'indicia:group_types','orderby'=>'sortorder,term');
+      if (!empty($args['group_type']))
+        $params['query'] = json_encode(array('in'=>array('id'=>array_values($args['group_type']))));
       $r .= data_entry_helper::select(array(
         'label' => lang::get('Group type'),
         'fieldname' => 'group:group_type_id',
@@ -303,7 +312,7 @@ class iform_group_edit {
         'table'=>'termlists_term',
         'valueField'=>'id',
         'captionField'=>'term',
-        'extraParams'=>$auth['read'] + array('termlist_external_key'=>'indicia:group_types'),
+        'extraParams'=>$auth['read'] + $params,
         'class'=>'control-width-4',
         'helpText'=>lang::get('Choose the type of group')
       ));
