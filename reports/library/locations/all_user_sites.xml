@@ -21,8 +21,12 @@
   </order_bys>
   <params>
     <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
-    <param name="location_id" display="Location Id" description="A location id user if we only want to return results for a single location." datatype="integer" default=''>
+    <param name="location_id" display="Location Id" description="A location id used if we only want to return results for a single location." datatype="integer" default='' emptyvalue=''>
       <where>l.id=#location_id#</where>
+    </param>
+    --Note am using the name the_user_id as just using user_id seems to pickup the current user's id automatically which isn't what we want at all
+    <param name="the_user_id" display="User Id" description="A user id used if we only want to return results for a single user." datatype="integer" default='' emptyvalue=''>
+      <where>u.id=#the_user_id#</where>
     </param>
   </params>
   <columns>
