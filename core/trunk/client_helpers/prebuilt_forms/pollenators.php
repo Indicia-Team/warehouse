@@ -1094,6 +1094,17 @@ $('#cc-1-reinit-button').click(function() {
     	$options['msgGeorefNothingFound'] = lang::get('msgGeorefNothingFound');
     
     $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order', 'allow_data_entry'=>'t');
+    $species_ctrl_args=array(
+    		'fieldname'=>'flowerSelect',
+    		'table'=>'taxa_taxon_list',
+    		'captionField'=>'taxon',
+    		'listCaptionSpecialChars'=>true,
+    		'valueField'=>'id',
+    		'columns'=>2,
+    		'blankText'=>lang::get('LANG_Choose_Taxon'),
+    		'extraParams'=>$extraParams,
+    		'suffixTemplate'=>'nosuffix'
+    );
     
     $r .= '
 <div id="cc-2" class="poll-section">
@@ -1114,18 +1125,16 @@ $('#cc-1-reinit-button').click(function() {
       <div id="cc-2-flower-identify" class="poll-dummy-form">
         <div class="id-tool-group">
           '.iform_pollenators::help_button($use_help, "flower-help-button", $args['help_function'], $args['help_flower_arg']).'
-		  <p><strong>'.lang::get('LANG_Identify_Flower').'</strong></p>
+		  <p><strong>'.lang::get('LANG_Identify_Flower').' :</strong></p>
           <div class="id-later-group">
             <label for="id-flower-later" class="follow-on">'.lang::get('LANG_ID_Flower_Later').' </label><input type="checkbox" id="id-flower-later" name="id-flower-later" /> 
           </div>
 		  <input type="hidden" id="flower:taxon_details" name="flower:taxon_details" value=""/>
           <input type="hidden" name="flower:determination_type" value="A" />
           <input type="hidden" name="flower:taxa_taxon_list_id" value="" />
-          <label for="id-flower-unknown" class="follow-on">'.lang::get('LANG_ID_Flower_Unknown').' </label><input type="checkbox" id="id-flower-unknown" name="id-flower-unknown" /> 
-          <table id="flower-species-list">
-            <thead><tr><th>'.lang::get('Selected Species').'</th><th></th></tr></thead>
-            <tbody><tr id="flowerAutocompleteRow"><td>'.lang::get('Add').' <input name="flowerAutocomplete" id="flowerAutocomplete" /></td><td></td></tr></tbody>
-          </table>
+          <label for="id-flower-unknown" class="follow-on">'.lang::get('LANG_ID_Flower_Unknown').' </label><input type="checkbox" id="id-flower-unknown" name="id-flower-unknown" /><br/>
+          '.lang::get('LANG_Known_Species').' : <input name="flowerAutocomplete" id="flowerAutocomplete" />'.data_entry_helper::select($species_ctrl_args).'
+          <table id="flower-species-list"><tbody id="flower-species-list-body"></tbody></table>
         </div>
  	    <div class="id-specified-group">
           <label for="flower:taxon_extra_info" class="follow-on">'.lang::get('LANG_ID_More_Precise').' </label> 
@@ -1246,13 +1255,21 @@ jQuery('input#flowerAutocomplete').autocomplete(flowerTaxa,
       // {max}
 });
 jQuery('input#flowerAutocomplete').result(function(event, data) {
+  if(jQuery('#flower-species-list input[value='+data.id+']').length > 0) return;
   jQuery('input#flowerAutocomplete').val('');
-  jQuery('<tr class=\"flower-species-list-entry\"><td><input type=\"hidden\" name=\"flower:taxa_taxon_list_id_list[]\" value=\"'+data.id+'\"\>'+htmlspecialchars(data.taxon)+'<td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>').insertBefore('#flowerAutocompleteRow');
+  jQuery('<tr class=\"flower-species-list-entry\"><td><input type=\"hidden\" name=\"flower:taxa_taxon_list_id_list[]\" value=\"'+data.id+'\"\>'+htmlspecialchars(data.taxon)+'</td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>').appendTo('#flower-species-list-body');
   jQuery('#cc-2-flower-identify [name=flower\\:determination_type]').val('A');
   jQuery('#id-flower-unknown').removeAttr('checked');
   jQuery('#id-flower-later').removeAttr('checked').attr('disabled','disabled');
 });
-
+jQuery('select#flowerSelect').change(function() {
+  if(jQuery('#flower-species-list input[value='+jQuery(this).val()+']').length > 0) return;
+  jQuery('<tr class=\"flower-species-list-entry\"><td><input type=\"hidden\" name=\"flower:taxa_taxon_list_id_list[]\" value=\"'+jQuery(this).val()+'\"\>'+htmlspecialchars(jQuery(this).find('option[value='+jQuery(this).val()+']').text())+'</td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>').appendTo('#flower-species-list-body');
+  jQuery('#cc-2-flower-identify [name=flower\\:determination_type]').val('A');
+  jQuery('select#flowerSelect').val('');
+  jQuery('#id-flower-unknown').removeAttr('checked');
+  jQuery('#id-flower-later').removeAttr('checked').attr('disabled','disabled');
+});
 showSessionsPanel = true;
 
 buildMap = function (){
@@ -1863,7 +1880,7 @@ checkDate = function(name, formSel){
   var session = this;
   var dateError = false;
   var d2 = new Date(convertDate(control.val()));
-  var two_days=2*1000*60*61*24; // allows a bit of leaway
+  var two_days=1000*60*61*(24+25); // allows a bit of leaway, plus extra hour for Day light saving transition. (milliSeconds)
   jQuery('.required').filter('[name=sample:date]').each(function(){
     var d1 = new Date(convertDate(jQuery(this).val()));
     if(Math.abs(d1.getTime()-d2.getTime()) > two_days){

@@ -262,11 +262,29 @@ class iform_pollenator_gallery {
           'group'=>'Floral Station Attributes'
           ),
       array(
+          'name'=>'flower_data_entry_only',
+          'caption'=>'Data entry only flowers',
+          'description'=>'Only include in the filter those flowers which are flagged as data entry allowed.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Floral Station Attributes'
+      ),
+      array(
           'name'=>'insect_list_id',
           'caption'=>'Insect Species List ID',
           'description'=>'The Indicia ID for the species list that insects can be selected from.',
           'type'=>'int',
           'group'=>'Insect Attributes'
+      ),
+      array(
+          'name'=>'insect_data_entry_only',
+          'caption'=>'Data entry only insects',
+          'description'=>'Only include in the filter those insects which are flagged as data entry allowed.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Insect Attributes'
       ),
       array(
           'name'=>'deleteable_user_id',
@@ -576,9 +594,10 @@ class iform_pollenator_gallery {
     	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order'),
 			'suffixTemplate'=>'nosuffix'
 	);
+	if(isset($args['flower_data_entry_only']) && $args['flower_data_entry_only']) $flower_ctrl_args['extraParams']['allow_data_entry']='t';
 	$focus_flower_ctrl_args = $flower_ctrl_args;
 	$focus_flower_ctrl_args['fieldname'] = 'determination:taxa_taxon_list_id';
-	$focus_flower_ctrl_args['extraParams'] = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order', 'allow_data_entry'=>'t');
+	$focus_flower_ctrl_args['extraParams']['allow_data_entry']='t';
 	$insect_ctrl_args=array(
     	    'label'=>lang::get('LANG_Insect_Species'),
         	'fieldname'=>'insect:taxa_taxon_list_id',
@@ -591,9 +610,10 @@ class iform_pollenator_gallery {
     	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order'),
 			'suffixTemplate'=>'nosuffix'
 	);
+	if(isset($args['insect_data_entry_only']) && $args['insect_data_entry_only']) $insect_ctrl_args['extraParams']['allow_data_entry']='t';
 	$focus_insect_ctrl_args = $insect_ctrl_args;
 	$focus_insect_ctrl_args['fieldname'] = 'determination:taxa_taxon_list_id';
-	$focus_insect_ctrl_args['extraParams'] = $readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order', 'allow_data_entry'=>'t');
+	$focus_insect_ctrl_args['extraParams']['allow_data_entry']='t';
 	$options = iform_map_get_map_options($args, $readAuth);
 	$olOptions = iform_map_get_ol_options($args);
     // The maps internal projection will be left at its default of 900913.
@@ -1016,7 +1036,10 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     </div>
 	<div id="fo-id-history" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active"></div>
     ';
-    if(isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['deleteable_user_id']==$user->uid){
+    $new_flower_ctrl_args = $focus_flower_ctrl_args;
+	unset($new_flower_ctrl_args['label']);
+	$new_flower_ctrl_args['fieldname']='flowerSelect';
+	if(isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['deleteable_user_id']==$user->uid){
      // need two as they use different species lists.
       $edit_flower_ctrl_args = $focus_flower_ctrl_args;
       $edit_flower_ctrl_args['class']='species-select';
@@ -1030,7 +1053,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
       $edit_insect_ctrl_args['label']='Main Species';
       $edit_insect_ctrl_args['id']='dummy_tag';
       unset($edit_insect_ctrl_args['extraParams']['allow_data_entry']);
-
+	  
       $r .= '	<div id="fo-edit-insect-id" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all">
 	  <p class="title">Modify Existing Insect Determination</p>
 	  <form id="fo-edit-insect-id-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST">
@@ -1114,12 +1137,10 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		<label for="id-flower-unknown" class="follow-on">'.lang::get('LANG_ID_Flower_Unknown').'</label><input type="checkbox" id="id-flower-unknown" name="id-flower-unknown" /> 
 		'.(user_access('IForm n'.$node->nid.' flower expert') ? '<p>'.lang::get('Status').' : <span id="fo-flower-expert-det-type" ></span></p>' : '').'
 		<input type="hidden" name="determination:determination_type" value="'.(user_access('IForm n'.$node->nid.' flower expert') ? "C" : "A").'" />
+        <label class="follow-on">'.lang::get('LANG_Known_Species').' : </label><input name="flowerAutocomplete2" id="flowerAutocomplete2" />'.data_entry_helper::select($new_flower_ctrl_args).'
 		<div class="id-tool-group">
           <input type="hidden" name="determination:taxon_details" />
-          <table id="flower-species-list">
-            <thead><tr><th>'.lang::get('Species').'</th><th></th></tr></thead>
-            <tbody><tr id="flowerAutocompleteRow2" class="autocompleteRow"><td>'.lang::get('LANG_Add').' <input name="flowerAutocomplete2" id="flowerAutocomplete2" /></td><td></td></tr></tbody>
-          </table>
+          <table id="flower-species-list"><tbody id="flower-species-list-body"></tbody></table>
  	    </div>
  	    <div class="id-specified-group">
           <label for="flower:taxon_extra_info" class="follow-on">'.lang::get('LANG_More_Precise').' : </label> 
@@ -1197,7 +1218,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 	</div>
 </div>
 ';
-		
+
     data_entry_helper::$javascript .= "
 // We need to leave the AJAX calls for the search alone, but abort other focus-on calls,
 // so we put a dummy REMOVEABLEJSONP in the URL, and search on that. This is ignored by the service call itself.
@@ -3251,6 +3272,7 @@ jQuery('form#fo-new-insect-id-form').ajaxForm({
 			jQuery(insectIDstruc.mainForm+' [name=determination\\:determination_type]').val(insectIDstruc.determinationType);
 			jQuery(insectIDstruc.mainForm+' [name=determination\\:taxa_taxon_list_id],[name=determination\\:comment],[name=determination\\:taxon_details],[name=determination\\:taxon_extra_info]').val('');
 			jQuery('#insect_taxa_list').empty();
+			jQuery(insectIDstruc.mainForm +' [name=determination\\:taxa_taxon_list_id_list\\[\\]]').remove();
 			jQuery('#fo-new-insect-id-form').hide();
 			jQuery('#fo-edit-insect-id').addClass('ui-accordion-content-active');
 			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), 'form#fo-new-insect-id-form', function(args, type){
@@ -3306,7 +3328,12 @@ jQuery('form#fo-new-flower-id-form').ajaxForm({
 			jQuery(flowerIDstruc.mainForm+' [name=determination\\:taxa_taxon_list_id],[name=determination\\:comment],[name=determination\\:taxon_details],[name=determination\\:taxon_extra_info]').val('');
 			jQuery('#flower_taxa_list').empty();
 			jQuery('#fo-new-flower-id-form').hide();
-			jQuery('#fo-edit-flower-id').show();
+			if(!jQuery('#fo-id-history').hasClass('empty')){
+				jQuery('#fo-id-history').addClass('ui-accordion-content-active');
+				jQuery('#fo-id-buttons').removeClass('ui-corner-bottom');
+			}
+	  		jQuery('#fo-edit-flower-id').addClass('ui-accordion-content-active');		
+			  					
 			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), 'form#fo-new-flower-id-form', function(args, type){
 			";
 	if($args['alert_js_function'] != '') {
@@ -3700,7 +3727,6 @@ loadDeterminations = function(keyValue, newIDForm, callback, isExpert, canDoubt,
 	jQuery(newIDForm).find('[name=determination\\:taxa_taxon_list_id]').val(''); // ttlidlist added below.
 	jQuery(newIDForm).find('[name=determination\\:taxon_extra_info]').val('');
 	jQuery(newIDForm).find('[name=determination\\:taxon_details]').val(''); // TODO NOT SURE IF NEEDED.
-	jQuery(newIDForm).find('.flower-species-list-entry').remove();
 	jQuery(newIDForm).find('[name=determination\\:taxa_taxon_list_id_list\\[\\]]').remove(); // needed for insects: not needed for flowers
 	jQuery(newIDForm).find('.flower-species-list-entry').remove();
 	if(isExpert) {
@@ -3779,7 +3805,7 @@ isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['
 				else {
 					jQuery(this.params.newIDForm).find('[name=determination:taxa_taxon_list_id]').val('');
 					if(detData[i].taxa_taxon_list_id!='' && detData[i].taxa_taxon_list_id != null) // for flowers convert to table list format
-						jQuery(this.params.newIDForm).find('.autocompleteRow').before('<tr class=\"flower-species-list-entry\"><td>'+detData[i].taxon+'<input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+detData[i].taxa_taxon_list_id+'\"\></td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
+						jQuery('#flower-species-list-body').append('<tr class=\"flower-species-list-entry\"><td>'+htmlspecialchars(detData[i].taxon)+'<input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+detData[i].taxa_taxon_list_id+'\"></td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
 				}
 				jQuery(this.params.newIDForm).find('[name=determination\\:taxon_extra_info]').val(detData[i].taxon_extra_info==null ? '' : detData[i].taxon_extra_info);
 				jQuery(this.params.newIDForm).find('[name=determination\\:taxon_details]').val(detData[i].taxon_details);
@@ -3798,11 +3824,17 @@ isset($args['deleteable_user_id']) && $args['deleteable_user_id']!='' && $args['
 							callbackEntry.taxa.push(this.params.taxaList[k].taxon);
 							break;
 						}
-					if(mF) mF.find('.autocompleteRow').before('<tr class=\"fo-edit-id-list-entry\"><td>'+species+'</td><td><input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+decoded[j]+'\"\>'+decoded[j]+'</td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
+					if(mF) mF.find('.autocompleteRow').before('<tr class=\"fo-edit-id-list-entry\"><td>'+species+'</td><td><input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+decoded[j]+'\">'+decoded[j]+'</td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
 					jQuery('#fo-express-doubt-form').append('<input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+decoded[j]+'\" />');
-					if(isExpert) jQuery(this.params.newIDForm).find('.autocompleteRow').before('<tr class=\"flower-species-list-entry\"><td>'+species+'<input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+decoded[j]+'\"\></td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
-				}
-				jQuery('.taxa_list').append(resultsText+ ' }');
+					if(isExpert){
+						if(this.params.type == 'I')
+							jQuery(this.params.newIDForm).append('<input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+decoded[j]+'\"/>');
+						else
+							jQuery('#flower-species-list-body').append('<tr class=\"flower-species-list-entry\"><td>'+species+'<input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+decoded[j]+'\"></td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
+					}
+  				}
+				if(isExpert)
+					jQuery('.taxa_list').append(resultsText+ ' }');
 			}
 			callbackArgs.push(callbackEntry);
 			jQuery('#poll-banner').append(string); // dont include extra info in banner
@@ -3987,7 +4019,7 @@ jQuery('input#insectAutocomplete1').autocomplete(insectTaxa,
 });
 jQuery('input#insectAutocomplete1').result(function(event, data) {
   jQuery('input#insectAutocomplete1').val('');
-  jQuery('#fo-edit-insect-id').find('.autocompleteRow').before('<tr class=\"fo-edit-id-list-entry\"><td>'+htmlspecialchars(data.taxon)+'</td><td><input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+data.id+'\"\>'+data.id+'</td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
+  jQuery('#fo-edit-insect-id').find('.autocompleteRow').before('<tr class=\"fo-edit-id-list-entry\"><td>'+htmlspecialchars(data.taxon)+'</td><td><input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+data.id+'\">'+data.id+'</td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
 });
 jQuery('input#flowerAutocomplete1').autocomplete(flowerTaxa,
       { matchContains: true,
@@ -4004,7 +4036,7 @@ jQuery('input#flowerAutocomplete1').autocomplete(flowerTaxa,
 });
 jQuery('input#flowerAutocomplete1').result(function(event, data) {
   jQuery('input#flowerAutocomplete1').val('');
-  jQuery('#fo-edit-flower-id').find('.autocompleteRow').before('<tr class=\"fo-edit-id-list-entry\"><td>'+htmlspecialchars(data.taxon)+'</td><td><input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+data.id+'\"\>'+data.id+'</td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
+  jQuery('#fo-edit-flower-id').find('.autocompleteRow').before('<tr class=\"fo-edit-id-list-entry\"><td>'+htmlspecialchars(data.taxon)+'</td><td><input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+data.id+'\">'+data.id+'</td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
 });
 // new Flower ID form autocompletes
 jQuery('input#flowerAutocomplete2').autocomplete(flowerTaxa,
@@ -4022,15 +4054,24 @@ jQuery('input#flowerAutocomplete2').autocomplete(flowerTaxa,
 });
 jQuery('input#flowerAutocomplete2').result(function(event, data) {
   jQuery('input#flowerAutocomplete2').val('');
-  jQuery('#flower-species-list').find('.autocompleteRow').before('<tr class=\"flower-species-list-entry\"><td>'+htmlspecialchars(data.taxon)+'<input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+data.id+'\"\></td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
+  if(jQuery('#flower-species-list input[value='+data.id+']').length > 0) return;
+  jQuery('#flower-species-list-body').append('<tr class=\"flower-species-list-entry\"><td>'+htmlspecialchars(data.taxon)+'<input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+data.id+'\"></td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
   jQuery('#fo-new-flower-id-form [name=determination\\:determination_type]').val('".(user_access('IForm n'.$node->nid.' flower expert') ? "C" : "A")."');
   jQuery('#fo-flower-expert-det-type').html('".lang::get('LANG_Det_Type_'.(user_access('IForm n'.$node->nid.' flower expert') ? "C" : "A"))."');
   jQuery('#id-flower-unknown').removeAttr('checked');
 });
+jQuery('select#flowerSelect').change(function() {
+  if(jQuery('#flower-species-list input[value='+jQuery(this).val()+']').length > 0) return;
+  jQuery('#flower-species-list-body').append('<tr class=\"flower-species-list-entry\"><td><input type=\"hidden\" name=\"determination:taxa_taxon_list_id_list[]\" value=\"'+jQuery(this).val()+'\">'+htmlspecialchars(jQuery(this).find('option[value='+jQuery(this).val()+']').text())+'</td><td><img class=\"removeRow\" src=\"/misc/watchdog-error.png\" alt=\"".lang::get('Remove this entry')."\" title=\"".lang::get('Remove this entry')."\"/></td></tr>');
+  jQuery('#fo-new-flower-id-form [name=determination\\:determination_type]').val('".(user_access('IForm n'.$node->nid.' flower expert') ? "C" : "A")."');
+  jQuery('#fo-flower-expert-det-type').html('".lang::get('LANG_Det_Type_'.(user_access('IForm n'.$node->nid.' flower expert') ? "C" : "A"))."');
+  jQuery('select#flowerSelect').val('');
+  jQuery('#id-flower-unknown').removeAttr('checked');
+});
+
 jQuery('#id-flower-unknown').change(function (){
   clearErrors('form#fo-new-flower-id-form');
   if (jQuery('#id-flower-unknown').attr('checked') != '') {
-    // no id later in gallery
     jQuery('#fo-new-flower-id-form [name=determination\\:determination_type]').val('X');
     jQuery('#fo-flower-expert-det-type').html('".lang::get('LANG_Det_Type_X')."');
     jQuery('.flower-species-list-entry').remove();

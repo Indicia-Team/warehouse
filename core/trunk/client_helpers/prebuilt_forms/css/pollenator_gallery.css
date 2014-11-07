@@ -327,3 +327,14 @@ input[type="checkbox"] {
 #fo-edit-insect-id-list thead, #fo-edit-insect-id-list .autocompleteRow {
     color: #5ca20a;
 }
+#flowerSelect {
+	width: 19px;
+}
+#flowerAutocomplete2 {
+	margin-right: 0px;
+	margin-top: 4px;
+	width: 170px;
+}
+#flower-species-list {
+	margin-bottom: 10px;
+}

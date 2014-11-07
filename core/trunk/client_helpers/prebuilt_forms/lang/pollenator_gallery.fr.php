@@ -60,7 +60,7 @@ $custom_terms = array(
 	,'LANG_Det_Type_B' => 'Exprimé doute'
 	,'LANG_Det_Type_C' => 'Correct, validé'
 	,'LANG_Det_Type_X' => 'Non identifié'
-	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la liste"
+	,'LANG_Choose_Taxon' => "Choisissez un taxon dans cette liste"
 	,'LANG_Identify_Insect' => 'Indiquer le nom de cet insecte:'
 	,'LANG_More_Precise' => 'Dénomination précise'
 	,'LANG_ID_Comment' => 'Commentez éventuellement votre identification :'
@@ -197,5 +197,7 @@ $custom_terms = array(
 	,'LANG_ID_Flower_Unknown' => 'Fleur espèces ne sait pas'
 	,'Species' => 'Espèces'
 	,'Status' => 'Statut'
-	
+	,'LANG_Known_Species' => 'Entrez le nom du taxon ou choisissez le dans cette liste'
+	,'Remove this entry' => 'Supprimer cette entrée'
+			
 );

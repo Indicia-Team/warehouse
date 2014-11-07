@@ -217,7 +217,7 @@ div#cc-1-summary {
 	padding-bottom:10px;
 	padding-top:10px;
 }
-#cc-2-flower-identify .id-later-group label, #cc-2-flower-identify .id-specified-group label,
+#cc-2-flower-identify .id-specified-group label,
 #cc-4-insect-identify .id-later-group label, #cc-4-insect-identify .id-specified-group label  {
 	vertical-align: middle;
 	padding: 0;
@@ -249,4 +249,14 @@ p.inline-error {
 #cc-2-location-notes {
     font-size: 0.95em;
     margin-bottom: 10px;
+}
+
+#flowerSelect {
+	width: 19px;
+}
+#flowerAutocomplete2 {
+	margin-right: 0px;
+}
+#flower-species-list {
+	margin-bottom: 10px;
 }
