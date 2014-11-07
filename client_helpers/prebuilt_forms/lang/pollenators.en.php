@@ -44,10 +44,9 @@ $custom_terms = array(
 	,'LANG_Upload' => 'Upload'
 	,'LANG_Flower_Station' => "YOUR FLORAL STATION"
 	,'LANG_Upload_Flower' => 'Upload a picture of the Flower'
-	,'LANG_ID_Flower_Later' => 'You would prefer to identify it later:'
 	,'LANG_Identify_Flower' => 'Select the name of this flower'
 	,'LANG_Flower_Species' => "You know the taxon for this flower"
-	,'LANG_Choose_Taxon' => "Choose a Taxon from the list"
+	,'LANG_Choose_Taxon' => "Choose a Taxon from this list"
 	,'LANG_Flower_ID_Key_label' => "You don't know the name of this flower"
 	,'LANG_Launch_ID_Key' => "Launch the identification tool"
 	,'LANG_Cancel_ID' => "Abort the identification tool"
@@ -131,5 +130,8 @@ $custom_terms = array(
 	
 	,'LANG_Help_Button' => '?'
 	,'LANG_Indicia_Warehouse_Error' => 'Error returned from Indicia Warehouse'
-	
+
+	,'LANG_Must_Provide_Identification' => "You must choose to mark the plant as unidentified, or enter an identification"
+	,'LANG_ID_Flower_Unknown' => 'Flower identification not known'
+			
 );
