@@ -177,6 +177,8 @@ class extension_my_sites {
    * Control allows administrators to maintain the "my sites" list for other users. @locationParamFromURL can be supplied as an option
    * to hide the locations drop-down and automatically get the location id from the $_GET url parameter, this option should be set as the
    * name of the parameter when it is in use.
+   * @userParamFromURL can be set in a very similar way, but this would hide the user drop down instead. This could be used in the situation where
+   * several sites need to be linked to a single user on a user maintenance page.
    */
   public static function add_sites_to_any_user($auth, $args, $tabalias, $options, $path) {
     //Need to call this so we can use indiciaData.read
@@ -193,6 +195,16 @@ class extension_my_sites {
       $locationIdFromURL=$_GET[$options['locationParamFromURL']];
     else
       $locationIdFromURL=0;
+    //Get the user_id from the URL if we can, this would hide the user drop-down and make
+    //the control applicable to a single user.
+    if (!empty($options['userParamFromURL'])&&!empty($_GET[$options['userParamFromURL']]))
+      $userIdFromURL=$_GET[$options['userParamFromURL']];
+    //This line is here to make sure we don't brake the existing code, this was hard-coded, now
+    //the param is soft-coded we still need this hard-coded param here.
+    elseif (!empty($_GET['dynamic-the_user_id']))
+      $userIdFromURL=$_GET['dynamic-the_user_id'];
+    else
+      $userIdFromURL=0;
     //If we don't want to automatically get the location id from the URL, then display a drop-down of locations the user can select from   
     if (empty($locationIdFromURL)) {
       $r .= '<label>'.lang::get('Location :').'</label> ';
@@ -207,8 +219,9 @@ class extension_my_sites {
         'blankText'=>'<' . lang::get('please select') . '>',
       ));
     }
-    //Get the user select control
-    $r .= self:: user_select_for_add_sites_to_any_user_control($auth['read'],$args);
+    //Get the user select control if the user id isn't in the url
+    if (empty($userIdFromURL))
+      $r .= self:: user_select_for_add_sites_to_any_user_control($auth['read'],$args);
     
     $r .= '<input id="add-user-site-button" type="button" value="'. lang::get('Add to this User\'s Sites List') .'"/><br></form><br>';
     
@@ -218,7 +231,7 @@ class extension_my_sites {
     //Then get the current user/sites saved in the database and if the new combination doesn't already exist then call a function to add it.
     data_entry_helper::$javascript .= "
     function duplicateCheck(locationId, userId) {
-      var userIdToAdd = $('#user-select').val();
+      var userIdToAdd = userId;
       var locationIdToAdd = locationId;
       var sitesReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/locations/all_user_sites.xml&mode=json&mode=json&callback=?';
         
@@ -228,7 +241,7 @@ class extension_my_sites {
         'nonce': indiciaData.read.nonce,
         'reportSource':'local'
       };
-        
+      
       if (!userIdToAdd||!locationIdToAdd) {
         alert('Please select both a user and a location to add.');
       } else {
@@ -278,12 +291,18 @@ class extension_my_sites {
     $('#add-user-site-button').click(function() {
       //We can get the location id from the url or from the locations drop-down depending on the option the administrator has set.
       var locationId;
+      var userId;
       if (".$locationIdFromURL.") {
         locationId = ".$locationIdFromURL.";
       } else {
-        locationId = $('#location-select').val()       
+        locationId = $('#location-select').val();       
       }
-      duplicateCheck(locationId,$('#dynamic-the_user_id').val());
+      if (".$userIdFromURL.") {
+        userId = ".$userIdFromURL.";
+      } else {
+        userId = $('#user-select').val();     
+      }
+      duplicateCheck(locationId,userId);
     });";
     //Zoom map as user selects locations
     data_entry_helper::$javascript .= "
@@ -296,7 +315,6 @@ class extension_my_sites {
     //Function for when user elects to remove sites
     data_entry_helper::$javascript .= "
     user_site_delete = function(pav_id) {
-      var userId=$('#dynamic-the_user_id').val();
       $.post('$postUrl', 
         {\"website_id\":".$args['website_id'].",\"id\":pav_id, \"deleted\":\"t\"},
         function (data) {
