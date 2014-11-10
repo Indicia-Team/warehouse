@@ -40,8 +40,16 @@ class iform_npms_sample_occurrence extends iform_dynamic_sample_occurrence {
           'caption'=>'Survey 1 attribute ID',
           'description'=>'The sample attribute ID that will store the ID of survey 1.',
           'type'=>'string',
-          'groupd'=>'Other IForm Parameters',
+          'group'=>'Other IForm Parameters',
           'required'=>true
+        ),
+        array(
+          'name'=>'locking_date',
+          'caption'=>'Locking Date',
+          'description'=>'The date to lock the form from. Samples "created on" earlier than this date are read-only (use format yyyy-mm-dd)',
+          'type'=>'string',
+          'group'=>'Locking Date',
+          'required'=>false
         ),
       )
     ); 
@@ -63,9 +71,42 @@ class iform_npms_sample_occurrence extends iform_dynamic_sample_occurrence {
   }
 
   protected static function get_form_html($args, $auth, $attributes) {
+    data_entry_helper::$javascript .= "
+      var sampleCreatedOn;
+      var lockingDate;
+    ";
+    //Test if the sample date is less than the locking date, if it is then lock the form.
+    if (!empty($_GET['sample_id'])&&!empty($args['locking_date'])) {
+      $sampleData = data_entry_helper::get_population_data(array(
+        'table' => 'sample',
+        'extraParams' => $auth['read'] + array('id' => $_GET['sample_id'], 'view' => 'detail'),
+      ));
+      //The date also has a time element. However this breaks javascript new date, so just get first part of the date (remove time).
+      //(the line below just gets the part of the string before the space).
+      $sampleCreatedOn = strtok($sampleData[0]['created_on'],  ' ');
+      if (!empty($sampleCreatedOn)) {
+        data_entry_helper::$javascript .= "
+          sampleCreatedOn = new Date('".$sampleCreatedOn."');
+          lockingDate = new Date('".$args['locking_date']."');
+        ";
+      }
+    }
+    //If the date the sample was created is less than the threshold date set by the user, then
+    //lock the form (put simply, old data cannot be edited by the user).
+    data_entry_helper::$javascript .= "
+      if (sampleCreatedOn&&lockingDate&&sampleCreatedOn<lockingDate) {  
+        $('[id*=_lock]').remove();\n $('.remove-row').remove();\n
+        $('.scImageLink,.scClonableRow').hide();
+        $('.edit-taxon-name,.remove-row').hide();
+        $('#disableDiv').find('input, textarea, text, button, select').attr('disabled','disabled');
+      }";
     //remove default validation mode of 'message' as species grid goes spazzy
     data_entry_helper::$validation_mode = array('colour');
-    return parent::get_form_html($args, $auth, $attributes);
+    //Div that can be used to disable page when required
+    $r = '<div id = "disableDiv">';
+    $r .= parent::get_form_html($args, $auth, $attributes);
+    $r .= '</div>';
+    return $r;
   }
 
   /**
