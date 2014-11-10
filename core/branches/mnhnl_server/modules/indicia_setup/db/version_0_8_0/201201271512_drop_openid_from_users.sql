@@ -1,1 +1,0 @@
-﻿ALTER TABLE users DROP COLUMN openid_url;
