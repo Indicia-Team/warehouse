@@ -79,7 +79,7 @@
     <column name='source' display='Source' sql="w.title || ' | ' || co.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='case when o.sensitivity_precision is null then co.sample_id else null end' datatype='integer' />
     <column name='name' display='Species' datatype='text'
-          sql="case when co.preferred_taxon=coalesce(co.default_common_name, '') then co.preferred_taxon else co.preferred_taxon || case when co.default_common_name is null then '' else ' - ' || co.default_common_name end end " />    
+          sql="case when co.preferred_taxon=coalesce(co.default_common_name, '') then co.preferred_taxon else co.preferred_taxon || case when co.default_common_name is null then '' else ' - ' || co.default_common_name end end " />
     <column name='taxon_group' display='Taxon Group' sql='co.taxon_group' datatype='text' />
     <column name='taxonversionkey' display='TaxonVersionKey' sql='co.taxa_taxon_list_external_key' datatype="text" />
     <column name='taxa_taxon_list_id' visible='false' sql='co.taxa_taxon_list_id' datatype='integer' />
