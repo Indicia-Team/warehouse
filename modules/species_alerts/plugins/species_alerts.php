@@ -45,7 +45,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
       JOIN users u ON 
         u.id=sa.user_id AND u.deleted='f'")->result_array(false);
   if (!empty($newOccDataForSpeciesAlert))
-    create_notifications($newOccDataForSpeciesAlert);
+    species_alerts_create_notifications($newOccDataForSpeciesAlert);
   else
     echo 'No Species Alerts have been created because there are no created/updated occurrences matching any species alert records.</br>';
 }
@@ -53,7 +53,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
 /*
  * Create a notification for each new/verified occurrence that matches an item in the species_alerts table
  */
-function create_notifications($newOccDataForSpeciesAlert) {
+function species_alerts_create_notifications($newOccDataForSpeciesAlert) {
   $notificationCounter=0;
   //For any new occurrence record which has a matching species alert record, we need to generate a notification for the user
   foreach ($newOccDataForSpeciesAlert as $speciesAlertOccurrenceData) {
