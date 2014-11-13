@@ -112,6 +112,9 @@ jQuery(document).ready(function($) {
             indiciaData.filter.def.taxon_rank_sort_order_combined!=="") {
           r.push($("#level-label").text() + ' ' + $("#taxon_rank_sort_order_op option:selected").text() + ' ' + $("#taxon_rank_sort_order_combined option:selected").text());
         }
+        if (typeof indiciaData.filter.def.marine_flag!=="undefined" && indiciaData.filter.def.marine_flag!=="all") {
+          r.push($("#marine_flag option[value="+indiciaData.filter.def.marine_flag+"]").text());
+        }
         return r.join('<br/>');
       },
       applyFormToDefinition:function() {
@@ -168,6 +171,14 @@ jQuery(document).ready(function($) {
           firstTab = 2;
           disabled = [0, 1];
           $('#species-tab .context-instruct').show();
+        }
+        if (context && context.marine_flag && context.marine_flag!=='all') {
+          $('#marine_flag option[value='+context.marine_flag+']').attr('selected', 'selected');
+          $('#marine_flag').attr('disabled', 'disabled');
+          $('#flags-tab .context-instruct').show();
+        } else {
+          $('#marine_flag').removeAttr('disabled');
+          $('#flags-tab .context-instruct').hide();
         }
         $("#what-tabs").tabs("option", "disabled", disabled);
         indiciaFns.activeTab($( "#what-tabs" ), firstTab);
@@ -974,6 +985,18 @@ jQuery(document).ready(function($) {
     $('#filter-reset').removeClass('disabled');
   }
   
+  // Applies the current loaded filter to the controls within the pane.
+  function updateControlValuesToReflectCurrentFilter(pane) {
+    // regexp extracts the pane ID from the href. Loop through the controls in the pane      
+    $.each(pane.find(':input').not(':checkbox,[type=button]'), function(idx, ctrl) {
+      // set control value to the stored filter setting
+      $(ctrl).val(indiciaData.filter.def[$(ctrl).attr('name')]);        
+    });
+    $.each(pane.find(':checkbox'), function(idx, ctrl) {
+      $(ctrl).attr('checked', typeof indiciaData.filter.def[$(ctrl).attr('name')]!=="undefined" && indiciaData.filter.def[$(ctrl).attr('name')]==$(ctrl).val());
+    });
+  }
+  
   $('.fb-filter-link').fancybox({
     onStart: function(e) {
       var pane=$(e[0].href.replace(/^[^#]+/, '')),
@@ -983,14 +1006,7 @@ jQuery(document).ready(function($) {
       }
       // reset
       pane.find('.fb-apply').data('clicked', false);
-      // regexp extracts the pane ID from the href. Loop through the controls in the pane      
-      $.each(pane.find(':input').not(':checkbox,[type=button]'), function(idx, ctrl) {
-        // set control value to the stored filter setting
-        $(ctrl).val(indiciaData.filter.def[$(ctrl).attr('name')]);        
-      });
-      $.each(pane.find(':checkbox'), function(idx, ctrl) {
-        $(ctrl).attr('checked', typeof indiciaData.filter.def[$(ctrl).attr('name')]!=="undefined" && indiciaData.filter.def[$(ctrl).attr('name')]==$(ctrl).val());
-      });
+      updateControlValuesToReflectCurrentFilter(pane);
     },
     onComplete: function(e) {
       var pane=$(e[0].href.replace(/^[^#]+/, '')), context, 
