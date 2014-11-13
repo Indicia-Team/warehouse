@@ -501,10 +501,10 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $data = ($indent?str_repeat("\t", $recursion):'').'<Placemark>'.($indent ? "\r\n" : '');
     // identify name
     $name = $root.'.'.(array_key_exists('id',$array) ? $array['id'] : $recordNum); // default if no name field in record
-    if(array_key_exists('name',$array)){
+    if (!empty($array['name'])) {
       $name = $array['name'];
       $to_skip[]='name';
-    } else if(array_key_exists('location_name',$array)){
+    } elseif (!empty($array['location_name'])) {
       $name = $array['location_name'];
       $to_skip[]='location_name';
     }
