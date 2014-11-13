@@ -1216,7 +1216,7 @@ class ORM extends ORM_Core {
     
     if (array_key_exists('superModels', $sub)) {
       foreach ($sub['superModels'] as $super=>$content) {
-        $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($website_id, $survey_id));
+        $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $website_id, $survey_id));
       }
     }
     return $fields;
