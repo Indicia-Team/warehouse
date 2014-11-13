@@ -817,7 +817,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     'Sample recorder names' => 'update cache_occurrences co
       set recorders=s.recorder_names
       from samples s, needs_update_occurrences nu
-      where co.recorders is null and s.id=co.sample_id and s.deleted=false
+      where co.recorders is null and s.id=co.sample_id and s.deleted=false and s.recorder_names is not null
       and nu.id=co.id;',
     // full recorder name
     'Full name' => 'update cache_occurrences co
@@ -842,8 +842,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     'Parent sample recorder names' => 'update cache_occurrences co
       set recorders=sp.recorder_names
       from needs_update_occurrences nu, samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false
-      where co.recorders is null and s.id=co.sample_id and s.deleted=false
+      join samples sp on sp.id=s.parent_id and sp.deleted=false and sp.recorder_names is not null
+      where co.recorders is null and s.id=co.sample_id and s.deleted=false 
       and nu.id=co.id;',
     // full recorder name in parent sample
     'Parent full name' => 'update cache_occurrences co
