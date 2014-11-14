@@ -440,31 +440,35 @@ class extension_splash_extensions {
       $reportOptions = array(
         'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_name_for_plot_id',
         'readAuth'=>$auth['read'],
-        'extraParams' => array('website_id'=>$args['website_id'], 
-            'vice_county_location_attribute_id'=>$options['viceCountyLocationAttributeId'], 
+        'extraParams' => array('website_id'=>$args['website_id'],
+            'vice_county_location_attribute_id'=>$options['viceCountyLocationAttributeId'],
             'no_vice_county_found_message'=>$options['noViceCountyFoundMessage'],
             'plot_id'=>$_GET['location_id']),
         'valueField'=>'id',
         'captionField'=>'name'
       );
     }
-    //The square/user admin page use's dynamic-location_id as its parameter. Only perform code for this 
+    //The square/user admin page use's dynamic-location_id as its parameter. Only perform code for this
     //page if this is present.
     //In add mode, the Plot Details page is given its parent square in the parent_square_id parameter, so use this to get the parent square name.
     if (!empty($_GET['dynamic-location_id'])||!empty($_GET['parent_square_id'])) {
       $reportOptions = array(
         'dataSource'=>'reports_for_prebuilt_forms/Splash/get_square_details_for_square_id',
         'readAuth'=>$auth['read'],
-        'extraParams' => array('website_id'=>$args['website_id'], 
-            'vice_county_location_attribute_id'=>$options['viceCountyLocationAttributeId'], 
+        'extraParams' => array('website_id'=>$args['website_id'],
+            'vice_county_location_attribute_id'=>$options['viceCountyLocationAttributeId'],
             'no_vice_county_found_message'=>$options['noViceCountyFoundMessage']),
         'valueField'=>'id',
         'captionField'=>'name'
       );
-      if (!empty($_GET['dynamic-location_id'])) 
+      if (!empty($_GET['dynamic-location_id']))
         $reportOptions['extraParams']['square_id']= $_GET['dynamic-location_id'];
-      if (!empty($_GET['parent_square_id'])) 
+      if (!empty($_GET['parent_square_id']))
         $reportOptions['extraParams']['square_id']= $_GET['parent_square_id'];
+    }
+    //In PSS/NPMS we don't show the Vice County in the label.
+    if (!empty($reportOptions['extraParams'])&&!empty($options['pssMode'])&&$options['pssMode']===true) {
+      $reportOptions['extraParams']=array_merge($reportOptions['extraParams'],['pss_mode'=>true]);
     }
     //Make the name of the square a link to the maintain square page
     if (!empty($reportOptions)) {
