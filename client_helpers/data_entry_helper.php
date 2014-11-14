@@ -2988,11 +2988,10 @@ $('#$escaped').change(function(e) {
       }
       // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrControlsExisting, $occAttrs);
-      $grid = '<span style="display: none;">Step 1</span>'."\n";
+      $beforegrid = '<span style="display: none;">Step 1</span>'."\n";
       if (isset($options['lookupListId'])) {
-        $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
+        $beforegrid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
-      $grid .= '<table class="'.implode(' ', $classlist).'" id="'.$options['id'].'">';
       $onlyImages = true;
       if ($options['mediaTypes']) {
         foreach($options['mediaTypes'] as $mediaType) {
@@ -3000,7 +2999,7 @@ $('#$escaped').change(function(e) {
             $onlyImages=false;
         }
       }
-      $grid .= self::get_species_checklist_header($options, $occAttrs, $onlyImages);
+      $grid = self::get_species_checklist_header($options, $occAttrs, $onlyImages);
       $rows = array();
       $imageRowIdxs = array();
       $taxonCounter = array();
@@ -3285,7 +3284,12 @@ $('#$escaped').change(function(e) {
       $grid .= "\n<tbody>\n";
       if (count($rows)>0) 
         $grid .= self::species_checklist_implode_rows($rows, $imageRowIdxs);
-      $grid .= "</tbody>\n</table>\n";
+      $grid .= "</tbody>\n";
+      $grid = str_replace(
+          array('{class}', '{id}', '{content}'), 
+          array(' class="'.implode(' ', $classlist).'"', " id=\"$options[id]\"", $grid), 
+          $indicia_templates['species-checklist-table']
+      );
       // in hasData mode, the wrap_species_checklist method must be notified of the different default 
       // way of checking if a row is to be made into an occurrence. This may differ between grids when
       // there are multiple grids on a page.
@@ -3322,7 +3326,7 @@ $('#$escaped').change(function(e) {
       // If options contain a help text, output it at the end if that is the preferred position
       $options['helpTextClass'] = (isset($options['helpTextClass'])) ? $options['helpTextClass'] : 'helpTextLeft';
       $r = self::get_help_text($options, 'before');
-      $r .= $grid;
+      $r .= $beforegrid . $grid;
       $r .= self::get_help_text($options, 'after');
       self::$javascript .= "$('#".$options['id']."').find('input,select').keydown(keyHandler);\n";
       //nameFilter is an array containing all the parameters required to return data for each of the
