@@ -51,7 +51,8 @@ function summary_builder_alter_menu($menu, $auth) {
 
 function summary_builder_extend_data_services() {
 	return array(
-			'summariser_definitions'=>array()
+			'summariser_definitions'=>array(),
+			'summary_occurrences'=>array()
 	);
 }
 ?>
