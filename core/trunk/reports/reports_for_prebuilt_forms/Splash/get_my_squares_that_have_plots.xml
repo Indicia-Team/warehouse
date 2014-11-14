@@ -7,7 +7,7 @@
     FROM locations square
       LEFT JOIN locations_websites lw on lw.location_id=square.id AND lw.deleted=false
       LEFT JOIN location_attribute_values lav on lav.location_id=square.id AND lav.location_attribute_id = #vice_county_location_attribute_id#
-      JOIN locations plot on plot.parent_id=square.id
+      JOIN locations plot on plot.parent_id=square.id AND plot.deleted=false
       JOIN users u on u.id=#current_user_id#
       JOIN person_attribute_values pav on pav.int_value=square.id AND pav.person_id=u.person_id AND pav.deleted=false
     WHERE (square.location_type_id=#core_square_location_type_id# OR square.location_type_id=#additional_square_location_type_id#)
