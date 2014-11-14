@@ -168,7 +168,10 @@ class extension_splash_extensions {
                              'vice_county_location_attribute_id'=>$viceCountyLocationAttributeId,
                              'no_vice_county_found_message'=>$noViceCountyFoundMessage)
     );
-    
+    //In PSS/NPMS we don't show the Vice County in the label.
+    if (!empty($reportOptions['extraParams'])&&!empty($options['pssMode'])&&$options['pssMode']===true) {
+      $reportOptions['extraParams']=array_merge($reportOptions['extraParams'],['pss_mode'=>true]);
+    }
     $rawData = data_entry_helper::get_report_data($reportOptions);
     if (empty($rawData)) {
       //If the user doesn't have any plots, then hide the map and disable the Spatial Ref field so they can't continue
