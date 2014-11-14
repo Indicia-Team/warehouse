@@ -583,5 +583,32 @@ class extension_splash_extensions {
     //Do not allow submission if there is no plot set
     data_entry_helper::$javascript .= '$("#save-button").click(function() { if (!$("#imp-boundary-geom").val()) {alert("Please select a plot type and create a plot before continuing."); return false; } else { $("#entry_form").submit(); }});';
   }
+  
+  /*
+   * Contains the javascript function that can be called to delete a plot.
+   * Fairly self-explanatory, includes a confirmation message then deletes the plot from the grid
+   */
+  public static function delete_plot($auth, $args, $tabalias, $options, $path) {
+    $postUrl = iform_ajaxproxy_url(null, 'location');
+    data_entry_helper::$javascript .= "
+    delete_plot = function(location_id) {
+      var r = confirm('Are you sure you want to delete this plot?');
+      if (r == true) {
+        $.post('$postUrl',
+          {\"website_id\":".$args['website_id'].",\"id\":location_id, \"deleted\":\"t\"},
+          function (data) {
+            if (typeof data.error === 'undefined') {
+              location.reload();
+            } else {
+              alert(data.error);
+            }
+          },
+          'json'
+        );
+      } else {
+        return false;
+      }
+    }\n";
+  }
 }
 ?>
