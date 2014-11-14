@@ -458,10 +458,10 @@ class iform_wildflower_count {
     $indicia_templates['check_or_radio_group']='{items}';
     foreach($coverageAttrs as $idx => $attr) {
       $r .= '<tr><td><label>'.$attr['caption'].'</label></td>';
-        $r .= data_entry_helper::outputAttribute($attr, array('extraParams'=>$auth, 'suffixTemplate'=>'nosuffix'));
+        $r .= data_entry_helper::outputAttribute($attr, array('extraParams'=>$auth));
       $r .= '<td>';
       if (isset($otherInfoAttrs[$idx])) {
-        $r .= data_entry_helper::outputAttribute($otherInfoAttrs[$idx], array('extraParams'=>$auth, 'suffixTemplate'=>'nosuffix'));
+        $r .= data_entry_helper::outputAttribute($otherInfoAttrs[$idx], array('extraParams'=>$auth));
       }
       $r .= '</td></tr>';
     }

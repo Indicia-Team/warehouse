@@ -35,13 +35,13 @@ var setAvailableDownloadFilters;
     });
     // if just the Select a filter option available, can hide the control
     if ($('#download-subfilter option').length===1) {
-      $('#wrap-download-subfilter').hide();
+      $('#ctrl-wrap-download-subfilter').hide();
       if ($('select#download-type').length===0) {
         // if no download type options at all, hide the whole fieldset
         $('#download-type-fieldset').hide();
       }
     } else {
-      $('#wrap-download-subfilter').show();
+      $('#ctrl-wrap-download-subfilter').show();
       $('#download-type-fieldset').show();
     }
     // load the survey options into the select

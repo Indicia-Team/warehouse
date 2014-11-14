@@ -40,8 +40,7 @@ class extension_my_sites {
       'fieldname' => 'locality_id',
       'id' => 'locality_id',
       'extraParams' => $auth['read'] + array('orderby' => 'name'),
-      'blankText'=>'<' . lang::get('all') . '>',
-      'suffixTemplate' => 'nosuffix'
+      'blankText'=>'<' . lang::get('all') . '>'
     );
     if (count($locationTypes)>1) {
       $r .= '<label>'.lang::get('Select site by type then locality:').'</label> ';
@@ -51,8 +50,7 @@ class extension_my_sites {
         'valueField' => 'id',
         'captionField' => 'term',
         'extraParams' => $auth['read'] + array('orderby' => 'term', 'query' => urlencode(json_encode(array('in'=>array('id', $locationTypes))))),
-        'blankText'=>'<' . lang::get('please select') . '>',
-        'suffixTemplate' => 'nosuffix'
+        'blankText'=>'<' . lang::get('please select') . '>'
       ));
       // link the locality select to the location type select
       $localityOpts = array_merge(array(
@@ -82,8 +80,7 @@ class extension_my_sites {
       'parentControlLabel' => lang::get('Locality to search'),
       'filterField' => 'parent_id',
       'filterIncludesNulls' => false,
-      'blankText'=>'<' . lang::get('please select') . '>',
-      'suffixTemplate' => 'nosuffix'
+      'blankText'=>'<' . lang::get('please select') . '>'
     ));
     $r .= '<button id="add-site-button" type="button">' . lang::get('Add to My Sites') . '</button><br/>';
     $r .= data_entry_helper::location_autocomplete(array(
@@ -95,8 +92,7 @@ class extension_my_sites {
       'captionField' => 'q',
       'extraParams' => $auth['read'] + array('location_type_ids'=>$options['locationTypeResults'], 'locattrs'=>'', 
           'user_id' => hostsite_get_user_field('indicia_user_id'), 'person_site_attr_id'=>$options['mySitesPsnAttrId'], 
-          'hide_existing' => 1, 'parent_id'=>''),
-      'suffixTemplate' => 'nosuffix'
+          'hide_existing' => 1, 'parent_id'=>'')
     ));
     $r .= '<button id="add-searched-site-button" type="button">' . lang::get('Add to My Sites') . '</button><br/>';
     $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');

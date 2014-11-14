@@ -628,9 +628,9 @@ jQuery('input#transectgrid_taxa_taxon_list_id\\\\:taxon').result(function(event,
           'numValues'=>$args['max_species_ids']
     ), $options);
     $defNRAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'),
-    				'lookUpKey' => 'meaning_id',
-//    				'language' => iform_lang_iso_639_2($args['language']),
-    				'suffixTemplate'=>'nosuffix');
+        'lookUpKey' => 'meaning_id',
+//      'language' => iform_lang_iso_639_2($args['language']),
+    );
     $defAttrOptions=$defNRAttrOptions;
     $defAttrOptions ['validation'] = array('required');
     

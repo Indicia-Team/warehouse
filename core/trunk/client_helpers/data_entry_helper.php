@@ -65,7 +65,7 @@ require_once('submission_builder.php');
  * <li><b>afterControl</b>
  * Allows a piece of HTML to be specified which is inserted immediately after the control, before the suffix and
  * helpText. Ideal for inserting buttons that are to be displayed alongside a control such as a Go button
- * for a search box.</li>
+ * for a search box. Also ideal for inserting units after value input boxes (e.g. degrees, m, cm etc).</li>
  * <li><b>lockable</b>
  * Adds a padlock icon after the control which can be used to lock the control's value. 
  * The value will then be remembered and redisplayed in the control each time the form is 
@@ -517,10 +517,10 @@ $('#$escaped').change(function(e) {
     unset($list_options['helpText']);
     $list_options['id'] = $list_options['id'].':search';
     $list_options['fieldname'] = $list_options['id'];
-    $list_options['suffixTemplate']='nosuffix';
     $list_options['default']='';
     $list_options['lockable']=null;
     $list_options['label'] = null;
+    $list_options['controlWrapTemplate'] = 'justControl';
     if (!empty($options['selectMode']) && $options['selectMode'])
       $list_options['selectMode']=true;
     if (!empty($options['numValues']))
@@ -2278,9 +2278,7 @@ $('#$escaped').change(function(e) {
       // The system select will be hidden since there is only one system
       $srefOptions = $options;
     } else {
-      // Keep the two controls on the same line
-      $srefOptions = array_merge($options, array('suffixTemplate'=>'nosuffix'));
-      $srefOptions = array_merge($srefOptions, array('requiredsuffixTemplate'=>'requirednosuffix'));
+      $srefOptions = array_merge($options);
       // Show the help text after the 2nd control
       if (isset($srefOptions['helpText'])) {
         unset($srefOptions['helpText']);
@@ -2304,6 +2302,9 @@ $('#$escaped').change(function(e) {
     }
     else {
       $r .= self::sref_system_select($options);
+      // put an outer container to keep them together
+      global $indicia_templates;
+      $r = str_replace(array('{control}', '{id}'), array($r, 'imp-sref-and-system'), $indicia_templates['controlWrap']);
     }
     return $r;
   }
@@ -3712,16 +3713,16 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   }
   $.fancybox('<div id=\"filter-form\"><fieldset class=\"popup-form\">' +
     '<legend>".lang::get('Configure the filter applied to species names you are searching for').":</legend>' +
-    '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-default\"'+defaultChecked+'/>$defaultOptionLabel</label><br/>' + \n";
+    '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-default\"'+defaultChecked+'/>$defaultOptionLabel</label>' + \n";
     if (!empty($options['usersPreferredGroups'])) {
       self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-user\"'+userChecked+'/>".
-          lang::get('Input species from the preferred list of species groups from your user account.')."</label><br/>' + \n";
+          lang::get('Input species from the preferred list of species groups from your user account.')."</label>' + \n";
     }
     self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-selected\"'+selectedChecked+'/>".
-        lang::get('Input species from the following species group:')."</label><br/>' +
-      '<select name=\"filter-group\" id=\"filter-group\"></select><br/>' +
-      '<label class=\"auto\">".
-        lang::get('Choose species names available for selection:')."</label><br/>' +
+        lang::get('Input species from the following species group:')."</label>' +
+      '<select name=\"filter-group\" id=\"filter-group\"></select>' +
+      '<label class=\"auto\" for=\"filter-name\">".
+        lang::get('Choose species names available for selection:')."</label>' +
       '<select name=\"filter-name\" id=\"filter-name\">' +
          '<option id=\"filter-all\" value=\"all\">".lang::get('All names including common names and synonyms')."</option>' +
          '<option id=\"filter-common\" value=\"currentLanguage\">".lang::get('Common names only')."</option>' +
@@ -4182,7 +4183,6 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       $ctrlOptions = array(
         'class' => $class,
         'extraParams' => $options['readAuth'],
-        'suffixTemplate' => 'nosuffix',
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
       // Some undocumented checklist options that are applied to all attributes
@@ -4386,8 +4386,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   public static function hidden_text($options) {
     $options = array_merge(array(
       'default'=>'',
-      'suffixTemplate'=>'nullsuffix',
-      'requirednosuffixTemplate'=>'nullsuffix'
+      'requiredsuffixTemplate'=>'suffix' // disables output of the required *
     ), self::check_options($options));
     unset($options['label']);
     return self::apply_template('hidden_text', $options);
@@ -4395,8 +4394,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   
   /**
   * Helper function to output a set of controls for handling the sensitivity of a record. Includes
-  * a checkbox plus a control for setting the amount to blur the record by for public viewing.  
-  * No Labels allowed, no suffix.
+  * a checkbox plus a control for setting the amount to blur the record by for public viewing.
   * The output of this control can be configured using the following templates: 
   * <ul>
   * <li><b>hidden_text</b></br>
@@ -4812,7 +4810,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'buttonClass' => 'indicia-button inline-control',
       'class'       => 'right',
       'page'        => 'middle',
-      'suffixTemplate' => 'nullsuffix',
       'includeVerifyButton' => false,
       'includeSubmitButton' => true,
       'includeDeleteButton' => false
@@ -5610,7 +5607,6 @@ if (errors$uniq.length>0) {
       $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:/$address\"><span>$caption</span></a></li>";
     }
     $options['tabs'] = $tabs;
-    $options['suffixTemplate']="nosuffix";
     return self::apply_template('tab_header', $options);
   }
 

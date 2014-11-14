@@ -1044,7 +1044,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     ));
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute = [];\n";
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl = [];\n";
-    $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'), 'suffixTemplate' => 'nosuffix');
+    $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'));
     foreach(array($args['occurrence_attribute_id'],
               (isset($args['occurrence_attribute_id_2']) && $args['occurrence_attribute_id_2']!="" ? $args['occurrence_attribute_id_2'] : $args['occurrence_attribute_id']),
               (isset($args['occurrence_attribute_id_3']) && $args['occurrence_attribute_id_3']!="" ? $args['occurrence_attribute_id_3'] : $args['occurrence_attribute_id']),

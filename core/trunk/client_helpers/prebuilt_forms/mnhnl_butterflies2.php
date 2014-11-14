@@ -1059,7 +1059,6 @@ indiciaFns.bindTabsActivate(jQuery(jQuery('#conditions').parent()), conditionsTa
             ($outerBlockFilter===null || strcasecmp($outerBlockFilter,$attribute['outer_structure_block'])==0)) {
       $options = $defAttrOptions + get_attr_validation($attribute, $args);
       if(!$useCaptions) unset($attribute['caption']);
-      $options['suffixTemplate']='nosuffix';
       $r .= '<td '.(isset($defAttrOptions['cellClass'])? 'class="'.$defAttrOptions['cellClass'].'"' : '').'>'.data_entry_helper::outputAttribute($attribute, $options).'</td>';
     }
    }
