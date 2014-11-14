@@ -675,10 +675,10 @@ class iform_npms_paths extends iform_wildflower_count {
       $r .= '<tr><td><label>'.$attr['caption'].'</label></td>';
         //unset the attribute caption as we have already drawn it
         unset($attr['caption']);
-        $r .= data_entry_helper::outputAttribute($attr, array('extraParams'=>$auth, 'suffixTemplate'=>'nosuffix'));
+        $r .= data_entry_helper::outputAttribute($attr, array('extraParams'=>$auth));
       $r .= '<td>';
       if (isset($otherInfoAttrs[$idx])) {
-        $r .= data_entry_helper::outputAttribute($otherInfoAttrs[$idx], array('extraParams'=>$auth, 'suffixTemplate'=>'nosuffix'));
+        $r .= data_entry_helper::outputAttribute($otherInfoAttrs[$idx], array('extraParams'=>$auth));
       }
       $r .= '</td></tr>';
     }

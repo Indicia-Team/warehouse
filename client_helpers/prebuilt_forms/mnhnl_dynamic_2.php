@@ -1026,7 +1026,6 @@ hook_species_checklist_pre_delete_row=function(e) {
             $ctrlOptions = array(
               'class'=>'scPrecision ' . (isset($precision['class']) ? ' '.$precision['class'] : ''),
               'extraParams' => $options['readAuth'],
-              'suffixTemplate' => 'nosuffix',
               'language' => $options['language']
             );
             if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
@@ -1069,8 +1068,7 @@ hook_species_checklist_pre_delete_row=function(e) {
               $ctrlOptions = array(
                 'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
                   (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
-                'extraParams' => $options['readAuth'],
-                'suffixTemplate' => 'nosuffix',
+                'extraParams' => $options['readAuth']
                 'language' => $options['language']
               );
               if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
@@ -1330,7 +1328,6 @@ $('#entry_form').before(cloneableDiv);\n";
             (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
         'extraParams' => $options['readAuth'],
         'cols' => 20,
-        'suffixTemplate' => 'nosuffix',
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
       if(in_array($occAttrId,$requiredAttrs)) $ctrlOptions['validation'] = array('required');
@@ -1486,8 +1483,7 @@ mapInitialisationHooks.push(function(mapdiv) {
       	$ctrlId = $prefix.":smpAttr:".$precision['attributeId'];
       	$ctrlOptions = array(
       			'class'=>'scPrecision ' . (isset($precision['class']) ? ' '.$precision['class'] : ''),
-      			'extraParams' => $options['readAuth'],
-      			'suffixTemplate' => 'nosuffix',
+      			'extraParams' => $options['readAuth']
       			'language' => $options['language']
       	);
       	if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];

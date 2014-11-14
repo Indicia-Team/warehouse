@@ -535,8 +535,7 @@ jQuery('#".$id."').click(function(){
     				'language' => iform_lang_iso_639_2($args['language']),
     				'booleanCtrl' => 'radio', // default has changed
     				'containerClass' => 'group-control-box',
-       				'sep' => ' &nbsp; ',
-    				'suffixTemplate'=>'nosuffix');
+            'sep' => ' &nbsp; ');
     $defAttrOptions=$defNRAttrOptions;
     $defAttrOptions ['validation'] = array('required');
     $checkOptions = $defNRAttrOptions;
@@ -1087,7 +1086,6 @@ $('#cc-1-reinit-button').click(function() {
     $options['proxy'] = '';
     // Switch to degrees, minutes, seconds for lat long.
     $options['latLongFormat'] = 'DMS';
-    $options['suffixTemplate'] = 'nosuffix';
     if( lang::get('msgGeorefSelectPlace') != 'msgGeorefSelectPlace')
     	$options['msgGeorefSelectPlace'] = lang::get('msgGeorefSelectPlace');
     if( lang::get('msgGeorefNothingFound') != 'msgGeorefNothingFound')
@@ -1213,8 +1211,7 @@ $('#cc-1-reinit-button').click(function() {
         		'labelLong' => lang::get('Longitude'),
     			'fieldnameLong' => 'place:long',
     			'idLat'=>'imp-sref-lat',
-        		'idLong'=>'imp-sref-long',
-    			'suffixTemplate'=>'nosuffix')).'
+        		'idLong'=>'imp-sref-long')).'
  	  </div>
  	  <div class="poll-map-container">';
     $tempScript = data_entry_helper::$onload_javascript;
@@ -2097,8 +2094,7 @@ jQuery('.mod-button').click(function() {
     	    'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
-    	    'extraParams'=>$extraParams,
-			'suffixTemplate'=>'nosuffix'
+    	    'extraParams'=>$extraParams
 	);
 	$checkOptions['labelClass']='checkbox-label';
  	$r .= '
@@ -2167,8 +2163,7 @@ jQuery('.mod-button').click(function() {
 	    '
  	.data_entry_helper::textarea(array(
 	        'label'=>lang::get('LANG_Comment'),
-    	    'fieldname'=>'occurrence:comment',
- 			'suffixTemplate'=>'nosuffix'
+    	    'fieldname'=>'occurrence:comment'
 	    ))
 	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['number_attr_id']],$defNRAttrOptions))
  	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],$checkOptions)).'

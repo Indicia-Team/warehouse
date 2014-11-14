@@ -573,7 +573,6 @@ class iform_pollenator_gallery {
     				'booleanCtrl' => 'checkbox_group',
        				'sep' => ' &nbsp; ',
     				'language' => $language,
-    				'suffixTemplate'=>'nosuffix',
     				'default'=>'-1');
     
 	// note we have to proxy the post. Every time a write transaction is carried out, the write nonce is trashed.
@@ -591,8 +590,7 @@ class iform_pollenator_gallery {
 			'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
-    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order'),
-			'suffixTemplate'=>'nosuffix'
+    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order')
 	);
 	if(isset($args['flower_data_entry_only']) && $args['flower_data_entry_only']) $flower_ctrl_args['extraParams']['allow_data_entry']='t';
 	$focus_flower_ctrl_args = $flower_ctrl_args;
@@ -607,8 +605,7 @@ class iform_pollenator_gallery {
         	'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
-    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order'),
-			'suffixTemplate'=>'nosuffix'
+    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order')
 	);
 	if(isset($args['insect_data_entry_only']) && $args['insect_data_entry_only']) $insect_ctrl_args['extraParams']['allow_data_entry']='t';
 	$focus_insect_ctrl_args = $insect_ctrl_args;
@@ -621,7 +618,6 @@ class iform_pollenator_gallery {
     $options['latLongFormat'] = 'DMS';
     $options['initialFeatureWkt'] = null;
     $options['proxy'] = '';
-    $options['suffixTemplate'] = 'nosuffix';
     if( lang::get('msgGeorefSelectPlace') != 'msgGeorefSelectPlace')
     	$options['msgGeorefSelectPlace'] = lang::get('msgGeorefSelectPlace');
     if( lang::get('msgGeorefNothingFound') != 'msgGeorefNothingFound')
@@ -709,7 +705,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
       		</div>
 		</div>
 	    <div id="name-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all">
-	        '.data_entry_helper::text_input(array('label'=>lang::get('LANG_Name'),'fieldname'=>'username', 'suffixTemplate'=>'nosuffix')).'
+	        '.data_entry_helper::text_input(array('label'=>lang::get('LANG_Name'),'fieldname'=>'username')).'
   		</div>
 		<div id="date-filter-header" class="ui-accordion-header ui-helper-reset ui-state-default ui-corner-all">
 	  		<div id="fold-date-button" class="ui-state-default ui-corner-all fold-button fold-button-folded">&nbsp;</div>
@@ -942,8 +938,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
         		'labelLong' => lang::get('Longitude'),
     			'fieldnameLong' => 'place:long',
     			'idLat'=>'imp-sref-lat',
-        		'idLong'=>'imp-sref-long',
-    			'suffixTemplate'=>'nosuffix')).'
+        		'idLong'=>'imp-sref-long')).'
             <input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
         </form>
 	  </div>
@@ -990,7 +985,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		    <input type="text" name="sample_comment:person_name" value="'.$username.'" readonly="readonly" />  
     		<label for="sample_comment:email_address">'.lang::get('LANG_Email').' :</label>
 		    <input type="text" name="sample_comment:email_address" value="'.$email.'" readonly="readonly" />
-		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment').' ', 'fieldname'=>'sample_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
+		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment').' ', 'fieldname'=>'sample_comment:comment', 'class'=>'required')).'
     		<input type="submit" id="fc_comment_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Comment').'" />
     	</form>
 	</div>

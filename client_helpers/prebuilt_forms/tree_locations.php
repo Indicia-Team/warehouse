@@ -671,11 +671,6 @@ $('#imp-sref-tree').attr('title',
                   "The size of the square is determined by the number of digits entered: each pair reduces the square size by a factor of 10 - 8 numbers will give 10m square. ".
                   "There should be no spaces between any of the characters. ".
                   "The letter may be upper or lower case, but by convention you should use upper case.")."');\n";
-    if (count($systems) >= 1) {
-      // Keep the two controls on the same line
-      $srefOptions['suffixTemplate']='nosuffix';
-      $srefOptions['requiredsuffixTemplate']='requirednosuffix';
-    }
     // Output the sref control
     $r .= data_entry_helper::sref_textbox($srefOptions);
     $srefOptions = array(

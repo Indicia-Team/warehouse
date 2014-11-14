@@ -619,7 +619,7 @@ mapInitialisationHooks.push(function(mapdiv) {
     data_entry_helper::$javascript .= "indiciaData.occurrence_totals = [];\n";
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute = [];\n";
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl = [];\n";
-    $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'), 'suffixTemplate' => 'nosuffix');
+    $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'));
     $occ_attributes_captions = array();
     foreach(explode(',',$args['occurrence_attribute_ids']) as $idx => $attr){
       $occ_attributes_captions[$idx] = $occ_attributes[$attr]['caption'];

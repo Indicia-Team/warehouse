@@ -25,7 +25,6 @@
 require_once('data_entry_helper.php');
 
 global $indicia_templates;
-$indicia_templates['suffix'] = ""; // no need for extra </br> better to use css
 $indicia_templates['form'] = <<<'EOD'
   <form method="{method}" enctype="multipart/form-data" id="{id}"
   action="{action}" data-ajax="false">{content}</form>
@@ -89,7 +88,7 @@ $indicia_templates['jqmSubmitButton'] = <<<'EOD'
        value="{caption}" />
 EOD;
 // Do not display an indicator that the field is required.
-$indicia_templates['requirednosuffix'] = "\n";
+$indicia_templates['requiredsuffix'] = "\n";
 $indicia_templates['check_or_radio_group_item'] = <<<'EOD'
     <input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"
       {class}{checked} {disabled}/>
@@ -499,7 +498,7 @@ EOD;
       'captionNext' => 'next step',
       'captionSave' => 'save',
       'class'       => '',
-      'suffixTemplate' => 'nullsuffix',
+      'suffixTemplate' => 'blank',
     );
     $options = array_merge($defaults, $options);
     
@@ -689,7 +688,7 @@ EOD;
   //          'title' => '',
   //          'disabled' => '',
             'caption' => $primaryItem['caption'],
-            'suffixTemplate' => 'nullsuffix',
+            'suffixTemplate' => 'blank',
         );
         $r .= self::apply_template('check_or_radio_group_item', $templateOpts);
       }

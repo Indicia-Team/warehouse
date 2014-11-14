@@ -34,16 +34,15 @@ global $indicia_templates;
 $indicia_templates = array(
   'blank' => '',
   'prefix' => '',
+  'controlWrap' => "<div id=\"ctrl-wrap-{id}\" class=\"form-row ctrl-wrap\">{control}</div>\n",
+  'justControl' => "{control}\n",
   'jsWrap' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       "document.write('{content}');".
       "/* ]]> */</script>\n",
   'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
   'toplabel' => '<label data-for="{id}"{labelClass}>{label}:</label>'."\n",
-  'suffix' => "<br/>\n",
-  'nosuffix' => " \n",
-  'nullsuffix' => "",
-  'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
-  'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
+  'suffix' => "\n",
+  'requiredsuffix' => "<span class=\"deh-required\">*</span>\n",
   'button' => '<button id="{id}" type="button" title="{title}"{class}>{caption}</button>',
   'submitButton' => '<input id="{id}" type="submit"{class} name="{name}" value="{caption}" />',
   'anchorButton' => '<a class="ui-corner-all ui-widget-content ui-state-default indicia-button {class}" href="{href}" id="{id}">{caption}</a>',
@@ -1586,7 +1585,13 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
             element=jqBox.length === 0 ? element : jqBox;
           }
           nexts=element.nextAll(':visible');
-          element = nexts && $(nexts[0]).hasClass('deh-required') ? nexts[0] : element;
+          if (nexts) {
+            $.each(nexts, function() {
+              if ($(this).hasClass('deh-required') || $(this).hasClass('locked-icon') || $(this).hasClass('unlocked-icon')) {
+                element = this;
+              }
+            });
+          }
           error.insertAfter(element);
         }" : "
         errorPlacement: function(error, element) {}") ."
@@ -1698,7 +1703,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
       }
     }
     if (isset($validationClasses) && !empty($validationClasses) && strpos($validationClasses, 'required')!==false) {
-      $r .= self::apply_static_template('requirednosuffix', $options);
+      $r .= self::apply_static_template('requiredsuffix', $options);
     }
     // Add an error icon to the control if there is an error and this option is set
     if ($error && in_array('icon', $options['validation_mode'])) {
@@ -1716,9 +1721,10 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
 
     // If options contain a help text, output it at the end if that is the preferred position
     $r .= self::get_help_text($options, 'after');
-    
-    if (!empty($options['label']) && isset($indicia_templates['controlWrap'])) 
-      $r = str_replace(array('{control}', '{id}'), array($r, str_replace(':', '-', $options['id'])), $indicia_templates['controlWrap']);
+    if (isset($options['id']) ) {
+      $wrap = empty($options['controlWrapTemplate']) ? $indicia_templates['controlWrap'] : $indicia_templates[$options['controlWrapTemplate']];
+      $r = str_replace(array('{control}', '{id}'), array($r, str_replace(':', '-', $options['id'])), $wrap);
+    }
     if (!empty($options['tooltip'])) {
       // preliminary support for
       $id = str_replace(':', '\\\\:', array_key_exists('inputId', $options) ? $options['inputId'] : $options['id']);

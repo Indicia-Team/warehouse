@@ -154,8 +154,7 @@ class iform_pollenator_reidentify {
         	'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('Choose Taxon'),
-    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order','allow_data_entry'=>'f'),
-			'suffixTemplate'=>'nosuffix'
+    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order','allow_data_entry'=>'f')
 	);
 	
  	$r .= '<h1 id="poll-banner"></h1>

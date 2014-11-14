@@ -552,8 +552,7 @@ $('#entry_form').submit(function() {
           'the group is no longer active.', self::$groupType) . '</p>';
       $r .= data_entry_helper::date_picker(array(
         'label' => ucfirst(lang::get('{1} active from', self::$groupType)),
-        'fieldname' => 'group:from_date',
-        'suffixTemplate' => 'nosuffix'
+        'fieldname' => 'group:from_date'
       ));
       $r .= data_entry_helper::date_picker(array(
         'label' => lang::get('to'),

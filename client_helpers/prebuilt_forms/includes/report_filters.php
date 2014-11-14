@@ -132,7 +132,6 @@ class filter_what extends filter_base {
     $r .= '<p id="level-label">'.lang::get('Include records where the level').'</p>';
     $r .= data_entry_helper::select(array(
       'labelClass'=>'auto',
-      'suffixTemplate'=>'nosuffix',
       'fieldname'=>'taxon_rank_sort_order_op',
       'lookupValues'=>array('='=>lang::get('is'), '>='=>lang::get('is the same or lower than'), '<='=>lang::get('is the same or higher than'))
     ));
@@ -146,7 +145,7 @@ class filter_what extends filter_base {
     foreach ($ranks as $rank) {
       $r .= "<option value=\"$rank[sort_order]:$rank[id]\">$rank[rank]</option>";
     }
-    $r .= '</select><br/>';
+    $r .= '</select>';
     $r .= "</div>\n";
     $r .= "<div id=\"flags-tab\">\n";
     $r .= '<p>' . lang::get('Select additional flags to filter for.') . '</p>' .
@@ -267,8 +266,7 @@ class filter_where extends filter_base {
       'fieldname'=>'site-type',
       'label' => lang::get('Choose an existing site or location'),
       'lookupValues' => $sitesLevel1,
-      'blankText' => '<'.lang::get('Please select').'>',
-      'suffixTemplate'=>'nosuffix'
+      'blankText' => '<'.lang::get('Please select').'>'
     ));
     $r .= data_entry_helper::select(array(
       'fieldname' => 'imp-location',
@@ -394,8 +392,7 @@ class filter_occurrence_id extends filter_base {
     $r = data_entry_helper::select(array(
       'label' => lang::get('Record ID'),
       'fieldname' => 'occurrence_id_op',
-      'lookupValues'=>array('='=>'is','>='=>'is at least','<='=>'is at most'),
-      'suffixTemplate'=>'nosuffix'
+      'lookupValues'=>array('='=>'is','>='=>'is at least','<='=>'is at most')
     ));
     $r .= data_entry_helper::text_input(array(
       'fieldname' => 'occurrence_id',
@@ -714,7 +711,6 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
           'label'=>lang::get('Select filter type'),
           'fieldname'=>'filter:sharing',
           'lookupValues'=>$options['adminCanSetSharingTo'],
-          'suffixTemplate'=>'nosuffix',
           'afterControl'=>'<input type="submit" value="Go"/>',
           'default'=>$options['sharingCode']
       ));

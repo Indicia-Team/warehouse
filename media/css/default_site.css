@@ -77,9 +77,7 @@ div.ui-effects-wrapper {
 }
 
 p.inline-error {
-  margin-left: 160px;
-  margin-bottom: -0.8em;
-  margin-top: 0em;  
+  margin: 0 0 0 164px;
 }
 
 .species-grid p.inline-error {
@@ -959,4 +957,7 @@ div.note-fail, p.note-fail {
 }
 .social-icon.vimeo {
   background-image: url(../images/somicro/with_border/vimeo-variation.png);
+}
+#filter-form label {
+  display: block;
 }

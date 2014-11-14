@@ -1113,7 +1113,10 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       // Get the list of possible groups they might be posting into using this form. To do this we need the page
       // path without the initial leading /.
       $reload = data_entry_helper::get_reload_link_parts();
+      // Slightly messy path handling. Ideally we'd call the same code as group_edit::get_path but we don't know the nid.
       $reload['path'] = preg_replace('/^\//', '', $reload['path']);
+      $dirname = preg_replace('/^\//', '', dirname($_SERVER['SCRIPT_NAME'])) . '/';      
+      $reload['path'] = str_replace($dirname, '', $reload['path']);
       $possibleGroups = data_entry_helper::get_report_data(array(
         'dataSource'=>'library/groups/groups_for_page',
         'readAuth'=>$auth['read'],
