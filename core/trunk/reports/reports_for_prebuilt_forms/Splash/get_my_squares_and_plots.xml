@@ -27,6 +27,7 @@
     <param name="current_user_id" display="Id of the currently logged in user" datatype="integer"/>
     <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
+    <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
   </params>
   <columns>
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" in_count="true"/>
@@ -38,12 +39,14 @@
     <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND count(locationSamples.id) = 0 then true else false end" visible="false" aggregate="true"/>
     <column name='name' display='Location Name' sql="
       case 
-        when l.parent_id is null 
+        when l.parent_id is null AND #pss_mode#=0
           then '&lt;b&gt;' || square.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;' 
+        when l.parent_id is null AND #pss_mode#=1  
+          then '&lt;b&gt;' || square.centroid_sref || '&lt;/b&gt;' 
         when l.parent_id is not null AND lavPlotName.text_value IS null 
           then '&lt;i&gt;' || 'Plot at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
         else 
           '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
       end" datatype='text' />
-  </columns>
+  </columns> 
 </report>
