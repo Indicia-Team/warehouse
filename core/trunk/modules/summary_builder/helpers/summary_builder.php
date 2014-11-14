@@ -160,7 +160,7 @@ class summary_builder {
 	  	$periodMapping=array();
 	  	// Build day number to period mapping. first period = 1, days 1st Jan = 0
 	  	$dayIterator = new DateTime($year.'-01-01');
-	  	$periodNo = 1;
+	  	$periodNo = 1-$weekNoOffset;
 	  	while($dayIterator->format('Y')==$year){
 	  		$periodMapping[$dayIterator->format('z')]=$periodNo;
 	  		$dayIterator->modify('+1 day');
@@ -168,7 +168,7 @@ class summary_builder {
 	  	}
 	  	// Build period definition. first period = 1, days 1st Jan = 0
 	  	$dayIterator = clone $weekOne_date;
-	  	$periodNo = 1;
+	  	$periodNo = 1-$weekNoOffset;
 	  	$periodLength = date_interval_create_from_date_string('6 days');
 	  	while($dayIterator->format('Y')<=$year){
 	  		$endDate = clone $dayIterator;
@@ -356,7 +356,7 @@ class summary_builder {
   
   private static function do_delete($db, $definition, $year, $taxonID, $locationID, $userID) {
     // set up a default delete query if none are specified
-    $query = "delete from summary_occurrences where date_start <= '".$year."-12-31' AND date_end >= '".$year."-01-01' AND ".
+    $query = "delete from summary_occurrences where year = '".$year."' AND ".
              "survey_id = ".$definition['survey_id']." AND ".
 			 "taxa_taxon_list_id = ".$taxonID." AND ".
 			 "location_id ".($locationID ? "= ".$locationID : "IS NULL")." AND ".
@@ -371,8 +371,10 @@ class summary_builder {
   		if($details['hasData']||$details['hasEstimate']){
   			$rows[] = "(".implode(',',array($definition['website_id'], /* website_id integer */
   				$definition['survey_id'], // survey_id integer,
+  				$year,
   				$locationID ? $locationID : "NULL", //location_id integer,
   				$userID ? $userID : "NULL", // user_id integer,
+  				$period,
 				"'".$periods[$period]['date_start']."'", //  date_start date,
   				"'".$periods[$period]['date_end']."'", //  date_end date,
   				"'DD'", // date_type character varying(2),
@@ -384,7 +386,8 @@ class summary_builder {
 				"'".str_replace("'","''",$taxon["preferred_taxon"])."'", // preferred_taxon character varying,
 				"'".str_replace("'","''",$taxon["default_common_name"])."'", // default_common_name character varying,
 				$taxon["taxon_meaning_id"], // taxon_meaning_id integer,
-				$details['hasData'] ? $details['summary'] : "NULL", //  count double precision,
+				$taxon["taxon_list_id"], // taxon_list_id integer,
+  				$details['hasData'] ? $details['summary'] : "NULL", //  count double precision,
 				$details['hasEstimate'] ? $details['estimate'] : "NULL", //  estimate double precision,
   				1, // created_by_id integer,
   				"now()" // summary_created_on timestamp without time zone NOT NULL,
@@ -394,8 +397,10 @@ class summary_builder {
   	if(!count($rows)) return;
   	$query = "insert into summary_occurrences (website_id, 
   				survey_id,
+  				year,
   				location_id,
   				user_id,
+  				period_number,
 				date_start,
   				date_end,
   				date_type,
@@ -407,6 +412,7 @@ class summary_builder {
 				preferred_taxon,
 				default_common_name,
 				taxon_meaning_id,
+	  			taxon_list_id,
 				count,
 				estimate,
   				created_by_id,
