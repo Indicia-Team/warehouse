@@ -11,6 +11,7 @@
     WHERE 1=1
       AND #website_filter#
       AND (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)
+      AND l.deleted=false
       #filters#
   </query>
   <order_bys>
