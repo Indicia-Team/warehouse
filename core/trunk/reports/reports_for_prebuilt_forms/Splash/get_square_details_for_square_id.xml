@@ -14,10 +14,11 @@
     <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text" default=''/>
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer" default='0'/>
     <param name="core_square_location_type_id" display="Core Square location type id" datatype="integer" default='0'/>
+    <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
   </params>
   <columns>
     <column name='id' display='Square ID' sql='square.id' datatype='integer'/>
-    <column name='name' display='Square Name' sql="square.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#')" datatype='text'/>
+    <column name='name' display='Square Name' sql="case when #pss_mode#=1 then square.centroid_sref else square.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') end" datatype='text'/>
     <column name='type' display='Square Type' sql="case when square.location_type_id=#core_square_location_type_id# then 'Core' else 'Additional' end" datatype='text' />
   </columns>
 </report>
