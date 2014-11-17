@@ -1105,6 +1105,8 @@ class helper_base extends helper_config {
       else
         $ctrlOptions['report']=$popOpts[1];
       if (isset($info['linked_to']) && isset($info['linked_filter_field'])) {
+        $ctrlOptions['filterIncludesNulls'] = false; //exclude null entries from filter field by default
+
         if (isset($options['extraParams']) && array_key_exists($info['linked_to'], $options['extraParams'])) {
           // if the control this is linked to is hidden because it has a preset value, just use that value as a filter on the
           // population call for this control
