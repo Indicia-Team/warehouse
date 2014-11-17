@@ -1,4 +1,4 @@
-  <?php
+<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -24,16 +24,16 @@
  * Extension class that supplies new controls to support the Splash project.
  */
 class extension_splash_extensions {
-  
-  /* 
+ 
+  /*
    * If no options are supplied then the only validation applied is a check to make sure the plot is filled in.
-   * 
+   *
    * $options Options array with the following possibilities:<ul>
    * <li><b>treeCountMode</b><br/>
    * If true then an additional check is made to make sure at least 1 tree has been entered.</li>
    * <li><b>treeGridRefAndEpiphyteMode</b><br/>
    * If true then all validation applies</li>
-   * 
+   *
    * Validator for Splash Epiphyte survey input forms, validates the following:
    * - That a plot is filled in.
    * - The details of at least one tree have been entered (treeCountMode and treeGridRefAndEpiphyteMode)
@@ -55,7 +55,7 @@ class extension_splash_extensions {
     //if the error count is above 0 then we know there are problems on the page
     data_entry_helper::$javascript .= "
     $('<span class=\"deh-required\">*</span>').insertAfter('.scGridRef');
-    $('#save-button').click(function(){ 
+    $('#save-button').click(function(){
       if ($('#imp-location').val()==='<Please select>'||$('#squares-select-list').val()==='<Please select>'||
           $('#imp-location').val()===''||$('#squares-select-list').val()==='') {
         alert('Please select a plot before submitting.');
@@ -94,7 +94,7 @@ class extension_splash_extensions {
     if (!empty($options['treeGridRefAndEpiphyteMode']) && $options['treeGridRefAndEpiphyteMode']===true) {
     data_entry_helper::$javascript .= "
     function runValidateOnEpiphyteGrid(treesCount,treeOccurrenceAttrIds) {
-      var treeIdxToCheck; 
+      var treeIdxToCheck;
       var issueCount=0;
       for (treeIdxToCheck=treesCount; treeIdxToCheck<treeOccurrenceAttrIds.length;treeIdxToCheck++) {
         var result = $('[id*=occAttr\\\\:'+treeOccurrenceAttrIds[treeIdxToCheck]+']').each(function(){
@@ -111,12 +111,12 @@ class extension_splash_extensions {
     ";
     }
   }
-  
+ 
   /**
    * Get a location select control pair, first the user must select a square then a plot associated with a square.
    * Only squares that are associated with the user and also have plots are displayed
    * When a plot is selected, then a mini report about the plot is displayed.
-   * 
+   *
    * $options Options array with the following possibilities:<ul>
    * <li><b>coreSquareLocationTypeId</b><br/>
    * The location type id of a core square</li>
@@ -202,7 +202,7 @@ class extension_splash_extensions {
         'fieldname'=> 'squares-select-list',
         'label' => lang::get('Select a Square'),
         'helpText' => lang::get('Select a square to input data for before selecting a plot.'),
-        'lookupValues' => $squaresData, 
+        'lookupValues' => $squaresData,
         'default' => $defaultSquareSelection
       ));
       //This code is same as standard lookup control
@@ -210,7 +210,7 @@ class extension_splash_extensions {
         foreach ($options['extraParams'] as $key => &$value)
           $value = apply_user_replacements($value);
         $options['extraParams'] = array_merge($auth['read'], $options['extraParams']);
-      } else 
+      } else
         $options['extraParams'] = array_merge($auth['read']);
       if (empty($options['reportProvidesOrderBy'])||$options['reportProvidesOrderBy']==0) {
         $options['extraParams']['orderby'] = 'name';
@@ -236,7 +236,7 @@ class extension_splash_extensions {
       return $r;
     }
   }
-  
+ 
   /*
    * Display a mini report when the user selects a plot
    */
@@ -274,7 +274,7 @@ class extension_splash_extensions {
         <span><b>% Ash cover: </b></span><span id='ash-cover-value'></span></br>
       </div>
     </div></br>";
-    //When the square or plot is changed or the page is loaded then get the data about the square/plot from reports and then 
+    //When the square or plot is changed or the page is loaded then get the data about the square/plot from reports and then
     //place it into the mini report html template using jQuery.
     data_entry_helper::$javascript .= "
     $('#squares-select-list').ready(function() {
@@ -374,9 +374,9 @@ class extension_splash_extensions {
 
   /*
    * When creating a plot, we need the plot location record to hold its parent square in location.parent_id.
-   * To do this, the calling page provides the square id in the $_GET which we then place in a hidden field on the page to be 
+   * To do this, the calling page provides the square id in the $_GET which we then place in a hidden field on the page to be
    * processed during submission.
-   * 
+   *
    */
   public static function insert_parent_square_id_into_location_record($auth, $args, $tabalias, $options, $path) {
     //Don't run the code unless the page in in add mode.
@@ -388,7 +388,7 @@ class extension_splash_extensions {
       return $hiddenField;
     }
   }
-  
+ 
   /*
    * This function performs two tasks,
    * 1. In view mode (summary mode) it allows the page to be displayed with read-only data.
@@ -405,11 +405,11 @@ class extension_splash_extensions {
     data_entry_helper::$javascript .= "$('#entry_form').submit(function() { $('#location\\\\:name').val($('#imp-sref').val());});\n";
     //Make the page read-only in summary mode
     if (!empty($_GET['summary_mode']) && $_GET['summary_mode']==true) {
-      data_entry_helper::$javascript .= "$('.read-only-capable').find('input, textarea, text, button, select').attr('disabled','disabled');\n"; 
-      data_entry_helper::$javascript .= "$('.page-notice, .indicia-button').hide();\n"; 
+      data_entry_helper::$javascript .= "$('.read-only-capable').find('input, textarea, text, button, select').attr('disabled','disabled');\n";
+      data_entry_helper::$javascript .= "$('.page-notice, .indicia-button').hide();\n";
     }
   }
-  
+ 
   /*
    * When the plot details page is in edit/view mode we display a list of species recorded against the plot.
    */
@@ -432,7 +432,7 @@ class extension_splash_extensions {
       ));
     }
   }
-  
+ 
   /*
    * When the plot details or square/user administration pages are displayed then we need to display the name of the square.
    * As the square display name is made from the name of the square plus its vice counties, then we need to collect this information from a report.
@@ -450,7 +450,7 @@ class extension_splash_extensions {
         'valueField'=>'id',
         'captionField'=>'name'
       );
-    }
+      }
     //The square/user admin page use's dynamic-location_id as its parameter. Only perform code for this
     //page if this is present.
     //In add mode, the Plot Details page is given its parent square in the parent_square_id parameter, so use this to get the parent square name.
@@ -489,38 +489,38 @@ class extension_splash_extensions {
       }
     }
   }
-  
+ 
   /*
    * For some plot types we simply provide the user with a free drawing tool (drawPolygon) to draw the plot.
    * For Plot Squares/Rectangles plot types, when the user clicks on the map on the plot details page, we calculate a plot square on the map where the south-west corner is the clicked point
    * or for PSS the middle is the click point.
    * The size of the plot square depends on the plot type but it extends north/east along the lat long grid system (as opposed to British National Grid which is at a slight angle).
-   * However we cannot calculate points a certain number of metres apart using lat/long because the unit is degrees, so to make the square calculation we need to use the British National Grid 
+   * However we cannot calculate points a certain number of metres apart using lat/long because the unit is degrees, so to make the square calculation we need to use the British National Grid
    * to help as this is in metres. However the BNG is also at a slight angle which makes the situation complicated, the high level algorithm for calculating a grid square is as follows,
    * 1. Get the lat/long value from the point the user clicked on.
    * 2. Take any arbitrary point north of the original point as long as we know it is definitely more than the length of one of the plot square's sides.
    * 3. Convert both these points into british national grid format
-   * 4. As the British National Grid is at an angle to lot/long we can make a right angle triangle by getting the 3rd point from the Y British National Grid value of the north point, and getting the 
+   * 4. As the British National Grid is at an angle to lot/long we can make a right angle triangle by getting the 3rd point from the Y British National Grid value of the north point, and getting the
    * x value from X British National Grid value of the southern point.
    * 5. Now we have the right angle triangle, the hypotenuse is the distance between the southern and northern points. As the third point we calculated has the same X BNG value as the southern point,
    * and the same Y value as the top point and then by looking at the 3 points it is very easy to calculate the length of the adjacent and opposite sites of the triangle.
-   * 6. Once we have the adjacent and opposite sites of the triangle, we can calculate the hypotenuse of the triangle in metres. 
+   * 6. Once we have the adjacent and opposite sites of the triangle, we can calculate the hypotenuse of the triangle in metres.
    * 7. For the purposes of this explanation let us assume our square will be 10m. If we have calculated the length of the hypotenuse (the distance between our north and southern points) as 100m,
    * then we know that 10m is just 10% of the length of this line.
    * 8. Once we know the percentage, then we can look at the original lat long grid references and work out the number of degrees difference between the points and then find 10 percent of this to
    * get the lat long value of the north-west point of the sqaure.
-   * 9. We repeat the above procedure to the east to get the lat long position of the south-east point of the plot square. Once we have 3 of the points, we can work out the lat long position of the north-east point by combining 
+   * 9. We repeat the above procedure to the east to get the lat long position of the south-east point of the plot square. Once we have 3 of the points, we can work out the lat long position of the north-east point by combining
    * the lat long grid ref values of the south-east and north-west points.
-   * 
+   *
    * $options Options array with the following possibilities:<ul>
    * <li><b>squareSizes</b><br/>
    * The length of the plot square associated with each plot type. Mandatory. Comma seperated list in the following format,
-   * 2543|10|20,2544|10|20,2545|0,2546|20. 
+   * 2543|10|20,2544|10|20,2545|0,2546|20.
    * The first number is the plot location type, the second is the rectangle width and the third is the length.
    * If only two numbers are specified then the plot will be a square when the side length matches the second number.
    * For plots where drawPolygon is used, the size should be 0 e.g. 2545|0 in the example above</li>
    * </ul>
-   * 
+   *
    */
   public static function draw_map_plot($auth, $args, $tabalias, $options, $path) {
     drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/splash_extensions.js');
@@ -536,7 +536,7 @@ class extension_splash_extensions {
       map_helper::$javascript .= "indiciaData.freeDrawPlotTypeNames=".json_encode(explode(',',$options['freeDrawPlotTypeNames'])).";";
     //The user provides the square sizes associated with the various plot types as a comma seperated option list.
     $squareSizesOptionsSplit=explode(',',$options['squareSizes']);
-    //Eash option consists of the following formats 
+    //Eash option consists of the following formats
     //<plot type id>|<square side lengh> or <plot type id>|<rectangle width>|<rectangle length> or <plot type id>|0 (for drawPolygon plots)
     //So these options need splitting into an array for use
     foreach ($squareSizesOptionsSplit as $squareSizeOption) {
@@ -590,28 +590,71 @@ class extension_splash_extensions {
     //Do not allow submission if there is no plot set
     data_entry_helper::$javascript .= '$("#save-button").click(function() { if (!$("#imp-boundary-geom").val()) {alert("Please select a plot type and create a plot before continuing."); return false; } else { $("#entry_form").submit(); }});';
   }
-  
+ 
   /*
-   * Contains the javascript function that can be called to delete a plot.
-   * Fairly self-explanatory, includes a confirmation message then deletes the plot from the grid
+   * When the administrator allocates squares to a user, allow the user to enter a mileage value
+   * and then reload the screen only showing squares which are within that distance of the user's post code.
    */
+  public static function postcode_distance_limiter($auth, $args, $tabalias, $options, $path) {
+    //When then screen loads, attempt to add a point to the map showing the user's post code (which is in the $_GET).
+    data_entry_helper::$javascript.="
+      jQuery(document).ready(function($) {
+      mapInitialisationHooks.push(function (div) {
+           //Put into indicia data so we can see the map div elsewhere
+          indiciaData.mapdiv = div;
+          if (indiciaData.postCodeGeom) {
+            var feature = new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(indiciaData.postCodeGeom));
+            indiciaData.mapdiv.map.editLayer.addFeatures([feature]);  
+          }
+      });
+    });
+    ";
+    //Current user id being maintained is supplied in URL
+    if (!empty($_GET['dynamic-the_user_id']))
+      $userId = $_GET['dynamic-the_user_id'];
+    else
+      $userId=0;
+    //Get the post code geometry from the URL
+    if (!empty($_GET['dynamic-post_code_geom'])) {
+      data_entry_helper::$javascript.="
+        indiciaData.postCodeGeom='".$_GET['dynamic-post_code_geom']."';
+      ";
+    }
+    //Get the current user's post code, this will need changing as we need to get the post code of the user being maintained.
+    if (function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_post_code'))
+      $postCode=hostsite_get_user_field('field_post_code');
+    if (!empty($postCode)) {
+      data_entry_helper::$javascript.="
+        indiciaData.google_api_key='".data_entry_helper::$google_api_key."';
+        var georeferenceProxy='".data_entry_helper::getRootFolder() . data_entry_helper::client_helper_path() . "proxy.php';
+        //Reload the screen with the limit applied
+        $('#limit-submit').click(function(){
+          var postcode='".$postCode."';
+          limit_to_post_code(postcode,georeferenceProxy,".$userId.");
+        });
+      ";
+      $r="<div>Only show squares within this distance (miles) of the user's post code.<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='Limit'></div>\n";
+      return $r;
+    }
+  }
+ 
   public static function delete_plot($auth, $args, $tabalias, $options, $path) {
     $postUrl = iform_ajaxproxy_url(null, 'location');
     data_entry_helper::$javascript .= "
     delete_plot = function(location_id) {
       var r = confirm('Are you sure you want to delete this plot?');
       if (r == true) {
-        $.post('$postUrl',
-          {\"website_id\":".$args['website_id'].",\"id\":location_id, \"deleted\":\"t\"},
-          function (data) {
-            if (typeof data.error === 'undefined') {
-              location.reload();
-            } else {
-              alert(data.error);
-            }
-          },
-          'json'
-        );
+      $.post('$postUrl',
+        {\"website_id\":".$args['website_id'].",\"id\":location_id, \"deleted\":\"t\"},
+        function (data) {
+          if (typeof data.error === 'undefined') {
+            location.reload();
+          } else {
+            alert(data.error);
+          }
+        },
+        'json'
+      );
       } else {
         return false;
       }
