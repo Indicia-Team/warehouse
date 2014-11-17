@@ -98,4 +98,3 @@ class extension_shorewatch_extensions {
     return $button;
   }
 }
-?>

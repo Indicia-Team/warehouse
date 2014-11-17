@@ -182,4 +182,3 @@ class extension_misc_extensions {
     drupal_set_breadcrumb($breadcrumb);
   }
 }
-?>

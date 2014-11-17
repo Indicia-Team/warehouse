@@ -367,7 +367,7 @@ var simple_tooltip;
         url: request,
         data: null,
         success: function(response) {
-          var tbody = $(div).find('tbody'), rows, rowclass, rowclasses, hasMore=false,
+          var tbody = $(div).find('tbody'), rows, rowclass, rowclasses, tdclasses, classes, hasMore=false,
               value, rowInProgress=false, rowOutput, rowId, features=[],
               feature, geom, map, valueData;
           // if we get a count back, then update the stored count
@@ -412,6 +412,15 @@ var simple_tooltip;
           }
           rowTitle = (div.settings.rowId && typeof indiciaData.reportlayer!=="undefined") ?
             ' title="'+div.settings.msgRowLinkedToMapHint+'"' : '';
+          if (rows.length===0) {
+            var viscols=0;
+            $.each(div.settings.columns, function(idx, col) {
+              if (col.visible!==false && col.visible!=='false') {
+                viscols++;
+              }
+            });
+            tbody.append('<tr><td colcount="'+viscols+'">No information available</td></tr>');
+          }
           $.each(rows, function(rowidx, row) {
             if (div.settings.rowClass!=='') {
               rowclasses=[mergeParamsIntoTemplate(div, row, div.settings.rowClass)];
@@ -440,6 +449,7 @@ var simple_tooltip;
                 }
               });
               $.each(div.settings.columns, function(idx, col) {
+                tdclasses=[];
                 if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" &&
                     typeof col.mappable!=="undefined" && (col.mappable==="true" || col.mappable===true)) {                  
                   geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
@@ -470,17 +480,27 @@ var simple_tooltip;
                     });
                     row[col.fieldname] = value;
                   }
+                  if (col.img === true || col.img==='true') {
+                    tdclasses.push('table-gallery');
+                  }
                   // either template the output, or just use the content according to the fieldname
                   if (typeof col.template !== "undefined") {
                     value = mergeParamsIntoTemplate(div, row, col.template);
                   } else if (typeof col.actions !== "undefined") {
                     value = getActions(div, row, col.actions);
+                    tdclasses.push('actions');
                   } else {
                     value = row[col.fieldname];
+                    tdclasses.push('data');
+                    tdclasses.push(col.fieldname);
+                  }
+                  if (typeof col['class'] !== "undefined" && col['class']!=='') {
+                    tdclasses.push(col['class']);
                   }
                   // clear null value cells
                   value = (value===null || typeof value==="undefined") ? '' : value;
-                  rowOutput += '<td>' + value + '</td>';
+                  classes = (tdclasses.length===0) ? '' : ' class="' + tdclasses.join(' ') + '"';
+                  rowOutput += '<td'+classes+'>' + value + '</td>';
                 }
               });
               if ((rowidx % div.settings.galleryColCount)===div.settings.galleryColCount-1) {

@@ -36,7 +36,8 @@ jQuery(document).ready(function($) {
     var
       attrName=table.id.replace('complex-attr-grid-', '').split('-'),
       attrTypeTag=attrName[0], attrId=attrName[1],
-      row='<tr>',
+      rowClass = ($(table).find('tbody tr').length % 2 === 0) ? ' class="odd"' : '',
+      row='<tr'+rowClass+'>',
       gridDef=indiciaData['complexAttrGrid-'+attrTypeTag+'-'+attrId],
       fieldname;
     

@@ -961,3 +961,14 @@ div.note-fail, p.note-fail {
 #filter-form label {
   display: block;
 }
+.detail-gallery ul {
+  padding: 0;
+}
+.detail-gallery li {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  list-style-type: none;
+  padding: 0.5em;
+}

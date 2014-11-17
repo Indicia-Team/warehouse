@@ -164,5 +164,3 @@ function get_attr_options_array_with_user_data($listData) {
   }
   return $r;
 }
-
-?>

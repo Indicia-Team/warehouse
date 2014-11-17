@@ -80,7 +80,7 @@ $indicia_templates = array(
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'checkbox' => '<input type="hidden" name="{fieldname}" value="0"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
   'training' => '<input type="hidden" name="{fieldname}" value="{hiddenValue}"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
-  'date_picker' => '<input type="text" placeholder="{placeholder}" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
+  'date_picker' => '<input type="text" placeholder="{placeholder}" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>'."\n",
   'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{items}</select>',
   'select_item' => '<option value="{value}" {selected} >{caption}</option>',
   'select_species' => '<option value="{value}" {selected} >{caption} - {common}</option>',
@@ -265,7 +265,7 @@ if ($("#{escapedId} option").length===0) {
   'report-tbody' => '<tbody>{content}</tbody>',
   'report-tbody-tr' => '<tr{class}{rowId}{rowTitle}>{content}</tr>',
   'report-tbody-td' => '<td{class}>{content}</td>',
-  'species-checklist-table' => '<table{class}{id}>{content}</table>',
+  'data-input-table' => '<table{class}{id}>{content}</table>',
 );
 
 
@@ -2282,5 +2282,4 @@ if(!function_exists('get_called_class')) {
     while ($matches[1] == 'parent'  && $matches[1]);
     return $matches[1];
   } 
-} 
-?>
+}

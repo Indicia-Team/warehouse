@@ -468,4 +468,3 @@ class user_helper extends helper_base {
   }
   
 }
-

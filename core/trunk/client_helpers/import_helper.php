@@ -842,5 +842,3 @@ class import_helper extends helper_base {
   }
 
 }
-
-?>

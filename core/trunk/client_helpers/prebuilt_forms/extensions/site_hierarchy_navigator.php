@@ -385,4 +385,3 @@ class extension_site_hierarchy_navigator {
   }
     
 }
-  

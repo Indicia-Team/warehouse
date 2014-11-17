@@ -163,4 +163,3 @@ if ($cleanupTargetDir) {
 
   // Return JSON-RPC success response
   echo '{"jsonrpc" : "2.0", "result" : null, "id" : "id"}';
-?>

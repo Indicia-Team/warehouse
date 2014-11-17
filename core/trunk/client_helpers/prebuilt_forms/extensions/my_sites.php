@@ -141,6 +141,7 @@ class extension_my_sites {
         );
       }
     ";
+    $r .= '</fieldset>';
     return $r;
   }
   
@@ -348,4 +349,3 @@ class extension_my_sites {
     return '<label>User : </label>'.$r.'<br>';
   }
 }
-?>

@@ -330,10 +330,6 @@ class report_helper extends helper_base {
   */
   public static function report_grid($options) {
     global $indicia_templates;
-    /*$indicia_templates['report-table']='{content}';
-    $indicia_templates['report-tbody']='{content}';
-    $indicia_templates['report-tbody-tr']='{content}';
-    $indicia_templates['report-tbody-td']='<div style="border: solid red 1px">{content}</div>';*/
     self::add_resource('fancybox');
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     $options = self::get_report_grid_options($options);
@@ -428,7 +424,7 @@ class report_helper extends helper_base {
       $thead = str_replace(array('{class}','{title}','{content}'), array('','',$thead), $indicia_templates['report-thead-tr']);
       if ($wantFilterRow && (!isset($options["forceNoFilterRow"]) || !$options["forceNoFilterRow"]))
         $thead .= str_replace(array('{class}','{title}','{content}'), 
-            array(' class="filter-row"','title="'.lang::get('Use this row to filter the grid').'"',$filterRow), $indicia_templates['report-thead-tr']);
+            array(' class="filter-row"',' title="'.lang::get('Use this row to filter the grid').'"',$filterRow), $indicia_templates['report-thead-tr']);
       $thead = str_replace(array('{class}', '{content}'), array(" class=\"$thClass\"", $thead), $indicia_templates['report-thead']);   
     }
     $currentUrl = self::get_reload_link_parts();
@@ -542,6 +538,8 @@ class report_helper extends helper_base {
             }
             $row[$field['fieldname']] = $value;
           }
+          if (isset($field['img']) && $field['img']=='true')
+            $classes[] = 'table-gallery';
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row, $pathParam);
             $classes[]='actions';
@@ -610,7 +608,6 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
       if ($rowInProgress)
         $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
     } else {
-      $tbody .= '<tr><td></td></tr>';
       $tbody .= str_replace(array('{class}','{rowId}','{rowTitle}','{content}'), array('','','','<td></td>'), $indicia_templates['report-tbody-tr']);
     }
     $tbody = str_replace('{content}', $tbody, $indicia_templates['report-tbody']);
@@ -1305,7 +1302,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </ul>
   */
   public static function freeform_report($options) {
-    $options = array_merge(array('class'=>''), $options);
+    if (empty($options['class']))
+      // prevent default report grid classes as this is not a grid
+      $options['class'] = 'banded-report';
     $options = self::get_report_grid_options($options);
     self::request_report($response, $options, $currentParamValues, false);
     if (isset($response['error'])) return $response['error'];
@@ -1317,8 +1316,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $options = array_merge(array(
       'header' => '',
       'footer' => '',
-      'bands' => array(),
-      'class' => 'banded-report'
+      'bands' => array()
     ), $options);
 
     if (!isset($records))

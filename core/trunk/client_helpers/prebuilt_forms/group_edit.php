@@ -550,15 +550,19 @@ $('#entry_form').submit(function() {
       $r .= '<p>' . lang::get('If the {1} will only be active for a limited period of time (e.g. an event or bioblitz) ' . 
           'then please fill in the start and or end date of this period in the controls below. This helps to prevent people joining after '.
           'the group is no longer active.', self::$groupType) . '</p>';
+      $r .= '<div id="ctrl-wrap-group-from-to" class="form-row ctrl-wrap">';
       $r .= data_entry_helper::date_picker(array(
         'label' => ucfirst(lang::get('{1} active from', self::$groupType)),
-        'fieldname' => 'group:from_date'
+        'fieldname' => 'group:from_date',
+        'controlWrapTemplate' => 'justControl'
       ));
       $r .= data_entry_helper::date_picker(array(
         'label' => lang::get('to'),
         'fieldname' => 'group:to_date',
-        'labelClass' => 'auto'
+        'labelClass' => 'auto',
+        'controlWrapTemplate' => 'justControl'
       ));
+      $r .= '</div>';
     }
     return $r;
   }
