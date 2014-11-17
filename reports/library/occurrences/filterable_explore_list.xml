@@ -20,7 +20,7 @@
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
   </params>
   <columns>
-    <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} certainty-{certainty} record-id'&gt;{occurrence_id}&lt;/div&gt;" datatype="integer" />
+    <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} release-{release_status} certainty-{certainty} record-id'&gt;{occurrence_id}&lt;/div&gt;" datatype="integer" />
     <column name='source' display='Source' datatype="text" 
         sql="w.title || ' | ' || case when substring(o.survey_title from 1 for length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
@@ -39,6 +39,7 @@
     <column name='zero_abundance' display='Zero abundance' sql='o.zero_abundance' visible="false" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
+    <column name='release_status' display='State' sql='o.release_status' visible="false" />
     <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
     <column name='belongs_to_user' display='Belongs to user' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#user_id#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
     <column name='belongs_to_site' display='Belongs to site' sql="CASE WHEN o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
