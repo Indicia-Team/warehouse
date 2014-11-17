@@ -5,17 +5,17 @@
 INSERT INTO map_squares (geom, x, y, size)
 SELECT DISTINCT on (
       round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-          GREATEST(o.sensitivity_precision, o.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+          GREATEST(o.sensitivity_precision, s.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
       round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-          GREATEST(o.sensitivity_precision, o.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+          GREATEST(o.sensitivity_precision, s.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
       GREATEST(o.sensitivity_precision, 1000)
   )
   reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-      GREATEST(o.sensitivity_precision, o.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system)),
+      GREATEST(o.sensitivity_precision, s.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system)),
   round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-      GREATEST(o.sensitivity_precision, o.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+      GREATEST(o.sensitivity_precision, s.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
   round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-      GREATEST(o.sensitivity_precision, o.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+      GREATEST(o.sensitivity_precision, s.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
   GREATEST(o.sensitivity_precision, 1000)
 FROM samples s
 JOIN occurrences o ON o.sample_id=s.id
@@ -26,17 +26,17 @@ WHERE coalesce(s.geom, l.centroid_geom) IS NOT NULL;
 
 SELECT DISTINCT on (
       round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-          GREATEST(o.sensitivity_precision, o.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+          GREATEST(o.sensitivity_precision, s.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
       round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-          GREATEST(o.sensitivity_precision, o.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+          GREATEST(o.sensitivity_precision, s.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
       GREATEST(o.sensitivity_precision, 2000)
   )
   reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-      GREATEST(o.sensitivity_precision, o.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system)) as geom,
+      GREATEST(o.sensitivity_precision, s.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system)) as geom,
   round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-      GREATEST(o.sensitivity_precision, o.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x,
+      GREATEST(o.sensitivity_precision, s.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x,
   round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-      GREATEST(o.sensitivity_precision, o.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y,
+      GREATEST(o.sensitivity_precision, s.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y,
   GREATEST(o.sensitivity_precision, 2000) as size
 INTO temp
 FROM samples s
@@ -56,17 +56,17 @@ DROP TABLE temp;
 
 SELECT DISTINCT on (
       round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-          GREATEST(o.sensitivity_precision, o.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+          GREATEST(o.sensitivity_precision, s.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
       round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-          GREATEST(o.sensitivity_precision, o.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
+          GREATEST(o.sensitivity_precision, s.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))),
       GREATEST(o.sensitivity_precision, 10000)
   )
   reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-      GREATEST(o.sensitivity_precision, o.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system)) as geom,
+      GREATEST(o.sensitivity_precision, s.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system)) as geom,
   round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-      GREATEST(o.sensitivity_precision, o.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x,
+      GREATEST(o.sensitivity_precision, s.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x,
   round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-      GREATEST(o.sensitivity_precision, o.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y,
+      GREATEST(o.sensitivity_precision, s.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y,
   GREATEST(o.sensitivity_precision, 10000) as size
 INTO temp
 FROM samples s
@@ -86,19 +86,19 @@ SELECT DISTINCT ON (o.confidential, o.sensitivity_precision, coalesce(s.entered_
     coalesce(s.geom, l.centroid_geom) as geom, o.confidential, o.sensitivity_precision, 
     coalesce(s.entered_sref, l.centroid_sref) as entered_sref, coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system, 
     round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-        greatest(o.sensitivity_precision, o.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x1k,
+        greatest(o.sensitivity_precision, s.privacy_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x1k,
     round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
         greatest(o.sensitivity_precision, 1000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y1k,
-    greatest(o.sensitivity_precision, o.privacy_precision, 1000) as size1k,
+    greatest(o.sensitivity_precision, s.privacy_precision, 1000) as size1k,
     round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-        greatest(o.sensitivity_precision, o.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x2k,
+        greatest(o.sensitivity_precision, s.privacy_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x2k,
     round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
         greatest(o.sensitivity_precision, 2000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y2k,
-    greatest(o.sensitivity_precision, o.privacy_precision, 2000) as size2k,    
+    greatest(o.sensitivity_precision, s.privacy_precision, 2000) as size2k,    
     round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-        greatest(o.sensitivity_precision, o.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x10k,
+        greatest(o.sensitivity_precision, s.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as x10k,
     round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, 
-        greatest(o.sensitivity_precision, o.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y10k,
+        greatest(o.sensitivity_precision, s.privacy_precision, 10000), coalesce(s.entered_sref_system, l.centroid_sref_system))))) as y10k,
     greatest(o.sensitivity_precision, 10000) as size10k,
     cast(null as integer) as msq_id1k, cast(null as integer) as msq_id2k, cast(null as integer) as msq_id10k
 INTO temporary interim
