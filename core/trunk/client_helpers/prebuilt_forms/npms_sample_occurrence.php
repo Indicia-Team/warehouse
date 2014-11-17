@@ -71,12 +71,13 @@ class iform_npms_sample_occurrence extends iform_dynamic_sample_occurrence {
   }
 
   protected static function get_form_html($args, $auth, $attributes) {
+    global $user;
     data_entry_helper::$javascript .= "
       var sampleCreatedOn;
       var lockingDate;
     ";
     //Test if the sample date is less than the locking date, if it is then lock the form.
-    if (!empty($_GET['sample_id'])&&!empty($args['locking_date'])) {
+    if (!empty($_GET['sample_id'])&&!empty($args['locking_date']) && !(in_array('administrator', $user->roles))) {
       $sampleData = data_entry_helper::get_population_data(array(
         'table' => 'sample',
         'extraParams' => $auth['read'] + array('id' => $_GET['sample_id'], 'view' => 'detail'),
