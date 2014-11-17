@@ -432,4 +432,3 @@ class submission_builder extends helper_config {
   }
 
 }
-?>

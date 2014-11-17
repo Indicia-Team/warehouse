@@ -1128,7 +1128,7 @@ jQuery(document).ready(function($) {
     $.each(arrays, function(name, arr) {
       indiciaData.filter.def[name] = arr.join(',');
     });
-    var pane=e.currentTarget.id.replace('controls-filter_', '');
+    var pane=e.currentTarget.parentNode.id.replace('controls-filter_', '');
     // Does the pane have any special code for applying it's settings to the definition?
     if (typeof paneObjList[pane].applyFormToDefinition!=="undefined") {
       paneObjList[pane].applyFormToDefinition();

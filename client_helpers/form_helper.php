@@ -507,5 +507,3 @@ $('#load-params').click(function() {
   }
 
 }
- 
- ?>

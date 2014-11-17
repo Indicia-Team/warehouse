@@ -290,8 +290,7 @@ class data_entry_helper extends helper_base {
       $attrId=str_replace('[]', '', $attrId);
     else
       return 'The complex attribute grid control must be used with a mult-value attribute.';
-    $r = "<table class=\"complex-attr-grid\" id=\"complex-attr-grid-$attrTypeTag-$attrId\">";
-    $r .= '<thead><tr>';
+    $r = '<thead><tr>';
     $lookupData = array();
     $thRow2 = '';
     foreach ($options['columns'] as $idx => &$def) {
@@ -340,7 +339,8 @@ class data_entry_helper extends helper_base {
     $rowCount = $options['defaultRows'] > count($options['default']) ? $options['defaultRows'] : count($options['default']);
     $extraCols=0;
     for ($i = 0; $i<=$rowCount-1; $i++) {
-      $r .= '<tr>';
+      $class=($i % 2 === 1) ? '' : ' class="odd"'; 
+      $r .= "<tr$class>";
       $defaults=isset($options['default'][$i]) ? json_decode($options['default'][$i]['default'], true) : array();
       foreach ($options['columns'] as $idx => $def) {
         if (isset($options['default'][$i]))
@@ -395,7 +395,13 @@ $('#$escaped').change(function(e) {
   changeComplexGridRowCount('$escaped', '$attrTypeTag', '$attrId');
 });\n";
     }
-    $r .= '</table>';
+    // wrap in a table template
+    global $indicia_templates;
+    $r = str_replace(
+          array('{class}', '{id}', '{content}'), 
+          array(' class="complex-attr-grid"', " id=\"complex-attr-grid-$attrTypeTag-$attrId\"", $r), 
+          $indicia_templates['data-input-table']);
+    
     return $r;  
   }
 
@@ -2273,7 +2279,11 @@ $('#$escaped').change(function(e) {
     $options = array_merge(array(
       'fieldname'=>'sample:entered_sref'
     ), $options);
-    
+    // If we have more than one possible system, need a control to allow user selection
+    $systemControlRequired = !(array_key_exists('systems', $options) && count($options['systems']) === 1);
+    // in which case, no wrap around the 2 inner controls, just one around the outer added later
+    if ($systemControlRequired)
+      $options['controlWrapTemplate'] = 'justControl';
     if (array_key_exists('systems',$options) && count($options['systems']) == 1) {
       // The system select will be hidden since there is only one system
       $srefOptions = $options;
@@ -2294,7 +2304,7 @@ $('#$escaped').change(function(e) {
       $options['default']=$options['defaultSystem'];
     }
     // Output the system control
-    if (array_key_exists('systems', $options) && count($options['systems']) === 1) {
+    if (!$systemControlRequired) {
       // Hidden field for the system
       $keys = array_keys($options['systems']);
       $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$options['fieldname']."\" value=\"".$keys[0]."\" />\n";
@@ -3288,7 +3298,7 @@ $('#$escaped').change(function(e) {
       $grid = str_replace(
           array('{class}', '{id}', '{content}'), 
           array(' class="'.implode(' ', $classlist).'"', " id=\"$options[id]\"", $grid), 
-          $indicia_templates['species-checklist-table']
+          $indicia_templates['data-input-table']
       );
       // in hasData mode, the wrap_species_checklist method must be notified of the different default 
       // way of checking if a row is to be made into an occurrence. This may differ between grids when
@@ -4186,6 +4196,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       }
       $ctrlOptions = array(
         'class' => $class,
+        'controlWrapTemplate' => 'justControl',
         'extraParams' => $options['readAuth'],
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
@@ -4219,7 +4230,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   private static function species_checklist_occ_attr_class($options, $idx, $caption) {
     return (array_key_exists('occAttrClasses', $options) && $idx < count($options['occAttrClasses'])) ?
           $options['occAttrClasses'][$idx] :
-          'sc' . str_replace(' ', '', ucWords($caption)); // provide a default class based on the control caption
+          'sc' . preg_replace('/[^a-zA-Z0-9]/', '', ucWords($caption)); // provide a default class based on the control caption
   }
 
   /**
@@ -4390,7 +4401,8 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   public static function hidden_text($options) {
     $options = array_merge(array(
       'default'=>'',
-      'requiredsuffixTemplate'=>'suffix' // disables output of the required *
+      'requiredsuffixTemplate'=>'suffix', // disables output of the required *
+      'controlWrapTemplate' => 'justControl'
     ), self::check_options($options));
     unset($options['label']);
     return self::apply_template('hidden_text', $options);
@@ -4816,7 +4828,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'page'        => 'middle',
       'includeVerifyButton' => false,
       'includeSubmitButton' => true,
-      'includeDeleteButton' => false
+      'includeDeleteButton' => false,
+      'controlWrapTemplate' => 'justControl'
     ), $options);
     $options['class'] .= ' buttons';
     // Output the buttons
@@ -4831,13 +4844,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['class']=$buttonClass." tab-prev";
         $options['id']='tab-prev';
         $options['caption']='&lt; '.lang::get($options['captionPrev']);
-        $r .= str_replace('{content}', self::apply_template('button', $options), $indicia_templates['jsWrap']);
+        $r .= str_replace('{content}', str_replace("\n", "", self::apply_template('button', $options)), $indicia_templates['jsWrap']);
       }
       if ($options['page']!='last') {
         $options['class']=$buttonClass." tab-next";
         $options['id']='tab-next';
         $options['caption']=lang::get($options['captionNext']).' &gt;';
-        $r .= str_replace('{content}', self::apply_template('button', $options), $indicia_templates['jsWrap']);
+        $r .= str_replace('{content}', str_replace("\n", "", self::apply_template('button', $options)), $indicia_templates['jsWrap']);
       } else {
         if ($options['includeDeleteButton']) {
           $options['class']=$buttonClass." tab-delete";
@@ -7183,4 +7196,3 @@ if (errors$uniq.length>0) {
   }
 
 }
-?>

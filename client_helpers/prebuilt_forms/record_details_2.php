@@ -319,38 +319,27 @@ Record ID',
   protected static function get_control_photos($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
     data_entry_helper::add_resource('fancybox');
-    //default an items per page if not set by administrator
+    // max photos to show
     if (empty($options['itemsPerPage'])) {
-      $options['itemsPerPage'] = 12;
-    }  
-    //default a column count if not set by administrator
-    if (empty($options['galleryColCount'])) {
-      $options['galleryColCount'] = 3;
-    }  
+      $options['itemsPerPage'] = 20;
+    }
 
-    return '<h3>Photos and media</h3>'.report_helper::report_grid(array(
+    return '<h3>Photos and media</h3>'.report_helper::freeform_report(array(
       'readAuth' => $auth['read'],
       'dataSource'=>'occurrence_image',
       'itemsPerPage' => $options['itemsPerPage'],
-      'columns' => array(
-        array(
-          'fieldname' => 'path',
-          'template' => '<div class="gallery-item"><a href="{imageFolder}{path}" class="fancybox single"><img src="{imageFolder}thumb-{path}" /></a><br/>{caption}</div>',
-          'img'=>true
-        )
-      ),
+      'class' => 'detail-gallery',
+      'header'=>'<ul>',
+      'footer'=>'</ul>',
+      'bands'=>array(array('content'=>'<li class="gallery-item"><a href="{imageFolder}{path}" class="fancybox single"><img src="{imageFolder}thumb-{path}" /></a><br/>{caption}</li>')),
       //mode direct means the datasource is a table instead of a report
       'mode' => 'direct',
       'autoParamsForm' => false,
       'includeAllColumns' => false,
-      'headers' => false,
-      'galleryColCount' => $options['galleryColCount'],
-      'pager' => false,
       'extraParams' => array(
         'occurrence_id'=>$_GET['occurrence_id'],
         'sharing'=>'reporting'        
-      ),
-      'ajax' => true
+      )      
     ));
   }
   

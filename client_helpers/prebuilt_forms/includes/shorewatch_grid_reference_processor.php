@@ -185,5 +185,3 @@
     $convertedSref = $sref['lat'].' '.$sref['long'];
     return $convertedSref;
   }
-
-?>

@@ -430,7 +430,7 @@ class iform_species_details extends iform_dynamic {
       )
     ));
 
-    $r = '<div class="record-details-fields ui-helper-clearfix">';
+    $r = '<h3>'.lang::get('Species Details').'</h3><div class="record-details-fields ui-helper-clearfix">';
     //draw the species names and custom attributes
     if (isset($details_report))
       $r .= $details_report;
@@ -479,48 +479,38 @@ class iform_species_details extends iform_dynamic {
     global $user;
     //default an items per page if not set by administrator
     if (empty($options['itemsPerPage'])) {
-      $options['itemsPerPage'] = 6;
-    }  
-    //default a column count if not set by administrator
-    if (empty($options['galleryColCount'])) {
-      $options['galleryColCount'] = 3;
-    }  
+      $options['itemsPerPage'] = 20;
+    }
     
     //Use this report to return the photos
     $reportName = 'library/occurrence_images/explore_list_2';
-    return report_helper::report_grid(array(
+    return '<h3>'.lang::get('Photos and media').'</h3>' . report_helper::freeform_report(array(
       'readAuth' => $auth['read'],
       'dataSource'=> $reportName,
       'itemsPerPage' => $options['itemsPerPage'],
-      'columns' => array(
-        array(
-          'fieldname' => 'path',
-          'template' => '<div class="gallery-item"><a href="{imageFolder}{path}" class="fancybox single"><img src="{imageFolder}thumb-{path}" /></a><br/>{caption}</div>',
-          'img'=>true
-        )
-      ),
+      'class' => 'detail-gallery',
+      'header'=>'<ul>',
+      'footer'=>'</ul>',
+      'bands'=>array(array('content'=>'<li class="gallery-item"><a href="{imageFolder}{path}" class="fancybox single"><img src="{imageFolder}thumb-{path}" /></a><br/>{caption}</li>')),
       'mode' => 'report',
       'autoParamsForm' => false,
-      'includeAllColumns' => false,
-      'headers' => false,
-      'galleryColCount' => $options['galleryColCount'],
-        'extraParams' => array(
-          'taxon_meaning_id'=> self::$taxon_meaning_id,
-          'smpattrs'=>'',
-          'occattrs'=>'',
-          'searchArea'=>'',
-          'idlist'=>'',
-          'currentUser'=>'',
-          'ownData'=>0,
-          'location_id'=>'',
-          'ownLocality'=>0,
-          'taxon_groups'=>'',
-          'ownGroups'=>0,
-          'survey_id'=>'',
-          'date_from'=>'',
-          'date_to'=>'',
-          'sharing'=>'reporting'
-        )
+      'extraParams' => array(
+        'taxon_meaning_id'=> self::$taxon_meaning_id,
+        'smpattrs'=>'',
+        'occattrs'=>'',
+        'searchArea'=>'',
+        'idlist'=>'',
+        'currentUser'=>'',
+        'ownData'=>0,
+        'location_id'=>'',
+        'ownLocality'=>0,
+        'taxon_groups'=>'',
+        'ownGroups'=>0,
+        'survey_id'=>'',
+        'date_from'=>'',
+        'date_to'=>'',
+        'sharing'=>'reporting'
+      )
     ));    
   }
   
@@ -571,7 +561,7 @@ class iform_species_details extends iform_dynamic {
       $layerTypes = explode(',', $args['include_layer_list_types']);
     else
       $layerTypes = array('base', 'overlay');
-    $r = '';
+    $r = '<h3>'.lang::get('Map').'</h3>';
     //Legend options set by the user
     if (!isset($args['include_layer_list']) || $args['include_layer_list'])
       $r .= map_helper::layer_list(array(
@@ -652,7 +642,7 @@ class iform_species_details extends iform_dynamic {
       )
     ));
     if (!empty($reportResult[0]['the_text']))
-      return '<div class="field ui-helper-clearfix"><span>Description:</span><span>'.$reportResult[0]['the_text'].'</span></div>';
+      return '<h3>'.lang::get('Species Notes').'</h3><p>'.$reportResult[0]['the_text'].'</p>';
   }
   
   /*

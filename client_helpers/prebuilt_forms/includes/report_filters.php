@@ -262,17 +262,20 @@ class filter_where extends filter_base {
     ));
     foreach ($locTypes as $locType)
       $sitesLevel1[$locType['id']] = $locType['term'].'...';
+    $r .= '<div id="ctrl-wrap-imp-location" class="form-row ctrl-wrap">';
     $r .= data_entry_helper::select(array(
       'fieldname'=>'site-type',
       'label' => lang::get('Choose an existing site or location'),
       'lookupValues' => $sitesLevel1,
-      'blankText' => '<'.lang::get('Please select').'>'
+      'blankText' => '<'.lang::get('Please select').'>',
+      'controlWrapTemplate' => 'justControl'
     ));
     $r .= data_entry_helper::select(array(
       'fieldname' => 'imp-location',
-      'lookupValues' => array()
+      'lookupValues' => array(),
+      'controlWrapTemplate' => 'justControl'
     ));
-    $r .= '</fieldset>';
+    $r .= '</div></fieldset>';
     $r .= '<fieldset class="exclusive">';
     $r .= data_entry_helper::text_input(array(
       'label' => lang::get('Or, search for site names containing'),
@@ -389,15 +392,19 @@ class filter_occurrence_id extends filter_base {
    * Define the HTML required for this filter's UI panel.
    */
   public function get_controls($readAuth, $options) { 
-    $r = data_entry_helper::select(array(
+    $r = '<div id="ctrl-wrap-occurrence_id" class="form-row ctrl-wrap">';
+    $r .= data_entry_helper::select(array(
       'label' => lang::get('Record ID'),
       'fieldname' => 'occurrence_id_op',
-      'lookupValues'=>array('='=>'is','>='=>'is at least','<='=>'is at most')
+      'lookupValues'=>array('='=>'is','>='=>'is at least','<='=>'is at most'),
+      'controlWrapTemplate' => 'justControl'
     ));
     $r .= data_entry_helper::text_input(array(
       'fieldname' => 'occurrence_id',
-      'class'=>'control-width-2'
+      'class'=>'control-width-2',
+      'controlWrapTemplate' => 'justControl'
     ));
+    $r .= '</div>';
     return $r;  
   }
 }
@@ -533,10 +540,12 @@ class filter_source extends filter_base {
     // create an object to contain a lookup from id to form for JS, since forms don't have a real id.
     $obj=array();
     foreach ($sources as $idx=>$source) {
-      $r .= '<li class="vis-survey-'.$source['survey_id'].' vis-website-'.$source['website_id'].'">' .
-          '<input type="checkbox" value="'.$source['input_form'].'" id="check-form-'.$idx.'"/>' .
-          '<label for="check-form-'.$idx.'">'.ucfirst(trim(preg_replace('/(http:\/\/)|[\/\-_]|(\?q=)/', ' ', $source['input_form']))).'</label></li>';
-      $obj[$source['input_form']]=$idx;
+      if (!empty($source['input_form'])) {
+        $r .= '<li class="vis-survey-'.$source['survey_id'].' vis-website-'.$source['website_id'].'">' .
+            '<input type="checkbox" value="'.$source['input_form'].'" id="check-form-'.$idx.'"/>' .
+            '<label for="check-form-'.$idx.'">'.ucfirst(trim(preg_replace('/(http:\/\/)|[\/\-_]|(\?q=)/', ' ', $source['input_form']))).'</label></li>';
+        $obj[$source['input_form']]=$idx;
+      }
     }
     $r .= '</ul></div>';
     report_helper::$javascript .= 'indiciaData.formsList='.json_encode($obj).";\n";
@@ -826,9 +835,9 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   $hiddenStuff = '';
   foreach ($filterModules as $category => $list) {
     foreach ($list as $moduleName=>$module) {
-      $hiddenStuff .= "<div style=\"display: none\"><form id=\"controls-$moduleName\" action=\"#\" class=\"filter-controls\"><fieldset>" . $module->get_controls($readAuth, $options) . 
+      $hiddenStuff .= "<div style=\"display: none\"><div class=\"filter-popup\" id=\"controls-$moduleName\"><form action=\"#\" class=\"filter-controls\"><fieldset>" . $module->get_controls($readAuth, $options) . 
         '<button class="fb-close" type="button">Cancel</button>' .
-        '<button class="fb-apply" type="submit">Apply</button></fieldset></form></div>';
+        '<button class="fb-apply" type="submit">Apply</button></fieldset></form></div></div>';
       $shortName=str_replace('filter_', '', $moduleName);
       report_helper::$javascript .= "indiciaData.lang.NoDescription$shortName='".lang::get('Click to Filter '.ucfirst($shortName))."';\n";
     }

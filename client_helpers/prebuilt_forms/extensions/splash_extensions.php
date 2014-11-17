@@ -661,4 +661,3 @@ class extension_splash_extensions {
     }\n";
   }
 }
-?>
