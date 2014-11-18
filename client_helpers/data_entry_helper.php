@@ -474,7 +474,7 @@ $('#$escaped').change(function(e) {
   */
   public static function sub_list($options) {
     global $indicia_templates;
-    static $idx=0; // unique ID for all sublists
+    static $sub_list_idx=0; // unique ID for all sublists
     // checks essential options, uses fieldname as id default and 
     // loads defaults if error or edit
     $options = self::check_options($options);
@@ -548,7 +548,7 @@ $('#$escaped').change(function(e) {
     $options['subListItem'] = str_replace(array('{caption}', '{value}', '{fieldname}'),  
       array('\'+caption+\'', '\'+value+\'', $options['fieldname']), 
       $indicia_templates['sub_list_item']);
-    $options['idx']=$idx;
+    $options['idx']=$sub_list_idx;
     self::$javascript .= self::apply_replacements_to_template($indicia_templates['sub_list_javascript'], $options);
     // load any default values for list items into display and hidden lists
     $items = "";
@@ -566,7 +566,7 @@ $('#$escaped').change(function(e) {
     
     // layout the control
     $r .= self::apply_template($options['template'], $options);
-    $idx++;
+    $sub_list_idx++;
     return $r;
   }
 
@@ -3032,7 +3032,7 @@ $('#$escaped').change(function(e) {
       // track if there is a row we are editing in this grid
       $hasEditedRecord = false;
       if ($options['mediaTypes']) {
-        $mediaBtnLabel = lang::get($onlyImages ? 'add images' : 'add media');
+        $mediaBtnLabel = lang::get($onlyImages ? 'Add images' : 'Add media');
         $mediaBtnClass = 'sc' . $onlyImages ? 'Image' : 'Media' . 'Link';
       }
       foreach ($taxonRows as $txIdx => $rowIds) {
@@ -4255,7 +4255,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     if ($options['subSpeciesColumn']) {
       $r .= '<td class="ui-widget-content scSubSpeciesCell"><select class="scSubSpecies" style="display: none" ' .
         "id=\"$fieldname:occurrence:subspecies\" name=\"$fieldname:occurrence:subspecies\" onchange=\"SetHtmlIdsOnSubspeciesChange(this.id);\">";
-      $r .= '</select><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
+      $r .= '</select><span class="species-checklist-select-species">'.lang::get('Select a species first').'</span></td>';
     }
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
     $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'>';
@@ -4297,10 +4297,10 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         if (!preg_match('/^Image:/', $mediaType))
           $onlyImages=false;
       }
-      $label = $onlyImages ? 'add images' : 'add media';
+      $label = $onlyImages ? 'Add images' : 'Add media';
       $class = 'sc' . $onlyImages ? 'Image' : 'Media' . 'Link';
       $r .= '<td class="ui-widget-content scAddMediaCell"><a href="" class="add-media-link button '.$class.'" style="display: none" id="add-media:'.$options['id'].'--idx-:">'.
-          lang::get($label).'</a><span class="species-checklist-select-species">'.lang::get('select a species first').'</span></td>';
+          lang::get($label).'</a><span class="species-checklist-select-species">'.lang::get('Select a species first').'</span></td>';
     }
     $r .= "</tr></tbody></table>\n";
     return $r;

@@ -1266,6 +1266,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * Read authorisation tokens.</li>
   * <li><b>dataSource</b><br/>
   * Name of the report file or table/view(s) to retrieve underlying data.</li>
+  * <li><b>id</b><br/>
+  * CSS id to apply to the outer div. Default is banded-report-n where n is a unique number.</li>
   * <li><b>class</b><br/>
   * CSS class to apply to the outer div. Default is banded-report.</li>
   * <li><b>reportGroup</b><br/>
@@ -1292,6 +1294,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * The band will then only be output once at the beginning of the report, then once
   * each time one of the named trigger fields' values change. Therefore when using
   * trigger fields the band acts as a group header band.</li>
+  * <li><b>emptyText</b><br/>
+  * Text to output in the event of no data being available.</li>
   * <li><b>sharing</b>
   * Assuming the report has been written to take account of website sharing agreements, set this to define the task
   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
@@ -1302,6 +1306,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </ul>
   */
   public static function freeform_report($options) {
+    static $freeform_report_idx = 1;
+    $options = array_merge(array(
+      'id' => 'banded-report-' . $freeform_report_idx,
+      'class' => 'banded-report',
+      'emptyText' => '',
+    ), $options);
+    $freeform_report_idx++;
     if (empty($options['class']))
       // prevent default report grid classes as this is not a grid
       $options['class'] = 'banded-report';
@@ -1319,43 +1330,42 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       'bands' => array()
     ), $options);
 
-    if (!isset($records))
-      return $r;
-    if (count($records)>0) {
-      // add a header
-      $r .= '<div class="'.$options['class'].'">'.$options['header'];
-      // output each row
-      foreach ($records as $row) {
-        // for each row, check through the list of report bands
-        foreach ($options['bands'] as &$band) {
-          // default is to output a band
-          $outputBand = true;
-          // if the band has fields which trigger it to be output when they change value between rows,
-          // we need to check for changes to see if the band is to be output
-          if (isset($band['triggerFields'])) {
-            $outputBand = false;
-            // Make sure we have somewhere to store the current field values for checking against
-            if (!isset($band['triggerValues']))
-              $band['triggerValues']=array();
-            // look for changes in each trigger field
-            foreach ($band['triggerFields'] as $triggerField) {
-              if (!isset($band['triggerValues'][$triggerField]) || $band['triggerValues'][$triggerField]!=$row[$triggerField])
-                // one of the trigger fields has changed value, so it means the band gets output
-                $outputBand=true;
-              // store the last value to compare against next time
-              $band['triggerValues'][$triggerField] = $row[$triggerField];
-            }
-          }
-          // output the band only if it has been triggered, or has no trigger fields specified.
-          if ($outputBand) {
-            $row['imageFolder'] = self::get_uploaded_image_folder();
-            $r .= self::apply_replacements_to_template($band['content'], $row);
+    if (!isset($records) || count($records)===0) {
+      return $r . $options['emptyText'];
+    }
+    // add a header
+    $r .= "<div id=\"$options[id]\" class=\"$options[class]\">$options[header]";
+    // output each row
+    foreach ($records as $row) {
+      // for each row, check through the list of report bands
+      foreach ($options['bands'] as &$band) {
+        // default is to output a band
+        $outputBand = true;
+        // if the band has fields which trigger it to be output when they change value between rows,
+        // we need to check for changes to see if the band is to be output
+        if (isset($band['triggerFields'])) {
+          $outputBand = false;
+          // Make sure we have somewhere to store the current field values for checking against
+          if (!isset($band['triggerValues']))
+            $band['triggerValues']=array();
+          // look for changes in each trigger field
+          foreach ($band['triggerFields'] as $triggerField) {
+            if (!isset($band['triggerValues'][$triggerField]) || $band['triggerValues'][$triggerField]!=$row[$triggerField])
+              // one of the trigger fields has changed value, so it means the band gets output
+              $outputBand=true;
+            // store the last value to compare against next time
+            $band['triggerValues'][$triggerField] = $row[$triggerField];
           }
         }
+        // output the band only if it has been triggered, or has no trigger fields specified.
+        if ($outputBand) {
+          $row['imageFolder'] = self::get_uploaded_image_folder();
+          $r .= self::apply_replacements_to_template($band['content'], $row);
+        }
       }
-      // add a footer
-      $r .= $options['footer'].'</div>';
     }
+    // add a footer
+    $r .= $options['footer'].'</div>';
     return $r;
   }
 
