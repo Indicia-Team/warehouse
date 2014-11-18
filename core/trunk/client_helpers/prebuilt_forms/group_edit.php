@@ -260,25 +260,26 @@ class iform_group_edit {
       if (!empty($args['parent_group_relationship_type']) && empty($_GET['from_group_id']))
         return 'This form should be called with a from_group_id parameter to define the parent when creating a new group';
     }
-    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
-    $r .= '<fieldset><legend>' . lang::get('Fill in details of your recording group below') . '</legend>';
-    $r .= $auth['write'].
-          "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
-    $r .= data_entry_helper::hidden_text(array('fieldname'=>'group:id'));
     // maintain compatibility with form settings from before group type became multiselect.
     if (empty($args['group_type']))
       $args['group_type'] = array();
     elseif (!is_array($args['group_type']))
       $args['group_type']=array($args['group_type']);
-    // if a fixed choice of group type, can use a hidden input to put the value in the form.
     if (count($args['group_type'])===1) {
-      $r .= '<input type="hidden" name="group:group_type_id" value="'.$args['group_type'][0].'"/>';
       $response = data_entry_helper::get_population_data(array(
         'table'=>'termlists_term',
         'extraParams'=>$auth['read'] + array('id'=>$args['group_type'][0])
       ));
       self::$groupType=strtolower($response[0]['term']);
     }
+    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
+    $r .= '<fieldset><legend>' . lang::get('Fill in details of your {1} below', self::$groupType) . '</legend>';
+    $r .= $auth['write'].
+          "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
+    $r .= data_entry_helper::hidden_text(array('fieldname'=>'group:id'));
+    // if a fixed choice of group type, can use a hidden input to put the value in the form.
+    if (count($args['group_type'])===1) 
+      $r .= '<input type="hidden" name="group:group_type_id" value="'.$args['group_type'][0].'"/>';
     if (!empty(data_entry_helper::$entity_to_load['group:title']) && function_exists('drupal_set_title'))
       drupal_set_title(lang::get('Edit {1}', data_entry_helper::$entity_to_load['group:title']));
     $r .= data_entry_helper::text_input(array(
@@ -344,8 +345,6 @@ class iform_group_edit {
     $r .= '</fieldset>';
     $r .= self::reportFilterBlock($args, $auth, $hiddenPopupDivs);
     $r .= self::inclusionMethodControl($args);
-    if ($args['include_report_filter'] || $hasFilterChoiceControl)   
-      $r .= '</fieldset>';
     $r .= self::formsBlock($args, $auth, $node);
     // auto-insert the creator as an admin of the new group, unless the admins are manually specified
     if (!$args['include_administrators'] && empty($_GET['group_id']))
