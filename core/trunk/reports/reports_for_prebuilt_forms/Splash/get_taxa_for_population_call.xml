@@ -1,0 +1,17 @@
+<report
+    title="Get taxa for population call."
+    description="Report returns a list of taxa, allowing the species list in report parameters to be populated. This might need further adjusting
+with custom parameters as the client requires to limit taxa return to particular groups."
+>
+  <query>
+  SELECT #columns#
+  FROM taxa t
+  WHERE 
+    t.deleted=false
+  GROUP BY t.id
+  </query>
+  <columns> 
+    <column name='id' sql='t.id' datatype='integer'/>
+    <column name='taxon' sql='t.taxon' datatype='text'/>
+  </columns>
+</report>
