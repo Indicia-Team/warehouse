@@ -895,6 +895,10 @@ class helper_base extends helper_config {
    * An optional array of parameter names for parameters that should be added to the form output as hidden inputs rather than visible controls.
    * <li><b>paramsToExclude</b><br/>
    * An optional array of parameter names for parameters that should be skipped in the form output despite being in the form definition.
+   * <li><b>forceLookupParamAutocomplete</b><br/>
+   * If true, forces lookup parameters to be an autocomplete instead of drop-down.
+   * <li><b>forceLookupParamAutocompleteSelectMode</b><br/>
+   * Used in conjunction with forceLookupParamAutocomplete, if true then autocomplete parameter control is put into selectMode.
    * </li>
    * <li><b>extraParams</b><br/>
    * Optional array of param names and values that have a fixed value and are therefore output only as a hidden control.
@@ -1060,7 +1064,7 @@ class helper_base extends helper_config {
       'label' => lang::get($info['display']),
       'helpText' => $options['helpText'] ? $info['description'] : '', // note we can't fit help text in the toolbar versions of a params form
       'fieldname' => $fieldPrefix.$key,
-      'nocache' => isset($options['nocache']) && $options['nocache']      
+      'nocache' => isset($options['nocache']) && $options['nocache']
     );
     // If this parameter is in the URL or post data, put it in the control instead of the original default
     if (isset($options['defaults'][$key]))
@@ -1124,7 +1128,14 @@ class helper_base extends helper_config {
           ));
         }
       }
-      $r .= data_entry_helper::select($ctrlOptions);
+      //If user has set option, then make any lookup parameter an autocomplete, note that autocomplete controls also have a "selectMode"
+      //which is why there is a further option provided if you want to use that mode.
+      if ((!empty($options['forceLookupParamAutocomplete']) && $options['forceLookupParamAutocomplete']==true)) {
+        if (!empty($options['forceLookupParamAutocompleteSelectMode']) && $options['forceLookupParamAutocompleteSelectMode']==true)
+          $ctrlOptions['selectMode']=true;
+        $r .= data_entry_helper::autocomplete($ctrlOptions);
+      } else 
+        $r .= data_entry_helper::select($ctrlOptions);
     } elseif ($info['datatype']=='lookup' && isset($info['lookup_values'])) {
       // Convert the lookup values into an associative array
       $lookups = explode(',', $info['lookup_values']);
@@ -1137,7 +1148,14 @@ class helper_base extends helper_config {
         'blankText'=>'<'.lang::get('please select').'>',
         'lookupValues' => $lookupsAssoc
       ));
-      $r .= data_entry_helper::select($ctrlOptions);
+      //If user has set option, then make any lookup parameter an autocomplete, note that autocomplete controls also have a "selectMode"
+      //which is why there is a further option provided if you want to use that mode.
+      if ((!empty($options['forceLookupParamAutocomplete']) && $options['forceLookupParamAutocomplete']==true)) {
+        if (!empty($options['forceLookupParamAutocompleteSelectMode']) && $options['forceLookupParamAutocompleteSelectMode']==true)
+          $ctrlOptions['selectMode']=true;
+        $r .= data_entry_helper::autocomplete($ctrlOptions);
+      } else 
+        $r .= data_entry_helper::select($ctrlOptions);
     } elseif ($info['datatype']=='date') {
       $r .= data_entry_helper::date_picker($ctrlOptions);
     } elseif ($info['datatype']=='geometry') {
