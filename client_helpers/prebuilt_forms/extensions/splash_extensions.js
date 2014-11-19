@@ -13,24 +13,28 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
  
   plot_type_dropdown_change = function plot_type_dropdown_change() {
     indiciaData.clickMiddleOfPlot=false;
-    //Some plot types use a free drawn polygon as the plot.
+    //Some plot types use a free drawn polygon/Line as the plot.
     if (inArray($('#location\\:location_type_id option:selected').text(),indiciaData.freeDrawPlotTypeNames)) {
       $('.olControlDrawFeaturePolygonItemActive').show();
+      $('.olControlDrawFeaturePathItemActive').show();
       $('.olControlDrawFeaturePolygonItemInactive').show();
-      //if using drawPolygon then we never need the length and width attributes on the screen
+      $('.olControlDrawFeaturePathItemInactive').show();
+      //if using drawPolygon/drawLine then we never need the length and width attributes on the screen
       if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length) {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).hide();
       }
       if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length) {
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).hide();
       }
-      //If using drawPolygon then we don't draw a plot automatically
+      //If using drawPolygon/Line then we don't draw a plot automatically
       indiciaData.mapdiv.settings.clickForPlot=false;
       indiciaData.mapdiv.settings.click_zoom=false;  
     } else {
-      //Otherwise we auto generate the plot rectangle/square, remove the drawPolygon tool
+      //Otherwise we auto generate the plot rectangle/square, remove the drawPolygon/Line tool
       $('.olControlDrawFeaturePolygonItemActive').hide();
+      $('.olControlDrawFeaturePathItemActive').hide();
       $('.olControlDrawFeaturePolygonItemInactive').hide();
+      $('.olControlDrawFeaturePathItemInactive').hide();
       //if for some plot types (currently PSS, the plot length/width can be adjusted on screen, show and fill in these fields if they exist
       if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length) {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).show();
@@ -41,7 +45,7 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][1]);
 
       }
-      //Need to select the click control by default, hide the draw free polygon tool
+      //Need to select the click control by default, hide the draw free polygon/line tool
       indiciaData.mapdiv.settings.clickForPlot=true;
       indiciaData.mapdiv.settings.click_zoom=true;
       $.each(indiciaData.mapdiv.map.controls, function(idx, control) {
