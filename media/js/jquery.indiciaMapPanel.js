@@ -222,7 +222,7 @@ mapClickForSpatialRefHooks = [];
       var parser = new OpenLayers.Format.WKT(), bounds = new OpenLayers.Bounds(), geometry;
       var features = [];
       // This replaces other features of the same type
-      removeAllFeatures(layer, type);
+        removeAllFeatures(layer, type);
       if(wkt){
         var feature = parser.read(wkt);
         // this could be an array of features for a GEOMETRYCOLLECTION
@@ -512,7 +512,11 @@ mapClickForSpatialRefHooks = [];
       div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
       modifier.activate();
       div.map.plotModifier = modifier;
-      div.map.plotModifier.selectFeature(feature);
+      //Needed check for undefined, as the ability to click for plot can now be altered on the fly once the screen
+      //has loaded. This function is still always called, but now there isn't always a plot when user clicks.
+      if (typeof feature !== 'undefined') {
+        div.map.plotModifier.selectFeature(feature);
+      }
     }
     
     /**
@@ -1797,7 +1801,7 @@ mapClickForSpatialRefHooks = [];
         // after half a second, reset the map size
         setTimeout(function() {tmp.style.height = (parseInt(tmp.style.height) + 1) + 'px';}, 500);
       });
-
+      
       if (this.settings.editLayer) {
         var editLayer;
         //If using click for plot, there can be a zoom ghost on the page, but we don't want
@@ -1991,7 +1995,7 @@ mapClickForSpatialRefHooks = [];
         div.map.addControl(infoCtrl);
         infoCtrl.activate();
       }
-
+      
       if (div.settings.editLayer && (div.settings.clickForSpatialRef || div.settings.clickForPlot)) {
         // Setup a click event handler for the map
         OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
@@ -2031,7 +2035,7 @@ mapClickForSpatialRefHooks = [];
         }
       }, drawStyle=new style('boundary');
       var ctrlObj;
-      $.each(div.settings.standardControls, function(i, ctrl) {
+      $.each(div.settings.standardControls, function(i, ctrl) {       
         ctrlObj=null;
         // Add a layer switcher if there are multiple layers
         if (ctrl=='layerSwitcher') {
