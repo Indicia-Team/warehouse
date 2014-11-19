@@ -2206,7 +2206,10 @@ mapClickForSpatialRefHooks = [];
       // keep a handy reference
       indiciaData.mapdiv=div;
       // temporary fix for fancybox 1 + OL map + google layers + Chrome 38 display corruption
-      setInterval(function(){$(".olForeignContainer").css("-webkit-transform","");},1000);
+      setInterval(function(){
+        $(".olForeignContainer").css("-webkit-transform","");
+        $(".olForeignContainer").css("transform","");
+      },1000);
       // call any post initialisation hooks
       $.each(mapInitialisationHooks, function() {
         this(div);
