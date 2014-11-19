@@ -1,0 +1,36 @@
+<report
+    title="Number of plots per species by plot type"
+    description="Return a list of species with the number of plots each species appears in. The report is grouped by survey type."
+>
+  <query>
+  SELECT #columns#
+  FROM surveys s
+    JOIN websites w on w.id=s.website_id AND w.deleted=false
+    JOIN cache_occurrences co on co.survey_id=s.id AND co.cache_created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)
+    JOIN locations plot on plot.id=co.location_id AND plot.deleted=false 
+    JOIN taxa_taxon_lists ttl ON ttl.id=co.taxa_taxon_list_id AND ttl.deleted=false
+    JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+    #joins#
+  WHERE 
+    s.website_id in (#sharing_website_ids#)
+    #filters#
+    AND s.deleted=false
+  GROUP BY s.id, t.id
+  </query>
+  <params>
+    <param name="survey_id" display="Surveys" datatype="lookup" population_call='report:reports_for_prebuilt_forms/Splash/get_surveys_for_population_call:id:title' emptyvalue=''>
+      <where>s.id=#survey_id#</where>
+    </param>
+    <param name="species_id" display="Species" datatype="lookup" population_call='report:reports_for_prebuilt_forms/Splash/get_taxa_for_population_call:id:taxon' emptyvalue=''>
+      <where>t.id=#species_id#</where>
+    </param>
+    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this data." datatype="date"/>
+  </params>
+  <columns> 
+    <column name='id' sql='distinct(s.id)' datatype='integer' visible='false'/>
+    <column name='survey_title' display='Survey title' sql='s.title' datatype='text'/>
+    <column name='taxon_id' sql='t.id' datatype='integer' visible='false'/>
+    <column name='taxon' display='Taxon' sql='t.taxon' datatype='text'/>
+    <column name='plot_count' display='Plot Count' sql='count(plot.id)' datatype='integer'/>
+  </columns>
+</report>
