@@ -12,6 +12,20 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
   }
  
   plot_type_dropdown_change = function plot_type_dropdown_change() {
+    //In NPMS simple (not enahanced mode) the admin user can define a comma separated list
+    //of location attributes to hid from view.
+    if (indiciaData.hideLocationAttrsInSimpleMode) {
+      if ($('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length&&
+          indiciaData.enhancedModeCheckboxAttrId&&!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked')) { 
+        $.each(indiciaData.hideLocationAttrsInSimpleMode.split(','), function(idx, attrToHide) {
+          $('#container-locAttr\\:'+attrToHide).hide();
+        });
+      } else {
+        $.each(indiciaData.hideLocationAttrsInSimpleMode.split(','), function(idx, attrToHide) {
+          $('#container-locAttr\\:'+attrToHide).show();
+        });
+      }
+    }
     indiciaData.clickMiddleOfPlot=false;
     //Some plot types use a free drawn polygon/Line as the plot.
     if (inArray($('#location\\:location_type_id option:selected').text(),indiciaData.freeDrawPlotTypeNames)) {
@@ -36,13 +50,13 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
       $('.olControlDrawFeaturePolygonItemInactive').hide();
       $('.olControlDrawFeaturePathItemInactive').hide();
       //For some plot types the width and length can be adjusted manually, show and fill in these fields if they exist
-      if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length&&(!$('#locAttr\\:32').length||$('#locAttr\\:32').is(':checked'))) {
+      if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).show();
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]);
       } else {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).hide();
       }
-      if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length&&(!$('#locAttr\\:32').length||$('#locAttr\\:32').is(':checked'))) {
+      if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).show();
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][1]);
       } else {
