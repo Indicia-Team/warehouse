@@ -564,9 +564,20 @@ class extension_splash_extensions {
     }
     //In edit mode, we need to manually load the plot geom
     map_helper::$javascript .= "$('#imp-boundary-geom').val($('#imp-geom').val());";
+    //On NPMS/PSS system there is a checkbox for enhanced mode (when this isn't selected plots are only drawn as points.
+    //Note that on splash there is no enhanced mode so plots are always drawn fully.
+    if (!empty($options['enhancedModeCheckboxAttrId']))
+      map_helper::$javascript .= "indiciaData.enhancedModeCheckboxAttrId=".$options['enhancedModeCheckboxAttrId'];
+    //If enhanced mode is toggle, then clear the map and also run the code as if the plot type has change.
+    //This allows the plot drawing to be reset for a new mode.
+    map_helper::$javascript .= "  
+    $('#locAttr\\\\:'+indiciaData.enhancedModeCheckboxAttrId).change(function() {  
+      clear_map_features();
+      plot_type_dropdown_change();
+    });";
     //If you change the location type then clear the features already on the map
     //If no location type is selected, then don't provide the plot drawing code with plot size details, this way it automatically warns the user  
-    map_helper::$javascript .= "
+    map_helper::$javascript .= " 
     $('#location\\\\:location_type_id').change(function() {
       clear_map_features();
       if ($(this).val()) {
