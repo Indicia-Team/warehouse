@@ -563,11 +563,15 @@ class extension_splash_extensions {
       map_helper::$javascript .= "indiciaData.noSizeWarning='Please select plot type from the drop-down.';\n";
     }
     //In edit mode, we need to manually load the plot geom
-    map_helper::$javascript .= "$('#imp-boundary-geom').val($('#imp-geom').val());";
+    map_helper::$javascript .= "$('#imp-boundary-geom').val($('#imp-geom').val());\n";
     //On NPMS/PSS system there is a checkbox for enhanced mode (when this isn't selected plots are only drawn as points.
     //Note that on splash there is no enhanced mode so plots are always drawn fully.
     if (!empty($options['enhancedModeCheckboxAttrId']))
-      map_helper::$javascript .= "indiciaData.enhancedModeCheckboxAttrId=".$options['enhancedModeCheckboxAttrId'];
+      map_helper::$javascript .= "indiciaData.enhancedModeCheckboxAttrId=".$options['enhancedModeCheckboxAttrId'].";\n";
+    //On PSS/NPMS non-enhanced mode the user can define some attributes that should be hidden from view.
+    //Comma separated list.
+    if (!empty($options['hideLocationAttrsInSimpleMode']))
+      map_helper::$javascript .= "indiciaData.hideLocationAttrsInSimpleMode='".$options['hideLocationAttrsInSimpleMode']."';\n";
     //If enhanced mode is toggle, then clear the map and also run the code as if the plot type has change.
     //This allows the plot drawing to be reset for a new mode.
     map_helper::$javascript .= "  
@@ -598,8 +602,17 @@ class extension_splash_extensions {
         $('#locAttr\\\\:'+indiciaData.plotLengthAttrId).val('');
       }
     });\n";
-    //Do not allow submission if there is no plot set
-    data_entry_helper::$javascript .= '$("#save-button").click(function() { if (!$("#imp-boundary-geom").val()) {alert("Please select a plot type and create a plot before continuing."); return false; } else { $("#entry_form").submit(); }});';
+    //Do not allow submission if there is no plot set unless in NPMS/PSS simple mode.
+    data_entry_helper::$javascript .= '
+    $("#save-button").click(function() { 
+      if (!$("#imp-boundary-geom").val()&&
+          (!$("#locAttr\\\\:"+indiciaData.enhancedModeCheckboxAttrId).length||$("#locAttr\\\\:"+indiciaData.enhancedModeCheckboxAttrId).is(":checked"))) {
+        alert("Please select a plot type and create a plot before continuing."); 
+        return false; 
+      } else { 
+        $("#entry_form").submit(); 
+      }
+    });';
   }
  
   /*
