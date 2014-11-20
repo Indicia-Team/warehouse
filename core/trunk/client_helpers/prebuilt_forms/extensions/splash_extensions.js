@@ -35,18 +35,26 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
       $('.olControlDrawFeaturePathItemActive').hide();
       $('.olControlDrawFeaturePolygonItemInactive').hide();
       $('.olControlDrawFeaturePathItemInactive').hide();
-      //if for some plot types (currently PSS, the plot length/width can be adjusted on screen, show and fill in these fields if they exist
-      if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length) {
+      //For some plot types the width and length can be adjusted manually, show and fill in these fields if they exist
+      if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length&&(!$('#locAttr\\:32').length||$('#locAttr\\:32').is(':checked'))) {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).show();
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]);
+      } else {
+        $('#locAttr\\:'+indiciaData.plotWidthAttrId).hide();
       }
-      if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length) {
+      if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length&&(!$('#locAttr\\:32').length||$('#locAttr\\:32').is(':checked'))) {
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).show();
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][1]);
-
+      } else {
+        $('#locAttr\\:'+indiciaData.plotLengthAttrId).hide();
       }
-      //Need to select the click control by default, hide the draw free polygon/line tool
-      indiciaData.mapdiv.settings.clickForPlot=true;
+      //Only draw a plot if the enhanced mode checkbox is present and is selected.
+      //Or also draw plot if the enhanced mode checkbox isn't present at all (Splash)
+      if (!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||(indiciaData.enhancedModeCheckboxAttrId&&$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
+        indiciaData.mapdiv.settings.clickForPlot=true;
+      } else {
+        indiciaData.mapdiv.settings.clickForPlot=false;
+      }
       indiciaData.mapdiv.settings.click_zoom=true;
       $.each(indiciaData.mapdiv.map.controls, function(idx, control) {
         if (control.CLASS_NAME==='OpenLayers.Control.DrawFeature'||control.CLASS_NAME==='OpenLayers.Control.Navigation') {
