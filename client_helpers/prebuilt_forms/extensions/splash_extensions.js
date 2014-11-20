@@ -52,13 +52,17 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
       //For some plot types the width and length can be adjusted manually, show and fill in these fields if they exist
       if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).show();
-        $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]);
+        if ($('#location\\:location_type_id').val()) {
+          $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]);
+        }
       } else {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).hide();
       }
       if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).show();
-        $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][1]);
+        if ($('#location\\:location_type_id').val()) {
+          $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][1]);
+        }
       } else {
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).hide();
       }

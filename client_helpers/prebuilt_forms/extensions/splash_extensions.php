@@ -601,6 +601,12 @@ class extension_splash_extensions {
         $('#locAttr\\\\:'+indiciaData.plotWidthAttrId).val('');
         $('#locAttr\\\\:'+indiciaData.plotLengthAttrId).val('');
       }
+      //As requested by client, stop return submitting form when spatial reference field is focussed
+      document.getElementById('imp-sref').addEventListener('keypress', function(event) {
+        if (event.keyCode == 13) {
+          event.preventDefault();
+        }
+      })
     });\n";
     //Do not allow submission if there is no plot set unless in NPMS/PSS simple mode.
     data_entry_helper::$javascript .= '
