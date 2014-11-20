@@ -28,5 +28,5 @@ global $custom_terms;
  */
 $custom_terms = array(
   'LANG_Add_Sites_Instruct' => "You can link sites to the group by either entering the details of a new site " .
-      "or by linking one of the sites you've previuosly created to the group."
+      "or by linking one of the sites you've previously created to the group."
 );
