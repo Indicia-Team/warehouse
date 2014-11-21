@@ -502,7 +502,7 @@ mapClickForSpatialRefHooks = [];
       }
     }
     
-    function updatePlotAfterMapClick(data, div) {
+    function updatePlotAfterMapClick(data, div, feature) {
       // if adding a plot, select it for modification
       var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
         standalone: true,
@@ -597,10 +597,10 @@ mapClickForSpatialRefHooks = [];
       feature.attributes = {type: "clickPoint"};
       feature.style = new style('default');
       div.map.editLayer.addFeatures([feature]);
-      
+
       // Call any code which handles a click to set the spatial reference, e.g. zoom the map in, or set help hints.
       $.each(mapClickForSpatialRefHooks, function() {
-        this(data, div);
+        this(data, div, feature);
       });
       
       showGridRefHints(div);
