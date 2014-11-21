@@ -503,19 +503,21 @@ mapClickForSpatialRefHooks = [];
     }
     
     function updatePlotAfterMapClick(data, div, feature) {
-      // if adding a plot, select it for modification
-      var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
-        standalone: true,
-        mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
-      });
-      div.map.addControl(modifier);
-      div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
-      modifier.activate();
-      div.map.plotModifier = modifier;
-      //Needed check for undefined, as the ability to click for plot can now be altered on the fly once the screen
-      //has loaded. This function is still always called, but now there isn't always a plot when user clicks.
-      if (typeof feature !== 'undefined') {
-        div.map.plotModifier.selectFeature(feature);
+      if (div.settings.clickForPlot) {
+        // if adding a plot, select it for modification
+        var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
+          standalone: true,
+          mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
+        });
+        div.map.addControl(modifier);
+        div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
+        modifier.activate();
+        div.map.plotModifier = modifier;
+        //Needed check for undefined, as the ability to click for plot can now be altered on the fly once the screen
+        //has loaded. This function is still always called, but now there isn't always a plot when user clicks.
+        if (typeof feature !== 'undefined') {
+          div.map.plotModifier.selectFeature(feature);
+        }
       }
     }
     
