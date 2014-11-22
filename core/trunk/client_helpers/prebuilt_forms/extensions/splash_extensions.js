@@ -122,15 +122,16 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
         var postCodePoint = 'POINT('+southWest.lon+' '+southWest.lat+')';
         //Get current URL
         var url = window.location.href.toString().split('?');
-        var params = "";  
-        //NOTE this part could probably be improved as url params might need to start with ? or &. Change to handle clean URLs.
+        var params = '?';
         if (userId!=0) {
-          params+="?dynamic-the_user_id="+userId
+          params+="dynamic-the_user_id="+userId+'&';
         }
-        if (postCodePoint && $('#limit-value').val()) {
-          params+="&dynamic-post_code_geom="+postCodePoint;
-          params+="&dynamic-distance_from_post_code="+($('#limit-value').val()*1609);
+        if (postCodePoint && $('#limit-value').val()) {        
+          params+="dynamic-post_code_geom="+postCodePoint+'&';
+          params+="dynamic-distance_from_post_code="+($('#limit-value').val()*1609)+'&';
         }
+        //Remove the & from the end of the url
+        params = params.substring(0, params.length - 1);
         //url[0] is the part of the url excluding parameters
         url[0] += params;
         //Reload screen and submit
