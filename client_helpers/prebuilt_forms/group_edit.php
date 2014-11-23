@@ -104,6 +104,14 @@ class iform_group_edit {
         'required'=>false
       ),
       array(
+        'name'=>'include_logo_controls',
+        'caption'=>'Include logo upload controls',
+        'description'=>'Include the controls for uploading and attaching a logo image to the group?',
+        'type'=>'checkbox',
+        'default'=>true,
+        'required'=>false
+      ),
+      array(
         'name'=>'include_sensitivity_controls',
         'caption'=>'Include sensitive records options',
         'description'=>'Include the options for controlling viewing of sensitive records within the group?',
@@ -239,6 +247,7 @@ class iform_group_edit {
     $args=array_merge(array(
       'include_code'=>false,
       'include_dates'=>false,
+      'include_logo_controls'=>true,
       'include_sensitivity_controls'=>true,
       'include_report_filter'=>true,
       'include_linked_pages'=>true,
@@ -272,7 +281,7 @@ class iform_group_edit {
       ));
       self::$groupType=strtolower($response[0]['term']);
     }
-    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
+    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" enctype=\"multipart/form-data\">\n";
     $r .= '<fieldset><legend>' . lang::get('Fill in details of your {1} below', self::$groupType) . '</legend>';
     $r .= $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
@@ -280,8 +289,8 @@ class iform_group_edit {
     // if a fixed choice of group type, can use a hidden input to put the value in the form.
     if (count($args['group_type'])===1) 
       $r .= '<input type="hidden" name="group:group_type_id" value="'.$args['group_type'][0].'"/>';
-    if (!empty(data_entry_helper::$entity_to_load['group:title']) && function_exists('drupal_set_title'))
-      drupal_set_title(lang::get('Edit {1}', data_entry_helper::$entity_to_load['group:title']));
+    if (!empty(data_entry_helper::$entity_to_load['group:title']))
+      hostsite_set_page_title(lang::get('Edit {1}', data_entry_helper::$entity_to_load['group:title']));
     $r .= data_entry_helper::text_input(array(
       'label' => lang::get('{1} name', ucfirst(self::$groupType)),
       'fieldname'=>'group:title',
@@ -318,6 +327,7 @@ class iform_group_edit {
         'helpText'=>lang::get('Choose the type of group')
       ));
     }
+    $r .= self::groupLogoControl($args);
     $r .= self::joinMethodsControl($args);
     if ($args['include_sensitivity_controls']) {
       $r .= data_entry_helper::checkbox(array(
@@ -471,6 +481,16 @@ $('#entry_form').submit(function() {
       $r[] = array('fieldname' => "group+:pages:$page[id]", 'default'=>json_encode(array($page['path'], $page['caption'], $page['administrator'])));
     }
     return $r;
+  }
+  
+  private static function groupLogoControl($args) {
+    if ($args['include_logo_controls'])
+      return data_entry_helper::image_upload(array(
+        'fieldname' => 'group:logo_path',
+        'label' => lang::get('Logo')
+      ));
+    else
+      return '';
   }
   
   /**
@@ -814,7 +834,8 @@ $('#entry_form').submit(function() {
       'extraParams'=>$auth['read']+array('view'=>'detail', 'id'=>$_GET['group_id']),
       'nocache'=>true
     ));
-    if ($group[0]['created_by_id']!==hostsite_get_user_field('indicia_user_id')) {
+    $group=$group[0];
+    if ($group['created_by_id']!==hostsite_get_user_field('indicia_user_id')) {
       if (!function_exists('user_access') || !user_access('Iform groups admin')) {
         // user did not create group. So, check they are an admin
         $admins = data_entry_helper::get_population_data(array(
@@ -835,20 +856,21 @@ $('#entry_form').submit(function() {
     }
       
     data_entry_helper::$entity_to_load = array(
-      'group:id' => $group[0]['id'],
-      'group:title' => $group[0]['title'],
-      'group:code' => $group[0]['code'],
-      'group:group_type_id' => $group[0]['group_type_id'],
-      'group:joining_method'=>$group[0]['joining_method'],
-      'group:description'=>$group[0]['description'],
-      'group:from_date'=>$group[0]['from_date'],
-      'group:to_date'=>$group[0]['to_date'],
-      'group:private_records'=>$group[0]['private_records'],
-      'group:filter_id'=>$group[0]['filter_id'],
-      'filter:id'=>$group[0]['filter_id']
+      'group:id' => $group['id'],
+      'group:title' => $group['title'],
+      'group:code' => $group['code'],
+      'group:group_type_id' => $group['group_type_id'],
+      'group:joining_method'=>$group['joining_method'],
+      'group:description'=>$group['description'],
+      'group:from_date'=>$group['from_date'],
+      'group:to_date'=>$group['to_date'],
+      'group:private_records'=>$group['private_records'],
+      'group:filter_id'=>$group['filter_id'],
+      'group:logo_path'=>$group['logo_path'],
+      'filter:id'=>$group['filter_id']
     );
     if ($args['include_report_filter']) {
-      $def=$group[0]['filter_definition'] ? $group[0]['filter_definition'] : '{}';
+      $def=$group['filter_definition'] ? $group['filter_definition'] : '{}';
       data_entry_helper::$javascript .= 
           "indiciaData.filter.def=$def;\n";
     }
