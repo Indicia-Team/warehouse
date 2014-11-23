@@ -33,7 +33,7 @@ class Sample_Model extends ORM_Tree
   public $search_field = 'id';
 
   protected $ORM_Tree_children = "samples";
-  protected $has_many=array('occurrences', 'sample_attribute_values', 'sample_images');
+  protected $has_many=array('occurrences', 'sample_attribute_values', 'sample_media');
   protected $belongs_to=array
   (
     'survey',
