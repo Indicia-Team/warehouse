@@ -76,6 +76,20 @@ class Survey_Controller extends Gridview_Base_Controller {
       )
     );
   }
+  
+    /**
+   * Return a list of the tabs to display for this controller's actions.
+   */
+  protected function getTabs($name) {
+    return array(
+      array(
+        'controller' => 'survey_medium',
+        'title' => 'Media Files',
+        'views'=>'survey',
+        'actions'=>array('edit')
+      )
+    );
+  }
 
   /**
    * Check access to a survey when editing. The survey's website must be in the list
