@@ -34,7 +34,8 @@ class Occurrence_Model extends ORM
   
   protected $has_many=array(
     'occurrence_attribute_values',
-    'determinations'
+    'determinations',
+    'occurrence_media'
   );
   protected $belongs_to=array(
     'determiner'=>'person',
