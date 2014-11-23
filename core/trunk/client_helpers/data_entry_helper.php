@@ -1097,7 +1097,7 @@ $('#$escaped').change(function(e) {
     // version.
     $r = '<div class="file-box" id="'.$containerId.'"></div><noscript>'.self::image_upload(array(
       'label' => $options['caption'],
-      // Convert table into a psuedo field name for the images
+      // Convert table into a pseudo field name for the images
       'id' => $options['id'],
       'fieldname' => str_replace('_', ':', $options['table'])
     )).'</noscript>';
@@ -1425,10 +1425,17 @@ $('#$escaped').change(function(e) {
     ), $options);
     $r = self::apply_template('image_upload', $options);
     if ($alreadyUploadedFile) {
-      // The control is being reloaded after a validation failure. So we can display a thumbnail of the
-      // already uploaded file, so the user knows not to re-upload.
-      $interimImageFolder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-      $r .= '<img width="100" src="$interimImageFolder$alreadyUploadedFile"/>'."\n";
+      if (self::$form_mode==='ERRORS') {
+        // The control is being reloaded after a validation failure. So we can display a thumbnail of the
+        // already uploaded file, so the user knows not to re-upload.
+        $folder = isset(self::$interim_image_folder) ? self::$interim_image_folder : 'upload/';
+      } else {
+        // image should be already on the warehouse
+        $folder = self::get_uploaded_image_folder();
+        $alreadyUploadedFile = "thumb-$alreadyUploadedFile";
+      }
+      
+      $r .= "<img width=\"100\" src=\"$folder$alreadyUploadedFile\"/>\n";
     }
     return $r;
   }
@@ -5747,6 +5754,13 @@ if (errors$uniq.length>0) {
       // pass through the user_id if hostsite_get_user_field is implemented
       if (function_exists('hostsite_get_user_field')) 
         $postargs .= '&user_id='.hostsite_get_user_field('indicia_user_id');
+      // look for media files attached to fields like group:logo_path (*:*_path)
+      // which are not in submodels, so not picked up by the extract_media_data code.
+      foreach ($_FILES as $fieldname => $file) {
+        if (preg_match('/^([a-z_]+:)?[a-z_]+_path$/', $fieldname)) {
+          $media[] = array('path' => $file['name']);
+        }
+      }
       // if there are images, we will send them after the main post, so we need to persist the write nonce
       if (count($media)>0)
         $postargs .= '&persist_auth=true';
