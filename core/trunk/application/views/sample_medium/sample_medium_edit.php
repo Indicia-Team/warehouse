@@ -47,8 +47,10 @@ echo data_entry_helper::hidden_text(array(
 $mediaTypeId=html::initial_value($values, 'sample_medium:media_type_id');
 $mediaType = $mediaTypeId ? $other_data['media_type_terms'][$mediaTypeId] : 'Image:Local';
 if ($mediaType==='Image:Local') {
-  echo '<label>Image:</label>';
-  echo html::sized_image(html::initial_value($values, 'occurrence_medium:path')).'</br>';
+  if (html::initial_value($values, 'sample_medium:path')) {
+    echo '<label>Image:</label>';
+    echo html::sized_image(html::initial_value($values, 'sample_medium:path')) . '</br>';
+  }
   echo data_entry_helper::hidden_text(array(
     'fieldname'=>'sample_medium:path',
     'default'=>html::initial_value($values, 'sample_medium:path')
