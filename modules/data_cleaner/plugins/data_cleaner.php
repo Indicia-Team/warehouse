@@ -5,7 +5,7 @@
  */
 function data_cleaner_alter_menu($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin')) 
-    $menu['Admin']['Verification Rules']='verification_rule';
+    $menu['Admin']['Verification rules']='verification_rule';
   return $menu;
 }
 

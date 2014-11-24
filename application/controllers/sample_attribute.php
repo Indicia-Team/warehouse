@@ -36,7 +36,7 @@ class Sample_attribute_Controller extends Attr_Gridview_Base_Controller {
   }
 
   /** 
-   * Override saave to store the applies_to_location field. 
+   * Override save to store the applies_to_location field. 
    */
   public function save() {
     if ($_POST['metaFields:disabled_input'] == 'NO') {

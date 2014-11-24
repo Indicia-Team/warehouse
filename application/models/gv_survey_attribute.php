@@ -1,4 +1,5 @@
-<?php 
+<?php defined('SYSPATH') or die('No direct script access.');
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,20 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Log Browser
- * @subpackage Plugins
+ * @package	Core
+ * @subpackage GridModels
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
 
 /**
- * Create a menu item for the log browser.
+ * Declares a model simply to expose the gv_survey_attribute view to ORM.
+ * 
+ * @package	Core
+ * @subpackage GridModels
  */
-function log_browser_alter_menu($menu, $auth) {
-  if ($auth->has_any_website_access('admin') || $auth->logged_in('CoreAdmin'))
-    $menu['Admin']['Browse server logs']='browse_server_logs';
-  return $menu;
-}
+class gv_survey_attribute_Model extends ORM {
 
-?>
+}

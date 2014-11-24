@@ -421,6 +421,9 @@ class submission_builder extends helper_config {
       case 'sample':
         $prefix = 'smp';
         break;
+      case 'survey':
+        $prefix = 'srv';
+        break;
       case 'taxa_taxon_list':
         $prefix = 'tax';
         break;
