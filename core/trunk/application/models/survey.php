@@ -41,6 +41,11 @@ class Survey_Model extends ORM_Tree {
       'website',
       'created_by'=>'user',
       'updated_by'=>'user');
+  
+  // Declare that this model has child attributes, and the name of the node in the submission which contains them
+  protected $has_attributes=true;
+  protected $attrs_submission_name='srvAttributes';
+  protected $attrs_field_prefix='srvAttr';
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');

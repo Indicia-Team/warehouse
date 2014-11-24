@@ -1018,7 +1018,7 @@ class ORM extends ORM_Core {
       } else {
         // New way of submitting attributes embeds attr values direct in the main table submission values.
         foreach($this->submission['fields'] as $field => $content) {
-          // look for pattern smpAttr:(fk_)nn (or occAttr, taxAttr, locAttr or psnAttr)
+          // look for pattern smpAttr:(fk_)nn (or occAttr, taxAttr, locAttr, srvAttr or psnAttr)
           $isAttribute = preg_match('/^'.$this->attrs_field_prefix.'\:(fk_)?[0-9]+/', $field, $baseAttrName);   
           if ($isAttribute) {
             // extract the nn, this is the attribute id
@@ -1628,7 +1628,7 @@ class ORM extends ORM_Core {
 
   /**
    * Converts any fk_* fields in a save array into the fkFields structure ready to be looked up.
-   * [occ|smp|loc|psn]Attr:fk_* are looked up in createAttributeRecord()
+   * [occ|smp|loc|srv|psn]Attr:fk_* are looked up in createAttributeRecord()
    *
    * @param $submission array Submission containing the foreign key field definitions to convert
    * @param $saveArray array Original form data being wrapped, which can contain filters to operate against the lookup table
