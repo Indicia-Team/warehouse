@@ -1,0 +1,28 @@
+<report
+    title="Species Richness Per Habitat"
+    description="Return the number of species found at each habitat."
+>
+  <query website_filter_field="o.website_id">
+  SELECT #columns#
+  FROM terms ter
+    JOIN sample_attribute_values sav on sav.sample_attribute_id=#habitat_attr_id# AND sav.deleted=false
+    JOIN termlists_terms tt on tt.id = sav.int_value AND tt.term_id=ter.id AND tt.deleted=false
+    JOIN samples s on s.id = sav.sample_id AND s.deleted = false
+    JOIN occurrences o on o.sample_id = s.id AND o.deleted = false
+    JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id AND ttl.deleted=false
+    JOIN taxa tax on tax.id = ttl.taxon_id AND tax.deleted = false  
+  WHERE ter.deleted=false
+    AND #website_filter#
+  GROUP BY ter.term
+  </query>
+  <order_bys>
+    <order_by>ter.term ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
+  </params>
+  <columns> 
+    <column name='species_richness' display='Total Richness' sql='count(distinct(tax.id))' datatype='integer'/>
+    <column name='habitat' display='Habitat' sql='ter.term' datatype='text'/>
+  </columns>
+</report>
