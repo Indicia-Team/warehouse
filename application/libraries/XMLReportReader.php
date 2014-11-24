@@ -825,7 +825,7 @@ class XMLReportReader_Core implements ReportReader
         'indexed_location_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Location IDs (indexed)', 
             'description'=>'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
             'joins' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ils# on #alias:ils#.sample_id=o.sample_id and #alias:ils#.location_id #indexed_location_list_op# (#indexed_location_list#)")
+              array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ilsfilt# on #alias:ilsfilt#.sample_id=o.sample_id and #alias:ilsfilt#.location_id #indexed_location_list_op# (#indexed_location_list#)")
             )
         ),
         'date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date from',
