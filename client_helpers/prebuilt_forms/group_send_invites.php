@@ -153,49 +153,50 @@ class iform_group_send_invites {
     $success = true;
     $failedRecipients = array();
     foreach ($emails as $idx => $email) {
-      $values = array(
-        'group_invitation:group_id'=>$_GET['group_id'],
-        'group_invitation:email' => $email,
-        'group_invitation:token' => $base.$idx,
-        'website_id' => $args['website_id']
-      );
-      $s = submission_builder::build_submission($values, array('model' => 'group_invitation'));
-      $r = data_entry_helper::forward_post_to('group_invitation', $s, $auth['write_tokens']);
-      $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
-      $rootFolder = data_entry_helper::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
-      $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-      $acceptUrl = $protocol . $_SERVER['HTTP_HOST'] . $rootFolder . $args['accept_invite_path'] . (empty($pathParam) ? '?' : '&') . 'token=' . $base . $idx;
-      $body = $_POST['invite_message'] . "<br/><br/>" .
-          '<a href="' . $acceptUrl . '">' . lang::get('Accept this invitation') . '</a>';
-      $message = array(
-          'id' => 'iform_group_invite', 
-          'to' => implode(',', $emails), 
-          'subject' => 'Invitation to join a recording group', 
-          'body' => $body, 
-          'headers' => array(
-            'MIME-Version' => '1.0',
-            'Content-type' => 'text/html; charset=iso-8859-1',
-            'From' => $user->mail
-          )
-      );
-      $mimeheaders = array();
-      foreach ($message['headers'] as $name => $value) {
-        $mimeheaders[] = $name . ': ' . mime_header_encode($value);
+      if (!empty(trim($email))) {
+        $values = array(
+          'group_invitation:group_id'=>$_GET['group_id'],
+          'group_invitation:email' => $email,
+          'group_invitation:token' => $base.$idx,
+          'website_id' => $args['website_id']
+        );
+        $s = submission_builder::build_submission($values, array('model' => 'group_invitation'));
+        $r = data_entry_helper::forward_post_to('group_invitation', $s, $auth['write_tokens']);
+        $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
+        $rootFolder = data_entry_helper::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=");
+        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+        $acceptUrl = $protocol . $_SERVER['HTTP_HOST'] . $rootFolder . $args['accept_invite_path'] . (empty($pathParam) ? '?' : '&') . 'token=' . $base . $idx;
+        $body = $_POST['invite_message'] . "<br/><br/>" .
+            '<a href="' . $acceptUrl . '">' . lang::get('Accept this invitation') . '</a>';
+        $message = array(
+            'id' => 'iform_group_invite', 
+            'to' => trim($email), 
+            'subject' => 'Invitation to join a recording group', 
+            'body' => $body, 
+            'headers' => array(
+              'MIME-Version' => '1.0',
+              'Content-type' => 'text/html; charset=iso-8859-1',
+              'From' => $user->mail
+            )
+        );
+        $mimeheaders = array();
+        foreach ($message['headers'] as $name => $value) {
+          $mimeheaders[] = $name . ': ' . mime_header_encode($value);
+        }
+        $thismailsuccess = mail(
+          $message['to'], mime_header_encode($message['subject']), 
+          // Note: e-mail uses CRLF for line-endings, but PHP's API requires LF.
+          // They will appear correctly in the actual e-mail that is sent.
+          str_replace("\r", '', $message['body']), 
+          // For headers, PHP's API suggests that we use CRLF normally,
+          // but some MTAs incorrecly replace LF with CRLF. See #234403.
+          join("\n", $mimeheaders)
+        );
+        if (!$thismailsuccess)
+          $failedRecipients[$message['to']]=$acceptUrl;
+        $success = $success && $thismailsuccess;
       }
     }
-    $thismailsuccess = mail(
-      $message['to'], mime_header_encode($message['subject']), 
-      // Note: e-mail uses CRLF for line-endings, but PHP's API requires LF.
-      // They will appear correctly in the actual e-mail that is sent.
-      str_replace("\r", '', $message['body']), 
-      // For headers, PHP's API suggests that we use CRLF normally,
-      // but some MTAs incorrecly replace LF with CRLF. See #234403.
-      join("\n", $mimeheaders)
-    );
-    if (!$thismailsuccess)
-      $failedRecipients[$message['to']]=$acceptUrl;
-    $success = $success && $thismailsuccess;
-    
     if ($success)
       drupal_set_message(lang::get('Invitation emails sent'));
     else {
