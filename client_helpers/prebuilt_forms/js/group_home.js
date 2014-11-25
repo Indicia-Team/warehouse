@@ -17,11 +17,12 @@ jQuery(document).ready(function($) {
 	  $.post($postUrl, 
 		s,
 		function (data) {
-		  if (typeof data.error === 'undefined') {
+      //No need to reload grid if only adding a comment
+      if (typeof data.error === 'undefined'&typeOfPost!=='occurrence_comment') {
         indiciaData.reports.dynamic.grid_report_grid_0.reload(true);
-		  } else {
+      } else {
         alert(data.error);
-		  }
+      }
 		},
 		'json'
 	  );
@@ -95,7 +96,7 @@ jQuery(document).ready(function($) {
         alert('Please enter an occurrence comment before saving.'); 
         return false;
       } else {
-        $('#occurrence-comment-form').submit(occurrence_comment_submit(id));
+        occurrence_comment_submit(id);
       }
     });
   }
