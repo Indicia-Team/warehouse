@@ -20,7 +20,7 @@ jQuery(document).ready(function($) {
       if (typeof data.error === 'undefined') {
         //No need to reload grid if only adding a comment
         if (typeOfPost!=='occurrence_comment') {
-          indiciaData.reports.dynamic.report_grid_0.reload(false);
+          indiciaData.reports.dynamic.grid_report_grid_0.reload(true);
         }
       } else {
         alert(data.error);
