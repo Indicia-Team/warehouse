@@ -17,9 +17,11 @@ jQuery(document).ready(function($) {
 	  $.post($postUrl, 
 		s,
 		function (data) {
-      //No need to reload grid if only adding a comment
-      if (typeof data.error === 'undefined'&typeOfPost!=='occurrence_comment') {
-        indiciaData.reports.dynamic.grid_report_grid_0.reload(true);
+      if (typeof data.error === 'undefined') {
+        //No need to reload grid if only adding a comment
+        if (typeOfPost!=='occurrence_comment') {
+          indiciaData.reports.dynamic.report_grid_0.reload(false);
+        }
       } else {
         alert(data.error);
       }
