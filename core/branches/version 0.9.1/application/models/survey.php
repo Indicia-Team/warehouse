@@ -32,6 +32,10 @@ class Survey_Model extends ORM_Tree {
 
   protected $ORM_Tree_children = "surveys";
   
+  protected $has_many = array(
+    'sample_media'
+  );
+  
   protected $belongs_to = array(
       'owner'=>'person',
       'website',
@@ -45,7 +49,8 @@ class Survey_Model extends ORM_Tree {
     $this->unvalidatedFields = array(
       'description',
       'deleted',
-      'parent_id'
+      'parent_id',
+      'owner_id'
     );
     return parent::validate($array, $save);
   }
