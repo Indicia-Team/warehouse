@@ -81,6 +81,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'sample_comment',
       'sample_medium',
       'survey',
+      'survey_medium',
       'taxa_taxon_list',
       'taxon_rank',
       'taxon_relation',
@@ -419,6 +420,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function survey()
   {
     $this->handle_call('survey');
+  }
+  
+  /**
+  * Provides the /service/data/survey_medium service.
+  * Retrieves details of sample media.
+  */
+  public function survey_medium()
+  {
+    $this->handle_call('survey_medium');
   }
 
   /**
