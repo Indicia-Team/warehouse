@@ -491,6 +491,9 @@ $('#$escaped').change(function(e) {
           case 'smp':
             $options['mainEntity'] = 'sample';
             break;
+          case 'srv':
+            $options['mainEntity'] = 'survey';
+            break;
           case 'psn':
             $options['mainEntity'] = 'person';
             break;

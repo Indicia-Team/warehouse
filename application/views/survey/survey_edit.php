@@ -67,7 +67,54 @@ echo data_entry_helper::select(array(
 ));
 ?>
 </fieldset>
+<?php if (array_key_exists('attributes', $values) && count($values['attributes'])>0) : ?>
+ <fieldset>
+ <legend>Custom attributes</legend>
+ <ol>
+ <?php
+ foreach ($values['attributes'] as $attr) {
+	$name = 'srvAttr:'.$attr['survey_attribute_id'];
+  // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
+  if ($attr['id']) $name .= ':'.$attr['id'];
+	switch ($attr['data_type']) {
+    case 'D':
+    case 'V':
+      echo data_entry_helper::date_picker(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
+      break;
+    case 'L':
+      echo data_entry_helper::select(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['raw_value'],
+        'lookupValues' => $values['terms_'.$attr['termlist_id']],
+        'blankText' => '<Please select>'
+      ));
+      break;
+    case 'B':
+      echo data_entry_helper::checkbox(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
+      break;
+    default:
+      echo data_entry_helper::text_input(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
+  }
+	
+}
+ ?>
+ </ol>
+ </fieldset>
 <?php 
+endif;
 echo html::form_buttons(html::initial_value($values, 'survey:id')!=null);
 data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';

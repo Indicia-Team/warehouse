@@ -122,7 +122,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   }
   
   /**
-   * Loads the custom attributes for a taxon, sample, location, person or occurrence into the load array. 
+   * Loads the custom attributes for a taxon, sample, location, survey, person or occurrence into the load array. 
    * Also sets up any lookup lists required.
    * This is only called by sub-classes for entities that have associated attributes.
    */

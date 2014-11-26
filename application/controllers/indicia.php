@@ -88,44 +88,45 @@ class Indicia_Controller extends Template_Controller {
     } else {
       $menu = array ('Home' => array());
       if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin'))
-        $menu['Lookup Lists'] = array(
-          'Species Lists'=>'taxon_list',
-          'Taxon Groups'=>'taxon_group',
-          'Term Lists'=>'termlist',
+        $menu['Lookup lists'] = array(
+          'Species lists'=>'taxon_list',
+          'Taxon groups'=>'taxon_group',
+          'Term lists'=>'termlist',
           'Locations'=>'location',
           'Survey datasets'=>'survey',
           'People'=>'person'
         );
       if ($this->auth->has_any_website_access('admin') || $this->auth->logged_in('CoreAdmin'))
-        $menu['Custom Attributes'] = array(
-          'Occurrence Attributes'=>'occurrence_attribute',
-          'Sample Attributes'=>'sample_attribute',
-          'Location Attributes'=>'location_attribute',
-          'Person Attributes'=>'person_attribute',
-          'Taxon Attributes'=>'taxa_taxon_list_attribute'
+        $menu['Custom attributes'] = array(
+          'Occurrence attributes'=>'occurrence_attribute',
+          'Sample attributes'=>'sample_attribute',
+          'Location attributes'=>'location_attribute',
+          'Survey attributes'=>'survey_attribute',
+          'Person attributes'=>'person_attribute',
+          'Taxon attributes'=>'taxa_taxon_list_attribute'
         );
       if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin'))
-        $menu['Entered Data'] = array(
+        $menu['Entered data'] = array(
           'Occurrences' => 'occurrence',
           'Samples' => 'sample',
           'Reports' => 'report'
         );
-      $adminMenu = array('Triggers &amp; Notifications' => 'trigger');
+      $adminMenu = array('Triggers &amp; notifications' => 'trigger');
       // Core admin can see all users or websites plus web admins can see their own users and websites.
       if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin')) {
         $adminMenu['Websites']='website';
         $adminMenu['Users']='user';
       }
       if($this->auth->logged_in('CoreAdmin')) {
-        $adminMenu['Website Agreements']='website_agreement';
+        $adminMenu['Website agreements']='website_agreement';
         $adminMenu['Languages']='language';
         $adminMenu['Titles']='title';
-        $adminMenu['Taxon Ranks']='taxon_rank';
-        $adminMenu['Taxon Relations']='taxon_relation_type';
+        $adminMenu['Taxon ranks']='taxon_rank';
+        $adminMenu['Taxon relations']='taxon_relation_type';
       }
       $menu['Admin'] = $adminMenu;
       $menu['Logged in as '.$_SESSION['auth_user']->username] = array(
-          'Set New Password' => 'new_password',
+          'Set new password' => 'new_password',
           'Logout'=>'logout'
       );
       // Now look for any modules which extend the menu
