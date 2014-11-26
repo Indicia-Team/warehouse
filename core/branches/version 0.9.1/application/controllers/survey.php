@@ -120,8 +120,26 @@ class Survey_Controller extends Gridview_Base_Controller {
   	$r = parent::getModelValues();
   	if ($this->model->parent_id)
   		$r['parent:title'] = $this->model->parent->title;
+    $r['website_id']=$this->model->website_id;
+    $this->loadAttributes($r, array(
+        'website_id'=>array($r['website_id'])
+    ));
   	return $r;
   }
+  
+  /**
+   * Load default values either when creating a survey new or reloading after a validation failure.
+   * This adds the custome attributes list to the data available for the view. 
+   */
+  protected function getDefaults() {
+    $r = parent::getDefaults();
+    $r['website_id'] = $this->model->website_id;
+    $this->loadAttributes($r, array(
+      'website_id'=>array($r['website_id'])
+    ));
+    return $r;
+  }
+  
 }
 
 ?>
