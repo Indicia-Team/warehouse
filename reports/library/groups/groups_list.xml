@@ -44,6 +44,9 @@
     </param>
     <param name="pending_path" display="Handle pending requests page path" description="Path to the page which will let admins handle pending requests, e.g. /groups/pending?group_id=" 
         datatype="text" default="" />
+    <param name="search_text" display="Search for" default="">
+      <where>(g.title ilike '%#search_text#%' or g.description ilike '%#search_text#%')</where>
+    </param>
   </params>
   <columns>
     <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
