@@ -98,7 +98,7 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
  
   //Function allows the report to only return squares located a certain distance from a user's
   //post code.
-  limit_to_post_code= function (postcode,georeferenceProxy,userId) {
+  limit_to_post_code= function (postcode,georeferenceProxy,indiciaUserId) {
     $.ajax({
       dataType: 'json',
       url: georeferenceProxy,
@@ -123,8 +123,8 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
         //Get current URL
         var url = window.location.href.toString().split('?');
         var params = '?';
-        if (userId!=0) {
-          params+="dynamic-the_user_id="+userId+'&';
+        if (indiciaUserId!=0) {
+          params+="dynamic-the_user_id="+indiciaUserId+'&';
         }
         if (postCodePoint && $('#limit-value').val()) {        
           params+="dynamic-post_code_geom="+postCodePoint+'&';
