@@ -919,18 +919,18 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
     if (self::getGridMode($args)) {
-      // multi-record mode using a checklist grid. We really just need to know the sample ID.
-      if (self::$loadedOccurrenceId && !self::$loadedSampleId) {
-        $response = data_entry_helper::get_population_data(array(
-            'table' => 'occurrence',
-            'extraParams' => $auth['read'] + array('id' => self::$loadedOccurrenceId, 'view' => 'detail')
-        ));
-        if (count($response) != 0) {
-          //we found an occurrence so use it to detect the sample
-          self::$loadedSampleId = $response[0]['sample_id'];       
-        }
-      }
-    } else {
+        // multi-record mode using a checklist grid. We really just need to know the sample ID.
+        if (self::$loadedOccurrenceId && !self::$loadedSampleId) {
+          $response = data_entry_helper::get_population_data(array(
+              'table' => 'occurrence',
+              'extraParams' => $auth['read'] + array('id' => self::$loadedOccurrenceId, 'view' => 'detail')
+          ));
+          if (count($response) != 0) {
+            //we found an occurrence so use it to detect the sample
+            self::$loadedSampleId = $response[0]['sample_id'];       
+          }
+        } 
+      } else {
       // single record entry mode. We want to load the occurrence entity and to know the sample ID.
       if (self::$loadedOccurrenceId) {
         data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, true);
@@ -995,7 +995,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     ,'survey_id'=>$args['survey_id']
     );
     if (!empty($id))
-      $attrOpts['id'] = $id;
+      $attrOpts['id'] = $id;  
     // select only the custom attributes that are for this sample method or all sample methods, if this
     // form is for a specific sample method.
     if (!empty($args['sample_method_id']))
@@ -1352,7 +1352,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Parses an options array to extract the attribute specific option settings, e.g. smpAttr:4|caption=Habitat etc.
    */
-  private static function get_attr_specific_options($options) {
+  protected static function get_attr_specific_options($options) {
     $attrOptions = array();
     foreach ($options as $option => $value) {
       if (preg_match('/^(?P<controlname>[a-z][a-z][a-z]Attr:[0-9]*)\|(?P<option>.*)$/', $option, $matches)) {
@@ -1738,6 +1738,17 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $label = $options['label'];
     else 
       $label = 'Overall Photo';
+    //Create a list of arrays. Each item is itself an array with a control id and associated sub type.
+    //This allows there to be multiple photo controls, each saving its own type of image. This can keep the 
+    //photos from each control independent of each other.
+    if (!empty($options['id'])&&!empty($options['subType'])) {
+      data_entry_helper::$javascript.="
+      if (indiciaData.subTypes) { 
+        indiciaData.subTypes.push(['".$options['id']."','".$options['subType']."']);
+      } else {
+        indiciaData.subTypes=[['".$options['id']."','".$options['subType']."']];
+      }\n";
+    }
     return data_entry_helper::file_box(array_merge(array(
       'table'=>'sample_medium',
       'readAuth' => $auth['read'],
