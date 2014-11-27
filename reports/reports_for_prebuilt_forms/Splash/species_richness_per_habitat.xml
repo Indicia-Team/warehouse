@@ -25,8 +25,30 @@
   </params>
   <columns> 
     <column name='habitat' display='Habitat' sql='hab.term' datatype='text'/>
-    <column name='total_samples' display='Total Samples Recorded With This Habitat' sql='count(distinct(samp.id))' datatype='float'/>
-    <column name='total_species_richness' display='Total Species Richness' sql='count(distinct(tax.id))' datatype='float'/>
-    <column name='mean_species_richness' display='Mean Species Richness' sql='cast(count(distinct(tax.id)) as float) / count(distinct(samp.id))'/>
+    <column name='habitat_abbr' display='Habitat' sql="
+      CASE 
+        WHEN hab.term='Arable field margins' then 'AFM' 
+        WHEN hab.term='Blanket bog' then 'BB' 
+        WHEN hab.term='Deciduous woodland' then 'DW' 
+        WHEN hab.term='Dry acid grassland' then 'DAG'
+        WHEN hab.term='Dry calcareous grassland' then 'DCG'
+        WHEN hab.term='Dry heath' then 'DH'
+        WHEN hab.term='Hedgerows' then 'H'
+        WHEN hab.term='Montane acid grassland' then 'MAG'
+        WHEN hab.term='Native pinewoods' then 'NP'
+        WHEN hab.term='Pastures and meadows' then 'PaM'
+        WHEN hab.term='Rivers and streams' then 'RaS'
+        WHEN hab.term='Species poor lakes and ponds' then 'SPLaP'
+        WHEN hab.term='Species rich lakes and ponds' then 'SRLaP'
+        WHEN hab.term='Species rich mires fens and flushes' then 'SRMFaF'
+        WHEN hab.term='Urban' then 'U'
+        WHEN hab.term='Wet grassland' then 'WG'
+        WHEN hab.term='Wet heath' then 'WH'
+        WHEN hab.term='Wet woodland' then 'WW'
+        ELSE hab.term 
+      END" datatype='text'/>
+    <column name='total_samples' display='Samples' sql='count(distinct(samp.id))' datatype='float'/>
+    <column name='total_species_richness' display='Species' sql='count(distinct(tax.id))' datatype='float'/>
+    <column name='mean_species_richness' display='Mean Richness' sql='cast(count(distinct(tax.id)) as float) / count(distinct(samp.id))'/>
   </columns>
 </report>
