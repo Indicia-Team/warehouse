@@ -153,7 +153,9 @@ class iform_group_send_invites {
     $success = true;
     $failedRecipients = array();
     foreach ($emails as $idx => $email) {
-      if (!empty(trim($email))) {
+      if (!empty($email))
+        $trimmedEmail=trim($email);
+      if (!empty($trimmedEmail)) {
         $values = array(
           'group_invitation:group_id'=>$_GET['group_id'],
           'group_invitation:email' => $email,
