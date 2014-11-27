@@ -594,9 +594,8 @@ class extension_splash_extensions {
     });
     //Don't use $(document).ready as that fires before the indiciaData.mapdiv is setup
     $(window).load(function() {
-      if ($('#location\\\\:location_type_id').val()) {
-        plot_type_dropdown_change();
-      } else {
+      plot_type_dropdown_change();
+      if (!$('#location\\\\:location_type_id').val()) {
         indiciaData.plotWidthLength='';
         $('#locAttr\\\\:'+indiciaData.plotWidthAttrId).val('');
         $('#locAttr\\\\:'+indiciaData.plotLengthAttrId).val('');
