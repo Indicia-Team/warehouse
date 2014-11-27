@@ -638,20 +638,36 @@ class extension_splash_extensions {
       });
     });
     ";
-    //Current user id being maintained is supplied in URL
-    if (!empty($_GET['dynamic-the_user_id']))
-      $userId = $_GET['dynamic-the_user_id'];
-    else
-      $userId=0;
-    //Get the post code geometry from the URL
+    //Once the limiter is applied, the post code geom is passed to the URL and so is the indicia user id, so we need to pick these up from the URL
     if (!empty($_GET['dynamic-post_code_geom'])) {
       data_entry_helper::$javascript.="
         indiciaData.postCodeGeom='".$_GET['dynamic-post_code_geom']."';
       ";
     }
-    //Get the current user's post code, this will need changing as we need to get the post code of the user being maintained.
-    if (function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_post_code'))
-      $postCode=hostsite_get_user_field('field_post_code');
+    if (!empty($_GET['dynamic-the_user_id']))
+      $indiciaUserId = $_GET['dynamic-the_user_id'];
+    else
+      $indiciaUserId=0;
+    
+    //if the page is loaded from a drupal view we have the uid in the url (drupal user id)
+    if (!empty($_GET['uid']))
+      $drupalUserId = $_GET['uid'];
+    else
+      $drupalUserId=0;
+    if ($drupalUserId!==0) {
+      $account=user_load($drupalUserId);
+      //If we only have the drupal user id, then we need to grab the indicia user id to pass into the report
+      if (!empty($account->field_indicia_user_id['und'][0]['value']))
+        $indiciaUserId = $account->field_indicia_user_id['und'][0]['value'];
+      if (!empty($account->field_post_code['und'][0]['value']))
+        $postCode = $account->field_post_code['und'][0]['value'];
+    } else {
+      //If the page is loaded without a user id at all, it means the user will be working to see which user squares are closest
+      //to their own post code.
+      if (empty($postCode) && function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_post_code'))
+        $postCode=hostsite_get_user_field('field_post_code');
+    }
+    //Only show the post code limiter if there is a post code to actually use as the origin point.
     if (!empty($postCode)) {
       data_entry_helper::$javascript.="
         indiciaData.google_api_key='".data_entry_helper::$google_api_key."';
@@ -659,10 +675,10 @@ class extension_splash_extensions {
         //Reload the screen with the limit applied
         $('#limit-submit').click(function(){
           var postcode='".$postCode."';
-          limit_to_post_code(postcode,georeferenceProxy,".$userId.");
+          limit_to_post_code(postcode,georeferenceProxy,".$indiciaUserId.");
         });
       ";
-      $r="<div>Only show squares within this distance (miles) of the user's post code.<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='Limit'></div>\n";
+      $r="<div>Only show squares within this distance (miles) of the user's post code.<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='Get squares'></div>\n";
       return $r;
     }
   }
