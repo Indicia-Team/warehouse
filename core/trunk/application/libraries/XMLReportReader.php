@@ -272,7 +272,7 @@ class XMLReportReader_Core implements ReportReader
       $query = str_replace(array('#website_filter#', '#website_ids#'), array($filter, $idList), $query);
     } else
       // use a dummy filter to return all websites if core admin
-      $query = str_replace('#website_filter#', '1=1', $query);
+      $query = str_replace(array('#website_filter#', '#website_ids#'), array('1=1', '1=1'), $query);
     if (!empty($this->trainingFilterField)) {
       if ($training==='true')
         $query = str_replace('#sharing_filter#', "({$this->trainingFilterField}=true OR {$this->trainingFilterField} IS NULL) AND #sharing_filter#", $query); 
