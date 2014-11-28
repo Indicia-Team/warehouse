@@ -648,25 +648,14 @@ class extension_splash_extensions {
       $indiciaUserId = $_GET['dynamic-the_user_id'];
     else
       $indiciaUserId=0;
-    
-    //if the page is loaded from a drupal view we have the uid in the url (drupal user id)
-    if (!empty($_GET['uid']))
-      $drupalUserId = $_GET['uid'];
-    else
-      $drupalUserId=0;
-    if ($drupalUserId!==0) {
-      $account=user_load($drupalUserId);
-      //If we only have the drupal user id, then we need to grab the indicia user id to pass into the report
-      if (!empty($account->field_indicia_user_id['und'][0]['value']))
-        $indiciaUserId = $account->field_indicia_user_id['und'][0]['value'];
-      if (!empty($account->field_post_code['und'][0]['value']))
-        $postCode = $account->field_post_code['und'][0]['value'];
-    } else {
-      //If the page is loaded without a user id at all, it means the user will be working to see which user squares are closest
-      //to their own post code.
-      if (empty($postCode) && function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_post_code'))
-        $postCode=hostsite_get_user_field('field_post_code');
-    }
+    //If the page is loaded without a user id at all, it means the user will be working to see which user squares are closest
+    //to their own post code.
+    if (empty($postCode) && function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_post_code'))
+      $postCode=hostsite_get_user_field('field_post_code');
+    if (!empty($options['label']))
+      $buttonLabel=$options['label'];
+    else 
+      $buttonLabel='Get Squares';
     //Only show the post code limiter if there is a post code to actually use as the origin point.
     if (!empty($postCode)) {
       data_entry_helper::$javascript.="
@@ -678,7 +667,7 @@ class extension_splash_extensions {
           limit_to_post_code(postcode,georeferenceProxy,".$indiciaUserId.");
         });
       ";
-      $r="<div>Only show squares within this distance (miles) of the user's post code.<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='Get squares'></div>\n";
+      $r="<div>Only show squares within this distance (miles) of the user's post code.<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$buttonLabel."'></div>\n";
       return $r;
     }
   }
