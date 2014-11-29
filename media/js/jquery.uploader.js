@@ -268,7 +268,10 @@ var checkSubmitInProgress = function () {
       $.each(div.settings.existingFiles, function(i, file) {
         requestId = $('.filelist .mediafile, .filelist .link').length,
             uniqueId = 'link-' + requestId;
-        if (file.media_type.match(/:Local$/)) {
+        //Media sub-types are now supported of the form like "Image:Local:SubTypeName
+        //The original format for media items would just have "Local" at the end.
+        //So include both of these possibilities
+        if (file.media_type.match(/:Local$/)||file.media_type.match(/:Local:/)) {
           origfilepath = div.settings.finalImageFolder + file.path;
           ext = file.path.split('.').pop().toLowerCase();
           existing = div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, uniqueId)
@@ -323,7 +326,7 @@ var checkSubmitInProgress = function () {
       });
       
       // Add a box to indicate a file that is added to the list to upload, but not yet uploaded.
-      this.uploader.bind('FilesAdded', function(up, files) {
+        this.uploader.bind('FilesAdded', function(up, files) {
         $(div).parents('form').bind('submit', checkSubmitInProgress);
         // Find any files over the upload limit
         var existingCount = $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').children().length, ext;
@@ -384,11 +387,27 @@ var checkSubmitInProgress = function () {
           } else {
             tmpl = div.settings.file_box_uploaded_audioTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
           }
-          
+          //If indiciaData.subTypes is supplied then the user is intending to use more than one photo control,
+          //each control will have their own media sub-type.
+          if (indiciaData.subTypes) {
+            for (var i=0; i<indiciaData.subTypes.length; i++) { 
+              //Each item of the array consists of a control id and the sub type.
+              //So all we need to do here is cycle through the options until we find a control
+              //id for the control we are currenty uploading too, and then select that sub-type
+              if (div.settings.id.indexOf(indiciaData.subTypes[i][0])>-1) {
+                fileType=indiciaData.subTypes[i][1];
+              }
+            }
+          }
           if ("mediaTypeTermIdLookup" in indiciaData) {
             // Backwards compatibility test. Property only exists if 
             // data_entry_helper::add_link_popup has set it.
-            mediaTypeId = indiciaData.mediaTypeTermIdLookup[fileType + ':Local'];
+            if (!indiciaData.subTypes)
+              mediaTypeId = indiciaData.mediaTypeTermIdLookup[fileType + ':Local'];
+            else
+              //If user has supplied an option to limit a photo control to a particular media type
+              //then we get the media type name straight from the option they provide
+              mediaTypeId = indiciaData.mediaTypeTermIdLookup[fileType];
           }
           else {
             // If no value is supplied, warehouse defaults to Image:Local
