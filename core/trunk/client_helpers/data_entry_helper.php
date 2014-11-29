@@ -893,6 +893,9 @@ $('#$escaped').change(function(e) {
   * <li><b>id</b><br/>
   * Optional. Provide a unique identifier for this image uploader control if more than one are required on the page.
   * </li>
+  * <li><b>SubType</b><br/>
+  * Optional. The name of the image sub-type to limit the file box to e.g. Image:Local:Sketch
+  * </li>
   * <li><b>caption</b><br/>
   * Caption to display at the top of the uploader box. Defaults to the translated string for "Files".
   * </li>
@@ -997,6 +1000,9 @@ $('#$escaped').change(function(e) {
     // Upload directory defaults to client_helpers/upload, but can be overriden.
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
     $relpath = self::getRootFolder() . self::client_helper_path();
+    //If a subType option is supplied, it means we only want to load a particular media type, not just any old media associated with the sample
+    if (!empty($options['subType']))
+      self::$upload_file_types[$options['subType']]=self::$upload_file_types['image'];
     // Allow options to be defaulted and overridden
     $defaults = array(
       'id' => 'default',
@@ -1016,7 +1022,7 @@ $('#$escaped').change(function(e) {
       'table' => 'occurrence_medium',
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '4M'),
       'codeGenerated' => 'all',
-      'mediaTypes' => array('Image:Local'),
+      'mediaTypes' => !empty($options['subType']) ? array($options['subType']) : array('Image:Local'),
       'fileTypes' => (object)self::$upload_file_types,
       'imgPath' => empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path,
       'addBtnCaption' => lang::get('Add {1}'),
@@ -1069,10 +1075,27 @@ $('#$escaped').change(function(e) {
         if ($idx < count($options)-1) $javascript .= ',';
         $idx++;
       }
+      //If the subType is specified, then this option is supplied as text by the user. So go and look up the ID to use in code.
+      if (!empty($options['subType'])) {
+        $typeTermData = self::get_population_data(array(
+          'table'=>'termlists_term',
+          'extraParams'=>$options['readAuth']+array('term'=>$options['subType'], 'columns'=>'id')
+        ));
+        $mediaTypeIdLimiter = $typeTermData[0]['id'];
+      }
       // add in any reloaded items, when editing or after validation failure
       if (self::$entity_to_load) {
-        $images = self::extract_media_data(self::$entity_to_load, 
-            isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table']);
+        //If we only want to display media of a particular type, then supply this as a parameter when extracting the media.
+        if (!empty($mediaTypeIdLimiter)) {
+          $images = self::extract_media_data(self::$entity_to_load, 
+              isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table'],
+              false,
+              false,
+              $mediaTypeIdLimiter);
+        } else {
+          $images = self::extract_media_data(self::$entity_to_load, 
+              isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table']);
+        }
         $javascript .= ",\n  existingFiles : ".json_encode($images);
       }
       $javascript .= "\n});\n";
@@ -2979,7 +3002,7 @@ $('#$escaped').change(function(e) {
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
           $options['mediaTypes'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
           (isset($options['subSampleSampleMethodID']) ? $options['subSampleSampleMethodID'] : ''));
-    // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
+    // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.  
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
@@ -3318,7 +3341,7 @@ $('#$escaped').change(function(e) {
         if (!empty($options['hasDataIgnoreAttrs']))
           $grid .= '<input name="hasDataIgnoreAttrs-' . $options['id'] . '" value="' 
                 . implode(',', $options['hasDataIgnoreAttrs']) . '" type="hidden" />';
-      }
+      } 
       self::add_resource('addrowtogrid');
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
@@ -3832,18 +3855,18 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         }
       }
       if($useSubSamples){
-      	$extraParams += $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );      	
-      	if($subSampleMethodID != '')
-      		$extraParams['sample_method_id'] = $subSampleMethodID;
-      	$subSamples = data_entry_helper::get_population_data(array(
-      			'table' => 'sample',
-      			'extraParams' => $extraParams,
-      			'nocache' => true
-      	));
+        $extraParams += $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );      	
+        if($subSampleMethodID != '')
+          $extraParams['sample_method_id'] = $subSampleMethodID;
+        $subSamples = data_entry_helper::get_population_data(array(
+            'table' => 'sample',
+            'extraParams' => $extraParams,
+            'nocache' => true
+        ));    
       	$subSampleList = array();
       	foreach($subSamples as $idx => $subsample){
       		$subSampleList[] = $subsample['id'];
-      		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
+            data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:geom'] = $subsample['wkt'];
       		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:wkt'] = $subsample['wkt'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:location_id'] = $subsample['location_id'];
@@ -3898,29 +3921,29 @@ $('#".$options['id']." .species-filter').click(function(evt) {
             self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
                 = $attrValue['raw_value'];
           }
-          if (count($loadMedia)>0) {
-            // @todo: Filter to the appropriate list of media types
-            $media = self::get_population_data(array(
-              'table' => 'occurrence_medium',
-              'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
-              'nocache' => true
-            ));
-            foreach($media as $medium) {
-              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:id:'.$medium['id']]
-                  = $medium['id'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:path:'.$medium['id']]
-                  = $medium['path'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:caption:'.$medium['id']]
-                  = $medium['caption'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type_id:'.$medium['id']]
-                  = $medium['media_type_id'];
-              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type:'.$medium['id']]
-                  = $medium['media_type'];
+            if (count($loadMedia)>0) {   
+              // @todo: Filter to the appropriate list of media types
+              $media = self::get_population_data(array(
+                'table' => 'occurrence_medium',
+                'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+                'nocache' => true
+              ));
+              foreach($media as $medium) {
+                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:id:'.$medium['id']]
+                    = $medium['id'];
+                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:path:'.$medium['id']]
+                    = $medium['path'];
+                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:caption:'.$medium['id']]
+                    = $medium['caption'];
+                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type_id:'.$medium['id']]
+                    = $medium['media_type_id'];
+                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type:'.$medium['id']]
+                    = $medium['media_type'];
+              }
             }
           }
         }
       }
-    }
     return $occurrenceIds;
   }
 
@@ -4242,7 +4265,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
           $options['occAttrClasses'][$idx] :
           'sc' . preg_replace('/[^a-zA-Z0-9]/', '', ucWords($caption)); // provide a default class based on the control caption
   }
-
+  
   /**
    * When the species checklist grid has a lookup list associated with it, this is a
    * secondary checklist which you can pick species from to add to the grid. As this happens,
@@ -5738,7 +5761,7 @@ if (errors$uniq.length>0) {
           setcookie('indicia_remembered', '');
         }
       }
-
+      
       $media = self::extract_media_data($_POST);
       $request = parent::$base_url."index.php/services/data/$entity";
       $postargs = 'submission='.urlencode(json_encode($submission));
@@ -6181,7 +6204,7 @@ if (errors$uniq.length>0) {
   public static function wrap_with_attrs($values, $modelName) {
     return submission_builder::wrap_with_attrs($values, $modelName);
   }
-
+  
   /**
    * Helper function to simplify building of a submission that contains a single sample
    * and occurrence record.
@@ -6239,7 +6262,7 @@ if (errors$uniq.length>0) {
     } else {
       $sampleMod['subModels'] = $occurrences;
     }
-
+    
     return $sampleMod;
   }
 
@@ -6610,7 +6633,7 @@ if (errors$uniq.length>0) {
       $query = array('in'=>array());
     self::add_resource('json');
     if (isset($options['website_ids'])) {
-      $query['in']['website_id']=$options['website_ids'];
+      $query['in']['website_id']=$options['website_ids'];  
     } elseif ($options['attrtable']!=='person_attribute') {
       $surveys = array(NULL);
       if (isset($options['survey_id']))
@@ -6981,8 +7004,9 @@ if (errors$uniq.length>0) {
    * can be handled in the same way as a pre-uploaded file.
    * @param boolean $moveSimpleFiles If true, then any file uploaded by normal means to the server (via multipart form submission
    * for a field named occurrence:image[:n] or similar) will be moved to the interim image upload folder.
+   * @param integer If specified, limits media data extraction to media with this media type id.
    */
-  public static function extract_media_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false) {
+  public static function extract_media_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false, $mediaTypeIdToExtract=null) {   
     $r = array();
     // legacy reasons, the model name might refer to _image model, rather than _medium. 
     $modelName = preg_replace('/^([a-z_]*)_image/', '${1}_medium', $modelName);
@@ -7005,18 +7029,22 @@ if (errors$uniq.length>0) {
         if ($pathPos !==false && ($modelName === null || $modelName == substr($key, 0, strlen($modelName)) || 
             $legacyModelName == substr($key, 0, strlen($legacyModelName)))) {
           $prefix = substr($key, 0, $pathPos);
-          $r[] = array(
-            // Id is set only when saving over an existing record.
-            'id' => array_key_exists($prefix.':id'.$uniqueId, $values) ?
-                $values[$prefix.':id'.$uniqueId] : '',
-            'path' => $value,
-            'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : '',
-            'media_type_id' => isset($values[$prefix.':media_type_id'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type_id'.$uniqueId]) : '',
-            'media_type' => isset($values[$prefix.':media_type'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type'.$uniqueId]) : ''
-          );
-          // if deleted = 't', add it to array so image is marked deleted
-          if (isset($values[$prefix.':deleted'.$uniqueId]) && $values[$prefix.':deleted'.$uniqueId]==='t') {
-            $r[count($r)-1]['deleted'] = 't';
+          $thisMediaTypeId=isset($values[$prefix.':media_type_id'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type_id'.$uniqueId]) : '';         
+          //Only extract the media if we are extracting media of any type or the data matches the type we are wanting to extract
+          if ($thisMediaTypeId==$mediaTypeIdToExtract||$mediaTypeIdToExtract===null) {    
+            $r[] = array(
+              // Id is set only when saving over an existing record.
+              'id' => array_key_exists($prefix.':id'.$uniqueId, $values) ?
+                  $values[$prefix.':id'.$uniqueId] : '',
+              'path' => $value,
+              'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : '',
+              'media_type_id' => $thisMediaTypeId,
+              'media_type' => isset($values[$prefix.':media_type'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type'.$uniqueId]) : ''
+            );
+            // if deleted = 't', add it to array so image is marked deleted
+            if (isset($values[$prefix.':deleted'.$uniqueId]) && $values[$prefix.':deleted'.$uniqueId]==='t') {
+              $r[count($r)-1]['deleted'] = 't';
+            }
           }
         }
       }
@@ -7076,7 +7104,7 @@ if (errors$uniq.length>0) {
     }
     return $r;
   }
-
+  
 /**
    * Validation rule to test if an uploaded file is allowed by file size.
    * File sizes are obtained from the helper_config maxUploadSize, and defined as:
@@ -7213,3 +7241,4 @@ if (errors$uniq.length>0) {
   }
 
 }
+?>
