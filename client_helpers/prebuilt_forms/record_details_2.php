@@ -287,8 +287,7 @@ Record ID',
 
     $r = '<div class="detail-panel" id="detail-panel-recorddetails"><h3>Record Details</h3>';
     
-    if (isset($details_report))
-      $r .= $details_report;
+    $r .= $details_report;
     if (isset($attrs_report))
       $r .= $attrs_report;
     $r .= '</div>';
@@ -356,6 +355,7 @@ Record ID',
     self::load_record($auth);
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
+      array('maxZoom'=>14),
       $options
     );
     if (isset(self::$record['geom'])) {
@@ -440,7 +440,7 @@ Record ID',
           'occurrence_id'=>$_GET['occurrence_id'],
           'sharing'=>'reporting'
         ),
-    )) . ' <div>';
+    ));
   }
   
   /**
