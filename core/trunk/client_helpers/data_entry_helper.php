@@ -3282,7 +3282,7 @@ $('#$escaped').change(function(e) {
           $row .= "<input class=\"scComment\" type=\"text\" name=\"$fieldname\" id=\"$fieldname\" value=\"".self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:comment"]."\" />";
           $row .= "</td>";
         }
-        if (isset($options['occurrenceSensitivity']) && $options['occurrenceSensitivity']) {
+        if ($options['occurrenceSensitivity']) {
           $row .= "\n<td class=\"ui-widget-content scSensitivityCell\" headers=\"".$options['id']."-sensitivity-$colIdx\">";
           $row .= self::select(array(
               'fieldname'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence:sensitivity_precision", 
@@ -3295,9 +3295,11 @@ $('#$escaped').change(function(e) {
           $row .= "</td>\n";
         }
         if ($options['mediaTypes']) {
+          $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occurrence_medium:id:[a-z0-9]*$/", array_keys(self::$entity_to_load)) : array();
           $row .= "\n<td class=\"ui-widget-content scAddMediaCell\">";
+          $style = (count($existingImages)>0) ? ' style="display: none"' : '';
           $fieldname = "add-media:$options[id]-$txIdx:$existing_record_id";
-          $row .= "<a href=\"\" class=\"add-media-link button $mediaBtnClass\" id=\"$fieldname\">" .
+          $row .= "<a href=\"\"$style class=\"add-media-link button $mediaBtnClass\" id=\"$fieldname\">" .
               "$mediaBtnLabel</a>";
           $row .= "</td>";
         }
@@ -3308,20 +3310,17 @@ $('#$escaped').change(function(e) {
           $rows[$rowIdx % (ceil(count($taxonRows)/$options['columns']))] .= $row;
         }
         $rowIdx++;
-        if ($options['mediaTypes']) {
-          $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$loadedTxIdx:$existing_record_id:occurrence_medium:id:[a-z0-9]*$/", array_keys(self::$entity_to_load)) : array();
-          // If there are existing images for this row, display the image control
-          if (count($existingImages) > 0) {
-            $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + (count($options['mediaTypes']) ? 1 : 0) + count($occAttrControls);
-            $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
-              'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_medium",
-              'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_medium",
-              'mediaTypes' => $options['mediaTypes'],
-              'readAuth' => $options['readAuth']
-            )).'</td>';
-            $imageRowIdxs[]=$rowIdx;
-            $rowIdx++;
-          }
+        if ($options['mediaTypes'] && count($existingImages) > 0) {
+          $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + count($occAttrControls)
+              + ($options['occurrenceComment'] ? 1 : 0) + ($options['occurrenceSensitivity'] ? 1 : 0) + (count($options['mediaTypes']) ? 1 : 0);
+          $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
+            'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_medium",
+            'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_medium",
+            'mediaTypes' => $options['mediaTypes'],
+            'readAuth' => $options['readAuth']
+          )).'</td>';
+          $imageRowIdxs[]=$rowIdx;
+          $rowIdx++;
         }
       }
       $grid .= "\n<tbody>\n";
