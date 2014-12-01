@@ -419,7 +419,10 @@ var simple_tooltip;
                 viscols++;
               }
             });
-            tbody.append('<tr><td colcount="'+viscols+'">No information available</td></tr>');
+            tbody.append('<tr class="empty-row"><td colcount="'+viscols+'">' + div.settings.msgNoInformation + '</td></tr>');
+            $(div).find('tfoot .pager').hide();
+          } else {
+            $(div).find('tfoot .pager').show();
           }
           $.each(rows, function(rowidx, row) {
             if (div.settings.rowClass!=='') {
@@ -924,7 +927,9 @@ var simple_tooltip;
         $.each(div.settings.extraParams, function(field, val) {
           if (field.match(/^[a-zA-Z_]+$/)) { // filter out rubbish in the extraParams
             // strip any prior values out before replacing with the latest filter settings
-            url = url.replace(new RegExp(field + '=[^&]*&?'), '') + '&' + field + '=' + encodeURIComponent(val);
+            url = url.replace(new RegExp('[?&]' + field + '=[^&]*&?'), function replacer(match) { 
+                return match.substr(0,1);
+              }) + '&' + field + '=' + encodeURIComponent(val);
           }
         });
         window.location=url;
