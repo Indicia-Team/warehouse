@@ -608,7 +608,8 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
       if ($rowInProgress)
         $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
     } else {
-      $tbody .= str_replace(array('{class}','{rowId}','{rowTitle}','{content}'), array('','','','<td></td>'), $indicia_templates['report-tbody-tr']);
+      $tbody .= str_replace(array('{class}','{rowId}','{rowTitle}','{content}'), array(' class="empty-row"','','','<td colspan="'.count($options['columns'])*$options['galleryColCount'].
+          '">' . lang::get('No information available') . '</td>'), $indicia_templates['report-tbody-tr']);
     }
     $tbody = str_replace('{content}', $tbody, $indicia_templates['report-tbody']);
     $r .= str_replace(array('{class}', '{content}'), array(' class="'.$options['class'].'"', "$thead\n$tbody\n$tfoot"), $indicia_templates['report-table'])."\n";
@@ -701,6 +702,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
   linkFilterToMap: ".(!empty($options['rowId']) && $options['linkFilterToMap'] ? 'true' : 'false').",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
+  msgNoInformation: '".lang::get('No information available')."',
   altRowClass: '$options[altRowClass]'";
       if (isset($options['sharing'])) {
         if (!isset($options['extraParams']))
@@ -832,6 +834,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $r = self::advanced_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl);
       }
       $r = str_replace('{paging}', $r, $indicia_templates['paging_container']);
+      if (count($response['records'])===0) 
+        self::$javascript .= "$('#$options[id] .pager').hide();\n";
       return $r;
     }
     else
