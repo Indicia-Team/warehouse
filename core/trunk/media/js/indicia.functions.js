@@ -88,15 +88,19 @@ if (typeof window.indiciaData==="undefined") {
     var version=$.ui.version.split('.'), 
         propname;
     if (version[0]==='1' && version[1]<10) {
-      propname = typeof index==="undefined" ? 'selected' : 'select';
+      if (typeof index==="undefined") {
+        return tabs.tabs('selected');
+      }
+      else {
+        return tabs.tabs('select', index);
+      }
     } else {
-      propname = 'active';
-    }
-    if (typeof index==="undefined") {
-      return tabs.tabs('option', propname);
-    }
-    else {
-      return tabs.tabs('option', propname, index);
+      if (typeof index==="undefined") {
+        return tabs.tabs('option', 'active');
+      }
+      else {
+        return tabs.tabs('option', 'active', index);
+      }
     }
   };
   
