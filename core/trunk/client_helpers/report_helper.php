@@ -3645,14 +3645,14 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $handle = fopen($cacheFolder.$cacheFile, 'wb');
           fwrite($handle, $rawDataDownloadGrid);
           fclose($handle);
-          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Raw Grid Data</button></a></th>'."\n";
+          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">Raw Grid Data</button></a></th>'."\n";
         }
         if($options['includeRawListDownload']) {
           $cacheFile = $options['downloadFilePrefix'].'rawDataList'.$timestamp.'.csv';
           $handle = fopen($cacheFolder.$cacheFile, 'wb');
           fwrite($handle, $rawDataDownloadList);
           fclose($handle);
-          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Raw List Data</button></a></th>'."\n";
+          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">Raw List Data</button></a></th>'."\n";
         }
       }
       if($options['includeSummaryData'] && $options['includeSummaryGridDownload']) {
@@ -3660,21 +3660,21 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $handle = fopen($cacheFolder.$cacheFile, 'wb');
         fwrite($handle, $summaryDataDownloadGrid);
         fclose($handle);
-        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Summary Grid Data</button></a></th>'."\n";
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">Summary Grid Data</button></a></th>'."\n";
       }
       if($options['includeEstimatesData'] && $options['includeEstimatesGridDownload']) {
         $cacheFile = $options['downloadFilePrefix'].'estimateDataGrid'.$timestamp.'.csv';
         $handle = fopen($cacheFolder.$cacheFile, 'wb');
         fwrite($handle, $estimateDataDownloadGrid);
         fclose($handle);
-        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Estimate Grid Data</button></a></th>'."\n";
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">Estimate Grid Data</button></a></th>'."\n";
       }
       if(($options['includeSummaryData'] || $options['includeEstimatesData']) && $options['includeListDownload']) {
         $cacheFile = $options['downloadFilePrefix'].'dataList'.$timestamp.'.csv';
         $handle = fopen($cacheFolder.$cacheFile, 'wb');
         fwrite($handle, $downloadList);
         fclose($handle);
-        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">List Data</button></a></th>'."\n";
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">List Data</button></a></th>'."\n";
       }
       $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" ><thead class="ui-widget-header"><tr>'.
             ($downloads == '' ? '' : '<th class="downloads-table-label">Downloads</th>'.$downloads).
