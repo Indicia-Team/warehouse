@@ -112,11 +112,35 @@ class iform_dynamic_location_splash_squares extends iform_dynamic_location {
    * @return Form HTML.
    */
   public static function get_form($args, $node) {
-    $r = parent::get_form($args, $node);
+    $r='';
+    //Display a label on the page showing whether the square is allocated to a user or not.
+    if (!empty($_GET['location_id']) && !empty($args['user_squares_person_attr_id'])) {
+      $r .= self::get_allocation_label($args);
+    }
+    $r .= parent::get_form($args, $node);
     //The system page configuration includes a setting to set the default spatial reference system to British National Grid, but
     //we also need to hide the field so the user cannot change it.
     if ($args['show_grid_system_selector']==false)
       data_entry_helper::$javascript .= "$('#imp-sref-system').hide();";
+    return $r;
+  }
+  
+  /*
+   * Display a label on the page showing whether the square is allocated to a user or not.
+   */
+  private static function get_allocation_label($args) {
+    $r='';    
+    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
+    $allocationData = data_entry_helper::get_population_data(array(
+      'table' => 'person_attribute_value',
+      'nocache'=>true,
+      'extraParams' => $readAuth + array('value' => $_GET['location_id'],'person_attribute_id' => $args['user_squares_person_attr_id']),
+    ));
+    if (!empty($allocationData[0])) {
+      $r .= '<div><label>User allocation status:</label>Allocated<br></div>';
+    } else {
+      $r .= '<div><label>User allocation status:</label>Not Allocated<br></div>';
+    }  
     return $r;
   }
   
