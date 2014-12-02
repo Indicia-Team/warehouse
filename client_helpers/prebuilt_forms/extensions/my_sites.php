@@ -171,11 +171,13 @@ class extension_my_sites {
   }
   
   /*
-   * Control allows administrators to maintain the "my sites" list for other users. @locationParamFromURL can be supplied as an option
-   * to hide the locations drop-down and automatically get the location id from the $_GET url parameter, this option should be set as the
+   * Control allows administrators to maintain the "my sites" list for other users. 
+   * @locationParamFromURL can be supplied as an option to hide the locations drop-down and automatically get the location id from the $_GET url parameter, this option should be set as the
    * name of the parameter when it is in use.
    * @userParamFromURL can be set in a very similar way, but this would hide the user drop down instead. This could be used in the situation where
    * several sites need to be linked to a single user on a user maintenance page.
+   * @postCodeGeomParamName AND @distanceFromPostCodeParamName can be set together to names of $_GET parameters in the URL which
+   * supply a post code geometry and distance to limit locations in the location drop-down parameter to
    */
   public static function add_sites_to_any_user($auth, $args, $tabalias, $options, $path) {
     //Need to call this so we can use indiciaData.read
@@ -201,7 +203,14 @@ class extension_my_sites {
     elseif (!empty($_GET['dynamic-the_user_id']))
       $userIdFromURL=$_GET['dynamic-the_user_id'];
     else
-      $userIdFromURL=0;
+      $userIdFromURL=0; 
+    $extraParams=array('location_type_ids'=>$options['locationTypes'], 'user_id'=>hostsite_get_user_field('indicia_user_id'),
+        'my_sites_person_attr_id'=>$options['mySitesPsnAttrId']);
+    //Can limit results in location drop-down to certain distance of a post code
+    if (!empty($options['postCodeGeomParamName'])&&!empty($_GET[$options['postCodeGeomParamName']]))
+      $extraParams['post_code_geom']=$_GET[$options['postCodeGeomParamName']];
+    if (!empty($options['distanceFromPostCodeParamName'])&&!empty($_GET[$options['distanceFromPostCodeParamName']]))
+      $extraParams['distance_from_post_code']=$_GET[$options['distanceFromPostCodeParamName']]; 
     //If we don't want to automatically get the location id from the URL, then display a drop-down of locations the user can select from   
     if (empty($locationIdFromURL)) {
       $r .= '<label>'.lang::get('Location :').'</label> ';
@@ -210,9 +219,7 @@ class extension_my_sites {
         'id' => 'location-select',
         'nocache' => true,
         'report' => 'reports_for_prebuilt_forms/Shorewatch/locations_with_my_sites_first',
-        'extraParams' => $auth['read'] + array('location_type_ids'=>$options['locationTypes'], 'user_id'=>hostsite_get_user_field('indicia_user_id'),
-            'my_sites_person_attr_id'=>$options['mySitesPsnAttrId']),
-
+        'extraParams' => $auth['read'] + $extraParams,
         'blankText'=>'<' . lang::get('please select') . '>',
       ));
     }
