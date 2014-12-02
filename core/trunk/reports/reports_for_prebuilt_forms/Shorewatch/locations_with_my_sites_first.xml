@@ -14,13 +14,21 @@
             AND #website_filter#
             AND (u.id = #user_id# OR u.id IS NULL)
             AND ((l.location_type_id IN (#location_type_ids#)) OR ('#location_type_ids#'='-1'))
-          ORDER BY u.id IS NULL ASC, l.name ASC
       </query>
+      <order_bys>
+        <order_by>u.id IS NULL ASC, l.name ASC</order_by>
+      </order_bys>
       <params>
         <param name="my_sites_person_attr_id" display="Person preferred sites attribute Id" description="Person preferred sites attribute Id" datatype="integer"/>
         <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" emptyvalue="-1"/>
         <param name="location_type_ids" display="Location Type ID" description="Warehouse Ids for the location types you 
             want to limit the report to." datatype="integer[]" emptyvalue='-1'/>
+        <param name="post_code_geom" display="Post Code Geom" description="Post code geometry, so we only show squares closest to the user." emptyvalue='' default=''>
+          <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
+        </param>
+        <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''>
+          <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
+        </param>
       </params>
       <columns>
         <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
