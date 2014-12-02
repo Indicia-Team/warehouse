@@ -1,6 +1,6 @@
 <report
     title="Get squares list for square and user administration."
-    description="Get a list of squares for display on the square and user maintenance page."
+    description="Get a list of squares for display on the square and user maintenance page, or post code query pages."
 >
   <query website_filter_field="lw.website_id">
     SELECT #columns#
@@ -13,6 +13,7 @@
       AND (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)
       AND l.deleted=false
       #filters#
+    GROUP BY l.id, lav.text_value
   </query>
   <order_bys>
     <order_by>l.id desc</order_by>
@@ -24,11 +25,20 @@
     </param>
     <param name="core_square_type_id" description="Core square location type id. We need to inclde this because if the user elects to show all squares we don't actually return all locations types" datatype="integer"/>
     <param name="additional_square_type_id" description="Additional square location type id. We need to inclde this because if the user elects to show all squares we don't actually return all locations types" datatype="integer"/>
-    <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
-    <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
+    <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text" emptyvalue='' default=''/>
+    <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer" emptyvalue='' default=''/>
+    <param name="post_code_geom" display="Post Code Geom" description="Post code geometry, so we only show squares closest to the user." emptyvalue='' default=''>
+      <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
+    </param>
+    <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''>
+      <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
+    </param>
   </params>
   <columns>
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" aggregate="true" in_count="true"/>
     <column name='name' display='Location Name' sql="'&lt;b&gt;' || l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;'" datatype='text' aggregate="true"/>
+    <column name="sc" visible="false" feature_style="strokeColor" sql="'blue'" aggregate='true'/>
+    <column name="fc" visible="false" feature_style="fillColor" sql="'blue'" aggregate='true'/>
+    <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom,l.centroid_geom))" aggregate='true'/>    
   </columns>
 </report>
