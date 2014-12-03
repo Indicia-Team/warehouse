@@ -1224,8 +1224,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // Force a new option
     $options['speciesControlToUseSubSamples'] = true;
     $options['base_url'] = data_entry_helper::$base_url;
-    if (!isset($args['cache_lookup']) || ($args['species_ctrl'] !== 'autocomplete'))
-      $args['cache_lookup']=false; // default for old form configurations or when not using an autocomplete
     //The filter can be a URL or on the edit tab, so do the processing to work out the filter to use
     $filterLines = self::get_species_filter($args);
     // store in the argument so that it can be used elsewhere
@@ -1441,8 +1439,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_species($auth, $args, $tabAlias, $options) {
     $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);
-    if (!isset($args['cache_lookup']) || ($args['species_ctrl'] !== 'autocomplete' && !$gridmode))
-      $args['cache_lookup']=false; // default for old form configurations or when not using an autocomplete
     //The filter can be a URL or on the edit tab, so do the processing to work out the filter to use
     $filterLines = self::get_species_filter($args);
     // store in the argument so that it can be used elsewhere
