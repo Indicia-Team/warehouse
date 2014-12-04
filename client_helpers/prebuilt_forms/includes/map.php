@@ -334,6 +334,7 @@ function iform_map_zoom_to_location($locationId, $readAuth) {
 }
 
 function iform_map_zoom_to_geom($geom, $name, $restrict=false) {
+  $name = str_replace("'", "''");
   // Note, since the following moves the map, we want it to be the first mapInitialisationHook
   data_entry_helper::$javascript .= "
 mapInitialisationHooks.push(function(mapdiv) {
