@@ -30,5 +30,6 @@ $custom_terms = array(
 	'Species' => 'Art',
 	'Latin Name' => 'Lateinischer Name',
 	'Date' => 'Datum',
-	'Spatial Ref' => 'Koordinaten'
+	'Spatial Ref' => 'Koordinaten',
+  'Add another record' => 'Geben sie eine andere Beobachtung ein
 );

@@ -363,7 +363,7 @@ class iform_my_dot_map {
         $parts[0] = url($parts[0]);
         $path = implode('?', $parts);
       }
-      $r .= '<a class="button" href="'.$path.'">'.lang::get('Add another').'</a><br/>';
+      $r .= '<a class="indicia-button" href="'.$path.'">'.lang::get('Add another record').'</a><br/>';
     }
     $r .= '<div id="mapandlegend">';
     $r .= map_helper::layer_list(array(
