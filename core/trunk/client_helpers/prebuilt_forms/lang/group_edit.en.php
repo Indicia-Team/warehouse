@@ -27,13 +27,23 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
+  "group's" => "activity's",
+  "groups" => "activities",
   'LANG_Filter_Instruct' => 'Your {1} might be only interested in certain records, e.g. records from a reserve, records from a species group or records within a set date range. ' .
-      'If this is the case then you can use the following controls to define which records are of interest to the group and therefore which records will appear on the group\'s ' .
-      'reporting pages. For example, you might want to specify the species or species groups that relate to your group using the <strong>What</strong> option, '.
-      'as well as the geographic area your group covers using the <strong>Where</strong> option.',
-  'LANG_Pages_Instruct' => 'Use the following grid to define any pages that you would like to make available for your group members to use. These pages will then ' .
-      'appear in the Links column in the list of recording groups. You only need to specify a link caption if you want to override the ' .
-      'default page name when accessed via your group. Please note that you must link at least one recording form page to the group if ' .
-      'you want to allow your members to explicitly post records into the group. You must also link at least one reporting page if you want your '.
-      'members to be able to view the output of the group.'
+      'If this is the case then you can use the following controls to define which records are of interest to the {1} members and therefore which records will appear on the {2} ' .
+      'reporting pages. For example, you might want to specify the species or species groups that relate to your {1} using the <strong>What</strong> option, '.
+      'as well as the geographic area your {1} covers using the <strong>Where</strong> option.',
+  'LANG_Pages_Instruct' => 'Use the following grid to define any pages that you would like to make available for your {1} members to use. These pages will then ' .
+      'appear in the Links column in the list of {2}. You only need to specify a link caption if you want to override the ' .
+      'default page name when accessed via your {1}. Please note that you must link at least one recording form page to the {1} if ' .
+      'you want to allow your members to explicitly post records into the {1}. You must also link at least one reporting page if you want your '.
+      'members to be able to view the records generated during this {1}.',
+  'LANG_Record_Inclusion_Instruct_1' => 'This option defines whether members will be expected to use the {2} recording forms to choose to post records into the {1}, or whether '.
+      'records are automatically included in the {2} data if the recorder participates in the {1} and the record is of interest to the {1} members as defined by the filter ' .
+      'above, e.g. the record is of the right species group and/or geographic area for the {1}.',
+  'LANG_Record_Inclusion_Instruct_Sensitive' => 'Note that some functionality such as allowing group members to view sensitive records ' .
+      'at full record precision depends on records being explicitly posted into the group.',
+  'LANG_Record_Inclusion_Instruct_2' => 'If you choose to require records to be explicitly posted into the '.
+      '{1} then make sure that you select at least 1 data entry form in the <strong>{2} pages</strong> section below so that {1} members have a means to '.
+      'post records into the {1}.'
 );
