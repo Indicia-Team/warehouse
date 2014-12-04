@@ -125,6 +125,8 @@ class iform_group_join {
   
   private static function abort($msg, $args) {
     hostsite_show_message($msg);
+    // if there is a main page for groups, and this page was deliberately called (i.e. not just a cron indexing scan) then 
+    // we can go back.
     if (!empty($_GET['group_id']) && !empty($args['groups_page_path']))
       hostsite_goto_page($args['groups_page_path']);  
   }

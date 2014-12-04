@@ -210,7 +210,7 @@ class iform_group_send_invites {
       }
       drupal_set_message(implode('<br/>', $list), 'warning');
     }
-    drupal_goto($args['redirect_on_success']);
+    hostsite_goto_page($args['redirect_on_success']);
   }
 
 }
