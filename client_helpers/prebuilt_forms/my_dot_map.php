@@ -316,7 +316,7 @@ class iform_my_dot_map {
       // Use a cUrl request to get the data from Indicia which contains the value we need to filter against
       // Read the record that was just posted.
       $fetchOpts = array(
-        'dataSource'=>'reports_for_prebuilt_forms/my_dot_map/occurrences_list',
+        'dataSource'=>'reports_for_prebuilt_forms/my_dot_map/occurrences_list_2',
         'mode'=>'report',
         'readAuth' => $readAuth,
         'extraParams' => array('sample_id' => $_GET['id'], 'language'=>$lang)
@@ -343,10 +343,13 @@ class iform_my_dot_map {
       
       if ($args['hide_grid'] == false) {
         // Now output a grid of the occurrences that were just saved.
-        $r .= "<table class=\"submission\"><thead><tr><th>".lang::get('Species')."</th><th>".lang::get('Latin Name')."</th><th>".lang::get('Date')."</th><th>".lang::get('Spatial Ref')."</th></tr></thead>\n";
+        $r .= "<table class=\"submission\"><thead><tr><th>".lang::get('Species')."</th><th>".lang::get('Latin Name').
+            "</th><th>".lang::get('Abundance')."</th><th>".lang::get('Date')."</th><th>".lang::get('Spatial Ref')."</th>".
+            "</th><th>".lang::get('Comment')."</th></tr></thead>\n";
         $r .= "<tbody>\n";
         foreach ($occurrence as $record) {
-          $r .= '<tr class="biota"><td>'.$record['lt4_taxon'].'</td><td class="binomial"><em>'.$record['lt7_taxon'].'</em></td><td>'.$record['lt0_date_start'].'</td><td>'.$record['lt0_entered_sref']."</td></tr>\n";
+          $r .= '<tr class="biota"><td>'.$record['taxon'].'</td><td class="binomial"><em>'.$record['preferred_taxon'].'</em></td><td>'
+              .$record['abundance'].'</td><td>'.$record['date'].'</td><td>'.$record['entered_sref'].'</td>'.$record['comment']."</td><td></tr>\n";
         }
         $r .= "</tbody></table>\n";
       }
@@ -355,7 +358,7 @@ class iform_my_dot_map {
       $path = $args['add_another_link'];
       if (count($occurrence)===1) {
         $path = str_replace(array('#taxon_meaning_id#', '#external_key#'), 
-            array($occurrence[0]['lt2_taxon_meaning_id'], $occurrence[0]['lt7_external_key']), $path);
+            array($occurrence[0]['taxon_meaning_id'], $occurrence[0]['external_key']), $path);
         $parts = explode('?', $path, 2);
         $parts[0] = url($parts[0]);
         $path = implode('?', $parts);
@@ -383,8 +386,8 @@ class iform_my_dot_map {
   private static function prepare_layer_titles(&$args, $occurrence) {
     $species = array();
     foreach ($occurrence as $record) {
-      $species[] = empty($record['lt4_taxon']) ? $record['lt7_taxon'] : $record['lt4_taxon'];
-      $survey = $record['lt8_title'];
+      $species[] = empty($record['taxon']) ? $record['preferrred_taxon'] : $record['taxon'];
+      $survey = $record['survey_title'];
     }
     $last=array_pop($species);
     $species = implode(', ',$species);
@@ -404,13 +407,6 @@ class iform_my_dot_map {
    * @return string Name of the layer object built in JavaScript.
    */
   private static function build_distribution_layer($layerId, $args, $occurrence) {
-    // create a mapping from the field names that we can filter to the fields in the occurrence list report
-    $filterMappings = array(
-      'taxon_meaning_id' => 'lt2_taxon_meaning_id',
-      'external_key' => 'lt4_external_key',
-      'survey_id' => 'lt8_id',
-      'sample_id' => 'lt0_id'
-    );
     $filter = '';
     if ($args["wms_dist_$layerId"."_title"]) {
       // if we have a filter specified, then set it up. Note we can only do this if the sample id is passed in at the moment.
@@ -422,7 +418,7 @@ class iform_my_dot_map {
         // Use an array of handled values so we only build each distinct filter once
         $handled = array();        
         foreach($occurrence as $record) {
-          $filterValue = $record[$filterMappings[$args["wms_dist_$layerId"."_filter_against"]]];
+          $filterValue = $record[$args["wms_dist_$layerId"."_filter_against"]];
           if (!in_array($filterValue, $handled)) {
             $filter .= ($filter==='' ? '' : ' OR ') . "$filterField=$filterValue";
             $handled[] = $filterValue;
