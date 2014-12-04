@@ -6,7 +6,6 @@
     SELECT #columns#
     FROM locations l
       LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
-      LEFT JOIN samples locationSamples on locationSamples.location_id = l.id
       LEFT JOIN location_attribute_values lav on lav.location_id=l.id AND lav.location_attribute_id = #vice_county_location_attribute_id#
       JOIN users u on u.id=#current_user_id#
       JOIN person_attribute_values pav on pav.int_value=l.id AND pav.person_id=u.person_id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
