@@ -1,0 +1,38 @@
+<report
+    title="Get my squares"
+    description="Get a list of squares that have been assigned to the user."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations l
+      LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+      LEFT JOIN samples locationSamples on locationSamples.location_id = l.id
+      LEFT JOIN location_attribute_values lav on lav.location_id=l.id AND lav.location_attribute_id = #vice_county_location_attribute_id#
+      JOIN users u on u.id=#current_user_id#
+      JOIN person_attribute_values pav on pav.int_value=l.id AND pav.person_id=u.person_id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
+    WHERE l.location_type_id=#core_square_location_type_id# OR l.location_type_id=#additional_square_location_type_id#
+    AND #website_filter# AND l.deleted=false    
+  </query>
+  <order_bys>
+    <order_by>l.id</order_by>
+  </order_bys>
+  <params>
+    <param name="core_square_location_type_id" display="Core Square location type id" datatype="integer"/>
+    <param name="additional_square_location_type_id" display="Additional Square location type id" datatype="integer"/>
+    <param name="current_user_id" display="Id of the currently logged in user" datatype="integer"/>
+    <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
+    <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
+    <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
+    <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
+  </params>
+  <columns>
+    <column name='id' display='Square Id' sql="l.id" datatype='integer' visible="false" in_count="true"/>
+    <column name='name' display='Square Name' sql="
+      case 
+        when l.parent_id is null AND #pss_mode#=0
+          then '&lt;b&gt;' || l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;' 
+        when l.parent_id is null AND #pss_mode#=1  
+          then '&lt;b&gt;' || l.centroid_sref || '&lt;/b&gt;' 
+      end" datatype='text' />
+  </columns> 
+</report>
