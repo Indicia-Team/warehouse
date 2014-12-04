@@ -16,7 +16,7 @@
     <param name='language' display='Language: ' description='ISO code of language for common names' datatype='int' />
   </params>
   <columns>
-    <column name="occurrence_id" display='ID' sql='o.id' disincton="true" />
+    <column name="occurrence_id" display='ID' sql='o.id' distincton="true" />
     <column name="sample_id" display='ID' sql='o.sample_id' />
     <column name="survey_id" display='ID' sql='o.survey_id' />
     <column name='date_start' sql='o.date_start' visible='false' />
