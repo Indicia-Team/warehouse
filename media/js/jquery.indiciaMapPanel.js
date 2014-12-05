@@ -2371,7 +2371,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     hlpImproveResolution2: "Good. {size} square selected.",
     hlpImproveResolution3: "Excellent! {size} square selected. If your position is wrong, either click your actual position again or zoom out until your position comes to view, then retry.",
     hlpImproveResolutionSwitch: "We've switched to a satellite view to allow you to locate your position even better.",
-    hlpCustomPolygon: "Excellent! A custom polygon has been drawn for this record.",
+    hlpCustomPolygon: "Excellent! A custom polygon has been drawn for this record."
 
 };
 
