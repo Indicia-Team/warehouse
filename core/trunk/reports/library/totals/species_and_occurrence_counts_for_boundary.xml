@@ -11,7 +11,7 @@
       AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-      AND st_intersects(s.geom, st_geomfromtext('#searchArea#',900913))
+      AND st_intersects(s.geom, ST_MakeValid(st_geomfromtext('#searchArea#',900913)))
       GROUP BY website_id
       </query>
   <params>
