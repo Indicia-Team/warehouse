@@ -92,7 +92,7 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     
     if (!empty($filter['indexed_location_list'])) {
       // Got an indexed location as the filter boundary definition, so we can use that as it is.
-      $location_ids[] = explode(',', $filter['indexed_location_list']);
+      $location_ids = explode(',', $filter['indexed_location_list']);
     } elseif (!empty($filter['location_list']) || !empty($filter['searchArea'])) {
       // got either an unindexed location, or a freehand boundary, so need to intersect to find the indexed locations
       // Without a configuration for the indexed location type layers we can't go any further.
