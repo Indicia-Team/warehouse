@@ -13,7 +13,7 @@
   #joins#
   WHERE #sharing_filter# 
   AND co.record_status not in ('I','T') AND (#ownData#=1 OR co.record_status not in ('D','R'))
-  AND ('#searchArea#'='' OR st_intersects(co.public_geom, st_geomfromtext('#searchArea#',900913)))
+  AND ('#searchArea#'='' OR st_intersects(co.public_geom, ST_MakeValid(st_geomfromtext('#searchArea#',900913))))
   AND (#ownData#=0 OR CAST(co.created_by_id AS character varying)='#currentUser#')
   AND (trim('#date_from#')='' or '#date_from#'='Click here' or co.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
   AND (trim('#date_to#')='' or '#date_to#'='Click here' or co.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))    
