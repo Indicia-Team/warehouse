@@ -69,7 +69,8 @@ class iform_dynamic_transect_sections_sample_occurrence extends iform_dynamic_sa
   
   protected static function get_control_species($auth, $args, $tabAlias, $options) {
     data_entry_helper::$onload_javascript .= "indiciaFns.bindTabsActivate($($('#$tabAlias').parent()), function(event, ui) {
-      if (ui.panel.id==='$tabAlias') { setSectionDropDown(); }
+      panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+      if (panel.id==='$tabAlias') { setSectionDropDown(); }
     });\n";
     // we need a place to store the subsites, to save loading from the db on submission
     $r = '<input type="hidden" name="subsites" id="subsites" value="" />';

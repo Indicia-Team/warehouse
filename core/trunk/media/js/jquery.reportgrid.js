@@ -700,7 +700,8 @@ var simple_tooltip;
       if ($(this).parents('.ui-tabs-panel').hasClass('ui-tabs-hide')) {
         var report=this;
         $($(this).parents('.ui-tabs-panel').parent()).bind('tabsshow', function(evt, ui) {
-          if (ui.panel.id===$(report).parents('.ui-tabs-panel')[0].id) {
+          panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+          if (panel.id===$(report).parents('.ui-tabs-panel')[0].id) {
             report.reload(true);
             $(this).unbind(evt);
           }

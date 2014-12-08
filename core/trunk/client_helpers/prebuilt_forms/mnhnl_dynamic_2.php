@@ -1226,7 +1226,8 @@ bindSpeciesButton(bindSpeciesOptions);\n";
       if($options['includeSubSample'] && $options['mapPosition']!='top') $r .= '<div class="sideMap-container">'.data_entry_helper::map_panel($mapOptions, $olOptions).'</div>';
       if($options['includeSubSample'])
       	data_entry_helper::$javascript .= "var speciesMapTabHandler = function(event, ui) {
-  if (ui.panel.id=='".$mapOptions['tabDiv']."') {
+  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id==='".$mapOptions['tabDiv']."') {
     $('.mnhnl-species-grid').find('tr').removeClass('highlight');
     var div=$('#".$mapOptions['divId']."')[0];
     div.map.editLayer.destroyFeatures();
