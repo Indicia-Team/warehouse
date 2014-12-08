@@ -514,18 +514,36 @@ class map_helper extends helper_base {
   }\n";
     self::$javascript .= "  layerHtml += '<span class=\"layer-title\">' + layer.name + '</span>';
   return layerHtml;
-}
-    
+}\n";
+    if ($options['includeSwitchers']) 
+      self::$javascript .= "
+function layerSwitcherClick() {
+  var id = this.id.replace(/^switch-/, '').replace(/-/g, '.'), 
+      visible=this.checked,
+      map = indiciaData.mapdiv.map;
+  $.each(map.layers, function(i, layer) {
+    if (layer.id==id) {
+      if (layer.isBaseLayer) {
+        if (visible) { map.setBaseLayer(layer); }
+      } else {
+        layer.setVisibility(visible);
+      }
+    }
+  }); 
+}\n";  
+    self::$javascript .= "  
 function refreshLayers_$funcSuffix(div) {
   $('#".$options['id']." ul li').remove();
   $.each(div.map.layers, function(i, layer) {
     if (layer.displayInLayerSwitcher) {
       $('#".$options['id']." ul').append(getLayerHtml_$funcSuffix(layer, div));
     }
-  });    
-}
+  });\n";
+    if ($options['includeSwitchers'])
+      self::$javascript .= "  $('.layer-switcher').click(layerSwitcherClick);\n";
+    self::$javascript .= "}
 
-mapInitialisationHooks.push(function(div) { 
+mapInitialisationHooks.push(function(div) {
   refreshLayers_$funcSuffix(div);
   div.map.events.register('addlayer', div.map, function(object, element) {
     refreshLayers_$funcSuffix(div);
@@ -540,27 +558,8 @@ mapInitialisationHooks.push(function(div) {
   });
   div.map.events.register('removelayer', div.map, function(object, element) {
     $('#'+object.layer.id.replace(/\./g,'-')).remove();
-  });
-  ";
-    if ($options['includeSwitchers']) {
-      self::$javascript .= "  var map=div.map;
-  $('.layer-switcher').live('click', function() {
-    var id = this.id.replace(/^switch-/, '').replace(/-/g, '.');
-    var visible=this.checked;
-    $.each(map.layers, function(i, layer) {
-      if (layer.id==id) {
-        if (layer.isBaseLayer) {
-          if (visible) { map.setBaseLayer(layer); }
-        } else {
-          layer.setVisibility(visible);
-        }
-      }
-    });
-    
-  });";    
-    
-    }
-    self::$javascript .= "});\n";
+  }); 
+});\n";
     return $r;
   }
   
