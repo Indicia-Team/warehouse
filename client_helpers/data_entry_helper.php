@@ -1107,8 +1107,9 @@ $('#$escaped').change(function(e) {
       if (isset($options['tabDiv'])) {
         // The file box is displayed on a tab, so we must only generate it when the tab is displayed.
         $javascript =
-            "var uploaderTabHandler = function(event, ui) { \n".
-            "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ".
+            "var uploaderTabHandler = function(event, ui) { \n" .
+            "  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];\n" .
+            "  if (panel.id=='".$options['tabDiv']."') {\n    ".
         $javascript.
             "    indiciaFns.unbindTabsActivate($($('#".$options['tabDiv']."').parent()), uploaderTabHandler);\n".
             "  }\n};\n".

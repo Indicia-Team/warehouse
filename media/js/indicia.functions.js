@@ -87,20 +87,15 @@ if (typeof window.indiciaData==="undefined") {
   indiciaFns.activeTab = function(tabs, index) {
     var version=$.ui.version.split('.'), 
         propname;
-    if (version[0]==='1' && version[1]<10) {
-      if (typeof index==="undefined") {
-        return tabs.tabs('selected');
-      }
-      else {
-        return tabs.tabs('select', index);
-      }
+    // behaviour differs if getting or setting the tab index and changes at jQuery UI 1.10.
+    if (typeof index==="undefined" && version[0]==='1' && version[1]<10) {
+      return tabs.tabs('option', 'selected');
+    } else if (typeof index==="undefined") {
+      return tabs.tabs('option', 'active');
+    } else if (version[0]==='1' && version[1]<10) {
+      return tabs.tabs('select', index);
     } else {
-      if (typeof index==="undefined") {
-        return tabs.tabs('option', 'active');
-      }
-      else {
-        return tabs.tabs('option', 'active', index);
-      }
+      return tabs.tabs('option', 'active', index);
     }
   };
   

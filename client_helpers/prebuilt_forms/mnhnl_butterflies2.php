@@ -692,7 +692,8 @@ jQuery('.remove-sgnewrow').live('click', function() {
   resetSpeciesGridHeader();
 });
 indiciaFns.bindTabsActivate(jQuery(jQuery('#species').parent()), function(e, ui){
-  if (ui.panel.id=='species') {
+  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id=='species') {
     resetSpeciesGridHeader();
   }
 })";
@@ -1037,7 +1038,8 @@ setCommentWidth = function(){
   });
 }
 conditionsTabHandler = function(e, ui){
-  if (ui.panel.id=='conditions') {
+  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id=='conditions') {
     setCommentWidth();
     indiciaFns.unbindTabsActivate(jQuery(jQuery('#conditions').parent()), conditionsTabHandler);
   }

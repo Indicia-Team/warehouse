@@ -1472,7 +1472,7 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id']) && $arg
     // Do an AJAX population of the grid rows.
     data_entry_helper::$javascript .= "loadSpeciesList();
 indiciaFns.bindTabsActivate(jQuery('#tabs'), function(event, ui) {
-    var target = ui.panel;
+    var target = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];;
     // first get rid of any previous tables
     jQuery('table.sticky-header').remove();
     jQuery('table.sticky-enabled thead.tableHeader-processed').removeClass('tableHeader-processed');
