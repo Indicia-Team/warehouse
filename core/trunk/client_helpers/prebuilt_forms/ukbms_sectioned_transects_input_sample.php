@@ -1305,7 +1305,8 @@ class iform_ukbms_sectioned_transects_input_sample {
        */
       $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Save').'" /></form></div>';
       data_entry_helper::$javascript .= "var speciesMapTabHandler = function(event, ui) {
-  if (ui.panel.id=='".$options["tabDiv"]."') {
+  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id=='".$options["tabDiv"]."') {
     if (indiciaData.ParentSampleLayer.features.length > 0) {
       var bounds=indiciaData.ParentSampleLayer.getDataExtent();
       bounds.extend(indiciaData.SubSampleLayer.getDataExtent());
