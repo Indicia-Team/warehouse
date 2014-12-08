@@ -1502,7 +1502,7 @@ class iform_wwt_colour_marked_report {
           'occurrenceSensitivity'=>(isset($args['subject_observation_confidential']) ? $args['subject_observation_confidential'] : false),
           'occurrenceImages'=>$args['observation_images'],
           'PHPtaxonLabel' => true,
-          'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
+          'language' => iform_lang_iso_639_2(hostsite_get_user_field('language')), // used for termlists in attributes
           'cacheLookup' => isset($args['cache_lookup']) && $args['cache_lookup'],
           'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args),          
       ), $options);
