@@ -287,7 +287,7 @@ function iform_map_get_map_options($args, $readAuth) {
     $options['tilecacheLayers'] = json_decode($args['tile_cache_layers'], true);
   }
   // And any indicia Wms layers from the GeoServer
-  if ($args['indicia_wms_layers']) {
+  if (!empty($args['indicia_wms_layers'])) {
     $options['indiciaWMSLayers'] = explode("\n", $args['indicia_wms_layers']);
   }
   // set up standard control list if supplied

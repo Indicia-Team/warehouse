@@ -426,7 +426,7 @@ jQuery(\"#sample\\\\:location_id\").change();
       $extraParams += array('preferred' => 't');
     }
     if ($args['species_names_filter']=='language') {
-      $extraParams += array('language_iso' => iform_lang_iso_639_2($user->lang));
+      $extraParams += array('language_iso' => iform_lang_iso_639_2(hostsite_get_user_field('language')));
     }  
     // A single species entry control of some kind
     if ($args['extra_list_id']=='')
@@ -607,7 +607,7 @@ jQuery('input#transectgrid_taxa_taxon_list_id\\\\:taxon').result(function(event,
       $extraParams += array('preferred' => 't');
     }
     if ($args['species_names_filter']=='language') {
-      $extraParams += array('language_iso' => iform_lang_iso_639_2($user->lang));
+      $extraParams += array('language_iso' => iform_lang_iso_639_2(hostsite_get_user_field('language')));
     }  
     // A single species entry control of some kind
     if ($args['extra_list_id']=='')

@@ -339,7 +339,7 @@ class iform_mnhnl_citizen_science_1 {
         $extraParams += array('preferred' => 't');
       }
       if ($args['restrict_species_to_users_lang']) {
-        $extraParams += array('language_iso' => iform_lang_iso_639_2($user->lang));
+        $extraParams += array('language_iso' => iform_lang_iso_639_2(hostsite_get_user_field('language')));
       }
       $species_list_args=array(
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
@@ -447,7 +447,7 @@ class iform_mnhnl_citizen_science_1 {
               'survey_id'=>$args['survey_id']
             ));
             foreach ($attributes as $attribute) {
-              $r .= data_entry_helper::outputAttribute($attribute, array('language' => iform_lang_iso_639_2($user->lang), 'booleanCtrl' => 'checkbox'));
+              $r .= data_entry_helper::outputAttribute($attribute, array('language' => iform_lang_iso_639_2(hostsite_get_user_field('language')), 'booleanCtrl' => 'checkbox'));
             }
 
           }
