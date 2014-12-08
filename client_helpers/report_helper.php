@@ -4401,20 +4401,21 @@ function replot(type){
   }
 };
 indiciaFns.bindTabsActivate($('#controls'), function(event, ui) {
-  if (ui.panel.id==='summaryChart') { replot('summary'); }
-  if (ui.panel.id==='estimateChart') { replot('estimates'); }
-  if (ui.panel.id==='summaryData' || ui.panel.id==='estimateData' || ui.panel.id==='rawData') {
+  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id==='summaryChart') { replot('summary'); }
+  if (panel.id==='estimateChart') { replot('estimates'); }
+  if (panel.id==='summaryData' || panel.id==='estimateData' || panel.id==='rawData') {
   	var max=0;
   	var extMax=0;
-  	$('#'+ui.panel.id+' .freeze-first-col').each(function(idx, elem){
+  	$('#'+panel.id+' .freeze-first-col').each(function(idx, elem){
   	  $(elem).css('width',''); 
   	  if(max < $(elem).width()) max= $(elem).width();
   	  if(extMax < $(elem).outerWidth(true)) extMax= $(elem).outerWidth(true);});
-  	$('#'+ui.panel.id+' .freeze-first-col').width(max);
-  	$('#'+ui.panel.id+' .results-grid-wrapper-inner').css('margin-left',extMax);
-  	$('#'+ui.panel.id+' table').hide();
-  	$('#'+ui.panel.id+' > div.results-grid-wrapper-outer').each(function(idx, elem){ $(elem).css('width',''); $(elem).width($(elem).width());});
-  	$('#'+ui.panel.id+' table').show();
+  	$('#'+panel.id+' .freeze-first-col').width(max);
+  	$('#'+panel.id+' .results-grid-wrapper-inner').css('margin-left',extMax);
+  	$('#'+panel.id+' table').hide();
+  	$('#'+panel.id+' > div.results-grid-wrapper-outer').each(function(idx, elem){ $(elem).css('width',''); $(elem).width($(elem).width());});
+  	$('#'+panel.id+' table').show();
   }
 });
 ";

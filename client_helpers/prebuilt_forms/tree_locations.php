@@ -564,7 +564,8 @@ check_attrs = function(){
     // with multiple maps can't use built in method on tabshow, so do here...
     $divId = preg_replace('/[^a-zA-Z0-9]/', '', 'site-details');
     $javascript = "var mapTabHandler = function(event, ui) { \n";
-    $javascript .= "  if (ui.panel.id=='site-details' && typeof indiciaData.mapdiv !== 'undefined') {
+    $javascript .= "  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id=='site-details' && typeof indiciaData.mapdiv !== 'undefined') {
     var map = jQuery('#map')[0].map;
     map.updateSize();
     var layerBounds = map.editLayer.getDataExtent().clone(); // use a clone
