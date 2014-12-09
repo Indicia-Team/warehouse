@@ -33,13 +33,21 @@ function group_authorise_form($args, $readAuth) {
     hostsite_goto_page('<front>');
   }    
   if (!empty($_GET['group_id'])) {
-    // loading data into a recording group. Are they a member?
+    // loading data into a recording group. Are they a member or is the page public?
+    // @todo: consider performance - 2 web services hits required to check permissions.
     $gu = data_entry_helper::get_population_data(array(
       'table'=>'groups_user',
       'extraParams'=>$readAuth + array('group_id'=>$_GET['group_id'], 'user_id'=>hostsite_get_user_field('indicia_user_id')),
       'nocache'=>true
     ));
-    if (count($gu)===0) {
+    $gp = data_entry_helper::get_population_data(array(
+      'table'=>'group_page',
+      'extraParams'=>$readAuth + array('group_id'=>$_GET['group_id'], 'path'=>drupal_get_path_alias($_GET['q']))
+    ));
+    if (count($gp)===0) {
+      hostsite_show_message(lang::get('You are trying to access a page which is not available for this group.'), 'alert');
+      hostsite_goto_page('<front>');
+    } elseif (count($gu)===0 && $gp[0]['administrator']!==NULL) {
       // not a group member, so throw them out
       hostsite_show_message(lang::get('You are trying to access a page for a group you do not belong to.'), 'alert');
       hostsite_goto_page('<front>');
