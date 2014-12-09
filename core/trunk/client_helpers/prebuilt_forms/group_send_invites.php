@@ -86,7 +86,7 @@ class iform_group_send_invites {
       'helpText' => 'What message would you like to send to your invitees?',
       'fieldname'=>'invite_message',
       'validation'=>array('required'),
-      'default' => 'Would you like to join the ' . $group['title'] . '?'
+      'default' => lang::get('Would you like to join the {1}?', $group['title'])
     ));
     $r .= '<button type="submit" class="indicia-button" id="save-button">'.lang::get('Send Invites')."</button>\n";
     $r .= '<button type="button" class="indicia-button" id="not-now-button" ' .
