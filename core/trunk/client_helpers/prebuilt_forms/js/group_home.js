@@ -86,8 +86,8 @@ jQuery(document).ready(function($) {
     $.fancybox(
       '<form id="occurrence-comment-form">' +
         '<fieldset class="popup-form">' +
-          '<legend>Occurrence Comment</legend>' +
-          '<textarea id="occurrence-comment" rows="4" class="required"></textarea>'+
+          '<legend>Comment</legend>' +
+          '<textarea id="occurrence-comment" rows="6" cols="80" class="required"></textarea>'+
           '<input type="button" id="occurrence-comment-save-button" value="Submit">' +
         '</fieldset>' +
       '</form>'
