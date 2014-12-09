@@ -1126,16 +1126,24 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         )
       ));
       // Output a drop down so they can select the appropriate group.
-      if (count($possibleGroups)) {
-        $options = array('' => lang::get('Ad-hoc records not attached to a specific group'));
+      if (count($possibleGroups)>1) {
+        $options = array('' => lang::get('Ad-hoc non-group records'));
         foreach ($possibleGroups as $group) {
           $options[$group['id']] = "$group[group_type]: $group[title]";
         }
         $r .= data_entry_helper::select(array(
-          'label' => lang::get('Record destination'),
-          'helpText' => lang::get('Choose whether to post your records into a group that you belong to.'),
-          'fieldname' => 'sample:group_id',
-          'lookupValues' => $options
+            'label' => lang::get('Record destination'),
+            'helpText' => lang::get('Choose whether to post your records into a group that you belong to.'),
+            'fieldname' => 'sample:group_id',
+            'lookupValues' => $options
+        ));
+      } elseif (count($possibleGroups)===1) {
+        $r .= data_entry_helper::radio_group(array(
+            'label' => lang::get('Post to {1}', $possibleGroups[0]['title']),
+            'labelClass' => 'auto',
+            'helpText' => lang::get('Choose whether to post your records into {1}.', $possibleGroups[0]['title']),
+            'fieldname' => 'sample:group_id',
+            'lookupValues' => array('' => lang::get('No'), $possibleGroups[0]['id'] => lang::get('Yes'))
         ));
       }
     }
@@ -2090,25 +2098,9 @@ else
       $submission = data_entry_helper::build_sample_occurrences_list_submission($values);
     else
       $submission = data_entry_helper::build_sample_occurrence_submission($values);
-    $submission = self::apply_release_status_to_submodels($values,$submission);
     return($submission);
   }
 
-  /**
-   * If a specific occurrence release status appears in the POST, then it needs to be applied to all occurrence submodels.
-   * For instance if the checkbox is selected to set all the records to pending.
-   */
-  private static function apply_release_status_to_submodels($values,$submission) {
-    if (!empty($values['occurrence:release_status'])) {
-      foreach ($submission['subModels'] as $subModelIdx=>$subModel) {
-        if ($subModel['model']['id']==='occurrence') {
-          $submission['subModels'][$subModelIdx]['model']['fields']['release_status']=array('value'=>'P');
-        }
-      }
-    }
-    return $submission;
-  }
-  
   /**
    * Retrieves a list of the css files that this form requires in addition to the standard
    * Drupal, theme or Indicia ones.
