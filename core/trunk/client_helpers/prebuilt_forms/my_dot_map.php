@@ -300,7 +300,7 @@ class iform_my_dot_map {
    * @todo: Implement this method
    */
   public static function get_form($args) {
-    $lang = iform_lang_iso_639_2(hostsite_get_user_field('language')) : 'eng';
+    $lang = iform_lang_iso_639_2(hostsite_get_user_field('language', 'en'));
     if (function_exists('iform_load_helpers')) {
       iform_load_helpers(array('map_helper'));
     } else {
