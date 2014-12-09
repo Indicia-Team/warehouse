@@ -1,0 +1,27 @@
+<report
+    title="Get broad and fine scale habitats"
+    description="Return habitats and the associated fine-scale habitat child terms."
+>
+  <query>
+  SELECT #columns#
+  FROM terms t
+    JOIN termlists_terms tt on tt.term_id = t.id AND tt.deleted=false
+    JOIN sample_attributes sa on sa.termlist_id = tt.termlist_id AND sa.id=#habitat_attr_id# AND sa.deleted=false  
+    LEFT JOIN sample_attribute_values sav on sav.sample_attribute_id=sa.id AND sav.sample_id=#sample_id# AND sav.deleted=false
+  WHERE t.deleted=false
+  </query>
+  <order_bys>
+    <order_by>t.term</order_by>
+  </order_bys>
+  <params>
+    <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
+    <param name='sample_id' display='Sample Id' description='Id of the existing sample that has a habitat value.' datatype='integer' emptyvalue='0' default='0'/>
+  </params>
+  <columns> 
+    <column name='id' sql='tt.id' datatype='integer' visible='false'/>
+    <column name='term' display='Habitat' sql="t.term" datatype='text' />
+    <column name='parent_id' display='Parent Id' sql="tt.parent_id" datatype='integer' />
+    <column name='existing_fine_habitat_id' display='Existing fine habitat id' sql="case when sav.int_value IS NOT NULL then sav.int_value else null end" datatype='integer' />
+    <column name='existing_fine_habitat_attr_value_id' display='Existing fine habitat sample_attribute_value id' sql="case when sav.id IS NOT NULL then sav.id else null end" datatype='integer' />
+  </columns>
+</report>
