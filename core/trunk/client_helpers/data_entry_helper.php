@@ -1109,7 +1109,7 @@ $('#$escaped').change(function(e) {
         $javascript =
             "var uploaderTabHandler = function(event, ui) { \n" .
             "  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];\n" .
-            "  if (panel.id=='".$options['tabDiv']."') {\n    ".
+            "  if ($(panel).attr('id')==='".$options['tabDiv']."') {\n    ".
         $javascript.
             "    indiciaFns.unbindTabsActivate($($('#".$options['tabDiv']."').parent()), uploaderTabHandler);\n".
             "  }\n};\n".
