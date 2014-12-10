@@ -1,0 +1,35 @@
+/* line 1, sass/seasearch_survey.scss */
+table#position-data {
+  width: auto;
+}
+/* line 3, sass/seasearch_survey.scss */
+table#position-data input {
+  width: 50px;
+}
+/* line 6, sass/seasearch_survey.scss */
+table#position-data .td-pad {
+  padding-right: 1em;
+}
+table#position-data p.inline-error {
+  display: none !important;
+}
+
+/* line 11, sass/seasearch_survey.scss */
+#map {
+  /* Hide missing tiles from layers such as DorIS */
+}
+/* line 13, sass/seasearch_survey.scss */
+#map .olImageLoadError {
+  display: none;
+}
+
+input.readonly {
+    background-color: #f7f7f7;
+    border: solid silver 1px;
+}
+
+/* line 18, sass/seasearch_survey.scss */
+p.drift-only {
+  opacity: 0;
+  margin-left: 164px;
+}

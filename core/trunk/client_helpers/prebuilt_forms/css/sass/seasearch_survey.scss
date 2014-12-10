@@ -1,0 +1,29 @@
+table#position-data {
+  width: auto;
+  input {
+    width: 50px;
+  }
+  .td-pad {
+    padding-right: 1em;
+  }
+  p.inline-error {
+    display: none;
+  }
+}
+
+#map {
+  /* Hide missing tiles from layers such as DorIS */
+  .olImageLoadError {
+    display: none;
+  }
+}
+
+input.readonly {
+  background-color: #f7f7f7;
+  border: solid silver 1px;
+}
+
+p.drift-only {
+  opacity: 0;
+  margin-left: 164px;
+}
