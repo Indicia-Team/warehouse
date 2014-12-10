@@ -1,49 +1,8 @@
 jQuery(document).ready(function($) {
 
-  jQuery.validator.addMethod("mustHaveSACFOR", function(value, element) {
-    var row=$(element).closest('tr');
-    return row.hasClass('scClonableRow') || row.find('option:selected[value!=""]').length>0;
-  }, "Please ensure that you have picked a SACFOR abundance value for at least one habitat.");
-
   // Retrieves a jQuery element from the PHP string representation of the ID.
   function getEl(id) {
     return $('#' + id.replace(/:/g, '\\:'));
-  }
-
-  function addHabitatColToSpeciesGrid(habitatIdx) {
-    var attrSelect, ttlInput, valueId, value, name, possValues = ['S', 'A', 'C', 'F', 'O', 'R', 'P'],
-        options = '<option value=""></option>', selectValidationClass = habitatIdx===1 ? ' class="mustHaveSACFOR"' : '';
-    // add headers to the species grid for the new habitat. Also include the Drupal sticky table header.
-    $('table.sticky-header #species-grid-images-0,table.species-grid #species-grid-images-0').before('<th>Abundance (habitat ' + habitatIdx + ')</th>');
-    // Set up the new input cell for the clonable row. Note, we use the habitat index (currentCount) in the field name
-    // instead of the attribute ID, since this allows us to split the data into different habitats later. There is only
-    // one custom attribute here, but multiple habitat columns so this is necessary.
-    name = 'sc:species-grid--idx-::occAttr:' + habitatIdx;
-    $.each(possValues, function () {
-      options += '<option value="' + this + '">' + this + '</option>';
-    });
-    $('tr#species-grid-scClonableRow .scAddMediaCell').before('<td class="scOccAttrCell habitat-' + habitatIdx + '"><select name="' + name + '">' + options + '</select></td>');
-    // set up the new input cell for the current input row at the bottom of the grid plus existing rows.
-    $('table.species-grid tbody tr .scAddMediaCell').before('<td class="scOccAttrCell habitat-' + habitatIdx +
-        '"><select' + selectValidationClass + '>' + options + '</select></td>');
-    // loop through the rows to setup the names and values of the controls according to their grid position record data.
-    $.each($('table#species-grid tbody tr'), function (row) {
-      attrSelect = $(this).find('td.habitat-' + habitatIdx + ' select');
-      if (attrSelect) {
-        valueId = '';
-        value = '';
-        // look for existing data if doing a reload
-        if (typeof indiciaData.existingOccAttrData !== "undefined" && typeof indiciaData.existingOccAttrData[habitatIdx - 1] !== "undefined") {
-          ttlInput = $(this).find('input.scPresence:checked');
-          if (ttlInput && typeof indiciaData.existingOccAttrData[habitatIdx - 1][$(ttlInput).val()] !== "undefined") {
-            valueId = ':' + indiciaData.existingOccAttrData[habitatIdx - 1][$(ttlInput).val()][0];
-            value = indiciaData.existingOccAttrData[habitatIdx - 1][$(ttlInput).val()][1]
-          }
-        }
-        $(attrSelect).attr('name', 'sc:species-grid-' + row + '::occAttr:' + habitatIdx + valueId);
-        $(attrSelect).val(value);
-      }
-    });
   }
 
   // On change of the habitat count control, or initial loading of the form, set up all the controls required
@@ -55,6 +14,7 @@ jQuery(document).ready(function($) {
     if (isNaN(targetCount) || targetCount === currentCount || targetCount<1) {
       return;
     }
+    $('#habitat-count').val(targetCount);
     if (targetCount > currentCount) {
       // too few blocks, so add some
       while (currentCount < targetCount) {
@@ -162,7 +122,7 @@ jQuery(document).ready(function($) {
                 .val(data[1]);
           }
         });
-        addHabitatColToSpeciesGrid(addingHabitatIdx);
+        //addHabitatColToSpeciesGrid(addingHabitatIdx);
         currentCount++;
       }
     }
@@ -178,6 +138,16 @@ jQuery(document).ready(function($) {
     setHabitatCount($('#habitat-blocks').children('fieldset').length+1);
   });
   setHabitatCount(indiciaData.initialHabitatCount);
+
+  // On load of existing data, ensure that the habitat indexes are loaded into the grid habitat controls properly.
+  var habitatInput, row;
+  $.each($('table.species-grid .scSampleCell input'), function() {
+    row = $(this).closest('tr');
+    if (!$(row.hasClass('scClonableRow'))) {
+      habitatInput = row.find('.scHabitatCell input');
+      $(habitatInput[0]).val(parseInt($(this).val()) + 1);
+    }
+  })
 
   // The date control value needs to feed into the lookup for dive group names.
   $('#sample\\:date').change(function() {

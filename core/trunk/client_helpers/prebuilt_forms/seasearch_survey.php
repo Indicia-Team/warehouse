@@ -44,12 +44,6 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
   private static $existingSubsampleData = array();
 
   /**
-   * @var array Array of existing loaded occurrence IDs, keyed by sample_id:taxa_taxon_list_id.
-   * Used to facilitate resave of edited data.
-   */
-  private static $existingOccIds = array();
-
-  /**
    * Return the form metadata.
    * @return string The definition of the form.
    */
@@ -159,7 +153,6 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
    */
   protected static function load_existing($sample_id, $auth) {
     iform_load_helpers(array('report_helper'));
-    $existingOccAttrData = array();
     $samples = report_helper::get_report_data(array(
         'dataSource' => 'library/samples/subsamples',
         'readAuth' => $auth['read'],
@@ -167,7 +160,6 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     ));
     foreach($samples as $sample) {
       self::$existingSubsampleData['sample:'.$sample['id']] = array('sample_id'=>$sample['id'], 'comment' => $sample['comment'], 'values' => array());
-      $existingOccAttrData['sample:'.$sample['id']] = array();
     }
     $values = report_helper::get_report_data(array(
       'dataSource' => 'library/sample_attribute_values/subsample_attribute_values',
@@ -180,31 +172,6 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     }
     data_entry_helper::$javascript .= "indiciaData.existingSubsampleData=" .
         json_encode(array_values(self::$existingSubsampleData)) . ";\n";
-    // Load any existing occurrences
-    $taxa = report_helper::get_report_data(array(
-        'dataSource' => 'reports_for_prebuilt_forms/seasearch/load_occurrences_for_dive',
-        'readAuth' => $auth['read'],
-        'extraParams' => array('parent_sample_id'=>$sample_id)
-    ));
-    foreach ($taxa as $idx => $taxon) {
-      data_entry_helper::$entity_to_load["sc:$idx:$idx:present"] = $taxon['taxa_taxon_list_id'];
-      $sampleIds = explode(',', $taxon['habitat_sample_ids']);
-      $values = explode(',', $taxon['sacfors']);
-      $valueIds = explode(',', $taxon['oav_ids']);
-      $ids = explode(',', $taxon['ids']);
-      foreach ($sampleIds as $sampleIdx => $sample_id) {
-        $existingOccAttrData['sample:'.$sample_id][$taxon['taxa_taxon_list_id']] = array($valueIds[$sampleIdx], $values[$sampleIdx]);
-        self::$existingOccIds["$sample_id:$taxon[taxa_taxon_list_id]"] = $ids[$sampleIdx];
-      }
-    }
-    data_entry_helper::$javascript .= 'indiciaData.existingOccAttrData = '.json_encode(array_values($existingOccAttrData)).";\n";
-  }
-
-  protected static function getHeader($args) {
-    $r = parent::getHeader($args);
-    $existing = htmlspecialchars(json_encode(self::$existingOccIds));
-    $r .= "<input type=\"hidden\" name=\"existingOccurrences\" value=\"$existing\"/>\n";
-    return $r;
   }
 
   protected static function get_control_addhabitat($auth, $args, $tabAlias, $options) {
@@ -344,6 +311,7 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     // create the control output
     // add the template, wrapped in a hidden div. JS will be used to clone it as many times as is required.
     $r = "<div style=\"display: none;\"><fieldset id=\"habitat-block-template\">\n$template\n</fieldset></div>\n";
+    $r .= '<input type="hidden" id="habitat-count" name="habitat-count" />';
     $r .= "<div id=\"habitat-blocks\"></div>\n";
     return $r;
   }
@@ -601,7 +569,10 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
   }
 
   public static function get_submission($values, $args) {
+    $values['habitat-count']=2;
     $habitatSamples = array();
+    for ($i=1; $i<=$values['habitat-count']; $i++)
+      $habitatSamples["habitat$i"] = array();
     foreach ($values as $key=>$value) {
       if (substr_count($key, ':')===3) {
         $parts = explode(':', $key, 4);
@@ -611,9 +582,6 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
           if (preg_match('/^\d+$/', $parts[3]) && (!empty($parts[2]) || !empty($value))) {
             // habitat number is the last part of the attribute field name
             $id = array_pop($parts);
-            if (!isset($habitatSamples["habitat$id"])) {
-              $habitatSamples["habitat$id"] = array();
-            }
             // remove empty stuff from the attribute name (e.g. an unused space for the existing value ID, if a new attribute value).
             while (empty($parts[count($parts)-1]))
               array_pop($parts);
@@ -630,6 +598,7 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
         $values[implode(':', $parts)] = $value;
     }
     $buddyPairSubmission = submission_builder::wrap_with_images($values, 'sample');
+    unset($buddyPairSubmission['fields']['habitat-count']);
     // Get the list of records implied by the SACFOR data for each habitat. At this point we'll create 1 big list and split
     // it across the habitats later.
     $occurrences = data_entry_helper::wrap_species_checklist($values, true, array(), array());
@@ -637,49 +606,18 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     $habitatOccurrences = array();
     foreach (array_keys($habitatSamples) as $habitatId)
       $habitatOccurrences[$habitatId] = array();
-    $existingOccurrences = json_decode($values['existingOccurrences'], true);
     foreach ($occurrences as $occurrence) {
       // take a copy of the fields with all habitat data
       $fields = array_merge($occurrence['model']['fields']);
-      foreach (array_keys($habitatSamples) as $habitatId) {
-        // Because our occurrences grid can have several columns for a single attribute ID, we use the habitat index
-        // number as a fake occurrence attribute ID. The following code maps these fake attribute IDs to the real ones.
-        // First get just the numeric habitat ID, e.g. 1, 2, 3
-        $habitatIdx = str_replace('habitat', '', $habitatId);
-        $sample_id = empty($_POST["habitat_sample_id:$habitatIdx"]) ? false : $_POST["habitat_sample_id:$habitatIdx"];
-        // test if there is a value
-        $matches = preg_grep("/^occAttr:$habitatIdx(:(\d+))?$/", array_keys($fields));
-        // The following line assumes only 1 type of occurrence attribute
-        $fieldname = array_pop($matches);
-        $realFieldname = preg_replace('/^occAttr:\d+/', "occAttr:$args[sacforp_attr_id]", $fieldname);
-        // remove the 'fake' attribute values from the submission
-        foreach(array_keys($occurrence['model']['fields']) as $key) {
-          if(preg_match('/^occAttr:/', $key)) {
-            unset($occurrence['model']['fields'][$key]);
-          }
-        }
-        $ttlId = $occurrence['model']['fields']['taxa_taxon_list_id']['value'];
-        if (isset($fields[$fieldname]) && !empty($fields[$fieldname]['value'])) {
-          // Got an abundance value for this habitat. So, clone the attribute-less occurrence into the correct habitat parent submission
-          // data, then add the habitat's abundance data back in.
-          $habitatOccurrence = array_merge($occurrence);
-          if ($sample_id) {
-            if (!empty($existingOccurrences["$sample_id:$ttlId"])) {
-              $habitatOccurrence['model']['fields']['id'] = array('value'=>$existingOccurrences["$sample_id:$ttlId"]);
-            }
-          }
-          $value = $fields[$fieldname]['value'];
-          $habitatOccurrence['model']['fields'][$realFieldname] = array('value' => $value);
-          // store the occurrence ready to attach to the habitat sample
-          $habitatOccurrences[$habitatId][] = $habitatOccurrence;
-        } elseif (!empty($existingOccurrences["$sample_id:$ttlId"])) {
-          // got an existing occurrence but user removed the abundance, so delete it
-          $habitatOccurrence = array_merge($occurrence);
-          $habitatOccurrence['model']['fields']['id'] = array('value'=>$existingOccurrences["$sample_id:$ttlId"]);
-          $habitatOccurrence['model']['fields']['deleted'] = array('value'=>'t');
-          $habitatOccurrences[$habitatId][] = $habitatOccurrence;
-        }
-      }
+      // @todo Remove hard coded field ID.
+      $habitatFields = preg_grep('/occAttr:243(:\d+)?/', array_keys($fields));
+      if (count($habitatFields))
+        $habitatId = $fields[array_pop($habitatFields)]['value'];
+      else
+        // this case occurs when deleting an occurrence, as the habitat ID input field is disabled. Therefore
+        // we need to revert to the original hidden sampleIdx field for the loaded record.
+        $habitatId = $fields['sampleIDX']['value'] + 1; // zero indexed
+      $habitatOccurrences["habitat$habitatId"][] = $occurrence;
     }
     // now create the submodel data for each habitat.
     $buddyPairSubmission['subModels'] = array();
@@ -694,8 +632,10 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
       $habitatSample['sample:entered_sref'] = $values['sample:entered_sref'];
       $habitatSample['sample:entered_sref_system'] = $values['sample:entered_sref_system'];
       $habitatSample['sample:input_form'] = $values['sample:input_form'];
-      if (isset($_POST["sample:comment:$habitatIdx"]))
+      if (isset($_POST["sample:comment:$habitatIdx"])) {
         $habitatSample['sample:comment'] = $_POST["sample:comment:$habitatIdx"];
+        unset($buddyPairSubmission['fields']["comment:$habitatIdx"]);
+      }
       $habitatSubmission = submission_builder::wrap($habitatSample, 'sample');
       $habitatSubmission['subModels'] = $habitatOccurrences[$habitatId];
       $buddyPairSubmission['subModels'][] = array(
