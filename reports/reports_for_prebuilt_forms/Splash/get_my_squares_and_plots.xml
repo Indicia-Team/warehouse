@@ -13,7 +13,7 @@
       LEFT JOIN location_attribute_values lav on lav.location_id=square.id AND lav.location_attribute_id = #vice_county_location_attribute_id#
       LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=l.id
       JOIN users u on u.id=#current_user_id#
-      JOIN person_attribute_values pav on pav.int_value=square.id AND pav.person_id=u.person_id AND pav.deleted=false
+      JOIN person_attribute_values pav on pav.int_value=square.id AND pav.person_id=u.person_id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
     WHERE (l.id = square.id OR l.parent_id = square.id)
     AND #website_filter# AND l.deleted=false
   </query>
@@ -28,6 +28,7 @@
     <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
     <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
+    <param name='user_square_attr_id' description='Id of the person attribute that holds user squares' datatype='integer'/>
   </params>
   <columns>
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" in_count="true"/>
