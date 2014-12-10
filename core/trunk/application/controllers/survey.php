@@ -83,6 +83,10 @@ class Survey_Controller extends Gridview_Base_Controller {
   protected function getTabs($name) {
     return array(
       array(
+        'controller' => 'survey_comment',
+        'title' => 'Comments',
+        'actions'=>array('edit')
+      ), array(
         'controller' => 'survey_medium',
         'title' => 'Media Files',
         'views'=>'survey',
