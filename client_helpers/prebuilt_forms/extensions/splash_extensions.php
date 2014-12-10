@@ -126,6 +126,8 @@ class extension_splash_extensions {
    * The attribute ID that holds the vice counties associated with a square</li>
    * <li><b>noViceCountyFoundMessage</b><br/>
    * A square's vice country makes up part of its name, however if it doesn't have a vice county then display this replacement text instead</li>
+   * <li><b>userSquareAttrId</b><br/>
+   * The ID of the person attribute that holds the user squares.</li>
    * <li><b>orientationAttributeId</b><br/>
    * The location attribute id that holds a plot's Orientation</li>
    * <li><b>aspectAttributeId</b><br/>
@@ -153,11 +155,16 @@ class extension_splash_extensions {
       drupal_set_message('Please fill in the @noViceCountyFoundMessage option for the splash_location_select control');
       return '';
     }
+    if (empty($options['userSquareAttrId'])) {
+      drupal_set_message('Please fill in the @userSquareAttrId option for the splash_location_select control');
+      return '';
+    }
     $coreSquareLocationTypeId=$options['coreSquareLocationTypeId'];
     $additionalSquareLocationTypeId=$options['additionalSquareLocationTypeId'];
     $currentUserId=hostsite_get_user_field('indicia_user_id');
     $viceCountyLocationAttributeId=$options['viceCountyLocationAttributeId'];
     $noViceCountyFoundMessage=$options['noViceCountyFoundMessage'];
+    $userSquareAttrId=$options['userSquareAttrId'];
     $reportOptions = array(
       'dataSource'=>'reports_for_prebuilt_forms/Splash/get_my_squares_that_have_plots',
       'readAuth'=>$auth['read'],
@@ -166,7 +173,8 @@ class extension_splash_extensions {
                              'additional_square_location_type_id'=>$additionalSquareLocationTypeId,
                              'current_user_id'=>$currentUserId,
                              'vice_county_location_attribute_id'=>$viceCountyLocationAttributeId,
-                             'no_vice_county_found_message'=>$noViceCountyFoundMessage)
+                             'no_vice_county_found_message'=>$noViceCountyFoundMessage,
+                             'user_square_attr_id'=>$userSquareAttrId)
     );
     //In PSS/NPMS we don't show the Vice County in the label.
     if (!empty($reportOptions['extraParams'])&&!empty($options['pssMode'])&&$options['pssMode']===true) {
