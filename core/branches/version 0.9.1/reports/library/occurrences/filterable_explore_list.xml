@@ -20,7 +20,8 @@
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
   </params>
   <columns>
-    <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} release-{release_status} certainty-{certainty} record-id'&gt;{occurrence_id}&lt;/div&gt;" datatype="integer" />
+    <column name='occurrence_id' display='ID' sql='o.id' datatype="integer"
+        template='&lt;div class="status-{record_status} release-{release_status}"&gt;&lt;div class="certainty-{certainty} record-id"&gt;{occurrence_id}&lt;/div&gt;&lt;/div&gt;'  />
     <column name='source' display='Source' datatype="text" 
         sql="w.title || ' | ' || case when substring(o.survey_title from 1 for length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
