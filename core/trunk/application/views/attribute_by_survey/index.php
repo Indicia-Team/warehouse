@@ -309,11 +309,10 @@ echo data_entry_helper::select(array(
   'label' => 'Display attributes for',
   'lookupValues' => array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations'),
   'default' => $_GET['type'],
-  'suffixTemplate' => 'nosuffix',
-  'class' => 'line-up'  
+  'class' => 'line-up',
+  'afterControl' => '<input type="submit" class="button ui-state-default ui-widget-content ui-corner-all line-up" id="change-type" value="Go" />'
 ));
 ?>
-<input type="submit" class="button ui-state-default ui-widget-content ui-corner-all line-up" id="change-type" value="Go" />
 </fieldset>
 </form>
 <ul id="top-blocks" class="block-list">
