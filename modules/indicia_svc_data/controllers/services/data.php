@@ -83,6 +83,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'survey',
       'survey_attribute',
       'survey_attribute_value',
+      'sample_comment',      
       'survey_medium',
       'taxa_taxon_list',
       'taxon_rank',
@@ -440,6 +441,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function survey_attribute_value()
   {
     $this->handle_call('survey_attribute_value');
+  }
+  
+  /**
+  * Provides the /services/data/survey_comment service.
+  */
+  public function survey_comment()
+  {
+    $this->handle_call('survey_comment');
   }
   
   /**
