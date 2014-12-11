@@ -178,7 +178,9 @@ class iform_group_send_invites {
             'headers' => array(
               'MIME-Version' => '1.0',
               'Content-type' => 'text/html; charset=iso-8859-1',
-              'From' => $user->mail
+              // prefer site's mail account in from, otherwise looks like spam
+              'From' => variable_get('site_mail', ''),
+              'Reply-To' => $user->mail
             )
         );
         $mimeheaders = array();
