@@ -23,10 +23,10 @@
 ?>
 <form action="<?php echo url::site().$controllerpath.'/upload_shp2'; ?>" method="post" class="cmxform">
 <fieldset>
-<input type='checkbox' class="vnarrow" name="boundary"/>Select this checkbox if the data should be loaded into the boundary geometry in the location (as opposed to the centroid geometry).<br/>
-<input type='checkbox' class="vnarrow" name="use_parent"/>Select the checkbox if the locations are associated with a parent location.<br/>
-<input type='checkbox' class="vnarrow" name="use_parent_code"/>If so, use the code to join to the parent rather than the name?.<br/>
-<label for='SRID' class='wide' >SRID used in Shapefile</label>
+<label class="auto"><input type='checkbox' class="vnarrow" name="boundary" checked="checked" />Select this checkbox if the data should be loaded into the boundary geometry in the location (as opposed to the centroid geometry).</label><br/>
+<label class="auto"><input type='checkbox' class="vnarrow" name="use_parent"/>Select the checkbox if the locations are associated with a parent location.</label><br/>
+<label class="auto"><input type='checkbox' class="vnarrow" name="use_parent_code"/>If so, use the code to join to the parent rather than the name?.</label><br/>
+<label for='SRID' class='wide' >SRID used in Shapefile:</label>
 <select id='SRID' name='srid' >
   <?php
     foreach ($systems as $code=>$system) {
@@ -35,7 +35,7 @@
   ?>
 </select><br/>
 <input type='checkbox' class="vnarrow" name="use_sref_system"/>Select this checkbox when using the boundary above and you wish the centroid to be generated using this sref. If not checked, the centroid will be generated in EPSG:4326 (Lat Long)<br/>
-<label for='type' class='wide' >Location type for all</label>
+<label for='type' class='wide' >Location type for all:</label>
 <select id='type' name='type' >
 <?php 
   $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
