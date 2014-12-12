@@ -319,7 +319,7 @@ idlist=';
     $r = '<div id="experience-tab"><p>'.lang::get('Recorder\'s other records of this species and species group. Click to explore:').'</p><div id="experience-div"></div></div>';
     $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
         'year for this species, <em>from the verified online recording data only.</em>').'</p><div id="chart-div"></div></div>';
-    $r .= '<div id="images-tab"></div>';
+    $r .= '<div id="media-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
     return $r;
   }
@@ -390,17 +390,17 @@ idlist=';
     $r .= '<button type="button" id="btn-email-recorder" class="default-button">'.lang::get('Recorder').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-tabs">';
-    // note - there is a dependency in the JS that comments is the last tab and images the 2nd to last.
+    // note - there is a dependency in the JS that comments is the last tab and media the 2nd to last.
     $r .= data_entry_helper::tab_header(array(
       'tabs'=>array(
         '#details-tab'=>lang::get('Details'),
         '#experience-tab'=>lang::get('Experience'),
         '#phenology-tab'=>lang::get('Phenology'),
-        '#images-tab'=>lang::get('Images'),
+        '#media-tab'=>lang::get('Media'),
         '#comments-tab'=>lang::get('Comments')
       )
     ));
-    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','experience','phenology','images','comments'];\n";
+    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','experience','phenology','media','comments'];\n";
     data_entry_helper::enable_tabs(array(
       'divId'=>'record-details-tabs'
     ));
@@ -767,32 +767,39 @@ idlist=';
 
   }
 
-  public static function ajax_images($website_id, $password) {
+  public static function ajax_media($website_id, $password) {
     iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
-    echo self::get_images($readAuth);
+    echo self::get_media($readAuth);
   }
 
-  private static function get_images($readAuth) {
+  private static function get_media($readAuth) {
     iform_load_helpers(array('data_entry_helper'));
-    $images = data_entry_helper::get_population_data(array(
-      'table' => 'occurrence_image',
+    $media = data_entry_helper::get_population_data(array(
+      'table' => 'occurrence_medium',
       'extraParams'=>$readAuth + array('occurrence_id'=>$_GET['occurrence_id']),
       'nocache'=>true,
       'sharing'=>'verification'
     ));
     $r = '';
-    if (count($images)===0)
-      $r .= lang::get('No images found for this record');
+    if (count($media)===0)
+      $r .= lang::get('No media found for this record');
     else {
       $path = data_entry_helper::get_uploaded_image_folder();
       $r .= '<ul class="gallery">';
-      foreach ($images as $image) {
-        $r .= '<li><a href="'.$path.$image['path'].'" class="fancybox"><img src="'.$path.'thumb-'.
-            $image['path'].'"/>'.'<br/>'.$image['caption'].'</a></li>';
+      foreach ($media as $file) {
+        if (preg_match('/^http(s)?:\/\/(www\.)?([a-z]+)/', $file['path'], $matches)) {
+          $media = "<a href=\"$file[path]\" class=\"social-icon $matches[3]\"></a>";
+        } elseif (preg_match('/.(wav|mp3)$/', $file['path'])) {
+          $media = "<audio controls src=\"$path$file[path]\" type=\"audio/mpeg\"/>";
+        } else {
+          $media = "<a href=\"$path$file[path]\" class=\"fancybox\"><img src=\"{$path}thumb-" .
+              "$file[path]\"/><br/>$file[caption]</a>";
+        }
+        $r .= "<li>$media</li>";
       }
       $r .= '</ul>';
-      $r .= '<p>'.lang::get('Click on image thumbnails to view full size').'</p>';
+      $r .= '<p>'.lang::get('Click on thumbnails to view full size').'</p>';
     }
     return $r;
   }
@@ -837,12 +844,12 @@ idlist=';
     return $r;
   }
 
-  public static function ajax_imagesAndComments($website_id, $password) {
+  public static function ajax_mediaAndComments($website_id, $password) {
     iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
     header('Content-type: application/json');
     echo json_encode(array(
-      'images' => self::get_images($readAuth),
+      'media' => self::get_media($readAuth),
       'comments' => self::get_comments($readAuth, false)
     ));
   }
