@@ -239,7 +239,7 @@ HTML;
     $this->succeed(array_values($this->projects));
   }
   
-  private function load_taxon_observations_report($params) {
+  private function load_report($report, $params) {
     // @todo: rather than use the report engine and its overheads, build the query required directly?
     // Should also return an object to iterate rather than loading the full array
     $this->reportEngine = new ReportEngine(array($this->website_id));
@@ -252,13 +252,14 @@ HTML;
     }
     // the project defines how records are allowed to be shared with this client
     $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
-    $report = $this->reportEngine->requestReport('rest_api/filterable_nbn_exchange.xml', 'local', 'xml', $params);
+    $params['orderby'] = 'id';
+    $report = $this->reportEngine->requestReport("rest_api/$report.xml", 'local', 'xml', $params);
     return $report;
   }
   
   public function taxon_observations_get_id($id) {
     $params = array('occurrence_id' => $id);
-    $report = $this->load_taxon_observations_report($params);
+    $report = $this->load_report('filterable_nbn_exchange', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
@@ -283,14 +284,41 @@ HTML;
     }
     if (!empty($this->request['edited_date_to'])) {
       $this->checkDate($this->request['edited_date_to'], 'edited_date_to');
-      $params['edited_date_from'] = $this->request['edited_date_to'];
+      $params['edited_date_to'] = $this->request['edited_date_to'];
     }
-    $report = $this->load_taxon_observations_report($params);
+    $report = $this->load_report('filterable_nbn_exchange', $params);
     $this->succeed($this->list_response_structure($report['content']['records'], 'taxon-observations'));
   }
+
   
-  public function annotations_get($id) {
-    
+  public function annotations_get() {
+    $this->checkPaginationParams();
+    $params = array(
+      // limit set to 1 more than we need, so we can ascertain if next page required
+      'limit' => $this->request['page_size']+1,
+      'offset' => ($this->request['page'] - 1) * $this->request['page_size']
+    );
+    if (!empty($this->request['edited_date_from'])) {
+      $this->checkDate($this->request['edited_date_from'], 'edited_date_from');
+      $params['comment_edited_date_from'] = $this->request['edited_date_from'];
+    }
+    if (!empty($this->request['edited_date_to'])) {
+      $this->checkDate($this->request['edited_date_to'], 'edited_date_to');
+      $params['comment_edited_date_to'] = $this->request['edited_date_to'];
+    }
+    $report = $this->load_report('filterable_annotations', $params);
+    $records = $report['content']['records'];
+    // for each record, restructure the taxon observations sub-object
+    foreach ($records as &$record) {
+      $record['taxonObservation'] = array(
+        'id' => $record['taxon_observation_id'],
+        'taxonKey' => $record['taxon_observation_taxonversionkey']
+      );
+      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
+      unset($record['taxon_observation_id']);
+      unset($record['taxon_observation_taxonversionkey']);
+    }
+    $this->succeed($this->list_response_structure($records, 'annotations'));
   }
   
   /**
@@ -307,6 +335,14 @@ HTML;
       $item['href'] .= "&format=$params[format]";
   }
   
+  /**
+   * Converts an array list of items loaded from the database into the structure ready for returning
+   * as the result from an API call. Adds pagination information as well as hrefs for contained objects.
+   * 
+   * @param type $list Array of records from the database
+   * @param type $entity Resource name that is being accessed.
+   * @return array Restructured version of the input list, with pagination and hrefs added.
+   */
   private function list_response_structure($list, $entity) {
     foreach ($list as &$item) {
       $this->add_item_metadata($item, $entity);
