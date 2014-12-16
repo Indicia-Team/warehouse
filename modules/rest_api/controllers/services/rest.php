@@ -234,7 +234,7 @@ HTML;
     // load the filter associated with the project ID
     // @todo load filter
     // map the input filter to report parameters
-    $report = $this->reportEngine->requestReport('library/occurrences/filterable_nbn_exchange.xml', 'local', 'xml', $params);
+    $report = $this->reportEngine->requestReport('rest_api/filterable_nbn_exchange.xml', 'local', 'xml', $params);
     return $report;
   }
   
