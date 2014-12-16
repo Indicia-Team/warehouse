@@ -1,6 +1,7 @@
 /* CSS styles to support the REST API help page */
 body {
   font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+  padding: 1em;
 }
 
 body * {
@@ -44,4 +45,5 @@ td, th {
   border: 1px solid silver;
   padding: 0.25em 0.5em;
   text-align: left;
+  vertical-align: top;
 }
