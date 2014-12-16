@@ -1,6 +1,6 @@
 <report
-    title="NBN Exchange format using standard filters"
-    description="An extract of records in a format suitable for creating NBN Exchange format files in combination with the nbn output format. Compatible with the standard report filter parameters."
+    title="NBN Exchange format for RESTful API"
+    description="Report to support taxon-observations resource output for the RESTful API. Compatible with the standard report filter parameters."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
 select #columns#
