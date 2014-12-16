@@ -1,0 +1,47 @@
+/* CSS styles to support the REST API help page */
+body {
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+}
+
+body * {
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2 {
+  color:#0066AA;
+}
+
+h2, h3 {
+  margin-top: 1em;
+}
+
+p {
+  margin: 0;
+}
+
+table {
+  border-collapse: collapse;
+  margin-top: 1em;
+  min-width: 50%;
+}
+
+caption {
+  padding: 0 0 0.25em 0;
+  font-style: italic;
+  text-align: left;
+}
+
+th[scope=col] {
+  background-color: #C1DAD7;
+}
+
+th[scope=row] {
+  background-color:#e6e6e6; 
+}
+
+td, th {
+  border: 1px solid silver;
+  padding: 0.25em 0.5em;
+  text-align: left;
+}

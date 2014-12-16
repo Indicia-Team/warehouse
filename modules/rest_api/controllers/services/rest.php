@@ -69,7 +69,11 @@ class Rest_Controller extends Controller {
         )
       ),
       '{taxon-observation ID}' => array(
-        'params' => array()
+        'params' => array(
+          'proj_id' => array(
+            'datatype' => 'integer'
+          )
+        )
       )
     )),
     'annotations' => array('get' => array(
@@ -103,12 +107,15 @@ class Rest_Controller extends Controller {
   );
   
   public function index() {
-    echo <<<'HTML'
+    $css = url::base() . "modules/rest_api/media/css/rest_api.css";
+    echo <<<"HTML"
 <!DOCTYPE HTML>
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Indicia RESTful API</title>
+  <link href="$css" rel="stylesheet" type="text/css" />
 </head>
 <body>
 <h1>RESTful API</h1>
@@ -132,8 +139,9 @@ HTML;
             )
           ), $resourceDef['params']);
           echo '<table><caption>Parameters</caption>';
+          echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
           foreach ($resourceDef['params'] as $name => $paramDef) {
-            echo "<tr><th>$name</th>";
+            echo "<tr><th scope=\"row\">$name</th>";
             echo "<td>$paramDef[datatype]</td>";
             $help = kohana::lang("rest_api.$resource.$name");
             echo "<td>$help</td>";
