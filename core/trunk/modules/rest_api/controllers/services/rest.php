@@ -15,24 +15,75 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package Services
- * @subpackage Data
+ * @subpackage REST API
  * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link    http://code.google.com/p/indicia/
  */
 
+/**
+ * Controller class for the RESTful API. Implements handlers for the variuos resource
+ * URIs.
+ * 
+ * Visit index.php/services/rest for a help page.
+ */
 class Rest_Controller extends Controller {
-  private $method='GET';
+  
+  /**
+   * The request method (GET, POST etc).
+   * @var string
+   */
+  private $method;
+  
+  /**
+   * The client's website ID (should point to a record in the websites table).
+   * @var integer
+   */
   private $website_id;
+  
+  /**
+   * The latest API major version number. Unversioned calls will map to this.
+   * @var integer
+   */
   private $api_major_version=1;
+  
+  /**
+   * The latest API minor version number. Unversioned calls will map to this.
+   * @var integer
+   */
   private $api_minor_version=0;
+  
+  /**
+   * List of API versions that this code base will support.
+   * @var array
+   */
   private $supported_api_versions = array(
     '1.0'
   );
-  private $request;
-  private $projects;
-  private $entity;
   
+  /**
+   * Holds the request parameters (e.g. from GET or POST data).
+   * @var array
+   */
+  private $request;
+  
+  /** 
+   * List of project definitions that are available to the authorised client.
+   * @var array
+   */
+  private $projects;
+  
+  /**
+   * The name of the resource being accessed.
+   * @var string
+   */
+  private $resourceName;
+  
+  /**
+   * A template to define the header of any HTML pages output. Replace {css} with the
+   * path to the CSS file to load.
+   * @var string
+   */
   private $html_header = <<<'HTML'
 <!DOCTYPE HTML>
 <html>
@@ -118,10 +169,19 @@ HTML;
     )),
   );
   
+  /**
+   * Controller for the default page for the /rest path. Outputs help text to describe
+   * the available API resources.
+   */
   public function index() {
+    // A temporary array to simulate the arguments, which we can use to check for versioning.
+    $arguments = array($this->uri->last_segment());
+    $this->check_version($arguments);
+    // Output an HTML page header
     $css = url::base() . "modules/rest_api/media/css/rest_api.css";
     echo str_replace('{css}', $css, $this->html_header);
     echo '<h1>RESTful API</h1>';
+    // Loop the resource names and output each of the available methods.
     foreach($this->http_methods as $resource => $methods) {
       echo "<h2>$resource</h2>";
       foreach ($methods as $method => $listOrID) {
@@ -157,6 +217,16 @@ HTML;
     echo '</body></html>';
   }
   
+  /**
+   * Magic method to handle calls to the various resource end-points. Maps the call
+   * to a method name defined by the resource and the request method.
+   * 
+   * @param string $name Resource name as defined by the segment of the URI called. 
+   * Note that this resource name has already passed through the router and had hyphens
+   * converted to underscores.
+   * @param array $arguments Additional arguments, for example the ID of a resource being requested.
+   * @throws exception
+   */
   public function __call($name, $arguments) {
     $resourceName = str_replace('_', '-', $name);
     $this->authenticate();
@@ -176,16 +246,7 @@ HTML;
         }
         
         $methodName = $name . '_' . strtolower($this->method);
-        if (count($arguments) && preg_match('/^v(?P<major>\d+)\.(?P<minor>\d+)$/', $arguments[count($arguments)-1], $matches)) {
-          array_pop($arguments);
-          // Check not asking for an invalid version
-          if (!in_array($matches['major'] . '.' . $matches['minor'], $this->supported_api_versions)) {
-            throw new exception('Unsupported API version');
-            // @todo: http response
-          }
-          $this->api_major_version = $matches['major'];
-          $this->api_minor_version = $matches['minor'];
-        }
+        $this->check_version($arguments);
       
         $requestForId = null;
         if (count($arguments)>1) {
@@ -206,7 +267,7 @@ HTML;
         }
         if ($requestForId)
           $methodName .= '_id';
-        $this->entity = $name;
+        $this->resourceName = $name;
         call_user_func(array($this, $methodName), $requestForId);
       }
     } else {
@@ -239,24 +300,11 @@ HTML;
     $this->succeed(array_values($this->projects));
   }
   
-  private function load_report($report, $params) {
-    // @todo: rather than use the report engine and its overheads, build the query required directly?
-    // Should also return an object to iterate rather than loading the full array
-    $this->reportEngine = new ReportEngine(array($this->website_id));
-    // load the filter associated with the project ID
-    $filter = $this->load_filter_for_project($this->request['proj_id']);
-    // The project's filter acts as a context for the report, meaning it defines the limit of all the 
-    // records that are available for this project.
-    foreach ($filter as $key=>$value) {
-      $params["{$key}_context"] = $value;
-    }
-    // the project defines how records are allowed to be shared with this client
-    $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
-    $params['orderby'] = 'id';
-    $report = $this->reportEngine->requestReport("rest_api/$report.xml", 'local', 'xml', $params);
-    return $report;
-  }
-  
+  /**
+   * GET handler for the taxon-observations/n resource. Outputs a single taxon observations's details.
+   * 
+   * @param type $id Unique ID for the taxon-observations to output
+   */
   public function taxon_observations_get_id($id) {
     $params = array('occurrence_id' => $id);
     $report = $this->load_report('filterable_nbn_exchange', $params);
@@ -271,6 +319,9 @@ HTML;
     }
   }
   
+  /**
+   * GET handler for the taxon-observations resource. Outputs a list of taxon observation details.
+   */
   public function taxon_observations_get() {
     $this->checkPaginationParams();
     $params = array(
@@ -290,8 +341,37 @@ HTML;
     $this->succeed($this->list_response_structure($report['content']['records'], 'taxon-observations'));
   }
 
+  /**
+   * GET handler for the annotations/n resource. Outputs a single annotations's details.
+   * 
+   * @param type $id Unique ID for the annotations to output
+   */
+  public function annotations_get_id($id) {
+    $params = array('id' => $id);
+    $report = $this->load_report('filterable_annotations', $params);
+    if (empty($report['content']['records'])) {
+      $this->fail('No Content', 204);
+    } elseif (count($report['content']['records'])>1) {
+      kohana::log('error', 'Internal error. Request for single annotation returned multiple');
+      $this->fail('Internal Server Error', 500);
+    } else {
+      $record = $report['content']['records'][0];
+      $record['taxonObservation'] = array(
+        'id' => $record['taxon_observation_id'],
+      );
+      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
+      $this->add_item_metadata($record, 'annotations');
+      $this->succeed($record);
+    }
+  }
   
+  /**
+   * GET handler for the annotations resource. Outputs a list of annotation details.
+   */
   public function annotations_get() {
+    // @todo Integrate determinations in the output
+    // @todo handle taxonversionkey properly
+    // @todo handle unansweredQuestion
     $this->checkPaginationParams();
     $params = array(
       // limit set to 1 more than we need, so we can ascertain if next page required
@@ -361,9 +441,41 @@ HTML;
     );
   }
   
+  /**
+   * Method to load the output of a report being used to construct an API call GET response.
+   * 
+   * @param string $report Report name (excluding .xml extension)
+   * @param array $params Report parameters in an associative array
+   * @return array Report response structure
+   */
+  private function load_report($report, $params) {
+    // @todo: rather than use the report engine and its overheads, build the query required directly?
+    // Should also return an object to iterate rather than loading the full array
+    $this->reportEngine = new ReportEngine(array($this->website_id));
+    // load the filter associated with the project ID
+    $filter = $this->load_filter_for_project($this->request['proj_id']);
+    // The project's filter acts as a context for the report, meaning it defines the limit of all the 
+    // records that are available for this project.
+    foreach ($filter as $key=>$value) {
+      $params["{$key}_context"] = $value;
+    }
+    // the project defines how records are allowed to be shared with this client
+    $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
+    $params['orderby'] = 'id';
+    $report = $this->reportEngine->requestReport("rest_api/$report.xml", 'local', 'xml', $params);
+    return $report;
+  }
+  
+  /**
+   * Regenerates the current GET URI link, but replacing one or more paraneters with a new value,
+   * e.g. a new page ID.
+   * 
+   * @param array $replacements List of parameters and values to replace
+   * @return string The reconstructed URL.
+   */
   private function generate_link($replacements=array()) {
     $params = array_merge($_GET, $replacements);
-    return url::base() . 'index.php/services/rest/' . $this->entity . '?' . http_build_query($params);
+    return url::base() . 'index.php/services/rest/' . $this->resourceName . '?' . http_build_query($params);
   }
   
   private function load_filter_for_project($id) {
@@ -375,6 +487,41 @@ HTML;
     return json_decode($filters[0]->definition, true);
   }
   
+  /**
+   * Checks the API version provided in the URI (if any) to ensure that the version is supported.
+   * Returns a 400 Bad request if not supported.
+   * @param array $arguments Additional URI segments
+   */  
+  private function check_version(&$arguments) {
+    if (count($arguments) && preg_match('/^v(?P<major>\d+)\.(?P<minor>\d+)$/', $arguments[count($arguments)-1], $matches)) {
+      array_pop($arguments);
+      // Check not asking for an invalid version
+      if (!in_array($matches['major'] . '.' . $matches['minor'], $this->supported_api_versions)) {
+        $this->fail('Bad request', 400, 'Unsupported API version');
+      }
+      $this->api_major_version = $matches['major'];
+      $this->api_minor_version = $matches['minor'];
+    }
+  }
+  
+  /** 
+   * Ensures that the request contains a page size and page, defaulting the values if 
+   * necessary. 
+   * Will return an HTTP error response if either parameter is not an integer.
+   */
+  private function checkPaginationParams() {
+    $this->request = array_merge(array(
+      'page' => 1,
+      'page_size' => 100
+    ), $this->request);
+    $this->checkInteger($this->request['page'], 'page');
+    $this->checkInteger($this->request['page_size'], 'page_size');
+  }
+  
+  /**
+   * Checks that the request's client_id and proj_id are valid.
+   * @todo Implement hash based authentication
+   */
   private function authenticate() {
     // @todo: implement proper hashing test
     if (empty($_REQUEST['client_id'])) {
@@ -388,27 +535,38 @@ HTML;
     $this->projects = $projects[$this->website_id];
   }
   
+  /**
+   * Checks a parameter passed to a request is a valid integer.
+   * Returns an HTTP error response if not valid.
+   * @param string $value Parameter to check
+   * @param type $param Name of the parameter being checked.
+   */
   private function checkInteger($value, $param) {
     if (!preg_match('/^\d+$/', $value)) {
       $this->fail('Bad request', 400, "Parameter $param is not an integer");
     }
   }
   
+  /**
+   * Checks a parameter passed to a request is a valid date.
+   * Returns an HTTP error response if not valid.
+   * @param string $value Parameter to check
+   * @param type $param Name of the parameter being checked.
+   */
   private function checkDate($value, $param) {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
       $this->fail('Bad request', 400, "Parameter $param is not an valid date");
     }
   }
   
-  private function fail($msg, $code, $info=NULL) {
-    http_response_code($code);
-    echo $msg;
-    if ($info)
-      kohana::log('debug', $info);
-    exit;
-  }
-  
-  private function outputArrayAsHtml($array) {
+    
+  /**
+   * Dumps out a nested array as a nested HTML table. Used to output response data when the 
+   * format type requested is HTML.
+   * 
+   * @param array $array Data to output
+   */
+  private function output_array_as_html($array) {
     if (count($array)) {
       echo '<table border="1">';
       $keys = array_keys($array);
@@ -419,7 +577,7 @@ HTML;
       foreach ($array as $key=>$value) {
         echo "<tr><th scope=\"row\">$key</th><td>";
         if (is_array($value))
-          $this->outputArrayAsHtml($value);
+          $this->output_array_as_html($value);
         else {
           if ($key==='href' || $key==='self' || $key==='next' || $key==='previous')
             $value = "<a href=\"$value\">$value</a>";
@@ -431,26 +589,34 @@ HTML;
     }
   }
   
+  /** 
+   * Returns an HTML error response code, logs a message and aborts the script.
+   * 
+   * @param string $msg HTTP error message
+   * @param integer $code HTTP error code
+   * @param string $info Message to log
+   */
+  private function fail($msg, $code, $info=NULL) {
+    http_response_code($code);
+    echo $msg;
+    if ($info)
+      kohana::log('debug', $info);
+    exit;
+  }
+
+  /**
+   * Outputs a data object as JSON (or chosen alternative format), in the case of successful operation.
+   * 
+   * @param array $data Response data to output.
+   */
   private function succeed($data) {
     if (!empty($this->request['format']) && $this->request['format']==='html') {
       $css = url::base() . "modules/rest_api/media/css/rest_api.css";
       echo str_replace('{css}', $css, $this->html_header);
-      $this->outputArrayAsHtml($data);
+      $this->output_array_as_html($data);
       echo '</body></html>';
     } else
       echo json_encode($data);
   }
 
-  /** 
-   * Ensures that the request contains a page size and page, defaulting the values if 
-   * necessary.
-   */
-  private function checkPaginationParams() {
-    $this->request = array_merge(array(
-      'page' => 1,
-      'page_size' => 100
-    ), $this->request);
-    $this->checkInteger($this->request['page'], 'page');
-    $this->checkInteger($this->request['page_size'], 'page_size');
-  }
 }
