@@ -312,11 +312,9 @@ HTML;
     foreach ($records as &$record) {
       $record['taxonObservation'] = array(
         'id' => $record['taxon_observation_id'],
-        'taxonKey' => $record['taxon_observation_taxonversionkey']
       );
       $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
       unset($record['taxon_observation_id']);
-      unset($record['taxon_observation_taxonversionkey']);
     }
     $this->succeed($this->list_response_structure($records, 'annotations'));
   }
