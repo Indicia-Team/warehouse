@@ -241,14 +241,14 @@ HTML;
   public function taxon_observations_get_id($id) {
     $params = array('occurrence_id' => $id);
     $report = $this->load_taxon_observations_report($params);
-    if (empty($report['records'])) {
+    if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
-    } elseif (count($report['records'])>1) {
+    } elseif (count($report['content']['records'])>1) {
       kohana::log('error', 'Internal error. Request for single record returned multiple');
       $this->fail('Internal Server Error', 500);
     } else {
-      $this->add_item_metadata($report['records'][0], 'taxon-observations');
-      $this->succeed($report['records'][0]);
+      $this->add_item_metadata($report['content']['records'][0], 'taxon-observations');
+      $this->succeed($report['content']['records'][0]);
     }
   }
   
