@@ -25,8 +25,8 @@ and st_y(st_transform(st_centroid(public_geom), 4326)) between -48 and 62
     <order_by>o.id ASC</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default="" />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' default="" />
   </params>
   <columns>
     <column name='id' display='ID' sql="o.id" datatype="integer" visible="false" />
