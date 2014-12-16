@@ -16,8 +16,6 @@ where #sharing_filter#
 and o.date_type in ('D','DD','O','OO','Y','YY','-Y','U') 
 and (s.entered_sref_system ilike 'osgb' or s.entered_sref_system ilike 'osie' or s.entered_sref_system = '4326' or s.entered_sref_system = '27700')
 and o.taxa_taxon_list_external_key is not null
-and st_x(st_transform(st_centroid(public_geom), 4326)) between -14 and 13
-and st_y(st_transform(st_centroid(public_geom), 4326)) between -48 and 62
 #idlist#
   </query>
   
