@@ -35,7 +35,9 @@ and o.taxa_taxon_list_external_key is not null
     <column name="id" display="ID" sql="oc.id" datatype="integer" />
     <column name="taxon_observation_id" display="Occurrence ID" sql="o.id" datatype="integer" />
     <column name="statusCode" display="Status Code" datatype="text"
-        sql="case when oc.comment like 'Verified%' or oc.comment like 'This record is assumed to be correct' then 'V' end" />
+        sql="case when oc.comment like 'Verified%' or oc.comment like 'This record is assumed to be correct' then 'G' 
+        when oc.comment like 'Dubiuos%' or oc.comment like 'Query%' then 'A' 
+        when oc.comment like 'Rejected%' then 'R' end" />
     <column name="taxonversionkey" display="Taxon version key" sql="o.taxa_taxon_list_external_key" datatype="text" />
     <column name="authorName" display="Author name" datatype="text" 
         sql="coalesce(oc.person_name, case u.id when 1 then 'anonymous' else p.first_name || ' ' || p.surname end)" />
