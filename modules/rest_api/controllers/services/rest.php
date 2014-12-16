@@ -60,7 +60,7 @@ HTML;
         'params' => array()
       )
     )),
-    'taxon_observations' => array('get'=>array(
+    'taxon-observations' => array('get'=>array(
       '' => array(
         'params' => array(
           'proj_id' => array(
@@ -158,14 +158,15 @@ HTML;
   }
   
   public function __call($name, $arguments) {
+    $resourceName = str_replace('_', '-', $name);
     $this->authenticate();
-    if (array_key_exists($name, $this->http_methods)) {
+    if (array_key_exists($resourceName, $this->http_methods)) {
       $this->method = $_SERVER['REQUEST_METHOD'];
       if ($this->method==='OPTIONS') {
         // A request for the methods allowed for this resource
-        header('allow: '.strtoupper(implode(',', array_keys($this->http_methods[$name]))));
+        header('allow: '.strtoupper(implode(',', array_keys($this->http_methods[$resourceName]))));
       } else {
-        if (!array_key_exists(strtolower($this->method), $this->http_methods[$name])) {
+        if (!array_key_exists(strtolower($this->method), $this->http_methods[$resourceName])) {
           $this->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
         }
         if ($this->method==='GET') {
@@ -243,8 +244,14 @@ HTML;
     // Should also return an object to iterate rather than loading the full array
     $this->reportEngine = new ReportEngine(array($this->website_id));
     // load the filter associated with the project ID
-    // @todo load filter
-    // map the input filter to report parameters
+    $filter = $this->load_filter_for_project($this->request['proj_id']);
+    // The project's filter acts as a context for the report, meaning it defines the limit of all the 
+    // records that are available for this project.
+    foreach ($filter as $key=>$value) {
+      $params["{$key}_context"] = $value;
+    }
+    // the project defines how records are allowed to be shared with this client
+    $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
     $report = $this->reportEngine->requestReport('rest_api/filterable_nbn_exchange.xml', 'local', 'xml', $params);
     return $report;
   }
@@ -270,12 +277,6 @@ HTML;
       'limit' => $this->request['page_size']+1,
       'offset' => ($this->request['page'] - 1) * $this->request['page_size']
     );
-    $filter = $this->load_filter_for_project($this->request['proj_id']);
-    // The project's filter acts as a context for the report, meaning it defines the limit of all the 
-    // records that are available for this project.
-    foreach ($filter as $key=>$value) {
-      $params["{$key}_context"] = $value;
-    }
     if (!empty($this->request['edited_date_from'])) {
       $this->checkDate($this->request['edited_date_from'], 'edited_date_from');
       $params['edited_date_from'] = $this->request['edited_date_from'];

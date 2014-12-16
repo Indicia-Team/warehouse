@@ -31,7 +31,8 @@ $config['projects']=array(
       'id' => 1,
       'title'=>'BRC birds',
       'description'=>'Bird records entered onto the BRC warehouse made available for verification on iRecord.',
-      'filter_id' => 53
+      'filter_id' => 53,
+      'sharing' => 'verification'
     )
   )
 );
