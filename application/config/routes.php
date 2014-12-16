@@ -32,3 +32,10 @@ $config['([a-z|_]+)/([0-9]+)'] = '$1/index/$2';
 $config['report'] = 'report_viewer';
 $config['report/local/(.+)'] = 'report_viewer/local/$1';
 $config['report/resume/([a-z0-9]+)'] = 'report_viewer/resume/$1';
+
+// for the REST api the following routes will map versioned calls to the normal resource endpoint
+// supplying the version as the last argument. Plus any resource names with a hyphen are converted
+// to underscores in the method names.
+$config['services/rest/v([0-9]+)\.([0-9]+)/([a-z0-9]+)-(.+)'] = 'services/rest/$3_$4/v$1.$2';
+$config['services/rest/v([0-9]+)\.([0-9]+)/(.+)'] = 'services/rest/$3/v$1.$2';
+$config['services/rest/([a-z0-9]+)-(.+)'] = 'services/rest/$1_$2';
