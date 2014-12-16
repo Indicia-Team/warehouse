@@ -33,6 +33,18 @@ class Rest_Controller extends Controller {
   private $projects;
   private $entity;
   
+  private $html_header = <<<'HTML'
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Indicia RESTful API</title>
+  <link href="{css}" rel="stylesheet" type="text/css" />
+</head>
+<body>
+HTML;
+  
   /** 
    * Define the list of HTTP methods that will be supported by each resource endpoint.
    * @var type array
@@ -108,18 +120,8 @@ class Rest_Controller extends Controller {
   
   public function index() {
     $css = url::base() . "modules/rest_api/media/css/rest_api.css";
-    echo <<<"HTML"
-<!DOCTYPE HTML>
-<html>
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Indicia RESTful API</title>
-  <link href="$css" rel="stylesheet" type="text/css" />
-</head>
-<body>
-<h1>RESTful API</h1>
-HTML;
+    echo str_replace('{css}', $css, $this->html_header);
+    echo '<h1>RESTful API</h1>';
     foreach($this->http_methods as $resource => $methods) {
       echo "<h2>$resource</h2>";
       foreach ($methods as $method => $listOrID) {
@@ -140,6 +142,7 @@ HTML;
           ), $resourceDef['params']);
           echo '<table><caption>Parameters</caption>';
           echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
+          echo '<tbody>';
           foreach ($resourceDef['params'] as $name => $paramDef) {
             echo "<tr><th scope=\"row\">$name</th>";
             echo "<td>$paramDef[datatype]</td>";
@@ -147,11 +150,11 @@ HTML;
             echo "<td>$help</td>";
             echo "</tr>";
           }
-          echo '</table>';
+          echo '</tbody></table>';
         }
       }
     }
-    echo '</html>';
+    echo '</body></html>';
   }
   
   public function __call($name, $arguments) {
@@ -371,24 +374,34 @@ HTML;
   }
   
   private function outputArrayAsHtml($array) {
-    echo '<table border="1">';
-    foreach ($array as $key=>$value) {
-      echo "<tr><th>$key</th><td>";
-      if (is_array($value))
-        $this->outputArrayAsHtml($value);
-      else {
-        if ($key==='href' || $key==='self' || $key==='next' || $key==='previous')
-          $value = "<a href=\"$value\">$value</a>";
-        echo "<p>$value</p>";
+    if (count($array)) {
+      echo '<table border="1">';
+      $keys = array_keys($array);
+      $col1 = is_integer($keys[0]) ? 'Row' : 'Field';
+      $col2 = is_integer($keys[0]) ? 'Record' : 'Value';
+      echo "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
+      echo '<tbody>';
+      foreach ($array as $key=>$value) {
+        echo "<tr><th scope=\"row\">$key</th><td>";
+        if (is_array($value))
+          $this->outputArrayAsHtml($value);
+        else {
+          if ($key==='href' || $key==='self' || $key==='next' || $key==='previous')
+            $value = "<a href=\"$value\">$value</a>";
+          echo "<p>$value</p>";
+        }
+        echo '</td></tr>';  
       }
-      echo '</td></tr>';  
+      echo '</tbody></table>';
     }
-    echo '</table>';
   }
   
   private function succeed($data) {
     if (!empty($this->request['format']) && $this->request['format']==='html') {
+      $css = url::base() . "modules/rest_api/media/css/rest_api.css";
+      echo str_replace('{css}', $css, $this->html_header);
       $this->outputArrayAsHtml($data);
+      echo '</body></html>';
     } else
       echo json_encode($data);
   }
