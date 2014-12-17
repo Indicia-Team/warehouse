@@ -349,7 +349,7 @@ class extension_event_reports {
         if (($entity==='users' && $indiciaUserId==$row['id']) 
             || ($entity==='locations' && $userLocationId==$row['id']))
           $class=' class="ui-state-highlight"';
-        $r .= "<tr$class><td>$pos</td><td>{$row[name]}</td><td>{$row[value]}</td></tr>\n";
+        $r .= "<tr$class><td>$pos</td><td>$row[name]</td><td>$row[value]</td></tr>\n";
       }
     } else {
       $r .= '<td colspan="3">' . lang::get('No results yet') . '</td>';
