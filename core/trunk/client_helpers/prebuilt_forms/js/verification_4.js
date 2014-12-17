@@ -56,7 +56,7 @@ var saveComment, saveVerifyComment, verificationGridLoaded;
         $('#record-details-content').show();
         if ($row.parents('tbody').length !== 0) {
           // point the image and comments tabs to the correct AJAX call for the selected occurrence.
-          $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('images'), indiciaData.ajaxUrl + '/images/' + 
+          $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('media'), indiciaData.ajaxUrl + '/media/' + 
               indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('comments'), indiciaData.ajaxUrl + '/comments/' + 
               indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
@@ -209,13 +209,13 @@ var saveComment, saveVerifyComment, verificationGridLoaded;
       email.body = $('#email-body').val();
 
       if (email.type === 'recordCheck') {
-        // ensure images are loaded
+        // ensure media are loaded
         $.ajax({
-          url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
+          url: indiciaData.ajaxUrl + '/mediaAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
           async: false,
           dataType: 'json',
           success: function (response) {
-              email.body = email.body.replace(/\[Photos\]/g, response.images);
+              email.body = email.body.replace(/\[Photos\]/g, response.media);
               email.body = email.body.replace(/\[Comments\]/g, response.comments);
           }
         });
@@ -376,8 +376,8 @@ var saveComment, saveVerifyComment, verificationGridLoaded;
             $('#chart-div').css('opacity',1);
           }
         );
-      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'images') {
-        $('#images-tab a.fancybox').fancybox();
+      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'media') {
+        $('#media-tab a.fancybox').fancybox();
       }
       // make it clear things are loading
       if (indiciaData.mapdiv !== null) {
