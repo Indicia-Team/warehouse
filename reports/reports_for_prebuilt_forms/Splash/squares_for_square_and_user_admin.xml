@@ -33,10 +33,19 @@
     <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''>
       <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
     </param>
+    <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
   </params>
   <columns>
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" aggregate="true" in_count="true"/>
-    <column name='name' display='Location Name' sql="'&lt;b&gt;' || l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;'" datatype='text' aggregate="true"/>
+    <column name='name' display='Location Name' 
+    sql="
+      case 
+        when #pss_mode#=0
+          then '&lt;b&gt;' || l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;' 
+         else
+          '&lt;b&gt;' || l.centroid_sref || '&lt;/b&gt;' 
+      end"
+    datatype='text' aggregate="true"/>
     <column name="sc" visible="false" feature_style="strokeColor" sql="'blue'" aggregate='true'/>
     <column name="fc" visible="false" feature_style="fillColor" sql="'blue'" aggregate='true'/>
     <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom,l.centroid_geom))" aggregate='true'/>    
