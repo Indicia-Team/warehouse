@@ -193,7 +193,10 @@ function extract_cms_user_attr(&$attributes, $unset=true) {
  * @param array $attributes List of form attributes.
  * @param array $args List of form arguments. Can include values called:
  *   copyFromProfile - boolean indicating if values should be copied from the profile when the names match
- *   nameShow - boolean, if true then name values should be displayed rather than hidden
+ *   nameShow - boolean, if true then name values should be displayed rather than hidden.
+ *     In fact this extends to all profile fields whose names match attribute 
+ *     captions. E.g. in D7, field_age would populate an attribute with caption 
+ *     age.
  *   emailShow - boolean, if true then email values should be displayed rather than hidden.
  * @param boolean $exists Pass true for an existing record. If the record exists, then the attributes
  *   are marked as handled but are not output to avoid overwriting metadata about the original creator of the record.
@@ -201,30 +204,41 @@ function extract_cms_user_attr(&$attributes, $unset=true) {
  * @return string HTML for the hidden inputs.
  */
 function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth) {
-  // This is Drupal specific code, so degrade gracefully.
-  if (!function_exists('profile_load_all_profile'))
+  // This is Drupal specific code, so return early if not in Drupal.
+  // This test for Drupal may break after D7 as profiles are deprecated in D7.
+  if (!function_exists('profile_load_all_profile')) {
     return '';
-  $hiddens = '';
+  }
+  
   global $user;
   $logged_in = $user->uid > 0;
+  // If the user is not logged in there is no profile so return early.
+  if (!$logged_in) {
+    return '';
+  }
+   
+  // If option to copy from profile is not set then return early.
+  if (!(isset($args['copyFromProfile']) && $args['copyFromProfile']) == true) {  
+    return '';
+  } 
+
+  $hiddens = '';
   $version6 = (substr(VERSION, 0, 1) == '6');
-  // If logged in, output some hidden data about the user
-  if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true) {  
-    if($version6) {
-      // In version 6 the profile module holds user setttings.
-      profile_load_all_profile($user);
-    }
-    else {
-      // In version 7, the field module holds user settings.
-      $user = user_load($user->uid);
-    }
-  }  
+  if($version6) {
+    // In version 6 the profile module holds user setttings.
+    profile_load_all_profile($user);
+  }
+  else {
+    // In version 7, the field module holds user settings.
+    $user = user_load($user->uid);
+  }
+  
   foreach($attributes as &$attribute) {
     // Constuct the name of the user property (which varies between versions) to match against the attribute caption.
     $attrPropName = $version6 ? 'profile_' : 'field_';
     $attrPropName .= strtolower(str_replace(' ', '_', $attribute['caption']));
     
-    if (isset($args['copyFromProfile']) && $args['copyFromProfile'] == true && isset($user->$attrPropName)) {
+    if (isset($user->$attrPropName)) {
       // Obtain the property value which is stored differently between versions.
       if($version6) {
         $attrPropValue = $user->$attrPropName;
@@ -247,46 +261,50 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
       }
       
       if (isset($args['nameShow']) && $args['nameShow'] == true) {
+        // Show the attribute with default value.
         $attribute['default'] = $value;
       }
       else {
-        // profile attributes are not displayed as the user is logged in
+        // Hide the attribute value
         $attribute['handled']=true;
         $attribute['value'] = $value;
       }
     }
-    elseif (strcasecmp($attribute['caption'], 'cms user id')==0) {
-      if ($logged_in) $attribute['value'] = $user->uid;
+    elseif (strcasecmp($attribute['caption'], 'cms user id') == 0) {
+      $attribute['value'] = $user->uid;
       $attribute['handled']=true; // user id attribute is never displayed
     }
-    elseif (strcasecmp($attribute['caption'], 'cms username')==0) {
-      if ($logged_in) $attribute['value'] = $user->name;
+    elseif (strcasecmp($attribute['caption'], 'cms username') == 0) {
+      $attribute['value'] = $user->name;
       $attribute['handled']=true; // username attribute is never displayed
     }
-    elseif (strcasecmp($attribute['caption'], 'email')==0) {
-      if ($logged_in) {
-        if (!isset($args['emailShow']) || $args['emailShow'] != true)
-        {// email attribute is not displayed
-          $attribute['value'] = $user->mail;
-          $attribute['handled']=true; 
-        }
-        else
-          $attribute['default'] = $user->mail;
+    elseif (strcasecmp($attribute['caption'], 'email') == 0) {
+      if (isset($args['emailShow']) && $args['emailShow'] == true) {
+        // Show the email attribute with default value.
+        $attribute['default'] = $user->mail;
+      }
+      else {
+        // Hide the email value
+        $attribute['value'] = $user->mail;
+        $attribute['handled'] = true; 
       }
     }
-    elseif ((strcasecmp($attribute['caption'], 'first name')==0 ||
-        strcasecmp($attribute['caption'], 'last name')==0 ||
-        strcasecmp($attribute['caption'], 'surname')==0) && $logged_in) {
+    elseif ((strcasecmp($attribute['caption'], 'first name') == 0 ||
+        strcasecmp($attribute['caption'], 'last name') == 0 ||
+        strcasecmp($attribute['caption'], 'surname') == 0)) {
+      // This would be the case where the warehouse is configured to store these
+      // values but there are no matching profile fields
       if (!isset($args['nameShow']) || $args['nameShow'] != true) {  
-        // name attributes are not displayed because we have the users login
-        $attribute['handled']=true;
+        // Name attributes are not displayed because we have the users login.
+        $attribute['handled'] = true;
       }
     }
-    // If we have a value for one of the user login attributes then we need to output this value. BUT, for existing data
-    // we must not overwrite the user who created the record. Note that we don't do this at the beginning of the method
-    // as we still wanted to mark the attributes as handled.
+    // If we have a value for one of the user login attributes then we need to 
+    // output this value. BUT, for existing data we must not overwrite the user 
+    // who created the record. Note that we don't do this at the beginning of 
+    // the method as we still wanted to mark the attributes as handled.
     if (isset($attribute['value']) && !$exists) {
-      $hiddens .= '<input type="hidden" name="'.$attribute['fieldname'].'" value="'.$attribute['value'].'" />'."\n";
+      $hiddens .= '<input type="hidden" name="' . $attribute['fieldname'] . '" value="' . $attribute['value'] . '" />' . "\n";
     }
   }
   return $hiddens;
