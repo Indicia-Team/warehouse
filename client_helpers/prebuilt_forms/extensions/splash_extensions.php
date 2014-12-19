@@ -633,6 +633,7 @@ class extension_splash_extensions {
    * and then reload the screen only showing squares which are within that distance of the user's post code.
    */
   public static function postcode_distance_limiter($auth, $args, $tabalias, $options, $path) {
+    $r='';
     //When then screen loads, attempt to add a point to the map showing the user's post code (which is in the $_GET).
     data_entry_helper::$javascript.="
       jQuery(document).ready(function($) {
@@ -675,9 +676,15 @@ class extension_splash_extensions {
           limit_to_post_code(postcode,georeferenceProxy,".$indiciaUserId.");
         });
       ";
-      $r="<div>Only show squares within this distance (miles) of the user's post code.<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$buttonLabel."'></div>\n";
-      return $r;
-    }
+      $r.="<div>Only show squares within this distance (miles) of the user's post code.<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$buttonLabel."'></div>\n";     
+    } else {
+      if(!empty($options['noPostCodeMessage']))
+        $noPostCodeMessage=$options['noPostCodeMessage'];
+      else
+        $noPostCodeMessage='Unable to display post code distance limiter control. This is probably because there is no post code on your own user account, or on the account of the person you are editing.';   
+      $r.='<div><em>'.$noPostCodeMessage.'</em></div><br>';
+    }  
+    return $r;
   }
  
   public static function delete_plot($auth, $args, $tabalias, $options, $path) {
