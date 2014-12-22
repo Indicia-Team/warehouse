@@ -52,7 +52,7 @@ if(!Array.indexOf){
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('images'), indiciaData.ajaxUrl + '/images/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('comments'), indiciaData.ajaxUrl + '/comments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           // reload current tabs
-          $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs'));
+          $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
           $('#record-details-toolbar *').attr('disabled', '');
           showTab();
           // remove any wms layers for species or the gateway data
