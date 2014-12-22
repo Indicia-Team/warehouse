@@ -118,6 +118,19 @@ if (typeof window.indiciaData==="undefined") {
         evtname=(version[0]==='1' && version[1]<10) ? 'tabsshow' : 'tabsactivate';
     return tabs.unbind(evtname, fn);
   };
+  
+  /** 
+   * jQuery UI 1.10 replaced the url method with the href attribute. Use this function to allow 
+   * non-version specific code to set the target of a remote tab.
+   */
+  indiciaFns.setTabHref = function(tabs, tabIdx, liId, href) {
+    var version=$.ui.version.split('.');
+    if (version[0]==='1' && version[1]<10) {
+      tabs.tabs('url', tabIdx, href);
+    } else {
+      $('#' + liId + ' a').attr('href', href);
+    }
+  };
 
 }) (jQuery);
 
