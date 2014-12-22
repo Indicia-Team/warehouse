@@ -56,10 +56,10 @@ var saveComment, saveVerifyComment, verificationGridLoaded;
         $('#record-details-content').show();
         if ($row.parents('tbody').length !== 0) {
           // point the image and comments tabs to the correct AJAX call for the selected occurrence.
-          $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('media'), indiciaData.ajaxUrl + '/media/' + 
-              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
-          $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('comments'), indiciaData.ajaxUrl + '/comments/' + 
-              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
+          indiciaFns.setTabHref($('#record-details-tabs'), indiciaData.detailsTabs.indexOf('media'), 'media-tab-tab', 
+              indiciaData.ajaxUrl + '/media/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
+          indiciaFns.setTabHref($('#record-details-tabs'), indiciaData.detailsTabs.indexOf('comments'), 'comments-tab-tab', 
+              indiciaData.ajaxUrl + '/comments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           // reload current tabs
           $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
           $('#record-details-toolbar *').removeAttr('disabled');
