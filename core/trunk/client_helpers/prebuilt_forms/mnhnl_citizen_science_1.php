@@ -240,7 +240,7 @@ class iform_mnhnl_citizen_science_1 {
         $speciesCommon = data_entry_helper::get_population_data(array(
             'table'=>'taxa_taxon_list',
             'extraParams' => $readAuth + array('taxon_meaning_id' => $uniqueMeaning,
-                'language_iso' => iform_lang_iso_639_2($user->lang), 'view' => 'detail')
+                'language_iso' => iform_lang_iso_639_2(hostsite_get_user_field('language')), 'view' => 'detail')
         ));
         $r .= '<div class="ui-widget ui-widget-content ui-corner-all page-notice ui-helper-clearfix">';
         $nameString = ($species[0]['language_iso']=='lat' ? '<em>' : '') . $species[0]['taxon'] . ($species[0]['language_iso']=='lat' ? '</em>' : '');
@@ -403,7 +403,7 @@ class iform_mnhnl_citizen_science_1 {
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls',
-        'page'=>($user->id==0 && isset($taxa_taxon_list_id)) ? 'first' : 'middle'
+        'page'=>($user->uid!==0 && isset($taxa_taxon_list_id)) ? 'first' : 'middle'
       ));
     }
     $r .= "</fieldset>\n";
