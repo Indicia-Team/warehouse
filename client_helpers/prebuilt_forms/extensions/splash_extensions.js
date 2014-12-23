@@ -28,11 +28,21 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
     }
     indiciaData.clickMiddleOfPlot=false;
     //Some plot types use a free drawn polygon/Line as the plot.
-    if (inArray($('#location\\:location_type_id option:selected').text(),indiciaData.freeDrawPlotTypeNames)) {
-      $('.olControlDrawFeaturePolygonItemActive').show();
-      $('.olControlDrawFeaturePathItemActive').show();
-      $('.olControlDrawFeaturePolygonItemInactive').show();
-      $('.olControlDrawFeaturePathItemInactive').show();
+    if (inArray($('#location\\:location_type_id option:selected').text(),indiciaData.freeDrawPlotTypeNames)) {     
+      if (!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked')) {
+        show_polygon_line_tool(true);
+      } else {
+        //Otherwise deactivate and hide the line/polygon tool and then select the map point clicking tool.
+        show_polygon_line_tool(false);
+        $.each(indiciaData.mapdiv.map.controls, function(idx, control) {
+        if (control.CLASS_NAME==='OpenLayers.Control.DrawFeature'||control.CLASS_NAME==='OpenLayers.Control.Navigation') {
+          control.deactivate();
+        }
+        if (control.CLASS_NAME==='OpenLayers.Control') {
+          control.activate();
+        }
+      });
+      }
       //if using drawPolygon/drawLine then we never need the length and width attributes on the screen
       if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length) {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).hide();
@@ -45,10 +55,7 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
       indiciaData.mapdiv.settings.click_zoom=false;  
     } else {
       //Otherwise we auto generate the plot rectangle/square, remove the drawPolygon/Line tool
-      $('.olControlDrawFeaturePolygonItemActive').hide();
-      $('.olControlDrawFeaturePathItemActive').hide();
-      $('.olControlDrawFeaturePolygonItemInactive').hide();
-      $('.olControlDrawFeaturePathItemInactive').hide();
+      show_polygon_line_tool(false);
       //For some plot types the width and length can be adjusted manually, show and fill in these fields if they exist
       if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).show();
@@ -93,6 +100,23 @@ var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
       //Splash plots get their rectangle sizes from user configurable options which are not displayed on screen
       if (!indiciaData.pssMode)
         indiciaData.plotWidthLength = indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]+ ',' + indiciaData.squareSizes[$('#location\\:location_type_id').val()][1];      
+    }
+  }
+ 
+  /*
+   * The polygon/line tool on the map needs showing or hiding depending on the plot type selected.
+   */
+  function show_polygon_line_tool(show) {
+    if (show===true) {
+      $('.olControlDrawFeaturePolygonItemActive').show();
+      $('.olControlDrawFeaturePathItemActive').show();
+      $('.olControlDrawFeaturePolygonItemInactive').show();
+      $('.olControlDrawFeaturePathItemInactive').show();
+    } else {
+      $('.olControlDrawFeaturePolygonItemActive').hide();
+      $('.olControlDrawFeaturePathItemActive').hide();
+      $('.olControlDrawFeaturePolygonItemInactive').hide();
+      $('.olControlDrawFeaturePathItemInactive').hide();
     }
   }
  
