@@ -50,7 +50,7 @@ $lang = array (
   'email_address' => Array (
     'required' => 'The email address cannot be blank.',
     'email' => 'This must be a valid email address.',
-    'length' => 'The email address must be a maximum of 50 characters in length.',
+    'length' => 'The email address must be a maximum of 100 characters in length.',
     'unique' => 'This email address must be unique, i.e. not shared with another person.',
     'default' => 'Invalid input.',
   ),
@@ -73,7 +73,7 @@ $lang = array (
   ),
   'first_name' => Array (
     'required' => 'The first name cannot be blank.',
-    'length' => 'The first name must be between 1 and 30 letters.',
+    'length' => 'The first name must be between 1 and 50 letters.',
     'default' => 'Invalid input.',
   ),
   'float_value' => Array (
@@ -132,7 +132,7 @@ $lang = array (
   ),  
   'surname' => Array (
     'required' => 'The surname cannot be blank.',
-    'length' => 'The surname must be between 1 and 30 letters.',
+    'length' => 'The surname must be between 1 and 50 letters.',
     'default' => 'Invalid input.',
   ),
   'survey_id' => Array (
