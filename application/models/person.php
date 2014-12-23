@@ -46,13 +46,13 @@ class Person_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $array->add_rules('first_name', 'required', 'length[1,30]');
-    $array->add_rules('surname', 'required', 'length[1,30]');
+    $array->add_rules('first_name', 'required', 'length[1,50]');
+    $array->add_rules('surname', 'required', 'length[1,50]');
     $array->add_rules('initials', 'length[1,6]');
     $array->add_rules('address', 'length[1,200]');
     // If this person is new, then setting id to -1 causes uniqueness check to include all existing records.
     $id = array_key_exists('id', $array->as_array()) ? $array['id'] : -1; 
-    $array->add_rules('email_address', 'email', 'length[1,50]', 'unique[people,email_address,'.$id.']');    
+    $array->add_rules('email_address', 'email', 'length[1,100]', 'unique[people,email_address,'.$id.']');    
     $array->add_rules('website_url', 'length[1,1000]', 'url[lax]');  
     $array->add_rules('external_key', 'length[1,50]');
     
