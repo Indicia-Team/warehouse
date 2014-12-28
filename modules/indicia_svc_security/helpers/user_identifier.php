@@ -73,7 +73,6 @@ class user_identifier {
    *   error - Error string if an error occurred.
    */
   public static function get_user_id($request, $websiteId) {
-    kohana::log('debug', print_r($request, true));
     if (!array_key_exists('identifiers', $request))
       throw new exception('Error: missing identifiers parameter');
     $identifiers = json_decode($request['identifiers']);
