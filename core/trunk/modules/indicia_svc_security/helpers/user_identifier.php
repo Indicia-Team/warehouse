@@ -73,6 +73,7 @@ class user_identifier {
    *   error - Error string if an error occurred.
    */
   public static function get_user_id($request, $websiteId) {
+    kohana::log('debug', print_r($request, true));
     if (!array_key_exists('identifiers', $request))
       throw new exception('Error: missing identifiers parameter');
     $identifiers = json_decode($request['identifiers']);
@@ -109,13 +110,15 @@ class user_identifier {
             ->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt1.meaning_id', $joinType)
             ->join('terms as t', 't.id', 'tlt2.term_id', $joinType)
             ->where(array('u.deleted'=>'f', 'p.deleted'=>'f'));
+        $ident = pg_escape_string($identifier->identifier);
+        $type = pg_escape_string($identifier->type);
         if ($identifier->type==='email') {
           // Filter to find either the user identifier or the email in the person record
-          $userPersonObj->db->where("(um.identifier ='".$identifier->identifier."' OR p.email_address='".$identifier->identifier."')");
-          $userPersonObj->db->where("(t.term='".$identifier->type."' OR p.email_address='".$identifier->identifier."')");
+          $userPersonObj->db->where("(um.identifier='$ident' OR p.email_address='$ident')");
+          $userPersonObj->db->where("(t.term='$type' OR p.email_address='$type')");
         } else {
-          $userPersonObj->db->where("um.identifier='".$identifier->identifier."'");
-          $userPersonObj->db->where("t.term IN ('".$identifier->type."')");
+          $userPersonObj->db->where("um.identifier='$ident'");
+          $userPersonObj->db->where("t.term='$type'");
         }
 
         if (isset($request['users_to_merge'])) {
@@ -123,6 +126,7 @@ class user_identifier {
           $userPersonObj->db->in('user_id', $usersToMerge);
         }
         $r = $userPersonObj->db->get()->result_array(true);
+        kohana::log('debug', $userPersonObj->db->last_query());
         foreach($r as $existingUser) {
           // create a placeholder for the known user we just found
           if (!isset($existingUsers[$existingUser->user_id]))
