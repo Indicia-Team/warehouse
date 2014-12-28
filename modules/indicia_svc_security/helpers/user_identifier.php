@@ -109,13 +109,15 @@ class user_identifier {
             ->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt1.meaning_id', $joinType)
             ->join('terms as t', 't.id', 'tlt2.term_id', $joinType)
             ->where(array('u.deleted'=>'f', 'p.deleted'=>'f'));
+        $ident = pg_escape_string($identifier->identifier);
+        $type = pg_escape_string($identifier->type);
         if ($identifier->type==='email') {
           // Filter to find either the user identifier or the email in the person record
-          $userPersonObj->db->where("(um.identifier ='".$identifier->identifier."' OR p.email_address='".$identifier->identifier."')");
-          $userPersonObj->db->where("(t.term='".$identifier->type."' OR p.email_address='".$identifier->identifier."')");
+          $userPersonObj->db->where("(um.identifier='$ident' OR p.email_address='$ident')");
+          $userPersonObj->db->where("(t.term='$type' OR p.email_address='$type')");
         } else {
-          $userPersonObj->db->where("um.identifier='".$identifier->identifier."'");
-          $userPersonObj->db->where("t.term IN ('".$identifier->type."')");
+          $userPersonObj->db->where("um.identifier='$ident'");
+          $userPersonObj->db->where("t.term='$type'");
         }
 
         if (isset($request['users_to_merge'])) {
