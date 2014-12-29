@@ -22,12 +22,14 @@
  
 // The following configuration should hold the list of websites which host a verification portal and 
 // where the verifiers should be automatically notified of incoming records. Each entry consists of
-// a website ID, then name of the website, then the verification page URL path.
+// a website ID, then name of the website, then the verification page URL path. Finally, an optional
+// linkText can be supplied to override the default.
 $config['verification_urls'] = array(
   array('website_id' => 23, 'title' => 'iRecord', 'url' => 'http://www.brc.ac.uk/irecord/verification')
 );
 // same again but for pending check/moderation tasks
 $config['moderation_urls'] = array(
-  array('website_id' => 23, 'title' => 'iRecord', 'url' => 'http://www.brc.ac.uk/irecord/moderation')
+  array('website_id' => 23, 'title' => 'iRecord', 'url' => 'http://www.brc.ac.uk/irecord/moderation', 
+      'linkText'=>'Click here to view mentoring records needing your help.')
 );
 ?>

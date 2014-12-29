@@ -72,6 +72,8 @@ function verifier_notifications_process_task_type($type, $params, $db) {
     $params['website_id'] = $url['website_id'];
     $params['title'] = $url['title'];
     $params['url'] = $url['url'];
+    if (!empty($url['linkTitle']))
+      $params['notificationComment'] = $url['linkTitle'];
     // Get all filters where the user for the filter does not already have an unacknowledged PT notification 
     // and the user is associated with the website of the moderation page
     $filters = get_filters_without_existing_notification($db, $params);
