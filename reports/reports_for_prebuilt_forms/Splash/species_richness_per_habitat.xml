@@ -1,6 +1,6 @@
 <report
     title="Species Richness Per Habitat"
-    description="Return the averga number of species found at each habitat."
+    description="Return the average number of species found at each habitat."
 >
   <query website_filter_field="su.website_id">
   SELECT #columns#
@@ -13,6 +13,7 @@
     LEFT JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id AND ttl.deleted=false
     LEFT JOIN taxa tax on tax.id = ttl.taxon_id AND tax.deleted = false  
   WHERE hab.deleted=false
+    #filters#
     AND #website_filter#
   GROUP BY hab.term
   </query>
@@ -22,6 +23,9 @@
   <params>
     <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
     <param name='survey_id' display='Survey ID' description='Survey' datatype='lookup' query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'/>
+    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this data." datatype="date" emptyvalue="" default="">
+      <where>o.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)</where>
+    </param>
   </params>
   <columns> 
     <column name='habitat' display='Habitat' sql='hab.term' datatype='text'/>
