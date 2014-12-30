@@ -1,6 +1,8 @@
 <report
     title="Squares Per Habitat"
-    description="Return a square if it has a plot that is associated with an sample for the habitat provided in the parameter."
+    description="Return a square if it has a plot that is associated with an sample for the broad/fine habitats provided in the parameter.
+Note that a broad or fine scale habitat can be explicitly saved for a sample, however if a fine scale habitat is explicitly saved, then when a
+broad scale habitat is reported on, we need to work out the related broad scale habitat from the termlists_terms.parent_id"
 >
   <query website_filter_field="square_w.website_id">
   SELECT #columns#
@@ -9,13 +11,19 @@
     JOIN locations plot on plot.parent_id=square.id AND plot.deleted=false
     JOIN samples samp on samp.location_id = plot.id AND samp.deleted = false
     JOIN sample_attribute_values sampHabVal on sampHabVal.sample_attribute_id=#habitat_attr_id# AND sampHabVal.sample_id=samp.id AND sampHabVal.deleted=false
+    JOIN termlists_terms habTt on habTt.id = sampHabVal.int_value AND habTt.deleted=false
   WHERE square.deleted=false
-    AND sampHabVal.int_value=#habitat#
     AND #website_filter#
   </query>
   <params>
-    <param name='habitat' display='Habitat' description='Habitat to report on.' datatype='lookup'
-        population_call='report:reports_for_prebuilt_forms/Splash/habitats_for_population_call:id:term'/>
+    <param name='broad_habitat' display='Broad Scale Habitat' description='Broad scale habitat to report on.' datatype='lookup' emptyvalue=''
+        population_call='report:reports_for_prebuilt_forms/Splash/broad_habitats_for_population_call:id:term'>
+      <where>sampHabVal.int_value=#broad_habitat# OR habTt.parent_id=#broad_habitat#</where>
+    </param>
+    <param name='fine_habitat' display='Fine Scale Habitat' description='Fine scale habitat to report on.' datatype='lookup' emptyvalue=''
+        population_call='report:reports_for_prebuilt_forms/Splash/fine_habitats_for_population_call:id:term'>
+      <where>sampHabVal.int_value=#fine_habitat#</where>
+    </param>
     <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
   </params>
   <columns> 
