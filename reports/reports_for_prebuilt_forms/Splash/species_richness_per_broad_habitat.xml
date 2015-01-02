@@ -1,0 +1,66 @@
+<report
+    title="Species Richness Per Broad Habitat"
+    description="Return the average number of species found at each broad scale habitat, this includes samples saved directly at the broad scale habitat or
+ones saved with a fine scale sub-habitat."
+>
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples samp
+    JOIN sample_attribute_values sampHabVal on sampHabVal.sample_id=samp.id AND sampHabVal.sample_attribute_id=#habitat_attr_id# AND sampHabVal.deleted=false
+    JOIN termlists_terms ttHab ON ttHab.id=sampHabVal.int_value AND ttHab.deleted=false
+    JOIN termlists_terms ttBroad ON (ttBroad.id=ttHab.parent_id OR (ttBroad.id=ttHab.id AND ttHab.parent_id IS NULL)) AND ttBroad.deleted=false
+    JOIN terms hab on hab.id = ttBroad.term_id AND hab.deleted=false
+    JOIN surveys su on su.id=samp.survey_id AND su.deleted=false
+    LEFT JOIN occurrences o on o.sample_id = samp.id AND o.deleted = false
+    LEFT JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id AND ttl.deleted=false
+    LEFT JOIN taxa tax on tax.id = ttl.taxon_id AND tax.deleted = false  
+  WHERE samp.deleted=false
+    #filters#
+    AND #website_filter#
+  GROUP BY hab.term
+  </query>
+  <order_bys>
+    <order_by>hab.term ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
+    <param name='broad_habitat' display='Broad Habitat' description='Restrict report to specific broad habitat.' datatype='lookup' emptyvalue=''
+        population_call='report:reports_for_prebuilt_forms/Splash/broad_habitats_for_population_call:id:term'>
+      <where>(ttHab.id=#broad_habitat# OR ttBroad.id=#broad_habitat#)</where>
+    </param>
+    <param name='survey_id' display='Survey ID' description='Survey' datatype='lookup' query='SELECT id, title as caption FROM surveys' emptyvalue='' population_call='direct:survey:id:title'>
+      <where>su.id=#survey_id# AND su.deleted=false</where>
+    </param>  
+    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">
+      <where>samp.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)</where>
+    </param>
+  </params>
+  <columns> 
+    <column name='broad_habitat' display='Broad Habitat' sql="distinct(hab.term)" datatype='text'/>
+    <column name='habitat_abbr' display='Abbreviation' sql="
+      CASE 
+        WHEN hab.term='Arable field margins' then 'AFM' 
+        WHEN hab.term='Blanket bog' then 'BB' 
+        WHEN hab.term='Deciduous woodland' then 'DW' 
+        WHEN hab.term='Dry acid grassland' then 'DAG'
+        WHEN hab.term='Dry calcareous grassland' then 'DCG'
+        WHEN hab.term='Dry heath' then 'DH'
+        WHEN hab.term='Hedgerows' then 'H'
+        WHEN hab.term='Montane acid grassland' then 'MAG'
+        WHEN hab.term='Native pinewoods' then 'NP'
+        WHEN hab.term='Pastures and meadows' then 'PaM'
+        WHEN hab.term='Rivers and streams' then 'RaS'
+        WHEN hab.term='Species poor lakes and ponds' then 'SPLaP'
+        WHEN hab.term='Species rich lakes and ponds' then 'SRLaP'
+        WHEN hab.term='Species rich mires fens and flushes' then 'SRMFaF'
+        WHEN hab.term='Urban' then 'U'
+        WHEN hab.term='Wet grassland' then 'WG'
+        WHEN hab.term='Wet heath' then 'WH'
+        WHEN hab.term='Wet woodland' then 'WW'
+        ELSE hab.term 
+      END" datatype='text'/>  
+    <column name='total_samples' display='Samples' sql='count(distinct(samp.id))' datatype='float'/>
+    <column name='total_species_richness' display='Species' sql='count(distinct(tax.id))' datatype='float'/>
+    <column name='mean_species_richness' display='Mean Richness' sql='cast(count(distinct(tax.id)) as float) / count(distinct(samp.id))'/>
+  </columns>
+</report>
