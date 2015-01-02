@@ -8,14 +8,21 @@
     JOIN users_websites uw on u.id=uw.user_id  
     LEFT JOIN person_attribute_values pav on pav.person_attribute_id=#user_square_attr_id# AND pav.person_id=u.person_id AND pav.deleted=false
     LEFT JOIN people p on p.id = u.person_id 
-  WHERE u.deleted=false AND p.deleted=false AND pav.id IS NULL
-  AND #website_filter#
+    LEFT JOIN locations sq ON pav.int_value=sq.id AND sq.deleted=false AND sq.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)
+  WHERE u.deleted=false AND p.deleted=false AND sq.id IS NULL
+  AND #website_filter# 
   </query>
   <order_bys>
     <order_by>u.created_on ASC</order_by>
   </order_bys>
   <params>
     <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
+    <param name="ignore_registration_dates_before" display="Ignore Registration Dates Before" description="Ignore anyone who registered earlier than this date.
+Useful if old users are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
+      <where>uw.created_on &gt;= CAST(COALESCE('#ignore_registration_dates_before#','1500-01-01') as date)</where>
+    </param>
+    <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any sqaures created before this date.
+Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default=""/>
   </params>
   <columns> 
     <column name='id' sql='u.id' datatype='integer' visible='false'/>
