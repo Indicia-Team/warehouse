@@ -18,13 +18,20 @@ broad scale habitat is reported on, we need to work out the related broad scale 
   <params>
     <param name='broad_habitat' display='Broad Scale Habitat' description='Broad scale habitat to report on.' datatype='lookup' emptyvalue=''
         population_call='report:reports_for_prebuilt_forms/Splash/broad_habitats_for_population_call:id:term'>
-      <where>sampHabVal.int_value=#broad_habitat# OR habTt.parent_id=#broad_habitat#</where>
+      <where>(sampHabVal.int_value=#broad_habitat# OR habTt.parent_id=#broad_habitat#)</where>
     </param>
     <param name='fine_habitat' display='Fine Scale Habitat' description='Fine scale habitat to report on.' datatype='lookup' emptyvalue=''
         population_call='report:reports_for_prebuilt_forms/Splash/fine_habitats_for_population_call:id:term'>
       <where>sampHabVal.int_value=#fine_habitat#</where>
     </param>
     <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
+    <param name="ignore_sample_dates_before" display="Ignore Sample Dates Before" description="Ignore any samples created before this date." datatype="date" emptyvalue="" default="">
+      <where>samp.created_on &gt;= CAST(COALESCE('#ignore_sample_dates_before#','1500-01-01') as date)</where>  
+    </param>      
+    <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any sqaures created before this date.
+Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
+      <where>square.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)</where>
+    </param>
   </params>
   <columns> 
     <column name='id' sql='distinct(square.id)' datatype='integer' visible='false'/>
