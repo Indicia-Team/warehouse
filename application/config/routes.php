@@ -38,4 +38,5 @@ $config['report/resume/([a-z0-9]+)'] = 'report_viewer/resume/$1';
 // to underscores in the method names.
 $config['services/rest/v([0-9]+)\.([0-9]+)/([a-z0-9]+)-(.+)'] = 'services/rest/$3_$4/v$1.$2';
 $config['services/rest/v([0-9]+)\.([0-9]+)/(.+)'] = 'services/rest/$3/v$1.$2';
+$config['services/rest/v([0-9]+)\.([0-9]+)'] = 'services/rest/index/v$1.$2';
 $config['services/rest/([a-z0-9]+)-(.+)'] = 'services/rest/$1_$2';
