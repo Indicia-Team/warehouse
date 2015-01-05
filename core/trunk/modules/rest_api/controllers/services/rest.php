@@ -195,9 +195,9 @@ HTML;
           echo "<p>$help</p>";
           // output the documentation for parameters. All requests require a client ID...
           $resourceDef['params'] = array_merge(array(
-            'client_id' => array(
+            'system_id' => array(
               'datatype' => 'integer',
-              'help' => 'Unique identifier for the client making the webservice call'
+              'help' => 'Unique identifier for the client system making the webservice call'
             )
           ), $resourceDef['params']);
           echo '<table><caption>Parameters</caption>';
@@ -254,7 +254,7 @@ HTML;
           // @todo: http response
         } elseif (count($arguments)===1) {
           // we only allow a single argument to request a single resource by ID
-          if (preg_match('/^\d+$/', $arguments[0])) {
+          if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
             $requestForId = $arguments[0];
           } else {
             throw new exception('Invalid ID requested');
@@ -290,14 +290,24 @@ HTML;
      
   /**
    * GET handler for the projects resource. Outputs a list of project details.
+   * @todo Projecst are currently hard coded in the config file, so pagination etc
+   * is just stub code.
    */
   public function projects_get() {
     // Add metadata such as href to each project
     foreach ($this->projects as $id => &$project) {
+      // Add metadata such as href to each project
       $this->add_item_metadata($project, 'projects');
+      // remove fields from the project that are for internal use only
       unset($project['filter_id']);
+      unset($project['sharing']);
     }
-    $this->succeed(array_values($this->projects));
+    $this->succeed(array(
+      'data' => array_values($this->projects),
+      'paging' => array(
+        'self' => $this->generate_link(array('page'=>1))
+      )
+    ));
   }
   
   /**
@@ -337,7 +347,7 @@ HTML;
       $this->checkDate($this->request['edited_date_to'], 'edited_date_to');
       $params['edited_date_to'] = $this->request['edited_date_to'];
     }
-    $report = $this->load_report('filterable_nbn_exchange', $params);
+    $report = $this->load_report('filterable_taxon_observations', $params);
     $this->succeed($this->list_response_structure($report['content']['records'], 'taxon-observations'));
   }
 
@@ -406,11 +416,13 @@ HTML;
    */
   private function add_item_metadata(&$item, $entity) {
     $params = $this->request;
-    $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]?client_id=$params[client_id]";
+    $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]?system_id=$params[system_id]";
     if (!empty($params['proj_id']))
       $item['href'] .= "&proj_id=$params[proj_id]";
     if (!empty($params['format']))
       $item['href'] .= "&format=$params[format]";
+    // strip nulls and empty strings
+    $item = array_filter($item, 'strlen');
   }
   
   /**
@@ -461,7 +473,7 @@ HTML;
     }
     // the project defines how records are allowed to be shared with this client
     $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
-    $params['orderby'] = 'id';
+    $params['system_id'] = kohana::config('rest.system_id');
     $report = $this->reportEngine->requestReport("rest_api/$report.xml", 'local', 'xml', $params);
     return $report;
   }
@@ -519,20 +531,20 @@ HTML;
   }
   
   /**
-   * Checks that the request's client_id and proj_id are valid.
+   * Checks that the request's system_id and proj_id are valid.
    * @todo Implement hash based authentication
    */
   private function authenticate() {
     // @todo: implement proper hashing test
-    if (empty($_REQUEST['client_id'])) {
-      $this->fail('Bad request', 400, 'Missing client ID');
+    if (empty($_REQUEST['system_id'])) {
+      $this->fail('Bad request', 400, 'Missing system ID');
     }
-    $this->website_id=$_REQUEST['client_id'];
-    $projects = kohana::config('rest.projects');
-    if (!array_key_exists($this->website_id, $projects)) {
-      $this->fail('Unauthorized', 401, 'Client ID not in projects configuration');
+    $config = kohana::config('rest.clients');
+    if (!array_key_exists($_REQUEST['system_id'], $config)) {
+      $this->fail('Unauthorized', 401, 'System ID not in projects configuration');
     }
-    $this->projects = $projects[$this->website_id];
+    $this->website_id=$config[$_REQUEST['system_id']]['website_id'];
+    $this->projects = $config[$_REQUEST['system_id']]['projects'];
   }
   
   /**

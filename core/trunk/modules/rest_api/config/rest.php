@@ -20,19 +20,27 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+/**
+ * Define the database ID used to identify this system in the network.
+ */
+$config['system_id'] = 'BRC';
+
 // The following configuration is a temporary definition of the projects available for 
 // each website.
 // @todo Move this configuration into a database table.
-$config['projects']=array(
-  // keyed by client website ID
-  1 => array(
-    // list of available projects
-    1 => array(
-      'id' => 1,
-      'title'=>'BRC birds',
-      'description'=>'Bird records entered onto the BRC warehouse made available for verification on iRecord.',
-      'filter_id' => 53,
-      'sharing' => 'verification'
+$config['clients']=array(
+  // keyed by client system ID
+  'BTO' => array(
+    'website_id' => 1,
+    'projects' => array(
+      // list of available projects keyed by project ID
+      'BRC1' => array(
+        'id' => 'BRC1',
+        'title'=>'BRC birds',
+        'description'=>'Bird records entered onto the BRC warehouse made available for verification on iRecord.',
+        'filter_id' => 53,
+        'sharing' => 'verification'
+      )
     )
   )
 );
