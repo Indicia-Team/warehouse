@@ -715,7 +715,8 @@ class XMLReportReader_Core implements ReportReader
       $paramXml = $reader->readInnerXML();
       if (!empty($paramXml)) {
         $reader = new XMLReader();
-        $reader->XML($paramXml);
+        // wrap contents of param in a container so we only have 1 top level node
+        $reader->XML("<container>$paramXml</container>");
         while ($reader->read()) {
           if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='join') {
             if (!isset($this->params[$name]['joins']))
@@ -904,7 +905,7 @@ class XMLReportReader_Core implements ReportReader
             'description'=>'Minimum quality of records to include', 
             'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
                 'T:Pending verification for trusted recorders,!D:Everything except dubious or rejected,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,'.
-                'R:Rejected records only,DR:Queried or rejected records',
+                'R:Rejected records only,DR:Queried or rejected records,All:All records',
             'wheres' => array(
               array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
               array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
