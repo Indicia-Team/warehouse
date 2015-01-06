@@ -1,6 +1,7 @@
 <report
     title="Get my squares and plots"
-    description="Get a list of Core Squares and Additional Squares that have been assigned to the user and list them with their associated plots. Only plots without samples are editable."
+    description="Get a list of Core Squares and Additional Squares that have been assigned to the user and list them with their associated plots. Only plots without samples are editable.
+Include only_return_private_plots to only return private plots associated with the user (no parent squares or public plots)."
 >
   <query website_filter_field="lw.website_id">
     SELECT #columns#
@@ -14,6 +15,7 @@
       LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=l.id
       JOIN users u on u.id=#current_user_id#
       JOIN person_attribute_values pav on pav.int_value=square.id AND pav.person_id=u.person_id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
+    #joins#
     WHERE (l.id = square.id OR l.parent_id = square.id)
     AND #website_filter# AND l.deleted=false
   </query>
@@ -29,6 +31,10 @@
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
     <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
     <param name='user_square_attr_id' description='Id of the person attribute that holds user squares' datatype='integer'/>
+    <param name='private_plot_attr_id' description='Private plot attribute id.' datatype='integer' emptyvalue='' default=''/>
+    <param name='only_return_private_plots' description='Only return private plots' datatype='integer' emptyvalue='' default=''>
+      <join>JOIN location_attribute_values lavPriv on lavPriv.location_id=l.id AND lavPriv.location_attribute_id = #private_plot_attr_id# AND lavPriv.int_value=1 AND lavPriv.deleted=false</join>
+    </param>
   </params>
   <columns>
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" in_count="true"/>
