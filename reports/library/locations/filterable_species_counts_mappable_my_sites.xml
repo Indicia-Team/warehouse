@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Record counts for my sites map using standard filter params"
+        description="Lists locations with mappable boundary output and the number of records within them.">
+  <query website_filter_field="o.website_id" standard_params="true">
+    SELECT #columns#
+    FROM locations l1
+    JOIN (
+    SELECT l.id, count(distinct o.taxon_meaning_id) as count
+    FROM locations l
+    JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
+    LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
+    LEFT JOIN users u on u.person_id=pav.person_id AND u.id=#user_id#
+    LEFT JOIN (cache_occurrences o
+      #agreements_join#
+      #joins#
+      AND #sharing_filter#
+      #filters#
+      #idlist#
+    ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom))
+      AND NOT st_touches(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom))
+    WHERE l.deleted=false
+    AND ('#location_type_ids#'='0' OR l.location_type_id IN (#location_type_ids#))
+    AND (l.created_by_id=#user_id# or u.id=#user_id#)
+    GROUP BY l.id, l.name
+    ) as l2 ON l2.id=l1.id
+  </query>
+  <params>
+    <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.'
+           datatype="integer[]" emptyvalue="0" default="" />
+    <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" />
+    <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites"
+           datatype="integer" emptyvalue="0" default="" />
+    <param name="simplifyFeatureTo" datatype="integer" default="10"/>
+    <param name="min_taxon_rank_sort_order" datatype="integer" default="" >
+      <join>JOIN cache_taxa_taxon_lists getrankcttl on getrankcttl.id=o.preferred_taxa_taxon_list_id</join>
+      <where>getrankcttl.taxon_rank_sort_order>=#min_taxon_rank_sort_order#</where>
+    </param>
+  </params>
+  <columns>
+        <column name="id" visible="false" sql="l1.id" />
+        <column name="name" display="Site Name" sql="l1.name" />
+        <column name="site_label" display="Label" sql="l1.name || ' (' || count::varchar || ' species)'" feature_style="label" />
+        <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l1.boundary_geom, l1.centroid_geom), #simplifyFeatureTo#), #simplifyFeatureTo#, #simplifyFeatureTo#))" visible="false" mappable="true"/>
+        <column name="value" display="No. of Species"  sql="count"/>
+        <column name="minvalue" visible="false" sql="0" />
+        <column name="maxvalue" visible="false" sql="max(l2.count) OVER ()" />
+        <column name="oc" visible="false" feature_style="labelOutlineColor" sql="'white'" />
+        <column name="ow" visible="false" feature_style="labelOutlineWidth" sql="5" />
+        <column name="sw" visible="false" feature_style="strokeWidth" sql="2" />
+        <column name="fs" visible="false" feature_style="fontSize" sql="case when count>1000 then 8 else 9 end" />
+  </columns>
+</report>

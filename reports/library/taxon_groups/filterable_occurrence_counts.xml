@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Filterable records by taxon group" description="Counts records by taxon group with standard params support.">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    select #columns#
+    from taxon_groups tg
+    join (cache_occurrences o 
+    #agreements_join#
+    #joins#
+    AND #sharing_filter#
+    #idlist#
+    ) on tg.id=o.taxon_group_id
+  </query>
+  <order_bys>
+    <order_by>count(distinct o.id) DESC</order_by>
+  </order_bys>
+  <columns>
+    <column name="id" display="ID" sql="tg.id" in_count="true" />
+    <column name="taxon_group" display="Taxon group" sql="tg.title" />
+    <column name="count" display="Records" sql="count(distinct o.id)" aggregate="true" />
+  </columns>
+</report>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Filterable records by month and taxon group" description="Counts records by month broken down by species group, with standard params support.">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    select #columns#
+    from generate_series(1,12) as months(no)
+    left join (cache_occurrences o 
+    #agreements_join#
+    #joins#
+    AND #sharing_filter#
+    #idlist#
+    ) on date_part('month', o.date_start)=months.no
+  </query>
+  <order_bys>
+    <order_by>months.no</order_by>
+  </order_bys>  
+  <params>
+    <param name="group_1" datatype="integer" />
+    <param name="group_2" datatype="integer" />
+    <param name="group_3" datatype="integer" />
+    <param name="group_4" datatype="integer" />
+    <param name="group_5" datatype="integer" />
+  </params>
+  <columns>
+    <column name="month" display="Month" sql="to_char(to_timestamp(months.no::text, 'MM'), 'TMmon')" orderby="month_no" />
+    <column name="month_no" sql="months.no" visible="false" in_count="true" />
+    <column name="group_1" display="Group 1 records" sql="count(distinct case when o.taxon_group_id=#group_1# then o.id else null end)" aggregate="true" />
+    <column name="group_2" display="Group 2 records" sql="count(distinct case when o.taxon_group_id=#group_2# then o.id else null end)" aggregate="true" />
+    <column name="group_3" display="Group 3 records" sql="count(distinct case when o.taxon_group_id=#group_3# then o.id else null end)" aggregate="true" />
+    <column name="group_4" display="Group 4 records" sql="count(distinct case when o.taxon_group_id=#group_4# then o.id else null end)" aggregate="true" />
+    <column name="group_5" display="Group 5 records" sql="count(distinct case when o.taxon_group_id=#group_5# then o.id else null end)" aggregate="true" />
+    <column name="other" display="Other records" aggregate="true"
+            sql="count(distinct case when o.taxon_group_id not in (#group_1#,#group_2#,#group_3#,#group_4#,#group_5#) then o.id else null end)" />
+  </columns>
+</report>
