@@ -1193,10 +1193,19 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   $('#chartdiv').bind('jqplotDataUnhighlight', function(ev, seriesIndex, pointIndex, data) {
     $('table.jqplot-table-legend td').removeClass('highlight');
   });\n";
-    $r .= '<div class="'.$options['class'].'" style="width:'.$options['width'].'; ">';
+    $heightStyle = '';
+    $widthStyle = '';
+    if (!empty($options['height']))
+      $heightStyle = "height: $options[height]px;";
+    if (!empty($options['width'])) {
+      if (substr($options['width']!=='%'))
+        $options['width'] .= 'px';
+      $widthStyle = "width: $options[width];";
+    }
+    $r .= "<div class=\"$options[class]\" style=\"$widthStyle\">";
     if (isset($options['title']))
       $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
-    $r .= '<div id="'.$options['id'].'" style="height:'.$options['height'].'px;width:'.$options['width'].'px; "></div>'."\n";
+    $r .= "<div id=\"$options[id]\" style=\"$heightStyle $widthStyle\"></div>\n";
     $r .= "</div>\n";
     return $r;
   }
@@ -1496,7 +1505,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * to a range of colours from blue to red.
   * array(
   *   'fillColor'=>array(
-  *     'from'=>'#00FF00',
+  *     'from'=>'#0000ff',
   *     'to' => '#ff0000',
   *     'valueField' => 'value',
   *     'minValue'=> '{minvalue}',
@@ -1683,6 +1692,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                   '}';
             $defsettings[$type]="\${get$type}";
           }
+          // As well as the columns required for valueOutput, we also need to include any others
+          // involved in the feature style
+          foreach ($response['columns'] as $col=>$cfg) {
+            if (!empty($cfg['feature_style']))
+              $colsToInclude[$col] = '';
+          }
         }
         $selStyleFns = implode(",\n", array_values(array_merge($defStyleFns, $selStyleFns)));
         $defStyleFns = implode(",\n", array_values($defStyleFns));
@@ -1839,7 +1854,9 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * Defaults to report, which means report data is being loaded. Set to direct to load data directly from an entity's view.
    * </li>
    * <li><b>dataSource</b><br/>
-   * Name of the report or entity being queried.
+   * Name of the report or entity being queried. If set to 'static', then provide an option staticData containing
+   * an array of preloaded report data to return, which can be used to override report data fetches for reporting
+   * components.
    * <li><b>readAuth</b><br/>
    * Read authentication tokens.
    * </li>
@@ -1875,6 +1892,8 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
    */
   public static function get_report_data($options, $extra='') {
+    if ($options['dataSource']==='static' && isset($options['staticData']))
+      return $options['staticData'];
     $query = array();
     if (!isset($options['mode'])) $options['mode']='report';
     if (!isset($options['format'])) $options['format']='json';
