@@ -47,8 +47,8 @@ class iform_report_selector {
    * @todo: Implement this method
    */
   public static function get_parameters() {
-    require_once iform_client_helpers_path() . 'prebuilt_forms/includes/map.php';
-    require_once iform_client_helpers_path() . 'prebuilt_forms/includes/report.php';
+    require_once 'includes/map.php';
+    require_once 'includes/report.php';
     return array_merge(
       iform_map_get_map_parameters(),
       array(
@@ -395,7 +395,7 @@ class iform_report_selector {
           $r .= "<label>Limit to records from year:<input type=\"text\" name=\"year\" value=\"$value\" /></label>";
           break;
         case 'taxon_group_list':
-          $r .= "<label>Limit to records from species group:<select name=\"taxon_group_list\">";
+          $r .= "<label>Limit to records from species group:<select name=\"taxon_group_list\"><option value=\"\">&lt;show all&gt;</option>";
           $groups = report_helper::get_report_data(array(
             'dataSource' => '/library/taxon_groups/taxon_groups_used_in_checklist',
             'readAuth' => $readAuth,
