@@ -715,6 +715,8 @@ class XMLReportReader_Core implements ReportReader
       $paramXml = $reader->readInnerXML();
       if (!empty($paramXml)) {
         $reader = new XMLReader();
+        // wrap contents of param in a container so we only have 1 top level node
+        $reader->XML("<container>$paramXml</container>");
         $reader->XML($paramXml);
         while ($reader->read()) {
           if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='join') {
