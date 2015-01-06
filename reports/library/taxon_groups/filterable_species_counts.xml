@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Filterable species by taxon group" description="Counts species by taxon group with standard params support.">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    select #columns#
+    from taxon_groups tg
+    join (cache_occurrences o 
+    #agreements_join#
+    #joins#
+    AND #sharing_filter#
+    AND o.zero_abundance='f'
+    #idlist#
+    ) on tg.id=o.taxon_group_id
+  </query>
+  <order_bys>
+    <order_by>count(distinct o.taxon_meaning_id) DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="min_taxon_rank_sort_order" datatype="integer" default="" >
+      <join>JOIN cache_taxa_taxon_lists getrankcttl on getrankcttl.id=o.preferred_taxa_taxon_list_id</join>
+      <where>getrankcttl.taxon_rank_sort_order>=#min_taxon_rank_sort_order#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" display="ID" sql="tg.id" in_count="true" />
+    <column name="taxon_group" display="Taxon group" sql="tg.title" />
+    <column name="count" display="Records" sql="count(distinct o.taxon_meaning_id)" aggregate="true" />
+  </columns>
+</report>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Filterable records by month" description="Counts records by month with standard params support.">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    select #columns#
+    from generate_series(1,12) as months(no)
+    left join (cache_occurrences o 
+    #agreements_join#
+    #joins#
+    AND #sharing_filter#
+    AND o.zero_abundance='f'
+    AND o.date_start is not null
+    #idlist#
+    ) on date_part('month', o.date_start)=months.no
+  </query>
+  <order_bys>
+    <order_by>months.no</order_by>
+  </order_bys>  
+  <columns>
+    <column name="month" display="Month" sql="to_char(to_timestamp(months.no::text, 'MM'), 'TMmon')" orderby="month_no" />
+    <column name="month_no" sql="months.no" visible="false" in_count="true" />
+    <column name="count" display="Records" sql="count(distinct o.id)" aggregate="true" />
+  </columns>
+</report>
