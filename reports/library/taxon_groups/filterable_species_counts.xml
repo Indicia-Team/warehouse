@@ -7,6 +7,7 @@
     #agreements_join#
     #joins#
     AND #sharing_filter#
+    AND o.zero_abundance='f'
     #idlist#
     ) on tg.id=o.taxon_group_id
   </query>
