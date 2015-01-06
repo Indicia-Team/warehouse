@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Species counts for indexed sites map using standard filter params" 
+        description="Lists locations with mappable boundary output and the number of species within them.">
+  <query website_filter_field="o.website_id" standard_params="true">
+    SELECT #columns#
+    FROM locations l1 
+    JOIN (
+    SELECT l.id, count(distinct o.taxon_meaning_id) as count
+    FROM locations l
+    LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
+    LEFT JOIN (index_locations_samples ils 
+      JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
+      #agreements_join#
+      #joins#
+      AND #sharing_filter# 
+      AND o.zero_abundance='f'
+      #filters#
+      #idlist#
+    ) ON ils.location_id=l.id
+    WHERE l.deleted=false
+    AND ('#location_type_ids#'='0' OR l.location_type_id IN (#location_type_ids#))
+    AND (l.public=true OR lw.id IS NOT NULL)
+    GROUP BY l.id, l.name
+    ) as l2 ON l2.id=l1.id
+  </query>
+  <params>
+    <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' 
+           datatype="integer[]" emptyvalue="0" default="" />
+    <param name="simplifyFeatureTo" datatype="integer" default="100" />
+    <param name="min_taxon_rank_sort_order" datatype="integer" default="" >
+      <join>JOIN cache_taxa_taxon_lists getrankcttl on getrankcttl.id=o.preferred_taxa_taxon_list_id</join>
+      <where>getrankcttl.taxon_rank_sort_order>=#min_taxon_rank_sort_order#</where>
+    </param>
+  </params>  
+  <columns>
+        <column name="id" visible="false" sql="l1.id" />
+        <column name="name" display="Site name" sql="l1.name" />
+        <column name="site_label" display="Label" sql="l1.name || ' (' || count::varchar || ' records)'" feature_style="label" />
+        <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l1.boundary_geom, l1.centroid_geom), #simplifyFeatureTo#), #simplifyFeatureTo#, #simplifyFeatureTo#))" visible="false" mappable="true"/>
+        <column name="value" display="No. of records"  sql="count"/>
+        <column name="minvalue" visible="false" sql="0" />
+        <column name="maxvalue" visible="false" sql="max(l2.count) OVER ()" />
+        <column name="oc" visible="false" feature_style="labelOutlineColor" sql="'white'" />
+        <column name="ow" visible="false" feature_style="labelOutlineWidth" sql="5" />
+        <column name="sw" visible="false" feature_style="strokeWidth" sql="2" />
+        <column name="fs" visible="false" feature_style="fontSize" sql="case when count>1000 then 8 else 9 end" />
+  </columns>
+</report>  
