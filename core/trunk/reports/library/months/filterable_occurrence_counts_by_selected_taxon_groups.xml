@@ -7,6 +7,8 @@
     #agreements_join#
     #joins#
     AND #sharing_filter#
+    AND o.zero_abundance='f'
+    AND o.date_start is not null
     #idlist#
     ) on date_part('month', o.date_start)=months.no
   </query>
