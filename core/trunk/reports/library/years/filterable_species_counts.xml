@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Filterable records by year" description="Counts records by year with standard params support.">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    select #columns#
+    from generate_series(#from_year#, date_part('year', now())::integer) as years(no)
+    left join (cache_occurrences o 
+    #agreements_join#
+    #joins#
+    AND #sharing_filter#
+    #idlist#
+    ) on date_part('year', o.date_start)=years.no
+  </query>
+  <order_bys>
+    <order_by>years.no</order_by>
+  </order_bys>
+  <params>
+    <param name="from_year" datatype="integer" default="2010" />
+    <param name="min_taxon_rank_sort_order" datatype="integer" default="" >
+      <join>JOIN cache_taxa_taxon_lists getrankcttl on getrankcttl.id=o.preferred_taxa_taxon_list_id</join>
+      <where>getrankcttl.taxon_rank_sort_order>=#min_taxon_rank_sort_order#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="year" display="Year" sql="years.no" />
+    <column name="count" display="Records" sql="count(distinct o.taxon_meaning_id)" aggregate="true" />
+  </columns>
+</report>

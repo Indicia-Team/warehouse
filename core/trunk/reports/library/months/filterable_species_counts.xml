@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Filterable species counts by month" description="Counts species by month with standard params support.">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    select #columns#
+    from generate_series(1,12) as months(no)
+    left join (cache_occurrences o 
+    #agreements_join#
+    #joins#
+    AND #sharing_filter#
+    #idlist#
+    ) on date_part('month', o.date_start)=months.no
+  </query>
+  <order_bys>
+    <order_by>months.no</order_by>
+  </order_bys>
+  <params>
+    <param name="min_taxon_rank_sort_order" datatype="integer" default="" >
+      <join>JOIN cache_taxa_taxon_lists getrankcttl on getrankcttl.id=o.preferred_taxa_taxon_list_id</join>
+      <where>getrankcttl.taxon_rank_sort_order>=#min_taxon_rank_sort_order#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="month" display="Month" sql="to_char(to_timestamp(months.no::text, 'MM'), 'TMmon')" orderby="month_no" />
+    <column name="month_no" sql="months.no" visible="false" in_count="true" />
+    <column name="count" display="Species" sql="count(distinct o.taxon_meaning_id)" aggregate="true" />
+  </columns>
+</report>
