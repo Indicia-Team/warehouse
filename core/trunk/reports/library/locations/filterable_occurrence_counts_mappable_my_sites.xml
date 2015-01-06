@@ -15,6 +15,7 @@
       #agreements_join#
       #joins#
       AND #sharing_filter# 
+      AND o.zero_abundance='f'
       #filters#
       #idlist#
     ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom))
