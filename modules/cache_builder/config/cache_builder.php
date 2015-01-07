@@ -753,9 +753,10 @@ $config['occurrences']['update'] = "update cache_occurrences co
       from occurrence_media
       where deleted=false
       group by occurrence_id) as images on images.occurrence_id=o.id
-    left join sample_attribute_values spv on spv.sample_id=s.id and spv.deleted=false
-    left join sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
-        and spa.system_function='sref_precision'
+    left join (sample_attribute_values spv 
+      join sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
+          and spa.system_function='sref_precision'
+    ) on spv.sample_id=s.id and spv.deleted=false
     where co.id=o.id";
 
 $config['occurrences']['insert']="insert into cache_occurrences (
@@ -870,9 +871,10 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     from occurrence_media
     where deleted=false
     group by occurrence_id) as images on images.occurrence_id=o.id
-  left join sample_attribute_values spv on spv.sample_id=s.id and spv.deleted=false
-  left join sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
-      and spa.system_function='sref_precision'
+  left join (sample_attribute_values spv 
+    join sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
+        and spa.system_function='sref_precision'
+  ) on spv.sample_id=s.id and spv.deleted=false
   #join_needs_update#
   where co.id is null";
   
