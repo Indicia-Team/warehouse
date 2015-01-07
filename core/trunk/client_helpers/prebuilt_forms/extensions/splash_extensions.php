@@ -136,6 +136,9 @@ class extension_splash_extensions {
    * The location attribute id that holds a plot's Slope</li>
    * <li><b>ashAttributeId</b><br/>
    * The location attribute id that holds a plot's % Ash Coverage</li>
+   * <li><b>privatePlotAttrId</b><br/>
+   * Optional attribute for the location attribute id which holds whether a plot is private. If supplied then when a private plot is selected
+   * as the location then all occurrences are set to have a sensitivity_precision=10000</li>
    * </ul>
    */
   public static function splash_location_select($auth, $args, $tabAlias, $options) {
@@ -165,16 +168,18 @@ class extension_splash_extensions {
     $viceCountyLocationAttributeId=$options['viceCountyLocationAttributeId'];
     $noViceCountyFoundMessage=$options['noViceCountyFoundMessage'];
     $userSquareAttrId=$options['userSquareAttrId'];
+    $extraParamForSquarePlotReports=array(
+                        'core_square_location_type_id'=>$coreSquareLocationTypeId,
+                        'additional_square_location_type_id'=>$additionalSquareLocationTypeId,
+                        'current_user_id'=>$currentUserId,
+                        'vice_county_location_attribute_id'=>$viceCountyLocationAttributeId,
+                        'no_vice_county_found_message'=>$noViceCountyFoundMessage,
+                        'user_square_attr_id'=>$userSquareAttrId);
     $reportOptions = array(
       'dataSource'=>'reports_for_prebuilt_forms/Splash/get_my_squares_that_have_plots',
       'readAuth'=>$auth['read'],
       'mode'=>'report',
-      'extraParams' => array('core_square_location_type_id'=>$coreSquareLocationTypeId,
-                             'additional_square_location_type_id'=>$additionalSquareLocationTypeId,
-                             'current_user_id'=>$currentUserId,
-                             'vice_county_location_attribute_id'=>$viceCountyLocationAttributeId,
-                             'no_vice_county_found_message'=>$noViceCountyFoundMessage,
-                             'user_square_attr_id'=>$userSquareAttrId)
+      'extraParams' => $extraParamForSquarePlotReports
     );
     //In PSS/NPMS we don't show the Vice County in the label.
     if (!empty($reportOptions['extraParams'])&&!empty($options['pssMode'])&&$options['pssMode']===true) {
@@ -241,6 +246,27 @@ class extension_splash_extensions {
       //Create the mini report, not currently required on PSS site
       if (empty($options['pssMode']))
         $r .= self::plot_report_panel($auth,$options);
+      //If an attribute holding whether plots are private is supplied, then we want to return
+      //whether the selected plot is private and set the occurrence sensitivity_precision appropriately
+      if (!empty($options['privatePlotAttrId'])) {
+        $extraParamForSquarePlotReports=array_merge($extraParamForSquarePlotReports,array('private_plot_attr_id'=>$options['privatePlotAttrId'],'only_return_private_plots'=>true));
+        //When the page initially loads, collect all the private plots that can be selected by the user, rather than
+        //load whether the plot is private when each selection is made.
+        $myPlotsAndSquares = data_entry_helper::get_report_data(array(
+          'dataSource'=>'reports_for_prebuilt_forms/Splash/get_my_squares_and_plots',
+          'readAuth'=>$auth['read'],
+          'extraParams'=>$extraParamForSquarePlotReports
+        ));
+        $privatePlots=array();    
+        foreach ($myPlotsAndSquares as $locationDataItem) {
+          $privatePlots[]=$locationDataItem['id'];
+        }
+        if (!empty($privatePlots)) {
+          data_entry_helper::$javascript .= '
+          private_plots_set_precision('.json_encode($privatePlots).');
+          ';
+        }
+      }
       return $r;
     }
   }

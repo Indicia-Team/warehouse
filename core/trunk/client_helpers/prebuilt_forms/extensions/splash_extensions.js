@@ -1,6 +1,37 @@
-var clear_map_features, plot_type_dropdown_change, limit_to_post_code;
+var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, limit_to_post_code;
 
 (function($) {
+  //If the use selects a private plot, then we need to set the sensitivity precision
+  //Requires input form Occurrence Sensitivity option to be on on the edit tab.
+  private_plots_set_precision = function (privatePlots) {
+    //When using private plots we make use of the occurrence sensitivity functionality, however
+    //as the functionality is done in code rather than by the user in this case, hide all the existing
+    //fields on the page.
+    $("[id*=\"sensitivity\"]").each(function() {
+      $(this).hide();
+    });
+    var startOfKeyHolder;  
+    var hiddenName;
+    $("#tab-submit").click(function() {
+      //Find each taxon
+      $("[name$=\"present\"]").each(function() {
+        if ($(this).val() && $(this).val()!="0") {
+          //Get the start of the html name we need to use
+          startOfKeyHolder = $(this).attr("name").slice(0,-7);
+          //Adjust the name so it can hold sensitivity_precision
+          hiddenName = startOfKeyHolder + "occurrence:sensitivity_precision"
+          //If the selected plot is private then set the sensitivity precision.
+          if (inArray($("#imp-location").val(),privatePlots)) {
+            $("[name=\""+hiddenName+"\"]").val("10000");
+          } else {
+            $("[name=\""+hiddenName+"\"]").val("");
+          }
+        }
+      });
+      $("#entry_form").submit();      
+    });
+  }
+  
   clear_map_features = function clear_map_features() {
     var mapLayers = indiciaData.mapdiv.map.layers;
     for(var a = 0; a < mapLayers.length; a++ ){
