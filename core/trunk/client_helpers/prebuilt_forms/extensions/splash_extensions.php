@@ -139,6 +139,8 @@ class extension_splash_extensions {
    * <li><b>privatePlotAttrId</b><br/>
    * Optional attribute for the location attribute id which holds whether a plot is private. If supplied then when a private plot is selected
    * as the location then all occurrences are set to have a sensitivity_precision=10000</li>
+   * <li><b>rowInclusionCheckModeHasData</b><br/>
+   * Optional. Supply this as true if the species grid is in rowInclusionCheck=hasData mode and you are using the privatePlotAttrId option.
    * </ul>
    */
   public static function splash_location_select($auth, $args, $tabAlias, $options) {
@@ -261,11 +263,21 @@ class extension_splash_extensions {
         foreach ($myPlotsAndSquares as $locationDataItem) {
           $privatePlots[]=$locationDataItem['id'];
         }
-        if (!empty($privatePlots)) {
-          data_entry_helper::$javascript .= '
-          private_plots_set_precision('.json_encode($privatePlots).');
-          ';
+        //Need option to tell the system if the species grid has rowInclusionCheck=hasData, and we are setting the occurrences
+        //sensitivity_precision for occurrences when a plot is private.
+        //This is because the way the system detects if an occurrence is present is different.
+        if (!empty($options['rowInclusionCheckModeHasData']) && $options['rowInclusionCheckModeHasData']==true) {
+          $rowInclusionCheckModeHasData='true';
+        } else {
+          $rowInclusionCheckModeHasData='false';
         }
+        if (!empty($_GET['sample_id']))
+          $editMode='true';
+        else
+          $editMode='false';
+        data_entry_helper::$javascript .= '
+        private_plots_set_precision('.json_encode($privatePlots).','.$rowInclusionCheckModeHasData.','.$editMode.');
+        ';
       }
       return $r;
     }
