@@ -206,10 +206,14 @@ class Location_Controller extends Gridview_Base_Controller {
         $this->setError('Upload file problem', '.dbf and .shp files in Zip archive have different names.');
         return;
       }
-      $_SESSION['extracted_basefile'] = $directory.'/'.basename($entry, '.dbf');
+      $_SESSION['extracted_basefile'] = $directory.basename($entry, '.dbf');
       $zip->close();
       $this->template->title = "Choose details in ".$entry." for ".$this->pagetitle;
-      $dbasedb = dbase_open($directory.'/'.$entry, 0);
+      try {
+        $dbasedb = dbase_open($directory.$entry, 0);
+      } catch (Exception $e) {
+        // error handled next
+      }
       if ($dbasedb) {
           // read some data ..
           $view->columns = dbase_get_header_info($dbasedb);
