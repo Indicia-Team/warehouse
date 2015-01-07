@@ -186,7 +186,7 @@ This page allows you to specify the details of a location.
 <?php endif; ?>
 
 <?php 
-  if (!is_null($id) && $values['location:public'] != "t") : 
+  if (!is_null($id) && $values['location:public'] === 'f') : 
   //No need to display for new locations or public locations.
   ?>
 <div id="attrs">
