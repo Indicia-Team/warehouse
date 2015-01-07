@@ -125,7 +125,6 @@ class user_identifier {
           $userPersonObj->db->in('user_id', $usersToMerge);
         }
         $r = $userPersonObj->db->get()->result_array(true);
-        kohana::log('debug', $userPersonObj->db->last_query());
         foreach($r as $existingUser) {
           // create a placeholder for the known user we just found
           if (!isset($existingUsers[$existingUser->user_id]))
