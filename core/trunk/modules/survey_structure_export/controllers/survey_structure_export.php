@@ -153,24 +153,31 @@ order by aw.website_id is null, aw.website_id={websiteId}";
         ->where(array('id'=>$surveyId))
         ->get()->result_array(FALSE);
     $this->website_id=$survey[0]['website_id'];
-    // start a transaction
-    $this->db->query('BEGIN;');
-    try {
-      $importData = json_decode($_POST['import_survey_structure'], true);
-      $this->doImport($importData, $_POST['survey_id']);
-      $this->template->title = 'Import Complete';
-      $this->view = new View('survey_structure_export/import_complete');
-      $this->view->log = $this->log;
-      $this->template->content = $this->view;
-      $this->db->query('COMMIT;');
-    } catch (Exception $e) {
-      $this->db->query('ROLLBACK;');
-      error::log_error('Exception during survey structure import', $e);
+    if (empty($_POST['import_survey_structure'])) {
       $this->template->title = 'Error during survey structure import';
       $this->view = new View('templates/error_message');
-      $this->view->message='An error occurred during the survey structure import and no changes have been made to the database. ' .
-                           'Please make sure the import data is valid. More information can be found in the warehouse logs.';
+      $this->view->message='Please ensure you copy the details of a survey\'s attributes into the "Import survey structure box" before importing.';
       $this->template->content = $this->view;
+    } else {
+      // start a transaction
+      $this->db->query('BEGIN;');
+      try {
+        $importData = json_decode($_POST['import_survey_structure'], true);
+        $this->doImport($importData, $_POST['survey_id']);
+        $this->template->title = 'Import Complete';
+        $this->view = new View('survey_structure_export/import_complete');
+        $this->view->log = $this->log;
+        $this->template->content = $this->view;
+        $this->db->query('COMMIT;');
+      } catch (Exception $e) {
+        $this->db->query('ROLLBACK;');
+        error::log_error('Exception during survey structure import', $e);
+        $this->template->title = 'Error during survey structure import';
+        $this->view = new View('templates/error_message');
+        $this->view->message='An error occurred during the survey structure import and no changes have been made to the database. ' .
+                             'Please make sure the import data is valid. More information can be found in the warehouse logs.';
+        $this->template->content = $this->view;
+      }
     }
     $this->surveyTitle = $survey[0]['title'];
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
