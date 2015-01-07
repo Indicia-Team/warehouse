@@ -39,5 +39,6 @@
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
     <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
     <column name="geom" visible="false" mappable="true" sql="st_astext(#sample_geom_field#)" in_count="true" />
+    <column name="sref_precision" visible="false" sql="o.sref_precision" />
   </columns>
 </report>

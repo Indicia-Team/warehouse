@@ -79,6 +79,10 @@ class Sample_Attribute_Model extends ATTR_ORM {
         'title' => 'Biotope',
         'friendly'=>'Habitat',
         'description'=>'A text or lookup attribute where the value describes the biotope (often described as the habitat) of the sample.'
+      ),
+      'sref_precision' => array(
+        'title' => 'Spatial precision',
+        'description' => 'A numeric attribute describing the precision of a map reference in metres.'
       )
     );
   }
