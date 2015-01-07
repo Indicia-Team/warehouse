@@ -106,7 +106,7 @@ DECLARE decimals INTEGER;
 DECLARE x FLOAT;
 DECLARE y FLOAT;
 BEGIN
-  geomInSrid = ST_TRANSFORM(geom, srid);
+  geomInSrid = ST_TRANSFORM(ST_CENTROID(geom), srid);
   -- very approximate way of reducing lat long dispay precision to reflect accuracy
   decimals = 7 - LENGTH(accuracy::varchar);
   x = round(st_x(geomInSrid)::numeric, decimals);
@@ -131,6 +131,10 @@ BEGIN
 
 -- set a default if accuracy not recorded.
 usedAccuracy = COALESCE(accuracy, 10);
+-- no support for DINTY at this point
+IF usedAccuracy=2000 THEN
+  usedAccuracy=10000;
+END IF;
 -- Find the best local grid system appropriate to the area on the map
 output_system = get_output_system(geom, sref_system, '4326');
 output_srid = sref_system_to_srid(output_system);
