@@ -1,5 +1,3 @@
-DROP FUNCTION get_output_system(geometry, character varying);
-
 CREATE OR REPLACE FUNCTION get_output_system(
     geom_in geometry,
     sref_system character varying,

@@ -128,26 +128,22 @@ DECLARE east FLOAT;
 DECLARE north FLOAT;
 DECLARE usedAccuracy INTEGER;
 BEGIN
+
 -- set a default if accuracy not recorded.
 usedAccuracy = COALESCE(accuracy, 10);
-IF sref_system IN ('OSGB', 'OSIE') THEN
-  -- Already in OS British or Irish grid, so can return sref as it is
-  RETURN upper(regexp_replace(sref, '/ /', ''));
+-- Find the best local grid system appropriate to the area on the map
+output_system = get_output_system(geom, sref_system, '4326');
+output_srid = sref_system_to_srid(output_system);
+centroid_in_srid = st_transform(st_centroid(geom), output_srid);
+east = st_x(centroid_in_srid);
+north = st_y(centroid_in_srid);
+-- this currently only supports OSGB and OSIE so will need extending to support other grid systems
+IF output_system='OSGB' THEN
+  RETURN convert_east_north_to_osgb(east, north, usedAccuracy);
+ELSEIF output_system='OSIE' THEN
+  RETURN convert_east_north_to_osie(east, north, usedAccuracy);
 ELSE
-  -- Find the best local grid system appropriate to the area on the map
-  output_system = get_output_system(geom, sref_system, '4326');
-  output_srid = sref_system_to_srid(output_system);
-  centroid_in_srid = st_transform(st_centroid(geom), output_srid);
-  east = st_x(centroid_in_srid);
-  north = st_y(centroid_in_srid);
-  -- this currently only supports OSGB and OSIE so will need extending to support other grid systems
-  IF output_system='OSGB' THEN
-    RETURN convert_east_north_to_osgb(east, north, usedAccuracy);
-  ELSEIF output_system='OSIE' THEN
-    RETURN convert_east_north_to_osie(east, north, usedAccuracy);
-  ELSE
-    RETURN format_geom_as_latlong(geom, 4326, accuracy);
-  END IF;
+  RETURN format_geom_as_latlong(geom, 4326, accuracy);
 END IF;
 
 END
