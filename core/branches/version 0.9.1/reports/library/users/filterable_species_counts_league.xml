@@ -20,6 +20,6 @@
   <columns>
         <column name="id" visible="false" sql="u.id" />
         <column name="name" display="Recorder" sql="COALESCE(p.first_name || ' ', '') || p.surname" />
-        <column name="value" display="No. of Species"  sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true"/>
+        <column name="value" display="No. of Species"  sql="COUNT(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END)" aggregate="true"/>
   </columns>
 </report>  

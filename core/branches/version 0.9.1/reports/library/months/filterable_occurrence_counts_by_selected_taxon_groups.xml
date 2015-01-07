@@ -21,6 +21,11 @@
     <param name="group_3" datatype="integer" />
     <param name="group_4" datatype="integer" />
     <param name="group_5" datatype="integer" />
+    <param name="group_6" datatype="integer" />
+    <param name="group_7" datatype="integer" />
+    <param name="group_8" datatype="integer" />
+    <param name="group_9" datatype="integer" />
+    <param name="group_10" datatype="integer" />
   </params>
   <columns>
     <column name="month" display="Month" sql="to_char(to_timestamp(months.no::text, 'MM'), 'TMmon')" orderby="month_no" />
@@ -30,7 +35,12 @@
     <column name="group_3" display="Group 3 records" sql="count(distinct case when o.taxon_group_id=#group_3# then o.id else null end)" aggregate="true" />
     <column name="group_4" display="Group 4 records" sql="count(distinct case when o.taxon_group_id=#group_4# then o.id else null end)" aggregate="true" />
     <column name="group_5" display="Group 5 records" sql="count(distinct case when o.taxon_group_id=#group_5# then o.id else null end)" aggregate="true" />
+    <column name="group_6" display="Group 6 records" sql="count(distinct case when o.taxon_group_id=#group_6# then o.id else null end)" aggregate="true" />
+    <column name="group_7" display="Group 7 records" sql="count(distinct case when o.taxon_group_id=#group_7# then o.id else null end)" aggregate="true" />
+    <column name="group_8" display="Group 8 records" sql="count(distinct case when o.taxon_group_id=#group_8# then o.id else null end)" aggregate="true" />
+    <column name="group_9" display="Group 9 records" sql="count(distinct case when o.taxon_group_id=#group_9# then o.id else null end)" aggregate="true" />
+    <column name="group_10" display="Group 10 records" sql="count(distinct case when o.taxon_group_id=#group_10# then o.id else null end)" aggregate="true" />
     <column name="other" display="Other records" aggregate="true"
-            sql="count(distinct case when o.taxon_group_id not in (#group_1#,#group_2#,#group_3#,#group_4#,#group_5#) then o.id else null end)" />
+            sql="count(distinct case when o.taxon_group_id not in (#group_1#,#group_2#,#group_3#,#group_4#,#group_5#,#group_6#,#group_7#,#group_8#,#group_9#,#group_10#) then o.id else null end)" />
   </columns>
 </report>

@@ -23,7 +23,7 @@
   </params>
   <columns>
         <column name="id" visible="false" sql="u.id" />
-        <column name="position" display="League position" sql="row_number() over (order by count(distinct o.taxa_taxon_list_external_key) desc)" aggregate="true" />
+        <column name="position" display="League position" sql="row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END) desc)" aggregate="true" />
         <column name="value" display="No. of taxa"  sql="count(distinct o.taxa_taxon_list_external_key)" aggregate="true" />
   </columns>
 </report>  
