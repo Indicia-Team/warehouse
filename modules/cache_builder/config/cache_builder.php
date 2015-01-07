@@ -687,7 +687,41 @@ $config['occurrences']['update'] = "update cache_occurrences co
       data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end,
       sensitivity_precision=o.sensitivity_precision,
       privacy_precision=s.privacy_precision,
-      group_id=s.group_id
+      group_id=s.group_id,
+      output_sref=get_output_sref(
+          case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else 
+          case 
+            when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
+              abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
+              || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
+              || ', '
+              || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar 
+              || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
+            when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
+              abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
+              || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
+              || ', '
+              || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar 
+              || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
+          else 
+            coalesce(s.entered_sref, l.centroid_sref) 
+          end
+        end,
+        case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
+        greatest(
+          o.sensitivity_precision,
+          s.privacy_precision,
+          -- work out best square size to reflect a lat long's true precision
+          case
+            when spv.int_value>=501 then 10000
+            when spv.int_value between 51 and 500 then 1000
+            when spv.int_value between 6 and 50 then 100
+            else 10
+          end,
+          10 -- default minimum square size
+        ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
+        case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)),
+      sref_precision=spv.int_value
     from occurrences o
     #join_needs_update#
     join (
@@ -715,10 +749,13 @@ $config['occurrences']['update'] = "update cache_occurrences co
     left join users uv on uv.id=o.verified_by_id and uv.deleted=false
     left join people pv on pv.id=uv.person_id and pv.deleted=false
     left join (select occurrence_id, 
-    array_to_string(array_agg(path), ',') as list
-    from occurrence_media
-    where deleted=false
-    group by occurrence_id) as images on images.occurrence_id=o.id
+      array_to_string(array_agg(path), ',') as list
+      from occurrence_media
+      where deleted=false
+      group by occurrence_id) as images on images.occurrence_id=o.id
+    left join sample_attribute_values spv on spv.sample_id=s.id and spv.deleted=false
+    left join sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
+        and spa.system_function='sref_precision'
     where co.id=o.id";
 
 $config['occurrences']['insert']="insert into cache_occurrences (
@@ -730,7 +767,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
-      verifier, verified_on, images, training, location_id, input_form, sensitivity_precision, privacy_precision, group_id
+      verifier, verified_on, images, training, location_id, input_form, sensitivity_precision, privacy_precision,
+      group_id, output_sref, sref_precision
     )
   select distinct on (o.id) o.id, o.record_status, o.release_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
@@ -777,7 +815,41 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     s.input_form,
     o.sensitivity_precision,
     s.privacy_precision,
-    s.group_id
+    s.group_id,
+    get_output_sref(
+      case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else 
+        case 
+          when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*,[ ]*-?[0-9]*\.[0-9]*' then
+            abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::numeric, 3))::varchar
+            || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[1])::float>0 then 'N' else 'S' end
+            || ', '
+            || abs(round(((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::numeric, 3))::varchar 
+            || case when ((string_to_array(coalesce(s.entered_sref, l.centroid_sref), ','))[2])::float>0 then 'E' else 'W' end
+          when s.entered_sref_system = '4326' and coalesce(s.entered_sref, l.centroid_sref) ~ '^-?[0-9]*\.[0-9]*[NS](, |[, ])*-?[0-9]*\.[0-9]*[EW]' then
+            abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[1])::numeric, 3))::varchar
+            || case when coalesce(s.entered_sref, l.centroid_sref) like '%N%' then 'N' else 'S' end
+            || ', '
+            || abs(round(((regexp_split_to_array(coalesce(s.entered_sref, l.centroid_sref), '([NS](, |[, ]))|[EW]'))[2])::numeric, 3))::varchar 
+            || case when coalesce(s.entered_sref, l.centroid_sref) like '%E%' then 'E' else 'W' end
+        else 
+          coalesce(s.entered_sref, l.centroid_sref) 
+        end
+      end,
+      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
+      greatest(
+        o.sensitivity_precision,
+        s.privacy_precision,
+        -- work out best square size to reflect a lat long's true precision
+        case
+          when spv.int_value>=501 then 10000
+          when spv.int_value between 51 and 500 then 1000
+          when spv.int_value between 6 and 50 then 100
+          else 10
+        end,
+        10 -- default minimum square size
+      ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
+        case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)),
+    spv.int_value
   from occurrences o
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 
@@ -798,6 +870,9 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     from occurrence_media
     where deleted=false
     group by occurrence_id) as images on images.occurrence_id=o.id
+  left join sample_attribute_values spv on spv.sample_id=s.id and spv.deleted=false
+  left join sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
+      and spa.system_function='sref_precision'
   #join_needs_update#
   where co.id is null";
   
