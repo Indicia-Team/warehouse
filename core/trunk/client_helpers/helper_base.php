@@ -2231,7 +2231,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
       $dir =  opendir($folder);
       if ($dir) {
         while ($filename = readdir($dir)) {
-          if ($filename == '.' || $filename == '..' || is_dir($filename))
+          if ($filename === '.' || $filename === '..' || is_dir($filename) || $filename === '.htaccess' || $filename === 'web.config')
             continue;
           $lastModified = filemtime($folder . $filename);
           $files[] = array($folder .$filename, $lastModified);
