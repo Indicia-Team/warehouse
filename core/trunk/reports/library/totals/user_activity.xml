@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="User activity breakdown" description="A breakdown of record and species counts for a user.">
+  <query website_filter_field="o.website_id">
+    select 1 as sort, 'Records' as count_of, 
+      count(distinct id) as total,
+      count(distinct case when record_status='V' then id else null end) as confirmed,
+      count(distinct case when cache_created_on>=now() - '1 month'::interval then id else null end) as month,
+      count(distinct case when cache_created_on>=now() - '1 year'::interval then id else null end) as year     
+    from cache_occurrences
+    where created_by_id=#user_id#
+    union
+    select 2 as sort, 'Species' as count_of, 
+      count(distinct coalesce(taxa_taxon_list_external_key, taxon_meaning_id::varchar)) as total,
+      count(distinct case when record_status='V' then coalesce(taxa_taxon_list_external_key, taxon_meaning_id::varchar) else null end) as confirmed,
+      count(distinct case when cache_created_on>=now() - '1 month'::interval then coalesce(taxa_taxon_list_external_key, taxon_meaning_id::varchar) else null end) as month,
+      count(distinct case when cache_created_on>=now() - '1 year'::interval then coalesce(taxa_taxon_list_external_key, taxon_meaning_id::varchar) else null end) as year     
+    from cache_occurrences
+    where created_by_id=#user_id#
+    union
+    select 3 as sort, 'Records I''ve verified' as count_of, 
+      count(distinct o.id) as total,
+      count(distinct case when o.record_status='V' then o.id else null end) as confirmed,
+      count(distinct case when o.created_on>=now() - '1 month'::interval then o.id else null end) as month,
+      count(distinct case when o.created_on>=now() - '1 year'::interval then o.id else null end) as year     
+    from occurrences o
+    join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+    where verified_by_id=#user_id# and o.deleted=false 
+    and '#include_verified_by#'='1'
+    group by count_of
+    union
+    select 4 as sort, 'Species I''ve verified' as count_of, 
+      count(distinct coalesce(cttl.external_key, taxon_meaning_id::varchar)) as total,
+      count(distinct case when record_status='V' then coalesce(cttl.external_key, cttl.taxon_meaning_id::varchar) else null end) as confirmed,
+      count(distinct case when o.created_on>=now() - '1 month'::interval then coalesce(cttl.external_key, cttl.taxon_meaning_id::varchar) else null end) as month,
+      count(distinct case when o.created_on>=now() - '1 year'::interval then coalesce(cttl.external_key, cttl.taxon_meaning_id::varchar) else null end) as year     
+    from occurrences o
+    join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+    where verified_by_id=#user_id# and o.deleted=false
+    and '#include_verified_by#'='1'
+    group by count_of
+  </query>
+  <order_bys>
+    <order_by>sort ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='user_id' display='Warehouse user ID' datatype='integer' />
+    <param name='include_verified_by' display='Include records verified by this user?' datatype='checkbox' default='0' />
+  </params>
+  <columns>
+    <column name="sort" visible="false" />
+    <column name="count_of" display="Count of" />
+    <column name="total" display="Total" />
+    <column name="confirmed" display="Verified as correct"/>
+    <column name="month" display="Added in last month" />
+    <column name="year" display="Added in last year" />
+  </columns>
+</report>
