@@ -16,7 +16,7 @@
   </order_bys>
   <params>
     <param name="from_year" datatype="integer" default="2010" />
-  </param>
+  </params>
   <columns>
     <column name="year" display="Year" sql="years.no" />
     <column name="count" display="Records" sql="count(distinct o.id)" aggregate="true" />
