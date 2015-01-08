@@ -41,6 +41,7 @@
         <column name="value" display="No. of records"  sql="count"/>
         <column name="minvalue" visible="false" sql="0" />
         <column name="maxvalue" visible="false" sql="max(l2.count) OVER ()" />
+        <column name="sw" visible="false" feature_style="strokeWidth" sql="0.5" />
         <column name="sc" visible="false" feature_style="strokeColor" sql="'#333333'" />
   </columns>
 </report>  
