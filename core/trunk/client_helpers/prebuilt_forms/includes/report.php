@@ -45,6 +45,7 @@ function iform_report_get_minimal_report_parameters() {
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
           'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. If you have installed the Profile module then you can also '.
           'use {profile_*} to refer to the value of a field in the user\'s profile (replace the asterisk to make the field name match the field created in the profile). '.
+          'Finally, use [*] to set a report parameter to 1 or 0 depending on whether the user has the permission, replacing * with the permission name. '.
           'Parameters with preset values are not shown in the parameters form and therefore can\'t be overridden by the user.',
       'type' => 'textarea',
       'required' => false,
@@ -56,6 +57,7 @@ function iform_report_get_minimal_report_parameters() {
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
           'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. If you have installed the Profile module then you can also '.
           'use {profile_*} to refer to the value of a field in the user\'s profile (replace the asterisk to make the field name match the field created in the profile). '.
+          'Finally, use [*] to set a report parameter to 1 or 0 depending on whether the user has the permission, replacing * with the permission name. '.
           'Unlike preset parameter values, parameters referred to by default parameter values are displayed in the parameters form and can therefore be changed by the user.',
       'type' => 'textarea',
       'required' => false,
