@@ -112,7 +112,7 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic {
       //For each configured line we need to find all the descriptions and store them against the page titles in an array
       foreach ($configuration as $configLineNum => $configurationLine) {
         //If line is a link title (specified inside square brackets)
-        if ($configurationLine[0]==='[' && substr($configurationLine, -1) == ']') {
+        if (preg_match('/^\[.+\]$/', $configurationLine)) {
           //If this isn't the first title, then we need to store the description for the previous title into an
           //array. The key is a number representing the order of the titles in the configuration, the sub array key is the name of the page link.
           if (!empty($key)) {
@@ -140,7 +140,7 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic {
       'dataSource'=>'library/groups/groups_list',
       'readAuth'=>$auth['read'],
       'mode'=>'report',
-      'extraParams' => array('currentUser'=>hostsite_get_user_field('indicia_user_id'),
+      'extraParams' => array('currentUser'=>hostsite_get_user_field('indicia_user_id'), 'id'=>$args['group_id'],
           'pending_path'=>'{rootFolder}?q=groups/pending&group_id=','userFilterMode'=>'member')
     );
     // automatic handling for Drupal clean urls.
@@ -157,16 +157,14 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic {
       return $r;
     }
     foreach ($groupsData as $groupDataItem) {
-      if ($groupDataItem['id']==$args['group_id']) {
-        $pageLinks = $groupDataItem['pages'];
-        $groupTitle = $groupDataItem['title'];
-      }
+      $pageLinks = $groupDataItem['pages'];
+      $groupTitle = $groupDataItem['title'];
     }
-    //Need to add a break at the front of the list of pages links, as the first item is lacking this,
-    //but the others have it.
-    $pageLinks='<br>'.$pageLinks;
     //All the page links come out of the database in one cluster. Explode these so we have each link separately
     $explodedPageLinks = explode('</a>',$pageLinks);
+    // reinsert the closing </a> used in the explode above
+    foreach ($explodedPageLinks as &$pageLink) 
+      $pageLink .= '</a>';
     $pageLinkHtml='';
     //Go through all the page links to display
     foreach ($titleDescriptions as $titleDescArr) {
@@ -177,15 +175,15 @@ class iform_group_link_to_pages_from_single_group extends iform_dynamic {
         //using italics. 
         if (array_key_exists($plainPageLink,$titleDescArr)) {  
           if (!empty($titleDescArr[$plainPageLink])) {
-            $pageLinkHtml .= '<h3>'.$pageLink.'</a></h3><i>'.$titleDescArr[$plainPageLink].'</i>';
+            $pageLinkHtml .= "<h3>$pageLink</a></h3><p>{$titleDescArr[$plainPageLink]}</p>\n";
           } else {
-            $pageLinkHtml .= '<h3>'.$pageLink.'</a></h3>';
+            $pageLinkHtml .= "<h3>$pageLink</a></h3>";
           }
         }
       }
     }
 
-    $r = '<div><h2>'.$groupTitle.' Links'.'</h2><br>';
+    $r = "<div><h2>$groupTitle Links</h2>";
     $r .= str_replace(array('{rootFolder}','{sep}'),
         array($rootFolder, strpos($rootFolder, '?')===FALSE ? '?' : '&'), $pageLinkHtml); 
     $r .= '</div><br>';
