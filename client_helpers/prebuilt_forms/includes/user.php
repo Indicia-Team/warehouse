@@ -109,6 +109,7 @@ function get_options_array_with_user_data($listData) {
  * {username} - the content management system username.
  * {email} - the email address stored for the user in the content management system.
  * {profile_*} - the respective field from the user profile stored in the content management system.
+ * [permission] - does the user have this permission? Replaces with 1 if they have the permission, else 0.
  */
 function apply_user_replacements($text) {
   global $user;
@@ -141,7 +142,14 @@ function apply_user_replacements($text) {
         $value = ($value===null ? '' : $value);
       } else
         $value='';
-      $text=str_replace('{'.$profileField.'}', $value, $text);  
+      $text=str_replace('{'.$profileField.'}', $value, $text);
+    }
+  }
+  // Look for any permission replacements
+  if (preg_match_all('/\[([^\]]*)\]/', $text, $matches)) {
+    foreach($matches[1] as $permission) {
+      $value = user_access($permission) ? '1' : '0';
+      $text=str_replace("[$permission]", $value, $text);
     }
   }
   // convert booleans to true booleans
