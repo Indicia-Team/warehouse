@@ -27,6 +27,17 @@
  * @subpackage PrebuiltForms
  */
 class iform_report_selector {
+
+  /**
+   * Set a cache refresh time for reports that don't need to update often to 1 day (in seconds)
+   */
+  const SLOW_CACHE_REFRESH = 86400; 
+  
+  /**
+   * Set a cache refresh time for reports that do need to update often to 5 minutes (in seconds).
+   * Generally used only when reporting the user's own data.
+   */
+  const FAST_CACHE_REFRESH = 300; 
   
   /** 
    * Return the form metadata. Note the title of this method includes the name of the form file. This ensures
@@ -343,15 +354,21 @@ class iform_report_selector {
    * Applies any filters set in the page URL to the report options.
    */
   private static function check_filters(&$reportOptions) {
-    if (!empty($_GET['my_records']))
+    if (!empty($_GET['my_records'])) {
       $reportOptions['extraParams']['my_records']=$_GET['my_records'];
+      $reportOptions['extraParams']['user_id']=hostsite_get_user_field('indicia_user_id');
+    }
     if (!empty($_GET['year'])) {
       $_GET['year'] = trim($_GET['year']);
-      if (is_numeric($_GET['year']) && $_GET['year']>1600 && $_GET['year']<date('Y')) {
-        $reportOptions['extraParams']['date_from']="$_GET[year]/01/01";
-        $reportOptions['extraParams']['date_to']="$_GET[year]/12/31";
+      if (is_numeric($_GET['year']) && strlen($_GET['year'])===4) {
+        if ($_GET['year']>date('Y')) {
+          hostsite_show_message(lang::get('Please select a year to report on that is not in the future.'), 'warning');
+        } else {
+          $reportOptions['extraParams']['date_from']="$_GET[year]/01/01";
+          $reportOptions['extraParams']['date_to']="$_GET[year]/12/31";
+        }
       } else {
-        hostsite_show_message(lang::get('Please enter a valid 4 digit year'), 'warning');
+        hostsite_show_message(lang::get('Please enter the year as a 4 digit number.'), 'warning');
       }
     }
     if (!empty($_GET['taxon_group_list'])) {
@@ -387,19 +404,22 @@ class iform_report_selector {
     foreach ($filters as $filter) {
       switch($filter) {
         case 'my_records':
-          $checked = (!empty($_GET['my_records']) && $_GET['my_records']==='1') ? ' checked="checked"' : '';
-          $r .= '<label>Show only my records?<input type="checkbox" name="my_records" value="1"$checked /></label>';
+          $checked = !empty($_GET['my_records']) ? ' checked="checked"' : '';
+          $r .= "<label>Show only my records?<input type=\"checkbox\" name=\"my_records\" value=\"1\"$checked /></label>";
           break;
         case 'year':
           $value = empty($_GET['year']) ? '' : $_GET['year'];
-          $r .= "<label>Limit to records from year:<input type=\"text\" name=\"year\" value=\"$value\" /></label>";
+          $r .= "<label>Limit to records from year:<input type=\"text\" name=\"year\" class=\"control-width-2\" value=\"$value\" /></label>";
           break;
         case 'taxon_group_list':
-          $r .= "<label>Limit to records from species group:<select name=\"taxon_group_list\"><option value=\"\">&lt;show all&gt;</option>";
+          $r .= "<label>Limit to records from species group:<select name=\"taxon_group_list\"><option value=\"\">&lt;".lang::get('any group')."&gt;</option>";
           $groups = report_helper::get_report_data(array(
             'dataSource' => '/library/taxon_groups/taxon_groups_used_in_checklist',
             'readAuth' => $readAuth,
-            'extraParams' => array('taxon_list_id' => variable_get('iform_master_checklist_id', 0))
+            'extraParams' => array('taxon_list_id' => variable_get('iform_master_checklist_id', 0)),
+            'caching' => true,
+            'cachePerUser' => false,
+            'cachetimeout' => self::SLOW_CACHE_REFRESH
           ));
           $selectedId = empty($_GET['taxon_group_list']) ? '' : $_GET['taxon_group_list'];
           foreach ($groups as $group) {
@@ -425,19 +445,19 @@ class iform_report_selector {
         : array('location_type_ids' => $args['main_location_layer_type_id']);
     if (!empty($args['min_rank_sort_order_for_species']))
       $extraParams['min_taxon_rank_sort_order'] = $args['min_rank_sort_order_for_species'];
+    $reportPerUser = $mySites || !empty($_GET['my_records']);
     $reportOptions = array(
       'readAuth' => $readAuth,
       'dataSource' => "library/locations/filterable_{$type}_counts_mappable$reportNameSuffix",
-      'extraParams' => $extraParams
+      'extraParams' => $extraParams,
+      'caching' => true,
+      'cachePerUser' => $reportPerUser,
+      'cachetimeout' => $reportPerUser ? self::FAST_CACHE_REFRESH : self::SLOW_CACHE_REFRESH
     );
     self::check_filters($reportOptions);
     if ($output==='map') {
       require_once iform_client_helpers_path() . 'prebuilt_forms/includes/map.php';
       $reportOptions += array(
-        'featureDoubleOutlineColour' => '#f7f7f7',
-        'rowId' => 'id',
-        'caching' => true,
-        'cachePerUser' => $mySites,
         'valueOutput' => array(
           'fillColor'=>array(
             'from'=>'#0000ff',
@@ -455,6 +475,9 @@ class iform_report_selector {
           )
         )
       );
+      // This looks better when the sites are not contiguous (unlike the full indexed sites layer)
+      if ($mySites)
+        $reportOptions['featureDoubleOutlineColour'] = '#f7f7f7';
       $mapOptions = iform_map_get_map_options($args, $readAuth);
       $olOptions = iform_map_get_ol_options($args);
       $mapOptions['clickForSpatialRef'] = false;
@@ -462,7 +485,13 @@ class iform_report_selector {
       $r .= report_helper::report_map($reportOptions);
     } else {
       $reportOptions += array(
-        'downloadLink' => true
+        'downloadLink' => true,
+        'columns' => array(
+          array(
+            'fieldname' => 'site_label',
+            'visible' => false
+          )
+        )
       );
       $r .= report_helper::report_grid($reportOptions);
     }
@@ -471,9 +500,13 @@ class iform_report_selector {
   
   private static function _build_months_report($args, $readAuth, $output, $type) {
     $r = self::filter_toolbar(array('my_records', 'year', 'taxon_group_list'), $readAuth);
+    $reportPerUser = !empty($_GET['my_records']);
     $reportOptions = array(
       'readAuth' => $readAuth,
-      'dataSource' => "library/months/filterable_{$type}_counts"
+      'dataSource' => "library/months/filterable_{$type}_counts",
+      'caching' => true,
+      'cachePerUser' => $reportPerUser,
+      'cachetimeout' => $reportPerUser ? self::FAST_CACHE_REFRESH : self::SLOW_CACHE_REFRESH
     );
     if (!empty($args['min_rank_sort_order_for_species']))
       $reportOptions['extraParams'] = array('min_taxon_rank_sort_order' => $args['min_rank_sort_order_for_species']);
@@ -484,8 +517,6 @@ class iform_report_selector {
         'yValues'=>array('count'),
         'xLabels'=>'month',
         'autoParamsForm' => false,
-        'caching' => true,
-        'cachePerUser' => false,
         'axesOptions' => array('yaxis'=>array('min' => 0, 'tickOptions' => array('formatString' => '%d')))
       );
       $r .= report_helper::report_chart($reportOptions);
@@ -501,11 +532,17 @@ class iform_report_selector {
   private static function _build_months_by_taxon_groups_report($args, $readAuth, $output, $type) {
     $r = self::filter_toolbar(array('my_records', 'year'), $readAuth);
     // first we need a quick (cached) prefetch of the main species groups recorded
+    $sortField = ($type==='species' ? 'taxon_count' : 'count');
+    $reportPerUser = !empty($_GET['my_records']);
     $reportOptions = array(
       'readAuth' => $readAuth,
       'dataSource' => "library/taxon_groups/filterable_explore_list",
-      'extraParams' => array('limit' => 5, 'orderby'=>'taxon_count', 'sortdir'=>'DESC'),
-      'caching' => true
+      'extraParams' => array('limit' => 10, 'orderby'=>$sortField, 'sortdir'=>'DESC', 
+          'restrict_to_taxon_list_id' => variable_get('iform_master_checklist_id', 0),
+          'min_taxon_rank_sort_order' => $args['min_rank_sort_order_for_species']),
+      'caching' => true,
+      'cachePerUser' => $reportPerUser,
+      'cachetimeout' => $reportPerUser ? self::FAST_CACHE_REFRESH : self::SLOW_CACHE_REFRESH
     );
     self::check_filters($reportOptions);
     $groups = report_helper::get_report_data($reportOptions);
@@ -521,25 +558,27 @@ class iform_report_selector {
       $groupLabels[] = $group['taxon_group'];
     }
     $groupLabels[] = lang::get('other');
+    $reportPerUser = !empty($_GET['my_records']);
     $reportOptions = array(
       'readAuth' => $readAuth,
       'dataSource' => "library/months/filterable_{$type}_counts_by_selected_taxon_groups",
-      'extraParams' => $extraParams
+      'extraParams' => $extraParams,
+      'caching' => true,
+      'cachePerUser' => $reportPerUser,
+      'cachetimeout' => $reportPerUser ? self::FAST_CACHE_REFRESH : self::SLOW_CACHE_REFRESH
     );
     self::check_filters($reportOptions);
     if (!empty($args['min_rank_sort_order_for_species']))
       $reportOptions['extraParams'] += array('min_taxon_rank_sort_order' => $args['min_rank_sort_order_for_species']);
     if ($output==='chart') {
       $reportOptions += array(
-        "seriesColors" => array('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462'),
+        "seriesColors" => array('#d9d9d9','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462', '#b3de69', '#fccde5', '#8dd3c7', '#bc80bd', '#ccebc5'),
         'stackSeries' => true,
         'chartType' => 'bar',
         'height' => '500',
-        'yValues'=>array('other', 'group_5', 'group_4', 'group_3', 'group_2', 'group_1'),
+        'yValues'=>array('other', 'group_10', 'group_9', 'group_8', 'group_7', 'group_6', 'group_5', 'group_4', 'group_3', 'group_2', 'group_1'),
         'xLabels'=>'month',
         'autoParamsForm' => false,
-        'caching' => true,
-        'cachePerUser' => false,
         'axesOptions' => array('yaxis'=>array('min' => 0, 'tickOptions' => array('formatString' => '%d'))),
         'legendOptions' => array(
           'show' => true,
@@ -559,11 +598,14 @@ class iform_report_selector {
   private static function _build_years_report($args, $readAuth, $output, $type) {
     $r = self::filter_toolbar(array('my_records', 'taxon_group_list'), $readAuth);
     // do a quick (cached) search for the first record to output
+    $reportPerUser = !empty($_GET['my_records']);
     $reportOptions = array(
       'readAuth' => $readAuth,
       'dataSource' => "library/occurrences/filterable_explore_list",
       'extraParams' => array('limit' => 1, 'orderby'=>'date_start', 'sortdir'=>'ASC', 'smpattrs'=>'', 'occattrs'=>''),
-      'caching' => true
+      'caching' => true,
+      'cachePerUser' => $reportPerUser,
+      'cachetimeout' => $reportPerUser ? self::FAST_CACHE_REFRESH : self::SLOW_CACHE_REFRESH
     );
     if (!empty($args['min_rank_sort_order_for_species']))
       $reportOptions['extraParams'] += array('min_taxon_rank_sort_order' => $args['min_rank_sort_order_for_species']);
@@ -571,7 +613,10 @@ class iform_report_selector {
     $firstRecords = report_helper::get_report_data($reportOptions);
     $reportOptions = array(
       'readAuth' => $readAuth,
-      'dataSource' => "library/years/filterable_{$type}_counts"
+      'dataSource' => "library/years/filterable_{$type}_counts",
+      'caching' => true,
+      'cachePerUser' => $reportPerUser,
+      'cachetimeout' => $reportPerUser ? self::FAST_CACHE_REFRESH : self::SLOW_CACHE_REFRESH
     );
     if (!empty($args['min_rank_sort_order_for_species']))
       $reportOptions['extraParams'] = array('min_taxon_rank_sort_order' => $args['min_rank_sort_order_for_species']);
@@ -579,8 +624,8 @@ class iform_report_selector {
     if (count($firstRecords)) {
       $firstYear = date('Y', strtotime($firstRecords[0]['date_start']));
       $thisYear = date('Y');
-      // show at least 4 years, more if there is stuff to show
-      $reportOptions['extraParams']['from_year'] = ($firstYear < $thisYear - 4) ? $firstYear : $thisYear - 4;
+      // show at least 4 years and no more than 15
+      $reportOptions['extraParams']['from_year'] = min($thisYear - 4, max($firstYear, $thisYear - 15));
     }
     if ($output==='chart') {
       $reportOptions += array(
@@ -589,8 +634,6 @@ class iform_report_selector {
         'yValues'=>array('count'),
         'xLabels'=>'year',
         'autoParamsForm' => false,
-        'caching' => true,
-        'cachePerUser' => false,
         'axesOptions' => array('yaxis'=>array('min' => 0, 'tickOptions' => array('formatString' => '%d')))
       );
       $r .= report_helper::report_chart($reportOptions);
@@ -605,43 +648,55 @@ class iform_report_selector {
   
   private static function _build_taxon_groups_report($args, $readAuth, $output, $type) {
     $r = self::filter_toolbar(array('my_records', 'year'), $readAuth);
+    $reportPerUser = !empty($_GET['my_records']);
     $reportOptions = array(
       'readAuth' => $readAuth,
-      'dataSource' => "library/taxon_groups/filterable_{$type}_counts"
+      'dataSource' => "library/taxon_groups/filterable_{$type}_counts",
+      'caching' => true,
+      'cachePerUser' => $reportPerUser,
+      'cachetimeout' => $reportPerUser ? self::FAST_CACHE_REFRESH : self::SLOW_CACHE_REFRESH
     );
     self::check_filters($reportOptions);
     if (!empty($args['min_rank_sort_order_for_species']))
       $reportOptions['extraParams'] = array('min_taxon_rank_sort_order' => $args['min_rank_sort_order_for_species']);
     if ($output==='pie_chart') {
       $data = report_helper::get_report_data($reportOptions);
-      // roll categories into 'other' if too many
-      if (count($data)>5) {
-        $totalOther = 0;
-        for ($i = 5; $i<count($data); $i++) {
-          $totalOther += $data[$i]['count'];
-        }
-        array_splice($data, 5);
-        $data[] = array('taxon_group'=>lang::get('other'), 'count'=>$totalOther);
+      // Get the taxon groups used in the master checklist
+      $groups = report_helper::get_report_data(array(
+        'dataSource' => '/library/taxon_groups/taxon_groups_used_in_checklist',
+        'readAuth' => $readAuth,
+        'extraParams' => array('taxon_list_id' => variable_get('iform_master_checklist_id', 0)),
+        'caching' => true,
+        'cachePerUser' => false,
+        'cachetimeout' => self::SLOW_CACHE_REFRESH
+      ));
+      // make an easy lookup
+      $groupIds = array();
+      foreach($groups as $group) 
+        $groupIds[$group['id']] = $group['title'];
+      // roll categories into 'other' if too many and process to remove unofficial groups
+      $totalOther = 0;
+      $processedData = array();
+      foreach ($data as $row) {
+        if (count($processedData)>=10 || !array_key_exists($row['id'], $groupIds)) 
+          $totalOther += $row['count'];
+        else
+          $processedData[] = $row;
       }
+      if ($totalOther>0)
+        $processedData[] = array('taxon_group'=>lang::get('other'), 'count'=>$totalOther);
       $reportOptions['dataSource'] = 'static';
       $reportOptions += array(
-        'staticData' => $data,
+        'staticData' => $processedData,
         'chartType' => 'pie',
-        "seriesColors" => array('#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462'),
+        'seriesColors' => array('#ccebc5','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462', '#b3de69', '#fccde5', '#8dd3c7', '#bc80bd', '#d9d9d9'),
         'height' => '500',
         'yValues'=>'count',
         'xLabels'=>'taxon_group',
         'autoParamsForm' => false,
-        'caching' => true,
-        'cachePerUser' => false,
         'axesOptions' => array('yaxis'=>array('min' => 0, 'tickOptions' => array('formatString' => '%d'))),
-        'legendOptions' => array(
-          'show' => true,
-          'rendererOptions' => array('numberColumns' => ceil(count($data) / 10)) // 2 columns if > 10
-        ),
-        'rendererOptions' => array(
-          'sliceMargin' => 2
-        )
+        'legendOptions' => array('show' => true),
+        'rendererOptions' => array('sliceMargin' => 3)
       );
       $r .= report_helper::report_chart($reportOptions);
     } else {

@@ -10,6 +10,10 @@
 .categories, .reports, .report-outputs {
   list-style-type: none;
 }
+.categories li, .reports li, .report-outputs li {
+  list-style-type: none;
+  background: none;
+}
 .reports li {
   display: inline-block;
 }
@@ -40,6 +44,9 @@
 }
 .report-outputs a.link-pie_chart {
   background-image: url("../../../media/images/report_piechart.png");
+}
+table.report-grid {
+  min-width: 60%;
 }
 @media (min-width: 900px) {
   .reports > li {
