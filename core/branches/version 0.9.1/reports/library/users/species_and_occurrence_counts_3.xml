@@ -16,9 +16,11 @@
       <where>o.survey_id=#survey_id#</where>
     </param>
     <param name="date_range" display="Show league for" datatype="lookup" lookup_values="all:All time,year:Last year,month:Last month,week:Last week" emptyvalue="all">
-      <where operator="equal" value="year">o.cache_created_on &gt; now()-'1 year'::interval</where>
-      <where operator="equal" value="month">o.cache_created_on &gt; now()-'1 month'::interval</where>
-      <where operator="equal" value="week">o.cache_created_on &gt; now()-'1 week'::interval</where>
+      <wheres>
+        <where operator="equal" value="year">o.cache_created_on &gt; now()-'1 year'::interval</where>
+        <where operator="equal" value="month">o.cache_created_on &gt; now()-'1 month'::interval</where>
+        <where operator="equal" value="week">o.cache_created_on &gt; now()-'1 week'::interval</where>
+      </wheres>
     </param>
     <param name="website_exclusions" display="List of website IDs to exclude" default=""
         description="Because some website owners don't like league tables, this allows them to be excluded by providing a comma separated list of IDs" datatype="integer[]">
