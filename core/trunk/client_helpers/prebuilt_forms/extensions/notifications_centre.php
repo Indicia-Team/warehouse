@@ -276,6 +276,23 @@ class extension_notifications_centre {
     //Only include notifications associated with a set of recording group ids if option is supplied.
     if (!empty($options['groupIds']))
       $extraParams['group_ids'] = $options['groupIds'];
+    $columns = array(
+        'data' => array('fieldname'=>'data','json'=>true,
+            'template'=>'<div class="type-{source_type}"><div class="status-{record_status}"></div></div><div class="note-type-{source_type}">{comment}</div>'.
+            '<div class="comment-from helpText" style="margin-left: 34px; display: block;">from {username} on {triggered_date}</div>', 'display'=>'Message'),
+        'occurrence_id' => array('fieldname'=>'occurrence_id'),
+        'actions' => array('actions'=>$availableActions),
+        'triggered_date' => array('fieldname'=>'triggered_date', 'visible' => false)
+    );
+    // allow columns config to override our default setup
+    if (!empty($options['columns'])) {
+      foreach($options['columns'] as $column) {
+        if (!empty($column['actions']))
+          $columns['actions'] = $column;
+        elseif (!empty($column['fieldname']))
+          $columns[$column['fieldname']] = $column;
+      }
+    }
     $r = report_helper::report_grid(array(
       'id'=>'notifications-'.$options['id'],
       'readAuth' => $auth['read'],
@@ -287,14 +304,7 @@ class extension_notifications_centre {
       'extraParams'=>$extraParams,
       'paramDefaults'=>array('source_filter'=>'all'),
       'paramsFormButtonCaption'=>lang::get('Filter'),
-      'columns'=>array(
-        array('fieldname'=>'data','json'=>true,
-            'template'=>'<div class="type-{source_type}"><div class="status-{record_status}"></div></div><div class="note-type-{source_type}">{comment}</div>'.
-            '<div class="comment-from helpText" style="margin-left: 34px; display: block;">from {username} on {triggered_date}</div>', 'display'=>'Message'),
-        array('fieldname'=>'occurrence_id'),
-        array('actions'=>$availableActions),
-        array('fieldname'=>'triggered_date', 'visible' => false)
-      ),
+      'columns'=>array_values($columns)
     ));
     return $r;
   }
