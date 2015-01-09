@@ -46,12 +46,9 @@ using a basic integer for the cover, whilst on others this number is represented
   <columns> 
     <column name='species' display='Species' sql='co.taxon' datatype='text'/>
     <column name='habitat' display='Habitat' sql='tHab.term' datatype='text'/>
-    <!-- A few things to note here, firstly, the all the coalesces makes sure we return at least a 0 when doing an addition, as null addition doesn't work. The NULLIF around the whole of the number we are dividing by makes sure a null is returned if 
-    it is going to be 0, this avoids divide by 0 error. Then the two NULLIF statements included inside this make sure if we detect 0 as a species cover, it does not count towards the mean calculation at all, this behaviour is on request of client and 
+    <!-- A few things to note here, firstly, the all the coalesces makes sure we return at least a 0 when doing an addition, as null addition doesn't work. Then NULLIF statement make sures if we detect 0 as a species cover, it does not count towards the mean calculation at all, this behaviour is on request of client and 
     makes sense in the context of this report.-->
-    <column name='mean_species_cover' display='Mean Cover' sql="
-    (coalesce((cast(sum(oavInt.int_value) as float)),0) 
-        + coalesce(cast(sum(ttCov.sort_order)/10 as float),0)) 
-    / NULLIF(COALESCE(count(NULLIF(oavInt.int_value,0)),0)+ COALESCE(NULLIF(count(tCov.term),0),0),0)"/>
+    <column name='mean_species_cover' display='Mean Cover' sql="avg(NULLIF(coalesce(oavInt.int_value,0) + coalesce((cast(ttCov.sort_order/10 as float)),0),0))"/>
+    <column name='standard_deviation' display='Standard Deviation' sql="stddev_samp(NULLIF(coalesce(oavInt.int_value,0) + coalesce((cast(ttCov.sort_order/10 as float)),0),0))"/>
   </columns>
 </report>
