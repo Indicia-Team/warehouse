@@ -15,7 +15,7 @@ into temporary to_update
 from cache_occurrences co, samples s
 where s.id=co.sample_id and s.deleted=false;
 
-create index ix_temp_to_update on to_update(temp);
+create index ix_temp_to_update on to_update(id);
 
 update cache_occurrences co 
 set output_sref = up.output_sref
