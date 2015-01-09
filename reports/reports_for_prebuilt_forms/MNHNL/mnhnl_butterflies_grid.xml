@@ -41,21 +41,21 @@
     WHERE s2.deleted = false and s2.location_name like 'GR%') griddet ON griddet.parent_id = s.id
   INNER JOIN sample_attribute_values sav0
   		ON sav0.sample_id = s.id AND sav0.sample_attribute_id = #username_attr_id# and sav0.deleted = FALSE
-  INNER JOIN sample_attribute_values sav1
+  LEFT JOIN sample_attribute_values sav1
   		ON sav1.sample_id = s.id AND sav1.sample_attribute_id = #observer_attr_id# and sav1.deleted = FALSE
-  INNER JOIN sample_attribute_values sav2
+  LEFT JOIN sample_attribute_values sav2
   		ON sav2.sample_id = s.id AND sav2.sample_attribute_id = #month_attr_id# and sav2.deleted = FALSE
-  INNER JOIN sample_attribute_values sav3
+  LEFT JOIN sample_attribute_values sav3
   		ON sav3.sample_id = s.id AND sav3.sample_attribute_id = #numberinmonth_attr_id# and sav3.deleted = FALSE
-  INNER JOIN sample_attribute_values sav4
+  LEFT JOIN sample_attribute_values sav4
   		ON sav4.sample_id = s.id AND sav4.sample_attribute_id = #starttime_attr_id# and sav4.deleted = FALSE
-  INNER JOIN sample_attribute_values sav5
+  LEFT JOIN sample_attribute_values sav5
   		ON sav5.sample_id = s.id AND sav5.sample_attribute_id = #endtime_attr_id# and sav5.deleted = FALSE
-  INNER JOIN sample_attribute_values sav6
+  LEFT JOIN sample_attribute_values sav6
   		ON sav6.sample_id = s.id AND sav6.sample_attribute_id = #temperature_attr_id# and sav6.deleted = FALSE
-  INNER JOIN sample_attribute_values sav7
+  LEFT JOIN sample_attribute_values sav7
   		ON sav7.sample_id = s.id AND sav7.sample_attribute_id = #wind_attr_id# and sav7.deleted = FALSE
-  INNER JOIN sample_attribute_values sav8
+  LEFT JOIN sample_attribute_values sav8
   		ON sav8.sample_id = s.id AND sav8.sample_attribute_id = #cloud_attr_id# and sav8.deleted = FALSE
   LEFT JOIN cache_termlists_terms tmonth ON tmonth.id=sav2.int_value
   LEFT JOIN cache_termlists_terms tnumber ON tnumber.id=sav3.int_value
