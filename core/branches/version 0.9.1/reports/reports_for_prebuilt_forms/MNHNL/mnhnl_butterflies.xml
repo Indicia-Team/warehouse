@@ -11,7 +11,7 @@
   		s.date_end,
   		s.date_type
   FROM samples s
-  INNER JOIN sample_attribute_values sav
+  LEFT JOIN sample_attribute_values sav
   		ON sav.sample_id = s.id AND sav.sample_attribute_id = #observer_attr_id# and sav.deleted = FALSE
   INNER JOIN sample_attribute_values sav1
   		ON sav1.sample_id = s.id AND sav1.sample_attribute_id = #userName_attr_id# and sav1.deleted = FALSE
