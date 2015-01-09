@@ -352,7 +352,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
           $this->db->query("update termlists_terms tlt set parent_id=tltp.id 
             from terms t, termlists_terms tltp
             join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$term[2]'
-            where tlt.termlist_id={tl->id} and t.id=tlt.term_id and t.deleted=false and t.term='$term[0]' 
+            where tlt.termlist_id={$tl->id} and t.id=tlt.term_id and t.deleted=false and t.term='$term[0]'
             and tltp.termlist_id=tlt.termlist_id and tltp.deleted=false");
         }
       }
