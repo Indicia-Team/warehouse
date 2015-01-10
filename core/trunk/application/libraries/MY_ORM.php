@@ -1388,6 +1388,7 @@ class ORM extends ORM_Core {
     if (!empty($this->attrValModels[$this->object_name])) {
       $attrValueModel = $this->attrValModels[$this->object_name];
       $attrValueModel->clear();
+      $attrValueModel->wantToUpdateMetadata = TRUE;
     } else {
       $attrValueModel=ORM::factory($this->object_name.'_attribute_value');
       $this->attrValModels[$this->object_name] = $attrValueModel;
@@ -1489,7 +1490,7 @@ class ORM extends ORM_Core {
       // A float may loose precision or trailing 0 - just check for small percentage difference
       if ( strcmp($attrValueModel->$vf, $value)===0 ||
           ($dataType === 'G' && !empty($attrValueModel->$vf)) ) {
-        kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
+        kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId.");
       } else {
         if ( $dataType === 'F' && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
           kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
