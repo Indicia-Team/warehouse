@@ -30,6 +30,12 @@
 abstract class Attribute_Value_ORM extends ORM {
 
   /**
+   * Default behaviour on save is to update metadata. If we detect no changes we can skip this.
+   * @var boolean
+   */
+  public $wantToUpdateMetadata = true;
+
+  /**
   * Function that applies the validation rules for any attribute value (sample, location or occurrence).
   * @param Validation $array The validation object to check.
   * @param String $type Specify the attribute type, either sample, occurrence or location
