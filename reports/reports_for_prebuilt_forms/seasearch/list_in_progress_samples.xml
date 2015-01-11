@@ -1,0 +1,21 @@
+<report
+    title="List in progress samples"
+    description="List samples that are 'In Progress', this is held in a sample attribute."
+>
+  <query>
+    SELECT #columns#
+    FROM samples s
+    JOIN sample_attribute_values sav on sav.sample_id=s.id and sav.int_value=1
+    JOIN sample_attributes sa on sa.id=sav.sample_attribute_id AND sa.id=#in_progress_attr_id#
+    WHERE s.deleted=false
+    GROUP BY s.id
+    ORDER BY s.id desc
+  </query>
+  <params>
+    <param name='in_progress_attr_id' display='In Progress Attribute Id' description='Id of sample attribute that holds whether a sample is in progress or not' datatype='integer'/>
+  </params>
+  <columns>
+    <column name='sample_id' display='ID' sql='s.id' datatype='integer' in_count="true" />
+    <column name='created_on' display='Created On' sql="to_char(s.created_on,'DD/MM/YYYY')" datatype='date' />
+  </columns>
+</report>
