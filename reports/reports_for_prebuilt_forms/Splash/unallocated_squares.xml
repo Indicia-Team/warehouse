@@ -27,7 +27,7 @@ Useful if old squares are left on the system but are not currently active." data
     </param>
   </params>
   <columns> 
-    <column name='id' sql='l.id' datatype='integer' visible='false'/>  
+    <column name='id' sql='l.id' datatype='integer' visible='false' in_count="true"/>  
     <column name='entered_sref' display='Grid Ref' sql="regexp_replace(l.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' />
     <column name='count' sql='count(uw.id)' display='Number of allocated users' datatype='integer' aggregate="true"/>
     <column name='gn' visible='false' feature_style="graphicName" sql="'square'" aggregate="true"/>    
