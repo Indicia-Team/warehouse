@@ -31,9 +31,9 @@
   </params>
   <columns> 
     <column name='id' sql='distinct(s.id)' datatype='integer' visible='false'/>
-    <column name='survey_title' display='Survey title' sql='s.title' datatype='text'/>
+    <column name='survey_title' display='Survey title' sql='s.title' datatype='text' in_count="true"/>
     <column name='taxon_id' sql='t.id' datatype='integer' visible='false'/>
-    <column name='taxon' display='Taxon' sql='t.taxon' datatype='text'/>
+    <column name='taxon' display='Taxon' sql='t.taxon' datatype='text' in_count="true"/>
     <column name='plot_count' display='Plot Count' sql='count(plot.id)' datatype='integer'/>
   </columns>
 </report>
