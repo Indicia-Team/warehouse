@@ -713,15 +713,15 @@ $config['occurrences']['update'] = "update cache_occurrences co
           s.privacy_precision,
           -- work out best square size to reflect a lat long's true precision
           case
-            when spv.int_value>=501 then 10000
-            when spv.int_value between 51 and 500 then 1000
-            when spv.int_value between 6 and 50 then 100
+            when coalesce(spv.int_value, spv.float_value)>=501 then 10000
+            when coalesce(spv.int_value, spv.float_value) between 51 and 500 then 1000
+            when coalesce(spv.int_value, spv.float_value) between 6 and 50 then 100
             else 10
           end,
           10 -- default minimum square size
         ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)),
-      sref_precision=spv.int_value
+      sref_precision=round(coalesce(spv.int_value, spv.float_value))
     from occurrences o
     #join_needs_update#
     join (
@@ -842,15 +842,15 @@ $config['occurrences']['insert']="insert into cache_occurrences (
         s.privacy_precision,
         -- work out best square size to reflect a lat long's true precision
         case
-          when spv.int_value>=501 then 10000
-          when spv.int_value between 51 and 500 then 1000
-          when spv.int_value between 6 and 50 then 100
+          when coalesce(spv.int_value, spv.float_value)>=501 then 10000
+          when coalesce(spv.int_value, spv.float_value) between 51 and 500 then 1000
+          when coalesce(spv.int_value, spv.float_value) between 6 and 50 then 100
           else 10
         end,
         10 -- default minimum square size
       ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)),
-    spv.int_value
+    round(coalesce(spv.int_value, spv.float_value))
   from occurrences o
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 
