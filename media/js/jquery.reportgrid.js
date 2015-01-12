@@ -684,7 +684,7 @@ var simple_tooltip;
      */
     this.ajaxload = function() {
       // are we on a hidden tab?
-      if ($(this).parents('.ui-tabs-panel:visible').length===0) {
+      if ($(this).parents('.ui-tabs-panel').length>0 && $(this).parents('.ui-tabs-panel:visible').length===0) {
         var report=this;
         indiciaFns.bindTabsActivate($(this).parents('.ui-tabs-panel').parent(), function(evt, ui) {
           var panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
