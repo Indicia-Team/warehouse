@@ -187,7 +187,7 @@ var simple_tooltip;
             href='';
           }
           if (typeof action.img!=="undefined") {
-            img=action.img.replace(/{rootFolder}/g, div.settings.rootFolder.replace(/\?q=$/, ''));
+            img=action.img.replace(/\{rootFolder\}/g, div.settings.rootFolder.replace(/\?q=$/, ''));
             content = '<img src="'+img+'" title="'+action.caption+'" />';
           } else
             content = action.caption;
@@ -697,10 +697,10 @@ var simple_tooltip;
      */
     this.ajaxload = function() {
       // are we on a hidden tab?
-      if ($(this).parents('.ui-tabs-panel').hasClass('ui-tabs-hide')) {
+      if ($(this).parents('.ui-tabs-panel:visible').length===0) {
         var report=this;
-        $($(this).parents('.ui-tabs-panel').parent()).bind('tabsshow', function(evt, ui) {
-          panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+        indiciaFns.bindTabsActivate($(this).parents('.ui-tabs-panel').parent(), function(evt, ui) {
+          var panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
           if (panel.id===$(report).parents('.ui-tabs-panel')[0].id) {
             report.reload(true);
             $(this).unbind(evt);
