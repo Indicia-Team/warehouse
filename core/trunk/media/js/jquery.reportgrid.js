@@ -368,7 +368,7 @@ var simple_tooltip;
         data: null,
         success: function(response) {
           var tbody = $(div).find('tbody'), rows, rowclass, rowclasses, tdclasses, classes, hasMore=false,
-              value, rowInProgress=false, rowOutput, rowId, features=[],
+              value, rowInProgress=false, rowOutput='', rowId, features=[],
               feature, geom, map, valueData;
           // if we get a count back, then update the stored count
           if (typeof response.count !== "undefined") {
@@ -524,8 +524,7 @@ var simple_tooltip;
           }
 
           // Set a class to indicate the sorted column
-          $('#' + div.id + ' th').removeClass('asc');
-          $('#' + div.id + ' th').removeClass('desc');
+          $('#' + div.id + ' th').removeClass('asc').removeClass('desc');
           if (div.settings.orderby) {
             $('#' + div.id + '-th-' + div.settings.orderby).addClass(div.settings.sortdir.toLowerCase());
           }
@@ -664,24 +663,12 @@ var simple_tooltip;
     }
 
     this.getUrlParamsForAllRecords = function() {
-      var r;
+      var r={};
       // loop, though we only return 1.
       $.each($(this), function(idx, div) {
         r=getUrlParamsForAllRecords(div, false);
       });
       return r;
-    };
-
-    /**
-     * Public function which adds a list of records to the bottom of the grid, loaded according to a filter.
-     * Typical usage might be to specify an id to add a single record.
-     */
-    this.addRecords = function(filterField, filterValue) {
-      $.each($(this), function(idx, div) {
-        var request = getRequest(div);
-        request += '&' + filterField + '=' + filterValue;
-        loadGridFrom(div, request, false);
-      });
     };
 
     this.reload = function(recount) {
