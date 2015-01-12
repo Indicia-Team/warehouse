@@ -341,7 +341,7 @@ jQuery(document).ready(function($) {
         
         $.each(indiciaData.mapdiv.map.editLayer.features, function(i, feature) {
           // ignore features with a special purpose, e.g. the selected record when verifying
-          if (typeof feature.tag==="undefined") {
+          if (typeof feature.tag==="undefined" && (typeof feature.attributes.type==="undefined" || feature.attributes.type!=="boundary")) {
             if (feature.geometry.CLASS_NAME.indexOf('Multi')!==-1) {
               geoms = geoms.concat(feature.geometry.components);
             } else {
