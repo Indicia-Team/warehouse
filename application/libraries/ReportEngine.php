@@ -878,7 +878,6 @@ class ReportEngine {
           ->join("{$entity}_attributes_websites as aw", "aw.{$entity}_attribute_id", 'a.id')
           ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id', 'LEFT')          
           ->where("(wa.to_website_id in ($websiteIds) or wa.to_website_id is null)")
-          ->where("(aw.website_id in ($websiteIds) or aw.website_id is null)")
           ->where("(wa.provide_for_{$this->sharingMode}='t' or wa.provide_for_{$this->sharingMode} is null)")
           ->where(array('aw.deleted' => 'f'));
     }
