@@ -34,7 +34,7 @@
     </param>
   </params>
   <columns> 
-    <column name='habitat' display='Habitat' sql="distinct(hab.term)" datatype='text'/>
+    <column name='habitat' display='Habitat' sql="hab.term" datatype='text' in_count="true"/>
     <column name='habitat_abbr' display='Abbreviation' sql="
       CASE 
         WHEN hab.term='Arable field margins' then 'AFM' 

@@ -36,7 +36,7 @@ ones saved with a fine scale sub-habitat."
     </param>
   </params>
   <columns> 
-    <column name='broad_habitat' display='Broad Habitat' sql="distinct(hab.term)" datatype='text'/>
+    <column name='broad_habitat' display='Broad Habitat' sql="hab.term" datatype='text' in_count="true"/>
     <column name='habitat_abbr' display='Abbreviation' sql="
       CASE 
         WHEN hab.term='Arable field margins' then 'AFM' 

@@ -44,8 +44,8 @@ using a basic integer for the cover, whilst on others this number is represented
     </param>
   </params>
   <columns> 
-    <column name='species' display='Species' sql='co.taxon' datatype='text'/>
-    <column name='habitat' display='Habitat' sql='tHab.term' datatype='text'/>
+    <column name='species' display='Species' sql='co.taxon' datatype='text' in_count="true"/>
+    <column name='habitat' display='Habitat' sql='tHab.term' datatype='text' in_count="true"/>
     <!-- A few things to note here, firstly, the all the coalesces makes sure we return at least a 0 when doing an addition, as null addition doesn't work. Then NULLIF statement make sures if we detect 0 as a species cover, it does not count towards the mean calculation at all, this behaviour is on request of client and 
     makes sense in the context of this report.-->
     <column name='mean_species_cover' display='Mean Cover' sql="avg(NULLIF(coalesce(oavInt.int_value,0) + coalesce((cast(ttCov.sort_order/10 as float)),0),0))"/>
