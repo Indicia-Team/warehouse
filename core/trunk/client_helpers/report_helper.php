@@ -73,7 +73,7 @@ class report_helper extends helper_base {
    * @param string $fieldname The fieldname for the report_picker control (=HTML form value)
    * @param string $default Name of the report to be initially selected
    * @param array $list Array of the reports and folders within the level to be output.
-   * @return HTML for the unordered list containing the level.
+   * @return string HTML for the unordered list containing the level.
    * @access private
    */
   private static function get_report_list_level($fieldname, $default, $list) {
@@ -475,7 +475,6 @@ class report_helper extends helper_base {
     $altRowClass = '';
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
-    $relpath = self::relative_client_helper_path();
     $addFeaturesJs = '';
     $haveUpdates=false;
     $updateformID=0;
@@ -882,7 +881,6 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   */
   private static function advanced_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl) {
     global $indicia_templates;
-    $r = '';
     $replacements = array();
     // build a link URL to an unspecified page
     $pagLinkUrl .= $sortAndPageUrlParams['page']['name'];
@@ -1090,6 +1088,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     // build the series data
     $seriesData = array();
     $lastRequestSource = '';
+    $xLabelsForSeries=array();
+    $r = '';
     for ($idx=0; $idx<$seriesCount; $idx++) {
       // copy the array data back into the options array to make a normal request for report data
       $options['yValues'] = $yValues[$idx];
@@ -1115,11 +1115,6 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
 
       $lastRequestSource = $options['dataSource'];
       $values=array();
-      $xLabelsForSeries=array();
-      //The options to pass to the report when the user clicks on a summary are held in an array whose keys match
-      //the number of the bar column (this is different to a pie chart). We use this variable to return the data 
-      //from the correct key in the array.
-      $trackerForBarGraph = 1;
       $jsData = array();
       foreach ($data as $row) {
         if (isset($options['xValues']))
@@ -1131,7 +1126,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             $values[] = array(lang::get($row[$options['xLabels']]), self::string_or_float($row[$options['yValues']]));
           } else {
             $values[] = self::string_or_float($row[$options['yValues']]);
-            if (isset($options['xLabels']))
+            if (isset($options['xLabels']) && $idx===0)
+              // get x labels from the first series only
               $xLabelsForSeries[] = $row[$options['xLabels']];
           }
         }
@@ -1198,7 +1194,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     if (!empty($options['height']))
       $heightStyle = "height: $options[height]px;";
     if (!empty($options['width'])) {
-      if (substr($options['width']!=='%'))
+      if (substr($options['width'], -1)!=='%')
         $options['width'] .= 'px';
       $widthStyle = "width: $options[width];";
     }
@@ -1577,7 +1573,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       // using geoserver, so we just need to know the param values.
       $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantRecords=0&wantParameters=1');
       $currentParamValues = self::get_report_grid_current_param_values($options);
-      $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
+      $r = self::get_report_grid_parameters_form($response, $options, $currentParamValues);
     }
     if (!isset($response['parameterRequest']) || count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
       if (empty($options['geoserverLayer'])) {
@@ -1590,7 +1586,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           'strokeWidth'=>empty($options['featureDoubleOutlineColour']) ? "\${getstrokewidth}" : 1,
           'fillOpacity'=>"\${getfillopacity}",
           'strokeOpacity'=>0.8,
-          'pointRadius'=>5,
+          'pointRadius'=>"\${getpointradius}",
           'graphicZIndex'=>"\${getgraphiczindex}");
         $selsettings = array_merge($defsettings, array(
           'fillColor'=> '#ff0000',
@@ -1606,6 +1602,17 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         // when selected, a little bit more opaque
         $selStyleFns['fillOpacity'] = "getfillopacity: function(feature) {
           return Math.max(0, 0.7-feature.layer.map.zoom/100);
+        }";
+        // default fill opacity, more opaque if selected, and gets more transparent as you zoom in.
+        // Note that the number of map units only approximates a metre in web-mercator, accurate
+        // near the equator but not near the poles. We use a very crude adjustment if necessary
+        // which works well around the UK's latitude.
+        $defStyleFns['pointRadius'] = "getpointradius: function(feature) {
+          var units = feature.attributes.sref_precision;
+          if (feature.geometry.getCentroid().y > 4000000) {
+            units = units * (feature.geometry.getCentroid().y / 8200000);
+          }
+          return Math.max(5, units / (feature.layer.map.getResolution()));
         }";
         // default z index, smaller objects on top
         $defStyleFns['graphicZIndex'] = "getgraphiczindex: function(feature) {
@@ -1707,7 +1714,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $addFeaturesJs = "";        
         // No need to pass the default type of vector display, so use empty obj to keep JavaScript size down
         $opts = $options['displaySymbol']==='vector' ? '{}' : json_encode(array('type'=>$options['displaySymbol']));
-        if ($options['clickableLayersOutputMode']<>'popup' && $options['clickableLayersOutputMode']<>'div') {
+        if ($options['clickableLayersOutputMode']<>'popup' && $options['clickableLayersOutputMode']<>'div' && isset($wktCol)) {
           // If we don't need record data for every row for feature clicks, then only include necessary columns to minimise JS
           $colsToInclude['occurrence_id']='';
           $colsToInclude[$wktCol]='';
@@ -1746,7 +1753,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         } else {
           $geoms = array();
           foreach ($records as $record) { 
-            if (!empty($record[$wktCol])) {
+            if (isset($wktCol) && !empty($record[$wktCol])) {
               $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
               // rather than output every geom separately, do a list of distinct geoms to minify the JS
               if (!$geomIdx = array_search('"'.$record[$wktCol].'"', $geoms)) {          
@@ -2010,7 +2017,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * bar. This effectively re-builds the current page's URL, but drops the query string parameters that
    * indicate the sort order and page number.
    * @param array $sortAndPageUrlParams List of the sorting and pagination parameters which should be excluded.
-   * @return unknown_type
+   * @return string
    */
   private static function report_grid_get_reload_url($sortAndPageUrlParams) {
     // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
@@ -2474,7 +2481,6 @@ update_controls();
     // Not implementing a download.
     $r .= "<tbody>\n";
     $date_from = array('year'=>$options["year"], 'month'=>1, 'day'=>1);
-    $date_to = array('year'=>$options["year"], 'month'=>12, 'day'=>31);
     $weekno=0;
     // ISO Date - Mon=1, Sun=7
     // Week 1 = the week with date_from in
@@ -2817,9 +2823,6 @@ update_controls();
     // convert records to a date based array so it can be used when generating the grid.
     $warnings .= '<span style="display:none;">Report request finish : '.date(DATE_ATOM).'</span>'."\n";
     $records = $response['records'];
-    $pageUrlParams = self::get_report_calendar_grid_page_url_params($options);
-    $pageUrl = self::report_calendar_grid_get_reload_url($pageUrlParams);
-    $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
     data_entry_helper::$javascript .= "
 var pageURI = \"".$_SERVER['REQUEST_URI']."\";
 function rebuild_page_url(oldURL, overrideparam, overridevalue) {
@@ -2891,12 +2894,8 @@ update_controls();
       $weekOne_date->modify('-'.($weekOne_date_weekday-$weekstart[1]).' day'); 
     else if($weekOne_date_weekday < $weekstart[1])
       $weekOne_date->modify('-'.(7+$weekOne_date_weekday-$weekstart[1]).' day');
-    // don't do anything if equal.
-    $year_start = date_create(substr($options['date_start'],0,4).'-Jan-01');
-    $year_end = date_create(substr($options['date_start'],0,4).'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
     $firstWeek_date = clone $weekOne_date; // date we start providing data for
     $weekOne_date_yearday = $weekOne_date->format('z'); // day within year note year_start_yearDay is by definition 0
-    $weekOne_date_weekday = $weekOne_date->format('N'); // day within week
     $minWeekNo = $weeknumberfilter[0]!='' ? $weeknumberfilter[0] : 1;
     $numWeeks = ceil($weekOne_date_yearday/7); // number of weeks in year prior to $weekOne_date - 1st Jan gives zero, 2nd-8th Jan gives 1, etc
     if($minWeekNo-1 < (-1 * $numWeeks)) $minWeekNo=(-1 * $numWeeks)+1; // have to allow for week zero
@@ -2937,12 +2936,9 @@ update_controls();
     $lastLocation=false;
     $seriesLabels=array();
     $lastTaxonID=false;
-    $lastSample=false;
     $locationSamples = array();
-    $dateList = array();
     $weekList = array();
     $avgFieldList = !empty($options['avgFields']) ? explode(',',$options['avgFields']) : false;
-    $smpAttrList = array();
     if(!$avgFieldList || count($avgFieldList)==0) $avgFields = false;
     else {
       $avgFields = array();
@@ -3126,7 +3122,6 @@ update_controls();
       if(isset($format['table'])) $format['table']['display']=true;
       else if(isset($format['chart'])) $format['chart']['display']=true;
     }
-    $seriesData=array();
     $r .= "\n<div class=\"inline-control report-summary-controls\">";
     $userPicksFormat = count($format)>1 && !(isset($options['simultaneousOutput']) && $options['simultaneousOutput']);
     $userPicksSource = ($options['includeRawData'] ? 1 : 0) +
@@ -3259,7 +3254,7 @@ update_controls();
         foreach($rawValues as $idx => $rawValue) {
           $rawTotalRow[$idx] += $rawValue;
         }
-        // each series will occupy an entry in $seriesData
+        // each series will occupy an entry in $...SeriesData
         if ($options['includeChartItemSeries']) {
           $seriesIDs[] = $seriesID;
           $rawSeriesData[] = '['.implode(',', $rawValues).']';
@@ -4140,9 +4135,6 @@ update_controls();
   		$weekOne_date->modify('-'.($weekOne_date_weekday-$weekstart[1]).' day');
   	else if($weekOne_date_weekday < $weekstart[1])
   		$weekOne_date->modify('-'.(7+$weekOne_date_weekday-$weekstart[1]).' day');
-  	// don't do anything if equal.
-  	$year_start = date_create($options['year'].'-Jan-01');
-  	$year_end = date_create($options['year'].'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
   	$firstWeek_date = clone $weekOne_date; // date we start providing data for
   	$weekOne_date_yearday = $weekOne_date->format('z'); // day within year note year_start_yearDay is by definition 0
   	$weekOne_date_weekday = $weekOne_date->format('N'); // day within week
@@ -4188,10 +4180,8 @@ update_controls();
   	$lastTaxonID=false;
   	$lastSample=false;
   	$locationSamples = array();
-  	$dateList = array();
   	$weekList = array();
   	$sampleFieldList = !empty($options['sampleFields']) ? explode(',',$options['sampleFields']) : false;
-  	$smpAttrList = array();
   	if(!$sampleFieldList || count($sampleFieldList)==0) $sampleFields = false;
   	else {
   		$sampleFields = array();
@@ -4274,7 +4264,6 @@ update_controls();
   	self::add_resource('jqplot_category_axis_renderer');
   	$opts = array();
    	$opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['rendererOptions'])."}";
-  	$seriesData=array();
   	$warnings .= '<span style="display:none;">Controls complete : '.date(DATE_ATOM).'</span>'."\n";
   	$seriesToDisplay=(isset($options['outputSeries']) ? explode(',', $options['outputSeries']) : 'all');
   	$thClass = $options['thClass'];
