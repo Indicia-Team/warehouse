@@ -299,11 +299,11 @@ class XMLReportReader_Core implements ReportReader
         // implement the appropriate sharing agreement across websites
         $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
         // add a join to users so we can check their privacy preferences. This does not apply if record input
-        // on this website.
+        // on this website, or for the admin user account.
         $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=".$this->createdByField;
         $query = str_replace(array('#agreements_join#','#sharing_filter#','#sharing_website_ids#'), 
             array($agreementsJoin, 
-            "({$this->websiteFilterField} in ($idList) OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
+            "({$this->websiteFilterField} in ($idList) OR privacyusers.id=1 OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
             "AND {$this->websiteFilterField} in ($sharedWebsiteIdList)", $sharedWebsiteIdList), $query);
       }
     }
@@ -791,7 +791,7 @@ class XMLReportReader_Core implements ReportReader
         'searchArea' => array('datatype'=>'geometry', 'default'=>'', 'display'=>'Boundary',
             'description'=>'Boundary to search within',
             'wheres' => array(
-              array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913))")
+              array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_makevalid(st_geomfromtext('#searchArea#',900913)))")
             )
         ),
         'occurrence_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'ID',
@@ -905,7 +905,7 @@ class XMLReportReader_Core implements ReportReader
             'description'=>'Minimum quality of records to include', 
             'lookup_values'=>'=V:Verified records only,C:Recorder was certain,L:Recorder thought the record was at least likely,P:Pending verification,' .
                 'T:Pending verification for trusted recorders,!D:Everything except dubious or rejected,!R:Everything except rejected,all:Everything including rejected,D:Queried records only,'.
-                'R:Rejected records only,DR:Queried or rejected records',
+                'R:Rejected records only,DR:Queried or rejected records,All:All records',
             'wheres' => array(
               array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
               array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
