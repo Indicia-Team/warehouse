@@ -158,7 +158,8 @@ class Report_Controller extends Data_Service_Base_Controller {
           // limit explode to 2 in case there is an = in the value itself
           $nv = explode("=", $pair, 2);
           $name = urldecode($nv[0]);
-          $value = urldecode($nv[1]);
+          // In some cases the pair might not parse correctly so we only get the key, with no value.
+          $value = count($nv)===2 ? urldecode($nv[1]) : '';
           $vars[$name] = $value;
         }
       }
