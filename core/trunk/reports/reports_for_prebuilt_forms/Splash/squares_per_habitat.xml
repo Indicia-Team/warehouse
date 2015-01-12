@@ -35,7 +35,7 @@ Useful if old squares are left on the system but are not currently active." data
   </params>
   <columns> 
     <column name='id' sql='distinct(square.id)' datatype='integer' visible='false'/>
-    <column name='centroid_sref' display='Square' sql="regexp_replace(square.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' />
+    <column name='centroid_sref' display='Square' sql="regexp_replace(square.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' in_count="true"/>
     <column name='gn' visible='false' feature_style="graphicName" sql="'square'" />    
     <column name="sc" visible="false" feature_style="strokeColor" sql="'green'" />
     <column name="fc" visible="false" feature_style="fillColor" sql="'green'"/>
