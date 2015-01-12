@@ -83,8 +83,10 @@ class user_identifier {
     $userPersonObj = new stdClass();
     $userPersonObj->db = new Database();
     if (!empty($request['warehouse_user_id'])) {
-      $userId=$request['warehouse_user_id'];
+      $userId = $request['warehouse_user_id'];
       $qry = $userPersonObj->db->select('person_id')->from('users')->where(array('id'=>$userId))->get()->result_array(false);
+      if (!isset($qry[0]))
+        throw new exception("Error: unknown warehouse_user_id ($userId)");
       $userPersonObj->person_id = $qry[0]['person_id'];
     } else {
       $existingUsers = array();
