@@ -116,7 +116,7 @@ class user_identifier {
         if ($identifier->type==='email') {
           // Filter to find either the user identifier or the email in the person record
           $userPersonObj->db->where("(um.identifier='$ident' OR p.email_address='$ident')");
-          $userPersonObj->db->where("(t.term='$type' OR p.email_address='$type')");
+          $userPersonObj->db->where("(t.term='$type' OR p.email_address='$ident')");
         } else {
           $userPersonObj->db->where("um.identifier='$ident'");
           $userPersonObj->db->where("t.term='$type'");
