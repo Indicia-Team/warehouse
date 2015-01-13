@@ -183,6 +183,8 @@ class ORM extends ORM_Core {
 
   /**
    * Override load_values to add in a vague date field. Also strips out any custom attribute values which don't go into this model.
+   * @param   array  values to load
+   * @return  ORM
    */
   public function load_values(array $values)
   {
@@ -211,6 +213,9 @@ class ORM extends ORM_Core {
 
   /**
    * Override the reload_columns method to add the vague_date virtual field
+   * @param bool $force Reload the columns from the db even if already loaded
+   * @return $this|\ORM
+   * @throws \Kohana_Database_Exception
    */
   public function reload_columns($force = FALSE)
   {
@@ -229,13 +234,14 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Provide an accessor so that the view helper can retrieve the for the model by field name.
+   * Provide an accessor so that the view helper can retrieve the error for the model by field name.
    * Will also retrieve errors from linked models (models that were posted in the same submission)
    * if the field name is of the form model:fieldname.
    *
    * @param string $fieldname Name of the field to retrieve errors for. The fieldname can either be
    * simple, or of the form model:fieldname in which linked models can also be checked for errors. If the
    * submission structure defines the fieldPrefix for the model then this is used instead of the model name.
+   * @return string The error text.
    */
   public function getError($fieldname) {
     $r='';
@@ -290,6 +296,8 @@ class ORM extends ORM_Core {
    *
    * @param Validation $array Validation array object.
    * @param boolean $save Optional. True if this call also saves the data, false to just validate. Default is false.
+   * @return boolean Returns TRUE on success or FALSE on fail.
+   * @throws Exception Rethrows any exceptions occurring on validate.
    */
   public function validate(Validation $array, $save = FALSE) {
     // set the default created/updated information
@@ -388,6 +396,8 @@ class ORM extends ORM_Core {
 
   /**
    * Do a default search for an item using the search_field setup for this model.
+   * @param $search_text Text to look up
+   * @return ORM The ORM object filtered to look up the text
    */
   public function lookup($search_text)
   {
@@ -699,6 +709,7 @@ class ORM extends ORM_Core {
    * Actually validate and submit the inner submission.
    *
    * @return int Id of the submitted record, or null if this failed.
+   * @throws Exception On access denied to the website of an existing record.
    */
   protected function validateAndSubmit() {
     $return = null;
@@ -816,6 +827,7 @@ class ORM extends ORM_Core {
    */
   protected function fkLookup($fkArr) {
     $r = false;
+    $key = '';
     if (ORM::$cacheFkLookups) {
       $keyArr=array('lookup', $fkArr['fkTable'], $fkArr['fkSearchField'], $fkArr['fkSearchValue']);
       // cache must be unique per filtered value (e.g. when lookup up a taxa in a taxon list).
@@ -1071,6 +1083,7 @@ class ORM extends ORM_Core {
    * of required fields. Override when there are other values which define the required fields
    * in the cache, e.g. for people each combination of website IDs defines a cache entry.
    * @param type $typeFilter
+   * @return string The cache key.
    */
   protected function getRequiredFieldsCacheKey($typeFilter) {
     $keyArr = array_merge(array('required', $this->object_name), $this->identifiers);
@@ -1145,6 +1158,7 @@ class ORM extends ORM_Core {
    * @param integer $survey_id If set then custom attributes are limited to those for this survey.
    * @param int @attrTypeFilter Specify a location type meaning id or a sample method meaning id to
    * filter the returned attributes to those which apply to the given type or method.
+   * @return array The list of submittable field definitions.
    */
   public function getSubmittableFields($fk = false, $website_id=null, $survey_id=null, $attrTypeFilter=null) {
     if ($website_id!==null)
@@ -1545,6 +1559,8 @@ class ORM extends ORM_Core {
    * Load the definition of an attribute from the database (cached)
    * @param string $attrTable Attribute type name, e.g. sample or occurrence
    * @param integer $attrId The ID of the attribute
+   * @return Object The definition of the attribute.
+   * @throws Exception When attribute ID not found.
    */
   protected function loadAttrDef($attrType, $attrId) {
     if (substr($attrId, 0, 3) == 'fk_')
@@ -1634,6 +1650,7 @@ class ORM extends ORM_Core {
    * @param $submission array Submission containing the foreign key field definitions to convert
    * @param $saveArray array Original form data being wrapped, which can contain filters to operate against the lookup table
    * of the form fkFilter:table:field=value.
+   * @return array The submission structure containing the fkFields element.
    */
   private function getFkFields($submission, $saveArray) {
     foreach ($submission['fields'] as $field=>$value) {
@@ -1744,8 +1761,8 @@ class ORM extends ORM_Core {
    * Override the ORM load_type method: modifies float behaviour.
    * Loads a value according to the types defined by the column metadata.
    *
-   * @param   string  column name
-   * @param   mixed   value to load
+   * @param   string $column Column name
+   * @param   mixed $value Value to load
    * @return  mixed
    */
   protected function load_type($column, $value)
