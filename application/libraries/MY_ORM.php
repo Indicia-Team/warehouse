@@ -805,8 +805,15 @@ class ORM extends ORM_Core {
           if ($fk) {
             $this->submission['fields'][$b['fkIdField']] = $fk;
           } else {
-            $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
-                  '" in the '.ucwords($b['fkSearchField']).' field.';
+            // look for a translation of the field name
+            $lookingIn = kohana::lang("default.dd:{$this->object_name}:$a");
+            if ($lookingIn === "default.dd:$this->object_name:$a") {
+              $fields = $this->getSubmittableFields(FALSE);
+              $lookingIn = empty($fields[$this->object_name . ':' . $a]) ?
+                $b['readableTableName'] . ' ' . ucwords($b['fkSearchField']) :
+                $fields[$this->object_name . ':' . $a];
+            }
+            $this->errors[$a] = "Could not find \"$b[fkSearchValue]\" in $lookingIn";
             $r=false;
           }
         }
@@ -1166,6 +1173,22 @@ class ORM extends ORM_Core {
     if ($survey_id!==null)
       $this->identifiers['survey_id']=$survey_id;
     $fields = $this->getPrefixedColumnsArray($fk);
+    $fields = array_merge($fields, $this->additional_csv_fields);
+    ksort($fields);
+    if ($this->has_attributes) {
+      $result = $this->getAttributes(FALSE, $attrTypeFilter);
+      foreach ($result as $row) {
+        if ($row->data_type == 'L' && $fk) {
+          // Lookup lists store a foreign key
+          $fieldname = $this->attrs_field_prefix . ':fk_' . $row->id;
+        }
+        else {
+          $fieldname = $this->attrs_field_prefix . ':' . $row->id;
+        }
+        $fields[$fieldname] = $row->caption;
+
+      }
+    }
     $struct = $this->get_submission_structure();
     if (array_key_exists('superModels', $struct)) {
       foreach ($struct['superModels'] as $super=>$content) {
@@ -1174,24 +1197,9 @@ class ORM extends ORM_Core {
     }
     if (array_key_exists('metaFields', $struct)) {
       foreach ($struct['metaFields'] as $metaField) {
-        $fields["metaFields:$metaField"]='';
+        $fields["metaFields:$metaField"] = '';
       }
     }
-    if ($this->has_attributes) {
-      $result = $this->getAttributes(false, $attrTypeFilter);
-      foreach($result as $row) {
-
-        if ($row->data_type == 'L' && $fk) {
-          // Lookup lists store a foreign key
-          $fieldname = $this->attrs_field_prefix.':fk_'.$row->id;
-        } else {
-          $fieldname = $this->attrs_field_prefix.':'.$row->id;
-        }
-        $fields[$fieldname] = $row->caption;
-
-      }
-    }
-    $fields = array_merge($fields, $this->additional_csv_fields);
     return $fields;
   }
 
@@ -1656,8 +1664,9 @@ class ORM extends ORM_Core {
     foreach ($submission['fields'] as $field=>$value) {
       if (substr($field, 0, 3)=='fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
-        // First work out the model to lookup against
-        $fieldName = substr($field,3);
+        // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
+        $fieldTokens = explode(':', substr($field,3));
+        $fieldName = $fieldTokens[0];
         if (array_key_exists($fieldName, $this->belongs_to)) {
           $fkTable = $this->belongs_to[$fieldName];
         } elseif ($this instanceof ORM_Tree && $fieldName == 'parent') {
@@ -1665,9 +1674,12 @@ class ORM extends ORM_Core {
         } else {
            $fkTable = $fieldName;
         }
-        // Create model without initialisting, so we can just check the lookup variables
+        // Create model without initialising, so we can just check the lookup variables
         kohana::log('debug', $fkTable);
         $fkModel = ORM::Factory($fkTable, -1);
+        // allow the linked lookup field to override the default model search field
+        if (count($fieldTokens)>1)
+          $fkModel->search_field = $fieldTokens[1];
         // let the model map the lookup against a view if necessary
         $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;
         // Generate a foreign key instance
@@ -1678,7 +1690,7 @@ class ORM extends ORM_Core {
           'fkTable' => $lookupAgainst,
           'fkSearchField' => $fkModel->search_field,
           'fkSearchValue' => trim($value['value']),
-          'readableTableName' => ucwords(preg_replace('/[\s_]+/', ' ', $fkTable))
+          'readableTableName' => ucfirst(preg_replace('/[\s_]+/', ' ', $fkTable))
         );
         // if the save array defines a filter against the lookup table then also store that. E.g.
         // a search in the taxa_taxon_list table may want to filter by the taxon list. This is done
