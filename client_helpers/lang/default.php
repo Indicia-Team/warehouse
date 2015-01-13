@@ -85,17 +85,18 @@ $default_terms = array(
   'upload_not_available' => 'The uploaded file is no longer available. Please try uploading again.',
   
   // define the captions for fields in the data dictionary
-  'dd:occurrence:fk_taxa_taxon_list' => 'Species or taxon selected from existing list',
+  'dd:occurrence:fk_taxa_taxon_list' => 'Species or taxon name',
+  'dd:occurrence:all_info_in_determinations' => 'Use determinations table for identification information (Y/N)',
   'dd:sample:entered_sref' => 'Grid ref or other spatial ref',
   'dd:sample:entered_sref_system' => 'Spatial reference system',
   
   // and import model name/field name prefix overrides
-  'smpAttr' => 'Sample Custom Attributes',
-  'occAttr' => 'Occurrence Custom Attributes',
-  'locAttr' => 'Location Custom Attributes',
-  'taxAttr' => 'Taxon Custom Attributes',
-  'psnAttr' => 'Person Custom Attributes',
-  'fkFilter' => 'Lookup Filters',
+  'smpAttr' => 'Sample custom attributes',
+  'occAttr' => 'Occurrence custom attributes',
+  'locAttr' => 'Location custom attributes',
+  'taxAttr' => 'Taxon custom attributes',
+  'psnAttr' => 'Person custom attributes',
+  'fkFilter' => 'Lookup filters',
   
   'Click to Filter What' => 'Select a list of species or species groups to include',
   'Click to Filter Where' => 'Define the geographic area, site or map reference to include',

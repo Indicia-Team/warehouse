@@ -241,6 +241,9 @@ class Import_Controller extends Service_Base_Controller {
       $model = ORM::Factory($_GET['model']);
       $this->submissionStruct = $model->get_submission_structure();
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
+        if(!array_filter($data))
+          // skip empty rows
+          continue;
         $count++;
         $index = 0;
         $saveArray = $model->getDefaults();
