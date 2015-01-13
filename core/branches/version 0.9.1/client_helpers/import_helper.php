@@ -79,7 +79,7 @@ class import_helper extends helper_base {
     $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
     $r = '<form action="'.$reloadpath.'" method="post" enctype="multipart/form-data">';
-    $r .= '<label for="id">'.lang::get('Select file to upload').':</label>';
+    $r .= '<label for="id">'.lang::get('Select *.csv (comma separated values) file to upload').':</label>';
     $r .= '<input type="file" name="upload" id="upload"/>';
     $r .= '<input type="Submit" value="'.lang::get('Upload').'"></form>';
     return $r;
@@ -153,6 +153,7 @@ class import_helper extends helper_base {
    * @param array $options Options array passed to the import control.
    */
   private static function upload_mappings_form($options) {
+    ini_set('auto_detect_line_endings',1);
     if (!file_exists($_SESSION['uploaded_file']))
       return lang::get('upload_not_available');
     self::add_resource('jquery_ui');
@@ -297,15 +298,25 @@ class import_helper extends helper_base {
     }\n";  
     self::$javascript .= "function update_required_fields() {
       // copy the list of required fields
-      var fields = $.extend(true, {}, required_fields);
+      var fields = $.extend(true, {}, required_fields),
+          sampleVagueDates = [],
+          fieldTokens, thisValue;
       $('#required-instructions li').remove();
-      var sampleVagueDates = [];
       // strip out the ones we have already allocated
       $.each($('#entry_form select'), function(i, select) {
-        delete fields[select.value];
+        thisValue = select.value;
+        // If there are several options of how to search a single lookup then they
+        // are identified by a 3rd token, e.g. occurrence:fk_taxa_taxon_list:search_code.
+        // These cases fulfil the needs of a required field so we can remove them.
+        fieldTokens = thisValue.split(':');
+        if (fieldTokens.length>2) {
+          fieldTokens.pop();
+          thisValue = fieldTokens.join(':');
+        }
+        delete fields[thisValue];
         // special case for vague dates - if we have a complete sample vague date, then can strike out the sample:date required field
         if (select.value.substr(0,12)=='sample:date_') {
-          sampleVagueDates.push(select.value);
+          sampleVagueDates.push(thisValue);
         }
       });
       if (sampleVagueDates.length==3) {
@@ -336,7 +347,7 @@ class import_helper extends helper_base {
       if (empty($caption)) {
         $tokens = explode(':', $field);
         $fieldname = $tokens[count($tokens)-1];
-        $caption = lang::get(self::leadingCaps(preg_replace(array('/^fk_/', '/_id$/'), array('', ''), $fieldname)));
+        $caption = lang::get(self::processLabel(preg_replace(array('/^fk_/', '/_id$/'), array('', ''), $fieldname)));
       }
       $caption = self::translate_field($field, $caption);
       self::$javascript .= "required_fields['$field']='$caption';\n";
@@ -608,18 +619,18 @@ class import_helper extends helper_base {
             $subOptionList = explode(':', $labelListHeading[$column.$heading]);
             $foundDuplicate=false;
             foreach ($subOptionList as $subOption) {
-              if ($labelList[$subOption] > 1) {
+              if (isset($labelList[$subOption]) && $labelList[$subOption] > 1) {
                 $theID = $idColumn.'Duplicate';
                 $foundDuplicate = true;
               }
-              if ($labelList[$subOption] == 1 and $foundDuplicate == false)
+              if (isset($labelList[$subOption]) && $labelList[$subOption] == 1 and $foundDuplicate == false)
                 $theID = $idColumn.'Normal';
             }
           }
           if (!empty($r)) 
             $r .= '</optgroup>';
             $r .= "<optgroup class=\"$theID\" label=\"";
-            $r .= self::leadingCaps(lang::get($heading)).'">';
+            $r .= self::processLabel(lang::get($heading)).'">';
         }
         $r .= $option;
       }
@@ -755,9 +766,9 @@ class import_helper extends helper_base {
       }    
       $fieldname=str_replace(array('fk_','_id'), array('',''), $fieldname);
       if ($prefix==$model || $prefix=="metaFields" || $prefix==substr($fieldname,0,strlen($prefix))) {
-        $caption = self::leadingCaps($fieldname).$captionSuffix;
+        $caption = self::processLabel($fieldname).$captionSuffix;
       } else {
-        $caption = self::leadingCaps("$fieldname").$captionSuffix;
+        $caption = self::processLabel("$fieldname").$captionSuffix;
       }
     } else {
       if (substr($fieldname,0,3)=='fk_') 
@@ -796,13 +807,13 @@ class import_helper extends helper_base {
 
   /**
    * Humanize a piece of text by inserting spaces instead of underscores, and making first letter
-   * of each word capital.
+   * of each phrase a capital.
    *
    * @param string $text The text to alter.
    * @return The altered string.
    */
-  private static function leadingCaps($text) {
-    return ucwords(preg_replace('/[\s_]+/', ' ', $text));
+  private static function processLabel($text) {
+    return ucFirst(preg_replace('/[\s_]+/', ' ', $text));
   }
 
   /**
@@ -841,5 +852,3 @@ class import_helper extends helper_base {
   }
 
 }
-
-?>

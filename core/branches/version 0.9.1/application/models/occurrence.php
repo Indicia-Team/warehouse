@@ -34,7 +34,8 @@ class Occurrence_Model extends ORM
   
   protected $has_many=array(
     'occurrence_attribute_values',
-    'determinations'
+    'determinations',
+    'occurrence_media'
   );
   protected $belongs_to=array(
     'determiner'=>'person',
@@ -49,6 +50,9 @@ class Occurrence_Model extends ORM
   protected $attrs_submission_name='occAttributes';
   protected $attrs_field_prefix='occAttr';
   protected $additional_csv_fields=array(
+    // extra lookup options
+    'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
+    'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
     // allow details of 4 images to be uploaded in CSV files
     'occurrence_image:path:1'=>'Image Path 1',
     'occurrence_image:caption:1'=>'Image Caption 1',
