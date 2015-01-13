@@ -20,7 +20,7 @@
   		twind.term as wind,
   		tcloud.term as cloud,
   		s.comment as comment,
-  		(select max(split_part(s3.location_name, ' ', 3)) from samples s3 where s3.parent_id = s.id and s3.deleted = false and s3.location_name like 'SL%') as num_sections,
+  		(select max(cast(split_part(s3.location_name, ' ', 3) as integer)) from samples s3 where s3.parent_id = s.id and s3.deleted = false and s3.location_name like 'SL%') as num_sections,
   		split_part(s2.location_name, ' ', 3) as section,
   		thabitat.term as habitat,
   		CASE sav11.int_value
