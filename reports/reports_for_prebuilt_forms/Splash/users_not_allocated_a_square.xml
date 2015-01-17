@@ -13,7 +13,7 @@
   AND #website_filter# 
   </query>
   <order_bys>
-    <order_by>u.created_on ASC</order_by>
+    <order_by>uw.created_on ASC</order_by>
   </order_bys>
   <params>
     <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
