@@ -3393,8 +3393,7 @@ $('#$escaped').change(function(e) {
 });\n";
         self::$onload_javascript .= "
 if ($('#$options[id]').parents('.ui-tabs-panel').length) {
-  var tabscontrols = $('#controls').tabs();
-  tabscontrols.tabs('select',$('#$options[id]').parents('.ui-tabs-panel')[0].id);
+  indiciaFns.activeTab($('#controls'), $('#$options[id]').parents('.ui-tabs-panel')[0].id);
 }\n";
       }
       if ($options['mediaTypes']) {
