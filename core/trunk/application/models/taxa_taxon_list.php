@@ -126,23 +126,20 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       foreach ($existingSyn as $syn)
       {
         // Is the taxon from the db in the list of synonyms?
-        if (array_key_exists($syn->taxon->taxon, $arrSyn) &&
-          $arrSyn[$syn->taxon->taxon]['lang'] ==
-          $syn->taxon->language->iso &&
-          $arrSyn[$syn->taxon->taxon]['auth'] ==
-          $syn->taxon->authority)
+        $key = str_replace('|','',$syn->taxon->taxon) . '|' . $syn->taxon->language->iso . '|' . $syn->taxon->authority;
+      	if (array_key_exists($key, $arrSyn))
         {
-          $arrSyn = array_diff_key($arrSyn, array($syn->taxon->taxon => ''));
-          Kohana::log("debug", "Known synonym: ".$syn->taxon->taxon);
+          unset($arrSyn[$key]);
+          Kohana::log("debug", "Known synonym: ".$syn->taxon->taxon. ', language ' . $syn->taxon->language->iso . ', Authority ' . $syn->taxon->authority);
         }
         else
         {
-          // Synonym has been deleted - remove it from the db
+          // Synonym not in new list has been deleted - remove it from the db
           $syn->deleted = 't';
           if ($this->common_taxon_id==$syn->taxon->id) {
             $this->common_taxon_id=null;
           }
-          Kohana::log("debug", "Deleting synonym: ".$syn->taxon->taxon);
+          Kohana::log("debug", "Deleting synonym: ".$syn->taxon->taxon. ', language ' . $syn->taxon->language->iso . ', Authority ' . $syn->taxon->authority);
           $syn->save();
         }
       }
@@ -150,11 +147,12 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       // $arraySyn should now be left only with those synonyms
       // we wish to add to the database
 
-      Kohana::log("debug", "Synonyms remaining to add: ".count($arrSyn));
+      Kohana::log("debug", "Number of synonyms remaining to add: ".count($arrSyn));
       $sm = ORM::factory('taxa_taxon_list');
-      foreach ($arrSyn as $taxon => $syn)
+      foreach ($arrSyn as $key => $syn)
       {
         $sm->clear();
+        $taxon = $syn['taxon'];
         $lang = $syn['lang'];
         $auth = $syn['auth'];
 
@@ -310,32 +308,20 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
 
   /**
    * Build the array that stores the language attached to common names being submitted.
+   * Note: Author is assumed blank.
    */
   protected function set_common_name_sub_array($tokens, &$array) {
-    if (count($tokens) == 2) {
-      $array[$tokens[0]] = array(
-        'lang' => trim($tokens[1]),
-        'auth' => ''
-      );
-    } else {
-      $array[$tokens[0]] = array(
-        'lang' => kohana::config('indicia.default_lang'),
-        'auth' => ''
-      );
-    }
+    $lang = (count($tokens) == 2 ? trim($tokens[1]) : kohana::config('indicia.default_lang'));
+    $array[str_replace('|','',$tokens[0]).'|'.$lang.'|'] = array('taxon' => $tokens[0], 'lang' => $lang, 'auth' => '');
   }
 
   /**
    * Build the array that stores the author attached to synonyms being submitted.
+   * Note: Synonym Language is Latin.
    */
   protected function set_synonym_sub_array($tokens, &$array) {
-    $array[$tokens[0]] = array(
-      'auth' => '',
-      'lang' => 'lat'
-    );
-    if (count($tokens) == 2) {
-      $array[$tokens[0]]['auth']=trim($tokens[1]);
-    }
+    $auth = (count($tokens) == 2 ? trim($tokens[1]) : '');
+    $array[str_replace('|','',$tokens[0]).'|lat|'.$auth] = array('taxon' => $tokens[0], 'lang' => 'lat', 'auth' => $auth);
   }
 
   /**
