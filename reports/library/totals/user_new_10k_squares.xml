@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Number of new 10k squares for user" 
+    description="Returns the number of 10km squares that were first filled in by a user for a species that had not been recorded there before according to the database.">
+  <query website_filter_field="o2.website_id">
+    set enable_nestloop='off';
+    select count(*) as new_squares
+    from cache_occurrences o
+    join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+    left join cache_occurrences o2 
+      on o2.taxa_taxon_list_external_key=o.taxa_taxon_list_external_key
+      and o2.id&lt;o.id
+      and o2.map_sq_10km_id=o.map_sq_10km_id	
+      and #website_filter#
+    where o2.id is null
+    and o.created_by_id=#user_id#
+    --and cttl.taxon_rank_sort_order >= 300
+    and o.survey_id=#survey_id#
+  </query>
+  <params>
+    <param name='user_id' display='Warehouse user ID' datatype='integer' />
+    <param name='survey_id' display='Survey ID' datatype='integer' />
+  </params>
+</report>
