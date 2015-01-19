@@ -13,7 +13,7 @@
       and #website_filter#
     where o2.id is null
     and o.created_by_id=#user_id#
-    --and cttl.taxon_rank_sort_order >= 300
+    and cttl.taxon_rank_sort_order >= 300
     and o.survey_id=#survey_id#
   </query>
   <params>
