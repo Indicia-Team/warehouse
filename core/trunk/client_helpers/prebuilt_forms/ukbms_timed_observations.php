@@ -621,6 +621,10 @@ mapInitialisationHooks.push(function(mapdiv) {
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl = [];\n";
     $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'));
     $occ_attributes_captions = array();
+    // remove the ctrlWrap as it complicates the grid
+    global $indicia_templates;
+    $oldCtrlWrapTemplate = $indicia_templates['controlWrap'];
+    $indicia_templates['controlWrap'] = '{control}';
     foreach(explode(',',$args['occurrence_attribute_ids']) as $idx => $attr){
       $occ_attributes_captions[$idx] = $occ_attributes[$attr]['caption'];
       unset($occ_attributes[$attr]['caption']);
@@ -629,6 +633,7 @@ mapInitialisationHooks.push(function(mapdiv) {
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute[".$idx."] = $attr;\n";
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl[".$idx."] = jQuery('".(str_replace("\n","",$ctrl))."');\n";
     }
+    $indicia_templates['controlWrap'] = $oldCtrlWrapTemplate;
 //    $r = "<h2>".$location[0]['name']." on ".$date."</h2>\n";
     $r = '<div id="tabs">';
     $tabs = array('#grid1'=>t($args['species_tab_1'])); // tab 1 is required.
