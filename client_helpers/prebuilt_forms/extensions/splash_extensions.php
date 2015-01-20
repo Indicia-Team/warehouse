@@ -186,6 +186,7 @@ class extension_splash_extensions {
     //In PSS/NPMS we don't show the Vice County in the label.
     if (!empty($reportOptions['extraParams'])&&!empty($options['pssMode'])&&$options['pssMode']===true) {
       $reportOptions['extraParams']=array_merge($reportOptions['extraParams'],['pss_mode'=>true]);
+      data_entry_helper::$javascript .= "$('#imp-sref').attr('readonly','readonly');";
     }
     $rawData = data_entry_helper::get_report_data($reportOptions);
     if (empty($rawData)) {
