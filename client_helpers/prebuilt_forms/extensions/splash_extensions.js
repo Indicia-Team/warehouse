@@ -75,7 +75,7 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
  
   plot_type_dropdown_change = function plot_type_dropdown_change() {
     //In NPMS simple (not enahanced mode) the admin user can define a comma separated list
-    //of location attributes to hid from view.
+    //of location attributes to hide from view.
     if (indiciaData.hideLocationAttrsInSimpleMode) {
       if ($('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length&&
           indiciaData.enhancedModeCheckboxAttrId&&!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked')) { 
@@ -124,24 +124,26 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
         if ($('#location\\:location_type_id').val()) {
           $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]);
         }
+        indiciaData.mapdiv.settings.noPlotRotation=false;
       } else {
+        $('#locAttr\\:'+indiciaData.plotWidthAttrId).val('3');
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).hide();
+        indiciaData.mapdiv.settings.noPlotRotation=true;
       }
       if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).show();
         if ($('#location\\:location_type_id').val()) {
           $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][1]);
         }
+        indiciaData.mapdiv.settings.noPlotRotation=false;
       } else {
+        $('#locAttr\\:'+indiciaData.plotLengthAttrId).val('3');
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).hide();
+        indiciaData.mapdiv.settings.noPlotRotation=true;
       }
-      //Only draw a plot if the enhanced mode checkbox is present and is selected.
-      //Or also draw plot if the enhanced mode checkbox isn't present at all (Splash)
-      if (!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||(indiciaData.enhancedModeCheckboxAttrId&&$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
-        indiciaData.mapdiv.settings.clickForPlot=true;
-      } else {
-        indiciaData.mapdiv.settings.clickForPlot=false;
-      }
+      //In non-enhanced mode in PSS mode, plots are always 3x3 non-rotatable square.
+      //In PSS enhanced mode, their size can be configured manually on the page
+      indiciaData.mapdiv.settings.clickForPlot=true;
       indiciaData.mapdiv.settings.click_zoom=true;
       $.each(indiciaData.mapdiv.map.controls, function(idx, control) {
         if (control.CLASS_NAME==='OpenLayers.Control.DrawFeature'||control.CLASS_NAME==='OpenLayers.Control.Navigation') {
@@ -191,7 +193,7 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
       data: {'url':'https://maps.googleapis.com/maps/api/place/textsearch/json','key':indiciaData.google_api_key, 'query':postcode, 'sensor':'false'},
       success: function(data) {
         var done=false;
-        $.each(data.results, function() {
+        $.each(data.results, function() {  
           if ($.inArray('postal_code', this.types)!==-1) {
             done=true;
             return false;
