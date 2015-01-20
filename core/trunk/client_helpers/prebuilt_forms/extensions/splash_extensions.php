@@ -747,4 +747,96 @@ class extension_splash_extensions {
       }
     }\n";
   }
+  
+  /*
+   * Very simple control with a text area to import data,and an upload button.
+   * Allows locations (squares) to be attached to people using the person_attribute_values table.
+   * Format of data must be
+   * <person emai>,<location name>,<location name>,<location name>....(as many as you need)
+   * e.g.
+   * admin@bb.com,NO1402
+   * admin2@abcd.com,NO1402,NO1202,NP1202
+   * admin3@abcde.com,NO1402
+   * 
+   * Duplicates are ignored and result in an alert showing the duplicate record which must be cleared before import continues.
+   * 
+   * Very simple control that needed to be developed very quickly. Not particularly well optimised as places one record at a 
+   * time into the database. However this allowed me to use existing code from the user/sqaure admin page, and as the import will only
+   * be done once or twice this won't be an issue.
+   */
+  public static function simple_user_square_upload($auth, $args, $tabalias, $options, $path) {
+    $r = '';
+    //Need to call this so we can use indiciaData.read
+    data_entry_helper::$js_read_tokens = $auth['read'];
+    if (!function_exists('iform_ajaxproxy_url'))
+      return 'An AJAX Proxy module must be enabled for user sites administration to work.';
+    $r .= '<div><form method="post"><textarea id="upload-data" name="upload-data" cols="20" rows="50"></textarea>';
+    $r .= '<input type="submit" id="upload-squares" value="Upload"></form></div><br>';
+    $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
+    if (!empty($_POST['upload-data']))
+     $uploadLines=data_entry_helper::explode_lines($_POST['upload-data']);
+    $convertedUploadData=[];
+    if (!empty($uploadLines)) {
+      $existingPersonAttrVals = data_entry_helper::get_population_data(array(
+        'table' => 'person_attribute_value',
+        'extraParams' => $auth['read'] + array(),
+        'nocache' => true
+      )); 
+      foreach ($uploadLines as $lineIdx=>$uploadLine) {
+        $lineParts=explode(",",$uploadLine);
+        $email = $lineParts[0];
+
+        $personData = data_entry_helper::get_population_data(array(
+          'table' => 'person',
+          'extraParams' => $auth['read'] + array('email_address' => $email, 'view' => 'detail'),
+          'nocache' => true
+        )); 
+        for ($idx2=1; $idx2<count($lineParts); $idx2++) {
+          $location = $lineParts[$idx2];
+          $locationData = data_entry_helper::get_population_data(array(
+            'table' => 'location',
+            'extraParams' => $auth['read'] + array('name' => $location, 'view' => 'detail'),
+            'nocache' => true
+          )); 
+          $convertedUploadData[$lineIdx][0]=$personData[0]['id'];
+          $convertedUploadData[$lineIdx][1]=$locationData[0]['id'];
+        }
+      }
+      data_entry_helper::$javascript .= "
+      var i;
+      var i2;
+      var uploadLines = ".json_encode($convertedUploadData).";
+      var existingPersonAttrVals = ".json_encode($existingPersonAttrVals).";
+      var duplicateDetected = false;
+      for (i=0; i<uploadLines.length; i++) {
+        for (i2=0; i2<existingPersonAttrVals .length; i2++) {
+          if (uploadLines[i][1]==existingPersonAttrVals[i2]['value']&&uploadLines[i][0]==existingPersonAttrVals[i2]['person_id']) {
+            duplicateDetected=true;
+          }
+        }
+        if (duplicateDetected==false) {
+          $.post('$postUrl', 
+          {\"website_id\":".$args['website_id'].",\"person_attribute_id\":".$options['mySitesPsnAttrId'].
+            ",\"person_id\":uploadLines[i][0],\"int_value\":uploadLines[i][1]},
+          function (data) {
+            if (typeof data.error !== 'undefined') {
+              alert(data.error);
+            }              
+          },
+          'json'
+          );
+          var emptyObj={};
+          emptyObj.value=uploadLines[i][1];
+          emptyObj.person_id=uploadLines[i][0];
+
+          existingPersonAttrVals.push(emptyObj);
+        } else {
+          alert('A duplicate entry upload has been attempted for person id ' + uploadLines[i][0] + ' location id ' + uploadLines[i][1]); 
+        }
+        duplicateDetected=false;
+      }
+      alert('Import Complete');";
+    }
+    return $r;
+  }
 }
