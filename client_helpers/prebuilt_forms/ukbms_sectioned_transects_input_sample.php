@@ -916,6 +916,10 @@ class iform_ukbms_sectioned_transects_input_sample {
 
   public static function get_occurrences_form($args, $node, $response) {
     global $user;
+    global $indicia_templates;
+    // remove the ctrlWrap as it complicates the grid & JavaScript unnecessarily
+    $oldCtrlWrapTemplate = $indicia_templates['controlWrap'];
+    $indicia_templates['controlWrap'] = '{control}';
   	if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
   	drupal_add_js('misc/tableheader.js'); // for sticky heading
@@ -1490,6 +1494,7 @@ indiciaFns.bindTabsActivate(jQuery('#tabs'), function(event, ui) {
     // remove any hanging autocomplete select list.
     jQuery('.ac_results').hide();
 });";
+    $indicia_templates['controlWrap'] = $oldCtrlWrapTemplate;
     return $r;
   }
 
@@ -1565,7 +1570,7 @@ indiciaFns.bindTabsActivate(jQuery('#tabs'), function(event, ui) {
   	$sampleCtrls = get_attribute_html($sampleAttrs, $args, array('extraParams' => $auth['read']), null, $attrOptions);
   	$r .= '<div id="'.$options['id'].'-subsample-ctrls" style="display: none">'.$sampleCtrls.'</div>';
   	**/
-  	$r .= '<div id="'.$options['id'].'-subsample-ctrls" style="display: none"></div>';
+  	$r = '<div id="'.$options['id'].'-subsample-ctrls" style="display: none"></div>';
   	$r .= '<div id="'.$options['id'].'-container" style="display: none">'.
   			'<input type="hidden" id="imp-sref" />'. // a dummy to capture feedback from the map
   			'<input type="hidden" id="imp-geom" />'. // a dummy to capture feedback from the map
