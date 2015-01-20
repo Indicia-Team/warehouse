@@ -503,7 +503,7 @@ mapClickForSpatialRefHooks = [];
     }
     
     function updatePlotAfterMapClick(data, div, feature) {
-      if (div.settings.clickForPlot) {
+      if (div.settings.clickForPlot && !div.settings.noPlotRotation) {
         // if adding a plot, select it for modification
         var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
           standalone: true,
