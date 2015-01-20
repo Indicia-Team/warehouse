@@ -610,15 +610,15 @@ class extension_splash_extensions {
     }
     //In edit mode, we need to manually load the plot geom
     map_helper::$javascript .= "$('#imp-boundary-geom').val($('#imp-geom').val());\n";
-    //On NPMS/PSS system there is a checkbox for enhanced mode (when this isn't selected plots are only drawn as points.
-    //Note that on splash there is no enhanced mode so plots are always drawn fully.
+    //On NPMS/PSS system there is a checkbox for enhanced mode (when this isn't selected, plots are not configurable and default to a 3 x 3 square.
+    //Note that on splash there is no enhanced mode so plots are fully configurable.
     if (!empty($options['enhancedModeCheckboxAttrId']))
       map_helper::$javascript .= "indiciaData.enhancedModeCheckboxAttrId=".$options['enhancedModeCheckboxAttrId'].";\n";
     //On PSS/NPMS non-enhanced mode the user can define some attributes that should be hidden from view.
     //Comma separated list.
     if (!empty($options['hideLocationAttrsInSimpleMode']))
       map_helper::$javascript .= "indiciaData.hideLocationAttrsInSimpleMode='".$options['hideLocationAttrsInSimpleMode']."';\n";
-    //If enhanced mode is toggle, then clear the map and also run the code as if the plot type has change.
+    //If enhanced mode is toggled, then clear the map and also run the code as if the plot type has changed.
     //This allows the plot drawing to be reset for a new mode.
     map_helper::$javascript .= "  
     $('#locAttr\\\\:'+indiciaData.enhancedModeCheckboxAttrId).change(function() {  
@@ -653,11 +653,10 @@ class extension_splash_extensions {
         }
       })
     });\n";
-    //Do not allow submission if there is no plot set unless in NPMS/PSS simple mode.
+    //Do not allow submission if there is no plot set
     data_entry_helper::$javascript .= '
     $("#save-button").click(function() { 
-      if (!$("#imp-boundary-geom").val()&&
-          (!$("#locAttr\\\\:"+indiciaData.enhancedModeCheckboxAttrId).length||$("#locAttr\\\\:"+indiciaData.enhancedModeCheckboxAttrId).is(":checked"))) {
+      if (!$("#imp-boundary-geom").val()) {
         alert("Please select a plot type and create a plot before continuing."); 
         return false; 
       } else { 
