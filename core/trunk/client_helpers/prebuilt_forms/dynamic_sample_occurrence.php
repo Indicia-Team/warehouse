@@ -850,7 +850,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       }
       
       $r .= '<form method="post"><input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><input type="hidden" name="page" value="'.$page.'" />
-  <div class="location-allocation-wrapper-outer" ><div class="location-allocation-wrapper-inner"><table border="1"></thead><tr><th class="freeze-first-col">'.lang::get('Location').'</th>';
+  <div class="location-allocation-wrapper-outer" ><div class="location-allocation-wrapper-inner"><table border="1"><thead><tr><th class="freeze-first-col">'.lang::get('Location').'</th>';
       // Main table body
       $userlist = iform_loctools_listusers($node);
       foreach($userlist as $uid => $a_user){
@@ -869,7 +869,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           $r .= "</tr>";
         }
       }
-      $r .= "<tbody></table></div></div>\n";
+      $r .= "</tbody></table></div></div>\n";
       
       // build pager outside scrollable table.
       $numEachSide = 5;
@@ -895,7 +895,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       		$r .= '<a class="pager-button" href="'.$path.$pages.'" rel="nofollow">'.$pages.'</a>';
       	$r .= "</div>";
       }
-      $r .= '</table><input type="submit" class="default-button" value="'.lang::get('Save Location Allocations').'" /></form></div>';
+      $r .= '<input type="submit" class="default-button" value="'.lang::get('Save Location Allocations').'" /></form></div>';
     }
 
     // Add content to extra tabs that derived classes may have added
