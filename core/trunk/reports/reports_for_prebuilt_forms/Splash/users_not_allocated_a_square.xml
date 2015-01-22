@@ -28,6 +28,6 @@ Useful if old squares are left on the system but are not currently active." data
     <column name='id' sql='u.id' datatype='integer' visible='false'/>
     <column name='username' sql='u.username' display='Username' datatype='text'/>
     <column name="person_name" display="User's Name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
-    <column name="registered" display="Registered" sql="to_char(uw.created_on,'DD/MM/YYYY')" datatype="date"/>
+    <column name="registered" display="Registered" sql="uw.created_on" datatype="date"/>
   </columns>
 </report>
