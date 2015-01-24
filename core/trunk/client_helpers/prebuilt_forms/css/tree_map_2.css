@@ -1,0 +1,54 @@
+#toolbar {
+  margin-left: auto;
+  margin-right: auto;
+  padding: 4px;
+  padding-top: 25px;
+  text-align: center;
+}
+#toolbar button, #timeSlider a, #dotSlider a {
+  border-color: #808080;
+}
+label, form#yearControlForm label {
+  width: auto;
+}
+#timeSlider {
+  margin: 5px;
+  background: -webkit-linear-gradient(left, blue, red);
+  background: -moz-linear-gradient(right, blue, red);
+  background: -o-linear-gradient(right, blue, red);
+  background: -ms-linear-gradient(right, blue 0%, red 100%);
+  background: linear-gradient(to right, blue, red);
+}
+.ui-slider-tick-mark{
+    display:inline-block;
+    width:1px;
+    background:black;
+    height:12px;
+    position:absolute;
+}
+.ui-slider-tick-mark.long{
+    height:18px;
+    position:absolute;
+}
+.ui-slider-label{
+    top:12px;
+    display:inline-block;
+    position:absolute;
+    text-align: center;
+}
+.ui-slider-label > span{
+  text-align: center;
+  margin-left: -15px;
+}
+#dotSlider {
+  display:inline-block;
+  width: 100px;
+  margin: 4px;
+  margin-bottom: 0;
+}
+#dotSliderLabel {
+  margin-left: 50px;
+}
+#center form#yearControlForm {
+  margin-bottom: 0;
+}

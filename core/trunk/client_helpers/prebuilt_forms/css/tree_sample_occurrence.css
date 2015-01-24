@@ -18,15 +18,18 @@
     float: left;
 }
 
-label {
-  width: 140px;
+#entry_form label {
+  min-width: 140px;
+  width: auto;
 }
 #imp-sref, #imp-sref-tree {
   width: 200px;
 }
 /* line 13, sass/sectioned_transects_edit_transect.scss */
 .helpText {
-  margin-left: 144px;
+  margin-left: 0px;
+  margin-top: 10px;
+  margin-bottom: -2px;
 }
 
 /* line 17, sass/sectioned_transects_edit_transect.scss */
