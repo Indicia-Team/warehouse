@@ -160,7 +160,7 @@ class iform_tree_locations {
             'group' => 'General Settings'
           ),
           array(
-            'name'=>'managerPermission',
+            'name'=>'manager_permission',
             'caption'=>'Drupal Permission for Manager mode',
             'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager.',
             'type'=>'string',
@@ -310,8 +310,8 @@ class iform_tree_locations {
       'SiteLocationType' => helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['location_type_term']) ? 'TreeSite' : $args['location_type_term'])),
       'TreeLocationType' => helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['tree_type_term']) ? 'Tree' : $args['tree_type_term'])),
       'locationId' => isset($_GET['id']) ? $_GET['id'] : null,
-      // Allocations of Users are done by a person holding the managerPermission.
-      'canAllocUser' => $args['managerPermission']=="" || user_access($args['managerPermission']) 
+      // Allocations of Users are done by a person holding the manager_permission.
+      'canAllocUser' => $args['manager_permission']=="" || user_access($args['manager_permission']) 
     );
     $settings['attributes'] = data_entry_helper::getAttributes(array(
         'id' => $settings['locationId'],
@@ -392,7 +392,7 @@ check_attrs = function(){
     if ($settings['locationId']) {
       data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
       // Work out permissions for this user
-      $canEdit = ($args['managerPermission']=="" || user_access($args['managerPermission']));
+      $canEdit = ($args['manager_permission']=="" || user_access($args['manager_permission']));
       if($args['allow_user_assignment'] && isset($settings['cmsUserAttr']['default']) && !empty($settings['cmsUserAttr']['default'])) {
         foreach($settings['cmsUserAttr']['default'] as $value) { // multi value
           if($value['default'] == $user->uid) { // comparing string against int so no triple equals
@@ -656,22 +656,13 @@ $('#delete-site').click(deleteSite);
     );
     data_entry_helper::$javascript .= "
 $('#imp-sref-tree').attr('title',
-    '".lang::get("When directly entering coordinates as a GPS Lat/Long, the format is flexible. ".
+    '".lang::get("When directly entering coordinates as a GPS Lat/Long reading, there should be no spaces between the numbers and the letter. ".
+                  "The degrees, minutes and seconds must all be separated by a colon (:). The direction letter can be placed at the start or the end of the number (e.g. N56.532 or 56.532N). ".
                   "The figures may be entered as decimal degrees (e.g. 56.532), degrees and decimal minutes (e.g. 56:31.92), or degrees, minutes and decimal seconds (e.g. 56:31:55.2). ".
-                  "The degrees minutes and seconds must all be separated by a colon (:). ".
-                  "The direction letter can be placed at the start or the end of the number (e.g. N56.532 or 56.532N), and it can be upper or lower case, but by convention you should use upper case. ".
-                  "There should be no spaces between the numbers and the letter. ".
                   "You can mix the formats of the Latitude and Longitude, provided they each follow the previous guidelines and a space separates them (e.g. N56.532 2:30W).")."  ".
-    lang::get("When directly entering a OSGB reference, this should take the format of 2 letters followed by an even number of digits (e.g. NT274628). ".
-                  "The letters specify the 100km grid square, the first half of the numbers are the Easting, and the second half the Northing. ".
-                  "The size of the square is determined by the number of digits entered: each pair reduces the square size by a factor of 10 - 8 numbers will give a 10m square. ".
-                  "There should be no spaces between any of the characters. ".
-                  "The letters may be upper or lower case, but by convention you should use upper case.")."  ".
-    lang::get("When directly entering a OSIE reference, this should take the format of 1 letter followed by an even number of digits (e.g. J081880). ".
-                  "The letter specifies the 100km grid square, the first half of the numbers are the Easting, and the second half the Northing. ".
-                  "The size of the square is determined by the number of digits entered: each pair reduces the square size by a factor of 10 - 8 numbers will give 10m square. ".
-                  "There should be no spaces between any of the characters. ".
-                  "The letter may be upper or lower case, but by convention you should use upper case.")."');\n";
+    lang::get("When directly entering an OS map reference, there should be no spaces between any of the characters. ".
+                  "An OSGB reference should comprise of 2 letters followed by an even number of digits (e.g. NT274628). ".
+                  "An OSIE reference should comprise of of 1 letter followed by an even number of digits (e.g. J081880).")."');\n";
     // Output the sref control
     $r .= data_entry_helper::sref_textbox($srefOptions);
     $srefOptions = array(

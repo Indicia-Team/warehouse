@@ -69,7 +69,7 @@ class iform_tree_sample_occurrence extends iform_dynamic_sample_occurrence {
     return $retVal;
   }
   
-  // TODO setup required understory species list, and Tree species list.
+  // TODO setup required understorey species list, and Tree species list.
   // TODO check errors on all data returned, php and JS
   // TODO Custom location control with display of pictures.
 
@@ -120,7 +120,17 @@ class iform_tree_sample_occurrence extends iform_dynamic_sample_occurrence {
     if(!isset(data_entry_helper::$entity_to_load['sample:date']) &&
         isset($_GET['date']))
       data_entry_helper::$entity_to_load['sample:date'] = $_GET['date'];
-    return self::get_control_date($auth, $args, $tabAlias, $options);
+    if (self::$loadedSampleId && !(empty($args['edit_permission']) || !function_exists('user_access') || user_access($args['edit_permission']))){
+      if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
+        // Date has 4 digit year first (ISO style) - convert date to expected output format
+        // @todo The date format should be a global configurable option. It should also be applied to reloading of custom date attributes.
+        $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
+        data_entry_helper::$entity_to_load['sample:date'] = $d->format('d/m/Y');
+      }
+      return data_entry_helper::text_input(array('label' => lang::get('Date'), 'fieldname' => 'sample:date', 'disabled'=>'readonly="readonly"', 'class'=>'tree-details-readonly' ));
+    } else {
+      return self::get_control_date($auth, $args, $tabAlias, $options);
+    }
   }
   
   /**
@@ -132,16 +142,32 @@ class iform_tree_sample_occurrence extends iform_dynamic_sample_occurrence {
    */
   protected static function get_control_treelocationselect($auth, $args, $tabAlias, $options) {
     global $indicia_templates;
+    global $user;
+    
+    data_entry_helper::$helpTextPos = 'before';
     $indicia_templates['two-col-50'] = '<div class="two_columns"><div id="leftcol" class="column">{col-1}</div><div id="rightcol" class="column">{col-2}</div></div>';
     $r="";
     if (!array_key_exists('location_type_id', $options))
       return "Control [tree location select] must be provided with a location_type_id.<br />";
     if (!array_key_exists('tree_location_type_id', $options))
       return "Control [tree location select] must be provided with a tree_location_type_id.<br />";
+$r .= '<span style="display:none;">'.print_r($_SERVER,true).'</span>';
+    if(isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER']!='' && ($referer = self::getRefererPath()) !== false)
+      $r .= '<input name="referer" type="hidden" value="'.$referer.'" />';
 
-    if(isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER']!='')
-      $r .= '<input name="referer" type="hidden" value="'.self::getRefererPath().'" />';
-
+    $attrArgs = array(
+    		'valuetable'=>'sample_attribute_value',
+    		'attrtable'=>'sample_attribute',
+    		'key'=>'sample_id',
+    		'extraParams'=>$auth['read'],
+    		'survey_id'=>$args['survey_id'],
+    		'fieldprefix'=>'smpAttr'
+    );
+    $attrArgs['extraParams'] += array('query'=>json_encode(array('in'=>array('caption'=>array('No Understorey Observed')))));
+    $smpAttrs = data_entry_helper::getAttributes($attrArgs, false);
+    if(!count($smpAttrs))
+      throw new exception(lang::get('This form must be used with an "No Understorey Observed" sample attribute.'));
+    
     data_entry_helper::$javascript .= "
 // assume map projection is same as indicia internal
 // Create vector layers: one to display the Parent Site onto, and another for the tree locations list
@@ -188,10 +214,26 @@ $('.scPresence:checkbox').change(function(){
   } else {
     cells.find('select').removeClass('required').val('').attr('disabled',true);
     cells.find('.deh-required').remove();
+    cells.find('label.error').remove();
+    cells.find('.error').removeClass('error');
+    cells.find('.inline-error').remove();
+    cells.find('.ui-state-error').removeClass('ui-state-error');
   }
 });
 $('.scPresence:checkbox').change();
-indiciaData.searchUpdatesSref=false;\n
+indiciaData.searchUpdatesSref=false;\n";
+    data_entry_helper::$late_javascript .= "
+jQuery('[name=".str_replace(':','\\\\:',$smpAttrs[0]['id'])."],[name^=".str_replace(':','\\\\:',$smpAttrs[0]['id'])."\\\\:]').filter(':checkbox').rules('add', {no_observation: true});
+$.validator.addMethod('no_observation', function(arg1, arg2){
+  // ignore the hidden zeroing field asscoiated with the boolean
+  if(!$(arg2).filter(':checkbox').length) return true;
+  var numRows = jQuery('.scPresence').filter(':checkbox').filter('[checked]').length;
+  var isChecked = jQuery(arg2).attr('checked') != false;
+  if(isChecked) return(numRows==0)
+  else if(numRows>0) return true;
+  return false;
+},
+  \"The <strong>".lang::get('No Understorey Observed')."</strong> checkbox must be selected if there are no species entered in the Flowering plant phenology grid, otherwise it must be unchecked.\");
 \n";
     self::$treeOccurrenceRecord = false;
     
@@ -207,10 +249,12 @@ indiciaData.searchUpdatesSref=false;\n
     		'key'=>'location_id',
     		'extraParams'=>$auth['read'],
     		'survey_id'=>$args['survey_id'],
-    		'fieldprefix'=>'locAttr'
+    		'fieldprefix'=>'locAttr',
+            'location_type_id' => $options['tree_location_type_id']
     );
+    
     if($location_id) $attrArgs['id'] = $location_id;
-    $attrArgs['extraParams'] += array('query'=>json_encode(array('in'=>array('caption'=>array('Assigned Recorder')))));
+    $attrArgs['extraParams'] += array('query'=>json_encode(array('in'=>array('caption'=>array('Recorder Name')))));
     $locAttrs = data_entry_helper::getAttributes($attrArgs, false);
     
     $attrArgs = array(
@@ -219,21 +263,22 @@ indiciaData.searchUpdatesSref=false;\n
     		'key'=>'sample_id',
     		'extraParams'=>$auth['read'],
     		'survey_id'=>$args['survey_id'],
-    		'fieldprefix'=>'smpAttr'
+    		'fieldprefix'=>'smpAttr',
+    		'sample_method_id'=>$args['sample_method_id']
     );
     $attrArgs['extraParams'] += array('query'=>json_encode(array('in'=>array('caption'=>array('Recorder Name')))));
     $smpAttrs = data_entry_helper::getAttributes($attrArgs, false);
     
     if(!count($locAttrs))
-      throw new exception(lang::get('This form must be used with an "Assigned Recorder" tree location attribute.'));
+      throw new exception(lang::get('This form must be used with a "Recorder Name" tree location attribute.'));
     if(!count($smpAttrs))
-    	throw new exception(lang::get('This form must be used with an "Recorder Name" tree location attribute.'));
+    	throw new exception(lang::get('This form must be used with a "Recorder Name" sample attribute.'));
     
     data_entry_helper::$javascript .= "indiciaData.assignedRecorderAttrID='".$locAttrs[0]['attributeId']."';\n";
     data_entry_helper::$javascript .= "indiciaData.recorderNameID='".$smpAttrs[0]['id']."';\n";
     
     if($location_id){
-      $r .= '<div class="page-notice ui-state-highlight ui-corner-all">This visit is already registered against a tree. All fields followed by a red asterisk (<span class="deh-required">*</span>) must be filled in. You can not modify any field that is greyed out.</div>';
+      $r .= '<div class="page-notice ui-state-highlight ui-corner-all">This visit is registered against the tree highlighted on the map. All fields followed by a red asterisk (<span class="deh-required">*</span>) must be filled in. You can not modify any field that is greyed out.</div>';
       $locationRecord = data_entry_helper::get_population_data(array(
             'table' => 'location',
             'extraParams' => $auth['read'] + array('id' => $location_id, "view"=>"detail"),
@@ -312,7 +357,7 @@ indiciaData.searchUpdatesSref=false;\n
       else
         $systems = array($locationRecord[0]['centroid_sref_system'] => $locationRecord[0]['centroid_sref_system']);
       $r .= data_entry_helper::sref_and_system(array_merge(array(
-            'label' => lang::get('Tree Grid Ref.'),
+            'label' => lang::get('Tree Grid Ref'),
             'systems' => $systems,
             'disabled' => ' readonly="readonly"',
             'validation' => '',
@@ -399,10 +444,14 @@ $('[name=sample\\\\:date]').change(function(){
     for(var i = data.length-1; i >=0; i--){
       sdate = data[i][\"date_start\"].split('-');
       if(sdate[0] < date[2] || (sdate[0] == date[2] && (sdate[1] < date[1] || (sdate[1] == date[1] && sdate[2] <= date[0])))) {
-        if(confirm(\"There was a previously recorded visit for this tree prior to this date, on \"+data[i][\"date_start\"]+'. Do you wish to use the data from this earlier visit as a starting point? (This will overwrite any data you have entered up to this point, apart from the Field Diary).')){
+        if(confirm(\"There was a previously recorded visit for this tree prior to this date, on \"+data[i][\"date_start\"]+'. Do you wish to use the data from this earlier visit as a starting point? (This will not affect any previously recorded observations - it will just fill in this form with the data from your previous visit, excluding the field diary. You can then update the data with any changes for this visit.)')){
           // this is an initial save: all attributes have vanilla names.
           $('.scPresence').removeAttr('checked');
           var cells = $('.scOccAttrCell');
+          $('#".data_entry_helper::$validated_form_id."').find('label.error').remove();
+          $('#".data_entry_helper::$validated_form_id."').find('.error').removeClass('error');
+          $('#".data_entry_helper::$validated_form_id."').find('.inline-error').remove();
+          $('#".data_entry_helper::$validated_form_id."').find('.ui-state-error').removeClass('ui-state-error');
           cells.find('select').removeClass('required').val('').attr('disabled',true);
           cells.find('.deh-required').remove();
           $('[name^=sc\\\\:tree\\\\:\\\\:occAttr\\\\:]').val('');
@@ -457,22 +506,51 @@ $('[name=sample\\\\:date]').change(function(){
     if (empty($options['reportProvidesOrderBy'])||$options['reportProvidesOrderBy']==0) {
       $options['extraParams']['orderby'] = 'name';
     }
+    // Get list of sites alocated to me, using CMS User ID.
+    $site_attributes = data_entry_helper::getAttributes(array(
+    		'valuetable'=>'location_attribute_value',
+    		'attrtable'=>'location_attribute',
+    		'key'=>'location_id',
+    		'extraParams'=>$auth['read'],
+    		'survey_id'=>$args['survey_id'],
+    		'location_type_id' => $options['location_type_id'],
+    		'fieldprefix'=>'locAttr'
+    ));
+    if (false==($cmsUserAttr = extract_cms_user_attr($site_attributes)))
+      return 'This form is designed to be used with the "CMS User ID" attribute setup for Site locations in the survey.';
+    $response = data_entry_helper::get_population_data(array(
+      'table' => 'location_attribute_value',
+      'extraParams' => $auth['read'] + array('view' => 'list', 'location_attribute_id'=>$cmsUserAttr['attributeId'], 'raw_value'=>$user->uid),
+      'nocache' => true
+    ));
+    if(count($response)==0)
+      throw new exception(lang::get('You have no sites, so you can not enter any phenology observations. Please create a site and some trees first.'));
+    $siteIDs = array();
+    foreach($response as $loc) {
+      $siteIDs[] = $loc['location_id'];
+    }
+    
     $location_list_args = array_merge(array(
         'label'=>lang::get('Site'),
         'view'=>'detail',
         'fieldname'=>'location:parent_id',
         'id'=>'imp-site-location',
         'blankText'=>lang::get('Please select a site.'),
-        'validation' => 'required'
+        'validation' => 'required',
+        'nocache' => true
       ), $options);
+    // $options already has the location_type_id set
+    $location_list_args['extraParams']['id']=$siteIDs;
     $r .= data_entry_helper::location_select($location_list_args);
 
     $location_list_args = array_merge(array(
         'label'=>lang::get('Tree'),
         'view'=>'detail',
         'blankText'=>lang::get('Please select a tree.'),
-        'validation' => 'required'
+        'validation' => 'required',
+        'nocache' => true
     ), $options);
+    $location_list_args['extraParams']['id']=$siteIDs;
     $location_list_args['location_type_id'] = $options['tree_location_type_id'];
     $r .= data_entry_helper::location_select($location_list_args);
 
@@ -482,20 +560,24 @@ $('[name=sample\\\\:date]').change(function(){
         'class' => 'control-width-4 tree-details-readonly',
         'disabled' => ' readonly="readonly"',
         'validation' => 'required',
-        'helpText' => lang::get('This is filled in automatically when you select a tree.')
+        'helpText' => lang::get('The following field is filled in automatically when you select a tree.')
     ));
     $r .= '<input name="sc:tree::present" type="hidden" value="" />';
     $systems = array('4326' => lang::get("sref:4326")); // this will be overwriten when the tree is loaded.
     $r .= data_entry_helper::sref_and_system(array_merge(array(
-        'label' => lang::get('Tree Grid Ref.'),
+        'label' => lang::get('Tree Grid Ref'),
         'systems' => $systems,
         'disabled' => ' readonly="readonly"',
         'validation' => '',
         'class' => 'tree-details-readonly',
-        'helpText' => lang::get('This is filled in automatically when you select a tree.')
+        'helpText' => lang::get('The following field is filled in automatically when you select a tree.')
     ), $options));
     data_entry_helper::$javascript .= "
 $('#imp-site-location').change(function() {
+  $('#".data_entry_helper::$validated_form_id."').find('label.error').remove();
+  $('#".data_entry_helper::$validated_form_id."').find('.error').removeClass('error');
+  $('#".data_entry_helper::$validated_form_id."').find('.inline-error').remove();
+  $('#".data_entry_helper::$validated_form_id."').find('.ui-state-error').removeClass('ui-state-error');
   ParentLocationLayer.destroyFeatures();
   TreeListLayer.destroyFeatures();
   var intValue = parseInt($(this).val());
@@ -549,6 +631,10 @@ $('#imp-site-location').change(function() {
     }});
 }});
 mapLocationSelectedHooks.push(function(div, data){
+  $('#".data_entry_helper::$validated_form_id."').find('label.error').remove();
+  $('#".data_entry_helper::$validated_form_id."').find('.error').removeClass('error');
+  $('#".data_entry_helper::$validated_form_id."').find('.inline-error').remove();
+  $('#".data_entry_helper::$validated_form_id."').find('.ui-state-error').removeClass('ui-state-error');
   if($('#imp-site-location').val() != data[0].parent_id) {
     $('#imp-site-location').val(data[0].parent_id).change();
     $('#imp-site-location option[value=]').attr('disabled',true);
@@ -586,6 +672,7 @@ mapLocationSelectedHooks.push(function(div, data){
   }});
 });
 $('[name=sample\\\\:date]').change(function(){
+  if($('#imp-location').val()=='') return;
   $.getJSON(ParentLocationLayer.map.div.settings.indiciaSvc + 'index.php/services/data/sample?location_id='+$('#imp-location').val() +
   		'&sample_method_id=".$args['sample_method_id']."&mode=json&view=detail&orderby=date_start' + ParentLocationLayer.map.div.settings.readAuth + '&callback=?', function(data) {
     if (typeof data.error!=='undefined') {
@@ -610,12 +697,17 @@ $('[name=sample\\\\:date]').change(function(){
     for(var i = data.length-1; i >=0; i--){
       sdate = data[i][\"date_start\"].split('-');
       if(sdate[0] < date[2] || (sdate[0] == date[2] && (sdate[1] < date[1] || (sdate[1] == date[1] && sdate[2] <= date[0])))) {
-        if(confirm(\"There was a previously recorded visit for this tree prior to this date, on \"+data[i][\"date_start\"]+'. Do you wish to use the data from this earlier visit as a starting point? (This will overwrite any data you have entered up to this point, apart from the Field Diary).')){
+        if(confirm(\"There was a previously recorded visit for this tree prior to this date, on \"+data[i][\"date_start\"]+'. Do you wish to use the data from this earlier visit as a starting point? (This will not affect any previously recorded observations - it will just fill in this form with the data from your previous visit, excluding the field diary. You can then update the data with any changes for this visit.)')){
           // this is an initial save: all attributes have vanilla names.
+          // TODO sample attributes
           $('.scPresence').removeAttr('checked');
           var cells = $('.scOccAttrCell');
           cells.find('select').removeClass('required').val('').attr('disabled',true);
           cells.find('.deh-required').remove();
+          $('#".data_entry_helper::$validated_form_id."').find('label.error').remove();
+          $('#".data_entry_helper::$validated_form_id."').find('.error').removeClass('error');
+          $('#".data_entry_helper::$validated_form_id."').find('.inline-error').remove();
+          $('#".data_entry_helper::$validated_form_id."').find('.ui-state-error').removeClass('ui-state-error');
           $('[name^=sc\\\\:tree\\\\:\\\\:occAttr\\\\:]').val('');
           $.getJSON(ParentLocationLayer.map.div.settings.indiciaSvc + 'index.php/services/data/occurrence?sample_id='+data[i]['id'] +
               '&mode=json&view=detail' + ParentLocationLayer.map.div.settings.readAuth + '&callback=?', function(odata) {
@@ -684,6 +776,8 @@ $('[name=sample\\\\:date]').change(function(){
   }
 
   protected static function get_control_sampleattributes($auth, $args, $tabAlias, $options) {
+    $r = '';
+  	$tab = (isset($options['tab']) ? $options['tab'] : null);
     $attrArgs = array(
          'valuetable'=>'sample_attribute_value',
          'attrtable'=>'sample_attribute',
@@ -708,29 +802,74 @@ $('[name=sample\\\\:date]').change(function(){
     foreach($attrSpecificOptions as $attr => $opts)
       if(isset($attrSpecificOptions[$attr]['default']))
         $attrSpecificOptions[$attr]['default'] = apply_user_replacements($attrSpecificOptions[$attr]['default']);
-    return get_attribute_html($smpAttrs, $args, $ctrlOptions, '', $attrSpecificOptions);
+    foreach ($smpAttrs as &$attribute) {
+      if (in_array($attribute['id'],data_entry_helper::$handled_attributes))
+        $attribute['handled']=1;
+      // Hide controls that have already been handled.
+      if (($tab===null || strcasecmp($tab, $attribute['inner_structure_block'])==0) && !isset($attribute['handled'])) {
+        $options = $ctrlOptions + get_attr_validation($attribute, $args);
+        // when getting the options, only use the first 2 parts of the fieldname as any further imply an existing record ID so would differ.
+        $fieldNameParts=explode(':',$attribute['fieldname']);
+        if (preg_match('/[a-z][a-z][a-z]Attr/', $fieldNameParts[count($fieldNameParts)-2]))
+          $optionFieldName = $fieldNameParts[count($fieldNameParts)-2] . ':' . $fieldNameParts[count($fieldNameParts)-1];
+        elseif (preg_match('/[a-za-za-z]Attr/', $fieldNameParts[count($fieldNameParts)-3]))
+          $optionFieldName = $fieldNameParts[count($fieldNameParts)-3] . ':' . $fieldNameParts[count($fieldNameParts)-2];
+        else
+          throw new exception('Option fieldname not found');
+        $dummy=null;
+        if (isset($attrSpecificOptions[$optionFieldName])) {
+          $options = array_merge($options, $attrSpecificOptions[$optionFieldName]);
+        }
+        $r .= data_entry_helper::outputAttribute($attribute, $options);
+        $attribute['handled']=true;
+      }
+    }
+    return $r;
   }
 
+  protected static function get_control_title($auth, $args, $tabAlias, $options) {
+  	$r = 'No Valid Header';
+  	if(is_array($options) && count($options)>0){
+      foreach($options as $key=>$value){
+        // only do first
+        switch($key){
+          case 'h4': $r = "<h4>".$value."</h4>";
+                     break;
+          case 'h3': $r = "<h3>".$value."</h3>";
+                     break;
+          case 'h2': $r = "<h2>".$value."</h2>";
+                     break;
+        }
+        break;
+      }
+  	}
+  	return $r;
+  }
+  
   /**
    * Override the default submit buttons to add a cancel button.
    */
   protected static function getSubmitButtons($args) {
     $r = '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Submit')."\" />";
-    $r .= '<a href="'.self::getRefererPath().'"><input type="button" class="indicia-button" name="cancel" value="'.lang::get('Cancel').'" /></a>';
-/*    if (!empty(self::$loadedSampleId)) {
+    if($referer = self::getRefererPath())
+      $r .= '<a href="'.$referer.'"><input type="button" class="indicia-button" name="cancel" value="'.lang::get('Cancel').'" /></a>';
+    else
+      $r .= '<a href="JavaScript:window.close()"><input type="button" class="indicia-button" name="cancel" value="'.lang::get('Cancel').'" /></a>';
+    if (!empty(self::$loadedSampleId)) {
       $r .= '<input type="submit" class="indicia-button" id="delete-button" name="delete-button" value="'.lang::get('Delete')."\" />\n";
       data_entry_helper::$javascript .= "$('#delete-button').click(function(e) {
-  if (!confirm(\"Are you sure you want to delete this record?\")) {
+  if (!confirm('".lang::get('Are you sure you want to delete this record?')."')) {
     e.preventDefault();
     return false;
   }
 });\n";
-    } */
+    }
     
     return $r;
   }
 
   protected static function getRefererPath () {
+    if(isset($_REQUEST['no_referer'])) return false;
     $split = strpos($_SERVER['HTTP_REFERER'], '?');
     // convert the query parameters into an array
     $gets = ($split!==false && strlen($_SERVER['HTTP_REFERER']) > $split+1) ?
@@ -750,6 +889,7 @@ $('[name=sample\\\\:date]').change(function(){
   	unset($getsAssoc['id']);
   	unset($getsAssoc['new']);
   	unset($getsAssoc['newLocation']);
+  	unset($getsAssoc['no_referer']);
   	if(count($getsAssoc)) {
   		// decode params prior to encoding to prevent double encoding.
   		foreach ($getsAssoc as $key => $param) {
@@ -778,9 +918,19 @@ $('[name=sample\\\\:date]').change(function(){
   public static function get_redirect_on_success($values, $args) {
   	if (isset($values['referer'])) {
   		return $values['referer'];
-  	}
+  	} else return false;
   }
-  
+
+  public static function get_form($args, $node, $response=null) {
+    if(is_array($response)) {
+      // we have got here via a post that has not been redirected.
+      data_entry_helper::$javascript .= "\njQuery('div.field-name-body').remove();\n";
+      return '<p>'.lang::get('Your phenology observation has been saved.').'<p>'.
+             '<p>'.lang::get('The creation of this observation was instigated after adding or modifying a tree, which was done in another tab or window - you may now close this browser tab, should you wish.').'</p>'.
+             '<a href="JavaScript:window.close()"><input type="button" class="indicia-button" name="close" value="'.lang::get('Close Tab').'" /></a>';
+    }
+    return parent::get_form($args, $node, $response);
+  }
 
 }
   
