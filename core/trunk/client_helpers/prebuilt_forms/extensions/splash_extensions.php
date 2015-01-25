@@ -748,6 +748,58 @@ class extension_splash_extensions {
     }\n";
   }
   
+  /* Approve a user/square allocation.
+   * Squares need approval if the updated_by_id on the allocation record (person_attribute_value) is the same as the user the allocation is intended for (i.e. they allocated it to themselves)
+   * The approval simply sets the updated_by_id on the record to the same id as the user who is doing the approval.
+   * This also means we need a message on screen that warns the user that they can't approve a square/user allocation record that is 
+   * intended for themselves.
+   */
+  public static function approve_allocation($auth, $args, $tabalias, $options, $path) {
+  //Need to get the Drupal node from the $path
+  $explodedPath=explode('/',$path);
+  global $base_url;
+  global $user;
+  if (function_exists('hostsite_get_user_field')) {
+    data_entry_helper::$javascript .= "indiciaData.indicia_user_id = ".hostsite_get_user_field('indicia_user_id').";\n";
+  };
+
+  data_entry_helper::$javascript .= "
+  indiciaData.nodeId=".$explodedPath[count($explodedPath)-1].";
+  indiciaData.baseUrl='".$base_url."';  
+  indiciaData.website_id = ".variable_get('indicia_website_id', '').";\n";  
+  
+  data_entry_helper::$javascript .= "
+  approve_allocation= function(id,allocation_updater,allocated_to) {
+    if (indiciaData.indicia_user_id===allocated_to) {
+      alert('You cannot approve this allocation because you are the user the allocation is intended for.');
+      return false;
+    }
+    var confirmation = confirm('Do you really want to approve the user/square allocation with id '+id+'?');
+    if (confirmation) { 
+      var s = {
+        'website_id':indiciaData.website_id,
+        'person_attribute_value:id':id,
+        'person_attribute_value:updated_by_id':indiciaData.indicia_user_id
+      };
+      var postUrl = indiciaData.baseUrl+'/?q=ajaxproxy&node='+indiciaData.nodeId+'&index=person_attribute_value';
+      $.post(postUrl, 
+        s,
+        function (data) {
+          if (typeof data.error === 'undefined') {
+            alert('Square/user allocation approved');
+            indiciaData.reports.dynamic.grid_report_grid_0.reload(true);
+          } else {
+            alert(data.error);
+          }
+        },
+        'json'
+      );
+    } else {
+      return false;
+    }
+  }\n";
+  }
+  
   /*
    * Very simple control with a text area to import data,and an upload button.
    * Allows locations (squares) to be attached to people using the person_attribute_values table.
