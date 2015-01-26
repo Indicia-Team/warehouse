@@ -56,5 +56,7 @@ Include only_return_private_plots to only return private plots associated with t
         else 
           '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
       end" datatype='text' />
+    <column name='allocation_updater' display='Person who updated allocation' sql="pav.updated_by_id" datatype='integer' visible="false"/>
+    <column name='allocated_to' display='Person who allocation is for' sql="u.id" datatype='integer' visible="false"/>
   </columns> 
 </report>
