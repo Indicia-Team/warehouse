@@ -22,7 +22,9 @@
     <param name="current_user_id" display="Id of the currently logged in user" datatype="integer"/>
     <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
-    <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
+    <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash. On NPMS we also don't show squares which users have assigned to themselves until the allocation is approved." datatype="integer" emptyvalue='0' default='0'>
+      <where>((pav.updated_by_id != u.id) AND #pss_mode#=1) OR #pss_mode#=0</where>
+    </param>
     <param name='user_square_attr_id' description='Id of the person attribute that holds user squares' datatype='integer'/>
   </params>
   <columns>
