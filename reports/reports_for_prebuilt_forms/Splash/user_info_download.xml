@@ -1,0 +1,45 @@
+<report
+    title="User Information Download"
+    description="Report containing user and person information for download purposes. Includes filter to includes only users with/without allocations."
+>
+  <query website_filter_field="uw.website_id">
+  SELECT #columns#
+  FROM people p
+  JOIN users u ON u.person_id=p.id AND u.deleted=false
+  JOIN users_websites uw on u.id=uw.user_id
+  LEFT JOIN person_attribute_values pavAlloc ON pavAlloc.person_id=p.id AND pavAlloc.person_attribute_id=#user_square_attr_id# AND pavAlloc.deleted=false 
+  LEFT JOIN locations l ON l.id=pavAlloc.int_value AND l.deleted=false 
+  #joins#
+  WHERE p.deleted=false
+    AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>p.surname ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='allocation_status' display='Allocated?' description='Choose whether you only wish to return users with allocated squares, without allocated squares, or leave as Please Select for both.' emptyvalue='' datatype='lookup'
+        lookup_values='allocated:Allocated,unallocated:Unallocated' >
+      <where>(('#allocation_status#'='allocated' AND pavAlloc.id IS NOT NULL) OR ('#allocation_status#'='unallocated' AND pavAlloc.id IS NULL))</where>
+    </param>
+    <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
+    <param name="registration_date_start" display="User registered after" description="Only return users who registered after this date." datatype="date" emptyvalue="">
+      <join>JOIN users_websites uwSta on u.id=uwSta.user_id AND uwSta.created_on &gt;= CAST(COALESCE('#registration_date_start#','1500-01-01') as date)</join>
+    </param>  
+    <param name="registration_date_end" display="User registered before" description="Only return users who registered before this date." datatype="date" emptyvalue="">
+      <join>JOIN users_websites uwEnd on u.id=uwEnd.user_id AND uwEnd.created_on &lt;= CAST(COALESCE('#registration_date_end#','1500-01-01') as date)</join>
+    </param>
+    <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any squares created before this date.
+        Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
+      <where>(l.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date))</where>
+    </param>
+  </params>
+  <columns> 
+    <column name='id' sql='p.id' datatype='integer' visible='false' in_count="true"/>
+    <column name='surname' display='Surname' sql='p.surname' datatype='text' />
+    <column name='first_name' display='First name' sql='p.first_name' datatype='text' />      
+    <column name='username' display='Username' sql='u.username' datatype='text'/> 
+    <column name='email_address' display='Email address' sql='p.email_address' datatype='text' />  
+    <column name='registration_date' display='Registration date' sql='uw.created_on' datatype='text' />  
+    <column name='count' sql='count(distinct(pavAlloc.id))' display='Number of allocated squares' datatype='integer' aggregate="true"/>
+  </columns>
+</report>
