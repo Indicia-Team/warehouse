@@ -181,41 +181,6 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     return '<button id="add-habitat" type="button">Add another habitat</button>';
   }
 
-  /**
-   * Output a text input control for the dive group or survey name.
-   *
-   * This control provides an autocomplete lookup facility to lookup other group names for dives already input on this \
-   * date.
-   *
-   * @param $auth Authorisation tokens
-   * @param $args Form configuration arguments
-   * @param $tabAlias Tab that this control is embedded onto
-   * @param $options Control options
-   * @return string HTML for the control
-   */
-  protected static function get_control_divegroup($auth, $args, $tabAlias, $options) {
-    $diveGroup = self::$attrsByCaption['name of group or survey'];
-    // Pass the attribute ID to JS so that the link between the date control and dive group control can be created.
-    data_entry_helper::$javascript .= "indiciaData.diveGroupAttrName='$diveGroup[fieldname]';\n";
-    // set the default display, since we are fudging a text input with autocomplete functionality
-    if (!empty($diveGroup['displayValue']))
-      data_entry_helper::$entity_to_load["$diveGroup[fieldname]:group_name"] = $diveGroup['displayValue'];
-    // Create the group input control
-    return data_entry_helper::autocomplete(array_merge(
-      array(
-        'fieldname' => $diveGroup['fieldname'],
-        'label' => lang::get('Name of group or survey'),
-        'report' => 'reports_for_prebuilt_forms/seasearch/dive_groups_for_date',
-        'captionField' => 'group_name',
-        'valueField' => 'group_name',
-        'extraParams' => $auth['read'] + array('date' => '', 'group_attr_id' => $diveGroup['attributeId']),
-        'default' => empty($diveGroup['displayValue']) ? '' : $diveGroup['displayValue']
-      ),
-      $options
-    ));
-
-  }
-
   protected static function get_control_habitatblocks($auth, $args, $tabAlias, $options) {
     // build a template for the data entry controls for each habitat
     $template = '<legend title="' . lang::get('Each habitat is numbered. Make sure the description and quantitative data is ' .

@@ -15,6 +15,9 @@ jQuery(document).ready(function($) {
       return;
     }
     $('#habitat-count').val(targetCount);
+    if (targetCount>=5) {
+      $('#add-habitat').hide();
+    }
     if (targetCount > currentCount) {
       // too few blocks, so add some
       while (currentCount < targetCount) {
@@ -147,14 +150,8 @@ jQuery(document).ready(function($) {
       habitatInput = row.find('.scHabitatCell input');
       $(habitatInput[0]).val(parseInt($(this).val()) + 1);
     }
-  })
-
-  // The date control value needs to feed into the lookup for dive group names.
-  $('#sample\\:date').change(function() {
-    getEl(indiciaData.diveGroupAttrName + ':group_name').setExtraParams({"date":$('#sample\\:date').val()});
   });
 
-  getEl(indiciaData.diveGroupAttrName + ':group_name').setExtraParams({"date":$('#sample\\:date').val()});
   getEl('smpAttr:' + indiciaData.driftAttrId).find('input').change(function() {
     if ($('label[for='+getEl('smpAttr:' + indiciaData.driftAttrId).find('input:checked').attr('id').replace(/:/g,'\\:')+']').html()==='Yes') {
       $('p.drift-only').css('opacity',1);
