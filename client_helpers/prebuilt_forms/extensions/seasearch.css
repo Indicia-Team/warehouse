@@ -1,0 +1,12 @@
+table#position-data {
+  width: auto;
+}
+table#position-data input {
+  width: 50px;
+}
+table#position-data .td-pad {
+  padding-right: 1em;
+}
+table#position-data p.inline-error {
+  display: none !important;
+}
