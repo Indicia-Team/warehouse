@@ -545,11 +545,13 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
             $path = call_user_func(array(self::$called_class, 'getReloadPath')); 
             //pass the classname of the form through to the extension control method to allow access to calling class functions and variables
             $args["calling_class"]='iform_' . self::$node->iform;
-            $html .= call_user_func(array('extension_' . $parts[0], $parts[1]), $auth, $args, $tabalias, $options, $path);
+            $html .= call_user_func(array('extension_' . $parts[0], $parts[1]), $auth, $args, $tabalias, $options, $path, $attributes);
             $hasControls = true;
             // auto-add JavaScript for the extension
             if (file_exists(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.js'))
-              drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.js');;
+              drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.js');
+            if (file_exists(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.css'))
+              drupal_add_css(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.css');
           } 
           else
             $html .= lang::get("The $component extension cannot be found.");

@@ -436,101 +436,12 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     return $r;
   }
 
-  /**
-   * If there is an existing sample, use the entered sref to build the array of tokens required for the centre position controls.
-   * @return array Array of tokens for control default values.
-   */
-  private static function getCentreTokens() {
-    $r = array();
-    if (!empty(data_entry_helper::$entity_to_load['sample:entered_sref'])) {
-      // If a decimal lat long, decode this to degrees + decimal minutes
-      if (preg_match('/(?P<latdeg>\d+).(?P<latdec>\d+)N,? (?P<longdeg>\d+).(?P<longdec>\d+)(?P<longdir>[EW])/',
-          data_entry_helper::$entity_to_load['sample:entered_sref'], $r)) {
-        // convert the decimal values into decimal minutes in the $r array
-        $r['latmin'] = ('0.' + $r['latdec'])*60;
-        $r['longmin'] = ('0.'+$r['longdec'])*60;
-      } else {
-        preg_match('/(?P<latdeg>\d+):(?P<latmin>\d+(\.\d+)?)N,? (?P<longdeg>\d+):(?P<longmin>\d+(\.\d+)?)(?P<longdir>[EW])/',
-            data_entry_helper::$entity_to_load['sample:entered_sref'], $r);
-      }
-    }
-    $r = array_merge(
-        array('latdeg'=>'', 'latmin'=>'', 'longdeg'=>'', 'longmin'=>'', 'longdir'=>''),
-        $r);
-    return $r;
-  }
-
   public static function get_control_position($auth, $args, $tabAlias, $options) {
     // @todo test
     // @todo draw drift on the map
     // @todo after validation failure, drift start and end don't reload, because they weren't in the post at all -TEST
     // @toto saving does not set the entered_sref_system properly
-    $centreTokens = self::getCentreTokens();
-    $driftStartAttr = self::$attrsByCaption['drift start'];
-    preg_match('/(?P<latdeg>\d+):(?P<latmin>\d+(\.\d+)?)N, (?P<longdeg>\d+):(?P<longmin>\d+(\.\d+)?)(?P<longdir>[EW])/',
-        $driftStartAttr['default'], $driftStartTokens);
-    $driftEndAttr = self::$attrsByCaption['drift end'];
-    preg_match('/(?P<latdeg>\d+):(?P<latmin>\d+(\.\d+)?)N, (?P<longdeg>\d+):(?P<longmin>\d+(\.\d+)?)(?P<longdir>[EW])/',
-        $driftEndAttr['default'], $driftEndTokens);;
-    // fill in defaults to make code cleaner later
-    $driftStartTokens = array_merge(
-        array('latdeg'=>'', 'latmin'=>'', 'longdeg'=>'', 'longmin'=>'', 'longdir'=>''),
-        $driftStartTokens);
-    $driftEndTokens = array_merge(
-        array('latdeg'=>'', 'latmin'=>'', 'longdeg'=>'', 'longmin'=>'', 'longdir'=>''),
-        $driftEndTokens);
-    // Add a GPS datum or grid system selection control
-    $r = '<label class="auto">Position format and datum '.
-        data_entry_helper::sref_system_select(array(
-            'fieldname'=>'sample:entered_sref_system',
-            'systems'=>array(
-                '4326'=>'Latitude and longitiude (degrees and decimal minutes WGS84)',
-                '4277'=>'Latitude and longitiude (degrees and decimal minutes OSGB36)',
-                'OSGB' => 'Ordnance Survey British National Grid'
-            )
-        )) . '</label>';
-    $r .= '<div><div id="input-ll-container"><p>'.lang::get('Position (degrees and decimal minutes)').'</p>';
-    $r .= '<table id="position-data"><thead><th colspan="2"></th><th colspan="2">'.lang::get('Latitude').'</th><th colspan="2">'.lang::get('Longitude').
-        '</th><th>'.lang::get('W or E').'</th><tr></tr></thead>';
-    $r .= '<tbody><tr id="input-centre"><td>'.lang::get('Centre of site').'</td>';
-    $r .= "<td><input type=\"radio\" title=\"".lang::get('Select this option then click on the map to set the dive centre')."\" name=\"which-point\" value=\"centre\" checked=\"checked\"/></td>";
-    $r .= "<td><input id=\"input-lat-deg\" class=\"input-lat input-deg {required: true,pattern:/^[0-9]*$/}\" type=\"text\" value=\"$centreTokens[latdeg]\"/>&deg;</td>";
-    $r .= "<td class=\"td-pad\"><input id=\"input-lat-min\" class=\"input-lat input-min {required: true,pattern:/^[0-9]+(.[\d]+)?$/}\" type=\"text\" value=\"$centreTokens[latmin]\"/>N</td>";
-    $r .= "<td><input id=\"input-long-deg\" class=\"input-long input-deg {required: true,pattern:/^[0-9]*$/}\" type=\"text\" value=\"$centreTokens[longdeg]\"/>&deg;</td>";
-    $r .= "<td><input id=\"input-long-min\" class=\"input-long input-min {required: true,pattern:/^[0-9]+(.[\d]+)?$/}\" type=\"text\" value=\"$centreTokens[longmin]\"/></td>";
-    $r .= '<td>'.data_entry_helper::select(array('lookupValues'=>array('E'=>'E','W'=>'W'), 'blankText'=>lang::get('choose'),
-            'fieldname'=>'e-w', 'default'=>$centreTokens['longdir'])).'</td>';
-    $r .= '</tr>';
-    $r .= '<tr><td colspan="6">'.lang::get('For drift dives').'</td></tr>';
-    $r .= '<tr id="input-drift-from"><td>'.lang::get('From').'</td>';
-    $r .= "<td><input type=\"radio\" title=\"".lang::get('Select this option then click on the map to set the dive start')."\" name=\"which-point\" value=\"from\" /></td>";
-    $r .= "<td><input id=\"input-lat-deg-from\" class=\"input-lat input-deg {pattern:/^[0-9]*$/}\" type=\"text\" value=\"$driftStartTokens[latdeg]\"/>&deg;</td>";
-    $r .= "<td class=\"td-pad\"><input id=\"input-lat-min-from\" class=\"input-lat input-min {pattern:/^[0-9]+(.[\d]+)?$/}\" type=\"text\" value=\"$driftStartTokens[latmin]\"/>N</td>";
-    $r .= "<td><input id=\"input-long-deg-from\" class=\"input-long input-deg {pattern:/^[0-9]*$/}\" type=\"text\" value=\"$driftStartTokens[longdeg]\"/>&deg;</td>";
-    $r .= "<td><input id=\"input-long-min-from\" class=\"input-long input-min {pattern:/^[0-9]+(.[\d]+)?$/}\" type=\"text\" value=\"$driftStartTokens[longmin]\"/></td>";
-    $r .= '<td>'.data_entry_helper::select(array('lookupValues'=>array('E'=>'E','W'=>'W'), 'blankText'=>lang::get('choose'),
-        'fieldname'=>'e-w-from', 'default'=>$driftStartTokens['longdir'])).'</td>';
-    $r .= '</tr>';
-    $r .= '<tr id="input-drift-to"><td>'.lang::get('To').'</td>';
-    $r .= "<td><input type=\"radio\" title=\"".lang::get('Select this option then click on the map to set the dive end')."\" name=\"which-point\" value=\"to\" />";
-    $r .= "<td><input id=\"input-lat-deg-to\" class=\"input-lat input-deg {pattern:/^[0-9]*$/}\" type=\"text\" value=\"$driftEndTokens[latdeg]\"/>&deg;</td>";
-    $r .= "<td class=\"td-pad\"><input id=\"input-lat-min-to\" class=\"input-lat input-min {pattern:/^[0-9]+(.[\d]+)?$/}\" type=\"text\" value=\"$driftEndTokens[latmin]\"/>N</td>";
-    $r .= "<td><input id=\"input-long-deg-to\" class=\"input-long input-deg {pattern:/^[0-9]*$/}\" type=\"text\" value=\"$driftEndTokens[longdeg]\"/>&deg;</td>";
-    $r .= "<td><input id=\"input-long-min-to\" class=\"input-long input-min {pattern:/^[0-9]+(.[\d]+)?$/}\" type=\"text\" value=\"$driftEndTokens[longmin]\"/></td>";
-    $r .= '<td>'.data_entry_helper::select(array('lookupValues'=>array('E'=>'E','W'=>'W'), 'blankText'=>lang::get('choose'),
-            'fieldname'=>'e-w-to', 'default'=>$driftEndTokens['longdir'])).'</td>';
-    $r .= '</tr>';
-    $r .= '</tbody></table></div>';
-    $r .= '<label id="input-os-grid-container">OS Grid Reference<input id="input-os-grid" type="text"/></label>';
-    $default = empty(data_entry_helper::$entity_to_load['sample:entered_sref']) ? '' : data_entry_helper::$entity_to_load['sample:entered_sref'];
-    $r .= "<input type=\"hidden\" name=\"sample:entered_sref\" id=\"imp-sref\" value=\"$default\" />";
-    // Pass the drift start and end  attribute IDs to JS so the values can be synced to the visible controls
-    data_entry_helper::$javascript .= "indiciaData.driftStartAttrFieldname='$driftStartAttr[fieldname]';\n";
-    $r .= "<input type=\"hidden\" name=\"$driftStartAttr[fieldname]\" id=\"$driftStartAttr[fieldname]\" value=\"$driftStartAttr[default]\"/>";
-    data_entry_helper::$javascript .= "indiciaData.driftEndAttrFieldname='$driftEndAttr[fieldname]';\n";
-    $r .= "<input type=\"hidden\" name=\"$driftEndAttr[fieldname]\" name=\"$driftEndAttr[fieldname]\"  value=\"$driftEndAttr[default]\"/>";
-    $r .= '</div>';
-    return $r;
+
   }
 
   public static function get_submission($values, $args) {
