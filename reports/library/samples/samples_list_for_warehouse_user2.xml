@@ -57,5 +57,6 @@
     <column name='date_end' sql='s.date_end' visible="false" />
     <column name='date_type' sql='s.date_type' visible="false" />
     <column name='date' display='Date' datatype="date" />
+    <column name='input_form' sql='s.input_form' visible="false" />
   </columns>
 </report>
