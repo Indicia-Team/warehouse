@@ -2355,7 +2355,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     hintDrawPointHint: 'Select this tool to draw points by clicking on the map.',
     hintDrawForReportingHint: 'You can then filter the report for intersecting records.',
     hintClearSelection: 'Clear the edit layer',
-    hintModifyFeature: 'Modify the selected feature. Grab and drag the handles or double click on lines to add new handles.',
+    hintModifyFeature: 'Modify the selected feature. Click on the feature to select it then grab and drag the circular handles to change the boundary.',
     hintFullscreen: 'Display the map in full screen mode',
     hlpClickOnceSetSref: 'Click once on the map to set your location.',
     hlpClickAgainToCorrect: 'Click on the map again to correct your position if necessary.',
