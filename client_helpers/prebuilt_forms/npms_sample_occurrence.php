@@ -192,7 +192,7 @@ class iform_npms_sample_occurrence extends iform_dynamic_sample_occurrence {
     // User must be logged in before we can access their records.
     if ($user->uid===0) {
       // Return a login link that takes you back to this form when done.
-      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
+      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>array('destination=node/'.($node->nid)))).'">login</a> to the website.');
     }
 
     // Get the Indicia User ID to filter on.
