@@ -357,7 +357,7 @@ mapInitialisationHooks.push(function(mapdiv) {
     }
     else {
       // Set the default view to show the feature we are loading
-      mapdiv.map.zoomToExtent(bounds, true);
+      mapdiv.map.zoomToExtent(bounds);
     }
   }
   ";
