@@ -6,13 +6,24 @@
   <query>
     WITH samples1 AS (
       SELECT s.id as sample_id1,
-        COALESCE(l.name, s.location_name, s.entered_sref) as location_name,
+        COALESCE(
+        case 
+        when lavPlotName.text_value IS null 
+          then '&lt;i&gt;' || 'Plot at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+        else 
+          '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+        end
+        , s.location_name, s.entered_sref) as location_name,
         s.date_start,
         s.date_end,
         s.date_type
       FROM samples s
-      LEFT JOIN locations l ON l.id = s.location_id
+      JOIN locations l ON l.id = s.location_id
+      LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=l.id AND lavPlotName.deleted=false
+      JOIN termlists_terms ttPlotType on ttPlotType.id = l.location_type_id
+      JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
       JOIN sample_attribute_values sav ON sav.sample_id = s.id AND sav.sample_attribute_id = #s1AttrID# AND sav.int_value = 0
+      #joins#
       WHERE s.survey_id = #survey_id# AND s.deleted = FALSE
       AND s.created_by_id = #iUserID#
     ), samples2 AS (
@@ -39,10 +50,11 @@
         query='SELECT id, title as caption FROM surveys' />
     <param name='iUserID' display='Indicia User ID' description='Indicia User ID: use 0 to ignore' datatype='int' />
     <param name='s1AttrID' display='Sample 1 Attribute ID' description='The ID of the sample attribute that links a second sample to a first' datatype='int' />
+    <param name='plot_number_attr_id' display='Plot number attribute Id' description='Id of the location attribute that holds the plot number label' datatype='int' default='0' empytvalue='0'/>
   </params>
   <columns>
     <column name='sample_id1' display='ID' />
-    <column name='location_name' display='Location' />
+    <column name='location_name' display='Plot' />
     <column name='date' display='Date' />
     <column name='sample_id2' visible='false' />
   </columns>
