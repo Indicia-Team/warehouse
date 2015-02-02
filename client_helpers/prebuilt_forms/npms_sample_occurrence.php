@@ -51,6 +51,17 @@ class iform_npms_sample_occurrence extends iform_dynamic_sample_occurrence {
           'group'=>'Locking Date',
           'required'=>false
         ),
+        array(
+          'name'=>'plot_number_attr_id',
+          'caption'=>'Plot number/label attribute id',
+          'description'=>'The attribute which holds the plot number/label.',
+          'type'=>'select',
+          'table'=>'location_attribute',
+          'valueField'=>'id',
+          'captionField'=>'caption',
+          'group'=>'Other IForm Parameters',
+          'required'=>false
+        ),
       )
     ); 
   }
@@ -203,7 +214,9 @@ class iform_npms_sample_occurrence extends iform_dynamic_sample_occurrence {
           's1AttrID' => $args['survey_1_attr'],
           'iUserID' => $iUserId);
     }
-
+    if (!empty($filter) && !empty($args['plot_number_attr_id'])) {
+      $filter = array_merge($filter,array('plot_number_attr_id' => $args['plot_number_attr_id']));
+    }
     // Return with error message if we cannot identify the user records
     if (!isset($filter)) {
       return lang::get('LANG_No_User_Id');
