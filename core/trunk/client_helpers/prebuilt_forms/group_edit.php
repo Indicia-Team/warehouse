@@ -60,6 +60,18 @@ class iform_group_edit {
         'captionField'=>'term',
         'extraParams'=>array('termlist_external_key'=>'indicia:group_types')
       ), array(
+        'name'=>'parent_group_type',
+        'caption'=>'Parent group type',
+        'description'=>'Type of group that this form can create children of. Requires that you set the parent relationship type ' .
+            'as well. Only used when accessing the form without a from_group_id, in which case a drop down control allows the user ' .
+            'to pick the parent group.',
+        'type'=>'select',
+        'table'=>'termlists_term',
+        'valueField'=>'id',
+        'captionField'=>'term',
+        'extraParams'=>array('termlist_external_key'=>'indicia:group_types'),
+        'required' => FALSE
+      ), array(
         'name'=>'parent_group_relationship_type',
         'caption'=>'Parent relationship type',
         'description'=>'If you are using this form to create groups which will be the children of other groups, then when you call this '.
@@ -71,7 +83,7 @@ class iform_group_edit {
         'valueField'=>'id',
         'captionField'=>'term',
         'extraParams'=>array('termlist_external_key'=>'indicia:group_relationship_types'),
-        'required'=>false
+        'required'=>FALSE
       ), array(
         'name'=>'join_methods',
         'caption'=>'Available joining methods',
@@ -85,63 +97,63 @@ class iform_group_edit {
         'type'=>'textarea',
         'default'=>"P=Anyone can join without needing approval\nR=Anyone can request to join but a group administrator must approve their membership\n" .
             "I=The group is closed and membership is by invite only\nA=Administrator will set up the members manually",
-        'required'=>true
+        'required'=>TRUE
       ),
       array(
         'name'=>'include_code',
         'caption'=>'Include code field',
         'description'=>'Include the optional field for setting a group code?',
         'type'=>'checkbox',
-        'default'=>false,
-        'required'=>false
+        'default'=>FALSE,
+        'required'=>FALSE
       ),
       array(
         'name'=>'include_dates',
         'caption'=>'Include date fields',
         'description'=>'Include the optional fields for setting the date range the group operates for?',
         'type'=>'checkbox',
-        'default'=>false,
-        'required'=>false
+        'default'=>FALSE,
+        'required'=>FALSE
       ),
       array(
         'name'=>'include_logo_controls',
         'caption'=>'Include logo upload controls',
         'description'=>'Include the controls for uploading and attaching a logo image to the group?',
         'type'=>'checkbox',
-        'default'=>true,
-        'required'=>false
+        'default'=>TRUE,
+        'required'=>FALSE
       ),
       array(
         'name'=>'include_sensitivity_controls',
         'caption'=>'Include sensitive records options',
         'description'=>'Include the options for controlling viewing of sensitive records within the group?',
         'type'=>'checkbox',
-        'default'=>true,
-        'required'=>false
+        'default'=>TRUE,
+        'required'=>FALSE
       ),
       array(
         'name'=>'include_report_filter',
         'caption'=>'Include report filter',
         'description'=>'Include the optional panel for defining a report filter?',
         'type'=>'checkbox',
-        'default'=>true,
-        'required'=>false
+        'default'=>TRUE,
+        'required'=>FALSE
       ),
       array(
         'name'=>'include_linked_pages',
         'caption'=>'Include linked pages',
         'description'=>'Include the optional panel for defining a data entry and reporting pages linked to this group?',
         'type'=>'checkbox',
-        'default'=>true,
-        'required'=>false
+        'default'=>TRUE,
+        'required'=>FALSE
       ),
       array(
         'name'=>'include_private_records',
         'caption'=>'Include private records field',
         'description'=>'Include the optional field for witholding records from release?',
         'type'=>'checkbox',
-        'default'=>false,
-        'required'=>false
+        'default'=>TRUE,
+        'required'=>FALSE
       ),
       array(
         'name'=>'include_administrators',
@@ -149,8 +161,8 @@ class iform_group_edit {
         'description'=>'Include a control for setting up a list of the admins for this group? If not set, then the group '.
             'creator automatically gets assigned as the administrator.',
         'type'=>'checkbox',
-        'default'=>false,
-        'required'=>false
+        'default'=>FALSE,
+        'required'=>FALSE
       ),
       array(
         'name'=>'include_members',
@@ -160,8 +172,8 @@ class iform_group_edit {
             'involve the members requesting or being invited - this is only appropriate when the group admin explicitly controls '.
             'the group membership.',
         'type'=>'checkbox',
-        'default'=>false,
-        'required'=>false
+        'default'=>FALSE,
+        'required'=>FALSE
       ),
       array(
         'name' => 'data_inclusion_mode',
@@ -181,21 +193,21 @@ class iform_group_edit {
         'description'=>'JSON describing the filter types that are available if the include report filter option is checked.',
         'type'=>'textarea',
         'default'=>'{"":"what,where,when","Advanced":"source,quality"}',
-        'required'=>false
+        'required'=>FALSE
       ),
       array(
         'name' => 'indexed_location_type_ids',
         'caption'=>'Indexed location types',
         'description'=>'Comma separated list of location type IDs that are available for selection as a filter boudary, where the location type is indexed.',
         'type'=>'text_input',
-        'required'=>false
+        'required'=>FALSE
       ),
       array(
         'name' => 'other_location_type_ids',
         'caption'=>'Other location types',
         'description'=>'Comma separated list of location type IDs that are available for selection as a filter boudary, where the location type is not indexed.',
         'type'=>'text_input',
-        'required'=>false
+        'required'=>FALSE
       ),
       array(
         'name' => 'default_linked_pages',
@@ -225,7 +237,7 @@ class iform_group_edit {
         'caption'=>'Path to main groups page',
         'description'=>'Path to the Drupal page which my groups are listed on.',
         'type'=>'text_input',
-        'required'=>false
+        'required'=>FALSE
       ), 
     );
   }
@@ -265,9 +277,6 @@ class iform_group_edit {
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     if (!empty($_GET['group_id'])) {
       self::loadExistingGroup($_GET['group_id'], $auth, $args);
-    } else {
-      if (!empty($args['parent_group_relationship_type']) && empty($_GET['from_group_id']))
-        return 'This form should be called with a from_group_id parameter to define the parent when creating a new group';
     }
     // maintain compatibility with form settings from before group type became multiselect.
     if (empty($args['group_type']))
@@ -309,9 +318,29 @@ class iform_group_edit {
     $r .= data_entry_helper::textarea(array(
       'label' => ucfirst(lang::get('{1} description', self::$groupType)),
       'fieldname' => 'group:description',
-      'helpText' => lang::get('Description and notes about the {1} which will be shown in the {1} listing pages to help other users find your {1}.', self::$groupType),
+      'helpText' => lang::get('LANG_Description_Field_Instruct', self::$groupType),
       'class' => 'control-width-6'
     ));
+    // If adding a new group which should have a parent group of some type or other, but no parent
+    // group is specified in the from_group_id parameter, then let the user pick a group to link as the parent.
+    if (empty($_GET['group_id']) && !empty($args['parent_group_type']) &&
+        !empty($args['parent_group_relationship_type']) && empty($_REQUEST['from_group_id'])) {
+      // There should be a parent group, but none provided, so allow the user to pick one.
+      $r .= data_entry_helper::select(array(
+        'label' => ucfirst(lang::get('{1} parent', self::$groupType)),
+        'fieldname' => 'from_group_id',
+        'table' => 'groups_user',
+        'captionField' => 'title',
+        'valueFields' => 'group_id',
+        'extraParams' => $auth['read'] + array(
+            'group_type_id' => $args['parent_group_type'],
+            'user_id' => hostsite_get_user_field('indicia_user_id'),
+            'view' => 'detail'
+          ),
+        'validation' => array('required'),
+        'blankText' => lang::get('<please select>')
+      ));
+    }
     if (count($args['group_type'])!==1) {
       $params = array('termlist_external_key'=>'indicia:group_types','orderby'=>'sortorder,term');
       if (!empty($args['group_type']))
@@ -319,12 +348,13 @@ class iform_group_edit {
       $r .= data_entry_helper::select(array(
         'label' => ucfirst(lang::get('{1} type', self::$groupType)),
         'fieldname' => 'group:group_type_id',
-        'required' => true,
+        'validation' => array('required'),
         'table'=>'termlists_term',
         'valueField'=>'id',
         'captionField'=>'term',
         'extraParams'=>$auth['read'] + $params,
         'class'=>'control-width-4',
+        'blankText' => lang::get('<please select>'),
         'helpText'=>lang::get('What sort of {1} is it?', self::$groupType)
       ));
     }
@@ -382,7 +412,7 @@ $('#entry_form').submit(function() {
     return $r;
   }
   
-  private static function formsBlock($args, $auth, $node) {
+  private static function formsBlock($args, $auth) {
     $r = '';
     if ($args['include_linked_pages']) {
       $r = '<fieldset><legend>' . lang::get('{1} pages', ucfirst(self::$groupType)) . '</legend>';
@@ -525,33 +555,27 @@ $('#entry_form').submit(function() {
    * @return string HTML to output
    */
   private static function inclusionMethodControl($args) {
-    $r = '';
-    $visibleOutput = false;
-    switch ($args['data_inclusion_mode']) {
-      case 'implicit':
-        $implicit = 't';
-      case 'explicit':
-        $implicit = 'f';
-        $r = data_entry_helper::hidden_text(array(
-          'fieldname' => 'group:implicit_record_inclusion',
-          'default' => $implicit
-        ));
-        break;
-      default: 
-        $r = '<fieldset><legend>' . lang::get('How to post records for the {1}', self::$groupType) . '</legend>';
-        $r .= '<p>' . lang::get('LANG_Record_Inclusion_Instruct_1', self::$groupType, lang::get("group's")) . ' ';
-        if ($args['include_sensitivity_controls'])
-          $r .= lang::get('LANG_Record_Inclusion_Instruct_Sensitive') . ' ';
-        $r .= lang::get('LANG_Record_Inclusion_Instruct_1', self::$groupType, ucfirst(self::$groupType))  . '</p>';
-        $r .= data_entry_helper::select(array(
-          'fieldname' => 'group:implicit_record_inclusion',
-          'label' => lang::get('Records are included in the {1} if', self::$groupType),
-          'lookupValues' => array(
-            't' => lang::get('they match the filter defined above'),
-            'f' => lang::get('they were recorded on a group data entry form')
-          )
-        ));
-        $r .' </fieldset>';
+    if ($args['data_inclusion_mode']!=='choose') {
+      $implicit = $args['data_inclusion_mode'] === 'implicit' ? 't' : 'f';
+      $r = data_entry_helper::hidden_text(array(
+        'fieldname' => 'group:implicit_record_inclusion',
+        'default' => $implicit
+      ));
+    } else {
+      $r = '<fieldset><legend>' . lang::get('How to post records for the {1}', self::$groupType) . '</legend>';
+      $r .= '<p>' . lang::get('LANG_Record_Inclusion_Instruct_1', self::$groupType, lang::get("group's")) . ' ';
+      if ($args['include_sensitivity_controls'])
+        $r .= lang::get('LANG_Record_Inclusion_Instruct_Sensitive') . ' ';
+      $r .= lang::get('LANG_Record_Inclusion_Instruct_1', self::$groupType, ucfirst(self::$groupType))  . '</p>';
+      $r .= data_entry_helper::select(array(
+        'fieldname' => 'group:implicit_record_inclusion',
+        'label' => lang::get('Records are included in the {1} if', self::$groupType),
+        'lookupValues' => array(
+          't' => lang::get('they match the filter defined above'),
+          'f' => lang::get('they were recorded on a group data entry form')
+        )
+      ));
+      $r .' </fieldset>';
     }
     return $r;
   }
@@ -572,12 +596,14 @@ $('#entry_form').submit(function() {
         'label' => ucfirst(lang::get('{1} active from', self::$groupType)),
         'fieldname' => 'group:from_date',
         'controlWrapTemplate' => 'justControl',
+        'helpText' => lang::get('LANG_From_Field_Instruct')
       ));
       $r .= data_entry_helper::date_picker(array(
         'label' => lang::get('to'),
         'fieldname' => 'group:to_date',
         'labelClass' => 'auto',
-        'controlWrapTemplate' => 'justControl'
+        'controlWrapTemplate' => 'justControl',
+        'helpText' => lang::get('LANG_To_Field_Instruct')
       ));
       $r .= '</div>';
     }
@@ -602,9 +628,7 @@ $('#entry_form').submit(function() {
         'captionField'=>'name_and_email',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
-        'helpText'=>lang::get('Search for additional users to make administrators of this {1} by typing a few characters of their surname ' .
-            'then selecting their name from the list of suggestions and clicking the Add button. Administrators will need register on this website ' .
-            'before you can add them.', self::$groupType),
+        'helpText'=>lang::get('LANG_Admins_Field_Instruct', self::$groupType),
         'addToTable'=>false,
         'class' => $class,
         'default' => array(
@@ -620,9 +644,7 @@ $('#entry_form').submit(function() {
         'captionField'=>'name_and_email',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
-        'helpText'=>lang::get('Search for users to give membership to by typing a few characters of their surname ' .
-            'then selecting their name from the list of suggestions and clicking the Add button. Users will need register on this website ' .
-            'before you can add them.'),
+        'helpText'=>lang::get('LANG_Members_Field_Instruct'),
         'addToTable'=>false,
         'class' => $class
       ));
@@ -684,11 +706,15 @@ $('#entry_form').submit(function() {
       $struct['superModels'] = array(
         'filter' => array('fk' => 'filter_id')
       );
-    if (!empty($args['parent_group_relationship_type']) && !empty($_GET['from_group_id'])) {
+    if (!empty($args['parent_group_relationship_type']) && !empty($_REQUEST['from_group_id'])) {
+      // $from_group_id could be posted in the form if user selectable or provided in the URL if fixed.
+      $from_group_id = empty($_GET['from_group_id'])
+          ? $_POST['from_group_id']
+          : $_GET['from_group_id'];
       $struct['subModels'] = array(
         'group_relation' => array('fk' => 'to_group_id')
       );
-      $values['group_relation:from_group_id']=$_GET['from_group_id'];
+      $values['group_relation:from_group_id']=$from_group_id;
       $values['group_relation:relationship_type_id']=$args['parent_group_relationship_type'];
     }
     $s = submission_builder::build_submission($values, $struct);
@@ -802,6 +828,8 @@ $('#entry_form').submit(function() {
       if ($duplicate)
         return array('groups_user:general'=>lang::get("Please ensure that the list of administrators and group members only includes each person once."));
     }
+    // default is no errors
+    return array();
   }
   
   /** 
@@ -899,7 +927,7 @@ $('#entry_form').submit(function() {
     }
   }
   
-  public static function get_perms($nid, $args) {
+  public static function get_perms() {
     return array('IForm groups admin');
   }
   
