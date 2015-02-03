@@ -85,9 +85,29 @@ jQuery(document).ready(function($) {
   // functions that drive each of the filter panes, e.g. to obtain the description from the controls.
   var paneObjList = {
     what:{
+      loadFilter: function() {
+        // if list of ids defined but not group names, this is a taxon group list loaded from the user profile.
+        // Hijack the names from indiciaData.myGroups.
+        if (typeof indiciaData.filter.def.taxon_group_names==="undefined") {
+          indiciaData.filter.def.taxon_group_names = [];
+          var foundIds = [], foundNames = [];
+          // Loop the group IDs we are expected to load
+          $.each(indiciaData.filter.def.taxon_group_list, function(idx, groupId) {
+            // Use the myGroups list to look them up
+            $.each(indiciaData.myGroups, function() {
+              if (this[0]===parseInt(groupId)) {
+                foundIds.push(this[0]);
+                foundNames.push(this[1]);
+              }
+            });
+          });
+          indiciaData.filter.def.taxon_group_names = foundNames;
+          indiciaData.filter.def.taxon_group_list = foundIds;
+        }
+      },
       getDescription:function() {
         var groups=[], taxa=[], r=[];
-        if (typeof indiciaData.filter.def.taxon_group_names!=="undefined") {
+        if (typeof indiciaData.filter.def.taxon_group_list!=="undefined") {
           $.each(indiciaData.filter.def.taxon_group_names, function(idx, group) {
             groups.push(group);
           });
@@ -130,27 +150,27 @@ jQuery(document).ready(function($) {
         indiciaData.filter.def.higher_taxa_taxon_list_names={};
         indiciaData.filter.def.taxa_taxon_list_names={};
         // if nothing selected, clean up the def
-        if ($('input[name=taxon_group_list\\[\\]]').length===0) {
+        if ($('input[name="taxon_group_list\\[\\]"]').length===0) {
           indiciaData.filter.def.taxon_group_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=taxon_group_list\\[\\]]'), function(idx, ctrl) {
+          $.each($('input[name="taxon_group_list\\[\\]"]'), function(idx, ctrl) {
             indiciaData.filter.def.taxon_group_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
-        if ($('input[name=higher_taxa_taxon_list_list\\[\\]]').length===0) {
+        if ($('input[name="higher_taxa_taxon_list_list\\[\\]"']').length===0) {
           indiciaData.filter.def.higher_taxa_taxon_list_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=higher_taxa_taxon_list_list\\[\\]]'), function(idx, ctrl) {
+          $.each($('input[name="higher_taxa_taxon_list_list\\[\\]"]'), function(idx, ctrl) {
             indiciaData.filter.def.higher_taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
-        if ($('input[name=taxa_taxon_list_list\\[\\]]').length===0) {
+        if ($('input[name="taxa_taxon_list_list\\[\\]"]').length===0) {
           indiciaData.filter.def.taxa_taxon_list_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=taxa_taxon_list_list\\[\\]]'), function(idx, ctrl) {
+          $.each($('input[name="taxa_taxon_list_list\\[\\]"]'), function(idx, ctrl) {
             indiciaData.filter.def.taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
