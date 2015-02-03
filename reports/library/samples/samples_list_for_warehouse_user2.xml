@@ -24,10 +24,10 @@
       <where>s.survey_id=#survey_id#</where>
     </param>
     <param name="date_from" display="Date From" datatype="date">
-      <where>('#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
+      <where>('#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
     </param>
     <param name="date_to" display="Date To" datatype="date">
-      <where>('#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
+      <where>('#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
     <param name='user_id' display='Warehouse User ID' description='Enter the ID of the warehouse user' datatype='int' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
