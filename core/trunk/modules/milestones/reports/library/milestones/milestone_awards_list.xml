@@ -1,0 +1,37 @@
+<report
+    title="Milestone awards list"
+    description="A general purpose list of awarded milestones."
+>
+  <query website_filter_field="m.website_id">
+  SELECT #columns#
+  FROM milestone_awards ma
+  JOIN milestones m on m.id=ma.milestone_id and m.deleted=false
+  JOIN users u on u.id=ma.user_id and u.deleted=false
+  JOIN people p on p.id=u.person_id and p.deleted=false
+  #joins#
+  WHERE ma.deleted=false
+  #filters#
+  AND #website_filter#
+  #order_by#
+  </query>  
+  <order_bys>
+    <order_by>ma.id desc</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="integer" default="" >
+      <where>ma.user_id=#currentUser#</where>
+    </param>
+    <param name="group_id" display="Group ID" description="Limit to milestones for this group" datatype="text" default="">
+      <where>m.group_id=#user_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="milestone_award_id" visible="false" sql="ma.id" />
+    <column name="milestone_id" visible="false" sql="m.id" />
+    <column name="title" sql="m.title" datatype="text" />
+    <column name="success_message" sql="m.success_message" datatype="text" />
+    <column name="awarded_by" sql="m.awarded_by" datatype="text" />
+    <column name="awarded_to" sql="p.surname || ', ' || p.first_name" datatype="text" />
+    <column name="awarded_date" sql="ma.created_on" datatype="date" />
+  </columns>
+</report>
