@@ -1492,7 +1492,7 @@ mapInitialisationHooks.push(function(mapdiv) {
       	$precision['fieldname'] = $ctrlId;
       	$precision['id'] = $ctrlId;
       	//$headerPreRow .= '<td class="ui-widget-content" ><label class="auto-width">'.$occAttrCaptions[$attrId].':</label></td>';
-      	$row .= "<td class='ui-widget-content'>".data_entry_helper::outputAttribute($precision, $ctrlOptions)."' /></td>";
+      	$r .= "<td class='ui-widget-content scSmpAttrCell'>".data_entry_helper::outputAttribute($precision, $ctrlOptions)."</td>";
       }
       if($maxCellsPerRow>2+($options['displaySampleDate']?1:0)+($precision?1:0))
         $r .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-(2+($options['displaySampleDate']?1:0)+($precision?1:0)))."></td>";
