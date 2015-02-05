@@ -12,7 +12,7 @@ Note the single digit regions are based on the Irish grid reference system."
   LEFT JOIN locations_websites lw on lw.location_id=sq.id AND lw.deleted=false
   LEFT JOIN location_attribute_values lavTra on lavTra.location_id=sq.id AND lavTra.location_attribute_id=#tranche_attr_id# AND lavTra.deleted=false
   LEFT JOIN person_attribute_values pav on pav.int_value=sq.id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
-  LEFT JOIN users u on u.person_id=pav.person_id AND u.id=pav.updated_by_id AND u.deleted=false
+  LEFT JOIN users u on u.person_id=pav.person_id AND u.deleted=false
   LEFT JOIN users_websites uw on u.id=uw.user_id AND uw.created_on &gt;= CAST(COALESCE('#ignore_registration_dates_before#','1500-01-01') as date)
   WHERE (sq.location_type_id=#core_square_type_id# OR sq.location_type_id=#additional_square_type_id#)
   #filters#
@@ -58,7 +58,7 @@ Note the single digit regions are based on the Irish grid reference system."
   </params>
   <columns> 
     <column name='region' display='Region' 
-    sql="
+    sql="    
     case 
       when 
         (st_intersects(sq.centroid_geom, 
@@ -149,8 +149,8 @@ Note the single digit regions are based on the Irish grid reference system."
         regexp_replace(regexp_replace(sq.centroid_sref, ',[^ ]', ', ', 'g'),'\d+$','')
     END
 " datatype='text' in_count='true'/>
-    <column name='percent_allocated' display='Allocation %' sql="case when cast(count(distinct(sq.id)) as float)=0 then 0 else count(distinct(case when pav.id IS NOT null then sq.id end))/cast(count(distinct(sq.id)) as float)*100 end" aggregate="true"/>
+    <column name='percent_allocated' display='Allocation %' sql="round(case when cast(count(distinct(sq.id)) as float)=0 then 0 else count(distinct(case when uw.id IS NOT null then sq.id end))/cast(count(distinct(sq.id)) as numeric)*100 end,2)" aggregate="true"/>
     <column name='number_of_squares' display='Number of squares' sql="cast(count(distinct(sq.id)) as float)" aggregate="true"/>
-    <column name='number_of_allocated_squares' display='Number of allocated squares' sql="count(distinct(case when pav.id IS NOT null then sq.id end))" aggregate="true"/>
+    <column name='number_of_allocated_squares' display='Number of allocated squares' sql="count(distinct(case when uw.id IS NOT null then sq.id end))" aggregate="true"/>
   </columns>
 </report>
