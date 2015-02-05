@@ -67,7 +67,7 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
     var mapLayers = indiciaData.mapdiv.map.layers;
     for(var a = 0; a < mapLayers.length; a++ ){
       if (mapLayers[a].CLASS_NAME=='OpenLayers.Layer.Vector') {
-        mapLayers[a].destroyFeatures()
+        destroyAllFeatures(mapLayers[a], 'zoomToBoundary', true);
       }
     };
     $('#imp-boundary-geom').val('');
