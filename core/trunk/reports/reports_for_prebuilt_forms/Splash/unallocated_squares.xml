@@ -20,17 +20,15 @@
     <param name='additional_square_type_id' display='Additional Square Type Id' description='' datatype='integer'/>
     <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
     <param name="ignore_registration_dates_before" display="Ignore Registration Dates Before" description="Ignore anyone who registered earlier than this date
-where working out if a square has been allocated or not." datatype="date" emptyvalue="" default=""/>
+        where working out if a square has been allocated or not." datatype="date" emptyvalue="" default=""/>
     <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any sqaures created before this date.
-Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
+        Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
       <where>l.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)</where>
     </param>
     <param name="post_code_geom" display="Post Code Geom" description="Post code geometry, so we only show squares closest to the user." emptyvalue='' default=''>
       <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
     </param>
-    <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''>
-      <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
-    </param>
+    <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''/>
   </params>
   <columns> 
     <column name='id' sql='l.id' datatype='integer' visible='false' in_count="true"/>  
