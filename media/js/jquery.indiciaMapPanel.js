@@ -39,6 +39,7 @@ mapLocationSelectedHooks = [];
  */
 mapClickForSpatialRefHooks = [];
 
+var destroyAllFeatures;
 /**
 * Class: indiciaMapPanel
 * JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
@@ -99,6 +100,23 @@ mapClickForSpatialRefHooks = [];
         }
       });
       layer.removeFeatures(toRemove, {});
+    }
+    
+    /*
+     * Destroy features version of removeAllFeatures function. Once destroyed features cannot be added back to the layer.
+     */
+    destroyAllFeatures = function (layer, type, inverse) {
+      var toRemove = [];
+      if (typeof inverse==="undefined") {
+        inverse=false;
+      }
+      $.each(layer.features, function() {
+        //Annotations is a special separate mode added after original code was written, so do not interfere with annotations even in inverse mode.
+        if ((!inverse && this.attributes.type===type) || (inverse && this.attributes.type!==type && this.attributes.type!=='annotation')) {
+          toRemove.push(this);
+        }
+      });
+      layer.destroyFeatures(toRemove, {});
     }
 
     /**
@@ -581,8 +599,14 @@ mapClickForSpatialRefHooks = [];
         //When in annotations mode, if the user sets the centroid on the map, we only want the previous centroid point to be removed.
         removeAllFeatures(div.map.editLayer, 'clickPoint');
       } else {
-        removeAllFeatures(div.map.editLayer, 'boundary', true);
-        removeAllFeatures(div.map.editLayer, 'ghost');
+        var toRemove = [];
+        $.each(div.map.editLayer.features, function() {
+          //Annotations is a special seperate mode added after original code was written, so do not interfere with annotations even in inverse mode.
+          if (this.attributes.type!=='boundary' && this.attributes.type!=='zoomToBoundary' && this.attributes.type!=='annotation') {
+            toRemove.push(this);
+          }
+        });
+        div.map.editLayer.removeFeatures(toRemove, {});
       }
       ghost=null;
       $('#' + opts.geomId).val(data.wkt);
@@ -1385,7 +1409,7 @@ mapClickForSpatialRefHooks = [];
           //When map is clicked on, then remove previous plots.
           for(var a = 0; a < mapLayers.length; a++ ){
             if (mapLayers[a].CLASS_NAME=='OpenLayers.Layer.Vector') {
-              mapLayers[a].destroyFeatures();
+              destroyAllFeatures(mapLayers[a], 'zoomToBoundary', true);
             }
           }
           $('#'+ div.settings.boundaryGeomId).val('');
