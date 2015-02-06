@@ -29,30 +29,32 @@ add_parent_taxon = function() {
   $.post('<?php echo url::site('taxa_taxon_list/add_parent_taxon'); ?>', {
       taxon_list_id: <?php echo $taxon_list_id; ?>,
       taxa_taxon_list_id: $('#add-from-parent').val()
-    }, function(data, textStatus) {
-      if (isNaN(parseInt(data)))
+    }, function(data) {
+      if (isNaN(parseInt(data))) {
         // if text returned, it is a message to display
         alert(data);
-      else 
+      } else { 
         // if OK, it returns the new record ID. Add it to the grid, using the global var created
         // when the grid was created.
-        grid_taxa_taxon_list.addRecords('id', data);
+        console.log(indiciaData);
+        indiciaData.reports.taxa_taxon_list.grid_taxa_taxon_list.addRecords('id', data);
+      }
     }
   );
-}
+};
 /*]]>*/
 </script>
 <?php
   require_once(DOCROOT.'client_helpers/data_entry_helper.php');
   $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
   echo '<div class="linear-form">';
-  echo data_entry_helper::autocomplete(array(
+  echo data_entry_helper::species_autocomplete(array(
     'label'=>'Add species',
     'fieldname'=>'add-from-parent',
     'helpText'=>'Search for taxa in the parent list to quickly add them into this list.',
-    'table' => 'taxa_taxon_list',
-    'captionField' => 'taxon',
-    'valueField' => 'id',
+    'cacheLookup' => TRUE,
+    'speciesIncludeBothNames' => TRUE,
+    'speciesIncludeTaxonGroup' => TRUE,
     'extraParams' => $readAuth + array('taxon_list_id'=>$parent_list_id),
     'afterControl' => '<input type="button" value="Add" onclick="add_parent_taxon();" />'
   ));
