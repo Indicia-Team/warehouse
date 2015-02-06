@@ -1,0 +1,29 @@
+/* The grid of group pages may overflow depending on the names of forms, 
+ * captions and so on. Control widths to prevent this. */
+
+#complex-attr-grid-group-pages {
+  table-layout: fixed;
+}
+#complex-attr-grid-group-pages .complex-attr-grid-col0 {
+  padding: 0;
+  width: 45%;
+}
+#complex-attr-grid-group-pages .complex-attr-grid-col1 {
+  padding: 0;
+  width: 20%;
+}
+#complex-attr-grid-group-pages .complex-attr-grid-col2 {
+  padding: 0;
+  width: 30%;
+}
+#complex-attr-grid-group-pages .complex-attr-grid-col-del {
+  /* Leave the final column to take up remaining width */
+}
+
+#complex-attr-grid-group-pages input, 
+#complex-attr-grid-group-pages select {
+  width: 98%
+}
+#complex-attr-grid-group-pages span.ind-delete-icon {
+  float: right;
+}
