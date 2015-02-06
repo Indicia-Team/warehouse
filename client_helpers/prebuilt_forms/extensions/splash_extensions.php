@@ -825,33 +825,44 @@ class extension_splash_extensions {
     $r .= '<div><form method="post"><textarea id="upload-data" name="upload-data" cols="20" rows="50"></textarea>';
     $r .= '<input type="submit" id="upload-squares" value="Upload"></form></div><br>';
     $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
+    //If there is data to upload then get the lines of data
     if (!empty($_POST['upload-data']))
      $uploadLines=data_entry_helper::explode_lines($_POST['upload-data']);
-    $convertedUploadData=[];
+    $convertedUploadData=array();
+    $convertedUploadIdx=0;
     if (!empty($uploadLines)) {
+      //Get existing data to detect duplicates
       $existingPersonAttrVals = data_entry_helper::get_population_data(array(
         'table' => 'person_attribute_value',
         'extraParams' => $auth['read'] + array(),
         'nocache' => true
       )); 
+      //Cycle through all the lines in the upload data
       foreach ($uploadLines as $lineIdx=>$uploadLine) {
+        //Split each line up into cells, cell 2 (index 1) onwards contain all the squares we are going to attach to people.
         $lineParts=explode(",",$uploadLine);
         $email = $lineParts[0];
-
+        //Get the id of the person to attach squares to
         $personData = data_entry_helper::get_population_data(array(
           'table' => 'person',
           'extraParams' => $auth['read'] + array('email_address' => $email, 'view' => 'detail'),
           'nocache' => true
         )); 
+        //Cycle through all the squares we want to attach to a person.
         for ($idx2=1; $idx2<count($lineParts); $idx2++) {
-          $location = $lineParts[$idx2];
-          $locationData = data_entry_helper::get_population_data(array(
-            'table' => 'location',
-            'extraParams' => $auth['read'] + array('name' => $location, 'view' => 'detail'),
-            'nocache' => true
-          )); 
-          $convertedUploadData[$lineIdx][0]=$personData[0]['id'];
-          $convertedUploadData[$lineIdx][1]=$locationData[0]['id'];
+          if (!empty($lineParts[$idx2])) {
+            //Get the name of the square to attach and then its id.
+            $location = $lineParts[$idx2];
+            $locationData = data_entry_helper::get_population_data(array(
+              'table' => 'location',
+              'extraParams' => $auth['read'] + array('name' => $location, 'view' => 'detail'),
+              'nocache' => true
+            )); 
+            //Save the data ready to import.
+            $convertedUploadData[$convertedUploadIdx][0]=$personData[0]['id'];
+            $convertedUploadData[$convertedUploadIdx][1]=$locationData[0]['id'];
+            $convertedUploadIdx++;
+          }
         }
       }
       data_entry_helper::$javascript .= "
