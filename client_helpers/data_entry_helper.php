@@ -266,6 +266,7 @@ class data_entry_helper extends helper_base {
    *   The array key is the column name and the value is a sub-array with a column definition. The column definition can contain
    *   the following:
    *   * label - The column label. Will be automatically translated.
+   *   * class - A class given to the column label.
    *   * datatype - The column's data type. Currently only text and lookup is supported.
    *   * termlist_id - If datatype=lookup, then provide the termlist_id of the list to load terms for as options in the control.
    *   * unit - An optional unit label to display after the control (e.g. 'cm', 'kg').
@@ -325,7 +326,9 @@ class data_entry_helper extends helper_base {
       // checkbox groups output a second row of cells for each checkbox label
       $rowspan = isset($def['control']) && $def['control']==='checkbox_group' ? 1 : 2;
       $colspan = isset($def['control']) && $def['control']==='checkbox_group' ? count($termlistData) : 1;
-      $r .= "<th rowspan=\"$rowspan\" colspan=\"$colspan\">".lang::get($def['label']).'</th>';
+      // Add default class if none provided.
+      $class = isset($def['class']) ? $def['class'] : 'complex-attr-grid-col' . $idx;
+      $r .= "<th rowspan=\"$rowspan\" colspan=\"$colspan\" class=\"$class\">" . lang::get($def['label']) . '</th>';
     }
     self::$javascript .= "indiciaData.langPleaseSelect='".lang::get('Please select')."'\n";
     self::$javascript .= "indiciaData.langCantRemoveEnoughRows='".lang::get('Please clear the values in some more rows before trying to reduce the number of rows further.')."'\n";
@@ -334,7 +337,10 @@ class data_entry_helper extends helper_base {
     $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows'],
         'rowCountControl'=>$options['rowCountControl'],'deleteRows'=>$options['deleteRows']);
     self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n"; 
-    $r .= "<th rowspan=\"2\"></th></tr><tr>$thRow2</tr></thead>";
+    // Add delete column and end tr.
+    $r .= '<th rowspan="2" class="complex-attr-grid-col-del"></th></tr>';
+    // Add second header row then end thead.
+    $r .= "<tr>$thRow2</tr></thead>";
     $r .= '<tbody>';
     $rowCount = $options['defaultRows'] > count($options['default']) ? $options['defaultRows'] : count($options['default']);
     $extraCols=0;
