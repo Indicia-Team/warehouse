@@ -51,9 +51,9 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   public function index()
   {
     $taxon_list_id = $this->uri->argument(1);
-    $list = ORM::factory('taxon_list',$taxon_list_id);
-    $this->pagetitle = "Species in ".$list->title;
-    $this->internal_index($taxon_list_id);
+    $taxonList = ORM::factory('taxon_list',$taxon_list_id);
+    $this->pagetitle = "Species in ".$taxonList->title;
+    $this->internal_index($taxon_list_id, $taxonList);
   }
  
   public function children($id) {
@@ -65,7 +65,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->view->parent_id=$id;
   }
   
-  private function internal_index($taxon_list_id) {
+  private function internal_index($taxon_list_id, $taxonList) {
     // No further filtering of the gridview required as the very fact you can access the parent taxon list
     // means you can access all the taxa for it.
     if (!$this->taxon_list_authorised($taxon_list_id))
@@ -74,10 +74,12 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       return;
     }
     $this->base_filter['taxon_list_id'] = $taxon_list_id;
+    if (!empty($taxonList->parent_id)) {
+      unset($this->base_filter['parent_id']);
+    }
     parent::index(); 
     $this->view->taxon_list_id = $taxon_list_id;
-    $list = ORM::factory('taxon_list', $taxon_list_id);
-    $this->view->parent_list_id = $list->parent_id;
+    $this->view->parent_list_id = $taxonList->parent_id;
     $this->upload_csv_form->staticFields = array(
       'taxa_taxon_list:taxon_list_id' => $taxon_list_id
     );
