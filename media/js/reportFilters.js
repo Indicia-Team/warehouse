@@ -88,7 +88,7 @@ jQuery(document).ready(function($) {
       loadFilter: function() {
         // if list of ids defined but not group names, this is a taxon group list loaded from the user profile.
         // Hijack the names from indiciaData.myGroups.
-        if (typeof indiciaData.filter.def.taxon_group_names==="undefined") {
+        if (typeof indiciaData.filter.def.taxon_group_list!=="undefined" && typeof indiciaData.filter.def.taxon_group_names==="undefined") {
           indiciaData.filter.def.taxon_group_names = [];
           var foundIds = [], foundNames = [];
           // Loop the group IDs we are expected to load
