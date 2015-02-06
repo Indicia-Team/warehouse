@@ -1,0 +1,18 @@
+<report
+    title="Get surveys for population call."
+    description="Report returns a list of surveys, allowing the surveys list in report parameters to be populated. Note this report has hard-coded
+survey names, as the system cannot provide parameters to this kind of report."
+>
+  <query>
+  SELECT #columns#
+  FROM surveys s
+  WHERE 
+    s.deleted=false
+  AND s.title in ('Wildflower Survey','Indicator Survey version 2','Inventory Survey version 2')
+  GROUP BY s.id
+  </query>
+  <columns> 
+    <column name='id' sql='s.id' datatype='integer'/>
+    <column name='title' sql='s.title' datatype='text'/>
+  </columns>
+</report>

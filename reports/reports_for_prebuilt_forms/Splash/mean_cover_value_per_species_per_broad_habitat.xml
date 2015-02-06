@@ -1,0 +1,56 @@
+<report
+    title="Mean cover value per species per broad habitat"
+    description="Return the average value of species cover by species and/or broad habitat. 
+This is complicated by some surveys using a basic integer for the cover, whilst on others this number is represented on a termlist.
+Broad habitat data may include data for samples where a fine scale sub-habitat has been selected."
+>
+  <query website_filter_field="su.website_id">
+    SELECT #columns#
+    FROM cache_occurrences co
+      JOIN taxa_taxon_lists ttl on ttl.id=co.taxa_taxon_list_id AND ttl.deleted=false
+      JOIN taxa tax on tax.id=ttl.taxon_id AND tax.deleted=false
+      JOIN samples samp on samp.id=co.sample_id AND samp.deleted = false
+      JOIN sample_attribute_values savHab on savHab.sample_id=samp.id AND savHab.sample_attribute_id=#habitat_attr_id# AND savHab.deleted=false
+      JOIN termlists_terms ttHab ON ttHab.id = savHab.int_value AND ttHab.deleted=false
+      JOIN termlists_terms ttBroad ON (ttBroad.id=ttHab.parent_id OR (ttBroad.id=ttHab.id AND ttHab.parent_id IS NULL)) AND ttBroad.deleted=false
+      JOIN terms tHab on tHab.id = ttBroad.term_id AND tHab.deleted=false
+      JOIN surveys su on su.id=samp.survey_id AND su.deleted=false
+      LEFT JOIN occurrence_attribute_values oavInt on oavInt.occurrence_id=co.id AND oavInt.occurrence_attribute_id=#cover_int_occ_attr_id# AND oavInt.deleted=false
+      LEFT JOIN occurrence_attribute_values oavCov on oavCov.occurrence_id=co.id AND oavCov.occurrence_attribute_id=#cover_tt_occ_attr_id# AND oavCov.deleted=false
+      LEFT JOIN termlists_terms ttCov ON ttCov.id = oavCov.int_value AND ttCov.deleted=false
+      LEFT JOIN terms tCov ON tCov.id = ttCov.term_id AND tCov.deleted=false
+    WHERE samp.deleted=false
+      #filters#
+      AND #website_filter#
+    GROUP BY co.taxon,tHab.term
+  </query>
+  <order_bys>
+    <order_by>co.taxon ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
+    <param name='cover_int_occ_attr_id' display='Species cover value integer attribute id' description='Id of the occurrence attribute that holds the cover integer value' datatype='integer'/>
+    <param name='cover_tt_occ_attr_id' display='Species cover value termlist attribute id' description='Id of the occurrence attribute that holds the cover termlist value' datatype='lookup'/>
+    <param name="survey_id" display="Surveys" datatype="lookup" population_call='report:reports_for_prebuilt_forms/Splash/get_surveys_for_population_call:id:title' emptyvalue=''>
+      <where>su.id=#survey_id#</where>
+    </param>
+    <param name="species_id" display="Species" datatype="lookup" population_call='report:reports_for_prebuilt_forms/Splash/get_taxa_for_population_call:id:taxon' emptyvalue=''>
+      <where>tax.id=#species_id#</where>
+    </param>  
+     <param name='broad_habitat' display='Broad Habitat' description='Restrict report to specific broad habitat.' datatype='lookup' emptyvalue=''
+        population_call='report:reports_for_prebuilt_forms/Splash/broad_habitats_for_population_call:id:term'>
+      <where>(ttHab.id=#broad_habitat# OR ttBroad.id=#broad_habitat#)</where>
+    </param>
+    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">
+      <where>samp.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)</where>
+    </param>
+  </params>
+  <columns> 
+    <column name='species' display='Species' sql='co.taxon' datatype='text' in_count="true"/>
+    <column name='habitat' display='Habitat' sql='tHab.term' datatype='text' in_count="true"/>
+    <!-- A few things to note here, firstly, the all the coalesces makes sure we return at least a 0 when doing an addition, as null addition doesn't work. Then NULLIF statement make sures if we detect 0 as a species cover, it does not count towards the mean calculation at all, this behaviour is on request of client and 
+    makes sense in the context of this report.-->
+    <column name='mean_species_cover' display='Mean Cover' sql="avg(NULLIF(coalesce(oavInt.int_value,0) + coalesce((cast(ttCov.sort_order/10 as float)),0),0))"/>
+    <column name='standard_deviation' display='Standard Deviation' sql="stddev_samp(NULLIF(coalesce(oavInt.int_value,0) + coalesce((cast(ttCov.sort_order/10 as float)),0),0))"/>
+  </columns>
+</report>
