@@ -1,0 +1,35 @@
+<report
+    title="Splash Visits"
+    description="Display a list of visits (parent samples for splash)."
+>
+  <query website_filter_field="sv.website_id">
+  SELECT #columns#
+  FROM samples s
+    JOIN surveys sv on sv.id=s.survey_id   
+    #joins#
+  WHERE #website_filter#
+    AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+    AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date)) 
+    AND s.parent_id is null
+    AND s.deleted=false
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="current_user" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name="my_own_data" display="My data only?" datatype="checkbox">
+      <where value="1">s.created_by_id=#current_user#</where>
+    </param>
+  </params>
+  <columns>
+    <column name='id' display='ID' sql='s.id' datatype='integer' in_count="true"/>
+    <column name='survey' display='Survey' sql='sv.title' datatype='text'/>
+    <column name='entered_sref' display='Square Grid Ref' sql="regexp_replace(s.entered_sref, ',[^ ]', ', ', 'g')" datatype='text' />
+    <column name='date' display='Date' datatype='date' sql='s.updated_on'/>
+    <column name='geom' visible='false' mappable="true" sql='st_astext(s.geom)' />
+    <column name='input_form' visible="false" sql="case when s.input_form is null then '#default_input_form#' else s.input_form end" />
+  </columns>
+</report>

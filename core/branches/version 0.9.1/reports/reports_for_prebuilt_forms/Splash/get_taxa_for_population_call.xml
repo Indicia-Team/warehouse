@@ -1,0 +1,33 @@
+<report
+    title="Get taxa for population call."
+    description="Report returns a list of taxa limited by particular groups, allowing the species list in report parameters to be populated.."
+>
+  <query>
+  SELECT #columns#
+  FROM taxa t
+  JOIN taxon_groups tg on tg.id = t.taxon_group_id AND tg.deleted=false
+   AND 
+    (tg.title='clubmoss'
+    OR
+    tg.title='conifer'
+    OR
+    tg.title='fern'
+    OR
+    tg.title='horsetail'  
+    OR
+    tg.title='flowering plant' 
+    OR
+    tg.title='ginkgo' 
+    OR
+    tg.title='quillwort'  
+    OR
+    tg.title='stonewort')   
+  WHERE 
+    t.deleted=false  
+  GROUP BY t.id
+  </query>
+  <columns> 
+    <column name='id' sql='t.id' datatype='integer'/>
+    <column name='taxon' sql='t.taxon' datatype='text'/>
+  </columns>
+</report>

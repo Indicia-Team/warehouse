@@ -1,0 +1,42 @@
+<report
+    title="Unallocated Squares"
+    description="Map showing monads (squares) where the ones that have a user allocation are shown in a different colour to the ones that don't."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+    LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+    LEFT JOIN person_attribute_values pav on pav.int_value=l.id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
+    LEFT JOIN users u on u.person_id=pav.person_id AND u.deleted=false
+    LEFT JOIN users_websites uw on u.id=uw.user_id AND uw.created_on &gt;= CAST(COALESCE('#ignore_registration_dates_before#','1500-01-01') as date)
+  WHERE (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)  
+    AND #website_filter# AND l.deleted=false
+  </query>
+  <order_bys>
+    <order_by>count ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='core_square_type_id' display='Core Square Type Id' description='' datatype='integer'/>
+    <param name='additional_square_type_id' display='Additional Square Type Id' description='' datatype='integer'/>
+    <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
+    <param name="ignore_registration_dates_before" display="Ignore Registration Dates Before" description="Ignore anyone who registered earlier than this date
+        where working out if a square has been allocated or not." datatype="date" emptyvalue="" default=""/>
+    <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any sqaures created before this date.
+        Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
+      <where>l.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)</where>
+    </param>
+    <param name="post_code_geom" display="Post Code Geom" description="Post code geometry, so we only show squares closest to the user." emptyvalue='' default=''>
+      <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
+    </param>
+    <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''/>
+  </params>
+  <columns> 
+    <column name='id' sql='l.id' datatype='integer' visible='false' in_count="true"/>  
+    <column name='entered_sref' display='Grid Ref' sql="regexp_replace(l.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' />
+    <column name='count' sql='count(distinct(pav.id))' display='Number of allocated users' datatype='integer' aggregate="true"/>
+    <column name='gn' visible='false' feature_style="graphicName" sql="'square'" aggregate="true"/>    
+    <column name="sc" visible="false" feature_style="strokeColor" sql="case count(distinct(pav.id)) when 0 then 'green' else 'red' end" aggregate="true"/>
+    <column name="fc" visible="false" feature_style="fillColor" sql="case count(distinct(pav.id)) when 0 then 'green' else 'red' end" aggregate="true"/>
+    <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom,l.centroid_geom))" />
+  </columns>
+</report>

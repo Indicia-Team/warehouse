@@ -1,0 +1,33 @@
+<report
+    title="Unapproved square allocations"
+    description="Squares which users have allocated to themselves need to be listed for approval."
+>
+  <query website_filter_field="uw.website_id">
+  SELECT #columns#
+  FROM person_attribute_values pav 
+  JOIN locations l on l.id=pav.int_value AND l.deleted=false
+  JOIN users u on u.person_id=pav.person_id AND u.id=pav.updated_by_id AND u.deleted=false
+  JOIN users_websites uw on u.id=uw.user_id AND uw.created_on &gt;= CAST(COALESCE('#ignore_registration_dates_before#','1500-01-01') as date)
+  WHERE pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
+  AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>pav.id ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
+    <param name="ignore_registration_dates_before" display="Ignore Registration Dates Before" description="Ignore anyone who registered earlier than this date
+        where working out if a square has been allocated or not." datatype="date" emptyvalue="" default=""/>
+    <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any squares created before this date.
+        Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
+      <where>l.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)</where>
+    </param>
+  </params>
+  <columns> 
+    <column name='id' sql='pav.id' datatype='integer' in_count="true"/>  
+    <column name='location' display='location' sql="regexp_replace(l.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' />
+    <column name='user' sql='u.username' display='Username' datatype='text'/>
+    <column name='allocation_updater' display='Person who updated allocation' sql="pav.updated_by_id" datatype='integer' visible="false"/>
+    <column name='allocated_to' display='Person who allocation is for' sql="u.id" datatype='integer' visible="false"/>
+  </columns>
+</report>
