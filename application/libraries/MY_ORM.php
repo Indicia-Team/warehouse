@@ -896,7 +896,8 @@ class ORM extends ORM_Core {
         } else {
           $m = ORM::factory($a['model']['id']);
         }
-
+        // Don't accidentally delete a parent when deleting a child
+        unset($a['model']['fields']['deleted']);
         // Call the submit method for that model and
         // check whether it returns correctly
         $m->submission = $a['model'];
