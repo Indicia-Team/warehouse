@@ -48,13 +48,13 @@ add_parent_taxon = function() {
   require_once(DOCROOT.'client_helpers/data_entry_helper.php');
   $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
   echo '<div class="linear-form">';
-  echo data_entry_helper::autocomplete(array(
+  echo data_entry_helper::species_autocomplete(array(
     'label'=>'Add species',
     'fieldname'=>'add-from-parent',
     'helpText'=>'Search for taxa in the parent list to quickly add them into this list.',
-    'table' => 'taxa_taxon_list',
-    'captionField' => 'taxon',
-    'valueField' => 'id',
+    'cacheLookup' => TRUE,
+    'speciesIncludeBothNames' => TRUE,
+    'speciesIncludeTaxonGroup' => TRUE,
     'extraParams' => $readAuth + array('taxon_list_id'=>$parent_list_id),
     'afterControl' => '<input type="button" value="Add" onclick="add_parent_taxon();" />'
   ));
