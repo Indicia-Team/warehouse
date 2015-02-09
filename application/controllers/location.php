@@ -235,7 +235,7 @@ class Location_Controller extends Gridview_Base_Controller {
       foreach ($errors as $key => $val) {
         switch ($val) {
           case 'required': 
-            $error .= 'You must specify a Zip Archive file to upload, containing the .shp and .dbf files.<br/>';
+            $error .= 'The file failed to upload. It might be larger than the file size limit configured for this server.<br/>';
             break;
           case 'valid': 
             $error .= 'The uploaded file is not valid.<br/>';
