@@ -697,8 +697,8 @@ class extension_splash_extensions {
       $indiciaUserId=0;
     //If the page is loaded without a user id at all, it means the user will be working to see which user squares are closest
     //to their own post code.
-    if (empty($postCode) && function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_post_code'))
-      $postCode=hostsite_get_user_field('field_post_code');
+    if (empty($postCode) && function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_indicia_post_code'))
+      $postCode=hostsite_get_user_field('field_indicia_post_code');
     if (!empty($options['label']))
       $buttonLabel=$options['label'];
     else 
