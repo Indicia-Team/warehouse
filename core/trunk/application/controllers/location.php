@@ -471,11 +471,14 @@ class Location_Controller extends Gridview_Base_Controller {
           case 5:
               $this->loadPolyLineRecord('POLYGON');
               break;
+          case 13:
+              $this->loadPolyLineZRecord('MULTILINESTRING');
+              break;
           case 15:
               $this->loadPolyLineZRecord('POLYGON'); // we discard the Z data.
               break;
           default:
-              break;
+              throw new exception('ShapeType ' . $this->shapeType . ' not supported');
       }
   }
 
