@@ -142,7 +142,7 @@ class iform_report_calendar_summary_2 {
           'group' => 'Controls'
         ),
         array(
-          'name'=>'managerPermission',
+          'name'=>'manager_permission',
           'caption'=>'Drupal Permission for Manager mode',
           'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager (i.e. full access to full data set). This primarily determines the functionality of the User filter, if selected.',
           'type'=>'string',
@@ -150,7 +150,7 @@ class iform_report_calendar_summary_2 {
           'group' => 'Controls'
         ),
         array(
-          'name'=>'branchManagerPermission',
+          'name'=>'branch_manager_permission',
           'caption'=>'Drupal Permission for Branch Coordinator mode',
           'description'=>'Enter the Drupal permission name to be used to determine if this user is a Branch Coordinator. This primarily determines the functionality of the User filter, if selected.',
           'type'=>'string',
@@ -833,7 +833,7 @@ class iform_report_calendar_summary_2 {
         foreach($terms as $termDetails){
           $lookUpValues[$termDetails['id']] = $termDetails['term'];
         }
-        // if location is predefined, can not change unless a 'managerPermission'
+        // if location is predefined, can not change unless a 'manager_permission'
         $ctrlid='calendar-location-type-'.$node->nid;
         $ctrl .= data_entry_helper::select(array(
                  'label' => lang::get('Site Type'),
@@ -1031,7 +1031,7 @@ class iform_report_calendar_summary_2 {
     } else {
       $options['my_user_id']=$user->uid;
     }
-    if(!isset($args['managerPermission']) || $args['managerPermission']=="" || !user_access($args['managerPermission'])) {
+    if(!isset($args['manager_permission']) || $args['manager_permission']=="" || !user_access($args['manager_permission'])) {
       // user is a normal user or branch manager
       $userList[$user->uid]=$user; // just me
       // unset linkURL if normal user and user_id is not specified to be me: pass in flag so warning message displayed.
@@ -1044,7 +1044,7 @@ class iform_report_calendar_summary_2 {
       	default : // all users or another user so no access
       		unset($options['linkURL']);
       		$options['linkMessage'] = '<p>'.lang::get('In order to have the column headings as links to the data entry pages for the Visit, you must set the').' "'.lang::get('Filter by recorder').'" '.
-      				(isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission']) ?
+      				(isset($args['branch_manager_permission']) && $args['branch_manager_permission']!="" && user_access($args['branch_manager_permission']) ?
       							lang::get(' control to yourself or branch data.') : lang::get(' control to yourself.')).'</p>';
       }
     } else {
@@ -1150,10 +1150,10 @@ class iform_report_calendar_summary_2 {
     $ctrl = '<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
           ': </label><select id="'.$ctrlid.'" class="user-select">'.
           '<option value='.($user->uid).' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$user->uid  ? 'selected="selected" ' : '').'>'.lang::get('My data').'</option>'.
-          (isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission']) ? '<option value="branch" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=="branch"  ? 'selected="selected" ' : '').'>'.lang::get('Branch data').'</option>' : '').
+          (isset($args['branch_manager_permission']) && $args['branch_manager_permission']!="" && user_access($args['branch_manager_permission']) ? '<option value="branch" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=="branch"  ? 'selected="selected" ' : '').'>'.lang::get('Branch data').'</option>' : '').
           '<option value="all" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=='' ? 'selected="selected" ' : '').'>'.lang::get('All recorders').'</option>';
     $found = $siteUrlParams[self::$userKey]['value']==$user->uid ||
-          (isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission']) && $siteUrlParams[self::$userKey]['value']=="branch") ||
+          (isset($args['branch_manager_permission']) && $args['branch_manager_permission']!="" && user_access($args['branch_manager_permission']) && $siteUrlParams[self::$userKey]['value']=="branch") ||
           $siteUrlParams[self::$userKey]['value']=='';
     $userListArr = array();
     foreach($userList as $id => $account) {
@@ -1173,8 +1173,9 @@ class iform_report_calendar_summary_2 {
     switch($siteUrlParams[self::$userKey]['value']){
       case '' : $options['downloadFilePrefix'] .= lang::get('AllRecorders').'_';
         break;
-      case $user->uid : $options['downloadFilePrefix'] .= lang::get('MyData').'_';
-        break;
+      // can't use myData as with cached reports, >1 person may have same filename, but different reports.
+//      case $user->uid : $options['downloadFilePrefix'] .= lang::get('MyData').'_';
+//        break;
       case "branch" : $options['downloadFilePrefix'] .= lang::get('MyBranch').'_';
         break;
       default :
@@ -1361,7 +1362,7 @@ jQuery('#".$ctrlid."').change(function(){
     $reportOptions['location_list'] = array();
     // for a branch user, we have an allowed list of locations for which we can link to the sample.
     self::$branchLocationList = array();
-    if(isset($args['branchManagerPermission']) && $args['branchManagerPermission']!="" && user_access($args['branchManagerPermission'])) {
+    if(isset($args['branch_manager_permission']) && $args['branch_manager_permission']!="" && user_access($args['branch_manager_permission'])) {
       // Get list of locations attached to this user via the branch cms user id attribute
       // first need to scan param_presets for survey_id..
       $attrArgs = array(
@@ -1392,7 +1393,7 @@ jQuery('#".$ctrlid."').change(function(){
       $reportOptions['location_list'] = self::$branchLocationList;
     }
     // for an admin, we can link to all samples.
-    if(isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) {
+    if(isset($args['manager_permission']) && $args['manager_permission']!="" && user_access($args['manager_permission'])) {
     	$reportOptions['location_list'] = 'all';
     }
     
@@ -1413,6 +1414,8 @@ jQuery('#".$ctrlid."').change(function(){
         $checked=(isset($_GET[$param]) && $_GET[$param]==='true') ? ' checked="checked"' : '';
         $retVal .= '<th><input type="checkbox" name="removeParam-'.$param.'" id="removeParam-'.$param.'" class="removableParam"'.$checked.'/>'.
             '<label for="removeParam-'.$param.'" >'.lang::get($caption).'</label></th>';
+        if($checked != '')
+          $reportOptions['downloadFilePrefix'] .= 'RM'.preg_replace('/[^A-Za-z0-9]/i', '', $param).'_';
       }
       self::set_up_control_change('removeParam-'.$param, $param, array(), true);
     }
@@ -1435,44 +1438,21 @@ jQuery('#".$ctrlid."').change(function(){
     
     $retVal.= '</tr></thead></table>';
     $reportOptions['survey_id']=self::$siteUrlParams[self::$SurveyKey]; // Sort of assuming that only one location type recorded against per survey.
-    $retVal .= report_helper::report_calendar_summary2($reportOptions);
-    // upto this point the report options holds the cms user id as user_id: the report_helper converts this to the indicia
-    // user_id if relevant to this installation. We now need to do the same for the report links.
-    if (isset($reportOptions['extraParams']['user_id'])) {
-      $reportOptions['extraParams']['cms_user_id'] = $reportOptions['extraParams']['user_id'];
-      if (function_exists('module_exists') && module_exists('easy_login')) {
-        $account = user_load($reportOptions['extraParams']['user_id']);
-        if (function_exists('profile_load_profile'))
-          profile_load_profile($account); /* will not be invoked for Drupal7 where the fields are already in the account object */
-        if(isset($account->profile_indicia_user_id))
-          $reportOptions['extraParams']['user_id'] = $account->profile_indicia_user_id;
-      }
-    }
-    if((isset($args['managerPermission']) && $args['managerPermission']!="" && user_access($args['managerPermission'])) || // if you are super manager then you can see all the downloads.
+    $reportOptions['downloads'] = array();
+    if((isset($args['manager_permission']) && $args['manager_permission']!="" && user_access($args['manager_permission'])) || // if you are super manager then you can see all the downloads.
         $reportOptions['extraParams']['location_list'] != '' || // only filled in for a branch user in branch mode
         $reportOptions['extraParams']['user_id'] != '') { // if user specified - either me in normal or branch mode, or a manager
-      global $indicia_templates;
-      $indicia_templates['report_download_link'] = '<th><a href="{link}"><button type="button">{caption}</button></a></th>';
-      // format is assumed to be CSV
-      $downloadOptions = array('readAuth'=>$auth,
-        'extraParams'=>array_merge($reportOptions['extraParams'], array('date_from' => $reportOptions['date_start'], 'date_to' => $reportOptions['date_end'])),
-        'itemsPerPage' => false);
-      // there are problems dealing with location_list as an array if empty, so connvert
-      if($downloadOptions['extraParams']['location_list']=="")
-        $downloadOptions['extraParams']['location_list']="(-1)";
-      else $downloadOptions['extraParams']['location_list']='('.$downloadOptions['extraParams']['location_list'].')';
-
       for($i=1; $i<=4; $i++){
         if(isset($args['Download'.$i.'Caption']) && $args['Download'.$i.'Caption'] != "" && isset($args['download_report_'.$i]) && $args['download_report_'.$i] != ""){
-          $downloadOptions['caption' ]=$args['Download'.$i.'Caption'];
-          $downloadOptions['dataSource']=$args['download_report_'.$i];
-          $downloadOptions['filename']=$reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download'.$i.'Caption']);
-          $downloadOptions['filename'] .= (isset($reportOptions['includeReportTimeStamp']) && $reportOptions['includeReportTimeStamp'] ? '_'.date('YmdHis') : '');
-          if(isset($args['download_report_'.$i.'_format'])) $downloadOptions['format']=$args['download_report_'.$i.'_format'];
-          data_entry_helper::$javascript .="\nif(jQuery('#downloads-table th').length==0)\n  jQuery('#downloads-table thead tr').append('<th class=\"downloads-table-label\">".lang::get("Downloads")."</th>');\njQuery('#downloads-table thead tr').append('".report_helper::report_download_link($downloadOptions)."');\n";
+          $reportOpts = array('caption' => $args['Download'.$i.'Caption'],
+                'dataSource' => $args['download_report_'.$i],
+                'filename' => $reportOptions['downloadFilePrefix'].preg_replace('/[^A-Za-z0-9]/i', '', $args['Download'.$i.'Caption']).(isset($reportOptions['includeReportTimeStamp']) && $reportOptions['includeReportTimeStamp'] ? '_'.date('YmdHis') : ''));
+          if(isset($args['download_report_'.$i.'_format'])) $reportOpts['format']=$args['download_report_'.$i.'_format'];
+          $reportOptions['downloads'][] = $reportOpts;
         }
       }
     }
+    $retVal .= report_helper::report_calendar_summary2($reportOptions);
     
     return $retVal;
   }
