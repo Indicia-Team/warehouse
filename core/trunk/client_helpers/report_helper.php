@@ -4419,8 +4419,8 @@ indiciaFns.bindTabsActivate($('#controls'), function(event, ui) {
   	  $(elem).css('width',''); 
   	  if(max < $(elem).width()) max= $(elem).width();
   	  if(extMax < $(elem).outerWidth(true)) extMax= $(elem).outerWidth(true);});
-  	$('#'+panel.id+' .freeze-first-col').width(max);
-  	$('#'+panel.id+' .results-grid-wrapper-inner').css('margin-left',extMax);
+  	$('#'+panel.id+' .freeze-first-col').width(max+1);
+  	$('#'+panel.id+' .results-grid-wrapper-inner').css('margin-left',extMax+1);
   	$('#'+panel.id+' table').hide();
   	$('#'+panel.id+' > div.results-grid-wrapper-outer').each(function(idx, elem){ $(elem).css('width',''); $(elem).width($(elem).width());});
   	$('#'+panel.id+' table').show();
@@ -4580,14 +4580,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   					'#estimateData'=>lang::get('Estimate Table'),
   					'#estimateChart'=>lang::get('Estimate Chart'),
   					'#rawData'=>lang::get('Raw Data'));
-  	$r .= '<div id="controls">'.(data_entry_helper::enable_tabs(array('divId'=>'controls'/*,'active'=>$active*/))).
-				data_entry_helper::tab_header(array('tabs'=>$tabs)).
-  				'<div id="summaryData">'.$summaryTab.'</div>'.
-  				'<div id="summaryChart"><div id="'.$options['chartID'].'-summary" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'.$summarySeriesPanel.'</div>'.
-  				'<div id="estimateData">'.$estimateTab.'</div>'.
-  				'<div id="estimateChart"><div id="'.$options['chartID'].'-estimates" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'.$summarySeriesPanel.'</div>'.
-			  	'<div id="rawData">'.$rawTab.'</div></div>';
-	$downloads="";
+	$downloadTab="";
   	$timestamp = (isset($options['includeReportTimeStamp']) && $options['includeReportTimeStamp'] ? '_'.date('YmdHis') : '');
   	// No need for saved reports to be atomic events. Will be purged automatically.
   	global $base_url;
@@ -4597,25 +4590,52 @@ jQuery('#estimateChart .disable-button').click(function(){
   		$handle = fopen($cacheFolder.$cacheFile, 'wb');
   		fwrite($handle, $summaryDataDownloadGrid);
   		fclose($handle);
-  		$downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Summary Grid Data</button></a></th>'."\n";
+  		$downloadTab .= '<tr><td>'.lang::get('Download Summary Grid (CSV Format)').' : </td><td><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">'.lang::get('Download').'</button></a></td></tr>'."\n";
   	}
   	if($options['includeEstimatesGridDownload']) {
   		$cacheFile = $options['downloadFilePrefix'].'estimateDataGrid'.$timestamp.'.csv';
   		$handle = fopen($cacheFolder.$cacheFile, 'wb');
   		fwrite($handle, $estimateDataDownloadGrid);
   		fclose($handle);
-  		$downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Estimate Grid Data</button></a></th>'."\n";
+  		$downloadTab .= '<tr><td>'.lang::get('Download Estimates Grid (CSV Format)').' : </td><td><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">'.lang::get('Download').'</button></a></td></tr>'."\n";
   	}
     if(isset($options['location_id']) && $options['location_id']!="" && $options['includeRawGridDownload']) {
 		$cacheFile = $options['downloadFilePrefix'].'rawDataGrid'.$timestamp.'.csv';
 		$handle = fopen($cacheFolder.$cacheFile, 'wb');
   		fwrite($handle, $rawDataDownloadGrid);
   		fclose($handle);
-  		$downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Raw Grid Data</button></a></th>'."\n";
+  		$downloadTab .= '<tr><td>'.lang::get('Download Raw Data Grid (CSV Format)').' : </td><td><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">'.lang::get('Download').'</button></a></td></tr>'."\n";
+  	} else if($options['includeRawGridDownload'])
+  		$downloadTab .= '<tr><td>'.lang::get('Raw Data is only available (for download) when a location is specified.').'</td><td></td></tr>'."\n";
+  	
+  	if(count($options['downloads'])>0) {
+  		// format is assumed to be CSV
+  		global $indicia_templates;
+  		$indicia_templates['report_download_link'] = '<a target="_blank" href="{link}" download ><button type="button">'.lang::get('Download').'</button></a>';
+  		
+  		$downloadOptions = array('readAuth'=>$auth,
+  				'extraParams'=>array_merge($options['extraParams'], array('date_from' => $options['date_start'], 'date_to' => $options['date_end'])),
+  				'itemsPerPage' => false);
+  		// there are problems dealing with location_list as an array if empty, so connvert
+  		if($downloadOptions['extraParams']['location_list']=="")
+  			$downloadOptions['extraParams']['location_list']="(-1)";
+  		else $downloadOptions['extraParams']['location_list']='('.$downloadOptions['extraParams']['location_list'].')';
+  	
+  		foreach($options['downloads']as $download){
+  			$downloadTab .= '<tr><td>'.$download['caption'].' : </td><td>'.report_helper::report_download_link($downloadOptions).'</td></tr>';
   	}
-  	$r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" ><thead class="ui-widget-header"><tr>'.
-  				($downloads == '' ? '' : '<th class="downloads-table-label">Downloads</th>'.$downloads).
-  				"</tr></thead></table>\n";
+  	}
+  	 
+  	if($downloadTab!="")
+  		$tabs['#dataDownloads'] = lang::get('Downloads');
+  	$r .= '<div id="controls">'.(data_entry_helper::enable_tabs(array('divId'=>'controls'/*,'active'=>$active*/))).
+				data_entry_helper::tab_header(array('tabs'=>$tabs)).
+  				'<div id="summaryData">'.$summaryTab.'</div>'.
+  				'<div id="summaryChart"><div id="'.$options['chartID'].'-summary" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'.$summarySeriesPanel.'</div>'.
+  				'<div id="estimateData">'.$estimateTab.'</div>'.
+  				'<div id="estimateChart"><div id="'.$options['chartID'].'-estimates" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'.$summarySeriesPanel.'</div>'.
+			  	'<div id="rawData">'.$rawTab.'</div>'.
+			  	($downloadTab!="" ? '<div id="dataDownloads"><table><tbody style="border:none;">'.$downloadTab.'</tbody></table></div>' : '').'</div>';
 	$warnings .= '<span style="display:none;">Output table complete : '.date(DATE_ATOM).'</span>'."\n";
   
   	if(count($summaryArray)==0)
