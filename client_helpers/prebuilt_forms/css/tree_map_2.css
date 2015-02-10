@@ -5,7 +5,7 @@
   padding-top: 25px;
   text-align: center;
 }
-#toolbar button, #timeSlider a, #dotSlider a {
+#toolbar button, #timeSlider a, #dotControl a {
   border-color: #808080;
 }
 label, form#yearControlForm label {
@@ -45,10 +45,43 @@ label, form#yearControlForm label {
   width: 100px;
   margin: 4px;
   margin-bottom: 0;
+  margin-right: 50px;
 }
-#dotSliderLabel {
-  margin-left: 50px;
+#dotSelect {
+  margin: 6px;
+  margin-right: 50px;
 }
 #center form#yearControlForm {
   margin-bottom: 0;
+}
+
+div.leftMap.leftMapOnly {
+	width: 100%;
+}
+div.leftMap.bothMaps {
+	width: 49%;
+	float:left;
+}
+div.rightMap.leftMapOnly {
+	display: none;
+}
+div.rightMap.bothMaps {
+	width: 49%;
+	float:left;
+}
+table.controls-table label {
+	width: auto;
+}
+div.mapContainers {
+	border: solid green 3px;
+}
+span#dateControlLabel {
+	margin-left: 50px;
+}
+#dotSelect, #timeSelect {
+	margin-top: 0;
+}
+.dateErrorWarning {
+	margin-top: 4px;
+	margin-left: 2px;
 }
