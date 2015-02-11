@@ -471,6 +471,7 @@ class iform_easy_download {
       $available_surveys = $surveys_expertise ? unserialize($surveys_expertise) : null;
     } else {
       // Default is no filter by survey, locality, taxon group
+      $location_expertise = '';
       $available_surveys = '';
       $taxon_groups_expertise = '';
       $surveys_expertise = '';
