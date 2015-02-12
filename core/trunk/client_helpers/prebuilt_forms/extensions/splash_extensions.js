@@ -74,6 +74,8 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
   }
  
   plot_type_dropdown_change = function plot_type_dropdown_change() {
+    //In simple mode we don't draw a proper plot, the plot is just represented by a pre-defined (non-rotatable) square on the screen
+    var simpleModePointSize=4;
     //In NPMS simple (not enahanced mode) the admin user can define a comma separated list
     //of location attributes to hide from view.
     if (indiciaData.hideLocationAttrsInSimpleMode) {
@@ -93,17 +95,26 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
     if (inArray($('#location\\:location_type_id option:selected').text(),indiciaData.freeDrawPlotTypeNames)) {     
       if (!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked')) {
         show_polygon_line_tool(true);
+        //If using drawPolygon/Line in enhanced mode then we don't draw a plot automatically
+        indiciaData.mapdiv.settings.clickForPlot=false;
+        indiciaData.mapdiv.settings.click_zoom=false;  
       } else {
         //Otherwise deactivate and hide the line/polygon tool and then select the map point clicking tool.
         show_polygon_line_tool(false);
         $.each(indiciaData.mapdiv.map.controls, function(idx, control) {
-        if (control.CLASS_NAME==='OpenLayers.Control.DrawFeature'||control.CLASS_NAME==='OpenLayers.Control.Navigation') {
-          control.deactivate();
-        }
-        if (control.CLASS_NAME==='OpenLayers.Control') {
-          control.activate();
-        }
-      });
+          if (control.CLASS_NAME==='OpenLayers.Control.DrawFeature'||control.CLASS_NAME==='OpenLayers.Control.Navigation') {
+            control.deactivate();
+          }
+          if (control.CLASS_NAME==='OpenLayers.Control') {
+            control.activate();
+          }
+        });
+        //In linear mode, default to using a big plot point so people can actually see it in simple mode
+        $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(simpleModePointSize);
+        $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(simpleModePointSize);
+        indiciaData.mapdiv.settings.clickForPlot=true;
+        indiciaData.mapdiv.settings.click_zoom=true;  
+        indiciaData.mapdiv.settings.noPlotRotation=true;
       }
       //if using drawPolygon/drawLine then we never need the length and width attributes on the screen
       if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length) {
@@ -112,9 +123,6 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
       if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length) {
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).hide();
       }
-      //If using drawPolygon/Line then we don't draw a plot automatically
-      indiciaData.mapdiv.settings.clickForPlot=false;
-      indiciaData.mapdiv.settings.click_zoom=false;  
     } else {
       //Otherwise we auto generate the plot rectangle/square, remove the drawPolygon/Line tool
       show_polygon_line_tool(false);
@@ -126,7 +134,7 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
         }
         indiciaData.mapdiv.settings.noPlotRotation=false;
       } else {
-        $('#locAttr\\:'+indiciaData.plotWidthAttrId).val('3');
+        $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(simpleModePointSize);
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).hide();
         indiciaData.mapdiv.settings.noPlotRotation=true;
       }
@@ -137,11 +145,11 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
         }
         indiciaData.mapdiv.settings.noPlotRotation=false;
       } else {
-        $('#locAttr\\:'+indiciaData.plotLengthAttrId).val('3');
+        $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(simpleModePointSize);
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).hide();
         indiciaData.mapdiv.settings.noPlotRotation=true;
       }
-      //In non-enhanced mode in PSS mode, plots are always 3x3 non-rotatable square.
+      //In non-enhanced mode in PSS mode, plots are always a non-rotatable square of 4x4.
       //In PSS enhanced mode, their size can be configured manually on the page
       indiciaData.mapdiv.settings.clickForPlot=true;
       indiciaData.mapdiv.settings.click_zoom=true;
