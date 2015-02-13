@@ -852,7 +852,14 @@ class extension_splash_extensions {
           'table' => 'person',
           'extraParams' => $auth['read'] + array('email_address' => $email, 'view' => 'detail'),
           'nocache' => true
-        ));    
+        ));       
+        if (empty($personData[0]['id'])) {
+          $personData = data_entry_helper::get_report_data(array(
+            'dataSource'=>'reports_for_prebuilt_forms/Splash/get_person_for_email_address',
+            'readAuth'=>$auth['read'],
+            'extraParams'=>array('email_address' => $email)
+          ));
+        }
         //Cycle through all the squares we want to attach to a person.
         for ($idx2=1; $idx2<count($lineParts); $idx2++) {
           if (!empty($lineParts[$idx2])) {
@@ -864,9 +871,17 @@ class extension_splash_extensions {
               'nocache' => true
             )); 
             //Save the data ready to import.
-            $convertedUploadData[$convertedUploadIdx][0]=$personData[0]['id'];
-            $convertedUploadData[$convertedUploadIdx][1]=$locationData[0]['id'];
-            $convertedUploadIdx++;
+            if (!empty($personData[0]['id'])&&!empty($locationData[0]['id'])) {
+              $convertedUploadData[$convertedUploadIdx][0]=$personData[0]['id'];
+              $convertedUploadData[$convertedUploadIdx][1]=$locationData[0]['id'];
+              $convertedUploadIdx++;
+            } else {
+              drupal_set_message('An upload issue has been detected.');
+              if (empty($personData[0]['id']))
+                drupal_set_message('Could not upload to person. The following email address was not found '.$email);
+              if (empty($locationData[0]['id']))
+                drupal_set_message('Could not upload square. The following location was not found '.$location);
+            }
           }
         }
       }
