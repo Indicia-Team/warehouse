@@ -35,6 +35,7 @@ class extension_misc_extensions {
    * The name of a static parameter to pass to the receiving page. Optional but requires paramValueToPass when in use</li>
    * <li><b>paramValueToPass</b><br/>
    * The value of the static parameter to pass to the receiving page. e.g. passing a static location_type_id. Optional but requires paramNameToPass when in use</li>
+   * User can also provide a value in braces to replace with the Drupal field for current user e.g. {field_indicia_user_id}</li>
    * <li><b>onlyShowWhenLoggedInStatus</b><br/>
    * If 1, then only show button for logged in users. If 2, only show link for users who are not logged in.
    * </ul>
@@ -49,8 +50,27 @@ class extension_misc_extensions {
         empty($options['onlyShowWhenLoggedInStatus'])) {
       //Only display a button if the administrator has specified both a label and a link path for the button.
       if (!empty($options['buttonLabel'])&&!empty($options['buttonLinkPath'])) {
-        if (!empty($options['paramNameToPass']) && !empty($options['paramValueToPass']))
+        if (!empty($options['paramNameToPass']) && !empty($options['paramValueToPass'])) {
+          //If the param value to pass is in braces, then collect the Drupal field where the name is between the braces e.g. field_indicia_user_id
+          if (substr($options['paramValueToPass'], 0, 1)==='{'&&substr($options['paramValueToPass'], -1)==='}') {
+            //Chop of the {}
+            $options['paramValueToPass']=substr($options['paramValueToPass'], 1, -1);
+            //hostsite_get_user_field doesn't want field or profile at the front.
+            $prefix = 'profile_';
+            if (substr($options['paramValueToPass'], 0, strlen($prefix)) == $prefix) {
+              $options['paramValueToPass'] = substr($options['paramValueToPass'], strlen($prefix));
+            } 
+            $prefix = 'field_';
+            if (substr($options['paramValueToPass'], 0, strlen($prefix)) == $prefix) {
+              $options['paramValueToPass'] = substr($options['paramValueToPass'], strlen($prefix));
+            } 
+            $paramValueFromUserField=hostsite_get_user_field($options['paramValueToPass']);
+            //If we have collected the user field from the profile, then overwrite the existing value.
+            if (!empty($paramValueFromUserField))
+              $options['paramValueToPass']=$paramValueFromUserField;
+          }
           $paramToPass=array($options['paramNameToPass']=>$options['paramValueToPass']);
+        }
         $button = '<div>';
         $button .= '  <FORM>';
         $button .= "    <INPUT TYPE=\"button\" VALUE=\"".$options['buttonLabel']."\"";
@@ -80,7 +100,8 @@ class extension_misc_extensions {
    * <li><b>paramNameToPass</b><br/>
    * The name of a static parameter to pass to the receiving page. Optional but requires paramValueToPass when in use</li>
    * <li><b>paramValueToPass</b><br/>
-   * The value of the static parameter to pass to the receiving page. e.g. passing a static location_type_id. Optional but requires paramNameToPass when in use</li>
+   * The value of the static parameter to pass to the receiving page. e.g. passing a static location_type_id. Optional but requires paramNameToPass when in use.
+   * User can also provide a value in braces to replace with the Drupal field for current user e.g. {field_indicia_user_id}</li>
    * <li><b>onlyShowWhenLoggedInStatus</b><br/>
    * If 1, then only show link for logged in users. If 2, only show link for users who are not logged in.
    * </ul>
@@ -95,8 +116,27 @@ class extension_misc_extensions {
         empty($options['onlyShowWhenLoggedInStatus'])) {
       //Only display a link if the administrator has specified both a label and a link.
       if (!empty($options['label'])&&!empty($options['linkPath'])) {
-        if (!empty($options['paramNameToPass']) && !empty($options['paramValueToPass']))
+        if (!empty($options['paramNameToPass']) && !empty($options['paramValueToPass'])) {
+          //If the param value to pass is in braces, then collect the Drupal field where the name is between the braces e.g. field_indicia_user_id
+          if (substr($options['paramValueToPass'], 0, 1)==='{'&&substr($options['paramValueToPass'], -1)==='}') {
+            //Chop of the {}
+            $options['paramValueToPass']=substr($options['paramValueToPass'], 1, -1);
+            //hostsite_get_user_field doesn't want field or profile at the front.
+            $prefix = 'profile_';
+            if (substr($options['paramValueToPass'], 0, strlen($prefix)) == $prefix) {
+              $options['paramValueToPass'] = substr($options['paramValueToPass'], strlen($prefix));
+            } 
+            $prefix = 'field_';
+            if (substr($options['paramValueToPass'], 0, strlen($prefix)) == $prefix) {
+              $options['paramValueToPass'] = substr($options['paramValueToPass'], strlen($prefix));
+            } 
+            $paramValueFromUserField=hostsite_get_user_field($options['paramValueToPass']);
+            //If we have collected the user field from the profile, then overwrite the existing value.
+            if (!empty($paramValueFromUserField))
+              $options['paramValueToPass']=$paramValueFromUserField;
+          }
           $paramToPass=array($options['paramNameToPass']=>$options['paramValueToPass']);
+        }
         $button = '<div>';
         $button .= "  <a ";
         //Button can still be used without a parameter to pass
