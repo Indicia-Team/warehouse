@@ -760,8 +760,6 @@ class extension_splash_extensions {
    * intended for themselves.
    */
   public static function approve_allocation($auth, $args, $tabalias, $options, $path) {
-  //Need to get the Drupal node from the $path
-  $explodedPath=explode('/',$path);
   global $base_url;
   global $user;
   if (function_exists('hostsite_get_user_field')) {
@@ -769,7 +767,6 @@ class extension_splash_extensions {
   };
 
   data_entry_helper::$javascript .= "
-  indiciaData.nodeId=".$explodedPath[count($explodedPath)-1].";
   indiciaData.baseUrl='".$base_url."';  
   indiciaData.website_id = ".variable_get('indicia_website_id', '').";\n";  
   
@@ -786,7 +783,7 @@ class extension_splash_extensions {
         'person_attribute_value:id':id,
         'person_attribute_value:updated_by_id':indiciaData.indicia_user_id
       };
-      var postUrl = indiciaData.baseUrl+'/?q=ajaxproxy&node='+indiciaData.nodeId+'&index=person_attribute_value';
+      var postUrl = indiciaData.baseUrl+'/?q=ajaxproxy&index=person_attribute_value';
       $.post(postUrl, 
         s,
         function (data) {
