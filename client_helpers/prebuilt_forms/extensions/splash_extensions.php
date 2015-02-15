@@ -820,8 +820,15 @@ class extension_splash_extensions {
    * Very simple control that needed to be developed very quickly. Not particularly well optimised as places one record at a 
    * time into the database. However this allowed me to use existing code from the user/sqaure admin page, and as the import will only
    * be done once or twice this won't be an issue.
+   * @minimumLocationDate option must be provided to specify a minimum created_on date for squares (tested with format d/m/yyyy
+   * suh as 1/1/2015 although other formats may work). This means that old squares can be ignored for instance.
    */
   public static function simple_user_square_upload($auth, $args, $tabalias, $options, $path) {
+    if (empty($options['minimumLocationDate'])) {
+      drupal_set_message('Please enter a @minimumLocationDate option to specify minimum square created_on date to look for');
+      return false;
+    }
+    $minSquareDate=strtotime($options['minimumLocationDate']);
     $r = '';
     //Need to call this so we can use indiciaData.read
     data_entry_helper::$js_read_tokens = $auth['read'];
@@ -872,9 +879,12 @@ class extension_splash_extensions {
             )); 
             //Save the data ready to import.
             if (!empty($personData[0]['id'])&&!empty($locationData[0]['id'])) {
-              $convertedUploadData[$convertedUploadIdx][0]=$personData[0]['id'];
-              $convertedUploadData[$convertedUploadIdx][1]=$locationData[0]['id'];
-              $convertedUploadIdx++;
+              //Only attach squares if they are newer than the specified minimum created_on option
+              if (strtotime($locationData[0]['created_on'])>$minSquareDate) { 
+                $convertedUploadData[$convertedUploadIdx][0]=$personData[0]['id'];
+                $convertedUploadData[$convertedUploadIdx][1]=$locationData[0]['id'];
+                $convertedUploadIdx++;
+              }
             } else {
               drupal_set_message('An upload issue has been detected.');
               if (empty($personData[0]['id']))
