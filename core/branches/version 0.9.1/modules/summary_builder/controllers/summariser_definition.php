@@ -126,11 +126,21 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
     $survey = new Survey_Model($values['summariser_definition:survey_id']);
     $attrsRet = array(''=>'(Each occurrence has count=1)');
     
-    $attrs = ORM::factory('occurrence_attribute')->
-    		where(array('data_type'=>'I','public'=>'t','deleted'=>'f'))->
-    		orderby('caption')->find_all();
-    foreach ($attrs as $attr) 
-    	$attrsRet[$attr->id] = $attr->caption.' (ID '.$attr->id.')';
+    $models = ORM::factory('occurrence_attributes_website')->
+    		where(array('restrict_to_survey_id'=>$values['summariser_definition:survey_id'],'deleted'=>'f'))->
+    		find_all();
+    if(count($models)>0){
+	    $attrIds = array();
+    	foreach ($models as $model)
+    		$attrIds[] = $model->occurrence_attribute_id;
+		$attrs = ORM::factory('occurrence_attribute')->
+    			where('deleted','f')->in('data_type',array('I','F'))->in('id',$attrIds)->
+				orderby('caption')->find_all();
+	    if(count($attrs)>0)
+			foreach ($attrs as $attr) 
+				$attrsRet[$attr->id] = $attr->caption.' (ID '.$attr->id.')';
+    }
+    
     return array(
       'survey_title' => $survey->title,
       'occAttrs' => $attrsRet
