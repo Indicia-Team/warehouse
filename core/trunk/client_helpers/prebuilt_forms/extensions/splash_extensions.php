@@ -697,13 +697,8 @@ class extension_splash_extensions {
       $indiciaUserId=0;
     //If the page is loaded without a user id at all, it means the user will be working to see which user squares are closest
     //to their own post code.
-    //Note this does not use the hostsite_get_user_field_code as usual because it is not compatible with
-    //the post code plug in.
-    global $user;
-    $account = user_load($user->uid);
-    $fieldinfo = field_get_items('user', $account, 'field_indicia_post_code');    
-    if (empty($postCode) && !empty($fieldinfo[0]['postal']))
-      $postCode=$fieldinfo[0]['postal'];
+    if (empty($postCode) && function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_indicia_post_code'))
+      $postCode=hostsite_get_user_field('field_indicia_post_code');
     if (!empty($options['label']))
       $buttonLabel=$options['label'];
     else 
@@ -729,7 +724,7 @@ class extension_splash_extensions {
     }  
     return $r;
   }
-  
+ 
   public static function delete_plot($auth, $args, $tabalias, $options, $path) {
     $postUrl = iform_ajaxproxy_url(null, 'location');
     data_entry_helper::$javascript .= "
@@ -856,7 +851,7 @@ class extension_splash_extensions {
           'table' => 'person',
           'extraParams' => $auth['read'] + array('email_address' => $email, 'view' => 'detail'),
           'nocache' => true
-        ));       
+        )); 
         if (empty($personData[0]['id'])) {
           $personData = data_entry_helper::get_report_data(array(
             'dataSource'=>'reports_for_prebuilt_forms/Splash/get_person_for_email_address',
@@ -878,18 +873,18 @@ class extension_splash_extensions {
             if (!empty($personData[0]['id'])&&!empty($locationData[0]['id'])) {
               //Only attach squares if they are newer than the specified minimum created_on option
               if (strtotime($locationData[0]['created_on'])>$minSquareDate) { 
-                $convertedUploadData[$convertedUploadIdx][0]=$personData[0]['id'];
-                $convertedUploadData[$convertedUploadIdx][1]=$locationData[0]['id'];
-                $convertedUploadIdx++;
-              }
+            $convertedUploadData[$convertedUploadIdx][0]=$personData[0]['id'];
+            $convertedUploadData[$convertedUploadIdx][1]=$locationData[0]['id'];
+            $convertedUploadIdx++;
+          }
             } else {
               drupal_set_message('An upload issue has been detected.');
               if (empty($personData[0]['id']))
                 drupal_set_message('Could not upload to person. The following email address was not found '.$email);
               if (empty($locationData[0]['id']))
                 drupal_set_message('Could not upload square. The following location was not found '.$location);
-            }
-          }
+        }
+      }
         }
       }
       data_entry_helper::$javascript .= "
