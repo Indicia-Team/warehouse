@@ -101,15 +101,17 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
         $types = "'".implode("','", $config['location_types'])."'";
         if (!empty($filter['location_list'])) {
           $rows = $this->db->query('select l.id from locations l ' .
-            'join locations search on st_intersects(coalesce(search.boundary_geom, search.centroid_geom), coalesce(l.boundary_geom, l.centroid_geom)) '.
+            'join locations search on ' .
+            '  (st_intersects(coalesce(search.boundary_geom, search.centroid_geom), coalesce(l.boundary_geom, l.centroid_geom)) ' .
+            '  and not st_touches(coalesce(search.boundary_geom, search.centroid_geom), coalesce(l.boundary_geom, l.centroid_geom)))' .
             'join cache_termlists_terms t on t.id=l.location_type_id ' .
-            "where s.id in ($filter[location_list]) and l.location_type_id in ($types)" .
-            "and t.preferred_term in ($types)")->result();
+            "where search.id in ($filter[location_list]) and t.preferred_term in ($types)")->result();
         } else {
           $srid = kohana::config('sref_notations.internal_srid');
           $rows = $this->db->query('select l.id from locations l ' .
             'join cache_termlists_terms t on t.id=l.location_type_id ' .
-            "where st_intersects(st_geomfromtext('$filter[searchArea]', $srid), coalesce(l.boundary_geom, l.centroid_geom)) " .
+            "where (st_intersects(st_geomfromtext('$filter[searchArea]', $srid), coalesce(l.boundary_geom, l.centroid_geom)) " .
+            "  and not st_touches(st_geomfromtext('$filter[searchArea]', $srid), coalesce(l.boundary_geom, l.centroid_geom)))" .
             "and t.preferred_term in ($types)")->result();
         }
         foreach ($rows as $row)
