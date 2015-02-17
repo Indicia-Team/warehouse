@@ -577,7 +577,7 @@ class ORM extends ORM_Core {
    * Wraps the process of submission in a transaction.
    * @return integer If successful, returns the id of the created/found record. If not, returns null - errors are embedded in the model.
    */
-  public function submit() {
+  public function submit() { 
     Kohana::log('debug', 'Commencing new transaction.');
     $this->db->query('BEGIN;');
     try {
@@ -803,7 +803,7 @@ class ORM extends ORM_Core {
           }
           $fk = $this->fkLookup($b);
           if ($fk) {
-            $this->submission['fields'][$b['fkIdField']] = $fk;
+            $this->submission['fields'][$b['fkIdField']]['value'] = $fk;
           } else {
             // look for a translation of the field name
             $lookingIn = kohana::lang("default.dd:{$this->object_name}:$a");
