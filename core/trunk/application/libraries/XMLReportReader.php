@@ -129,6 +129,9 @@ class XMLReportReader_Core implements ReportReader
                 if (!$this->createdByField = $reader->getAttribute('created_by_field'))
                   // default field name for filtering the user ID that created the record
                   $this->createdByField = 'o.created_by_id';
+                if (!$this->surveys_id_field = $reader->getAttribute('surveys_id_field'))
+                  // default table alias for the surveys table, so we can join to the id
+                  $this->surveys_id_field = 'su.id';
                 if (!$this->samples_id_field = $reader->getAttribute('samples_id_field'))
                   // default table alias for the samples table, so we can join to the id
                   $this->samples_id_field = 's.id';
