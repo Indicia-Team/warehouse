@@ -59,7 +59,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   public function children($id) {
     $parentTtl = ORM::factory('taxa_taxon_list', $id);
     $this->base_filter['parent_id'] = $id;
-    $this->internal_index($parentTtl->taxon_list_id);
+    $taxonList = ORM::factory('taxon_list', $parentTtl->taxon_list_id);
+    $this->internal_index($parentTtl->taxon_list_id,$taxonList);
     // pass the parent id into the view, so the create list button can use it to autoset
     // the parent of the new list.
     $this->view->parent_id=$id;
