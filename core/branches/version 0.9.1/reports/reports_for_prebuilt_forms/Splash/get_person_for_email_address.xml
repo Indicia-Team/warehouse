@@ -1,0 +1,20 @@
+<report
+    title="Get person for email address."
+    description="Search people table for someone matching the given email address. This report is needed because the views
+seem to block users who are only currently associated with a different website, the NPMS square attachment upload code needs to
+include these users also.">
+  <query>
+    SELECT #columns#
+    FROM people p
+    WHERE p.email_address='#email_address#' AND p.deleted=false   
+  </query>
+  <order_bys>
+    <order_by>p.id ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='email_address' display='Email address' description='Email address of person to search for.' datatype='text'/>
+  </params>
+  <columns> 
+    <column name='id' sql='p.id' datatype='integer' in_count="true"/>  
+  </columns>
+</report>
