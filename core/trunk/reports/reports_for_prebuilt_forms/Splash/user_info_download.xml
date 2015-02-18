@@ -1,6 +1,6 @@
 <report
     title="User Information Download"
-    description="Report containing user and person information for download purposes. Includes filter to includes only users with/without allocations."
+    description="Report containing user and person information for download purposes. Includes filter to include only users with/without allocations."
 >
   <query website_filter_field="uw.website_id">
   SELECT #columns#
@@ -8,6 +8,11 @@
   JOIN users u ON u.person_id=p.id AND u.deleted=false
   JOIN users_websites uw on u.id=uw.user_id
   LEFT JOIN person_attribute_values pavAlloc ON pavAlloc.person_id=p.id AND pavAlloc.person_attribute_id=#user_square_attr_id# AND pavAlloc.deleted=false 
+  LEFT JOIN person_attribute_values pavAddr ON pavAddr.person_id=p.id AND pavAddr.person_attribute_id=#address_attr_id# AND pavAddr.deleted=false 
+  LEFT JOIN person_attribute_values pavTown ON pavTown.person_id=p.id AND pavTown.person_attribute_id=#town_attr_id# AND pavTown.deleted=false 
+  LEFT JOIN person_attribute_values pavCounty ON pavCounty.person_id=p.id AND pavCounty.person_attribute_id=#county_attr_id# AND pavCounty.deleted=false 
+  LEFT JOIN person_attribute_values pavCountry ON pavCountry.person_id=p.id AND pavCountry.person_attribute_id=#country_attr_id# AND pavCountry.deleted=false 
+  LEFT JOIN person_attribute_values pavPC ON pavPC.person_id=p.id AND pavPC.person_attribute_id=#post_code_attr_id# AND pavPC.deleted=false 
   LEFT JOIN locations l ON l.id=pavAlloc.int_value AND l.deleted=false 
   #joins#
   WHERE p.deleted=false
@@ -32,6 +37,11 @@
         Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
       <where>(l.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date))</where>
     </param>
+    <param name="address_attr_id" display="Address attribute id" description="Person attribute id that holds the user address." datatype="text"/>
+    <param name="town_attr_id" display="Town attribute id" description="Person attribute id that holds the user town." datatype="text"/>
+    <param name="county_attr_id" display="County attribute id" description="Person attribute id that holds the user county." datatype="text"/>
+    <param name="country_attr_id" display="Country attribute id" description="Person attribute id that holds the user country." datatype="text"/>
+    <param name="post_code_attr_id" display="Post code attribute id" description="Person attribute id that holds the user post code." datatype="text"/>
   </params>
   <columns> 
     <column name='id' sql='p.id' datatype='integer' visible='false' in_count="true"/>
@@ -39,6 +49,11 @@
     <column name='first_name' display='First name' sql='p.first_name' datatype='text' />      
     <column name='username' display='Username' sql='u.username' datatype='text'/> 
     <column name='email_address' display='Email address' sql='p.email_address' datatype='text' />  
+    <column name='address' display='Address' sql='pavAddr.text_value' datatype='text' />
+    <column name='town' display='Town' sql='pavTown.text_value' datatype='text' />
+    <column name='county' display='County' sql='pavCounty.text_value' datatype='text' />
+    <column name='country' display='Country' sql='pavCountry.text_value' datatype='text' />
+    <column name='post_code' display='Post Code' sql='pavPC.text_value' datatype='text' />
     <column name='registration_date' display='Registration date' sql='uw.created_on' datatype='text' />  
     <column name='count' sql='count(distinct(pavAlloc.id))' display='Number of allocated squares' datatype='integer' aggregate="true"/>
   </columns>
