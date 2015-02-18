@@ -1,0 +1,32 @@
+<report
+    title="Events list"
+    description="A list of events."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+  LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+  LEFT JOIN (termlists_terms ttl1
+    JOIN terms tinput ON tinput.id=ttl1.term_id
+    JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
+    JOIN terms t ON t.id=ttl2.term_id
+  ) ON ttl1.id=l.location_type_id
+  #joins#
+  WHERE l.deleted=false
+  AND #website_filter#
+  AND (CAST(l.location_type_id AS character varying)='#location_type_id#')
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.created_on desc</order_by>
+  </order_bys>
+  <params>
+    <param name='location_type_id' display='Location Type' description='Select the location type for events' datatype='integer'/>
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+  </params>
+  <columns>
+    <column name='location_id' display='ID' sql='l.id' visible='false'/>
+    <column name='name' display='Name' sql='l.name'/>
+    <column name='description' display='Description' sql='l.comment'/>
+  </columns>
+</report>
