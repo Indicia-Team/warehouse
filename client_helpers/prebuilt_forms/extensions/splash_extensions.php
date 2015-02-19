@@ -669,6 +669,7 @@ class extension_splash_extensions {
   /*
    * When the administrator allocates squares to a user, allow the user to enter a mileage value
    * and then reload the screen only showing squares which are within that distance of the user's post code.
+   * @instructionText can be set to override the instuction text given to the user next to the control.
    */
   public static function postcode_distance_limiter($auth, $args, $tabalias, $options, $path) {
     $r='';
@@ -714,7 +715,11 @@ class extension_splash_extensions {
           limit_to_post_code(postcode,georeferenceProxy,".$indiciaUserId.");
         });
       ";
-      $r.="<div>Only show squares within this distance (miles) of the user's post code.<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$buttonLabel."'></div>\n";     
+      if (!empty($options['instructionText']))
+        $instructionText=$options['instructionText'];
+       else 
+        $instructionText="Only show locations within this distance (miles) of the user's post code.";
+      $r.="<div>".$instructionText."<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$buttonLabel."'></div>\n";     
     } else {
       if(!empty($options['noPostCodeMessage']))
         $noPostCodeMessage=$options['noPostCodeMessage'];
