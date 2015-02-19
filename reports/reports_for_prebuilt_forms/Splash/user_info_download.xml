@@ -13,8 +13,8 @@
   LEFT JOIN person_attribute_values pavCounty ON pavCounty.person_id=p.id AND pavCounty.person_attribute_id=#county_attr_id# AND pavCounty.deleted=false 
   LEFT JOIN person_attribute_values pavCountry ON pavCountry.person_id=p.id AND pavCountry.person_attribute_id=#country_attr_id# AND pavCountry.deleted=false 
   LEFT JOIN person_attribute_values pavPC ON pavPC.person_id=p.id AND pavPC.person_attribute_id=#post_code_attr_id# AND pavPC.deleted=false 
+  LEFT JOIN person_attribute_values pav18 ON pav18.person_id=p.id AND pav18.person_attribute_id=#under_18_attr_id# AND pavPC.deleted=false 
   LEFT JOIN locations l ON l.id=pavAlloc.int_value AND l.deleted=false 
-  #joins#
   WHERE p.deleted=false
     AND #website_filter#
   </query>
@@ -28,10 +28,10 @@
     </param>
     <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
     <param name="registration_date_start" display="User registered after" description="Only return users who registered after this date." datatype="date" emptyvalue="">
-      <join>JOIN users_websites uwSta on u.id=uwSta.user_id AND uwSta.created_on &gt;= CAST(COALESCE('#registration_date_start#','1500-01-01') as date)</join>
+      <where>(uw.created_on &gt;= CAST(COALESCE('#registration_date_start#','1500-01-01') as date))</where>
     </param>  
     <param name="registration_date_end" display="User registered before" description="Only return users who registered before this date." datatype="date" emptyvalue="">
-      <join>JOIN users_websites uwEnd on u.id=uwEnd.user_id AND uwEnd.created_on &lt;= CAST(COALESCE('#registration_date_end#','1500-01-01') as date)</join>
+      <where>(uw.created_on &lt;= CAST(COALESCE('#registration_date_end#','1500-01-01') as date))</where>
     </param>
     <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any squares created before this date.
         Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
@@ -42,6 +42,7 @@
     <param name="county_attr_id" display="County attribute id" description="Person attribute id that holds the user county." datatype="text"/>
     <param name="country_attr_id" display="Country attribute id" description="Person attribute id that holds the user country." datatype="text"/>
     <param name="post_code_attr_id" display="Post code attribute id" description="Person attribute id that holds the user post code." datatype="text"/>
+    <param name="under_18_attr_id" display="Under 18 attribute id" description="Person attribute id that holds whether a user is under 18." datatype="text"/>
   </params>
   <columns> 
     <column name='id' sql='p.id' datatype='integer' visible='false' in_count="true"/>
@@ -54,6 +55,7 @@
     <column name='county' display='County' sql='pavCounty.text_value' datatype='text' />
     <column name='country' display='Country' sql='pavCountry.text_value' datatype='text' />
     <column name='post_code' display='Post Code' sql='pavPC.text_value' datatype='text' />
+    <column name='under_18' display='Under 18?' sql="case pav18.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='registration_date' display='Registration date' sql='uw.created_on' datatype='text' />  
     <column name='count' sql='count(distinct(pavAlloc.id))' display='Number of allocated squares' datatype='integer' aggregate="true"/>
   </columns>
