@@ -178,13 +178,28 @@ class extension_my_sites {
    * several sites need to be linked to a single user on a user maintenance page.
    * @postCodeGeomParamName AND @distanceFromPostCodeParamName can be set together to names of $_GET parameters in the URL which
    * supply a post code geometry and distance to limit locations in the location drop-down parameter to
+   * @fieldSetLegend can be set to override default legend text for the fieldset
+   * @addbuttonLabel can be set to override default text for the button that adds the location to the list.
+   * @locationDropDownLabel can be set to override the label of the Location drop-down.
    */
   public static function add_sites_to_any_user($auth, $args, $tabalias, $options, $path) {
     //Need to call this so we can use indiciaData.read
     data_entry_helper::$js_read_tokens = $auth['read'];
     if (!function_exists('iform_ajaxproxy_url'))
       return 'An AJAX Proxy module must be enabled for user sites administration to work.';
-    $r = "<form><fieldset><legend>" . lang::get('Add locations to the sites lists for other users') . "</legend>";
+     if (!empty($options['locationDropDownLabel']))
+      $locationDropDownLabel=$addButtonLabel=$options['locationDropDownLabel'].' :';
+    else 
+      $locationDropDownLabel=lang::get('Location :');
+    if (!empty($options['addButtonLabel']))
+      $addButtonLabel=$options['addButtonLabel'];
+    else 
+      $addButtonLabel=lang::get('Add to this User\'s Sites List');
+    if (!empty($options['fieldSetLegend']))
+      $fieldSetLegendText=$options['fieldSetLegend'];
+    else 
+      $fieldSetLegendText=lang::get('Add locations to the sites lists for other users');
+    $r = "<form><fieldset><legend>" .$fieldSetLegendText. "</legend>";
     if (empty($options['locationTypes']) || !preg_match('/^([0-9]+,( )?)*[0-9]+$/', $options['locationTypes']))
       return 'The sites form is not correctly configured. Please provide the location type you can add.';
     $locationTypes = explode(',', str_replace(' ', '', $options['locationTypes']));
@@ -213,7 +228,7 @@ class extension_my_sites {
       $extraParams['distance_from_post_code']=$_GET[$options['distanceFromPostCodeParamName']]; 
     //If we don't want to automatically get the location id from the URL, then display a drop-down of locations the user can select from   
     if (empty($locationIdFromURL)) {
-      $r .= '<label>'.lang::get('Location :').'</label> ';
+      $r .= '<label>'.$locationDropDownLabel.'</label> ';
       //Get a list of all the locations that match the given location types (in this case my sites are returned first, although this isn't a requirement)
       $r .= data_entry_helper::location_select(array(
         'id' => 'location-select',
@@ -227,7 +242,7 @@ class extension_my_sites {
     if (empty($userIdFromURL))
       $r .= self:: user_select_for_add_sites_to_any_user_control($auth['read'],$args);
     
-    $r .= '<input id="add-user-site-button" type="button" value="'. lang::get('Add to this User\'s Sites List') .'"/><br></form><br>';
+    $r .= '<input id="add-user-site-button" type="button" value="'.$addButtonLabel.'"/><br></form><br>';
     
     $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
 
