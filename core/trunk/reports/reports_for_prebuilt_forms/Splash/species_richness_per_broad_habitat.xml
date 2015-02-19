@@ -61,6 +61,6 @@ ones saved with a fine scale sub-habitat."
       END" datatype='text'/>  
     <column name='total_samples' display='Samples' sql='count(distinct(samp.id))' datatype='float'/>
     <column name='total_species_richness' display='Species' sql='count(distinct(tax.id))' datatype='float'/>
-    <column name='mean_species_richness' display='Mean Richness' sql='cast(count(distinct(tax.id)) as float) / count(distinct(samp.id))'/>
+    <column name='mean_species_richness' display='Mean Richness' sql='round(cast(count(distinct(tax.id)) as numeric) / count(distinct(samp.id)),2)'/>
   </columns>
 </report>
