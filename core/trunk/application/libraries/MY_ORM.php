@@ -803,7 +803,7 @@ class ORM extends ORM_Core {
           }
           $fk = $this->fkLookup($b);
           if ($fk) {
-            $this->submission['fields'][$b['fkIdField']]['value'] = $fk;
+            $this->submission['fields'][$b['fkIdField']] = array('value' => $fk);
           } else {
             // look for a translation of the field name
             $lookingIn = kohana::lang("default.dd:{$this->object_name}:$a");
