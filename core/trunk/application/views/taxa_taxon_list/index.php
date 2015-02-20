@@ -24,6 +24,10 @@
 if (isset($parent_list_id)) : ?>
 <script type="text/javascript">
 /*<![CDATA[*/
+jQuery(document).ready(function($) {
+  $('#ctrl-wrap-search_method').hide();
+
+});
 add_parent_taxon = function() {
   // ask the warehouse to copy the taxon from the parent list to the child list
   $.post('<?php echo url::site('taxa_taxon_list/add_parent_taxon'); ?>', {
@@ -42,25 +46,52 @@ add_parent_taxon = function() {
     }
   );
 };
+convert_to_list_mode = function() {
+  $('#add-from-parent\\:taxon').hide();
+  $('#pasted_taxa').show();
+  $('#ctrl-wrap-add-from-parent').find(':button').hide();
+  $('#add-list').show();
+  $('#ctrl-wrap-search_method').show();
+  $('#ctrl-wrap-add-from-parent .helpText').html(
+      'Paste a list of taxon names or external keys into the box above then click Add to add them all');
+};
 /*]]>*/
 </script>
+<form action="<?php echo url::site().'taxa_taxon_list/paste_childlist/'.$taxon_list_id; ?>" method="post">
+  <div>
+  <?php
+    require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+    $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+    echo '';
+    echo data_entry_helper::select(array(
+      'label' => 'Search for taxa using',
+      'fieldname' => 'search_method',
+      'helpText' => 'When adding a list of taxa, which field in the taxon data will your input values be looked up against?',
+      'lookupValues' => array(
+          'taxon' => 'Species or other taxon name',
+          'external_key' => 'External key'
+      )
+    ));
+    echo data_entry_helper::species_autocomplete(array(
+      'label'=>'Add species',
+      'fieldname'=>'add-from-parent',
+      'helpText'=>'Search for taxa in the parent list to quickly add them into this list.',
+      'cacheLookup' => TRUE,
+      'speciesIncludeBothNames' => TRUE,
+      'speciesIncludeTaxonGroup' => TRUE,
+      'extraParams' => $readAuth + array('taxon_list_id'=>$parent_list_id),
+      'afterControl' => '<textarea style="display: none" id="pasted_taxa" name="pasted_taxa" rows="10" cols="40"/>' .
+          '<input type="button" value="Add" onclick="add_parent_taxon();" '.
+          'title="Click this button to add the taxa searched for in the Add species box to your child list"/>' .
+          '<input type="button" value="Add many..." onclick="convert_to_list_mode();" ' .
+          'title="Click this button to be able to paste in a list of taxa to add"/>' .
+          '<input type="submit" style="display: none" value="Add list" id="add-list" />'
+    ));
+  ?>
+  </div>
+</form>
 <?php
-  require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-  $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-  echo '<div class="linear-form">';
-  echo data_entry_helper::species_autocomplete(array(
-    'label'=>'Add species',
-    'fieldname'=>'add-from-parent',
-    'helpText'=>'Search for taxa in the parent list to quickly add them into this list.',
-    'cacheLookup' => TRUE,
-    'speciesIncludeBothNames' => TRUE,
-    'speciesIncludeTaxonGroup' => TRUE,
-    'extraParams' => $readAuth + array('taxon_list_id'=>$parent_list_id),
-    'afterControl' => '<input type="button" value="Add" onclick="add_parent_taxon();" />'
-  ));
-  echo '</div>';
 endif;
-
 echo $grid;
 ?>
 <br/>
