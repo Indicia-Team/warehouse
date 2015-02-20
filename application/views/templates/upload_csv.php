@@ -31,7 +31,7 @@ if ($staticFields != null) {
 }
 ?>
 <fieldset>
-<label for="csv_upload" class="auto">Upload a CSV file into this list:</label>
+<label for="csv_upload" class="auto wide">Upload a CSV file into this list:</label>
 <input type="file" name="csv_upload" id="csv_upload" size="40" />
 <input type="submit" value="Upload CSV File" />
 </fieldset>

@@ -36,7 +36,6 @@ if (isset($_POST))
 echo data_entry_helper::radio_group(array(
     'fieldname' => 'trigger_action:param2',
     'label' => 'Notification frequency',
-    'labelClass' => 'align-top',
     'class' => 'check-or-radio-box',
     'default' => html::initial_value($values, 'trigger_action:param2'),
     'helpText' => 'Please specify how frequently you would like to receive email notifications for this trigger?',
@@ -46,7 +45,6 @@ echo data_entry_helper::radio_group(array(
 echo data_entry_helper::textarea(array(
   'label' => 'Copy email to',
   'helpText'=>'Provide a comma separated list of email addresses to copy this notification to.',
-  'labelClass' => 'align-top',
   'fieldname' => 'trigger_action:param3',
   'default' => html::initial_value($values, 'trigger_action:param3'),
 ));
