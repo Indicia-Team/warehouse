@@ -141,6 +141,8 @@ class extension_splash_extensions {
    * as the location then all occurrences are set to have a sensitivity_precision=10000</li>
    * <li><b>rowInclusionCheckModeHasData</b><br/>
    * Optional. Supply this as true if the species grid is in rowInclusionCheck=hasData mode and you are using the privatePlotAttrId option.
+   * <li><b>noPlotMessageInAlert</b><br/>
+   * Optional. Override the default message that is displayed if a user has not plots to select. This message is displayed in an alert box as well.
    * </ul>
    */
   public static function splash_location_select($auth, $args, $tabAlias, $options) {
@@ -191,11 +193,17 @@ class extension_splash_extensions {
     $rawData = data_entry_helper::get_report_data($reportOptions);
     if (empty($rawData)) {
       //If the user doesn't have any plots, then hide the map and disable the Spatial Ref field so they can't continue
-      drupal_set_message('Note: You have not been allocated any squares to input data for, or the squares you have been allocated do not have plots.');
+      if (!empty($options['noPlotMessageInAlert']))
+        data_entry_helper::$javascript .= "alert('".$options['noPlotMessageInAlert']."');";
+      else
+        drupal_set_message('Note: You have not been allocated any squares to input data for, or the squares you have been allocated do not have plots.');
       drupal_set_message('You cannot enter data without having a plot to select.');
       data_entry_helper::$javascript .= "$('#map').hide();";
       data_entry_helper::$javascript .= "$('#imp-sref').attr('disabled','disabled');";
-      return '<b>You have not been allocated any Squares that contain plots</b></br>';
+      if (!empty($options['noPlotMessageInAlert']))
+        return '<b>'.$options['noPlotMessageInAlert'].'</b></br>';
+      else
+        return '<b>You have not been allocated any Squares that contain plots</b></br>';      
     } else {
       //Convert the raw data in the report into array format suitable for the Select drop-down to user (an array of ID=>Name pairs)
       foreach($rawData as $rawRow) {
