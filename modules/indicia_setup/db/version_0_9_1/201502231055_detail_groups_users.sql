@@ -3,7 +3,7 @@
 CREATE OR REPLACE VIEW detail_groups_users AS 
  SELECT gu.id,
     gu.group_id,
-    g.title, 
+    g.title as group_title, 
     g.group_type_id,
     gu.user_id,
     gu.administrator,
