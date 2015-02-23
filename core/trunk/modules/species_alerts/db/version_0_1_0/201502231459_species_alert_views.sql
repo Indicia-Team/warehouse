@@ -42,6 +42,7 @@ CREATE OR REPLACE VIEW detail_species_alerts AS
     sp.alert_on_verify,
     l.id as location_id,
     l.name AS location_name,
+    w.id as website_id,
     w.title AS website,
     sp.external_key,
     sp.taxon_meaning_id,
@@ -64,5 +65,4 @@ CREATE OR REPLACE VIEW detail_species_alerts AS
      LEFT JOIN taxon_lists tl on tl.id=sp.taxon_list_id and tl.deleted=false
   WHERE sp.deleted = false
   GROUP BY sp.id, u.id, u.username, sp.alert_on_entry, sp.alert_on_verify, l.id, l.name, 
-    w.title, sp.external_key, sp.taxon_meaning_id, tl.title, c.username, sp.updated_on, sp.updated_by_id, up.username;
-
+    w.id, w.title, sp.external_key, sp.taxon_meaning_id, tl.title, c.username, sp.updated_on, sp.updated_by_id, up.username;
