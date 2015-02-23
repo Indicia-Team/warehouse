@@ -938,4 +938,59 @@ class extension_splash_extensions {
     }
     return $r;
   }
+  
+  /* Some user roles should be exempt from requiring squares the user allocated to themselves from requiring approval. The approval system
+   * checks to see if the person the allocation is intended for is the same as the person who last updated the allocation. We can take advantage of
+   * this and if a user is detected as being exempt from approval then we simply always set the updated_by_id of the allocation to be 1 instead of the
+   * user id. The means the allocation will not be picked up by the approval system (unless the person happens to have indicia user id 1, which they shouldn't).
+   * Designed to be used in conjunction with the [my_sites.add_sites_to_any_user] extension, this extension should be supplied as well, and the one below
+   * will override some of it.
+   */
+  public static function override_site_allocation_for_roles_exempt_from_approval($auth, $args, $tabalias, $options, $path) {
+    $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
+    global $user;
+    //This veriabe holds the updated_by_id=1 if the user is found to be exempt, if they aren't exempt then this is blank so that the 
+    //updated_by_id is set automaticall by the system.
+    $updatedBySystem = ''; 
+    if (!empty($options['rolesExemptFromApproval']))
+      $RolesExemptFromApproval=explode(',',$options['rolesExemptFromApproval']);
+    else {
+      drupal_set_message('Please enter a RolesExemptFromApproval option for the override_site_allocation_for_roles_exempt_from_approval control.
+          This option should be a comma separated list of user roles which do not require approval when the user allocates themselves a square.');
+      return false;
+    }
+    if (empty($options['mySitesPsnAttrId'])) {
+      drupal_set_message('Please enter the mySitesPsnAttrId option for the override_site_allocation_for_roles_exempt_from_approval control.
+          This option contains the attribute ID that holds the site allocations.');
+      return false;
+    }
+    //See if any of the user's roles are in the exempt list.
+    foreach ($RolesExemptFromApproval as $exemptRole) {
+      foreach ($user->roles as $userRole) {
+        if ($exemptRole===$userRole)
+          $updatedBySystem = ',"updated_by_id":1'; 
+      }
+    }
+    //Add the user/site combination to the person_attribute_values database table.
+    //This overrides the function in the my_sites.php file.
+    data_entry_helper::$javascript .= "
+    var addUserSiteData = function (locationId, userIdToAdd) {
+      if (!isNaN(locationId) && locationId!=='') {
+        $.post('$postUrl', 
+          {\"website_id\":".$args['website_id'].",\"person_attribute_id\":".$options['mySitesPsnAttrId'].
+              ",\"user_id\":userIdToAdd,\"int_value\":locationId".$updatedBySystem."},
+          function (data) {
+            if (typeof data.error === 'undefined') {
+              alert('User site configuration saved successfully');
+              location.reload();
+            } else {
+              alert(data.error);
+            }              
+          },
+          'json'
+        );
+      }
+    }
+    ";
+  }
 }
