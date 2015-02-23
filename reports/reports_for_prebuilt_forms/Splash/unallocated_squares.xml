@@ -9,8 +9,9 @@
     LEFT JOIN person_attribute_values pav on pav.int_value=l.id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
     LEFT JOIN users u on u.person_id=pav.person_id AND u.deleted=false
     LEFT JOIN users_websites uw on u.id=uw.user_id AND uw.created_on &gt;= CAST(COALESCE('#ignore_registration_dates_before#','1500-01-01') as date)
+    LEFT JOIN location_attribute_values lavEx on lavEx.location_id=l.id AND lavEx.location_attribute_id=#excluded_square_attr_id# AND lavEx.deleted=false
   WHERE (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)  
-    AND #website_filter# AND l.deleted=false
+    AND #website_filter# AND lavEx.int_value != 1 AND l.deleted=false
   </query>
   <order_bys>
     <order_by>count ASC</order_by>
@@ -29,6 +30,7 @@
       <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
     </param>
     <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''/>
+    <param name="excluded_square_attr_id" display="Excluded squares attribute id" description="Id of attribute that holds whether a square is excluded or not. If it is excluded then don't display on the map." datatype="integer"/>
   </params>
   <columns> 
     <column name='id' sql='l.id' datatype='integer' visible='false' in_count="true"/>  
