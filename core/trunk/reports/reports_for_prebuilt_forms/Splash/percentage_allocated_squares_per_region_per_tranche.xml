@@ -14,7 +14,7 @@ Note the single digit regions are based on the Irish grid reference system."
   LEFT JOIN person_attribute_values pav on pav.int_value=sq.id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
   LEFT JOIN users u on u.person_id=pav.person_id AND u.deleted=false
   LEFT JOIN users_websites uw on u.id=uw.user_id AND uw.created_on &gt;= CAST(COALESCE('#ignore_registration_dates_before#','1500-01-01') as date)
-  WHERE (sq.location_type_id=#core_square_type_id# OR sq.location_type_id=#additional_square_type_id#)
+  WHERE (sq.location_type_id=#core_square_type_id#)
   #filters#
   AND sq.deleted=false
   AND #website_filter#
@@ -24,7 +24,6 @@ Note the single digit regions are based on the Irish grid reference system."
   </order_bys>
   <params>
     <param name='core_square_type_id' display='Core Square Type Id' description='' datatype='integer'/>
-    <param name='additional_square_type_id' display='Additional Square Type Id' description='' datatype='integer'/>
     <param name='tranche_attr_id' display='Id the location tranche attribute' description='Id the location tranche attribute' datatype='integer'/>
     <param name='region' display='Region' description='Region the square is in' datatype='lookup'
         lookup_values='C:C,CI:CI,D:D,GH:GH,HPTU:HPTU,HY:HY,IoM:IoM,J:J,NAB:NAB,NC:NC,ND:ND,NF:NF,NG:NG,NH:NH,NJK:NJK,NLM:NLM,NN:NN,NO:NO,NR:NR,NS:NS,NT:NT,NU:NU,NWX:NWX,NY:NY,NZ:NZ,SD:SD,SE:SE,SH:SH,SJ:SJ,SK:SK,SMNR:SMNR,SO:SO,SP:SP,SS:SS,ST:ST,SU:SU,SVW:SVW,SX:SX,SY:SY,SZ:SZ,TA:TA,TF:TF,TG:TG,TL:TL,TM:TM,TQV:TQV,TR:TR'>
@@ -46,7 +45,7 @@ Note the single digit regions are based on the Irish grid reference system."
         (char_length('#region#') = 4 AND
           (substring('#region#', 1, 1) || substring('#region#', 2, 1) = regexp_replace(regexp_replace(sq.centroid_sref, ',[^ ]', ', ', 'g'),'\d+$','') OR  substring('#region#', 1, 1) || substring('#region#', 3, 1) = regexp_replace(regexp_replace(sq.centroid_sref, ',[^ ]', ', ', 'g'),'\d+$','') OR  substring('#region#', 1, 1) || substring('#region#', 4, 1) = regexp_replace(regexp_replace(sq.centroid_sref, ',[^ ]', ', ', 'g'),'\d+$','')))
         OR 
-        ('#region#' != 'GH' AND ('"' || regexp_replace(regexp_replace(sq.centroid_sref, ',[^ ]', ', ', 'g'),'\d+$','') || '"'='"#region#"')))
+        ('#region#' != 'GH' AND '#region#' != 'CI' AND ('"' || regexp_replace(regexp_replace(sq.centroid_sref, ',[^ ]', ', ', 'g'),'\d+$','') || '"'='"#region#"')))
         </where>
     </param>
     <param name='tranche' display='Tranche number' description='Number of the tranche you wish to return data for, enter nothing for all tranches.' datatype='integer' emptyvalue=''> 
