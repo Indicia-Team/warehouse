@@ -208,7 +208,7 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
           }
         });
         if (!done) {
-          alert('Sorry there appears to be a problem associated with the post code, so I cannot perform a search using it.');
+          alert('Sorry, there appears to be a problem searching with the post code. Please check your system\'s Google API key is operating correctly and that your post code is valid.');
           return false;
         }
         
