@@ -27,13 +27,16 @@ function species_alerts_scheduled_task($last_run_date, $db) {
       u.username as username
     FROM occdelta od
       LEFT JOIN index_locations_samples ils on ils.sample_id=od.sample_id
+      LEFT JOIN cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id=od.taxon_meaning_id
       JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=od.website_id and iwwa.receive_for_reporting=true
       JOIN species_alerts sa ON 
         (sa.location_id IS NULL OR sa.location_id=ils.location_id)
         AND 
           (sa.taxon_meaning_id = od.taxon_meaning_id
           OR
-          sa.external_key = od.taxa_taxon_list_external_key)
+          sa.external_key = od.taxa_taxon_list_external_key
+          OR
+          sa.taxon_list_id = cttl.taxon_list_id)
         AND
           (sa.alert_on_entry='t' AND od.cud='C'
           OR

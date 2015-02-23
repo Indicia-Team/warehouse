@@ -80,6 +80,8 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
   
   /*
    * Create the Species Alert record to submit and save it to the database
+   * @todo Shouldn't the validation here be built into the model, and the results extracted
+   * from a failed save?
    */
   private function store_species_alert($userId) {
     $alertRecordSubmissionObj = ORM::factory('species_alert');
@@ -93,11 +95,13 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
     //Already checked this has been filled in so don't need to do this again
     $alertRecordSubmissionObj->website_id=$_GET['website_id'];
     //At least one of this must be supplied to identifiy the taxon
-    self::either_field_required('taxon_meaning_id','external_key');
+    self::at_least_one_field_required(array('taxon_meaning_id','external_key','taxon_list_id'));
     if (!empty($_GET['taxon_meaning_id']))
       $alertRecordSubmissionObj->taxon_meaning_id=$_GET['taxon_meaning_id'];
     if (!empty($_GET['external_key']))
       $alertRecordSubmissionObj->external_key=$_GET['external_key'];
+    if (!empty($_GET['taxon_list_id']))
+      $alertRecordSubmissionObj->taxon_list_id=$_GET['taxon_list_id'];
     
     //If boolean isn't supplied just assume as false
     if (!empty($_GET['alert_on_entry']))
@@ -178,12 +182,16 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
   }
   
   /*
-   * Validate an "either" scenerio where is at least one of two fields must be filled in
+   * Validate an "at least one of" scenerio where is at least one of a list of fields must be filled in
    */
-  private function either_field_required($field1,$field2) {
-    if (empty($_GET[$field1])&&empty($_GET[$field2])) {
-      throw new Exception($field1.' or '.$field2.' must be supplied to the Species Alert service.');
+  private function at_least_one_field_required($array) {
+    $found = FALSE;
+    foreach ($array as $item) {
+      if (!empty($_GET[$item])) {
+        return;
+      }
     }
+    throw new Exception('At least one of ' . implode(', ', $array) . ' must be supplied to the Species Alert service.');
   }
 }
  
