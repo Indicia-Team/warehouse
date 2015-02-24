@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Locations from add square drop-down" description="A list of all locations where my sites are returned first. Includes support
+for limiting results to a certain distance from a post code and also excluding excluded squares, although report can be used for other location types such as events.">
+      <query website_filter_field="lw.website_id">
+        SELECT #columns#
+          FROM locations l
+            JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+            LEFT JOIN location_attribute_values lavEx on lavEx.location_id=l.id AND lavEx.location_attribute_id=#excluded_square_attr_id# AND lavEx.deleted=false
+            LEFT JOIN (person_attribute_values pav 
+              JOIN person_attributes pa ON pa.id=pav.person_attribute_id AND pa.id=#my_sites_person_attr_id# AND pav.person_id = #user_id# AND pa.deleted=false
+              JOIN people p ON p.id = pav.person_id
+              JOIN users u ON u.person_id = p.id AND u.id = #user_id#
+            ) ON pav.int_value=l.id AND pav.deleted=false
+          WHERE l.deleted=false
+            AND #website_filter#
+            AND (u.id = #user_id# OR u.id IS NULL)
+            AND (lavEx.int_value != 1 OR lavEx.int_value IS NULL)
+            AND ((l.location_type_id IN (#location_type_ids#)) OR ('#location_type_ids#'='-1'))
+      </query>
+      <order_bys>
+        <order_by>u.id IS NULL ASC, l.name ASC</order_by>
+      </order_bys>
+      <params>
+        <param name="my_sites_person_attr_id" display="Person preferred sites attribute Id" description="Person preferred sites attribute Id" datatype="integer"/>
+        <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" emptyvalue="-1"/>
+        <param name="location_type_ids" display="Location Type ID" description="Warehouse Ids for the location types you 
+            want to limit the report to." datatype="integer[]" emptyvalue='-1'/>
+        <param name="post_code_geom" display="Post Code Geom" description="Post code geometry, so we only show squares closest to the user." emptyvalue='' default=''>
+          <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
+        </param>
+          <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''>
+            <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
+        </param>
+        <param name="excluded_square_attr_id" display="Excluded squares attribute id" description="Id of attribute that holds whether a square is excluded or not. If it is excluded then don't display on the map." datatype="integer" default='0' emptyvalue='0'/>
+      </params>
+      <columns>
+        <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
+        <column name="name" display="Site Name" sql="l.name" datatype="text" />
+      </columns>
+</report>
