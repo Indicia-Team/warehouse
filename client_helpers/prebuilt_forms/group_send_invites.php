@@ -173,7 +173,7 @@ class iform_group_send_invites {
         $message = array(
             'id' => 'iform_group_invite', 
             'to' => trim($email), 
-            'subject' => 'Invitation to join a recording group', 
+            'subject' => lang::get('Invitation to join a recording group'), 
             'body' => $body, 
             'headers' => array(
               'MIME-Version' => '1.0',
