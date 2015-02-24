@@ -8,12 +8,14 @@
       LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
       --Get the vice country for the square as it is included in the name label, this is stored in a custom attribute as it is faster than insecting on the fly.
       LEFT JOIN location_attribute_values lav on lav.location_id=l.id AND lav.location_attribute_id = #vice_county_location_attribute_id# AND lav.deleted=false
+      --Determine whether square is excluded if needed
+      LEFT JOIN location_attribute_values lavEx on lavEx.location_id=l.id AND lavEx.location_attribute_id=#excluded_square_attr_id# AND lavEx.deleted=false
     WHERE 1=1
       AND #website_filter#
-      AND (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)
+      AND (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)     
       AND l.deleted=false
       #filters#
-    GROUP BY l.id, lav.text_value
+    GROUP BY l.id, lav.text_value, lavEx.int_value
   </query>
   <order_bys>
     <order_by>l.id desc</order_by>
@@ -32,6 +34,8 @@
     </param>
     <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''/>
     <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
+    --Not required, needed if you want the not_excluded and excluded columns to output correct data 
+    <param name="excluded_square_attr_id" display="Excluded squares attribute id" description="Id of attribute that holds whether a square is excluded or not. If it is excluded then don't display on the map." datatype="integer" default='0' emptyvalue='0'/>
   </params>
   <columns>
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" aggregate="true" in_count="true"/>
@@ -47,5 +51,7 @@
     <column name="sc" visible="false" feature_style="strokeColor" sql="'blue'" aggregate='true'/>
     <column name="fc" visible="false" feature_style="fillColor" sql="'blue'" aggregate='true'/>
     <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom,l.centroid_geom))" aggregate='true'/>    
+    <column name="excluded" visible="false" sql="case when lavEx.int_value = 1 then true else false end" aggregate='true'/> 
+    <column name="not_excluded" visible="false" sql="case when lavEx.int_value != 1 then true else false end" aggregate='true'/> 
   </columns>
 </report>
