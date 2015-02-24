@@ -11,7 +11,7 @@
     LEFT JOIN users_websites uw on u.id=uw.user_id AND uw.created_on &gt;= CAST(COALESCE('#ignore_registration_dates_before#','1500-01-01') as date)
     LEFT JOIN location_attribute_values lavEx on lavEx.location_id=l.id AND lavEx.location_attribute_id=#excluded_square_attr_id# AND lavEx.deleted=false
   WHERE (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)  
-    AND #website_filter# AND lavEx.int_value != 1 AND l.deleted=false
+    AND #website_filter# AND (lavEx.int_value != 1 OR lavEx.int_value IS NULL) AND l.deleted=false
   </query>
   <order_bys>
     <order_by>count ASC</order_by>
