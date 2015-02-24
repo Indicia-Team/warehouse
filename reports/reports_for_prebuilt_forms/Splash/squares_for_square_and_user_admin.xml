@@ -12,7 +12,8 @@
       LEFT JOIN location_attribute_values lavEx on lavEx.location_id=l.id AND lavEx.location_attribute_id=#excluded_square_attr_id# AND lavEx.deleted=false
     WHERE 1=1
       AND #website_filter#
-      AND (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)     
+      AND (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)    
+      AND (#distance_from_post_code# != 0 OR #only_results_after_search#=false)
       AND l.deleted=false
       #filters#
     GROUP BY l.id, lav.text_value, lavEx.int_value
@@ -29,10 +30,11 @@
     <param name="additional_square_type_id" description="Additional square location type id. We need to inclde this because if the user elects to show all squares we don't actually return all locations types" datatype="integer"/>
     <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text" emptyvalue='' default=''/>
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer" emptyvalue='' default=''/>
+    <param name="only_results_after_search" display="Only show results after search" datatype="boolean" emptyvalue='false' default='false'/>
     <param name="post_code_geom" display="Post Code Geom" description="Post code geometry, so we only show squares closest to the user." emptyvalue='' default=''>
       <where>st_dwithin(ST_GeomFromText('#post_code_geom#',3857), ST_Transform(l.centroid_geom,3857), #distance_from_post_code#)</where>
     </param>
-    <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='' emptyvalue=''/>
+    <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='0' emptyvalue='0'/>
     <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
     --Not required, needed if you want the not_excluded and excluded columns to output correct data 
     <param name="excluded_square_attr_id" display="Excluded squares attribute id" description="Id of attribute that holds whether a square is excluded or not. If it is excluded then don't display on the map." datatype="integer" default='0' emptyvalue='0'/>
