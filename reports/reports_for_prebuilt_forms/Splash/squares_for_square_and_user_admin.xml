@@ -52,6 +52,6 @@
     <column name="fc" visible="false" feature_style="fillColor" sql="'blue'" aggregate='true'/>
     <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom,l.centroid_geom))" aggregate='true'/>    
     <column name="excluded" visible="false" sql="case when lavEx.int_value = 1 then true else false end" aggregate='true'/> 
-    <column name="not_excluded" visible="false" sql="case when lavEx.int_value != 1 then true else false end" aggregate='true'/> 
+    <column name="not_excluded" visible="false" sql="case when (lavEx.int_value != 1 OR lavEx.int_value IS NULL) then true else false end" aggregate='true'/> 
   </columns>
 </report>
