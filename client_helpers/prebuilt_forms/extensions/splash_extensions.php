@@ -939,31 +939,135 @@ class extension_splash_extensions {
     return $r;
   }
   
-  /* Some user roles should be exempt from requiring squares the user allocated to themselves from requiring approval. The approval system
-   * checks to see if the person the allocation is intended for is the same as the person who last updated the allocation. We can take advantage of
-   * this and if a user is detected as being exempt from approval then we simply always set the updated_by_id of the allocation to be 1 instead of the
-   * user id. The means the allocation will not be picked up by the approval system (unless the person happens to have indicia user id 1, which they shouldn't).
-   * Designed to be used in conjunction with the [my_sites.add_sites_to_any_user] extension, this extension should be supplied as well, and the one below
-   * will override some of it.
+  /*
+   * Control allows a user to add squares to themselves or another user (depending if the user id is present in the dynamic-the_user_id get parameter)
+   * Very similar to the add_sites_to_any_user control in my_sites but with some key difference.
+   * @locationParamFromURL can be supplied as an option to hide the locations drop-down and automatically get the location id from the $_GET url parameter, this option should be set as the
+   * name of the parameter when it is in use.
+   * @userParamFromURL can be set in a very similar way, but this would hide the user drop down instead. This could be used in the situation where
+   * several sites need to be linked to a single user on a user maintenance page.
+   * @postCodeGeomParamName AND @distanceFromPostCodeParamName can be set together to names of $_GET parameters in the URL which
+   * supply a post code geometry and distance to limit locations in the location drop-down parameter to
+   * @fieldSetLegend can be set to override default legend text for the fieldset
+   * @addbuttonLabel can be set to override default text for the button that adds the location to the list.
+   * @locationDropDownLabel can be set to override the label of the Location drop-down.
+   * @rolesExemptFromApproval Optional comma separated list of user roles that do not need to be part of the square approval process
+   * @excludedSquareAttrId Optional location attribute id if you need to exclude squares where the excluded flag has been set.
    */
-  public static function override_site_allocation_for_roles_exempt_from_approval($auth, $args, $tabalias, $options, $path) {
-    $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
+  public static function add_locations_to_user($auth, $args, $tabalias, $options, $path) {
     global $user;
-    //This veriabe holds the updated_by_id=1 if the user is found to be exempt, if they aren't exempt then this is blank so that the 
-    //updated_by_id is set automaticall by the system.
-    $updatedBySystem = ''; 
+    //Need to call this so we can use indiciaData.read
+    data_entry_helper::$js_read_tokens = $auth['read'];
+    if (!function_exists('iform_ajaxproxy_url'))
+      return 'An AJAX Proxy module must be enabled for user sites administration to work.';
+     if (!empty($options['locationDropDownLabel']))
+      $locationDropDownLabel=$addButtonLabel=$options['locationDropDownLabel'].' :';
+    else 
+      $locationDropDownLabel=lang::get('Location :');
+    if (!empty($options['addButtonLabel']))
+      $addButtonLabel=$options['addButtonLabel'];
+    else 
+      $addButtonLabel=lang::get('Add to this User\'s Sites List');
+    if (!empty($options['fieldSetLegend']))
+      $fieldSetLegendText=$options['fieldSetLegend'];
+    else 
+      $fieldSetLegendText=lang::get('Add locations to the sites lists for other users');
     if (!empty($options['rolesExemptFromApproval']))
-      $RolesExemptFromApproval=explode(',',$options['rolesExemptFromApproval']);
-    else {
-      drupal_set_message('Please enter a RolesExemptFromApproval option for the override_site_allocation_for_roles_exempt_from_approval control.
-          This option should be a comma separated list of user roles which do not require approval when the user allocates themselves a square.');
-      return false;
+      $RolesExemptFromApproval=explode(',',$options['rolesExemptFromApproval']);      
+    else 
+      $RolesExemptFromApproval=array(); 
+    $r = "<form><fieldset><legend>" .$fieldSetLegendText. "</legend>";
+    if (empty($options['locationTypes']) || !preg_match('/^([0-9]+,( )?)*[0-9]+$/', $options['locationTypes']))
+      return 'The sites form is not correctly configured. Please provide the location type you can add.';
+    $locationTypes = explode(',', str_replace(' ', '', $options['locationTypes']));
+    if (empty($options['mySitesPsnAttrId']) || !preg_match('/^[0-9]+$/', $options['mySitesPsnAttrId']))
+      return 'The sites form is not correctly configured. Please provide the person attribute ID used to store My Sites.';
+    if (!empty($options['locationParamFromURL'])&&!empty($_GET[$options['locationParamFromURL']]))
+      $locationIdFromURL=$_GET[$options['locationParamFromURL']];
+    else
+      $locationIdFromURL=0;
+    //Get the user_id from the URL if we can, this would hide the user drop-down and make
+    //the control applicable to a single user.
+    if (!empty($options['userParamFromURL'])&&!empty($_GET[$options['userParamFromURL']]))
+      $userIdFromURL=$_GET[$options['userParamFromURL']];
+    //This line is here to make sure we don't brake the existing code, this was hard-coded, now
+    //the param is soft-coded we still need this hard-coded param here.
+    elseif (!empty($_GET['dynamic-the_user_id']))
+      $userIdFromURL=$_GET['dynamic-the_user_id'];
+    else
+      $userIdFromURL=0; 
+    $extraParams=array('location_type_ids'=>$options['locationTypes'], 'user_id'=>hostsite_get_user_field('indicia_user_id'),
+        'my_sites_person_attr_id'=>$options['mySitesPsnAttrId']);
+    //Can limit results in location drop-down to certain distance of a post code
+    if (!empty($options['postCodeGeomParamName'])&&!empty($_GET[$options['postCodeGeomParamName']]))
+      $extraParams['post_code_geom']=$_GET[$options['postCodeGeomParamName']];
+    if (!empty($options['distanceFromPostCodeParamName'])&&!empty($_GET[$options['distanceFromPostCodeParamName']]))
+      $extraParams['distance_from_post_code']=$_GET[$options['distanceFromPostCodeParamName']]; 
+    if (!empty($options['excludedSquareAttrId']))
+      $extraParams['excluded_square_attr_id']=$options['excludedSquareAttrId'];
+    //If we don't want to automatically get the location id from the URL, then display a drop-down of locations the user can select from   
+    if (empty($locationIdFromURL)) {
+      $r .= '<label>'.$locationDropDownLabel.'</label> ';
+      //Get a list of all the locations that match the given location types (in this case my sites are returned first, although this isn't a requirement)
+      $r .= data_entry_helper::location_select(array(
+        'id' => 'location-select',
+        'nocache' => true,
+        'report' => 'reports_for_prebuilt_forms/Splash/locations_for_add_location_drop_down',
+        'extraParams' => $auth['read'] + $extraParams,
+        'blankText'=>'<' . lang::get('please select') . '>',
+      ));
     }
-    if (empty($options['mySitesPsnAttrId'])) {
-      drupal_set_message('Please enter the mySitesPsnAttrId option for the override_site_allocation_for_roles_exempt_from_approval control.
-          This option contains the attribute ID that holds the site allocations.');
-      return false;
+    //Get the user select control if the user id isn't in the url
+    if (empty($userIdFromURL))
+      $r .= self:: user_select_for_add_sites_to_any_user_control($auth['read'],$args);
+    
+    $r .= '<input id="add-user-site-button" type="button" value="'.$addButtonLabel.'"/><br></form><br>';
+    
+    $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
+
+    //Firstly check both a uer and location have been selected.
+    //Then get the current user/sites saved in the database and if the new combination doesn't already exist then call a function to add it.
+    data_entry_helper::$javascript .= "
+    function duplicateCheck(locationId, userId) {
+      var userIdToAdd = userId;
+      var locationIdToAdd = locationId;
+      var sitesReport = indiciaData.read.url +'/index.php/services/report/requestReport?report=library/locations/all_user_sites.xml&mode=json&mode=json&callback=?';
+        
+      var sitesReportParameters = {
+        'person_site_attr_id': '".$options['mySitesPsnAttrId']."',
+        'auth_token': indiciaData.read.auth_token,
+        'nonce': indiciaData.read.nonce,
+        'reportSource':'local'
+      };
+      
+      if (!userIdToAdd||!locationIdToAdd) {
+        alert('Please select both a user and a location to add.');
+      } else {
+        $.getJSON (
+          sitesReport,
+          sitesReportParameters,
+          function (data) {
+            var duplicateDetected=false;
+            $.each(data, function(i, dataItem) {
+              if (userIdToAdd==dataItem.pav_user_id&&locationIdToAdd==dataItem.location_id) {
+                  duplicateDetected=true;
+              }
+            });
+            if (duplicateDetected===true) {
+              alert('The site/user combination you are adding already exists in the database.');
+            } else {
+              addUserSiteData(locationId, userIdToAdd);
+            }
+          }
+        );
+      }    
     }
+    ";
+      
+    //This veriabe holds the updated_by_id=1 if the user is found to be exempt, if they aren't exempt then this is blank so that the 
+    //updated_by_id is set automatically by the system.
+    $updatedBySystem = ''; 
+
     //See if any of the user's roles are in the exempt list.
     foreach ($RolesExemptFromApproval as $exemptRole) {
       foreach ($user->roles as $userRole) {
@@ -992,5 +1096,69 @@ class extension_splash_extensions {
       }
     }
     ";
+    //Call duplicate check when administrator elects to save a user/site combination
+    data_entry_helper::$javascript .= "
+    $('#add-user-site-button').click(function() {
+      //We can get the location id from the url or from the locations drop-down depending on the option the administrator has set.
+      var locationId;
+      var userId;
+      if (".$locationIdFromURL.") {
+        locationId = ".$locationIdFromURL.";
+      } else {
+        locationId = $('#location-select').val();       
+      }
+      if (".$userIdFromURL.") {
+        userId = ".$userIdFromURL.";
+      } else {
+        userId = $('#user-select').val();     
+      }
+      duplicateCheck(locationId,userId);
+    });";
+    //Zoom map as user selects locations
+    data_entry_helper::$javascript .= "
+    $('#location-select, #location-search, #locality_id').change(function() {
+      if (typeof indiciaData.mapdiv!=='undefined') {
+        indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, this.value);
+      }
+    });
+    ";
+    //Function for when user elects to remove sites
+    data_entry_helper::$javascript .= "
+    user_site_delete = function(pav_id) {
+      $.post('$postUrl', 
+        {\"website_id\":".$args['website_id'].",\"id\":pav_id, \"deleted\":\"t\"},
+        function (data) {
+          if (typeof data.error === 'undefined') {
+            location.reload(); 
+          } else {
+            alert(data.error);
+          }
+        },
+        'json'
+      );
+    }
+    ";
+    return $r;
+  }
+  
+  /*
+   * User select drop-down for sites administation control
+   */
+  private static function  user_select_for_add_sites_to_any_user_control($readAuth,$args) {
+    $reportOptions = array(
+      'dataSource'=>'library/users/get_people_details_for_website_or_user',
+      'readAuth'=>$readAuth,
+      'extraParams' => array('website_id'=>$args['website_id']),
+      'valueField'=>'id',
+      'captionField'=>'fullname_surname_first'
+    );
+    $userData = data_entry_helper::get_report_data($reportOptions);
+    $r = '<select id="user-select">\n';
+    $r .= '<option value="">'.'please select'.'</option>\n';
+    foreach ($userData as $userItem) {
+      $r .= '<option value='.$userItem['id'].'>'.$userItem['fullname_surname_first'].'</option>';
+    }
+    $r .= '</select>';
+    return '<label>User : </label>'.$r.'<br>';
   }
 }
