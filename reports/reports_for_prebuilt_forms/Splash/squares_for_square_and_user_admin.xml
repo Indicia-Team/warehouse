@@ -41,7 +41,7 @@
   </params>
   <columns>
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" aggregate="true" in_count="true"/>
-    <column name='name' display='Location Name' 
+    <column name='name' display='Name' 
     sql="
       case 
         when #pss_mode#=0
