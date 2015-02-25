@@ -69,4 +69,34 @@ initButtons = function(){
   });
 }
 
-
+// not happy about centroid calculations: lines and multipoints seem to take first vertex
+// mildly recursive.
+_getCentroid = function(geometry){
+  var retVal;
+  retVal = {sumx: 0, sumy: 0, count: 0};
+  switch(geometry.CLASS_NAME){
+    case 'OpenLayers.Geometry.Point':
+      retVal = {sumx: geometry.x, sumy: geometry.y, count: 1};
+      break;
+    case 'OpenLayers.Geometry.MultiPoint':
+    case 'OpenLayers.Geometry.MultiLineString':
+    case 'OpenLayers.Geometry.LineString':
+    case 'OpenLayers.Geometry.MultiPolygon':
+    case 'OpenLayers.Geometry.Collection':
+      var retVal = {sumx: 0, sumy: 0, count: 0};
+      for(var i=0; i< geometry.components.length; i++){
+        var point=_getCentroid(geometry.components[i]);
+        retVal = {sumx: retVal.sumx+point.sumx, sumy: retVal.sumy+point.sumy, count: retVal.count+point.count};
+      }
+      break;
+    case 'OpenLayers.Geometry.Polygon': // only do outer ring
+      var point=geometry.getCentroid();
+      retVal = {sumx: point.x*geometry.components[0].components.length, sumy: point.y*geometry.components[0].components.length, count: geometry.components[0].components.length};
+      break;
+  }
+  return retVal;
+}
+getCentroid=function(geometry){
+  var oddball=_getCentroid(geometry);
+  return new OpenLayers.Geometry.Point(oddball.sumx/oddball.count, oddball.sumy/oddball.count);
+}

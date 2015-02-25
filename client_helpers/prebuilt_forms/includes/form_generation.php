@@ -189,7 +189,8 @@ function extract_cms_user_attr(&$attributes, $unset=true) {
 /**
  * Returns a list of hidden inputs which are extracted from the form attributes which can be extracted
  * from the user's profile information in Drupal. The attributes which are used are marked as handled
- * so they don't need to be output elsewhere on the form.
+ * so they don't need to be output elsewhere on the form. This function also handles non-profile based 
+ * CMS User ID, Username, and Email; and also special processing for names.
  * @param array $attributes List of form attributes.
  * @param array $args List of form arguments. Can include values called:
  *   copyFromProfile - boolean indicating if values should be copied from the profile when the names match
@@ -204,11 +205,7 @@ function extract_cms_user_attr(&$attributes, $unset=true) {
  * @return string HTML for the hidden inputs.
  */
 function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth) {
-  // This is Drupal specific code, so return early if not in Drupal.
-  // This test for Drupal may break after D7 as profiles are deprecated in D7.
-  if (!function_exists('profile_load_all_profile')) {
-    return '';
-  }
+  // This is Drupal specific code
   
   global $user;
   $logged_in = $user->uid > 0;
@@ -217,16 +214,13 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
     return '';
   }
    
-  // If option to copy from profile is not set then return early.
-  if (!(isset($args['copyFromProfile']) && $args['copyFromProfile']) == true) {  
-    return '';
-  } 
-
   $hiddens = '';
   $version6 = (substr(VERSION, 0, 1) == '6');
   if($version6) {
     // In version 6 the profile module holds user setttings.
-    profile_load_all_profile($user);
+    // but may not be using profile module, but still need to proceed to handle CMS User ID etc.
+    if (function_exists('profile_load_all_profile')) // D6 specific
+  	  profile_load_all_profile($user);
   }
   else {
     // In version 7, the field module holds user settings.
@@ -235,10 +229,9 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
   
   foreach($attributes as &$attribute) {
     // Constuct the name of the user property (which varies between versions) to match against the attribute caption.
-    $attrPropName = $version6 ? 'profile_' : 'field_';
-    $attrPropName .= strtolower(str_replace(' ', '_', $attribute['caption']));
-    
-    if (isset($user->$attrPropName)) {
+    $attrPropName = ($version6 ? 'profile_' : 'field_') . strtolower(str_replace(' ', '_', $attribute['caption']));
+
+    if (isset($user->$attrPropName) && isset($args['copyFromProfile']) && $args['copyFromProfile'] == true) {
       // Obtain the property value which is stored differently between versions.
       if($version6) {
         $attrPropValue = $user->$attrPropName;

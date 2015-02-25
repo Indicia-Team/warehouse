@@ -22,7 +22,7 @@
 
 /*
  * Future enhancements:
- * Aggregate other sample based attrs?
+ * Aggregate sample based attrs?
  * Extand to allow user to select between line and bar charts.
  * Extend Header processing on table to allow configuration so that user can choose whether to have week numbers or dates.
  * Extend X label processing on chart to allow configuration so that user can choose whether to have week numbers or dates.
@@ -73,57 +73,44 @@ class iform_report_calendar_summary_2 {
   }
 
   /* Installation/configuration notes
-   * get_css function is now reducdant: use form arguments to add link to report_calendar_summary.css file
+   * get_css function is now reducdant: use form arguments to add link to report_calendar_summary_2.css file
    * */
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {
-    return 
+    return
       array(
         array(
-          'name'=>'report_name',
-          'caption'=>'Report Name',
-          'description'=>'Select the report to provide the raw data for this page.',
-          'type'=>'report_helper::report_picker',
-          'group'=>'Report Settings'
-        ),
-        array(
-          'name' => 'param_presets',
-          'caption' => 'Preset Parameter Values',
-          'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
-              'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
-              'user ID from the CMS logged in user or {username} as a value replaces with the logged in username.',
-          'type' => 'textarea',
+          'name'=>'manager_permission',
+          'caption'=>'Drupal Permission for Manager mode',
+          'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager (i.e. full access to full data set). This primarily determines the functionality of the User and Location filters, if selected.',
+          'type'=>'string',
           'required' => false,
-          'group'=>'Report Settings'
+          'group' => 'Access Control'
         ),
         array(
-          'name'=>'removable_params',
-          'caption'=>'Removable report parameters',
-          'description' => 'Provide a list of any report parameters from the Preset Parameter Values list that can be set to a "blank" value by '.
-              'use of a checkbox. For example the report might allow a taxon_list_id parameter to filter for a taxon list or to return all taxon list data '.
-              'if an empty value is provided, so the taxon_list_id parameter can be listed here to provide a checkbox to remove this filter. Provide each '.
-              'parameter on one line, followed by an equals then the caption of the check box, e.g. taxon_list_id=Check this box to include all species.',
-          'type' => 'textarea',
+          'name'=>'branch_manager_permission',
+          'caption'=>'Drupal Permission for Branch Coordinator mode',
+          'description'=>'Enter the Drupal permission name to be used to determine if this user is a Branch Coordinator. This primarily determines the functionality of the User and Location filters, if selected.',
+          'type'=>'string',
           'required' => false,
-          'group'=>'Report Settings'
+          'group' => 'Access Control'
         ),
         array(
-          'name' => 'sampleFields',
-          'caption' => 'Sample Fields',
-          'description' => 'Comma separated list of the sample level fields in the report. Format is Caption:field. Use field = smpattr:<x> to run this '.
-               'processing against a sample attribute.',
-          'type' => 'string',
+          'name'=>'branchFilterAttribute',
+          'caption'=>'Location Branch Coordinator Attribute',
+          'description'=>'The caption of the location attribute used to assign locations to Branch Coordinators.',
+          'type'=>'string',
           'required' => false,
-          'group'=>'Report Settings'
+          'group' => 'Access Control'
         ),
-        
-        array(
+
+      	array(
           'name'=>'dateFilter',
           'caption'=>'Date Filter type',
-          'description'=>'Type of control used to select the start and end dates provided to the report.',
+          'description'=>'Type of control used to select the start and end dates.',
           'type'=>'select',
           'options' => array(
 //            'none' => 'None',
@@ -132,7 +119,19 @@ class iform_report_calendar_summary_2 {
           'default' => 'year',
           'group' => 'Controls'
         ),
-        array(
+      	array(
+          'name'=>'userFilter',
+          'caption'=>'User Filter type',
+          'description'=>'Type of control used to select the user.',
+          'type'=>'select',
+          'options' => array(
+            'none' => 'None',
+            'year' => 'User selectable year',
+          ),
+          'default' => 'year',
+          'group' => 'Controls'
+        ),
+      	array(
           'name'=>'includeUserFilter',
           'caption'=>'Include user filter',
           'description'=>'Choose whether to include a filter on the user. This is passed through to the report parameter list as user_id. If not selected, user_id is not included in the report parameter list.',
@@ -141,83 +140,99 @@ class iform_report_calendar_summary_2 {
           'required' => false,
           'group' => 'Controls'
         ),
+      	array(
+      		'name'=>'userLookUp', // TODO Convert to use new report.
+      		'caption'=>'Only Users who have entered data',
+      		'description'=>'Choose whether to include only users which have entered data (indicated by the created_by_id sample field if Easy Login is enabled, or the CMS User ID attribute lodged against a sample if not).',
+      		'type'=>'boolean',
+      		'default' => false,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'userLookUpSampleMethod',
+      		'caption'=>'Sample Method',
+      		'description'=>'When looking up the sample attributes, enter an optional sample method term.',
+      		'type'=>'string',
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'includeLocationFilter',
+      		'caption'=>'Include location filter',
+      		'description'=>'Choose whether to include a filter on the locations. This is passed through to the report parameter list as location_id. If not selected, location_id is not included in the report parameter list.',
+      		'type'=>'boolean',
+      		'default' => false,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'userSpecificLocationLookUp',
+      		'caption'=>'Make location list user specific',
+      		'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user using the CMS User ID location attribute.',
+      		'type'=>'boolean',
+      		'default' => true,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'locationTypesFilter',
+      		'caption'=>'Restrict locations to types',
+      		'description'=>'Implies a location type selection control. Comma separated list of the location types to be included in the control. Retricts the locations in the user specific location filter to the selected location type. The CMS User ID attribute must be defined for all location types selected or all location types.',
+      		'type'=>'string',
+      		'default' => false,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'includeSrefInLocationFilter',
+      		'caption'=>'Include Sref in location filter name',
+      		'description'=>'When including the user specific location filter, choose whether to include the sref when generating the select name.',
+      		'type'=>'boolean',
+      		'default' => true,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'removable_params',
+      		'caption'=>'Removable report parameters',
+      		'description' => 'Provide a list of any report parameters from the Preset Parameter Values list that can be set to a "blank" value by '.
+      			'use of a checkbox. For example the report might allow a taxon_list_id parameter to filter for a taxon list or to return all taxon list data '.
+      			'if an empty value is provided, so the taxon_list_id parameter can be listed here to provide a checkbox to remove this filter. Provide each '.
+      			'parameter on one line, followed by an equals then the caption of the check box, e.g. taxon_list_id=Check this box to include all species.',
+      		'type' => 'textarea',
+      		'required' => false,
+      		'group'=>'Controls'
+      	),
+      		
         array(
-          'name'=>'manager_permission',
-          'caption'=>'Drupal Permission for Manager mode',
-          'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager (i.e. full access to full data set). This primarily determines the functionality of the User filter, if selected.',
-          'type'=>'string',
+          'name' => 'sampleFields',
+          'caption' => 'Sample Fields',
+          'description' => 'Comma separated list of the sample level fields in the report. Format is Caption:field. Use field = smpattr:<x> to run this '.
+               'processing against a sample attribute.',
+          'type' => 'string',
           'required' => false,
-          'group' => 'Controls'
+          'group'=>'Data Grid Settings'
+        ),
+      	array(
+          'name'=>'report_name',
+          'caption'=>'Raw Data Report Name',
+          'description'=>'Select the report to provide the raw data for this page. If not provided, then Raw Data will not be available.',
+          'type'=>'report_helper::report_picker',
+          'required' => false,
+          'group'=>'Data Grid Settings'
         ),
         array(
-          'name'=>'branch_manager_permission',
-          'caption'=>'Drupal Permission for Branch Coordinator mode',
-          'description'=>'Enter the Drupal permission name to be used to determine if this user is a Branch Coordinator. This primarily determines the functionality of the User filter, if selected.',
-          'type'=>'string',
+          'name' => 'param_presets',
+          'caption' => 'Raw Data Preset Parameter Values',
+          'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
+              'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
+              'user ID from the CMS logged in user or {username} as a value replaces with the logged in username.',
+          'type' => 'textarea',
           'required' => false,
-          'group' => 'Controls'
+          'group'=>'Data Grid Settings'
         ),
-        array(
-          'name'=>'branchFilterAttribute',
-          'caption'=>'Location Branch Coordinator Attribute',
-          'description'=>'The caption of the location attribute used to assign locations to Branch Coordinators.',
-          'type'=>'string',
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'userLookUp',
-          'caption'=>'Only Users who have entered data',
-          'description'=>'Choose whether to include only users which have entered data (indicated by the created_by_id sample field if Easy Login is enabled, or the CMS User ID attribute lodged against a sample if not).',
-          'type'=>'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'userLookUpSampleMethod',
-          'caption'=>'Sample Method',
-          'description'=>'When looking up the sample attributes, enter an optional sample method term.',
-          'type'=>'string',
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'includeLocationFilter',
-          'caption'=>'Include location filter',
-          'description'=>'Choose whether to include a filter on the locations. This is passed through to the report parameter list as location_id. If not selected, location_id is not included in the report parameter list.',
-          'type'=>'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'userSpecificLocationLookUp',
-          'caption'=>'Make location list user specific',
-          'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user using the CMS User ID location attribute.',
-          'type'=>'boolean',
-          'default' => true,
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'locationTypesFilter',
-          'caption'=>'Restrict locations to types',
-          'description'=>'Implies a location type selection control. Comma separated list of the location types to be included in the control. Retricts the locations in the user specific location filter to the selected location type. The CMS User ID attribute must be defined for all location types selected or all location types.',
-          'type'=>'string',
-          'default' => false,
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'includeSrefInLocationFilter',
-          'caption'=>'Include Sref in location filter name',
-          'description'=>'When including the user specific location filter, choose whether to include the sref when generating the select name.',
-          'type'=>'boolean',
-          'default' => true,
-          'required' => false,
-          'group' => 'Controls'
-        ),
+
 
         array(
           'name'=>'includeRawGridDownload',
@@ -666,6 +681,7 @@ class iform_report_calendar_summary_2 {
           'required' => false,
           'group' => 'Report Settings'
         ),
+      		
         array(
           'name' => 'sensitivityLocAttrId',
           'caption' => 'Location attribute used to filter out sensitive sites',
@@ -732,7 +748,7 @@ class iform_report_calendar_summary_2 {
    * @param <type> $readAuth
    * @return string
    */
-  private static function get_report_calendar_options($args, $readAuth) {
+  private static function get_report_calendar_2_options($args, $readAuth) {
     $presets = get_options_array_with_user_data($args['param_presets']);
     $reportOptions = array(
       'id' => 'report-summary',
@@ -807,7 +823,7 @@ class iform_report_calendar_summary_2 {
     $allowSensitive = empty($args['sensitivityLocAttrId']) ||
         (function_exists('user_access') && !empty($args['sensitivityAccessPermission']) && user_access($args['sensitivityAccessPermission']));
     if(!empty($args['sensitivityLocAttrId']))
-      $locationListArgs['extraParams']['locattrs'] = $args['sensitivityLocAttrId']; // if we have a sensitive attribute, may want to change the template to highlight them.
+      $locationListArgs['extraParams']['locattrs'] = $args['sensitivityLocAttrId'];
     $attrArgs = array(
     		'valuetable'=>'location_attribute_value',
     		'attrtable'=>'location_attribute',
@@ -1329,7 +1345,7 @@ jQuery('#".$ctrlid."').change(function(){
     $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
     if(!self::set_up_survey($args, $auth))
       return(lang::get('set_up_survey returned false: survey_id missing from presets or location_type definition.'));
-    $reportOptions = self::get_report_calendar_options($args, $auth);
+    $reportOptions = self::get_report_calendar_2_options($args, $auth);
     $reportOptions['id']='calendar-summary-'.$node->nid;
     if (!empty($args['removable_params']))
       self::$removableParams = get_options_array_with_user_data($args['removable_params']);
