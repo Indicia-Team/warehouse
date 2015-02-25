@@ -27,10 +27,10 @@
       <where>(('#allocation_status#'='allocated' AND pavAlloc.id IS NOT NULL) OR ('#allocation_status#'='unallocated' AND pavAlloc.id IS NULL))</where>
     </param>
     <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
-    <param name="registration_date_start" display="User registered after" description="Only return users who registered after this date." datatype="date" emptyvalue="">
+    <param name="registration_date_start" display="User registered on or after this date" description="Only return users who registered on or after this date." datatype="date" emptyvalue="">
       <where>(uw.created_on &gt;= CAST(COALESCE('#registration_date_start#','1500-01-01') as date))</where>
     </param>  
-    <param name="registration_date_end" display="User registered before" description="Only return users who registered before this date." datatype="date" emptyvalue="">
+    <param name="registration_date_end" display="User registered before this date" description="Only return users who registered before this date." datatype="date" emptyvalue="">
       <where>(uw.created_on &lt;= CAST(COALESCE('#registration_date_end#','1500-01-01') as date))</where>
     </param>
     <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any squares created before this date.
