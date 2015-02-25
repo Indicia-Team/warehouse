@@ -36,7 +36,6 @@ function iform_timed_count_subsample_cmp($a, $b)
 // BIG WARNING: in this form the sample Sref will not represent the geometry.
 // Each visit the flight area is reentered: no 2 visits have the same geometry. No location records.
 
-// TODO Check if flight area attribute is to be calculated from the site polygon, or entered by the user.
 // TODO Check if OS Map number is to be included.
 // TODO Check validation rules to be applied to each field.
 
@@ -54,7 +53,7 @@ class iform_timed_count {
       'description'=>'A form for inputting the counts of species during a timed period. Can be called with sample=<id> to edit an existing sample.'
     );
   }
-
+  
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -64,6 +63,13 @@ class iform_timed_count {
       iform_map_get_map_parameters(),
       iform_map_get_georef_parameters(),
       array(
+      	array(
+      		'name'=>'manager_permission',
+      		'caption'=>'Drupal Permission for Manager mode',
+      		'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager: such people may modify the shape of an existing flight area.',
+      		'type'=>'string',
+      		'required' => false
+      	),
         array(
           'name'=>'survey_id',
           'caption'=>'Survey',
@@ -201,19 +207,350 @@ class iform_timed_count {
   }
 
   public static function get_sample_form($args, $node, $response) {
-    global $user;
-    iform_load_helpers(array('map_helper'));
-    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
-    // either looking at existing, creating a new one, or an error occurred: no successful posts...
-    // first check some conditions are met
-    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Timed Count'));
-    if (count($sampleMethods)==0)
-      return 'The sample method "Timed Count" must be defined in the termlist in order to use this form.';
+  	
+  	global $user;
+  	iform_load_helpers(array('map_helper'));
+  	$auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+  	// either looking at existing, creating a new one, or an error occurred: no successful posts...
+  	// first check some conditions are met
+  	$sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Timed Count'));
+  	if (count($sampleMethods)==0)
+  		return 'The sample method "Timed Count" must be defined in the termlist in order to use this form.';
+  	
+  	$sampleId = isset($_GET['sample_id']) ? $_GET['sample_id'] : null;
+  	if ($sampleId && !isset(data_entry_helper::$validation_errors))
+  		data_entry_helper::load_existing_record($auth['read'], 'sample', $sampleId);
+  	
+  	$isAdmin = (isset($args['manager_permission']) && user_access($args['manager_permission']));
 
-    $sampleId = isset($_GET['sample_id']) ? $_GET['sample_id'] : null;
-    if ($sampleId && !isset(data_entry_helper::$validation_errors))
-      data_entry_helper::load_existing_record($auth['read'], 'sample', $sampleId);
+  	// The following is butchered from mnhnl.
+	data_entry_helper::$javascript .= "
+// the default edit layer is used for this sample
+var editLayer = null;
 
+convertGeom = function(geom, projection){
+  if (projection.projcode!='EPSG:900913' && projection.projcode!='EPSG:3857') {
+    var cloned = geom.clone();
+    return cloned.transform(new OpenLayers.Projection('EPSG:900913'), projection);
+  }
+  return geom;
+}
+reverseConvertGeom = function(geom, projection){
+  if (projection.projcode!='EPSG:900913' && projection.projcode!='EPSG:3857') {
+    var cloned = geom.clone();
+    return cloned.transform(projection, new OpenLayers.Projection('EPSG:900913'));
+  }
+  return geom;
+}
+
+getwkt = function(geometry, incFront, incBrackets){
+  var retVal;
+  	  retVal = '';
+  	  switch(geometry.CLASS_NAME){
+  	  case \"OpenLayers.Geometry.Point\":
+  	  return((incFront!=false ? 'POINT' : '')+(incBrackets!=false ? '(' : '')+geometry.x+' '+geometry.y+(incBrackets!=false ? ')' : ''));
+  	  break;
+  	  case \"OpenLayers.Geometry.MultiPoint\":
+      retVal = 'MULTIPOINT(';
+      for(var i=0; i< geometry.components.length; i++)
+        retVal += (i!=0 ? ',':'')+getwkt(geometry.components[i], false, true);
+      retVal += ')';
+      break;
+    case \"OpenLayers.Geometry.LineString\":
+      retVal = (incFront!=false ? 'LINESTRING' : '')+'(';
+      for(var i=0; i< geometry.components.length; i++)
+        retVal += (i!=0 ? ',':'')+getwkt(geometry.components[i], false, false);
+      retVal += ')';
+      break;
+    case \"OpenLayers.Geometry.MultiLineString\":
+      retVal = 'MULTILINESTRING(';
+      for(var i=0; i< geometry.components.length; i++)
+        retVal += (i!=0 ? ',':'')+getwkt(geometry.components[i], false, true);
+      retVal += ')';
+      break;
+    case \"OpenLayers.Geometry.Polygon\": // only do outer ring
+      retVal = (incFront!=false ? 'POLYGON' : '')+'((';
+      for(var i=0; i< geometry.components[0].components.length; i++)
+        retVal += (i!=0 ? ',':'')+getwkt(geometry.components[0].components[i], false, false);
+      retVal += '))';
+      break;
+    case \"OpenLayers.Geometry.MultiPolygon\":
+      retVal = 'MULTIPOLYGON(';
+      for(var i=0; i< geometry.components.length; i++)
+        retVal += (i!=0 ? ',':'')+getwkt(geometry.components[i], false, true);
+      retVal += ')';
+      break;
+    case \"OpenLayers.Geometry.Collection\":
+      retVal = 'GEOMETRYCOLLECTION(';
+      for(var i=0; i< geometry.components.length; i++)
+        retVal += (i!=0 ? ',':'')+getwkt(geometry.components[i], true, true);
+      retVal += ')';
+      break;
+  }
+  return retVal;
+}
+setSref = function(geometry){
+  var centre = getCentroid(geometry);
+  centre = reverseConvertGeom(centre, editLayer.map.projection); // convert to indicia internal projection
+  var system = $('#imp-sref-system').val();				
+  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=POINT(' + centre.x + '  ' + centre.y + ')&system=' + system + '&precision=".(isset($args['precision']) && $args['precision'] != '' ? $args['precision'] : '8')."&callback=?',
+      function(data){
+        if(typeof data.error != 'undefined')
+          alert(data.error);
+        else
+          $('#imp-sref').val(data.sref);
+       });
+};
+hook_setGeomFields = [];
+setGeomFields = function(){
+  var geomstack = [];
+  var completeGeom;
+  for(var i=0; i<editLayer.features.length; i++)
+    if(editLayer.features[i].attributes.highlighted == true)
+      geomstack.push(editLayer.features[i].geometry.clone()); // needs to be a clone as we don't want to transform the original geoms.
+  if(geomstack.length == 0){
+    jQuery('#imp-geom').val('');
+    jQuery('#imp-sref').val('');
+    return;
+  } else if (geomstack.length == 1)
+    completeGeom = geomstack[0];
+  else
+    completeGeom = new OpenLayers.Geometry.Collection(geomstack);
+  // the geometry is in the map projection: if this doesn't match indicia's internal one, then must convert.
+  if (editLayer.map.projection.projcode!='EPSG:900913' && editLayer.map.projection.projcode!='EPSG:3857') 
+    completeGeom.transform(editLayer.map.projection,  new OpenLayers.Projection('EPSG:900913'));
+  jQuery('#imp-geom').val(getwkt(completeGeom, true, true));
+  setSref(getCentroid(completeGeom));
+  if(hook_setGeomFields.length > 0)
+    for(i=0; i< hook_setGeomFields.length; i++)
+  	  (hook_setGeomFields[i])(completeGeom);
+}
+removeDrawnGeom = function(){
+  var highlighted=gethighlight();
+  if(highlighted.length > 0) {
+    unhighlightAll();
+  }
+  for(var i=editLayer.features.length-1; i>=0; i--)
+    editLayer.destroyFeatures([editLayer.features[i]]);
+}
+replaceGeom = function(feature, layer, modControl, geom, highlight, setFields){
+  if(modControl.feature)
+    modControl.unselectFeature(modControl.feature);
+  var newfeature = new OpenLayers.Feature.Vector(geom, {});
+  newfeature.attributes = feature.attributes;
+  layer.destroyFeatures([feature]);
+  layer.addFeatures([newfeature]);
+  modControl.selectFeature(newfeature);
+  selectFeature.highlight(newfeature);
+  newfeature.attributes.highlighted=true;
+  if(setFields) setGeomFields();
+}
+addAndSelectNewGeom = function(layer, modControl, geom, highlight){
+  var feature = new OpenLayers.Feature.Vector(geom, {highlighted: false, ours: true});
+  layer.addFeatures([feature]);
+  modControl.selectFeature(feature);
+  feature.attributes.highlighted=true;
+  selectFeature.highlight(feature);
+  setGeomFields();
+  return feature;
+}
+addToExistingFeatureSet = function(existingFeatures, layer, modControl, geom, highlight){
+  var feature = new OpenLayers.Feature.Vector(geom, {});
+  feature.attributes = existingFeatures[0].attributes;
+  layer.addFeatures([feature]);
+  modControl.selectFeature(feature);
+  selectFeature.highlight(feature);
+  feature.attributes.highlighted=true;
+  setGeomFields();
+}
+unhighlightAll = function(){
+  if(modAreaFeature.feature) modAreaFeature.unselectFeature(modAreaFeature.feature);
+  var highlighted = gethighlight();
+  for(var i=0; i<highlighted.length; i++) {
+    highlighted[i].attributes.highlighted = false;
+    selectFeature.unhighlight(highlighted[i]);
+  }
+}
+gethighlight = function(){
+  var features=[];
+  for(var i=0; i<editLayer.features.length; i++){
+    if(editLayer.features[i].attributes.highlighted==true){
+      features.push(editLayer.features[i]);
+    }}
+  return features;
+}
+
+addDrawnPolygonToSelection = function(geometry) {
+  var points = geometry.components[0].getVertices();
+  if(points.length < 3){
+    alert(\"".lang::get('LANG_TooFewPoints')."\");
+    return false;
+  }
+  var highlightedFeatures = gethighlight();
+  if(highlightedFeatures.length == 0){
+    // No currently selected feature. Create a new one.
+    feature = addAndSelectNewGeom(editLayer, modAreaFeature, geometry, true);
+  	return true;
+  }
+  var selectedFeature = false;
+  for(var i=0; i<highlightedFeatures.length; i++){
+    if(highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.Polygon\" ||
+        highlightedFeatures[i].geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiPolygon\") {
+      selectedFeature = highlightedFeatures[i];
+  	        		break;
+    }}
+  // a site is already selected so the Drawn/Specified state stays unaltered
+  if(!selectedFeature) {
+      addToExistingFeatureSet(highlightedFeatures, editLayer, modAreaFeature, geometry, true);
+      return true;
+  }
+  if(selectedFeature.geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiPolygon\") {
+    if(modAreaFeature.feature)
+	    modAreaFeature.unselectFeature(selectedFeature);
+    selectedFeature.geometry.addComponents([geometry]);
+    modAreaFeature.selectFeature(selectedFeature);
+    selectFeature.highlight(selectedFeature);
+    selectedFeature.attributes.highlighted = true;
+    setGeomFields();
+  } else { // is OpenLayers.Geometry.Polygon
+    var CompoundGeom = new OpenLayers.Geometry.MultiPolygon([selectedFeature.geometry, geometry]);
+    replaceGeom(selectedFeature, editLayer, modAreaFeature, CompoundGeom, true, true);
+  }
+  return true;
+}
+onFeatureModified = function(evt) {
+  var feature = evt.feature;
+  switch(feature.geometry.CLASS_NAME){
+    case \"OpenLayers.Geometry.Polygon\": // only do outer ring
+      points = feature.geometry.components[0].getVertices();
+      if(points.length < 3){
+        alert(\"".lang::get('There are now too few vertices to make a polygon: it will now be completely removed.')."\");
+        modAreaFeature.unselectFeature(feature);
+        editLayer.destroyFeatures([feature]);
+      }
+      break;
+    case \"OpenLayers.Geometry.MultiPolygon\":
+  	  for(i=feature.geometry.components.length-1; i>=0; i--) {
+        points = feature.geometry.components[i].components[0].getVertices();
+        if(points.length < 3){
+          alert(\"".lang::get('There are now too few vertices to make a polygon: it will now be completely removed.')."\");
+  	      var selectedFeature = modAreaFeature.feature;
+          modAreaFeature.unselectFeature(selectedFeature);
+          selectFeature.unhighlight(selectedFeature);
+          editLayer.removeFeatures([selectedFeature]);
+          selectedFeature.geometry.removeComponents([feature.geometry.components[i]]);
+  	      editLayer.addFeatures([selectedFeature]);
+          modAreaFeature.selectFeature(selectedFeature);
+          selectFeature.highlight(selectedFeature);
+          selectedFeature.attributes.highlighted = true;
+        }
+      }
+      if(feature.geometry.components.length == 0){
+        modAreaFeature.unselectFeature(feature);
+        editLayer.destroyFeatures([feature]);
+      }
+      break;
+  }
+  setGeomFields();
+}
+/********************************/
+/* Define Map Control callbacks */
+/********************************/
+UndoSketchPoint = function(layer){
+  for(var i = editControl.controls.length-1; i>=0; i--)
+    if(editControl.controls[i].CLASS_NAME == \"OpenLayers.Control.DrawFeature\" && editControl.controls[i].active)
+      editControl.controls[i].undo();
+};
+RemoveNewSite = function(){
+  highlighted = gethighlight();
+  removeDrawnGeom(highlighted[0].attributes.SiteNum);
+  setGeomFields();
+};
+ZoomToFeature = function(feature){
+  var div = jQuery('#map')[0];
+  var bounds=feature.geometry.bounds.clone();
+  // extend the boundary to include a buffer, so the map does not zoom too tight.
+  var dy = (bounds.top-bounds.bottom) * div.settings.maxZoomBuffer;
+  var dx = (bounds.right-bounds.left) * div.settings.maxZoomBuffer;
+  bounds.top = bounds.top + dy;
+  bounds.bottom = bounds.bottom - dy;
+  bounds.right = bounds.right + dx;
+  bounds.left = bounds.left - dx;
+  if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+    // if showing something small, don't zoom in too far
+    div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+  } else {
+    // Set the default view to show something triple the size of the grid square
+    // Assume this is within the map extent
+    div.map.zoomToExtent(bounds);
+  }
+};
+/***********************************/
+/* Define Controls for use on Map. */
+/***********************************/
+polygonDrawActivate = function(){
+  selectFeature.deactivate();
+  modAreaFeature.activate();
+  highlighted = gethighlight();
+  if(highlighted.length == 0)
+    return true;
+  for(var i=0; i<editLayer.features.length; i++)
+      if(editLayer.features[i].attributes.highlighted == true)
+        modAreaFeature.selectFeature(editLayer.features[i]);
+  return true;
+};
+		         		 		
+modAreaFeature = null;
+selectFeature = null;
+polygonDraw = null;
+editControl = null;
+
+mapInitialisationHooks.push(function(mapdiv) {
+	$('#imp-sref').unbind('change');
+	editLayer=mapdiv.map.editLayer;
+    var nav=new OpenLayers.Control.Navigation({displayClass: \"olControlNavigation\", \"title\":mapdiv.settings.hintNavigation+((!mapdiv.settings.scroll_wheel_zoom || mapdiv.settings.scroll_wheel_zoom===\"false\")?'': mapdiv.settings.hintScrollWheel)});	
+	editControl = new OpenLayers.Control.Panel({allowDepress: false, 'displayClass':'olControlEditingToolbar'});
+	mapdiv.map.addControl(editControl);
+".($isAdmin || $sampleId == null ?
+	// can edit the shape 
+"  	modAreaFeature = new OpenLayers.Control.ModifyFeature(editLayer,{standalone: true});
+	selectFeature = new OpenLayers.Control.SelectFeature([editLayer],{standalone: true});
+	polygonDraw = new OpenLayers.Control.DrawFeature(editLayer,OpenLayers.Handler.Polygon,{'displayClass':'olControlDrawFeaturePolygon', drawFeature: addDrawnPolygonToSelection, title: '".lang::get('Select this tool to draw a polygon, clicking on the map to place the vertices of the shape, and double clicking on the final vertex to finish. You may drag and drop vertices (circles) to move them, and draw more than one polygon, i.e. input a discontinuous site.')."'});
+	polygonDraw.events.on({'activate': polygonDrawActivate});
+	editControl.addControls([polygonDraw
+				         ,new OpenLayers.Control.Button({displayClass: \"olControlClearLayer\", trigger: RemoveNewSite, title: '".lang::get('Press this button to completely remove the currently drawn site.')."'})
+    					 ,nav	
+				         ,new OpenLayers.Control.Button({displayClass: \"olControlUndo\", trigger: UndoSketchPoint, title: '".lang::get('If you have not completed a polygon, press this button to clear the last vertex. If you have completed a polygon but wish to remove a vertex, place the mouse over the vertex and press the Delete button: this only works for the corner vertices, not the dummy ones half way down each side.')."'})
+    ]);
+	mapdiv.map.addControl(modAreaFeature);
+	modAreaFeature.deactivate();
+	for(var i=0; i<mapdiv.map.controls.length; i++)
+      mapdiv.map.controls[i].deactivate();
+	editControl.activate();
+	nav.activate();
+	// any existing features come from the existing sites geometry: convert to ours
+    // will have been zoomed as well.
+	for(var i=0; i<editLayer.features.length; i++) {
+	  editLayer.features[i].attributes.highlighted = true;
+	  editLayer.features[i].attributes.type = 'ours';
+	  editLayer.features[i].attributes.ours = true;
+	  selectFeature.highlight(editLayer.features[i]);
+	}				         		
+	editLayer.events.on({
+		'featuremodified': onFeatureModified
+	});
+" :
+	// non admin access to existing shape: can't modify it.
+"	editControl.addControls([nav]);
+	for(var i=0; i<mapdiv.map.controls.length; i++)
+      mapdiv.map.controls[i].deactivate();
+	editControl.activate();
+	nav.activate();
+").
+"	mapdiv.map.events.triggerEvent('zoomend');
+});
+";
+  	
     $r = '<form method="post" id="sample">'.$auth['write'];
     // we pass through the read auth. This makes it possible for the get_submission method to authorise against the warehouse
     // without an additional (expensive) warehouse call, so it can get location details.
@@ -236,7 +573,7 @@ class iform_timed_count {
       'survey_id'=>$args['survey_id'],
       'sample_method_id'=>$sampleMethods[0]['id']
     ));
-    $r .= get_user_profile_hidden_inputs($attributes, $args, '', $auth['read']).
+    $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['sample:id']), $auth['read']).
         data_entry_helper::text_input(array('label' => lang::get('Site Name'), 'fieldname' => 'sample:location_name', 'validation' => array('required') /*, 'class' => 'control-width-5' */ ))
         // .data_entry_helper::textarea(array('label'=>lang::get('Recorder names'), 'fieldname'=>'sample:recorder_names'))
         ;
@@ -263,20 +600,26 @@ if(jQuery('#C1\\\\:sample\\\\:date').val() != '') jQuery('#sample\\\\:date').val
       $blockOptions = get_attr_options_array_with_user_data($args['custom_attribute_options']);
     else $blockOptions=array();
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
+    foreach($blockOptions as $attr => $block){
+      foreach($block as $item => $value){
+      	switch($item){
+      		case 'suffix':
+	      	  data_entry_helper::$javascript .= "$('#".str_replace(':','\\\\:',$attr)."').after(' <label style=\"width:auto\">".$value."</label>');\n";
+	      	  break;
+      		case 'setArea':
+      		  $parts = explode(',',$value); // 0=factor,1=number decimal places
+      		  data_entry_helper::$javascript .= "$('#".str_replace(':','\\\\:',$attr)."').attr('readonly','readonly');\nhook_setGeomFields.push(function(geom){\n$('#".str_replace(':','\\\\:',$attr)."').val(\n(geom.getArea()/".$parts[0].").toFixed(".$parts[1]."));\n});\n";
+      		  break;
+      	}		 
+      }
+    }
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $help = lang::get('Now draw the flight area for the timed count on the map below. The Grid Reference is filled in automatically when the site is drawn.');
     $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     $options = iform_map_get_map_options($args, $auth['read']);
-    $options['allowPolygonRecording'] = true;
     $options['clickForSpatialRef'] = false;
-    if(isset($args['precision']) && $args['precision'] != ''){
-      $options['clickedSrefPrecisionMin'] = $args['precision'];
-      $options['clickedSrefPrecisionMax'] = $args['precision'];
-    }
     $olOptions = iform_map_get_ol_options($args);
-    if(!in_array('drawPolygon', $options['standardControls'])) $options['standardControls'][]= 'drawPolygon';
-    if(!in_array('modifyFeature', $options['standardControls'])) $options['standardControls'][]= 'modifyFeature';
-
+    
     $systems=array();
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) $systems[$system] = lang::get($system); 
@@ -292,23 +635,6 @@ if(jQuery('#C1\\\\:sample\\\\:date').val() != '') jQuery('#sample\\\\:date').val
     
     $r .= '<br />'.data_entry_helper::georeference_lookup(iform_map_get_georef_options($args, $auth['read']));
     $r .= data_entry_helper::map_panel($options, $olOptions);
-    // switch off the sref functionality.
-    data_entry_helper::$javascript .= "mapInitialisationHooks.push(function(div){
-  $('#imp-sref').unbind('change');
-  // Programatic activation does not rippleout, so deactivate Nav first, which is actibve by default.
-  for(var i=0; i<div.map.controls.length; i++)
-    if(div.map.controls[i].CLASS_NAME == \"OpenLayers.Control.Navigation\")
-      div.map.controls[i].deactivate();
-  activeCtrl = false;
-  for(var i=0; i<div.map.controls.length; i++){
-    if(div.map.controls[i].CLASS_NAME == \"".
-     (isset(data_entry_helper::$entity_to_load['sample:id']) ? "OpenLayers.Control.ModifyFeature" : "OpenLayers.Control.DrawFeature")."\"){
-      div.map.controls[i].activate();
-      activeCtrl = div.map.controls[i];
-      break;
-    }}\n".
-(isset(data_entry_helper::$entity_to_load['sample:id']) ?
-"  if(activeCtrl && div.map.editLayer.features.length>0) activeCtrl.selectFeature(div.map.editLayer.features[0]);\n" : "")."});\n";
 
     $r .= data_entry_helper::textarea(array('label'=>'Comment', 'fieldname'=>'sample:comment', 'class'=>'wide'));
     $r .= '<input type="submit" value="'.lang::get('Next').'" />';
@@ -444,7 +770,6 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     if (isset($args['custom_attribute_options']) && $args['custom_attribute_options']) 
       $blockOptions = get_attr_options_array_with_user_data($args['custom_attribute_options']);
     else $blockOptions=array();
-
     for($i = 0; $i < $args['numberOfCounts']; $i++){
       $subSampleId = (isset($subSamples[$i]) ? $subSamples[$i]['sample_id'] : null);
       $r .= "<fieldset id=\"count-$i\"><legend>".lang::get('Count ').($i+1)."</legend>";
@@ -480,6 +805,9 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
             'fieldname' => 'C'.($i+1).':'.$attr['fieldname'],
             'extraParams'=>$auth['read']
           ));
+        // we need process validation specially: deh expects an array, we have a string...
+        if(isset($attrOpts['validation']) && is_string($attrOpts['validation']))
+        	$attrOpts['validation'] = explode(';', $attrOpts['validation']);
           // if there is an existing value, set it and also ensure the attribute name reflects the attribute value id.
         if (isset($subSampleId)) {
           // but have to take into account possibility that this field has been blanked out, so deleting the attribute.
@@ -514,7 +842,7 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
         $r .= '<tr '.$rowClass.'>'.
                '<td><input id="TLC-'.($i+1).'-'.($j+1).'" name="taxonLookupControl" value="'.$taxon.'" '.((!$j && (!$i||$subSampleId))||$taxon ? 'class="required"' : '').' '.(!$subSampleId && $i ? 'disabled="disabled"' : '' ).'>'.((!$j && (!$i||$subSampleId))||$taxon ? '<span class="deh-required">*</span>' : '').'</td>'.
                '<td><input name="'.$fieldname.'" id="occ-'.($i+1).'-'.($j+1).'" value="'.$value.'" class="occValField integer '.((!$j && (!$i||$subSampleId))||$taxon ? 'required' : '').'" '.((!$subSampleId && $i) || ($taxon=='' && ($i || $j)) ? 'disabled="disabled"' : '').' min=0 >'.((!$j && (!$i||$subSampleId))||$taxon ? '<span class="deh-required">*</span>' : '').'</td>'.
-               '<td>'.(!$j ? '' : '<div class="ui-state-default remove-button">&nbsp;</div>').'</td>'.
+               '<td>'.(!$j ? '' : '<div class="ui-state-default remove-button">' . lang::get('Remove this Species entry') . '</div>').'</td>'.
                '</tr>';
         $rowClass=$rowClass=='' ? 'class="alt-row"':'';
         data_entry_helper::$javascript .= "bindSpeciesAutocomplete(\"TLC-".($i+1)."-".($j+1)."\",\"occ-".($i+1)."-".($j+1)."\",\"".data_entry_helper::$base_url."index.php/services/data\", \"".$args['taxon_list_id']."\",
@@ -568,7 +896,8 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
     if (!isset($values['page']) || $values['page']=='site') {
       // submitting the first page, with top level sample details
       // keep the first count date on a subsample for use later.
-      if(isset($values['C1:sample:date'])){
+      // only create if a new sample: if existing, then this will already exist.
+      if(isset($values['C1:sample:date']) && !isset($values['sample:id'])){
         $sampleMethods = helper_base::get_termlist_terms(array('read'=>$read), 'indicia:sample_methods', array('Timed Count Count'));
         $smp = array('fkId' => 'parent_id',
                    'model' => array('id' => 'sample',

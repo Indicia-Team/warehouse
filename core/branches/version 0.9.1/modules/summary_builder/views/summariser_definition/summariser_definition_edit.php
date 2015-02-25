@@ -69,9 +69,7 @@ echo data_entry_helper::text_input(array(
 		'label'=>'Period One Contains',
 		'fieldname'=>'summariser_definition:period_one_contains',
 		'default'=>html::initial_value($values, 'summariser_definition:period_one_contains'),
-		'helpText' => 'Define the first day of each period. There are 2 options.<br/>'.
-		"&nbsp;&nbsp;<strong>weekday=&lt;n&gt;</strong> where <strong>&lt;n&gt;</strong> is a number between 1 (for Monday) and 7 (for Sunday).<br/>".
-		"&nbsp;&nbsp;<strong>date=MMM/DD</strong> where <strong>MMM/DD</strong> is a month/day combination: e.g. choosing Apr-1 will start each week on the day of the week on which the 1st of April occurs.<br/>",
+		'helpText' => 'Calculate week one as the week containing this date: value should be in the format <strong>MMM/DD</strong>, which is a month/day combination: e.g. choosing Apr-1 will mean week one contains the date of the 1st of April. Default is the Jan-01',
 		'validation'=>'required'
 ));
 echo data_entry_helper::select(array(

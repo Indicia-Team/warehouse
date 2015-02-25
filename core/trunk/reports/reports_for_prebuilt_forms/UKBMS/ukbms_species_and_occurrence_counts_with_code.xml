@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <report title="UKBMS specific species and occurrence counts by site" description="UKBMS specific: Lists locations and the number of species and occurrences within them. This report includes the location code, and relies on the record being input with a link to the site and will not pick up records where the spatial reference is in the site boundary but without a direct reference to the site.">
-      <query website_filter_field='survey.website_id'>
+      <query website_filter_field='su.website_id'>
       WITH RECURSIVE search_samples(top_id, id, location_id, survey_id, date_start, date_end, depth) AS (
         SELECT s.id, s.id, s.location_id, s.survey_id, s.date_start, s.date_end, 1
         FROM samples s

@@ -110,6 +110,14 @@ class iform_report_calendar_grid {
           'group' => 'Controls'
         ),
         array(
+      		'name'=>'first_year',
+      		'caption'=>'First Year of Data',
+      		'description'=>'Used to determine first year displayed in the year control. Final Year will be current year.',
+      		'type'=>'int',
+          	'required' => false,
+      		'group'=>'Controls'
+      	),
+        array(
           'name'=>'includeSrefInLocationFilter',
           'caption'=>'Include Sref in location filter name',
           'description'=>'When including a user specific location filter, choose whether to include the sref when generating the select name.',
@@ -187,6 +195,14 @@ class iform_report_calendar_grid {
           'description'=>'The URL to invoke when selecting an existing sample.<br />'.
                          'To the end of this will be appended "&sample_id=&lt;n&gt;".',
           'type'=>'string',
+          'group' => 'Report Settings'
+        ), 
+        array(
+          'name' => 'footer',
+          'caption' => 'Footer',
+          'description' => 'Additional HTML to include in the report footer area. If using this to create internal links, the replacement {rootFolder} can be used to give the path to the root of the site.',
+          'type' => 'textarea',
+          'required' => false,
           'group' => 'Report Settings'
         )
     );
@@ -453,6 +469,10 @@ jQuery('#".$ctrlid."').change(function(){
     	$extensions[] = '&'.$args['newURLLocationTypeParam'].'='.$siteUrlParams[self::$locationTypeKey]['value'];
     }
     $reportOptions['newURL'] = self::get_url($args['newURL'], $extensions);
+    if (isset($args['footer']))
+    	$reportOptions['footer'] = $args['footer'];
+    if(isset($args['first_year']) && $args['first_year']!='')
+    	$reportOptions['first_year'] = $args['first_year'];
     $grid .= report_helper::report_calendar_grid($reportOptions);
     return $grid;
   }

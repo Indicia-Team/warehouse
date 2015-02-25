@@ -1,16 +1,10 @@
-
-div.remove-button {
-	width: 16px;
-	height: 16px;
-	background-image: url("../../../media/images/delete.png") !important;
-	background-color: transparent !important;	
-	display: inline-block;
-	background-position: left top;
-    background-repeat: no-repeat;
-    background-size: auto auto;
-    border: none !important;
-}
-
 .page-notice {
   color:red;
+}
+div.olControlEditingToolbar .olControlUndoItemInactive {
+  background-image: url("../../../media/images/cancel.png");
+  width: 16px;
+  height: 16px;
+  margin: 8px 6px;
+  background-position: 0px 0px;
 }
