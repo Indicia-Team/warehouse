@@ -2416,10 +2416,12 @@ update_controls();
     $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
     $thClass = $options['thClass'];
     $r = "\n<table class=\"".$options['class']."\">";
-    $r .= "\n<thead class=\"$thClass\"><tr>".($options['includeWeekNumber'] ? "<td>".lang::get("Week Number")."</td>" : "")."<td></td><td></td><td></td>".
-        "<td colspan=\"3\" class=\"year-picker\"><a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1).
-        "\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a>".
-        "<span class=\"thisYear\">".$options["year"]."</span>";
+    $r .= "\n<thead class=\"$thClass\"><tr>".($options['includeWeekNumber'] ? "<td>".lang::get("Week Number")."</td>" : "")."<td></td><td></td><td></td><td colspan=\"3\" class=\"year-picker\">";
+    if(!isset($options["first_year"]) || $options["year"]>$options["first_year"]){
+    	$r .= "<a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1).
+        	"\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a>";
+    }
+    $r .= "<span class=\"thisYear\">".$options["year"]."</span>";
     if($options["year"]<date('Y')){
       $r .= "  <a title=\"".($options["year"]+1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]+1)."\" class=\"ui-datepicker-next ui-corner-all\">
         <span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a>";
@@ -2546,7 +2548,41 @@ update_controls();
       }
       $r .= "</tr>";
     }
-    $r .= "</tbody></table>\n";
+    $r .= "</tbody>";
+    $extraFooter = '';
+    if (isset($options['footer']) && !empty($options['footer'])) {
+      $footer = str_replace(array('{rootFolder}',
+                '{currentUrl}',
+                '{sep}',
+                '{warehouseRoot}',
+                '{geoserverRoot}',
+                '{nonce}',
+                '{auth}',
+                '{iUserID}',
+                '{website_id}',
+      			'{startDate}',
+      			'{endDate}'),
+          array($rootFolder,
+                $currentUrl['path'],
+                strpos($rootFolder, '?')===FALSE ? '?' : '&',
+                self::$base_url,
+                self::$geoserver_url,
+                'nonce='.$options['readAuth']['nonce'],
+                'auth_token='.$options['readAuth']['auth_token'],
+                (function_exists('hostsite_get_user_field') ? hostsite_get_user_field('indicia_user_id') : ''),
+                self::$website_id,
+                $options['date_start'],
+                $options['date_end']
+          ), $options['footer']);
+      // Merge in any references to the parameters sent to the report: could extend this in the future to pass in the extraParams
+      foreach($currentParamValues as $key=>$param){
+        $footer = str_replace(array('{'.$key.'}'), array($param), $footer);
+        }
+      $extraFooter .= '<div class="left">'.$footer.'</div>';
+      }
+    if (!empty($extraFooter))
+      $r .= '<tfoot><tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr></tfoot>';
+    $r .= "</table>\n";
     return $warnings.$r;
   }
 
@@ -3365,9 +3401,9 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
       $warnings .= '<span style="display:none;">Output chart complete : '.date(DATE_ATOM).'</span>'."\n";
     }
     if(isset($format['table'])){
+      $thClass = $options['thClass'];
       $r .= '<div id="'.$options['tableContainerID'].'">';
       if($options['includeRawData']){
-        $thClass = $options['thClass'];
         $rawDataDownloadGrid="";
         $rawDataDownloadList='Location,'.(($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number') ? 'Week Number,' : '')."Date,Species,Count\n";
         $r .= "\n<table id=\"".$options['tableID']."-raw\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
@@ -4186,7 +4222,9 @@ update_controls();
   	$sortData=array();
   	foreach($records as $idex => $record){
   		$taxonID=$record['taxon_meaning_id']; // TODO ??
-  		$seriesLabels[$taxonID]=$record['default_common_name']; // TODO user to be able to choose from taxon or common 
+  		if(!empty($record['default_common_name'])) $seriesLabels[$taxonID]=$record['default_common_name']; // TODO user to be able to choose from taxon or common 
+  		if(empty($seriesLabels[$taxonID])) $seriesLabels[$taxonID]=$record['taxon']; // various fall backs.
+  		if(empty($seriesLabels[$taxonID])) $seriesLabels[$taxonID]='['.$record['taxa_taxon_list_id'].']';
   		$weekno = $record['period_number'];
   		$count = $record['count'];
   		if(!isset($summaryArray[$taxonID])){
@@ -4362,9 +4400,11 @@ function replot(type){
   $('.legend-colours').remove();
   if($('#".$options['chartID']."-'+type).parent().find('[name=".$options['chartID']."-series]').filter('[checked]').length == 0) return;
   var plot = $.jqplot('".$options['chartID']."-'+type, seriesData[type], opts);
-  for(var i=0; i<plot.seriesColors.length; i++){
-    var elem = $('#".$options['chartID']."-'+type).parent().find('[name=".$options['chartID']."-series]').filter('[checked]').eq(i);
-    elem.after('<div class=\"legend-colours\"><div class=\"legend-colours-inner\" style=\"background:'+plot.seriesColors[i]+';\">&nbsp;</div></div>');
+  for(var i=0; i<plot.series.length; i++){
+  	if(plot.series[i].show==true) {
+	    var elem = $('#".$options['chartID']."-'+type).parent().find('[name=".$options['chartID']."-series]').eq(i);
+    	elem.after('<div class=\"legend-colours\"><div class=\"legend-colours-inner\" style=\"background:'+plot.series[i].color+';\">&nbsp;</div></div>');
+	}
   }
 };
 indiciaFns.bindTabsActivate($('#controls'), function(event, ui) {
@@ -4603,7 +4643,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   	return $warnings.$r;
   }
   
-  function report_calendar_summary_sort1($a, $b)
+  static function report_calendar_summary_sort1($a, $b)
   {
   	return ($a[0] > $b[0]) ;
   }

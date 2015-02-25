@@ -7,6 +7,7 @@
   FROM samples s
   JOIN samples ss on s.id=ss.parent_id and ss.deleted=false
   JOIN surveys su on su.id=s.survey_id and su.deleted=false
+  LEFT JOIN cache_termlists_terms ctt on ctt.id=s.sample_method_id  
   #joins#
   WHERE s.deleted = FALSE
   AND s.parent_id IS NULL
@@ -14,7 +15,7 @@
   AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-  AND CAST(s.created_by_id AS character varying)='#user_id#'
+  AND (CAST(s.sample_method_id AS character varying)='#sample_method_id#' OR '#sample_method_id#'='' OR ctt.term='#sample_method_id#')  
   #order_by#
   </query>
   <field_sql>
@@ -35,7 +36,11 @@
         population_call='direct:survey:id:title' />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
-    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' />
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' >
+      <where>s.created_by_id=#user_id#</where>
+    </param>
+    <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
+        population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
   </params>
   <columns>
     <column name='sample_id' visible='true' />

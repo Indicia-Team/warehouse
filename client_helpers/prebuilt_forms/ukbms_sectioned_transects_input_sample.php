@@ -792,7 +792,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $sitesJs = array();
       foreach ($availableSites as $site) {
         $sitesLookup[$site['location_id']]=$site['name'];
-        $sitesJs[$site['location_id']] = $site;
+        $sitesJs[$site['location_id']] = array('centroid_sref'=>$site['centroid_sref'], 'centroid_sref_system'=>$site['centroid_sref_system']);
       }
       // bolt in branch locations. Don't assume that branch list is superset of normal sites list.
       // Only need to do if not a manager - they have already fetched the full list anyway.
@@ -838,7 +838,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       'survey_id'=>$args['survey_id'],
       'sample_method_id'=>$sampleMethods[0]['id']
     ));
-    $r .= get_user_profile_hidden_inputs($attributes, $args, '', $auth['read']);
+    $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['sample:id']), $auth['read']);
     if(isset($_GET['date'])){
       $r .= '<input type="hidden" name="sample:date" value="'.$_GET['date'].'"/>';
       $r .= '<label>'.lang::get('Date').':</label> <span class="value-label">'.$_GET['date'].'</span><br/>';
@@ -1267,17 +1267,17 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a></div>';
     }
     $reloadPath = self::getReloadPath();
+    $defaults = helper_base::explode_lines_key_value_pairs($args['defaults']);
+    $record_status = isset($defaults['occurrence:record_status']) ? $defaults['occurrence:record_status'] : 'C';
     if(isset($args['map_taxon_list_id']) && $args['map_taxon_list_id']!=''){
       // TODO convert to AJAX.
       data_entry_helper::enable_validation('entry_form');
-      $value = helper_base::explode_lines_key_value_pairs($args['defaults']);
-      $value = isset($value['occurrence:record_status']) ? $value['occurrence:record_status'] : 'C';
       
       $r .= '<div id="gridmap">'."\n".'<form method="post" id="entry_form" action="'.$reloadPath.'">'.$auth['write'].
             '<p>When using this page, please remember that the data is not saved to the database as you go (which is the case for the previous tabs). In order to save the data entered in this page you must click on the Save button at the bottom of the page.</p>'.
             '<input type="hidden" id="website_id" name="website_id" value="'.$args["website_id"].'" />'.
             '<input type="hidden" id="survey_id" name="sample:survey_id" value="'.$args["survey_id"].'" />'.
-            '<input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="'.$value.'" />'.
+            '<input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="'.$record_status.'" />'.
             '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>'.
             '<input type="hidden" name="page" value="speciesmap"/>'.
             '<input type="hidden" name="sample:location_id" value="'.$parentLocId.'"/>';
@@ -1358,6 +1358,7 @@ jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTa
     $r .= '<input name="occurrence:deleted" id="occdeleted" />';
     $r .= '<input name="occurrence:zero_abundance" id="occzero" />';
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
+    $r .= '<input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="'.$record_status.'" />';
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
     if(isset($args["sensitiveAttrID"]) && $args["sensitiveAttrID"] != "" && isset($args["sensitivityPrecision"]) && $args["sensitivityPrecision"] != "") {
       $locationType = helper_base::get_termlist_terms($auth, 'indicia:location_types', array(empty($args['transect_type_term']) ? 'Transect' : $args['transect_type_term']));
@@ -1564,7 +1565,7 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
   	$sampleCtrls = get_attribute_html($sampleAttrs, $args, array('extraParams' => $auth['read']), null, $attrOptions);
   	$r .= '<div id="'.$options['id'].'-subsample-ctrls" style="display: none">'.$sampleCtrls.'</div>';
   	**/
-  	$r .= '<div id="'.$options['id'].'-subsample-ctrls" style="display: none"></div>';
+  	$r = '<div id="'.$options['id'].'-subsample-ctrls" style="display: none"></div>';
   	$r .= '<div id="'.$options['id'].'-container" style="display: none">'.
   			'<input type="hidden" id="imp-sref" />'. // a dummy to capture feedback from the map
   			'<input type="hidden" id="imp-geom" />'. // a dummy to capture feedback from the map
