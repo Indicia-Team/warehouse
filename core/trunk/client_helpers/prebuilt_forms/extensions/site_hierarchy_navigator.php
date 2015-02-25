@@ -33,11 +33,13 @@ class extension_site_hierarchy_navigator {
    * to show the intersecting polygons from the next location type. Continues down the locations hierarchy in a supplied sequence of 
    * location types (e.g. you might set the location type sequence to Country, County, Parish, Site). 
    *
-   * Supply an option @layerLocationTypes with a comma separated array of the location types ID to load in top down order.
+   * Supply the following options:
+   *   @layerLocationTypes with a comma separated array of the location types ID to load in top down order.
+   *  @informationSheetLink
    */
-  public function map($auth, $args, $tabalias, $options, $path) {  
+  public static function map($auth, $args, $tabalias, $options, $path) {
     global $base_root;
-    //Setup the path to the cudi information sheets. 
+    //Setup the path to the site information sheets.
     //Include the parameter on the end of the path, but leave off the parameter values
     //as these will change for each path used.
     iform_load_helpers(array('map_helper','report_helper'));
@@ -136,7 +138,7 @@ class extension_site_hierarchy_navigator {
   /*
    * A breadcrumb trail of the site hierarchy locations the user has clicked through as a seperate control
    */
-  public function breadcrumb($auth, $args, $tabalias, $options, $path) {
+  public static function breadcrumb($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('map_helper'));
     map_helper::$javascript .= "indiciaData.useBreadCrumb=true;\n";
     //If the id parameter is supplied in the url, it means the user has clicked on another page homepage link to zoom to the location, so we need to rebuild the 
@@ -162,7 +164,7 @@ class extension_site_hierarchy_navigator {
    * if there is no data that can be displayed then the select list gives a warning and
    * the map just ignores the user's click.
    */
-  public function selectlist($auth, $args, $tabalias, $options, $path) {
+  public static function selectlist($auth, $args, $tabalias, $options, $path) {
     iform_load_helpers(array('map_helper'));
     //The button is included because if the user is at the bottom level of the tree, they will only be viewing a single count unit item
     //so the drop-down is changed to be a single button that has the same function as a single item drop-down (handled with jQuery).
@@ -181,7 +183,7 @@ class extension_site_hierarchy_navigator {
    * The options format is comma seperated where the format of the elements is "location_type_id|report_path|report_parameter".
    * If an option is not found for the displayed layer's location type, then the report link button is hidden from view.
    */
-  public function listreportlink($auth, $args, $tabalias, $options, $path) {
+  public static function listreportlink($auth, $args, $tabalias, $options, $path) {
     global $base_root;
     iform_load_helpers(array('map_helper'));
     $msg=self::check_format($options, 'listReportLinks', 'location_type_id|report_path|report_parameter', 
@@ -215,7 +217,7 @@ class extension_site_hierarchy_navigator {
    * The options format is comma seperated where the format of the elements is "location_type_id|page_path|parameter_name".
    * If an option is not found for the displayed layer's location type, then the Add Count Unit button is hidden from view.
    */
-  public function addcountunit($auth, $args, $tabalias, $options, $path) {
+  public static function addcountunit($auth, $args, $tabalias, $options, $path) {
     global $base_root;
     iform_load_helpers(array('map_helper'));
     $msg=self::check_format($options, 'addCountUnitLinks', 'location_type_id|page_path|parameter_name', 
@@ -247,7 +249,7 @@ class extension_site_hierarchy_navigator {
    * The options format is comma seperated where the format of the elements is "location_type_id|page_path".
    * If an option is not found for the displayed layer's location type, then the View Count Units Review button is hidden from view.
    */
-  public function viwcountunitsreport($auth, $args, $tabalias, $options, $path) {
+  public static function viwcountunitsreport($auth, $args, $tabalias, $options, $path) {
     global $base_root;
     iform_load_helpers(array('map_helper'));
     $msg=self::check_format($options, 'viewCountUnitsReportLinks', 'location_type_id|page_path', 
@@ -281,7 +283,7 @@ class extension_site_hierarchy_navigator {
    * The options format is comma seperated where the format of the elements is "location_type_id|page_path|parameter_name".
    * If an option is not found for the displayed layer's location type, then the Add Site button is hidden from view.
    */
-  public function addsite($auth, $args, $tabalias, $options, $path) {
+  public static function addsite($auth, $args, $tabalias, $options, $path) {
     global $base_root;
     iform_load_helpers(array('map_helper'));
     $msg=self::check_format($options, 'addSiteLinks', 'location_type_id|page_path|parameter_name', 
@@ -304,7 +306,7 @@ class extension_site_hierarchy_navigator {
    * An extension that can be added to the Site Details page to limit the Local Organiser Region field so that it is 
    * displayed only when the location type is Site.
    */
-  public function site_detail_ext_local_organiser_site_limiter($auth, $args, $tabalias, $options, $path) {
+  public static function site_detail_ext_local_organiser_site_limiter($auth, $args, $tabalias, $options, $path) {
     //If in edit mode, get the details of the site we are viewing.
     if (!empty($_GET['location_id'])) {
       $existingLocationDetail = data_entry_helper::get_population_data(array(
@@ -332,7 +334,7 @@ class extension_site_hierarchy_navigator {
   /*
    * Allow the user to specify a button to edit the parent site with
    */
-  public function editsite($auth, $args, $tabalias, $options, $path) {
+  public static function editsite($auth, $args, $tabalias, $options, $path) {
     global $base_root;
     iform_load_helpers(array('map_helper'));
     $msg=self::check_format($options, 'editSiteLinks', 'location_type_id|page_path|parameter_name', 
@@ -355,7 +357,7 @@ class extension_site_hierarchy_navigator {
    * Collect options from the form sturcture for buttons whose options are in the format
    * location_type_id_to_display_button_for|path_to_page|parameter_to_send_to_page
    */
-  private function get_link_options($linkOptions) {
+  private static function get_link_options($linkOptions) {
     $linksToCreate=explode(',',$linkOptions);
     //Cycle through all the supplied options, get the options and save the locations types and the paths we are going to use.
     foreach ($linksToCreate as $id=>$linkToCreate) {
@@ -376,7 +378,7 @@ class extension_site_hierarchy_navigator {
   /**
    * Internal function that checks a form structure control option against a regular expression to check it's format.
    */
-  private function check_format($options, $optionName, $friendlyFormat, $regex) {
+  private static function check_format($options, $optionName, $friendlyFormat, $regex) {
     $testval = $options[$optionName];
     if (!preg_match($regex, $testval)&&!empty($testval))
       return "<p>$testval</p>" .
