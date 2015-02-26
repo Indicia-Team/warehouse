@@ -31,7 +31,3 @@ CREATE OR REPLACE VIEW list_survey_comments AS
    JOIN surveys s ON s.id = sc.survey_id AND s.deleted = false
    LEFT JOIN users u ON sc.created_by_id = u.id
   WHERE sc.deleted = false;
-
-ALTER TABLE list_survey_comments
-  OWNER TO indicia_user;
-
