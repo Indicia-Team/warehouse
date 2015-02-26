@@ -13,7 +13,7 @@
   LEFT JOIN person_attribute_values pavCounty ON pavCounty.person_id=p.id AND pavCounty.person_attribute_id=#county_attr_id# AND pavCounty.deleted=false 
   LEFT JOIN person_attribute_values pavCountry ON pavCountry.person_id=p.id AND pavCountry.person_attribute_id=#country_attr_id# AND pavCountry.deleted=false 
   LEFT JOIN person_attribute_values pavPC ON pavPC.person_id=p.id AND pavPC.person_attribute_id=#post_code_attr_id# AND pavPC.deleted=false 
-  LEFT JOIN person_attribute_values pav18 ON pav18.person_id=p.id AND pav18.person_attribute_id=#under_18_attr_id# AND pav18.deleted=false 
+  LEFT JOIN person_attribute_values pav18 ON pav18.person_id=p.id AND pav18.person_attribute_id=#over_18_attr_id# AND pav18.deleted=false 
   LEFT JOIN locations l ON l.id=pavAlloc.int_value AND l.deleted=false 
   WHERE p.deleted=false
     AND #website_filter#
@@ -42,7 +42,7 @@
     <param name="county_attr_id" display="County attribute id" description="Person attribute id that holds the user county." datatype="text"/>
     <param name="country_attr_id" display="Country attribute id" description="Person attribute id that holds the user country." datatype="text"/>
     <param name="post_code_attr_id" display="Post code attribute id" description="Person attribute id that holds the user post code." datatype="text"/>
-    <param name="under_18_attr_id" display="Under 18 attribute id" description="Person attribute id that holds whether a user is under 18." datatype="text"/>
+    <param name="over_18_attr_id" display="Over 18 attribute id" description="Person attribute id that holds whether a user is over 18." datatype="text"/>
   </params>
   <columns> 
     <column name='id' sql='u.id' display='Indicia User Id' datatype='integer' in_count="true"/>
@@ -55,7 +55,7 @@
     <column name='county' display='County' sql='pavCounty.text_value' datatype='text' />
     <column name='country' display='Country' sql='pavCountry.text_value' datatype='text' />
     <column name='post_code' display='Post Code' sql='pavPC.text_value' datatype='text' />
-    <column name='under_18' display='Under 18?' sql="case pav18.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
+    <column name='over_18' display='Over 18?' sql="case pav18.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='registration_date' display='Registration date' sql='uw.created_on' datatype='text' />  
     <column name='count' sql='count(distinct(pavAlloc.id))' display='Number of allocated squares' datatype='integer' aggregate="true"/>
   </columns>
