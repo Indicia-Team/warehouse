@@ -13,7 +13,7 @@
   LEFT JOIN person_attribute_values pavCounty ON pavCounty.person_id=p.id AND pavCounty.person_attribute_id=#county_attr_id# AND pavCounty.deleted=false 
   LEFT JOIN person_attribute_values pavCountry ON pavCountry.person_id=p.id AND pavCountry.person_attribute_id=#country_attr_id# AND pavCountry.deleted=false 
   LEFT JOIN person_attribute_values pavPC ON pavPC.person_id=p.id AND pavPC.person_attribute_id=#post_code_attr_id# AND pavPC.deleted=false 
-  LEFT JOIN person_attribute_values pav18 ON pav18.person_id=p.id AND pav18.person_attribute_id=#under_18_attr_id# AND pavPC.deleted=false 
+  LEFT JOIN person_attribute_values pav18 ON pav18.person_id=p.id AND pav18.person_attribute_id=#under_18_attr_id# AND pav18.deleted=false 
   LEFT JOIN locations l ON l.id=pavAlloc.int_value AND l.deleted=false 
   WHERE p.deleted=false
     AND #website_filter#
@@ -45,10 +45,10 @@
     <param name="under_18_attr_id" display="Under 18 attribute id" description="Person attribute id that holds whether a user is under 18." datatype="text"/>
   </params>
   <columns> 
-    <column name='id' sql='p.id' datatype='integer' visible='false' in_count="true"/>
-    <column name='surname' display='Surname' sql='p.surname' datatype='text' />
-    <column name='first_name' display='First name' sql='p.first_name' datatype='text' />      
-    <column name='username' display='Username' sql='u.username' datatype='text'/> 
+    <column name='id' sql='u.id' display='Indicia User Id' datatype='integer' in_count="true"/>
+    <column name='first_name' display='First name' sql='p.first_name' datatype='text' /> 
+    <column name='surname' display='Surname' sql='p.surname' datatype='text' />        
+    <column name='username' display='Indicia Username' sql='u.username' datatype='text'/> 
     <column name='email_address' display='Email address' sql='p.email_address' datatype='text' />  
     <column name='address' display='Address' sql='pavAddr.text_value' datatype='text' />
     <column name='town' display='Town' sql='pavTown.text_value' datatype='text' />
