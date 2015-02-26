@@ -24,6 +24,9 @@
     <param name="location_id" display="Location Id" description="A location id used if we only want to return results for a single location." datatype="integer" default='' emptyvalue=''>
       <where>l.id=#location_id#</where>
     </param>
+    <param name="location_type_ids" display="Location Type Ids" description="Comma separated list of location type ids we want to return results for." datatype="text" default='' emptyvalue=''>
+      <where>l.location_type_id in (#location_type_ids#)</where>
+    </param>
     --Note am using the name the_user_id as just using user_id seems to pickup the current user's id automatically which isn't what we want at all
     <param name="the_user_id" display="User Id" description="A user id used if we only want to return results for a single user." datatype="integer" default='' emptyvalue=''>
       <where>u.id=#the_user_id#</where>
