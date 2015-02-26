@@ -241,4 +241,15 @@ class extension_misc_extensions {
     $breadcrumb[] = drupal_get_title();
     drupal_set_breadcrumb($breadcrumb);
   }
+  
+  /*
+   * Simply add this extension to your form's form structure to make the page read only. Might need expanding to 
+   * take into account different scenarios
+   */
+  public static function read_only_input_form($auth, $args, $tabalias, $options, $path) {
+    data_entry_helper::$javascript .= "
+    $('#entry_form').find('input, textarea, text, button').attr('readonly', true);
+    $('#entry_form').find('select,:checkbox').attr('disabled', true);\n 
+    $('.indicia-button').hide();\n"; 
+  }
 }
