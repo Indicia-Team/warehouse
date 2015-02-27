@@ -195,6 +195,10 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
   //Function allows the report to only return squares located a certain distance from a user's
   //post code.
   limit_to_post_code= function (postcode,georeferenceProxy,indiciaUserId) {
+    if ($('#limit-value').val()>50) {
+      alert('Please enter a number below 50 miles to search squares for');
+      return false;
+    }
     $.ajax({
       dataType: 'json',
       url: georeferenceProxy,
