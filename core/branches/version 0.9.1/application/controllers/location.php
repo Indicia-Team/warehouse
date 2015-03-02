@@ -206,10 +206,14 @@ class Location_Controller extends Gridview_Base_Controller {
         $this->setError('Upload file problem', '.dbf and .shp files in Zip archive have different names.');
         return;
       }
-      $_SESSION['extracted_basefile'] = $directory.'/'.basename($entry, '.dbf');
+      $_SESSION['extracted_basefile'] = $directory.basename($entry, '.dbf');
       $zip->close();
       $this->template->title = "Choose details in ".$entry." for ".$this->pagetitle;
-      $dbasedb = dbase_open($directory.'/'.$entry, 0);
+      try {
+        $dbasedb = dbase_open($directory.$entry, 0);
+      } catch (Exception $e) {
+        // error handled next
+      }
       if ($dbasedb) {
           // read some data ..
           $view->columns = dbase_get_header_info($dbasedb);
@@ -231,7 +235,7 @@ class Location_Controller extends Gridview_Base_Controller {
       foreach ($errors as $key => $val) {
         switch ($val) {
           case 'required': 
-            $error .= 'You must specify a Zip Archive file to upload, containing the .shp and .dbf files.<br/>';
+            $error .= 'The file failed to upload. It might be larger than the file size limit configured for this server.<br/>';
             break;
           case 'valid': 
             $error .= 'The uploaded file is not valid.<br/>';
@@ -467,11 +471,14 @@ class Location_Controller extends Gridview_Base_Controller {
           case 5:
               $this->loadPolyLineRecord('POLYGON');
               break;
+          case 13:
+              $this->loadPolyLineZRecord('MULTILINESTRING');
+              break;
           case 15:
               $this->loadPolyLineZRecord('POLYGON'); // we discard the Z data.
               break;
           default:
-              break;
+              throw new exception('ShapeType ' . $this->shapeType . ' not supported');
       }
   }
 
