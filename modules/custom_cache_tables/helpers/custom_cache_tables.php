@@ -33,12 +33,28 @@ class custom_cache_tables {
     foreach (glob(MODPATH . "custom_cache_tables/definitions/*.php") as $filename) {
       require_once $filename;
       $defname = preg_replace('/\.php$/', '', basename($filename));
-      if (!function_exists("get_{$defname}_query") || !function_exists("get_{$defname}_update_frequency") ) {
-        kohana::log('warning', "Skipping incomplete custom_cache_tables definition $filename");
+      if (!function_exists("get_{$defname}_query") || !function_exists("get_{$defname}_metadata") ) {
+        kohana::log('error', "Skipping incomplete custom_cache_tables definition $filename");
         continue; // foreach
       }
-      $frequency = call_user_func("get_{$defname}_update_frequency");
-      if (empty($lastDoneInfo[$defname]) || strtotime($lastDoneInfo[$defname]) < strtotime("-$frequency")) {
+      $metadata = call_user_func("get_{$defname}_metadata");
+      if (empty($metadata['frequency'])) {
+        kohana::log('error', "Definition $filename omits metadata frequency for custom_cache_tables");
+        continue; // foreach
+      }
+      if (empty($lastDoneInfo[$defname]) || strtotime($lastDoneInfo[$defname]) < strtotime("-$metadata[frequency]")) {
+        // Even if we are due an update, we might not have to do anything if there is a detect_changes_query
+        // which returns nothing
+        if (!empty($metadata['detect_changes_query'])) {
+          $check = $db->query(str_replace('#date#', date('Y-m-d H:i:s', strtotime($lastDoneInfo[$defname])),
+              $metadata['detect_changes_query']))->current();
+          if (!$check->count) {
+            kohana::log('debug', "Skipping $defname as no changes available to process");
+            // reset the time to the next check
+            $lastDoneInfo[$defname]=date(DATE_ISO8601);
+            continue; // foreach
+          }
+        }
         // if the table already exists, delete it
         if (!empty($lastDoneInfo[$defname]))
           $db->query("DROP TABLE custom_cache_tables.$defname");
