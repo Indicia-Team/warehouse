@@ -1,0 +1,1 @@
+CREATE SCHEMA custom_cache_tables;
