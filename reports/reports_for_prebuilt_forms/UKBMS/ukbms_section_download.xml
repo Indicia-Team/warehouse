@@ -7,6 +7,7 @@
   FROM samples parent
   JOIN samples s ON s.parent_id=parent.id AND s.deleted=false
   JOIN locations l ON parent.location_id=l.id
+  JOIN cache_termlists_terms ctt ON ctt.id=l.location_type_id
   JOIN locations l2 ON s.location_id=l2.id
   JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false
   JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
@@ -25,6 +26,7 @@
   <field_sql>
       o.id as occurrence_id, 
       parent.id as sample_id,
+      ctt.term as site_type,
       l.name as site_name,
       l.code as site_code,
       s.id as subsample_id,
@@ -101,6 +103,7 @@
     <column name='sample_id' visible='false' />
     <column name='subsample_id' visible='false' />
     <column name='occurrence_id' visible='false' />
+    <column name='site_type' display='Site Type' />
     <column name='site_name' display='Site Name' />
     <column name='site_code' display='Site Code' />
     <column name='section_name' display='Section No.' comment='used for section level data only'/>

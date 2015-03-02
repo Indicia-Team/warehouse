@@ -4307,9 +4307,9 @@ update_controls();
   	$thClass = $options['thClass'];
  	$summaryTab = '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner"><table id="'.$options['tableID'].'-summary" class="'.$options['tableClass'].'"><thead class="'.$thClass.'">';
  	$estimateTab = '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner"><table id="'.$options['tableID'].'-estimate" class="'.$options['tableClass'].'"><thead class="'.$thClass.'">';
- 	$summaryDataDownloadGrid="";
-  	$estimateDataDownloadGrid="";
-  	$rawDataDownloadGrid="";
+ 	$summaryDataDownloadGrid = '';
+  	$estimateDataDownloadGrid = '';
+  	$rawDataDownloadGrid = '';
   	$summaryTab .= '<tr><th class="freeze-first-col">'.lang::get('Week').'</th>'.$tableNumberHeaderRow.'<th>Total</th></tr>'.
 			    	'<tr><th class="freeze-first-col">'.lang::get('Date').'</th>'.$tableDateHeaderRow.'<th></th></tr></thead><tbody>';
   	$estimateTab .= '<tr><th class="freeze-first-col">'.lang::get('Week').'</th>'.$tableNumberHeaderRow.'<th>Total with<br/>estimates</th></tr>'.
@@ -4528,6 +4528,7 @@ jQuery('#estimateChart .disable-button').click(function(){
 ";
   	}
   	if(isset($options['location_id']) && $options['location_id']!=""){
+  		// get the raw data for a single location.
   		$options = self::get_report_calendar_grid_options($options);
   		$extras = '';
    		// TODO need to restrict a normal users view of samples to their own.
@@ -4542,7 +4543,8 @@ jQuery('#estimateChart .disable-button').click(function(){
 	  		// convert records to a date based array so it can be used when generating the grid.
   			$altRow=false;
   			$records = $response['records'];
-  			$rawTab = '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner">'.(isset($options['linkMessage']) ? $options['linkMessage'] : '').'<table class="'.$options['tableClass'].'"><thead class="'.$thClass.'"><tr><th class="freeze-first-col">'.lang::get('Date').'</th>';
+  			$rawTab = '<span style="display:none;"><br/>'.print_r($options,true).'<br/>'.print_r($currentParamValues,true).'<br/>'.print_r($extras,true).'<br/></span>';
+  			$rawTab .= '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner">'.(isset($options['linkMessage']) ? $options['linkMessage'] : '').'<table class="'.$options['tableClass'].'"><thead class="'.$thClass.'"><tr><th class="freeze-first-col">'.lang::get('Date').'</th>';
   			$rawDataDownloadGrid = lang::get('Date');
   			$rawArray = array();
   			$sampleList=array();
@@ -4647,13 +4649,13 @@ jQuery('#estimateChart .disable-button').click(function(){
   		$downloadTab .= '<tr><td>'.lang::get('Download Raw Data Grid (CSV Format)').' : </td><td><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">'.lang::get('Download').'</button></a></td></tr>'."\n";
   	} else if($options['includeRawGridDownload'])
   		$downloadTab .= '<tr><td>'.lang::get('Raw Data is only available (for download) when a location is specified.').'</td><td></td></tr>'."\n";
-  	
+
   	if(count($options['downloads'])>0) {
   		// format is assumed to be CSV
   		global $indicia_templates;
   		$indicia_templates['report_download_link'] = '<a target="_blank" href="{link}" download ><button type="button">'.lang::get('Download').'</button></a>';
   		
-  		$downloadOptions = array('readAuth'=>$auth,
+  		$downloadOptions = array('readAuth'=>$options['readAuth'],
   				'extraParams'=>array_merge($options['extraParams'], array('date_from' => $options['date_start'], 'date_to' => $options['date_end'])),
   				'itemsPerPage' => false);
   		// there are problems dealing with location_list as an array if empty, so connvert
@@ -4662,8 +4664,10 @@ jQuery('#estimateChart .disable-button').click(function(){
   		else $downloadOptions['extraParams']['location_list']='('.$downloadOptions['extraParams']['location_list'].')';
   	
   		foreach($options['downloads']as $download){
+  			$downloadOptions['dataSource'] = $download['dataSource'];
+  			$downloadOptions['filename'] = $download['filename'];
   			$downloadTab .= '<tr><td>'.$download['caption'].' : </td><td>'.report_helper::report_download_link($downloadOptions).'</td></tr>';
-  	}
+  		}
   	}
   	 
   	if($downloadTab!="")

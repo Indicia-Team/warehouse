@@ -5,6 +5,7 @@
   FROM samples parent
   JOIN samples s ON s.parent_id=parent.id AND s.deleted=false
   JOIN locations l ON parent.location_id=l.id
+  JOIN cache_termlists_terms ctt ON ctt.id=l.location_type_id
   JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false
   JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
       AND (CAST(cttl.taxon_list_id AS character varying)='#taxon_list_id#' OR '#taxon_list_id#' = '')
@@ -18,10 +19,11 @@
   #filters#
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-  GROUP BY l.name, l.centroid_sref, date, parent.date_start, parent.date_end, parent.date_type, sav.text_value, cttl.taxonomic_sort_order, common
+  GROUP BY ctt.term, l.name, l.centroid_sref, date, parent.date_start, parent.date_end, parent.date_type, sav.text_value, cttl.taxonomic_sort_order, common
   #order_by#
   </query>
   <field_sql>
+      ctt.term as site_type,
       l.name as site_name,
       l.centroid_sref as sref,
       '' as date, --- allows proper positioning of date column in report
@@ -58,6 +60,7 @@
     </param>
   </params>
   <columns>
+    <column name='site_type' display='Site Type' />
     <column name='site_name' display='Site Name' />
     <column name='sref' display='Grid Ref' />
     <column name='date' display='Date' />

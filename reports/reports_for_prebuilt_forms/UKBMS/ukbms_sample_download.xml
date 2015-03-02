@@ -21,6 +21,9 @@
     <tabColumn name='id' display='Sample ID' visible='true'/>
     <subTable tablename="locations" where="('#location_id#'='' OR CAST(#this#.id AS character varying) = '#location_id#')
         AND ('#location_list#'='(-1)' OR #this#.id IN #location_list#) AND (#this#.location_type_id = #location_type_id#)" > // allow deleted Sites!
+      <subTable tablename='cache_termlists_terms' parentKey="location_type_id" >
+        <tabColumn name='term' display='Site Type'/>
+      </subTable>
       <tabColumn name='id' visible='false' />
       <tabColumn name='name' display='Site name'/>
       <tabColumn name='code' display='Site Code' />
