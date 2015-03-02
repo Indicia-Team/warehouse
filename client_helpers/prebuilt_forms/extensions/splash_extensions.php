@@ -810,6 +810,23 @@ class extension_splash_extensions {
   }\n";
   }
   
+  /* Reject a user/square allocation.
+   * Squares need approval if the updated_by_id on the allocation record (person_attribute_value) is the same as the user the allocation is intended for (i.e. they allocated it to themselves)
+   * Rejecting simply removes the original allocation.
+   */
+  public static function reject_allocation($auth, $args, $tabalias, $options, $path) {
+    $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
+    data_entry_helper::$javascript .= "
+    reject_allocation = function(pav_id) {
+      var confirmation = confirm('Do you really want to reject the user/square allocation with id '+pav_id+'?');
+      if (confirmation) { 
+        user_site_delete(pav_id);
+      }
+    }
+    ";
+    self::user_site_delete($postUrl,$args);
+  }
+  
   /*
    * Very simple control with a text area to import data,and an upload button.
    * Allows locations (squares) to be attached to people using the person_attribute_values table.
@@ -1122,7 +1139,12 @@ class extension_splash_extensions {
       }
     });
     ";
-    //Function for when user elects to remove sites
+    self::user_site_delete($postUrl,$args);
+    return $r;
+  }
+  
+  private static function user_site_delete($postUrl,$args) {
+    //Function for when user elects to remove site allocations
     data_entry_helper::$javascript .= "
     user_site_delete = function(pav_id) {
       $.post('$postUrl', 
@@ -1138,7 +1160,6 @@ class extension_splash_extensions {
       );
     }
     ";
-    return $r;
   }
   
   /*
