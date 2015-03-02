@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Display unsurveyed stretches of river in a 10km square"
+        description="Requires a set of locations (with given location type) to define the river stretches, plus samples
+        which define where recording has taken place. Shows just the unsurveyed stretches of river in the given square.">
+    <query website_filter_field="lw.website_id">     
+	select 'samples' as geomtype, st_astext(st_intersection(st_union(s.geom), st_transform(g.geom, 900913))) as geom, 
+	    'blue' as sc, 4 as sw, 0 as fo
+	from grids_osgb_10k g
+	left join samples s on st_intersects(s.geom, st_transform(g.geom, 900913))
+	  and s.date_start>'2014-01-01'
+	  and s.survey_id=3
+	  and s.parent_id is null
+	where g.square='#square#'
+	group by g.square
+	union
+	select 'locations' as geomtype, st_astext(st_intersection(st_union(l.boundary_geom), st_transform(g.geom, 900913))), 
+       'red' as sc, 4 as sw, 0 as fo
+	from grids_osgb_10k g
+	left join locations l 
+	  on st_intersects(l.boundary_geom, st_transform(g.geom, 900913))
+	  and l.location_type_id=#rivers_location_type_id#
+	where g.square='#square#'
+	group by g.square
+	union
+	select 'square' as geomtype, st_astext(st_transform(geom, 900913)), 
+		'blue' as sc, 1 as sw, 0 as fo
+	from grids_osgb_10k g
+	where g.square='#square#'
+    </query>
+    <params>
+        <param name="rivers_location_type_id" display="Location type ID" datatype="integer"
+               description="Select the location type ID for the rivers geometries to compare against."/>
+        <param name="square" display="Grid square" datatype="text" />
+    </params>
+    <columns>
+        <column name="geomtype" />
+        <column name="geom" mappable="true" />
+        <column name="sc" feature_style="strokeColor" />
+        <column name="sw" feature_style="strokeWidth" />
+        <column name="fo" feature_style="fillOpacity" />
+    </columns>
+</report>
