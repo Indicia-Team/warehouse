@@ -54,6 +54,9 @@ class iform_report_calendar_summary_2 {
   // internal key, not used on URL: maps the location_id to the survey_id.
   private static $SurveyKey = 'survey_id';
 
+  // internal key, not used on URL: maps the location_id to a url extension.
+  private static $URLExtensionKey = 'URLExtension';
+
   private static $removableParams = array();
   
   private static $siteUrlParams = array();
@@ -120,18 +123,6 @@ class iform_report_calendar_summary_2 {
           'group' => 'Controls'
         ),
       	array(
-          'name'=>'userFilter',
-          'caption'=>'User Filter type',
-          'description'=>'Type of control used to select the user.',
-          'type'=>'select',
-          'options' => array(
-            'none' => 'None',
-            'year' => 'User selectable year',
-          ),
-          'default' => 'year',
-          'group' => 'Controls'
-        ),
-      	array(
           'name'=>'includeUserFilter',
           'caption'=>'Include user filter',
           'description'=>'Choose whether to include a filter on the user. This is passed through to the report parameter list as user_id. If not selected, user_id is not included in the report parameter list.',
@@ -178,7 +169,7 @@ class iform_report_calendar_summary_2 {
       	array(
       		'name'=>'locationTypesFilter',
       		'caption'=>'Restrict locations to types',
-      		'description'=>'Implies a location type selection control. Comma separated list of the location types to be included in the control. Retricts the locations in the user specific location filter to the selected location type. The CMS User ID attribute must be defined for all location types selected or all location types.',
+      		'description'=>'Implies a location type selection control. Comma separated list of the location types definitions to be included in the control, of form {Location Type Term}:{Survey ID}[:{Link URL Extension}]. Restricts the locations in the user specific location filter to the selected location type, and restricts the data retrieved to the defined survey. In the Raw Data grid, the Links to the data entry page have the optional extension added. The CMS User ID attribute must be defined for all location types selected or all location types.',
       		'type'=>'string',
       		'default' => false,
       		'required' => false,
@@ -212,7 +203,7 @@ class iform_report_calendar_summary_2 {
                'processing against a sample attribute.',
           'type' => 'string',
           'required' => false,
-          'group'=>'Data Grid Settings'
+          'group'=>'Raw Data Report Settings'
         ),
       	array(
           'name'=>'report_name',
@@ -220,7 +211,7 @@ class iform_report_calendar_summary_2 {
           'description'=>'Select the report to provide the raw data for this page. If not provided, then Raw Data will not be available.',
           'type'=>'report_helper::report_picker',
           'required' => false,
-          'group'=>'Data Grid Settings'
+          'group'=>'Raw Data Report Settings'
         ),
         array(
           'name' => 'param_presets',
@@ -230,7 +221,7 @@ class iform_report_calendar_summary_2 {
               'user ID from the CMS logged in user or {username} as a value replaces with the logged in username.',
           'type' => 'textarea',
           'required' => false,
-          'group'=>'Data Grid Settings'
+          'group'=>'Raw Data Report Settings'
         ),
 
 
@@ -454,7 +445,7 @@ class iform_report_calendar_summary_2 {
           'description'=>'Used when generating link URLs to associated samples. If not included, no links will be generated.',
           'type'=>'string',
           'required' => false,
-          'group' => 'Table Options'
+          'group'=>'Raw Data Report Settings'
         ),
       	array(
           'name' => 'chartType',
@@ -663,7 +654,7 @@ class iform_report_calendar_summary_2 {
           'description'=>'The column in the report which is used as the data series label.',
           'type'=>'string',
           'default'=>'taxon',
-          'group' => 'Report Settings'
+          'group' => 'Raw Data Report Settings'
         ),
         array(
           'name'=>'rowGroupID',
@@ -671,7 +662,7 @@ class iform_report_calendar_summary_2 {
           'description'=>'The column in the report which is used as the data series id. This is used to pass the series displayed as part of a URL which has a restricted length.',
           'type'=>'string',
           'default'=>'taxon_meaning_id',
-          'group' => 'Report Settings'
+          'group' => 'Raw Data Report Settings'
         ),
         array(
           'name'=>'countColumn',
@@ -679,7 +670,7 @@ class iform_report_calendar_summary_2 {
           'description'=>'The column in the report which is used as the count associated with the occurrence. If not proviced then each occurrence has a count of one.',
           'type'=>'string',
           'required' => false,
-          'group' => 'Report Settings'
+          'group' => 'Raw Data Report Settings'
         ),
       		
         array(
@@ -791,6 +782,9 @@ class iform_report_calendar_summary_2 {
       for($i = 0; $i < count($terms); $i++){
         if($terms[$i]['id'] == $default && count($types2[$i])>1 && $types2[$i][1]!='') {
           self::$siteUrlParams[self::$SurveyKey] = $types2[$i][1];
+        }
+        if($terms[$i]['id'] == $default && count($types2[$i])>2 && $types2[$i][2]!='') {
+          self::$siteUrlParams[self::$URLExtensionKey] = $types2[$i][2];
         }
       }
   	}
@@ -1030,7 +1024,7 @@ class iform_report_calendar_summary_2 {
   	}
   }
   
-  private static function user_control($args, $readAuth, $node, &$options)
+  private static function user_control(&$args, $readAuth, $node, &$options)
   {
     // we don't use the userID option as the user_id can be blank, and will force the parameter request if left as a blank
     global $user;
@@ -1058,7 +1052,7 @@ class iform_report_calendar_summary_2 {
       	case "branch" : // my branch so OK
 	      	break;
       	default : // all users or another user so no access
-      		unset($options['linkURL']);
+      		unset($args['linkURL']);
       		$options['linkMessage'] = '<p>'.lang::get('In order to have the column headings as links to the data entry pages for the Visit, you must set the').' "'.lang::get('Filter by recorder').'" '.
       				(isset($args['branch_manager_permission']) && $args['branch_manager_permission']!="" && user_access($args['branch_manager_permission']) ?
       							lang::get(' control to yourself or branch data.') : lang::get(' control to yourself.')).'</p>';
@@ -1090,6 +1084,10 @@ class iform_report_calendar_summary_2 {
           $sampleArgs=array(// 'nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id'], 'survey_id'=>self::$siteUrlParams[self::$SurveyKey]), $readAuth),
             'table'=>'sample','columns'=>'created_by_id');
+          if(isset($args['userLookUpSampleMethod']) && $args['userLookUpSampleMethod']!="") {
+            $sampleMethods = helper_base::get_termlist_terms(array('read'=>$readAuth), 'indicia:sample_methods', array(trim($args['userLookUpSampleMethod'])));
+            $sampleArgs['extraParams']['sample_method_id']=$sampleMethods[0]['id'];
+          }
           $sampleList = data_entry_helper::get_population_data($sampleArgs);
           if (isset($sampleList['error'])) return $sampleList['error'];
           $uList = array();
@@ -1189,13 +1187,12 @@ class iform_report_calendar_summary_2 {
     switch($siteUrlParams[self::$userKey]['value']){
       case '' : $options['downloadFilePrefix'] .= lang::get('AllRecorders').'_';
         break;
-      // can't use myData as with cached reports, >1 person may have same filename, but different reports.
-//      case $user->uid : $options['downloadFilePrefix'] .= lang::get('MyData').'_';
-//        break;
       case "branch" : $options['downloadFilePrefix'] .= lang::get('MyBranch').'_';
-        break;
+        // need to add user after branch so we know which branch
       default :
-        // if account comes from cache, then it is an array, if from drupal an object.
+        // can't use "myData" as with cached reports >1 person may have same filename, but different reports. Also
+        // providing explicit name makes it clearer.
+      	// if account comes from cache, then it is an array, if from drupal an object.
         $account = is_array($userList[$siteUrlParams[self::$userKey]['value']]) ? 
                      $userList[$siteUrlParams[self::$userKey]['value']] :
                      get_object_vars($userList[$siteUrlParams[self::$userKey]['value']]);
@@ -1355,7 +1352,7 @@ jQuery('#".$ctrlid."').change(function(){
             'tableHeaders','chartLabels','disableableSeries',
             'chartType','rowGroupColumn','rowGroupID','width','height',
             'includeChartTotalSeries','includeChartItemSeries',
-            'includeRawData', 'includeSummaryData', 'includeEstimatesData', 'linkURL',
+            'includeRawData', 'includeSummaryData', 'includeEstimatesData',
             'includeRawGridDownload', 'includeSummaryGridDownload',
             'includeEstimatesGridDownload', 'sampleFields'
       ));
@@ -1450,6 +1447,11 @@ jQuery('#".$ctrlid."').change(function(){
     } else
       $reportOptions['extraParams']['location_type_id'] = self::$siteUrlParams[self::$locationTypeKey]['value'];
     
+    if(isset($args['linkURL'])) {
+    	$reportOptions['linkURL'] = $args['linkURL'] . (isset($siteUrlParams[self::$URLExtensionKey]) ? $siteUrlParams[self::$URLExtensionKey] : '');
+	    $reportOptions['linkURL'] .= (is_int(strpos('?',$reportOptions['linkURL'])) ? '&' : '?').'sample_id=';
+    }
+
     $reportOptions['includeReportTimeStamp']=isset($args['includeFilenameTimestamps']) && $args['includeFilenameTimestamps'];
     
     $retVal.= '</tr></thead></table>';

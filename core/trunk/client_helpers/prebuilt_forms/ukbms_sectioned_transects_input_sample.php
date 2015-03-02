@@ -702,10 +702,8 @@ class iform_ukbms_sectioned_transects_input_sample {
   public static function get_form($args, $node, $response=null) {
     if (isset($response['error']))
       data_entry_helper::dump_errors($response);
-    if ((isset($_REQUEST['page']) && $_REQUEST['page']==='mainSample' && !isset(data_entry_helper::$validation_errors) && !isset($response['error'])) ||
-        (isset($_REQUEST['page']) && $_REQUEST['page']==='notes')) {
+    if (isset($_REQUEST['page']) && $_REQUEST['page']==='mainSample' && !isset(data_entry_helper::$validation_errors) && !isset($response['error'])) {
       // we have just saved the sample page, so move on to the occurrences list,
-      // or we have had an error in the notes page
       return self::get_occurrences_form($args, $node, $response);
     } else {
       return self::get_sample_form($args, $node, $response);
@@ -827,7 +825,7 @@ class iform_ukbms_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="" id="entered_sref_system"/>';
       // sref values for the sample will be populated automatically when the submission is built.
     }
-    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
+    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect')); // hardcoded??
     $attributes = data_entry_helper::getAttributes(array(
       'id' => $sampleId,
       'valuetable'=>'sample_attribute_value',
@@ -860,6 +858,11 @@ class iform_ukbms_sectioned_transects_input_sample {
     else 
       $blockOptions=array();
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
+    $r .= data_entry_helper::textarea(array(
+      'fieldname'=>'sample:comment',
+      'label'=>lang::get('Notes'),
+      'helpText'=>"Use this space to input comments about this week's walk."
+    ));
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" />';
     $r .= '<a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Cancel').'</a>';
@@ -1082,7 +1085,6 @@ class iform_ukbms_sectioned_transects_input_sample {
       $tabs['#grid4']=t(isset($args['species_tab_4']) && $args['species_tab_4'] != '' ? $args['species_tab_4'] : 'Species Tab 4');
     if(isset($args['map_taxon_list_id']) && $args['map_taxon_list_id']!='')
       $tabs['#gridmap']=t(isset($args['species_map_tab']) && $args['species_map_tab'] != '' ? $args['species_map_tab'] : 'Map Based Tab');
-    $tabs['#notes']=lang::get('Notes');
     $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
     data_entry_helper::enable_tabs(array(
         'divId'=>'tabs',
@@ -1322,39 +1324,11 @@ class iform_ukbms_sectioned_transects_input_sample {
 };
 indiciaFns.bindTabsActivate(jQuery(jQuery('#".$options["tabDiv"]."').parent()), speciesMapTabHandler);\n";
     } else // enable validation on the comments form in order to include the simplified ajax queuing for the autocomplete.
-      data_entry_helper::enable_validation('notes_form');
+      data_entry_helper::enable_validation('validation-form');
 
-    // for the comment form, we want to ensure that if there is a timeout error that it reloads the 
-    // data as stored in the DB.
-    $reloadParts = explode('?', $reloadPath, 2);
-    // fragment is always at the end. discard this.
-    if(count($reloadParts)>1){
-    	$params = explode('#', $reloadParts[1], 2);
-    	$params=$params[0]."&sample_id=".$parentSampleId;
-    } else {
-    	$reloadParts = explode('#', $reloadParts[0], 2);
-    	$params = "sample_id=".$parentSampleId;
-    }
-    
-    $r .= "<div id=\"notes\">\n";
-    $r .= "<form method=\"post\" id=\"notes_form\" action=\"".$reloadParts[0].'?'.$params."#notes\">\n";
-    $r .= $auth['write'];
-    $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
-    $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
-    $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'"/>';
-    $r .= '<input type="hidden" name="page" value="notes"/>';
-    $r .= '<p  class="page-notice ui-state-highlight ui-corner-all">'.
-          lang::get('When using this page, please remember that the data is not saved to the database as you go (which is the case for the previous tabs). In order to save the data entered in this page you must click on the Submit button at the bottom of the page.').
-          '</p>';
-    $r .= data_entry_helper::textarea(array(
-      'fieldname'=>'sample:comment',
-      'label'=>lang::get('Notes'),
-      'helpText'=>"Use this space to input comments about this week's walk."
-    ));    
-    $r .= '<input type="submit" value="'.lang::get('Submit').'" id="save-button"/>';
-    $r .= '</form>';
-    $r .= '<br /><a href="'.$args['my_walks_page'].'" class="button">'.lang::get('Finish').'</a>';
-    $r .= '</div></div>';
+    $r .= '</div>';
+    // a stub form to attach validation to.
+    $r .= '<form style="display: none" id="validation-form"></form>';
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';

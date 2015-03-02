@@ -108,7 +108,9 @@ class summary_builder {
  			if(!isset($YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']] = array();
  			if(!in_array($row['created_by_id'], $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']][] = $row['created_by_id'];
   		}
-  	}
+  		echo 'Last missed occurrence processed has id '.$r[count($r)-1]['id'].'<br/>';
+  	} else
+  		echo 'No missed occurrences to be processed.<br/>';
   	if(count($YearTaxon)>0){
   		ksort($YearTaxon);
   		ksort($YearTaxonUser);
@@ -184,7 +186,7 @@ class summary_builder {
 	  foreach($taxonList as $taxonID) {
  	  		$taxon = $db->query("SELECT * FROM cache_taxa_taxon_lists WHERE id = $taxonID")->result_array(false);
 	  		if(count($taxon)!=1) {
-	  			echo "Error : Taxon search for id = $taxonID return wrong number of rows: ".count($taxon)."<br/>";
+	  			echo "Error : Taxon search for id = $taxonID returned wrong number of rows: ".count($taxon)." - expected one row. <br/>";
 	  			continue;
 	  		}
 	  	foreach($YearTaxonLocation[$year.':'.$taxonID] as $locationID) {
