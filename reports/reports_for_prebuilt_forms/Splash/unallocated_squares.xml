@@ -38,8 +38,8 @@
     <column name='entered_sref' display='Grid Ref' sql="regexp_replace(l.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' />
     <column name='count' sql='count(distinct(pav.id))' display='Number of allocated users' datatype='integer' aggregate="true"/>
     <column name='gn' visible='false' feature_style="graphicName" sql="'square'" aggregate="true"/>    
-    <column name="sc" visible="false" feature_style="strokeColor" sql="case count(distinct(pav.id)) when 0 then 'green' else 'red' end" aggregate="true"/>
-    <column name="fc" visible="false" feature_style="fillColor" sql="case count(distinct(pav.id)) when 0 then 'green' else 'red' end" aggregate="true"/>
+    <column name="sc" visible="false" feature_style="strokeColor" sql="case count(distinct(pav.id)) when 0 then 'blue' else '#FFA62F' end" aggregate="true"/>
+    <column name="fc" visible="false" feature_style="fillColor" sql="case count(distinct(pav.id)) when 0 then 'blue' else '#FFA62F' end" aggregate="true"/>
     <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom,l.centroid_geom))" />
   </columns>
 </report>
