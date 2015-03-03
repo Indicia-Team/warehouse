@@ -192,6 +192,22 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
     }
   }
  
+  //Return all squares instead of doing a post code search
+  return_all_squares= function (indiciaUserId) {
+    var url = window.location.href.toString().split('?');
+    var params = '?';
+    //If we are only returning squares for a single user.
+    if (indiciaUserId!=0) {
+      params+="dynamic-the_user_id="+indiciaUserId+'&';
+    }
+    params+="dynamic-return_all_squares=true";
+    url[0] += params;
+    //Reload screen and submit
+    window.location=url[0];
+    window.location.href;
+    $('#entry_form').submit();
+  }
+
   //Function allows the report to only return squares located a certain distance from a user's
   //post code.
   limit_to_post_code= function (postcode,georeferenceProxy,indiciaUserId) {

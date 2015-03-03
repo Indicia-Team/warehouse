@@ -708,10 +708,14 @@ class extension_splash_extensions {
     //to their own post code.
     if (empty($postCode) && function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_indicia_post_code'))
       $postCode=hostsite_get_user_field('field_indicia_post_code');
-    if (!empty($options['label']))
-      $buttonLabel=$options['label'];
+    if (!empty($options['postCodeSearchButtonLabel']))
+      $postCodeSearchButtonLabel=$options['postCodeSearchButtonLabel'];
     else 
-      $buttonLabel='Get Squares';
+      $postCodeSearchButtonLabel='Get Squares';
+    if (!empty($options['returnAllButtonLabel']))
+      $returnAllButtonLabel=$options['returnAllButtonLabel'];
+    else 
+      $returnAllButtonLabel='Return all squares';
     //Only show the post code limiter if there is a post code to actually use as the origin point.
     if (!empty($postCode)) {
       data_entry_helper::$javascript.="
@@ -722,12 +726,15 @@ class extension_splash_extensions {
           var postcode='".$postCode."';
           limit_to_post_code(postcode,georeferenceProxy,".$indiciaUserId.");
         });
+        $('#return-all-submit').click(function(){;
+          return_all_squares(".$indiciaUserId.");
+        });
       ";
       if (!empty($options['instructionText']))
         $instructionText=$options['instructionText'];
        else 
         $instructionText="Only show locations within this distance (miles) of the user's post code.";
-      $r.="<div>".$instructionText."<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$buttonLabel."'></div>\n";     
+      $r.="<div>".$instructionText."<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$postCodeSearchButtonLabel."'><input id='return-all-submit' type='button' value='".$returnAllButtonLabel."'></div>\n";     
     } else {
       if(!empty($options['noPostCodeMessage']))
         $noPostCodeMessage=$options['noPostCodeMessage'];
