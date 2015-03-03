@@ -12,7 +12,7 @@
     LEFT JOIN location_attribute_values lavEx on lavEx.location_id=l.id AND lavEx.location_attribute_id=#excluded_square_attr_id# AND lavEx.deleted=false
   WHERE (l.location_type_id=#core_square_type_id#)  
     AND #website_filter# AND (lavEx.int_value != 1 OR lavEx.int_value IS NULL) AND l.deleted=false
-    AND #distance_from_post_code# != 0
+    AND (#distance_from_post_code# != 0 OR '#return_all_squares#'='true')
   </query>
   <order_bys>
     <order_by>count ASC</order_by>
@@ -31,6 +31,7 @@
     </param>
     <param name="distance_from_post_code" display="Distance from post code" description="The distance to return items from the specified post code." datatype="integer" default='0' emptyvalue='0'/>
     <param name="excluded_square_attr_id" display="Excluded squares attribute id" description="Id of attribute that holds whether a square is excluded or not. If it is excluded then don't display on the map." datatype="integer"/>
+    <param name="return_all_squares" display="Return all squares" description="If true, return all squares else return nothing or return squares using the post code search."  default='' emptyvalue=''/>
   </params>
   <columns> 
     <column name='id' sql='l.id' datatype='integer' visible='false' in_count="true"/>  
