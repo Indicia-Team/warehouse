@@ -13,7 +13,7 @@
     WHERE 1=1
       AND #website_filter#
       AND (l.location_type_id=#core_square_type_id# OR l.location_type_id=#additional_square_type_id#)    
-      AND (#distance_from_post_code# != 0 OR #only_results_after_search#=false OR '#return_all_squares#'='true')
+      AND (#distance_from_post_code# != 0 OR #only_results_after_search#=false)
       AND l.deleted=false
       #filters#
     GROUP BY l.id, lav.text_value, lavEx.int_value
@@ -38,7 +38,6 @@
     <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
     --Not required, needed if you want the not_excluded and excluded columns to output correct data 
     <param name="excluded_square_attr_id" display="Excluded squares attribute id" description="Id of attribute that holds whether a square is excluded or not. If it is excluded then don't display on the map." datatype="integer" default='0' emptyvalue='0'/>
-    <param name="return_all_squares" display="Return all squares" description="If true, return all squares otherwise fall back on behaviour of other set parameters."  default='' emptyvalue=''/>
   </params>
   <columns>
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" aggregate="true" in_count="true"/>
