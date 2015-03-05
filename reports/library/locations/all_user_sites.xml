@@ -38,6 +38,8 @@
     --note: Do not rename this as user_id as there appears to be automatic code associated with the website filter that looks for that name
     <column name="pav_user_id" display="User Id" sql="u.id" datatype="integer" visible="false"/>
     <column name="person_name" display="User's Name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
+    --Default to invisible as this field was added later and don't want to affect old reports
+    <column name="person_email" display="User's Email" sql="p.email_address" visible="false" datatype="text"/>
     <column name="location_name" display="Location" sql="l.name" datatype="text" />
   </columns>
 </report>
