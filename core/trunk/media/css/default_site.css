@@ -541,6 +541,7 @@ form #map-toolbar {
 #map-footer {
   background-color: #cccccc;
   padding: 1px;
+  box-sizing: border-box;
 }
 
 #map-footer .grid-ref-hint {
@@ -551,8 +552,21 @@ form #map-toolbar {
   font-size: 1em;
   font-family: arial, sans-serif;
   margin: 0;
-  float: left;  
+  float: left;
+  box-sizing: border-box;
+}
+#map-footer h3 {
   width: 25%;
+}
+#map-footer div {
+  width: 27%;
+}
+#map-footer div.hint-normal {
+  width: 21%;
+}
+
+#map-footer span {
+  white-space:nowrap;
 }
 
 .columns #map-footer h3 {
