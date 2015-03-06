@@ -247,7 +247,7 @@ var destroyAllFeatures;
         if ($.isArray(feature)===false) {
           feature = [feature];
         }
-        var styletype = (typeof type !== 'undefined') ? styletype = type : styletype = 'default';
+        var styletype = (typeof type !== 'undefined') ? type : 'default';
         $.each(feature, function(){
           if (typeof transform!=="undefined" && transform && div.map.projection.getCode() != div.indiciaProjection.getCode()) {
             this.geometry.transform(div.indiciaProjection, div.map.projection);
@@ -424,11 +424,11 @@ var destroyAllFeatures;
     }
 
     function _getPrecisionHelp(div, value) {
-      var helptext = [],info;
+      var helptext = [], info, handler = indiciaData.srefHandlers[_getSystem().toLowerCase()];
       if (div.settings.helpToPickPrecisionMin && typeof indiciaData.srefHandlers!=="undefined" &&
           typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
           $.inArray('precisions', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns) !== -1) {
-        info = indiciaData.srefHandlers[_getSystem().toLowerCase()].sreflenToPrecision(value.length);
+        info = handler.getPrecisionInfo(handler.valueToAccuracy(value));
         if (info.metres > div.settings.helpToPickPrecisionMin) {
           helptext.push(div.settings.hlpImproveResolution1.replace('{size}', info.display));
         } else if (info.metres > div.settings.helpToPickPrecisionMax) {
@@ -543,7 +543,8 @@ var destroyAllFeatures;
      * After clicking on the map, if the option is set, output encouragement and help text to get the
      * user to specify an accurate map reference. Also zooms the map in to assist this process.
      */
-    function updateHelpAfterMapClick(data, div) {
+    function updateHelpAfterMapClick(data, div, feature) {
+      var helptext=[], helpitem;
       // Output optional help and zoom in if more precision needed
       helpitem = _getPrecisionHelp(div, data.sref);
       if (helpitem !== '') {
@@ -584,7 +585,7 @@ var destroyAllFeatures;
      */
     function _setClickPoint(data, div) {
       // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
-      var feature, helptext=[], helpitem, parser = new OpenLayers.Format.WKT();
+      var feature, parser = new OpenLayers.Format.WKT();
       // Update the spatial reference control
       $('#' + opts.srefId).val(data.sref);
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
@@ -1199,7 +1200,9 @@ var destroyAllFeatures;
      * Gets the precision required for a grid square dependent on the map zoom.
      * Precision parameter is the optional default, overridden by the clickedSrefPrecisionMin and
      * clickedSrefPrecisionMax settings. Set accountForModifierKey to false to disable adjustments
-     * made for the plus and minus key
+     * made for the plus and minus key.
+     * @return Number of letters required in OSGB style notation to describe a ref to this precision.
+     * Therefore 0 = 100km precision, 2 = 10km precision, 4=1km precision etc.
      */
     function getPrecisionInfo(div, precision, accountForModifierKey) {
       if (typeof accountForModifierKey==="undefined") {
@@ -1434,8 +1437,7 @@ var destroyAllFeatures;
             return false;
           }
           //create a rectangular polygon
-          var coords = plot_rectangle_calculator(lonlat, width, length);
-          polygon = coords;
+          polygon = plot_rectangle_calculator(lonlat, width, length);
           $('#'+ div.settings.boundaryGeomId).val(polygon);
         } else if (plotShape === 'circle') {
           // create a circular polygon
@@ -1463,10 +1465,66 @@ var destroyAllFeatures;
       else
       {
         // Clicking to locate an sref (eg an OSGB grid square)
-        pointToSref(div, point, _getSystem(), function(data){
+        var system = chooseBestSystem(div, point, _getSystem());
+        $('select#'+opts.srefSystemId).val(system);
+        pointToSref(div, point, system, function(data){
           handleSelectedPositionOnMap(lonlat,div,data);
         });
       }
+    }
+
+    /**
+     * Given an sref system, check whether this is appropriate for the supplied point. If not, then works out the best
+     * available alternative.
+     * @param div The map div
+     * @param point A point object with x, y coordinates, in the map projection
+     * @param system The system code which is currently selected
+     */
+    function chooseBestSystem(div, point, system) {
+      var proj, testpoint, sys;
+      // If no sref selector available, then just return the original system
+      if ($('select#'+opts.srefSystemId).length===0) {
+        return system;
+      }
+      sys = false;
+      // Use the web mercator projection to do a rough test for each possible system.
+      // First, OSIE
+      if ($('#'+opts.srefSystemId+' option[value="OSIE"]').length
+          && point.x >= -1196000 && point.x <= -599200 && point.y >= 6687800 && point.y <= 7442470) {
+        // Got a rough match, now transform to the correct system so we can do exact match. Note that we are not testing against
+        // a pure rectangle now.
+        proj=new OpenLayers.Projection('EPSG:29901');
+        testpoint = point.clone().transform(div.map.projection, proj);
+        if (testpoint.x >= 10000 && testpoint.x <= 367300 && testpoint.y >= 10000 && testpoint.y <= 468100
+            && (testpoint.x < 332000 || testpoint.y < 445900)) {
+          sys = 'OSIE';
+        }
+      }
+      // Next, OSGB
+      if (!sys && $('#'+opts.srefSystemId+' option[value="OSGB"]').length
+          && point.x >= -1081873 && point.x <= -422933 && point.y >= 6405988 && point.y <= 8944478) {
+        // Got a rough match, now transform to the correct system so we can do exact match. This time we can do a pure
+        // rectangle, as the IE grid refs have already been taken out
+        proj=new OpenLayers.Projection('EPSG:27700');
+        testpoint = point.clone().transform(div.map.projection, proj);
+        if (testpoint.x >= 0 && testpoint.x <= 700000 && testpoint.y >= 0 && testpoint.y <= 1400000) {
+          sys = 'OSGB';
+        }
+      }
+      if (!sys && $('#'+opts.srefSystemId+' option[value="LUGR"]').length
+          && point.x >= 634030 && point.x <= 729730 && point.y >= 6348260 && point.y <= 6484930) {
+        proj=new OpenLayers.Projection('EPSG:2169');
+        testpoint = point.clone().transform(div.map.projection, proj);
+        if (testpoint.x >= 46000 && testpoint.x <= 108000 && testpoint.y >= 55000 && testpoint.y <= 141000) {
+          sys = 'LUGR';
+        }
+      }
+      // revert to the original system if we failed to find a better one
+      if (!sys) {
+        sys = system;
+      }
+      return sys;
+
     }
 
     function showGridRefHints(div) {
@@ -1474,7 +1532,7 @@ var destroyAllFeatures;
           typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined") {
         var ll = div.map.getLonLatFromPixel(currentMousePixel), precisionInfo,
               handler=indiciaData.srefHandlers[_getSystem().toLowerCase()], largestSrefLen, pt,
-              proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0), r;
+              proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0);
         if ($.inArray('precisions', handler.returns)!==-1 && $.inArray('gridNotation', handler.returns)!==-1) {
           precisionInfo=getPrecisionInfo(div, null, false);
           proj=new OpenLayers.Projection('EPSG:'+indiciaData.srefHandlers[_getSystem().toLowerCase()].srid);
@@ -1483,7 +1541,7 @@ var destroyAllFeatures;
           largestSrefLen = precisionInfo.precision;
           $('.grid-ref-hint').removeClass('active');
           // If there are multiple precisions available using the +/- keys, activate the current one
-          if (div.settings.clickForSpatialRef && handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen).metres) {
+          if (div.settings.clickForSpatialRef && handler.getPrecisionInfo(largestSrefLen+2).metres !== handler.getPrecisionInfo(largestSrefLen).metres) {
             if (minusKeyDown) {
               $('.hint-minus').addClass('active');
             } else if (plusKeyDown) {
@@ -1493,9 +1551,9 @@ var destroyAllFeatures;
             }
           }
           // almost every mouse move causes the smallest + key square to change
-          if (handler.sreflenToPrecision(largestSrefLen+4)!==false &&
-                handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
-            $('.hint-plus .label').html(handler.sreflenToPrecision(largestSrefLen+4).display + ':');
+          if (handler.getPrecisionInfo(largestSrefLen+2)!==false &&
+                handler.getPrecisionInfo(largestSrefLen+2).metres !== handler.getPrecisionInfo(largestSrefLen).metres) {
+            $('.hint-plus .label').html(handler.getPrecisionInfo(largestSrefLen+2).display + ':');
             $('.hint-plus .data').html(handler.pointToGridNotation(pt, largestSrefLen+2));
             $('.hint-plus').css('opacity', 1);
           } else {
@@ -1504,15 +1562,15 @@ var destroyAllFeatures;
           // don't recalculate if mouse is still over the existing ghost
           if (recalcGhost || $('.hint-normal').css('opacity')===0) {
             // since we've moved a square, redo the grid ref hints
-            if (handler.sreflenToPrecision(largestSrefLen)!==false &&
-                handler.sreflenToPrecision(largestSrefLen).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
-              $('.hint-minus .label').html(handler.sreflenToPrecision(largestSrefLen).display + ':');
+            if (handler.getPrecisionInfo(largestSrefLen-2)!==false &&
+                handler.getPrecisionInfo(largestSrefLen-2).metres !== handler.getPrecisionInfo(largestSrefLen).metres) {
+              $('.hint-minus .label').html(handler.getPrecisionInfo(largestSrefLen-2).display + ':');
               $('.hint-minus .data').html(handler.pointToGridNotation(pt, largestSrefLen-2));
               $('.hint-minus').css('opacity', 1);
             } else {
               $('.hint-minus').css('opacity', 0);
             }
-            $('.hint-normal .label').html(handler.sreflenToPrecision(largestSrefLen+2).display + ':');
+            $('.hint-normal .label').html(handler.getPrecisionInfo(largestSrefLen).display + ':');
             $('.hint-normal .data').html(handler.pointToGridNotation(pt, largestSrefLen));
             $('.hint-normal').css('opacity', 1);
           }
@@ -1819,7 +1877,7 @@ var destroyAllFeatures;
       };
 
       // This hack fixes an IE8 bug where it won't display Google layers when switching using the Layer Switcher.
-      div.map.events.register('changebaselayer', null, function(e) {
+      div.map.events.register('changebaselayer', null, function() {
         // trigger layer redraw by changing the map size
         div.style.height = (parseInt(div.style.height)-1) + 'px';
         // keep a local reference to the map div, so we can access it from the timeout
@@ -1892,10 +1950,9 @@ var destroyAllFeatures;
                 if (typeof indiciaData.srefHandlers!=="undefined" &&
                     typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
                     $.inArray('wkt', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns)!==-1) {
-                  var ll, handler=indiciaData.srefHandlers[_getSystem().toLowerCase()], pt,
-                      proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0), precisionInfo;
+                  var ll=div.map.getLonLatFromPixel(evt.xy), handler=indiciaData.srefHandlers[_getSystem().toLowerCase()],
+                      pt, proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0), precisionInfo;
                   if (recalcGhost) {
-                    ll=div.map.getLonLatFromPixel(evt.xy);
                     precisionInfo=getPrecisionInfo(div);
                     proj=new OpenLayers.Projection('EPSG:'+indiciaData.srefHandlers[_getSystem().toLowerCase()].srid);
                     ll.transform(div.map.projection, proj);
@@ -1910,7 +1967,7 @@ var destroyAllFeatures;
                       parser = new OpenLayers.Format.WKT();
                       feature = parser.read(r.wkt);
                       r.wkt = feature.geometry.transform(proj, div.map.projection).toString();
-                      //If this line is used, it breaks the roation handles on the plots without
+                      //If this line is used, it breaks the rotation handles on the plots without
                       //actually having any other effect as far as I can tell.
                       if (!div.settings.clickForPlot) {                     
                         ghost=_showWktFeature(div, r.wkt, div.map.editLayer, null, true, 'ghost', false);
@@ -1919,25 +1976,22 @@ var destroyAllFeatures;
                   } else if (parseInt(_getSystem())==_getSystem()) {
                     // also draw a selection ghost if using a point ref system we can simply transform client-side
                     ll = div.map.getLonLatFromPixel({x: evt.layerX, y: evt.layerY});
-                    proj=new OpenLayers.Projection('EPSG:'+_getSystem());
-                    //ll.transform(div.map.projection, proj);
                     ghost=_showWktFeature(div, 'POINT('+ll.lon+' '+ll.lat+')', div.map.editLayer, null, true, 'ghost', false);
                   }
                 }
               }
             }
           });
-          $('#map').mouseleave(function(evt) {
+          $('#map').mouseleave(function() {
             // clear ghost hover markers when mouse leaves the map
             removeAllFeatures(div.map.editLayer, 'ghost');
           });
         }
       }
       if (this.settings.searchLayer) {
-          // Add an editable layer to the map
-          var searchLayer = new OpenLayers.Layer.Vector(this.settings.searchLayerName, {style: this.settings.searchStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.searchLayerInSwitcher});
-          div.map.searchLayer = searchLayer;
-          div.map.addLayer(div.map.searchLayer);
+        // Add an editable layer to the map
+        div.map.searchLayer = new OpenLayers.Layer.Vector(this.settings.searchLayerName, {style: this.settings.searchStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.searchLayerInSwitcher});
+        div.map.addLayer(div.map.searchLayer);
       } else {
         div.map.searchLayer = div.map.editLayer;
       }
@@ -2054,7 +2108,7 @@ var destroyAllFeatures;
           }
         }});
       }
-      var ctrl, hint, pushDrawCtrl = function(c) {
+      var hint, pushDrawCtrl = function(c) {
         toolbarControls.push(c);
         if (div.settings.editLayer && div.settings.allowPolygonRecording) {
           c.events.register('featureadded', c, recordPolygon);
@@ -2310,8 +2364,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     plotLengthId: 'attr-length', // html id of plot length control for plotShape = 'rectangle'
     plotRadiusId: 'attr-radius', // html id of plot radius control for plotShape = 'circle'
     boundaryGeomId: 'imp-boundary-geom',
-    clickedSrefPrecisionMin: '2', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
-    clickedSrefPrecisionMax: '10',
+    clickedSrefPrecisionMin: 2, // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
+    clickedSrefPrecisionMax: 10,
     plotPrecision: '10', // when clickForPlot is true, the precision of grid ref associated with plot.
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
@@ -2542,6 +2596,5 @@ function plot_rectangle_calculator(latLongPoint, width, length) {
   mercNorthEast = OpenLayers.Layer.SphericalMercator.forwardMercator(actualSquareNorthEastPoint4326.x,actualSquareNorthEastPoint4326.y);
 
   var polygonMetadata = 'POLYGON(('+mercOriginal.lon+' '+mercOriginal.lat+','+mercNorth.lon+' '+mercNorth.lat+','+mercNorthEast.lon+' '+mercNorthEast.lat+','+mercEast.lon+' '+mercEast.lat+'))';
-  var polygon=OpenLayers.Geometry.fromWKT(polygonMetadata);
-  return polygon;
+  return OpenLayers.Geometry.fromWKT(polygonMetadata);
 }

@@ -21,9 +21,9 @@ if (typeof indiciaData.srefHandlers==="undefined") {
   indiciaData.srefHandlers={};
 }
 
-indiciaData.srefHandlers['osgb'] = {
+indiciaData.srefHandlers['osie'] = {
 
-  srid: 27700,
+  srid: 29901,
 
   returns: ['wkt','precisions','gridNotation'], // sref
 
@@ -34,7 +34,7 @@ indiciaData.srefHandlers['osgb'] = {
     var sqrSize = Math.pow(10, (10-precisionInfo.precision)/2);
     var x=Math.floor(point.x/sqrSize)*sqrSize,
         y=Math.floor(point.y/sqrSize)*sqrSize;
-    if (x>=0 && x<=700000-sqrSize && y>=0 && y<=1300000-sqrSize) {
+    if (x>=0 && x<=500000-sqrSize && y>=0 && y<=500000-sqrSize) {
       return {
         // @todo: sref:
         wkt: 'POLYGON(('+
@@ -65,37 +65,37 @@ indiciaData.srefHandlers['osgb'] = {
   },
 
   valueToAccuracy: function(value) {
-    // OSGB grid ref length correspond exactly to the scale of accuracy used on the warehouse, excluding the 100km square letters
-    return value.length-2;
+    // OSIE grid ref length correspond exactly to the scale of accuracy used on the warehouse, excluding the 100km square letter
+    return value.length-1;
   },
   
   /**
    * Converts an easting northing point to a grid ref.
-   * Thanks to Chris Veness, http://www.movable-type.co.uk/scripts/latlong-gridref.html, for the original script.   
+   * Thanks to Chris Veness, http://www.movable-type.co.uk/scripts/latlong-gridref.html, for the original script.
    */
   pointToGridNotation: function(point, digits) {
-    var e=point.x, n=point.y;
+    var e=point.x, n=point.y, l, letter, e100k, n100k;
     if (e==NaN || n==NaN) return '??';
-    
+
     // get the 100km-grid indices
-    var e100k = Math.floor(e/100000), n100k = Math.floor(n/100000);
+    e100k = Math.floor(e/100000), n100k = Math.floor(n/100000);
     
-    if (e100k<0 || e100k>6 || n100k<0 || n100k>12) return '';
+    if (e100k<0 || e100k>5 || n100k<0 || n100k>5) return '';
 
-    // translate those into numeric equivalents of the grid letters
-    var l1 = (19-n100k) - (19-n100k)%5 + Math.floor((e100k+10)/5);
-    var l2 = (19-n100k)*5%25 + e100k%5;
+    // translate this into numeric equivalents of the grid letter
+    l = ((4 - (n100k % 5)) * 5) + (e100k % 5);
 
-    // compensate for skipped 'I' and build grid letter-pairs
-    if (l1 > 7) l1++;
-    if (l2 > 7) l2++;
-    var letPair = String.fromCharCode(l1+'A'.charCodeAt(0), l2+'A'.charCodeAt(0));
+    // compensate for skipped 'I'
+    if (l > 7) {
+      l++;
+    }
+    letter = String.fromCharCode(l+'A'.charCodeAt(0));
 
     // strip 100km-grid indices from easting & northing, and reduce precision
-    e = Math.floor((e%100000)/Math.pow(10,5-digits/2));
-    n = Math.floor((n%100000)/Math.pow(10,5-digits/2));
+    e = Math.floor((e%100000)/Math.pow(10, 5-digits/2));
+    n = Math.floor((n%100000)/Math.pow(10, 5-digits/2));
 
-    var gridRef = letPair + e.padLz(digits/2) + n.padLz(digits/2);
+    var gridRef = letter + e.padLz(digits/2) + n.padLz(digits/2);
 
     return gridRef;
   }
