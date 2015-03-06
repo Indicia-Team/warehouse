@@ -80,7 +80,8 @@ class Data_cleaner_Controller extends Service_Base_Controller {
   
   /**
    * Fills the temporary table called occdelta, which contains details of each proposed record to 
-   * verify.
+   * verify. This is only done when calling verify directly, since occdelta is prepared by the 
+   * scheduled_tasks process when auto-checks are being run on the schedule.
    */
   private function prepareOccdelta($db, $sample, $occurrences) {
     $website_id=$this->website_id;
