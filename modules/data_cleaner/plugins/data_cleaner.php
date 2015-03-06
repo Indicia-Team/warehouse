@@ -5,7 +5,7 @@
  */
 function data_cleaner_alter_menu($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin')) 
-    $menu['Admin']['Verification Rules']='verification_rule';
+    $menu['Admin']['Verification rules']='verification_rule';
   return $menu;
 }
 
@@ -93,9 +93,10 @@ function data_cleaner_run_rules($rules, $db) {
   from occdelta co";
       if (isset($query['joins']))
         $sql .= "\n" . $query['joins'];
+      $sql .= "\nwhere ";
       if (isset($query['where']))
-        $sql .= "\nwhere " . $query['where'];
-      $sql .= "\n and co.record_status not in ('I','V','R','D')";
+        $sql .= "$query[where] \nand ";
+      $sql .= "co.verification_checks_enabled=true\nand co.record_status not in ('I','V','R','D')";
       // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
       try {
         $count += $db->query($sql)->count();
