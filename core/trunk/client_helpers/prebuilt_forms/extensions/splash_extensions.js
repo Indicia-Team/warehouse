@@ -210,7 +210,15 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
 
   //Function allows the report to only return squares located a certain distance from a user's
   //post code.
-  limit_to_post_code= function (postcode,georeferenceProxy,indiciaUserId) {
+  limit_to_post_code= function (postcode,georeferenceProxy,indiciaUserId,postCodeRequestIssueWarning) {
+    if (!postcode) {
+      alert('Please enter a post code to search for.');
+      return false;
+    }
+    if (!$('#limit-value').val()) {
+      alert('Please enter the number of miles you wish to search for from the post code.');
+      return false;
+    }
     if ($('#limit-value').val()>30) {
       alert('Please enter a maximum of 30 miles to search squares for');
       return false;
@@ -228,7 +236,7 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
           }
         });
         if (!done) {
-          alert('Sorry, there appears to be a problem searching with the post code. Please check your system\'s Google API key is operating correctly and that your post code is valid.');
+          alert(postCodeRequestIssueWarning);
           return false;
         }
         
@@ -246,10 +254,11 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
           params+="dynamic-post_code_geom="+postCodePoint+'&';
           params+="dynamic-distance_from_post_code="+($('#limit-value').val()*1609)+'&';
         }
-        //Remove the & from the end of the url
-        params = params.substring(0, params.length - 1);
+        //Need the post code and mieage in the url params so when the page reloads we can set the mileage and post code fields so they don't need to be re-entered.
+        params += "post_code=" + postcode;
+        params += "&mileage=" + $('#limit-value').val();
         //url[0] is the part of the url excluding parameters
-        url[0] += params;
+        url[0] += params; 
         //Reload screen and submit
         window.location=url[0];
         window.location.href;
