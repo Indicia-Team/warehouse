@@ -677,7 +677,12 @@ class extension_splash_extensions {
   /*
    * When the administrator allocates squares to a user, allow the user to enter a mileage value
    * and then reload the screen only showing squares which are within that distance of the user's post code.
-   * @instructionText can be set to override the instuction text given to the user next to the control.
+   * Initially loads with no squares shown on the page, however there is also a Return All Squares button available to the user.
+   * @freeTextPostCode override default behaviour so user is presented with post code text box instead of getting from their account.
+   * @returnAllButtonLabel override the label on the Return On Squares button
+   * @instructionText can be set to override the instuction text given to the user next to the mileage control.
+   * @postCodeRequestIssueWarning override the warning given to the user if the post code search doesn't work (probably because the post code is invalid or google api is not responding correctly
+   * @postCodeSearchButtonLabel override the label on the button used to perform the search.
    */
   public static function postcode_distance_limiter($auth, $args, $tabalias, $options, $path) {
     $r='';
@@ -704,10 +709,27 @@ class extension_splash_extensions {
       $indiciaUserId = $_GET['dynamic-the_user_id'];
     else
       $indiciaUserId=0;
+    //If the post code is in the URL params then it means a request has been made and the page is reloading.
+    //Place the post code back into the field so the user doesn't have to re-enter it.
+    if (!empty($_GET['post_code'])) {
+      data_entry_helper::$javascript.="
+        $('#free-postcode').val('".$_GET['post_code']."');
+      ";
+    }
+    //If the mileage is in the URL params then it means a request has been made and the page is reloading.
+    //Place the mileage back into the field so the user doesn't have to re-enter it.
+    if (!empty($_GET['mileage'])) {
+      data_entry_helper::$javascript.="
+        $('#limit-value').val('".$_GET['mileage']."');
+      ";
+    }
     //If the page is loaded without a user id at all, it means the user will be working to see which user squares are closest
     //to their own post code.
+    //This post code variable might later be overriden if a free text post code search is available (depending on whether option is set
     if (empty($postCode) && function_exists('hostsite_get_user_field') && hostsite_get_user_field('field_indicia_post_code'))
       $postCode=hostsite_get_user_field('field_indicia_post_code');
+    else 
+      $postCode=null;
     if (!empty($options['postCodeSearchButtonLabel']))
       $postCodeSearchButtonLabel=$options['postCodeSearchButtonLabel'];
     else 
@@ -716,15 +738,26 @@ class extension_splash_extensions {
       $returnAllButtonLabel=$options['returnAllButtonLabel'];
     else 
       $returnAllButtonLabel='Return all squares';
+    //Message displayed if post code is invalid, or the the google api key has run out of requests available on the google account
+    if (!empty($options['postCodeRequestIssueWarning']))
+      $postCodeRequestIssueWarning=$options['postCodeRequestIssueWarning'];
+    else
+      $postCodeRequestIssueWarning='Sorry, there appears to be a problem searching with the post code. Please check your system\'s Google API key is operating correctly and that your post code is valid.';
     //Only show the post code limiter if there is a post code to actually use as the origin point.
-    if (!empty($postCode)) {
+    if (!empty($postCode)||(!empty($options['freeTextPostCode'])&&$options['freeTextPostCode']==true)) {
       data_entry_helper::$javascript.="
         indiciaData.google_api_key='".data_entry_helper::$google_api_key."';
         var georeferenceProxy='".data_entry_helper::getRootFolder() . data_entry_helper::client_helper_path() . "proxy.php';
         //Reload the screen with the limit applied
         $('#limit-submit').click(function(){
-          var postcode='".$postCode."';
-          limit_to_post_code(postcode,georeferenceProxy,".$indiciaUserId.");
+          var postcode
+          //If post code is available as a free text box, then use that, else fall back on the account post code
+          if ($('#free-postcode').val()) {
+            postcode=$('#free-postcode').val();
+          } else {
+            postcode='".$postCode."';
+          }
+          limit_to_post_code(postcode,georeferenceProxy,".$indiciaUserId.",\"".$postCodeRequestIssueWarning."\");
         });
         $('#return-all-submit').click(function(){;
           return_all_squares(".$indiciaUserId.");
@@ -734,7 +767,10 @@ class extension_splash_extensions {
         $instructionText=$options['instructionText'];
        else 
         $instructionText="Only show locations within this distance (miles) of the user's post code.";
-      $r.="<div>".$instructionText."<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$postCodeSearchButtonLabel."'><input id='return-all-submit' type='button' value='".$returnAllButtonLabel."'></div>\n";     
+      //Put a free text post code on the page if that option has been set by the user
+      if (!empty($options['freeTextPostCode'])&&$options['freeTextPostCode']==true)
+        $r.="<div>Please enter your post code here<br><input id='free-postcode' type='textbox'></div>\n";
+      $r.="<div>".$instructionText."<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$postCodeSearchButtonLabel."'><input id='return-all-submit' type='button' value='".$returnAllButtonLabel."'></div>\n";    
     } else {
       if(!empty($options['noPostCodeMessage']))
         $noPostCodeMessage=$options['noPostCodeMessage'];
