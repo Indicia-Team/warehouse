@@ -24,6 +24,7 @@
       s.date_start as date,
       cttl.taxon_meaning_id,
       coalesce(cttl.default_common_name, cttl.preferred_taxon) as common,
+      cttl.preferred_taxon as preferred,
       s.created_by_id as user_id,
       (select avg(sav.int_value) from sample_attribute_values sav
         JOIN sample_attributes sa ON sav.sample_attribute_id = sa.id AND sa.deleted = false AND sa.caption = '% sun'
@@ -53,6 +54,7 @@
   <columns>
     <column name='sample_id' display='Sample'/>
     <column name='common' display='Common Name' /> 
+    <column name='preferred' display='Preferred' /> 
     <column name='taxa_taxon_list_id' display='TTL ID' />   
     <column name='location_id' display='Site ID' />
     <column name='location_name' display='Transect' />

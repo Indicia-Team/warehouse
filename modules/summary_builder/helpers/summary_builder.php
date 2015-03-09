@@ -64,12 +64,15 @@ class summary_builder {
   
   private static function get_changelist($db, $last_run_date, $definition, &$YearTaxonLocationUser, &$YearTaxonLocation, &$YearTaxonUser, &$YearTaxon) {
   	$queries = kohana::config('summary_builder');
-  	$query = str_replace('#date#', $last_run_date, $queries['get_changed_items_query']);
-  	$query = str_replace('#survey_id#', $definition['survey_id'], $query);
+  	$limit = 1000;
+  	$query = str_replace(array('#date#','#survey_id#','#limit#'),
+  						 array($last_run_date,$definition['survey_id'],$limit),
+  						 $queries['get_changed_items_query']);
   	 
   	$r = $db->query($query)->result_array(false);
-  	if(count($r)){
-  		echo count($r).' new/altered occurrences to be processed.<br/>';
+  	$count = count($r);
+  	if($count){
+  		echo $count.' new/altered occurrences to be processed.<br/>';
   		foreach($r as $row){
  			$year = substr($row['date_start'], 0, 4);
   			// create list of year/taxon  
@@ -85,11 +88,14 @@ class summary_builder {
  			if(!isset($YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']] = array();
  			if(!in_array($row['created_by_id'], $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']][] = $row['created_by_id'];
   		}
+  		$limit = $limit-$count;
    	} else {
   		echo 'No new/altered occurrences to be processed.<br/>';
   	}
   	// Now check for any missed data.
-    $query = str_replace('#survey_id#', $definition['survey_id'], $queries['get_missed_items_query']);
+  	$query = str_replace(array('#date#','#survey_id#','#limit#'),
+  						 array($last_run_date,$definition['survey_id'],$limit),
+  						 $queries['get_missed_items_query']);
   	$r = $db->query($query)->result_array(false);
   	if(count($r)){
   		echo count($r).' missed occurrences to be processed.<br/>';
@@ -123,6 +129,7 @@ class summary_builder {
   private static function do_summary($db, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon) {
   	$queries = kohana::config('summary_builder');
 	foreach($YearTaxon as $year=>$taxonList) {
+	  echo "Processing data for ".$year.".<br />";
 	  $yearStart = new DateTime($year.'-01-01');
 	  $yearEnd = new DateTime($year.'-01-01');
 	  // calculate date to period conversions
@@ -295,7 +302,7 @@ class summary_builder {
   				$val=0;
   				foreach($detail['samples'] as $sampleID=>$value) $val += $value;
   				$cnt = count($detail['samples']);
-  				$val = $cnt ? ($val.".0")/count($detail['samples']) : 0;
+  				$val = $cnt ? ($val.".0")/$cnt : 0;
   				if($val>0 && $val<1) $val=1;
   				// data rounding only occurs in this option
   				$data[$period]['summary'] = summary_builder::apply_data_rounding($definition, $val);
