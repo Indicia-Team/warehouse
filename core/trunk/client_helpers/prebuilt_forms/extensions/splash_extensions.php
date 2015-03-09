@@ -770,7 +770,7 @@ class extension_splash_extensions {
       //Put a free text post code on the page if that option has been set by the user
       if (!empty($options['freeTextPostCode'])&&$options['freeTextPostCode']==true)
         $r.="<div>Please enter your post code here<br><input id='free-postcode' type='textbox'></div>\n";
-      $r.="<div>".$instructionText."<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$postCodeSearchButtonLabel."'><input id='return-all-submit' type='button' value='".$returnAllButtonLabel."'></div>\n";    
+      $r.="<div>".$instructionText."<br><input id='limit-value' type='textbox'><input id='limit-submit' type='button' value='".$postCodeSearchButtonLabel."'><input id='return-all-submit' type='button' value='".$returnAllButtonLabel."'></div>\n";
     } else {
       if(!empty($options['noPostCodeMessage']))
         $noPostCodeMessage=$options['noPostCodeMessage'];
@@ -997,6 +997,272 @@ class extension_splash_extensions {
       alert('Import Complete');";
     }
     return $r;
+  }
+  
+  /*
+   * In a similar way to the simple square upload, this function is designed only to be used once, so is not 
+   * optimised for speed or elegance.
+   * This will upload the Address/Town/County/Country/Post Code And Over 18 profile field into person_attribute_values on the warehouse.
+   * This is needed as the site went live before the easy_login syncing was working, and the easy login syncing needs a user to be logging
+   * in for the sync to work, which is not useful in this situation as some people have already used the site and won't be logging in again soon.
+   */
+  public static function simple_user_address_upload($auth, $args, $tabalias, $options, $path) {
+    //Warn user if any mandatory options are not filled in
+    if (self::simple_user_address_upload_mandatory_options_checks($options)===false)
+      return false;
+    //Array to hold data to upload from address fields in Drupal which are not present yet in the warehouse in the form of a person_attribute_value
+    $convertedNewUploadData=array();
+    $convertedNewUploadIdx=0;
+    //Same as above but holds data that already exists in the warehouse
+    $convertedExistingUploadData=array();
+    $convertedExistingUploadIdx=0;
+    //Same as above but only holds the Over 18 attribute (which is different because it is a boolean)
+    $convertedNewOver18UploadData=array();
+    $convertedNewOver18UploadIdx=0;
+    //same as above, but for over 18 data that already exists.
+    $convertedExistingOver18UploadData=array();
+    $convertedExistingOver18UploadIdx=0;
+    
+    $convertedExistingUploadDataToDelete=array();
+    
+    
+    
+
+    $r = ''; 
+    $r .= '<div><form method="post">';
+    $r .= '<input type="submit" id="sync-addresses" value="Sync"></form></div><br>'; 
+    
+    $postUrl = iform_ajaxproxy_url(null, 'person_attribute_value');
+    //Need to call this so we can use indiciaData.read
+    data_entry_helper::$js_read_tokens = $auth['read'];
+
+    //Make a list of the different address fields we need to upload to warehouse
+    $typesOfAddressField=array('Address','Town','County','Country','Post Code');
+    //Cycle through users, the starting and ending user id are supplied as configurations, as we can make the upload work in smaller chunks in case performance is poor.
+    for ($idx=$options['minimumUid']; $idx<=$options['maximumUid']; $idx++) {
+      //On each cycle it is safer to make sure variables are empty, so data isn't picked up from previous user.
+      $user=null;
+      $personData=null;
+      $user=user_load($idx);
+      if (!empty($user->mail)) {
+        //We need to collect the id of the person in the warehouse, as this is not held on the drupal profile (only the indicia user id)
+        $personData = data_entry_helper::get_population_data(array(
+          'table' => 'person',
+          'extraParams' => $auth['read'] + array('email_address' => $user->mail, 'view' => 'detail'),
+          'nocache' => true
+        )); 
+      }
+      //This won't be empty, but check anyway
+      if (!empty($personData[0]['id'])) {
+        //Cycle through all the address types to upload.
+        foreach ($typesOfAddressField as $addressFieldToCheck) {
+          $existingAttrVal=null;
+          $existingOver18AttrVal=null;
+          //Grab the field we are interested in and save to a variable
+          if ($addressFieldToCheck==='Address') {        
+            $attributeId=$options['addressAttrId'];
+            if (!empty($user->field_indicia_address['und'][0]['value']))
+              $fieldData=$user->field_indicia_address['und'][0]['value'];
+            else
+              $fieldData="";
+          }
+          if ($addressFieldToCheck==='Town') {
+            $attributeId=$options['townAttrId'];
+            if (!empty($user->field_indicia_town['und'][0]['value']))
+              $fieldData=$user->field_indicia_town['und'][0]['value'];
+            else
+              $fieldData="";
+          }
+          if ($addressFieldToCheck==='County') {
+            $attributeId=$options['countyAttrId'];
+            if (!empty($user->field_indicia_county['und'][0]['value']))
+              $fieldData=$user->field_indicia_county['und'][0]['value'];
+            else
+              $fieldData="";
+          }
+          if ($addressFieldToCheck==='Country') {
+            $attributeId=$options['countryAttrId'];
+            if (!empty($user->field_indicia_country['und'][0]['value']))
+              $fieldData=$user->field_indicia_country['und'][0]['value'];
+            else
+              $fieldData="";
+          }
+          if ($addressFieldToCheck==='Post Code') {
+            $attributeId=$options['postCodeAttrId'];
+            if (!empty($user->field_indicia_post_code['und'][0]['value']))
+              $fieldData=$user->field_indicia_post_code['und'][0]['value'];
+            else
+              $fieldData="";
+          }
+          //Try to get any existing data from the warehouse for the person and that attribute.
+          $reportOptions = array(
+            'dataSource'=>'reports_for_prebuilt_forms/Splash/check_existing_person_attribute_values',
+            'readAuth'=>$auth['read'],
+            'extraParams' => array('website_id'=>$args['website_id'],'person_attribute_id'=>$attributeId, 'person_id'=>$personData[0]['id']),
+          );
+          $existingAttrVal = data_entry_helper::get_report_data($reportOptions);
+          //If the data item already exists then save it into the array of existing data to update (this is different as it
+          //has the data the existing attribute value id to update)
+          //Otherwise add it to the array of new data to create.
+          if (!empty($existingAttrVal[0]['id'])&&$fieldData!=="") {
+            $convertedExistingUploadData[$convertedExistingUploadIdx][0]=$existingAttrVal[0]['id'];    
+            $convertedExistingUploadData[$convertedExistingUploadIdx][1]=$fieldData;
+            $convertedExistingUploadIdx++;
+          } elseif (!empty($existingAttrVal[0]['id'])&&$fieldData==="") {
+            $convertedExistingUploadDataToDelete[]=$existingAttrVal[0]['id'];
+          }  else {
+            $convertedNewUploadData[$convertedNewUploadIdx][0]=$personData[0]['id']; 
+            $convertedNewUploadData[$convertedNewUploadIdx][1]=$attributeId;
+            $convertedNewUploadData[$convertedNewUploadIdx][2]=$fieldData;
+            $convertedNewUploadIdx++;
+          }
+        }
+        $reportOptions = array(
+          'dataSource'=>'reports_for_prebuilt_forms/Splash/check_existing_person_attribute_values',
+          'readAuth'=>$auth['read'],
+          'extraParams' => array('website_id'=>$args['website_id'],'person_attribute_id'=>$options['over18AttrId'], 'person_id'=>$personData[0]['id']),
+        );
+        $existingOver18AttrVal = data_entry_helper::get_report_data($reportOptions);
+        if (!empty($user->field_indicia_over_18['und'][0]['value']))
+          $over18Data=$user->field_indicia_over_18['und'][0]['value'];
+        else
+          $over18Data=0;
+        if (!empty($existingOver18AttrVal[0]['id'])) {
+          $convertedExistingOver18UploadData[$convertedExistingOver18UploadIdx][0]=$existingOver18AttrVal[0]['id'];    
+          $convertedExistingOver18UploadData[$convertedExistingOver18UploadIdx][1]=$over18Data;
+          $convertedExistingOver18UploadIdx++;
+        }  else {
+          $convertedNewOver18UploadData[$convertedNewOver18UploadIdx][0]=$personData[0]['id']; 
+          $convertedNewOver18UploadData[$convertedNewOver18UploadIdx][1]=$options['over18AttrId'];
+          $convertedNewOver18UploadData[$convertedNewOver18UploadIdx][2]=$over18Data;
+          $convertedNewOver18UploadIdx++;
+        }
+       
+      }  
+    }
+    if (!empty($convertedExistingUploadData)||!empty($convertedNewUploadData)) {
+      data_entry_helper::$javascript .= "
+      $('#sync-addresses').click(function() {
+        var i;
+        var newSyncData = ".json_encode($convertedNewUploadData).";
+        var existingSyncData = ".json_encode($convertedExistingUploadData).";
+        var newOver18SyncData = ".json_encode($convertedNewOver18UploadData).";
+        var existingOver18SyncData = ".json_encode($convertedExistingOver18UploadData).";
+        var syncDataToDelete = ".json_encode($convertedExistingUploadDataToDelete).";
+        for (i=0; i<newSyncData.length; i++) {
+          if (newSyncData[i][2].length>0) {
+            $.ajax({
+              type: 'POST',
+              url: '$postUrl',
+              data: {\"website_id\":".$args['website_id'].",\"person_id\":newSyncData[i][0],\"person_attribute_id\":newSyncData[i][1],\"text_value\":newSyncData[i][2]},
+              success: function (data) {
+                          if (typeof data.error !== 'undefined') {
+                            alert(data.error);
+                          }              
+                        },
+              dataType: 'json',
+              async:false
+            });
+          }
+        }
+        for (i=0; i<existingSyncData.length; i++) {
+            $.ajax({
+              type: 'POST',
+              url: '$postUrl',
+              data: {\"website_id\":".$args['website_id'].",\"id\":existingSyncData[i][0],\"text_value\":existingSyncData[i][1]},
+              success: function (data) {
+                if (typeof data.error !== 'undefined') {
+                  alert(data.error);
+                }              
+              },
+              dataType: 'json',
+              async:false
+            });
+        }
+        for (i=0; i<syncDataToDelete.length; i++) {
+          $.ajax({
+            type: 'POST',
+            url: '$postUrl',
+            data: {\"website_id\":".$args['website_id'].",\"id\":syncDataToDelete[i],\"deleted\":\"t\"},
+            success: function (data) {
+              if (typeof data.error !== 'undefined') {
+                alert(data.error);
+              }              
+            },
+            dataType: 'json',
+            async:false
+          });
+        }
+        for (i=0; i<newOver18SyncData.length; i++) {
+          $.ajax({
+            type: 'POST',
+            url: '$postUrl',
+            data: {\"website_id\":".$args['website_id'].",\"person_id\":newOver18SyncData[i][0],\"person_attribute_id\":newOver18SyncData[i][1],\"text_value\":newOver18SyncData[i][2]},
+            success: function (data) {
+              if (typeof data.error !== 'undefined') {
+                alert(data.error);
+              }              
+            },
+            dataType: 'json',
+            async:false
+          });
+        }
+        for (i=0; i<existingOver18SyncData.length; i++) {
+          $.ajax({
+            type: 'POST',
+            url: '$postUrl',
+            data: {\"website_id\":".$args['website_id'].",\"id\":existingOver18SyncData[i][0],\"text_value\":existingOver18SyncData[i][1]},
+            success: function (data) {
+              if (typeof data.error !== 'undefined') {
+                alert(data.error);
+              }              
+            },
+            dataType: 'json',
+            async:false
+          });    
+        }
+        alert('Import Complete');
+      });";
+    }
+    return $r;
+  }
+  
+  private static function simple_user_address_upload_mandatory_options_checks($options) {
+    if (!function_exists('iform_ajaxproxy_url'))
+      return 'An AJAX Proxy module must be enabled for user address syncing to work.';
+    
+    if (empty($options['minimumUid'])) {
+      drupal_set_message('Please enter a minimumUid for the minimum user id for the user address upload');
+      return false;
+    } 
+    if (empty($options['maximumUid'])) {
+      drupal_set_message('Please enter a maximumUid for the maximum user id for the user address upload');
+      return false;
+    }  
+    if (empty($options['addressAttrId'])) {
+      drupal_set_message('Please enter the person_attribute_id that holds the address field');
+      return false;
+    }  
+    if (empty($options['townAttrId'])) {
+      drupal_set_message('Please enter the person_attribute_id that holds the town field');
+      return false;
+    }  
+    if (empty($options['countyAttrId'])) {
+      drupal_set_message('Please enter the person_attribute_id that holds the county field');
+      return false;
+    }  
+    if (empty($options['countryAttrId'])) {
+      drupal_set_message('Please enter the person_attribute_id that holds the country field');
+      return false;
+    }  
+    if (empty($options['postCodeAttrId'])) {
+      drupal_set_message('Please enter the person_attribute_id that holds the post code field');
+      return false;
+    } 
+    if (empty($options['over18AttrId'])) {
+      drupal_set_message('Please enter the person_attribute_id that holds the over 18 field');
+      return false;
+    } 
   }
   
   /*
