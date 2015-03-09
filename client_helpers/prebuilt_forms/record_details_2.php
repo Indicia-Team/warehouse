@@ -484,11 +484,11 @@ Record ID',
     $record = self::$record;
     if (($user_id=hostsite_get_user_field('indicia_user_id')) && $user_id==self::$record['created_by_id']
         && variable_get('indicia_website_id', 0)==self::$record['website_id']) {
-      $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
       if (empty($record['input_form']))
         $record['input_form']=$args['default_input_form'];
-      $url = data_entry_helper::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=") .
-          "$record[input_form]&occurrence_id=$record[occurrence_id]";
+      $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? '?q=' : '';
+      $paramJoin= empty($pathParam) ? '?' : '&';
+      $url = data_entry_helper::getRootFolder() . "$pathParam$record[input_form]{$paramJoin}occurrence_id=$record[occurrence_id]";
       return '<a class="button" href="'.$url.'">' . lang::get('Edit this record') . '</a>';
     }
     else 
