@@ -19,7 +19,7 @@
   #filters#
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-  GROUP BY ctt.term, l.name, l.centroid_sref, date, parent.date_start, parent.date_end, parent.date_type, sav.text_value, cttl.taxonomic_sort_order, common
+  GROUP BY ctt.term, l.name, l.centroid_sref, date, parent.date_start, parent.date_end, parent.date_type, sav.text_value, cttl.taxonomic_sort_order, common, cttl.preferred_taxon
   #order_by#
   </query>
   <field_sql>
@@ -32,6 +32,7 @@
       parent.date_type,
       sav.text_value as recorder,
       coalesce(cttl.default_common_name, cttl.preferred_taxon) as common,
+      cttl.preferred_taxon as preferred,
       SUM(oav.int_value) as total
   </field_sql>
   <order_bys>
@@ -66,6 +67,7 @@
     <column name='date' display='Date' />
     <column name='recorder' display='Recorder' />
     <column name='common' display='Species' /> 
+    <column name='preferred' display='Preferred' /> 
     <column name='total' display='Count' /> 
   </columns>
 </report>

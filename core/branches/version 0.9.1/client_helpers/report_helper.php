@@ -438,6 +438,7 @@ class report_helper extends helper_base {
                 '{nonce}',
                 '{auth}',
                 '{iUserID}',
+                '{user_id}',
                 '{website_id}'),
           array($rootFolder,
                 $currentUrl['path'],
@@ -447,6 +448,7 @@ class report_helper extends helper_base {
                 'nonce='.$options['readAuth']['nonce'],
                 'auth_token='.$options['readAuth']['auth_token'],
                 (function_exists('hostsite_get_user_field') ? hostsite_get_user_field('indicia_user_id') : ''),
+          		$user->uid,
                 self::$website_id
           ), $options['footer']);
       // Merge in any references to the parameters sent to the report: could extend this in the future to pass in the extraParams
@@ -4222,9 +4224,10 @@ update_controls();
   	$sortData=array();
   	foreach($records as $idex => $record){
   		$taxonID=$record['taxon_meaning_id']; // TODO ??
-  		if(!empty($record['default_common_name'])) $seriesLabels[$taxonID]=$record['default_common_name']; // TODO user to be able to choose from taxon or common 
-  		if(empty($seriesLabels[$taxonID])) $seriesLabels[$taxonID]=$record['taxon']; // various fall backs.
-  		if(empty($seriesLabels[$taxonID])) $seriesLabels[$taxonID]='['.$record['taxa_taxon_list_id'].']';
+  		if(!empty($record['default_common_name'])) $seriesLabels[$taxonID]=array('label'=>$record['default_common_name']); // TODO user to be able to choose from taxon or common 
+  		if(empty($seriesLabels[$taxonID])) $seriesLabels[$taxonID]=array('label'=>$record['taxon']); // various fall backs.
+  		if(empty($seriesLabels[$taxonID])) $seriesLabels[$taxonID]=array('label'=>'['.$record['taxa_taxon_list_id'].']');
+  		if(!empty($record['preferred_taxon'])) $seriesLabels[$taxonID]['preferred']=$record['preferred_taxon'];
   		$weekno = $record['period_number'];
   		$count = $record['count'];
   		if(!isset($summaryArray[$taxonID])){
@@ -4273,8 +4276,8 @@ update_controls();
 			    	'<tr><th class="freeze-first-col">'.lang::get('Date').'</th>'.$tableDateHeaderRow.'<th></th></tr></thead><tbody>';
   	$estimateTab .= '<tr><th class="freeze-first-col">'.lang::get('Week').'</th>'.$tableNumberHeaderRow.'<th>Total with<br/>estimates</th></tr>'.
 			    	'<tr><th class="freeze-first-col">'.lang::get('Date').'</th>'.$tableDateHeaderRow.'<th></th></tr></thead><tbody>';
-  	$summaryDataDownloadGrid .= 'Week'.$downloadNumberHeaderRow.',Total'."\n".lang::get('Date').$downloadDateHeaderRow.",\n";
-  	$estimateDataDownloadGrid .= 'Week'.$downloadNumberHeaderRow.',Estimates Total'."\n".lang::get('Date').$downloadDateHeaderRow.",\n";
+  	$summaryDataDownloadGrid .= 'Week,'.$downloadNumberHeaderRow.',Total'."\n".lang::get('Date').','.$downloadDateHeaderRow.",\n";
+  	$estimateDataDownloadGrid .= 'Week,'.$downloadNumberHeaderRow.',Estimates Total'."\n".lang::get('Date').','.$downloadDateHeaderRow.",\n";
   	$altRow=false;
   	$grandTotal=0;
   	$totalRow = array();
@@ -4296,10 +4299,10 @@ update_controls();
   		if (!empty($seriesLabels[$seriesID])) {
   			$total=0;  // row total
   			$estimatesTotal=0;  // row total
-  			$summaryTab .= '<tr class="datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col">'.$seriesLabels[$seriesID].'</td>';
-  			$estimateTab .= '<tr class="datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col">'.$seriesLabels[$seriesID].'</td>';
-  			$summaryDataDownloadGrid .= '"'.$seriesLabels[$seriesID].'"';
-  			$estimateDataDownloadGrid .= '"'.$seriesLabels[$seriesID].'"';
+  			$summaryTab .= '<tr class="datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col"'.(isset($seriesLabels[$seriesID]['preferred']) ? ' title="'.$seriesLabels[$seriesID]['preferred'].'"' : '').'>'.$seriesLabels[$seriesID]['label'].'</td>';
+  			$estimateTab .= '<tr class="datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col"'.(isset($seriesLabels[$seriesID]['preferred']) ? ' title="'.$seriesLabels[$seriesID]['preferred'].'"' : '').'>'.$seriesLabels[$seriesID]['label'].'</td>';
+  			$summaryDataDownloadGrid .= '"'.$seriesLabels[$seriesID]['label'].'","'.(isset($seriesLabels[$seriesID]['preferred']) ? $seriesLabels[$seriesID]['preferred'] : '').'"';
+  			$estimateDataDownloadGrid .= '"'.$seriesLabels[$seriesID]['label'].'","'.(isset($seriesLabels[$seriesID]['preferred']) ? $seriesLabels[$seriesID]['preferred'] : '').'"';
   			for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
   				$summaryDataDownloadGrid .= ',';
   				$estimateDataDownloadGrid .= ',';
@@ -4336,7 +4339,7 @@ update_controls();
 				$seriesIDs[] = $seriesID;
 				$summarySeriesData[] = '['.implode(',', $summaryValues).']';
 				$estimatesSeriesData[] = '['.implode(',', $estimatesValues).']';
-				$seriesOptions[] = '{"show":'.($seriesToDisplay == 'all' || in_array($seriesID, $seriesToDisplay) ? 'true' : 'false').',"label":"'.$seriesLabels[$seriesID].'","showlabel":true}';
+				$seriesOptions[] = '{"show":'.($seriesToDisplay == 'all' || in_array($seriesID, $seriesToDisplay) ? 'true' : 'false').',"label":"'.$seriesLabels[$seriesID]['label'].'","showlabel":true}';
 			}
   			$summaryTab .= '<td class="total-column">'.$total.'</td></tr>';
 			$summaryDataDownloadGrid .= ','.$total."\n";
@@ -4364,8 +4367,8 @@ update_controls();
   	 
   	$summaryTab .= "<tr class=\"totalrow\"><td class=\"freeze-first-col\">".lang::get('Total (Summary)').'</td>';
   	$estimateTab .= "<tr class=\"totalrow estimates\"><td class=\"freeze-first-col\">".lang::get('Total inc Estimates').'</td>';
-   	$summaryDataDownloadGrid .= '"'.lang::get('Total (Summary)').'"';
-  	$estimateDataDownloadGrid .= '"'.lang::get('Total').'"';
+   	$summaryDataDownloadGrid .= '"'.lang::get('Total (Summary)').'",';
+  	$estimateDataDownloadGrid .= '"'.lang::get('Total').'",';
   	for($i= $minWeekNo; $i <= $maxWeekNo; $i++) {
   		$summaryTab .= '<td>'.$totalRow[$i].'</td>';
   		$estimateTab.= '<td>'.$totalEstimatesRow[$i].'</td>';
@@ -4447,7 +4450,7 @@ indiciaFns.bindTabsActivate($('#controls'), function(event, ui) {
   		foreach($sortData as $sortedTaxon){
   			$seriesID=$sortedTaxon[1];
   			$summaryRow=$summaryArray[$seriesID];
-  			$summarySeriesPanel .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$seriesID.'"/><label for="'.$options['chartID'].'-series-'.$idx.'">'.$seriesLabels[$seriesID]."</label></span>\n";
+  			$summarySeriesPanel .= '<span class="chart-series-span"><input type="checkbox" checked="checked" id="'.$options['chartID'].'-series-'.$idx.'" name="'.$options['chartID'].'-series" value="'.$seriesID.'"/><label for="'.$options['chartID'].'-series-'.$idx.'"'.(isset($seriesLabels[$seriesID]['preferred']) ? ' title="'.$seriesLabels[$seriesID]['preferred'].'"' : '').'>'.$seriesLabels[$seriesID]['label']."</label></span>\n";
   			$idx++;
   			data_entry_helper::$javascript .= "\njQuery('[name=".$options['chartID']."-series]').filter('[value=".$seriesID."]').".($seriesToDisplay == 'all' || in_array($seriesID, $seriesToDisplay) ? 'attr("checked","checked");' : 'removeAttr("checked");');
   		}
@@ -4504,7 +4507,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   			$records = $response['records'];
   			$rawTab = '<span style="display:none;"><br/>'.print_r($options,true).'<br/>'.print_r($currentParamValues,true).'<br/>'.print_r($extras,true).'<br/></span>';
   			$rawTab .= '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner">'.(isset($options['linkMessage']) ? $options['linkMessage'] : '').'<table class="'.$options['tableClass'].'"><thead class="'.$thClass.'"><tr><th class="freeze-first-col">'.lang::get('Date').'</th>';
-  			$rawDataDownloadGrid = lang::get('Date');
+  			$rawDataDownloadGrid = lang::get('Date').',';
   			$rawArray = array();
   			$sampleList=array();
   			$sampleDateList=array();
@@ -4516,12 +4519,12 @@ jQuery('#estimateChart .disable-button').click(function(){
   					$rawArray[$occurrence['sample_id']] = array();
   					if($sampleFields){
   						foreach($sampleFields as $sampleField) {
-  							if(!$sampleField['attr'])
+  							if($sampleField['attr'] === false)
   								$sampleData[$sampleField['caption']] = $occurrence[$sampleField['field']];
-  							else if($avgField['attr']['data_type']=='L')
-  								$sampleData[$sampleField['caption']] = $occurrence['attr_sample_term_'.$avgField['id']];
+  							else if($sampleField['attr']['data_type']=='L')
+  								$sampleData[$sampleField['caption']] = $occurrence['attr_sample_term_'.$sampleField['id']];
   							else
-  								$sampleData[$sampleField['caption']] = $occurrence['attr_sample_'.$avgField['id']];
+  								$sampleData[$sampleField['caption']] = $occurrence['attr_sample_'.$sampleField['id']];
    						}
   					}
   					$sampleDateList[] = $sampleData;
@@ -4548,7 +4551,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   			if($sampleFields){
   				foreach($sampleFields as $sampleField) { // last-sample-datarow
   				  	$rawTab .= '<tr class="sample-datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col">'.$sampleField['caption'].'</td>';
-  				  	$rawDataDownloadGrid .= '"'.$sampleField['caption'].'"';
+  				  	$rawDataDownloadGrid .= '"'.$sampleField['caption'].'",';
   				  	foreach($sampleDateList as $sample){
   						$rawTab .= '<td>'.($sample[$sampleField['caption']]===null || $sample[$sampleField['caption']]=='' ? '&nbsp;' : $sample[$sampleField['caption']]).'</td>';
   						$rawDataDownloadGrid .= ','.$sample[$sampleField['caption']];
@@ -4562,8 +4565,8 @@ jQuery('#estimateChart .disable-button').click(function(){
   			foreach($sortData as $sortedTaxon){
   				$seriesID=$sortedTaxon[1]; // this is the meaning id
   				if (!empty($seriesLabels[$seriesID])) {
-	   				$rawTab .= '<tr class="datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col">'.$seriesLabels[$seriesID].'</td>';
-  					$rawDataDownloadGrid .= $seriesLabels[$seriesID];
+	   				$rawTab .= '<tr class="datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col"'.(isset($seriesLabels[$seriesID]['preferred']) ? ' title="'.$seriesLabels[$seriesID]['preferred'].'"' : '').'>'.$seriesLabels[$seriesID]['label'].'</td>';
+  					$rawDataDownloadGrid .= '"'.$seriesLabels[$seriesID]['label'].'","'.(isset($seriesLabels[$seriesID]['preferred']) ? $seriesLabels[$seriesID]['preferred'] : '').'",';
   					foreach($sampleList as $sampleID){
   						$rawTab .= '<td>'.(isset($rawArray[$sampleID][$seriesID]) ? $rawArray[$sampleID][$seriesID] : '&nbsp;').'</td>';
   						$rawDataDownloadGrid .= ','.(isset($rawArray[$sampleID][$seriesID]) ? $rawArray[$sampleID][$seriesID] : '');
@@ -4583,6 +4586,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   					'#rawData'=>lang::get('Raw Data'));
 	$downloadTab="";
   	$timestamp = (isset($options['includeReportTimeStamp']) && $options['includeReportTimeStamp'] ? '_'.date('YmdHis') : '');
+  	unset($options['extraParams']['orderby']); // may have been set for raw data
   	// No need for saved reports to be atomic events. Will be purged automatically.
   	global $base_url;
   	$cacheFolder = data_entry_helper::$cache_folder ? data_entry_helper::$cache_folder : data_entry_helper::relative_client_helper_path() . 'cache/';

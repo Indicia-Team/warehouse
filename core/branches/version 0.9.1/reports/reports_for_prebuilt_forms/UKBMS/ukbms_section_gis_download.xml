@@ -4,16 +4,16 @@
     <query website_filter_field='lw.website_id'>
       SELECT #columns#
       FROM locations_websites lw 
-      JOIN locations p ON p.id=lw.location_id and p.deleted=false 
-      JOIN locations l ON l.parent_id=p.id and l.deleted=false 
+      JOIN locations l ON l.id=lw.location_id and l.deleted=false 
+      JOIN locations section ON section.parent_id=l.id and section.deleted=false 
       LEFT JOIN (termlists_terms ttl1
         JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id and ttl2.deleted=false
         JOIN terms t ON t.id=ttl2.term_id and t.deleted=false
-      ) ON ttl1.id=p.location_type_id and ttl1.deleted=false
+      ) ON ttl1.id=l.location_type_id and ttl1.deleted=false
       #joins#
       WHERE lw.deleted=false AND #website_filter#
-      AND (CAST(p.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='' OR t.term='#location_type_id#')
-      AND GeometryType(l.boundary_geom) = 'LINESTRING'
+      AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='' OR t.term='#location_type_id#')
+      AND GeometryType(section.boundary_geom) = 'LINESTRING'
     </query>
     <order_bys>
         <order_by>name</order_by>
@@ -21,10 +21,11 @@
     <params>
         <param name='location_type_id' display='Parent Location Type' description='Select the parent site location type, or leave blank to not filter by location type.' datatype='lookup'
             population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' />
+    	<param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
     </params>
     <columns>
-        <column name="name" display="Section Code" sql="coalesce(p.code,p.name)||'.'||substring(l.code from 2)" datatype="text" />
-        <column name="geom" sql="st_astext(st_transform(l.boundary_geom, 4326))" datatype="text" />
-        <column name="site_name" display="Site Name" sql="p.name" datatype="text" />
+        <column name="name" display="Section Code" sql="coalesce(l.code,l.name)||'.'||substring(section.code from 2)" datatype="text" />
+        <column name="geom" sql="st_astext(st_transform(section.boundary_geom, 4326))" datatype="text" />
+        <column name="site_name" display="Site Name" sql="l.name" datatype="text" />
     </columns>
 </report>

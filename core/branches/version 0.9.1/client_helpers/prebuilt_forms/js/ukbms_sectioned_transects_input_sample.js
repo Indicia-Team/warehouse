@@ -59,7 +59,7 @@ function addSpeciesToGrid(taxonList, speciesTableSelector, force, tabIDX){
   // adds them to a table in the order they are in that taxon list
   // any that are left are swept up by another function.
   jQuery.each(taxonList, function(idx, species) {
-    var include = force;
+    var include = force != 'none';
     jQuery.each(indiciaData.existingOccurrences, function(idx, occ){
       // taxonList may or may not be preferred, Occ has both a ttl_id and a preferred
       if(occ['taxon_meaning_id'] === species['taxon_meaning_id'])
@@ -71,9 +71,10 @@ function addSpeciesToGrid(taxonList, speciesTableSelector, force, tabIDX){
 }
 
 function addGridRow(species, speciesTableSelector, end, tabIDX){
+  if(jQuery('#row-' + species.taxon_meaning_id).length>0) return;
   var name, val;
   if (species.default_common_name!==null) {
-    name = species.default_common_name
+    name = species.default_common_name;
   } else if (species.preferred_language_iso==='lat') {
     name = '<em>'+species.taxon+'</em>';
   } else {
@@ -82,7 +83,7 @@ function addGridRow(species, speciesTableSelector, end, tabIDX){
   var rowCount = jQuery(speciesTableSelector+' tbody').find('tr').length;
   var rowclass = rowCount%2===0 ? '' : ' class="alt-row"';
   var row = jQuery('<tr id="row-' + species.taxon_meaning_id + '"' + rowclass + '/>');
-  jQuery('<td>'+name+'</td>').appendTo(row);
+  jQuery('<td'+(name != species.preferred_taxon ? ' title="'+species.preferred_taxon+'"' : '')+'>'+name+'</td>').appendTo(row);
   var rowTotal = 0;
   var isNumber = indiciaData.occurrence_attribute_ctrl[tabIDX].attr('class').indexOf('number:true')>=0; // TBD number:true
   jQuery.each(indiciaData.sections, function(idx, section) {
@@ -366,7 +367,7 @@ function loadSpeciesList() {
                 'orderby': 'taxonomic_sort_order'
           };
           var query = {};
-          if(!indiciaData.speciesList4Force)
+          if(indiciaData.speciesList4Force != 'full')
             query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtTransect}};
           if(typeof indiciaData.speciesList4FilterField != "undefined") {
             if(typeof query['in'] == 'undefined') query = {"in":{}};
@@ -400,7 +401,7 @@ function loadSpeciesList() {
               'orderby': 'taxonomic_sort_order'
         };
         var query = {};
-        if(!indiciaData.speciesList3Force)
+        if(indiciaData.speciesList3Force != 'full')
           query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtTransect}};
         if(typeof indiciaData.speciesList3FilterField != "undefined") {
           if(typeof query['in'] == 'undefined') query = {"in":{}};
@@ -435,7 +436,7 @@ function loadSpeciesList() {
             'orderby': 'taxonomic_sort_order'
       };
       var query = {};
-      if(!indiciaData.speciesList2Force)
+      if(indiciaData.speciesList2Force != 'full')
         query = {"in":{"taxon_meaning_id":indiciaData.allTaxonMeaningIdsAtTransect}};
       if(typeof indiciaData.speciesList2FilterField != "undefined") {
         if(typeof query['in'] == 'undefined') query = {"in":{}};
@@ -805,7 +806,7 @@ function bindSpeciesAutocomplete(selectorID, tableSelectorID, url, lookupListId,
         return results;
       },
       formatItem: function(item) {
-        return item.taxon;
+        return item.taxon+' <em>&lt;'+item.preferred_taxon+'&gt;</em>';
       }
   });
   ctrl.bind('result', handleSelectedTaxon);
