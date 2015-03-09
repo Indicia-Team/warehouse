@@ -32,7 +32,8 @@
       parent.date_end,
       parent.date_type,
       sav.int_value as section_sun,
-      coalesce(cttl.default_common_name, cttl.preferred_taxon) as common
+      coalesce(cttl.default_common_name, cttl.preferred_taxon) as common,
+      cttl.preferred_taxon as preferred
   </field_sql>
   <order_bys>
     <order_by>l.code, parent.date_start, section_name, cttl.taxonomic_sort_order, o.id DESC</order_by>
@@ -70,5 +71,6 @@
     <column name='section_name' display='Section No.' />
     <column name='section_sun' display='Section Sun %' />
     <column name='common' display='Species' /> 
+    <column name='preferred' display='Preferred' /> 
   </columns>
 </report>

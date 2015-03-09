@@ -30,7 +30,8 @@ $config['get_changed_items_query'] = "
 	FROM occurrences o
 	JOIN samples s ON s.id = o.sample_id
 	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id#
-	WHERE o.updated_on>='#date#'";
+	WHERE o.updated_on>='#date#'
+	LIMIT #limit#";
 
 $config['get_missed_items_query'] = "
   select o.id, o.taxa_taxon_list_id, s.id as sample_id, p.id as parent_sample_id, p.date_start, p.created_by_id, p.location_id  
@@ -40,7 +41,7 @@ $config['get_missed_items_query'] = "
 	LEFT JOIN summary_occurrences so ON so.survey_id = #survey_id# AND so.taxa_taxon_list_id = o.taxa_taxon_list_id AND so.location_id = p.location_id AND so.user_id = p.created_by_id AND p.date_start <= so.date_end AND p.date_start >= so.date_start
     WHERE so.survey_id IS NULL AND o.deleted = 'f'
 	ORDER BY o.id ASC
-	LIMIT 1000"; // TBD configurable limit
+	LIMIT #limit#";
 
 $config['get_YearTaxonLocationUser_query'] = "
   select 1 as count, p.id as sample_id, p.date_start

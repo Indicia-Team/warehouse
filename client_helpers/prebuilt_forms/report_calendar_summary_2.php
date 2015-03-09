@@ -86,6 +86,33 @@ class iform_report_calendar_summary_2 {
     return
       array(
         array(
+          'name' => 'includeRawData',
+          'caption' => 'Include raw data',
+          'description' => 'Defines whether to include raw data in the chart/grid.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => true,
+          'group' => 'Data Inclusion'
+        ),
+        array(
+          'name' => 'includeSummaryData',
+          'caption' => 'Include summary data',
+          'description' => 'Defines whether to include summary data in the chart/grid.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => true,
+          'group' => 'Data Inclusion'
+        ),
+        array(
+          'name' => 'includeEstimatesData',
+          'caption' => 'Include estimates data',
+          'description' => 'Define whether to include summary data with estimates in the chart/grid.',
+          'type' => 'boolean',
+          'required' => false,
+          'default' => false,
+          'group' => 'Data Inclusion'
+        ),
+      	array(
           'name'=>'manager_permission',
           'caption'=>'Drupal Permission for Manager mode',
           'description'=>'Enter the Drupal permission name to be used to determine if this user is a manager (i.e. full access to full data set). This primarily determines the functionality of the User and Location filters, if selected.',
@@ -688,33 +715,6 @@ class iform_report_calendar_summary_2 {
           'type' => 'string',
           'required' => false,
           'group' => 'Controls'
-        ),
-        array(
-          'name' => 'includeRawData',
-          'caption' => 'Include raw data',
-          'description' => 'Defines whether to include raw data in the chart/grid.',
-          'type' => 'boolean',
-          'required' => false,
-          'default' => true,
-          'group' => 'Data Handling'
-        ),
-        array(
-          'name' => 'includeSummaryData',
-          'caption' => 'Include summary data',
-          'description' => 'Defines whether to include summary data in the chart/grid.',
-          'type' => 'boolean',
-          'required' => false,
-          'default' => true,
-          'group' => 'Data Handling'
-        ),
-        array(
-          'name' => 'includeEstimatesData',
-          'caption' => 'Include estimates data',
-          'description' => 'Define whether to include summary data with estimates in the chart/grid.',
-          'type' => 'boolean',
-          'required' => false,
-          'default' => false,
-          'group' => 'Data Handling'
         )
     );
   }
@@ -865,7 +865,7 @@ class iform_report_calendar_summary_2 {
         	isset($args['userSpecificLocationLookUp']) && $args['userSpecificLocationLookUp'] &&
         	isset($options['user_id']) && $options['user_id']!="" &&
         	$siteUrlParams[self::$userKey]['value']!="branch") {
-      if(!$allowSensitive && $options['user_id']!=$user->uid) { // ensure can see sensitive sites for my sites only.
+      if(!$allowSensitive && $options['user_id']!=$user->uid) { // ensure can see sensitive sites for my sites only, unless manager who can see all
         $locationListArgs['extraParams']['sensattr'] = $args['sensitivityLocAttrId'];
         $locationListArgs['extraParams']['exclude_sensitive'] = 1;
       }
@@ -1028,19 +1028,15 @@ class iform_report_calendar_summary_2 {
   {
     // we don't use the userID option as the user_id can be blank, and will force the parameter request if left as a blank
     global $user;
+    $ctrl = '';
     if(!isset($args['includeUserFilter']) || !$args['includeUserFilter'])
       return '';
     // if the user is changed then we must reset the location
     $siteUrlParams = self::get_site_url_params();
-    // var_dump($siteUrlParams);
-    $options['extraParams']['user_id'] = $siteUrlParams[self::$userKey]['value'] == "branch" ? '' : $siteUrlParams[self::$userKey]['value'];
     $options['user_id'] = $siteUrlParams[self::$userKey]['value'] == "branch" ? '' : $siteUrlParams[self::$userKey]['value'];
+    $options['extraParams']['user_id'] = $options['user_id'];
     $userList=array();
-    if (function_exists('module_exists') && module_exists('easy_login') && function_exists('hostsite_get_user_field')) {
-      $options['my_user_id']=hostsite_get_user_field('indicia_user_id');
-    } else {
-      $options['my_user_id']=$user->uid;
-    }
+    
     if(!isset($args['manager_permission']) || $args['manager_permission']=="" || !user_access($args['manager_permission'])) {
       // user is a normal user or branch manager
       $userList[$user->uid]=$user; // just me
@@ -1051,7 +1047,7 @@ class iform_report_calendar_summary_2 {
       	case $user->uid : // me so OK
       	case "branch" : // my branch so OK
 	      	break;
-      	default : // all users or another user so no access
+      	default : // all users or another user so no access to samples via links
       		unset($args['linkURL']);
       		$options['linkMessage'] = '<p>'.lang::get('In order to have the column headings as links to the data entry pages for the Visit, you must set the').' "'.lang::get('Filter by recorder').'" '.
       				(isset($args['branch_manager_permission']) && $args['branch_manager_permission']!="" && user_access($args['branch_manager_permission']) ?
@@ -1160,8 +1156,10 @@ class iform_report_calendar_summary_2 {
        self::_cacheResponse($user->uid, $userList);
       }
     }
+    // The option values are CMS User ID, not Indicia ID.
+    // This implies that $siteUrlParams[self::$userKey] is also CMS User ID.
     $ctrlid = 'calendar-user-select-'.$node->nid;
-    $ctrl = '<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
+    $ctrl .= '<label for="'.$ctrlid.'" class="user-select-label">'.lang::get('Filter by recorder').
           ': </label><select id="'.$ctrlid.'" class="user-select">'.
           '<option value='.($user->uid).' class="user-select-option" '.($siteUrlParams[self::$userKey]['value']==$user->uid  ? 'selected="selected" ' : '').'>'.lang::get('My data').'</option>'.
           (isset($args['branch_manager_permission']) && $args['branch_manager_permission']!="" && user_access($args['branch_manager_permission']) ? '<option value="branch" class="user-select-option" '.($siteUrlParams[self::$userKey]['value']=="branch"  ? 'selected="selected" ' : '').'>'.lang::get('Branch data').'</option>' : '').
@@ -1171,7 +1169,7 @@ class iform_report_calendar_summary_2 {
           $siteUrlParams[self::$userKey]['value']=='';
     $userListArr = array();
     foreach($userList as $id => $account) {
-      // if account comes from cache, then it is an array, if from drupal an object.
+      // if account comes from cache, then it is an array, if from drupal an object - convert.
       if(!is_array($account))
         $account = get_object_vars($account);
       if($account !== true && $id!=$user->uid){
@@ -1215,7 +1213,8 @@ class iform_report_calendar_summary_2 {
       self::$siteUrlParams = array(
         self::$userKey => array(
           'name' => self::$userKey,
-          'value' => isset($_GET[self::$userKey]) ? $_GET[self::$userKey] : ''
+          // Force defaults for the user: if none provided default to user, if all then remove it.
+          'value' => isset($_GET[self::$userKey]) ? ($_GET[self::$userKey] == "all" ? '' : $_GET[self::$userKey])  : $user->uid
         ),
         self::$locationKey => array(
           'name' => self::$locationKey,
@@ -1226,15 +1225,10 @@ class iform_report_calendar_summary_2 {
           'value' => isset($_GET[self::$locationTypeKey]) ? $_GET[self::$locationTypeKey] : ''
         ),
         self::$yearKey => array(
-              'name' => self::$yearKey,
-              'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')
+          'name' => self::$yearKey,
+          'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')
         )
       );
-      // Force defaults for the user: if none provided default to user, if all then remove it.
-      if(self::$siteUrlParams[self::$userKey]['value'] == 'all')
-        self::$siteUrlParams[self::$userKey]['value'] = '';
-      elseif(self::$siteUrlParams[self::$userKey]['value'] == '')
-        self::$siteUrlParams[self::$userKey]['value'] = $user->uid;
       foreach (self::$removableParams as $param=>$caption) {
         self::$siteUrlParams[$param] = array(
           'name' => $param,
@@ -1329,6 +1323,7 @@ jQuery('#".$ctrlid."').change(function(){
    */
   public static function get_form($args, $node, $response) {
     global $user;
+    $retVal = '';
     $logged_in = $user->uid>0;
     if(!$logged_in) {
       return('<p>'.lang::get('Please log in before attempting to use this form.').'</p>');
@@ -1409,13 +1404,7 @@ jQuery('#".$ctrlid."').change(function(){
     if(isset($args['manager_permission']) && $args['manager_permission']!="" && user_access($args['manager_permission'])) {
     	$reportOptions['location_list'] = 'all';
     }
-    
-    if (function_exists('module_exists') && module_exists('easy_login') && function_exists('hostsite_get_user_field')) {
-      $reportOptions['my_user_id']=hostsite_get_user_field('indicia_user_id');
-    } else {
-      $reportOptions['my_user_id']=$user->uid; // CMS ID
-    }
-    $retVal = '';
+
     // Add controls first: set up a control bar
     $retVal .= "\n<table id=\"controls-table\" class=\"ui-widget ui-widget-content ui-corner-all controls-table\"><thead class=\"ui-widget-header\"><tr>";
     $retVal .= self::year_control($args, $auth, $node, $reportOptions);
@@ -1469,7 +1458,7 @@ jQuery('#".$ctrlid."').change(function(){
           $reportOptions['downloads'][] = $reportOpts;
         }
       }
-    }
+    } else $reportOptions['includeRawGridDownload'] = false;
     $retVal .= report_helper::report_calendar_summary2($reportOptions);
     
     return $retVal;

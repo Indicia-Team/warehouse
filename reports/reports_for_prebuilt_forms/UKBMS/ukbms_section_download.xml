@@ -69,7 +69,8 @@
       sav.text_value as recorder,
       cttl.taxon_meaning_id,
       cttl.preferred_taxon as taxon,
-      coalesce(cttl.default_common_name, cttl.preferred_taxon) as common
+      coalesce(cttl.default_common_name, cttl.preferred_taxon) as common,
+      cttl.preferred_taxon as preferred
   </field_sql>
   <order_bys>
     <order_by>l.name, section_name, parent.date_start, cttl.taxonomic_sort_order, o.id DESC</order_by>
@@ -113,5 +114,6 @@
     <column name='taxon_meaning_id' visible='false' />
     <column name='taxon' visible='false' comment='Latin Name' />    
     <column name='common' display='Species' /> 
+    <column name='preferred' display='Preferred' /> 
   </columns>
 </report>
