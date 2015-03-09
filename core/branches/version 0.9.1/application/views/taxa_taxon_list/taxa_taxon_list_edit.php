@@ -207,6 +207,8 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
 </li>
 <li>
 <label for="allow_data_entry">Allow Data Entry:</label>
+<?php // ensure that an unchecked checkbox still sends the value ?>
+<input type="hidden" name="taxa_taxon_list:allow_data_entry" value="0" />
 <?php echo form::checkbox(array('id' => 'allow_data_entry', 'name' => 'taxa_taxon_list:allow_data_entry'), TRUE, array_key_exists('taxa_taxon_list:allow_data_entry', $values) AND ($values['taxa_taxon_list:allow_data_entry'] == 't') ) ?>
 </li>
 </ol>
