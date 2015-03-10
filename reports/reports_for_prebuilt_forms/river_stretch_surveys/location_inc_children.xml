@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="List of locations for mapping" 
+        description="Basic list of locations designed for mapping.">
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations l
+    LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false
+    WHERE l.deleted=false
+    AND (l.public=true or lw.website_id in (#website_ids#))
+      #filters#
+  </query>
+  <params>
+      <param name="location_type_id" display="Location Type" default=""
+             description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
+             population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=" >
+          <where>l.location_type_id=#location_type_id#</where>
+      </param>
+      <param name="simplifyFeatureTo" datatype="integer" default="1" />
+      <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
+        <where>st_intersects(l.boundary_geom, st_geomfromtext('#bounds#', 900913))</where>
+      </param>
+      <param name="strokewidth" default="1" datatype="integer" />
+      <param name="parent_id" default="" datatype="integer" description="ID of the parent site to filter to">
+          <where>l.parent_id=#parent_id# or l.id=#parent_id#</where>
+      </param>
+  </params>
+  <columns>
+        <column name="id" visible="false" sql="l.id" datatype="integer" />
+        <column name="name" display="Site name" sql="l.name" />
+        <column name="geom" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l.boundary_geom, l.centroid_geom), #simplifyFeatureTo#), #simplifyFeatureTo#, #simplifyFeatureTo#))" visible="false" mappable="true"/>
+        <column name="pr" visible="false" feature_style="pointRadius" sql="1" />
+        <column name="sw" visible="false" feature_style="strokeWidth" sql="3" />
+        <column name="so" visible="false" feature_style="strokeOpacity" sql="0.8" />
+        <column name="fo" visible="false" feature_style="fillOpacity" sql="0.25" />
+        <column name="sc" visible="false" feature_style="strokeColor"
+                sql="case #parent_id# when l.parent_id then 'blue' else 'red' end" />
+  </columns>
+</report>  
