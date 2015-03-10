@@ -1042,18 +1042,18 @@ class extension_splash_extensions {
     for ($idx=$options['minimumUid']; $idx<=$options['maximumUid']; $idx++) {
       //On each cycle it is safer to make sure variables are empty, so data isn't picked up from previous user.
       $user=null;
-      $personData=null;
+      $userData=null;
       $user=user_load($idx);
-      if (!empty($user->mail)) {
+      if (!empty($user->field_indicia_user_id['und'][0]['value'])) {
         //We need to collect the id of the person in the warehouse, as this is not held on the drupal profile (only the indicia user id)
-        $personData = data_entry_helper::get_population_data(array(
-          'table' => 'person',
-          'extraParams' => $auth['read'] + array('email_address' => $user->mail, 'view' => 'detail'),
+        $userData = data_entry_helper::get_population_data(array(
+          'table' => 'user',
+          'extraParams' => $auth['read'] + array('id' => $user->field_indicia_user_id['und'][0]['value']),
           'nocache' => true
         )); 
       }
       //This won't be empty, but check anyway
-      if (!empty($personData[0]['id'])) {
+      if (!empty($userData[0]['person_id'])) {
         //Cycle through all the address types to upload.
         foreach ($typesOfAddressField as $addressFieldToCheck) {
           $existingAttrVal=null;
@@ -1098,7 +1098,7 @@ class extension_splash_extensions {
           $reportOptions = array(
             'dataSource'=>'reports_for_prebuilt_forms/Splash/check_existing_person_attribute_values',
             'readAuth'=>$auth['read'],
-            'extraParams' => array('website_id'=>$args['website_id'],'person_attribute_id'=>$attributeId, 'person_id'=>$personData[0]['id']),
+            'extraParams' => array('website_id'=>$args['website_id'],'person_attribute_id'=>$attributeId, 'person_id'=>$userData[0]['person_id']),
           );
           $existingAttrVal = data_entry_helper::get_report_data($reportOptions);
           //If the data item already exists then save it into the array of existing data to update (this is different as it
@@ -1111,7 +1111,7 @@ class extension_splash_extensions {
           } elseif (!empty($existingAttrVal[0]['id'])&&$fieldData==="") {
             $convertedExistingUploadDataToDelete[]=$existingAttrVal[0]['id'];
           }  else {
-            $convertedNewUploadData[$convertedNewUploadIdx][0]=$personData[0]['id']; 
+            $convertedNewUploadData[$convertedNewUploadIdx][0]=$userData[0]['person_id']; 
             $convertedNewUploadData[$convertedNewUploadIdx][1]=$attributeId;
             $convertedNewUploadData[$convertedNewUploadIdx][2]=$fieldData;
             $convertedNewUploadIdx++;
@@ -1120,19 +1120,21 @@ class extension_splash_extensions {
         $reportOptions = array(
           'dataSource'=>'reports_for_prebuilt_forms/Splash/check_existing_person_attribute_values',
           'readAuth'=>$auth['read'],
-          'extraParams' => array('website_id'=>$args['website_id'],'person_attribute_id'=>$options['over18AttrId'], 'person_id'=>$personData[0]['id']),
+          'extraParams' => array('website_id'=>$args['website_id'],'person_attribute_id'=>$options['over18AttrId'], 'person_id'=>$userData[0]['person_id']),
         );
         $existingOver18AttrVal = data_entry_helper::get_report_data($reportOptions);
         if (!empty($user->field_indicia_over_18['und'][0]['value']))
           $over18Data=$user->field_indicia_over_18['und'][0]['value'];
         else
           $over18Data=0;
-        if (!empty($existingOver18AttrVal[0]['id'])) {
+        if (!empty($existingOver18AttrVal[0]['id'])&&$over18Data==1) {
           $convertedExistingOver18UploadData[$convertedExistingOver18UploadIdx][0]=$existingOver18AttrVal[0]['id'];    
           $convertedExistingOver18UploadData[$convertedExistingOver18UploadIdx][1]=$over18Data;
           $convertedExistingOver18UploadIdx++;
-        }  else {
-          $convertedNewOver18UploadData[$convertedNewOver18UploadIdx][0]=$personData[0]['id']; 
+        } elseif (!empty($existingOver18AttrVal[0]['id'])&& $over18Data==0) {  
+          $convertedExistingUploadDataToDelete[]=$existingOver18AttrVal[0]['id'];
+        } elseif (empty($existingOver18AttrVal[0]['id'])&& $over18Data==1) {
+          $convertedNewOver18UploadData[$convertedNewOver18UploadIdx][0]=$userData[0]['person_id']; 
           $convertedNewOver18UploadData[$convertedNewOver18UploadIdx][1]=$options['over18AttrId'];
           $convertedNewOver18UploadData[$convertedNewOver18UploadIdx][2]=$over18Data;
           $convertedNewOver18UploadIdx++;
