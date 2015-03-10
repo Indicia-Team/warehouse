@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Display unsurveyed stretches of river"
+        description="Requires a set of locations (with given location type) to define the river stretches, plus samples
+        which define where recording has taken place. Shows just the unsurveyed stretches of river.">
+    <query website_filter_field="lw.website_id">
+        select #columns#
+        from custom_cache_tables.ywt_inns_survey_coverage
+    </query>
+    <params>
+        <param name="rivers_location_type_id" display="Location type ID"
+               description="Select the location type ID for the rivers geometries to compare against."/>
+    </params>
+    <columns>
+        <column name="square" sql="square" />
+        <column name="geom" mappable="true" sql="st_astext(square_geom)" />
+        <column name="fc" feature_style="fillColor" sql="case
+        when covered_length is null or covered_length / total_length &lt; 0.25 then 'red'
+        when covered_length / total_length &lt; 0.75 then 'orange'
+        else 'green'
+        end" />
+        <column name="sc" feature_style="strokeColor" sql="'black'" />
+        <column name="sw" feature_style="strokeWidth" sql="1" />
+    </columns>
+</report>
