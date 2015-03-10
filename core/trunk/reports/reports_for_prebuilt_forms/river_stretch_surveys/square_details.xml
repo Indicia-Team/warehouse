@@ -8,8 +8,8 @@
 	    'blue' as sc, 4 as sw, 0 as fo
 	from grids_osgb_10k g
 	left join samples s on st_intersects(s.geom, st_transform(g.geom, 900913))
-	  and s.date_start>'2014-01-01'
-	  and s.survey_id=3
+	  and s.date_start>now() - '1 year'::interval
+	  and s.survey_id=#survey_id#
 	  and s.parent_id is null
 	where g.square='#square#'
 	group by g.square
@@ -31,6 +31,8 @@
     <params>
         <param name="rivers_location_type_id" display="Location type ID" datatype="integer"
                description="Select the location type ID for the rivers geometries to compare against."/>
+        <param name="survey_id" display="Survey ID" datatype="integer"
+               description="Select the Survey ID for the survey containing the observations."/>
         <param name="square" display="Grid square" datatype="text" />
     </params>
     <columns>
