@@ -7,6 +7,7 @@
   FROM people p
   JOIN users u ON u.person_id=p.id AND u.deleted=false
   JOIN users_websites uw on u.id=uw.user_id
+  LEFT JOIN person_attribute_values eventAlloc ON eventAlloc.person_id=p.id AND eventAlloc.person_attribute_id=#user_event_attr_id# AND eventAlloc.deleted=false 
   LEFT JOIN person_attribute_values pavAlloc ON pavAlloc.person_id=p.id AND pavAlloc.person_attribute_id=#user_square_attr_id# AND pavAlloc.deleted=false 
   LEFT JOIN person_attribute_values pavAddr ON pavAddr.person_id=p.id AND pavAddr.person_attribute_id=#address_attr_id# AND pavAddr.deleted=false 
   LEFT JOIN person_attribute_values pavTown ON pavTown.person_id=p.id AND pavTown.person_attribute_id=#town_attr_id# AND pavTown.deleted=false 
@@ -15,6 +16,7 @@
   LEFT JOIN person_attribute_values pavPC ON pavPC.person_id=p.id AND pavPC.person_attribute_id=#post_code_attr_id# AND pavPC.deleted=false 
   LEFT JOIN person_attribute_values pav18 ON pav18.person_id=p.id AND pav18.person_attribute_id=#over_18_attr_id# AND pav18.deleted=false 
   LEFT JOIN locations l ON l.id=pavAlloc.int_value AND l.deleted=false 
+  LEFT JOIN locations event ON event.id=eventAlloc.int_value AND event.deleted=false 
   WHERE p.deleted=false
     AND #website_filter#
   </query>
@@ -27,6 +29,7 @@
       <where>(('#allocation_status#'='allocated' AND pavAlloc.id IS NOT NULL) OR ('#allocation_status#'='unallocated' AND pavAlloc.id IS NULL))</where>
     </param>
     <param name='user_square_attr_id' display='Id of the person attribute that holds user squares' description='' datatype='integer'/>
+    <param name='user_event_attr_id' display='Id of the person attribute that holds user events' description='' datatype='integer'/>
     <param name="registration_date_start" display="User registered on or after this date" description="Only return users who registered on or after this date." datatype="date" emptyvalue="">
       <where>(uw.created_on &gt;= CAST(COALESCE('#registration_date_start#','1500-01-01') as date))</where>
     </param>  
@@ -58,6 +61,7 @@
     <column name='over_18' display='Over 18?' sql="case pav18.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='registration_date' display='Registration date' sql='uw.created_on' datatype='text' />  
     <column name='count' sql='count(distinct(pavAlloc.id))' display='Number of allocated squares' datatype='integer' aggregate="true"/>
-    <column name='allocated_squares' sql="string_agg(l.name, ',')" display='Squares allocated' datatype='text' aggregate="true"/>
+    <column name='allocated_squares' sql="string_agg(distinct(l.name), ',')" display='Squares allocated' datatype='text' aggregate="true"/>
+    <column name='allocated_events' sql="string_agg(distinct(event.name), ',')" display='Events' datatype='text' aggregate="true"/>
   </columns>
 </report>
