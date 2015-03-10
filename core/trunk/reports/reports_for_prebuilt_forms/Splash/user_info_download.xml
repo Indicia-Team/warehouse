@@ -58,5 +58,6 @@
     <column name='over_18' display='Over 18?' sql="case pav18.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='registration_date' display='Registration date' sql='uw.created_on' datatype='text' />  
     <column name='count' sql='count(distinct(pavAlloc.id))' display='Number of allocated squares' datatype='integer' aggregate="true"/>
+    <column name='allocated_squares' sql="string_agg(l.name, ',')" display='Squares allocated' datatype='text' aggregate="true"/>
   </columns>
 </report>
