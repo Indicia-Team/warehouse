@@ -269,6 +269,7 @@ input[disabled] {
 #controls-filter_source .filter-popup-columns ul {
   overflow: auto;
   max-height: 500px;
+  padding: 0;
 }
 
 .survey-hide, .website-hide {
