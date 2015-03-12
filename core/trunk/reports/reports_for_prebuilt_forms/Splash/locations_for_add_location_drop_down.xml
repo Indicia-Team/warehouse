@@ -6,6 +6,7 @@ for limiting results to a certain distance from a post code and also excluding e
         SELECT #columns#
           FROM locations l
             JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+            LEFT JOIN person_attribute_values pavNotAllocOnly ON pavNotAllocOnly.int_value=l.id AND pavNotAllocOnly.person_attribute_id=#my_sites_person_attr_id# AND pavNotAllocOnly.deleted=false
             LEFT JOIN location_attribute_values lavEx on lavEx.location_id=l.id AND lavEx.location_attribute_id=#excluded_square_attr_id# AND lavEx.deleted=false
             LEFT JOIN (person_attribute_values pav 
               JOIN person_attributes pa ON pa.id=pav.person_attribute_id AND pa.id=#my_sites_person_attr_id# AND pav.person_id = #user_id# AND pa.deleted=false
@@ -22,6 +23,9 @@ for limiting results to a certain distance from a post code and also excluding e
         <order_by>u.id IS NULL ASC, l.name ASC</order_by>
       </order_bys>
       <params>
+        <param name="dont_return_allocated_locations" display="Don't return allocated locations" description="Optional parameter, when true then locations already allocated are not returned." datatype="boolean" emptyvalue="0" default="0">
+          <where>('#dont_return_allocated_locations#'!=1 OR ('#dont_return_allocated_locations#'=1 AND pavNotAllocOnly.id IS NULL))</where>
+        </param>           
         <param name="my_sites_person_attr_id" display="Person preferred sites attribute Id" description="Person preferred sites attribute Id" datatype="integer"/>
         <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" emptyvalue="-1"/>
         <param name="location_type_ids" display="Location Type ID" description="Warehouse Ids for the location types you 
