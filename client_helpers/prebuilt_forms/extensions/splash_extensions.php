@@ -1281,6 +1281,7 @@ class extension_splash_extensions {
    * @locationDropDownLabel can be set to override the label of the Location drop-down.
    * @rolesExemptFromApproval Optional comma separated list of user roles that do not need to be part of the square approval process
    * @excludedSquareAttrId Optional location attribute id if you need to exclude squares where the excluded flag has been set.
+   * @dontReturnAllocatedLocations Optional, when true then locations that are already allocated to another user are not available for selection (maximum of one location allocation per person)
    */
   public static function add_locations_to_user($auth, $args, $tabalias, $options, $path) {
     global $user;
@@ -1333,6 +1334,8 @@ class extension_splash_extensions {
       $extraParams['distance_from_post_code']=$_GET[$options['distanceFromPostCodeParamName']]; 
     if (!empty($options['excludedSquareAttrId']))
       $extraParams['excluded_square_attr_id']=$options['excludedSquareAttrId'];
+    if (!empty($options['dontReturnAllocatedLocations']))
+      $extraParams['dont_return_allocated_locations']=$options['dontReturnAllocatedLocations'];
     //If we don't want to automatically get the location id from the URL, then display a drop-down of locations the user can select from   
     if (empty($locationIdFromURL)) {
       $r .= '<label>'.$locationDropDownLabel.'</label> ';
