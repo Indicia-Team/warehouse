@@ -80,8 +80,9 @@ class iform_subscribe_species_alert {
         array(
           'fieldname'=>'location_type_id',
           'label'=>'Location type',
-          'helpText'=>'The location type available to filter against.',
-          'type'=>'select',
+          'helpText'=>'The location type available to filter against. This location type must be indexed by the ' .
+              'warehouse\'s spatial_index_builder module.',
+          'type'=>'checkbox_group',
           'table'=>'termlists_term',
           'valueField'=>'id',
           'captionField'=>'term',
