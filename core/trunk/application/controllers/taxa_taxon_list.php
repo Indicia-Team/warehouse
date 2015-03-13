@@ -290,19 +290,18 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   }
 
   /**
-   * AJAX controller method for the ability to add a taxon from a parent list into a child list.
-   * Takes the child (destination) taxon list id and the source taxa taxon list id as parameters
-   * in the $_POST data.
+   * Function used by the AJAX methods which allow adding a taxon from a parent list into
+   * the current list. Adds a single taxon.
+   * @param integer $parentTtlId The taxa_taxon_list_id to add, from the parent list.
+   * @param integer $thisListId The current list ID
    */
-  public function add_parent_taxon() {
-    // no template as this is for AJAX
-    $this->auto_render=false;
+  private function add_single_taxon_from_parent_list($parentTtlId, $thisListId) {
     // get the selected name
-    $ttl = ORM::factory('taxa_taxon_list', $_POST['taxa_taxon_list_id']);
+    $ttl = ORM::factory('taxa_taxon_list', $parentTtlId);
     // find a list of the taxon ids for this meaning which are already in the list.
     $existing = ORM::factory('taxa_taxon_list')->where(array(
-        'taxon_list_id'=>$_POST['taxon_list_id'],
-        'taxon_meaning_id'=>$ttl->taxon_meaning_id
+      'taxon_list_id'=>$thisListId,
+      'taxon_meaning_id'=>$ttl->taxon_meaning_id
     ))->find_all();
     $existingTaxa = array();
     foreach($existing as $item)
@@ -314,12 +313,13 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     ))->find_all();
     $existingCount = 0;
     $newCount = 0;
+    $r = array('added_preferred_taxa_taxon_list_id'=>false, 'message'=>'');
     // loop through the names
-    
     foreach($all_names as $name) {
       $data = $name->as_array();
-      if (in_array($data['taxon_id'], $existingTaxa))
+      if (in_array($data['taxon_id'], $existingTaxa)) {
         $existingCount++;
+      }
       else {
         unset($data['id']);
         $data['taxon_list_id']=$_POST['taxon_list_id'];
@@ -328,17 +328,80 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
         $newttl->validate(new Validation($data), true);
         // we want to return the id of the preferred taxon copied over
         if ($newttl->preferred=='t')
-          $prefId = $newttl->id;
+          $r['added_preferred_taxa_taxon_list_id'] = $newttl->id;
         $newCount++;
       }
     }
-    if (isset($prefId))
-      echo $prefId;
-    elseif ($existingCount>0)
-      echo 'The taxon already exists in the list.';
-    elseif ($newCount>0)
-      echo 'The taxon already exists in the list but some names were missing, so they have '.
-        'been copied across.';
+    if (!$r['added_preferred_taxa_taxon_list_id']) {
+      // failed to add something, so generate a message as to why
+      if ($existingCount>0)
+        $r['message'] = 'The taxon already exists in the list.';
+      elseif ($newCount>0)
+        $r['message'] = 'The taxon already exists in the list but some names were missing, so they have '.
+          'been copied across.';
+      else
+        $r['message'] = 'Failed to add the taxon to the list.';
+    }
+    return $r;
+  }
+
+  /**
+   * AJAX controller method for the ability to add a taxon from a parent list into a child list.
+   * Takes the child (destination) taxon list id and the source taxa taxon list id as parameters
+   * in the $_POST data.
+   */
+  public function add_parent_taxon() {
+    // no template as this is for AJAX
+    $this->auto_render=false;
+    $outcome = $this->add_single_taxon_from_parent_list($_POST['taxa_taxon_list_id'], $_POST['taxon_list_id']);
+    if ($outcome['added_preferred_taxa_taxon_list_id'])
+      echo $outcome['added_preferred_taxa_taxon_list_id'];
+    else
+      echo $outcome['message'];
+  }
+
+  public function add_parent_taxon_list() {
+    // no template as this is for AJAX
+    $this->auto_render=false;
+    // convert the pasted text into an array
+    $pasted_taxa = str_replace("\r\n", "\n", $_POST['taxa_to_add']);
+    $pasted_taxa = str_replace("\r", "\n", $pasted_taxa);
+    $pasted_taxa = explode("\n", trim($pasted_taxa));
+    $thisListId = $_POST['taxon_list_id'];
+    $list = ORM::factory('taxon_list', $thisListId);
+    if (!$list->parent_id) {
+      throw new exception('Trying to copy taxa into a child list but the list has no parent');
+    };
+    $messages = array();
+    foreach ($pasted_taxa as $pasted_taxon) {
+      $pasted_taxon = trim($pasted_taxon);
+      if (empty($pasted_taxon))
+        continue; // to next in list, as empty line found
+      $rows = $this->db->select('id, taxon_meaning_id, taxon_id, preferred, taxon')
+        ->from('list_taxa_taxon_lists')
+        ->where(array(
+          $_POST['search_method'] => $pasted_taxon,
+          'taxon_list_id' => $list->parent_id
+        ))
+        ->orderby('preferred', 'DESC')
+        ->get()->result_array(false);
+      if (empty($rows))
+        $messages[] = "$pasted_taxon could not be found in the parent list";
+      elseif (count($rows)>1 && ($rows[0]['preferred']==='f' || $rows[1]['preferred']==='t'))
+        $messages[] = "$pasted_taxon was found but could not be used to identify a unique taxon in the parent list";
+      else {
+        // Found a unique hit, either the only matching preferred name, or the only matching name
+        // so we can add it to the sublist database.
+        $outcome = $this->add_single_taxon_from_parent_list($rows[0]['id'], $thisListId);
+        $taxon = $rows[0]['taxon'];
+        if ($outcome['added_preferred_taxa_taxon_list_id'])
+          $messages[] = "$taxon was added to the list";
+        else {
+          $messages[] = "$taxon - $outcome[message]";
+        }
+      }
+    }
+    echo json_encode($messages);
   }
 
 }
