@@ -661,6 +661,18 @@ var simple_tooltip;
         });
       }
     }
+    
+    /**
+     * Public function which adds a list of records to the bottom of the grid, loaded according to a filter.
+     * Typical usage might be to specify an id to add a single record.
+     */
+    this.addRecords = function(filterField, filterValue) {
+      $.each($(this), function(idx, div) {
+        var request = getRequest(div);
+        request += '&' + filterField + '=' + filterValue;
+        loadGridFrom(div, request, false);
+      });
+    };
 
     this.getUrlParamsForAllRecords = function() {
       var r={};
