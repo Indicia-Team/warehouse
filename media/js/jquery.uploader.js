@@ -333,6 +333,10 @@ var checkSubmitInProgress = function () {
         extras = files.splice(div.settings.maxFileCount - existingCount, 9999);
         if (extras.length!==0) {
           alert(div.settings.msgTooManyFiles.replace('[0]', div.settings.maxFileCount));
+          // Remove excess files from the uploader queue.
+          $.each(extras, function(i, file){
+            div.uploader.removeFile(file);
+          });
         }
         $.each(files, function(i, file) {
           ext=file.name.split('.').pop();
