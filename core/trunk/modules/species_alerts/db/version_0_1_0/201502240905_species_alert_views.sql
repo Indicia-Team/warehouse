@@ -54,7 +54,8 @@ CREATE OR REPLACE VIEW detail_species_alerts AS
     c.username AS created_by,
     sp.updated_on,
     sp.updated_by_id,
-    up.username AS updated_by
+    up.username AS updated_by,
+    sp.taxon_list_id
    FROM species_alerts sp
      JOIN users u ON u.id = sp.user_id
      JOIN users c ON c.id = sp.created_by_id
