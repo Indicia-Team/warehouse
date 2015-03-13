@@ -44,7 +44,7 @@ class Species_Alert_Model extends ORM {
     $array->add_rules('location_id', 'integer');
     $array->add_rules('taxon_meaning_id', 'integer');
     $array->add_rules('taxon_list_id', 'integer');
-    $this->unvalidatedFields = array('deleted', 'taxon_list_id');
+    $this->unvalidatedFields = array('deleted');
     return parent::validate($array, $save);
   }
 }
