@@ -2,7 +2,7 @@
 
 function species_alerts_extend_data_services() {
   return array(
-    'species_alerts'=>array('allow_full_access'=>true)
+    'species_alerts'=>array()
   );
 }
 
@@ -27,13 +27,16 @@ function species_alerts_scheduled_task($last_run_date, $db) {
       u.username as username
     FROM occdelta od
       LEFT JOIN index_locations_samples ils on ils.sample_id=od.sample_id
+      LEFT JOIN cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id=od.taxon_meaning_id
       JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=od.website_id and iwwa.receive_for_reporting=true
       JOIN species_alerts sa ON 
         (sa.location_id IS NULL OR sa.location_id=ils.location_id)
         AND 
           (sa.taxon_meaning_id = od.taxon_meaning_id
           OR
-          sa.external_key = od.taxa_taxon_list_external_key)
+          sa.external_key = od.taxa_taxon_list_external_key
+          OR
+          sa.taxon_list_id = cttl.taxon_list_id)
         AND
           (sa.alert_on_entry='t' AND od.cud='C'
           OR
@@ -45,7 +48,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
       JOIN users u ON 
         u.id=sa.user_id AND u.deleted='f'")->result_array(false);
   if (!empty($newOccDataForSpeciesAlert))
-    create_notifications($newOccDataForSpeciesAlert);
+    species_alerts_create_notifications($newOccDataForSpeciesAlert);
   else
     echo 'No Species Alerts have been created because there are no created/updated occurrences matching any species alert records.</br>';
 }
@@ -53,7 +56,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
 /*
  * Create a notification for each new/verified occurrence that matches an item in the species_alerts table
  */
-function create_notifications($newOccDataForSpeciesAlert) {
+function species_alerts_create_notifications($newOccDataForSpeciesAlert) {
   $notificationCounter=0;
   //For any new occurrence record which has a matching species alert record, we need to generate a notification for the user
   foreach ($newOccDataForSpeciesAlert as $speciesAlertOccurrenceData) {
