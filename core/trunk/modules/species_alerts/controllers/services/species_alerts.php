@@ -84,34 +84,28 @@ class Species_alerts_Controller extends Data_Service_Base_Controller {
    * from a failed save?
    */
   private function store_species_alert($userId) {
-    $alertRecordSubmissionObj = ORM::factory('species_alert');
+    // load existing or create a new record
+    if (!empty($_GET['id']))
+      $alertRecordSubmissionObj = ORM::factory('species_alert', $_GET['id']);
+    else
+      $alertRecordSubmissionObj = ORM::factory('species_alert');
     //The user id can be either a new user or exsting user, this has already been sorted out by the get_user_id function, so 
     //by this point we don't care about whether the user is new or existing, we are just dealing with a user id given to us by that function.
     //No need to validate as the user_id comes from get_user_id
     $alertRecordSubmissionObj->user_id=$userId;   
     //Region to receive alerts for.
-    if (!empty($_GET['location_id']))
-      $alertRecordSubmissionObj->location_id=$_GET['location_id'];
+    $alertRecordSubmissionObj->location_id = empty($_GET['location_id']) ? null : $_GET['location_id'];
     //Already checked this has been filled in so don't need to do this again
     $alertRecordSubmissionObj->website_id=$_GET['website_id'];
     //At least one of this must be supplied to identifiy the taxon
     self::at_least_one_field_required(array('taxon_meaning_id','external_key','taxon_list_id'));
-    if (!empty($_GET['taxon_meaning_id']))
-      $alertRecordSubmissionObj->taxon_meaning_id=$_GET['taxon_meaning_id'];
-    if (!empty($_GET['external_key']))
-      $alertRecordSubmissionObj->external_key=$_GET['external_key'];
-    if (!empty($_GET['taxon_list_id']))
-      $alertRecordSubmissionObj->taxon_list_id=$_GET['taxon_list_id'];
+    $alertRecordSubmissionObj->taxon_meaning_id = empty($_GET['taxon_meaning_id']) ? null : $_GET['taxon_meaning_id'];
+    $alertRecordSubmissionObj->external_key = empty($_GET['external_key']) ? null : $_GET['external_key'];
+    $alertRecordSubmissionObj->taxon_list_id = empty($_GET['taxon_list_id']) ? null : $_GET['taxon_list_id'];
     
     //If boolean isn't supplied just assume as false
-    if (!empty($_GET['alert_on_entry']))
-      $alertRecordSubmissionObj->alert_on_entry=$_GET['alert_on_entry'];
-    else 
-      $alertRecordSubmissionObj->alert_on_entry="false";
-    if (!empty($_GET['alert_on_verify']))
-      $alertRecordSubmissionObj->alert_on_verify=$_GET['alert_on_verify'];
-    else 
-      $alertRecordSubmissionObj->alert_on_verify="false";
+    $alertRecordSubmissionObj->alert_on_entry = empty($_GET['alert_on_entry']) ? 'f' : $_GET['alert_on_entry'];
+    $alertRecordSubmissionObj->alert_on_verify = empty($_GET['alert_on_verify']) ? 'f' : $_GET['alert_on_verify'];
     //Fill in the Created/Updated data fields in the record row
     $alertRecordSubmissionObj->set_metadata($alertRecordSubmissionObj);
     $alertRecordSubmissionObj->save();

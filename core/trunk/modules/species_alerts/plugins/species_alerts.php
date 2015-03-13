@@ -2,7 +2,7 @@
 
 function species_alerts_extend_data_services() {
   return array(
-    'species_alerts'=>array('allow_full_access'=>true)
+    'species_alerts'=>array()
   );
 }
 
