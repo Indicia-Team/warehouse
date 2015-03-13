@@ -5810,6 +5810,8 @@ if (errors$uniq.length>0) {
               parent::$final_image_folder;
         }
         // submission succeeded. So we also need to move the images to the final location
+        $image_overall_success = TRUE;
+        $image_errors = array();
         foreach ($media as $item) {
           // no need to resend an existing image, or a media link, just local files.
           if ((empty($item['media_type']) || preg_match('/:Local$/', $item['media_type'])) && (!isset($item['id']) || empty($item['id']))) {
@@ -5820,11 +5822,18 @@ if (errors$uniq.length>0) {
             } else {
               $success = rename($interim_image_folder.$item['path'], $final_image_folder.$item['path']);
             }
-            if ($success!==true) {
-              return array('error' => lang::get('submit ok but file transfer failed').
-                  "<br/>$success");
+            if ($success !== true) {
+              // Record all files that fail to move successfully.
+              $image_overall_success = FALSE;
+              $image_errors[] = $success;
             }
           }
+        }
+        if (!$image_overall_success) {
+          // Report any file transfer failures.
+          $error = lang::get('submit ok but file transfer failed') . '<br/>';
+          $error .= implode('<br/>', $image_errors);
+          $output = array('error' => $error);
         }
       }
       return $output;
