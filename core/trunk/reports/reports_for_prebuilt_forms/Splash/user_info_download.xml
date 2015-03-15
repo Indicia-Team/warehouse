@@ -1,6 +1,7 @@
 <report
     title="User Information Download"
-    description="Report containing user and person information for download purposes. Includes filter to include only users with/without allocations."
+    description="Report containing user and person information for download purposes. Includes filter to include only users with/without allocations. Also
+an event filter to return users associated with a particular event."
 >
   <query website_filter_field="uw.website_id">
   SELECT #columns#
@@ -13,11 +14,19 @@
     LEFT JOIN person_attribute_values pavCountry ON pavCountry.person_id=u.person_id AND pavCountry.person_attribute_id=#country_attr_id# AND pavCountry.deleted=false 
     LEFT JOIN person_attribute_values pavPC ON pavPC.person_id=u.person_id AND pavPC.person_attribute_id=#post_code_attr_id# AND pavPC.deleted=false 
     LEFT JOIN person_attribute_values pav18 ON pav18.person_id=u.person_id AND pav18.person_attribute_id=#over_18_attr_id# AND pav18.deleted=false 
+  
+  -- Get squares associated with users provided the square creation date is later than the minimum date parameter
   LEFT JOIN person_attribute_values sqrPav ON sqrPav.person_id=u.person_id AND sqrPav.person_attribute_id=#user_square_attr_id# AND sqrPav.deleted=false 
   LEFT JOIN locations sqr ON sqr.id=sqrPav.int_value AND sqr.location_type_id = #core_square_location_type_id# AND sqr.deleted=false 
     AND ('#ignore_square_dates_before#'='' OR (sqr.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date))) 
+    
+  -- Get events associated with user. There is an event parameter, need to be careful here as we still want to show the other events a user might be associated 
+  -- with even though we might only be returning users associated with a particular event.
   LEFT JOIN person_attribute_values eventPav ON eventPav.person_id=p.id AND eventPav.person_attribute_id=#user_event_attr_id# AND eventPav.deleted=false
-  LEFT JOIN locations eventAlloc ON eventAlloc.id=eventPav.int_value AND eventAlloc.deleted=false       
+  JOIN person_attribute_values eventPav2 ON eventPav2.person_id=p.id AND eventPav2.person_attribute_id=#user_event_attr_id# AND eventPav2.deleted=false
+    AND (eventPav2.int_value=#event_id# OR eventPav2.int_value='0')
+  LEFT JOIN locations event ON event.id=eventPav.int_value AND event.deleted=false  
+       
   WHERE p.deleted=false
   AND (('#allocation_status#'='') OR ('#allocation_status#'='allocated' AND sqrPav.id IS NOT NULL) OR ('#allocation_status#'='unallocated' AND sqrPav.id IS NULL))
   AND #website_filter#
@@ -26,6 +35,8 @@
     <order_by>p.surname ASC</order_by>
   </order_bys>
   <params>
+    <param name='event_id' display='Event' description='Select an event to see people signedup up for that event.' datatype='lookup'
+        population_call='report:reports_for_prebuilt_forms/Splash/events_for_population_call:id:name' emptyvalue='0'/>
     <param name="core_square_location_type_id" display="Core Square location type id" datatype="integer"/>
     <param name='allocation_status' display='Allocated?' description='Choose whether you only wish to return users with allocated squares, without allocated squares, or leave as Please Select for both.' emptyvalue='' datatype='lookup'
         lookup_values='allocated:Allocated,unallocated:Unallocated' />
@@ -61,6 +72,6 @@
     <column name='registration_date' display='Registration date' sql='uw.created_on' datatype='text' />  
     <column name='count' sql='count(distinct(sqr.id))' display='Number of allocated squares' datatype='integer' aggregate="true"/>
     <column name='allocated_squares' sql="string_agg(distinct(sqr.name), ',')" display='Squares allocated' datatype='text' aggregate="true"/>
-    <column name='allocated_events' sql="string_agg(distinct(eventAlloc.name), ',')" display='Events' datatype='text' aggregate="true"/>
+    <column name='allocated_events' sql="string_agg(distinct(event.name), ',')" display='Events' datatype='text' aggregate="true"/>
   </columns>
 </report>
