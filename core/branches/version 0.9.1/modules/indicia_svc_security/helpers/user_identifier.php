@@ -154,7 +154,7 @@ class user_identifier {
         $userId = array_pop($keys);
         $userPersonObj->person_id = $existingUsers[$userId][0]['person_id'];
       }
-      if (!isset($userId)) {
+      if (!isset($userId)) {      
         $resolution = self::resolveMultipleUsers($identifiers, $existingUsers, $userPersonObj);        
         // response could be a list of possible users to match against, or a single user ID.
         if (isset($resolution['possibleMatches'])) {
@@ -246,8 +246,8 @@ class user_identifier {
     $person = ORM::factory('person')->where(array('email_address'=>$email, 'deleted'=>'f'))->find();
     if ($person->loaded
         && ((!empty($person->first_name) && $person->first_name != '?'
-        && !empty($_REQUEST['first_name']) && $_REQUEST['first_name']!==$person->first_name)
-        || $person->surname !== $_REQUEST['surname']))
+        && !empty($_REQUEST['first_name']) && strtolower(trim($_REQUEST['first_name']))!==strtolower(trim($person->first_name)))
+        || strtolower(trim($person->surname)) !== strtolower(trim($_REQUEST['surname']))))
       throw new exception("The system attempted to use your user account details to register you as a user of the ".
           "central records database, but a different person with email address $email already exists. Please contact your ".
           "site administrator who may be able to help resolve this issue." . print_r($_REQUEST, true));
@@ -457,7 +457,7 @@ class user_identifier {
               $pav->clear();
             $pav->validate(new Validation($data), true);
             self::checkErrors($pav);
-          }
+        }
         }
         
       }
@@ -474,10 +474,10 @@ class user_identifier {
   private static function resolveMultipleUsers($identifiers, $existingUsers, $userPersonObj) {
     if (isset($_REQUEST['force'])) {
       if ($_REQUEST['force']==='split') {
-        $uid = self::findBestFit($identifiers, $existingUsers);
+        $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
         return array('userId'=>$uid);
       } elseif ($_REQUEST['force']==='merge') {
-        $uid = self::findBestFit($identifiers, $existingUsers);
+        $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
         // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be used to limit which are merged.
         self::mergeUsers($uid, $existingUsers);
         return array('userId'=>$uid);
@@ -509,7 +509,7 @@ class user_identifier {
    * @todo Note that in conjunction with this, a tool must be provided in the warehouse for admin to 
    * check for and merge potential duplicate users.
    */
-  private static function findBestFit($identifiers, $existingUsers) {
+  private static function findBestFit($identifiers, $existingUsers, $userPersonObj) {
     $nameMatches = array();    
     foreach ($identifiers as $identifier) {
       // find all the existing users which match this identifier.
