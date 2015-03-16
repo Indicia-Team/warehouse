@@ -29,8 +29,19 @@ an event filter to return users associated with a particular event."
   LEFT JOIN person_attribute_values eventPav2 ON eventPav2.person_id=p.id AND eventPav2.person_attribute_id=#user_event_attr_id# AND eventPav2.deleted=false
   LEFT JOIN locations event ON event.id=eventPav.int_value AND event.deleted=false  
   WHERE p.deleted=false
-  AND (('#allocation_status#'='') OR ('#allocation_status#'='allocated' AND sqrPavDated.id IS NOT NULL) OR ('#allocation_status#'='unallocated' AND sqrPavDated.id IS NULL))
   AND #website_filter#
+  AND (('#allocation_status#'='') 
+      OR ('#allocation_status#'='allocated' AND sqrPavDated.id IS NOT NULL)
+      OR ('#allocation_status#'='unallocated' AND p.id NOT in 
+        (
+          select person_id
+          from person_attribute_values subPav
+          join locations subSqr ON subSqr.id=subPav.int_value AND subSqr.location_type_id = #core_square_location_type_id# AND subSqr.deleted=false 
+            and ('#ignore_square_dates_before#'='' OR (subSqr.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date))) 
+          where
+            subPav.person_attribute_id=#user_square_attr_id# AND subPav.deleted=false 
+        )  
+      ))
   </query>
   <order_bys>
     <order_by>p.surname ASC</order_by>
