@@ -479,7 +479,7 @@ class user_identifier {
       } elseif ($_REQUEST['force']==='merge') {
         $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
         // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be used to limit which are merged.
-        self::mergeUsers($uid, $existingUsers);
+        self::mergeUsers($uid, $existingUsers, $userPersonObj);
         return array('userId'=>$uid);
       }
     } else {
@@ -565,7 +565,7 @@ class user_identifier {
   /**
    * If a request is received with the force parameter set to merge, this means we can merge the detected users into one.
    */
-  private static function mergeUsers($uid, $existingUsers,$userPersonObj) {
+  private static function mergeUsers($uid, $existingUsers, $userPersonObj) {
     foreach($existingUsers as $userIdToMerge=>$websites) {
       if ($userIdToMerge!=$uid && (!isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge']))) {
         // Own the occurrences
