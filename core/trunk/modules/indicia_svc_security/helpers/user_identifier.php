@@ -474,10 +474,10 @@ class user_identifier {
   private static function resolveMultipleUsers($identifiers, $existingUsers, $userPersonObj) {
     if (isset($_REQUEST['force'])) {
       if ($_REQUEST['force']==='split') {
-        $uid = self::findBestFit($identifiers, $existingUsers);
+        $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
         return array('userId'=>$uid);
       } elseif ($_REQUEST['force']==='merge') {
-        $uid = self::findBestFit($identifiers, $existingUsers);
+        $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
         // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be used to limit which are merged.
         self::mergeUsers($uid, $existingUsers);
         return array('userId'=>$uid);
@@ -509,7 +509,7 @@ class user_identifier {
    * @todo Note that in conjunction with this, a tool must be provided in the warehouse for admin to 
    * check for and merge potential duplicate users.
    */
-  private static function findBestFit($identifiers, $existingUsers) {
+  private static function findBestFit($identifiers, $existingUsers, $userPersonObj) {
     $nameMatches = array();    
     foreach ($identifiers as $identifier) {
       // find all the existing users which match this identifier.
