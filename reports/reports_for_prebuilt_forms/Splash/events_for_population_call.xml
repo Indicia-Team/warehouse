@@ -2,9 +2,10 @@
     title="Events for population call"
     description="Return a list of events for a lookup parameter."
 >
-  <query>
+  <query website_filter_field="lw.website_id">
   SELECT #columns#
   FROM locations event
+    JOIN locations_websites lw on lw.location_id = event.id 
     JOIN termlists_terms tt on tt.id=event.location_type_id AND tt.deleted=false
     JOIN terms t on t.id=tt.term_id AND t.term='NPMS Event' AND t.deleted=false
   WHERE event.deleted=false
