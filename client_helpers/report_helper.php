@@ -4006,9 +4006,11 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
 //      'smpattrs' => '',
       'occattrs' => ''), $options["extraParams"]);
 
+    // Note for the calendar reports, the user_id is initially assumed to be the CMS user id as recorded in the CMS User ID attribute,
+    // not the Indicia user id: we do the conversion here.
     if (isset($options["extraParams"]['user_id'])) {
       $options["extraParams"]['cms_user_id'] = $options["extraParams"]['user_id'];
-      if (function_exists('module_exists') && module_exists('easy_login')) {
+      if (function_exists('module_exists') && module_exists('easy_login') && $options["extraParams"]['user_id']!='') {
         $account = user_load($options["extraParams"]['user_id']);
         if (function_exists('profile_load_profile'))
           profile_load_profile($account); /* will not be invoked for Drupal7 where the fields are already in the account object */

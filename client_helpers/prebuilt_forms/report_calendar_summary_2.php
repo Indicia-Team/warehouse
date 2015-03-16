@@ -1438,7 +1438,7 @@ jQuery('#".$ctrlid."').change(function(){
     
     if(isset($args['linkURL'])) {
     	$reportOptions['linkURL'] = $args['linkURL'] . (isset($siteUrlParams[self::$URLExtensionKey]) ? $siteUrlParams[self::$URLExtensionKey] : '');
-	    $reportOptions['linkURL'] .= (is_int(strpos('?',$reportOptions['linkURL'])) ? '&' : '?').'sample_id=';
+	    $reportOptions['linkURL'] .= (strpos($reportOptions['linkURL'], '?') !== FALSE ? '&' : '?').'sample_id=';
     }
 
     $reportOptions['includeReportTimeStamp']=isset($args['includeFilenameTimestamps']) && $args['includeFilenameTimestamps'];
