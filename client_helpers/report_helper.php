@@ -1114,7 +1114,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         return $r;
       }
       if (isset($data['parameterRequest']))
-        $r .= self::build_params_form(array_merge($options, array('form'=>$data['parameterRequest'], 'defaults'=>$params)), $hasVisibleContent);
+        $r .= self::build_params_form(array_merge($options, array('form'=>$data['parameterRequest'], 'defaults'=>$currentParamValues)), $hasVisibleContent);
 
       $lastRequestSource = $options['dataSource'];
       $values=array();
@@ -1530,7 +1530,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * GeoServer layers. Note that when ajax loading the map, the map will not automatically zoom to the layer extent.
   * </li>
   * <li><b>zoomMapToOutput</b>
-  * Default true. Defines that the map will automatically zoom to show the records.
+  * Default true. Defines that the map will automatically zoom to show the records. If using AJAX then note that the
+  * zoom will happen after initial page load and the map will zoom again if several pages of records are loaded.
   * </li>
   * <li><b>featureDoubleOutlineColour</b>
   * If set to a CSS colour class, then feature outlines will be doubled up, for example a 1 pixel dark outline
@@ -1574,8 +1575,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $r .= "<p>".lang::get("The report's configuration does not output any mappable data")."</p>";
     } else {
       // using geoserver, so we just need to know the param values.
-      $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantRecords=0&wantParameters=1');
       $currentParamValues = self::get_report_grid_current_param_values($options);
+      $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantRecords=0&wantParameters=1');
       $r = self::get_report_grid_parameters_form($response, $options, $currentParamValues);
     }
     if (!isset($response['parameterRequest']) || count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
@@ -1956,7 +1957,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
       // a link must be proxied as can be used client-site 
       return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
     }
-    return self::_get_cached_services_call($request, $options);    
+    return self::_get_cached_services_call($request, $options);
   }
 
   /**
@@ -2276,7 +2277,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       $options['caching']=true;
     if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
     // use the current report as the params form by default
-    if (empty($options['reportGroup'])) $options['reportGroup'] = $options['id'];
+    if (empty($options['reportGroup'])) $options['reportGroup'] = str_replace('-', '_', $options['id']);
     if (empty($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
     if (function_exists('hostsite_get_user_field')) {
       // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that
