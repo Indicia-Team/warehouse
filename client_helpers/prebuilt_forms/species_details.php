@@ -511,7 +511,8 @@ class iform_species_details extends iform_dynamic {
         'survey_id'=>'',
         'date_from'=>'',
         'date_to'=>'',
-        'sharing'=>'reporting'
+        'sharing'=>'reporting',
+        'quality'=>'V'
       )
     )).'</div>';
   }
