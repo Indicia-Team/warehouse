@@ -4048,7 +4048,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
   	 
   	$warnings = '<span style="display:none;">Starting report_calendar_summary2 : '.date(DATE_ATOM).'</span>'."\n";
   	data_entry_helper::add_resource('jquery_ui');
-  	$options = self::get_report_calendar_summary_options($options); // don't use all of these, eg. extraParams
+  	$options = self::get_report_calendar_summary_options($options); // don't use all of these now, eg. extraParams: this is used later for raw data
   	$extras = '';
   	$extraParams = $options['readAuth'] + array('year'=>$options['year'], 'survey_id'=>$options['survey_id']);
   	$extraParams['user_id']= (!isset($options['user_id']) || $options['user_id']=="") ? 'NULL' : $options['user_id'];
@@ -4493,11 +4493,8 @@ jQuery('#estimateChart .disable-button').click(function(){
   	}
   	if(isset($options['location_id']) && $options['location_id']!=""){
   		// get the raw data for a single location.
-  		$options = self::get_report_calendar_grid_options($options);
-  		$extras = '';
-   		// TODO need to restrict a normal users view of samples to their own.
   		$options['extraParams']['orderby'] = 'date';
-  		self::request_report($response, $options, $currentParamValues, false, $extras);
+  		self::request_report($response, $options, $currentParamValues, false, '');
   		if (isset($response['error'])) {
   			$rawTab = "ERROR RETURNED FROM request_report:<br />".(print_r($response,true));
   		} else if (isset($response['parameterRequest'])) {
@@ -4507,8 +4504,7 @@ jQuery('#estimateChart .disable-button').click(function(){
 	  		// convert records to a date based array so it can be used when generating the grid.
   			$altRow=false;
   			$records = $response['records'];
-  			$rawTab = '<span style="display:none;"><br/>'.print_r($options,true).'<br/>'.print_r($currentParamValues,true).'<br/>'.print_r($extras,true).'<br/></span>';
-  			$rawTab .= '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner">'.(isset($options['linkMessage']) ? $options['linkMessage'] : '').'<table class="'.$options['tableClass'].'"><thead class="'.$thClass.'"><tr><th class="freeze-first-col">'.lang::get('Date').'</th>';
+  			$rawTab = '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner">'.(isset($options['linkMessage']) ? $options['linkMessage'] : '').'<table class="'.$options['tableClass'].'"><thead class="'.$thClass.'"><tr><th class="freeze-first-col">'.lang::get('Date').'</th>';
   			$rawDataDownloadGrid = lang::get('Date').',';
   			$rawArray = array();
   			$sampleList=array();
