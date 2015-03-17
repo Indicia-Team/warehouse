@@ -124,12 +124,27 @@ if (typeof window.indiciaData==="undefined") {
    * non-version specific code to set the target of a remote tab.
    */
   indiciaFns.setTabHref = function(tabs, tabIdx, liId, href) {
-    var version=$.ui.version.split('.');
-    if (version[0]==='1' && version[1]<10) {
+    var version = $.ui.version.split('.');
+    if (version[0] === '1' && version[1] < 10) {
       tabs.tabs('url', tabIdx, href);
     } else {
       $('#' + liId + ' a').attr('href', href);
     }
+  };
+
+  /**
+   * jQuery version independent .live/.delegate/.on code.
+   */
+  indiciaFns.on = function(events, selector, data, handler) {
+    var version = $.ui.version.split('.');
+    if (version[0] === '1' && version[1] < 4) {
+      $(selector).live(events, data, handler);
+    } else if (version[0] === '1' && version[1] < 7) {
+      $('document').delegate(selector, events, data, handler);
+    } else {
+      $(document).on(events, selector, data, handler);
+    }
+
   };
 
 }) (jQuery);
