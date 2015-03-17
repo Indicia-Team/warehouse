@@ -80,7 +80,8 @@ class extension_paths_editor {
     // Output some instructions to the user which will depend on whether we are on the first
     // child sample or not.
     if (!empty($options['outputInstructionsTo'])) {
-      data_entry_helper::$javascript .= "$('#$options[outputInstructionsTo]').html('$options[firstInstruction]');\n";
+      $instruct = empty($childGeoms) ? $options['firstInstructions'] : $options['otherInstructions'];
+      data_entry_helper::$javascript .= "$('#$options[outputInstructionsTo]').html('$instruct');\n";
     }
     $childGeoms = implode(',', $childGeoms);
     data_entry_helper::$javascript .= "indiciaData.showChildSampleGeoms = [$childGeoms];\n";
@@ -89,9 +90,6 @@ class extension_paths_editor {
       'default' => $_GET['id']
     ));
     return $r;
-    /*
-     * Now, please tell us which plants you found and where they were along the stretch of river. For each point where you found plants along the river, click once on the map to set the location, then on the next tab you can tell us which plants you saw at that point, before continuing to enter further records for other positions along the stretch of river. The stretch of river you walked has been highlighted with a dotted red line on the map for convenience.
-     */
   }
 
   /**

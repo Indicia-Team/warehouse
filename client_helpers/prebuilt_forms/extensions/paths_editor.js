@@ -265,24 +265,25 @@ jQuery(document).ready(function ($) {
         featuresadded: onPointAdded
       });
     }
-    var f;
     if (typeof indiciaData.showParentSampleGeom!=="undefined") {
+      var f, styleMap = new OpenLayers.StyleMap({strokeColor:"#0000FF", fillOpacity: 0.2}),
+          layer = new OpenLayers.Layer.Vector('Data entered so far', {styleMap: styleMap});
+      div.map.addLayer(layer);
       f = new OpenLayers.Feature.Vector(
         OpenLayers.Geometry.fromWKT(indiciaData.showParentSampleGeom),
         {type: "boundary"}
       );
-      div.map.editLayer.addFeatures([f]);
-      div.map.zoomToExtent(div.map.editLayer.getDataExtent());
-    }
-    if (typeof indiciaData.showChildSampleGeoms!=="undefined") {
-      $.each(indiciaData.showChildSampleGeoms, function() {
-        f = new OpenLayers.Feature.Vector(
-          OpenLayers.Geometry.fromWKT(this),
-          {type: "childsample"}
-        );
-        div.map.editLayer.addFeatures([f]);
-        div.map.zoomToExtent(div.map.editLayer.getDataExtent());
-      });
+      layer.addFeatures([f]);
+      if (typeof indiciaData.showChildSampleGeoms!=="undefined") {
+        $.each(indiciaData.showChildSampleGeoms, function() {
+          f = new OpenLayers.Feature.Vector(
+            OpenLayers.Geometry.fromWKT(this),
+            {type: "childsample"}
+          );
+          layer.addFeatures([f]);
+        });
+      }
+      div.map.zoomToExtent(layer.getDataExtent());
     }
     // event handler for the select_map_control button click
     $('button.select_map_control').click(function() {
