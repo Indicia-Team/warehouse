@@ -549,9 +549,9 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
             $hasControls = true;
             // auto-add JavaScript for the extension
             if (file_exists(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.js'))
-              drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.js');
+              drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.js', array('preprocess'=>FALSE));
             if (file_exists(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.css'))
-              drupal_add_css(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.css');
+              drupal_add_css(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.css', array('preprocess'=>FALSE));
           } 
           else
             $html .= lang::get("The $component extension cannot be found.");
