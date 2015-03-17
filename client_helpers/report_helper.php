@@ -73,7 +73,7 @@ class report_helper extends helper_base {
    * @param string $fieldname The fieldname for the report_picker control (=HTML form value)
    * @param string $default Name of the report to be initially selected
    * @param array $list Array of the reports and folders within the level to be output.
-   * @return HTML for the unordered list containing the level.
+   * @return string HTML for the unordered list containing the level.
    * @access private
    */
   private static function get_report_list_level($fieldname, $default, $list) {
@@ -116,7 +116,7 @@ class report_helper extends helper_base {
     $options = array_merge(array(
       'caption' => lang::get('Download this report'), 
       'format' => 'csv',
-      'itemsPerPage' => 10000
+      'itemsPerPage' => 20000
     ), $options);
     $options = self::get_report_grid_options($options);
     $options['linkOnly'] = true;
@@ -293,6 +293,9 @@ class report_helper extends helper_base {
   * <li><b>linkFilterToMap</b>
   * Default true but requires a rowId to be set. If true, then filtering the grid causes the map to also filter.
   * </li>
+  * <li><b>includePopupFilter</b>
+  * Set to true if you want to include a filter in the report header that displays a popup allowing the user to select exactly what data they want to display on the report.
+  * </li>
   * <li><b>zoomMapToOutput</b>
   * Default true. When combined with sendOutputToMap=true, defines that the map will automatically zoom to show the records.
   * </li>
@@ -327,10 +330,7 @@ class report_helper extends helper_base {
   */
   public static function report_grid($options) {
     global $indicia_templates;
-    /*$indicia_templates['report-table']='{content}';
-    $indicia_templates['report-tbody']='{content}';
-    $indicia_templates['report-tbody-tr']='{content}';
-    $indicia_templates['report-tbody-td']='<div style="border: solid red 1px">{content}</div>';*/
+    global $user;
     self::add_resource('fancybox');
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     $options = self::get_report_grid_options($options);
@@ -405,8 +405,18 @@ class report_helper extends helper_base {
                       "{1} more or less than your search value, or enter a range such as 1000-2000.", $caption);
             }
             $title = htmlspecialchars(lang::get('Type here to filter.').' '.$title);
+            //Filter, which when clicked, displays a popup with a series of checkboxes representing a distinct set of data from a column on the report.
+            //The user can then deselect these checkboxes to remove data from the report.
+            if (!empty($options['includePopupFilter'])&&$options['includePopupFilter']===true) {
+              data_entry_helper::$javascript.="indiciaData.includePopupFilter=true;";
+              $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
+              $popupFilterIcon = $imgPath."desc.gif";
+              $popupFilterIconHtml='<img class="col-popup-filter" id="col-popup-filter-'.$field['fieldname'].'-'.$options['id'].'" src="'.$popupFilterIcon.'"  >';
+            }
+            if (empty($popupFilterIconHtml))
+              $popupFilterIconHtml='';
             //The filter's input id includes the grid id ($options['id']) in its id as there maybe more than one grid and we need to make the id unique.
-            $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."-".$options['id']."\"/></th>";
+            $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."-".$options['id']."\"/>$popupFilterIconHtml</th>";//Add a icon for the popup filter
             $wantFilterRow = true;
           } else
             $filterRow .= '<th></th>';
@@ -415,8 +425,8 @@ class report_helper extends helper_base {
       $thead = str_replace(array('{class}','{title}','{content}'), array('','',$thead), $indicia_templates['report-thead-tr']);
       if ($wantFilterRow && (!isset($options["forceNoFilterRow"]) || !$options["forceNoFilterRow"]))
         $thead .= str_replace(array('{class}','{title}','{content}'), 
-            array(' class="filter-row"','title="'.lang::get('Use this row to filter the grid').'"',$filterRow), $indicia_templates['report-thead-tr']);
-      $thead = str_replace(array('{class}', '{content}'), array(" class=\"$thClass\"", $thead), $indicia_templates['report-thead']);
+            array(' class="filter-row"',' title="'.lang::get('Use this row to filter the grid').'"',$filterRow), $indicia_templates['report-thead-tr']);
+      $thead = str_replace(array('{class}', '{content}'), array(" class=\"$thClass\"", $thead), $indicia_templates['report-thead']);   
     }
     $currentUrl = self::get_reload_link_parts();
     // automatic handling for Drupal clean urls.
@@ -439,7 +449,7 @@ class report_helper extends helper_base {
                 '{auth}',
                 '{iUserID}',
                 '{user_id}',
-                '{website_id}'),
+      		    '{website_id}'),
           array($rootFolder,
                 $currentUrl['path'],
                 strpos($rootFolder, '?')===FALSE ? '?' : '&',
@@ -468,7 +478,6 @@ class report_helper extends helper_base {
     $altRowClass = '';
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
-    $relpath = self::relative_client_helper_path();
     $addFeaturesJs = '';
     $haveUpdates=false;
     $updateformID=0;
@@ -517,7 +526,7 @@ class report_helper extends helper_base {
           }
           if (isset($field['visible']) && ($field['visible']==='false' || $field['visible']===false))
             continue; // skip this column as marked invisible          
-          if (isset($field['img']) && $field['img']=='true' && !empty($row[$field['fieldname']])) {
+          if (isset($field['img']) && $field['img']=='true' && !empty($row[$field['fieldname']]) && !isset($field['template'])) {
             $imgs = explode(',', $row[$field['fieldname']]);
             $value='';
             $imgclass=count($imgs)>1 ? 'multi' : 'single';
@@ -531,6 +540,8 @@ class report_helper extends helper_base {
             }
             $row[$field['fieldname']] = $value;
           }
+          if (isset($field['img']) && $field['img']=='true')
+            $classes[] = 'table-gallery';
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row, $pathParam);
             $classes[]='actions';
@@ -599,8 +610,8 @@ jQuery('#updateform-".$updateformID."').ajaxForm({
       if ($rowInProgress)
         $tbody .= str_replace(array('{class}','{rowId}','{title}','{content}'), array($rowClass, $rowId, $rowTitle, $tr), $indicia_templates['report-tbody-tr']);
     } else {
-      $tbody .= '<tr><td></td></tr>';
-      $tbody .= str_replace(array('{class}','{rowId}','{rowTitle}','{content}'), array('','','','<td></td>'), $indicia_templates['report-tbody-tr']);
+      $tbody .= str_replace(array('{class}','{rowId}','{rowTitle}','{content}'), array(' class="empty-row"','','','<td colspan="'.count($options['columns'])*$options['galleryColCount'].
+          '">' . lang::get('No information available') . '</td>'), $indicia_templates['report-tbody-tr']);
     }
     $tbody = str_replace('{content}', $tbody, $indicia_templates['report-tbody']);
     $r .= str_replace(array('{class}', '{content}'), array(' class="'.$options['class'].'"', "$thead\n$tbody\n$tfoot"), $indicia_templates['report-table'])."\n";
@@ -693,6 +704,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
   linkFilterToMap: ".(!empty($options['rowId']) && $options['linkFilterToMap'] ? 'true' : 'false').",
   msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
+  msgNoInformation: '".lang::get('No information available')."',
   altRowClass: '$options[altRowClass]'";
       if (isset($options['sharing'])) {
         if (!isset($options['extraParams']))
@@ -721,7 +733,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       self::$javascript.= "  opts.clickableLayersOutputMode='reportHighlight';\n";
       self::$javascript .= "});\n";
     }
-    if ($options['ajax'] && $options['autoloadAjax']) 
+    if ($options['ajax'] && $options['autoloadAjax'])
       self::$onload_javascript .= "indiciaData.reports.$group.$uniqueName.ajaxload();\n";
     return $r;
   }
@@ -824,6 +836,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $r = self::advanced_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl);
       }
       $r = str_replace('{paging}', $r, $indicia_templates['paging_container']);
+      if (count($response['records'])===0) 
+        self::$javascript .= "$('#$options[id] .pager').hide();\n";
       return $r;
     }
     else
@@ -870,7 +884,6 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   */
   private static function advanced_pager($options, $sortAndPageUrlParams, $response, $pagLinkUrl) {
     global $indicia_templates;
-    $r = '';
     $replacements = array();
     // build a link URL to an unspecified page
     $pagLinkUrl .= $sortAndPageUrlParams['page']['name'];
@@ -1078,6 +1091,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     // build the series data
     $seriesData = array();
     $lastRequestSource = '';
+    $xLabelsForSeries=array();
+    $r = '';
     for ($idx=0; $idx<$seriesCount; $idx++) {
       // copy the array data back into the options array to make a normal request for report data
       $options['yValues'] = $yValues[$idx];
@@ -1099,15 +1114,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         return $r;
       }
       if (isset($data['parameterRequest']))
-        $r .= self::build_params_form(array_merge($options, array('form'=>$data['parameterRequest'], 'defaults'=>$params)), $hasVisibleContent);
+        $r .= self::build_params_form(array_merge($options, array('form'=>$data['parameterRequest'], 'defaults'=>$currentParamValues)), $hasVisibleContent);
 
       $lastRequestSource = $options['dataSource'];
       $values=array();
-      $xLabelsForSeries=array();
-      //The options to pass to the report when the user clicks on a summary are held in an array whose keys match
-      //the number of the bar column (this is different to a pie chart). We use this variable to return the data 
-      //from the correct key in the array.
-      $trackerForBarGraph = 1;
       $jsData = array();
       foreach ($data as $row) {
         if (isset($options['xValues']))
@@ -1119,7 +1129,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             $values[] = array(lang::get($row[$options['xLabels']]), self::string_or_float($row[$options['yValues']]));
           } else {
             $values[] = self::string_or_float($row[$options['yValues']]);
-            if (isset($options['xLabels']))
+            if (isset($options['xLabels']) && $idx===0)
+              // get x labels from the first series only
               $xLabelsForSeries[] = $row[$options['xLabels']];
           }
         }
@@ -1181,10 +1192,19 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   $('#chartdiv').bind('jqplotDataUnhighlight', function(ev, seriesIndex, pointIndex, data) {
     $('table.jqplot-table-legend td').removeClass('highlight');
   });\n";
-    $r .= '<div class="'.$options['class'].'" style="width:'.$options['width'].'; ">';
+    $heightStyle = '';
+    $widthStyle = '';
+    if (!empty($options['height']))
+      $heightStyle = "height: $options[height]px;";
+    if (!empty($options['width'])) {
+      if (substr($options['width'], -1)!=='%')
+        $options['width'] .= 'px';
+      $widthStyle = "width: $options[width];";
+    }
+    $r .= "<div class=\"$options[class]\" style=\"$widthStyle\">";
     if (isset($options['title']))
       $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
-    $r .= '<div id="'.$options['id'].'" style="height:'.$options['height'].'px;width:'.$options['width'].'px; "></div>'."\n";
+    $r .= "<div id=\"$options[id]\" style=\"$heightStyle $widthStyle\"></div>\n";
     $r .= "</div>\n";
     return $r;
   }
@@ -1258,6 +1278,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * Read authorisation tokens.</li>
   * <li><b>dataSource</b><br/>
   * Name of the report file or table/view(s) to retrieve underlying data.</li>
+  * <li><b>id</b><br/>
+  * CSS id to apply to the outer div. Default is banded-report-n where n is a unique number.</li>
   * <li><b>class</b><br/>
   * CSS class to apply to the outer div. Default is banded-report.</li>
   * <li><b>reportGroup</b><br/>
@@ -1284,6 +1306,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * The band will then only be output once at the beginning of the report, then once
   * each time one of the named trigger fields' values change. Therefore when using
   * trigger fields the band acts as a group header band.</li>
+  * <li><b>emptyText</b><br/>
+  * Text to output in the event of no data being available.</li>
   * <li><b>sharing</b>
   * Assuming the report has been written to take account of website sharing agreements, set this to define the task
   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default),
@@ -1294,7 +1318,16 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </ul>
   */
   public static function freeform_report($options) {
-    $options = array_merge(array('class'=>''), $options);
+    static $freeform_report_idx = 1;
+    $options = array_merge(array(
+      'id' => 'banded-report-' . $freeform_report_idx,
+      'class' => 'banded-report',
+      'emptyText' => '',
+    ), $options);
+    $freeform_report_idx++;
+    if (empty($options['class']))
+      // prevent default report grid classes as this is not a grid
+      $options['class'] = 'banded-report';
     $options = self::get_report_grid_options($options);
     self::request_report($response, $options, $currentParamValues, false);
     if (isset($response['error'])) return $response['error'];
@@ -1306,47 +1339,45 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     $options = array_merge(array(
       'header' => '',
       'footer' => '',
-      'bands' => array(),
-      'class' => 'banded-report'
+      'bands' => array()
     ), $options);
 
-    if (!isset($records))
-      return $r;
-    if (count($records)>0) {
-      // add a header
-      $r .= '<div class="'.$options['class'].'">'.$options['header'];
-      // output each row
-      foreach ($records as $row) {
-        // for each row, check through the list of report bands
-        foreach ($options['bands'] as &$band) {
-          // default is to output a band
-          $outputBand = true;
-          // if the band has fields which trigger it to be output when they change value between rows,
-          // we need to check for changes to see if the band is to be output
-          if (isset($band['triggerFields'])) {
-            $outputBand = false;
-            // Make sure we have somewhere to store the current field values for checking against
-            if (!isset($band['triggerValues']))
-              $band['triggerValues']=array();
-            // look for changes in each trigger field
-            foreach ($band['triggerFields'] as $triggerField) {
-              if (!isset($band['triggerValues'][$triggerField]) || $band['triggerValues'][$triggerField]!=$row[$triggerField])
-                // one of the trigger fields has changed value, so it means the band gets output
-                $outputBand=true;
-              // store the last value to compare against next time
-              $band['triggerValues'][$triggerField] = $row[$triggerField];
-            }
-          }
-          // output the band only if it has been triggered, or has no trigger fields specified.
-          if ($outputBand) {
-            $row['imageFolder'] = self::get_uploaded_image_folder();
-            $r .= self::apply_replacements_to_template($band['content'], $row);
+    if (!isset($records) || count($records)===0) {
+      return $r . $options['emptyText'];
+    }
+    // add a header
+    $r .= "<div id=\"$options[id]\" class=\"$options[class]\">$options[header]";
+    // output each row
+    foreach ($records as $row) {
+      // for each row, check through the list of report bands
+      foreach ($options['bands'] as &$band) {
+        // default is to output a band
+        $outputBand = true;
+        // if the band has fields which trigger it to be output when they change value between rows,
+        // we need to check for changes to see if the band is to be output
+        if (isset($band['triggerFields'])) {
+          $outputBand = false;
+          // Make sure we have somewhere to store the current field values for checking against
+          if (!isset($band['triggerValues']))
+            $band['triggerValues']=array();
+          // look for changes in each trigger field
+          foreach ($band['triggerFields'] as $triggerField) {
+            if (!isset($band['triggerValues'][$triggerField]) || $band['triggerValues'][$triggerField]!=$row[$triggerField])
+              // one of the trigger fields has changed value, so it means the band gets output
+              $outputBand=true;
+            // store the last value to compare against next time
+            $band['triggerValues'][$triggerField] = $row[$triggerField];
           }
         }
+        // output the band only if it has been triggered, or has no trigger fields specified.
+        if ($outputBand) {
+          $row['imageFolder'] = self::get_uploaded_image_folder();
+          $r .= self::apply_replacements_to_template($band['content'], $row);
+        }
       }
-      // add a footer
-      $r .= $options['footer'].'</div>';
     }
+    // add a footer
+    $r .= $options['footer'].'</div>';
     return $r;
   }
 
@@ -1473,7 +1504,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * to a range of colours from blue to red.
   * array(
   *   'fillColor'=>array(
-  *     'from'=>'#00FF00',
+  *     'from'=>'#0000ff',
   *     'to' => '#ff0000',
   *     'valueField' => 'value',
   *     'minValue'=> '{minvalue}',
@@ -1499,7 +1530,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * GeoServer layers. Note that when ajax loading the map, the map will not automatically zoom to the layer extent.
   * </li>
   * <li><b>zoomMapToOutput</b>
-  * Default true. Defines that the map will automatically zoom to show the records.
+  * Default true. Defines that the map will automatically zoom to show the records. If using AJAX then note that the
+  * zoom will happen after initial page load and the map will zoom again if several pages of records are loaded.
   * </li>
   * <li><b>featureDoubleOutlineColour</b>
   * If set to a CSS colour class, then feature outlines will be doubled up, for example a 1 pixel dark outline
@@ -1543,9 +1575,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $r .= "<p>".lang::get("The report's configuration does not output any mappable data")."</p>";
     } else {
       // using geoserver, so we just need to know the param values.
-      $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantRecords=0&wantParameters=1');
       $currentParamValues = self::get_report_grid_current_param_values($options);
-      $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
+      $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantRecords=0&wantParameters=1');
+      $r = self::get_report_grid_parameters_form($response, $options, $currentParamValues);
     }
     if (!isset($response['parameterRequest']) || count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
       if (empty($options['geoserverLayer'])) {
@@ -1558,7 +1590,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
           'strokeWidth'=>empty($options['featureDoubleOutlineColour']) ? "\${getstrokewidth}" : 1,
           'fillOpacity'=>"\${getfillopacity}",
           'strokeOpacity'=>0.8,
-          'pointRadius'=>5,
+          'pointRadius'=>"\${getpointradius}",
           'graphicZIndex'=>"\${getgraphiczindex}");
         $selsettings = array_merge($defsettings, array(
           'fillColor'=> '#ff0000',
@@ -1574,6 +1606,17 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         // when selected, a little bit more opaque
         $selStyleFns['fillOpacity'] = "getfillopacity: function(feature) {
           return Math.max(0, 0.7-feature.layer.map.zoom/100);
+        }";
+        // default fill opacity, more opaque if selected, and gets more transparent as you zoom in.
+        // Note that the number of map units only approximates a metre in web-mercator, accurate
+        // near the equator but not near the poles. We use a very crude adjustment if necessary
+        // which works well around the UK's latitude.
+        $defStyleFns['pointRadius'] = "getpointradius: function(feature) {
+          var units = feature.attributes.sref_precision;
+          if (feature.geometry.getCentroid().y > 4000000) {
+            units = units * (feature.geometry.getCentroid().y / 8200000);
+          }
+          return Math.max(5, units / (feature.layer.map.getResolution()));
         }";
         // default z index, smaller objects on top
         $defStyleFns['graphicZIndex'] = "getgraphiczindex: function(feature) {
@@ -1660,6 +1703,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
                   '}';
             $defsettings[$type]="\${get$type}";
           }
+          // As well as the columns required for valueOutput, we also need to include any others
+          // involved in the feature style
+          foreach ($response['columns'] as $col=>$cfg) {
+            if (!empty($cfg['feature_style']))
+              $colsToInclude[$col] = '';
+          }
         }
         $selStyleFns = implode(",\n", array_values(array_merge($defStyleFns, $selStyleFns)));
         $defStyleFns = implode(",\n", array_values($defStyleFns));
@@ -1669,7 +1718,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $addFeaturesJs = "";        
         // No need to pass the default type of vector display, so use empty obj to keep JavaScript size down
         $opts = $options['displaySymbol']==='vector' ? '{}' : json_encode(array('type'=>$options['displaySymbol']));
-        if ($options['clickableLayersOutputMode']<>'popup' && $options['clickableLayersOutputMode']<>'div') {
+        if ($options['clickableLayersOutputMode']<>'popup' && $options['clickableLayersOutputMode']<>'div' && isset($wktCol)) {
           // If we don't need record data for every row for feature clicks, then only include necessary columns to minimise JS
           $colsToInclude['occurrence_id']='';
           $colsToInclude[$wktCol]='';
@@ -1685,10 +1734,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
             "  var wantToMap = typeof indiciaData.filter==='undefined' || typeof indiciaData.filter.def.indexed_location_id==='undefined' || indiciaData.filter.def.indexed_location_id==='';\n" .
             "  if (wantToMap && typeof indiciaData.reports!==\"undefined\") {\n" .
             "    $.each(indiciaData.reports.".$options['reportGroup'].", function(idx, grid) {\n" .
-            "      if (grid[0].settings.linkFilterToMap) {\n" .
-            "        grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."');\n" .
-            "        return false;\n" . // only need the first grid to draw the map. 
-            "      }\n" .
+            "      grid.mapRecords('".$options['dataSource']."', '".$options['dataSourceLoRes']."');\n" .
+            "      return false;\n" . // only need the first grid to draw the map.
             "    });\n" .
             "  }\n";
           if ($options['dataSourceLoRes']) {
@@ -1710,7 +1757,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         } else {
           $geoms = array();
           foreach ($records as $record) { 
-            if (!empty($record[$wktCol])) {
+            if (isset($wktCol) && !empty($record[$wktCol])) {
               $record[$wktCol]=preg_replace('/\.(\d+)/', '', $record[$wktCol]);
               // rather than output every geom separately, do a list of distinct geoms to minify the JS
               if (!$geomIdx = array_search('"'.$record[$wktCol].'"', $geoms)) {          
@@ -1719,7 +1766,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
               }
               $record[$wktCol] = $geomIdx;
               if (!empty($colsToInclude)) {
+                // if limiting the columns, ensure that the geom and row ID are included.
                 $colsToInclude[$wktCol]='';
+                if (!empty($options['rowId']))
+                  $colsToInclude[$options['rowId']]='';
                 $record = array_intersect_key($record, $colsToInclude); 
               }
               $addFeaturesJs.= "div.addPt(features, ".json_encode($record).", '$wktCol', $opts" . (empty($options['rowId']) ? '' : ", '" . $record[$options['rowId']] . "'") . ");\n";
@@ -1815,7 +1865,9 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * Defaults to report, which means report data is being loaded. Set to direct to load data directly from an entity's view.
    * </li>
    * <li><b>dataSource</b><br/>
-   * Name of the report or entity being queried.
+   * Name of the report or entity being queried. If set to 'static', then provide an option staticData containing
+   * an array of preloaded report data to return, which can be used to override report data fetches for reporting
+   * components.
    * <li><b>readAuth</b><br/>
    * Read authentication tokens.
    * </li>
@@ -1851,6 +1903,8 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
    */
   public static function get_report_data($options, $extra='') {
+    if ($options['dataSource']==='static' && isset($options['staticData']))
+      return $options['staticData'];
     $query = array();
     if (!isset($options['mode'])) $options['mode']='report';
     if (!isset($options['format'])) $options['format']='json';
@@ -1903,7 +1957,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
       // a link must be proxied as can be used client-site 
       return (empty(parent::$warehouse_proxy) ? parent::$base_url : parent::$warehouse_proxy).$request;
     }
-    return self::_get_cached_services_call($request, $options);    
+    return self::_get_cached_services_call($request, $options);
   }
 
   /**
@@ -1967,7 +2021,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * bar. This effectively re-builds the current page's URL, but drops the query string parameters that
    * indicate the sort order and page number.
    * @param array $sortAndPageUrlParams List of the sorting and pagination parameters which should be excluded.
-   * @return unknown_type
+   * @return string
    */
   private static function report_grid_get_reload_url($sortAndPageUrlParams) {
     // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
@@ -2079,11 +2133,9 @@ if (typeof mapSettingsHooks!=='undefined') {
           $actionCols[] = $col;
         }
         $idx++;
-        // datatype of column always defined in the server XML report file. Copy into the col def
-        if (isset($col['fieldname']) && array_key_exists($col['fieldname'], $response['columns'])) {
-          if (isset($response['columns'][$col['fieldname']]['datatype']))
-            $col['datatype']=$response['columns'][$col['fieldname']]['datatype'];
-        }
+        //Make sure all the information relating to the columns are used from the report response, such as the display name
+        if (isset($col['fieldname']) && array_key_exists($col['fieldname'], $response['columns']))
+          $col = array_merge($response['columns'][$col['fieldname']],$col);
       }
       if ($options['includeAllColumns']) {
         foreach ($response['columns'] as $resultField => $value) {
@@ -2179,7 +2231,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       if (isset($action['img'])) {
         $rootFolder = self::getRootfolder();
         $img=str_replace(array('{rootFolder}', '{sep}'), array($rootFolder, strpos($rootFolder, '?')===FALSE ? '?' : '&'), $action['img']);
-        $content = '<img src="'.$img.'" title="'.$action['caption'].'" />';
+        $title = empty($action['caption']) ? lang::get('Click to run the action') : $action['caption'];
+        $content = "<img src=\"$img\" title=\"$title\" />";
       } elseif (isset($action['caption']))
         $content = $action['caption'];
       $links[] = "<a class=\"action-button$class\"$href$onclick>".$content.'</a>';
@@ -2224,7 +2277,7 @@ if (typeof mapSettingsHooks!=='undefined') {
       $options['caching']=true;
     if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
     // use the current report as the params form by default
-    if (empty($options['reportGroup'])) $options['reportGroup'] = $options['id'];
+    if (empty($options['reportGroup'])) $options['reportGroup'] = str_replace('-', '_', $options['id']);
     if (empty($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
     if (function_exists('hostsite_get_user_field')) {
       // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that
@@ -2264,19 +2317,20 @@ if (typeof mapSettingsHooks!=='undefined') {
       // guard against a corrupt cookie
       if (!is_array($cookieData)) 
         $cookieData=array();
-      if (!empty($cookieData[$options['rememberParamsReportGroup']]))
+      if (!empty($cookieData[$options['rememberParamsReportGroup']])) {
         $cookieParams = $cookieData[$options['rememberParamsReportGroup']];
-        if (is_array($cookieParams)) {
+        if (isset($cookieParams) && is_array($cookieParams)) {
           // We shouldn't use the cookie values to overwrite any parameters that are hidden in the form as this is confusing.
           $ignoreParamNames = array();
           foreach($options['paramsToExclude'] as $param)
             $ignoreParamNames[$options['reportGroup']."-$param"] = '';
-          $cookieParams = array_diff_key($cookieParams, $ignoreParamNames);       
+          $cookieParams = array_diff_key($cookieParams, $ignoreParamNames);
           $providedParams = array_merge(
             $cookieParams,
             $providedParams
           );
         }
+      }
     }
     if (!empty($options['rememberParamsReportGroup'])) {
       // need to store the current set of saved params. These need to be merged into an array to go in
@@ -2433,7 +2487,6 @@ update_controls();
     // Not implementing a download.
     $r .= "<tbody>\n";
     $date_from = array('year'=>$options["year"], 'month'=>1, 'day'=>1);
-    $date_to = array('year'=>$options["year"], 'month'=>12, 'day'=>31);
     $weekno=0;
     // ISO Date - Mon=1, Sun=7
     // Week 1 = the week with date_from in
@@ -2579,9 +2632,9 @@ update_controls();
       // Merge in any references to the parameters sent to the report: could extend this in the future to pass in the extraParams
       foreach($currentParamValues as $key=>$param){
         $footer = str_replace(array('{'.$key.'}'), array($param), $footer);
-        }
-      $extraFooter .= '<div class="left">'.$footer.'</div>';
       }
+      $extraFooter .= '<div class="left">'.$footer.'</div>';
+    }
     if (!empty($extraFooter))
       $r .= '<tfoot><tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr></tfoot>';
     $r .= "</table>\n";
@@ -2810,9 +2863,6 @@ update_controls();
     // convert records to a date based array so it can be used when generating the grid.
     $warnings .= '<span style="display:none;">Report request finish : '.date(DATE_ATOM).'</span>'."\n";
     $records = $response['records'];
-    $pageUrlParams = self::get_report_calendar_grid_page_url_params($options);
-    $pageUrl = self::report_calendar_grid_get_reload_url($pageUrlParams);
-    $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
     data_entry_helper::$javascript .= "
 var pageURI = \"".$_SERVER['REQUEST_URI']."\";
 function rebuild_page_url(oldURL, overrideparam, overridevalue) {
@@ -2884,12 +2934,8 @@ update_controls();
       $weekOne_date->modify('-'.($weekOne_date_weekday-$weekstart[1]).' day'); 
     else if($weekOne_date_weekday < $weekstart[1])
       $weekOne_date->modify('-'.(7+$weekOne_date_weekday-$weekstart[1]).' day');
-    // don't do anything if equal.
-    $year_start = date_create(substr($options['date_start'],0,4).'-Jan-01');
-    $year_end = date_create(substr($options['date_start'],0,4).'-Dec-25'); // don't want to go beyond the end of year: this is 1st Jan minus 1 week: it is the start of the last full week
     $firstWeek_date = clone $weekOne_date; // date we start providing data for
     $weekOne_date_yearday = $weekOne_date->format('z'); // day within year note year_start_yearDay is by definition 0
-    $weekOne_date_weekday = $weekOne_date->format('N'); // day within week
     $minWeekNo = $weeknumberfilter[0]!='' ? $weeknumberfilter[0] : 1;
     $numWeeks = ceil($weekOne_date_yearday/7); // number of weeks in year prior to $weekOne_date - 1st Jan gives zero, 2nd-8th Jan gives 1, etc
     if($minWeekNo-1 < (-1 * $numWeeks)) $minWeekNo=(-1 * $numWeeks)+1; // have to allow for week zero
@@ -2930,12 +2976,9 @@ update_controls();
     $lastLocation=false;
     $seriesLabels=array();
     $lastTaxonID=false;
-    $lastSample=false;
     $locationSamples = array();
-    $dateList = array();
     $weekList = array();
     $avgFieldList = !empty($options['avgFields']) ? explode(',',$options['avgFields']) : false;
-    $smpAttrList = array();
     if(!$avgFieldList || count($avgFieldList)==0) $avgFields = false;
     else {
       $avgFields = array();
@@ -3119,7 +3162,6 @@ update_controls();
       if(isset($format['table'])) $format['table']['display']=true;
       else if(isset($format['chart'])) $format['chart']['display']=true;
     }
-    $seriesData=array();
     $r .= "\n<div class=\"inline-control report-summary-controls\">";
     $userPicksFormat = count($format)>1 && !(isset($options['simultaneousOutput']) && $options['simultaneousOutput']);
     $userPicksSource = ($options['includeRawData'] ? 1 : 0) +
@@ -3252,7 +3294,7 @@ update_controls();
         foreach($rawValues as $idx => $rawValue) {
           $rawTotalRow[$idx] += $rawValue;
         }
-        // each series will occupy an entry in $seriesData
+        // each series will occupy an entry in $...SeriesData
         if ($options['includeChartItemSeries']) {
           $seriesIDs[] = $seriesID;
           $rawSeriesData[] = '['.implode(',', $rawValues).']';
@@ -3657,14 +3699,14 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
           $handle = fopen($cacheFolder.$cacheFile, 'wb');
           fwrite($handle, $rawDataDownloadGrid);
           fclose($handle);
-          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Raw Grid Data</button></a></th>'."\n";
+          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">Raw Grid Data</button></a></th>'."\n";
         }
         if($options['includeRawListDownload']) {
           $cacheFile = $options['downloadFilePrefix'].'rawDataList'.$timestamp.'.csv';
           $handle = fopen($cacheFolder.$cacheFile, 'wb');
           fwrite($handle, $rawDataDownloadList);
           fclose($handle);
-          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Raw List Data</button></a></th>'."\n";
+          $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">Raw List Data</button></a></th>'."\n";
         }
       }
       if($options['includeSummaryData'] && $options['includeSummaryGridDownload']) {
@@ -3672,21 +3714,21 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $handle = fopen($cacheFolder.$cacheFile, 'wb');
         fwrite($handle, $summaryDataDownloadGrid);
         fclose($handle);
-        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Summary Grid Data</button></a></th>'."\n";
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">Summary Grid Data</button></a></th>'."\n";
       }
       if($options['includeEstimatesData'] && $options['includeEstimatesGridDownload']) {
         $cacheFile = $options['downloadFilePrefix'].'estimateDataGrid'.$timestamp.'.csv';
         $handle = fopen($cacheFolder.$cacheFile, 'wb');
         fwrite($handle, $estimateDataDownloadGrid);
         fclose($handle);
-        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">Estimate Grid Data</button></a></th>'."\n";
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">Estimate Grid Data</button></a></th>'."\n";
       }
       if(($options['includeSummaryData'] || $options['includeEstimatesData']) && $options['includeListDownload']) {
         $cacheFile = $options['downloadFilePrefix'].'dataList'.$timestamp.'.csv';
         $handle = fopen($cacheFolder.$cacheFile, 'wb');
         fwrite($handle, $downloadList);
         fclose($handle);
-        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">List Data</button></a></th>'."\n";
+        $downloads .= '<th><a target="_blank" href="'.$base_url.'/'.$cacheFolder.$cacheFile.'" download type="text/csv"><button type="button">List Data</button></a></th>'."\n";
       }
       $r .= '<br/><table id="downloads-table" class="ui-widget ui-widget-content ui-corner-all downloads-table" ><thead class="ui-widget-header"><tr>'.
             ($downloads == '' ? '' : '<th class="downloads-table-label">Downloads</th>'.$downloads).
@@ -4054,6 +4096,7 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
   	$extraParams['user_id']= (!isset($options['user_id']) || $options['user_id']=="") ? 'NULL' : $options['user_id'];
   	if(isset($options['taxon_list_id']) && $options['taxon_list_id']!="")
   		$extraParams['taxon_list_id'] = $options['taxon_list_id'];
+  	 
   	if(isset($options['location_id']) && $options['location_id']!="")
   		$extraParams['location_id'] = $options['location_id'];
   	else if(isset($options['branch_location_list']))
@@ -4271,9 +4314,9 @@ update_controls();
   	$thClass = $options['thClass'];
  	$summaryTab = '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner"><table id="'.$options['tableID'].'-summary" class="'.$options['tableClass'].'"><thead class="'.$thClass.'">';
  	$estimateTab = '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner"><table id="'.$options['tableID'].'-estimate" class="'.$options['tableClass'].'"><thead class="'.$thClass.'">';
- 	$summaryDataDownloadGrid="";
-  	$estimateDataDownloadGrid="";
-  	$rawDataDownloadGrid="";
+ 	$summaryDataDownloadGrid = '';
+  	$estimateDataDownloadGrid = '';
+  	$rawDataDownloadGrid = '';
   	$summaryTab .= '<tr><th class="freeze-first-col">'.lang::get('Week').'</th>'.$tableNumberHeaderRow.'<th>Total</th></tr>'.
 			    	'<tr><th class="freeze-first-col">'.lang::get('Date').'</th>'.$tableDateHeaderRow.'<th></th></tr></thead><tbody>';
   	$estimateTab .= '<tr><th class="freeze-first-col">'.lang::get('Week').'</th>'.$tableNumberHeaderRow.'<th>Total with<br/>estimates</th></tr>'.
@@ -4548,7 +4591,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   			$rawTab .= '</tr></thead><tbody>';
   			if($sampleFields){
   				foreach($sampleFields as $sampleField) { // last-sample-datarow
-  				  	$rawTab .= '<tr class="sample-datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col">'.$sampleField['caption'].'</td>';
+  					$rawTab .= '<tr class="sample-datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col">'.$sampleField['caption'].'</td>';
   				  	$rawDataDownloadGrid .= '"'.$sampleField['caption'].'",';
   				  	foreach($sampleDateList as $sample){
   						$rawTab .= '<td>'.($sample[$sampleField['caption']]===null || $sample[$sampleField['caption']]=='' ? '&nbsp;' : $sample[$sampleField['caption']]).'</td>';
@@ -4610,7 +4653,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   		$downloadTab .= '<tr><td>'.lang::get('Download Raw Data Grid (CSV Format)').' : </td><td><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">'.lang::get('Download').'</button></a></td></tr>'."\n";
   	} else if($options['includeRawGridDownload'])
   		$downloadTab .= '<tr><td>'.lang::get('Raw Data is only available (for download) when a location is specified.').'</td><td></td></tr>'."\n";
-  	
+
   	if(count($options['downloads'])>0) {
   		// format is assumed to be CSV
   		global $indicia_templates;
@@ -4628,7 +4671,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   			$downloadOptions['dataSource'] = $download['dataSource'];
   			$downloadOptions['filename'] = $download['filename'];
   			$downloadTab .= '<tr><td>'.$download['caption'].' : </td><td>'.report_helper::report_download_link($downloadOptions).'</td></tr>';
-  	}
+  		}
   	}
   	 
   	if($downloadTab!="")
@@ -4653,5 +4696,6 @@ jQuery('#estimateChart .disable-button').click(function(){
   {
   	return ($a[0] > $b[0]) ;
   }
-
+  
+  
 }

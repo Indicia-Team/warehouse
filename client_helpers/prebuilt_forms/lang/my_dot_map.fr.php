@@ -29,6 +29,9 @@ global $custom_terms;
 $custom_terms = array(
 	'Species' => 'Espèce',
 	'Latin Name' => 'Nom Latin',
+  'Abundance' => 'Abondance',
 	'Date' => 'Date',
-	'Spatial Ref' => 'Coordonnées'
+	'Spatial Ref' => 'Coordonnées',
+  'Comment' => 'Commentaire',
+  'Add another record' => 'Entrez une autre observation'
 );

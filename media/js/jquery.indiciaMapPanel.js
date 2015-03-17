@@ -34,6 +34,13 @@ mapGeoreferenceHooks = [];
 mapLocationSelectedHooks = [];
 
 /**
+ * Add functions to this array for them to be called when clicking on the map to set a spatial reference.
+ * Functions will be passed data (click point information) and the map div as parameters.
+ */
+mapClickForSpatialRefHooks = [];
+
+var destroyAllFeatures;
+/**
 * Class: indiciaMapPanel
 * JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
 * This code file supports read only maps. A separate plugin will then run on top of this to provide editing support
@@ -93,6 +100,23 @@ mapLocationSelectedHooks = [];
         }
       });
       layer.removeFeatures(toRemove, {});
+    }
+    
+    /*
+     * Destroy features version of removeAllFeatures function. Once destroyed features cannot be added back to the layer.
+     */
+    destroyAllFeatures = function (layer, type, inverse) {
+      var toRemove = [];
+      if (typeof inverse==="undefined") {
+        inverse=false;
+      }
+      $.each(layer.features, function() {
+        //Annotations is a special separate mode added after original code was written, so do not interfere with annotations even in inverse mode.
+        if ((!inverse && this.attributes.type===type) || (inverse && this.attributes.type!==type && this.attributes.type!=='annotation')) {
+          toRemove.push(this);
+        }
+      });
+      layer.destroyFeatures(toRemove, {});
     }
 
     /**
@@ -216,14 +240,14 @@ mapLocationSelectedHooks = [];
       var parser = new OpenLayers.Format.WKT(), bounds = new OpenLayers.Bounds(), geometry;
       var features = [];
       // This replaces other features of the same type
-      removeAllFeatures(layer, type);
+        removeAllFeatures(layer, type);
       if(wkt){
         var feature = parser.read(wkt);
         // this could be an array of features for a GEOMETRYCOLLECTION
         if ($.isArray(feature)===false) {
           feature = [feature];
         }
-        var styletype = (typeof type !== 'undefined') ? styletype = type : styletype = 'default';
+        var styletype = (typeof type !== 'undefined') ? type : 'default';
         $.each(feature, function(){
           if (typeof transform!=="undefined" && transform && div.map.projection.getCode() != div.indiciaProjection.getCode()) {
             this.geometry.transform(div.indiciaProjection, div.map.projection);
@@ -381,15 +405,30 @@ mapLocationSelectedHooks = [];
         locChange();
       }
     }
-
-
+    
+    /**
+     * After a click on the map, zoom in to the clicked on point.
+     */
+    function _zoomInToClickPoint(div) {
+      var features=getFeaturesByVal(div.map.editLayer, 'clickPoint', 'type'),
+          bounds = features[0].geometry.getBounds();
+      bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
+      if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+        // if showing something small, don't zoom in too far
+        div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+      }
+      else {
+        // Set the default view to show something triple the size of the grid square
+        div.map.zoomToExtent(bounds);
+      }
+    }
 
     function _getPrecisionHelp(div, value) {
-      var helptext = [],info;
+      var helptext = [], info, handler = indiciaData.srefHandlers[_getSystem().toLowerCase()];
       if (div.settings.helpToPickPrecisionMin && typeof indiciaData.srefHandlers!=="undefined" &&
           typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
           $.inArray('precisions', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns) !== -1) {
-        info = indiciaData.srefHandlers[_getSystem().toLowerCase()].sreflenToPrecision(value.length);
+        info = handler.getPrecisionInfo(handler.valueToAccuracy(value));
         if (info.metres > div.settings.helpToPickPrecisionMin) {
           helptext.push(div.settings.hlpImproveResolution1.replace('{size}', info.display));
         } else if (info.metres > div.settings.helpToPickPrecisionMax) {
@@ -406,17 +445,7 @@ mapLocationSelectedHooks = [];
             }
           });
         }
-        var features=getFeaturesByVal(div.map.editLayer, 'clickPoint', 'type'),
-            bounds = features[0].geometry.getBounds();
-        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer);
-        if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
-          // if showing something small, don't zoom in too far
-          div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-        }
-        else {
-          // Set the default view to show something triple the size of the grid square
-          div.map.zoomToExtent(bounds);
-        }
+        _zoomInToClickPoint(div);
       }
       return helptext.join(' ');
     }
@@ -490,6 +519,64 @@ mapLocationSelectedHooks = [];
         });
       }
     }
+    
+    function updatePlotAfterMapClick(data, div, feature) {
+      if (div.settings.clickForPlot && !div.settings.noPlotRotation) {
+        // if adding a plot, select it for modification
+        var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
+          standalone: true,
+          mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
+        });
+        div.map.addControl(modifier);
+        div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
+        modifier.activate();
+        div.map.plotModifier = modifier;
+        //Needed check for undefined, as the ability to click for plot can now be altered on the fly once the screen
+        //has loaded. This function is still always called, but now there isn't always a plot when user clicks.
+        if (typeof feature !== 'undefined') {
+          div.map.plotModifier.selectFeature(feature);
+        }
+      }
+    }
+    
+    /**
+     * After clicking on the map, if the option is set, output encouragement and help text to get the
+     * user to specify an accurate map reference. Also zooms the map in to assist this process.
+     */
+    function updateHelpAfterMapClick(data, div, feature) {
+      var helptext=[], helpitem;
+      // Output optional help and zoom in if more precision needed
+      helpitem = _getPrecisionHelp(div, data.sref);
+      if (helpitem !== '') {
+        $('#' + div.settings.helpDiv).html(helpitem);
+      } else {
+        helptext.push(div.settings.hlpClickAgainToCorrect);
+        // Extra help for grid square precision, as long as the precision is not fixed.
+        if (feature.geometry.CLASS_NAME !== 'OpenLayers.Geometry.Point' && 
+            (div.settings.clickedSrefPrecisionMin==='' || div.settings.clickedSrefPrecisionMin !== div.settings.clickedSrefPrecisionMax)) {
+          helptext.push(div.settings.hlpZoomChangesPrecision);
+        }
+        $('#' + div.settings.helpDiv).html(helptext.join(' '));
+      }
+      $('#' + div.settings.helpDiv).show();
+    } 
+    
+    /**
+     * After clicking on the map, if the option is set, zoom the map in to facilitate a more accurate setting
+     * of the position subsequently.
+     */
+    function updateZoomAfterMapClick(data, div) {
+      // Optional zoom in after clicking when helpDiv not in use.
+      _zoomInToClickPoint(div);
+      // Optional switch to satellite layer when using click_zoom
+      if (div.settings.helpToPickPrecisionSwitchAt && data.sref.length >= div.settings.helpToPickPrecisionSwitchAt) {
+        $.each(div.map.layers, function() {
+          if (this.isBaseLayer && this.name.indexOf('Satellite') !== -1 && div.map.baseLayer !== this) {
+            div.map.setBaseLayer(this);
+          }
+        });
+      }
+    }
 
     /**
      * Having clicked on the map, and asked warehouse services to transform this to a WKT,
@@ -498,7 +585,7 @@ mapLocationSelectedHooks = [];
      */
     function _setClickPoint(data, div) {
       // data holds the sref in _getSystem format, wkt in indiciaProjection, optional mapwkt in mapProjection
-      var feature, helptext=[], helpitem, parser = new OpenLayers.Format.WKT();
+      var feature, parser = new OpenLayers.Format.WKT();
       // Update the spatial reference control
       $('#' + opts.srefId).val(data.sref);
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
@@ -513,8 +600,14 @@ mapLocationSelectedHooks = [];
         //When in annotations mode, if the user sets the centroid on the map, we only want the previous centroid point to be removed.
         removeAllFeatures(div.map.editLayer, 'clickPoint');
       } else {
-        removeAllFeatures(div.map.editLayer, 'boundary', true);
-        removeAllFeatures(div.map.editLayer, 'ghost');
+        var toRemove = [];
+        $.each(div.map.editLayer.features, function() {
+          //Annotations is a special seperate mode added after original code was written, so do not interfere with annotations even in inverse mode.
+          if (this.attributes.type!=='boundary' && this.attributes.type!=='zoomToBoundary' && this.attributes.type!=='annotation') {
+            toRemove.push(this);
+          }
+        });
+        div.map.editLayer.removeFeatures(toRemove, {});
       }
       ghost=null;
       $('#' + opts.geomId).val(data.wkt);
@@ -532,54 +625,11 @@ mapLocationSelectedHooks = [];
       feature.style = new style('default');
       div.map.editLayer.addFeatures([feature]);
 
-      if (div.settings.clickForPlot) {
-        // if adding a plot, select it for modification
-        var modifier = new OpenLayers.Control.ModifyFeature(div.map.editLayer, {
-          standalone: true,
-          mode: OpenLayers.Control.ModifyFeature.DRAG | OpenLayers.Control.ModifyFeature.ROTATE
-        });
-        div.map.addControl(modifier);
-        div.map.editLayer.events.register('featuremodified', modifier, modifyPlot);
-        modifier.activate();
-        div.map.plotModifier = modifier;
-        div.map.plotModifier.selectFeature(feature);
-      }
-
-      if (div.settings.helpDiv) {
-        // Output optional help and zoom in if more precision needed
-        helpitem = _getPrecisionHelp(div, data.sref);
-        if (helpitem !== '') {
-          $('#' + div.settings.helpDiv).html(helpitem);
-        } else {
-          helptext.push(div.settings.hlpClickAgainToCorrect);
-          // Extra help for grid square precision, as long as the precision is not fixed.
-          if (feature.geometry.CLASS_NAME !== 'OpenLayers.Geometry.Point' && 
-              (div.settings.clickedSrefPrecisionMin==='' || div.settings.clickedSrefPrecisionMin !== div.settings.clickedSrefPrecisionMax)) {
-            helptext.push(div.settings.hlpZoomChangesPrecision);
-          }
-          $('#' + div.settings.helpDiv).html(helptext.join(' '));
-        }
-        $('#' + div.settings.helpDiv).show();
-     } else if (div.settings.click_zoom) {
-        // Optional zoom in after clicking when helpDiv not in use.
-        var bounds = div.map.editLayer.features[0].geometry.getBounds();
-        bounds = _extendBounds(bounds, div.settings.maxZoomBuffer*2);
-        if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
-          // if showing something small, don't zoom in too far
-          div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-        } else {
-          // Set the default view to show something triple the size of the grid square
-          div.map.zoomToExtent(bounds);
-        }
-        // Optional switch to satellite layer when using click_zoom
-        if (div.settings.helpToPickPrecisionSwitchAt && data.sref.length >= div.settings.helpToPickPrecisionSwitchAt) {
-          $.each(div.map.layers, function() {
-            if (this.isBaseLayer && this.name.indexOf('Satellite') !== -1 && div.map.baseLayer !== this) {
-              div.map.setBaseLayer(this);
-            }
-          });
-        }
-      }
+      // Call any code which handles a click to set the spatial reference, e.g. zoom the map in, or set help hints.
+      $.each(mapClickForSpatialRefHooks, function() {
+        this(data, div, feature);
+      });
+      
       showGridRefHints(div);
     }
 
@@ -930,7 +980,7 @@ mapLocationSelectedHooks = [];
             clickableVectorLayers.push(this);
           }
         });
-
+        
         clickableWMSLayerNames = clickableWMSLayerNames.join(',');
         // Create a control that can handle both WMS and vector layer clicks.
         var infoCtrl = new OpenLayers.Control({
@@ -938,6 +988,19 @@ mapLocationSelectedHooks = [];
           title: div.settings.reportGroup===null ? '' : div.settings.hintQueryDataPointsTool,
           lastclick: {},
           allowBox: clickableVectorLayers.length>0 && div.settings.allowBox===true,
+          deactivate: function() { 
+            //If the map is setup to use popups, then we need to switch off popups when moving to use a different tool icon
+            //on the map (such as drawing boundaries) otheriwise they will continue to show.
+            if (clickableVectorLayers.length>0 && this.allowBox) {
+              if (this.handlers) {
+                this.handlers.box.deactivate();            
+              }
+              //Remove any popups still being displayed
+              $('.olPopup').remove();
+            } 
+            //Continue with the deactivation.
+            OpenLayers.Control.prototype.deactivate.call(this);
+          },
           activate: function() {
             var handlerOptions = {
               'single': true,
@@ -950,8 +1013,8 @@ mapLocationSelectedHooks = [];
                   this, {done: this.onGetInfo},
                   {boxDivClassName: "olHandlerBoxSelectFeature"}
                 )
-              };
-              this.handlers.box.activate();
+              };             
+             this.handlers.box.activate();
             } else {
               // allow click or bounding box actions
               this.handlers = {click: new OpenLayers.Handler.Click(this, {
@@ -1137,7 +1200,9 @@ mapLocationSelectedHooks = [];
      * Gets the precision required for a grid square dependent on the map zoom.
      * Precision parameter is the optional default, overridden by the clickedSrefPrecisionMin and
      * clickedSrefPrecisionMax settings. Set accountForModifierKey to false to disable adjustments
-     * made for the plus and minus key
+     * made for the plus and minus key.
+     * @return Number of letters required in OSGB style notation to describe a ref to this precision.
+     * Therefore 0 = 100km precision, 2 = 10km precision, 4=1km precision etc.
      */
     function getPrecisionInfo(div, precision, accountForModifierKey) {
       if (typeof accountForModifierKey==="undefined") {
@@ -1265,6 +1330,10 @@ mapLocationSelectedHooks = [];
           map.editLayer.redraw();
         } else {
           $('#imp-geom').val(geom.toString());
+          map.div.removeAllFeatures(evt.feature.layer, 'clickPoint');
+          if (div.settings.helpDiv) {
+            $('#' + div.settings.helpDiv).html(map.div.settings.hlpCustomPolygon);
+          }
           // as we are not separating the boundary geom, the geom's sref goes in the centroid
           pointToSref(div, geom.getCentroid(), _getSystem(), function(data) {
             if (typeof data.sref !== "undefined") {
@@ -1343,7 +1412,7 @@ mapLocationSelectedHooks = [];
           //When map is clicked on, then remove previous plots.
           for(var a = 0; a < mapLayers.length; a++ ){
             if (mapLayers[a].CLASS_NAME=='OpenLayers.Layer.Vector') {
-              mapLayers[a].destroyFeatures();
+              destroyAllFeatures(mapLayers[a], 'zoomToBoundary', true);
             }
           }
           $('#'+ div.settings.boundaryGeomId).val('');
@@ -1368,8 +1437,7 @@ mapLocationSelectedHooks = [];
             return false;
           }
           //create a rectangular polygon
-          var coords = plot_rectangle_calculator(lonlat, width, length);
-          polygon = coords;
+          polygon = plot_rectangle_calculator(lonlat, width, length);
           $('#'+ div.settings.boundaryGeomId).val(polygon);
         } else if (plotShape === 'circle') {
           // create a circular polygon
@@ -1397,10 +1465,66 @@ mapLocationSelectedHooks = [];
       else
       {
         // Clicking to locate an sref (eg an OSGB grid square)
-        pointToSref(div, point, _getSystem(), function(data){
+        var system = chooseBestSystem(div, point, _getSystem());
+        $('select#'+opts.srefSystemId).val(system);
+        pointToSref(div, point, system, function(data){
           handleSelectedPositionOnMap(lonlat,div,data);
         });
       }
+    }
+
+    /**
+     * Given an sref system, check whether this is appropriate for the supplied point. If not, then works out the best
+     * available alternative.
+     * @param div The map div
+     * @param point A point object with x, y coordinates, in the map projection
+     * @param system The system code which is currently selected
+     */
+    function chooseBestSystem(div, point, system) {
+      var proj, testpoint, sys;
+      // If no sref selector available, then just return the original system
+      if ($('select#'+opts.srefSystemId).length===0) {
+        return system;
+      }
+      sys = false;
+      // Use the web mercator projection to do a rough test for each possible system.
+      // First, OSIE
+      if ($('#'+opts.srefSystemId+' option[value="OSIE"]').length
+          && point.x >= -1196000 && point.x <= -599200 && point.y >= 6687800 && point.y <= 7442470) {
+        // Got a rough match, now transform to the correct system so we can do exact match. Note that we are not testing against
+        // a pure rectangle now.
+        proj=new OpenLayers.Projection('EPSG:29901');
+        testpoint = point.clone().transform(div.map.projection, proj);
+        if (testpoint.x >= 10000 && testpoint.x <= 367300 && testpoint.y >= 10000 && testpoint.y <= 468100
+            && (testpoint.x < 332000 || testpoint.y < 445900)) {
+          sys = 'OSIE';
+        }
+      }
+      // Next, OSGB
+      if (!sys && $('#'+opts.srefSystemId+' option[value="OSGB"]').length
+          && point.x >= -1081873 && point.x <= -422933 && point.y >= 6405988 && point.y <= 8944478) {
+        // Got a rough match, now transform to the correct system so we can do exact match. This time we can do a pure
+        // rectangle, as the IE grid refs have already been taken out
+        proj=new OpenLayers.Projection('EPSG:27700');
+        testpoint = point.clone().transform(div.map.projection, proj);
+        if (testpoint.x >= 0 && testpoint.x <= 700000 && testpoint.y >= 0 && testpoint.y <= 1400000) {
+          sys = 'OSGB';
+        }
+      }
+      if (!sys && $('#'+opts.srefSystemId+' option[value="LUGR"]').length
+          && point.x >= 634030 && point.x <= 729730 && point.y >= 6348260 && point.y <= 6484930) {
+        proj=new OpenLayers.Projection('EPSG:2169');
+        testpoint = point.clone().transform(div.map.projection, proj);
+        if (testpoint.x >= 46000 && testpoint.x <= 108000 && testpoint.y >= 55000 && testpoint.y <= 141000) {
+          sys = 'LUGR';
+        }
+      }
+      // revert to the original system if we failed to find a better one
+      if (!sys) {
+        sys = system;
+      }
+      return sys;
+
     }
 
     function showGridRefHints(div) {
@@ -1408,7 +1532,7 @@ mapLocationSelectedHooks = [];
           typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined") {
         var ll = div.map.getLonLatFromPixel(currentMousePixel), precisionInfo,
               handler=indiciaData.srefHandlers[_getSystem().toLowerCase()], largestSrefLen, pt,
-              proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0), r;
+              proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0);
         if ($.inArray('precisions', handler.returns)!==-1 && $.inArray('gridNotation', handler.returns)!==-1) {
           precisionInfo=getPrecisionInfo(div, null, false);
           proj=new OpenLayers.Projection('EPSG:'+indiciaData.srefHandlers[_getSystem().toLowerCase()].srid);
@@ -1417,7 +1541,7 @@ mapLocationSelectedHooks = [];
           largestSrefLen = precisionInfo.precision;
           $('.grid-ref-hint').removeClass('active');
           // If there are multiple precisions available using the +/- keys, activate the current one
-          if (div.settings.clickForSpatialRef && handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen).metres) {
+          if (div.settings.clickForSpatialRef && handler.getPrecisionInfo(largestSrefLen+2).metres !== handler.getPrecisionInfo(largestSrefLen).metres) {
             if (minusKeyDown) {
               $('.hint-minus').addClass('active');
             } else if (plusKeyDown) {
@@ -1427,9 +1551,9 @@ mapLocationSelectedHooks = [];
             }
           }
           // almost every mouse move causes the smallest + key square to change
-          if (handler.sreflenToPrecision(largestSrefLen+4)!==false &&
-                handler.sreflenToPrecision(largestSrefLen+4).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
-            $('.hint-plus .label').html(handler.sreflenToPrecision(largestSrefLen+4).display + ':');
+          if (handler.getPrecisionInfo(largestSrefLen+2)!==false &&
+                handler.getPrecisionInfo(largestSrefLen+2).metres !== handler.getPrecisionInfo(largestSrefLen).metres) {
+            $('.hint-plus .label').html(handler.getPrecisionInfo(largestSrefLen+2).display + ':');
             $('.hint-plus .data').html(handler.pointToGridNotation(pt, largestSrefLen+2));
             $('.hint-plus').css('opacity', 1);
           } else {
@@ -1438,15 +1562,15 @@ mapLocationSelectedHooks = [];
           // don't recalculate if mouse is still over the existing ghost
           if (recalcGhost || $('.hint-normal').css('opacity')===0) {
             // since we've moved a square, redo the grid ref hints
-            if (handler.sreflenToPrecision(largestSrefLen)!==false &&
-                handler.sreflenToPrecision(largestSrefLen).metres !== handler.sreflenToPrecision(largestSrefLen+2).metres) {
-              $('.hint-minus .label').html(handler.sreflenToPrecision(largestSrefLen).display + ':');
+            if (handler.getPrecisionInfo(largestSrefLen-2)!==false &&
+                handler.getPrecisionInfo(largestSrefLen-2).metres !== handler.getPrecisionInfo(largestSrefLen).metres) {
+              $('.hint-minus .label').html(handler.getPrecisionInfo(largestSrefLen-2).display + ':');
               $('.hint-minus .data').html(handler.pointToGridNotation(pt, largestSrefLen-2));
               $('.hint-minus').css('opacity', 1);
             } else {
               $('.hint-minus').css('opacity', 0);
             }
-            $('.hint-normal .label').html(handler.sreflenToPrecision(largestSrefLen+2).display + ':');
+            $('.hint-normal .label').html(handler.getPrecisionInfo(largestSrefLen).display + ':');
             $('.hint-normal .data').html(handler.pointToGridNotation(pt, largestSrefLen));
             $('.hint-normal').css('opacity', 1);
           }
@@ -1476,6 +1600,9 @@ mapLocationSelectedHooks = [];
       }
       else {
         _setClickPoint(data, div); // data sref in _getSystem, wkt in indiciaProjection, mapwkt in mapProjection
+      }
+      if (typeof indiciaFns.showHideRememberSiteButton!=="undefined") {
+        indiciaFns.showHideRememberSiteButton();
       }
     };
 
@@ -1717,7 +1844,7 @@ mapLocationSelectedHooks = [];
         zoom = this.settings.initial_zoom;
       }
       if (center.lon !== null && center.lat !== null) {
-        center = new OpenLayers.LonLat(center.lon, center.lat);
+        center = new OpenLayers.LonLat(center.lon, center.lat);   
       } else {
         center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
         if (div.map.displayProjection.getCode()!=div.map.projection.getCode()) {
@@ -1750,7 +1877,7 @@ mapLocationSelectedHooks = [];
       };
 
       // This hack fixes an IE8 bug where it won't display Google layers when switching using the Layer Switcher.
-      div.map.events.register('changebaselayer', null, function(e) {
+      div.map.events.register('changebaselayer', null, function() {
         // trigger layer redraw by changing the map size
         div.style.height = (parseInt(div.style.height)-1) + 'px';
         // keep a local reference to the map div, so we can access it from the timeout
@@ -1758,7 +1885,7 @@ mapLocationSelectedHooks = [];
         // after half a second, reset the map size
         setTimeout(function() {tmp.style.height = (parseInt(tmp.style.height) + 1) + 'px';}, 500);
       });
-
+      
       if (this.settings.editLayer) {
         var editLayer;
         //If using click for plot, there can be a zoom ghost on the page, but we don't want
@@ -1823,10 +1950,9 @@ mapLocationSelectedHooks = [];
                 if (typeof indiciaData.srefHandlers!=="undefined" &&
                     typeof indiciaData.srefHandlers[_getSystem().toLowerCase()]!=="undefined" &&
                     $.inArray('wkt', indiciaData.srefHandlers[_getSystem().toLowerCase()].returns)!==-1) {
-                  var ll, handler=indiciaData.srefHandlers[_getSystem().toLowerCase()], pt,
-                      proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0), precisionInfo;
+                  var ll=div.map.getLonLatFromPixel(evt.xy), handler=indiciaData.srefHandlers[_getSystem().toLowerCase()],
+                      pt, proj, recalcGhost = ghost===null || !ghost.atPoint(ll, 0, 0), precisionInfo;
                   if (recalcGhost) {
-                    ll=div.map.getLonLatFromPixel(evt.xy);
                     precisionInfo=getPrecisionInfo(div);
                     proj=new OpenLayers.Projection('EPSG:'+indiciaData.srefHandlers[_getSystem().toLowerCase()].srid);
                     ll.transform(div.map.projection, proj);
@@ -1841,30 +1967,31 @@ mapLocationSelectedHooks = [];
                       parser = new OpenLayers.Format.WKT();
                       feature = parser.read(r.wkt);
                       r.wkt = feature.geometry.transform(proj, div.map.projection).toString();
-                      ghost=_showWktFeature(div, r.wkt, div.map.editLayer, null, true, 'ghost', false);
+                      //If this line is used, it breaks the rotation handles on the plots without
+                      //actually having any other effect as far as I can tell.
+                      if (!div.settings.clickForPlot) {                     
+                        ghost=_showWktFeature(div, r.wkt, div.map.editLayer, null, true, 'ghost', false);
+                      }
                     }
                   } else if (parseInt(_getSystem())==_getSystem()) {
                     // also draw a selection ghost if using a point ref system we can simply transform client-side
                     ll = div.map.getLonLatFromPixel({x: evt.layerX, y: evt.layerY});
-                    proj=new OpenLayers.Projection('EPSG:'+_getSystem());
-                    //ll.transform(div.map.projection, proj);
                     ghost=_showWktFeature(div, 'POINT('+ll.lon+' '+ll.lat+')', div.map.editLayer, null, true, 'ghost', false);
                   }
                 }
               }
             }
           });
-          $('#map').mouseleave(function(evt) {
+          $('#map').mouseleave(function() {
             // clear ghost hover markers when mouse leaves the map
             removeAllFeatures(div.map.editLayer, 'ghost');
           });
         }
       }
       if (this.settings.searchLayer) {
-          // Add an editable layer to the map
-          var searchLayer = new OpenLayers.Layer.Vector(this.settings.searchLayerName, {style: this.settings.searchStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.searchLayerInSwitcher});
-          div.map.searchLayer = searchLayer;
-          div.map.addLayer(div.map.searchLayer);
+        // Add an editable layer to the map
+        div.map.searchLayer = new OpenLayers.Layer.Vector(this.settings.searchLayerName, {style: this.settings.searchStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.searchLayerInSwitcher});
+        div.map.addLayer(div.map.searchLayer);
       } else {
         div.map.searchLayer = div.map.editLayer;
       }
@@ -1944,11 +2071,11 @@ mapLocationSelectedHooks = [];
             }
           }
         });
-
+        
         div.map.addControl(infoCtrl);
         infoCtrl.activate();
       }
-
+      
       if (div.settings.editLayer && (div.settings.clickForSpatialRef || div.settings.clickForPlot)) {
         // Setup a click event handler for the map
         OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
@@ -1981,14 +2108,14 @@ mapLocationSelectedHooks = [];
           }
         }});
       }
-      var ctrl, hint, pushDrawCtrl = function(c) {
+      var hint, pushDrawCtrl = function(c) {
         toolbarControls.push(c);
         if (div.settings.editLayer && div.settings.allowPolygonRecording) {
           c.events.register('featureadded', c, recordPolygon);
         }
       }, drawStyle=new style('boundary');
       var ctrlObj;
-      $.each(div.settings.standardControls, function(i, ctrl) {
+      $.each(div.settings.standardControls, function(i, ctrl) {       
         ctrlObj=null;
         // Add a layer switcher if there are multiple layers
         if (ctrl=='layerSwitcher') {
@@ -2029,8 +2156,11 @@ mapLocationSelectedHooks = [];
         } else if (ctrl=='selectFeature' && div.settings.editLayer) {
           ctrlObj = new OpenLayers.Control.SelectFeature(div.map.editLayer);
           toolbarControls.push(ctrlObj);
-        } else if (ctrl=='hoverFeatureHighlight' && div.settings.editLayer) {
-          ctrlObj = new OpenLayers.Control.SelectFeature(div.map.editLayer, {hover: true, highlightOnly: true});
+        } else if (ctrl=='hoverFeatureHighlight' && (div.settings.editLayer || indiciaData.reportlayer)) {
+          // attach control to report layer, or the editLayer if no report loaded.
+          ctrlObj = new OpenLayers.Control.SelectFeature(
+            typeof indiciaData.reportlayer ==="undefined" ? div.map.editLayer : indiciaData.reportlayer,
+            {hover: true, highlightOnly: true});
           div.map.addControl(ctrlObj);
         } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
@@ -2051,18 +2181,16 @@ mapLocationSelectedHooks = [];
           var fullscreenEnabled = document.fullscreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled,
           fullscreenchange=function () {
             var fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement;
-            div.map.updateSize();
             if (fullscreenElement) {
-              if (typeof indiciaData.origFullscreenWidth==="undefined") {
-                indiciaData.origFullscreenWidth=$(div).css('width');
-                indiciaData.origFullscreenHeight=$(div).css('height');
+              if (typeof indiciaData.origMapStyle==="undefined") {
+                indiciaData.origMapStyle=$(div).attr('style');
               }
               $(div).css('width','100%');
               $(div).css('height','100%');
             } else {
-              $(div).css('width', indiciaData.origFullscreenWidth);
-              $(div).css('height', indiciaData.origFullscreenHeight);
+              $(div).attr('style', indiciaData.origMapStyle);
             }
+            div.map.updateSize();
           };
           if (fullscreenEnabled) {
             document.addEventListener("fullscreenchange", fullscreenchange);
@@ -2071,8 +2199,15 @@ mapLocationSelectedHooks = [];
             document.addEventListener("msfullscreenchange", fullscreenchange);
             ctrlObj = new OpenLayers.Control.Button({
                 displayClass: "olControlFullscreen", title: div.settings.hintFullscreen, trigger: function() {
-                  var fs = div.requestFullscreen || div.mozRequestFullScreen || div.webkitRequestFullScreen || div.msRequestFullscreen;
-                  fs.call(div);
+                  if ((document.fullscreenElement && document.fullscreenElement !== null) ||    // alternative standard methods
+                      document.mozFullScreen || document.webkitIsFullScreen) {
+                    var cancel=document.exitFullscreen || document.mozCancelFullScreen || webkitExitFullScreen || msExitFullScreen;
+                    cancel.call(document);
+                  } else {
+                    var fs = div.requestFullscreen || div.mozRequestFullScreen || div.webkitRequestFullScreen || div.msRequestFullscreen;
+                    fs.call(div);
+                  }
+
                 }
             });
             toolbarControls.push(ctrlObj);
@@ -2139,12 +2274,28 @@ mapLocationSelectedHooks = [];
           }
         });
       }
+      
+      // What extra stuff do we need to do after clicking to set the spatial reference?
+      if (div.settings.clickForPlot) {
+        mapClickForSpatialRefHooks.push(updatePlotAfterMapClick);
+      }
+      if (div.settings.helpDiv) {
+        mapClickForSpatialRefHooks.push(updateHelpAfterMapClick);
+      } else if (div.settings.click_zoom) {
+        mapClickForSpatialRefHooks.push(updateZoomAfterMapClick);
+      }
+      
       _bindControls(this);
       // keep a handy reference
       indiciaData.mapdiv=div;
+      // temporary fix for fancybox 1 + OL map + google layers + Chrome 38 display corruption
+      setInterval(function(){
+        $(".olForeignContainer").css("-webkit-transform","");
+        $(".olForeignContainer").css("transform","");
+      },1000);
       // call any post initialisation hooks
-      $.each(mapInitialisationHooks, function(i, fn) {
-        fn(div);
+      $.each(mapInitialisationHooks, function() {
+        this(div);
       });
     });
 
@@ -2216,8 +2367,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     plotLengthId: 'attr-length', // html id of plot length control for plotShape = 'rectangle'
     plotRadiusId: 'attr-radius', // html id of plot radius control for plotShape = 'circle'
     boundaryGeomId: 'imp-boundary-geom',
-    clickedSrefPrecisionMin: '2', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
-    clickedSrefPrecisionMax: '10',
+    clickedSrefPrecisionMin: 2, // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
+    clickedSrefPrecisionMax: 10,
     plotPrecision: '10', // when clickForPlot is true, the precision of grid ref associated with plot.
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
@@ -2285,7 +2436,7 @@ jQuery.fn.indiciaMapPanel.defaults = {
     hintDrawPointHint: 'Select this tool to draw points by clicking on the map.',
     hintDrawForReportingHint: 'You can then filter the report for intersecting records.',
     hintClearSelection: 'Clear the edit layer',
-    hintModifyFeature: 'Modify the selected feature. Grab and drag the handles or double click on lines to add new handles.',
+    hintModifyFeature: 'Modify the selected feature. Click on the feature to select it then grab and drag the circular handles to change the boundary.',
     hintFullscreen: 'Display the map in full screen mode',
     hlpClickOnceSetSref: 'Click once on the map to set your location.',
     hlpClickAgainToCorrect: 'Click on the map again to correct your position if necessary.',
@@ -2300,7 +2451,8 @@ jQuery.fn.indiciaMapPanel.defaults = {
     hlpImproveResolution1: "{size} square selected. Please click on the map again to provide a more accurate location.",
     hlpImproveResolution2: "Good. {size} square selected.",
     hlpImproveResolution3: "Excellent! {size} square selected. If your position is wrong, either click your actual position again or zoom out until your position comes to view, then retry.",
-    hlpImproveResolutionSwitch: "We've switched to a satellite view to allow you to locate your position even better."
+    hlpImproveResolutionSwitch: "We've switched to a satellite view to allow you to locate your position even better.",
+    hlpCustomPolygon: "Excellent! A custom polygon has been drawn for this record."
 
 };
 
@@ -2447,6 +2599,5 @@ function plot_rectangle_calculator(latLongPoint, width, length) {
   mercNorthEast = OpenLayers.Layer.SphericalMercator.forwardMercator(actualSquareNorthEastPoint4326.x,actualSquareNorthEastPoint4326.y);
 
   var polygonMetadata = 'POLYGON(('+mercOriginal.lon+' '+mercOriginal.lat+','+mercNorth.lon+' '+mercNorth.lat+','+mercNorthEast.lon+' '+mercNorthEast.lat+','+mercEast.lon+' '+mercEast.lat+'))';
-  var polygon=OpenLayers.Geometry.fromWKT(polygonMetadata);
-  return polygon;
+  return OpenLayers.Geometry.fromWKT(polygonMetadata);
 }

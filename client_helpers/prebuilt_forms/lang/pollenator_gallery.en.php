@@ -56,9 +56,10 @@ $custom_terms = array(
 	,'LANG_Taxa_Unknown_In_Tool' => 'Taxa not known in ID tool'
 	,'LANG_Det_Type_Label' => 'Determination Status'
 	,'LANG_Det_Type_A' => 'Initial, Unvalidated'
+	,'LANG_Det_Type_B' => 'Doubt Expressed'
 	,'LANG_Det_Type_C' => 'Correct, Validated'
 	,'LANG_Det_Type_X' => 'Unidentified'
-	,'LANG_Choose_Taxon' => "Choose a taxon from the list"
+	,'LANG_Choose_Taxon' => "Choose a taxon from this list"
 	,'LANG_Identify_Insect' => 'Identify this insect:'
 	,'LANG_More_Precise' => 'More precise identification'
 	,'LANG_ID_Comment' => 'Identification comments'
@@ -141,4 +142,7 @@ $custom_terms = array(
 	,'LANG_Bad_Collection_ID' => 'You have tried to load a session as a collection: this ID is not a valid collection.'
 	,'LANG_Bad_Insect_ID' => 'You have tried to load a flower as an insect: this ID is not a valid insect.'
 	,'LANG_Bad_Flower_ID' => 'You have tried to load an insect as a flower: this ID is not a valid flower.'
+	
+	,'LANG_Add' => 'Add'
+	,'LANG_ID_Flower_Unknown' => 'Flower Species Not Known'
 );

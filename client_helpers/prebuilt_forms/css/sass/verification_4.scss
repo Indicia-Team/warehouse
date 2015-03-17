@@ -19,7 +19,6 @@ $verify-button-margin: 4%;
 }
 
 table.report-grid {
-  font-size: 80%;  
   width: 100%;
   tr:hover, table.report-grid tr.odd:hover {
     background-color: $hover-color;
@@ -27,6 +26,9 @@ table.report-grid {
   tr.selected, tr.selected td {
     background-color: $selected-color;
     color: white;
+  }
+  tr.zero-t {
+    text-decoration: line-through;
   }
   .nowrap {
     whitespace: nowrap;

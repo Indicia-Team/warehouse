@@ -1,4 +1,4 @@
-var saveComment, saveVerifyComment;
+var saveComment, saveVerifyComment, verificationGridLoaded;
 
 (function ($) {
   "use strict";
@@ -56,10 +56,10 @@ var saveComment, saveVerifyComment;
         $('#record-details-content').show();
         if ($row.parents('tbody').length !== 0) {
           // point the image and comments tabs to the correct AJAX call for the selected occurrence.
-          $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('images'), indiciaData.ajaxUrl + '/images/' + 
-              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
-          $('#record-details-tabs').tabs('url', indiciaData.detailsTabs.indexOf('comments'), indiciaData.ajaxUrl + '/comments/' + 
-              indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
+          indiciaFns.setTabHref($('#record-details-tabs'), indiciaData.detailsTabs.indexOf('media'), 'media-tab-tab', 
+              indiciaData.ajaxUrl + '/media/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
+          indiciaFns.setTabHref($('#record-details-tabs'), indiciaData.detailsTabs.indexOf('comments'), 'comments-tab-tab', 
+              indiciaData.ajaxUrl + '/comments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
           // reload current tabs
           $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
           $('#record-details-toolbar *').removeAttr('disabled');
@@ -209,13 +209,13 @@ var saveComment, saveVerifyComment;
       email.body = $('#email-body').val();
 
       if (email.type === 'recordCheck') {
-        // ensure images are loaded
+        // ensure media are loaded
         $.ajax({
-          url: indiciaData.ajaxUrl + '/imagesAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
+          url: indiciaData.ajaxUrl + '/mediaAndComments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
           async: false,
           dataType: 'json',
           success: function (response) {
-              email.body = email.body.replace(/\[Photos\]/g, response.images);
+              email.body = email.body.replace(/\[Photos\]/g, response.media);
               email.body = email.body.replace(/\[Comments\]/g, response.comments);
           }
         });
@@ -320,6 +320,26 @@ var saveComment, saveVerifyComment;
     }
   };
 
+  // show the list of tickboxes for verifying multiple records quickly
+  function showTicklist() {
+    $('.check-row').attr('checked', false);
+    $('#row' + occurrence_id + ' .check-row').attr('checked', true);
+    $('.check-row').show();
+    $('#btn-multiple').addClass('active');
+    $('#btn-edit-verify').hide();
+    $('#verify-buttons-inner label').html('With ticked records:');
+    $('#btn-multiple').val('Verify single records');
+    $('#btn-multiple').after($('#verify-buttons-inner'));
+    $('#verify-buttons-inner button').removeAttr('disabled');
+  }
+    
+  // Callback for the report grid. Use to fill in the tickboxes if in multiple mode.
+  verificationGridLoaded = function() {
+    if (multimode) {
+      showTicklist();
+    }
+  }
+
   function showTab() {
     if (currRec !== null) {
       if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'details') {
@@ -356,8 +376,8 @@ var saveComment, saveVerifyComment;
             $('#chart-div').css('opacity',1);
           }
         );
-      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'images') {
-        $('#images-tab a.fancybox').fancybox();
+      } else if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'media') {
+        $('#media-tab a.fancybox').fancybox();
       }
       // make it clear things are loading
       if (indiciaData.mapdiv !== null) {
@@ -775,10 +795,8 @@ var saveComment, saveVerifyComment;
       }
     });
 
-    $('#record-details-tabs').bind('tabsshow', function () {
-      showTab();
-    });
-
+    indiciaFns.bindTabsActivate($('#record-details-tabs'), showTab);
+    
     $('#btn-verify').click(function () {
       setStatus('V');
     });
@@ -798,15 +816,7 @@ var saveComment, saveVerifyComment;
     $('#btn-multiple').click(function() {
       multimode=!multimode;
       if (multimode) {
-        $('.check-row').attr('checked', false);
-        $('#row' + occurrence_id + ' .check-row').attr('checked', true);
-        $('.check-row').show();
-        $('#btn-multiple').addClass('active');
-        $('#btn-edit-verify').hide();
-        $('#verify-buttons-inner label').html('With ticked records:');
-        $('#btn-multiple').val('Verify single records');
-        $('#btn-multiple').after($('#verify-buttons-inner'));
-        $('#verify-buttons-inner button').removeAttr('disabled');
+        showTicklist();
       } else {
         $('.check-row').hide();
         $('#btn-multiple').removeClass('active');

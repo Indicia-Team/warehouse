@@ -374,17 +374,10 @@ class iform_ukbms_timed_observations {
     		'nocache' => true));
     // convert the report data to an array for the lookup, plus one to pass to the JS so it can keep the map updated
     $sitesLookup = array();
-    $sitesIds = array();
     $sitesJs = array();
     foreach ($availableSites as $site) {
       $sitesLookup[$site['location_id']]=$site['name'];
-      $sitesIds[] = $site['location_id'];
-    }
-    $sites = data_entry_helper::get_population_data(array(
-        'table'=>'location',
-        'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'id'=>$sitesIds,'view'=>'detail')));
-    foreach ($sites as $site) {
-      $sitesJs[$site['id']] = $site;
+      $sitesJs[$site['location_id']] = array('geom' => $site['geom']);
     }
     data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
     if ($locationId) {
@@ -446,7 +439,7 @@ class iform_ukbms_timed_observations {
     $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" />';
-    $r .= '<a href="'.$args['my_obs_page'].'" class="button">'.lang::get('Cancel').'</a>';
+    $r .= '<a href="'.$args['my_obs_page'].'" class="button ui-state-default ui-corner-all">'.lang::get('Cancel').'</a>';
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       $r .= '<button id="delete-button" type="button" class="ui-state-default ui-corner-all" />'.lang::get('Delete').'</button>';
     $r .= "</div>"; // left
@@ -626,8 +619,12 @@ mapInitialisationHooks.push(function(mapdiv) {
     data_entry_helper::$javascript .= "indiciaData.occurrence_totals = [];\n";
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute = [];\n";
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl = [];\n";
-    $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'), 'suffixTemplate' => 'nosuffix');
+    $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'));
     $occ_attributes_captions = array();
+    // remove the ctrlWrap as it complicates the grid
+    global $indicia_templates;
+    $oldCtrlWrapTemplate = $indicia_templates['controlWrap'];
+    $indicia_templates['controlWrap'] = '{control}';
     foreach(explode(',',$args['occurrence_attribute_ids']) as $idx => $attr){
       $occ_attributes_captions[$idx] = $occ_attributes[$attr]['caption'];
       unset($occ_attributes[$attr]['caption']);
@@ -636,6 +633,7 @@ mapInitialisationHooks.push(function(mapdiv) {
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute[".$idx."] = $attr;\n";
       data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl[".$idx."] = jQuery('".(str_replace("\n","",$ctrl))."');\n";
     }
+    $indicia_templates['controlWrap'] = $oldCtrlWrapTemplate;
 //    $r = "<h2>".$location[0]['name']." on ".$date."</h2>\n";
     $r = '<div id="tabs">';
     $tabs = array('#grid1'=>t($args['species_tab_1'])); // tab 1 is required.
@@ -805,8 +803,8 @@ mapInitialisationHooks.push(function(mapdiv) {
     }
     // Do an AJAX population of the grid rows.
     data_entry_helper::$javascript .= "loadSpeciesList();
-jQuery('#tabs').bind('tabsshow', function(event, ui) {
-    var target = ui.panel;
+indiciaFns.bindTabsActivate(jQuery('#tabs'), function(event, ui) {
+    var target = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];;
     // first get rid of any previous tables
     jQuery('table.sticky-header').remove();
     jQuery('table.sticky-enabled thead.tableHeader-processed').removeClass('tableHeader-processed');

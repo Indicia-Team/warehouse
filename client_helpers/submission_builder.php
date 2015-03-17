@@ -349,24 +349,41 @@ class submission_builder extends helper_config {
    * contain an image upload (as long as a suitable entity is available to store the image in).
    */
   public static function wrap_with_images($values, $modelName, $fieldPrefix=null) {
-    // Now search for an input controls with the name image_upload.
-    // For example, this occurs on the taxon_image edit page of the Warehouse.
-    // We do this first so the uploaded image path can be put into the submission
-    if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
-      $file = $_FILES['image_upload'];
-      // Get the original file's extension
-      $parts = explode(".",$file['name']);
-      $fext = array_pop($parts);
-      // Generate a file id to store the image as
-      $destination = time().rand(0,1000).".".strtolower($fext);
-      $uploadpath = dirname($_SERVER['SCRIPT_FILENAME']).'/'.(isset(parent::$indicia_upload_path) ? parent::$indicia_upload_path : 'upload/');
-      if (move_uploaded_file($file['tmp_name'], $uploadpath.$destination)) {
-        // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
-        $_FILES['image_upload']['name'] = $destination;
-        $values['path'] = $destination;
-        // This is the final file destination, so create the image files.
-        Image::create_image_files($uploadpath, $destination);
-      } 
+    // Now search for an input control values which imply that an image file will need to be 
+    // either moved to the warehouse, or if already on the warehouse, processed to create
+    // thumbnails.
+    foreach ($_FILES as $fieldname => &$file) {
+      if ($file['name']) {
+        // Get the original file's extension
+        $parts = explode(".",$file['name']);
+        $fext = array_pop($parts);
+        // Generate a file id to store the image as
+        $filename = time().rand(0,1000).".".strtolower($fext);
+        if ($fieldname==='image_upload') {
+          // image_upload is a special case only used on the warehouse, so can move the file directly to its final place
+          // @todo: Should this special case exist?
+          $uploadpath = dirname($_SERVER['SCRIPT_FILENAME']).'/'.(isset(parent::$indicia_upload_path) ? parent::$indicia_upload_path : 'upload/');
+          if (move_uploaded_file($file['tmp_name'], $uploadpath.$filename)) {
+            // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
+            $file['name'] = $filename;
+            $values['path'] = $filename;
+            // This is the final file destination, so create the image files.
+            Image::create_image_files($uploadpath, $filename);
+          }
+        } elseif (preg_match('/^('.$modelName.':)?[a-z_]+_path$/', $fieldname)) {
+          // image fields can be of form {model}:{qualifier}_path (e.g. group:logo_path) if they are
+          // directly embedded in the entity, rather than in a child media entity. These files need
+          // to be moved to interim upload folder and will be sent to the warehouse after a successful
+          // save.
+          $values[$fieldname] = $filename;
+          $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
+          $uploadpath = $uploadpath = helper_base::relative_client_helper_path().$interim_image_folder;
+          $tempFile = isset($file['tmp_name']) ? $file['tmp_name'] : '';
+          if (!move_uploaded_file($tempFile, $uploadpath.$filename))
+            throw new exception('Failed to move uploaded file from temporary location');
+          $file['name'] = $filename;
+        }
+      }
     }
     // Get the parent model into JSON
     $modelWrapped = self::wrap($values, $modelName, $fieldPrefix);
@@ -435,4 +452,3 @@ class submission_builder extends helper_config {
   }
 
 }
-?>

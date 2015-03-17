@@ -1,0 +1,16 @@
+#map {
+  /* Hide missing tiles from layers such as DorIS */
+  .olImageLoadError {
+    display: none;
+  }
+}
+
+input.readonly {
+  background-color: #f7f7f7;
+  border: solid silver 1px;
+}
+
+p.drift-only {
+  opacity: 0;
+  margin-left: 164px;
+}

@@ -419,7 +419,7 @@ class iform_distribution_map_3 {
       'table' => 'taxa_taxon_list',
       'extraParams' => $readAuth + array(
       'view' => 'detail',
-      'language_iso' => iform_lang_iso_639_2($user->lang),
+      'language_iso' => iform_lang_iso_639_2(hostsite_get_user_field('language')),
       'taxon_meaning_id' => $meaningId
       )
     );

@@ -574,7 +574,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       $extraParams += array('preferred' => 't');
     }
     if ($args['species_names_filter']=='language') {
-      $extraParams += array('language' => iform_lang_iso_639_2($user->lang));
+      $extraParams += array('language' => iform_lang_iso_639_2(hostsite_get_user_field('language')));
     }  
     // multiple species being input via a grid      
     $species_ctrl_opts=array_merge(array(
@@ -586,7 +586,7 @@ hook_species_checklist_pre_delete_row=function(e) {
           'extraParams'=>$extraParams,
           'survey_id'=>$args['survey_id'],
           'PHPtaxonLabel' => true,
-          'language' => iform_lang_iso_639_2($user->lang) // used for termlists in attributes
+          'language' => iform_lang_iso_639_2(hostsite_get_user_field('language')) // used for termlists in attributes
          ,'max_species_ids'=>$args['max_species_ids']
          ,'surveyMethodAttrId'=>$surveyMethodIdAttr
          ,'surveyMethods'=>$surveyMethods

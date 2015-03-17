@@ -1026,7 +1026,6 @@ hook_species_checklist_pre_delete_row=function(e) {
             $ctrlOptions = array(
               'class'=>'scPrecision ' . (isset($precision['class']) ? ' '.$precision['class'] : ''),
               'extraParams' => $options['readAuth'],
-              'suffixTemplate' => 'nosuffix',
               'language' => $options['language']
             );
             if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
@@ -1070,7 +1069,6 @@ hook_species_checklist_pre_delete_row=function(e) {
                 'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
                   (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
                 'extraParams' => $options['readAuth'],
-                'suffixTemplate' => 'nosuffix',
                 'language' => $options['language']
               );
               if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
@@ -1228,7 +1226,8 @@ bindSpeciesButton(bindSpeciesOptions);\n";
       if($options['includeSubSample'] && $options['mapPosition']!='top') $r .= '<div class="sideMap-container">'.data_entry_helper::map_panel($mapOptions, $olOptions).'</div>';
       if($options['includeSubSample'])
       	data_entry_helper::$javascript .= "var speciesMapTabHandler = function(event, ui) {
-  if (ui.panel.id=='".$mapOptions['tabDiv']."') {
+  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id==='".$mapOptions['tabDiv']."') {
     $('.mnhnl-species-grid').find('tr').removeClass('highlight');
     var div=$('#".$mapOptions['divId']."')[0];
     div.map.editLayer.destroyFeatures();
@@ -1261,7 +1260,7 @@ bindSpeciesButton(bindSpeciesOptions);\n";
     }
   }
 };
-jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()).bind('tabsshow', speciesMapTabHandler);\n";
+indiciaFns.bindTabsActivate(jQuery(jQuery('#".$mapOptions['tabDiv']."').parent()), speciesMapTabHandler);\n";
       // move the cloneable table outside the form, so allowing the validation to ignore it.
       data_entry_helper::$javascript .= "var cloneableDiv = $('<div style=\"display: none;\">');
 cloneableDiv.append($('#".$options['id']."-scClonable'));
@@ -1330,7 +1329,6 @@ $('#entry_form').before(cloneableDiv);\n";
             (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
         'extraParams' => $options['readAuth'],
         'cols' => 20,
-        'suffixTemplate' => 'nosuffix',
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
       if(in_array($occAttrId,$requiredAttrs)) $ctrlOptions['validation'] = array('required');
@@ -1487,7 +1485,6 @@ mapInitialisationHooks.push(function(mapdiv) {
       	$ctrlOptions = array(
       			'class'=>'scPrecision ' . (isset($precision['class']) ? ' '.$precision['class'] : ''),
       			'extraParams' => $options['readAuth'],
-      			'suffixTemplate' => 'nosuffix',
       			'language' => $options['language']
       	);
       	if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
@@ -1495,7 +1492,7 @@ mapInitialisationHooks.push(function(mapdiv) {
       	$precision['fieldname'] = $ctrlId;
       	$precision['id'] = $ctrlId;
       	//$headerPreRow .= '<td class="ui-widget-content" ><label class="auto-width">'.$occAttrCaptions[$attrId].':</label></td>';
-      	$row .= "<td class='ui-widget-content'>".data_entry_helper::outputAttribute($precision, $ctrlOptions)."' /></td>";
+      	$r .= "<td class='ui-widget-content scSmpAttrCell'>".data_entry_helper::outputAttribute($precision, $ctrlOptions)."</td>";
       }
       if($maxCellsPerRow>2+($options['displaySampleDate']?1:0)+($precision?1:0))
         $r .= "<td class='ui-widget-content' colspan=".($maxCellsPerRow-(2+($options['displaySampleDate']?1:0)+($precision?1:0)))."></td>";

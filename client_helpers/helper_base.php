@@ -34,16 +34,15 @@ global $indicia_templates;
 $indicia_templates = array(
   'blank' => '',
   'prefix' => '',
+  'controlWrap' => "<div id=\"ctrl-wrap-{id}\" class=\"form-row ctrl-wrap\">{control}</div>\n",
+  'justControl' => "{control}\n",
   'jsWrap' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       "document.write('{content}');".
       "/* ]]> */</script>\n",
   'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
   'toplabel' => '<label data-for="{id}"{labelClass}>{label}:</label>'."\n",
-  'suffix' => "<br/>\n",
-  'nosuffix' => " \n",
-  'nullsuffix' => "",
-  'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
-  'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
+  'suffix' => "\n",
+  'requiredsuffix' => "<span class=\"deh-required\">*</span>\n",
   'button' => '<button id="{id}" type="button" title="{title}"{class}>{caption}</button>',
   'submitButton' => '<input id="{id}" type="submit"{class} name="{name}" value="{caption}" />',
   'anchorButton' => '<a class="ui-corner-all ui-widget-content ui-state-default indicia-button {class}" href="{href}" id="{id}">{caption}</a>',
@@ -65,7 +64,7 @@ $indicia_templates = array(
             if (!tabselected) {
               var tp=ctrl.filter('input,select,textarea').closest('.ui-tabs-panel');
               if (tp.length===1) {
-                $(tp).parent().tabs('select',tp.id);
+                indiciaFns.activeTab($(tp).parent(), tp.id);
               }
               tabselected = true;
             }
@@ -81,7 +80,7 @@ $indicia_templates = array(
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'checkbox' => '<input type="hidden" name="{fieldname}" value="0"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
   'training' => '<input type="hidden" name="{fieldname}" value="{hiddenValue}"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
-  'date_picker' => '<input type="text" placeholder="{placeholder}" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
+  'date_picker' => '<input type="text" placeholder="{placeholder}" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>'."\n",
   'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{items}</select>',
   'select_item' => '<option value="{value}" {selected} >{caption}</option>',
   'select_species' => '<option value="{value}" {selected} >{caption} - {common}</option>',
@@ -158,7 +157,7 @@ $indicia_templates = array(
       }
       $('input#{escaped_id}').change();
     });\r\n",
-  'sub_list' => '<div id="{id}:box" class="control-box wide"><div {class}>'."\n".
+  'sub_list' => '<div id="{id}:box" class="control-box wide"><div>'."\n".
     '<div>'."\n".
     '{panel_control} <input id="{id}:add" type="button" value="'.lang::get('add').'" />'."\n".
     '</div>'."\n".
@@ -208,8 +207,9 @@ $indicia_templates = array(
     
     'linked_list_javascript' => '
 {fn} = function() {
-  $("#{escapedId}").addClass("ui-state-disabled").html("<option>Loading...</option>");
-  if (!isNaN($(this).val())) { // skip loading for placeholder text
+var placeHolder=" Loading... ";
+  $("#{escapedId}").addClass("ui-state-disabled").html("<option>"+placeHolder+"</option>");
+  if ($(this).val() != placeHolder) { // skip loading for placeholder text
     $.getJSON("{request}&{query}", function(data){
       var $control = $("#{escapedId}"), selected;
       $control.html("");
@@ -265,8 +265,7 @@ if ($("#{escapedId} option").length===0) {
   'report-tbody' => '<tbody>{content}</tbody>',
   'report-tbody-tr' => '<tr{class}{rowId}{rowTitle}>{content}</tr>',
   'report-tbody-td' => '<td{class}>{content}</td>',
-  
-    
+  'data-input-table' => '<table{class}{id}>{content}</table>',
 );
 
 
@@ -289,9 +288,11 @@ class helper_base extends helper_config {
   public static $website_id = null;
 
   /**
-   * @var Array List of resources that have been identified as required by the controls used. This defines the
-   * JavaScript and stylesheets that must be added to the page. Each entry is an array containing stylesheets and javascript
-   * sub-arrays. This has public access so the Drupal module can perform Drupal specific resource output.
+   * @var Array List of resources that have been identified as required by the 
+   * controls used. This defines the JavaScript and stylesheets that must be 
+   * added to the page. Each entry is an array containing stylesheets and 
+   * javascript sub-arrays. This has public access so the Drupal module can 
+   * perform Drupal specific resource output.
    */
   public static $required_resources=array();
 
@@ -309,8 +310,10 @@ class helper_base extends helper_config {
   public static $js_read_tokens=null;
 
   /**
-   * @var string Path to Indicia JavaScript folder. If not specified, then it is calculated from the Warehouse $base_url.
-   * This path should be a full path on the server (starting with '/' exluding the domain).
+   * @var string Path to Indicia JavaScript folder. If not specified, then it is
+   * calculated from the Warehouse $base_url.
+   * This path should be a full path on the server (starting with '/' exluding 
+   * the domain and ending with '/').
    */
   public static $js_path = null;
 
@@ -364,16 +367,41 @@ class helper_base extends helper_config {
   public static $nocache = false;
   
  /**
-   * @var integer On average, every 1 in $interim_image_chance_purge times the Warehouse is called for data, all interim images
-   * older than $interim_image_expiry seconds will be deleted. These are images that should have uploaded to the warehouse but the form was not
-   * finally submitted.
-   */
-  public static $interim_image_chance_purge=100;
+  * @var integer On average, every 1 in $interim_image_chance_purge times the 
+  * Warehouse is called for data, all interim images older than $interim_image_expiry 
+  * seconds will be deleted. These are images that should have uploaded to the 
+  * warehouse but the form was not finally submitted.
+  */
+  public static $interim_image_chance_purge = 100;
 
   /**
-   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
+   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse 
+   * is called for data which is
    */
-  public static $interim_image_expiry=14400;
+  public static $interim_image_expiry = 14400;
+  
+  /**
+   * @var array Contains elements for each media type that can be uploaded. Each
+   * element is an array of allowed file extensions for that media type. Used
+   * for filtering files to upload on client side. File extensions must be in 
+   * lower case. Each entry should have its mime type included in 
+   * $upload_mime_types.
+   */
+  public static $upload_file_types = array(
+    'image' => array('jpg', 'gif', 'png', 'jpeg'),
+    'audio' => array('mp3', 'wav')
+  );
+
+  /**
+   * @var array Contains elements for each media type that can be uploaded. Each
+   * element is an array of the allowed mime subtypes for that media type. Used
+   * for testing uploaded files. Each entry in $upload_file_types should have
+   * its mime type in this list.
+   */
+  public static $upload_mime_types = array(
+    'image' => array('jpeg', 'gif', 'png'),
+    'audio' => array('mpeg', 'x-wav')
+  );
 
   /**
    * List of methods used to report a validation failure. Options are message, message, hint, icon, colour, inline.
@@ -497,12 +525,16 @@ class helper_base extends helper_config {
 
   /**
    * Method to link up the external css or js files associated with a set of code.
-   * This is normally called internally by the control methods to ensure the required files are linked into the page so
-   * does not need to be called directly. However it can be useful when writing custom code that uses one of these standard
-   * libraries such as jQuery. Ensures each file is only linked once.
+   * This is normally called internally by the control methods to ensure the required 
+   * files are linked into the page so does not need to be called directly. However 
+   * it can be useful when writing custom code that uses one of these standard
+   * libraries such as jQuery. 
+   * Ensures each file is only linked once and that dependencies are included
+   * first and in the order given.
    *
    * @param string $resource Name of resource to link. The following options are available:
    * <ul>
+   * <li>indiciaFns</li>
    * <li>jquery</li>
    * <li>openlayers</li>
    * <li>graticule</li>
@@ -549,9 +581,14 @@ class helper_base extends helper_config {
    */
   public static function add_resource($resource)
   {
+    // Ensure indiciaFns is always the first resource added
+    if (!self::$indiciaFnsDone) {
+      self::$indiciaFnsDone = true;
+      self::add_resource('indiciaFns');
+    }
+    $resourceList = self::get_resources();
     // If this is an available resource and we have not already included it, then add it to the list
-    if (array_key_exists($resource, self::get_resources()) && !in_array($resource, self::$required_resources)) {
-      $resourceList = self::get_resources();
+    if (array_key_exists($resource, $resourceList) && !in_array($resource, self::$required_resources)) {
       if (isset($resourceList[$resource]['deps'])) {
         foreach ($resourceList[$resource]['deps'] as $dep) {
           self::add_resource($dep);
@@ -593,6 +630,7 @@ class helper_base extends helper_config {
       if (substr($indicia_theme_path, -1)!=='/')
         $indicia_theme_path .= '/';
       self::$resource_list = array (
+        'indiciaFns' => array('deps' =>array('jquery'), 'javascript' => array(self::$js_path."indicia.functions.js")),
         'jquery' => array('javascript' => array(self::$js_path."jquery.js",self::$js_path."ie_vml_sizzlepatch_2.js")),
         'openlayers' => array('javascript' => array(self::$js_path.(function_exists('iform_openlayers_get_file') ? iform_openlayers_get_file() : "OpenLayers.js"),
             self::$js_path."proj4js.js", self::$js_path."proj4defs.js", self::$js_path."lang/en.js")),
@@ -654,13 +692,7 @@ class helper_base extends helper_config {
    */
   public static function link_default_stylesheet() {
     // make buttons highlight when hovering over them
-    self::$javascript .= "
-$('.ui-state-default').live('mouseover', function() {
-  $(this).addClass('ui-state-hover');
-});
-$('.ui-state-default').live('mouseout', function() {
-  $(this).removeClass('ui-state-hover');
-});\n";
+    self::$javascript .=  "indiciaFns.enableHoverEffect();\n";
     self::$default_styles = true;
   }
 
@@ -863,6 +895,10 @@ $('.ui-state-default').live('mouseout', function() {
    * An optional array of parameter names for parameters that should be added to the form output as hidden inputs rather than visible controls.
    * <li><b>paramsToExclude</b><br/>
    * An optional array of parameter names for parameters that should be skipped in the form output despite being in the form definition.
+   * <li><b>forceLookupParamAutocomplete</b><br/>
+   * If true, forces lookup parameters to be an autocomplete instead of drop-down.
+   * <li><b>forceLookupParamAutocompleteSelectMode</b><br/>
+   * Used in conjunction with forceLookupParamAutocomplete, if true then autocomplete parameter control is put into selectMode.
    * </li>
    * <li><b>extraParams</b><br/>
    * Optional array of param names and values that have a fixed value and are therefore output only as a hidden control.
@@ -1028,7 +1064,7 @@ $('.ui-state-default').live('mouseout', function() {
       'label' => lang::get($info['display']),
       'helpText' => $options['helpText'] ? $info['description'] : '', // note we can't fit help text in the toolbar versions of a params form
       'fieldname' => $fieldPrefix.$key,
-      'nocache' => isset($options['nocache']) && $options['nocache']      
+      'nocache' => isset($options['nocache']) && $options['nocache']
     );
     // If this parameter is in the URL or post data, put it in the control instead of the original default
     if (isset($options['defaults'][$key]))
@@ -1073,6 +1109,8 @@ $('.ui-state-default').live('mouseout', function() {
       else
         $ctrlOptions['report']=$popOpts[1];
       if (isset($info['linked_to']) && isset($info['linked_filter_field'])) {
+        $ctrlOptions['filterIncludesNulls'] = false; //exclude null entries from filter field by default
+
         if (isset($options['extraParams']) && array_key_exists($info['linked_to'], $options['extraParams'])) {
           // if the control this is linked to is hidden because it has a preset value, just use that value as a filter on the
           // population call for this control
@@ -1090,7 +1128,14 @@ $('.ui-state-default').live('mouseout', function() {
           ));
         }
       }
-      $r .= data_entry_helper::select($ctrlOptions);
+      //If user has set option, then make any lookup parameter an autocomplete, note that autocomplete controls also have a "selectMode"
+      //which is why there is a further option provided if you want to use that mode.
+      if ((!empty($options['forceLookupParamAutocomplete']) && $options['forceLookupParamAutocomplete']==true)) {
+        if (!empty($options['forceLookupParamAutocompleteSelectMode']) && $options['forceLookupParamAutocompleteSelectMode']==true)
+          $ctrlOptions['selectMode']=true;
+        $r .= data_entry_helper::autocomplete($ctrlOptions);
+      } else 
+        $r .= data_entry_helper::select($ctrlOptions);
     } elseif ($info['datatype']=='lookup' && isset($info['lookup_values'])) {
       // Convert the lookup values into an associative array
       $lookups = explode(',', $info['lookup_values']);
@@ -1103,7 +1148,14 @@ $('.ui-state-default').live('mouseout', function() {
         'blankText'=>'<'.lang::get('please select').'>',
         'lookupValues' => $lookupsAssoc
       ));
-      $r .= data_entry_helper::select($ctrlOptions);
+      //If user has set option, then make any lookup parameter an autocomplete, note that autocomplete controls also have a "selectMode"
+      //which is why there is a further option provided if you want to use that mode.
+      if ((!empty($options['forceLookupParamAutocomplete']) && $options['forceLookupParamAutocomplete']==true)) {
+        if (!empty($options['forceLookupParamAutocompleteSelectMode']) && $options['forceLookupParamAutocompleteSelectMode']==true)
+          $ctrlOptions['selectMode']=true;
+        $r .= data_entry_helper::autocomplete($ctrlOptions);
+      } else 
+        $r .= data_entry_helper::select($ctrlOptions);
     } elseif ($info['datatype']=='date') {
       $r .= data_entry_helper::date_picker($ctrlOptions);
     } elseif ($info['datatype']=='geometry') {
@@ -1417,22 +1469,21 @@ $('.ui-state-default').live('mouseout', function() {
           if (isset($resourceList[$resource]['javascript'])) {
             foreach ($resourceList[$resource]['javascript'] as $j) {
               // if enabling fancybox, link it up
-              if (strpos($j, 'fancybox.')!==false)
+              if (strpos($j, 'fancybox.')!==false) {
                 self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
+              }
               // look out for a condition that this script is IE only.
               if (substr($j, 0, 4)=='[IE]'){
               	$libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
-              } else
+              } 
+              else { 
                 $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
+              }
             }
           }
           // Record the resource as being dumped, so we don't do it again.
           array_push(self::$dumped_resources, $resource);
         }
-      }
-      if (!self::$indiciaFnsDone) {
-        $libraries = '<script type="text/javascript" src="'.self::$js_path."indicia.functions.js\"></script>\n".$libraries;
-        self::$indiciaFnsDone = true;
       }
     }
     return $stylesheets.$libraries;
@@ -1553,7 +1604,13 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
             element=jqBox.length === 0 ? element : jqBox;
           }
           nexts=element.nextAll(':visible');
-          element = nexts && $(nexts[0]).hasClass('deh-required') ? nexts[0] : element;
+          if (nexts) {
+            $.each(nexts, function() {
+              if ($(this).hasClass('deh-required') || $(this).hasClass('locked-icon') || $(this).hasClass('unlocked-icon')) {
+                element = this;
+              }
+            });
+          }
           error.insertAfter(element);
         }" : "
         errorPlacement: function(error, element) {}") ."
@@ -1665,7 +1722,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
       }
     }
     if (isset($validationClasses) && !empty($validationClasses) && strpos($validationClasses, 'required')!==false) {
-      $r .= self::apply_static_template('requirednosuffix', $options);
+      $r .= self::apply_static_template('requiredsuffix', $options);
     }
     // Add an error icon to the control if there is an error and this option is set
     if ($error && in_array('icon', $options['validation_mode'])) {
@@ -1683,10 +1740,15 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
 
     // If options contain a help text, output it at the end if that is the preferred position
     $r .= self::get_help_text($options, 'after');
-    
-    if (!empty($options['label']) && isset($indicia_templates['controlWrap'])) 
-      $r = str_replace(array('{control}', '{id}'), array($r, str_replace(':', '-', $options['id'])), $indicia_templates['controlWrap']);
-      
+    if (isset($options['id']) ) {
+      $wrap = empty($options['controlWrapTemplate']) ? $indicia_templates['controlWrap'] : $indicia_templates[$options['controlWrapTemplate']];
+      $r = str_replace(array('{control}', '{id}'), array($r, str_replace(':', '-', $options['id'])), $wrap);
+    }
+    if (!empty($options['tooltip'])) {
+      // preliminary support for
+      $id = str_replace(':', '\\\\:', array_key_exists('inputId', $options) ? $options['inputId'] : $options['id']);
+      self::$javascript .= "$('#$id').attr('title', '$options[tooltip]');\n";
+    }
     return $r;
   }
 
@@ -1700,6 +1762,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
   */
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
+    self::$javascript .= "indiciaData.validatedFormId = '" . self::$validated_form_id . "';\n";
     // prevent double submission of the form
     self::$javascript .= "$('#$form_id').submit(function(e) {
   if (typeof $('#$form_id').valid === 'undefined' || $('#$form_id').valid()) {
@@ -2168,7 +2231,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
       $dir =  opendir($folder);
       if ($dir) {
         while ($filename = readdir($dir)) {
-          if ($filename == '.' || $filename == '..' || is_dir($filename))
+          if ($filename === '.' || $filename === '..' || is_dir($filename) || $filename === '.htaccess' || $filename === 'web.config')
             continue;
           $lastModified = filemtime($folder . $filename);
           $files[] = array($folder .$filename, $lastModified);
@@ -2239,5 +2302,4 @@ if(!function_exists('get_called_class')) {
     while ($matches[1] == 'parent'  && $matches[1]);
     return $matches[1];
   } 
-} 
-?>
+}

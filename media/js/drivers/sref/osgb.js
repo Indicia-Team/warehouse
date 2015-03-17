@@ -52,16 +52,21 @@ indiciaData.srefHandlers['osgb'] = {
     }
   },
 
-  sreflenToPrecision: function(len) {
-    switch(len) {
-      case 4: return {display:'10km',metres:10000};
-      case 5: return {display:'2km',metres:2000};
-      case 6: return {display:'1km',metres:1000};
-      case 8: return {display:'100m',metres:100};
-      case 10: return {display:'10m',metres:10};
-      case 12: return {display:'1m',metres:1};
+  getPrecisionInfo: function(accuracy) {
+    switch(accuracy) {
+      case 2: return {display:'10km',metres:10000};
+      case 3: return {display:'2km',metres:2000};
+      case 4: return {display:'1km',metres:1000};
+      case 6: return {display:'100m',metres:100};
+      case 8: return {display:'10m',metres:10};
+      case 10: return {display:'1m',metres:1};
     }
     return false;
+  },
+
+  valueToAccuracy: function(value) {
+    // OSGB grid ref length correspond exactly to the scale of accuracy used on the warehouse, excluding the 100km square letters
+    return value.length-2;
   },
   
   /**

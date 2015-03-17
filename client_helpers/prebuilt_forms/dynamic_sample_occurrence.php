@@ -44,6 +44,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static $loadedOccurrenceId;
   protected static $group = false;
   
+  protected static $availableForGroups = false;
+  
   /**
    * The list of attributes loaded for occurrences. Keep a class level variable, so that we can track the ones we have already
    * emitted into the form globally.
@@ -174,7 +176,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
             "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"] ".
             "or a keyed array as @extraParams={\"preferred\":\"true\",\"orderby\":\"term\"}. " .
             "Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
-            "classes to the control such as control-width-3). <br/>".
+            "classes to the control such as control-width-3). Specify @permision=... to create a Drupal permission which you can use to " .
+            "control the visibility of this specific control.<br/>".
             "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. When this option is ".
             "used, you can change any of the control options for an individual custom attribute control by putting @control|option=value on the subsequent line(s). ".
             "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*]. ".
@@ -633,6 +636,22 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     );
     return $retVal;
   }
+
+  /** 
+   * Declare the list of permissions we've got set up to pass to the CMS' permissions code.
+   * @param int $nid Node ID, not used
+   * @param array $args Form parameters array, used to extract the defined permissions.
+   * @return array List of distinct permissions.
+   */
+  public static function get_perms($nid, $args) {
+    $perms = array();
+    if (!empty($args['edit_permission']))
+      $perms[] = $args['edit_permission'];
+    if (!empty($args['ro_permission']))
+      $perms[] = $args['ro_permission'];
+    $perms += parent::get_perms($nid, $args);
+    return $perms;
+  }
   
   /**
    * Override get_form_html so we can store the remembered argument in a global, to make
@@ -674,12 +693,28 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
         ));
         $geom = $response[0]['boundary_geom'] ? $response[0]['boundary_geom'] : $response[0]['centroid_geom'];  
         iform_map_zoom_to_geom($geom, lang::get('Boundary of {1} for the {2} group', $response[0]['name'], self::$group['title']), true);
+        self::hide_other_boundaries($args);
       }
       elseif (!empty($filterdef->searchArea)) {
         iform_map_zoom_to_geom($filterdef->searchArea, lang::get('Recording area for the {1} group', self::$group['title']), true);
+        self::hide_other_boundaries($args);
       }
+      if (!empty($filterDef->taxon_group_names)) {
+        $args['taxon_filter'] = implode("\n", array_values((array)$filterdef->taxon_group_names));
+        $args['taxon_filter_field']='taxon_group';
+      }
+      // @todo Consider other types of species filter, e.g. family or species list?
     }
     return parent::get_form_html($args, $auth, $attributes);
+  }
+  
+  /**
+   * If zooming to a group site, we don't want to display the user's own profile locality or other map setting location.
+   */
+  private static function hide_other_boundaries(&$args) {
+    $args['remember_pos']=false;
+    unset($args['location_boundary_id']);
+    $args['display_user_profile_location']=false;
   }
 
   /**
@@ -694,6 +729,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     $mode = (isset($args['no_grid']) && $args['no_grid']) ? self::MODE_NEW : self::MODE_GRID;
     self::$loadedSampleId = null;
     self::$loadedOccurrenceId = null;
+    self::$availableForGroups = $node->available_for_groups;
     if ($_POST) {
       if(!array_key_exists('website_id', $_POST)) {
         // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrupt the data by accident
@@ -814,7 +850,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       }
       
       $r .= '<form method="post"><input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><input type="hidden" name="page" value="'.$page.'" />
-  <div class="location-allocation-wrapper-outer" ><div class="location-allocation-wrapper-inner"><table border="1"></thead><tr><th class="freeze-first-col">'.lang::get('Location').'</th>';
+  <div class="location-allocation-wrapper-outer" ><div class="location-allocation-wrapper-inner"><table border="1"><thead><tr><th class="freeze-first-col">'.lang::get('Location').'</th>';
       // Main table body
       $userlist = iform_loctools_listusers($node);
       foreach($userlist as $uid => $a_user){
@@ -833,7 +869,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           $r .= "</tr>";
         }
       }
-      $r .= "<tbody></table></div></div>\n";
+      $r .= "</tbody></table></div></div>\n";
       
       // build pager outside scrollable table.
       $numEachSide = 5;
@@ -859,7 +895,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       		$r .= '<a class="pager-button" href="'.$path.$pages.'" rel="nofollow">'.$pages.'</a>';
       	$r .= "</div>";
       }
-      $r .= '</table><input type="submit" class="default-button" value="'.lang::get('Save Location Allocations').'" /></form></div>';
+      $r .= '<input type="submit" class="default-button" value="'.lang::get('Save Location Allocations').'" /></form></div>';
     }
 
     // Add content to extra tabs that derived classes may have added
@@ -883,18 +919,18 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
     if (self::getGridMode($args)) {
-      // multi-record mode using a checklist grid. We really just need to know the sample ID.
-      if (self::$loadedOccurrenceId && !self::$loadedSampleId) {
-        $response = data_entry_helper::get_population_data(array(
-            'table' => 'occurrence',
-            'extraParams' => $auth['read'] + array('id' => self::$loadedOccurrenceId, 'view' => 'detail')
-        ));
-        if (count($response) != 0) {
-          //we found an occurrence so use it to detect the sample
-          self::$loadedSampleId = $response[0]['sample_id'];       
-        }
-      }
-    } else {
+        // multi-record mode using a checklist grid. We really just need to know the sample ID.
+        if (self::$loadedOccurrenceId && !self::$loadedSampleId) {
+          $response = data_entry_helper::get_population_data(array(
+              'table' => 'occurrence',
+              'extraParams' => $auth['read'] + array('id' => self::$loadedOccurrenceId, 'view' => 'detail')
+          ));
+          if (count($response) != 0) {
+            //we found an occurrence so use it to detect the sample
+            self::$loadedSampleId = $response[0]['sample_id'];       
+          }
+        } 
+      } else {
       // single record entry mode. We want to load the occurrence entity and to know the sample ID.
       if (self::$loadedOccurrenceId) {
         data_entry_helper::load_existing_record($auth['read'], 'occurrence', self::$loadedOccurrenceId, 'detail', false, true);
@@ -913,8 +949,11 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // Load the sample record
     if (self::$loadedSampleId) {
       data_entry_helper::load_existing_record($auth['read'], 'sample', self::$loadedSampleId, 'detail', false, true);
-      if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) 
+      // If there is a parent sample - load it next so the details overwrite the child sample. 
+      if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) {
         data_entry_helper::load_existing_record($auth['read'], 'sample', data_entry_helper::$entity_to_load['sample:parent_id']);
+        self::$loadedSampleId = data_entry_helper::$entity_to_load['sample:id'];
+      }
     }
     
     // Ensure that if we are used to load a different survey's data, then we get the correct survey attributes. We can change args
@@ -956,7 +995,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     ,'survey_id'=>$args['survey_id']
     );
     if (!empty($id))
-      $attrOpts['id'] = $id;
+      $attrOpts['id'] = $id;  
     // select only the custom attributes that are for this sample method or all sample methods, if this
     // form is for a specific sample method.
     if (!empty($args['sample_method_id']))
@@ -1060,11 +1099,53 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     }
     if (!empty(data_entry_helper::$entity_to_load['sample:group_id'])) {
       $r .= "<input type=\"hidden\" id=\"group_id\" name=\"sample:group_id\" value=\"".data_entry_helper::$entity_to_load['sample:group_id']."\" />\n";
+      // If the group does not release it's records, set the release_status flag
+      if (self::$group['private_records']==='t')
+        $r .= "<input type=\"hidden\" id=\"occurrence:release_status\" name=\"occurrence:release_status\" value=\"U\" />\n";
       if (empty(data_entry_helper::$entity_to_load['sample:group_title'])) {
         data_entry_helper::$entity_to_load['sample:group_title'] = self::$group['title'];
       }
       $msg=empty(self::$loadedSampleId) ? 'This form will be posted to the <strong>{1}</strong> group.' : 'This form was posted to the <strong>{1}</strong> group.';
       $r .= '<p>' . lang::get($msg, data_entry_helper::$entity_to_load['sample:group_title']) . '</p>';
+    } elseif (self::$availableForGroups && !isset(data_entry_helper::$entity_to_load['sample:id'])) {
+      // Group enabled form being used to add new records, but no group specified in URL path, so give 
+      // the user a chance to pick from their list of possible groups for this form.
+      // Get the list of possible groups they might be posting into using this form. To do this we need the page
+      // path without the initial leading /.
+      $reload = data_entry_helper::get_reload_link_parts();
+      // Slightly messy path handling. Ideally we'd call the same code as group_edit::get_path but we don't know the nid.
+      $reload['path'] = preg_replace('/^\//', '', $reload['path']);
+      $dirname = preg_replace('/^\//', '', dirname($_SERVER['SCRIPT_NAME'])) . '/';      
+      $reload['path'] = str_replace($dirname, '', $reload['path']);
+      $possibleGroups = data_entry_helper::get_report_data(array(
+        'dataSource'=>'library/groups/groups_for_page',
+        'readAuth'=>$auth['read'],
+        'extraParams'=>array(
+            'currentUser' => hostsite_get_user_field('indicia_user_id'),
+            'path' => $reload['path']
+        )
+      ));
+      // Output a drop down so they can select the appropriate group.
+      if (count($possibleGroups)>1) {
+        $options = array('' => lang::get('Ad-hoc non-group records'));
+        foreach ($possibleGroups as $group) {
+          $options[$group['id']] = "$group[group_type]: $group[title]";
+        }
+        $r .= data_entry_helper::select(array(
+            'label' => lang::get('Record destination'),
+            'helpText' => lang::get('Choose whether to post your records into a group that you belong to.'),
+            'fieldname' => 'sample:group_id',
+            'lookupValues' => $options
+        ));
+      } elseif (count($possibleGroups)===1) {
+        $r .= data_entry_helper::radio_group(array(
+            'label' => lang::get('Post to {1}', $possibleGroups[0]['title']),
+            'labelClass' => 'auto',
+            'helpText' => lang::get('Choose whether to post your records into {1}.', $possibleGroups[0]['title']),
+            'fieldname' => 'sample:group_id',
+            'lookupValues' => array('' => lang::get('No'), $possibleGroups[0]['id'] => lang::get('Yes'))
+        ));
+      }
     }
     // Check if Record Status is included as a control. If not, then add it as a hidden.
     $arr = helper_base::explode_lines($args['structure']);
@@ -1075,6 +1156,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if (!empty($args['defaults']['occurrence:release_status']))
       $r .= '<input type="hidden" id="occurrence:release_status" name="occurrence:release_status" value="' . $args['defaults']['occurrence:release_status'] . '" />' . PHP_EOL;
     $r .= get_user_profile_hidden_inputs($attributes, $args, isset(data_entry_helper::$entity_to_load['sample:id']), $auth['read']);
+    if ($args['multiple_occurrence_mode']==='multi')
+      $r .= '<input type="hidden" value="true" name="gridmode" />';
     return $r;
   }
 
@@ -1149,8 +1232,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // Force a new option
     $options['speciesControlToUseSubSamples'] = true;
     $options['base_url'] = data_entry_helper::$base_url;
-    if (!isset($args['cache_lookup']) || ($args['species_ctrl'] !== 'autocomplete'))
-      $args['cache_lookup']=false; // default for old form configurations or when not using an autocomplete
     //The filter can be a URL or on the edit tab, so do the processing to work out the filter to use
     $filterLines = self::get_species_filter($args);
     // store in the argument so that it can be used elsewhere
@@ -1277,7 +1358,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   /**
    * Parses an options array to extract the attribute specific option settings, e.g. smpAttr:4|caption=Habitat etc.
    */
-  private static function get_attr_specific_options($options) {
+  protected static function get_attr_specific_options($options) {
     $attrOptions = array();
     foreach ($options as $option => $value) {
       if (preg_match('/^(?P<controlname>[a-z][a-z][a-z]Attr:[0-9]*)\|(?P<option>.*)$/', $option, $matches)) {
@@ -1366,8 +1447,6 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_species($auth, $args, $tabAlias, $options) {
     $gridmode = call_user_func(array(self::$called_class, 'getGridMode'), $args);
-    if (!isset($args['cache_lookup']) || ($args['species_ctrl'] !== 'autocomplete' && !$gridmode))
-      $args['cache_lookup']=false; // default for old form configurations or when not using an autocomplete
     //The filter can be a URL or on the edit tab, so do the processing to work out the filter to use
     $filterLines = self::get_species_filter($args);
     // store in the argument so that it can be used elsewhere
@@ -1470,11 +1549,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
     call_user_func(array(self::$called_class, 'build_grid_taxon_label_function'), $args, $options);
     if (self::$mode == self::MODE_CLONE)
-      $species_ctrl_opts['useLoadedExistingRecords'] = true;
-    // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
-    // then output the grid control
-    return '<input type="hidden" value="true" name="gridmode" />'.
-        data_entry_helper::species_checklist($species_ctrl_opts);
+      $species_ctrl_opts['useLoadedExistingRecords'] = true;   
+    return data_entry_helper::species_checklist($species_ctrl_opts);
   }
 
   /**
@@ -1666,6 +1742,17 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       $label = $options['label'];
     else 
       $label = 'Overall Photo';
+    //Create a list of arrays. Each item is itself an array with a control id and associated sub type.
+    //This allows there to be multiple photo controls, each saving its own type of image. This can keep the 
+    //photos from each control independent of each other.
+    if (!empty($options['id'])&&!empty($options['subType'])) {
+      data_entry_helper::$javascript.="
+      if (indiciaData.subTypes) { 
+        indiciaData.subTypes.push(['".$options['id']."','".$options['subType']."']);
+      } else {
+        indiciaData.subTypes=[['".$options['id']."','".$options['subType']."']];
+      }\n";
+    }
     return data_entry_helper::file_box(array_merge(array(
       'table'=>'sample_medium',
       'readAuth' => $auth['read'],
@@ -1733,7 +1820,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_locationautocomplete($auth, $args, $tabAlias, $options) {
     if (isset($options['extraParams'])) {
-      foreach ($options['extraParams'] as $key => &$value)
+      foreach ($options['extraParams'] as &$value)
         $value = apply_user_replacements($value);
     }
 
@@ -1754,6 +1841,9 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       }
       $location_list_args['extraParams']['view']='detail';
       $location_list_args['allowCreate']=true;
+      // pass through the group we are recording in, if any, so we can show group sites
+      if (!empty($_GET['group_id']))
+        $location_list_args['extraParams']['group_id']=$_GET['group_id'];
     }
     if (empty($location_list_args['numValues']))
       // set a relatively high number until we sort out the "more" handling like species autocomplete.
@@ -1862,9 +1952,9 @@ else
    * Get an occurrence attribute control.
    */
   protected static function get_control_occattr($auth, $args, $tabAlias, $options) {
+    $attribName = 'occAttr:' . $options['ctrlId'];
     if ($args['multiple_occurrence_mode']==='single') {
       self::load_custom_occattrs($auth['read'], $args['survey_id']);
-      $attribName = 'occAttr:' . $options['ctrlId'];
       foreach (self::$occAttrs as $idx => $attr) {
         if ($attr['id'] === $attribName) {
           self::$occAttrs[$idx]['handled'] = true;
@@ -1899,7 +1989,6 @@ else
    * @return string HTML for the control.
    */
   protected static function get_control_recordernames($auth, $args, $tabAlias, $options) {
-    iform_load_helpers(array('data_entry_helper'));
     //We don't need to touch the control in edit mode. Make the current user's name the default in add mode if the user has selected that option.
     if (empty($_GET['sample_id']) && !empty($options['defaultToCurrentUser'])&& $options['defaultToCurrentUser']==true) {
       $defaultUserData = data_entry_helper::get_report_data(array(
@@ -1973,12 +2062,13 @@ else
   /*
    * A checkbox which when selected will set the record to having a Pending release_status. This is useful if (for instance) an
    * untrained user wishes to have their worked checked.
-   * Note that unlike most other controls this will always be unchecked when the screen loads (even in edit mode). This means the user must select the checkbox to apply the override otherwise the release status is left untouched.
+   * Control always defaults to selected.
+   * Note this control has not been tested with and probably won't work with sub-samples mode.
    */
   protected static function get_control_pendingreleasecheckbox($auth, $args, $tabalias, $options) {
     if (empty($options['label']))
       $options['label']='Always override Release Status to be P (pending release)?';
-    $r = '<div><input id="pending_release_status" type="checkbox" name="occurrence:release_status" value="">'.$options['label'].'</div>';
+    $r = '<div><input id="pending_release_status" type="checkbox" checked="checked" name="occurrence:release_status" value="P">'.$options['label'].'</div>';
     data_entry_helper::$javascript .= "
     $('#pending_release_status').change(function() {
       if ($('#pending_release_status').is(':checked')) {

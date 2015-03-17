@@ -61,9 +61,9 @@ function addSpeciesToGrid(taxonList, speciesTableSelector, force, tabIDX){
   jQuery.each(taxonList, function(idx, species) {
     var include = force != 'none';
     jQuery.each(indiciaData.existingOccurrences, function(idx, occ){
-      // taxonList may or may not be preferred, Occ has both a ttl_id and a preferred
-      if(occ['taxon_meaning_id'] === species['taxon_meaning_id'])
-        include = !occ['processed'];
+    	// taxonList may or may not be preferred, Occ has both a ttl_id and a preferred
+    	if(occ['taxon_meaning_id'] === species['taxon_meaning_id'])
+    		include = !occ['processed'];
     });
     if (include)
       addGridRow(species, speciesTableSelector, true, tabIDX);

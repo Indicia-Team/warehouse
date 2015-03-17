@@ -951,6 +951,10 @@ class iform_ukbms_sectioned_transects_input_sample {
 
   public static function get_occurrences_form($args, $node, $response) {
     global $user;
+    global $indicia_templates;
+    // remove the ctrlWrap as it complicates the grid & JavaScript unnecessarily
+    $oldCtrlWrapTemplate = $indicia_templates['controlWrap'];
+    $indicia_templates['controlWrap'] = '{control}';
   	if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
   	drupal_add_js('misc/tableheader.js'); // for sticky heading
@@ -1079,7 +1083,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     ));
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute = [];\n";
     data_entry_helper::$javascript .= "indiciaData.occurrence_attribute_ctrl = [];\n";
-    $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'), 'suffixTemplate' => 'nosuffix');
+    $defAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'));
     foreach(array($args['occurrence_attribute_id'],
               (isset($args['occurrence_attribute_id_2']) && $args['occurrence_attribute_id_2']!="" ? $args['occurrence_attribute_id_2'] : $args['occurrence_attribute_id']),
               (isset($args['occurrence_attribute_id_3']) && $args['occurrence_attribute_id_3']!="" ? $args['occurrence_attribute_id_3'] : $args['occurrence_attribute_id']),
@@ -1337,7 +1341,8 @@ class iform_ukbms_sectioned_transects_input_sample {
        */
       $r .= '<input type="submit" class="indicia-button" id="save-button" value="'.lang::get('Save').'" /></form></div>';
       data_entry_helper::$javascript .= "var speciesMapTabHandler = function(event, ui) {
-  if (ui.panel.id=='".$options["tabDiv"]."') {
+  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id=='".$options["tabDiv"]."') {
     if (indiciaData.ParentSampleLayer.features.length > 0) {
       var bounds=indiciaData.ParentSampleLayer.getDataExtent();
       bounds.extend(indiciaData.SubSampleLayer.getDataExtent());
@@ -1347,7 +1352,7 @@ class iform_ukbms_sectioned_transects_input_sample {
     }
   }
 };
-jQuery(jQuery('#".$options["tabDiv"]."').parent()).bind('tabsshow', speciesMapTabHandler);\n";
+indiciaFns.bindTabsActivate(jQuery(jQuery('#".$options["tabDiv"]."').parent()), speciesMapTabHandler);\n";
     } else // enable validation on the comments form in order to include the simplified ajax queuing for the autocomplete.
       data_entry_helper::enable_validation('validation-form');
 
@@ -1476,8 +1481,8 @@ indiciaData.speciesList1Subset = ".(isset($args['common_taxon_list_id']) && $arg
     }
     // Do an AJAX population of the grid rows.
     data_entry_helper::$javascript .= "loadSpeciesList();
-jQuery('#tabs').bind('tabsshow', function(event, ui) {
-    var target = ui.panel;
+indiciaFns.bindTabsActivate(jQuery('#tabs'), function(event, ui) {
+    var target = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];;
     // first get rid of any previous tables
     jQuery('table.sticky-header').remove();
     jQuery('table.sticky-enabled thead.tableHeader-processed').removeClass('tableHeader-processed');
@@ -1494,6 +1499,7 @@ jQuery('#tabs').bind('tabsshow', function(event, ui) {
     // remove any hanging autocomplete select list.
     jQuery('.ac_results').hide();
 });";
+    $indicia_templates['controlWrap'] = $oldCtrlWrapTemplate;
     return $r;
   }
 

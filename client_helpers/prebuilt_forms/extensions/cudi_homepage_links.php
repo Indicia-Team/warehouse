@@ -128,4 +128,3 @@ class extension_cudi_homepage_links {
     return $r;
   }
 }
-  

@@ -1029,6 +1029,7 @@ class iform_report_calendar_summary {
       }
       $terms = self::get_sorted_termlist_terms(array('read'=>$readAuth), 'indicia:location_types', $types1);      
       $attrArgs['location_type_id'] = $siteUrlParams[self::$locationTypeKey]['value'];
+      $locationListArgs['extraParams']['location_type_id'] = $siteUrlParams[self::$locationTypeKey]['value'];
       if(count($types)>1){
         $lookUpValues = array();
         foreach($terms as $termDetails){

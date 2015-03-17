@@ -287,7 +287,7 @@ function iform_map_get_map_options($args, $readAuth) {
     $options['tilecacheLayers'] = json_decode($args['tile_cache_layers'], true);
   }
   // And any indicia Wms layers from the GeoServer
-  if ($args['indicia_wms_layers']) {
+  if (!empty($args['indicia_wms_layers'])) {
     $options['indiciaWMSLayers'] = explode("\n", $args['indicia_wms_layers']);
   }
   // set up standard control list if supplied
@@ -334,9 +334,10 @@ function iform_map_zoom_to_location($locationId, $readAuth) {
 }
 
 function iform_map_zoom_to_geom($geom, $name, $restrict=false) {
+  $name = str_replace("'", "''", $name);
   // Note, since the following moves the map, we want it to be the first mapInitialisationHook
   data_entry_helper::$javascript .= "
-mapInitialisationHooks.unshift(function(mapdiv) {
+mapInitialisationHooks.push(function(mapdiv) {
   var parser, feature, loclayer = new OpenLayers.Layer.Vector(
     '".$name."',
     {'sphericalMercator': true, displayInLayerSwitcher: true}
@@ -348,6 +349,7 @@ mapInitialisationHooks.unshift(function(mapdiv) {
   loclayer.addFeatures([feature]);
   // Don't zoom to the locality if the map is set to remember last position
   var bounds=feature.geometry.getBounds();
+  mapdiv.map.updateSize();
   if (typeof $.cookie === 'undefined' || mapdiv.settings.rememberPos===false || $.cookie('maplon')===null) {
     if (mapdiv.map.getZoomForExtent(bounds) > mapdiv.settings.maxZoom) {
       // if showing something small, don't zoom in too far
@@ -355,7 +357,7 @@ mapInitialisationHooks.unshift(function(mapdiv) {
     }
     else {
       // Set the default view to show the feature we are loading
-      mapdiv.map.zoomToExtent(bounds, true);
+      mapdiv.map.zoomToExtent(bounds);
     }
   }
   ";
@@ -383,8 +385,6 @@ function iform_map_get_ol_options($args) {
   } else {
     $opts = array();
   }
-  if (!isset($opts['theme']))
-    $opts['theme'] = data_entry_helper::$js_path . 'theme/default/style.css';
   return $opts;
 }
 

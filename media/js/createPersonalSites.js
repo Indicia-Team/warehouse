@@ -16,14 +16,17 @@ allowCreateSites=function() {
       '" id="save-site" style="display: none;" class="ui-corner-all ui-widget-content ui-state-default indicia-button inline-control">'+
       indiciaData.msgRememberSite+'</button>'+
       '<input name="save-site-flag" id="save-site-flag" type="hidden" value="0"/>');
-  $('#imp-location\\:name,#imp-location,#imp-sref').change(function() {
+  
+  indiciaFns.showHideRememberSiteButton = function() {
     if ($('#imp-location\\:name').val().length>0 && $('#imp-sref').val().length>0 &&
         $('#imp-location').val().length===0) {
       $('#save-site').show();
     } else {
       $('#save-site').hide();
     }
-  });
+  };
+  
+  $('#imp-location\\:name,#imp-location,#imp-sref').change(indiciaFns.showHideRememberSiteButton);
   $('#save-site').click(function() {
     if ($('#save-site').hasClass('ui-state-highlight')) {
       $('#save-site').removeClass('ui-state-highlight');
