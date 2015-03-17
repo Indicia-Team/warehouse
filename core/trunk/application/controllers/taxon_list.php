@@ -62,6 +62,8 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     if ($this->uri->method(false)=='create' && array_key_exists('parent_id', $_POST)) {
       // Parent_id is passed in as POST params for a new record.
       $r['taxon_list:parent_id'] = $_POST['parent_id'];
+      $parent = ORM::factory('taxon_list', $_POST['parent_id']);
+      $r['parent_website_id']=$parent->website_id;
     }
     return $r;    
   }
@@ -72,14 +74,8 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   protected function prepareOtherViewData($values)
   { 
     $websites = ORM::factory('website');
-    $parent_id=html::initial_value($values, 'taxon_list:parent_id');    
-    if ($parent_id != null) {
-      // parent list already has a link to a website, so we can't change it 
-      $websites = $websites->in('id', ORM::factory('taxon_list', $parent_id)->website_id);
-    } else {
-      if (!$this->auth->logged_in('CoreAdmin'))
-        $websites = $websites->in('id',$this->auth_filter['values']);
-    }
+    if (!$this->auth->logged_in('CoreAdmin'))
+      $websites = $websites->in('id',$this->auth_filter['values']);
     return array(
       'websites' => $websites->where('deleted','false')->orderby('title','asc')->find_all()
     );
