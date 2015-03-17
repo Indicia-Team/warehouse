@@ -2502,7 +2502,7 @@ function format_selected_features(features, div) {
       }
     }
     html += '</tr></thead><tbody>';
-    $.each(features, function(i, item) {
+    jQuery.each(features, function(i, item) {
       html += '<tr>';
       for(var attr in item.attributes) {
         if ((keepVagueDates || attr.substr(0, 5)!=='date_') && (div.settings.clickableLayersOutputColumns.length===0 || div.settings.clickableLayersOutputColumns[attr]!==undefined)) {
