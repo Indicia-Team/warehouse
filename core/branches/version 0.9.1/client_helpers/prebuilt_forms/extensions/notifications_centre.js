@@ -25,19 +25,24 @@ var createNotifications;
   function setCurrentFilter() {
     var label='Acknowledge all your notifications';
     currentFilter = $('#notifications-notifications-grid-source_filter').val();
-    if (currentFilter!=='all' && currentFilter!=='') {
-      label += ' for '
-      if (currentFilter==='record_cleaner') {
-        label += 'Record Cleaner';
-      } else {
-        label += $('#notifications-notifications-grid-source_filter option:selected').html().toLowerCase();
+    //Only need to deal with the label when the filter drop-down is displayed.
+    //If the user has provided a source type to preload the notifications grid with 
+    //then we don't change the button label based on the drop-down selection.
+    if (currentFilter) {
+      if (currentFilter!=='all' && currentFilter!=='') {
+        label += ' for '
+        if (currentFilter==='record_cleaner') {
+          label += 'Record Cleaner';
+        } else {
+          label += $('#notifications-notifications-grid-source_filter option:selected').html().toLowerCase();
+        }
       }
     }
     $('#remove-all').val(label);
   }
   
   $(document).ready(function() {
-    setCurrentFilter();
+      setCurrentFilter();
   });
   
   $('#run-report').click(function() {
@@ -50,10 +55,13 @@ var createNotifications;
   acknowledge_all_notifications = function(id) { 
     var visibleCount = $('#notifications-' + id + ' tbody tr').length,
         recordCount = indiciaData.reports.notifications_notifications_grid.grid_notifications_notifications_grid[0].settings.recordCount;
-    if (currentFilter!=='' && visibleCount>0) {
+    if ((currentFilter!==''||indiciaData.preloaded_source_types!=='') && visibleCount>0) {
       var msg='Are you sure you want to acknowledge all your notifications';
-      if (currentFilter!=='all' && currentFilter!=='') {
-        msg += ' for '
+      //Only change the confirmation message depending on the user's filter drop-down selection
+      //if that drop-down is actually displayed (it isn't displayed if the grid has been setup
+      //to preload particular source types)
+      if (currentFilter!=='all' && currentFilter!==''&&!indiciaData.preloaded_source_types) {
+        msg += ' for ';
         if (currentFilter==='record_cleaner') {
           msg += 'Record Cleaner';
         } else {

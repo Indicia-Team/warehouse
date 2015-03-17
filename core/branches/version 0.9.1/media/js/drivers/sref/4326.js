@@ -29,8 +29,13 @@ indiciaData.srefHandlers['4326'] = {
 
   returns: ['precisions','gridNotation'], // sref
 
-  sreflenToPrecision: function(len) {
+  getPrecisionInfo: function() {
     return {display:'Lat/Long', metres:1};
+  },
+
+  valueToAccuracy: function() {
+    // accuracy value 10 corresponds to 1m.
+    return 10;
   },
   
   /**

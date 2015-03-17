@@ -33,8 +33,9 @@ var checkSubmitInProgress = function () {
 
 
 (function($) {
-  // When adding a link to a remote resource, the oembed protocol is used to fetch the HTML to display for the
-  // external resource. Use the noembed service to guarantee jsonp support and a consistent response.
+  // When adding a link to a remote resource, the oembed protocol is used to 
+  // fetch the HTML to display for the external resource. Use the noembed 
+  // service to guarantee jsonp support and a consistent response.
   var noembed = function(div, id, url, requestId, typename, isNew, caption) {
     var duplicate = false;
     // Check for duplicate links to the same resource
@@ -88,6 +89,7 @@ var checkSubmitInProgress = function () {
       }
     });
   };
+  
   indiciaData.mediaTypes = {
     "Audio:SoundCloud" : {
       "regex":/^http(s)?:\/\/(www.)?soundcloud.com\//
@@ -113,10 +115,6 @@ var checkSubmitInProgress = function () {
     "Video:Vimeo" : {
       "regex":/^http:\/\/vimeo.com\//
     }
-  };
-  indiciaData.uploadFileTypes = {
-    "Image":["jpg","gif","png","jpeg"],  
-    "Audio":["mp3","wav"]
   };
   
   var currentDiv;
@@ -186,6 +184,7 @@ var checkSubmitInProgress = function () {
       alert('The file_box control requires a jsPath setting to operate correctly. It should point to the URL '+
           'path of the media/js folder.');
     }
+    
     return this.each(function() {
       var uploadSelectBtn='', linkSelectBtn='', id=Math.floor((Math.random())*0x10000), tokens,
           hasLocalFiles = false, hasLinks = false, div=this, fileTypes=[], caption=opts.msgPhoto, linkTypes=[];
@@ -195,9 +194,9 @@ var checkSubmitInProgress = function () {
         if (tokens[1]==='Local') {
           hasLocalFiles = true;
           if (tokens[0]==='Image') {
-            fileTypes.push(indiciaData.uploadFileTypes.Image.join(','));
+            fileTypes.push(opts.fileTypes.image.join(','));
           } else if (tokens[0]==='Audio') {
-            fileTypes.push(indiciaData.uploadFileTypes.Audio.join(','));
+            fileTypes.push(opts.fileTypes.audio.join(','));
             caption=opts.msgFile;
           }
         } else {
@@ -269,9 +268,12 @@ var checkSubmitInProgress = function () {
       $.each(div.settings.existingFiles, function(i, file) {
         requestId = $('.filelist .mediafile, .filelist .link').length,
             uniqueId = 'link-' + requestId;
-        if (file.media_type.match(/:Local$/)) {
+        //Media sub-types are now supported of the form like "Image:Local:SubTypeName
+        //The original format for media items would just have "Local" at the end.
+        //So include both of these possibilities
+        if (file.media_type.match(/:Local$/)||file.media_type.match(/:Local:/)) {
           origfilepath = div.settings.finalImageFolder + file.path;
-          ext=file.path.split('.').pop().toLowerCase();
+          ext = file.path.split('.').pop().toLowerCase();
           existing = div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, uniqueId)
               .replace(/\{filename\}/g, file.media_type.match(/^Audio:/) ? div.settings.msgFile : div.settings.msgPhoto)
               .replace(/\{imagewidth\}/g, div.settings.imageWidth);       
@@ -289,7 +291,7 @@ var checkSubmitInProgress = function () {
               thumbnailfilepath = div.settings.finalImageFolderThumbs + file.path;
             }
           }
-          if ($.inArray(ext, indiciaData.uploadFileTypes.Audio)===-1) {
+          if ($.inArray(ext, div.settings.fileTypes.audio) === -1) {
             tmpl = div.settings.file_box_uploaded_imageTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
           } else {
             tmpl = div.settings.file_box_uploaded_audioTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
@@ -324,18 +326,22 @@ var checkSubmitInProgress = function () {
       });
       
       // Add a box to indicate a file that is added to the list to upload, but not yet uploaded.
-      this.uploader.bind('FilesAdded', function(up, files) {
+        this.uploader.bind('FilesAdded', function(up, files) {
         $(div).parents('form').bind('submit', checkSubmitInProgress);
         // Find any files over the upload limit
         var existingCount = $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').children().length, ext;
         extras = files.splice(div.settings.maxFileCount - existingCount, 9999);
         if (extras.length!==0) {
           alert(div.settings.msgTooManyFiles.replace('[0]', div.settings.maxFileCount));
+          // Remove excess files from the uploader queue.
+          $.each(extras, function(i, file){
+            div.uploader.removeFile(file);
+          });
         }
         $.each(files, function(i, file) {
           ext=file.name.split('.').pop();
           $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, file.id)
-              .replace(/\{filename\}/g, $.inArray(ext, indiciaData.uploadFileTypes.Image)>-1 ? div.settings.msgPhoto : div.settings.msgFile)
+              .replace(/\{filename\}/g, $.inArray(ext, div.settings.fileTypes.image) > -1 ? div.settings.msgPhoto : div.settings.msgFile)
               .replace(/\{imagewidth\}/g, div.settings.imageWidth)
           );
           // change the file name to be unique & lowercase, since the warehouse lowercases files
@@ -379,17 +385,33 @@ var checkSubmitInProgress = function () {
         } else {
           filepath = div.settings.destinationFolder + file.name;
           uniqueId = $('.filelist .media-wrapper').length - $('.filelist .progress').length;
-          fileType = $.inArray(filepath.split('.').pop().toLowerCase(), indiciaData.uploadFileTypes.Audio)===-1 ? 'Image' : 'Audio';
+          fileType = $.inArray(filepath.split('.').pop().toLowerCase(), div.settings.fileTypes.audio) === -1 ? 'Image' : 'Audio';
           if (fileType==='Image') {
-            tmpl = div.settings.file_box_uploaded_imageTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
+            tmpl = div.settings.file_box_uploaded_imageTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
           } else {
-            tmpl = div.settings.file_box_uploaded_audioTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
+            tmpl = div.settings.file_box_uploaded_audioTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
           }
-          
+          //If indiciaData.subTypes is supplied then the user is intending to use more than one photo control,
+          //each control will have their own media sub-type.
+          if (indiciaData.subTypes) {
+            for (var i=0; i<indiciaData.subTypes.length; i++) { 
+              //Each item of the array consists of a control id and the sub type.
+              //So all we need to do here is cycle through the options until we find a control
+              //id for the control we are currenty uploading too, and then select that sub-type
+              if (div.settings.id.indexOf(indiciaData.subTypes[i][0])>-1) {
+                fileType=indiciaData.subTypes[i][1];
+              }
+            }
+          }
           if ("mediaTypeTermIdLookup" in indiciaData) {
             // Backwards compatibility test. Property only exists if 
             // data_entry_helper::add_link_popup has set it.
-            mediaTypeId = indiciaData.mediaTypeTermIdLookup[fileType + ':Local'];
+            if (!indiciaData.subTypes)
+              mediaTypeId = indiciaData.mediaTypeTermIdLookup[fileType + ':Local'];
+            else
+              //If user has supplied an option to limit a photo control to a particular media type
+              //then we get the media type name straight from the option they provide
+              mediaTypeId = indiciaData.mediaTypeTermIdLookup[fileType];
           }
           else {
             // If no value is supplied, warehouse defaults to Image:Local
@@ -514,5 +536,7 @@ jQuery.fn.uploader.defaults = {
   uploadScript : 'upload.php',
   destinationFolder : '',
   runtimes : 'html5,flash,silverlight,html4',
-  mediaTypes : ["Image:Local"]
+  mediaTypes : ["Image:Local"],
+  fileTypes : {image : ["jpg", "gif", "png", "jpeg"], 
+               audio : ["mp3", "wav"]}
 };

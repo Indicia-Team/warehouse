@@ -274,7 +274,8 @@ class iform_dynamic_report_explorer extends iform_dynamic {
    * which makes the tokens cachable therefore faster. It does mean that $auth['write'] will not be available.
    */
   public static function get_form($args, $node) {
-    self::$auth = array('read' => data_entry_helper::get_read_auth($args['website_id'], $args['password']));
+    $conn = iform_get_connection_details($node);
+    self::$auth = array('read' => data_entry_helper::get_read_auth($conn['website_id'], $conn['password']));
     return parent::get_form($args, $node);
   }
  

@@ -41,17 +41,6 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
   hook_species_checklist_new_row = [];
   
   var resetSpeciesText;
-  /*
-   * Validator makes sures user cannot enter junk into the taxon cell and continue with submit
-   */
-  jQuery.validator.addMethod('speciesMustBeFilled',
-            function(value, element) {
-              var presenceCellInput = $(element).parents('tr:first').find('.scPresenceCell').children(':input');
-              if ($(presenceCellInput).val() || !$(element).val()) {
-                return true;
-              }
-            },
-          '');
           
   /*
    * A keyboard event handler for the grid.
@@ -354,13 +343,16 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
     extraParams = {
-      orderby : indiciaData.speciesGrid[gridId].cacheLookup ? 'searchterm_length,original,preferred_taxon' : 'taxon',
       mode : 'json',
       qfield : indiciaData.speciesGrid[gridId].cacheLookup ? 'searchterm' : 'taxon',
       auth_token: readAuth.auth_token,
       nonce: readAuth.nonce,
       taxon_list_id: lookupListId
     };
+    if (indiciaData.speciesGrid[gridId].cacheLookup)
+      extraParams.orderby = indiciaData.speciesGrid[gridId].selectMode ? 'original,preferred_taxon' : 'searchterm_length,original,preferred_taxon';
+    else
+      extraParams.orderby = 'taxon';
     if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") { 
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
       // a custom query on the list id overrides the standard filter..
@@ -498,16 +490,17 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
    */
   $('.add-media-link').live('click', function(evt) {
     evt.preventDefault();
-    var table = evt.target.id.replace('add-media','sc') + ':occurrence_medium';
-    var ctrlId='container-'+table+'-'+Math.floor((Math.random())*0x10000);
-    var colspan = $($(evt.target).parent().parent()).children().length;
-    var imageRow = '<tr class="image-row"><td colspan="' + colspan + '">';
+    var table = evt.target.id.replace('add-media','sc') + ':occurrence_medium',
+        ctrlId='container-'+table+'-'+Math.floor((Math.random())*0x10000),
+        colspan = $($(evt.target).parent().parent()).children().length,
+        imageRow = '<tr class="image-row"><td colspan="' + colspan + '">',
+        mediaTypes = indiciaData.uploadSettings.mediaTypes;
     imageRow += '<div class="file-box" id="' + ctrlId + '"></div>';
     imageRow += '</td></tr>';
     imageRow = $(imageRow);
     $($(evt.target).parent().parent()).after(imageRow);
         var opts={
-          caption : 'Files',
+          caption : (mediaTypes.length===1 && mediaTypes[0]==='Image:Local') ? 'Photos' : 'Files',
           autoupload : '1',
           msgUploadError : 'An error occurred uploading the file.',
           msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
@@ -520,7 +513,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
           maxUploadSize : '4000000', // 4mb
           container: ctrlId,
           autopick: true,
-          mediaTypes: indiciaData.uploadSettings.mediaTypes
+          mediaTypes: mediaTypes
         };
         if (typeof indiciaData.uploadSettings.resizeWidth!=="undefined") { opts.resizeWidth=indiciaData.uploadSettings.resizeWidth; }
         if (typeof indiciaData.uploadSettings.resizeHeight!=="undefined") { opts.resizeHeight=indiciaData.uploadSettings.resizeHeight; }

@@ -319,7 +319,7 @@ idlist=';
     $r = '<div id="experience-tab"><p>'.lang::get('Recorder\'s other records of this species and species group. Click to explore:').'</p><div id="experience-div"></div></div>';
     $r .= '<div id="phenology-tab"><p>'.lang::get('The following phenology chart shows the relative abundance of records through the '.
         'year for this species, <em>from the verified online recording data only.</em>').'</p><div id="chart-div"></div></div>';
-    $r .= '<div id="images-tab"></div>';
+    $r .= '<div id="media-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
     return $r;
   }
@@ -390,17 +390,17 @@ idlist=';
     $r .= '<button type="button" id="btn-email-recorder" class="default-button">'.lang::get('Recorder').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-tabs">';
-    // note - there is a dependency in the JS that comments is the last tab and images the 2nd to last.
+    // note - there is a dependency in the JS that comments is the last tab and media the 2nd to last.
     $r .= data_entry_helper::tab_header(array(
       'tabs'=>array(
         '#details-tab'=>lang::get('Details'),
         '#experience-tab'=>lang::get('Experience'),
         '#phenology-tab'=>lang::get('Phenology'),
-        '#images-tab'=>lang::get('Images'),
+        '#media-tab'=>lang::get('Media'),
         '#comments-tab'=>lang::get('Comments')
       )
     ));
-    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','experience','phenology','images','comments'];\n";
+    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','experience','phenology','media','comments'];\n";
     data_entry_helper::enable_tabs(array(
       'divId'=>'record-details-tabs'
     ));
@@ -495,7 +495,9 @@ idlist=';
           'paramPrefix'=>'<div class="report-param">',
           'paramSuffix'=>'</div>',
           'sharing'=>'verification',
-          'ajax'=>TRUE
+          'ajax'=>TRUE,
+          'callback' => 'verificationGridLoaded',
+          'rowClass' => 'zero-{zero_abundance}'
         )
     );
     $opts['columns'][] = array(
@@ -677,11 +679,14 @@ idlist=';
         // is this a new heading?
         if (!isset($data[$caption[0]]))
           $data[$caption[0]]=array();
-        $data[$caption[0]][] = array('caption'=>$caption[1], 'value'=>$record[$col]);
+        $val = ($col==='record_status') ? self::statusLabel($record[$col]) : $record[$col];
+        $data[$caption[0]][] = array('caption'=>$caption[1], 'value'=>$val);
       }
       if ($col==='email' && !empty($record[$col])) 
         $email=$record[$col];
     }
+    if ($record['zero_abundance']==='t')
+      $data['Key facts'][] = array('caption'=>lang::get('Absence'), 'value'=> lang::get('This is a record indicating absence.'));
 
     // Do the custom attributes
     $options = array(
@@ -693,18 +698,13 @@ idlist=';
     $reportData = report_helper::get_report_data($options);
     foreach ($reportData as $attribute) {
       if (!empty($attribute['value'])) {
-        if (!isset($data[$attribute['attribute_type']]))
-          $data[$attribute['attribute_type']]=array();
-        $data[$attribute['attribute_type']][] = array('caption'=>$attribute['caption'], 'value'=>$attribute['value']);
+        if (!isset($data[$attribute['attribute_type'] . ' attributes']))
+          $data[$attribute['attribute_type'] . ' attributes']=array();
+        $data[$attribute['attribute_type'] . ' attributes'][] = array('caption'=>$attribute['caption'], 'value'=>$attribute['value']);
       }
     }
 
-    $r = "<table>\n";
-    $r .= '<tr><td class="caption">'.lang::get('Status').'</td><td class="status status-'.$record['record_status'].'">';
-    $r .= self::statusLabel($record['record_status']);
-    if ($record['zero_abundance']==='t')
-      $r .= '<br/>' . lang::get('This is a record indicating absence.');
-    $r .= "</td></tr>\n";
+    $r = "<table class=\"report-grid\">\n";
     foreach($data as $heading=>$items) {
       $r .= "<tr><td colspan=\"2\" class=\"header\">$heading</td></tr>\n";
       foreach ($items as $item) {
@@ -767,36 +767,45 @@ idlist=';
 
   }
 
-  public static function ajax_images($website_id, $password) {
+  public static function ajax_media($website_id, $password) {
+    iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
-    echo self::get_images($readAuth);
+    echo self::get_media($readAuth);
   }
 
-  private static function get_images($readAuth) {
+  private static function get_media($readAuth) {
     iform_load_helpers(array('data_entry_helper'));
-    $images = data_entry_helper::get_population_data(array(
-      'table' => 'occurrence_image',
+    $media = data_entry_helper::get_population_data(array(
+      'table' => 'occurrence_medium',
       'extraParams'=>$readAuth + array('occurrence_id'=>$_GET['occurrence_id']),
       'nocache'=>true,
       'sharing'=>'verification'
     ));
     $r = '';
-    if (count($images)===0)
-      $r .= lang::get('No images found for this record');
+    if (count($media)===0)
+      $r .= lang::get('No media found for this record');
     else {
       $path = data_entry_helper::get_uploaded_image_folder();
       $r .= '<ul class="gallery">';
-      foreach ($images as $image) {
-        $r .= '<li><a href="'.$path.$image['path'].'" class="fancybox"><img src="'.$path.'thumb-'.
-            $image['path'].'"/>'.'<br/>'.$image['caption'].'</a></li>';
+      foreach ($media as $file) {
+        if (preg_match('/^http(s)?:\/\/(www\.)?([a-z]+)/', $file['path'], $matches)) {
+          $media = "<a href=\"$file[path]\" class=\"social-icon $matches[3]\"></a>";
+        } elseif (preg_match('/.(wav|mp3)$/', $file['path'])) {
+          $media = "<audio controls src=\"$path$file[path]\" type=\"audio/mpeg\"/>";
+        } else {
+          $media = "<a href=\"$path$file[path]\" class=\"fancybox\"><img src=\"{$path}thumb-" .
+              "$file[path]\"/><br/>$file[caption]</a>";
+        }
+        $r .= "<li>$media</li>";
       }
       $r .= '</ul>';
-      $r .= '<p>'.lang::get('Click on image thumbnails to view full size').'</p>';
+      $r .= '<p>'.lang::get('Click on thumbnails to view full size').'</p>';
     }
     return $r;
   }
 
   public static function ajax_comments($website_id, $password) {
+    iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
     echo self::get_comments($readAuth);
   }
@@ -835,11 +844,12 @@ idlist=';
     return $r;
   }
 
-  public static function ajax_imagesAndComments($website_id, $password) {
+  public static function ajax_mediaAndComments($website_id, $password) {
+    iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
     header('Content-type: application/json');
     echo json_encode(array(
-      'images' => self::get_images($readAuth),
+      'media' => self::get_media($readAuth),
       'comments' => self::get_comments($readAuth, false)
     ));
   }
@@ -911,16 +921,9 @@ idlist=';
     // See if there is a filled in profile_experience field for the user. If so, add
     // the statement to the response.
     if (!empty($_GET['user_id'])) {
-      $result = db_query("SELECT vuid.value
-FROM {profile_values} vuser_id
-JOIN {profile_fields} fuser_id ON fuser_id.fid=vuser_id.fid AND fuser_id.name='profile_indicia_user_id'
-JOIN {profile_values} vuid ON vuid.uid=vuser_id.uid
-JOIN {profile_fields} fuid ON fuid.fid=vuid.fid AND fuid.name='profile_experience'
-WHERE vuser_id.value=".$_GET['user_id']);
-      if ($exp = db_fetch_object($result)) {
-        if (!empty($exp->value)) 
-          $r .= "<h3>User's description of their experience</h3>{$exp->value}\n";
-      } 
+      $experience = hostsite_get_user_field('experience', false, false, $_GET['user_id']);
+      if ($experience) 
+        $r .= "<h3>User's description of their experience</h3><p>$experience</p>\n";
     }
     echo $r;
   }

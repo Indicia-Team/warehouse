@@ -56,10 +56,11 @@ $custom_terms = array(
 	,'LANG_ID_Unrecognised' => 'Les suivants ne sont pas reconnus: '
 	,'LANG_Taxa_Unknown_In_Tool' => 'Taxon inconnu de la clé'
 	,'LANG_Det_Type_Label' => 'Identification'
-	,'LANG_Det_Type_A' => 'Initial, Unvalidated'
+	,'LANG_Det_Type_A' => 'Initiale, non validé'
+	,'LANG_Det_Type_B' => 'Exprimé doute'
 	,'LANG_Det_Type_C' => 'Correct, validé'
 	,'LANG_Det_Type_X' => 'Non identifié'
-	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la liste"
+	,'LANG_Choose_Taxon' => "Choisissez un taxon dans cette liste"
 	,'LANG_Identify_Insect' => 'Indiquer le nom de cet insecte:'
 	,'LANG_More_Precise' => 'Dénomination précise'
 	,'LANG_ID_Comment' => 'Commentez éventuellement votre identification :'
@@ -79,7 +80,6 @@ $custom_terms = array(
 	,'LANG_Date_Filter_Title' => 'Date'
 	,'LANG_Flower_Filter_Title' => 'Fleur'
 	,'LANG_ID_Status' => "Statut de l'identification "
-	,'LANG_ID_Status_Choose' => "Choisissez un statut dans la liste"
 	,'LANG_ID_Status_Unidentified' => "non identifié"
 	,'LANG_ID_Status_Initial' => "identifié par l'auteur"
 	,'LANG_ID_Status_Doubt' => "doute émis sur l'identification"
@@ -193,4 +193,11 @@ $custom_terms = array(
 	,'LANG_Bad_Insect_ID' => "Vous avez essayé de charger une fleur comme un insecte: cette ID n'est pas un insect."
 	,'LANG_Bad_Flower_ID' => "Vous avez essayé de charger un insecte comme une fleur: cet ID n'est pas une fleur."
 	
+	,'LANG_Add' => 'Ajouter'
+	,'LANG_ID_Flower_Unknown' => 'Fleur espèces ne sait pas'
+	,'Species' => 'Espèces'
+	,'Status' => 'Statut'
+	,'LANG_Known_Species' => 'Entrez le nom du taxon ou choisissez le dans cette liste'
+	,'Remove this entry' => 'Supprimer cette entrée'
+			
 );

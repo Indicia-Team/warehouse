@@ -430,13 +430,13 @@ class iform_species_details extends iform_dynamic {
       )
     ));
 
-    $r = '<div class="record-details-fields ui-helper-clearfix">';
+    $r = '<div class="detail-panel" id="detail-panel-speciesdetails"><h3>'.lang::get('Species Details').'</h3><div class="record-details-fields ui-helper-clearfix">';
     //draw the species names and custom attributes
     if (isset($details_report))
       $r .= $details_report;
     if (isset($attrs_report))
       $r .= $attrs_report;
-    $r .= '</div>';
+    $r .= '</div></div>';
     return $r;
   }
   
@@ -476,52 +476,45 @@ class iform_species_details extends iform_dynamic {
   protected static function get_control_photos($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
     data_entry_helper::add_resource('fancybox');
-    global $user;
-    //default an items per page if not set by administrator
-    if (empty($options['itemsPerPage'])) {
-      $options['itemsPerPage'] = 6;
-    }  
-    //default a column count if not set by administrator
-    if (empty($options['galleryColCount'])) {
-      $options['galleryColCount'] = 3;
-    }  
+    $options = array_merge(array(
+      'itemsPerPage' => 20,
+      'imageSize' => 'thumb',
+      'class' => 'detail-gallery'
+    ), $options);
     
     //Use this report to return the photos
     $reportName = 'library/occurrence_images/explore_list_2';
-    return report_helper::report_grid(array(
+    return '<div class="detail-panel" id="detail-panel-photos"><h3>'.lang::get('Photos and media').'</h3>' . 
+      report_helper::freeform_report(array(
       'readAuth' => $auth['read'],
       'dataSource'=> $reportName,
       'itemsPerPage' => $options['itemsPerPage'],
-      'columns' => array(
-        array(
-          'fieldname' => 'path',
-          'template' => '<div class="gallery-item">{path}<br/>{caption}</div>',
-          'img'=>true
-        )
-      ),
+      'class' => $options['class'],
+      'header'=>'<ul>',
+      'footer'=>'</ul>',
+      'bands'=>array(array('content'=>'<li class="gallery-item"><a href="{imageFolder}{path}" class="fancybox single"><img src="{imageFolder}'.$options['imageSize'].'-{path}" /></a><br/>{caption}</li>')),
+      'emptyText' => '<p>No photos or media files available</p>',
       'mode' => 'report',
       'autoParamsForm' => false,
-      'includeAllColumns' => false,
-      'headers' => false,
-      'galleryColCount' => $options['galleryColCount'],
-        'extraParams' => array(
-          'taxon_meaning_id'=> self::$taxon_meaning_id,
-          'smpattrs'=>'',
-          'occattrs'=>'',
-          'searchArea'=>'',
-          'idlist'=>'',
-          'currentUser'=>'',
-          'ownData'=>0,
-          'location_id'=>'',
-          'ownLocality'=>0,
-          'taxon_groups'=>'',
-          'ownGroups'=>0,
-          'survey_id'=>'',
-          'date_from'=>'',
-          'date_to'=>'',
-          'sharing'=>'reporting'
-        )
-    ));    
+      'extraParams' => array(
+        'taxon_meaning_id'=> self::$taxon_meaning_id,
+        'smpattrs'=>'',
+        'occattrs'=>'',
+        'searchArea'=>'',
+        'idlist'=>'',
+        'currentUser'=>'',
+        'ownData'=>0,
+        'location_id'=>'',
+        'ownLocality'=>0,
+        'taxon_groups'=>'',
+        'ownGroups'=>0,
+        'survey_id'=>'',
+        'date_from'=>'',
+        'date_to'=>'',
+        'sharing'=>'reporting',
+        'quality'=>'V'
+      )
+    )).'</div>';
   }
   
   /**
@@ -536,6 +529,8 @@ class iform_species_details extends iform_dynamic {
     global $user;
     // setup the map options
     $options = iform_map_get_map_options($args, $auth['read']);
+    if ($args['interface']!=='one_page')
+      $options['tabDiv'] = $tabalias;
     $olOptions = iform_map_get_ol_options($args);
     $url = map_helper::$geoserver_url.'wms';
     // Get the style if there is one selected
@@ -571,7 +566,7 @@ class iform_species_details extends iform_dynamic {
       $layerTypes = explode(',', $args['include_layer_list_types']);
     else
       $layerTypes = array('base', 'overlay');
-    $r = '';
+    $r = '<div class="detail-panel" id="detail-panel-map"><h3>'.lang::get('Map').'</h3>';
     //Legend options set by the user
     if (!isset($args['include_layer_list']) || $args['include_layer_list'])
       $r .= map_helper::layer_list(array(
@@ -581,6 +576,7 @@ class iform_species_details extends iform_dynamic {
       ));
     
     $r .= map_helper::map_panel($options, $olOptions);
+    $r .= '</div>';
 
     // Set up a page refresh for dynamic update of the map at set intervals
     if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
@@ -588,18 +584,7 @@ class iform_species_details extends iform_dynamic {
         map_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
       else
         map_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
-    }
-    
-    $options = array_merge(
-      iform_map_get_map_options($args, $auth['read']),
-      $options
-    );
-   
-    if ($args['interface']!=='one_page')
-      $options['tabDiv'] = $tabalias;
-    
-    if (!isset($options['standardControls']))
-      $options['standardControls']=array('layerSwitcher','panZoom');
+    }    
     return $r;  
   }
   
@@ -652,17 +637,19 @@ class iform_species_details extends iform_dynamic {
       )
     ));
     if (!empty($reportResult[0]['the_text']))
-      return '<div class="field ui-helper-clearfix"><span>Description:</span><span>'.$reportResult[0]['the_text'].'</span></div>';
+      return '<div class="detail-panel" id="detail-panel-speciesnotes"><h3>'.
+          lang::get('Species Notes').'</h3><p>'.$reportResult[0]['the_text'].'</p></div>';
   }
   
   /*
    * Control returns all the images associated with a particular taxon meaning in the taxon_images table. 
-   * These are the the general images of a species as opposed to the photos control which returns photos of the specific occurrences.
+   * These are the the general dictionary images of a species as opposed to the photos control which returns photos 
+   * associated with occurrences of this species.
    */
   protected static function get_control_speciesphotos($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
     data_entry_helper::add_resource('fancybox');
-    global $user;  
+    global $user;
     //default an items per page if not set by administrator
     if (empty($options['itemsPerPage']) || $options['itemsPerPage'] == NULL) {
       $options['itemsPerPage'] = 6;
@@ -693,7 +680,8 @@ class iform_species_details extends iform_dynamic {
         'taxon_meaning_id'=>self::$taxon_meaning_id,
       )
     ));    
-    return '<h3>Photos and media</h3>'.$reportResults;
+    return '<div class="detail-panel" id="detail-panel-speciesphotos"><h3>' . lang::get('Photos and media') . '</h3>' . 
+        $reportResults . '</div>';
   }
   
   /**

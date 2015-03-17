@@ -83,7 +83,7 @@ class iform_report_calendar_summary_2 {
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {
-    return 
+    return
       array(
         array(
           'name' => 'includeRawData',
@@ -132,12 +132,12 @@ class iform_report_calendar_summary_2 {
           'name'=>'branchFilterAttribute',
           'caption'=>'Location Branch Coordinator Attribute',
           'description'=>'The caption of the location attribute used to assign locations to Branch Coordinators.',
-          'type' => 'string',
+          'type'=>'string',
           'required' => false,
           'group' => 'Access Control'
         ),
-        
-        array(
+
+      	array(
           'name'=>'dateFilter',
           'caption'=>'Date Filter type',
           'description'=>'Type of control used to select the start and end dates.',
@@ -149,7 +149,7 @@ class iform_report_calendar_summary_2 {
           'default' => 'year',
           'group' => 'Controls'
         ),
-        array(
+      	array(
           'name'=>'includeUserFilter',
           'caption'=>'Include user filter',
           'description'=>'Choose whether to include a filter on the user. This is passed through to the report parameter list as user_id. If not selected, user_id is not included in the report parameter list.',
@@ -158,59 +158,59 @@ class iform_report_calendar_summary_2 {
           'required' => false,
           'group' => 'Controls'
         ),
-        array(
+      	array(
       		'name'=>'userLookUp', // TODO Convert to use new report.
-          'caption'=>'Only Users who have entered data',
-          'description'=>'Choose whether to include only users which have entered data (indicated by the created_by_id sample field if Easy Login is enabled, or the CMS User ID attribute lodged against a sample if not).',
-          'type'=>'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'userLookUpSampleMethod',
-          'caption'=>'Sample Method',
-          'description'=>'When looking up the sample attributes, enter an optional sample method term.',
-          'type'=>'string',
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'includeLocationFilter',
-          'caption'=>'Include location filter',
-          'description'=>'Choose whether to include a filter on the locations. This is passed through to the report parameter list as location_id. If not selected, location_id is not included in the report parameter list.',
-          'type'=>'boolean',
-          'default' => false,
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'userSpecificLocationLookUp',
-          'caption'=>'Make location list user specific',
-          'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user using the CMS User ID location attribute.',
-          'type'=>'boolean',
-          'default' => true,
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'locationTypesFilter',
-          'caption'=>'Restrict locations to types',
+      		'caption'=>'Only Users who have entered data',
+      		'description'=>'Choose whether to include only users which have entered data (indicated by the created_by_id sample field if Easy Login is enabled, or the CMS User ID attribute lodged against a sample if not).',
+      		'type'=>'boolean',
+      		'default' => false,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'userLookUpSampleMethod',
+      		'caption'=>'Sample Method',
+      		'description'=>'When looking up the sample attributes, enter an optional sample method term.',
+      		'type'=>'string',
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'includeLocationFilter',
+      		'caption'=>'Include location filter',
+      		'description'=>'Choose whether to include a filter on the locations. This is passed through to the report parameter list as location_id. If not selected, location_id is not included in the report parameter list.',
+      		'type'=>'boolean',
+      		'default' => false,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'userSpecificLocationLookUp',
+      		'caption'=>'Make location list user specific',
+      		'description'=>'Choose whether to restrict the list of locations to those assigned to the selected user using the CMS User ID location attribute.',
+      		'type'=>'boolean',
+      		'default' => true,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'locationTypesFilter',
+      		'caption'=>'Restrict locations to types',
       		'description'=>'Implies a location type selection control. Comma separated list of the location types definitions to be included in the control, of form {Location Type Term}:{Survey ID}[:{Link URL Extension}]. Restricts the locations in the user specific location filter to the selected location type, and restricts the data retrieved to the defined survey. In the Raw Data grid, the Links to the data entry page have the optional extension added. The CMS User ID attribute must be defined for all location types selected or all location types.',
-          'type'=>'string',
-          'default' => false,
-          'required' => false,
-          'group' => 'Controls'
-        ),
-        array(
-          'name'=>'includeSrefInLocationFilter',
-          'caption'=>'Include Sref in location filter name',
-          'description'=>'When including the user specific location filter, choose whether to include the sref when generating the select name.',
-          'type'=>'boolean',
-          'default' => true,
-          'required' => false,
-          'group' => 'Controls'
-        ),
+      		'type'=>'string',
+      		'default' => false,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
+      	array(
+      		'name'=>'includeSrefInLocationFilter',
+      		'caption'=>'Include Sref in location filter name',
+      		'description'=>'When including the user specific location filter, choose whether to include the sref when generating the select name.',
+      		'type'=>'boolean',
+      		'default' => true,
+      		'required' => false,
+      		'group' => 'Controls'
+      	),
       	array(
       		'name'=>'removable_params',
       		'caption'=>'Removable report parameters',
@@ -699,6 +699,7 @@ class iform_report_calendar_summary_2 {
           'required' => false,
           'group' => 'Raw Data Report Settings'
         ),
+      		
         array(
           'name' => 'sensitivityLocAttrId',
           'caption' => 'Location attribute used to filter out sensitive sites',
@@ -785,7 +786,7 @@ class iform_report_calendar_summary_2 {
         if($terms[$i]['id'] == $default && count($types2[$i])>2 && $types2[$i][2]!='') {
           self::$siteUrlParams[self::$URLExtensionKey] = $types2[$i][2];
         }
-  	  }
+      }
   	}
   	return isset(self::$siteUrlParams[self::$SurveyKey]);
   }
@@ -1189,7 +1190,7 @@ class iform_report_calendar_summary_2 {
       default :
         // can't use "myData" as with cached reports >1 person may have same filename, but different reports. Also
         // providing explicit name makes it clearer.
-        // if account comes from cache, then it is an array, if from drupal an object.
+      	// if account comes from cache, then it is an array, if from drupal an object.
         $account = is_array($userList[$siteUrlParams[self::$userKey]['value']]) ? 
                      $userList[$siteUrlParams[self::$userKey]['value']] :
                      get_object_vars($userList[$siteUrlParams[self::$userKey]['value']]);
@@ -1224,8 +1225,8 @@ class iform_report_calendar_summary_2 {
           'value' => isset($_GET[self::$locationTypeKey]) ? $_GET[self::$locationTypeKey] : ''
         ),
         self::$yearKey => array(
-              'name' => self::$yearKey,
-              'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')
+          'name' => self::$yearKey,
+          'value' => isset($_GET[self::$yearKey]) ? $_GET[self::$yearKey] : date('Y')
         )
       );
       foreach (self::$removableParams as $param=>$caption) {
@@ -1403,7 +1404,7 @@ jQuery('#".$ctrlid."').change(function(){
     if(isset($args['manager_permission']) && $args['manager_permission']!="" && user_access($args['manager_permission'])) {
     	$reportOptions['location_list'] = 'all';
     }
-    
+
     // Add controls first: set up a control bar
     $retVal .= "\n<table id=\"controls-table\" class=\"ui-widget ui-widget-content ui-corner-all controls-table\"><thead class=\"ui-widget-header\"><tr>";
     $retVal .= self::year_control($args, $auth, $node, $reportOptions);

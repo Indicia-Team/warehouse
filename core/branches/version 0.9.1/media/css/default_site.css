@@ -77,9 +77,7 @@ div.ui-effects-wrapper {
 }
 
 p.inline-error {
-  margin-left: 160px;
-  margin-bottom: -0.8em;
-  margin-top: 0em;  
+  margin: 0 0 0 164px;
 }
 
 .species-grid p.inline-error {
@@ -109,7 +107,7 @@ label, form label {
   margin: 4px 0 4px 0;
 }
 
-input, select, textarea, #form-params textarea, .timeEntry_control, 
+input:not([type="submit"]), select, textarea, #form-params textarea, .timeEntry_control, 
     .inline-control, button.inline-control, input.inline-control {
   vertical-align: top;
   margin: 4px 0;
@@ -122,30 +120,37 @@ a {
 
 .control-width-0 {
   width: 25px !important;
+  box-sizing: border-box;
 }
 
 .control-width-1 {
   width: 50px !important;
+  box-sizing: border-box;
 }
 
 .control-width-2 {
   width: 100px !important;
+  box-sizing: border-box;
 }
 
 .control-width-3 {
   width: 150px !important;
+  box-sizing: border-box;
 }
 
 .control-width-4 {
   width: 200px !important;
+  box-sizing: border-box;
 }
 
 .control-width-5 {
   width: 300px !important;
+  box-sizing: border-box;
 }
 
 .control-width-6 {
   width: 500px !important;
+  box-sizing: border-box;
 }
 
 .auto {
@@ -484,6 +489,10 @@ td.row-buttons img {
   margin-left: 0;
 }
 
+.linear-form div:first-child label, .linear-form > label:first-child {
+  width: 160px;
+}
+
 table.jqplot-table-legend {
   width: auto;
   border: none;
@@ -532,6 +541,7 @@ form #map-toolbar {
 #map-footer {
   background-color: #cccccc;
   padding: 1px;
+  box-sizing: border-box;
 }
 
 #map-footer .grid-ref-hint {
@@ -542,8 +552,21 @@ form #map-toolbar {
   font-size: 1em;
   font-family: arial, sans-serif;
   margin: 0;
-  float: left;  
+  float: left;
+  box-sizing: border-box;
+}
+#map-footer h3 {
   width: 25%;
+}
+#map-footer div {
+  width: 27%;
+}
+#map-footer div.hint-normal {
+  width: 21%;
+}
+
+#map-footer span {
+  white-space:nowrap;
 }
 
 .columns #map-footer h3 {
@@ -769,6 +792,12 @@ span.ind-cancel-icon {
   margin: 0.5em;
 }
 
+.popup-filter-options-container {
+  overflow-y: scroll; 
+  max-height: 400px; 
+  height: 400px
+}
+
 .filter-row {
   background: #e7e7e7;
 }
@@ -946,4 +975,18 @@ div.note-fail, p.note-fail {
 }
 .social-icon.vimeo {
   background-image: url(../images/somicro/with_border/vimeo-variation.png);
+}
+#filter-form label {
+  display: block;
+}
+.detail-gallery ul {
+  padding: 0;
+}
+.detail-gallery li {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  list-style-type: none;
+  padding: 0.5em;
 }

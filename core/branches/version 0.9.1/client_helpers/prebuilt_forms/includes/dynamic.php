@@ -89,6 +89,16 @@ class iform_dynamic {
           'group' => 'User Interface'
         ),
         array(
+          'name'=>'force_next_previous',
+          'caption'=>'Next/previous buttons shown in tab mode?',
+          'description'=>'Should the wizard style Next & Previous buttons be shown even when in tab mode? This option does '.
+              'not apply when the option "Submit button below all pages" is set.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
+        array(
           'name'=>'clientSideValidation',
           'caption'=>'Client Side Validation',
           'description'=>'Enable client side validation of controls using JavaScript.',
@@ -166,6 +176,26 @@ class iform_dynamic {
       )
     );
     return $retVal;
+  }
+
+  /**
+   * Declare the list of permissions we've got set up to pass to the CMS' permissions code.
+   * @param int $nid Node ID, not used
+   * @param array $args Form parameters array, used to extract the defined permissions.
+   * @return array List of distinct permissions.
+   */
+  public static function get_perms($nid, $args) {
+    $perms = array();
+    if (!empty($args['structure'])) {
+      // scan for @permission=... in the form structure
+      $structure = data_entry_helper::explode_lines($args['structure']);
+      $permissions = preg_grep('/^@((smp|occ|loc)Attr:\d+|)?permission=/', $structure);
+      foreach ($permissions as $permission) {
+        $parts = explode('=', $permission, 2);
+        $perms[] = array_pop($parts);
+      }
+    }
+    return $perms;
   }
 
     /**
@@ -269,7 +299,8 @@ class iform_dynamic {
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
           'style'=>$args['interface'],
-          'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
+          'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true,
+          'navButtons' => isset($args['force_next_previous']) && $args['force_next_previous']
       ));
     } else {
       // ensure client side validation is activated if requested on single page forms. This is done in the enable_tabs bit above.
@@ -307,7 +338,7 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
       if (isset($args['verification_panel']) && $args['verification_panel'] && $pageIdx==count($tabHtml)-1)
         $r .= data_entry_helper::verification_panel(array('readAuth'=>$auth['read'], 'panelOnly'=>true));
       // Add any buttons required at the bottom of the tab   
-      if ($args['interface']=='wizard') {
+      if ($args['interface']==='wizard' || ($args['interface']==='tabs' && isset($args['force_next_previous']) && $args['force_next_previous'])) {
         $r .= data_entry_helper::wizard_buttons(array(
           'divId'=>'controls',
           'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabHtml)-1) ? 'last' : 'middle'),
@@ -489,6 +520,9 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
               $options['default'] = $_GET[$option[1]];
           }
         }
+        // if @permission specified as an option, then check that the user has access to this control
+        if (!empty($options['permission']) && !user_access($options['permission']))
+          continue;
         $parts = explode('.', str_replace(array('[', ']'), '', $component));
         $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
         if (!empty($args['high_volume']) && $args['high_volume']) {
@@ -511,8 +545,13 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
             $path = call_user_func(array(self::$called_class, 'getReloadPath')); 
             //pass the classname of the form through to the extension control method to allow access to calling class functions and variables
             $args["calling_class"]='iform_' . self::$node->iform;
-            $html .= call_user_func(array('extension_' . $parts[0], $parts[1]), $auth, $args, $tabalias, $options, $path);
+            $html .= call_user_func(array('extension_' . $parts[0], $parts[1]), $auth, $args, $tabalias, $options, $path, $attributes);
             $hasControls = true;
+            // auto-add JavaScript for the extension
+            if (file_exists(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.js'))
+              drupal_add_js(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.js', array('preprocess'=>FALSE));
+            if (file_exists(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.css'))
+              drupal_add_css(iform_client_helpers_path().'prebuilt_forms/extensions/' . $parts[0] . '.css', array('preprocess'=>FALSE));
           } 
           else
             $html .= lang::get("The $component extension cannot be found.");

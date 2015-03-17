@@ -45,7 +45,7 @@ class filter_what extends filter_base {
     //There is only one tab when running on the Warehouse.
     if (!isset($options['runningOnWarehouse']) || $options['runningOnWarehouse']==false)
       $r .= "<p id=\"what-filter-instruct\">".lang::get('You can filter by species group (first tab), a selection of families or other higher taxa (second tab), '.
-          'a selection of genera or species (third tab) or the level within the taxonomic hierarchy (fourth tab).')."</p>\n";
+          'a selection of genera or species (third tab), the level within the taxonomic hierarchy (fourth tab) or other flags such as marine taxa (fifth tab).')."</p>\n";
     $r .= '<div id="what-tabs">'."\n";
     // data_entry_helper::tab_header breaks inside fancybox. So output manually.
     $r .= '<ul class="ui-helper-hidden">' .
@@ -53,6 +53,7 @@ class filter_what extends filter_base {
         '<li id="families-tab-tab"><a href="#families-tab" rel="address:families-tab"><span>Families and other higher taxa</span></a></li>' . 
         '<li id="species-tab-tab"><a href="#species-tab" rel="address:species-tab"><span>Species and lower taxa</span></a></li>' . 
         '<li id="rank-tab-tab"><a href="#rank-tab" rel="address:rank-tab"><span>Level</span></a></li>' .
+        '<li id="flags-tab-tab"><a href="#flags-tab" rel="address:flags-tab"><span>Other flags</span></a></li>' .
         '</ul>';
     $r .= '<div id="species-group-tab">' . "\n";
     if (function_exists('hostsite_get_user_field')) {
@@ -118,8 +119,8 @@ class filter_what extends filter_base {
       'fieldname' => 'taxa_taxon_list_list',
       'table' => 'cache_taxa_taxon_list',
       'captionField' => 'taxon',
-      'valueField' => 'id',
-      'extraParams' => $readAuth + array('preferred' => 't', 'query' => '{"where":["taxon_rank_sort_order>'.$familySortOrder.'"]}'),
+      'valueField' => 'preferred_taxa_taxon_list_id',
+      'extraParams' => $readAuth + array('query' => '{"where":["taxon_rank_sort_order>'.$familySortOrder.'"]}'),
       'addToTable' => false
     );
     //Use all taxa in the warehouse as there isn't an iform master list so don't need the taxon list id param
@@ -131,7 +132,6 @@ class filter_what extends filter_base {
     $r .= '<p id="level-label">'.lang::get('Include records where the level').'</p>';
     $r .= data_entry_helper::select(array(
       'labelClass'=>'auto',
-      'suffixTemplate'=>'nosuffix',
       'fieldname'=>'taxon_rank_sort_order_op',
       'lookupValues'=>array('='=>lang::get('is'), '>='=>lang::get('is the same or lower than'), '<='=>lang::get('is the same or higher than'))
     ));
@@ -145,8 +145,17 @@ class filter_what extends filter_base {
     foreach ($ranks as $rank) {
       $r .= "<option value=\"$rank[sort_order]:$rank[id]\">$rank[rank]</option>";
     }
-    $r .= '</select><br/>';
+    $r .= '</select>';
     $r .= "</div>\n";
+    $r .= "<div id=\"flags-tab\">\n";
+    $r .= '<p>' . lang::get('Select additional flags to filter for.') . '</p>' .
+        ' <div class="context-instruct messages warning">' . lang::get('Please note that your access permissions limit the settings you can change on this tab.') . '</div>';
+    $r .= data_entry_helper::select(array(
+      'label'=>'Marine species',
+      'fieldname'=>'marine_flag',
+      'lookupValues'=>array('all'=>lang::get('Include marine and non-marine species'), 'Y'=>lang::get('Only marine species'), 'N'=>lang::get('Exclude marine species'))
+    ));
+    $r .= '</div>';
     $r .= "</div>\n";
     data_entry_helper::enable_tabs(array(
       'divId' => 'what-tabs'
@@ -253,18 +262,20 @@ class filter_where extends filter_base {
     ));
     foreach ($locTypes as $locType)
       $sitesLevel1[$locType['id']] = $locType['term'].'...';
+    $r .= '<div id="ctrl-wrap-imp-location" class="form-row ctrl-wrap">';
     $r .= data_entry_helper::select(array(
       'fieldname'=>'site-type',
       'label' => lang::get('Choose an existing site or location'),
       'lookupValues' => $sitesLevel1,
       'blankText' => '<'.lang::get('Please select').'>',
-      'suffixTemplate'=>'nosuffix'
+      'controlWrapTemplate' => 'justControl'
     ));
     $r .= data_entry_helper::select(array(
       'fieldname' => 'imp-location',
-      'lookupValues' => array()
+      'lookupValues' => array(),
+      'controlWrapTemplate' => 'justControl'
     ));
-    $r .= '</fieldset>';
+    $r .= '</div></fieldset>';
     $r .= '<fieldset class="exclusive">';
     $r .= data_entry_helper::text_input(array(
       'label' => lang::get('Or, search for site names containing'),
@@ -381,16 +392,19 @@ class filter_occurrence_id extends filter_base {
    * Define the HTML required for this filter's UI panel.
    */
   public function get_controls($readAuth, $options) { 
-    $r = data_entry_helper::select(array(
+    $r = '<div id="ctrl-wrap-occurrence_id" class="form-row ctrl-wrap">';
+    $r .= data_entry_helper::select(array(
       'label' => lang::get('Record ID'),
       'fieldname' => 'occurrence_id_op',
       'lookupValues'=>array('='=>'is','>='=>'is at least','<='=>'is at most'),
-      'suffixTemplate'=>'nosuffix'
+      'controlWrapTemplate' => 'justControl'
     ));
     $r .= data_entry_helper::text_input(array(
       'fieldname' => 'occurrence_id',
-      'class'=>'control-width-2'
+      'class'=>'control-width-2',
+      'controlWrapTemplate' => 'justControl'
     ));
+    $r .= '</div>';
     return $r;  
   }
 }
@@ -526,10 +540,12 @@ class filter_source extends filter_base {
     // create an object to contain a lookup from id to form for JS, since forms don't have a real id.
     $obj=array();
     foreach ($sources as $idx=>$source) {
-      $r .= '<li class="vis-survey-'.$source['survey_id'].' vis-website-'.$source['website_id'].'">' .
-          '<input type="checkbox" value="'.$source['input_form'].'" id="check-form-'.$idx.'"/>' .
-          '<label for="check-form-'.$idx.'">'.ucfirst(trim(preg_replace('/(http:\/\/)|[\/\-_]|(\?q=)/', ' ', $source['input_form']))).'</label></li>';
-      $obj[$source['input_form']]=$idx;
+      if (!empty($source['input_form'])) {
+        $r .= '<li class="vis-survey-'.$source['survey_id'].' vis-website-'.$source['website_id'].'">' .
+            '<input type="checkbox" value="'.$source['input_form'].'" id="check-form-'.$idx.'"/>' .
+            '<label for="check-form-'.$idx.'">'.ucfirst(trim(preg_replace('/(http:\/\/)|[\/\-_]|(\?q=)/', ' ', $source['input_form']))).'</label></li>';
+        $obj[$source['input_form']]=$idx;
+      }
     }
     $r .= '</ul></div>';
     report_helper::$javascript .= 'indiciaData.formsList='.json_encode($obj).";\n";
@@ -704,7 +720,6 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
           'label'=>lang::get('Select filter type'),
           'fieldname'=>'filter:sharing',
           'lookupValues'=>$options['adminCanSetSharingTo'],
-          'suffixTemplate'=>'nosuffix',
           'afterControl'=>'<input type="submit" value="Go"/>',
           'default'=>$options['sharingCode']
       ));
@@ -765,8 +780,13 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     $filterModules = array('' => $filters);
   foreach ($filterModules as $category => $list) {
     if ($category) {
-      $class=defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY==='7.x' ? '' : 'collapsible collapsed';
-      $r .= "<fieldset class=\"$class\"><legend>" . $category . '</legend><div>';
+      $r .= '<fieldset class="collapsible collapsed">'
+              . '<legend>'
+                . '<span class="fieldset-legend">'
+                  . $category
+                . '</span>'
+              . '</legend>'
+              . '<div class="fieldset-wrapper">';
     }
     foreach ($list as $moduleName=>$module) {
       $r .= "<div class=\"pane\" id=\"pane-$moduleName\"><a class=\"fb-filter-link\" href=\"#controls-$moduleName\"><span class=\"pane-title\">" . $module->get_title() . '</span>';
@@ -820,9 +840,9 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   $hiddenStuff = '';
   foreach ($filterModules as $category => $list) {
     foreach ($list as $moduleName=>$module) {
-      $hiddenStuff .= "<div style=\"display: none\"><form id=\"controls-$moduleName\" action=\"#\" class=\"filter-controls\"><fieldset>" . $module->get_controls($readAuth, $options) . 
+      $hiddenStuff .= "<div style=\"display: none\"><div class=\"filter-popup\" id=\"controls-$moduleName\"><form action=\"#\" class=\"filter-controls\"><fieldset>" . $module->get_controls($readAuth, $options) . 
         '<button class="fb-close" type="button">Cancel</button>' .
-        '<button class="fb-apply" type="submit">Apply</button></fieldset></form></div>';
+        '<button class="fb-apply" type="submit">Apply</button></fieldset></form></div></div>';
       $shortName=str_replace('filter_', '', $moduleName);
       report_helper::$javascript .= "indiciaData.lang.NoDescription$shortName='".lang::get('Click to Filter '.ucfirst($shortName))."';\n";
     }

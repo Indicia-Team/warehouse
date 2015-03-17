@@ -46,22 +46,22 @@ class lang {
       return "[$key]";
     global $default_terms;
     global $custom_terms;
-    $output='';
+    $output = FALSE;
     if (isset($custom_terms)) {
       if (array_key_exists($key, $custom_terms)) {
-        $output=$custom_terms[$key];
+        $output = $custom_terms[$key];
       }
     }
-    if ($output=='' && array_key_exists($key, $default_terms)) {
+    if ($output === FALSE && array_key_exists($key, $default_terms)) {
       // use default term if no custom terms, or absent from custom term list
-      $output=$default_terms[$key];
-    } elseif ($output=='') {
+      $output = $default_terms[$key];
+    } elseif ($output === FALSE) {
       // no translation, so use original requested key
-      $output=$key;
+      $output = $key;
     }
     // Now do any replacements using any additional function arguments
     $args = func_get_args();
-    if (count($args)>1) {
+    if (count($args) > 1) {
       // get rid of the first argument, it is the language string key
       array_shift($args);
       // build a set of replacements

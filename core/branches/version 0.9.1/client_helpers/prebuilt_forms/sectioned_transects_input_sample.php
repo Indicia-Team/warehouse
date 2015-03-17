@@ -190,7 +190,7 @@ class iform_sectioned_transects_input_sample {
       $sitesJs = array();
       foreach ($availableSites as $site) {
         $sitesLookup[$site['location_id']]=$site['name'];
-        $sitesJs[$site['location_id']] = $site;
+        $sitesJs[$site['location_id']] = array('centroid_sref'=>$site['centroid_sref'], 'centroid_sref_system'=>$site['centroid_sref_system']);
       }
       data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
       $options = array(

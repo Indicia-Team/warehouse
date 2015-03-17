@@ -254,7 +254,7 @@ class iform_distribution_map_1 {
         'table' => 'taxa_taxon_list',
         'extraParams' => $readAuth + array(
         'view' => 'detail',
-        'language_iso' => iform_lang_iso_639_2($user->lang),
+        'language_iso' => iform_lang_iso_639_2(hostsite_get_user_field('language')),
         'taxon_meaning_id' => $meaningId
         )
       );
@@ -271,7 +271,7 @@ class iform_distribution_map_1 {
       $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
       map_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
     }
-    if ($args['cql_filter']) 
+    if (!empty($args['cql_filter']))
       map_helper::$onload_javascript .= "\n    filter += ' AND(".str_replace("'","\'",$args['cql_filter']).")';\n";
     
     $layerTitle = str_replace("'","\'",$layerTitle);
@@ -309,6 +309,7 @@ class iform_distribution_map_1 {
       $layerTypes = explode(',', $args['include_layer_list_types']);
     else
       $layerTypes = array('base', 'overlay');
+    $r = '';
     if (!isset($args['include_layer_list']) || $args['include_layer_list'])
       $r .= map_helper::layer_list(array(
         'includeSwitchers' => isset($args['include_layer_list_switchers']) ? $args['include_layer_list_switchers'] : true,
@@ -322,7 +323,7 @@ class iform_distribution_map_1 {
       $r .= '<div id="getinfo-output"></div>';
     }
     // Set up a page refresh for dynamic update of the map at set intervals
-    if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
+    if (!empty($args['refresh_timer']) && $args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
       if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
         map_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
       else

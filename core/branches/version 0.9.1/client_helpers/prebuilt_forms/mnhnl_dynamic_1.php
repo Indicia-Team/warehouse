@@ -37,6 +37,7 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
     if(isset($args['permission_name']) && $args['permission_name']!='') $perms[] = $args['permission_name'];
     if(isset($args['edit_permission']) && $args['edit_permission']!='') $perms[] = $args['edit_permission'];
     if(isset($args['ro_permission'])   && $args['ro_permission']!='')   $perms[] = $args['ro_permission'];
+    $perms += parent::get_perms($nid, $args);
     return $perms;
   }
 
@@ -49,7 +50,8 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
       'title'=>'MNHNL Dynamic 1 - dynamically generated data entry form',
       'category' => 'MNHNL forms',
       'helpLink'=>'http://code.google.com/p/indicia/wiki/TutorialDynamicForm',
-      'description'=>'Derived from the Dynamic Sample Occurrence Form with custom headers and footers.'
+      'description'=>'Derived from the Dynamic Sample Occurrence Form with custom headers and footers.',
+      'supportsGroups'=>true
     );
   }
 
@@ -110,7 +112,7 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
   }
   
   /*
-   * Hide a control if a user is not a member of a particular group.
+   * Hide a control if a user is not in a particular group.
    * 
    * $options Options array with the following possibilities:<ul>
    * <li><b>controlId</b><br/>
@@ -136,14 +138,17 @@ class iform_mnhnl_dynamic_1 extends iform_dynamic_sample_occurrence {
       'extraParams' => array('group_id'=>$options['groupId'])
     );
     $usersInGroup = report_helper::get_report_data($reportOptions);
-    //Check all members in the group, if the current user is a member, then there is no need to hide the control.
+    //Check all members in the group, if the current user is in the group, then there is no need to hide the control.
     $userFoundInGroup=false;
     foreach ($usersInGroup as $userInGroup) {
-      //User role must be Member so that we don't show the control for administrators
-      if ($userInGroup['id']===$currentUserId && $userInGroup['role']==='Member')
+      if ($userInGroup['id']===$currentUserId)
         $userFoundInGroup=true;
     }
-    if ($userFoundInGroup!==true)
+    if ($userFoundInGroup!==true||empty($_GET['group_id'])||$_GET['group_id']!=$options['groupId']) {
+      //Parent hide control stops the control and label from showing on screen. 
+      //Disable control stops it appearing in the POST and getting submitted.
+      data_entry_helper::$javascript .= "$('#".$options['controlId']."').attr('disabled', true);\n";
       data_entry_helper::$javascript .= "$('#".$options['controlId']."').parent().hide();\n";
+    }
   } 
 }

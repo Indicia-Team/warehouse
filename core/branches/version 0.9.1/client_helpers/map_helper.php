@@ -264,7 +264,7 @@ class map_helper extends helper_base {
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
   */
-  public static function map_panel($options, $olOptions=null) {
+  public static function map_panel($options, $olOptions=array()) {
     if (!$options) {
       return '<div class="error">Form error. No options supplied to the map_panel method.</div>';
     } else {
@@ -378,9 +378,10 @@ class map_helper extends helper_base {
       if (isset(self::$bing_api_key))
         $jsoptions['bing_api_key'] = self::$bing_api_key;
       $json=substr(json_encode($jsoptions), 0, -1).$json_insert.'}';
-      if ($olOptions) {
-        $json .= ','.json_encode($olOptions);
-      }
+      $olOptions = array_merge(array(
+        'theme' => self::$js_path . 'theme/default/style.css'
+      ), $olOptions);
+      $json .= ','.json_encode($olOptions);
       $javascript = '';
       $mapSetupJs = '';
       if (isset($options['setupJs'])) {
@@ -400,10 +401,11 @@ class map_helper extends helper_base {
       if (isset($options['tabDiv'])) {
         $divId = preg_replace('/[^a-zA-Z0-9]/', '', $options['divId']);
         $javascript .= "var mapTabHandler = function(event, ui) { \n";
-        $javascript .= "  if (typeof indiciaData.mapdiv !== 'undefined' && $(indiciaData.mapdiv).parents('#'+ui.panel.id).length) {\n";
+        $javascript .= "  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];\n";
+        $javascript .= "  if (typeof indiciaData.mapdiv !== 'undefined' && $(indiciaData.mapdiv).parents('#'+panel.id).length) {\n";
         $javascript .= "    indiciaData.mapdiv.map.updateSize();\n";
         $javascript .= "  }\n\n};\n";
-        $javascript .= "$($('#".$options['tabDiv']."').parent()).bind('tabsshow', mapTabHandler);\n";
+        $javascript .= "indiciaFns.bindTabsActivate($($('#".$options['tabDiv']."').parent()), mapTabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;
@@ -421,7 +423,7 @@ class map_helper extends helper_base {
                   '<span class="label"></span><span class="data"></span> <span>('.lang::get('hold -').')</span></div>' .
               '<div class="grid-ref-hint hint-normal"><span class="label"> </span><span class="data"></span></div>' .
               '<div class="grid-ref-hint hint-plus">' .
-                  '<span class="label"></span><span class="data"></span><span>('.lang::get('hold +').')</span></div>';
+                  '<span class="label"></span><span class="data"></span> <span>('.lang::get('hold +').')</span></div>';
         else
           $r .= $div . '<h3>' . lang::get('Map ref at pointer') . '</h3>' .
               '<div class="grid-ref-hint hint-normal"><span class="label"></span><span class="data"></span></div>';
@@ -512,18 +514,36 @@ class map_helper extends helper_base {
   }\n";
     self::$javascript .= "  layerHtml += '<span class=\"layer-title\">' + layer.name + '</span>';
   return layerHtml;
-}
-    
+}\n";
+    if ($options['includeSwitchers']) 
+      self::$javascript .= "
+function layerSwitcherClick() {
+  var id = this.id.replace(/^switch-/, '').replace(/-/g, '.'), 
+      visible=this.checked,
+      map = indiciaData.mapdiv.map;
+  $.each(map.layers, function(i, layer) {
+    if (layer.id==id) {
+      if (layer.isBaseLayer) {
+        if (visible) { map.setBaseLayer(layer); }
+      } else {
+        layer.setVisibility(visible);
+      }
+    }
+  }); 
+}\n";  
+    self::$javascript .= "  
 function refreshLayers_$funcSuffix(div) {
   $('#".$options['id']." ul li').remove();
   $.each(div.map.layers, function(i, layer) {
     if (layer.displayInLayerSwitcher) {
       $('#".$options['id']." ul').append(getLayerHtml_$funcSuffix(layer, div));
     }
-  });    
-}
+  });\n";
+    if ($options['includeSwitchers'])
+      self::$javascript .= "  $('.layer-switcher').click(layerSwitcherClick);\n";
+    self::$javascript .= "}
 
-mapInitialisationHooks.push(function(div) { 
+mapInitialisationHooks.push(function(div) {
   refreshLayers_$funcSuffix(div);
   div.map.events.register('addlayer', div.map, function(object, element) {
     refreshLayers_$funcSuffix(div);
@@ -538,27 +558,8 @@ mapInitialisationHooks.push(function(div) {
   });
   div.map.events.register('removelayer', div.map, function(object, element) {
     $('#'+object.layer.id.replace(/\./g,'-')).remove();
-  });
-  ";
-    if ($options['includeSwitchers']) {
-      self::$javascript .= "  var map=div.map;
-  $('.layer-switcher').live('click', function() {
-    var id = this.id.replace(/^switch-/, '').replace(/-/g, '.');
-    var visible=this.checked;
-    $.each(map.layers, function(i, layer) {
-      if (layer.id==id) {
-        if (layer.isBaseLayer) {
-          if (visible) { map.setBaseLayer(layer); }
-        } else {
-          layer.setVisibility(visible);
-        }
-      }
-    });
-    
-  });";    
-    
-    }
-    self::$javascript .= "});\n";
+  }); 
+});\n";
     return $r;
   }
   

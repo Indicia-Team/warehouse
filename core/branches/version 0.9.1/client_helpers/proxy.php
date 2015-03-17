@@ -35,14 +35,16 @@ foreach($_GET AS $key => $value)
   // Do not copy the url param, only everything after it. Must include blanks in this so that reports know when they
   // get passed a blank param.
   if ($found) {
-    $url=$url."$key=$value&";
+    $value = str_replace('\"', '"', $value);
+    $value = urlencode($value);
+    $url = $url . "$key=$value&";
   }
   if ($key == "url"){
-    $found =true;
+    $found = true;
   }
 }
-$url = str_replace ('\"','"',$url);
-$url = str_replace (' ','%20',$url);
+$url = str_replace('\"', '"', $url);
+$url = str_replace(' ', '%20', $url);
 
 $session = curl_init($url);
 // Set the POST options.
@@ -80,16 +82,19 @@ if (curl_errno($session) || strpos($response, 'HTTP/1.1 200 OK')===false) {
   $offset = strpos($response, "\r\n\r\n");
   $headers = curl_getinfo($session);
 
-  if (strpos($headers['content_type'], '/')!==false) {
-    $arr = explode('/',$headers['content_type']);
+  if (strpos($headers['content_type'], '/') !== false) {
+    $arr = explode('/', $headers['content_type']);
     $fileType = array_pop($arr);
-    if (strpos($fileType, ';')!==false) {
+    if (strpos($fileType, ';') !== false) {
       $arr = explode(';', $fileType);
       $fileType = $arr[0];
     }
-    header('Content-Disposition', 'attachment; filename=download.'.$fileType);
+    if($fileType == 'comma-separated-values') {
+      $fileType = 'csv';
+    }
+    header('Content-Disposition: attachment; filename="download.' . $fileType . '"');
 
-    if ($fileType=='csv') {
+    if ($fileType == 'csv') {
       // output a byte order mark for proper CSV UTF-8
       echo chr(239) . chr(187) . chr(191);
     }
@@ -97,7 +102,7 @@ if (curl_errno($session) || strpos($response, 'HTTP/1.1 200 OK')===false) {
   if (array_key_exists('charset', $headers)) {
     $headers['content_type'] .= '; '.$headers['charset'];
   }
-  header('Content-type: '.$headers['content_type']);
+  header('Content-type: ' . $headers['content_type']);
 
   // last part of response is the actual data
   $arr = explode("\r\n\r\n", $response);

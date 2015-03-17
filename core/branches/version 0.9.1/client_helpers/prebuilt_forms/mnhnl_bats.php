@@ -979,7 +979,6 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
             (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
         'extraParams' => $options['readAuth'],
-        'suffixTemplate' => 'nosuffix',
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
       if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];

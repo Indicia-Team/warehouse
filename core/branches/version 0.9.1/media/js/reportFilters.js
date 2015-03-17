@@ -85,9 +85,29 @@ jQuery(document).ready(function($) {
   // functions that drive each of the filter panes, e.g. to obtain the description from the controls.
   var paneObjList = {
     what:{
+      loadFilter: function() {
+        // if list of ids defined but not group names, this is a taxon group list loaded from the user profile.
+        // Hijack the names from indiciaData.myGroups.
+        if (typeof indiciaData.filter.def.taxon_group_list!=="undefined" && typeof indiciaData.filter.def.taxon_group_names==="undefined") {
+          indiciaData.filter.def.taxon_group_names = [];
+          var foundIds = [], foundNames = [];
+          // Loop the group IDs we are expected to load
+          $.each(indiciaData.filter.def.taxon_group_list, function(idx, groupId) {
+            // Use the myGroups list to look them up
+            $.each(indiciaData.myGroups, function() {
+              if (this[0]===parseInt(groupId)) {
+                foundIds.push(this[0]);
+                foundNames.push(this[1]);
+              }
+            });
+          });
+          indiciaData.filter.def.taxon_group_names = foundNames;
+          indiciaData.filter.def.taxon_group_list = foundIds;
+        }
+      },
       getDescription:function() {
         var groups=[], taxa=[], r=[];
-        if (typeof indiciaData.filter.def.taxon_group_names!=="undefined") {
+        if (typeof indiciaData.filter.def.taxon_group_list!=="undefined") {
           $.each(indiciaData.filter.def.taxon_group_names, function(idx, group) {
             groups.push(group);
           });
@@ -112,6 +132,9 @@ jQuery(document).ready(function($) {
             indiciaData.filter.def.taxon_rank_sort_order_combined!=="") {
           r.push($("#level-label").text() + ' ' + $("#taxon_rank_sort_order_op option:selected").text() + ' ' + $("#taxon_rank_sort_order_combined option:selected").text());
         }
+        if (typeof indiciaData.filter.def.marine_flag!=="undefined" && indiciaData.filter.def.marine_flag!=="all") {
+          r.push($("#marine_flag option[value="+indiciaData.filter.def.marine_flag+"]").text());
+        }
         return r.join('<br/>');
       },
       applyFormToDefinition:function() {
@@ -127,27 +150,27 @@ jQuery(document).ready(function($) {
         indiciaData.filter.def.higher_taxa_taxon_list_names={};
         indiciaData.filter.def.taxa_taxon_list_names={};
         // if nothing selected, clean up the def
-        if ($('input[name=taxon_group_list\\[\\]]').length===0) {
+        if ($('input[name="taxon_group_list\\[\\]"]').length===0) {
           indiciaData.filter.def.taxon_group_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=taxon_group_list\\[\\]]'), function(idx, ctrl) {
+          $.each($('input[name="taxon_group_list\\[\\]"]'), function(idx, ctrl) {
             indiciaData.filter.def.taxon_group_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
-        if ($('input[name=higher_taxa_taxon_list_list\\[\\]]').length===0) {
+        if ($('input[name="higher_taxa_taxon_list_list\\[\\]"]').length===0) {
           indiciaData.filter.def.higher_taxa_taxon_list_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=higher_taxa_taxon_list_list\\[\\]]'), function(idx, ctrl) {
+          $.each($('input[name="higher_taxa_taxon_list_list\\[\\]"]'), function(idx, ctrl) {
             indiciaData.filter.def.higher_taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
-        if ($('input[name=taxa_taxon_list_list\\[\\]]').length===0) {
+        if ($('input[name="taxa_taxon_list_list\\[\\]"]').length===0) {
           indiciaData.filter.def.taxa_taxon_list_list='';
         } else {
           // store the list of names in the def, though not used for the report they save web service hits later
-          $.each($('input[name=taxa_taxon_list_list\\[\\]]'), function(idx, ctrl) {
+          $.each($('input[name="taxa_taxon_list_list\\[\\]"]'), function(idx, ctrl) {
             indiciaData.filter.def.taxa_taxon_list_names[$(ctrl).val()] = $.trim($(ctrl).parent().text());
           });
         }
@@ -169,9 +192,16 @@ jQuery(document).ready(function($) {
           disabled = [0, 1];
           $('#species-tab .context-instruct').show();
         }
+        if (context && context.marine_flag && context.marine_flag!=='all') {
+          $('#marine_flag option[value='+context.marine_flag+']').attr('selected', 'selected');
+          $('#marine_flag').attr('disabled', 'disabled');
+          $('#flags-tab .context-instruct').show();
+        } else {
+          $('#marine_flag').removeAttr('disabled');
+          $('#flags-tab .context-instruct').hide();
+        }
         $("#what-tabs").tabs("option", "disabled", disabled);
-        $( "#what-tabs" ).tabs("select", firstTab);
-        $( "#what-tabs" ).tabs("option", "active", firstTab);
+        indiciaFns.activeTab($( "#what-tabs" ), firstTab);
         if (context && context.taxon_group_list) {
           $('input#taxon_group_list\\:search\\:q').setExtraParams({"idlist":context.taxon_group_list});
           $('#species-group-tab .context-instruct').show();
@@ -331,7 +361,7 @@ jQuery(document).ready(function($) {
         
         $.each(indiciaData.mapdiv.map.editLayer.features, function(i, feature) {
           // ignore features with a special purpose, e.g. the selected record when verifying
-          if (typeof feature.tag==="undefined") {
+          if (typeof feature.tag==="undefined" && (typeof feature.attributes.type==="undefined" || feature.attributes.type!=="boundary")) {
             if (feature.geometry.CLASS_NAME.indexOf('Multi')!==-1) {
               geoms = geoms.concat(feature.geometry.components);
             } else {
@@ -611,14 +641,14 @@ jQuery(document).ready(function($) {
       }
     });
   };
-  $.each(taxonSelectionMethods, function() {
+  $.each(taxonSelectionMethods, function(idx, method) {
     $('#'+this+'\\:search\\:taxon').keypress(function(e) {
       if (e.which===13) {
-        keep(this);
+        keep(method);
       }
     });
     $('#'+this+'\\:add').click(function() {
-      keep(this);
+      keep(method);
     });
   });
   
@@ -975,6 +1005,18 @@ jQuery(document).ready(function($) {
     $('#filter-reset').removeClass('disabled');
   }
   
+  // Applies the current loaded filter to the controls within the pane.
+  function updateControlValuesToReflectCurrentFilter(pane) {
+    // regexp extracts the pane ID from the href. Loop through the controls in the pane      
+    $.each(pane.find(':input').not(':checkbox,[type=button]'), function(idx, ctrl) {
+      // set control value to the stored filter setting
+      $(ctrl).val(indiciaData.filter.def[$(ctrl).attr('name')]);        
+    });
+    $.each(pane.find(':checkbox'), function(idx, ctrl) {
+      $(ctrl).attr('checked', typeof indiciaData.filter.def[$(ctrl).attr('name')]!=="undefined" && indiciaData.filter.def[$(ctrl).attr('name')]==$(ctrl).val());
+    });
+  }
+  
   $('.fb-filter-link').fancybox({
     onStart: function(e) {
       var pane=$(e[0].href.replace(/^[^#]+/, '')),
@@ -984,14 +1026,7 @@ jQuery(document).ready(function($) {
       }
       // reset
       pane.find('.fb-apply').data('clicked', false);
-      // regexp extracts the pane ID from the href. Loop through the controls in the pane      
-      $.each(pane.find(':input').not(':checkbox,[type=button]'), function(idx, ctrl) {
-        // set control value to the stored filter setting
-        $(ctrl).val(indiciaData.filter.def[$(ctrl).attr('name')]);        
-      });
-      $.each(pane.find(':checkbox'), function(idx, ctrl) {
-        $(ctrl).attr('checked', typeof indiciaData.filter.def[$(ctrl).attr('name')]!=="undefined" && indiciaData.filter.def[$(ctrl).attr('name')]==$(ctrl).val());
-      });
+      updateControlValuesToReflectCurrentFilter(pane);
     },
     onComplete: function(e) {
       var pane=$(e[0].href.replace(/^[^#]+/, '')), context, 
@@ -1113,7 +1148,7 @@ jQuery(document).ready(function($) {
     $.each(arrays, function(name, arr) {
       indiciaData.filter.def[name] = arr.join(',');
     });
-    var pane=e.currentTarget.id.replace('controls-filter_', '');
+    var pane=e.currentTarget.parentNode.id.replace('controls-filter_', '');
     // Does the pane have any special code for applying it's settings to the definition?
     if (typeof paneObjList[pane].applyFormToDefinition!=="undefined") {
       paneObjList[pane].applyFormToDefinition();

@@ -285,13 +285,12 @@ Record ID',
       ));
     }
 
-    $r = '<h3>Record Details</h3>';
+    $r = '<div class="detail-panel" id="detail-panel-recorddetails"><h3>Record Details</h3>';
     
-    if (isset($details_report))
-      $r .= $details_report;
+    $r .= $details_report;
     if (isset($attrs_report))
       $r .= $attrs_report;
-  
+    $r .= '</div>';
     return $r;
   }
  
@@ -319,39 +318,28 @@ Record ID',
   protected static function get_control_photos($auth, $args, $tabalias, $options) {
     iform_load_helpers(array('report_helper'));
     data_entry_helper::add_resource('fancybox');
-    //default an items per page if not set by administrator
-    if (empty($options['itemsPerPage'])) {
-      $options['itemsPerPage'] = 12;
-    }  
-    //default a column count if not set by administrator
-    if (empty($options['galleryColCount'])) {
-      $options['galleryColCount'] = 3;
-    }  
-
-    return '<h3>Photos and media</h3>'.report_helper::report_grid(array(
+    $options = array_merge(array(
+      'itemsPerPage' => 20,
+      'imageSize' => 'thumb',
+      'class' => 'detail-gallery'
+    ), $options);
+    return '<div class="detail-panel" id="detail-panel-photos"><h3>Photos and media</h3>'.report_helper::freeform_report(array(
       'readAuth' => $auth['read'],
       'dataSource'=>'occurrence_image',
       'itemsPerPage' => $options['itemsPerPage'],
-      'columns' => array(
-        array(
-          'fieldname' => 'path',
-          'template' => '<div class="gallery-item">{path}<br/>{caption}</div>',
-          'img'=>true
-        )
-      ),
+      'class' => $options['class'],
+      'header'=>'<ul>',
+      'footer'=>'</ul>',
+      'bands'=>array(array('content'=>'<li class="gallery-item"><a href="{imageFolder}{path}" class="fancybox single"><img src="{imageFolder}'.$options['imageSize'].'-{path}" /></a><br/>{caption}</li>')),
+      'emptyText' => '<p>No photos or media files available</p>',
       //mode direct means the datasource is a table instead of a report
       'mode' => 'direct',
       'autoParamsForm' => false,
-      'includeAllColumns' => false,
-      'headers' => false,
-      'galleryColCount' => $options['galleryColCount'],
-      'pager' => false,
       'extraParams' => array(
         'occurrence_id'=>$_GET['occurrence_id'],
         'sharing'=>'reporting'        
-      ),
-      'ajax' => true
-    ));
+      )      
+    )) . '</div>';
   }
   
   
@@ -367,6 +355,7 @@ Record ID',
     self::load_record($auth);
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
+      array('maxZoom'=>14),
       $options
     );
     if (isset(self::$record['geom'])) {
@@ -380,7 +369,7 @@ Record ID',
     
     if (!isset($options['standardControls']))
       $options['standardControls']=array('layerSwitcher','panZoom');
-    return '<h3>Map</h3>'.data_entry_helper::map_panel($options, $olOptions);
+    return '<div class="detail-panel" id="detail-panel-map"><h3>Map</h3>' . data_entry_helper::map_panel($options, $olOptions) . '</div>';
     
   }
  
@@ -425,11 +414,12 @@ Record ID',
     $r .= '</fieldset></form>';
     $r .= '</div>';
     
-    return '<h3>Comments</h3>'.$r;
+    return '<div class="detail-panel" id="detail-panel-comments"><h3>Comments</h3>' . $r . '</div>';
   }
   
   /**
-   * Displays a list of determinations associated with an occurrence record.
+   * Displays a list of determinations associated with an occurrence record. This particular panel
+   * is ommitted if there are no determinations.
    * 
    * @return string The determinations report grid.
    */
@@ -443,8 +433,9 @@ Record ID',
         'dataSource'=>$options['report'],
         'mode' => 'report',
         'autoParamsForm' => false,
-        'header' => '<h3>Previous Determinations</h3>',
+        'header' => '<div class="detail-panel" id="detail-panel-previousdeterminations"><h3>'.lang::get('Previous determinations').'</h3>',
         'bands'=>array(array('content'=>'<div class="field ui-helper-clearfix">{taxon_html} by {person_name} on {date}</div>')),
+        'footer' => '</div>',
         'extraParams' => array(
           'occurrence_id'=>$_GET['occurrence_id'],
           'sharing'=>'reporting'
@@ -493,11 +484,11 @@ Record ID',
     $record = self::$record;
     if (($user_id=hostsite_get_user_field('indicia_user_id')) && $user_id==self::$record['created_by_id']
         && variable_get('indicia_website_id', 0)==self::$record['website_id']) {
-      $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
       if (empty($record['input_form']))
         $record['input_form']=$args['default_input_form'];
-      $url = data_entry_helper::getRootFolder() . (empty($pathParam) ? '' : "?$pathParam=") .
-          "$record[input_form]&occurrence_id=$record[occurrence_id]";
+      $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? '?q=' : '';
+      $paramJoin= empty($pathParam) ? '?' : '&';
+      $url = data_entry_helper::getRootFolder() . "$pathParam$record[input_form]{$paramJoin}occurrence_id=$record[occurrence_id]";
       return '<a class="button" href="'.$url.'">' . lang::get('Edit this record') . '</a>';
     }
     else 

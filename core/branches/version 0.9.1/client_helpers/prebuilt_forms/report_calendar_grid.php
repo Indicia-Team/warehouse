@@ -109,6 +109,14 @@ class iform_report_calendar_grid {
           'required' => false,
           'group' => 'Controls'
         ),
+      	array(
+      		'name'=>'first_year',
+      		'caption'=>'First Year of Data',
+      		'description'=>'Used to determine first year displayed in the year control. Final Year will be current year.',
+      		'type'=>'int',
+          	'required' => false,
+      		'group'=>'Controls'
+      	),
         array(
       		'name'=>'first_year',
       		'caption'=>'First Year of Data',

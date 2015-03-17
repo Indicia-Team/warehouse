@@ -172,4 +172,3 @@ class extension_cudi_information_sheet {
     }
   }  
 }
-  

@@ -34,8 +34,11 @@
   opacity: 0.3;
 }
 
-#standard-params .header button, #standard-params .header select, #standard-params .toolbar button, #standard-params .toolbar select{  
+#standard-params .header select, #standard-params .toolbar select, #standard-params .toolbar button {  
   padding: 0;
+}
+#standard-params .header button, #standard-params .header input[type=button]{  
+  padding: 0.1em 0.3em;
 }
 #standard-params #filter-panes {
   padding-right: 22px;
@@ -266,6 +269,7 @@ input[disabled] {
 #controls-filter_source .filter-popup-columns ul {
   overflow: auto;
   max-height: 500px;
+  padding: 0;
 }
 
 .survey-hide, .website-hide {

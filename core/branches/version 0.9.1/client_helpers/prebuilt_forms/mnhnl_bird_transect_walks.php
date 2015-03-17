@@ -529,7 +529,7 @@ mapInitialisationHooks.push(function (div) {
       $r .= "<div class=\"mnhnl-btw-mappanel\">\n".(data_entry_helper::map_panel($options, $olOptions))."</div>\n";
 
       data_entry_helper::$javascript .= "
-$('#controls').bind('tabsshow', function(event, ui) {
+indiciaFns.bindTabsActivate($('#controls'), function(event, ui) {
   var y = $('.mnhnl-btw-datapanel:visible').outerHeight(true) + $('.mnhnl-btw-datapanel:visible').position().top;
   if(y < $('.mnhnl-btw-mappanel').outerHeight(true)+ $('.mnhnl-btw-mappanel').position().top){
     y = $('.mnhnl-btw-mappanel').outerHeight(true)+ $('.mnhnl-btw-mappanel').position().top;
@@ -800,10 +800,10 @@ mapInitialisationHooks.push(function (div) {
     }
     $r .= ($sample_wind_id ?          data_entry_helper::outputAttribute($attributes[$sample_wind_id], $languageFilteredAttrOptions) :                                                                                                "<span style=\"display: none;\">Sample attribute '".self::ATTR_WIND."' not assigned to this survey</span>").
           ($sample_precipitation_id ? data_entry_helper::outputAttribute($attributes[$sample_precipitation_id], $languageFilteredAttrOptions) :                                                                                       "<span style=\"display: none;\">Sample attribute '".self::ATTR_RAIN."' not assigned to this survey</span>").
-          ($sample_temperature_id ?   data_entry_helper::outputAttribute($attributes[$sample_temperature_id], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')))."<span class=\"attr-trailer\"> &deg;C</span><br />": "<span style=\"display: none;\">Sample attribute '".self::ATTR_TEMP."' not assigned to this survey</span>").
+          ($sample_temperature_id ?   data_entry_helper::outputAttribute($attributes[$sample_temperature_id], $defAttrOptions)."<span class=\"attr-trailer\"> &deg;C</span><br />": "<span style=\"display: none;\">Sample attribute '".self::ATTR_TEMP."' not assigned to this survey</span>").
           ($sample_cloud_id ?         data_entry_helper::outputAttribute($attributes[$sample_cloud_id], $defAttrOptions) :                                                                                                            "<span style=\"display: none;\">Sample attribute '".self::ATTR_CLOUD."' not assigned to this survey</span>").
-          ($sample_start_time_id ?    data_entry_helper::outputAttribute($attributes[$sample_start_time_id], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')))."<span class=\"attr-trailer\"> hh:mm</span><br />" :  "<span style=\"display: none;\">Sample attribute '".self::ATTR_START_TIME."' not assigned to this survey</span>").
-          ($sample_end_time_id ?      data_entry_helper::outputAttribute($attributes[$sample_end_time_id], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')))."<span class=\"attr-trailer\"> hh:mm</span><br />" :    "<span style=\"display: none;\">Sample attribute '".self::ATTR_END_TIME."' not assigned to this survey</span>");
+          ($sample_start_time_id ?    data_entry_helper::outputAttribute($attributes[$sample_start_time_id], $defAttrOptions)."<span class=\"attr-trailer\"> hh:mm</span><br />" :  "<span style=\"display: none;\">Sample attribute '".self::ATTR_START_TIME."' not assigned to this survey</span>").
+          ($sample_end_time_id ?      data_entry_helper::outputAttribute($attributes[$sample_end_time_id], $defAttrOptions)."<span class=\"attr-trailer\"> hh:mm</span><br />" :    "<span style=\"display: none;\">Sample attribute '".self::ATTR_END_TIME."' not assigned to this survey</span>");
     data_entry_helper::$javascript .= "
 jQuery('.attr-trailer').prev('br').remove();
 ";
@@ -1392,16 +1392,14 @@ var selected = indiciaFns.activeTab($('#controls'));
 if(selected != 1){
     locationLayer.map.editLayer.clickControl.deactivate();
 }
-$('#controls').bind('tabsshow', function(event, ui) {
-        if(ui.index == 1)
-        {
-         locationLayer.map.editLayer.clickControl.activate();
-        }
-        else
-        {
-         locationLayer.map.editLayer.clickControl.deactivate();
-        }
-    }
+indiciaFns.bindTabsActivate($('#controls'), function(event, ui) {
+  if(ui.index == 1) {
+    locationLayer.map.editLayer.clickControl.activate();
+  }
+  else {
+    locationLayer.map.editLayer.clickControl.deactivate();
+  }
+}
 );
 activateAddList = 1;
 thisOccID = ".$thisOccID.";

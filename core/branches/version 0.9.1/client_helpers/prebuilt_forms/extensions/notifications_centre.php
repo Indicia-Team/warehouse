@@ -99,10 +99,6 @@ class extension_notifications_centre {
         else
           self::$dataServicesUrl = data_entry_helper::$base_url."index.php/services/data";
         report_helper::$javascript .= "indiciaData.data_services_url = '".self::$dataServicesUrl."';\n";
-        // include the JavaScript file
-        $jsPath = iform_client_helpers_path().'prebuilt_forms/extensions/notifications_centre.js';
-        drupal_add_js($jsPath);
-        
         //If the user clicks the Remove Notifications submit button, then a hidden field
         //called remove-notifications is set. We can check for this when the 
         //page reloads and then call the remove notifications code.    
@@ -117,8 +113,13 @@ class extension_notifications_centre {
    * Return the actual grid code.
    */
   private static function notifications_grid($auth, $options, $website_id, $user_id) {
+    iform_load_helpers(array('report_helper'));
+    //$sourceType is a user provided option for the grid to preload rather than the user selecting from the filter drop-down.
+    //When the source types are provided like this, the filter drop-down is not displayed.
     //There can be more than one sourcetype, this is supplied as a comma seperated list and needs putting into an array
     $sourceType=empty($options['sourceType']) ? array() : explode(',',$options['sourceType']);
+    if (!empty($sourceType))
+      report_helper::$javascript .= "indiciaData.preloaded_source_types = '".$options['sourceType']."';\n";  
     //reload path to current page
     $reloadPath = self::getReloadPath ();
     $r='';
@@ -163,8 +164,8 @@ class extension_notifications_centre {
     $extraParams['source_filter']=empty($_POST['source-filter']) ? 'all' : $_POST['source-filter'];
     //Get the source types to remove from a hidden field if the user has configured the page
     //to use a user specified option to specify exactly what kind of notifications to display
-    if (!empty($_POST['source_types'])) 
-      $sourceTypesToClearFromConfig = explode(',', $_POST['source_types']);
+    if (!empty($options['sourceType'])) 
+      $sourceTypesToClearFromConfig = explode(',', $options['sourceType']);
     //Place quotes around the source type letters for the report to accept as strings
     if (!empty($sourceTypesToClearFromConfig)) {
       if (array_key_exists(0,$sourceTypesToClearFromConfig) && !empty($sourceTypesToClearFromConfig[0])) {
@@ -177,6 +178,13 @@ class extension_notifications_centre {
     if (!empty($options['sourceTypes']))
       // this disables the param for picking a single source type
       $extraParams['source_filter'] = 'all';
+    //Only include notifications associated with a set of recording group ids if option is supplied.
+    if (!empty($options['groupIds'])) {
+      $extraParams['group_ids'] = $options['groupIds'];
+    }
+    // respect training mode
+    if (hostsite_get_user_field('training')) 
+      $extraParams['training'] = 'true';
     $notifications = data_entry_helper::get_report_data(array(
       'dataSource'=>'library/notifications/notifications_list_for_notifications_centre',
       'readAuth'=>$auth['read'],
@@ -217,9 +225,7 @@ class extension_notifications_centre {
    * Draw the notifications grid.
    */
   private static function get_notifications_html($auth, $sourceType, $website_id, $user_id, $options) {
-    iform_load_helpers(array('report_helper'));
-    $readNonce = $auth['nonce'];
-    $readAuthToken = $auth['auth_token'];      
+    iform_load_helpers(array('report_helper'));    
     $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
     $sendReply = $imgPath."nuvola/mail_send-22px.png";
     $cancelReply = $imgPath."nuvola/mail_delete-22px.png";    
@@ -237,17 +243,19 @@ class extension_notifications_centre {
       }
     };\n
     "; 
-    
+    $urlParams=array('occurrence_id'=>'{occurrence_id}');
+    if (!empty($_GET['group_id']))
+      $urlParams['group_id']=$_GET['group_id'];
     $availableActions = 
       array(
-        array('caption'=>lang::get('Edit this record'), 'class'=>'edit-notification', 'url'=>'{rootFolder}{editing_form}', 'urlParams'=>array('occurrence_id'=>'{occurrence_id}'),
+        array('caption'=>lang::get('Edit this record'), 'class'=>'edit-notification', 'url'=>'{rootFolder}{editing_form}', 'urlParams'=>$urlParams,
               'img'=>$imgPath.'nuvola/package_editors-22px.png', 'visibility_field'=>'editable_flag'),
-        array('caption'=>lang::get('View this record'), 'class'=>'view-notification', 'url'=>'{rootFolder}{viewing_form}', 'urlParams'=>array('occurrence_id'=>'{occurrence_id}'),
+        array('caption'=>lang::get('View this record'), 'class'=>'view-notification', 'url'=>'{rootFolder}{viewing_form}', 'urlParams'=>$urlParams,
               'img'=>$imgPath.'nuvola/find-22px.png', 'visibility_field'=>'viewable_flag' ),
         array('caption'=>lang::get('Mark as read'), 'javascript'=>'remove_message({notification_id});',
               'img'=>$imgPath.'nuvola/kmail-22px.png'));
     //Only allow replying for 'user' messages.
-    if ($options['allowReply']===true)
+    if (isset($options['allowReply']) && $options['allowReply']===true)
       $availableActions = array_merge($availableActions,array(array('caption'=>lang::get('Reply to this message'), 'img'=>$imgPath.'nuvola/mail_reply-22px.png', 'visibility_field'=>'reply_flag',
           'javascript'=>"indiciaData.reply_to_message(".'{notification_id}'.",".'{occurrence_id}'.");")));
     $extraParams= array(
@@ -265,7 +273,27 @@ class extension_notifications_centre {
       // source filter drop down.
       $extraParams['source_filter'] = 'all';
     }
-    $r .= report_helper::report_grid(array(
+    //Only include notifications associated with a set of recording group ids if option is supplied.
+    if (!empty($options['groupIds']))
+      $extraParams['group_ids'] = $options['groupIds'];
+    $columns = array(
+        'data' => array('fieldname'=>'data','json'=>true,
+            'template'=>'<div class="type-{source_type}"><div class="status-{record_status}"></div></div><div class="note-type-{source_type}">{comment}</div>'.
+            '<div class="comment-from helpText" style="margin-left: 34px; display: block;">from {username} on {triggered_date}</div>', 'display'=>'Message'),
+        'occurrence_id' => array('fieldname'=>'occurrence_id'),
+        'actions' => array('actions'=>$availableActions),
+        'triggered_date' => array('fieldname'=>'triggered_date', 'visible' => false)
+    );
+    // allow columns config to override our default setup
+    if (!empty($options['columns'])) {
+      foreach($options['columns'] as $column) {
+        if (!empty($column['actions']))
+          $columns['actions'] = $column;
+        elseif (!empty($column['fieldname']))
+          $columns[$column['fieldname']] = $column;
+      }
+    }
+    $r = report_helper::report_grid(array(
       'id'=>'notifications-'.$options['id'],
       'readAuth' => $auth['read'],
       'itemsPerPage'=>10,
@@ -276,15 +304,8 @@ class extension_notifications_centre {
       'extraParams'=>$extraParams,
       'paramDefaults'=>array('source_filter'=>'all'),
       'paramsFormButtonCaption'=>lang::get('Filter'),
-      'columns'=>array(
-        array('fieldname'=>'data','json'=>true,
-            'template'=>'<div class="type-{source_type}"><div class="status-{record_status}"></div></div><div class="note-type-{source_type}">{comment}</div>'.
-            '<div class="comment-from helpText" style="margin-left: 34px; display: block;">from {username} on {triggered_date}</div>', 'display'=>'Message'),
-        array('actions'=>$availableActions),
-        array('fieldname'=>'triggered_date', 'visible' => false)
-      ),
+      'columns'=>array_values($columns)
     ));
-    //$r .= "<input type=\"submit\" value=\"Get Notifications\"><br>\n";
     return $r;
   }
 

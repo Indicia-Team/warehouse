@@ -691,8 +691,9 @@ jQuery('.remove-sgnewrow').live('click', function() {
   thisRow.remove();
   resetSpeciesGridHeader();
 });
-jQuery(jQuery('#species').parent()).bind('tabsshow', function(e, ui){
-  if (ui.panel.id=='species') {
+indiciaFns.bindTabsActivate(jQuery(jQuery('#species').parent()), function(e, ui){
+  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id=='species') {
     resetSpeciesGridHeader();
   }
 })";
@@ -1037,12 +1038,13 @@ setCommentWidth = function(){
   });
 }
 conditionsTabHandler = function(e, ui){
-  if (ui.panel.id=='conditions') {
+  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];
+  if (panel.id=='conditions') {
     setCommentWidth();
-    jQuery(jQuery('#conditions').parent()).unbind('tabsshow', conditionsTabHandler);
+    indiciaFns.unbindTabsActivate(jQuery(jQuery('#conditions').parent()), conditionsTabHandler);
   }
 }
-jQuery(jQuery('#conditions').parent()).bind('tabsshow', conditionsTabHandler);
+indiciaFns.bindTabsActivate(jQuery(jQuery('#conditions').parent()), conditionsTabHandler);
 ";
     
     return $ret;
@@ -1059,7 +1061,6 @@ jQuery(jQuery('#conditions').parent()).bind('tabsshow', conditionsTabHandler);
             ($outerBlockFilter===null || strcasecmp($outerBlockFilter,$attribute['outer_structure_block'])==0)) {
       $options = $defAttrOptions + get_attr_validation($attribute, $args);
       if(!$useCaptions) unset($attribute['caption']);
-      $options['suffixTemplate']='nosuffix';
       $r .= '<td '.(isset($defAttrOptions['cellClass'])? 'class="'.$defAttrOptions['cellClass'].'"' : '').'>'.data_entry_helper::outputAttribute($attribute, $options).'</td>';
     }
    }

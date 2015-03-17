@@ -54,7 +54,7 @@ $custom_terms = array(
 	,'LANG_Taxa_Unknown_In_Tool' => 'Taxon inconnu de la clé'
 	,'LANG_ID_More_Precise' => 'Vous connaissez une dénomination plus précise :'
 	,'LANG_ID_Comment' => 'Commentez éventuellement votre identification :'
-	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la liste"
+	,'LANG_Choose_Taxon' => "Choisissez un taxon dans cette liste"
 	,'LANG_Upload_Environment' => "Charger l'image de son environnement"
 	,'LANG_Georef_Label' => "Entrer le nom d'une commune, d'une région, d'un département ou d'un code postal "
     ,'msgGeorefSelectPlace' => "Sélectionnez dans les endroits suivants qui correspondent à vos critères de recherche, puis cliquez sur la carte pour indiquer l'emplacement exact"
@@ -172,4 +172,10 @@ $custom_terms = array(
 	,'Internal Error 24: could not load image for flower ' => "Erreur interne 24: n'a pas pu charger l'image pour la fleur "
 	,'Internal Error 25: could not load attributes for flower ' => "Erreur interne 25: n'a pas pu charger les attributs de fleur "
 	,'Internal Error 26: could not load attributes for session ' => "Erreur interne 26: n'a pas pu charger les attributs de la session "
+
+	,'LANG_Must_Provide_Identification' => "Vous devez choisir de marquer la plante non identifiée, ou entrer une identification"
+	,'LANG_ID_Flower_Unknown' => 'Je ne connais pas le nom de cette fleur'
+	,'LANG_Known_Species' => '<b>Vous connaissez le taxon correspondant à cette fleur</b>. Entrez le nom du taxon ou choisissez le dans cette liste'
+	,'Remove this entry' => 'Supprimer cette entrée'
+
 );
