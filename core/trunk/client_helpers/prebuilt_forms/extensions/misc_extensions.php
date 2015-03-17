@@ -24,6 +24,7 @@
  * Extension class that supplies general extension controls that can be used with any project.
  */
 class extension_misc_extensions {
+
   /**
    * General button link control can be placed on pages to link to another page.
    * $options Options array with the following possibilities:<ul>
@@ -86,8 +87,9 @@ class extension_misc_extensions {
         drupal_set_message('A link button has been specified without a link path or button label, please fill in the @buttonLinkPath and @buttonLabel options');
         $button = '';
       }   
-    return $button;
-    }
+      return $button;
+    } else
+      return '';
   }
   
   /**
@@ -153,7 +155,8 @@ class extension_misc_extensions {
         $button = '';
       }   
       return $button;
-    }
+    } else
+      return '';
   }
   
   /**
@@ -174,7 +177,8 @@ class extension_misc_extensions {
 }\n";
       $done_js_has_permission=true;
     }
-    data_entry_helper::$javascript .= "indiciaData.permissions['$options[permissionName]']=$val;\n" ;
+    data_entry_helper::$javascript .= "indiciaData.permissions['$options[permissionName]']=$val;\n";
+    return '';
   }
   
   /**
@@ -201,7 +205,8 @@ class extension_misc_extensions {
 }\n";
       $done_js_user_field=true;
     }
-    data_entry_helper::$javascript .= "indiciaData.userFields['$options[fieldName]']=$val;\n" ;
+    data_entry_helper::$javascript .= "indiciaData.userFields['$options[fieldName]']=$val;\n";
+    return '';
   }
   
   public static function data_entry_helper_control($auth, $args, $tabalias, $options, $path) {
@@ -240,6 +245,7 @@ class extension_misc_extensions {
     }
     $breadcrumb[] = drupal_get_title();
     drupal_set_breadcrumb($breadcrumb);
+    return '';
   }
   
   /*
@@ -251,5 +257,24 @@ class extension_misc_extensions {
     $('#entry_form').find('input, textarea, text, button').attr('readonly', true);
     $('#entry_form').find('select,:checkbox').attr('disabled', true);\n 
     $('.indicia-button').hide();\n"; 
+  }
+
+  /**
+   * Sets the page title according to an option. The title can refer to the URL query
+   * string parameters as tokens.
+   * @param $auth
+   * @param $args
+   * @param $tabalias
+   * @param $options
+   * @param $path
+   * @return string
+   */
+  public static function set_page_title($auth, $args, $tabalias, $options, $path) {
+    if (!isset($options['title']))
+      return 'Please set the template for the title in the @title parameter';
+    foreach($_GET as $key => $value)
+      $options['title'] = str_replace("#$key#", $value, $options['title']);
+    hostsite_set_page_title($options['title']);
+    return '';
   }
 }
