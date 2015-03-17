@@ -1496,4 +1496,13 @@ class extension_splash_extensions {
     $r .= '</select>';
     return '<label>User : </label>'.$r.'<br>';
   }
+  
+  /*
+   * On the Request a Square page we need to hide the column filter on the My Allocations grid only
+   */
+  public static function hide_my_allocations_report_grid_filter($auth, $args, $tabalias, $options, $path) {
+    data_entry_helper::$javascript .= "
+    $('#col-filter-location_name-report-grid-0').hide()
+    ";
+  }
 }
