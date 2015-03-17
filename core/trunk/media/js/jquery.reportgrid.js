@@ -579,8 +579,9 @@ var simple_tooltip;
       // Ask for one more row than we need so we know if the next page link is available
       if (div.settings.itemsPerPage !== null && !indiciaData.includePopupFilter) {
         //If using a popup filter, we need to return all items from the report so that we can populate the popup.
-        //Normally reords are returned one page at a time.
-        request += '&limit=' + (div.settings.itemsPerPage+1);
+        //Normally records are returned one page at a time. We load +1 records in case recordCount is not available so we
+        //know if there is a next page of records (not necessary when loading 0 records to get just column metadata etc).
+        request += '&limit=' + (div.settings.itemsPerPage === 0 ? 0 : div.settings.itemsPerPage+1);
       }
       loadGridFrom(div, request, true);
     }
@@ -746,7 +747,7 @@ var simple_tooltip;
         dataType: "json",
         url: request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : ''),
         success: function(response) {
-          if (typeof recordCount==="undefined") {
+          if (typeof recordCount==="undefined" && typeof response.count!=="undefined" && !isNaN(response.count)) {
             recordCount = response.count;
             response = response.records;
           }
@@ -780,7 +781,10 @@ var simple_tooltip;
               }
             });
             indiciaData.reportlayer.addFeatures(features);
-            if (offset+BATCH_SIZE>=recordCount) {
+            if (indiciaData.mapdiv.settings.zoomMapToOutput) {
+              indiciaData.mapdiv.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
+            }
+            if (typeof recordCount==="undefined" || offset+BATCH_SIZE>=recordCount) {
               $('#map-loading').hide();
             }
           }
@@ -1077,10 +1081,10 @@ var simple_tooltip;
           doFilter(e);
         }
       });
-      $('.apply-popup-filter').live( 'click', function() {
+      indiciaFns.on('click', '.apply-popup-filter', {}, function() {
         doPopupFilter();
       });
-      $('.clear-popup-filter').live( 'click', function() {
+      indiciaFns.on('click', '.clear-popup-filter', {}, function() {
         $('.popup-filter-checkbox').each(function (index, theCheckbox) {
           //If the checkbox is checked, then deselect it
           if ($(theCheckbox).is(':checked')) {
@@ -1088,7 +1092,7 @@ var simple_tooltip;
           }
         });
       });
-      $('.select-all-popup-filter').live( 'click', function() {
+      indiciaFns.on('click', '.select-all-popup-filter', {}, function() {
         $('.popup-filter-checkbox').each(function (index, theCheckbox) {
           //If the checkbox is not checked, then select it
           if (!$(theCheckbox).is(':checked')) {
@@ -1155,7 +1159,7 @@ var simple_tooltip;
     });
   };
 
-  $('.social-icon').live('click', function(e) {
+  indiciaFns.on('click', '.social-icon', {}, function(e) {
     e.preventDefault();
     var href=$(e.target).attr('href');
     if (href) {
