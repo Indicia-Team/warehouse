@@ -2156,8 +2156,11 @@ var destroyAllFeatures;
         } else if (ctrl=='selectFeature' && div.settings.editLayer) {
           ctrlObj = new OpenLayers.Control.SelectFeature(div.map.editLayer);
           toolbarControls.push(ctrlObj);
-        } else if (ctrl=='hoverFeatureHighlight' && div.settings.editLayer) {
-          ctrlObj = new OpenLayers.Control.SelectFeature(div.map.editLayer, {hover: true, highlightOnly: true});
+        } else if (ctrl=='hoverFeatureHighlight' && (div.settings.editLayer || indiciaData.reportlayer)) {
+          // attach control to report layer, or the editLayer if no report loaded.
+          ctrlObj = new OpenLayers.Control.SelectFeature(
+            typeof indiciaData.reportlayer ==="undefined" ? div.map.editLayer : indiciaData.reportlayer,
+            {hover: true, highlightOnly: true});
           div.map.addControl(ctrlObj);
         } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
