@@ -54,24 +54,25 @@ if ($parent_id != null) : ?>
 <?php echo html::error_message($model->getError('taxon_list:description')); ?>
 </li>
 <li>
-<label for="website">Owned by</label>
-<select id="website_id" name="taxon_list:website_id" <?php echo $disabled; ?>>
-<?php 
-if ($parent_id != null && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== null) {
+  <label for="website">Owned by</label>
+  <select id="website_id" name="taxon_list:website_id" <?php echo $disabled; ?>>
+<?php
+// if we have a new child list, default the website to the parent's website
+if (empty($id) && !empty($values['parent_website_id']))
   $website_id=$values['parent_website_id']; 
-} else {
+else
   $website_id = html::initial_value($values, 'taxon_list:website_id');
-  if ($this->auth->logged_in('CoreAdmin') || (!$website_id && $id !== null)) {
-    // Core admin can select Warehouse as owner. Other users can only have this option in the list if the
-    // list is already assigned to the warehouse in which case the list is read only.
-    echo '<option value="">&lt;Warehouse&gt;</option>';
-  } 
-  foreach ($other_data['websites'] as $website) {
-    echo '  <option value="'.$website->id.'" ';
-    if ($website->id==$website_id)
-      echo 'selected="selected" ';
-    echo '>'.$website->title.'</option>';
-  }
+
+if ($this->auth->logged_in('CoreAdmin') || (!$website_id && $id !== null)) {
+  // Core admin can select Warehouse as owner. Other users can only have this option in the list if the
+  // list is already assigned to the warehouse in which case the list is read only.
+  echo '<option value="">&lt;Warehouse&gt;</option>';
+}
+foreach ($other_data['websites'] as $website) {
+  echo '  <option value="'.$website->id.'" ';
+  if ($website->id==$website_id)
+    echo 'selected="selected" ';
+  echo '>'.$website->title.'</option>';
 }
 ?>
 </select>
