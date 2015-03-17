@@ -59,9 +59,11 @@ class extension_paths_editor {
       'extraParams' => $auth['read'] + array(
           'query' => json_encode(array('where' => array('id', $_GET['id']), 'orwhere' => array('parent_id', $_GET['id']))),
           'view' => 'detail'
-      )
+      ),
+      'caching' => false
     ));
     $childGeoms = array();
+    $r = '';
     foreach ($samples as $sample) {
       if ($sample['id']===$_GET['id']) {
         // found the parent sample. Send to JS so it can be shown on the map
