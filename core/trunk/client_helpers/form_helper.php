@@ -300,7 +300,7 @@ $('#load-params').click(function() {
    * </ul>
    */
   public static function prebuilt_form_params_form($options) {
-    if (function_exists('hostsite_add_library') && (!defined('DRUPAL_CORE_COMPATIBILITY') || DRUPAL_CORE_COMPATIBILITY!=='7.x')) {
+    if (function_exists('hostsite_add_library')) {
       hostsite_add_library('collapse');
     }
     require_once('data_entry_helper.php');
@@ -353,16 +353,14 @@ $('#load-params').click(function() {
     }
     $class=(isset($options['expandFirst']) && $options['expandFirst']) ? 'collapsible' : 'collapsible collapsed';
     foreach($fieldsets as $fieldset=>$content) {
-      // Drupal 7 collapsible fieldsets broken, see http://drupal.org/node/1607822
-      // so we remove the class
-      if (defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY==='7.x')
-        $class='';
-      $r .= "<fieldset class=\"$class\"><legend>$fieldset</legend>\n";
+      $r .= "<fieldset class=\"$class\">\n"; 
+      $r .= "<legend><span class=\"fieldset-legend\">$fieldset</span></legend>\n";
+      $r .= "<div class=\"fieldset-wrapper\">\n";
       $r .= $fieldsets[$fieldset];
+      $r .= "</div>\n"; 
       $r .= "\n</fieldset>\n";
       // any subsequent fieldset should be collapsed
-      if (isset($options['expandFirst']) && $options['expandFirst'])
-        $class .= ' collapsed';
+      $class = 'collapsible collapsed';
     }
     self::$nocache = $oldnocache;
     return $r;
