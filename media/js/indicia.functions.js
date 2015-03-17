@@ -136,7 +136,7 @@ if (typeof window.indiciaData==="undefined") {
    * jQuery version independent .live/.delegate/.on code.
    */
   indiciaFns.on = function(events, selector, data, handler) {
-    var version = jQuery.fn.jquery;
+    var version = jQuery.fn.jquery.split('.');
     if (version[0] === '1' && version[1] < 4) {
       $(selector).live(events, data, handler);
     } else if (version[0] === '1' && version[1] < 7) {
