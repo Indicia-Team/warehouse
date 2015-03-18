@@ -11,22 +11,30 @@
     JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
     JOIN terms t ON t.id=ttl2.term_id
   ) ON ttl1.id=l.location_type_id
+  LEFT JOIN location_attribute_values lav on lav.location_id=l.id AND lav.location_attribute_id=#max_people_attr_id# AND lav.deleted=false
+  LEFT JOIN person_attribute_values pav on pav.int_value=l.id AND pav.person_attribute_id=#user_event_attr_id# AND pav.deleted=false  
   #joins#
   WHERE l.deleted=false
   AND #website_filter#
   AND (CAST(l.location_type_id AS character varying)='#location_type_id#')
+  GROUP BY l.id, l.name, l.comment,lav.int_value
   #order_by#
   </query>
   <order_bys>
     <order_by>l.created_on desc</order_by>
   </order_bys>
   <params>
+    <param name='user_event_attr_id' display='Id of the person attribute that holds user events' description='' datatype='integer'/>
     <param name='location_type_id' display='Location Type' description='Select the location type for events' datatype='integer'/>
     <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+    <param name='max_people_attr_id' display='Max People Attr Id' description='Attribute Id that holds the maximum number of people allowed on the event.' datatype='integer'/>
   </params>
   <columns>
-    <column name='location_id' display='ID' sql='l.id' visible='false'/>
+    <column name='location_id' display='ID' sql='l.id' visible='false' incount='true'/>
     <column name='name' display='Name' sql='l.name'/>
     <column name='description' display='Description' sql='l.comment'/>
+    <column name='signed_up' display='Signed up' sql="count(pav.id)"/>
+    <column name='max_people' display='Max people' sql="lav.int_value"/>
+    <column name='full' display='Spaces available?' sql="case when count(pav.id)>=lav.int_value then '&lt;b style=&quot;color:red&quot;&gt;FULL&lt;/b&gt;' else '&lt;i&gt;Spaces available&lt;/i&gt;' end"/>
   </columns>
 </report>
