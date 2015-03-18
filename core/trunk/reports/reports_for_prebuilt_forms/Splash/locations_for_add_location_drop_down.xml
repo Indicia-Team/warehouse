@@ -13,11 +13,13 @@ for limiting results to a certain distance from a post code and also excluding e
               JOIN people p ON p.id = pav.person_id
               JOIN users u ON u.person_id = p.id AND u.id = #user_id#
             ) ON pav.int_value=l.id AND pav.deleted=false
+          #joins#
           WHERE l.deleted=false
             AND #website_filter#
             AND (u.id = #user_id# OR u.id IS NULL)
             AND (lavEx.int_value != 1 OR lavEx.int_value IS NULL)
             AND ((l.location_type_id IN (#location_type_ids#)) OR ('#location_type_ids#'='-1'))
+            #filters#
       </query>
       <order_bys>
         <order_by>u.id IS NULL ASC, l.name ASC</order_by>
@@ -25,7 +27,20 @@ for limiting results to a certain distance from a post code and also excluding e
       <params>
         <param name="dont_return_allocated_locations" display="Don't return allocated locations" description="Optional parameter, when true then locations already allocated are not returned." datatype="boolean" emptyvalue="0" default="0">
           <where>('#dont_return_allocated_locations#'!=1 OR ('#dont_return_allocated_locations#'=1 AND pavNotAllocOnly.id IS NULL))</where>
-        </param>           
+        </param>   
+        <param name="max_allocation_for_location_attr_id" display="Max Allocation For Location Attr Id" description="Optional parameter. Id of attribute that holds the maximum allocations allowed for a location e.g. an event location might have a maximum number of people." datatype="integer" emptyvalue="0" default="0">
+          <join>LEFT JOIN location_attribute_values lavMax on lavMax.location_attribute_id=#max_allocation_for_location_attr_id# AND lavMax.location_id=l.id AND lavMax.deleted=false</join>
+          <where>('#max_allocation_for_location_attr_id#'=0 OR 
+                    lavMax.int_value IS NULL OR
+                    (lavMax.int_value > 
+                            (select count(id)
+                             from person_attribute_values pavMax
+                             where pavMax.int_value=l.id AND pavMax.person_attribute_id=#my_sites_person_attr_id# AND pavMax.deleted=false
+                             )
+                    )
+                  )
+          </where>         
+        </param>                
         <param name="my_sites_person_attr_id" display="Person preferred sites attribute Id" description="Person preferred sites attribute Id" datatype="integer"/>
         <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" emptyvalue="-1"/>
         <param name="location_type_ids" display="Location Type ID" description="Warehouse Ids for the location types you 
