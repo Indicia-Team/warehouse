@@ -30,7 +30,7 @@
     <param name='max_people_attr_id' display='Max People Attr Id' description='Attribute Id that holds the maximum number of people allowed on the event.' datatype='integer'/>
   </params>
   <columns>
-    <column name='location_id' display='ID' sql='l.id' visible='false' incount='true'/>
+    <column name='location_id' display='ID' sql='l.id' visible='false' in_count='true'/>
     <column name='name' display='Name' sql='l.name'/>
     <column name='description' display='Description' sql='l.comment'/>
     <column name='signed_up' display='Signed up' sql="count(pav.id)"/>
