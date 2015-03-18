@@ -1282,6 +1282,8 @@ class extension_splash_extensions {
    * @rolesExemptFromApproval Optional comma separated list of user roles that do not need to be part of the square approval process
    * @excludedSquareAttrId Optional location attribute id if you need to exclude squares where the excluded flag has been set.
    * @dontReturnAllocatedLocations Optional, when true then locations that are already allocated to another user are not available for selection (maximum of one location allocation per person)
+   * @maxAllocationForLocationAttrId Optional, Id of attribute that holds the maximum number of people that can be allocated to a location before it becomes hidden for selection. Provide this attribute id to enable this option.
+   * An example might be an event location, where only a certain number of people can attend.
    */
   public static function add_locations_to_user($auth, $args, $tabalias, $options, $path) {
     global $user;
@@ -1336,6 +1338,8 @@ class extension_splash_extensions {
       $extraParams['excluded_square_attr_id']=$options['excludedSquareAttrId'];
     if (!empty($options['dontReturnAllocatedLocations']))
       $extraParams['dont_return_allocated_locations']=$options['dontReturnAllocatedLocations'];
+    if (!empty($options['maxAllocationForLocationAttrId']))
+      $extraParams['max_allocation_for_location_attr_id']=$options['maxAllocationForLocationAttrId'];
     //If we don't want to automatically get the location id from the URL, then display a drop-down of locations the user can select from   
     if (empty($locationIdFromURL)) {
       $r .= '<label>'.$locationDropDownLabel.'</label> ';
