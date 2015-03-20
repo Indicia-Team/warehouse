@@ -896,7 +896,7 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
     if (!isset($values['page']) || $values['page']=='site') {
       // submitting the first page, with top level sample details
       // keep the first count date on a subsample for use later.
-      // only create if a new sample: if existing, then this will already exist.
+      // only create the subsample if this is a new top level sample: if existing, then this will already have been done.
       if(isset($values['C1:sample:date']) && !isset($values['sample:id'])){
         $sampleMethods = helper_base::get_termlist_terms(array('read'=>$read), 'indicia:sample_methods', array('Timed Count Count'));
         $smp = array('fkId' => 'parent_id',
@@ -907,7 +907,6 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
                                        'sample_method_id' => array('value' => $sampleMethods[0]['id'])
                      )),
                    'copyFields' => array('entered_sref'=>'entered_sref','entered_sref_system'=>'entered_sref_system'));
-//                   'copyFields' => array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type'));
         $subsampleModels[] = $smp;
       }
     } else if($values['page']=='occurrences'){
@@ -915,7 +914,7 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
       // loop from 1 to numberOfCounts, or number of existing subsamples, whichever is bigger.
       $subSamples = data_entry_helper::get_population_data(array(
         'table' => 'sample',
-        'extraParams' => $read + array('parent_id'=>$values['sample:id']),
+        'extraParams' => $read + array('parent_id'=>$values['sample:id'], 'view'=>'detail', 'survey_id'=>$values['sample:survey_id']),
         'nocache'=>true
       ));
       for($i = 1; $i <= max(count($subSamples), $args['numberOfCounts']); $i++){
@@ -924,6 +923,7 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
                              'survey_id' => $values['sample:survey_id']);
           $occurrences = array();
           $occModels = array();
+          // separate out the sample and occurrence details for the subsample visit
           foreach($values as $field => $value){
             $parts = explode(':',$field,2);
             if($parts[0]=='C'.$i) $subSample[$parts[1]] = $value;
@@ -931,14 +931,14 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
           }
           ksort($occurrences);
           foreach($occurrences as $field => $value){
-            // have take off O<i> do is now <j>:<ttlid>:<occid>:<attrid>:<attrvalid> - sorted in <j> order
+            // have taken off O<i> front so is now <j>:<ttlid>:<occid>:<attrid>:<attrvalid> - sorted in <j> order, which is the occurrence order in the table.
             $parts = explode(':',$field);
             $occurrence = array('website_id' => $values['website_id']);
-            if($parts[1] != '--ttlid--') $occurrence['taxa_taxon_list_id'] = $parts[1];
-            if($parts[2] != '--occid--') $occurrence['id'] = $parts[2];
+            if($parts[1] != '--ttlid--') $occurrence['taxa_taxon_list_id'] = $parts[1]; // can't see situation where this is not filled in
+            if($parts[2] != '--occid--') $occurrence['id'] = $parts[2]; // if an existing entry.
             if($value == '') $occurrence['deleted'] = 't';
-            else if($parts[4] == '--valid--') $occurrence['occAttr:'.$parts[3]] = $value;
-            else $occurrence['occAttr:'.$parts[3].':'.$parts[4]] = $value;
+            else if($parts[4] == '--valid--') $occurrence['occAttr:'.$parts[3]] = $value; // new attribute value
+            else $occurrence['occAttr:'.$parts[3].':'.$parts[4]] = $value; // existing attribute value
             if (array_key_exists('occurrence:determiner_id', $values)) $occurrence['determiner_id'] = $values['occurrence:determiner_id'];
             if (array_key_exists('occurrence:record_status', $values)) $occurrence['record_status'] = $values['occurrence:record_status'];
             if(isset($occurrence['id']) || !isset($occurrence['deleted'])){
