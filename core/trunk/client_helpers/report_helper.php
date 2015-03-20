@@ -2449,12 +2449,6 @@ function rebuild_page_url(oldURL, overrideparam, overridevalue, removeparam) {
   var retVal = parts[0]+(params.length > 0 ? '?'+(params.join('&')) : '');
   return retVal;
 };
-function update_controls(){
-  $('#year-control-previous').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."-1,[]));
-  $('#year-control-next').attr('href',rebuild_page_url(pageURI,'year',".substr($options['date_start'],0,4)."+1,[]));
-  // user and location ids are dealt with in the main form. their change functions look a pageURI
-};
-update_controls();
 ";
     
     // convert records to a date based array so it can be used when generating the grid.
@@ -2474,12 +2468,12 @@ update_controls();
     $r = "\n<table class=\"".$options['class']."\">";
     $r .= "\n<thead class=\"$thClass\"><tr>".($options['includeWeekNumber'] ? "<td>".lang::get("Week Number")."</td>" : "")."<td></td><td></td><td></td><td colspan=\"3\" class=\"year-picker\">";
     if(!isset($options["first_year"]) || $options["year"]>$options["first_year"]){
-    	$r .= "<a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1).
+    	$r .= "<a id=\"year-control-previous\" title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1).
         	"\" class=\"ui-datepicker-prev ui-corner-all\"><span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a>";
     }
     $r .= "<span class=\"thisYear\">".$options["year"]."</span>";
     if($options["year"]<date('Y')){
-      $r .= "  <a title=\"".($options["year"]+1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]+1)."\" class=\"ui-datepicker-next ui-corner-all\">
+      $r .= "  <a id=\"year-control-next\" title=\"".($options["year"]+1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]+1)."\" class=\"ui-datepicker-next ui-corner-all\">
         <span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a>";
     }
     $r .= "</td><td></td><td></td></tr></thead>\n";
@@ -2606,6 +2600,8 @@ update_controls();
     $r .= "</tbody>";
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
+      $rootFolder = self::getRootfolder();
+      $currentUrl = self::get_reload_link_parts();
       $footer = str_replace(array('{rootFolder}',
                 '{currentUrl}',
                 '{sep}',
@@ -2626,8 +2622,8 @@ update_controls();
                 'auth_token='.$options['readAuth']['auth_token'],
                 (function_exists('hostsite_get_user_field') ? hostsite_get_user_field('indicia_user_id') : ''),
                 self::$website_id,
-                $options['date_start'],
-                $options['date_end']
+                $options['extraParams']['date_from'],
+                $options['extraParams']['date_to']
           ), $options['footer']);
       // Merge in any references to the parameters sent to the report: could extend this in the future to pass in the extraParams
       foreach($currentParamValues as $key=>$param){
