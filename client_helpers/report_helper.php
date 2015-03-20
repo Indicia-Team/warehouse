@@ -2425,6 +2425,7 @@ if (typeof mapSettingsHooks!=='undefined') {
     // default is samples_list_for_cms_user.xml
     $options = self::get_report_calendar_grid_options($options);
     $extras = '';
+    $currentParamValues = self::get_report_grid_current_param_values($options);
     self::request_report($response, $options, $currentParamValues, false, $extras);
     if (isset($response['error'])) {
       return "ERROR RETURNED FROM request_report:".$response['error'];
