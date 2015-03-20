@@ -3022,7 +3022,7 @@ $('#$escaped').change(function(e) {
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       );
-      if (!empty($options['attributeIds'])) {
+      if (isset($options['attributeIds'])) {
         // make sure we load the grid ID attribute
         if (!empty($options['gridIdAttributeId']) && !in_array($options['gridIdAttributeId'], $options['attributeIds'])) 
           $options['attributeIds'][] = $options['gridIdAttributeId'];
@@ -4901,7 +4901,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           $options['class']=$buttonClass." tab-submit";
           $options['id']='tab-submit';
           $options['caption']=lang::get($options['captionSave']);
-          $options['name']='action-delete';
+          $options['name']='action-submit';
           $r .= self::apply_template('submitButton', $options);
         }
       }
@@ -6236,9 +6236,8 @@ if (errors$uniq.length>0) {
     // Either an uploadable file, or a link to an external detail means include the submodel
     if ((array_key_exists('occurrence:image', $values) && $values['occurrence:image'])
         || array_key_exists('occurrence_medium:external_details', $values) && $values['occurrence_medium:external_details']) {
-      $structure['submodel']['submodel'] = array(
-          'model' => 'occurrence_medium',
-          'fk' => 'occurrence_id'
+      $structure['subModels']['occurrence']['subModels'] = array(
+          'occurrence_medium' => array('fk' => 'occurrence_id')
       );
     }
     return submission_builder::build_submission($values, $structure);
@@ -6665,10 +6664,10 @@ if (errors$uniq.length>0) {
     if ($options['attrtable']=='location_attribute') {
       // for location attributes, we want all which have null in the restrict_to_location_type_id,
       // or where the supplied location type matches the attribute's.
-      $methods = array(null);
-      if (isset($options['location_type_id']))
-        $methods[] = $options['location_type_id'];
-      $query['in']['restrict_to_location_type_id'] = $methods;
+      if (isset($options['location_type_id'])) {
+        $methods[] = array(null, $options['location_type_id']);
+        $query['in']['restrict_to_location_type_id'] = $methods;
+      }
     }
     
     $attrOptions = array(
