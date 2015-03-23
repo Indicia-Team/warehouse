@@ -197,7 +197,7 @@ $(document).ready(function() {
       $('#controls').append('<li id="attribute-'+attrId+'" style="border-color: red" '+
             'class="attribute-'+attrId+' draggable-control ui-widget ui-widget-content ui-corner-all ui-helper-clearfix">' +
             '<span class="handle">&nbsp;</span>' +
-            '<span class="caption">' + existingAttrs['id'+attrId] + ' *</span>' +			
+            '<span class="caption">' + existingAttrs['id'+attrId] + ' (ID ' + attrId + ')*</span>' +			
             '</li><li class="control-drop"></li>');
       makeControlsDragDroppable();
 	  $('#layout-change-form').show();	
@@ -309,11 +309,10 @@ echo data_entry_helper::select(array(
   'label' => 'Display attributes for',
   'lookupValues' => array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations'),
   'default' => $_GET['type'],
-  'suffixTemplate' => 'nosuffix',
-  'class' => 'line-up'  
+  'class' => 'line-up',
+  'afterControl' => '<input type="submit" class="button ui-state-default ui-widget-content ui-corner-all line-up" id="change-type" value="Go" />'
 ));
 ?>
-<input type="submit" class="button ui-state-default ui-widget-content ui-corner-all line-up" id="change-type" value="Go" />
 </fieldset>
 </form>
 <ul id="top-blocks" class="block-list">
@@ -364,14 +363,15 @@ function get_controls($block_id, $controlfilter) {
         orderby('weight', 'ASC')->find_all();
   foreach($child_controls as $control) {
     echo '<li class="control-drop"></li>';
-	// prepare some dynamic property names
+    // prepare some dynamic property names
     $attr = $_GET['type'].'_attribute';
-	$attrId = $attr.'_id';
+    $attrId = $attr.'_id';
     echo '<li id="control-'.$control->id.'" class="attribute-'.$control->$attrId.' draggable-control ui-widget ui-widget-content ui-corner-all ui-helper-clearfix">'.
         "<span class=\"handle\">&nbsp;</span>\n".
-        '<span class="caption">'.$control->$attr->caption."</span>\n".
-        '<a href="'.url::site().'attribute_by_survey/edit/'.$control->id.'?type='.$_GET['type']."\">Edit</a>\n".
-		'<a href="" class="control-delete">Delete</a>'.
+        '<span class="caption">'.$control->$attr->caption." (ID {$control->$attrId})</span>\n".
+        '<a href="" class="control-delete">Delete</a>'.
+        '<a href="'.url::site().'attribute_by_survey/edit/'.$control->id.'?type='.$_GET['type']."\">Survey settings</a>\n".
+        '<a href="'.url::site().$_GET['type']."_attribute/edit/{$control->$attrId}\">Global settings</a>\n".
         "</li>\n";
   }
   // extra item to allow drop at end of list
@@ -403,7 +403,7 @@ function get_controls($block_id, $controlfilter) {
 <select id="existing-attribute" name="existing-attribute" style="width: 206px;" class="line-up">
 <?php 
 foreach ($existingAttrs as $attr) {
-  echo '<option value="'.$attr->id.'">'.$attr->caption."</option>\n";
+  echo "<option value=\"{$attr->id}\">{$attr->caption} (ID {$attr->id})</option>\n";
 }
 ?>
 </select>
