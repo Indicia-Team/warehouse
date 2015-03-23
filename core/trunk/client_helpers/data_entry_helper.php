@@ -6664,10 +6664,10 @@ if (errors$uniq.length>0) {
     if ($options['attrtable']=='location_attribute') {
       // for location attributes, we want all which have null in the restrict_to_location_type_id,
       // or where the supplied location type matches the attribute's.
-      if (isset($options['location_type_id'])) {
-        $methods[] = array(null, $options['location_type_id']);
-        $query['in']['restrict_to_location_type_id'] = $methods;
-      }
+      $methods = array(null);
+      if (isset($options['location_type_id']))
+        $methods[] = $options['location_type_id'];
+      $query['in']['restrict_to_location_type_id'] = $methods;
     }
     
     $attrOptions = array(

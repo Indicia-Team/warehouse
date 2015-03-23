@@ -359,6 +359,8 @@ jQuery('#".$ctrlid."').change(function(){
         'fieldprefix'=>'locAttr',
         'extraParams'=>$readAuth,
         'survey_id'=>$siteUrlParams[self::$SurveyKey]['value']);
+    if (!empty($presets['location_type_id'])) 
+      $attrArgs['location_type_id'] = $presets['location_type_id'];
     if($siteUrlParams[self::$locationTypeKey]['value']!="")
       $attrArgs['location_type_id'] = $siteUrlParams[self::$locationTypeKey]['value'];
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
