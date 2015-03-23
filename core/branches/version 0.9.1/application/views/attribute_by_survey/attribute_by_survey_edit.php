@@ -164,7 +164,7 @@ echo data_entry_helper::outputAttribute(array(
 ?>
 <?php
 $controlTypeId = html::initial_value($values, $_GET['type'].'_attributes_website:control_type_id');
-$types = array(''=>'&lt;Not specified&gt;');
+$types = array(''=>'<Not specified>');
 
 foreach ($other_data['controlTypes'] as $controlType)
   $types[$controlType->id] = $controlType->control;
@@ -176,7 +176,7 @@ echo data_entry_helper::select(array(
 ));
 
 if ($_GET['type']=='location') {
-  $terms = array(''=>'&lt;Not specified&gt;')+$this->get_termlist_terms('indicia:location_types');
+  $terms = array(''=>'<Not specified>')+$this->get_termlist_terms('indicia:location_types');
   echo data_entry_helper::select(array(
     'label' => 'Location Type',
     'fieldname' => 'location_attributes_website:restrict_to_location_type_id',
@@ -185,7 +185,7 @@ if ($_GET['type']=='location') {
     'helpText' => 'If you want this attribute to only apply for locations of a certain type, select the type here.'
   ));
 } elseif ($_GET['type']=='sample') {
-  $terms = array(''=>'&lt;Not specified&gt;')+$this->get_termlist_terms('indicia:sample_methods');
+  $terms = array(''=>'<Not specified>')+$this->get_termlist_terms('indicia:sample_methods');
   echo data_entry_helper::select(array(
     'label' => 'Sample Method',
     'fieldname' => 'sample_attributes_website:restrict_to_sample_method_id',
