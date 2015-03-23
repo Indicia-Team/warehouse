@@ -353,8 +353,11 @@ $('#load-params').click(function() {
     }
     $class=(isset($options['expandFirst']) && $options['expandFirst']) ? 'collapsible' : 'collapsible collapsed';
     foreach($fieldsets as $fieldset=>$content) {
-      $r .= "<fieldset class=\"$class\">\n"; 
-      $r .= "<legend><span class=\"fieldset-legend\">$fieldset</span></legend>\n";
+      $r .= "<fieldset class=\"$class\">\n";
+      // In Drupal 7 the fieldset output includes an extra span
+      $legendContent = (defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY==='7.x') ?
+        "<span class=\"fieldset-legend\">$fieldset</span>" : $fieldset;
+      $r .= "<legend>$legendContent</legend>\n";
       $r .= "<div class=\"fieldset-wrapper\">\n";
       $r .= $fieldsets[$fieldset];
       $r .= "</div>\n"; 
