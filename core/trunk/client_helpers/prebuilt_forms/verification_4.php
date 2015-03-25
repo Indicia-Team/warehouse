@@ -745,7 +745,7 @@ idlist=';
     ));
   }
 
-  private function statusLabel($status) {
+  private static function statusLabel($status) {
     switch ($status) {
       case 'V' :
         return lang::get('Verified');
