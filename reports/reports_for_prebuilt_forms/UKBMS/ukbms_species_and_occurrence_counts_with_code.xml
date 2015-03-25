@@ -1,31 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="UKBMS specific species and occurrence counts by site" description="UKBMS specific: Lists locations and the number of species and occurrences within them. This report includes the location code, and relies on the record being input with a link to the site and will not pick up records where the spatial reference is in the site boundary but without a direct reference to the site.">
-      <query website_filter_field='su.website_id'>
-      WITH RECURSIVE search_samples(top_id, id, location_id, survey_id, date_start, date_end, depth) AS (
-        SELECT s.id, s.id, s.location_id, s.survey_id, s.date_start, s.date_end, 1
-        FROM samples s
-        WHERE s.deleted=false
-      UNION ALL
-        SELECT ss.id, s.id, ss.location_id, ss.survey_id, s.date_start, s.date_end, ss.depth+1
-        FROM samples s, search_samples ss
-        WHERE s.parent_id = ss.id AND s.deleted=false
-      )
+<report title="UKBMS specific species and occurrence counts by site" description="UKBMS specific Lists locations and the number of species and occurrences within them. This report includes the location code, and relies on the record being input with a link to the site and will not pick up records where the spatial reference is in the site boundary but without a direct reference to the site.">
+      <query website_filter_field='lw.website_id'>
       SELECT #columns#
-      FROM surveys su
-      JOIN locations_websites lw ON lw.website_id=su.website_id and lw.deleted=false
+      FROM locations_websites lw
       JOIN locations l ON l.id=lw.location_id and l.deleted=false 
         AND (l.code = '' OR l.code IS NULL OR '#blank_code#'!='yes')
-      LEFT JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id
-      LEFT JOIN (search_samples s
-        JOIN cache_occurrences o on o.sample_id=s.id AND o.zero_abundance='f'
-      ) on s.survey_id=su.id AND s.location_id=l.id 
+      LEFT JOIN (locations section
+        JOIN cache_occurrences o on o.location_id=section.id AND o.zero_abundance='f'
+      ) on section.parent_id=l.id
       #joins#
-      WHERE su.deleted=false
+      WHERE lw.deleted=false
       AND #website_filter#
-      AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='' OR ctt.term='#location_type_id#')
-      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
-      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND l.location_type_id = #location_type_id#
       </query>
       <order_bys>
             <order_by>occurrences DESC</order_by>
@@ -33,9 +20,7 @@
             <order_by>name</order_by>
       </order_bys>
       <params>
-        <param name='date_from' display='Date From' datatype='date' />
-        <param name='date_to' display='Date To' datatype='date' />
-        <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
+         <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
             population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' />
         <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
         <param name='blank_code' display='Restrict to blank code values' datatype='lookup' lookup_values='no:No,yes:Yes' />
@@ -47,6 +32,5 @@
             <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true" datatype="integer" />
             <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT o.taxon_group_id)" aggregate="true" datatype="integer" />
             <column name="code" display="Code" sql="l.code" datatype="text" />
-            <column name="geom" sql="l.centroid_geom" datatype="text" />
       </columns>
 </report>
