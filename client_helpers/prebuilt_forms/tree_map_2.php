@@ -23,12 +23,6 @@
 require_once('includes/map.php');
 require_once('includes/report.php');
 
-// TODO: check on Live:
-// My sites squares layer.
-// Check functionality of Advanced UI slider control, date displayed
-// Check functionality of Advanced UI dot control
-// Check works OK with map2 disabled.
-//
 // TODO DEV
 // picture of species in corner.
 // Add speed control
@@ -157,9 +151,8 @@ class iform_tree_map_2 {
 		drupal_add_js('/misc/ui/jquery.ui.slider.js');
 //      drupal_add_js('/misc/ui/jquery.ui.button.min.js');
     }
-    iform_load_helpers(array('map_helper'));
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-
+    
     $now = new DateTime('now');
     $year = (isset($_REQUEST['year']) ? $_REQUEST['year'] : $year = $now->format('Y'));
 
@@ -227,7 +220,7 @@ class iform_tree_map_2 {
     $options['divId']='map2';
     if(isset($args['twinMaps']) && $args['twinMaps'])
     	$r .= '<div class="rightMap mapContainers leftMapOnly">'.map_helper::map_panel($options, $olOptions).'</div>';
-
+    
     $r .= '<div class="ui-helper-clearfix"></div><div id="timeControls">'.
     		(isset($args['advancedUI']) && $args['advancedUI'] ? '<div id="timeSlider"></div>' : '').
     		'<div id="toolbar">'.
