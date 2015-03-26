@@ -377,17 +377,18 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       $pasted_taxon = trim($pasted_taxon);
       if (empty($pasted_taxon))
         continue; // to next in list, as empty line found
-      $rows = $this->db->select('id, taxon_meaning_id, taxon_id, preferred, taxon')
+      $rows = $this->db->select('id, taxon_meaning_id, taxon_id, preferred, allow_data_entry, taxon')
         ->from('list_taxa_taxon_lists')
         ->where(array(
           $_POST['search_method'] => $pasted_taxon,
           'taxon_list_id' => $list->parent_id
         ))
-        ->orderby('preferred', 'DESC')
+        ->orderby(array('preferred'=>'DESC', 'allow_data_entry'=>'DESC'))
         ->get()->result_array(false);
       if (empty($rows))
         $messages[] = "$pasted_taxon could not be found in the parent list";
-      elseif (count($rows)>1 && ($rows[0]['preferred']==='f' || $rows[1]['preferred']==='t'))
+      elseif (count($rows)>1 && ($rows[0]['preferred']==='f' || $rows[1]['preferred']==='t') && 
+          ($rows[0]['allow_data_entry']==='f' || $rows[1]['allow_data_entry']==='t'))
         $messages[] = "$pasted_taxon was found but could not be used to identify a unique taxon in the parent list";
       else {
         // Found a unique hit, either the only matching preferred name, or the only matching name
