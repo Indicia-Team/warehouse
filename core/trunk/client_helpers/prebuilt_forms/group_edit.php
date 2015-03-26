@@ -625,7 +625,7 @@ $('#entry_form').submit(function() {
         'fieldname'=>'groups_user:admin_user_id',
         'label' => ucfirst(lang::get('{1} administrators', self::$groupType)),
         'table'=>'user',
-        'captionField'=>'name_and_email',
+        'captionField'=>'person_name',
         'valueField'=>'id',
         'extraParams'=>$auth['read']+array('view'=>'detail'),
         'helpText'=>lang::get('LANG_Admins_Field_Instruct', self::$groupType),
