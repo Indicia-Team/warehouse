@@ -188,8 +188,9 @@ class form_helper extends helper_base {
           'table' => 'group',
           'valueField' => 'id',
           'captionField' => 'title',
-          'extraParams' => $readAuth,
-          'default' => isset($options['limit_to_group_id']) ? $options['limit_to_group_id'] : false
+          'extraParams' => $readAuth + array('orderby' => 'title'),
+          'default' => isset($options['limit_to_group_id']) ? $options['limit_to_group_id'] : false,
+          'caching' => false
         ));
       }
     }
