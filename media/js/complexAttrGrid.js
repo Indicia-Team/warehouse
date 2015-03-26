@@ -115,9 +115,9 @@ jQuery(document).ready(function($) {
 	else
 {
       $(row).css('opacity', 0.4);
-      $(row).find('input').css('text-decoration', 'line-through');
+      $(row).find(':input').css('text-decoration', 'line-through');
       $(row).find('.delete-flag').val('t');
-      $(row).find('input').not(':hidden').attr('disabled', true);
+      $(row).find(':input').not(':hidden').attr('disabled', true);
 }
       updateUniqueSelects(newTarget); 
     }
