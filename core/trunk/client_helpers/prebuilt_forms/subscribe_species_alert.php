@@ -73,6 +73,7 @@ class iform_subscribe_species_alert {
           'table'=>'taxon_list',
           'valueField'=>'id',
           'captionField'=>'title',
+          'sharing' => 'reporting',
           'required'=>FALSE,
           'group'=>'Lookups',
           'siteSpecific'=>TRUE
@@ -219,7 +220,8 @@ class iform_subscribe_species_alert {
         'table' => 'taxon_list',
         'valueField' => 'id',
         'captionField' => 'title',
-        'extraParams' => $auth['read'] + array('id' => $args['full_lists'], 'orderby' => 'title'),
+        'extraParams' => $auth['read'] + array('id' => $args['full_lists'], 'orderby' => 'title')
+        'sharing' => 'reporting',
         'class' => 'control-width-4'
       ));
     }
