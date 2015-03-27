@@ -4956,12 +4956,19 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   public static function get_browser_info($agent=null) {
     $browsers = array("firefox", "msie", "opera", "chrome", "safari",
-                            "mozilla", "seamonkey",    "konqueror", "netscape",
+                            "mozilla", "seamonkey", "konqueror", "netscape",
                             "gecko", "navigator", "mosaic", "lynx", "amaya",
                             "omniweb", "avant", "camino", "flock", "aol");
     if (!$agent)
       $agent = $_SERVER['HTTP_USER_AGENT'];
     $agent = strtolower($agent);
+    
+    // Create a default response in case browser is not found.
+    $r = array(
+        'name' => '',
+        'version' => '',
+    );
+    
     foreach($browsers as $browser)
     {
         if (preg_match("#($browser)[/ ]?([0-9.]*)#", $agent, $match))
