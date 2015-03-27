@@ -287,7 +287,7 @@ class iform_easy_download {
       return 'This download page is configured so that no download format options are available.';
     
     if (!empty($_POST))
-      self::do_download($args, $filters);
+      self::do_download($args, $node);
     
     iform_load_helpers(array('data_entry_helper'));
     $reload = data_entry_helper::get_reload_link_parts();  
@@ -419,20 +419,20 @@ class iform_easy_download {
   /** 
    * Handles a request for download. Works out which type of request it is and calls the appropriate function.
    */
-  private static function do_download($args) {
+  private static function do_download($args, $node) {
     if ($_POST['format']===lang::get('Spreadsheet (CSV)'))
-      self::do_data_services_download($args, 'csv');
+      self::do_data_services_download($args, $node, 'csv');
     elseif ($_POST['format']===lang::get('Tab Separated File (TSV)'))
-      self::do_data_services_download($args, 'tsv');
+      self::do_data_services_download($args, $node, 'tsv');
     elseif ($_POST['format']===lang::get('Google Earth File'))
-      self::do_data_services_download($args, 'kml');
+      self::do_data_services_download($args, $node, 'kml');
     elseif ($_POST['format']===lang::get('GPS Track File'))
-      self::do_data_services_download($args, 'gpx');
+      self::do_data_services_download($args, $node, 'gpx');
     elseif ($_POST['format']===lang::get('NBN Format'))
-      self::do_data_services_download($args, 'nbn');
+      self::do_data_services_download($args, $node, 'nbn');
   }
   
-  private static function do_data_services_download($args, $format) {
+  private static function do_data_services_download($args, $node, $format) {
     iform_load_helpers(array('report_helper'));
     $conn = iform_get_connection_details($node);
     $readAuth = data_entry_helper::get_read_auth($conn['website_id'], $conn['password']);
