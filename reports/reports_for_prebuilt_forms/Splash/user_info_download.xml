@@ -1,6 +1,6 @@
 <report
     title="User Information Download"
-    description="Report containing user and person information for download purposes. Includes filter to include only users with/without allocations. Also
+    description="Report containing user and person information for download purposes. Includes filter to include only users with/without allocations and another to only show users who have an allocation made in a given date range. Also
 an event filter to return users associated with a particular event."
 >
   <query website_filter_field="uw.website_id">
@@ -40,8 +40,24 @@ an event filter to return users associated with a particular event."
             and ('#ignore_square_dates_before#'='' OR (subSqr.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date))) 
           where
             subPav.person_attribute_id=#user_square_attr_id# AND subPav.deleted=false 
+            AND subPav.person_id=u.person_id
         )  
       ))
+  -- Only show users who have a square allocated within a given date range. Users who have a square allocation in the range, but other squares for them are outside the range, have those extra squares shown in red.
+  AND (('#allocation_date_start#'='' AND '#allocation_date_end#'='')
+      OR  
+        (p.id in
+            (
+              select person_id
+              from person_attribute_values pavAllocDated 
+              join locations sqrAllocDated ON sqrAllocDated.id=pavAllocDated.int_value AND sqrAllocDated.location_type_id = #core_square_location_type_id# AND sqrAllocDated.deleted=false 
+                and ('#ignore_square_dates_before#'='' OR (sqrAllocDated.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date))) 
+              where
+                pavAllocDated.person_attribute_id=#user_square_attr_id# AND pavAllocDated.deleted=false 
+                AND (pavAllocDated.created_on &gt;= CAST(COALESCE('#allocation_date_start#','1500-01-01') as date) OR '#allocation_date_start#'='')
+                AND (pavAllocDated.created_on &lt;= CAST(COALESCE('#allocation_date_end#','1500-01-01') as date) OR '#allocation_date_end#'='')
+                AND pavAllocDated.person_id=u.person_id
+            )))  
   </query>
   <order_bys>
     <order_by>p.surname ASC</order_by>
@@ -70,6 +86,8 @@ an event filter to return users associated with a particular event."
     <param name="country_attr_id" display="Country attribute id" description="Person attribute id that holds the user country." datatype="text"/>
     <param name="post_code_attr_id" display="Post code attribute id" description="Person attribute id that holds the user post code." datatype="text"/>
     <param name="over_18_attr_id" display="Over 18 attribute id" description="Person attribute id that holds whether a user is over 18." datatype="text"/>
+    <param name="allocation_date_start" display="User allocated square on or after this date" description="Only return users who were allocated a square on or after this date." datatype="date" emptyvalue=""/>
+    <param name="allocation_date_end" display="User allocated square before this date" description="Only return users who were allocated a square before this date." datatype="date" emptyvalue=""/>
   </params>
   <columns> 
     <column name='id' sql='u.id' display='Indicia User Id' datatype='integer' in_count="true"/>
@@ -77,7 +95,7 @@ an event filter to return users associated with a particular event."
     <column name='surname' display='Surname' sql='p.surname' datatype='text' />        
     <column name='username' display='Indicia Username' sql='u.username' datatype='text'/> 
     <column name='email_address' display='Email address' sql='p.email_address' datatype='text' />  
-    <column name='address' display='Address' sql='pavAddr.text_value' datatype='text' />
+    <column name='address' display='Address' sql='pavAddr.text_value' datatype='text' /> 
     <column name='town' display='Town' sql='pavTown.text_value' datatype='text' />
     <column name='county' display='County' sql='pavCounty.text_value' datatype='text' />
     <column name='country' display='Country' sql='pavCountry.text_value' datatype='text' />
@@ -85,7 +103,10 @@ an event filter to return users associated with a particular event."
     <column name='over_18' display='Over 18?' sql="case pav18.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='registration_date' display='Registration date' sql='uw.created_on' datatype='text' />  
     <column name='count' sql='count(distinct(sqr.id))' display='Number of allocated squares' datatype='integer' aggregate="true"/>
-    <column name='allocated_squares' sql="string_agg(distinct(sqr.name), ',')" display='Squares allocated' datatype='text' aggregate="true"/>
+    <column name='allocated_squares' sql="string_agg(distinct(case when 
+          ((sqrPavDated.created_on &gt;= CAST(COALESCE('#allocation_date_start#','1500-01-01') as date) OR '#allocation_date_start#'='')
+          AND (sqrPavDated.created_on &lt;= CAST(COALESCE('#allocation_date_end#','1500-01-01') as date) OR '#allocation_date_end#'=''))
+        then sqr.name else '&lt;b style=&quot;color:red&quot;&gt;' || sqr.name || '&lt;/b&gt;' END), ',')" display='Squares allocated' datatype='text' aggregate="true"/>
     <column name='allocated_events' sql="string_agg(distinct(event.name), ',')" display='Events' datatype='text' aggregate="true"/>
   </columns>
 </report>
