@@ -447,8 +447,9 @@ $('#entry_form').submit(function() {
             'label' => 'Who can access the page?',
             'datatype' => 'lookup',
             'lookupValues' => array(
-              'f' => lang::get('Available to all group members', self::$groupType),
-              't' => lang::get('Available only to group admins', self::$groupType),
+              '' => lang::get('Available to anyone'),
+              'f' => lang::get('Available only to group members'),
+              't' => lang::get('Available only to group admins'),
             ),
             'default' => 'f'
           )
@@ -733,7 +734,7 @@ $('#entry_form').submit(function() {
           $path = $tokens[0];
           $caption=empty($values[$base.'1']) ? $tokens[1] : $values[$base.'1'];
           $administrator=explode(':',$values[$base.'2']);
-          $administrator = empty($administrator) ? 'f' : $administrator[0];
+          $administrator = empty($administrator) ? null : $administrator[0];
           $page = array(
             'caption' => $caption,
             'path' => $path,
