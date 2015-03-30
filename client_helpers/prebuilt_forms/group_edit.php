@@ -673,8 +673,8 @@ $('#entry_form').submit(function() {
     if ($args['include_report_filter']) {
       $r .= '<fieldset><legend>' . lang::get('Records that are of interest to the {1}', lang::get(self::$groupType)) . '</legend>';
       $r .= '<p>' . lang::get('LANG_Filter_Instruct', lang::get(self::$groupType), lang::get("group's")) . '</p>';
-      $indexedLocationTypeIds = explode(',', $args['indexed_location_type_ids']);
-      $otherLocationTypeIds = explode(',', $args['other_location_type_ids']);
+      $indexedLocationTypeIds =  array_map('intval', explode(',', $args['indexed_location_type_ids']));
+      $otherLocationTypeIds =  array_map('intval', explode(',', $args['other_location_type_ids']));
       $r .= report_filter_panel($auth['read'], array(
         'allowLoad'=>false,
         'allowSave' => false,
