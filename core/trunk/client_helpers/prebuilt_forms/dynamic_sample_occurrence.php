@@ -160,6 +160,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
                 "location's centroid as the sample map reference.<br/>".
                 "&nbsp;&nbsp;<strong>[location select]</strong> - a select control for picking a stored location. A spatial reference is still required.<br/>".
                 "&nbsp;&nbsp;<strong>[location map]</strong> - combines location select, map and spatial reference controls for recording only at stored locations.<br/>".
+                "&nbsp;&nbsp;<strong>[occurrence comment]</strong> - a text box for occurrence level comment. Alternatively use the ".
+                    "[species attributes] control to output all input controls for the species automatically. <br/>".
                 "&nbsp;&nbsp;<strong>[photos]</strong> - use when in single record entry mode to provide a control for uploading occurrence photos. Alternatively use the ".
                     "[species attributes] control to output all input controls for the species automatically. The [photos] control overrides the setting <strong>Occurrence Images</strong>.<br/>".
                 "&nbsp;&nbsp;<strong>[place search]</strong> - zooms the map to the entered location.<br/>".
@@ -918,7 +920,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
-    if (self::getGridMode($args)) {
+    if (!(call_user_func(array(self::$called_class, 'getGridMode'), $args))) {
         // multi-record mode using a checklist grid. We really just need to know the sample ID.
         if (self::$loadedOccurrenceId && !self::$loadedSampleId) {
           $response = data_entry_helper::get_population_data(array(
@@ -1730,7 +1732,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
   protected static function get_control_samplecomment($auth, $args, $tabAlias, $options) {
     return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>'sample:comment',
-      'label'=>lang::get('Overall Comment')
+      'label'=>lang::get('Overall comment')
     ), $options));
   }
 
@@ -1781,7 +1783,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
       if ($args['occurrence_comment'])
         $r .= data_entry_helper::textarea(array(
           'fieldname'=>'occurrence:comment',
-          'label'=>lang::get('Record Comment')
+          'label'=>lang::get('Record comment')
         ));
       if ($args['occurrence_images']){
         $r .= self::occurrence_photo_input($auth['read'], $options, $tabAlias, $args);
@@ -1965,6 +1967,18 @@ else
     } 
     else 
       return "Occurrence attribute $attribName cannot be included in form when in grid entry mode.";
+  }
+  
+  /**
+   * Get the occurrence comment control
+   */
+  protected static function get_control_occurrencecomment($auth, $args, $tabAlias, $options) {
+    if (!(call_user_func(array(self::$called_class, 'getGridMode'), $args))) {
+      return data_entry_helper::textarea(array_merge(array(
+        'fieldname'=>'occurrence:comment',
+        'label'=>lang::get('Record comment')
+      ), $options));
+    }
   }
   
   /**
