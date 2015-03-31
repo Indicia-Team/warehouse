@@ -65,6 +65,7 @@ class error {
         $output .= "\t".$file.' - line '.$line.' - '.$function."\n";
       }
       kohana::log('debug', $output);
+      kohana::log_save();
     }
   }
 }
