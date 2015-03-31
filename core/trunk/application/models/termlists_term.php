@@ -109,7 +109,6 @@ class Termlists_term_Model extends Base_Name_Model {
 
         Kohana::log("info", "Synonyms remaining to add: ".count($arrSyn));
         $sm = ORM::factory('termlists_term');
-        kohana::log('debug', $arrSyn);
         foreach ($arrSyn as $lang => $term) {
           $sm->clear();
           $syn = array();
