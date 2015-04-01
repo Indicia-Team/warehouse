@@ -227,9 +227,3 @@ CREATE INDEX ix_occurrences_taxon_meaning_id
 
 DROP INDEX IF EXISTS ix_cache_occurrences_sample_id;
 CREATE INDEX ix_cache_occurrences_sample_id ON cache_occurrences(sample_id);
-
-DROP INDEX IF EXISTS ix_cache_occurrences_sample_id;
-CREATE INDEX ix_cache_occurrences_sample_id
-    ON cache_occurrences
-    USING btree
-    (taxa_taxon_list_external_key);
