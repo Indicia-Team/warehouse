@@ -46,7 +46,7 @@ class ORM extends ORM_Core {
    * Tracks list of all inserted, updated or deleted records in this transaction.
    * @var array
    */
-  public static $changedRecords = array('update'=>array(),'insert'=>array(),'delete'=>array());
+  public static $changedRecords;
 
   public function last_query() {
     return $this->db->last_query();
@@ -581,6 +581,7 @@ class ORM extends ORM_Core {
     Kohana::log('debug', 'Commencing new transaction.');
     $this->db->query('BEGIN;');
     try {
+      $this->preProcess();
       $res = $this->inner_submit();
       $this->postProcess();
     } catch (Exception $e) {
@@ -596,6 +597,14 @@ class ORM extends ORM_Core {
       $this->db->query('ROLLBACK;');
     }
     return $res;
+  }
+  
+  /**
+   * Run preprocessing required before submission.
+   */
+  private function preProcess() {
+    // Initialise the variable which tracks the records we are about to submit.
+    self::$changedRecords = array('update'=>array(),'insert'=>array(),'delete'=>array());
   }
 
   /**
