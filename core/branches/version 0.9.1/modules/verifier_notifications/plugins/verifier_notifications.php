@@ -87,7 +87,7 @@ function verifier_notifications_process_task_type($type, $params, $db) {
  */
 function get_filters_without_existing_notification($db, $params) {
   $filters = $db
-    ->select('f.id,f.definition,fu.user_id,u.username')
+    ->select('DISTINCT f.id,f.definition,fu.user_id,u.username')
     ->from('filters f')
     ->join('filters_users as fu','fu.filter_id','f.id')
     ->join('users as u','u.id','fu.user_id')
