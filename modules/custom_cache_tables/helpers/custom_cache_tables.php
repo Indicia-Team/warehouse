@@ -43,6 +43,9 @@ class custom_cache_tables {
         continue; // foreach
       }
       if (empty($lastDoneInfo[$defname]) || strtotime($lastDoneInfo[$defname]) < strtotime("-$metadata[frequency]")) {
+        // for a new cache table, use now as the starting point to trigger population
+        if (empty($lastDoneInfo[$defname]))
+          $lastDoneInfo[$defname] = date(DATE_ISO8601);
         // Even if we are due an update, we might not have to do anything if there is a detect_changes_query
         // which returns nothing
         if (!empty($metadata['detect_changes_query'])) {
