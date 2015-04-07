@@ -47,8 +47,7 @@ $(document).ready(function() {
     },
     parse: function(data) {
       var results = [];
-      var obj = JSON.parse(data);
-      $.each(obj, function(i, item) {
+      $.each(data, function(i, item) {
         results[results.length] = {
           'data' : item,
           'value' : item.id,
@@ -188,7 +187,7 @@ echo $metadata;
 <span id="taxon_meaning_id" style="display: inline-block; margin: 4px"><?php echo html::initial_value($values, 'taxon_meaning:id'); ?></span>
 </li>
 <li>
-<input type="hidden" name="taxa_taxon_list:parent_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:parent_id'); ?>" />
+<input type="hidden" name="taxa_taxon_list:parent_id" id="parent_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:parent_id'); ?>" />
 <label for="parent">Parent Taxon:</label>
 <input id="parent" name="taxa_taxon_list:parent" value="<?php 
 $parent_id = html::initial_value($values, 'taxa_taxon_list:parent_id'); 
