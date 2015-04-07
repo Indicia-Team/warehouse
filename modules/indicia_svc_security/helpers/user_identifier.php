@@ -165,7 +165,7 @@ class user_identifier {
         }
       }
     }
-    self::storeIdentifiers($userId, $identifiers, $userPersonObj);
+    self::storeIdentifiers($userId, $identifiers, $userPersonObj, $websiteId);
     self::associateWebsite($userId,$userPersonObj, $websiteId);
     self::storeSharingPreferences($userId, $userPersonObj);
     $attrs = self::getAttributes($userPersonObj, $websiteId);
@@ -286,7 +286,7 @@ class user_identifier {
    * For the list of identifiers passed through for a user, ensure they are all 
    * persisted in the database. 
    */
-  private static function storeIdentifiers($userId, $identifiers, $userPersonObj) {
+  private static function storeIdentifiers($userId, $identifiers, $userPersonObj, $websiteId) {
     // build a list of all the identifier types we will need, to ensure that we have terms for them.
     $typeTerms = array();
     foreach ($identifiers as $identifier) {
@@ -335,12 +335,33 @@ class user_identifier {
         );
         $new->validate(new Validation($data), true);
         self::checkErrors($new);
-        // If the identifier is an email address, store this against the person record since it is
-        // their most recently updated email.
-        if ($identifier->type==='email') 
-          $userPersonObj->db->update('people', array('email_address'=>$identifier->identifier), array('id'=>$userPersonObj->person_id));
       }
+      if ($identifier->type==='email') 
+        self::updateEmailAddress($identifier->identifiers, $userPersonObj, $websiteId);
     }    
+  }
+  
+  /**
+   * When updating an email identifier, as this is the latest update copy it into the person record 
+   * and update all associated sample attribute values from this website.
+   */
+  private static function updateEmailAddress($email, $userPersonObj, $websiteId) {
+    $userPersonObj->db->update('people', array('email_address'=>$email), array('id'=>$userPersonObj->person_id));
+    // update all sample attribute values matching other email addresses for this account and linked to the user ID and website to this email
+    $userPersonObj->db->query(<<<QRY
+update sample_attribute_values sav
+set text_value=p.email_address
+from people p
+join users u on u.person_id=p.id and u.deleted=false
+join user_identifiers ui on ui.user_id=u.id and ui.deleted=false 
+join cache_termlists_terms ctt on ctt.id=ui.type_id and ctt.term='email'
+join samples s on s.created_by_id=u.id and s.deleted=false
+join surveys su on su.id=s.survey_id and su.deleted=false and su.website_id=$websiteId
+where p.id={$userPersonObj->person_id}
+and sav.sample_id=s.id
+and sav.text_value<>p.email_address
+and sav.text_value=ui.identifier
+QRY);
   }
   
   /**
