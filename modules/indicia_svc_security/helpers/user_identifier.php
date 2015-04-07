@@ -337,7 +337,7 @@ class user_identifier {
         self::checkErrors($new);
       }
       if ($identifier->type==='email') 
-        self::updateEmailAddress($identifier->identifiers, $userPersonObj, $websiteId);
+        self::updateEmailAddress($identifier->identifier, $userPersonObj, $websiteId);
     }    
   }
   
@@ -361,7 +361,8 @@ where p.id={$userPersonObj->person_id}
 and sav.sample_id=s.id
 and sav.text_value<>p.email_address
 and sav.text_value=ui.identifier
-QRY);
+QRY
+  );
   }
   
   /**
