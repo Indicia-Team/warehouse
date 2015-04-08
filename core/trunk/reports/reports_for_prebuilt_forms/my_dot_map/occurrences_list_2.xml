@@ -6,8 +6,9 @@
   JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
   JOIN samples s on s.id=o.sample_id
   LEFT JOIN cache_taxa_taxon_lists ttlcomm on ttlcomm.taxon_meaning_id=o.taxon_meaning_id AND ttlcomm.language_iso='#language#'
-  LEFT JOIN occurrence_attribute_values oav on oav.occurrence_id=o.id and oav.deleted=false
-  LEFT JOIN occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='sex_stage_count'
+  LEFT JOIN (occurrence_attribute_values oav
+    JOIN occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oa.deleted=false and oa.system_function='sex_stage_count'
+  ) on oav.occurrence_id=o.id and oav.deleted=false
   LEFT JOIN cache_termlists_terms abund on abund.termlist_id=oa.termlist_id and abund.id=oav.int_value
   WHERE o.sample_id=#sample_id#
   </query>
