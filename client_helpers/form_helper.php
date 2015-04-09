@@ -269,7 +269,8 @@ $('#load-params').click(function() {
         {form: $('#form-picker').val(),
             website_id: $('#website_id').val(),
             password: $('#password').val(),
-            base_url: '".self::$base_url."'},
+            base_url: '".self::$base_url."',
+            generator: $('meta[name=\"generator\"]').attr('content')},
         function(data) {
           $('#form-params').hide().html(data).fadeIn();
           Drupal.attachBehaviors();
@@ -298,6 +299,9 @@ $('#load-params').click(function() {
    * Optional. Defaults to false. If true then only parameters marked as specific to a site
    * are loaded. Used to provide a reduced version of the params form after migrating a
    * form between sites (e.g. when installing a Drupal feature).</li>
+   * <li><b>generator</b>
+   * Optional. A string which, if it contains 'Drupal 7' is used to output
+   * html specific to that CMS. </li>
    * </ul>
    */
   public static function prebuilt_form_params_form($options) {
@@ -356,7 +360,7 @@ $('#load-params').click(function() {
     foreach($fieldsets as $fieldset=>$content) {
       $r .= "<fieldset class=\"$class\">\n";
       // In Drupal 7 the fieldset output includes an extra span
-      $legendContent = (defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY==='7.x') ?
+      $legendContent = (isset($options['generator']) && stristr($options['generator'], 'Drupal 7')) ?
         "<span class=\"fieldset-legend\">$fieldset</span>" : $fieldset;
       $r .= "<legend>$legendContent</legend>\n";
       $r .= "<div class=\"fieldset-wrapper\">\n";
