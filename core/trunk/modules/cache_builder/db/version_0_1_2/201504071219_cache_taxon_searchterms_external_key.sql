@@ -1,6 +1,9 @@
-﻿ALTER TABLE indicia.cache_taxon_searchterms
+﻿-- #slow script#
+-- Took 27 minutes on testwarehouse.
+
+ALTER TABLE cache_taxon_searchterms
    ADD COLUMN external_key character varying;
-COMMENT ON COLUMN indicia.cache_taxon_searchterms.external_key
+COMMENT ON COLUMN cache_taxon_searchterms.external_key
   IS 'External identifier for the taxon.';
 
 UPDATE cache_taxon_searchterms cts
