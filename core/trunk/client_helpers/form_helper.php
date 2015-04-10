@@ -360,8 +360,15 @@ $('#load-params').click(function() {
     foreach($fieldsets as $fieldset=>$content) {
       $r .= "<fieldset class=\"$class\">\n";
       // In Drupal 7 the fieldset output includes an extra span
-      $legendContent = (isset($options['generator']) && stristr($options['generator'], 'Drupal 7')) ?
-        "<span class=\"fieldset-legend\">$fieldset</span>" : $fieldset;
+      // When called from within Drupal, DRUPAL_CORE_COMPATIBILITY can determine
+      // version. When called by Ajax version has to be sent in $options.
+      if((defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY==='7.x') ||
+          (isset($options['generator']) && stristr($options['generator'], 'Drupal 7'))) {
+        $legendContent = "<span class=\"fieldset-legend\">$fieldset</span>";
+      }
+      else {
+        $legendContent = $fieldset;
+      }
       $r .= "<legend>$legendContent</legend>\n";
       $r .= "<div class=\"fieldset-wrapper\">\n";
       $r .= $fieldsets[$fieldset];
