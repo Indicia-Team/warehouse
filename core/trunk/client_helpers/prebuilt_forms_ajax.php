@@ -43,7 +43,7 @@ echo form_helper::prebuilt_form_params_form(array(
   'form' => $_POST['form'],
   'readAuth' => $readAuth,
   'expandFirst' => true,
-  'generator' => $_POST['generator'],
+  'generator' => (isset($_POST['generator'])) ? $_POST['generator'] : 'No generator metatag posted',
 ));
 data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';
