@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Associated species using standard filters"
+        description="Gives a list of top n associated species for occurrences selected according to a standard filter, with their number of records. Ideal for populating
+        a 'species cloud'.">
+      <query website_filter_field="o.website_id" standard_params="true">
+      SELECT COALESCE(default_common_name, preferred_taxon) as species, taxon_meaning_id, records,
+          24 - ((rank() OVER (ORDER BY records DESC))::float - 1) / count(*) * 15 as font_size
+      FROM (
+        SELECT default_common_name, preferred_taxon, taxon_meaning_id, count(id) as records
+        FROM (SELECT oassoc.id, oassoc.default_common_name, oassoc.preferred_taxon, oassoc.taxon_meaning_id
+          FROM cache_occurrences o
+          JOIN occurrence_associations oa on (oa.from_occurrence_id=o.id or oa.to_occurrence_id=o.id) and oa.deleted=false
+          JOIN cache_termlists_terms ctt on ctt.id=oa.association_type_id
+          JOIN cache_occurrences oassoc
+              on (oassoc.id=oa.to_occurrence_id and oa.from_occurrence_id=o.id)
+              or (oassoc.id=oa.from_occurrence_id and oa.to_occurrence_id=o.id)
+          #agreements_join#
+          #joins#
+          WHERE #sharing_filter#
+          #filters#
+          ORDER BY id DESC
+        ) list
+        GROUP BY default_common_name, preferred_taxon, taxon_meaning_id
+        ORDER BY count(id) DESC
+        LIMIT #species_to_return#
+      ) AS list
+          GROUP BY COALESCE(default_common_name, preferred_taxon), taxon_meaning_id, records
+          ORDER BY COALESCE(default_common_name, preferred_taxon) ASC
+      </query>
+  <params>
+    <param name="species_to_return" datatype="integer" default="15" />
+  </params>
+</report>
