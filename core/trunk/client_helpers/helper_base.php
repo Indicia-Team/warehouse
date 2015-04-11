@@ -1616,7 +1616,9 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
         errorPlacement: function(error, element) {}") ."
       });
       //Don't validate whilst user is still typing in field
-      validator.settings.onkeyup = false;
+      if (typeof validator!=='undefined') {
+        validator.settings.onkeyup = false;
+      }
       \n";
     }
   }
