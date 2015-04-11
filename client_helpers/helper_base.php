@@ -52,7 +52,7 @@ $indicia_templates = array(
       \"".lang::get('unlocked tool-tip')."\",
       \"{lock_form_mode}\"
       );\n",
-  'validation_message' => '<p for="{for}" class="{class}">{error}</p>'."\n",
+  'validation_message' => '<p class="{class}">{error}</p>'."\n",
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
   'error_class' => 'inline-error',
@@ -702,6 +702,7 @@ class helper_base extends helper_config {
    *
    * @param string $fieldname Fieldname of the control to retrieve errors for.
    * @param boolean $plaintext Set to true to return just the error text, otherwise it is wrapped in a span.
+   * @return string HTML for the validation error output.
    */
   public static function check_errors($fieldname, $plaintext=false)
   {
@@ -1030,12 +1031,13 @@ class helper_base extends helper_config {
     self::$javascript .= $javascript;
     return $r;
   }
-  
-  /** 
+
+  /**
    * Internal method to safely find the value of a preset parameter. Returns empty string if not defined.
-   * @param array $options The options array, containing a extraParams entry that the parameter should be 
+   * @param array $options The options array, containing a extraParams entry that the parameter should be
    * found in.
    * @param string $name The key identifying the preset parameter to look for.
+   * @return string Value of preset parameter or empty string.
    */
   private static function get_preset_param($options, $name) {
     if (!isset($options['extraParams']))
@@ -1276,7 +1278,7 @@ class helper_base extends helper_config {
    * client_helpers/upload folder.
    * @param boolean $persist_auth Allows the write nonce to be preserved after sending the file, useful when several files
    * are being uploaded.
-   * @param array readAuth Read authorisation tokens, if not supplied then the $_POST array should contain them.
+   * @param array $readAuth Read authorisation tokens, if not supplied then the $_POST array should contain them.
    * @param string $service Path to the service URL used. Default is data/handle_media, but could be import/upload_csv.
    * @return string Error message, or true if successful.
    */
@@ -1346,12 +1348,13 @@ class helper_base extends helper_config {
   }
 
   /**
-  * Retrieves a read token and passes it back as an array suitable to drop into the
-  * 'extraParams' options for an Ajax call.
-  *
-  * @param string $website_id Indicia ID for the website.
-  * @param string $password Indicia password for the website.
-  */
+   * Retrieves a read token and passes it back as an array suitable to drop into the
+   * 'extraParams' options for an Ajax call.
+   *
+   * @param string $website_id Indicia ID for the website.
+   * @param string $password Indicia password for the website.
+   * @return array Read authorisation tokens array.
+   */
   public static function get_read_auth($website_id, $password) {
     self::$website_id = $website_id; /* Store this for use with data caching */
     // Keep a non-random cache for 10 minutes. It MUST be shorter than the normal cache lifetime so this expires more frequently.
@@ -1375,7 +1378,7 @@ class helper_base extends helper_config {
   * Retrieves read and write nonce tokens from the warehouse.
   * @param string $website_id Indicia ID for the website.
   * @param string $password Indicia password for the website.
-  * @return Returns an array containing:
+  * @return array Returns an array containing:
   * 'read' => the read authorisation array,
   * 'write' => the write authorisation input controls to insert into your form.
   * 'write_tokens' => the write authorisation array, if needed as separate tokens rather than just placing in form.
@@ -1408,7 +1411,7 @@ class helper_base extends helper_config {
    * The advantage of dump_javascript is that it intelligently builds the required links
    * depending on what is on your form. dump_header is not intelligent because the form is not
    * built yet, but placing links in the header leads to cleaner code which validates better.
-   * @param $resources List of resources to include in the header. The available options are described
+   * @param array $resources List of resources to include in the header. The available options are described
    * in the documentation for the add_resource method. The default for this is jquery_ui and defaultStylesheet.
    *
    * @return string Text to place in the head section of the html file.
@@ -1807,13 +1810,14 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
       return array();
     }
   }
-  
+
   /**
-   * Utility function to load a list of terms from a termlist. 
+   * Utility function to load a list of terms from a termlist.
    * @param array $auth Read authorisation array.
-   * @param mixed $termlist Either the id or external_key of the termlist to load. 
+   * @param mixed $termlist Either the id or external_key of the termlist to load.
    * @param array $filter List of the terms that are required, or null for all terms.
    * @return array Output of the Warehouse data services request for the terms.
+   * @throws \Exception
    */
   public static function get_termlist_terms($auth, $termlist, $filter=null) {
     if (!is_int($termlist)) {
@@ -1957,8 +1961,6 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
   protected static function apply_static_template($name, $options) {
     global $indicia_templates;
     $key = $name .'Template';
-    $r = '';
-
     if (array_key_exists($key, $options)) {
       //a template has been specified    
       if (array_key_exists($options[$key], $indicia_templates))
@@ -2010,7 +2012,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
    * caches? Default true.
    * @return mixed String read from the cache, or false if not read.
    */   
-  public static function cache_get($cacheOpts, $cacheTimeout=false, $random=true) {
+  public static function cache_get($cacheOpts, $cacheTimeout=0, $random=true) {
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut(array());
     $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
@@ -2026,19 +2028,21 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
    * @param string $toCache String data to cache.
    * @param integer $cacheTimeout Timeout in seconds, if overriding the default cache timeout.
    */   
-  public static function cache_set($cacheOpts, $toCache, $cacheTimeout=false) {
+  public static function cache_set($cacheOpts, $toCache, $cacheTimeout=0) {
     if (!$cacheTimeout)
       $cacheTimeout = self::_getCacheTimeOut(array());
     $cacheFolder = self::$cache_folder ? self::$cache_folder : self::relative_client_helper_path() . 'cache/';
     $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeout);
     self::_cacheResponse($cacheFile, array('output' => $toCache), $cacheOpts);
   }
-  
-  /** 
+
+  /**
    * Wrapped up handler for a cached call to the data or reporting services.
    * @param string $request Request URL.
    * @param array $options Control options, which may include a caching option and/or cachePerUser
    * option.
+   * @return mixed
+   * @throws \Exception
    */
   protected static function _get_cached_services_call($request, $options) {
     $cacheLoaded = false;
@@ -2105,7 +2109,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
    * Protected function to generate a filename to be used as the cache file for this data
    * @param string $path directory path for file
    * @param array $options Options array : contents are used along with md5 to generate the filename.
-   * @param number $timeout - will be false if no caching to take place
+   * @param integer $timeout - will be false if no caching to take place
    * @return string filename, else FALSE if data is not to be cached.
    */
   protected static function _getCacheFileName($path, $options, $timeout)
@@ -2126,7 +2130,7 @@ indiciaData.jQuery = jQuery; //saving the current version of jQuery
    * Protected function to return the cached data stored in the specified local file.
    * 
    * @param string $file Cache file to be used, includes path
-   * @param number $timeout - will be false if no caching to take place
+   * @param integer $timeout - will be false if no caching to take place
    * @param array $options Options array : contents used to confirm what this data is.
    * @param boolean $random Should a random element be introduced to prevent simultaneous expiry of multiple
    * caches? Default true.
