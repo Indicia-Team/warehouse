@@ -1118,7 +1118,8 @@ jsonwidget.editor.setView = function setView (viewtoset) {
     if(tryUpdateJSON) {
       je.updateJSON();
     }
-    document.getElementById(je.htmlids.sourcetextarea).style.display="inline";
+    // modified to use jQuery, as original code style.display="inline" only seems to work on FF
+    jQuery('#' + je.htmlids.sourcetextarea).attr('style', '');
     je.clearStatusLight();
   },this.getStatusLightDelay(null));
   break;
