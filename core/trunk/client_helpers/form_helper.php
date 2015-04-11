@@ -270,7 +270,10 @@ $('#load-params').click(function() {
             website_id: $('#website_id').val(),
             password: $('#password').val(),
             base_url: '".self::$base_url."',
-            generator: $('meta[name=\"generator\"]').attr('content')},
+            generator: $('meta').filter(function() { 
+              return typeof $(this).attr('name')!=='undefined' && $(this).attr('name').toLowerCase() === 'generator';
+            }).attr('content')
+        },
         function(data) {
           $('#form-params').hide().html(data).fadeIn();
           Drupal.attachBehaviors();
