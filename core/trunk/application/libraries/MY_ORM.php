@@ -114,6 +114,14 @@ class ORM extends ORM_Core {
   private $attrValModels = array();
 
   /**
+   * @var array If a submission contains submodels, then the array of submodels can be keyed. This
+   * allows other foreign key fields in the submisson to refer to a model which does not exist yet.
+   * Normally, super/sub-models can handle foreign keys, but this approach is needed for association
+   * tables which join across 2 entities created by a submission.
+   */
+  private $dynamicRowIdReferences = array();
+
+  /**
    * Constructor allows plugins to modify the data model.
    * @var int $id ID of the record to load. If null then creates a new record. If -1 then the ORM
    * object is not initialised, providing access to the variables only.
@@ -594,6 +602,7 @@ class ORM extends ORM_Core {
       $this->db->query('COMMIT;');
     } else {
       Kohana::log('debug', 'Rolling back transaction.');
+      kohana::log('debug', var_export($this->getAllErrors(), true));
       $this->db->query('ROLLBACK;');
     }
     return $res;
@@ -609,7 +618,8 @@ class ORM extends ORM_Core {
 
   /**
    * Handles any index rebuild requirements as a result of new or updated records, e.g. in
-   * samples or occurrences.
+   * samples or occurrences. Also handles joining of occurrence_associations to the
+   * correct records
    */
   private function postProcess() {
     if (class_exists('cache_builder')) {
@@ -641,6 +651,18 @@ class ORM extends ORM_Core {
           postgreSQL::insertMapSquaresForOccurrences($occurrences, 2000, $this->db);
           postgreSQL::insertMapSquaresForOccurrences($occurrences, 10000, $this->db);
         }
+      }
+    }
+    if (!empty(self::$changedRecords['insert']['occurrence_association'])) {
+      // We've got some associations between occurrences that could not have the to_occurrence_id
+      // foreign key filled in yet, since the occurrence referred to did not exist at the time of
+      // saving
+      foreach(Occurrence_association_Model::$to_occurrence_id_pointers as $associationId => $pointer) {
+        if (!empty($this->dynamicRowIdReferences["occurrence:$pointer"]))
+          $this->db->from('occurrence_associations')
+              ->set('to_occurrence_id', $this->dynamicRowIdReferences["occurrence:$pointer"])
+              ->where('id', $associationId)
+              ->update();
       }
     }
   }
@@ -939,7 +961,7 @@ class ORM extends ORM_Core {
     $r=true;
     if (array_key_exists('subModels', $this->submission)) {
       // Iterate through the subModel array, linking them to this model
-      foreach ($this->submission['subModels'] as $a) {
+      foreach ($this->submission['subModels'] as $key => $a) {
         Kohana::log("debug", "Submitting submodel ".$a['model']['id'].".");
         // Establish the right model
         $modelName = $a['model']['id'];
@@ -978,6 +1000,11 @@ class ORM extends ORM_Core {
             $this->errors[$fieldPrefix.$key]=$value;
           }
           $r=false;
+        } elseif (!preg_match('/^\d+$/', $key)) {
+          // sub-model list is an associative array. This means there might be references
+          // to these keys elsewhere in the submission. Basically dynamic references to
+          // rows which don't yet exist.
+          $this->dynamicRowIdReferences["$modelName:$key"] = $m->id;
         }
       }
     }
