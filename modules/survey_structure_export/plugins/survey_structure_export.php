@@ -7,6 +7,12 @@ function survey_structure_export_extend_ui() {
     'controller'=>'survey_structure_export',
     'title'=>'Import & Export',
     'allowForNew' => false
+  ), array(
+    'view'=>'termlist/termlist_edit',
+    'type'=>'tab',
+    'controller'=>'termlist_export',
+    'title'=>'Import & Export',
+    'allowForNew' => false
   ));
 }
 
