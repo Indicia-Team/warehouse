@@ -156,14 +156,14 @@ order by aw.website_id is null, aw.website_id={websiteId}";
     if (empty($_POST['import_survey_structure'])) {
       $this->template->title = 'Error during survey structure import';
       $this->view = new View('templates/error_message');
-      $this->view->message='Please ensure you copy the details of a survey\'s attributes into the "Import survey structure box" before importing.';
+      $this->view->message='Please ensure you copy the details of a survey\'s attributes into the "Import survey structure" box before importing.';
       $this->template->content = $this->view;
     } else {
       // start a transaction
       $this->db->query('BEGIN;');
       try {
         $importData = json_decode($_POST['import_survey_structure'], true);
-        $this->doImport($importData, $_POST['survey_id']);
+        $this->doImport($importData);
         $this->template->title = 'Import Complete';
         $this->view = new View('survey_structure_export/import_complete');
         $this->view->log = $this->log;
@@ -189,9 +189,8 @@ order by aw.website_id is null, aw.website_id={websiteId}";
    * Import a pasted definition of a set of custom attributes.
    *
    * @param array $importData The array definition of the attributes to import.
-   * @param int $surveyId The ID of the survey in the database we are importing into.
    */
-  public function doImport($importData, $surveyId) {
+  public function doImport($importData) {
     if (isset($_SESSION['auth_user']))
       $this->userId = $_SESSION['auth_user']->id;
     else {
@@ -264,15 +263,15 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       // can use $existingAttrs[0] to link to safely.
       $this->linkAttr($type, $importAttrDef, $existingAttrs[0]);
   }
-  
+
   /**
    * Create a sample or occurrence custom attribute.
-   * 
+   *
    * @param string $type Type of custom attribute, sample or occurrence.
    * @param array $attrDef Definition of the attribute in an array, as retrieved from the imported
    * data.
    * @param array $extraFields List of non-standard fields in this attributes database table.
-   * @return type
+   * @throws \exception
    */
   private function createAttr($type, $attrDef, $extraFields) {
     $array=array(
@@ -317,13 +316,14 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       $this->linkAttr($type, $attrDef, $a->as_array());
     }
   }
-  
+
   /**
-   * Create a new termlist and populate it with the terms required for a new lookup 
+   * Create a new termlist and populate it with the terms required for a new lookup
    * custom attribute.
-   * 
+   *
    * @param array $attrDef Definition of the attribute as defined by the imported data.
-   * @return integer Returns the database ID of the created termist.
+   * @return int Returns the database ID of the created termist.
+   * @throws \exception
    */
   private function createTermlist($attrDef) {
     $tl = ORM::factory('termlist');
@@ -351,7 +351,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
         if (!empty($term[3])) {
           $this->db->query("update termlists_terms tlt set parent_id=tltp.id 
             from terms t, termlists_terms tltp
-            join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$term[2]'
+            join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$term[3]'
             where tlt.termlist_id={$tl->id} and t.id=tlt.term_id and t.deleted=false and t.term='$term[0]'
             and tltp.termlist_id=tlt.termlist_id and tltp.deleted=false");
         }
@@ -360,15 +360,17 @@ order by aw.website_id is null, aw.website_id={websiteId}";
     }
     return $tl->id;
   }
-  
+
   /**
    * Link an attribute to the survey by checking a sample_attributes_websites or occurrence_attributes_websites
    * record exists and if not then creates it.
-   * 
+   *
    * @param string $type Type of attribute we are working on, occurrence or sample.
-   * @param array $attrDef Definition of the attribute as defined by the imported data.
-   * @param array $existingAttr The array definition of the attribute to link, which must 
+   * @param array $importAttrDef The definition of the attribute we are importing.
+   * @param array $existingAttr The array definition of the attribute to link, which must
    * already exist.
+   * @throws \exception
+   * @internal param array $attrDef Definition of the attribute as defined by the imported data.
    */
   private function linkAttr($type, $importAttrDef, $existingAttr) {
     $aw = ORM::factory("{$type}_attributes_website")->where(array("{$type}_attribute_id"=>$existingAttr['id'], 'restrict_to_survey_id'=>$_POST['survey_id']))->find();
@@ -378,9 +380,6 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       // Need to create a link in sample_attributes_websites to link the existing attribute to the survey
       $fkName = "{$type}_attribute_id";
       $aw->$fkName=$existingAttr['id'];
-      
-      
-      
       $aw->website_id=$this->website_id;
       $aw->restrict_to_survey_id=$_POST['survey_id'];
       $aw->validation_rules=$importAttrDef['aw_validation_rules'];
@@ -405,7 +404,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
         }
       }
       if (!$aw->save()) {
-        throw new exception("Error creating $type attributes website record to associate $attrDef[caption].");
+        throw new exception("Error creating $type attributes website record to associate $importAttrDef[caption].");
       }
     }
   }
@@ -440,8 +439,6 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       $parent=false;
       if (!empty($attrDef['fsb2_name'])) {
         // If we have a parent block, find an existing one or create a new one as appropriate
-        $matches = $this->db->query("select id from form_structure_blocks
-            where name='$attrDef[fsb2_name]' and survey_id=$_POST[survey_id] and parent_id is null")->result_array(FALSE);
         $parent = ORM::factory('form_structure_block')->where(array(
           'name' => $attrDef['fsb2_name'],
           'survey_id' => $_POST['survey_id'],
@@ -471,7 +468,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
   /**
    * Retrieves the data for a list of attributes associated with a given survey.
    * 
-   * @param type $surveyId
+   * @param integer $id Survey ID
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
    */
