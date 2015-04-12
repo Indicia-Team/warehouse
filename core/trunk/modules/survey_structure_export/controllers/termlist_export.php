@@ -196,7 +196,7 @@ where {where}";
    * arrays of the data from the tables.
    */
   public function getTerms($termlistId) {
-    $r = $this->db->query(str_replace('{where}', "t.termlist_id=$id", self::SQL_FETCH_ALL_TERMS))->result_array(FALSE);
+    $r = $this->db->query(str_replace('{where}', "t.termlist_id=$termlistId", self::SQL_FETCH_ALL_TERMS))->result_array(FALSE);
     return $r[0];
   }
   
