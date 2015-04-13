@@ -16,7 +16,7 @@ CREATE TABLE occurrence_associations
   deleted boolean NOT NULL DEFAULT false, -- Has this record been deleted?
   CONSTRAINT pk_association_types PRIMARY KEY (id),
   CONSTRAINT fk_occurrence_association_from_occurrence FOREIGN KEY (from_occurrence_id)
-      REFERENCES termlists_terms (id) MATCH SIMPLE
+      REFERENCES occurrences (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_occurrence_association_to_occurrence FOREIGN KEY (to_occurrence_id)
       REFERENCES occurrences (id) MATCH SIMPLE
