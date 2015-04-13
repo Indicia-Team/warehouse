@@ -608,7 +608,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   report_helper::add_resource('reportfilters');
   report_helper::add_resource('validation');
   report_helper::add_resource('fancybox');
-  if (defined('DRUPAL_CORE_COMPATIBILITY') && DRUPAL_CORE_COMPATIBILITY!=='7.x')
+  if (function_exists('hostsite_add_library'))
     hostsite_add_library('collapse');
   $filterData = report_filters_load_existing($readAuth, $options['sharingCode']);
   $existing = '';
