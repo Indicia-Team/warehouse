@@ -1799,10 +1799,12 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function get_control_date($auth, $args, $tabAlias, $options) {
     if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
-      // Date has 4 digit year first (ISO style) - convert date to expected output format
-      // @todo The date format should be a global configurable option. It should also be applied to reloading of custom date attributes.
+      // Date has 4 digit year first (ISO style) - convert date to expected output format.
+      //Note this only affects the loading of the date itself when the form initially loads, the format displayed as soon as the 
+      //date picker is selected is determined by Drupal's settings.
+      // @todo The date format should be a global configurable option.
       $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
-      data_entry_helper::$entity_to_load['sample:date'] = $d->format('d/m/Y');
+      data_entry_helper::$entity_to_load['sample:date'] = $d->format(helper_base::$date_format);
     }
     if($args['language'] != 'en')
       data_entry_helper::add_resource('jquery_ui_'.$args['language']); // this will autoload the jquery_ui resource. The date_picker does not have access to the args.
