@@ -3867,7 +3867,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
             'table' => 'sample',
             'extraParams' => $extraParams,
             'nocache' => true
-        ));    
+        ));   
       	$subSampleList = array();
       	foreach($subSamples as $idx => $subsample){
       		$subSampleList[] = $subsample['id'];
@@ -6002,7 +6002,7 @@ if (errors$uniq.length>0) {
    * customised submissions that only need to build sub-samples for some grids. The grid id comes from the @id option given 
    * to the species grid.
    */
-  public static function wrap_species_checklist_with_subsamples($arr, $include_if_any_data=false,
+    public static function wrap_species_checklist_with_subsamples($arr, $include_if_any_data=false,
           $zero_attrs = true, $zero_values=array('0','None','Absent'), $gridsToExclude=array()){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
@@ -6347,7 +6347,7 @@ if (errors$uniq.length>0) {
   public static function build_submission($values, $structure) {
     return submission_builder::build_submission($values, $structure);
   }
-
+  
   /**
   * Takes a response from a call to forward_post_to() and outputs any errors from it onto the screen.
   *
@@ -6721,6 +6721,14 @@ if (errors$uniq.length>0) {
         foreach ($valueResponse as $value){
           $attrId = $value[$options['attrtable'].'_id'];
           if($attrId == $itemId && $value['id']) {
+            if ($item['data_type']==='D' && isset($value['value']) && preg_match('/^(\d{4})/', $value['value'])) {
+              // Date has 4 digit year first (ISO style) - convert date to expected output format
+              // Note this only affects the loading of the date itself when the form initially loads, the format displayed as soon as the 
+              // date picker is selected is determined by Drupal's settings.
+              // @todo The date format should be a global configurable option. 
+              $d = new DateTime($value['value']);
+              $value['value'] = $d->format(helper_base::$date_format);
+            }
             // for multilanguage look ups we get > 1 record for the same attribute.
             $fieldname = $options['fieldprefix'].':'.$itemId.':'.$value['id'];
             $found = false;
@@ -6729,7 +6737,7 @@ if (errors$uniq.length>0) {
                 $found = true;
             if(!$found)
               $item['values'][] = array('fieldname' => $options['fieldprefix'].':'.$itemId.':'.$value['id'],
-                                'default' => $value['raw_value'], 'caption'=>$value['value']);
+                                'default' => $value['value'], 'caption'=>$value['value']);
             $item['displayValue'] = $value['value']; //bit of a bodge but not using multivalue for this at the moment.
           }
         }
@@ -7049,7 +7057,7 @@ if (errors$uniq.length>0) {
         if ($pathPos !==false && ($modelName === null || $modelName == substr($key, 0, strlen($modelName)) || 
             $legacyModelName == substr($key, 0, strlen($legacyModelName)))) {
           $prefix = substr($key, 0, $pathPos);
-          $thisMediaTypeId=isset($values[$prefix.':media_type_id'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type_id'.$uniqueId]) : '';         
+          $thisMediaTypeId=isset($values[$prefix.':media_type_id'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type_id'.$uniqueId]) : '';
           //Only extract the media if we are extracting media of any type or the data matches the type we are wanting to extract
           if ($thisMediaTypeId==$mediaTypeIdToExtract||$mediaTypeIdToExtract===null) {    
             $r[] = array(
