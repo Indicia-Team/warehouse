@@ -488,7 +488,18 @@ class helper_base extends helper_config {
    * @var string Google API key. Placed here rather than helper_config.php, as only recently introduced. 
    */
   public static $google_api_key = '';
-
+  
+  /*
+   * Global format for display of dates such as sample date, date attributes in Drupal.
+   * Note this only affects the loading of the date itself when a form in edit mode loads, the format displayed as soon as the 
+   * date picker is selected is determined by Drupal's settings. So make sure Drupal's date format and this option match up. 
+   * @todo need to create a proper config option for this
+   * @todo not all dates will respect this format yet. Sample dates (dynamic sample occurrence) and also the display of custom attribute dates on forms will currently respect the
+   * format so far.
+   *
+   */
+  public static $date_format='d/m/y';
+  
   /**
    * @var Boolean indicates if any form controls have specified the lockable option.
    * If so, we will need to output some javascript.
@@ -511,7 +522,7 @@ class helper_base extends helper_config {
     'outerClass' => 'class',
     'selected' => 'selected'
   );
-
+  
   /**
    * @var array List of error messages that have been displayed, so we don't duplicate them when dumping any
    * remaining ones at the end.
