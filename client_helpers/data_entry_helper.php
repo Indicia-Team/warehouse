@@ -6241,8 +6241,7 @@ if (errors$uniq.length>0) {
         )
     );
     // Either an uploadable file, or a link to an external detail means include the submodel
-    if ((array_key_exists('occurrence:image', $values) && $values['occurrence:image'])
-        || array_key_exists('occurrence_medium:external_details', $values) && $values['occurrence_medium:external_details']) {
+    if (!empty($values['occurrence:image']) || !empty($values['occurrence_medium:external_details'])) {
       $structure['subModels']['occurrence']['subModels'] = array(
           'occurrence_medium' => array('fk' => 'occurrence_id')
       );
@@ -6333,13 +6332,11 @@ if (errors$uniq.length>0) {
    *     'model' => 'main model name',
    *     'subModels' => array('child model name' =>  array(
    *         'fieldPrefix'=>'Optional prefix for HTML form fields in the sub model. If not specified then the sub model name is used.',
-   *         'fk' => 'foreign key name',
-   *         'image_entity' => 'name of image entity if present'
+   *         'fk' => 'foreign key name'
    *     )),
    *     'superModels' => array('child model name' =>  array(
    *         'fieldPrefix'=>'Optional prefix for HTML form fields in the sub model. If not specified then the sub model name is used.',
-   *         'fk' => 'foreign key name',
-   *         'image_entity' => 'name of image entity if present'
+   *         'fk' => 'foreign key name'
    *     )),
    *     'metaFields' => array('fieldname1', 'fieldname2', ...)
    * )
