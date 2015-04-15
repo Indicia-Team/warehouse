@@ -81,6 +81,15 @@ jQuery(document).ready(function($) {
       }
     }
   }
+
+  /**
+   * Returns true if a site or grid reference are currently selected on the filter
+   * @returns boolean
+   */
+  function siteOrGridRefSelected() {
+    return ($('#imp-location').val()!=='' && $('#imp-location').val()!==null)
+      || ($('#imp-sref').val()!=='' && $('#imp-sref').val()!==null);
+  }
   
   // functions that drive each of the filter panes, e.g. to obtain the description from the controls.
   var paneObjList = {
@@ -361,7 +370,9 @@ jQuery(document).ready(function($) {
         
         $.each(indiciaData.mapdiv.map.editLayer.features, function(i, feature) {
           // ignore features with a special purpose, e.g. the selected record when verifying
-          if (typeof feature.tag==="undefined" && (typeof feature.attributes.type==="undefined" || feature.attributes.type!=="boundary")) {
+          if (typeof feature.tag==="undefined" &&
+              (typeof feature.attributes.type==="undefined" ||
+              (feature.attributes.type!=="boundary" && feature.attributes.type!=="ghost"))) {
             if (feature.geometry.CLASS_NAME.indexOf('Multi')!==-1) {
               geoms = geoms.concat(feature.geometry.components);
             } else {
@@ -417,6 +428,10 @@ jQuery(document).ready(function($) {
           $(indiciaData.mapdiv).css('height', '100%');
           $('#filter-map-container').append(element);
         }
+        if (siteOrGridRefSelected()) {
+          // don't want to be able to edit a loaded site boundary or grid reference
+          $('.olControlModifyFeatureItemInactive').hide();
+        }
         // select the first draw... tool if allowed to draw on the map by permissions, else select navigate
         $.each(indiciaData.mapdiv.map.controls, function(idx, ctrl) {        
           if (context && (((context.sref || context.searchArea) && ctrl.CLASS_NAME.indexOf('Control.Navigate')>-1) ||
@@ -443,12 +458,13 @@ jQuery(document).ready(function($) {
       },
       loadFilter: function() {
         if (typeof indiciaData.mapdiv!=="undefined") {
+          var map=indiciaData.mapdiv.map;
           if (indiciaData.filter.def.searchArea) {
             var parser = new OpenLayers.Format.WKT(), feature = parser.read(indiciaData.filter.def.searchArea);
-            if (indiciaData.mapdiv.map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
-              feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, indiciaData.mapdiv.map.projection);
+            if (map.projection.getCode() !== indiciaData.mapdiv.indiciaProjection.getCode()) {
+              feature.geometry.transform(indiciaData.mapdiv.indiciaProjection, map.projection);
             }
-            indiciaData.mapdiv.map.editLayer.addFeatures([feature]);
+            map.editLayer.addFeatures([feature]);
           } else if (indiciaData.filter.def.location_id) {
             indiciaData.mapdiv.locationSelectedInInput(indiciaData.mapdiv, indiciaData.filter.def.location_id);
           } else if (indiciaData.filter.def.indexed_location_id) {
@@ -619,12 +635,12 @@ jQuery(document).ready(function($) {
   
   // Ensure that pane controls that are exclusive of others are only filled in one at a time
   $('.filter-controls fieldset :input').change(function(e) {
-    var form=$(e.currentTarget).parents('.filter-controls'),
+    var formDiv=$(e.currentTarget).parents('.filter-popup'),
       thisFieldset=$(e.currentTarget).parents('fieldset')[0];
-    if ($(form)[0].id==='controls-filter_where') {      
+    if ($(formDiv)[0].id==='controls-filter_where') {
       indiciaData.mapdiv.map.editLayer.removeAllFeatures();
     }
-    $.each($(form).find('fieldset.exclusive'), function(idx, fieldset) {
+    $.each($(formDiv).find('fieldset.exclusive'), function(idx, fieldset) {
       if (fieldset!==thisFieldset) {
         $(fieldset).find(':input').not('#imp-sref-system,:checkbox,[type=button]').val('');
         $(fieldset).find(':checkbox').attr('checked', false);
@@ -1008,7 +1024,7 @@ jQuery(document).ready(function($) {
   // Applies the current loaded filter to the controls within the pane.
   function updateControlValuesToReflectCurrentFilter(pane) {
     // regexp extracts the pane ID from the href. Loop through the controls in the pane      
-    $.each(pane.find(':input').not(':checkbox,[type=button]'), function(idx, ctrl) {
+    $.each(pane.find(':input').not('#imp-sref-system,:checkbox,[type=button]'), function(idx, ctrl) {
       // set control value to the stored filter setting
       $(ctrl).val(indiciaData.filter.def[$(ctrl).attr('name')]);        
     });
@@ -1041,6 +1057,8 @@ jQuery(document).ready(function($) {
       if (pane[0].id==='controls-filter_where') {
         indiciaData.mapdiv.map.updateSize();
         indiciaData.mapdiv.settings.drawObjectType='queryPolygon';
+        // No need to do this when loading a site boundary as indiciaMapPanel automates it.
+        indiciaData.mapdiv.map.zoomToExtent(indiciaData.mapdiv.map.editLayer.getDataExtent());
       }
     },
     onClosed: function(e) {
@@ -1112,7 +1130,44 @@ jQuery(document).ready(function($) {
   
   $('.fb-close').click(function() {
     $.fancybox.close();
-  });  
+  });
+
+  // Select a named location - deactivate the drawFeature and hide modifyFeature controls.
+  $('#imp-location').change(function() {
+    $.each(indiciaData.mapdiv.map.controls, function() {
+      if (this.CLASS_NAME==='OpenLayers.Control.DrawFeature') {
+        this.deactivate();
+      }
+    });
+    $('.olControlModifyFeatureItemInactive').hide();
+  });
+
+  mapInitialisationHooks.push(function(div) {
+    // On initialisation of the map, hook event handlers to the draw feature control so we can link the modify feature
+    // control visibility to it.
+    $.each(div.map.controls, function() {
+      if (this.CLASS_NAME==='OpenLayers.Control.DrawFeature' || this.CLASS_NAME==='OpenLayers.Control.ModifyFeature') {
+        this.events.register('activate', '', function() {
+          $('.olControlModifyFeatureItemInactive, .olControlModifyFeatureItemActive').show();
+          // If a selected site but switching to freehand, we need to clear the site boundary.
+          if (siteOrGridRefSelected()) {
+            $('#imp-location').val('');
+            $('#imp-sref').val('');
+            div.map.editLayer.removeAllFeatures()
+          }
+        });
+        this.events.register('deactivate', '', function() {
+          $('.olControlModifyFeatureItemInactive').hide();
+        });
+      }
+    });
+  });
+
+  mapClickForSpatialRefHooks.push(function(data, mapdiv) {
+    // on click to set a grid square, clear any other boundary data
+    mapdiv.removeAllFeatures(mapdiv.map.editLayer, 'clickPoint', true);
+    $('#controls-filter_where').find(':input').not('#imp-sref,#imp-sref-system,:checkbox,[type=button]').val('');
+  });
   
   $('form.filter-controls').submit(function(e){
     e.preventDefault();
