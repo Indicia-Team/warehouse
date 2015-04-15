@@ -65,7 +65,7 @@ var createNotifications;
         if (currentFilter==='record_cleaner') {
           msg += 'Record Cleaner';
         } else {
-          msg += $('#notifications-notifications-grid-source_filter option:selected').html().toLowerCase();
+          msg += $('#notifications_notifications_grid-source_filter option:selected').html().toLowerCase();
         }
       }
       msg += '?';
