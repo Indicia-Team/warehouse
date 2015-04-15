@@ -386,7 +386,7 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
   protected static function getHeader($args) {
     // Make sure the form action points back to this page
     $reloadPath = call_user_func(array(self::$called_class, 'getReloadPath'));    
-    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
+    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" enctype=\"multipart/form-data\">\n";
     // request automatic JS validation
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
