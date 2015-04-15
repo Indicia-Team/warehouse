@@ -10,6 +10,7 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
+  AND s.deleted=false
   AND s.parent_id IS NULL
   AND s.created_by_id=#user_id#
   AND su.website_id in (#website_ids#)
