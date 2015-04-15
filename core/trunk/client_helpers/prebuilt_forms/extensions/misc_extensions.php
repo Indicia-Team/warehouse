@@ -106,6 +106,8 @@ class extension_misc_extensions {
    * User can also provide a value in braces to replace with the Drupal field for current user e.g. {field_indicia_user_id}</li>
    * <li><b>onlyShowWhenLoggedInStatus</b><br/>
    * If 1, then only show link for logged in users. If 2, only show link for users who are not logged in.
+   * <li><b>anchorId</b><br/>
+   * Optional id for anchor link. This might be useful, for example, if you want to reference the anchor with jQuery to set the path in real-time.
    * </ul>
    */
   public static function text_link($auth, $args, $tabalias, $options, $path) {
@@ -140,7 +142,12 @@ class extension_misc_extensions {
           $paramToPass=array($options['paramNameToPass']=>$options['paramValueToPass']);
         }
         $button = '<div>';
-        $button .= "  <a ";
+        //If an id option for the anchor is supplied then set the anchor id.
+        //This might be useful, for example, if you want to reference the anchor with jQuery to set the path in real-time.
+        if (!empty($options['anchorId']))
+          $button .= "  <a id=\"".$options['anchorId']."\" ";
+        else 
+          $button .= "  <a  ";
         //Button can still be used without a parameter to pass
         if (!empty($paramToPass)) {
           $button .= "href=\"".url($options['linkPath'], array('query'=>$paramToPass))."\">";
