@@ -13,7 +13,7 @@
   ) ON ttl1.id=l.location_type_id
   LEFT JOIN location_attribute_values lav on lav.location_id=l.id AND lav.location_attribute_id=#max_people_attr_id# AND lav.deleted=false
   LEFT JOIN location_attribute_values lavEvent on lavEvent.location_id=l.id AND lavEvent.location_attribute_id=#event_date_attr_id# AND lavEvent.deleted=false
-  LEFT JOIN person_attribute_values pav on pav.int_value=l.id AND pav.person_attribute_id=#event_date_attr_id# AND pav.deleted=false  
+  LEFT JOIN person_attribute_values pav on pav.int_value=l.id AND pav.person_attribute_id=#user_event_attr_id# AND pav.deleted=false  
   #joins#
   WHERE l.deleted=false
   AND #website_filter#
