@@ -284,11 +284,11 @@ class iform_group_edit {
     elseif (!is_array($args['group_type']))
       $args['group_type']=array($args['group_type']);
     if (count($args['group_type'])===1) {
-      $response = data_entry_helper::get_population_data(array(
+      $terms = data_entry_helper::get_population_data(array(
         'table'=>'termlists_term',
         'extraParams'=>$auth['read'] + array('id'=>$args['group_type'][0])
       ));
-      self::$groupType=strtolower($response[0]['term']);
+      self::$groupType=strtolower($terms[0]['term']);
     }
     self::$groupType = lang::get(self::$groupType);
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" enctype=\"multipart/form-data\">\n";
@@ -431,7 +431,7 @@ $('#entry_form').submit(function() {
         }
       }
       else
-        $default = self::getGroupPages($args, $auth);
+        $default = self::getGroupPages($auth);
       $r .= data_entry_helper::complex_attr_grid(array(
         'fieldname' => 'group:pages[]',
         'columns' => array(
@@ -502,7 +502,7 @@ $('#entry_form').submit(function() {
   /** 
    * Retrieve the pages linked to this group from the database.
    */
-  private static function getGroupPages($args, $auth) {
+  private static function getGroupPages($auth) {
     $pages = data_entry_helper::get_population_data(array(
       'table' => 'group_page',
       'extraParams' => $auth['read'] + array('group_id'=>$_GET['group_id']),
@@ -576,7 +576,7 @@ $('#entry_form').submit(function() {
           'f' => lang::get('they were recorded on a group data entry form')
         )
       ));
-      $r .' </fieldset>';
+      $r .= ' </fieldset>';
     }
     return $r;
   }
@@ -863,7 +863,7 @@ $('#entry_form').submit(function() {
   private static function loadExistingGroup($id, $auth, $args) {
     $group = data_entry_helper::get_population_data(array(
       'table'=>'group',
-      'extraParams'=>$auth['read']+array('view'=>'detail', 'id'=>$_GET['group_id']),
+      'extraParams'=>$auth['read']+array('view'=>'detail', 'id'=>$id),
       'nocache'=>true
     ));
     $group=$group[0];
@@ -872,7 +872,7 @@ $('#entry_form').submit(function() {
         // user did not create group. So, check they are an admin
         $admins = data_entry_helper::get_population_data(array(
           'table'=>'groups_user',
-          'extraParams'=>$auth['read']+array('group_id'=>$_GET['group_id'], 'administrator'=>'t'),
+          'extraParams'=>$auth['read']+array('group_id'=>$id, 'administrator'=>'t'),
           'nocache'=>true
         ));
         $found=false;
@@ -909,7 +909,7 @@ $('#entry_form').submit(function() {
     if ($args['include_administrators'] || $args['include_members']) {
       $members = data_entry_helper::get_population_data(array(
         'table'=>'groups_user',
-        'extraParams'=>$auth['read']+array('view'=>'detail', 'group_id'=>$_GET['group_id']),
+        'extraParams'=>$auth['read']+array('view'=>'detail', 'group_id'=>$id),
         'nocache'=>true
       ));
       $admins = array();
