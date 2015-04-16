@@ -724,12 +724,11 @@ $('#entry_form').submit(function() {
     $pageKeys = preg_grep('/^group\+:pages:\d*:\d+:(0|deleted)$/', array_keys($values));
     $pages = array();
     foreach ($pageKeys as $key) {
-      // skip empty rows, unless they were rows loaded for an existing group_pages record
-      if (!empty($values[$key]) || preg_match('/^group\+:pages:(\d+)/', $key)) {
-        if (preg_match('/deleted$/', $key) && !empty($values[$key]) && $values[$key]==='f') {
-          // the deleted field columns are skipped unless true
-          continue;
-        }
+      // skip empty rows, unless they were rows loaded for an existing group_pages record. Also
+      // skip deletions of non-existing rows or non-deletions of any row.
+      if ((!empty($values[$key]) || preg_match('/^group\+:pages:(\d+)/', $key))
+          && !preg_match('/::(\d+):deleted$/', $key)
+          && !(preg_match('/:deleted$/', $key) && $values[$key]==='f')) {
         // get the key without the column index, so we can access any column we want
         $base = preg_replace('/(0|deleted)$/', '', $key);
         if ((isset($values[$base.'deleted']) && $values[$base.'deleted']==='t') || empty($values[$base.'0']))
