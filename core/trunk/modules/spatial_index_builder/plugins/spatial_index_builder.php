@@ -94,7 +94,7 @@ function spatial_index_builder_get_type_filter() {
     $join='join cache_termlists_terms t on t.id=l.location_type_id';
     $where="and t.preferred_term in ('".implode("','", $config['location_types'])."')";
     if (array_key_exists('survey_restrictions', $config)) {
-      foreach ($config['location_types'] as $type => $surveyIds) {
+      foreach ($config['survey_restrictions'] as $type => $surveyIds) {
         $surveys = implode(', ', $surveyIds);
         $surveyRestriction .= "and (t.preferred_term<>'$type' or s.survey_id in ($surveys))\n";
       }
