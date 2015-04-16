@@ -719,16 +719,21 @@ $('#entry_form').submit(function() {
       $values['group_relation:relationship_type_id']=$args['parent_group_relationship_type'];
     }
     $s = submission_builder::build_submission($values, $struct);
-    // scan the posted values for group pages. This search grabs the first column value keys.
-    $pageKeys = preg_grep('/^group\+:pages:\d*:\d+:0$/', array_keys($values));
+    // scan the posted values for group pages. This search grabs the first column value keys, or if this
+    // is disabled then the hidden deleted field.
+    $pageKeys = preg_grep('/^group\+:pages:\d*:\d+:(0|deleted)$/', array_keys($values));
     $pages = array();
     foreach ($pageKeys as $key) {
       // skip empty rows, unless they were rows loaded for an existing group_pages record
       if (!empty($values[$key]) || preg_match('/^group\+:pages:(\d+)/', $key)) {
+        if (preg_match('/deleted$/', $key) && !empty($values[$key]) && $values[$key]==='f') {
+          // the deleted field columns are skipped unless true
+          continue;
+        }
         // get the key without the column index, so we can access any column we want
-        $base = preg_replace('/0$/', '', $key);
+        $base = preg_replace('/(0|deleted)$/', '', $key);
         if ((isset($values[$base.'deleted']) && $values[$base.'deleted']==='t') || empty($values[$base.'0']))
-          $page = array('deleted'=>'t');
+          $page = array('deleted' => 't');
         else {
           $tokens=explode(':',$values[$base.'0']);
           $path = $tokens[0];
