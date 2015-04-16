@@ -1030,12 +1030,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
   */
   public static function report_chart($options) {
+    $options = self::get_report_grid_options($options);
     if (empty($options['rendererOptions']))
       $options['rendererOptions'] = array();
     if (empty($options['axesOptions']))
       $options['axesOptions'] = array();
-    $standardReportOptions = self::get_report_grid_options($options);   
-    $options = array_merge($standardReportOptions,$options);
     $currentParamValues = self::get_report_grid_current_param_values($options);
     //If we want the report_chart to only return the parameters control, then don't provide
     //the report with parameters so that it will return parameter requests for all the 
