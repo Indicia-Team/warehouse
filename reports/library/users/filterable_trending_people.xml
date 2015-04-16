@@ -10,7 +10,7 @@
           FROM cache_occurrences o
           #agreements_join#
           #joins#
-          WHERE COALESCE(o.recorders, '') not in ('admin', '')
+          WHERE COALESCE(o.recorders, '') not in ('admin', '', ',')
           AND #sharing_filter#
           #filters#
           ORDER BY id DESC
