@@ -7,6 +7,7 @@
     JOIN (
     SELECT l.id, count(o.id) as count
     FROM locations l
+    LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
     JOIN (index_locations_samples ils 
       JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
       #agreements_join#
@@ -17,7 +18,7 @@
     ) ON ils.location_id=l.id    
     WHERE l.deleted=false
     AND l.location_type_id=#location_type_id#
-    AND l.public=true
+    AND (l.public=true or lw.id IS NOT NULL)
     AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)
     GROUP BY l.id, l.name
     ) as l2 ON l2.id=l1.id
