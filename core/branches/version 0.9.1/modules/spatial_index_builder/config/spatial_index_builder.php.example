@@ -20,6 +20,15 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+// List the location type terms that area available for indexing againts. Typically these will need to be those
+// which are frequently reported against especially where the boundaries are large and/or complex.
 $config['location_types']=array(
-  'Vice County'
+  'Vice County',
+  'Local wildlife site'
+);
+
+// If any of the indexed location types only need indexing for certain surveys then that can be configured here.
+// Omit this configuration if not required.
+$config['survey_restrictions'] => array(
+  'Local wildlife site' => array(25, 26, 27) // only build an index for surveys 25, 26 and 27 for local wildlife sites
 );

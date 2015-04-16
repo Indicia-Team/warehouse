@@ -60,12 +60,14 @@ function spatial_index_builder_scheduled_task($last_run_date, $db) {
 
 /**
  * Build a temporary table with the list of new and changed locations we will process, so that we have
- * consistency if changes are happening concurrently. 
- * @param type $db 
+ * consistency if changes are happening concurrently.
+ * @param $last_run_date Timestamp when this was last run, used to get DB changed records
+ * @param object $db Database object
+ * @return integer Count of locations found
  */
 function spatial_index_builder_get_location_list($last_run_date, $db) {
   $filter=spatial_index_builder_get_type_filter();
-  list($join, $where)=$filter;
+  list($join, $where, $surveyRestriction)=$filter;
   $query = "select l.id, now() as timepoint into temporary loclist 
 from locations l
 $join
@@ -87,14 +89,21 @@ $where";
  */
 function spatial_index_builder_get_type_filter() {
   $config=kohana::config_load('spatial_index_builder', false);
+  $surveyRestriction = '';
   if (array_key_exists('location_types', $config)) {
     $join='join cache_termlists_terms t on t.id=l.location_type_id';
     $where="and t.preferred_term in ('".implode("','", $config['location_types'])."')";
+    if (array_key_exists('survey_restrictions', $config)) {
+      foreach ($config['survey_restrictions'] as $type => $surveyIds) {
+        $surveys = implode(', ', $surveyIds);
+        $surveyRestriction .= "and (t.preferred_term<>'$type' or s.survey_id in ($surveys))\n";
+      }
+    }
   } else {
     $join='';
     $where='';
   }
-  return array($join, $where);
+  return array($join, $where, $surveyRestriction);
 }
 
 /** 
@@ -114,17 +123,19 @@ function spatial_index_builder_populate($db) {
   Kohana::log('debug', "Cleaned up index_locations_samples before populating new values.");
   // are we filtering by location type?
   $filter=spatial_index_builder_get_type_filter();
-  list($join, $where)=$filter;
+  list($join, $where, $surveyRestriction)=$filter;
   // Now the actual population
   $query = "insert into index_locations_samples (location_id, sample_id, contains)
     select l.id, s.id, st_contains(l.boundary_geom, s.geom)
     from locations l
     $join
-    join samples s on s.deleted=false and st_intersects(l.boundary_geom, s.geom)
+    join samples s on s.deleted=false
+      and (st_intersects(l.boundary_geom, s.geom) and not st_touches(l.boundary_geom, s.geom))
     where l.deleted=false
     and (l.id in (select id from loclist)
     or s.id in (select sample_id from occdelta))
-    $where";
+    $where
+    $surveyRestriction";
   $message = $db->query($query)->count().' index_locations_samples entries created.';
   echo "$message<br/>";
   Kohana::log('debug', $message);
@@ -133,5 +144,3 @@ function spatial_index_builder_populate($db) {
 function spatial_index_builder_cleanup($db) {
   $db->query('drop table loclist');
 }
-
-?>
