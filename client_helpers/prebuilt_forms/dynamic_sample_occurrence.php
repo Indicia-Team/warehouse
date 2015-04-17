@@ -684,25 +684,31 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
           'extraParams'=>$auth['read']+array('view'=>'detail','id'=>data_entry_helper::$entity_to_load['sample:group_id'])
       ));
       self::$group=self::$group[0];
-      $filterdef = json_decode(self::$group['filter_definition']);
-      // does the group filter define a site or boundary for the recording? If so we need to show it and limit the map extent
-      $locationIDToLoad = empty($filterdef->location_id) ? 
-          (empty($filterdef->indexed_location_id) ? false : $filterdef->indexed_location_id) : $filterdef->location_id;
-      if ($locationIDToLoad) {
-        $response = data_entry_helper::get_population_data(array(
-          'table' => 'location',
-          'extraParams' => $auth['read'] + array('id'=>$locationIDToLoad, 'view' => 'detail')
-        ));
-        $geom = $response[0]['boundary_geom'] ? $response[0]['boundary_geom'] : $response[0]['centroid_geom'];  
-        iform_map_zoom_to_geom($geom, lang::get('Boundary of {1} for the {2} group', $response[0]['name'], self::$group['title']), true);
-        self::hide_other_boundaries($args);
-      }
-      elseif (!empty($filterdef->searchArea)) {
-        iform_map_zoom_to_geom($filterdef->searchArea, lang::get('Recording area for the {1} group', self::$group['title']), true);
-        self::hide_other_boundaries($args);
+      $filterDef = json_decode(self::$group['filter_definition']);
+      if (empty($args['location_boundary_id'])) {
+        // Does the group filter define a site or boundary for the recording? If so and the form
+        // is not locked to a boundary, we need to show it and limit the map extent.
+        $locationIDToLoad = empty($filterDef->location_id) ?
+          (empty($filterDef->indexed_location_id) ? FALSE : $filterDef->indexed_location_id) : $filterDef->location_id;
+        if ($locationIDToLoad) {
+          $response = data_entry_helper::get_population_data(array(
+            'table' => 'location',
+            'extraParams' => $auth['read'] + array(
+                'id' => $locationIDToLoad,
+                'view' => 'detail'
+              )
+          ));
+          $geom = $response[0]['boundary_geom'] ? $response[0]['boundary_geom'] : $response[0]['centroid_geom'];
+          iform_map_zoom_to_geom($geom, lang::get('Boundary of {1} for the {2} group', $response[0]['name'], self::$group['title']), TRUE);
+          self::hide_other_boundaries($args);
+        }
+        elseif (!empty($filterDef->searchArea)) {
+          iform_map_zoom_to_geom($filterDef->searchArea, lang::get('Recording area for the {1} group', self::$group['title']), TRUE);
+          self::hide_other_boundaries($args);
+        }
       }
       if (!empty($filterDef->taxon_group_names)) {
-        $args['taxon_filter'] = implode("\n", array_values((array)$filterdef->taxon_group_names));
+        $args['taxon_filter'] = implode("\n", array_values((array)$filterDef->taxon_group_names));
         $args['taxon_filter_field']='taxon_group';
       }
       // @todo Consider other types of species filter, e.g. family or species list?
@@ -2298,7 +2304,10 @@ else
       if (strpos($key, ':')===false)
         $opts[$key]=$value;
     }
-    return data_entry_helper::file_box($opts);
+    return '..'.data_entry_helper::image_upload(array(
+      'fieldname' => 'sample:image:1'
+    ));
+    //return data_entry_helper::file_box($opts);
   }
   
   /** 
