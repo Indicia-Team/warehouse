@@ -1656,7 +1656,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     // if using something other than an autocomplete, then set the caption template to include the appropriate names. Autocompletes
     // use a JS function instead.
     global $indicia_templates;
-    if ($ctrl!=='autocomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']) {
+    if ($ctrl!=='autocomplete' && isset($args['species_include_both_names']) && $args['species_include_both_names']
+        && !isset($species_ctrl_opts['captionTemplate'])) {
       if ($args['species_names_filter']==='all')
         $indicia_templates['species_caption'] = "{{$colTaxon}}";
       elseif ($args['species_names_filter']==='language')
