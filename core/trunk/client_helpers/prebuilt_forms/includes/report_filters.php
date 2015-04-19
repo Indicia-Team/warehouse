@@ -57,15 +57,15 @@ class filter_what extends filter_base {
         '</ul>';
     $r .= '<div id="species-group-tab">' . "\n";
     if (function_exists('hostsite_get_user_field')) {
-      $myGroupIds = hostsite_get_user_field('taxon_groups', '');
+      $myGroupIds = hostsite_get_user_field('taxon_groups', array(), true);
     } else {
-      $myGroupIds = '';
+      $myGroupIds = array();
     }
     if ($myGroupIds) {
       $r .= '<h3>' . lang::get('My groups') . '</h3>';
       $myGroupsData = data_entry_helper::get_population_data(array(
         'table' => 'taxon_group',
-        'extraParams' => $readAuth + array('query'=>json_encode(array('in'=>array('id', unserialize($myGroupIds)))))
+        'extraParams' => $readAuth + array('query'=>json_encode(array('in'=>array('id', $myGroupIds))))
       ));
       $myGroupNames = array();
       data_entry_helper::$javascript .= "indiciaData.myGroups = [];\n";
@@ -638,7 +638,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
             $title = lang::get('My verified records'); 
           break;
         case 'my-groups':
-          if (hostsite_get_user_field('taxon_groups'))
+          if (hostsite_get_user_field('taxon_groups', false, true))
             $title = lang::get('Records in species groups I like to record'); 
           break;
         case 'my-locality':
@@ -646,7 +646,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
             $title = lang::get('Records in the locality I generally record in'); 
           break;
         case 'my-groups-locality':
-          if (hostsite_get_user_field('taxon_groups') && hostsite_get_user_field('location'))
+          if (hostsite_get_user_field('taxon_groups', false, true) && hostsite_get_user_field('location'))
             $title = lang::get('Records of my species groups in my locality'); 
           break;
         default:
@@ -658,8 +658,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
       }
     }
     if (count($options['presets'])) {
-      if ($groups=hostsite_get_user_field('taxon_groups'))
-        data_entry_helper::$javascript .= "indiciaData.userPrefsTaxonGroups='".implode(',', array_keys(unserialize($groups)))."';\n";
+      if ($groups=hostsite_get_user_field('taxon_groups', false, true))
+        data_entry_helper::$javascript .= "indiciaData.userPrefsTaxonGroups='".implode(',', $groups)."';\n";
       if ($location=hostsite_get_user_field('location'))
         data_entry_helper::$javascript .= "indiciaData.userPrefsLocation=".$location.";\n";
     }
@@ -667,8 +667,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     if ($options['sharing']==='verification') {
       // apply legacy verification settings from their profile
       $location_id = hostsite_get_user_field('location_expertise');
-      $taxon_group_ids = hostsite_get_user_field('taxon_groups_expertise');
-      $survey_ids = hostsite_get_user_field('surveys_expertise');
+      $taxon_group_ids = hostsite_get_user_field('taxon_groups_expertise', false, true);
+      $survey_ids = hostsite_get_user_field('surveys_expertise', false, true);
       if ($location_id || $taxon_group_ids || $survey_ids) {
         $selected = (!empty($options['context_id']) && $options['context_id']==='default') ? 'selected="selected" ' : '';
         $contexts .= "<option value=\"default\" $selected>".lang::get('My verification records')."</option>";
@@ -677,8 +677,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
           // user profile geographic limits should always be based on an indexed location.
           $def['indexed_location_id'] = $location_id;
         if ($taxon_group_ids) {
-          $arr=unserialize($taxon_group_ids);
-          $def['taxon_group_list']=implode(',', $arr);
+          $def['taxon_group_list']=implode(',', $taxon_group_ids);
           $def['taxon_group_names']=array();
           $groups = data_entry_helper::get_population_data(array(
             'table' => 'taxon_group',
