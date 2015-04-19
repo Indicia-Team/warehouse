@@ -249,9 +249,9 @@ class iform_group_edit {
    * @param object $node The Drupal node object.
    * @param array $response When this form is reloading after saving a submission, contains the response from the service call.
    * Note this does not apply when redirecting (in this case the details of the saved object are in the $_GET data).
-   * @return Form HTML.
+   * @return string Form HTML.
    */
-  public static function get_form($args, $node, $response=null) {
+  public static function get_form($args, $node) {
     if (!hostsite_get_user_field('indicia_user_id'))
       return 'Please ensure that you\'ve filled in your surname on your user profile before creating or editing groups.';
     self::createBreadcrumb($args);
@@ -461,9 +461,11 @@ $('#entry_form').submit(function() {
     }
     return $r;
   }
-  
+
   /**
    * Retrieve all the pages that are available for linking to this group.
+   * @param integer $group_id ID of group to retrieve pages for.
+   * @return array List of pages.
    */
   private static function getAvailablePages($group_id) {
     $sql = "SELECT n.nid, n.title
@@ -612,10 +614,11 @@ $('#entry_form').submit(function() {
     }
     return $r;
   }
-  
+
   /**
-   * Returns controls for defining the list of group members and administrators if this option is enabled. 
+   * Returns controls for defining the list of group members and administrators if this option is enabled.
    * @param array $args Form configuration arguments
+   * @param array $auth Authorisation tokens
    * @return string HTML to output
    */
   private static function memberControls($args, $auth) {
@@ -855,11 +858,13 @@ $('#entry_form').submit(function() {
     }
     return $reloadPath;
   }
-  
+
   /**
    * Fetch an existing group's information from the database when editing.
    * @param integer $id Group ID
    * @param array $auth Authorisation tokens
+   * @param $args
+   * @throws \exception
    */
   private static function loadExistingGroup($id, $auth, $args) {
     $group = data_entry_helper::get_population_data(array(
