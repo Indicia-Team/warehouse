@@ -926,7 +926,7 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
    */
   protected static function getEntity($args, $auth) {
     data_entry_helper::$entity_to_load = array();
-    if (!(call_user_func(array(self::$called_class, 'getGridMode'), $args))) {
+    if ((call_user_func(array(self::$called_class, 'getGridMode'), $args))) {
         // multi-record mode using a checklist grid. We really just need to know the sample ID.
         if (self::$loadedOccurrenceId && !self::$loadedSampleId) {
           $response = data_entry_helper::get_population_data(array(
