@@ -597,14 +597,16 @@ $('#entry_form').submit(function() {
         'label' => ucfirst(lang::get('{1} active from', self::$groupType)),
         'fieldname' => 'group:from_date',
         'controlWrapTemplate' => 'justControl',
-        'helpText' => lang::get('LANG_From_Field_Instruct')
+        'helpText' => lang::get('LANG_From_Field_Instruct'),
+        'allowFuture' => true
       ));
       $r .= data_entry_helper::date_picker(array(
         'label' => lang::get('to'),
         'fieldname' => 'group:to_date',
         'labelClass' => 'auto',
         'controlWrapTemplate' => 'justControl',
-        'helpText' => lang::get('LANG_To_Field_Instruct')
+        'helpText' => lang::get('LANG_To_Field_Instruct'),
+        'allowFuture' => true
       ));
       $r .= '</div>';
     }
