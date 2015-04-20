@@ -32,13 +32,21 @@ class summary_builder {
    * Performs the actual task of table population.
    */
 	
-  public static function populate_summary_table($db, $last_run_date) {
+  public static function populate_summary_table($db, $last_run_date, $rebuild) {
   	$queries = kohana::config('summary_builder');
   	$r = $db->query($queries['select_definitions'])->result_array(false);
   	if(count($r)){
   		foreach($r as $row){
-  			echo 'Processing summariser_definition ID '.$row['id'].' for survey ID '.$row['survey_id'].'<br/>';
-  			self::populate_summary_table_for_survey($db, $last_run_date, $row);
+  			if($rebuild === true || $rebuild == $row['survey_id']) {
+  				echo 'Rebuilding summary data for survey ID '.$row['survey_id'].'<br/>';
+  				$query = "delete from summary_occurrences where ".
+  						"survey_id = ".$row['survey_id'];
+	  			$count = $db->query($query)->count();
+  				echo 'Removed '.$count.' records. Rebuild will commence on next invocation of scheduled tasks.<br/>';
+	  		} else {
+  				echo 'Processing summariser_definition ID '.$row['id'].' for survey ID '.$row['survey_id'].'<br/>';
+  				self::populate_summary_table_for_survey($db, $last_run_date, $row);
+  			}
   		}
   	} else {
   		echo 'No summariser_definitions to be processed.';
@@ -162,9 +170,10 @@ class summary_builder {
 	  	  $weekOne_date->modify('-7 days');
 	  	  $weekNoOffset++;
 	  	}
+	  	
 	  	$anchors=explode(',',$definition['season_limits']);
-	  	$definition['anchors'] = ((count($anchors) && $anchors[0]!='') ? $anchors[0]+$weekNoOffset : '').','.
-	  									((count($anchors)>1 && $anchors[1]!='') ? $anchors[1]+$weekNoOffset : '');
+	  	$definition['anchors'] = array((count($anchors) && $anchors[0]!='') ? $anchors[0] : false,
+	  									(count($anchors)>1 && $anchors[1]!='') ? $anchors[1] : false);
 	  	$periods=array();
 	  	$periodMapping=array();
 	  	// Build day number to period mapping. first period = 1, days 1st Jan = 0
@@ -317,20 +326,19 @@ class summary_builder {
   }
 
   private static function apply_estimates($db, $definition, &$data) {
-  	$anchors=explode(',',$definition['anchors']);
-  	$firstAnchor = (count($anchors) && $anchors[0]!='') ? $anchors[0] : false;
-  	$lastAnchor = (count($anchors)>1 && $anchors[1]!='') ? $anchors[1] : false;
+  	$firstAnchor = $definition['anchors'][0];
+  	$lastAnchor = $definition['anchors'][1];
   	$thisLocation=false;
   	$lastDataPeriod=false;
   	foreach($data as $period=>$detail) {
   		if($detail['hasData']) {
   			$data[$period]['estimate'] = $detail['summary'];
   			$data[$period]['hasEstimate'] = true;
-  			if(!$lastDataPeriod && ($firstAnchor===false || $period-1>$firstAnchor) &&  $period>1 && $definition['first_value']=='half') {
+  			if($lastDataPeriod===false && ($firstAnchor===false || $period-1>$firstAnchor) && ($lastAnchor===false || $period-1<$lastAnchor) && $definition['first_value']=='H') {
   				$lastDataPeriod = $period-2;
   				$lastDataPeriodValue = 0;
   			}
-  			if($lastDataPeriod && ($period-$lastDataPeriod > 1)){
+  			if($lastDataPeriod!==false && ($period-$lastDataPeriod > 1)){
   			  for($j=1; $j < ($period-$lastDataPeriod); $j++){ // fill in periods between data points
   			  	$estimate = $data[$lastDataPeriod]['summary']+(($j.".0")*($data[$period]['summary']-$lastDataPeriodValue))/($period-$lastDataPeriod);
   			  	$data[$lastDataPeriod+$j]['estimate'] = summary_builder::apply_data_rounding($definition, $estimate);
@@ -341,8 +349,8 @@ class summary_builder {
   			$lastDataPeriodValue=$data[$lastDataPeriod]['summary'];
   		}
   	}
-  	if($lastDataPeriod && ($lastAnchor===false || $lastDataPeriod-1<$lastAnchor) && $lastDataPeriod<count($data) && $definition['last_value']=='half') {
-  		$data[$lastDataPeriod+1]['estimate'] = summary_builder::apply_data_rounding($definition, $data[$lastDataPeriod+1]['summary']/2.0);
+  	if($lastDataPeriod && ($firstAnchor===false || $lastDataPeriod>=$firstAnchor) && ($lastAnchor===false || $lastDataPeriod-1<$lastAnchor) && $lastDataPeriod<count($data) && $definition['last_value']=='H') {
+  		$data[$lastDataPeriod+1]['estimate'] = summary_builder::apply_data_rounding($definition, $data[$lastDataPeriod]['summary']/2.0);
   		$data[$lastDataPeriod+1]['hasEstimate'] = true;
   	} 
   }

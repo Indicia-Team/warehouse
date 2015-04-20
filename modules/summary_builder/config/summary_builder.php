@@ -52,9 +52,12 @@ $config['get_YearTaxonLocationUser_query'] = "
 		AND o.deleted = 'f' AND o.zero_abundance = 'f'
   UNION ALL
   select 0 as count, p.id as sample_id, p.date_start
-	FROM samples s 
-	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id = #location_id# AND p.created_by_id = #user_id# AND p.deleted = 'f' AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
-	WHERE s.deleted = 'f'
+	FROM samples p
+	WHERE p.survey_id = #survey_id#
+		AND p.location_id = #location_id#
+		AND p.created_by_id = #user_id#
+		AND p.deleted = 'f'
+		AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
   ";
 
 $config['get_YearTaxonLocationUser_Attr_query'] = "
@@ -67,9 +70,12 @@ $config['get_YearTaxonLocationUser_Attr_query'] = "
 		AND o.deleted = 'f' AND o.zero_abundance = 'f'
   UNION ALL
   select 0 as count, p.id as sample_id, p.date_start
-	FROM samples s
-	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id = #location_id# AND p.created_by_id = #user_id# AND p.deleted = 'f' AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
-	WHERE s.deleted = 'f'
+	FROM samples p
+	WHERE p.survey_id = #survey_id#
+		AND p.location_id = #location_id#
+		AND p.created_by_id = #user_id#
+		AND p.deleted = 'f'
+		AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
   ";
 
 $config['get_YearTaxonLocation_query'] = "
@@ -81,9 +87,11 @@ $config['get_YearTaxonLocation_query'] = "
 		AND o.deleted = 'f' AND o.zero_abundance = 'f'
   UNION ALL
   select 0 as count, p.id as sample_id, p.date_start
-	FROM samples s
-	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id = #location_id# AND p.deleted = 'f' AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
-	WHERE s.deleted = 'f'
+	FROM samples p
+	WHERE p.survey_id = #survey_id#
+		AND p.location_id = #location_id#
+		AND p.deleted = 'f'
+		AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
   ";
 
 $config['get_YearTaxonLocation_Attr_query'] = "
@@ -96,9 +104,11 @@ $config['get_YearTaxonLocation_Attr_query'] = "
 		AND o.deleted = 'f' AND o.zero_abundance = 'f'
   UNION ALL
   select 0 as count, p.id as sample_id, p.date_start
-	FROM samples s
-	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id = #location_id# AND p.deleted = 'f' AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
-	WHERE s.deleted = 'f'
+	FROM samples p
+	WHERE p.survey_id = #survey_id#
+		AND p.location_id = #location_id#
+		AND p.deleted = 'f'
+		AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
   ";
 
 $config['get_YearTaxonUser_query'] = "
@@ -109,6 +119,6 @@ $config['get_YearTaxonUser_query'] = "
 $config['get_YearTaxon_query'] = "
   select count, estimate, date_start
 	FROM summary_occurrences
-	WHERE survey_id = #survey_id# AND user_id IS NOT NULL AND date_end>='#year#-01-01' AND date_start<='#year#-12-31' AND taxa_taxon_list_id = #taxon_id# AND location_id IS NULL 
+	WHERE survey_id = #survey_id# AND user_id IS NULL AND date_end>='#year#-01-01' AND date_start<='#year#-12-31' AND taxa_taxon_list_id = #taxon_id# AND location_id IS NOT NULL 
   ";
 ?>
