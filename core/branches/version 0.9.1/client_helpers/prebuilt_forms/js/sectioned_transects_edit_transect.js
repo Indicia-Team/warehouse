@@ -2,7 +2,7 @@
 
 var selectedFeature = null;
 var sectionDetailsChanged = false;
-var clearSection, loadSectionDetails, confirmSelectSection, selectSection, asyncPost, deleteWalks,
+var clearSection, loadSectionDetails, confirmSelectSection, selectSection, syncPost, deleteWalks,
     deleteLocation, deleteSections, deleteSection;
 
 (function ($) {
@@ -155,7 +155,7 @@ selectSection = function(section, doFeature) {
   }
 };
 
-asyncPost = function(url, data) {
+syncPost = function(url, data) {
   $.ajax({
     type: 'POST',
     url: url,
@@ -179,7 +179,7 @@ deleteWalks = function(walkIDs) {
       'sample:deleted':'t',
       'website_id':indiciaData.website_id
     };
-    asyncPost(indiciaData.ajaxFormPostSampleUrl, data);
+    syncPost(indiciaData.ajaxFormPostSampleUrl, data);
   });
   $('#delete-transect').html('Deleting Walks 100%');
 };
@@ -190,7 +190,7 @@ deleteLocation = function(ID) {
     'location:deleted':'t',
     'website_id':indiciaData.website_id
   };
-  asyncPost(indiciaData.ajaxFormPostUrl, data);
+  syncPost(indiciaData.ajaxFormPostUrl, data);
 };
 
 // delete a set of sections. Does not re-index the other section codes.
@@ -401,6 +401,7 @@ $(document).ready(function() {
               alert(data.error);
             } else {
               // Better way of doing this?
+              var current = $('#section-select-route li.selected').html();
               $('#section-select-route-'+current).addClass('missing');
               $('#section-select-'+current).addClass('missing');
             }
@@ -436,7 +437,7 @@ $(document).ready(function() {
             return bounds;
         }
 
-        var div, target = ui.newPanel[0] || ui.panel;
+        var div, target = (typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0]);
         if((div = $('#'+target.id+' #route-map')).length > 0){
           copy_over_transects();
           div = div[0];
@@ -586,9 +587,9 @@ $(document).ready(function() {
                 alert(data.error);
               } else {
                 // Better way of doing this?
-                var id = data.outer_id;
-                indiciaData.sections[current].id = id;
-                $('#section-location-id').val(id);
+                var current = $('#section-select-route li.selected').html();
+                indiciaData.sections[current].id = data.outer_id;
+                $('#section-location-id').val(data.outer_id);
                 $('#section-select-route-'+current).removeClass('missing');
                 $('#section-select-'+current).removeClass('missing');
                 loadSectionDetails(current);
