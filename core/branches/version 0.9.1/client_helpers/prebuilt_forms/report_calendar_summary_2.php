@@ -152,7 +152,7 @@ class iform_report_calendar_summary_2 {
       	array(
           'name'=>'includeUserFilter',
           'caption'=>'Include user filter',
-          'description'=>'Choose whether to include a filter on the user. This is passed through to the report parameter list as user_id. If not selected, user_id is not included in the report parameter list.',
+          'description'=>'Choose whether to include a filter on the user. This is passed through to the report_helper and raw data reports as user_id. If not selected, user_id is not included in the report parameter list.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
@@ -1026,6 +1026,7 @@ class iform_report_calendar_summary_2 {
   
   private static function user_control(&$args, $readAuth, $node, &$options)
   {
+  	// user filter is keyed on the CMS User ID; converted to cms_user_id/Indicia user_id pair by report_helper, if applicable.
     // we don't use the userID option as the user_id can be blank, and will force the parameter request if left as a blank
     global $user;
     $ctrl = '';
@@ -1077,6 +1078,8 @@ class iform_report_calendar_summary_2 {
         }
        } else {
         if (function_exists('module_exists') && module_exists('easy_login')) {
+          // easy_login active: identify users who have entered data by the created_by_id on the main sample record.
+          // TODO consider whether should check only top level samples here? may not be necessary if sample_method set.
           $sampleArgs=array(// 'nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'detail', 'website_id'=>$args['website_id'], 'survey_id'=>self::$siteUrlParams[self::$SurveyKey]), $readAuth),
             'table'=>'sample','columns'=>'created_by_id');
@@ -1090,9 +1093,10 @@ class iform_report_calendar_summary_2 {
           foreach($sampleList as $sample)
             $uList[intval($sample['created_by_id'])] = true;
           // This next bit is DRUPAL specific, but we are using the Easy Login module.
+          // get list of CMS users which match the retrieved set of Indicia User_ids.
           if (count($uList)>0) {
             if(version_compare(VERSION, '7', '<')) {
-              $results = db_query("SELECT DISTINCT pv.uid, u.name FROM {users} u " .
+              $results = db_query("SELECT DISTINCT u.uid, u.name FROM {users} u " .
                   "JOIN {profile_values} pv ON pv.uid=u.uid " .
                   "JOIN {profile_fields} pf ON pf.fid=pv.fid AND pf.name='profile_indicia_user_id' " .
                   "AND pv.value IN (" . implode(',', array_keys($uList)). ")");
@@ -1113,7 +1117,7 @@ class iform_report_calendar_summary_2 {
             }
           }
         } else {
-          // not easy login so use the CMS User ID attribute hanging off the to find which users have entered data.
+          // not easy login so use the CMS User ID attribute hanging off the samples to find which users have entered data.
           $attrArgs = array(
             'valuetable'=>'sample_attribute_value',
             'attrtable'=>'sample_attribute',
@@ -1127,10 +1131,10 @@ class iform_report_calendar_summary_2 {
           }
           $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
           if (false== ($cmsAttr = extract_cms_user_attr($sampleAttributes)))
-            return(lang::get('User control: CMS User ID sample attribute missing.'.'<span style="display:none;">'.print_r($attrArgs,true).'</span>'));
+            return(lang::get('User control: Looking up users who have previously entered data - non easy_login, so using CMS User ID attribute on samples: CMS User ID sample attribute missing.<br/>'.'<span style="display:none;">'.print_r($attrArgs,true).'</span>'));
           $attrListArgs=array(// 'nocache'=>true,
             'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],
-                             'sample_attribute_id'=>$cmsAttr['attributeId']),
+                             'sample_attribute_id'=>$cmsAttr['attributeId'],'columns'=>'id,raw_value'),
                        $readAuth),
             'table'=>'sample_attribute_value');
           $attrList = data_entry_helper::get_population_data($attrListArgs);

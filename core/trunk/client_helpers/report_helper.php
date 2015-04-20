@@ -4089,7 +4089,10 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
   	$options = self::get_report_calendar_summary_options($options); // don't use all of these now, eg. extraParams: this is used later for raw data
   	$extras = '';
   	$extraParams = $options['readAuth'] + array('year'=>$options['year'], 'survey_id'=>$options['survey_id']);
-  	$extraParams['user_id']= (!isset($options['user_id']) || $options['user_id']=="") ? 'NULL' : $options['user_id'];
+  	// at the moment the summary_builder module indexes the user_id on the created_by_id field on the parent sample.
+  	// this effectively means that it assumes easy_login.
+  	// Also means we have to use the converted Indicia user_id, stored by options function above in the extraParams. 
+  	$extraParams['user_id'] = (!isset($options['extraParams']['user_id']) || $options['extraParams']['user_id']=="") ? 'NULL' : $options['extraParams']['user_id'];
   	if(isset($options['taxon_list_id']) && $options['taxon_list_id']!="")
   		$extraParams['taxon_list_id'] = $options['taxon_list_id'];
   	 
@@ -4285,8 +4288,6 @@ update_controls();
   	}
   	usort($sortData, array('report_helper', 'report_calendar_summary_sort1'));
   	$warnings .= '<span style="display:none;">Estimate processing finished : '.date(DATE_ATOM).'</span>'."\n";
-  	if(count($summaryArray)==0)
-  		return $r.$warnings.'<p>'.lang::get('No data returned for this period.').'</p>';
   	// will storedata in an array[Y][X]
   	data_entry_helper::add_resource('jqplot');
   	switch ($options['chartType']) {
@@ -4530,6 +4531,7 @@ jQuery('#estimateChart .disable-button').click(function(){
 });
 ";
   	}
+  	$hasRawData = false;
   	if(isset($options['location_id']) && $options['location_id']!=""){
   		// get the raw data for a single location.
   		$options['extraParams']['orderby'] = 'date';
@@ -4543,114 +4545,122 @@ jQuery('#estimateChart .disable-button').click(function(){
 	  		// convert records to a date based array so it can be used when generating the grid.
   			$altRow=false;
   			$records = $response['records'];
-  			$rawTab = '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner">'.(isset($options['linkMessage']) ? $options['linkMessage'] : '').'<table class="'.$options['tableClass'].'"><thead class="'.$thClass.'"><tr><th class="freeze-first-col">'.lang::get('Date').'</th>';
+  			$rawTab = (isset($options['linkMessage']) ? $options['linkMessage'] : '');
   			$rawDataDownloadGrid = lang::get('Date').',';
   			$rawArray = array();
   			$sampleList=array();
   			$sampleDateList=array();
   			$smpIdx=0;
-  			foreach($records as $occurrence){
-  				if(!in_array($occurrence['sample_id'], $sampleList)) {
-  					$sampleList[] = $occurrence['sample_id'];
-  					$sampleData = array('id'=>$occurrence['sample_id'], 'date'=>$occurrence['date'], 'location'=>$occurrence['locaton_name']);
-  					$rawArray[$occurrence['sample_id']] = array();
-  					if($sampleFields){
-  						foreach($sampleFields as $sampleField) {
-  							if($sampleField['attr'] === false)
-  								$sampleData[$sampleField['caption']] = $occurrence[$sampleField['field']];
-  							else if($sampleField['attr']['data_type']=='L')
-  								$sampleData[$sampleField['caption']] = $occurrence['attr_sample_term_'.$sampleField['id']];
-  							else
-  								$sampleData[$sampleField['caption']] = $occurrence['attr_sample_'.$sampleField['id']];
-   						}
+  			$hasRawData = (count($records) > 0);
+  			if(!$hasRawData)
+  				$rawTab .= '<p>'.lang::get('No raw data available for this period with these filter values.').'</p>';
+ 			else {
+  				$rawTab = '<div class="results-grid-wrapper-outer"><div class="results-grid-wrapper-inner"><table class="'.$options['tableClass'].'"><thead class="'.$thClass.'"><tr><th class="freeze-first-col">'.lang::get('Date').'</th>';
+ 				foreach($records as $occurrence){
+  					if(!in_array($occurrence['sample_id'], $sampleList)) {
+  						$sampleList[] = $occurrence['sample_id'];
+  						$sampleData = array('id'=>$occurrence['sample_id'], 'date'=>$occurrence['date'], 'location'=>$occurrence['locaton_name']);
+	  					$rawArray[$occurrence['sample_id']] = array();
+  						if($sampleFields){
+  							foreach($sampleFields as $sampleField) {
+  								if($sampleField['attr'] === false)
+  									$sampleData[$sampleField['caption']] = $occurrence[$sampleField['field']];
+  								else if($sampleField['attr']['data_type']=='L')
+  									$sampleData[$sampleField['caption']] = $occurrence['attr_sample_term_'.$sampleField['id']];
+  								else
+  									$sampleData[$sampleField['caption']] = $occurrence['attr_sample_'.$sampleField['id']];
+	   						}
+  						}
+  						$sampleDateList[] = $sampleData;
   					}
-  					$sampleDateList[] = $sampleData;
-  				}
-  				if($occurrence['taxon_meaning_id']!==null && $occurrence['taxon_meaning_id']!=''){
-	  				$count = (isset($options['countColumn']) && $options['countColumn']!='') ?
-  								(isset($occurrence[$options['countColumn']]) ? $occurrence[$options['countColumn']] : 0) :
-  								1;
-  					if(!isset($rawArray[$occurrence['sample_id']][$occurrence['taxon_meaning_id']])) $rawArray[$occurrence['sample_id']][$occurrence['taxon_meaning_id']] = $count;
-  					else $rawArray[$occurrence['sample_id']][$occurrence['taxon_meaning_id']] += $count;
-  				}
-  			}				
-  			foreach($sampleDateList as $sample){
-  				$sample_date = date_create($sample['date']);
-  				$rawTab .= '<th>'.
-  						(isset($options['linkURL']) && $options['linkURL']!= '' ? '<a href="'.$options['linkURL'].$sample['id'].'" target="_blank" title="Link to data entry form for '.$sample['location'].' on '.$sample['date'].' (Sample ID '.$sample['id'].')">' : '').
-    					$sample_date->format('M').'<br/>'.$sample_date->format('d').
-  						(isset($options['linkURL']) && $options['linkURL']!= '' ? '</a>' : '').
-    					'</th>';
-  				$rawDataDownloadGrid .= ','.$sample['date'];
-  			}
-  			$rawDataDownloadGrid .= "\n";
-  			$rawTab .= '</tr></thead><tbody>';
-  			if($sampleFields){
-  				foreach($sampleFields as $sampleField) { // last-sample-datarow
-  					$rawTab .= '<tr class="sample-datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col">'.$sampleField['caption'].'</td>';
-  				  	$rawDataDownloadGrid .= '"'.$sampleField['caption'].'",';
-  				  	foreach($sampleDateList as $sample){
-  						$rawTab .= '<td>'.($sample[$sampleField['caption']]===null || $sample[$sampleField['caption']]=='' ? '&nbsp;' : $sample[$sampleField['caption']]).'</td>';
-  						$rawDataDownloadGrid .= ','.$sample[$sampleField['caption']];
+  					if($occurrence['taxon_meaning_id']!==null && $occurrence['taxon_meaning_id']!=''){
+	  					$count = (isset($options['countColumn']) && $options['countColumn']!='') ?
+  									(isset($occurrence[$options['countColumn']]) ? $occurrence[$options['countColumn']] : 0) :
+  									1;
+	  					if(!isset($rawArray[$occurrence['sample_id']][$occurrence['taxon_meaning_id']])) $rawArray[$occurrence['sample_id']][$occurrence['taxon_meaning_id']] = $count;
+  						else $rawArray[$occurrence['sample_id']][$occurrence['taxon_meaning_id']] += $count;
   					}
-  				  	$rawTab .= '</tr>';
-  					$rawDataDownloadGrid .= "\n";
-  					$altRow=!$altRow;
   				}
-  				data_entry_helper::$javascript .= "var sampleDatarows = $('#rawData .sample-datarow').length;\n$('#rawData .sample-datarow').eq(sampleDatarows-1).addClass('last-sample-datarow');\n";
-  			}
-  			foreach($sortData as $sortedTaxon){
-  				$seriesID=$sortedTaxon[1]; // this is the meaning id
-  				if (!empty($seriesLabels[$seriesID])) {
-	   				$rawTab .= '<tr class="datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col"'.(isset($seriesLabels[$seriesID]['preferred']) ? ' title="'.$seriesLabels[$seriesID]['preferred'].'"' : '').'>'.$seriesLabels[$seriesID]['label'].'</td>';
-  					$rawDataDownloadGrid .= '"'.$seriesLabels[$seriesID]['label'].'","'.(isset($seriesLabels[$seriesID]['preferred']) ? $seriesLabels[$seriesID]['preferred'] : '').'",';
-  					foreach($sampleList as $sampleID){
-  						$rawTab .= '<td>'.(isset($rawArray[$sampleID][$seriesID]) ? $rawArray[$sampleID][$seriesID] : '&nbsp;').'</td>';
-  						$rawDataDownloadGrid .= ','.(isset($rawArray[$sampleID][$seriesID]) ? $rawArray[$sampleID][$seriesID] : '');
+	  			foreach($sampleDateList as $sample){
+  					$sample_date = date_create($sample['date']);
+  					$rawTab .= '<th>'.
+  							(isset($options['linkURL']) && $options['linkURL']!= '' ? '<a href="'.$options['linkURL'].$sample['id'].'" target="_blank" title="Link to data entry form for '.$sample['location'].' on '.$sample['date'].' (Sample ID '.$sample['id'].')">' : '').
+    						$sample_date->format('M').'<br/>'.$sample_date->format('d').
+  							(isset($options['linkURL']) && $options['linkURL']!= '' ? '</a>' : '').
+    						'</th>';
+	  				$rawDataDownloadGrid .= ','.$sample['date'];
+  				}
+  				$rawDataDownloadGrid .= "\n";
+  				$rawTab .= '</tr></thead><tbody>';
+  				if($sampleFields){
+  					foreach($sampleFields as $sampleField) { // last-sample-datarow
+  						$rawTab .= '<tr class="sample-datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col">'.$sampleField['caption'].'</td>';
+	  				  	$rawDataDownloadGrid .= '"'.$sampleField['caption'].'",';
+  					  	foreach($sampleDateList as $sample){
+  							$rawTab .= '<td>'.($sample[$sampleField['caption']]===null || $sample[$sampleField['caption']]=='' ? '&nbsp;' : $sample[$sampleField['caption']]).'</td>';
+  							$rawDataDownloadGrid .= ','.$sample[$sampleField['caption']];
+  						}
+  				  		$rawTab .= '</tr>';
+	  					$rawDataDownloadGrid .= "\n";
+  						$altRow=!$altRow;
   					}
-	   				$rawTab .= '</tr>';
-  					$rawDataDownloadGrid .= "\n";
-  					$altRow=!$altRow;
+  					data_entry_helper::$javascript .= "var sampleDatarows = $('#rawData .sample-datarow').length;\n$('#rawData .sample-datarow').eq(sampleDatarows-1).addClass('last-sample-datarow');\n";
+	  			}
+  				foreach($sortData as $sortedTaxon){
+  					$seriesID=$sortedTaxon[1]; // this is the meaning id
+  					if (!empty($seriesLabels[$seriesID])) {
+	   					$rawTab .= '<tr class="datarow '.($altRow?$options['altRowClass']:'').'"><td class="freeze-first-col"'.(isset($seriesLabels[$seriesID]['preferred']) ? ' title="'.$seriesLabels[$seriesID]['preferred'].'"' : '').'>'.$seriesLabels[$seriesID]['label'].'</td>';
+  						$rawDataDownloadGrid .= '"'.$seriesLabels[$seriesID]['label'].'","'.(isset($seriesLabels[$seriesID]['preferred']) ? $seriesLabels[$seriesID]['preferred'] : '').'",';
+	  					foreach($sampleList as $sampleID){
+  							$rawTab .= '<td>'.(isset($rawArray[$sampleID][$seriesID]) ? $rawArray[$sampleID][$seriesID] : '&nbsp;').'</td>';
+  							$rawDataDownloadGrid .= ','.(isset($rawArray[$sampleID][$seriesID]) ? $rawArray[$sampleID][$seriesID] : '');
+  						}
+	   					$rawTab .= '</tr>';
+  						$rawDataDownloadGrid .= "\n";
+	  					$altRow=!$altRow;
+  					}
   				}
-  			}
-  			$rawTab .= '</tbody></table></div></div>';
+  				$rawTab .= '</tbody></table></div></div>';
+ 			}
   		}
   	} else $rawTab = "<p>Raw Data is only available when a location is specified.</p>";
-  	$tabs = array('#summaryData'=>lang::get('Summary Table'),
+  	$hasData = (count($summaryArray)>0);
+  	
+  	$tabs = array('#summaryData'=>lang::get('Summary Table'));
+  	if($hasData) $tabs = array_merge($tabs, array(
 		  			'#summaryChart'=>lang::get('Summary Chart'),
   					'#estimateData'=>lang::get('Estimate Table'),
-  					'#estimateChart'=>lang::get('Estimate Chart'),
-  					'#rawData'=>lang::get('Raw Data'));
+  					'#estimateChart'=>lang::get('Estimate Chart')));
+  	$tabs['#rawData'] = lang::get('Raw Data');
 	$downloadTab="";
   	$timestamp = (isset($options['includeReportTimeStamp']) && $options['includeReportTimeStamp'] ? '_'.date('YmdHis') : '');
   	unset($options['extraParams']['orderby']); // may have been set for raw data
   	// No need for saved reports to be atomic events. Will be purged automatically.
   	global $base_url;
   	$cacheFolder = data_entry_helper::$cache_folder ? data_entry_helper::$cache_folder : data_entry_helper::relative_client_helper_path() . 'cache/';
-  	if($options['includeSummaryGridDownload']) {
+  	if($hasData && $options['includeSummaryGridDownload']) {
   		$cacheFile = $options['downloadFilePrefix'].'summaryDataGrid'.$timestamp.'.csv';
   		$handle = fopen($cacheFolder.$cacheFile, 'wb');
   		fwrite($handle, $summaryDataDownloadGrid);
   		fclose($handle);
   		$downloadTab .= '<tr><td>'.lang::get('Download Summary Grid (CSV Format)').' : </td><td><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">'.lang::get('Download').'</button></a></td></tr>'."\n";
   	}
-  	if($options['includeEstimatesGridDownload']) {
+  	if($hasData && $options['includeEstimatesGridDownload']) {
   		$cacheFile = $options['downloadFilePrefix'].'estimateDataGrid'.$timestamp.'.csv';
   		$handle = fopen($cacheFolder.$cacheFile, 'wb');
   		fwrite($handle, $estimateDataDownloadGrid);
   		fclose($handle);
   		$downloadTab .= '<tr><td>'.lang::get('Download Estimates Grid (CSV Format)').' : </td><td><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">'.lang::get('Download').'</button></a></td></tr>'."\n";
   	}
-    if(isset($options['location_id']) && $options['location_id']!="" && $options['includeRawGridDownload']) {
+    if($hasRawData && $options['includeRawGridDownload']) {
 		$cacheFile = $options['downloadFilePrefix'].'rawDataGrid'.$timestamp.'.csv';
 		$handle = fopen($cacheFolder.$cacheFile, 'wb');
   		fwrite($handle, $rawDataDownloadGrid);
   		fclose($handle);
   		$downloadTab .= '<tr><td>'.lang::get('Download Raw Data Grid (CSV Format)').' : </td><td><a target="_blank" href="'.$base_url.'/'.drupal_get_path('module', 'iform').'/client_helpers/cache/'.$cacheFile.'" download type="text/csv"><button type="button">'.lang::get('Download').'</button></a></td></tr>'."\n";
-  	} else if($options['includeRawGridDownload'])
-  		$downloadTab .= '<tr><td>'.lang::get('Raw Data is only available (for download) when a location is specified.').'</td><td></td></tr>'."\n";
+  	}
 
-  	if(count($options['downloads'])>0) {
+  	if($hasData && count($options['downloads'])>0) {
   		// format is assumed to be CSV
   		global $indicia_templates;
   		$indicia_templates['report_download_link'] = '<a target="_blank" href="{link}" download ><button type="button">'.lang::get('Download').'</button></a>';
@@ -4674,16 +4684,15 @@ jQuery('#estimateChart .disable-button').click(function(){
   		$tabs['#dataDownloads'] = lang::get('Downloads');
   	$r .= '<div id="controls">'.(data_entry_helper::enable_tabs(array('divId'=>'controls'/*,'active'=>$active*/))).
 				data_entry_helper::tab_header(array('tabs'=>$tabs)).
-  				'<div id="summaryData">'.$summaryTab.'</div>'.
-  				'<div id="summaryChart"><div id="'.$options['chartID'].'-summary" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'.$summarySeriesPanel.'</div>'.
-  				'<div id="estimateData">'.$estimateTab.'</div>'.
-  				'<div id="estimateChart"><div id="'.$options['chartID'].'-estimates" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'.$summarySeriesPanel.'</div>'.
+  				($hasData ?
+	  				'<div id="summaryData">'.$summaryTab.'</div>'.
+	  				'<div id="summaryChart"><div id="'.$options['chartID'].'-summary" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'.$summarySeriesPanel.'</div>'.
+  					'<div id="estimateData">'.$estimateTab.'</div>'.
+  					'<div id="estimateChart"><div id="'.$options['chartID'].'-estimates" style="height:'.$options['height'].'px;'.(isset($options['width']) && $options['width'] != '' ? 'width:'.$options['width'].'px;':'').'"></div>'.$summarySeriesPanel.'</div>' 
+  				  : '<div id="summaryData"><p>'.lang::get('No data available for this period with these filter values.').'</p></div>').
 			  	'<div id="rawData">'.$rawTab.'</div>'.
-			  	($downloadTab!="" ? '<div id="dataDownloads"><table><tbody style="border:none;">'.$downloadTab.'</tbody></table></div>' : '').'</div>';
-	$warnings .= '<span style="display:none;">Output table complete : '.date(DATE_ATOM).'</span>'."\n";
-  
-  	if(count($summaryArray)==0)
-  		$r .= '<p>'.lang::get('No data returned for this period.').'</p>';
+ 			  	($downloadTab!="" ? '<div id="dataDownloads"><table><tbody style="border:none;">'.$downloadTab.'</tbody></table></div>' : '').
+  			'</div>';
   	$warnings .= '<span style="display:none;">Finish report_calendar_summary : '.date(DATE_ATOM).'</span>'."\n";
   	return $warnings.$r;
   }
