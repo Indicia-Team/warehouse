@@ -335,21 +335,16 @@ function iform_map_zoom_to_location($locationId, $readAuth) {
 
 function iform_map_zoom_to_geom($geom, $name, $restrict=false) {
   $name = str_replace("'", "''", $name);
+  // Create code to restrict extent and zoom in if being asked to do so, will add to JS in a moment
+  $restrictExtentCode = !$restrict ? '' : <<<SCRIPT
+  mapdiv.map.setOptions({restrictedExtent: bounds});
+  if (mapdiv.map.getZoomForExtent(bounds)>mapdiv.map.getZoom()) {
+    mapdiv.map.zoomTo(mapdiv.map.getZoomForExtent(bounds));
+  }
+SCRIPT;
   // Note, since the following moves the map, we want it to be the first mapInitialisationHook
-  data_entry_helper::$javascript .= "
-mapInitialisationHooks.push(function(mapdiv) {
-  var parser, feature, loclayer = new OpenLayers.Layer.Vector(
-    '".$name."',
-    {'sphericalMercator': true, displayInLayerSwitcher: true}
-  );
-  parser = new OpenLayers.Format.WKT();
-  feature = parser.read('".$geom."');
-  feature.style = {fillOpacity: 0, strokeColor: '#0000ff', strokeWidth: 2};  
-  feature.style.fillOpacity=0;
-  loclayer.addFeatures([feature]);
-  // Don't zoom to the locality if the map is set to remember last position
-  var bounds=feature.geometry.getBounds();
-  mapdiv.map.updateSize();
+  data_entry_helper::$javascript .= <<<SCRIPT
+indiciaFns.zoomToBounds = function(mapdiv, bounds) {
   if (typeof $.cookie === 'undefined' || mapdiv.settings.rememberPos===false || $.cookie('maplon')===null) {
     if (mapdiv.map.getZoomForExtent(bounds) > mapdiv.settings.maxZoom) {
       // if showing something small, don't zoom in too far
@@ -360,17 +355,26 @@ mapInitialisationHooks.push(function(mapdiv) {
       mapdiv.map.zoomToExtent(bounds);
     }
   }
-  ";
-  if ($restrict) {
-    // restrict extent and zoom in if being asked to do so
-    data_entry_helper::$javascript .= "mapdiv.map.setOptions({restrictedExtent: bounds});
-    if (mapdiv.map.getZoomForExtent(bounds)>mapdiv.map.getZoom()) {
-      mapdiv.map.zoomTo(mapdiv.map.getZoomForExtent(bounds));
-    }
-  ";
-  }
-      data_entry_helper::$javascript .= "mapdiv.map.addLayer(loclayer);
-});\n";
+}
+mapInitialisationHooks.push(function(mapdiv) {
+  var parser, feature, loclayer = new OpenLayers.Layer.Vector(
+    '$name',
+    {'sphericalMercator': true, displayInLayerSwitcher: true}
+  );
+  parser = new OpenLayers.Format.WKT();
+  feature = parser.read('$geom');
+  feature.style = {fillOpacity: 0, strokeColor: '#0000ff', strokeWidth: 2};  
+  feature.style.fillOpacity=0;
+  loclayer.addFeatures([feature]);
+  // Don't zoom to the locality if the map is set to remember last position
+  var bounds=feature.geometry.getBounds();
+  mapdiv.map.updateSize();
+  indiciaData.initialBounds = bounds;
+  indiciaFns.zoomToBounds(mapdiv, bounds);
+$restrictExtentCode
+  mapdiv.map.addLayer(loclayer);
+});
+SCRIPT;
 }
 
 /**
