@@ -261,7 +261,7 @@ class iform_easy_download {
    * @param object $node The Drupal node object.
    * @param array $response When this form is reloading after saving a submission, contains the response from the service call.
    * Note this does not apply when redirecting (in this case the details of the saved object are in the $_GET data).
-   * @return Form HTML.
+   * @return string Form HTML.
    */
   public static function get_form($args, $node, $response=null) {
     // Do they have expert access?
@@ -380,12 +380,13 @@ class iform_easy_download {
     }
     $r .= '</fieldset></form>';
     return $r;
-  } 
-  
+  }
+
   /**
-   * Returns an array of the available types of filter.
+   * Returns an array of the available types of filter (my records, expert records, all records).
    * @param array $args Form arguments
-   * @return array Associative array of filter type 
+   * @param array $readAuth Read authorisation tokens
+   * @return array Associative array of filter type suitable for loading into a picker control.
    */
   private static function get_filters($args, $readAuth) {
     $filters = array();
@@ -415,9 +416,11 @@ class iform_easy_download {
       $filters['all']=lang::get('Download all records');
     return $filters;
   }
-  
-  /** 
+
+  /**
    * Handles a request for download. Works out which type of request it is and calls the appropriate function.
+   * @param array $args Form configuration arguments
+   * @param object $node Node object
    */
   private static function do_download($args, $node) {
     if ($_POST['format']===lang::get('Spreadsheet (CSV)'))
@@ -455,7 +458,16 @@ class iform_easy_download {
     ));
     header("Location: $url");
   }
-  
+
+  /**
+   * Builds the filter to send in the extraParams of a report services request for the download data.
+   * @param array $args Form configuration
+   * @param array $readAuth Read authorisation tokens
+   * @param $format File format being requested, e.g. csv
+   * @param $useStandardParams True if the download report supports the standard parameters for occurrence reporting.
+   * @return array List of filter key value pairs
+   * @throws \exception
+   */
   private static function build_filter($args, $readAuth, $format, $useStandardParams) {
     require_once('includes/user.php');
     $filterToApply = $_POST['user-filter'];
@@ -465,16 +477,13 @@ class iform_easy_download {
     if ($filterToApply==='expert') {
       require_once('includes/user.php');
       $location_expertise = hostsite_get_user_field('location_expertise');
-      $taxon_groups_expertise = hostsite_get_user_field('taxon_groups_expertise');
-      $taxon_groups_expertise = $taxon_groups_expertise ? unserialize($taxon_groups_expertise) : null;
-      $surveys_expertise = hostsite_get_user_field('surveys_expertise');
-      $available_surveys = $surveys_expertise ? unserialize($surveys_expertise) : null;
+      $taxon_groups_expertise = hostsite_get_user_field('taxon_groups_expertise', array(), true);
+      $surveys_expertise = hostsite_get_user_field('surveys_expertise', array(), true);
     } else {
       // Default is no filter by survey, locality, taxon group
       $location_expertise = '';
-      $available_surveys = '';
-      $taxon_groups_expertise = '';
-      $surveys_expertise = '';
+      $taxon_groups_expertise = array();
+      $surveys_expertise = array();
     }
     // We are downloading either a configured survey, a selected single survey, or the surveys the 
     // user can see. The field name used will depend on which of the survey selects were active - 
@@ -482,7 +491,7 @@ class iform_easy_download {
     // all surveys.
     $surveyFieldName='survey_id_'.(preg_match('/^expert/', $filterToApply) ? 'expert' : 'all');
     if (empty($args['survey_id'])) {
-      $surveys = empty($_POST[$surveyFieldName]) ? implode(',', $available_surveys) : $_POST[$surveyFieldName];
+      $surveys = empty($_POST[$surveyFieldName]) ? implode(',', $surveys_expertise) : $_POST[$surveyFieldName];
     } else 
       // survey to load is preconfigured for the form
       $surveys = $args['survey_id'];
@@ -526,13 +535,15 @@ class iform_easy_download {
     );
     return $filters;
   }
-  
+
   /**
-   * If filtering by a verification context, then load the filter and return the array of 
+   * If filtering by a verification context, then load the filter and return the array of
    * filter data ready to use as a permissions context.
    *
    * @param string $filterToApply Identifier for the filter we are appliying. A filter with ID expert-id-n
    * means that filter ID n will be loaded and returned.
+   * @param $readAuth Read authorisation tokens
+   * @return array List of filters
    */
   private static function get_filter_verification_context($filterToApply, $readAuth) {
     $filters = array();
