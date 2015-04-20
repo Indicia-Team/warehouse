@@ -429,6 +429,19 @@ idlist=';
     $r .= '</ul></div>';
     return $r;
   }
+  
+  private static function check_prerequisites() {
+    $msg = false;
+    if (!function_exists('iform_ajaxproxy_url'))
+      $msg = 'The AJAX Proxy module must be enabled to support saving filters on the verification page.';
+    if (!module_exists('easy_login'))
+      $msg = 'The verification 4 page requires the Easy Login module to be enabled.';
+    if (!function_exists('hostsite_get_user_field') || !hostsite_get_user_field('indicia_user_id'))
+      $msg = 'Before verifying records, please visit your user account profile and ensure that you have entered your full name, then save it.';
+    if ($msg) 
+      hostsite_show_message($msg, 'warning');
+    return $msg ? false : true;
+  }
 
 
   /**
@@ -441,6 +454,8 @@ idlist=';
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
+    if (!self::check_prerequisites())
+      return '';
     iform_load_helpers(array('data_entry_helper', 'map_helper', 'report_helper'));
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     //Clear Verifier Tasks automatically when they open the screen if the option is set.
@@ -1053,11 +1068,7 @@ idlist=';
       'sharing' => 'verification',
       'linkToMapDiv'=>'map',
       'filter-quality'=>'P'
-    );
-    if (!function_exists('iform_ajaxproxy_url'))
-      return 'The AJAX Proxy module must be enabled to support saving filters.';
-    if (!function_exists('hostsite_get_user_field') || !hostsite_get_user_field('indicia_user_id'))
-      return 'The verification_4 form requires Easy Login.';
+    );   
     $r = report_filter_panel($readAuth, $options, $args['website_id'], $hiddenStuff);
     return $r . $hiddenStuff;
   }
