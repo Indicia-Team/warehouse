@@ -2305,10 +2305,7 @@ else
       if (strpos($key, ':')===false)
         $opts[$key]=$value;
     }
-    return '..'.data_entry_helper::image_upload(array(
-      'fieldname' => 'sample:image:1'
-    ));
-    //return data_entry_helper::file_box($opts);
+    return data_entry_helper::file_box($opts);
   }
   
   /** 
