@@ -21,16 +21,23 @@
  
 jQuery(document).ready(function ($) {
   function setVisibleSurveyControl() {
-    if ($('#user-filter\\:1').attr('checked')) {
-      $('#survey_expertise').show();
-      $('#survey_all').hide();    
-    } else {
-      if (!$('#user-filter\\:0').attr('checked') && !$('#user-filter\\:2').attr('checked')) {
-        $('#user-filter\\:0').attr('checked',true);
-      }
-      // radios 0 and 2 allow all surveys to be selected
-      $('#survey_all').show();
-      $('#survey_expertise').hide();
+    // check first option if none checked
+    if ($('input[name="user-filter"]:checked').length===0) {
+      $('#user-filter\\:0').attr('checked',true);
+    }
+    var filter=$('input[name="user-filter"]:checked').val();
+    switch (filter) {
+      case expert:
+        // expert records - might be limited so a different list of surveys
+        $('#survey_expertise').show();
+        $('#survey_all').hide();
+        break;
+      case mine:
+      case all:
+        // my records or all records - can pick any survey
+        $('#survey_all').show();
+        $('#survey_expertise').hide();
+        break;
     }
   }
   
