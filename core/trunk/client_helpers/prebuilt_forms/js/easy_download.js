@@ -27,13 +27,13 @@ jQuery(document).ready(function ($) {
     }
     var filter=$('input[name="user-filter"]:checked').val();
     switch (filter) {
-      case expert:
+      case 'expert':
         // expert records - might be limited so a different list of surveys
         $('#survey_expertise').show();
         $('#survey_all').hide();
         break;
-      case mine:
-      case all:
+      case 'mine':
+      case 'all':
         // my records or all records - can pick any survey
         $('#survey_all').show();
         $('#survey_expertise').hide();
