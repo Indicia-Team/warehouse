@@ -26,7 +26,7 @@
       coalesce(cttl.default_common_name, cttl.preferred_taxon) as common,
       cttl.preferred_taxon as preferred,
       s.created_by_id as user_id,
-      (select avg(sav.int_value) from sample_attribute_values sav
+      (select round(avg(sav.int_value)) from sample_attribute_values sav
         JOIN sample_attributes sa ON sav.sample_attribute_id = sa.id AND sa.deleted = false AND sa.caption = '% sun'
         JOIN samples s2 ON sav.sample_id = s2.id AND s2.parent_id = s.id AND s2.deleted = false
         WHERE sav.deleted = false) as sun

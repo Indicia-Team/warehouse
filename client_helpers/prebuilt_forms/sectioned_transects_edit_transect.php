@@ -320,7 +320,7 @@ class iform_sectioned_transects_edit_transect {
         'multiValue' => true
     ));
     if ($args['allow_user_assignment']) {
-      if (false==$settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes']))
+      if (false== ($settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes'])))
         return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey, or the "Allow users to be assigned to transects" option unticked.';
       // keep a copy of the cms user ID attribute so we can use it later.
       self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
@@ -393,7 +393,7 @@ class iform_sectioned_transects_edit_transect {
       }
       $sections = data_entry_helper::get_population_data(array(
         'table' => 'location',
-        'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$settings['locationId'],'deleted'=>'f','orderby'=>'code'),
+        'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$settings['locationId'],'deleted'=>'f','orderby'=>'id'),
         'nocache' => true
       ));
       foreach($sections as $section) {

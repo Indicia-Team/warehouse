@@ -1,6 +1,6 @@
 <report
     title="UKBMS Walks: Top level samples list for a CMS user"
-    description="A list of top level samples for use in the UKBMS My Walks report calendar grid. Filtered according to the ID of the user when logged into the CMS, and optional location ID. Top level means that the parent_id field of the samples is null."
+    description="A list of top level samples for use in the UKBMS My Walks report calendar grid. Filtered according to the Indicia ID of the user, and optional location ID. Top level means that the parent_id field of the samples is null."
 >
 <query website_filter_field="su.website_id">
   SELECT #field_sql#
@@ -11,9 +11,6 @@
     INNER JOIN terms t ON t.id=ttl2.term_id
   ) ON ttl1.id=s.sample_method_id
   LEFT JOIN locations l ON l.id=s.location_id
-  JOIN (sample_attribute_values sav
-    JOIN sample_attributes sa ON sa.id=sav.sample_attribute_id AND sa.deleted=false AND sa.caption='CMS User ID'
-  ) ON sav.sample_id=s.id AND sav.deleted=false
   #joins#
   WHERE s.deleted = FALSE
   AND s.parent_id IS NULL
@@ -22,7 +19,6 @@
   AND (CAST(ttl2.id AS character varying)='#sample_method_id#' OR '#sample_method_id#'='' OR t.term='#sample_method_id#')
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-  AND CAST(sav.int_value AS character varying)='#user_id#'
   AND (CAST(l.id AS character varying)='#location_id#' OR '#location_id#' = '')
   #order_by#
   </query>
@@ -46,7 +42,9 @@
         population_call='direct:survey:id:title' />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
-    <param name='user_id' display='CMS User ID' description='Enter the ID of the CMS user' datatype='int' />
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' >
+      <where>s.created_by_id=#user_id#</where>
+    </param>
     <param name='location_id' display='Location ID' description='Enter the Location ID.' datatype='int' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
