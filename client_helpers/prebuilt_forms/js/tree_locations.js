@@ -2,7 +2,7 @@
 
 var selectedFeature = null;
 var treeDetailsChanged = false;
-var clearTree, loadTreeDetails, confirmSelectTree, selectTree, asyncPost,
+var clearTree, loadTreeDetails, confirmSelectTree, selectTree, syncPost,
     deleteLocation, deleteTrees, deleteTree;
 
 (function ($) {
@@ -243,7 +243,7 @@ selectTree = function(tree, doFeature) {
   }
 };
 
-asyncPost = function(url, data) {
+syncPost = function(url, data) {
   $.ajax({
     type: 'POST',
     url: url,
@@ -265,7 +265,7 @@ deleteLocation = function(ID) {
     'location:deleted':'t',
     'website_id':indiciaData.website_id
   };
-  asyncPost(indiciaData.ajaxFormPostLocationUrl, data);
+  syncPost(indiciaData.ajaxFormPostLocationUrl, data);
 };
 
 // delete a set of trees.
@@ -463,7 +463,7 @@ $(document).ready(function() {
             return bounds;
         }
 
-        var div, target = ui.newPanel[0] || ui.panel;
+        var div, target = (typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0]);
         if((div = $('#'+target.id+' #trees-map')).length > 0){
           copy_over_sites();
           div = div[0];
