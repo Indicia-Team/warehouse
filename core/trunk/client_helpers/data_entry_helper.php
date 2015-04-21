@@ -1020,7 +1020,7 @@ $('#$escaped').change(function(e) {
       'runtimes' => array('html5','flash','silverlight','html4'),
       'autoupload' => true,
       'imageWidth' => 200,
-      'uploadScript' => $relpath . 'upload.php',
+      'uploadScript' => "http://$_SERVER[HTTP_HOST]/" . self::getRootFolder() . self::relative_client_helper_path() . 'upload.php',
       'destinationFolder' => $relpath . $interim_image_folder,
       'finalImageFolder' => self::get_uploaded_image_folder(),
       'jsPath' => self::$js_path,
