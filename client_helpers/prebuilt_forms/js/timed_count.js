@@ -100,4 +100,13 @@ getCentroid=function(geometry){
   var oddball=_getCentroid(geometry);
   return new OpenLayers.Geometry.Point(oddball.sumx/oddball.count, oddball.sumy/oddball.count);
 }
+// Only allow one delete at a time: prevents removal of last subsample.
+processDeleted=function(){
+  $('.subSampleDelete').change(function(){
+    if($(this).attr('checked'))
+      $('.subSampleDelete').not(this).attr('disabled','disabled');
+    else
+      $('.subSampleDelete').removeAttr('disabled');
+  })
+}
 
