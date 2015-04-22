@@ -144,10 +144,11 @@ var checkSubmitInProgress = function () {
           var url=$('#link_url').val(), dlg=this, found=false;
           // validate the link matches one of our file type regexes
           $.each(indiciaData.mediaTypes, function(name, cfg) {
-            if ($.inArray(name, currentDiv.settings.mediaTypes) && url.match(cfg.regex)) {
+            if ($.inArray(name, currentDiv.settings.mediaTypes) >= 0 && url.match(cfg.regex)) {
               noembed(currentDiv, '', url, linkRequestId, name, true, '');
               $(dlg).dialog( "close" );
               found=true;
+              return false;
             }
           });
           if (!found) {
