@@ -724,6 +724,11 @@ if(jQuery('#C1\\\\:sample\\\\:date').val() != '') jQuery('#sample\\\\:date').val
           }
         }
       }
+    } else {
+    	return "An internal error has occurred: there has been a mismatch between the validation applied in the browser and that applied by the warehouse.<br/>".
+    		"Please contact the site administrator, and provide them with the following diagnostic information.<br>".
+			print_r(data_entry_helper::$validation_errors, true)."<br>".
+			print_r($_POST, true);
     }
 
     data_entry_helper::$javascript .= "indiciaData.speciesList = ".$args['taxon_list_id'].";\n";
@@ -789,10 +794,10 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
   myFieldset.find('.smp-input,[name=taxonLookupControl]').removeAttr('disabled'); // leave the count fields as are.
 });\n";
       }
-      if($subSampleId && $i)
+      if($subSampleId && count($subSamples)>1)
         $r .= "<label for='C".($i+1).":sample:deleted'>Delete this count:</label>
-<input id='C".($i+1).":sample:deleted' type='checkbox' value='t' name='C".($i+1).":sample:deleted'><br />
-<p>".lang::get('Setting this will delete this count when the page is saved.').'</p>';
+<input id='C".($i+1).":sample:deleted' type='checkbox' value='t' name='C".($i+1).":sample:deleted' class='subSampleDelete'><br />
+<p class='helpText'>".lang::get('Setting this will delete this count when the page is saved. Only one count can be deleted at a time.').'</p>';
       
       foreach ($attributes as $attr) {
         if(strcasecmp($attr['untranslatedCaption'],'Unconfirmed Individuals')==0) continue;
@@ -880,7 +885,7 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
     $r .= '<input type="submit" value="'.lang::get('Save').'" />';
     $r .= '<a href="'.$args['summary_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Cancel').'</button></a></form>';
     data_entry_helper::enable_validation('subsamples');
-    data_entry_helper::$javascript .= "initButtons();\n";
+    data_entry_helper::$javascript .= "initButtons();\nprocessDeleted();\n";
     return $r;
   }
 
