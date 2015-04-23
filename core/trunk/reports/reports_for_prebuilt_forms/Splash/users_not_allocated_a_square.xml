@@ -6,10 +6,11 @@
   SELECT #columns#
   FROM users u  
     JOIN users_websites uw on u.id=uw.user_id  
+    JOIN people p on p.id = u.person_id AND p.deleted=false 
     LEFT JOIN person_attribute_values pav on pav.person_attribute_id=#user_square_attr_id# AND pav.person_id=u.person_id AND pav.deleted=false
-    LEFT JOIN people p on p.id = u.person_id 
-    LEFT JOIN locations sq ON pav.int_value=sq.id AND sq.deleted=false AND sq.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)
-  WHERE u.deleted=false AND p.deleted=false AND sq.id IS NULL
+    LEFT JOIN locations sq ON pav.int_value=sq.id AND sq.deleted=false 
+        AND sq.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)
+  WHERE u.deleted=false AND sq.id IS NULL
   AND #website_filter# 
   </query>
   <order_bys>
@@ -25,7 +26,7 @@ Useful if old users are left on the system but are not currently active." dataty
 Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default=""/>
   </params>
   <columns> 
-    <column name='id' sql='u.id' datatype='integer' visible='false'/>
+    <column name='id' sql='distinct(u.id)' datatype='integer' visible='false'/>
     <column name='username' sql='u.username' display='Username' datatype='text'/>
     <column name="person_name" display="User's Name" sql="p.first_name || ' ' || p.surname" datatype="text"/>
     <column name="registered" display="Registered Raw Date" sql="uw.created_on" datatype="date" visible='false'/>
