@@ -6725,6 +6725,11 @@ if (errors$uniq.length>0) {
               // @todo The date format should be a global configurable option. 
               $d = new DateTime($value['value']);
               $value['value'] = $d->format(helper_base::$date_format);
+              //If a date, then we default to the value after formatting
+              $defaultValue = $value['value'];
+            } else {
+              //If not date we need to use the raw_value, items like drop-downs won't reload correctly without this
+              $defaultValue = $value['raw_value'];
             }
             // for multilanguage look ups we get > 1 record for the same attribute.
             $fieldname = $options['fieldprefix'].':'.$itemId.':'.$value['id'];
@@ -6734,7 +6739,7 @@ if (errors$uniq.length>0) {
                 $found = true;
             if(!$found)
               $item['values'][] = array('fieldname' => $options['fieldprefix'].':'.$itemId.':'.$value['id'],
-                                'default' => $value['value'], 'caption'=>$value['value']);
+                                'default' => $defaultValue, 'caption'=>$value['value']);
             $item['displayValue'] = $value['value']; //bit of a bodge but not using multivalue for this at the moment.
           }
         }
