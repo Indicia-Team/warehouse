@@ -22,11 +22,11 @@
   </order_bys>
   <params>
     <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
-    <param name='fine_habitat' display='Habitat' description='Restrict report to specific habitat.' datatype='lookup' emptyvalue=''
+    <param name='fine_habitat' display='Fine Scale Habitat' description='Restrict report to specific habitat.' datatype='lookup' emptyvalue=''
         population_call='report:reports_for_prebuilt_forms/Splash/fine_habitats_for_population_call:id:term'>
       <where>(ttHab.id=#fine_habitat#)</where>
     </param>
-    <param name='survey_id' display='Survey ID' description='Survey' datatype='lookup' query='SELECT id, title as caption FROM surveys' emptyvalue='' population_call='direct:survey:id:title'>
+    <param name='survey_id' display='Survey' description='Survey' datatype='lookup' emptyvalue='' population_call='report:reports_for_prebuilt_forms/Splash/get_surveys_for_population_call:id:title'>
       <where>su.id=#survey_id# AND su.deleted=false</where>
     </param>  
     <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">

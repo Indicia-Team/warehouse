@@ -28,7 +28,7 @@ ones saved with a fine scale sub-habitat."
         population_call='report:reports_for_prebuilt_forms/Splash/broad_habitats_for_population_call:id:term'>
       <where>(ttHab.id=#broad_habitat# OR ttBroad.id=#broad_habitat#)</where>
     </param>
-    <param name='survey_id' display='Survey ID' description='Survey' datatype='lookup' query='SELECT id, title as caption FROM surveys' emptyvalue='' population_call='direct:survey:id:title'>
+    <param name='survey_id' display='Survey' description='Survey' datatype='lookup' emptyvalue='' population_call='report:reports_for_prebuilt_forms/Splash/get_surveys_for_population_call:id:title'>
       <where>su.id=#survey_id# AND su.deleted=false</where>
     </param>  
     <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">
