@@ -22,7 +22,7 @@
       <where>s.id=#survey_id#</where>
     </param>
     <param name="species_id" display="Species" datatype="lookup" population_call='report:reports_for_prebuilt_forms/Splash/get_taxa_for_population_call:id:taxon' emptyvalue=''>
-      <where>t.id=#species_id#</where>
+      <where>t.id in (#species_id#)</where>
     </param>
     <param name="plot_type_id" display="Plot Type" datatype="lookup" population_call='report:reports_for_prebuilt_forms/Splash/get_plot_types_for_population_call:id:term' emptyvalue=''>
       <where>plot.location_type_id=#plot_type_id#</where>
