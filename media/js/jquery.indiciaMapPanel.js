@@ -422,6 +422,15 @@ var destroyAllFeatures;
         div.map.zoomToExtent(bounds);
       }
     }
+    
+    function switchToSatelliteBaseLayer(map) {
+      $.each(map.layers, function() {
+        if (this.isBaseLayer && (this.name.indexOf('Satellite')!==-1 || this.name.indexOf('Hybrid')) && map.baseLayer!==this) {
+          map.setBaseLayer(this);
+          return false;
+        }
+      });
+    }
 
     function _getPrecisionHelp(div, value) {
       var helptext = [], info, handler = indiciaData.srefHandlers[_getSystem().toLowerCase()];
@@ -438,12 +447,8 @@ var destroyAllFeatures;
         }
         // switch layer?
         if (div.settings.helpToPickPrecisionSwitchAt && info.metres<=div.settings.helpToPickPrecisionSwitchAt) {
-          $.each(div.map.layers, function() {
-            if (this.isBaseLayer && this.name.indexOf('Satellite')!==-1 && div.map.baseLayer!==this) {
-              div.map.setBaseLayer(this);
-              helptext.push(div.settings.hlpImproveResolutionSwitch);
-            }
-          });
+          switchToSatelliteBaseLayer(div.map);
+          helptext.push(div.settings.hlpImproveResolutionSwitch);
         }
         _zoomInToClickPoint(div);
       }
@@ -570,11 +575,7 @@ var destroyAllFeatures;
       _zoomInToClickPoint(div);
       // Optional switch to satellite layer when using click_zoom
       if (div.settings.helpToPickPrecisionSwitchAt && data.sref.length >= div.settings.helpToPickPrecisionSwitchAt) {
-        $.each(div.map.layers, function() {
-          if (this.isBaseLayer && this.name.indexOf('Satellite') !== -1 && div.map.baseLayer !== this) {
-            div.map.setBaseLayer(this);
-          }
-        });
+        switchToSatelliteBaseLayer(div.map);
       }
     }
 
