@@ -35,7 +35,7 @@ Broad habitat data may include data for samples where a fine scale sub-habitat h
       <where>su.id=#survey_id#</where>
     </param>
     <param name="species_id" display="Species" datatype="lookup" population_call='report:reports_for_prebuilt_forms/Splash/get_taxa_for_population_call:id:taxon' emptyvalue=''>
-      <where>tax.id=#species_id#</where>
+      <where>tax.id in (#species_id#)</where>
     </param>  
      <param name='broad_habitat' display='Broad Habitat' description='Restrict report to specific broad habitat.' datatype='lookup' emptyvalue=''
         population_call='report:reports_for_prebuilt_forms/Splash/broad_habitats_for_population_call:id:term'>
