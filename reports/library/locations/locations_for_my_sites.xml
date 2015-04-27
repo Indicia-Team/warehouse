@@ -24,7 +24,7 @@
     <param name='location_type_ids' display='Location Types' description='Comma separated list of location_type_ids to allow for inclusion in the results.' datatype="integer[]" emptyvalue="0"/>
     <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
     <param name="parent_id" display="Parent location ID" description="The ID of the parent location to filter for" datatype="integer" >
-      <join>JOIN locations lp on lp.id=#parent_id# and st_intersects(lp.boundary_geom, l.boundary_geom)</join>
+      <join>JOIN locations lp on lp.id=#parent_id# and st_intersects(lp.boundary_geom, coalesce(l.boundary_geom, l.centroid_geom))</join>
     </param>
     <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" />
     <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
