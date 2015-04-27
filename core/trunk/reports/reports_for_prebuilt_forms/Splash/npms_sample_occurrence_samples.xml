@@ -26,6 +26,7 @@
       #joins#
       WHERE s.survey_id = #survey_id# AND s.deleted = FALSE
       AND s.created_by_id = #iUserID#
+      AND (s.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
     ), samples2 AS (
       SELECT s.id AS sample_id2,
         sav.int_value AS sample_id1
@@ -51,6 +52,7 @@
     <param name='iUserID' display='Indicia User ID' description='Indicia User ID: use 0 to ignore' datatype='int' />
     <param name='s1AttrID' display='Sample 1 Attribute ID' description='The ID of the sample attribute that links a second sample to a first' datatype='int' />
     <param name='plot_number_attr_id' display='Plot number attribute Id' description='Id of the location attribute that holds the plot number label' datatype='int' default='0' empytvalue='0'/>
+    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore samples before this date." datatype="date" emptyvalue="" default=""/>
   </params>
   <columns>
     <column name='sample_id1' display='ID' />
