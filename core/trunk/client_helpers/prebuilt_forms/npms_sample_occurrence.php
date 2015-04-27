@@ -62,6 +62,14 @@ class iform_npms_sample_occurrence extends iform_dynamic_sample_occurrence {
           'group'=>'Other IForm Parameters',
           'required'=>false
         ),
+        array(
+          'name'=>'ignore_grid_sample_dates_before',
+          'caption'=>'Ignore grid sample date before',
+          'description'=>'Exclude any samples before this date on the initial grid of data.',
+          'type'=>'string',
+          'group'=>'Other IForm Parameters',
+          'required'=>false
+        ),  
       )
     ); 
   }
@@ -209,10 +217,15 @@ class iform_npms_sample_occurrence extends iform_dynamic_sample_occurrence {
     // Get the Indicia User ID to filter on.
     if (function_exists('hostsite_get_user_field')) {
       $iUserId = hostsite_get_user_field('indicia_user_id');
-      if (isset($iUserId)) $filter = array (
-          'survey_id' => $args['survey_id'],
-          's1AttrID' => $args['survey_1_attr'],
-          'iUserID' => $iUserId);
+      if (isset($iUserId)) {
+        $repOptions=array(
+            'survey_id' => $args['survey_id'],
+            's1AttrID' => $args['survey_1_attr'],
+            'iUserID' => $iUserId);
+        if (!empty($args['ignore_grid_sample_dates_before'])) 
+          $repOptions=array_merge($repOptions,array('ignore_dates_before'=>$args['ignore_grid_sample_dates_before']));
+        $filter = $repOptions;
+      }
     }
     if (!empty($filter) && !empty($args['plot_number_attr_id'])) {
       $filter = array_merge($filter,array('plot_number_attr_id' => $args['plot_number_attr_id']));
