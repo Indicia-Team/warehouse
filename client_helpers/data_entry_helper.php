@@ -5761,7 +5761,8 @@ if (errors$uniq.length>0) {
           // if given a choice, the user opted for fields to be remembered
           $arr=array();
           foreach ($remembered_fields as $field) {
-            $arr[$field]=$_POST[$field];
+            if (!empty($_POST[$field]))
+              $arr[$field]=$_POST[$field];
           }
             // put them in a cookie with a 30 day expiry
           setcookie('indicia_remembered', serialize($arr), time()+60*60*24*30);
