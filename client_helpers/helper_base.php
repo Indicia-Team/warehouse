@@ -1264,7 +1264,7 @@ class helper_base extends helper_config {
           array_push($replaceTags, '{'.$param.'-escape-htmldblquote}');
         }
         // allow sep to have <br/>
-        $value = ($param == 'sep' || $allowHtml) ? $value : htmlentities($value);
+        $value = ($param == 'sep' || $allowHtml) ? $value : htmlspecialchars($value, ENT_QUOTES, "UTF-8");
         // HTML attributes get automatically wrapped
         if (in_array($param, self::$html_attributes) && !empty($value))
           $value = " $param=\"$value\"";
