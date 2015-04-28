@@ -44,10 +44,10 @@
     <column name='name' display='Name' 
     sql="
       case 
-        when #pss_mode#=0
-          then '&lt;b&gt;' || l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;' 
+        when '#pss_mode#'='0'
+          then l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#')
          else
-          '&lt;b&gt;' || l.centroid_sref || '&lt;/b&gt;' 
+          l.centroid_sref 
       end"
     datatype='text' aggregate="true"/>
     <column name="sc" visible="false" feature_style="strokeColor" sql="'blue'" aggregate='true'/>
