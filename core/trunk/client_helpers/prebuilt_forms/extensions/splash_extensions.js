@@ -33,23 +33,19 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
           var lastIndex
           //If row inclusion check is hasData and in add mode, then we are checking fields which end in occAttr:<num>
           //So we need to chop off the <num> and the occAttr, otherwise we are just removing the word present
-          //If in edit mode, we need to do an additional chop, as the occAttr has an additional occurrence_attribute_values id
-          //on the end e.g. occAttr:33:32414
-          if (rowInclusionCheckModeHasData==true) {
-            if (editMode==true) {
-              numItemsToChop=3;
-            } else {
-              numItemsToChop=2;
-            }
-          } else {
-            numItemsToChop=1;
-          }
+          //Not in edit mode occAttr has an additional occurrence_attribute_values id
+          //on the end e.g. occAttr:33:32414, however we don't need to worry about this because of the way we do the chop.
+          //Firstly get the field name
           startOfKeyHolder=$(this).attr("name");
-          for (var i = 0; i<numItemsToChop; i++) {
-            lastIndex = startOfKeyHolder.lastIndexOf(":")
-            startOfKeyHolder = startOfKeyHolder.substring(0, lastIndex);
+          //The get the character position of the word we are going to chop from.
+          if (rowInclusionCheckModeHasData==true) {      
+            lastIndex = startOfKeyHolder.lastIndexOf(":occAttr");     
+          } else {
+            lastIndex = startOfKeyHolder.lastIndexOf(":present");
           }
-          //Adjust the name so it can hold sensitivity_precision
+          //Remove the end from the key
+          startOfKeyHolder = startOfKeyHolder.substring(0, lastIndex);
+          //Adjust the name so it now refers to the sensitivity precision instead.
           hiddenName = startOfKeyHolder + ":occurrence:sensitivity_precision"
           //If the selected plot is private then set the sensitivity precision.
           if (inArray($("#imp-location").val(),privatePlots)) {
