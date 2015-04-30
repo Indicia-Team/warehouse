@@ -146,8 +146,8 @@ class iform_timed_count {
         ),
         array(
           'name'=>'numberOfCounts',
-          'caption'=>'Max number of counts',
-          'description'=>'Max number of counts to be entered in this location.',
+          'caption'=>'Min number of counts',
+          'description'=>'Min number of counts to be displayed on the entry page for this location.',
           'type'=>'int',
           'required'=>true,
           'siteSpecific'=>true,
@@ -775,7 +775,7 @@ indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     if (isset($args['custom_attribute_options']) && $args['custom_attribute_options']) 
       $blockOptions = get_attr_options_array_with_user_data($args['custom_attribute_options']);
     else $blockOptions=array();
-    for($i = 0; $i < $args['numberOfCounts']; $i++){
+    for($i = 0; $i < max($args['numberOfCounts'], count($subSamples)+1); $i++){
       $subSampleId = (isset($subSamples[$i]) ? $subSamples[$i]['sample_id'] : null);
       $r .= "<fieldset id=\"count-$i\"><legend>".lang::get('Count ').($i+1)."</legend>";
       if($subSampleId) $r .= "<input type='hidden' name='C".($i+1).":sample:id' value='".$subSampleId."'/>";
@@ -882,6 +882,7 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
       if($i && !$subSampleId) $r .= '<button type="button" class="clear-button ui-state-default ui-corner-all smp-input" disabled="disabled" />'.lang::get('Clear this count').'</button>';
       $r .= '</fieldset>';
     }
+    $r .= '<p>'.lang::get('In order to enter extra counts, save these first, and then view the form again for this location. Each time you do so an extra blank count will be displayed at the bottom, ready to be entered.').'</p>';
     $r .= '<input type="submit" value="'.lang::get('Save').'" />';
     $r .= '<a href="'.$args['summary_page'].'"><button type="button" class="ui-state-default ui-corner-all" />'.lang::get('Cancel').'</button></a></form>';
     data_entry_helper::enable_validation('subsamples');
@@ -916,13 +917,13 @@ $('#C".($i+1)."\\\\:sample\\\\:date' ).datepicker( 'option', 'maxDate', new Date
       }
     } else if($values['page']=='occurrences'){
       // at this point there is a parent supersample.
-      // loop from 1 to numberOfCounts, or number of existing subsamples, whichever is bigger.
+      // loop from 1 to numberOfCounts, or number of existing subsamples+1, whichever is bigger.
       $subSamples = data_entry_helper::get_population_data(array(
         'table' => 'sample',
         'extraParams' => $read + array('parent_id'=>$values['sample:id'], 'view'=>'detail', 'survey_id'=>$values['sample:survey_id']),
         'nocache'=>true
       ));
-      for($i = 1; $i <= max(count($subSamples), $args['numberOfCounts']); $i++){
+      for($i = 1; $i <= max(count($subSamples)+1, $args['numberOfCounts']); $i++){
         if(isset($values['C'.$i.':sample:id']) || (isset($values['C'.$i.':sample:date']) && $values['C'.$i.':sample:date']!='')){
           $subSample = array('website_id' => $values['website_id'],
                              'survey_id' => $values['sample:survey_id']);
