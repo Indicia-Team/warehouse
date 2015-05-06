@@ -1,66 +1,142 @@
 <report
-    title="Species Richness Per Broad Habitat"
-    description="Return the average number of species found at each broad scale habitat, this includes samples saved directly at the broad scale habitat or
-ones saved with a fine scale sub-habitat."
+    title="Species Richness Per broad Habitat"
+    description="Return the average number of species found at each broad habitat. For instance a grass habitat
+might have an average of 5 different species. This is made slightly more complicated because the habitat is held at sample level instead of location
+level. Also each broad habitat can have child fine habitat, so for samples saved at a fine habitat, we need to work out what broad habitat category these fall into."
 >
   <query website_filter_field="su.website_id">
-  SELECT #columns#
-  FROM samples samp
-    JOIN sample_attribute_values sampHabVal on sampHabVal.sample_id=samp.id AND sampHabVal.sample_attribute_id=#habitat_attr_id# AND sampHabVal.deleted=false
-    JOIN termlists_terms ttHab ON ttHab.id=sampHabVal.int_value AND ttHab.deleted=false
-    JOIN termlists_terms ttBroad ON (ttBroad.id=ttHab.parent_id OR (ttBroad.id=ttHab.id AND ttHab.parent_id IS NULL)) AND ttBroad.deleted=false
-    JOIN terms hab on hab.id = ttBroad.term_id AND hab.deleted=false
-    JOIN surveys su on su.id=samp.survey_id AND su.deleted=false
+    SELECT #columns#  
+    FROM terms broadHab
+      JOIN termlists_terms ttBroadHab ON ttBroadHab.term_id=broadHab.id AND ttBroadHab.deleted=false
+        AND (ttBroadHab.id=#broad_habitat# OR #broad_habitat#=0)
+        AND ttBroadHab.deleted=false 
+      --Get all the termlists terms associated with the broad habitat, including the fine (child) habitats
+      JOIN termlists_terms ttFineHab ON ttFineHab.parent_id=ttBroadHab.id AND ttFineHab.deleted=false
+      JOIN sample_attribute_values sampHabVal on (sampHabVal.int_value=ttBroadHab.id OR sampHabVal.int_value=ttFineHab.id) AND sampHabVal.sample_attribute_id=#habitat_attr_id# AND sampHabVal.deleted=false
+      JOIN samples samp on samp.id = sampHabVal.sample_id 
+        AND (samp.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
+        AND samp.deleted=false
+      JOIN locations plot on plot.id = samp.location_id AND plot.deleted=false
+      JOIN surveys su on su.id=samp.survey_id 
+        AND (su.id=#survey_id# OR #survey_id#=0)
+        AND su.deleted=false
     LEFT JOIN occurrences o on o.sample_id = samp.id AND o.deleted = false
     LEFT JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id AND ttl.deleted=false
-    LEFT JOIN taxa tax on tax.id = ttl.taxon_id AND tax.deleted = false  
-  WHERE samp.deleted=false
-    #filters#
-    AND #website_filter#
-  GROUP BY hab.term
+    WHERE broadHab.deleted=false
+      #filters#
+      AND #website_filter#
+    GROUP BY broadHab.term,ttBroadHab.id
   </query>
-  <order_bys>
-    <order_by>hab.term ASC</order_by>
-  </order_bys>
   <params>
     <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
-    <param name='broad_habitat' display='Broad Habitat' description='Restrict report to specific broad habitat.' datatype='lookup' emptyvalue=''
-        population_call='report:reports_for_prebuilt_forms/Splash/broad_habitats_for_population_call:id:term'>
-      <where>(ttHab.id=#broad_habitat# OR ttBroad.id=#broad_habitat#)</where>
-    </param>
-    <param name='survey_id' display='Survey' description='Survey' datatype='lookup' emptyvalue='' population_call='report:reports_for_prebuilt_forms/Splash/get_surveys_for_population_call:id:title'>
-      <where>su.id=#survey_id# AND su.deleted=false</where>
-    </param>  
-    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">
-      <where>samp.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)</where>
-    </param>
+    <param name='broad_habitat' display='Broad Scale Habitat' description='Restrict report to specific habitat.' datatype='lookup' emptyvalue='0'
+        population_call='report:reports_for_prebuilt_forms/Splash/broad_habitats_for_population_call:id:term'/>   
+    <param name='survey_id' display='Survey' description='Survey' datatype='lookup' population_call='report:reports_for_prebuilt_forms/Splash/get_surveys_for_population_call:id:title' emptyvalue='0'/>
+    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default=""/>
   </params>
   <columns> 
-    <column name='broad_habitat' display='Broad Habitat' sql="hab.term" datatype='text' in_count="true"/>
+    <column name='habitat' display='Habitat' sql="broadHab.term" datatype='text' in_count="true"/>
     <column name='habitat_abbr' display='Abbreviation' sql="
       CASE 
-        WHEN hab.term='Arable field margins' then 'AFM' 
-        WHEN hab.term='Blanket bog' then 'BB' 
-        WHEN hab.term='Deciduous woodland' then 'DW' 
-        WHEN hab.term='Dry acid grassland' then 'DAG'
-        WHEN hab.term='Dry calcareous grassland' then 'DCG'
-        WHEN hab.term='Dry heath' then 'DH'
-        WHEN hab.term='Hedgerows' then 'H'
-        WHEN hab.term='Montane acid grassland' then 'MAG'
-        WHEN hab.term='Native pinewoods' then 'NP'
-        WHEN hab.term='Pastures and meadows' then 'PaM'
-        WHEN hab.term='Rivers and streams' then 'RaS'
-        WHEN hab.term='Species poor lakes and ponds' then 'SPLaP'
-        WHEN hab.term='Species rich lakes and ponds' then 'SRLaP'
-        WHEN hab.term='Species rich mires fens and flushes' then 'SRMFaF'
-        WHEN hab.term='Urban' then 'U'
-        WHEN hab.term='Wet grassland' then 'WG'
-        WHEN hab.term='Wet heath' then 'WH'
-        WHEN hab.term='Wet woodland' then 'WW'
-        ELSE hab.term 
+        WHEN broadHab.term='Arable field margins' then 'AFM' 
+        WHEN broadHab.term='Blanket bog' then 'BB' 
+        WHEN broadHab.term='Deciduous woodland' then 'DW' 
+        WHEN broadHab.term='Dry acid grassland' then 'DAG'
+        WHEN broadHab.term='Dry calcareous grassland' then 'DCG'
+        WHEN broadHab.term='Dry heath' then 'DH'
+        WHEN broadHab.term='Hedgerows' then 'H'
+        WHEN broadHab.term='Montane acid grassland' then 'MAG'
+        WHEN broadHab.term='Native pinewoods' then 'NP'
+        WHEN broadHab.term='Pastures and meadows' then 'PaM'
+        WHEN broadHab.term='Rivers and streams' then 'RaS'
+        WHEN broadHab.term='Species poor lakes and ponds' then 'SPLaP'
+        WHEN broadHab.term='Species rich lakes and ponds' then 'SRLaP'
+        WHEN broadHab.term='Species rich mires fens and flushes' then 'SRMFaF'
+        WHEN broadHab.term='Urban' then 'U'
+        WHEN broadHab.term='Wet grassland' then 'WG'
+        WHEN broadHab.term='Wet heath' then 'WH'
+        WHEN broadHab.term='Wet woodland' then 'WW'
+        ELSE broadHab.term
       END" datatype='text'/>  
-    <column name='total_samples' display='Samples' sql='count(distinct(samp.id))' datatype='float'/>
-    <column name='total_species_richness' display='Species' sql='count(distinct(tax.id))' datatype='float'/>
-    <column name='mean_species_richness' display='Mean Richness' sql='round(cast(count(distinct(tax.id)) as numeric) / count(distinct(samp.id)),2)'/>
+    <column name='total_plots' display='Number of plots' sql='count(distinct(plot.id))' datatype='float'/>
+    <column name='total_species_richness' display='Species' sql='count(distinct(ttl.taxon_meaning_id))' datatype='float'/>
+    <!-- The species richness is complicated by a few things.
+    Firstly the plot habitat is actually only held at the sample level instead of the location itself.
+    Secondly to calculate the richness of a plot we need a distinct list of the species at the plot.
+    However as each habitat might have several plots, we can't just use the word distinct in the select statement as
+    this will actually only count distinct species accross all the plots, not at individual plots, so we need a sub-query
+    to select the distinct taxon meanings at the individual plots.
+    -->
+    <column name='mean_species_richness' display='Mean Richness' sql="
+      (select round(avg(count_richness_per_plot),2)
+         FROM
+         (select plot2.id as plot_id, plot_counts.count as count_richness_per_plot
+           FROM locations plot2
+           JOIN samples samp2 on samp2.location_id=plot2.id AND samp2.deleted=false
+             AND (samp2.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
+           JOIN sample_attribute_values sampHabVal2 on sampHabVal2.sample_id=samp2.id AND sampHabVal2.sample_attribute_id=#habitat_attr_id# AND sampHabVal2.deleted=false
+           JOIN termlists_terms ttDirectHab2 ON ttDirectHab2.id=sampHabVal2.int_value AND ttDirectHab2.deleted=false
+           JOIN termlists_terms ttBroad2 ON (ttBroad2.id=ttDirectHab2.parent_id OR (ttBroad2.id=ttDirectHab2.id AND ttDirectHab2.parent_id IS NULL)) AND ttBroad2.deleted=false
+             AND (ttBroad2.id=ttBroadHab.id)
+             AND ttBroad2.deleted=false
+           JOIN surveys su2 on su2.id=samp2.survey_id AND su2.deleted=false
+             AND (su2.id=#survey_id# OR #survey_id#=0)
+
+           LEFT JOIN
+
+            (select plot3.id as plot_id, count(distinct ttl3.taxon_meaning_id) as count
+              FROM locations plot3
+              JOIN samples samp3 on samp3.location_id = plot3.id AND samp3.deleted=false
+                AND (samp3.created_on >= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')         
+              JOIN sample_attribute_values sampHabVal3 on sampHabVal3.sample_id=samp3.id AND sampHabVal3.sample_attribute_id=#habitat_attr_id# AND sampHabVal3.deleted=false         
+              JOIN termlists_terms ttDirectHab3 ON ttDirectHab3.id=sampHabVal3.int_value AND ttDirectHab3.deleted=false
+              JOIN termlists_terms ttBroad3 ON (ttBroad3.id=ttDirectHab3.parent_id OR (ttBroad3.id=ttDirectHab3.id AND ttDirectHab3.parent_id IS NULL)) AND ttBroad3.deleted=false
+                AND (ttBroad3.id=ttBroadHab.id)
+                AND ttBroad3.deleted=false     
+              JOIN surveys su3 on su3.id=samp3.survey_id AND su3.deleted=false AND (su3.id=#survey_id# OR #survey_id#=0) 
+              LEFT JOIN occurrences o3 on o3.sample_id=samp3.id AND o3.deleted=false
+              LEFT JOIN taxa_taxon_lists ttl3 on ttl3.id=o3.taxa_taxon_list_id AND ttl3.deleted=false
+              WHERE plot3.deleted=false
+              GROUP BY plot3.id) plot_counts
+         ON plot_counts.plot_id=plot2.id
+         WHERE plot2.deleted=false
+         GROUP BY plot2.id,plot_counts.count) as counts)"   
+    />
+    <column name='stand_deviation' display='Standard Deviation' sql="
+      (select round(stddev(count_richness_per_plot),2)
+         FROM
+         (select plot2.id as plot_id, plot_counts.count as count_richness_per_plot
+           FROM locations plot2
+           JOIN samples samp2 on samp2.location_id=plot2.id AND samp2.deleted=false
+             AND (samp2.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
+           JOIN sample_attribute_values sampHabVal2 on sampHabVal2.sample_id=samp2.id AND sampHabVal2.sample_attribute_id=#habitat_attr_id# AND sampHabVal2.deleted=false
+           JOIN termlists_terms ttDirectHab2 ON ttDirectHab2.id=sampHabVal2.int_value AND ttDirectHab2.deleted=false
+           JOIN termlists_terms ttBroad2 ON (ttBroad2.id=ttDirectHab2.parent_id OR (ttBroad2.id=ttDirectHab2.id AND ttDirectHab2.parent_id IS NULL)) AND ttBroad2.deleted=false
+             AND (ttBroad2.id=ttBroadHab.id)
+             AND ttBroad2.deleted=false
+           JOIN surveys su2 on su2.id=samp2.survey_id AND su2.deleted=false
+             AND (su2.id=#survey_id# OR #survey_id#=0)
+
+           LEFT JOIN
+
+            (select plot3.id as plot_id, count(distinct ttl3.taxon_meaning_id) as count
+              FROM locations plot3
+              JOIN samples samp3 on samp3.location_id = plot3.id AND samp3.deleted=false
+                AND (samp3.created_on >= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')         
+              JOIN sample_attribute_values sampHabVal3 on sampHabVal3.sample_id=samp3.id AND sampHabVal3.sample_attribute_id=#habitat_attr_id# AND sampHabVal3.deleted=false         
+              JOIN termlists_terms ttDirectHab3 ON ttDirectHab3.id=sampHabVal3.int_value AND ttDirectHab3.deleted=false
+              JOIN termlists_terms ttBroad3 ON (ttBroad3.id=ttDirectHab3.parent_id OR (ttBroad3.id=ttDirectHab3.id AND ttDirectHab3.parent_id IS NULL)) AND ttBroad3.deleted=false
+                AND (ttBroad3.id=ttBroadHab.id)
+                AND ttBroad3.deleted=false     
+              JOIN surveys su3 on su3.id=samp3.survey_id AND su3.deleted=false AND (su3.id=#survey_id# OR #survey_id#=0) 
+              LEFT JOIN occurrences o3 on o3.sample_id=samp3.id AND o3.deleted=false
+              LEFT JOIN taxa_taxon_lists ttl3 on ttl3.id=o3.taxa_taxon_list_id AND ttl3.deleted=false
+              WHERE plot3.deleted=false
+              GROUP BY plot3.id) plot_counts
+         ON plot_counts.plot_id=plot2.id
+         WHERE plot2.deleted=false
+         GROUP BY plot2.id,plot_counts.count) as counts)"   
+    />       
   </columns>
 </report>
+
