@@ -121,8 +121,8 @@ level."
               JOIN sample_attribute_values sampHabVal3 on sampHabVal3.sample_id=samp3.id AND sampHabVal3.sample_attribute_id=#habitat_attr_id# AND sampHabVal3.deleted=false         
               JOIN termlists_terms ttHab3 ON ttHab3.id=sampHabVal3.int_value AND ttHab3.parent_id IS NOT NULL AND (ttHab3.id=ttHab.id) AND ttHab3.deleted=false         
               JOIN surveys su3 on su3.id=samp3.survey_id AND su3.deleted=false AND (su3.id=#survey_id# OR #survey_id#=0) 
-              JOIN occurrences o3 on o3.sample_id=samp3.id AND o3.deleted=false
-              JOIN taxa_taxon_lists ttl3 on ttl3.id=o3.taxa_taxon_list_id AND ttl3.deleted=false
+              LEFT JOIN occurrences o3 on o3.sample_id=samp3.id AND o3.deleted=false
+              LEFT JOIN taxa_taxon_lists ttl3 on ttl3.id=o3.taxa_taxon_list_id AND ttl3.deleted=false
               WHERE plot3.deleted=false
               GROUP BY plot3.id) plot_counts
          ON plot_counts.plot_id=plot2.id
