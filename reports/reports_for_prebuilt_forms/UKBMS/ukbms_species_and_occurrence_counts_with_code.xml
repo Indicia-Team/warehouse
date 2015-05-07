@@ -28,6 +28,7 @@
       <columns>
             <column name="id" display="ID" sql="l.id" in_count="true" datatype="integer" />
             <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" datatype="text" />
+            <column name="centroid_sref" display="Site Sref" sql="l.centroid_sref" datatype="text" />
             <column name="occurrences" display="No. of Occurrences" sql="COUNT(DISTINCT o.id)" aggregate="true" datatype="integer" />
             <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true" datatype="integer" />
             <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT o.taxon_group_id)" aggregate="true" datatype="integer" />
