@@ -1,0 +1,6 @@
+# This file exists to ensure this folder exists when stored in a git repository.
+
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore
