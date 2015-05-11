@@ -17,7 +17,7 @@
   </order_bys>
   <params>
     <param name="plot_number_attr_id" display="Id of the plot number attribute" datatype="integer" default="0"/>
-    <param name="square_id" display="Square id to get plots for" datatype="integer"/>
+    <param name="square_id" display="Square id to get plots for" datatype="integer" emptyvalue="0"/>
   </params>
   <columns>
     <column name='id' display='Plot ID' sql="plot.id" datatype='integer' visible="false" in_count="true"/>
