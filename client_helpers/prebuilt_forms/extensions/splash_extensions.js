@@ -112,40 +112,30 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
         indiciaData.mapdiv.settings.click_zoom=true;  
         indiciaData.mapdiv.settings.noPlotRotation=true;
       }
-      //if using drawPolygon/drawLine then we never need the length and width attributes on the screen
-      if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length) {
-        $('#locAttr\\:'+indiciaData.plotWidthAttrId).hide();
-      }
-      if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length) {
-        $('#locAttr\\:'+indiciaData.plotLengthAttrId).hide();
-      }
     } else {
       //Otherwise we auto generate the plot rectangle/square, remove the drawPolygon/Line tool
       show_polygon_line_tool(false);
-      //For some plot types the width and length can be adjusted manually, show and fill in these fields if they exist
+      //For some plot types the width and length used be be adjusted manually, fill in these fields if they exist. The engine of how this works is still present in case we need to go back.
+      //So the attributes are still defaulted on the page, however these are currently hidden by default so can't be changed for now.
       if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
-        $('#locAttr\\:'+indiciaData.plotWidthAttrId).show();
         if ($('#location\\:location_type_id').val()) {
           $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]);
         }
         indiciaData.mapdiv.settings.noPlotRotation=false;
       } else {
         $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(simpleModePointSize);
-        $('#locAttr\\:'+indiciaData.plotWidthAttrId).hide();
         indiciaData.mapdiv.settings.noPlotRotation=true;
       }
       if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
-        $('#locAttr\\:'+indiciaData.plotLengthAttrId).show();
         if ($('#location\\:location_type_id').val()) {
           $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][1]);
         }
         indiciaData.mapdiv.settings.noPlotRotation=false;
       } else {
         $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(simpleModePointSize);
-        $('#locAttr\\:'+indiciaData.plotLengthAttrId).hide();
         indiciaData.mapdiv.settings.noPlotRotation=true;
       }
-      //In non-enhanced mode in PSS mode, plots are always a non-rotatable square of 4x4.
+      //In non-enhanced mode in PSS mode, plots are always a set size non-rotatable square 
       //In PSS enhanced mode, their size can be configured manually on the page
       indiciaData.mapdiv.settings.clickForPlot=true;
       indiciaData.mapdiv.settings.click_zoom=true;
@@ -165,7 +155,8 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
         //Rectangular PSS plots have the grid reference in the middle of the plot
         indiciaData.clickMiddleOfPlot=true;
       }
-      //Splash plots get their rectangle sizes from user configurable options which are not displayed on screen
+      //Splash plots get their rectangle sizes from user configurable options which are not displayed on screen (NPMS used to allow configuration of these on screen, however they are now hidden,
+      //although the attributes remain on screen in case we need to go back.
       if (!indiciaData.pssMode)
         indiciaData.plotWidthLength = indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]+ ',' + indiciaData.squareSizes[$('#location\\:location_type_id').val()][1];      
     }
