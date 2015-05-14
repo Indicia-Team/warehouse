@@ -40,7 +40,15 @@ echo data_entry_helper::textarea(array(
   'label' => 'Comment',
   'fieldname' => 'occurrence_comment:comment',
   'default' => html::initial_value($values, 'occurrence_comment:comment')
-)); ?>
+));
+if (html::initial_value($values, 'occurrence_comment:auto_generated')==='f')
+  echo data_entry_helper::checkbox(array(
+    'label' => 'Query',
+    'fieldname' => 'occurrence_comment:query',
+    'helpText' => 'Does this comment represent a query about the record?',
+    'default' => html::initial_value($values, 'occurrence_comment:query')
+  ));
+?>
 </fieldset>
 <?php echo html::form_buttons($id!=null, false, false); ?>
 </form>

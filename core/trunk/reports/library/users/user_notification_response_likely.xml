@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="User notification response likely" description="Gives information that will help determine if a user is likely to receive and acknowledge a notification for a comment on a record.">
+  <query>
+  select case acknowledged when true then 'acknowledged' else 'unacknowledged' end as key, count(*)::varchar as value
+  from notifications 
+  where user_id=#user_id#
+  and triggered_on>now() - '1 year'::interval
+  and source_type in ('C', 'V')
+  group by acknowledged
+  union
+  select 'email_frequency', notification_frequency 
+  from user_email_notification_settings 
+  where user_id=#user_id#
+  and notification_source_type='C'
+  </query>
+  <params>
+    <param name='user_id' display='User ID' description='Warehouse user ID' datatype='integer'/>
+  </params>
+</report>
