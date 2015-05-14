@@ -22,7 +22,7 @@
       <where>ma.user_id=#currentUser#</where>
     </param>
     <param name="group_id" display="Group ID" description="Limit to milestones for this group" datatype="text" default="">
-      <where>m.group_id=#user_id#</where>
+      <where>m.group_id=#group_id#</where>
     </param>
   </params>
   <columns>
