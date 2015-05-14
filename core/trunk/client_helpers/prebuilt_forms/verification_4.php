@@ -936,10 +936,20 @@ idlist=';
     // See if there is a filled in profile_experience field for the user. If so, add
     // the statement to the response.
     if (!empty($_GET['user_id'])) {
-      $experience = hostsite_get_user_field('experience', false, false, $_GET['user_id']);
-      if ($experience) 
-        $r .= "<h3>User's description of their experience</h3><p>$experience</p>\n";
+      // user ID is a warehouse ID, we need the associated Drupal account...
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'user')
+        ->fieldCondition('field_indicia_user_id', 'value', $_GET['user_id'], '=');
+      $result = $query->execute();
+      if ($result) {
+        $users = array_keys($result['user']);
+        $experience = hostsite_get_user_field('experience', false, false, $users[0]);
+        if ($experience)
+          $r .= "<h3>User's description of their experience</h3><p>$experience</p>\n";
+      }
     }
+    if (empty($r))
+      $r = lang::get("No information available on this recorder's experience");
     echo $r;
   }
   
