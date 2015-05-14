@@ -944,6 +944,8 @@ idlist=';
       if ($result) {
         $users = array_keys($result['user']);
         $experience = hostsite_get_user_field('experience', false, false, $users[0]);
+        // allow for experience possibly being rich text
+        $experience = is_array($experience) ? $experience['value'] : $experience;
         if ($experience)
           $r .= "<h3>User's description of their experience</h3><p>$experience</p>\n";
       }
