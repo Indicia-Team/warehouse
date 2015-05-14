@@ -27,6 +27,7 @@
   <columns>
     <column name='taxon' display='Key facts:Species' sql='co.taxon' />
     <column name='record_status' display="Key facts:Record status" sql='o.record_status' />
+    <column name='record_substatus' sql='o.record_substatus' />
     <column name='recorder' display='Key facts:Recorder' sql='co.recorders' />
     <column name='entered_sref' display='Key facts:Map ref.' sql='coalesce(s.entered_sref, l.centroid_sref)' />
     <column name='location_name' display='Key facts:Site Name' sql="case when co.location_name=s.location_name then co.location_name else co.location_name || COALESCE(' - ' || s.location_name, '') end" />

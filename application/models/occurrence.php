@@ -103,6 +103,7 @@ class Occurrence_Model extends ORM
       'deleted',
       'record_status',
       'release_status',
+      'record_substatus',
       'downloaded_flag',
       'verified_by_id',
       'verified_on',
