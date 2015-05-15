@@ -4675,7 +4675,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   	 
   	if($downloadTab!="")
   		$tabs['#dataDownloads'] = lang::get('Downloads');
-  	$r .= '<div id="controls">'
+  	$r .= '<div id="controls">'.
 				data_entry_helper::tab_header(array('tabs'=>$tabs)).
   				($hasData ?
 	  				'<div id="summaryData">'.$summaryTab.'</div>'.
