@@ -35,9 +35,13 @@ class filter_what extends filter_base {
   public function get_title() {
     return 'What';
   }
-  
+
   /**
    * Define the HTML required for this filter's UI panel.
+   * @param array $readAuth Read authorisation tokens
+   * @param array $options
+   * @return string
+   * @throws \exception
    */
   public function get_controls($readAuth, $options) {
     $r='';
@@ -561,10 +565,10 @@ class filter_source extends filter_base {
 }
 
 /**
- * Code to output a standardised report filtering panel. 
+ * Code to output a standardised report filtering panel.
  *
- * Filters can be saved and loaded by each user. Additionally, filters can define permissions to a certain task, e.g. they can be used to define the 
- * context within which someone can verify. In this case they provide the "outer limit" of the available records. 
+ * Filters can be saved and loaded by each user. Additionally, filters can define permissions to a certain task, e.g. they can be used to define the
+ * context within which someone can verify. In this case they provide the "outer limit" of the available records.
  * Requires a [map] control on the page. If you don't want a map, the current option is to include one anyway and use css to hide the #map-container div.
  *
  * @param array $readAuth Pass read authorisation tokens.
@@ -572,11 +576,11 @@ class filter_source extends filter_base {
  *   sharing - define the record sharing task that is being filtered against. Options are reporting (default), peer_review, verification, moderation, data_flow.
  *   context_id - can also be passed as URL parameter. Force the initial selection of a particular context (a record which has defines_permissions=true in the
  *   filters table. Set to "default" to select their profile verification settings when sharing=verification.
- *   filter_id - can also be passed as URL parameter. Force the initial selection of a particular filter record in the filters table. 
+ *   filter_id - can also be passed as URL parameter. Force the initial selection of a particular filter record in the filters table.
  *   filterTypes - allows control of the list of filter panels available, e.g. to turn one off. Associative array keyed by category
  *   so that the filter panels can be grouped (use a blank key if not required). The array values are an array of or strings with a comma separated list
  *   of the filter types to included in the category - options are what, where, when, who, quality, source.
- *   filter-#name# - set the initial value of a report filter parameter #name#. 
+ *   filter-#name# - set the initial value of a report filter parameter #name#.
  *   allowLoad - set to false to disable the load bar at the top of the panel.
  *   allowSave - set to false to disable the save bar at the foot of the panel.
  *   presets - provide an array of preset filters to provide in the filters drop down. Choose from my-records, my-groups (uses
@@ -585,6 +589,7 @@ class filter_source extends filter_base {
  * @param integer $website_id The current website's warehouse ID.
  * @param string $hiddenStuff Output parameter which will contain the hidden popup HTML that will be shown
  * using fancybox during filter editing. Should be appended AFTER any form element on the page as nested forms are not allowed.
+ * @return string HTML for the report filter panel
  */
 function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
   if (function_exists('iform_load_helpers'))
@@ -685,7 +690,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
           $def['taxon_group_names']=array();
           $groups = data_entry_helper::get_population_data(array(
             'table' => 'taxon_group',
-            'extraParams' => $readAuth + array('id' => $arr)
+            'extraParams' => $readAuth + array('id' => $taxon_group_ids)
           ));
           foreach ($groups as $group) {
             $def['taxon_group_names'][$group['id']]=$group['title'];
@@ -719,7 +724,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
       $reload = data_entry_helper::get_reload_link_parts();
       $reloadPath = $reload['path'];
       if(count($reload['params'])) $reloadPath .= '?'.data_entry_helper::array_to_query_string($reload['params']);
-      $r .= "<form action=\"$reloadPath\" method=\"post\" />";
+      $r .= "<form action=\"$reloadPath\" method=\"post\" >";
       $r .= data_entry_helper::select(array(
           'label'=>lang::get('Select filter type'),
           'fieldname'=>'filter:sharing',
