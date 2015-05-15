@@ -2,7 +2,7 @@
   padding: 1px;
 }
 
-#standard-params .header > div:first-child {
+#standard-params .header > div:first-child, #standard-params span.changed {
   float: left;
   width: auto;
 }
