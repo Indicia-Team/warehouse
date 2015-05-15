@@ -1,3 +1,4 @@
+-- SLOW SCRIPT
 CREATE OR REPLACE VIEW detail_samples AS 
  SELECT s.id,
     s.entered_sref,
