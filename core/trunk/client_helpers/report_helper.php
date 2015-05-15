@@ -663,6 +663,8 @@ $('.update-input').focus(function(evt) {
           ', {context: { '.sprintf($strokeWidthFn, 9, 2, 2).' }}', 
           ', {context: { '.sprintf($strokeWidthFn, 10, 3, 3).' }}', $options['zoomMapToOutput']);
     }
+    $uniqueName = 'grid_' . preg_replace( "/[^a-z0-9]+/", "_", $options['id']);
+    $group = preg_replace( "/[^a-zA-Z0-9]+/", "_", $options['reportGroup']);
     // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
     // In which case we don't need to output anything.
     if (!empty($r)) {
@@ -670,8 +672,6 @@ $('.update-input').focus(function(evt) {
       $r = "<div id=\"".$options['id']."\">$r</div>\n";
       // Now AJAXify the grid
       self::add_resource('reportgrid');
-      $uniqueName = 'grid_' . preg_replace( "/[^a-z0-9]+/", "_", $options['id']);
-      $group = preg_replace( "/[^a-zA-Z0-9]+/", "_", $options['reportGroup']);
       global $indicia_templates;
       if (!empty(parent::$warehouse_proxy))
         $warehouseUrl = parent::$warehouse_proxy;
@@ -1899,7 +1899,7 @@ mapSettingsHooks.push(function(opts) { $setLocationJs
    * </ul>
    *
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
-   * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
+   * @return mixed If linkOnly is set in the options, returns the link string, otherwise returns the response as an array.
    */
   public static function get_report_data($options, $extra='') {
     if ($options['dataSource']==='static' && isset($options['staticData']))
@@ -2114,7 +2114,6 @@ if (typeof mapSettingsHooks!=='undefined') {
    * from the results to the end of the options['columns'] array.
    * @param $response
    * @param $options
-   * @return unknown_type
    */
   private static function report_grid_get_columns($response, &$options) {
     if (isset($response['columns'])) {
@@ -2461,7 +2460,7 @@ function rebuild_page_url(oldURL, overrideparam, overridevalue, removeparam) {
         $dateRecords[$record['date']] = array($record);
       }
     }
-    $pageUrlParams = self::get_report_calendar_grid_page_url_params($options);
+    $pageUrlParams = self::get_report_calendar_grid_page_url_params();
     $pageUrl = self::report_calendar_grid_get_reload_url($pageUrlParams);
     $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
     $thClass = $options['thClass'];
@@ -2683,10 +2682,9 @@ function rebuild_page_url(oldURL, overrideparam, overridevalue, removeparam) {
  /**
    * Works out the page URL param names for this report calendar grid, and also gets their current values.
    * Note there is no need to sort for the calender grid.
-   * @param $options Control options array
    * @return array Contains the page params, as an assoc array. Each array value is an array containing name & value.
    */
-  private static function get_report_calendar_grid_page_url_params($options) {
+  private static function get_report_calendar_grid_page_url_params() {
     $yearKey = 'year';
     return array(
       'year' => array(
@@ -3557,7 +3555,6 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
         $r .= "</tbody></table>\n";
       }
       $summaryDataDownloadGrid="";
-      $estimateDataDownloadGrid="";
       $r .= "\n<table id=\"".$options['tableID']."\" class=\"".$options['tableClass']."\" style=\"".($format['table']['display']?'':'display:none;')."\">";
       $r .= "\n<thead class=\"$thClass\">";
       if($options['tableHeaders'] == 'both' || $options['tableHeaders'] == 'number'){
@@ -3947,7 +3944,6 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
    * @return array The processed options array.
    */
   private static function get_report_calendar_summary_options($options) {
-    global $user;
     $options = array_merge(array(
       'mode' => 'report',
       'id' => 'calendar-report-output', // this needs to be set explicitly when more than one report on a page
@@ -4087,7 +4083,6 @@ jQuery('#".$options['chartID']."-series-disable').click(function(){
   	$warnings = '<span style="display:none;">Starting report_calendar_summary2 : '.date(DATE_ATOM).'</span>'."\n";
   	data_entry_helper::add_resource('jquery_ui');
   	$options = self::get_report_calendar_summary_options($options); // don't use all of these now, eg. extraParams: this is used later for raw data
-  	$extras = '';
   	$extraParams = $options['readAuth'] + array('year'=>$options['year'], 'survey_id'=>$options['survey_id']);
   	// at the moment the summary_builder module indexes the user_id on the created_by_id field on the parent sample.
   	// this effectively means that it assumes easy_login.
@@ -4178,7 +4173,6 @@ update_controls();
   		$weekOne_date->modify('-'.(7+$weekOne_date_weekday-$weekstart[1]).' day');
   	$firstWeek_date = clone $weekOne_date; // date we start providing data for
   	$weekOne_date_yearday = $weekOne_date->format('z'); // day within year note year_start_yearDay is by definition 0
-  	$weekOne_date_weekday = $weekOne_date->format('N'); // day within week
   	$minWeekNo = $weeknumberfilter[0]!='' ? $weeknumberfilter[0] : 1;
   	$numWeeks = ceil($weekOne_date_yearday/7); // number of weeks in year prior to $weekOne_date - 1st Jan gives zero, 2nd-8th Jan gives 1, etc
   	if($minWeekNo-1 < (-1 * $numWeeks)) $minWeekNo=(-1 * $numWeeks)+1; // have to allow for week zero
@@ -4264,7 +4258,6 @@ update_controls();
   	$warnings .= '<span style="display:none;">Records date pre-processing complete : '.date(DATE_ATOM).'</span>'."\n";
   	$count = count($records);
   	$warnings .= '<span style="display:none;">Number of records processed : '.$count.' : '.date(DATE_ATOM).'</span>'."\n";
-  	$summaryArray=array();
   	$sortData=array();
   	foreach($records as $idex => $record){
   		$taxonID=$record['taxon_meaning_id']; // TODO ??
@@ -4682,7 +4675,7 @@ jQuery('#estimateChart .disable-button').click(function(){
   	 
   	if($downloadTab!="")
   		$tabs['#dataDownloads'] = lang::get('Downloads');
-  	$r .= '<div id="controls">'.(data_entry_helper::enable_tabs(array('divId'=>'controls'/*,'active'=>$active*/))).
+  	$r .= '<div id="controls">'
 				data_entry_helper::tab_header(array('tabs'=>$tabs)).
   				($hasData ?
 	  				'<div id="summaryData">'.$summaryTab.'</div>'.
@@ -4693,6 +4686,7 @@ jQuery('#estimateChart .disable-button').click(function(){
 			  	'<div id="rawData">'.$rawTab.'</div>'.
  			  	($downloadTab!="" ? '<div id="dataDownloads"><table><tbody style="border:none;">'.$downloadTab.'</tbody></table></div>' : '').
   			'</div>';
+    data_entry_helper::enable_tabs(array('divId'=>'controls'));
   	$warnings .= '<span style="display:none;">Finish report_calendar_summary : '.date(DATE_ATOM).'</span>'."\n";
   	return $warnings.$r;
   }
