@@ -624,15 +624,19 @@ $config['occurrences']['get_changed_items_query'] = "
     join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
     where tmethod.cache_updated_on>'#date#'
     union
-    select o.id, false
-    from occurrences o
-    join occurrence_media om on om.occurrence_id=o.id
-    where om.updated_on>'#date#' 
+    select om.occurrence_id, false
+    from occurrence_media om
+    where om.updated_on>'#date#'
+    union
+    select oc.occurrence_id, false
+    from occurrence_comments oc
+    where oc.auto_generated=false and oc.updated_on>'#date#'
     ) as sub
     group by id ";
 
 $config['occurrences']['update'] = "update cache_occurrences co
-    set record_status=o.record_status, 
+    set record_status=o.record_status,
+      record_substatus=o.record_substatus,
       release_status=o.release_status, 
       downloaded_flag=o.downloaded_flag, 
       zero_abundance=o.zero_abundance,
@@ -731,7 +735,12 @@ $config['occurrences']['update'] = "update cache_occurrences co
           10 -- default minimum square size
         ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)),
-      sref_precision=round(coalesce(spv.int_value, spv.float_value))
+      sref_precision=round(coalesce(spv.int_value, spv.float_value)),
+      query=case
+        when oc1.id is null then null
+        when oc2.id is null then 'Q'
+        else 'A'
+      end
     from occurrences o
     #join_needs_update#
     join (
@@ -767,10 +776,14 @@ $config['occurrences']['update'] = "update cache_occurrences co
       join sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
           and spa.system_function='sref_precision'
     ) on spv.sample_id=s.id and spv.deleted=false
+    left join occurrence_comments oc1 on oc1.occurrence_id=o.id and oc1.deleted=false and oc1.auto_generated=false
+	    and oc1.query=true and (o.verified_on is null or oc1.created_on>o.verified_on)
+    left join occurrence_comments oc2 on oc2.occurrence_id=o.id and oc2.deleted=false and oc2.auto_generated=false
+	    and oc2.query=false and (o.verified_on is null or oc2.created_on>o.verified_on) and oc2.id>oc1.id
     where co.id=o.id";
 
 $config['occurrences']['insert']="insert into cache_occurrences (
-      id, record_status, release_status, downloaded_flag, zero_abundance,
+      id, record_status, record_substatus, release_status, downloaded_flag, zero_abundance,
       website_id, survey_id, sample_id, survey_title,
       date_start, date_end, date_type,
       public_entered_sref, entered_sref_system, public_geom,
@@ -781,7 +794,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       verifier, verified_on, images, training, location_id, input_form, sensitivity_precision, privacy_precision,
       group_id, output_sref, sref_precision
     )
-  select distinct on (o.id) o.id, o.record_status, o.release_status, o.downloaded_flag, o.zero_abundance,
+  select distinct on (o.id) o.id, o.record_status, o.record_substatus, o.release_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
     s.date_start, s.date_end, s.date_type,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null then null else 
@@ -888,186 +901,186 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   #join_needs_update#
   where co.id is null";
   
-  $config['occurrences']['join_needs_update']='join needs_update_occurrences nu on nu.id=o.id';
-  $config['occurrences']['key_field']='o.id';
-  
-  // Additional update statements to pick up the recorder name from various possible custom attribute places. Faster than 
-  // loads of left joins. These should be in priority order - i.e. ones where we have recorded the inputter rather than
-  // specifically the recorder should come after ones where we have recorded the recorder specifically.
-  $config['occurrences']['extra_multi_record_updates']=array(
-    // nullify the recorders field so it gets an update
-    'Nullify recorders' => 'update cache_occurrences co
-      set recorders=null
-      from needs_update_occurrences nu
-      where nu.id=co.id;',
-    // Sample recorder names
-    'Sample recorder names' => 'update cache_occurrences co
-      set recorders=s.recorder_names
-      from samples s, needs_update_occurrences nu
-      where co.recorders is null and s.id=co.sample_id and s.deleted=false and s.recorder_names is not null
-      and nu.id=co.id;',
-    // full recorder name
-    'Full name' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from needs_update_occurrences nu, sample_attribute_values sav
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-      where co.recorders is null  
-      and sav.sample_id=co.sample_id and sav.deleted=false and sav.text_value <> \', \' 
-      and nu.id=co.id;',
-    // surname, firstname
-    'First name/surname' => 'update cache_occurrences co
-      set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
-      from needs_update_occurrences nu, sample_attribute_values sav
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-      left join (sample_attribute_values savf 
-      join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-      ) on savf.deleted=false
-      where co.recorders is null and savf.sample_id=co.sample_id
-      and sav.sample_id=co.sample_id and sav.deleted=false
-      and nu.id=co.id;',
-    // Sample recorder names in parent sample
-    'Parent sample recorder names' => 'update cache_occurrences co
-      set recorders=sp.recorder_names
-      from needs_update_occurrences nu, samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false and sp.recorder_names is not null
-      where co.recorders is null and s.id=co.sample_id and s.deleted=false 
-      and nu.id=co.id;',
-    // full recorder name in parent sample
-    'Parent full name' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from needs_update_occurrences nu, samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false
-      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \' 
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-      where co.recorders is null
-      and s.id=co.sample_id and s.deleted=false
-      and nu.id=co.id;',
-    // firstname and surname in parent sample
-    'Parent first name/surname' => 'update cache_occurrences co
-      set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
-      from needs_update_occurrences nu, samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false
-      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-      left join (sample_attribute_values savf 
-      join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-      ) on savf.deleted=false
-      where co.recorders is null and savf.sample_id=sp.id
-      and s.id=co.sample_id and s.deleted=false
-      and nu.id=co.id;',
-    // warehouse surname, first name
-    'Warehouse surname, first name' => 'update cache_occurrences co
-      set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
-      from needs_update_occurrences nu, users u, people p
-      where co.recorders is null and u.id=co.created_by_id and p.id=u.person_id and p.deleted=false
-      and nu.id=co.id and u.id<>1;',
-    // CMS username
-    'CMS Username' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from needs_update_occurrences nu, sample_attribute_values sav
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-      where co.recorders is null and sav.sample_id=co.sample_id and sav.deleted=false
-      and nu.id=co.id;',
-    // CMS username in parent sample
-    'Parent CMS Username' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from needs_update_occurrences nu, samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false
-      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-      where co.recorders is null and s.id=co.sample_id and s.deleted=false
-      and nu.id=co.id;',
-    // warehouse username
-    'Warehouse username' => 'update cache_occurrences co
-      set recorders=case u.id when 1 then null else u.username end
-      from needs_update_occurrences nu, users u
-      where co.recorders is null and u.id=co.created_by_id
-      and nu.id=co.id;'
-  );
-  
-  // Final statements to pick up after an insert of a single record.
-  $config['occurrences']['extra_single_record_updates']=array(
-    // Sample recorder names
-    'Sample recorder names' => "update cache_occurrences co
-      set recorders=s.recorder_names
-      from samples s
-      where s.id=co.sample_id and s.deleted=false and s.recorder_names is not null and s.recorder_names<>''
-      and co.id in (#ids#);",
-    // Full recorder name
-    'full name' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from sample_attribute_values sav 
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-      where sav.sample_id=co.sample_id and sav.deleted=false and sav.text_value <> \', \' 
-      and co.id in (#ids#);',
-    // surname, firstname
-    'First name/surname' => 'update cache_occurrences co
-      set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
-      from sample_attribute_values sav 
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-      left join (sample_attribute_values savf 
-      join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-      ) on savf.deleted=false
-      where savf.sample_id=co.sample_id
-      and sav.sample_id=co.sample_id and sav.deleted=false
-      and co.id in (#ids#);',    
-    // Sample recorder names in parent sample
-    'Parent sample recorder names' => "update cache_occurrences co
-      set recorders=sp.recorder_names
-      from samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false
-      where s.id=co.sample_id and s.deleted=false and sp.recorder_names is not null and sp.recorder_names<>''
-      and co.id in (#ids#);",
-    // Full recorder name in parent sample
-    'Parent full name' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false
-      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \' 
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-      where s.id=co.sample_id and s.deleted=false
-      and co.id in (#ids#);',
-    // surname, firstname in parent sample
-    'Parent first name/surname' => 'update cache_occurrences co
-      set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
-      from samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false
-      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-      left join (sample_attribute_values savf 
-      join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-      ) on savf.deleted=false
-      where savf.sample_id=sp.id
-      and s.id=co.sample_id and s.deleted=false
-      and co.id in (#ids#);',    
-    // warehouse surname, firstname
-    'Warehouse first name/surname' => 'update cache_occurrences co
-      set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
-      from users u
-      join people p on p.id=u.person_id and p.deleted=false
-      where u.id=co.created_by_id and u.id<>1
-      and co.id in (#ids#);',
-    // CMS username
-    'CMS Username' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from sample_attribute_values sav
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-      where sav.sample_id=co.sample_id and sav.deleted=false
-      and co.id in (#ids#);',
-    // CMS username in parent sample
-    'Parent CMS Username' => 'update cache_occurrences co
-      set recorders=sav.text_value
-      from samples s
-      join samples sp on sp.id=s.parent_id and sp.deleted=false
-      join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
-      join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-      where s.id=co.sample_id and s.deleted=false
-      and co.id in (#ids#);',
-    'Warehouse username' => 'update cache_occurrences co
-      set recorders=u.username
-      from users u
-      where u.id=co.created_by_id and u.id<>1
-      and co.id in (#ids#);',
-  );
+$config['occurrences']['join_needs_update']='join needs_update_occurrences nu on nu.id=o.id';
+$config['occurrences']['key_field']='o.id';
+
+// Additional update statements to pick up the recorder name from various possible custom attribute places. Faster than
+// loads of left joins. These should be in priority order - i.e. ones where we have recorded the inputter rather than
+// specifically the recorder should come after ones where we have recorded the recorder specifically.
+$config['occurrences']['extra_multi_record_updates']=array(
+  // nullify the recorders field so it gets an update
+  'Nullify recorders' => 'update cache_occurrences co
+    set recorders=null
+    from needs_update_occurrences nu
+    where nu.id=co.id;',
+  // Sample recorder names
+  'Sample recorder names' => 'update cache_occurrences co
+    set recorders=s.recorder_names
+    from samples s, needs_update_occurrences nu
+    where co.recorders is null and s.id=co.sample_id and s.deleted=false and s.recorder_names is not null
+    and nu.id=co.id;',
+  // full recorder name
+  'Full name' => 'update cache_occurrences co
+    set recorders=sav.text_value
+    from needs_update_occurrences nu, sample_attribute_values sav
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+    where co.recorders is null
+    and sav.sample_id=co.sample_id and sav.deleted=false and sav.text_value <> \', \'
+    and nu.id=co.id;',
+  // surname, firstname
+  'First name/surname' => 'update cache_occurrences co
+    set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
+    from needs_update_occurrences nu, sample_attribute_values sav
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
+    left join (sample_attribute_values savf
+    join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
+    ) on savf.deleted=false
+    where co.recorders is null and savf.sample_id=co.sample_id
+    and sav.sample_id=co.sample_id and sav.deleted=false
+    and nu.id=co.id;',
+  // Sample recorder names in parent sample
+  'Parent sample recorder names' => 'update cache_occurrences co
+    set recorders=sp.recorder_names
+    from needs_update_occurrences nu, samples s
+    join samples sp on sp.id=s.parent_id and sp.deleted=false and sp.recorder_names is not null
+    where co.recorders is null and s.id=co.sample_id and s.deleted=false
+    and nu.id=co.id;',
+  // full recorder name in parent sample
+  'Parent full name' => 'update cache_occurrences co
+    set recorders=sav.text_value
+    from needs_update_occurrences nu, samples s
+    join samples sp on sp.id=s.parent_id and sp.deleted=false
+    join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \'
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+    where co.recorders is null
+    and s.id=co.sample_id and s.deleted=false
+    and nu.id=co.id;',
+  // firstname and surname in parent sample
+  'Parent first name/surname' => 'update cache_occurrences co
+    set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
+    from needs_update_occurrences nu, samples s
+    join samples sp on sp.id=s.parent_id and sp.deleted=false
+    join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
+    left join (sample_attribute_values savf
+    join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
+    ) on savf.deleted=false
+    where co.recorders is null and savf.sample_id=sp.id
+    and s.id=co.sample_id and s.deleted=false
+    and nu.id=co.id;',
+  // warehouse surname, first name
+  'Warehouse surname, first name' => 'update cache_occurrences co
+    set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
+    from needs_update_occurrences nu, users u, people p
+    where co.recorders is null and u.id=co.created_by_id and p.id=u.person_id and p.deleted=false
+    and nu.id=co.id and u.id<>1;',
+  // CMS username
+  'CMS Username' => 'update cache_occurrences co
+    set recorders=sav.text_value
+    from needs_update_occurrences nu, sample_attribute_values sav
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
+    where co.recorders is null and sav.sample_id=co.sample_id and sav.deleted=false
+    and nu.id=co.id;',
+  // CMS username in parent sample
+  'Parent CMS Username' => 'update cache_occurrences co
+    set recorders=sav.text_value
+    from needs_update_occurrences nu, samples s
+    join samples sp on sp.id=s.parent_id and sp.deleted=false
+    join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
+    where co.recorders is null and s.id=co.sample_id and s.deleted=false
+    and nu.id=co.id;',
+  // warehouse username
+  'Warehouse username' => 'update cache_occurrences co
+    set recorders=case u.id when 1 then null else u.username end
+    from needs_update_occurrences nu, users u
+    where co.recorders is null and u.id=co.created_by_id
+    and nu.id=co.id;'
+);
+
+// Final statements to pick up after an insert of a single record.
+$config['occurrences']['extra_single_record_updates']=array(
+  // Sample recorder names
+  'Sample recorder names' => "update cache_occurrences co
+    set recorders=s.recorder_names
+    from samples s
+    where s.id=co.sample_id and s.deleted=false and s.recorder_names is not null and s.recorder_names<>''
+    and co.id in (#ids#);",
+  // Full recorder name
+  'full name' => 'update cache_occurrences co
+    set recorders=sav.text_value
+    from sample_attribute_values sav
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+    where sav.sample_id=co.sample_id and sav.deleted=false and sav.text_value <> \', \'
+    and co.id in (#ids#);',
+  // surname, firstname
+  'First name/surname' => 'update cache_occurrences co
+    set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
+    from sample_attribute_values sav
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
+    left join (sample_attribute_values savf
+    join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
+    ) on savf.deleted=false
+    where savf.sample_id=co.sample_id
+    and sav.sample_id=co.sample_id and sav.deleted=false
+    and co.id in (#ids#);',
+  // Sample recorder names in parent sample
+  'Parent sample recorder names' => "update cache_occurrences co
+    set recorders=sp.recorder_names
+    from samples s
+    join samples sp on sp.id=s.parent_id and sp.deleted=false
+    where s.id=co.sample_id and s.deleted=false and sp.recorder_names is not null and sp.recorder_names<>''
+    and co.id in (#ids#);",
+  // Full recorder name in parent sample
+  'Parent full name' => 'update cache_occurrences co
+    set recorders=sav.text_value
+    from samples s
+    join samples sp on sp.id=s.parent_id and sp.deleted=false
+    join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \'
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
+    where s.id=co.sample_id and s.deleted=false
+    and co.id in (#ids#);',
+  // surname, firstname in parent sample
+  'Parent first name/surname' => 'update cache_occurrences co
+    set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
+    from samples s
+    join samples sp on sp.id=s.parent_id and sp.deleted=false
+    join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
+    left join (sample_attribute_values savf
+    join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
+    ) on savf.deleted=false
+    where savf.sample_id=sp.id
+    and s.id=co.sample_id and s.deleted=false
+    and co.id in (#ids#);',
+  // warehouse surname, firstname
+  'Warehouse first name/surname' => 'update cache_occurrences co
+    set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
+    from users u
+    join people p on p.id=u.person_id and p.deleted=false
+    where u.id=co.created_by_id and u.id<>1
+    and co.id in (#ids#);',
+  // CMS username
+  'CMS Username' => 'update cache_occurrences co
+    set recorders=sav.text_value
+    from sample_attribute_values sav
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
+    where sav.sample_id=co.sample_id and sav.deleted=false
+    and co.id in (#ids#);',
+  // CMS username in parent sample
+  'Parent CMS Username' => 'update cache_occurrences co
+    set recorders=sav.text_value
+    from samples s
+    join samples sp on sp.id=s.parent_id and sp.deleted=false
+    join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
+    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
+    where s.id=co.sample_id and s.deleted=false
+    and co.id in (#ids#);',
+  'Warehouse username' => 'update cache_occurrences co
+    set recorders=u.username
+    from users u
+    where u.id=co.created_by_id and u.id<>1
+    and co.id in (#ids#);',
+);
 
 ?>
