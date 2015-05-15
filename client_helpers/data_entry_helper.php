@@ -4490,7 +4490,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
                   '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
       'blankText' => 'none',
-      'helpText' => 'This is the precision that the record will be shown at for public viewing'
+      'helpText' => lang::get('This is the precision that the record will be shown at for public viewing')
     ));
     // output any extra controls which should get disabled when the record is not sensitive.
     $r .= $options['additionalControls'];
