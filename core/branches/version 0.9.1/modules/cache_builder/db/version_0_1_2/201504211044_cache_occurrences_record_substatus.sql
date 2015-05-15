@@ -1,3 +1,4 @@
+-- SLOW SCRIPT
 -- move into a cache_builder script
 ALTER TABLE cache_occurrences
    ADD COLUMN record_substatus smallint,
