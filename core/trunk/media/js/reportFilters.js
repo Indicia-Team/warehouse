@@ -948,13 +948,13 @@ jQuery(document).ready(function($) {
         case 'my-records':
           def = "{\"quality\":\"all\",\"my_records\":1}";
           break;
-        case 'my-queried-rejected-records':
+        case 'my-queried-or-not-accepted-records':
           def = "{\"quality\":\"DR\",\"my_records\":1}";
           break;
-        case 'my-pending-records':
+        case 'my-not-reviewed-records':
           def = "{\"quality\":\"P\",\"my_records\":1}";
           break;
-        case 'my-verified-records':
+        case 'my-accepted-records':
           def = "{\"quality\":\"V\",\"my_records\":1}";
           break;
         case 'my-groups':

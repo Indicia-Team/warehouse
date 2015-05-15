@@ -430,17 +430,21 @@ class filter_quality extends filter_base {
       'fieldname'=>'quality',
       'id'=>'quality-filter',
       'lookupValues' => array(
-        'V' => lang::get('Verified records only'),
+        'V1' => lang::get('Accepted as correct records only'),
+        'V' => lang::get('Accepted records only'),
+        '-3' => lang::get('Reviewer agreed at least plausible'),
         'C' => lang::get('Recorder was certain'),
         'L' => lang::get('Recorder thought the record was at least likely'),
-        'P' => lang::get('Pending verification'),
-        'T' => lang::get('Pending verification for trusted records'),
-        '!R' => lang::get('Exclude rejected'),
-        '!D' => lang::get('Exclude dubious or rejected'),
+        'P' => lang::get('Not reviewed'),
+        'T' => lang::get('Not reviewed but trusted recorder'),
+        '!R' => lang::get('Exclude not accepted records'),
+        '!D' => lang::get('Exclude queried or not accepted records'),
         'all' => lang::get('All records'),
         'D' => lang::get('Queried records only'),
-        'R' => lang::get('Rejected records only'),
-        'DR' => lang::get('Queried or rejected records')
+        'A' => lang::get('Answered records only'),
+        'R' => lang::get('Not accepted records only'),
+        'R4' => lang::get('Not accepted as reviewer unable to verify records only'),
+        'DR' => lang::get('Queried or not accepted records')
       )
     ));
     $r .= data_entry_helper::select(array(
@@ -598,7 +602,7 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     'allowLoad' => true,
     'allowSave' => true,
     'redirect_on_success' => '',
-    'presets' => array('my-records', 'my-queried-rejected-records', 'my-pending-records', 'my-verified-records', 'my-groups', 'my-locality', 'my-groups-locality')
+    'presets' => array('my-records', 'my-queried-or-not-accepted-records', 'my-not-reviewed-records', 'my-accepted-records', 'my-groups', 'my-locality', 'my-groups-locality')
   ), $options);
   //If in the warehouse we don't need to worry about the iform master list.
   if (function_exists('variable_get'))
@@ -625,17 +629,17 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
           if (hostsite_get_user_field('id'))
             $title = lang::get('My records'); 
           break;
-        case 'my-queried-rejected-records':
+        case 'my-queried-or-not-accepted-records':
           if (hostsite_get_user_field('id'))
-            $title = lang::get('My rejected or queried records'); 
+            $title = lang::get('My not accepted or queried records');
           break;
-        case 'my-pending-records':
+        case 'my-not-reviewed-records':
           if (hostsite_get_user_field('id'))
-            $title = lang::get('My pending verification records'); 
+            $title = lang::get('My not reviewed records');
           break;
-        case 'my-verified-records':
+        case 'my-accepted-records':
           if (hostsite_get_user_field('id'))
-            $title = lang::get('My verified records'); 
+            $title = lang::get('My accepted records');
           break;
         case 'my-groups':
           if (hostsite_get_user_field('taxon_groups', false, true))
