@@ -3286,7 +3286,9 @@ $('#$escaped').change(function(e) {
         if ($options['occurrenceComment']) {
           $row .= "\n<td class=\"ui-widget-content scCommentCell\" headers=\"$options[id]-comment-$colIdx\">";
           $fieldname = "sc:$options[id]-$txIdx:$existing_record_id:occurrence:comment";
-          $row .= "<input class=\"scComment\" type=\"text\" name=\"$fieldname\" id=\"$fieldname\" value=\"".self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:comment"]."\" />";
+          $value = isset(self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:comment"]) ?
+              self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:comment"] : '';
+          $row .= "<input class=\"scComment\" type=\"text\" name=\"$fieldname\" id=\"$fieldname\" value=\"$value\" />";
           $row .= "</td>";
         }
         if ($options['occurrenceSensitivity']) {
