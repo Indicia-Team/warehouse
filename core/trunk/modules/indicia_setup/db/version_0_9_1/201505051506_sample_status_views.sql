@@ -1,5 +1,5 @@
--- SLOW SCRIPT
-CREATE OR REPLACE VIEW detail_samples AS 
+-- SLOW QUERY
+CREATE OR REPLACE VIEW detail_samples AS
  SELECT s.id,
     s.entered_sref,
     s.entered_sref_system,

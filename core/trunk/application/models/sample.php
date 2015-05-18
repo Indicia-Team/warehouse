@@ -30,6 +30,8 @@
  */
 class Sample_Model extends ORM_Tree
 {
+  protected $requeuedForVerification = false;
+
   public $search_field = 'id';
 
   protected $ORM_Tree_children = "samples";
@@ -71,6 +73,15 @@ class Sample_Model extends ORM_Tree
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
 
+    if ($this->id && preg_match('/[RDV]/', $this->record_status) && empty($this->submission['fields']['record_status'])
+        && $this->wantToUpdateMetadata) {
+      // If we update a processed occurrence but don't set the verification state, revert it to completed/awaiting verification.
+      $array->verified_by_id=null;
+      $array->verified_on=null;
+      $array->record_status='C';
+      $this->requeuedForVerification=true;
+    }
+
     // Any fields that don't have a validation rule need to be copied into the model manually
     $this->unvalidatedFields = array
     (
@@ -85,7 +96,10 @@ class Sample_Model extends ORM_Tree
       'input_form',
       'external_key',
       'group_id',
-      'privacy_precision'
+      'privacy_precision',
+      'record_status',
+      'verified_by_id',
+      'verified_on'
     );
     $array->add_rules('survey_id', 'required');
     // when deleting a sample, only need the id and the deleted flag, don't need the date or location details, but copy over if they are there.
@@ -230,6 +244,8 @@ class Sample_Model extends ORM_Tree
   
   /**
    * Post submit, use the sample's group.private_records to set the occurrence release status.
+   * Also, if this was a verified sample but it has been modified, add a comment to explain
+   * why its been requeued for verification.
    */
   public function postSubmit($isInsert) {
     if ($this->group_id) {
@@ -241,6 +257,15 @@ class Sample_Model extends ORM_Tree
         $this->db->update('occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
         $this->db->update('cache_occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
       }
+    }
+    if ($this->requeuedForVerification && !$isInsert) {
+      $data = array(
+        'sample_id'=>$this->id,
+        'comment'=>kohana::lang('misc.recheck_verification'),
+        'auto_generated'=>'t'
+      );
+      $comment = ORM::factory('sample_id');
+      $comment->validate(new Validation($data), true);
     }
     return true;
   }

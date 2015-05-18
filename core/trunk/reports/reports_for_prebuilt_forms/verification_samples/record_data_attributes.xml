@@ -1,0 +1,93 @@
+<report
+    title="Record attributes for verification"
+    description="Report used to retrieve custom attributes of a record for the verification 3 prebuilt form."
+>
+  <query website_filter_field="su.website_id">
+  select
+    s.id, saw.weight, 'Parent sample' as attribute_type, a.system_function,
+    CASE a.data_type
+            WHEN 'T'::bpchar THEN 'Text'::bpchar
+            WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
+            WHEN 'I'::bpchar THEN 'Integer'::bpchar
+            WHEN 'B'::bpchar THEN 'Boolean'::bpchar
+            WHEN 'F'::bpchar THEN 'Float'::bpchar
+            WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
+            WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
+            ELSE a.data_type
+        END AS data_type, a.caption, 
+        CASE a.data_type
+            WHEN 'T'::bpchar THEN av.text_value
+            WHEN 'L'::bpchar THEN lookup.term::text
+            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'B'::bpchar THEN av.int_value::character varying::text
+            WHEN 'F'::bpchar THEN av.float_value::character varying::text
+            WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+            ELSE NULL::text
+        END AS value, 
+        CASE a.data_type
+            WHEN 'T'::bpchar THEN av.text_value
+            WHEN 'L'::bpchar THEN av.int_value::character varying::text
+            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'B'::bpchar THEN av.int_value::character varying::text
+            WHEN 'F'::bpchar THEN av.float_value::character varying::text
+            WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+            ELSE NULL::text
+        END AS raw_value
+  from samples s
+  join sample_attribute_values av on av.sample_id=s.parent_id and av.deleted=false
+  join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
+  left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  left join sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.restrict_to_survey_id=s.survey_id and saw.deleted=false
+  where s.id=#sample_id#
+  and s.deleted=false
+  and (a.system_function&lt;&gt;'cms_user_id' or a.system_function is null)
+
+  union
+
+  select 
+    s.id, saw.weight, 'Sample' as attribute_type, a.system_function,
+    CASE a.data_type
+            WHEN 'T'::bpchar THEN 'Text'::bpchar
+            WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
+            WHEN 'I'::bpchar THEN 'Integer'::bpchar
+            WHEN 'B'::bpchar THEN 'Boolean'::bpchar
+            WHEN 'F'::bpchar THEN 'Float'::bpchar
+            WHEN 'D'::bpchar THEN 'Specific Date'::bpchar
+            WHEN 'V'::bpchar THEN 'Vague Date'::bpchar
+            ELSE a.data_type
+        END AS data_type, a.caption, 
+        CASE a.data_type
+            WHEN 'T'::bpchar THEN av.text_value
+            WHEN 'L'::bpchar THEN lookup.term::text
+            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'B'::bpchar THEN av.int_value::character varying::text
+            WHEN 'F'::bpchar THEN av.float_value::character varying::text
+            WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+            ELSE NULL::text
+        END AS value, 
+        CASE a.data_type
+            WHEN 'T'::bpchar THEN av.text_value
+            WHEN 'L'::bpchar THEN av.int_value::character varying::text
+            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'B'::bpchar THEN av.int_value::character varying::text
+            WHEN 'F'::bpchar THEN av.float_value::character varying::text
+            WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
+            WHEN 'V'::bpchar THEN (av.date_start_value::character varying::text || ' - '::text) || av.date_end_value::character varying::text
+            ELSE NULL::text
+        END AS raw_value
+  from samples s
+  join sample_attribute_values av on av.sample_id=s.id and av.deleted=false
+  join sample_attributes a on a.id=av.sample_attribute_id and a.deleted=false
+  left join cache_termlists_terms lookup on lookup.id=av.int_value 
+  left join sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.restrict_to_survey_id=s.survey_id and saw.deleted=false
+  where s.id=#sample_id#
+  and (a.system_function&lt;&gt;'cms_user_id' or a.system_function is null)
+  order by attribute_type, weight, caption
+  </query>
+  <params>
+    <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
+  </params>
+</report>

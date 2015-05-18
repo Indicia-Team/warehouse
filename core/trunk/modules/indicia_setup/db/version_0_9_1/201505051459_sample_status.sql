@@ -1,3 +1,4 @@
+-- SLOW QUERY
 ALTER TABLE samples
    ADD COLUMN record_status character(1) CONSTRAINT samples_record_status_check CHECK (record_status = ANY (ARRAY['I'::bpchar, 'C'::bpchar, 'V'::bpchar, 'R'::bpchar, 'T'::bpchar, 'D'::bpchar])),
    ADD COLUMN verified_by_id integer,
@@ -6,6 +7,8 @@ ALTER TABLE samples
       REFERENCES users (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION;
 
+UPDATE samples SET record_status='C';
+ALTER TABLE samples ALTER record_status SET default 'C';
 
 COMMENT ON COLUMN samples.record_status IS 'Status of this sample. I - in progress, C - completed, V - verified, R - rejected, D - dubious/queried (deprecated), T - test.';
 COMMENT ON COLUMN samples.verified_by_id IS 'Foreign key to the users table (verifier of the sample).';
