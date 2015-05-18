@@ -416,6 +416,36 @@ class filter_occurrence_id extends filter_base {
 }
 
 /**
+ * Class defining a "id" filter - sample selection by known id.
+ */
+class filter_sample_id extends filter_base {
+
+  public function get_title() {
+    return 'Sample ID';
+  }
+
+  /**
+   * Define the HTML required for this filter's UI panel.
+   */
+  public function get_controls($readAuth, $options) {
+    $r = '<div id="ctrl-wrap-occurrence_id" class="form-row ctrl-wrap">';
+    $r .= data_entry_helper::select(array(
+      'label' => lang::get('Sample ID'),
+      'fieldname' => 'sample_id_op',
+      'lookupValues'=>array('='=>'is','>='=>'is at least','<='=>'is at most'),
+      'controlWrapTemplate' => 'justControl'
+    ));
+    $r .= data_entry_helper::text_input(array(
+      'fieldname' => 'sample_id',
+      'class'=>'control-width-2',
+      'controlWrapTemplate' => 'justControl'
+    ));
+    $r .= '</div>';
+    return $r;
+  }
+}
+
+/**
  * Class defining a "quality" filter - record status, photos, verification rule check selection.
  */
 class filter_quality extends filter_base {
@@ -449,6 +479,50 @@ class filter_quality extends filter_base {
         'R' => lang::get('Not accepted records only'),
         'R4' => lang::get('Not accepted as reviewer unable to verify records only'),
         'DR' => lang::get('Queried or not accepted records')
+      )
+    ));
+    $r .= data_entry_helper::select(array(
+      'label'=>'Automated checks',
+      'fieldname'=>'autochecks',
+      'lookupValues'=>array(
+        ''=>lang::get('Not filtered'),
+        'P'=>lang::get('Only include records that pass all automated checks'),
+        'F'=>lang::get('Only include records that fail at least one automated check')
+      )
+    ));
+    $r .= data_entry_helper::checkbox(array(
+      'label' => lang::get('Only include records which have photos available'),
+      'fieldname' => 'has_photos'
+    ));
+    return $r;
+  }
+}
+
+/**
+ * Class defining a "quality" filter for samples - based on record status.
+ */
+class filter_quality_sample extends filter_base {
+
+  public function get_title() {
+    return 'Quality';
+  }
+
+  /**
+   * Define the HTML required for this filter's UI panel.
+   */
+  public function get_controls($readAuth) {
+    $r = '<div class="context-instruct messages warning">' . lang::get('Please note, your options for quality filtering are restricted by your access permissions in this context.') . '</div>';
+    $r .= data_entry_helper::select(array(
+      'label'=>lang::get('Samples to include'),
+      'fieldname'=>'quality',
+      'id'=>'quality-filter',
+      'lookupValues' => array(
+        'V' => lang::get('Accepted records only'),
+        'P' => lang::get('Not reviewed'),
+        '!R' => lang::get('Exclude not accepted records'),
+        '!D' => lang::get('Exclude queried or not accepted records'),
+        'all' => lang::get('All records'),
+        'R' => lang::get('Not accepted records only')
       )
     ));
     $r .= data_entry_helper::select(array(
@@ -607,7 +681,8 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     'allowLoad' => true,
     'allowSave' => true,
     'redirect_on_success' => '',
-    'presets' => array('my-records', 'my-queried-or-not-accepted-records', 'my-not-reviewed-records', 'my-accepted-records', 'my-groups', 'my-locality', 'my-groups-locality')
+    'presets' => array('my-records', 'my-queried-or-not-accepted-records', 'my-not-reviewed-records', 'my-accepted-records', 'my-groups', 'my-locality', 'my-groups-locality'),
+    'entity' => 'occurrence'
   ), $options);
   //If in the warehouse we don't need to worry about the iform master list.
   if (function_exists('variable_get'))
@@ -766,15 +841,27 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
       $r .= "<input type=\"hidden\" id=\"select-filters-user\" value=\"$options[filters_user_id]\"/>";
   }
   $r .= '<div id="filter-panes">';
-  $filters = array(
-    'filter_what'=>new filter_what(),
-    'filter_where'=>new filter_where(), 
-    'filter_when'=>new filter_when(), 
-    'filter_who'=>new filter_who(), 
-    'filter_occurrence_id'=>new filter_occurrence_id(), 
-    'filter_quality'=>new filter_quality(),
-    'filter_source'=>new filter_source()
-  );
+  if ($options['entity']==='occurrence') {
+    $filters = array(
+      'filter_what'=>new filter_what(),
+      'filter_where'=>new filter_where(),
+      'filter_when'=>new filter_when(),
+      'filter_who'=>new filter_who(),
+      'filter_occurrence_id'=>new filter_occurrence_id(),
+      'filter_quality'=>new filter_quality(),
+      'filter_source'=>new filter_source()
+    );
+
+  } elseif ($options['entity']==='sample') {
+    $filters = array(
+      'filter_where'=>new filter_where(),
+      'filter_when'=>new filter_when(),
+      'filter_who'=>new filter_who(),
+      'filter_sample_id'=>new filter_sample_id(),
+      'filter_quality'=>new filter_quality_sample(),
+      'filter_source'=>new filter_source()
+    );
+  }
   if (!empty($options['filterTypes'])) {
     $filterModules = array();
     foreach ($options['filterTypes'] as $category => $list) {

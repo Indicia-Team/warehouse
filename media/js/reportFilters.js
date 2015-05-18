@@ -139,10 +139,11 @@ jQuery(document).ready(function($) {
         }
         if (typeof indiciaData.filter.def.taxon_rank_sort_order_combined!=="undefined" && 
             indiciaData.filter.def.taxon_rank_sort_order_combined!=="") {
-          r.push($("#level-label").text() + ' ' + $("#taxon_rank_sort_order_op option:selected").text() + ' ' + $("#taxon_rank_sort_order_combined option:selected").text());
+          r.push($("#level-label").text() + ' ' + $("#taxon_rank_sort_order_op").find("option:selected").text() + ' ' +
+              $("#taxon_rank_sort_order_combined").find("option:selected").text());
         }
         if (typeof indiciaData.filter.def.marine_flag!=="undefined" && indiciaData.filter.def.marine_flag!=="all") {
-          r.push($("#marine_flag option[value="+indiciaData.filter.def.marine_flag+"]").text());
+          r.push($("#marine_flag").find("option[value="+indiciaData.filter.def.marine_flag+"]").text());
         }
         return r.join('<br/>');
       },
@@ -189,20 +190,20 @@ jQuery(document).ready(function($) {
         }
       },
       loadForm:function(context) {
-        var firstTab = 0, i, disabled = [];
+        var firstTab = 0, disabled = [];
         // got a families or species level context. So may as well disable the less specific tabs as they won't be useful.
         if (context && context.higher_taxa_taxon_list_list) {
           firstTab = 1;
           disabled = [0];
-          $('#families-tab .context-instruct').show();
+          $('#families-tab').find('.context-instruct').show();
         }
         else if (context && context.taxa_taxon_list_list) {
           firstTab = 2;
           disabled = [0, 1];
-          $('#species-tab .context-instruct').show();
+          $('#species-tab').find('.context-instruct').show();
         }
         if (context && context.marine_flag && context.marine_flag!=='all') {
-          $('#marine_flag option[value='+context.marine_flag+']').attr('selected', 'selected');
+          $('#marine_flag').find('option[value='+context.marine_flag+']').attr('selected', 'selected');
           $('#marine_flag').attr('disabled', 'disabled');
           $('#flags-tab .context-instruct').show();
         } else {
@@ -505,6 +506,19 @@ jQuery(document).ready(function($) {
       loadForm:function(context) {
       }
     },
+    sample_id:{
+      getDescription:function() {
+        if (indiciaData.filter.def.sample_id) {
+          var op = typeof indiciaData.filter.def.sample_id==="undefined" ? '=' : indiciaData.filter.def.sample_id.replace(/[<=>]/g, "\\$&");
+          return $('#sample_id_op option[value='+op+']').html()
+            + ' ' + indiciaData.filter.def.sample_id;
+        } else {
+          return '';
+        }
+      },
+      loadForm:function(context) {
+      }
+    },
     quality:{
       getDescription:function() {
         var r=[];
@@ -708,7 +722,7 @@ jQuery(document).ready(function($) {
     }
   }
   
-  $('#site-type').change(function(e) {
+  $('#site-type').change(function() {
     changeSiteType();
   });
   
@@ -787,25 +801,6 @@ jQuery(document).ready(function($) {
     d1 = jQuery.datepicker.parseDate(format, d1);
     d2 = jQuery.datepicker.parseDate(format, d2);
     return d1>d2;
-  }
-  
-  function ageStrIsGreater(d1, d2) {
-    var days1, days2;
-    d1 = d1.split(/\s/);
-    switch ($.trim(d1[1]).substr(0,3).toUpperCase()) {
-      case 'WEE': days1=d1[0]*7; break;
-      case 'MON': days1=d1[0]*30; break;
-      case 'YEA': days1=d1[0]*365; break;
-      default: days1=d1[0];
-    }
-    d2 = d2.split(/\s/);
-    switch ($.trim(d2[1]).substr(0,3).toUpperCase()) {
-      case 'WEE': days2=d2[0]*7; break;
-      case 'MON': days2=d2[0]*30; break;
-      case 'YEA': days2=d2[0]*365; break;
-      default: days2=d2[0];
-    }
-    return days1>days2;
   }
   
   function applyContextLimits() {
