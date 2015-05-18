@@ -43,7 +43,9 @@ class Sample_comment_model extends ORM {
     $this->unvalidatedFields = array(
       'email_address',
       'person_name',
-      'deleted'
+      'deleted',
+      'query',
+      'record_status'
     );
     return parent::validate($array, $save);
 

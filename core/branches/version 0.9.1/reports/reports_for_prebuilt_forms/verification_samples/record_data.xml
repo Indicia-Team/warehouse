@@ -1,0 +1,58 @@
+<report
+    title="Record data for verification"
+    description="Report used to retrieve details of a record excluding custom attributes for the verification 3 prebuilt form."
+>
+  <query website_filter_field="su.website_id" samples_id_field="s.id" standard_params="samples"
+         created_by_field="s.created_by_id" training_filter_field="">
+  select #columns#
+  from samples s
+  join surveys su on su.id=s.survey_id and su.deleted=false
+  left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
+  left join locations l on l.id=s.location_id and l.deleted=false
+  left join (index_locations_samples ils
+    join locations locality on locality.id=ils.location_id and locality.location_type_id=#locality_type_id#
+  ) on ils.sample_id=s.id 
+  left join (users u
+    join people p on p.id=u.person_id and p.deleted=false
+  ) on u.id=s.created_by_id and u.id&lt;&gt;1 and u.deleted=false
+  left join users uv on uv.id=s.verified_by_id and uv.deleted=false
+  left join people pv on pv.id=uv.person_id and pv.deleted=false
+  left join (sample_attribute_values srecv
+      left join sample_attributes sreca on sreca.id=srecv.sample_attribute_id and sreca.deleted=false
+      and sreca.system_function='full_name'
+  ) on srecv.sample_id=s.id and srecv.deleted=false
+  #agreements_join#
+  #joins#
+  where s.id=#sample_id#
+  </query>
+  <params>
+    <param name='sample_id' display='Sample ID' description='ID of the sample to load' datatype='text' />
+    <param name='locality_type_id' display='Locality Type ID' description='ID of the location type used for verification localities' datatype='text' emptyvalue="0"/>
+  </params>
+  <columns>
+    <column name='record_status' display="Key facts:Sample status" sql='s.record_status' />
+
+
+    <column name='recorder' display='Key facts:Recorder' sql='srecv.text_value' />
+
+
+    <column name='entered_sref' display='Key facts:Map ref.' sql='coalesce(s.entered_sref, l.centroid_sref)' />
+    <column name='location_name' display='Key facts:Site Name' sql="COALESCE(l.name, s.location_name)" />
+    <column name='date' display='Key facts:Date' sql='s.date_start' />
+    <column name='sample_id' display='Sample:ID' sql='s.id' />
+    <column name='email' visible='false' sql='p.email_address' />
+    <column name='verifier' display='Sample:Verified by' sql="pv.surname || ', ' || pv.first_name" />
+    <column name='created_on' display='Sample:Submitted on' sql='s.created_on' />
+    <column name='updated_on' display='Sample:Last updated on' sql='s.updated_on' />
+    <column name='sample_comment' display='Sample:Comment' sql='s.comment' />
+    <column name='survey_title' display='Sample:Survey' sql='su.title' />
+    <column name='wkt' visible="false" sql='st_astext(coalesce(s.geom, l.centroid_geom))' />
+    <!--The following output columns are hidden but required by the system-->
+    <column name="created_by_id" sql="s.created_by_id" visible="false" />
+    <column name="input_by_first_name" sql="p.first_name" visible="false" />
+    <column name="input_by_surname" sql="p.surname" visible="false" />
+    <column name="survey_id" sql="su.id" visible="false" />
+    <column name="localities" sql="array_to_string(array_agg(locality.name), '|')" aggregate="true" visible="false" />
+    <column name="locality_ids" sql="array_to_string(array_agg(locality.id), '|')" aggregate="true" visible="false" />
+  </columns>
+</report>

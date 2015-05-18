@@ -1,0 +1,47 @@
+<report
+    title="Explore samples using standard filters"
+    description="Explore samples with standardised filtering parameters."
+>
+  <query website_filter_field="su.website_id" samples_id_field="s.id" standard_params="samples"
+         created_by_field="s.created_by_id" training_filter_field="">
+  SELECT #columns#
+  FROM samples s
+  JOIN surveys su on su.id=s.survey_id and su.deleted=false
+  JOIN websites w on w.id=su.website_id and w.deleted=false
+  LEFT JOIN (sample_attribute_values savrecorder
+      JOIN sample_attributes sarecorder on sarecorder.id=savrecorder.sample_attribute_id and sarecorder.deleted=false
+           and sarecorder.system_function='full_name'
+  ) on savrecorder.sample_id=s.id and savrecorder.deleted=false
+  LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE s.deleted=false
+  AND #sharing_filter#
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+  </params>
+  <columns>
+    <column name='sample_id' display='ID' sql='s.id' datatype="integer"
+        template='&lt;div class="status-{record_status}"&gt;&lt;div class="record-id"&gt;{sample_id}&lt;/div&gt;&lt;/div&gt;'  />
+    <column name='source' display='Source' datatype="text" 
+        sql="w.title || ' | ' || case when substring(su.title from 1 for length(w.title)) = w.title then trim(substring(su.title from length(w.title)+1)) else su.title end" />
+    <column name='location_name' display='Site name' sql='coalesce(s.location_name, l.name)' datatype="text" />
+    <column name='entered_sref' display='Grid ref' sql="s.entered_sref" datatype="text" />
+    <column name='date_start' sql='s.date_start' visible='false' />
+    <column name='date_end' sql='s.date_end' visible='false' />
+    <column name='date_type' sql='s.date_type' visible='false' />
+    <column name='date' display='Date' datatype="date" />
+    <column name='recorder' display='Recorder' sql="savrecorder.text_value" datatype="text" />
+    <column name='created_by_id' visible='false' sql='s.created_by_id' datatype="integer" />
+    <column name='record_status' display='State' sql='s.record_status' visible="false" />
+    <column name='belongs_to_user' display='Belongs to user' sql="CASE WHEN CAST(s.created_by_id AS character varying) = '#user_id#' AND su.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='belongs_to_site' display='Belongs to site' sql="CASE WHEN su.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='input_form' visible="false" sql="case when s.input_form is null then '#default_input_form#' else s.input_form end" datatype="text" />
+  </columns>
+</report>
