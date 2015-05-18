@@ -180,6 +180,87 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       error::log_error('Exception during single record verify', $e);
     }
   }
+
+  /**
+   * Provides the services/data_utils/single_verify_sample service. This takes a sample:id, sample:record_status, user_id (the verifier)
+   * and optional sample_comment:comment in the $_POST data and updates the sample. This is provided as a more optimised
+   * alternative to using the normal data services calls.
+   */
+  public function single_verify_sample() {
+    if (empty($_POST['sample:id']) || !preg_match('/^\d+$/', $_POST['sample:id']))
+      echo 'sample:id not supplied or invalid';
+    elseif (empty($_POST['sample:record_status']) || !preg_match('/^[VRCD]$/', $_POST['sample:record_status']))
+      echo 'sample:record_status not supplied or invalid';
+    elseif (!empty($_POST['sample:record_substatus']) && !preg_match('/^[1-5]$/', $_POST['sample:record_substatus']))
+      echo 'sample:record_substatus invalid';
+    else try {
+      $db = new Database();
+      $this->authenticate('write');
+      $updates = array('record_status'=>$_POST['sample:record_status'], 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
+        'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s'));
+      $db->from('samples')
+        ->set($updates)
+        ->where('id', $_POST['sample:id'])
+        ->update();
+
+      if (!empty($_POST['sample_comment:comment'])) {
+        $db->insert('sample_comments', array(
+          'sample_id'=>$_POST['sample:id'],
+          'comment'=>$_POST['sample_comment:comment'],
+          'created_by_id'=>$this->user_id,
+          'created_on'=>date('Y-m-d H:i:s'),
+          'updated_by_id'=>$this->user_id,
+          'updated_on'=>date('Y-m-d H:i:s'),
+          'record_status'=>$_POST['sample:record_status']
+        ));
+      }
+      echo 'OK';
+    } catch (Exception $e) {
+      echo $e->getMessage();
+      error::log_error('Exception during single sample verify', $e);
+    }
+  }
+
+  /**
+   * Provides the services/data_utils/bulk_verify_samples service. This takes a report plus params (json object) in the $_POST
+   * data and verifies all the samples returned by the report according to the filter.
+   */
+  public function bulk_verify_samples() {
+    $db = new Database();
+    $this->authenticate('write');
+    $report = $_POST['report'];
+    $params = json_decode($_POST['params'], true);
+    $params['sharing'] = 'verification';
+    $websites = $this->website_id ? array($this->website_id) : null;
+    $reportEngine = new ReportEngine($websites, $this->user_id);
+    try {
+      // Load the report used for the verification grid with the same params
+      $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+      // now get a list of all the occurrence ids
+      $ids = array();
+      foreach ($data['content']['records'] as $record) {
+        if ($record['record_status']!=='V') {
+          $ids[$record['sample_id']] = $record['sample_id'];
+          $db->insert('sample_comments', array(
+            'sample_id'=>$record['sample_id'],
+            'comment'=>"This sample is accepted",
+            'created_by_id'=>$this->user_id,
+            'created_on'=>date('Y-m-d H:i:s'),
+            'updated_by_id'=>$this->user_id,
+            'updated_on'=>date('Y-m-d H:i:s'),
+            'record_status'=>'V'
+          ));
+        }
+      }
+      $db->from('samples')->set(array('record_status'=>'V', 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
+        'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+      echo count($ids);
+    } catch (Exception $e) {
+      echo $e->getMessage();
+      error::log_error('Exception during bulk verify of samples', $e);
+    }
+  }
+
 }
  
  

@@ -1,0 +1,44 @@
+<report
+    title="Explore samples using standard filters for mapping"
+    description="Explore samples with standardised filtering parameters."
+>
+  <query website_filter_field="su.website_id" samples_id_field="s.id" standard_params="samples"
+         created_by_field="s.created_by_id" training_filter_field="">
+  SELECT #columns#
+  FROM samples s
+  JOIN surveys su on su.id=s.survey_id and su.deleted=false
+  JOIN websites w on w.id=su.website_id and w.deleted=false
+  LEFT JOIN (sample_attribute_values savrecorder
+  LEFT JOIN sample_attributes sarecorder on sarecorder.id=savrecorder.sample_attribute_id and sarecorder.deleted=false
+      and sarecorder.system_function='full_name'
+  ) on savrecorder.sample_id=s.id and savrecorder.deleted=false
+  LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE s.deleted=false
+  AND #sharing_filter#
+  #idlist#
+  </query>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+  </params>
+  <columns>
+    <column name='sample_id' sql='s.id' datatype="integer" />
+    <column name='source' on_demand="true" datatype="text" />
+    <column name='location_name' on_demand="true" sql='coalesce(s.location_name, l.name)' datatype="text" />
+    <column name='entered_sref' on_demand="true" sql="s.entered_sref" datatype="text" />
+    <column name='date_start' on_demand="true" sql='s.date_start' visible='false' />
+    <column name='date_end' on_demand="true" sql='s.date_end' visible='false' />
+    <column name='date_type' on_demand="true" sql='s.date_type' visible='false' />
+    <column name='date' on_demand="true" datatype="date" />
+    <column name='recorder' on_demand="true" sql="savrecorder.text_value" datatype="text" />
+    <column name='created_by_id' on_demand="true" visible='false' sql='s.created_by_id' datatype="integer" />
+    <column name='record_status' on_demand="true" sql='s.record_status' visible="false" />
+    <column name='belongs_to_user' on_demand="true" sql="CASE WHEN CAST(s.created_by_id AS character varying) = '#user_id#' AND su.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='belongs_to_site' on_demand="true" sql="CASE WHEN su.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='input_form' on_demand="true" visible="false" sql="case when s.input_form is null then '#default_input_form#' else s.input_form end" datatype="text" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(s.geom)" in_count="true" />
+    <column name="sref_precision" visible="false" sql="1" />
+  </columns>
+</report>
