@@ -793,7 +793,7 @@ class ReportEngine {
    */
   private function groupAllowsSensitiveAccess() {
     // basic checks we can perform to avoid unnecessary db access
-    if (!$this->reportReader->hasStandardParams || !$this->userId || 
+    if (!$this->reportReader->loadStandardParamsSet || !$this->userId ||
         (empty($this->providedParams['group_id']) && empty($this->providedParams['implicit_group_id'])))
       return false;
     $group_id = empty($this->providedParams['group_id']) ? $this->providedParams['implicit_group_id'] : $this->providedParams['group_id'];
