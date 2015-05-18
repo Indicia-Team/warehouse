@@ -44,7 +44,8 @@ class Sample_comment_model extends ORM {
       'email_address',
       'person_name',
       'deleted',
-      'query'
+      'query',
+      'record_status'
     );
     return parent::validate($array, $save);
 
