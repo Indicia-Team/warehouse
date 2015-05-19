@@ -42,7 +42,7 @@ ul.gallery li {
 /* line 46, sass/verification_5.scss */
 #action-buttons button {
   width: 16%;
-  margin-right: 4%;
+  margin: 0 4% 2px 0;
   margin-bottom: 2px;
   height: 26px;
   vertical-align: middle;
