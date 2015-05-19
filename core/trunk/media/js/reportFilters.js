@@ -17,14 +17,14 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link    http://code.google.com/p/indicia/
  */
- 
+
 var loadFilter, loadFilterUser, applyFilterToReports;
 
 jQuery(document).ready(function($) {
   "use strict";
   indiciaData.filter = {"def":{},"id":null,"title":null};
   var saving=false, filterOverride={};
-  
+
   function disableIfPresent(context, fields, ctrlIds) {
     var disable=false;
     $.each(fields, function(idx, field) {
@@ -40,7 +40,7 @@ jQuery(document).ready(function($) {
       }
     });
   }
-  
+
   function disableSourceControlsForContext(type, context) {
     if (context && context[type+'_list_op'] && context[type+'_list']) {
       $('#filter-'+type+'s-mode').attr('disabled', true);
@@ -62,14 +62,14 @@ jQuery(document).ready(function($) {
       $('#'+type+'-list-checklist input').removeAttr('disabled');
     }
   }
-  
+
   function limitSourceToContext (type, filterDef, context) {
     var context_idlist, idlist;
     if (context[type + '_list']) {
       if (!filterDef[type + '_list']) {
         filterDef[type + '_list']=context[type + '_list'];
       } else if (context[type + '_list_op']==='not in') {
-        // if excluding these websites, then we combine the selected filter list with the context list            
+        // if excluding these websites, then we combine the selected filter list with the context list
         filterDef[type + '_list']=filterDef[type + '_list'] + ',' + context[type + '_list'];
       } else {
         // including context websites, so we want an intersection
@@ -90,7 +90,7 @@ jQuery(document).ready(function($) {
     return ($('#imp-location').val()!=='' && $('#imp-location').val()!==null)
       || ($('#imp-sref').val()!=='' && $('#imp-sref').val()!==null);
   }
-  
+
   // functions that drive each of the filter panes, e.g. to obtain the description from the controls.
   var paneObjList = {
     what:{
@@ -137,7 +137,7 @@ jQuery(document).ready(function($) {
         if (taxa.length>0) {
           r.push(taxa.join(', '));
         }
-        if (typeof indiciaData.filter.def.taxon_rank_sort_order_combined!=="undefined" && 
+        if (typeof indiciaData.filter.def.taxon_rank_sort_order_combined!=="undefined" &&
             indiciaData.filter.def.taxon_rank_sort_order_combined!=="") {
           r.push($("#level-label").text() + ' ' + $("#taxon_rank_sort_order_op").find("option:selected").text() + ' ' +
               $("#taxon_rank_sort_order_combined").find("option:selected").text());
@@ -223,21 +223,21 @@ jQuery(document).ready(function($) {
         $('#taxon_group_list\\:sublist').children().remove();
         if (typeof indiciaData.filter.def.taxon_group_names!=="undefined") {
           $.each(indiciaData.filter.def.taxon_group_names, function(id, name) {
-            $('#taxon_group_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name + 
+            $('#taxon_group_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name +
                 '<input type="hidden" value="' + id + '" name="taxon_group_list[]"/></li>');
           });
         }
         $('#higher_taxa_taxon_list_list\\:sublist').children().remove();
         if (typeof indiciaData.filter.def.higher_taxa_taxon_list_names!=="undefined") {
           $.each(indiciaData.filter.def.higher_taxa_taxon_list_names, function(id, name) {
-            $('#higher_taxa_taxon_list_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name + 
+            $('#higher_taxa_taxon_list_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name +
                 '<input type="hidden" value="' + id + '" name="higher_taxa_taxon_list_list[]"/></li>');
           });
         }
         $('#taxa_taxon_list_list\\:sublist').children().remove();
         if (typeof indiciaData.filter.def.taxa_taxon_list_names!=="undefined") {
           $.each(indiciaData.filter.def.taxa_taxon_list_names, function(id, name) {
-            $('#taxa_taxon_list_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name + 
+            $('#taxa_taxon_list_list\\:sublist').append('<li class="ui-widget-content ui-corner-all"><span class="ind-delete-icon"> </span>' + name +
                 '<input type="hidden" value="' + id + '" name="taxa_taxon_list_list[]"/></li>');
           });
         }
@@ -275,7 +275,7 @@ jQuery(document).ready(function($) {
         if (typeof indiciaData.filter.def.date_type!=="undefined" && indiciaData.filter.def.date_type!=="recorded") {
           dateTypePrefix = indiciaData.filter.def.date_type + '_';
         }
-        if (context && (context.date_from || context.date_to || context.date_age || 
+        if (context && (context.date_from || context.date_to || context.date_age ||
             context.input_date_from || context.input_date_to || context.input_date_age ||
             context.edited_date_from || context.edited_date_to || context.edited_date_age ||
             context.verified_date_from || context.verified_date_to || context.verified_date_age)) {
@@ -329,7 +329,7 @@ jQuery(document).ready(function($) {
           return 'Records in ' + indiciaData.filter.def.remembered_location_name;
         } else if (indiciaData.filter.def['imp-location:name']) { // legacy
           return 'Records in ' + indiciaData.filter.def['imp-location:name'];
-        } else if (indiciaData.filter.def.indexed_location_id) { 
+        } else if (indiciaData.filter.def.indexed_location_id) {
           // legacy location ID for the user's locality. In this case we need to hijack the site type drop down shortcuts to get the locality name
           return $('#site-type option[value=loc\\:' + indiciaData.filter.def.indexed_location_id + ']').text();
         } else if (indiciaData.filter.def.location_name) {
@@ -340,7 +340,7 @@ jQuery(document).ready(function($) {
           return 'Records within a freehand boundary';
         } else {
           return '';
-        }        
+        }
       },
       applyFormToDefinition:function() {
         var geoms=[], geom;
@@ -368,7 +368,7 @@ jQuery(document).ready(function($) {
             return;
           }
         }
-        
+
         $.each(indiciaData.mapdiv.map.editLayer.features, function(i, feature) {
           // ignore features with a special purpose, e.g. the selected record when verifying
           if (typeof feature.tag==="undefined" &&
@@ -407,7 +407,7 @@ jQuery(document).ready(function($) {
         indiciaData.disableMapDataLoading=true;
         indiciaData.mapOrigCentre=indiciaData.mapdiv.map.getCenter();
         indiciaData.mapOrigZoom=indiciaData.mapdiv.map.getZoom();
-        if (indiciaData.filter.def.indexed_location_id && 
+        if (indiciaData.filter.def.indexed_location_id &&
             $("#site-type option[value='loc:"+indiciaData.filter.def.indexed_location_id+"']").length > 0) {
           $('#site-type').val('loc:'+indiciaData.filter.def.indexed_location_id);
         } else if (indiciaData.filter.def.indexed_location_id || indiciaData.filter.def.location_id) {
@@ -434,7 +434,7 @@ jQuery(document).ready(function($) {
           $('.olControlModifyFeatureItemInactive').hide();
         }
         // select the first draw... tool if allowed to draw on the map by permissions, else select navigate
-        $.each(indiciaData.mapdiv.map.controls, function(idx, ctrl) {        
+        $.each(indiciaData.mapdiv.map.controls, function(idx, ctrl) {
           if (context && (((context.sref || context.searchArea) && ctrl.CLASS_NAME.indexOf('Control.Navigate')>-1) ||
               ((!context.sref && !context.searchArea) && ctrl.CLASS_NAME.indexOf('Control.Draw')>-1))) {
             ctrl.activate();
@@ -443,7 +443,7 @@ jQuery(document).ready(function($) {
         });
         if (context && (context.location_id || context.indexed_location_id || context.location_name || context.searchArea)) {
           $('#controls-filter_where .context-instruct').show();
-        }        
+        }
         disableIfPresent(context, ['location_id','location_name'], ['#imp-location\\:name','#location_name']);
         disableIfPresent(context, ['indexed_location_id'], ['#indexed_location_id']);
         disableIfPresent(context, ['sref','searchArea'], ['#imp-sref']);
@@ -455,7 +455,7 @@ jQuery(document).ready(function($) {
         } else {
           $('#controls-filter_where legend').show();
         }
-        
+
       },
       loadFilter: function() {
         if (typeof indiciaData.mapdiv!=="undefined") {
@@ -585,7 +585,7 @@ jQuery(document).ready(function($) {
         return r.join('<br/>');
       },
       loadForm: function(context) {
-        if (context && ((context.website_list && context.website_list_op) || 
+        if (context && ((context.website_list && context.website_list_op) ||
             (context.survey_list && context.survey_list_op) || (context.input_form_list && context.input_form_list_op))) {
           $('#controls-filter_source .context-instruct').show();
         }
@@ -629,13 +629,13 @@ jQuery(document).ready(function($) {
       }
     }
   };
-  
+
   // Event handler for a draw tool boundary being added which clears the other controls on the map pane.
   function addedFeature() {
     $('#controls-filter_where').find(':input').not('#imp-sref-system,:checkbox,[type=button]').val('');
     $('#controls-filter_where').find(':checkbox').attr('checked', false);
   }
-  
+
   // Hook the addedFeature handler up to the draw controls on the map
   mapInitialisationHooks.push(function(mapdiv) {
     $.each(mapdiv.map.controls, function(idx, ctrl) {
@@ -646,7 +646,7 @@ jQuery(document).ready(function($) {
     // ensures that if part of a loaded filter description is a boundary, it gets loaded onto the map only when the map is ready
     updateFilterDescriptions();
   });
-  
+
   // Ensure that pane controls that are exclusive of others are only filled in one at a time
   $('.filter-controls fieldset :input').change(function(e) {
     var formDiv=$(e.currentTarget).parents('.filter-popup'),
@@ -661,10 +661,10 @@ jQuery(document).ready(function($) {
       }
     });
   });
-  
+
   // Ensure that only one of families, species and species groups are picked on the what filter
   var taxonSelectionMethods=['higher_taxa_taxon_list_list', 'taxa_taxon_list_list', 'taxon_group_list'];
-  var keep = function(toKeep) {    
+  var keep = function(toKeep) {
     $.each(taxonSelectionMethods, function() {
       if (this!==toKeep) {
         $('#'+this+'\\:sublist').children().remove();
@@ -681,7 +681,7 @@ jQuery(document).ready(function($) {
       keep(method);
     });
   });
-  
+
   function loadSites(filter, idToSelect) {
     $.ajax({
       dataType: "json",
@@ -697,7 +697,7 @@ jQuery(document).ready(function($) {
       }
     });
   }
-  
+
   function changeSiteType(idToSelect) {
     $('#imp-location').children().remove();
     $('#imp-location').append('<option value="">'+indiciaData.lang.pleaseSelect+'</option>');
@@ -709,7 +709,7 @@ jQuery(document).ready(function($) {
       }
     } else if ($('#site-type').val().match(/^[0-9]+$/)) {
       // a location_type_id selected
-      $('#imp-location').show();      
+      $('#imp-location').show();
       loadSites('location_type_id='+$('#site-type').val(), idToSelect);
     } else {
       // a shortcut site from the site-types list
@@ -721,11 +721,11 @@ jQuery(document).ready(function($) {
       }
     }
   }
-  
+
   $('#site-type').change(function() {
     changeSiteType();
   });
-  
+
   function updateSurveySelection() {
     var surveys=[];
     $.each($('#filter-surveys input:checked'), function(idx, checkbox) {
@@ -734,7 +734,7 @@ jQuery(document).ready(function($) {
     if (surveys.length===0) {
       // no websites picked, so can pick any survey
       $('#filter-input_forms li').show();
-    } 
+    }
     else if ($('#filter-surveys-mode').val()==='in') {
       // list only the forms that can be picked
       $('#filter-input_forms li').filter(surveys.join(',')).removeClass('survey-hide');
@@ -747,17 +747,17 @@ jQuery(document).ready(function($) {
       $('#filter-input_forms li').filter(surveys.join(',')).find('input').attr('checked', false);
     }
   }
-  
+
   function updateWebsiteSelection() {
     var websites=[], lis=$('#filter-surveys li, #filter-input_forms li');
     $.each($('#filter-websites input:checked'), function(idx, checkbox) {
       websites.push('.vis-website-' + $(checkbox).val());
     });
-    
+
     if (websites.length===0) {
       // no websites picked, so can pick any survey
       lis.removeClass('website-hide');
-    } 
+    }
     else if ($('#filter-websites-mode').val()==='in') {
       // list only the surveys that can be picked
       lis.filter(websites.join(',')).removeClass('website-hide');
@@ -770,20 +770,20 @@ jQuery(document).ready(function($) {
       lis.filter(websites.join(',')).find('input').attr('checked', false);
     }
   }
-  
+
   $('#filter-websites :input').change(updateWebsiteSelection);
-  
+
   $('#filter-surveys :input').change(updateSurveySelection);
-  
+
   $('#my_groups').click(function() {
     $.each(indiciaData.myGroups, function(idx, group) {
       if ($('#taxon_group_list\\:sublist input[value=' + group[0] + ']').length===0) {
-        $('#taxon_group_list\\:sublist').append('<li><span class="ind-delete-icon"> </span>' + group[1] + 
+        $('#taxon_group_list\\:sublist').append('<li><span class="ind-delete-icon"> </span>' + group[1] +
             '<input type="hidden" value="' + group[0] + '" name="taxon_group_list[]"></li>');
       }
     });
   });
-  
+
   // Event handler for selecting a filter from the drop down. Enables the apply filter button when appropriate.
   var filterChange=function() {
     if ($('#select-filter').val()) {
@@ -792,17 +792,17 @@ jQuery(document).ready(function($) {
       $('#filter-apply').addClass('disabled');
     }
   };
-  
+
   // Hook the above event handler to the select filter dropdown.
   $('#select-filter').change(filterChange);
-  
+
   function dateStrIsGreater(d1, d2) {
     var format=$("#date_from").datepicker( "option", "dateFormat");
     d1 = jQuery.datepicker.parseDate(format, d1);
     d2 = jQuery.datepicker.parseDate(format, d2);
     return d1>d2;
   }
-  
+
   function applyContextLimits() {
     // if a context is loaded, need to limit the filter to the records in the context
     if ($('#context-filter').length) {
@@ -814,7 +814,7 @@ jQuery(document).ready(function($) {
       });
     }
   }
-  
+
   applyFilterToReports = function(reload) {
     if (typeof reload==="undefined") {
       reload=true;
@@ -849,7 +849,7 @@ jQuery(document).ready(function($) {
       });
     }
   };
-  
+
   function applyDefaults() {
     $.each(paneObjList, function(name, obj) {
       if (typeof obj.getDefaults!=="undefined") {
@@ -857,7 +857,7 @@ jQuery(document).ready(function($) {
       }
     });
   }
-  
+
   function resetFilter() {
     indiciaData.filter.def={};
     applyDefaults();
@@ -898,7 +898,7 @@ jQuery(document).ready(function($) {
     $('#active-filter-label').html(indiciaData.lang.FilterReport);
     $('#standard-params .header span.changed').hide();
   }
-  
+
   function updateFilterDescriptions() {
     var description, name;
     $.each($('#filter-panes .pane'), function(idx, pane) {
@@ -913,7 +913,7 @@ jQuery(document).ready(function($) {
       $(pane).find('span.filter-desc').html(description);
     });
   }
-  
+
   function filterLoaded(data) {
     indiciaData.filter.def = $.extend(JSON.parse(data[0].definition), filterOverride);
     indiciaData.filter.id = data[0].id;
@@ -932,9 +932,9 @@ jQuery(document).ready(function($) {
       $('#filter-delete').show();
     } else {
       $('#filter-delete').hide();
-    }      
+    }
   }
-  
+
   loadFilter = function(id, getParams) {
     filterOverride = getParams;
     if ($('#standard-params .header span.changed:visible').length===0 || confirm(indiciaData.lang.ConfirmFilterChangedLoad)) {
@@ -944,7 +944,7 @@ jQuery(document).ready(function($) {
           def = "{\"quality\":\"all\",\"my_records\":1}";
           break;
         case 'my-queried-or-not-accepted-records':
-        case 'my-queried-rejected-records':          
+        case 'my-queried-rejected-records':
           def = "{\"quality\":\"DR\",\"my_records\":1}";
           break;
         case 'my-not-reviewed-records':
@@ -977,7 +977,7 @@ jQuery(document).ready(function($) {
       }
     }
   };
-  
+
   function codeToSharingTerm(code) {
     switch (code) {
       case 'R': return 'reporting';
@@ -988,7 +988,7 @@ jQuery(document).ready(function($) {
     }
     return code;
   }
-  
+
   loadFilterUser = function(fu, getParams) {
     indiciaData.filter.def = $.extend(JSON.parse(fu.filter_definition), getParams);
     indiciaData.filter.id = fu.filter_id;
@@ -1013,24 +1013,24 @@ jQuery(document).ready(function($) {
       $('#filter-delete').hide();
     }
   };
-  
+
   function filterParamsChanged() {
     $('#standard-params .header span.changed').show();
     $('#filter-reset').removeClass('disabled');
   }
-  
+
   // Applies the current loaded filter to the controls within the pane.
   function updateControlValuesToReflectCurrentFilter(pane) {
-    // regexp extracts the pane ID from the href. Loop through the controls in the pane      
+    // regexp extracts the pane ID from the href. Loop through the controls in the pane
     $.each(pane.find(':input').not('#imp-sref-system,:checkbox,[type=button]'), function(idx, ctrl) {
       // set control value to the stored filter setting
-      $(ctrl).val(indiciaData.filter.def[$(ctrl).attr('name')]);        
+      $(ctrl).val(indiciaData.filter.def[$(ctrl).attr('name')]);
     });
     $.each(pane.find(':checkbox'), function(idx, ctrl) {
       $(ctrl).attr('checked', typeof indiciaData.filter.def[$(ctrl).attr('name')]!=="undefined" && indiciaData.filter.def[$(ctrl).attr('name')]==$(ctrl).val());
     });
   }
-  
+
   $('.fb-filter-link').fancybox({
     onStart: function(e) {
       var pane=$(e[0].href.replace(/^[^#]+/, '')),
@@ -1043,7 +1043,7 @@ jQuery(document).ready(function($) {
       updateControlValuesToReflectCurrentFilter(pane);
     },
     onComplete: function(e) {
-      var pane=$(e[0].href.replace(/^[^#]+/, '')), context, 
+      var pane=$(e[0].href.replace(/^[^#]+/, '')), context,
           paneName=$(pane).attr('id').replace('controls-filter_', '');
       // if a context is loaded, need to let the forms configure themselves on this basis
       context = $('#context-filter').length ? indiciaData.filterContextDefs[$('#context-filter').val()] : null;
@@ -1072,20 +1072,20 @@ jQuery(document).ready(function($) {
         indiciaData.disableMapDataLoading=false;
       }
     }
-  }); 
-  
+  });
+
   $('form.filter-controls :input').change(function(){
     filterParamsChanged();
   });
 
   $('#filter-apply').click(function() {
     loadFilter($('#select-filter').val(), {});
-  });  
-  
+  });
+
   $('#filter-reset').click(function() {
     resetFilter();
-  }); 
-  
+  });
+
   $('#filter-build').click(function() {
     var desc;
     $.each(paneObjList, function(name, obj) {
@@ -1094,18 +1094,18 @@ jQuery(document).ready(function($) {
         desc=indiciaData.lang['NoDescription' + name];
       }
       $('#pane-filter_'+name+' span.filter-desc').html(desc);
-    });    
+    });
     $('#filter-details').slideDown();
     $('#filter-build').addClass('disabled');
   });
-  
+
   $('#filter-delete').click(function(e) {
     if ($(e.currentTarget).hasClass('disabled')) {
       return;
     }
     if (confirm(indiciaData.lang.ConfirmFilterDelete.replace('{title}', indiciaData.filter.title))) {
       var filter = {"id": indiciaData.filter.id, "website_id":indiciaData.website_id, "user_id":indiciaData.user_id, "deleted":"t"};
-      $.post(indiciaData.filterPostUrl, 
+      $.post(indiciaData.filterPostUrl,
         filter,
         function (data) {
           if (typeof data.error === 'undefined') {
@@ -1120,12 +1120,12 @@ jQuery(document).ready(function($) {
       );
     }
   });
-  
+
   $('#filter-done').click(function() {
     $('#filter-details').slideUp();
     $('#filter-build').removeClass('disabled');
   });
-  
+
   $('.fb-close').click(function() {
     $.fancybox.close();
   });
@@ -1166,7 +1166,7 @@ jQuery(document).ready(function($) {
     mapdiv.removeAllFeatures(mapdiv.map.editLayer, 'clickPoint', true);
     $('#controls-filter_where').find(':input').not('#imp-sref,#imp-sref-system,:checkbox,[type=button]').val('');
   });
-  
+
   $('form.filter-controls').submit(function(e){
     e.preventDefault();
     if (!$(e.currentTarget).valid() || $(e.currentTarget).find('.fb-apply').data('clicked')) {
@@ -1210,7 +1210,7 @@ jQuery(document).ready(function($) {
     updateFilterDescriptions();
     $.fancybox.close();
   });
-  
+
   var saveFilter = function() {
     if (saving) {
       return;
@@ -1227,11 +1227,11 @@ jQuery(document).ready(function($) {
     }
     saving=true;
     // TODO: Validate user control
-    
+
     var adminMode = $('#filters_user\\:user_id').length===1,
         user_id=adminMode ? $('#filters_user\\:user_id').val() : indiciaData.user_id,
         sharing=adminMode ? $('#filter\\:sharing').val() : indiciaData.filterSharing,
-        url, 
+        url,
         filter = {"website_id":indiciaData.website_id, "user_id":indiciaData.user_id,
           "filters_user:user_id":user_id, "filter:title":$('#filter\\:title').val(),
           "filter:description":$('#filter\\:description').val(),
@@ -1294,13 +1294,13 @@ jQuery(document).ready(function($) {
       'json'
     );
   };
-  
+
   $('#imp-location').hide();
   $('#filter-save').click(saveFilter);
   $('#context-filter').change(resetFilter);
-  
+
   filterChange();
   applyDefaults();
   $('form.filter-controls').validate();
- 
+
 });
