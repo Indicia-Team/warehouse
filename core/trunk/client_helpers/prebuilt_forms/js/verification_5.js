@@ -544,7 +544,7 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
 
   function saveRedetComment() {
     if ($('#redet').val()==='') {
-      validator.showErrors({'redet:taxon': 'Please choose a name from the list of suggestions'});
+      validator.showErrors({'redet:taxon': 'Please type a few characters then choose a name from the list of suggestions'});
     } else if (validator.numberOfInvalids()===0) {
       var data = {
         'website_id': indiciaData.website_id,

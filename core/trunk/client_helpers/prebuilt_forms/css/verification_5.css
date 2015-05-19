@@ -191,11 +191,11 @@ ul.gallery li {
 }
 /* line 44, ../../../../../../../../../../Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.2/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form input.text, .popup-form input.title, .popup-form input[type=email], .popup-form input[type=text], .popup-form input[type=password] {
-  width: 485px;
+  width: 475px;
 }
 /* line 46, ../../../../../../../../../../Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.2/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form textarea {
-  width: 485px;
+  width: 475px;
   height: 250px;
 }
 /* line 116, sass/verification_5.scss */
@@ -205,7 +205,7 @@ ul.gallery li {
 /* line 118, sass/verification_5.scss */
 .popup-form label.error {
   width: auto;
-  margin: 0 0 0 120px;
+  margin: 0 0 4px 0;
   line-height: 1em;
 }
 /* line 124, sass/verification_5.scss */

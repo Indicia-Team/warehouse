@@ -111,13 +111,13 @@ ul.gallery li {
 .popup-form {
   width: 500px;
   @include blueprint-form;
-  @include blueprint-form-sizes(485px, 485px);
+  @include blueprint-form-sizes(475px, 475px);
 
   label {
     display: block;
     &.error {
       width: auto;
-      margin: 0 0 0 120px;
+      margin: 0 0 4px 0;
       line-height: 1em;
     }
   }
