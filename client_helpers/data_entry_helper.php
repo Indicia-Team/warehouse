@@ -2899,7 +2899,9 @@ $('#$escaped').change(function(e) {
   * Optional, defaults to true. Enables sticky table headers if supported by the host site (e.g. Drupal). 
   * </li>
   * <li><b>numValues</b><br/>
-  * Optional. Number of returned values in the species autocomplete drop down list. Defaults to 20.
+  * Optional. Number of requested values in the species autocomplete drop down list. Defaults to 20.
+  * Note that, because items with matching taxon_meaning are filtered out by the parse function in
+  * addRowToGrid.js::autocompleterSettingsToReturn the list may contain fewer than numValues.
   * </li>
   * <li><b>selectMode</b>
   * Should the species autocomplete used for adding new rows simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
