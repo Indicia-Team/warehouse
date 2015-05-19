@@ -257,7 +257,7 @@ var addRowToGrid, keyHandler, ConvertControlsToPopup, hook_species_checklist_new
       }
       // Allow forms to hook into the event of a new row being added
       $.each(hook_species_checklist_new_row, function(idx, fn) {
-        fn(data); 
+        fn(data, row);
       });
     };
     //If the user chooses to edit a species on the grid, then immediately 'clicks off'
