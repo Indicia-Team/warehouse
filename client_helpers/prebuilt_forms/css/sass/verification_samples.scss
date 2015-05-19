@@ -45,8 +45,7 @@ ul.gallery li {
 #action-buttons {
   button {    
     width: $verify-button-width;
-    margin-right: $verify-button-margin;
-    margin-bottom: 2px;
+    margin: 0 $verify-button-margin 2px 0;
     height: 26px;
     vertical-align: middle;
     box-sizing: border-box;

@@ -42,35 +42,34 @@ ul.gallery li {
 /* line 46, sass/verification_samples.scss */
 #action-buttons button {
   width: 16%;
-  margin-right: 4%;
-  margin-bottom: 2px;
+  margin: 0 4% 2px 0;
   height: 26px;
   vertical-align: middle;
   box-sizing: border-box;
 }
-/* line 54, sass/verification_samples.scss */
+/* line 53, sass/verification_samples.scss */
 #action-buttons #actions-less button {
   width: 36%;
 }
-/* line 57, sass/verification_samples.scss */
+/* line 56, sass/verification_samples.scss */
 #action-buttons button:nth-child(5) {
   margin-right: 0;
 }
-/* line 60, sass/verification_samples.scss */
+/* line 59, sass/verification_samples.scss */
 #action-buttons button img {
   margin: 0 1px;
 }
-/* line 63, sass/verification_samples.scss */
+/* line 62, sass/verification_samples.scss */
 #action-buttons button img:nth-child(2) {
   margin-left: 0;
 }
-/* line 66, sass/verification_samples.scss */
+/* line 65, sass/verification_samples.scss */
 #action-buttons label, #action-buttons #more-status-buttons {
   width: auto;
   vertical-align: middle;
 }
 
-/* line 73, sass/verification_samples.scss */
+/* line 72, sass/verification_samples.scss */
 .action-buttons-row .col-1 {
   width: 20%;
   display: -moz-inline-stack;
@@ -80,7 +79,7 @@ ul.gallery li {
   zoom: 1;
   *display: inline;
 }
-/* line 77, sass/verification_samples.scss */
+/* line 76, sass/verification_samples.scss */
 .action-buttons-row div.buttons-row {
   width: 80%;
   display: -moz-inline-stack;
@@ -91,35 +90,35 @@ ul.gallery li {
   *display: inline;
 }
 
-/* line 84, sass/verification_samples.scss */
+/* line 83, sass/verification_samples.scss */
 .header .action-buttons-row div.buttons-row {
   width: auto;
 }
 
-/* line 90, sass/verification_samples.scss */
+/* line 89, sass/verification_samples.scss */
 #btn-email-expert, #btn-email-recorder {
   width: 36%;
 }
 
-/* line 94, sass/verification_samples.scss */
+/* line 93, sass/verification_samples.scss */
 #btn-email-expert {
   margin-right: 4%;
 }
 
-/* line 99, sass/verification_samples.scss */
+/* line 98, sass/verification_samples.scss */
 #btn-multiple.active {
   -webkit-box-shadow: yellow 0 0 10px;
   -moz-box-shadow: yellow 0 0 10px;
   box-shadow: yellow 0 0 10px;
 }
 
-/* line 103, sass/verification_samples.scss */
+/* line 102, sass/verification_samples.scss */
 #comment-text, #query-comment-text {
   display: block;
   width: 100%;
 }
 
-/* line 108, sass/verification_samples.scss */
+/* line 107, sass/verification_samples.scss */
 .popup-form {
   width: 500px;
 }
@@ -195,25 +194,25 @@ ul.gallery li {
   width: 485px;
   height: 250px;
 }
-/* line 113, sass/verification_samples.scss */
+/* line 112, sass/verification_samples.scss */
 .popup-form label {
   display: block;
 }
-/* line 115, sass/verification_samples.scss */
+/* line 114, sass/verification_samples.scss */
 .popup-form label.error {
   width: auto;
   margin: 0 0 0 120px;
   line-height: 1em;
 }
-/* line 121, sass/verification_samples.scss */
+/* line 120, sass/verification_samples.scss */
 .popup-form #ctrl-wrap-redet-from-full-list label {
   display: inline-block;
 }
-/* line 124, sass/verification_samples.scss */
+/* line 123, sass/verification_samples.scss */
 .popup-form .helpText {
   margin-left: 0;
 }
-/* line 127, sass/verification_samples.scss */
+/* line 126, sass/verification_samples.scss */
 .popup-form .warning {
   line-height: 1.2em;
   -webkit-box-shadow: #a00000 1px 1px 3px;
@@ -228,20 +227,20 @@ ul.gallery li {
   margin: 1em;
 }
 
-/* line 136, sass/verification_samples.scss */
+/* line 135, sass/verification_samples.scss */
 .manual-email {
   width: 600px;
 }
-/* line 139, sass/verification_samples.scss */
+/* line 138, sass/verification_samples.scss */
 .manual-email .left {
   width: 120px;
 }
-/* line 142, sass/verification_samples.scss */
+/* line 141, sass/verification_samples.scss */
 .manual-email .right {
   width: 450px;
 }
 
-/* line 147, sass/verification_samples.scss */
+/* line 146, sass/verification_samples.scss */
 #instructions {
   padding: 1em;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffffff), color-stop(100%, #c2e0ee));
@@ -250,35 +249,35 @@ ul.gallery li {
   background: -o-linear-gradient(top, #ffffff, #c2e0ee);
   background: linear-gradient(top, #ffffff, #c2e0ee);
 }
-/* line 150, sass/verification_samples.scss */
+/* line 149, sass/verification_samples.scss */
 #instructions li {
   background-image: none;
   list-style: circle inside;
   padding-top: 0.1em;
 }
 
-/* line 157, sass/verification_samples.scss */
+/* line 156, sass/verification_samples.scss */
 #record-details-toolbar {
   padding: 2px;
   border: solid silver 2px;
 }
 
-/* line 162, sass/verification_samples.scss */
+/* line 161, sass/verification_samples.scss */
 #record-details-tabs {
   font-size: 80%;
 }
-/* line 168, sass/verification_samples.scss */
+/* line 167, sass/verification_samples.scss */
 #record-details-tabs #details-tab table td.header {
   color: #027ac6;
   font-weight: bold;
   border-bottom: solid silver 1px;
 }
-/* line 173, sass/verification_samples.scss */
+/* line 172, sass/verification_samples.scss */
 #record-details-tabs #details-tab table td.caption {
   padding: 0 1em 0 0.5em;
   font-weight: bold;
 }
-/* line 182, sass/verification_samples.scss */
+/* line 181, sass/verification_samples.scss */
 #record-details-tabs .comment .header {
   background-color: #e7e7e7;
   padding: 4px;
@@ -289,79 +288,79 @@ ul.gallery li {
   -o-border-radius: 4px;
   border-radius: 4px;
 }
-/* line 191, sass/verification_samples.scss */
+/* line 190, sass/verification_samples.scss */
 #record-details-tabs #phenology-tab p {
   margin: 0;
 }
 
-/* line 197, sass/verification_samples.scss */
+/* line 196, sass/verification_samples.scss */
 input[type="button"].tools-btn, button.tools-btn {
   padding: 0.3em;
 }
 
-/* line 202, sass/verification_samples.scss */
+/* line 201, sass/verification_samples.scss */
 .quick-verify-popup label {
   width: auto;
   margin-left: 2em;
 }
-/* line 206, sass/verification_samples.scss */
+/* line 205, sass/verification_samples.scss */
 .quick-verify-popup button {
   margin-top: 1em;
 }
-/* line 209, sass/verification_samples.scss */
+/* line 208, sass/verification_samples.scss */
 .quick-verify-popup .helpText {
   margin-left: 45px;
 }
-/* line 212, sass/verification_samples.scss */
+/* line 211, sass/verification_samples.scss */
 .quick-verify-popup h2, .quick-verify-popup h3 {
   margin-bottom: 4px;
 }
-/* line 215, sass/verification_samples.scss */
+/* line 214, sass/verification_samples.scss */
 .quick-verify-popup a {
   text-decoration: underline;
   margin: 0 6px;
 }
-/* line 218, sass/verification_samples.scss */
+/* line 217, sass/verification_samples.scss */
 .quick-verify-popup a:hover, .quick-verify-popup a:active {
   background-color: #ffffcc;
 }
 
-/* line 225, sass/verification_samples.scss */
+/* line 224, sass/verification_samples.scss */
 .verify-tools {
   display: none;
   position: absolute;
   background: white;
   border: solid silver 1px;
 }
-/* line 230, sass/verification_samples.scss */
+/* line 229, sass/verification_samples.scss */
 .verify-tools li {
   background-image: none;
   padding: 0.2em 0.5em;
 }
 
-/* line 237, sass/verification_samples.scss */
+/* line 236, sass/verification_samples.scss */
 tr.verified, tr.rejected, tr.total {
   text-align: right;
   padding-right: 1em;
 }
-/* line 241, sass/verification_samples.scss */
+/* line 240, sass/verification_samples.scss */
 tr.verified {
   color: #00a000;
 }
-/* line 244, sass/verification_samples.scss */
+/* line 243, sass/verification_samples.scss */
 tr.rejected {
   color: #00a000;
 }
-/* line 247, sass/verification_samples.scss */
+/* line 246, sass/verification_samples.scss */
 tr.total {
   font-weight: bold;
 }
 
-/* line 253, sass/verification_samples.scss */
+/* line 252, sass/verification_samples.scss */
 .grid-verify-popup button {
   margin-right: 1em;
 }
-/* line 256, sass/verification_samples.scss */
+/* line 255, sass/verification_samples.scss */
 .grid-verify-popup label, .grid-verify-popup label * {
   vertical-align: middle;
 }
