@@ -442,6 +442,42 @@ Record ID',
         ),
     ));
   }
+
+  /**
+   * Outputs a list of associated occurrence information (recorded interactions).
+   * @param $auth
+   * @param $args
+   * @param $tabalias
+   * @param $options
+   * @return string
+   * @throws \exception
+   */
+  protected static function get_control_occurrenceassociations($auth, $args, $tabalias, $options) {
+    iform_load_helpers(array('report_helper'));
+    $options = array_merge(array(
+      'dataSource' => 'library/occurrence_associations/filterable_explore_list',
+      'itemsPerPage' => 100,
+      'header' => '<ul>',
+      'footer' => '</ul>',
+      'bands' => array(array('content'=>'<li>{association_detail}</li>')),
+      'emptyText' => '<p>No association information available</p>'
+    ), $options);
+    return '<div class="detail-panel" id="detail-panel-occurrenceassociations"><h3>'.lang::get('Associations').'</h3>' .
+    report_helper::freeform_report(array(
+      'readAuth' => $auth['read'],
+      'dataSource'=> $options['dataSource'],
+      'itemsPerPage' => $options['itemsPerPage'],
+      'header'=> $options['header'],
+      'footer'=> $options['footer'],
+      'bands'=> $options['bands'],
+      'emptyText' => $options['emptyText'],
+      'mode' => 'report',
+      'autoParamsForm' => false,
+      'extraParams' => array(
+        'occurrence_id'=> $_GET['occurrence_id']
+      )
+    )).'</div>';
+  }
   
   /**
    * An edit button control which only displays if the user owns the record.

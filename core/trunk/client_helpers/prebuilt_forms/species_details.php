@@ -126,6 +126,7 @@ class iform_species_details extends iform_dynamic {
               "&nbsp;&nbsp;<strong>[explore]</strong> - a button “Explore this species' records” which takes you to explore all records, filtered to the species.<br/>".
               "&nbsp;&nbsp;<strong>[photos]</strong> - photos associated with the occurrence<br/>".
               "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location<br/>".
+              "&nbsp;&nbsp;<strong>[occurrenceassociations]</strong> - a list of associated species, drawn from the occurrence associations data.<br/>".
           "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page (alpha-numeric characters only). ".
           "If the page interface type is set to one page, then each tab/page name is displayed as a seperate section on the page. ".
           "Note that in one page mode, the tab/page names are not displayed on the screen.<br/>".
@@ -289,7 +290,7 @@ class iform_species_details extends iform_dynamic {
   protected static function get_form_html($args, $auth, $attributes) {
     if (isset($_POST['enable'])) {
       module_enable(array('iform_ajaxproxy'));
-      drupal_set_message(lang::get('The Indicia AJAX Proxy module has been enabled.', 'info'));
+      hostsite_show_message(lang::get('The Indicia AJAX Proxy module has been enabled.'));
     }
     if (!defined('IFORM_AJAXPROXY_PATH')) {
       $r = '<p>'.lang::get('The Indicia AJAX Proxy module must be enabled to use this form. This lets the form save verifications to the '.
@@ -513,6 +514,45 @@ class iform_species_details extends iform_dynamic {
         'date_to'=>'',
         'sharing'=>'reporting',
         'quality'=>'V'
+      )
+    )).'</div>';
+  }
+
+  protected static function get_control_occurrenceassociations($auth, $args, $tabalias, $options) {
+    iform_load_helpers(array('report_helper'));
+    $currentUrl = report_helper::get_reload_link_parts();
+    // automatic handling for Drupal clean urls.
+    $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
+    // amend currentUrl path if we have drupal dirty URLs so javascript will work properly
+    if ($pathParam==='q' && isset($currentUrl['params']['q']) && strpos($currentUrl['path'], '?')===false) {
+      $currentUrl['path'] .= '?q='.$currentUrl['params']['q'].'&taxon_meaning_id=';
+    } else {
+      $currentUrl['path'] . '&taxon_meaning_id';
+    }
+    $options = array_merge(array(
+      'dataSource' => 'library/occurrence_associations/filterable_associated_species_list_cloud',
+      'itemsPerPage' => 20,
+      'class' => 'cloud',
+      'header' => '<ul>',
+      'footer' => '</ul>',
+      'bands' => array(array('content'=>'<li style="font-size: {font_size}px">' .
+          "<a href=\"$currentUrl[path]{taxon_meaning_id}\">{species}<a/></li>")),
+      'emptyText' => '<p>No association species information available</p>'
+    ), $options);
+    return '<div class="detail-panel" id="detail-panel-occurrenceassociations"><h3>'.lang::get('Associated species').'</h3>' .
+    report_helper::freeform_report(array(
+      'readAuth' => $auth['read'],
+      'dataSource'=> $options['dataSource'],
+      'itemsPerPage' => $options['itemsPerPage'],
+      'class' => $options['class'],
+      'header'=> $options['header'],
+      'footer'=> $options['footer'],
+      'bands'=> $options['bands'],
+      'emptyText' => $options['emptyText'],
+      'mode' => 'report',
+      'autoParamsForm' => false,
+      'extraParams' => array(
+        'taxon_meaning_list'=> self::$taxon_meaning_id
       )
     )).'</div>';
   }
