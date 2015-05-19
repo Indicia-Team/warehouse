@@ -1,32 +1,32 @@
-/* line 16, sass/verification_4.scss */
+/* line 16, sass/verification_5.scss */
 #verification-grid {
   height: 650px;
   overflow-y: scroll;
 }
 
-/* line 21, sass/verification_4.scss */
+/* line 21, sass/verification_5.scss */
 table.report-grid {
   width: 100%;
 }
-/* line 23, sass/verification_4.scss */
+/* line 23, sass/verification_5.scss */
 table.report-grid tr:hover, table.report-grid table.report-grid tr.odd:hover {
   background-color: #ffffcc;
 }
-/* line 26, sass/verification_4.scss */
+/* line 26, sass/verification_5.scss */
 table.report-grid tr.selected, table.report-grid tr.selected td {
   background-color: #027ac6;
   color: white;
 }
-/* line 30, sass/verification_4.scss */
+/* line 30, sass/verification_5.scss */
 table.report-grid tr.zero-t {
   text-decoration: line-through;
 }
-/* line 33, sass/verification_4.scss */
+/* line 33, sass/verification_5.scss */
 table.report-grid .nowrap {
   whitespace: nowrap;
 }
 
-/* line 38, sass/verification_4.scss */
+/* line 38, sass/verification_5.scss */
 ul.gallery li {
   display: -moz-inline-stack;
   display: inline-block;
@@ -39,7 +39,7 @@ ul.gallery li {
   background: none;
 }
 
-/* line 46, sass/verification_4.scss */
+/* line 46, sass/verification_5.scss */
 #action-buttons button {
   width: 16%;
   margin-right: 4%;
@@ -47,72 +47,81 @@ ul.gallery li {
   height: 26px;
   vertical-align: middle;
   box-sizing: border-box;
+  padding: 0;
+  font-size: 0.9em;
 }
+/* line 56, sass/verification_5.scss */
 #action-buttons #actions-less button {
   width: 36%;
 }
-/* line 52, sass/verification_4.scss */
+/* line 59, sass/verification_5.scss */
 #action-buttons button:nth-child(5) {
   margin-right: 0;
 }
-/* line 55, sass/verification_4.scss */
+/* line 62, sass/verification_5.scss */
 #action-buttons button img {
   margin: 0 1px;
 }
-/* line 58, sass/verification_4.scss */
+/* line 65, sass/verification_5.scss */
 #action-buttons button img:nth-child(2) {
   margin-left: 0;
 }
+/* line 68, sass/verification_5.scss */
 #action-buttons label, #action-buttons #more-status-buttons {
   width: auto;
   vertical-align: middle;
 }
 
+/* line 75, sass/verification_5.scss */
 .action-buttons-row .col-1 {
   width: 20%;
-  display: -moz-inline-box;
-  -moz-box-orient: vertical;
+  display: -moz-inline-stack;
   display: inline-block;
   vertical-align: middle;
   *vertical-align: auto;
+  zoom: 1;
+  *display: inline;
 }
-
+/* line 79, sass/verification_5.scss */
 .action-buttons-row div.buttons-row {
   width: 80%;
-  display: -moz-inline-box;
-  -moz-box-orient: vertical;
+  display: -moz-inline-stack;
   display: inline-block;
   vertical-align: middle;
   *vertical-align: auto;
+  zoom: 1;
+  *display: inline;
 }
+
+/* line 86, sass/verification_5.scss */
 .header .action-buttons-row div.buttons-row {
   width: auto;
 }
 
-/* line 63, sass/verification_4.scss */
+/* line 92, sass/verification_5.scss */
 #btn-email-expert, #btn-email-recorder {
   width: 36%;
 }
 
-/* line 67, sass/verification_4.scss */
+/* line 96, sass/verification_5.scss */
 #btn-email-expert {
   margin-right: 4%;
 }
 
-/* line 72, sass/verification_4.scss */
+/* line 101, sass/verification_5.scss */
 #btn-multiple.active {
   -webkit-box-shadow: yellow 0 0 10px;
   -moz-box-shadow: yellow 0 0 10px;
   box-shadow: yellow 0 0 10px;
 }
 
-/* line 76, sass/verification_4.scss */
+/* line 105, sass/verification_5.scss */
 #comment-text, #query-comment-text {
   display: block;
   width: 100%;
 }
 
-/* line 81, sass/verification_4.scss */
+/* line 110, sass/verification_5.scss */
 .popup-form {
   width: 500px;
 }
@@ -167,7 +176,7 @@ ul.gallery li {
 /* line 65, ../../../../../../../../../../Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.2/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form select {
   background-color: #fff;
-  border: 1px;
+  border-width: 1px;
   border-style: solid;
 }
 /* line 44, ../../../../../../../../../../Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.2/frameworks/blueprint/stylesheets/blueprint/_form.scss */
@@ -188,24 +197,25 @@ ul.gallery li {
   width: 485px;
   height: 250px;
 }
-/* line 86, sass/verification_4.scss */
+/* line 115, sass/verification_5.scss */
 .popup-form label {
   display: block;
 }
-.popup-form #ctrl-wrap-redet-from-full-list label {
-  display: inline-block;
-}
-/* line 88, sass/verification_4.scss */
+/* line 117, sass/verification_5.scss */
 .popup-form label.error {
   width: auto;
   margin: 0 0 0 120px;
   line-height: 1em;
 }
-/* line 94, sass/verification_4.scss */
+/* line 123, sass/verification_5.scss */
+.popup-form #ctrl-wrap-redet-from-full-list label {
+  display: inline-block;
+}
+/* line 126, sass/verification_5.scss */
 .popup-form .helpText {
   margin-left: 0;
 }
-/* line 97, sass/verification_4.scss */
+/* line 129, sass/verification_5.scss */
 .popup-form .warning {
   line-height: 1.2em;
   -webkit-box-shadow: #a00000 1px 1px 3px;
@@ -220,20 +230,20 @@ ul.gallery li {
   margin: 1em;
 }
 
-/* line 106, sass/verification_4.scss */
+/* line 138, sass/verification_5.scss */
 .manual-email {
   width: 600px;
 }
-/* line 109, sass/verification_4.scss */
+/* line 141, sass/verification_5.scss */
 .manual-email .left {
   width: 120px;
 }
-/* line 112, sass/verification_4.scss */
+/* line 144, sass/verification_5.scss */
 .manual-email .right {
   width: 450px;
 }
 
-/* line 117, sass/verification_4.scss */
+/* line 149, sass/verification_5.scss */
 #instructions {
   padding: 1em;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffffff), color-stop(100%, #c2e0ee));
@@ -242,119 +252,118 @@ ul.gallery li {
   background: -o-linear-gradient(top, #ffffff, #c2e0ee);
   background: linear-gradient(top, #ffffff, #c2e0ee);
 }
-/* line 120, sass/verification_4.scss */
+/* line 152, sass/verification_5.scss */
 #instructions li {
   background-image: none;
   list-style: circle inside;
   padding-top: 0.1em;
 }
 
-/* line 128, sass/verification_4.scss */
+/* line 159, sass/verification_5.scss */
 #record-details-toolbar {
   padding: 2px;
   border: solid silver 2px;
 }
 
-/* line 136, sass/verification_4.scss */
+/* line 164, sass/verification_5.scss */
 #record-details-tabs {
   font-size: 80%;
 }
-/* line 142, sass/verification_4.scss */
+/* line 170, sass/verification_5.scss */
 #record-details-tabs #details-tab table td.header {
   color: #027ac6;
   font-weight: bold;
   border-bottom: solid silver 1px;
 }
-/* line 147, sass/verification_4.scss */
+/* line 175, sass/verification_5.scss */
 #record-details-tabs #details-tab table td.caption {
   padding: 0 1em 0 0.5em;
   font-weight: bold;
 }
-
+/* line 184, sass/verification_5.scss */
 #record-details-tabs .comment .header {
   background-color: #e7e7e7;
   padding: 4px;
   vertical-align: middle;
-  -moz-border-radius: 4px;
   -webkit-border-radius: 4px;
-  -o-border-radius: 4px;
+  -moz-border-radius: 4px;
   -ms-border-radius: 4px;
-  -khtml-border-radius: 4px;
+  -o-border-radius: 4px;
   border-radius: 4px;
 }
-
-/* line 156, sass/verification_4.scss */
+/* line 193, sass/verification_5.scss */
 #record-details-tabs #phenology-tab p {
   margin: 0;
 }
 
-/* line 162, sass/verification_4.scss */
+/* line 199, sass/verification_5.scss */
 input[type="button"].tools-btn, button.tools-btn {
   padding: 0.3em;
 }
 
-/* line 167, sass/verification_4.scss */
+/* line 204, sass/verification_5.scss */
 .quick-verify-popup label {
   width: auto;
   margin-left: 2em;
 }
-/* line 171, sass/verification_4.scss */
+/* line 208, sass/verification_5.scss */
 .quick-verify-popup button {
   margin-top: 1em;
 }
-/* line 174, sass/verification_4.scss */
+/* line 211, sass/verification_5.scss */
 .quick-verify-popup .helpText {
   margin-left: 45px;
 }
-/* line 177, sass/verification_4.scss */
+/* line 214, sass/verification_5.scss */
 .quick-verify-popup h2, .quick-verify-popup h3 {
   margin-bottom: 4px;
 }
-/* line 180, sass/verification_4.scss */
+/* line 217, sass/verification_5.scss */
 .quick-verify-popup a {
   text-decoration: underline;
   margin: 0 6px;
 }
-/* line 183, sass/verification_4.scss */
+/* line 220, sass/verification_5.scss */
 .quick-verify-popup a:hover, .quick-verify-popup a:active {
   background-color: #ffffcc;
 }
 
-/* line 190, sass/verification_4.scss */
+/* line 227, sass/verification_5.scss */
 .verify-tools {
   display: none;
   position: absolute;
   background: white;
   border: solid silver 1px;
 }
-/* line 195, sass/verification_4.scss */
+/* line 232, sass/verification_5.scss */
 .verify-tools li {
   background-image: none;
   padding: 0.2em 0.5em;
 }
 
-/* line 202, sass/verification_4.scss */
+/* line 239, sass/verification_5.scss */
 tr.verified, tr.rejected, tr.total {
   text-align: right;
   padding-right: 1em;
 }
-/* line 206, sass/verification_4.scss */
+/* line 243, sass/verification_5.scss */
 tr.verified {
   color: #00a000;
 }
-/* line 209, sass/verification_4.scss */
+/* line 246, sass/verification_5.scss */
 tr.rejected {
   color: #00a000;
 }
-/* line 212, sass/verification_4.scss */
+/* line 249, sass/verification_5.scss */
 tr.total {
   font-weight: bold;
 }
 
-/* line 218, sass/verification_4.scss */
+/* line 255, sass/verification_5.scss */
 .grid-verify-popup button {
   margin-right: 1em;
 }
+/* line 258, sass/verification_5.scss */
 .grid-verify-popup label, .grid-verify-popup label * {
   vertical-align: middle;
 }
