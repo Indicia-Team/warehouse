@@ -49,8 +49,41 @@ Broad habitat data may include data for samples where a fine scale sub-habitat h
     <column name='species' display='Species' sql='co.taxon' datatype='text' in_count="true"/>
     <column name='habitat' display='Habitat' sql='tHab.term' datatype='text' in_count="true"/>
     <!-- A few things to note here, firstly, the all the coalesces makes sure we return at least a 0 when doing an addition, as null addition doesn't work. Then NULLIF statement make sures if we detect 0 as a species cover, it does not count towards the mean calculation at all, this behaviour is on request of client and 
-    makes sense in the context of this report.-->
-    <column name='mean_species_cover' display='Mean Cover' sql="avg(NULLIF(coalesce(oavInt.int_value,0) + coalesce((cast(ttCov.sort_order/10 as float)),0),0))"/>
-    <column name='standard_deviation' display='Standard Deviation' sql="stddev_samp(NULLIF(coalesce(oavInt.int_value,0) + coalesce((cast(ttCov.sort_order/10 as float)),0),0))"/>
+    makes sense in the context of this report. Also note that the cover values get translated into percentages before being used in the calculations-->
+    <column name='mean_species_cover' display='Mean Cover' sql="
+      avg(NULLIF(coalesce(
+        case oavInt.int_value 
+          when 1 then 0.3 
+          when 2 then 1.5
+          when 3 then 4.3
+          when 4 then 9.2
+          when 5 then 16.4
+          when 6 then 26.4
+          when 7 then 39.4
+          when 8 then 55.7
+          when 9 then 75.7
+          when 10 then 99.5
+          END
+      ,0) 
+      + 
+      coalesce((cast(ttCov.sort_order as float)/10),0),0))
+    "/>
+    <column name='standard_deviation' display='Standard Deviation' sql="
+    stddev(NULLIF(coalesce(
+      case oavInt.int_value 
+        when 1 then 0.3 
+        when 2 then 1.5
+        when 3 then 4.3
+        when 4 then 9.2
+        when 5 then 16.4
+        when 6 then 26.4
+        when 7 then 39.4
+        when 8 then 55.7
+        when 9 then 75.7
+        when 10 then 99.5
+      END
+    ,0) 
+    + 
+    coalesce((cast(ttCov.sort_order as float)/10),0),0))"/>
   </columns>
 </report>
