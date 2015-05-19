@@ -543,47 +543,52 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
   }
 
   function saveRedetComment() {
-    var data = {
-      'website_id': indiciaData.website_id,
-      'occurrence:id': occurrence_id,
-      'occurrence:taxa_taxon_list_id': $('#redet').val(),
-      'user_id': indiciaData.userId
-    };
-    if ($('#verify-comment').val()) {
-      data['occurrence_comment:comment'] = $('#verify-comment').val();
-    }
-    $.fancybox.close();
-    $.post(
-      indiciaData.ajaxFormPostUrl,
-      data,
-      function (response) {
-        if (typeof response.error !== "undefined") {
-          alert(response.error);
-        } else {
-          // reload current tab
-          if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'details' ||
-            indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'comments') {
-            $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
-          }
-          rowIdToReselect = occurrence_id;
-          indiciaData.reports.verification.grid_verification_grid[0].settings.callback = 'reselectRow';
-          // Reload grid to remove row if not in your current verification set
-          indiciaData.reports.verification.grid_verification_grid.reload(true);
-        }
+    if ($('#redet').val()==='') {
+      validator.showErrors({'redet:taxon': 'Please choose a name from the list of suggestions'});
+    } else if (validator.numberOfInvalids()===0) {
+      var data = {
+        'website_id': indiciaData.website_id,
+        'occurrence:id': occurrence_id,
+        'occurrence:taxa_taxon_list_id': $('#redet').val(),
+        'user_id': indiciaData.userId
+      };
+      if ($('#verify-comment').val()) {
+        data['occurrence_comment:comment'] = $('#verify-comment').val();
       }
-    );
-    $('#add-comment').remove();
+      $.fancybox.close();
+      $.post(
+        indiciaData.ajaxFormPostUrl,
+        data,
+        function (response) {
+          if (typeof response.error !== "undefined") {
+            alert(response.error);
+          } else {
+            // reload current tab
+            if (indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'details' ||
+              indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'comments') {
+              $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
+            }
+            rowIdToReselect = occurrence_id;
+            indiciaData.reports.verification.grid_verification_grid[0].settings.callback = 'reselectRow';
+            // Reload grid to remove row if not in your current verification set
+            indiciaData.reports.verification.grid_verification_grid.reload(true);
+          }
+        }
+      );
+      $('#add-comment').remove();
+    }
+    return false;
   }
 
   function showRedeterminationPopup() {
-    var html = '<fieldset class="popup-form">' +
+    var html = '<form id="redet-form"><fieldset class="popup-form">' +
       '<legend>' + indiciaData.popupTranslations.redetermine + '</legend>';
     html += '<div id="redet-dropdown-popup-ctnr"></div>';
     $('#redet\\:taxon').setExtraParams({"taxon_list_id": currRec.extra.taxon_list_id});
     html += '<label class="auto">Comment:</label><textarea id="verify-comment" rows="5" cols="80"></textarea><br />' +
-        '<button type="button" class="default-button" id="save-redet-submit">' +
-        indiciaData.popupTranslations.redetermine + '</button>' +
-    '</fieldset>';
+        '<input type="submit" class="default-button" value="' +
+        indiciaData.popupTranslations.redetermine + '" />' +
+    '</fieldset></form>';
     $.fancybox(html, {
       "onCleanup" : function() {
         $('#redet-dropdown').appendTo($('#redet-dropdown-ctnr'));
@@ -600,8 +605,8 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
       $('#ctrl-wrap-redet-from-full-list').show();
       $('#redet-from-full-list').removeAttr('checked');
     }
-    // hook submit handler
-    $('#save-redet-submit').click(saveRedetComment);
+    validator = $('#redet-form').validate({});
+    $('#redet-form').submit(saveRedetComment);
   }
 
   function setStatus(status, substatus) {

@@ -513,7 +513,8 @@ idlist=';
       'cacheLookup' => true,
       'extraParams' => $readAuth + array('taxon_list_id' => 1), // taxon list ID will be updated when it is used
       'speciesIncludeBothNames' => true,
-      'speciesIncludeTaxonGroup' => true
+      'speciesIncludeTaxonGroup' => true,
+      'validation' => array('required')
     ));
     if (function_exists('variable_get')) {
       $taxon_list_id = variable_get('iform_master_checklist_id', 0);
