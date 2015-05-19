@@ -453,7 +453,7 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
     if (indiciaData.popupTranslations['sub' + substatus]) {
       labels.push(indiciaData.popupTranslations['sub' + substatus]);
     }
-    return labels.join('::');
+    return labels.join(' as ');
   }
 
   saveVerifyComment=function() {
