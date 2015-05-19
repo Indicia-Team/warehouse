@@ -4479,7 +4479,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       'fieldname'=>'occurrence:sensitivity_precision',
       'defaultBlur' => 10000,
       'additionalControls' => '',
-      'precisions' => array(100, 1000, 2000, 1000, 10000)
+      'precisions' => array(100, 1000, 2000, 10000, 100000)
     ), $options);
     $r = '<fieldset><legend>'.lang::get('Sensitivity').'</legend>';
     $r .= data_entry_helper::checkbox(array(
