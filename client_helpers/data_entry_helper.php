@@ -67,8 +67,8 @@ require_once('submission_builder.php');
  * helpText. Ideal for inserting buttons that are to be displayed alongside a control such as a Go button
  * for a search box. Also ideal for inserting units after value input boxes (e.g. degrees, m, cm etc).</li>
  * <li><b>lockable</b>
- * Adds a padlock icon after the control which can be used to lock the control's value. 
- * The value will then be remembered and redisplayed in the control each time the form is 
+ * Adds a padlock icon after the control which can be used to lock the control's value.
+ * The value will then be remembered and redisplayed in the control each time the form is
  * shown until the control is unlocked or the end of the browser session. This option will not
  * work for password controls.</li>
  * </ul>
@@ -91,98 +91,98 @@ class data_entry_helper extends helper_base {
   private static $remembered_fields=null;
   /**
    *
-   * @var array List of attribute ids that should be ignored when automatically drawing attributes to the page because they 
+   * @var array List of attribute ids that should be ignored when automatically drawing attributes to the page because they
    * are already output, e.g. if they are output by a radio group which shows a textbox when "other" is selected..
    */
   public static $handled_attributes=array();
-  
-/**********************************/
-/* Start of main controls section */
-/**********************************/
 
- /**
-  * Helper function to generate an autocomplete box from an Indicia core service query.
-  * Because this generates a hidden ID control as well as a text input control, if you are outputting your own HTML label
-  * then the label you associate with this control should be of the form "$id:$caption" rather than just the $id which
-  * is normal for other controls. For example:
-  * <code>
-  * <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
-  * <?php echo data_entry_helper::autocomplete(array(
-  *     'fieldname' => 'occurrence:taxa_taxon_list_id',
-  *     'table' => 'taxa_taxon_list',
-  *     'captionField' => 'taxon',
-  *     'valueField' => 'id',
-  *     'extraParams' => $readAuth
-  * )); ?>
-  * </code>
-  * Of course if you use the built in label option in the options array then this is handled for you.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>autocomplete</b></br>
-  * Defines a hidden input and a visible input, to hold the underlying database ID and to 
-  * allow input and display of the text search string respectively.
-  * </li>
-  * <li><b>autocomplete_javascript</b></br>
-  * Defines the JavaScript which will be inserted onto the page in order to activate the 
-  * autocomplete control.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. This should be left to its default value for
-  * integration with other mapping controls to work correctly.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>defaultCaption</b><br/>
-  * Optional. The default caption to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Optional. Table name to get data from for the autocomplete options.</li>
-  * <li><b>report</b><br/>
-  * Optional. Report name to get data from for the autocomplete options. If specified then the table option is ignored.</li>
-  * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
-  * <li><b>captionFieldInEntity</b><br/>
-  * Optional. Field to use in the loaded entity to display the caption, when reloading an existing record. Defaults
-  * to the captionField.</li>
-  * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>template</b><br/>
-  * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
-  * <li><b>numValues</b><br/>
-  * Optional. Number of returned values in the drop down list. Defaults to 20.</li>
-  * <li><b>duplicateCheckFields</b><br/>
-  * Optional. Provide an array of field names from the dataset returned from the warehouse. Any duplicates
-  * based  values from this list of fields will not be added to the output.</li>
-  * <li><b>simplify</b><br/>
-  * Set to true to simplify the search term by removing punctuation and spaces. Use when the field 
-  * being searched against is also simplified.</li>
-  * <li><b>warnIfNoMatch</b>
-  * Should the autocomplete control warn the user if they leave the control whilst searching
-  * and then nothing is matched? Default true.</li>
-  * <li><b>continueOnBlur</b>
-  * Should the autocomplete control continue trying to load values when the user blurs out of the control? If true
-  * then tabbing out of the control will select the first match. Set to false if you intend to allow the user to enter free text which 
-  * is not matched to a term in the database. Default true.</li>  
-  * <li><b>selectMode</b>
-  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
-  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the autocomplete control.
-  *
-  * @link http://code.google.com/p/indicia/wiki/DataModel
-  */
+  /**********************************/
+  /* Start of main controls section */
+  /**********************************/
+
+  /**
+   * Helper function to generate an autocomplete box from an Indicia core service query.
+   * Because this generates a hidden ID control as well as a text input control, if you are outputting your own HTML label
+   * then the label you associate with this control should be of the form "$id:$caption" rather than just the $id which
+   * is normal for other controls. For example:
+   * <code>
+   * <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
+   * <?php echo data_entry_helper::autocomplete(array(
+   *     'fieldname' => 'occurrence:taxa_taxon_list_id',
+   *     'table' => 'taxa_taxon_list',
+   *     'captionField' => 'taxon',
+   *     'valueField' => 'id',
+   *     'extraParams' => $readAuth
+   * )); ?>
+   * </code>
+   * Of course if you use the built in label option in the options array then this is handled for you.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>autocomplete</b></br>
+   * Defines a hidden input and a visible input, to hold the underlying database ID and to
+   * allow input and display of the text search string respectively.
+   * </li>
+   * <li><b>autocomplete_javascript</b></br>
+   * Defines the JavaScript which will be inserted onto the page in order to activate the
+   * autocomplete control.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. This should be left to its default value for
+   * integration with other mapping controls to work correctly.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>defaultCaption</b><br/>
+   * Optional. The default caption to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>table</b><br/>
+   * Optional. Table name to get data from for the autocomplete options.</li>
+   * <li><b>report</b><br/>
+   * Optional. Report name to get data from for the autocomplete options. If specified then the table option is ignored.</li>
+   * <li><b>captionField</b><br/>
+   * Required. Field to draw values to show in the control from.</li>
+   * <li><b>captionFieldInEntity</b><br/>
+   * Optional. Field to use in the loaded entity to display the caption, when reloading an existing record. Defaults
+   * to the captionField.</li>
+   * <li><b>valueField</b><br/>
+   * Optional. Field to draw values to return from the control from. Defaults
+   * to the value of captionField.</li>
+   * <li><b>extraParams</b><br/>
+   * Optional. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array.</li>
+   * <li><b>template</b><br/>
+   * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
+   * <li><b>numValues</b><br/>
+   * Optional. Number of returned values in the drop down list. Defaults to 20.</li>
+   * <li><b>duplicateCheckFields</b><br/>
+   * Optional. Provide an array of field names from the dataset returned from the warehouse. Any duplicates
+   * based  values from this list of fields will not be added to the output.</li>
+   * <li><b>simplify</b><br/>
+   * Set to true to simplify the search term by removing punctuation and spaces. Use when the field
+   * being searched against is also simplified.</li>
+   * <li><b>warnIfNoMatch</b>
+   * Should the autocomplete control warn the user if they leave the control whilst searching
+   * and then nothing is matched? Default true.</li>
+   * <li><b>continueOnBlur</b>
+   * Should the autocomplete control continue trying to load values when the user blurs out of the control? If true
+   * then tabbing out of the control will select the first match. Set to false if you intend to allow the user to enter free text which
+   * is not matched to a term in the database. Default true.</li>
+   * <li><b>selectMode</b>
+   * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+   * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the autocomplete control.
+   *
+   * @link http://code.google.com/p/indicia/wiki/DataModel
+   */
   public static function autocomplete($options) {
     global $indicia_templates;
     $options = self::check_options($options);
@@ -191,14 +191,14 @@ class data_entry_helper extends helper_base {
     // the inputId is the id given to the text field, e.g. occurrence:taxa_taxon_list_id:taxon
     $options['inputId'] = $options['id'].':'.$options['captionFieldInEntity'];
     $defaultCaption = self::check_default_value($options['inputId']);
-    
+
     if ( !is_null($defaultCaption) ) {
       // This computed value overrides a value passed in to the function
       $options['defaultCaption'] = $defaultCaption;
     } elseif (!isset($options['defaultCaption'])) {
       $options['defaultCaption'] = '';
     }
-    
+
     if (!empty(parent::$warehouse_proxy))
       $warehouseUrl = parent::$warehouse_proxy;
     else
@@ -252,15 +252,15 @@ class data_entry_helper extends helper_base {
     $r = self::apply_template($options['template'], $options);
     return $r;
   }
-  
+
   /**
-   * A control that can be used to output a multi-value text attribute where the text value holds a json record 
+   * A control that can be used to output a multi-value text attribute where the text value holds a json record
    * structure. The control is a simple grid with each row representing a single attribute value and each column representing
    * a field in the JSON stored in the value.
-   * 
+   *
    * @param array $options Options array with the following possibilities:
    * * **fieldname** - The fieldname of the attribute, e.g. smpAttr:10.
-   * **defaultRows** - Number of rows to show in the grid by default. An Add Another button is available to add more. 
+   * **defaultRows** - Number of rows to show in the grid by default. An Add Another button is available to add more.
    *   Defaults to 3.
    * * **columns** - An array defining the columns available in the grid which map to fields in the JSON stored for each value.
    *   The array key is the column name and the value is a sub-array with a column definition. The column definition can contain
@@ -281,7 +281,7 @@ class data_entry_helper extends helper_base {
     $options = array_merge(array(
       'defaultRows'=>3,
       'columns'=>array('x'=>array('label'=>'x','datatype'=>'text','unit'=>'cm','regex'=>'/^[0-9]+$/'),
-          'y'=>array('label'=>'y','datatype'=>'lookup','termlist_id'=>'5')),
+        'y'=>array('label'=>'y','datatype'=>'lookup','termlist_id'=>'5')),
       'default'=>array(),
       'deleteRows'=>false,
       'rowCountControl'=>''
@@ -335,8 +335,8 @@ class data_entry_helper extends helper_base {
     // need to unset the variable used in &$def, otherwise it doesn't work in the next iterator.
     unset($def);
     $jsData = array('cols'=>$options['columns'],'rowCount'=>$options['defaultRows'],
-        'rowCountControl'=>$options['rowCountControl'],'deleteRows'=>$options['deleteRows']);
-    self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n"; 
+      'rowCountControl'=>$options['rowCountControl'],'deleteRows'=>$options['deleteRows']);
+    self::$javascript .= "indiciaData['complexAttrGrid-$attrTypeTag-$attrId']=".json_encode($jsData).";\n";
     // Add delete column and end tr.
     $r .= '<th rowspan="2" class="complex-attr-grid-col-del"></th></tr>';
     // Add second header row then end thead.
@@ -345,7 +345,7 @@ class data_entry_helper extends helper_base {
     $rowCount = $options['defaultRows'] > count($options['default']) ? $options['defaultRows'] : count($options['default']);
     $extraCols=0;
     for ($i = 0; $i<=$rowCount-1; $i++) {
-      $class=($i % 2 === 1) ? '' : ' class="odd"'; 
+      $class=($i % 2 === 1) ? '' : ' class="odd"';
       $r .= "<tr$class>";
       $defaults=isset($options['default'][$i]) ? json_decode($options['default'][$i]['default'], true) : array();
       foreach ($options['columns'] as $idx => $def) {
@@ -355,8 +355,8 @@ class data_entry_helper extends helper_base {
           $fieldnamePrefix = "$attrTypeTag+:$attrId:";
         $fieldname="$fieldnamePrefix:$i:$idx";
         $default = isset(self::$entity_to_load[$fieldname]) ? self::$entity_to_load[$fieldname] :
-            (isset($defaults[$idx]) ? $defaults[$idx] : 
-                (isset($def['default']) ? $def['default'] : ''));
+          (isset($defaults[$idx]) ? $defaults[$idx] :
+            (isset($def['default']) ? $def['default'] : ''));
         $r .= "<td>";
         if ($def['datatype']==='lookup' && isset($def['control']) && $def['control']) {
           $checkboxes=array();
@@ -376,7 +376,7 @@ class data_entry_helper extends helper_base {
           }
           $r .= "</select>";
         } else {
-          $class = empty($def['regex']) ? '' : ' class="{pattern:'.$def['regex'].'}"';          
+          $class = empty($def['regex']) ? '' : ' class="{pattern:'.$def['regex'].'}"';
           $r .= "<input type=\"text\" name=\"$fieldname\" value=\"$default\"$class/>";
         }
         if (!empty($def['unit']))
@@ -395,8 +395,8 @@ class data_entry_helper extends helper_base {
       $r .= '</tfoot>';
     } else {
       $escaped = str_replace(':', '\\\\:', $options['rowCountControl']);
-      data_entry_helper::$javascript .= 
-"$('#$escaped').val($rowCount);
+      data_entry_helper::$javascript .=
+        "$('#$escaped').val($rowCount);
 $('#$escaped').change(function(e) {
   changeComplexGridRowCount('$escaped', '$attrTypeTag', '$attrId');
 });\n";
@@ -404,80 +404,80 @@ $('#$escaped').change(function(e) {
     // wrap in a table template
     global $indicia_templates;
     $r = str_replace(
-          array('{class}', '{id}', '{content}'), 
-          array(' class="complex-attr-grid"', " id=\"complex-attr-grid-$attrTypeTag-$attrId\"", $r), 
-          $indicia_templates['data-input-table']);
-    
-    return $r;  
+      array('{class}', '{id}', '{content}'),
+      array(' class="complex-attr-grid"', " id=\"complex-attr-grid-$attrTypeTag-$attrId\"", $r),
+      $indicia_templates['data-input-table']);
+
+    return $r;
   }
 
- /**
-  * Helper function to generate a sub list UI control. This control allows a user to create a new list 
-  * by selecting some items from the caption 'field' of an existing database table while 
-  * adding some new items. 
-  * The resulting list is submitted and the new items are added to the existing table 
-  * as skeleton entries while the id values for the items are stored as a custom attribute.
-  * 
-  * An example usage would be to associate a list of people with a sample or location.
-  * 
-  * @param array $options (deprecated argument list not supported). 
-  * Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to. This must be a custom attributes 
-  * field of type integer which supports multiple values</li>
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the autocomplete options. The control will 
-  * use the captionField from this table</li>
-  * <li><b>captionField</b><br/>
-  * Required if addToTable is false. Field to draw values from to show in the control from. 
-  * If addToTable is true, this setting will be ignored and 'caption' will always be used.</li>
-  * <li><b>extraParams</b><br/>
-  * Required. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. Base value defaults to fieldname, but 
-  * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
-  * <li><b>default</b><br/>
-  * Optional. An array of items to load into the control on page startup. Each entry must be an associative array
-  * with keys fieldname, caption and default.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>numValues</b><br/>
-  * Optional. Number of returned values in the drop down list. Defaults to 20.</li>
-  * <li><b>addOnSelect TODO</b><br/>
-  * Optional. Boolean, if true, matched items from the autocomplete control are automatically 
-  * added to the list when selected. Defaults to false.</li>
-  * <li><b>addToTable</b><br/>
-  * Optional. Boolean, if false, only existing items from the table can be selected, and no rows can be added. 
-  * The control then acts like a multi-value autocomplete and submits a list of ID values for the chosen items. 
-  * If true, the control allows new values to be added and inserts them into the source table.
-  * Defaults to true.</li>
-  * <li><b>selectMode</b>
-  * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
-  * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
-  * </li>
-  * </ul>
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>sub_list</b></br>
-  * Defines the search input, plus container element for the list of items which will be added.
-  * </li>
-  * <li><b>sub_list_item</b></br>
-  * Defines the template for a single item added to the list.
-  * </li>
-  * <li><b>sub_list_add</b></br>
-  * Defines hidden inputs to insert onto the page which contain the items to add to the 
-  * sublist, when loading existing records.
-  * </li>
-  * <li><b>sub_list_javascript</b></br>
-  * Defines the JavaScript added to the page to implement the click handling for the various 
-  * butons. 
-  * </li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the sub_list control.
-  *
-  */
+  /**
+   * Helper function to generate a sub list UI control. This control allows a user to create a new list
+   * by selecting some items from the caption 'field' of an existing database table while
+   * adding some new items.
+   * The resulting list is submitted and the new items are added to the existing table
+   * as skeleton entries while the id values for the items are stored as a custom attribute.
+   *
+   * An example usage would be to associate a list of people with a sample or location.
+   *
+   * @param array $options (deprecated argument list not supported).
+   * Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to. This must be a custom attributes
+   * field of type integer which supports multiple values</li>
+   * <li><b>table</b><br/>
+   * Required. Table name to get data from for the autocomplete options. The control will
+   * use the captionField from this table</li>
+   * <li><b>captionField</b><br/>
+   * Required if addToTable is false. Field to draw values from to show in the control from.
+   * If addToTable is true, this setting will be ignored and 'caption' will always be used.</li>
+   * <li><b>extraParams</b><br/>
+   * Required. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. Base value defaults to fieldname, but
+   * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
+   * <li><b>default</b><br/>
+   * Optional. An array of items to load into the control on page startup. Each entry must be an associative array
+   * with keys fieldname, caption and default.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>numValues</b><br/>
+   * Optional. Number of returned values in the drop down list. Defaults to 20.</li>
+   * <li><b>addOnSelect TODO</b><br/>
+   * Optional. Boolean, if true, matched items from the autocomplete control are automatically
+   * added to the list when selected. Defaults to false.</li>
+   * <li><b>addToTable</b><br/>
+   * Optional. Boolean, if false, only existing items from the table can be selected, and no rows can be added.
+   * The control then acts like a multi-value autocomplete and submits a list of ID values for the chosen items.
+   * If true, the control allows new values to be added and inserts them into the source table.
+   * Defaults to true.</li>
+   * <li><b>selectMode</b>
+   * Should the autocomplete simulate a select drop down control by adding a drop down arrow after the input box which, when clicked,
+   * populates the drop down list with all search results to a maximum of numValues. This is similar to typing * into the box. Default false.
+   * </li>
+   * </ul>
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>sub_list</b></br>
+   * Defines the search input, plus container element for the list of items which will be added.
+   * </li>
+   * <li><b>sub_list_item</b></br>
+   * Defines the template for a single item added to the list.
+   * </li>
+   * <li><b>sub_list_add</b></br>
+   * Defines hidden inputs to insert onto the page which contain the items to add to the
+   * sublist, when loading existing records.
+   * </li>
+   * <li><b>sub_list_javascript</b></br>
+   * Defines the JavaScript added to the page to implement the click handling for the various
+   * butons.
+   * </li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the sub_list control.
+   *
+   */
   public static function sub_list($options) {
     global $indicia_templates;
     static $sub_list_idx=0; // unique ID for all sublists
@@ -493,7 +493,7 @@ $('#$escaped').change(function(e) {
     // so PHP puts multiple submitted values in an array
     if (substr($options['fieldname'],-2) !='[]')
       $options['fieldname'] .= '[]';
-      
+
     if ($options['addToTable']===true) {
       // prepare options for updating the source table
       $options['basefieldname'] = substr($options['fieldname'], 0, strlen($options['fieldname'])-2);
@@ -526,7 +526,7 @@ $('#$escaped').change(function(e) {
     } else {
       $options['subListAdd'] = '';
     }
-    
+
     // prepare embedded search control for add bar panel
     $list_options = $options;
     unset($list_options['helpText']);
@@ -542,7 +542,7 @@ $('#$escaped').change(function(e) {
       $list_options['numValues']=$options['numValues'];
     // set up add panel
     $options['panel_control'] = self::autocomplete($list_options);
-    
+
     // prepare other main control options
     $options['inputId'] = $options['id'].':'.$options['captionField'];
     $options = array_merge(array(
@@ -552,10 +552,10 @@ $('#$escaped').change(function(e) {
       'escaped_id' => self::jq_esc($options['id']),
       'escaped_captionField' => self::jq_esc($options['captionField'])
     ), $options);
-    
+
     // set up javascript
-    $options['subListItem'] = str_replace(array('{caption}', '{value}', '{fieldname}'),  
-      array('\'+caption+\'', '\'+value+\'', $options['fieldname']), 
+    $options['subListItem'] = str_replace(array('{caption}', '{value}', '{fieldname}'),
+      array('\'+caption+\'', '\'+value+\'', $options['fieldname']),
       $indicia_templates['sub_list_item']);
     $options['idx']=$sub_list_idx;
     self::$javascript .= self::apply_replacements_to_template($indicia_templates['sub_list_javascript'], $options);
@@ -564,7 +564,7 @@ $('#$escaped').change(function(e) {
     $r = '';
     if (array_key_exists('default', $options) && is_array($options['default'])) {
       foreach ($options['default'] as $item) {
-        $items .= str_replace(array('{caption}', '{value}', '{fieldname}'), 
+        $items .= str_replace(array('{caption}', '{value}', '{fieldname}'),
           array($item['caption'], $item['default'], $item['fieldname']),
           $indicia_templates['sub_list_item']);
         // a hidden input to put a blank in the submission if it is deleted
@@ -572,39 +572,39 @@ $('#$escaped').change(function(e) {
       }
     }
     $options['items'] = $items;
-    
+
     // layout the control
     $r .= self::apply_template($options['template'], $options);
     $sub_list_idx++;
     return $r;
   }
 
- /**
-  * Helper function to output an HTML checkbox control. This includes re-loading of existing values
-  * and displaying of validation error messages.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>checkbox</b></br>
-  * HTML template for the checkbox.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>template</b><br/>
-  * Optional. Name of the template entry used to build the HTML for the control. Defaults to checkbox.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the checkbox control.
-  */
+  /**
+   * Helper function to output an HTML checkbox control. This includes re-loading of existing values
+   * and displaying of validation error messages.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>checkbox</b></br>
+   * HTML template for the checkbox.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>template</b><br/>
+   * Optional. Name of the template entry used to build the HTML for the control. Defaults to checkbox.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the checkbox control.
+   */
   public static function checkbox($options) {
     $options = self::check_options($options);
     $default = isset($options['default']) ? $options['default'] : '';
@@ -615,33 +615,33 @@ $('#$escaped').change(function(e) {
   }
 
 
- /**
-  * Helper function to output a checkbox for controlling training mode. 
-  * Occurrences submitted in training mode can be kept apart from normal records.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>training</b></br>
-  * HTML template for checkbox with hidden input.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned 'training' is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. Boolean. The default value to assign to the control Defaults to true i.e to training mode. 
-  * This is overridden when reloading a record with existing data for this control.</li>
-  * <li><b>disabled</b><br/>
-  * Optional. Boolean. Determines whether the user is prevented from changing the value. 
-  * Defaults to true i.e control is disabled.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>template</b><br/>
-  * Optional. Name of the template entry used to build the HTML for the control. Defaults to training.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the checkbox control.
-  */
+  /**
+   * Helper function to output a checkbox for controlling training mode.
+   * Occurrences submitted in training mode can be kept apart from normal records.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>training</b></br>
+   * HTML template for checkbox with hidden input.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned 'training' is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. Boolean. The default value to assign to the control Defaults to true i.e to training mode.
+   * This is overridden when reloading a record with existing data for this control.</li>
+   * <li><b>disabled</b><br/>
+   * Optional. Boolean. Determines whether the user is prevented from changing the value.
+   * Defaults to true i.e control is disabled.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>template</b><br/>
+   * Optional. Name of the template entry used to build the HTML for the control. Defaults to training.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the checkbox control.
+   */
   public static function training($options) {
     // The fieldname is fixed for the specific purpose of this control
     $options['fieldname'] = 'training';
@@ -675,73 +675,73 @@ $('#$escaped').change(function(e) {
     return self::apply_template($options['template'], $options);
   }
 
- /**
-  * Helper function to generate a list of checkboxes from a Indicia core service query.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control. Defaults to inline when not sortable.</li>
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
-  * <li><b>captionField</b><br/>
-  * Optional. Field to draw values to show in the control from. Required unless lookupValues is specified.</li>
-  * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField. </li>
-  * <li><b>otherItemId</b><br/>
-  * Optional. The termlists_terms id of the checkbox_group item that will be considered as "Other".
-  * When this checkbox is selected then another textbox is displayed allowing specific details relating to the
-  * Other item to be entered. The otherValueAttrId and otherTextboxLabel options must be specified to use this feature.</li>
-  * <li><b>otherValueAttrId</b><br/>
-  * Optional. The attribute id where the "Other" text will be stored, e.g. smpAttr:10. See otherItemId option description.</li>
-  * <li><b>otherTextboxLabel</b><br/>
-  * Optional. The label for the "Other" textbox. See otherItemId, otherValueAttrId option descriptions.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>lookupValues</b><br/>
-  * If the group is to be populated with a fixed list of values, rather than via a service call, then the
-  * values can be passed into this parameter as an associated array of key=>caption.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>template</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for the outer control.</li>
-  * <li><b>itemTemplate</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for each item in the control.</li>
-  * <li><b>captionTemplate</b><br/>
-  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
-  * with each database field represented as {fieldname}.</li>
-  * <li><b>sortable</b></br>
-  * Set to true to allow drag sorting of the list of checkboxes. If sortable, then the layout will be a vertical
-  * column of checkboxes rather than inline.
-  * </li>
-  * </ul>
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>check_or_radio_group</b></br>
-  * Container element for the group of checkboxes.
-  * </li>
-  * <li><b>check_or_radio_group_item</b></br>
-  * Template for the HTML element used for each item in the group.
-  * </li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the group of checkboxes.
-  */
-  public static function checkbox_group($options) { 
+  /**
+   * Helper function to generate a list of checkboxes from a Indicia core service query.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control. Defaults to inline when not sortable.</li>
+   * <li><b>table</b><br/>
+   * Required. Table name to get data from for the select options.</li>
+   * <li><b>captionField</b><br/>
+   * Optional. Field to draw values to show in the control from. Required unless lookupValues is specified.</li>
+   * <li><b>valueField</b><br/>
+   * Optional. Field to draw values to return from the control from. Defaults
+   * to the value of captionField. </li>
+   * <li><b>otherItemId</b><br/>
+   * Optional. The termlists_terms id of the checkbox_group item that will be considered as "Other".
+   * When this checkbox is selected then another textbox is displayed allowing specific details relating to the
+   * Other item to be entered. The otherValueAttrId and otherTextboxLabel options must be specified to use this feature.</li>
+   * <li><b>otherValueAttrId</b><br/>
+   * Optional. The attribute id where the "Other" text will be stored, e.g. smpAttr:10. See otherItemId option description.</li>
+   * <li><b>otherTextboxLabel</b><br/>
+   * Optional. The label for the "Other" textbox. See otherItemId, otherValueAttrId option descriptions.</li>
+   * <li><b>extraParams</b><br/>
+   * Optional. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array.</li>
+   * <li><b>lookupValues</b><br/>
+   * If the group is to be populated with a fixed list of values, rather than via a service call, then the
+   * values can be passed into this parameter as an associated array of key=>caption.</li>
+   * <li><b>cachetimeout</b><br/>
+   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+   * if this is not specified then 1 hour.</li>
+   * <li><b>template</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for the outer control.</li>
+   * <li><b>itemTemplate</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for each item in the control.</li>
+   * <li><b>captionTemplate</b><br/>
+   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+   * with each database field represented as {fieldname}.</li>
+   * <li><b>sortable</b></br>
+   * Set to true to allow drag sorting of the list of checkboxes. If sortable, then the layout will be a vertical
+   * column of checkboxes rather than inline.
+   * </li>
+   * </ul>
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>check_or_radio_group</b></br>
+   * Container element for the group of checkboxes.
+   * </li>
+   * <li><b>check_or_radio_group_item</b></br>
+   * Template for the HTML element used for each item in the group.
+   * </li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the group of checkboxes.
+   */
+  public static function checkbox_group($options) {
     $options = self::check_options($options);
     $options = array_merge(array(
       'class'=>empty($options['sortable']) || !$options['sortable'] ? 'inline' : ''
@@ -757,58 +757,58 @@ $('#$escaped').change(function(e) {
         // First copy over the ones that are ticked, in order
         foreach ($options['default'] as $option) {
           if (!empty($options['lookupValues'][$option]))
-          $sorted[$option] = $options['lookupValues'][$option];
+            $sorted[$option] = $options['lookupValues'][$option];
         }
         // now the unticked ones in original order
         foreach ($options['lookupValues'] as $option => $caption) {
-         if (!isset($sorted[$option]))
-          $sorted[$option]=$caption;
+          if (!isset($sorted[$option]))
+            $sorted[$option]=$caption;
         }
         $options['lookupValues']=$sorted;
       }
-      
+
     }
     return self::check_or_radio_group($options, 'checkbox');
   }
 
- /**
-  * Helper function to insert a date picker control.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>date_picker</b></br>
-  * HTML The output of this controlfor the text input element used for the date picker. Other functionality is added
-  * using JavaScript.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, for example 'sample:date'.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>allowFuture</b><br/>
-  * Optional. If true, then future dates are allowed. Default is false.</li>
-  * <li><b>dateFormat</b><br/>
-  * Optional. Allows the date format string to be set, which must match a date format that can be parsed by the JavaScript Date object.
-  * Default is dd/mm/yy.</li>
-  * <li><b>allowVagueDates</b><br/>
-  * Optional. Set to true to enable vague date input, which disables client side validation for standard date input formats.</li>
-  * <li><b>showButton</b><br/>
-  * Optional. Set to true to show a button which must be clicked to drop down the picker. Defaults to false unless allowVagueDates is true
-  * as inputting a vague date without the button is confusing.</li>
-  * <li><b>buttonText</b><br/>
-  * Optional. If showButton is true, this text will be shown as the 'alt' text for the buttom image.</li>
-  * <li><b>placeHolder</b><br/>
-  * Optional. Control the placeholder text shown in the text box before a value has been added.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the date picker control.
-  */
+  /**
+   * Helper function to insert a date picker control.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>date_picker</b></br>
+   * HTML The output of this controlfor the text input element used for the date picker. Other functionality is added
+   * using JavaScript.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to, for example 'sample:date'.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>allowFuture</b><br/>
+   * Optional. If true, then future dates are allowed. Default is false.</li>
+   * <li><b>dateFormat</b><br/>
+   * Optional. Allows the date format string to be set, which must match a date format that can be parsed by the JavaScript Date object.
+   * Default is dd/mm/yy.</li>
+   * <li><b>allowVagueDates</b><br/>
+   * Optional. Set to true to enable vague date input, which disables client side validation for standard date input formats.</li>
+   * <li><b>showButton</b><br/>
+   * Optional. Set to true to show a button which must be clicked to drop down the picker. Defaults to false unless allowVagueDates is true
+   * as inputting a vague date without the button is confusing.</li>
+   * <li><b>buttonText</b><br/>
+   * Optional. If showButton is true, this text will be shown as the 'alt' text for the buttom image.</li>
+   * <li><b>placeHolder</b><br/>
+   * Optional. Control the placeholder text shown in the text box before a value has been added.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the date picker control.
+   */
   public static function date_picker($options) {
     $options = self::check_options($options);
     $options = array_merge(array(
@@ -828,7 +828,7 @@ $('#$escaped').change(function(e) {
     if ($escaped_id!='{fieldname}') {
       // should include even if validated_form_id is null, as could be doing this via AJAX.
       if (!$options['allowVagueDates']) {
-          self::$javascript .= "if (typeof jQuery.validator !== \"undefined\") {
+        self::$javascript .= "if (typeof jQuery.validator !== \"undefined\") {
   jQuery.validator.addMethod('customDate',
     function(value, element) {
       // parseDate throws exception if the value is invalid
@@ -880,127 +880,127 @@ $('#$escaped').change(function(e) {
     return self::apply_template('date_picker', $options);
   }
 
-/**
-  * Outputs a file upload control suitable for linking images to records.
-  * The control allows selection of multiple files, and depending on the browser functionality it gives progress feedback.
-  * The control uses Silverlight, Flash or HTML5 to enhance the functionality where available. The output of the control 
-  * can be configured by changing the content of the templates called file_box, file_box_initial_file_info, 
-  * file_box_uploaded_image and button.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>table</b><br/>
-  * Name of the image table to upload images into, e.g. occurrence_medium, location_medium, sample_medium or taxon_medium.
-  * Defaults to occurrence_medium.
-  * </li>
-  * <li><b>loadExistingRecordKey</b><br/>
-  * Optional prefix for the information in the data_entry_helper::$entity_to_load to use for loading any existing images. 
-  * Defaults to use the table option.
-  * </li>
-  * <li><b>id</b><br/>
-  * Optional. Provide a unique identifier for this image uploader control if more than one are required on the page.
-  * </li>
-  * <li><b>SubType</b><br/>
-  * Optional. The name of the image sub-type to limit the file box to e.g. Image:Local:Sketch
-  * </li>
-  * <li><b>caption</b><br/>
-  * Caption to display at the top of the uploader box. Defaults to the translated string for "Files".
-  * </li>
-  * <li><b>uploadSelectBtnCaption</b><br/>
-  * Set this to override the caption for the button for selecting files to upload.
-  * </li>
-  * <li><b>uploadStartBtnCaption</b><br/>
-  * Set this to override the caption for the start upload button, which is only visible if autoUpload is false.
-  * </li>
-  * <li><b>useFancybox</b><br/>
-  * Defaults to true. If true, then image previews use the Fancybox plugin to display a "lightbox" effect when clicked on.
-  * </li>
-  * <li><b>imageWidth</b><br/>
-  * Defaults to 200. Number of pixels wide the image previews should be.
-  * </li>
-  * <li><b>resizeWidth</b><br/>
-  * If set, then the file will be resized before upload using this as the maximum pixels width.
-  * </li>
-  * <li><b>resizeHeight</b><br/>
-  * If set, then the file will be resized before upload using this as the maximum pixels height.
-  * </li>
-  * <li><b>resizeQuality</b><br/>
-  * Defines the quality of the resize operation (from 1 to 100). Has no effect unless either resizeWidth or resizeHeight are non-zero.
-  * </li>
-  * <li><b>upload</b><br/>
-  * Boolean, defaults to true. 
-  * </li>
-  * <li><b>maxFileCount</b><br/>
-  * Maximum number of files to allow upload for. Defaults to 4. Set to false to allow unlimited files.
-  * </li>
-  * <li><b>maxUploadSize</b><br/>
-  * Maximum file size to allow in bytes. This limits file selection. PHP settings on 
-  * server may limit upload. 
-  * </li>
-  * <li><b>autoupload</b><br/>
-  * Defaults to true. If false, then a button is displayed which the user must click to initiate upload of the files
-  * currently in the queue.
-  * </li>
-  * <li><b>msgUploadError</b><br/>
-  * Use this to override the message displayed for a generic file upload error.
-  * </li>
-  * <li><b>msgFileTooBig</b><br/>
-  * Use this to override the message displayed when the file is larger than the size limit allowed on the Warehouse.
-  * </li>
-  * <li><b>msgTooManyFiles</b><br/>
-  * Use this to override the message displayed when attempting to upload more files than the maxFileCount allows. Use a
-  * replacement string [0] to specify the maxFileCount value.
-  * </li>
-  * <li><b>uploadScript</b><br/>
-  * Specify the script used to handle image uploads on the server (relative to the client_helpers folder). You should not
-  * normally need to change this. Defaults to upload.php.
-  * </li>
-  * <li><b>runtimes</b><br/>
-  * Array of runtimes that the file upload component will use in order of priority. Defaults to
-  * array('html5','flash','silverlight','html4'), though flash is removed for Internet Explorer 6. You 
-  * should not normally need to change this.
-  * </li>
-  * <li><b>destinationFolder</b><br/>
-  * Override the destination folder for uploaded files. You should not normally need to change this.
-  * </li>
-  * <li><b>codeGenerated</b>
-  * If set to all (default), then this returns the HTML required and also inserts JavaScript in the document onload event. However, if you
-  * need to delay the loading of the control until a certain event, e.g. when a radio button is checked, then this can be set
-  * to php to return just the php and ignore the JavaScript, or js to return the JavaScript instead of inserting it into
-  * document onload, in which case the php is ignored. this allows you to attach the JavaScript to any event you need to.
-  * </li>
-  * <li><b>tabDiv</b><br/>
-  * If loading this control onto a set of tabs, specify the tab control's div ID here. This allows the control to
-  * automatically generate code which only generates the uploader when the tab is shown, reducing problems in certain
-  * runtimes. This has no effect if codeGenerated is not left to the default state of all.
-  * </li>
-  * </ul>
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>file_box</b></br>
-  * Outputs the HTML container which will contain the upload button and images.
-  * </li>
-  * <li><b>file_box_initial_file_info</b></br>
-  * HTML which provides the outer container for each displayed image, including the header and
-  * remove file button. Has an element with class set to media-wrapper into which images 
-  * themselves will be inserted.
-  * </li>
-  * <li><b>file_box_uploaded_image</b></br>
-  * Template for the HTML for each uploaded image, including the image, caption input
-  * and hidden inputs to define the link to the database. Will be inserted into the
-  * file_box_initial_file_info template's media-wrapper element.
-  * </li>
-  * <li><b>button</b></br>
-  * Template for the buttons used.
-  * </li>
-  * <li><b>readAuth</b><br/>
-  * Optional. Read authentication tokens for the Indicia warehouse if using the 
-  * add_link_popup.</li>
-  * </ul>
-  *
-  * @todo select file button pointer overriden by the flash shim
-  * @todo if using a normal file input, after validation, the input needs to show that the file upload has worked.
-  * @todo Cleanup uploaded files that never got submitted because of validation failure elsewhere.
-  */
+  /**
+   * Outputs a file upload control suitable for linking images to records.
+   * The control allows selection of multiple files, and depending on the browser functionality it gives progress feedback.
+   * The control uses Silverlight, Flash or HTML5 to enhance the functionality where available. The output of the control
+   * can be configured by changing the content of the templates called file_box, file_box_initial_file_info,
+   * file_box_uploaded_image and button.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>table</b><br/>
+   * Name of the image table to upload images into, e.g. occurrence_medium, location_medium, sample_medium or taxon_medium.
+   * Defaults to occurrence_medium.
+   * </li>
+   * <li><b>loadExistingRecordKey</b><br/>
+   * Optional prefix for the information in the data_entry_helper::$entity_to_load to use for loading any existing images.
+   * Defaults to use the table option.
+   * </li>
+   * <li><b>id</b><br/>
+   * Optional. Provide a unique identifier for this image uploader control if more than one are required on the page.
+   * </li>
+   * <li><b>SubType</b><br/>
+   * Optional. The name of the image sub-type to limit the file box to e.g. Image:Local:Sketch
+   * </li>
+   * <li><b>caption</b><br/>
+   * Caption to display at the top of the uploader box. Defaults to the translated string for "Files".
+   * </li>
+   * <li><b>uploadSelectBtnCaption</b><br/>
+   * Set this to override the caption for the button for selecting files to upload.
+   * </li>
+   * <li><b>uploadStartBtnCaption</b><br/>
+   * Set this to override the caption for the start upload button, which is only visible if autoUpload is false.
+   * </li>
+   * <li><b>useFancybox</b><br/>
+   * Defaults to true. If true, then image previews use the Fancybox plugin to display a "lightbox" effect when clicked on.
+   * </li>
+   * <li><b>imageWidth</b><br/>
+   * Defaults to 200. Number of pixels wide the image previews should be.
+   * </li>
+   * <li><b>resizeWidth</b><br/>
+   * If set, then the file will be resized before upload using this as the maximum pixels width.
+   * </li>
+   * <li><b>resizeHeight</b><br/>
+   * If set, then the file will be resized before upload using this as the maximum pixels height.
+   * </li>
+   * <li><b>resizeQuality</b><br/>
+   * Defines the quality of the resize operation (from 1 to 100). Has no effect unless either resizeWidth or resizeHeight are non-zero.
+   * </li>
+   * <li><b>upload</b><br/>
+   * Boolean, defaults to true.
+   * </li>
+   * <li><b>maxFileCount</b><br/>
+   * Maximum number of files to allow upload for. Defaults to 4. Set to false to allow unlimited files.
+   * </li>
+   * <li><b>maxUploadSize</b><br/>
+   * Maximum file size to allow in bytes. This limits file selection. PHP settings on
+   * server may limit upload.
+   * </li>
+   * <li><b>autoupload</b><br/>
+   * Defaults to true. If false, then a button is displayed which the user must click to initiate upload of the files
+   * currently in the queue.
+   * </li>
+   * <li><b>msgUploadError</b><br/>
+   * Use this to override the message displayed for a generic file upload error.
+   * </li>
+   * <li><b>msgFileTooBig</b><br/>
+   * Use this to override the message displayed when the file is larger than the size limit allowed on the Warehouse.
+   * </li>
+   * <li><b>msgTooManyFiles</b><br/>
+   * Use this to override the message displayed when attempting to upload more files than the maxFileCount allows. Use a
+   * replacement string [0] to specify the maxFileCount value.
+   * </li>
+   * <li><b>uploadScript</b><br/>
+   * Specify the script used to handle image uploads on the server (relative to the client_helpers folder). You should not
+   * normally need to change this. Defaults to upload.php.
+   * </li>
+   * <li><b>runtimes</b><br/>
+   * Array of runtimes that the file upload component will use in order of priority. Defaults to
+   * array('html5','flash','silverlight','html4'), though flash is removed for Internet Explorer 6. You
+   * should not normally need to change this.
+   * </li>
+   * <li><b>destinationFolder</b><br/>
+   * Override the destination folder for uploaded files. You should not normally need to change this.
+   * </li>
+   * <li><b>codeGenerated</b>
+   * If set to all (default), then this returns the HTML required and also inserts JavaScript in the document onload event. However, if you
+   * need to delay the loading of the control until a certain event, e.g. when a radio button is checked, then this can be set
+   * to php to return just the php and ignore the JavaScript, or js to return the JavaScript instead of inserting it into
+   * document onload, in which case the php is ignored. this allows you to attach the JavaScript to any event you need to.
+   * </li>
+   * <li><b>tabDiv</b><br/>
+   * If loading this control onto a set of tabs, specify the tab control's div ID here. This allows the control to
+   * automatically generate code which only generates the uploader when the tab is shown, reducing problems in certain
+   * runtimes. This has no effect if codeGenerated is not left to the default state of all.
+   * </li>
+   * </ul>
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>file_box</b></br>
+   * Outputs the HTML container which will contain the upload button and images.
+   * </li>
+   * <li><b>file_box_initial_file_info</b></br>
+   * HTML which provides the outer container for each displayed image, including the header and
+   * remove file button. Has an element with class set to media-wrapper into which images
+   * themselves will be inserted.
+   * </li>
+   * <li><b>file_box_uploaded_image</b></br>
+   * Template for the HTML for each uploaded image, including the image, caption input
+   * and hidden inputs to define the link to the database. Will be inserted into the
+   * file_box_initial_file_info template's media-wrapper element.
+   * </li>
+   * <li><b>button</b></br>
+   * Template for the buttons used.
+   * </li>
+   * <li><b>readAuth</b><br/>
+   * Optional. Read authentication tokens for the Indicia warehouse if using the
+   * add_link_popup.</li>
+   * </ul>
+   *
+   * @todo select file button pointer overriden by the flash shim
+   * @todo if using a normal file input, after validation, the input needs to show that the file upload has worked.
+   * @todo Cleanup uploaded files that never got submitted because of validation failure elsewhere.
+   */
   public static function file_box($options) {
     global $indicia_templates;
     // Upload directory defaults to client_helpers/upload, but can be overriden.
@@ -1039,7 +1039,7 @@ $('#$escaped').change(function(e) {
       'msgDelete' => lang::get('Delete this item'),
       'msgUseAddFileBtn' => lang::get('Use the Add file button to select a file from your local disk. Files of type {1} are allowed.'),
       'msgUseAddLinkBtn' => lang::get('Use the Add link button to add a link to information stored elsewhere on the internet. You can enter links from {1}.')
-    ); 
+    );
     $defaults['caption'] = (!isset($options['mediaTypes']) || $options['mediaTypes']===array('Image:Local')) ? lang::get('Photos') : lang::get('Media files');
     if (isset(self::$final_image_folder_thumbs))
       $defaults['finalImageFolderThumbs'] = $relpath . self::$final_image_folder_thumbs;
@@ -1093,14 +1093,14 @@ $('#$escaped').change(function(e) {
       if (self::$entity_to_load) {
         //If we only want to display media of a particular type, then supply this as a parameter when extracting the media.
         if (!empty($mediaTypeIdLimiter)) {
-          $images = self::extract_media_data(self::$entity_to_load, 
-              isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table'],
-              false,
-              false,
-              $mediaTypeIdLimiter);
+          $images = self::extract_media_data(self::$entity_to_load,
+            isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table'],
+            false,
+            false,
+            $mediaTypeIdLimiter);
         } else {
-          $images = self::extract_media_data(self::$entity_to_load, 
-              isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table']);
+          $images = self::extract_media_data(self::$entity_to_load,
+            isset($options['loadExistingRecordKey']) ? $options['loadExistingRecordKey'] : $options['table']);
         }
         $javascript .= ",\n  existingFiles : ".json_encode($images);
       }
@@ -1113,13 +1113,13 @@ $('#$escaped').change(function(e) {
       if (isset($options['tabDiv'])) {
         // The file box is displayed on a tab, so we must only generate it when the tab is displayed.
         $javascript =
-            "var uploaderTabHandler = function(event, ui) { \n" .
-            "  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];\n" .
-            "  if ($(panel).attr('id')==='".$options['tabDiv']."') {\n    ".
-        $javascript.
-            "    indiciaFns.unbindTabsActivate($($('#".$options['tabDiv']."').parent()), uploaderTabHandler);\n".
-            "  }\n};\n".
-            "indiciaFns.bindTabsActivate($($('#".$options['tabDiv']."').parent()), uploaderTabHandler);\n";
+          "var uploaderTabHandler = function(event, ui) { \n" .
+          "  panel = typeof ui.newPanel==='undefined' ? ui.panel : ui.newPanel[0];\n" .
+          "  if ($(panel).attr('id')==='".$options['tabDiv']."') {\n    ".
+          $javascript.
+          "    indiciaFns.unbindTabsActivate($($('#".$options['tabDiv']."').parent()), uploaderTabHandler);\n".
+          "  }\n};\n".
+          "indiciaFns.bindTabsActivate($($('#".$options['tabDiv']."').parent()), uploaderTabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;
@@ -1129,82 +1129,82 @@ $('#$escaped').change(function(e) {
     // Output a placeholder div for the jQuery plugin. Also output a normal file input for the noscripts
     // version.
     $r = '<div class="file-box" id="'.$containerId.'"></div><noscript>'.self::image_upload(array(
-      'label' => $options['caption'],
-      // Convert table into a pseudo field name for the images
-      'id' => $options['id'],
-      'fieldname' => str_replace('_', ':', $options['table'])
-    )).'</noscript>';
+        'label' => $options['caption'],
+        // Convert table into a pseudo field name for the images
+        'id' => $options['id'],
+        'fieldname' => str_replace('_', ':', $options['table'])
+      )).'</noscript>';
     $r .= self::add_link_popup($options);
     return $r;
   }
 
- /**
-  * Generates a text input control with a search button that looks up an entered place against a georeferencing
-  * web service. The control is automatically linked to any map panel added to the page.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>georeference_lookup</b></br>
-  * Template which outputs the HTML for the georeference search input, button placehold and container
-  * for the list of search results. The default template uses JavaScript to write the output, so that 
-  * this control is removed from the page if JavaScript is disabled as it will have no functionality.
-  * </li>
-  * <li><b>button</b></br>
-  * HTML template for the buttons used.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:
-  * <ul>
-  * <li><b>fieldname</b><br/>
-  * Optional. The name of the database field this control is bound to if any.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>georefPreferredArea</b><br/>
-  * Optional. Hint provided to the locality search service as to which area to look for the place name in. Any example usage of this
-  * would be to set it to the name of a region for a survey based in that region. Note that this is only a hint, and the search
-  * service may still return place names outside the region. Defaults to gb.</li>
-  * <li><b>georefCountry</b><br/>
-  * Optional. Hint provided to the locality search service as to which country to look for the place name in. Defaults to United Kingdom.</li>
-  * <li><b>georefLang</b><br/>
-  * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
-  * <li><b>readAuth</b><br/>
-  * Optional. Read authentication tokens for the Indicia warehouse if using the indicia_locations driver setting.</li>
-  * <li><b>driver</b><br/>
-  * Optional. Driver to use for the georeferencing operation. Supported options are:<br/>
-  *   geoplanet - uses the Yahoo! GeoPlanet place search. This is the default.<br/>
-  *   google_places_api - uses the Google Places API text search service.<br/>
-  *   geoportal_lu - Use the Luxembourg specific place name search provided by geoportal.lu.
-  *   indicia_locations - Use the list of locations available to the current website in Indicia as a search list.
-  * </li>
-  * <li><b>public</b><br/>
-  * Optional. If using the indicia_locations driver, then set this to true to include public (non-website specific)
-  * locations in the search results. Defaults to false.
-  * </li>
-  * <li><b>autoCollapseResults</b><br/>
-  * Optional. If a list of possible matches are found, does selecting a match automatically fold up the results? Defaults to false.
-  * </li>
-  * </ul>
-  * 
-  * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
-  * @link http://code.google.com/p/indicia/wiki/GeoreferenceLookupDrivers Documentation for the driver architecture.
-  * @return string HTML to insert into the page for the georeference lookup control.
-  */
+  /**
+   * Generates a text input control with a search button that looks up an entered place against a georeferencing
+   * web service. The control is automatically linked to any map panel added to the page.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>georeference_lookup</b></br>
+   * Template which outputs the HTML for the georeference search input, button placehold and container
+   * for the list of search results. The default template uses JavaScript to write the output, so that
+   * this control is removed from the page if JavaScript is disabled as it will have no functionality.
+   * </li>
+   * <li><b>button</b></br>
+   * HTML template for the buttons used.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:
+   * <ul>
+   * <li><b>fieldname</b><br/>
+   * Optional. The name of the database field this control is bound to if any.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>georefPreferredArea</b><br/>
+   * Optional. Hint provided to the locality search service as to which area to look for the place name in. Any example usage of this
+   * would be to set it to the name of a region for a survey based in that region. Note that this is only a hint, and the search
+   * service may still return place names outside the region. Defaults to gb.</li>
+   * <li><b>georefCountry</b><br/>
+   * Optional. Hint provided to the locality search service as to which country to look for the place name in. Defaults to United Kingdom.</li>
+   * <li><b>georefLang</b><br/>
+   * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
+   * <li><b>readAuth</b><br/>
+   * Optional. Read authentication tokens for the Indicia warehouse if using the indicia_locations driver setting.</li>
+   * <li><b>driver</b><br/>
+   * Optional. Driver to use for the georeferencing operation. Supported options are:<br/>
+   *   geoplanet - uses the Yahoo! GeoPlanet place search. This is the default.<br/>
+   *   google_places_api - uses the Google Places API text search service.<br/>
+   *   geoportal_lu - Use the Luxembourg specific place name search provided by geoportal.lu.
+   *   indicia_locations - Use the list of locations available to the current website in Indicia as a search list.
+   * </li>
+   * <li><b>public</b><br/>
+   * Optional. If using the indicia_locations driver, then set this to true to include public (non-website specific)
+   * locations in the search results. Defaults to false.
+   * </li>
+   * <li><b>autoCollapseResults</b><br/>
+   * Optional. If a list of possible matches are found, does selecting a match automatically fold up the results? Defaults to false.
+   * </li>
+   * </ul>
+   *
+   * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
+   * @link http://code.google.com/p/indicia/wiki/GeoreferenceLookupDrivers Documentation for the driver architecture.
+   * @return string HTML to insert into the page for the georeference lookup control.
+   */
   public static function georeference_lookup($options) {
     $options = self::check_options($options);
     global $indicia_templates;
     $options = array_merge(array(
       'id' => 'imp-georef-search',
       'driver' => 'geoplanet',
-      'searchButton' => self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Search'), 'title'=>'')),
+      'searchButton' => self::apply_replacements_to_template($indicia_templates['button'],
+        array('href'=>'#', 'id'=>'imp-georef-search-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Search'), 'title'=>'')),
       'public' => false,
       'autoCollapseResults' => false
     ), $options);
     if (($options['driver']==='geoplanet' && empty(self::$geoplanet_api_key)) ||
-        ($options['driver']==='google_places' && empty(self::$google_api_key))) {
+      ($options['driver']==='google_places' && empty(self::$google_api_key))) {
       // can't use place search without the driver API key
       return 'The georeference lookup control requires an API key configured for the place search API in use.<br/>';
-    }    
+    }
     self::add_resource('indiciaMapPanel');
     // dynamically build a resource to link us to the driver js file.
     self::$required_resources[] = 'georeference_default_'.$options['driver'];
@@ -1227,7 +1227,7 @@ $('#$escaped').change(function(e) {
     // If the lookup service driver uses cross domain JavaScript, this setting provides
     // a path to a simple PHP proxy script on the server.
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
-        self::getRootFolder() . self::client_helper_path() . "proxy.php';\n\n";
+      self::getRootFolder() . self::client_helper_path() . "proxy.php';\n\n";
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.autoCollapseResults='".($options['autoCollapseResults'] ? 't' : 'f')."';\n";
     // for the indicia_locations driver, pass through the read auth and url
     if ($options['driver']==='indicia_locations') {
@@ -1242,57 +1242,57 @@ $('#$escaped').change(function(e) {
       $options['closeButton']='';
     } else {
       // want a close button on the results list
-      $options['closeButton'] = self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'imp-georef-close-btn', 'class' => '', 'caption'=>lang::get('Close the search results'), 'title'=>''));
+      $options['closeButton'] = self::apply_replacements_to_template($indicia_templates['button'],
+        array('href'=>'#', 'id'=>'imp-georef-close-btn', 'class' => '', 'caption'=>lang::get('Close the search results'), 'title'=>''));
     }
     return self::apply_template('georeference_lookup', $options);
   }
-  
- /**
-  * A version of the select control which supports hierarchical termlist data by adding new selects to the next line
-  * populated with the child terms when a parent term is selected.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>  *
-  * <li><b>table</b><br/>
-  * Table name to get data from for the select options. Should be termlists_term for termlist data.</li>
-  * <li><b>report</b><br/>
-  * Report name to get data from for the select options if the select is being populated by a service call using a report.
-  * Mutually exclusive with the table option. The report should return a parent_id field.</li>
-  * <li><b>captionField</b><br/>
-  * Field to draw values to show in the control from if the select is being populated by a service call.</li>
-  * <li><b>valueField</b><br/>
-  * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array if the select is being populated by a service call. It can also contain
-  * view=cache to use the cached termlists entries or view=detail for the uncached version.</li>
-  * <li><b>captionTemplate</b><br/>
-  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
-  * with each database field represented as {fieldname}.</li>
-  * </ul>
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>select</b></br>
-  * Template used for the HTML select element.
-  * </li>
-  * <li><b>select_item</b></br>
-  * Template used for each option item placed within the select element.
-  * </li>
-  * <li><b>hidden_text</b></br>
-  * HTML used for a hidden input that will hold the value to post to the database.
-  * </li>
-  * </ul>
-  */
+
+  /**
+   * A version of the select control which supports hierarchical termlist data by adding new selects to the next line
+   * populated with the child terms when a parent term is selected.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>  *
+   * <li><b>table</b><br/>
+   * Table name to get data from for the select options. Should be termlists_term for termlist data.</li>
+   * <li><b>report</b><br/>
+   * Report name to get data from for the select options if the select is being populated by a service call using a report.
+   * Mutually exclusive with the table option. The report should return a parent_id field.</li>
+   * <li><b>captionField</b><br/>
+   * Field to draw values to show in the control from if the select is being populated by a service call.</li>
+   * <li><b>valueField</b><br/>
+   * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
+   * to the value of captionField.</li>
+   * <li><b>extraParams</b><br/>
+   * Optional. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array if the select is being populated by a service call. It can also contain
+   * view=cache to use the cached termlists entries or view=detail for the uncached version.</li>
+   * <li><b>captionTemplate</b><br/>
+   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+   * with each database field represented as {fieldname}.</li>
+   * </ul>
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>select</b></br>
+   * Template used for the HTML select element.
+   * </li>
+   * <li><b>select_item</b></br>
+   * Template used for each option item placed within the select element.
+   * </li>
+   * <li><b>hidden_text</b></br>
+   * HTML used for a hidden input that will hold the value to post to the database.
+   * </li>
+   * </ul>
+   */
   public static function hierarchical_select($options) {
     $options = array_merge(array(
       'id'=>'select-'.rand(0,10000),
@@ -1312,7 +1312,7 @@ $('#$escaped').change(function(e) {
       else {
         $itemCaption = $item[$options['captionField']];
       }
-      
+
       if (empty($item['parent_id']))
         $lookupValues[$itemValue] = $itemCaption;
       else {
@@ -1333,12 +1333,12 @@ $('#$escaped').change(function(e) {
     unset($options['captionField']);
     unset($options['valueField']);
     $options['lookupValues'] = $lookupValues;
-    
+
     // as we are going to output a select using the options, but will use a hidden field for the form value for the selected item, 
     // grab the fieldname and prevent the topmost select having the same name.
     $fieldname = $options['fieldname'];
     $options['fieldname'] = 'parent-'.$options['fieldname'];
-    
+
     // Output a select. Use templating to add a wrapper div, so we can keep all the hierarchical selects together. 
     global $indicia_templates;
     $oldTemplate = $indicia_templates['select'];
@@ -1426,28 +1426,28 @@ $('#$escaped').change(function(e) {
     return $r;
   }
 
- /**
-  * Simple file upload control suitable for uploading images to attach to occurrences.
-  * Note that when using this control, it is essential that the form's HTML enctype attribute is
-  * set to enctype="multipart/form-data" so that the image file is included in the form data. For multiple
-  * image support and more advanced options, see the file_box control.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>image_upload</b></br>
-  * HTML template for the file input control.
-  * </li></ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the file upload control.
-  */
+  /**
+   * Simple file upload control suitable for uploading images to attach to occurrences.
+   * Note that when using this control, it is essential that the form's HTML enctype attribute is
+   * set to enctype="multipart/form-data" so that the image file is included in the form data. For multiple
+   * image support and more advanced options, see the file_box control.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>image_upload</b></br>
+   * HTML template for the file input control.
+   * </li></ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the file upload control.
+   */
   public static function image_upload($options) {
     $options = self::check_options($options);
     $pathField = str_replace(array(':image',':medium'),'_medium:path', $options['fieldname']);
@@ -1467,7 +1467,7 @@ $('#$escaped').change(function(e) {
         $folder = self::get_uploaded_image_folder();
         $alreadyUploadedFile = "thumb-$alreadyUploadedFile";
       }
-      
+
       $r .= "<img width=\"100\" src=\"$folder$alreadyUploadedFile\"/>\n";
     }
     return $r;
@@ -1492,10 +1492,10 @@ $('#$escaped').change(function(e) {
    * <li><b>class</b>
    * Additional css class names to include on the outer div.</li>
    * </ul>
-   * The output of this control can be configured using the following templates: 
+   * The output of this control can be configured using the following templates:
    * <ul>
    * <li><b>jsonwidget</b></br>
-   * HTML template for outer container. The inner content is not templatable since it is created by the 
+   * HTML template for outer container. The inner content is not templatable since it is created by the
    * JavaScript control code.
    * </li></ul>
    * @return HTML string to insert in the form.
@@ -1518,66 +1518,66 @@ $('#$escaped').change(function(e) {
     return self::apply_template('jsonwidget', $options);
   }
 
- /**
-  * Outputs an autocomplete control that is dedicated to listing locations and which is bound to any map panel
-  * added to the page. Although it is possible to set all the options of a normal autocomplete, generally
-  * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
-  * sample's location_id field so can normally also be left.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>autocomplete</b></br>
-  * Defines a hidden input and a visible input, to hold the underlying database ID and to 
-  * allow input and display of the text search string respectively.
-  * </li>
-  * <li><b>autocomplete_javascript</b></br>
-  * Defines the JavaScript which will be inserted onto the page in order to activate the 
-  * autocomplete control.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Optional. The name of the database field this control is bound to.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>extraParams</b><br/>
-  * Required. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>useLocationName</b>
-  * Optional. If true, then inputting a place name which does not match to an existing place
-  * gets stored in the location_name field. Defaults to false.
-  * </li>
-  * <li><b>searchUpdatesSref</b>
-  * Optional. If true, then when a location is found in the autocomplete, the location's centroid spatial 
-  * reference is loaded into the spatial_ref control on the form if any exists. Defaults to false.
-  * </li>
-  * <li><b>allowcreate</b>
-  * Optional. If true, if the user has typed in a non-existing location name and also supplied
-  * a spatial reference, a button is displayed which lets them save a location for future
-  * personal use. Defaults to false. For this to work, you must either allow the standard Indicia
-  * code to handle the submission for you, or your code must handle the presence of a value called
-  * save-site-flag in the form submission data and if true, it must first save the site information
-  * to the locations table database then attach the location_id returned to the submitted sample data.
-  * </li>
-  * <li><b>fetchLocationAttributesIntoSample</b>
-  * Defaults to true. Defines that when a location is picked, any sample attributes marked as for_location=true
-  * will be populated with their previous values from the same site for this user. For example you might capture
-  * a habitat sample attribute and expect it to default to the previously entered value when a repeat visit to a 
-  * site occurs.
-  * </li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the location select control.
-  */
+  /**
+   * Outputs an autocomplete control that is dedicated to listing locations and which is bound to any map panel
+   * added to the page. Although it is possible to set all the options of a normal autocomplete, generally
+   * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
+   * sample's location_id field so can normally also be left.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>autocomplete</b></br>
+   * Defines a hidden input and a visible input, to hold the underlying database ID and to
+   * allow input and display of the text search string respectively.
+   * </li>
+   * <li><b>autocomplete_javascript</b></br>
+   * Defines the JavaScript which will be inserted onto the page in order to activate the
+   * autocomplete control.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Optional. The name of the database field this control is bound to.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>extraParams</b><br/>
+   * Required. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array.</li>
+   * <li><b>cachetimeout</b><br/>
+   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+   * if this is not specified then 1 hour.</li>
+   * <li><b>useLocationName</b>
+   * Optional. If true, then inputting a place name which does not match to an existing place
+   * gets stored in the location_name field. Defaults to false.
+   * </li>
+   * <li><b>searchUpdatesSref</b>
+   * Optional. If true, then when a location is found in the autocomplete, the location's centroid spatial
+   * reference is loaded into the spatial_ref control on the form if any exists. Defaults to false.
+   * </li>
+   * <li><b>allowcreate</b>
+   * Optional. If true, if the user has typed in a non-existing location name and also supplied
+   * a spatial reference, a button is displayed which lets them save a location for future
+   * personal use. Defaults to false. For this to work, you must either allow the standard Indicia
+   * code to handle the submission for you, or your code must handle the presence of a value called
+   * save-site-flag in the form submission data and if true, it must first save the site information
+   * to the locations table database then attach the location_id returned to the submitted sample data.
+   * </li>
+   * <li><b>fetchLocationAttributesIntoSample</b>
+   * Defaults to true. Defines that when a location is picked, any sample attributes marked as for_location=true
+   * will be populated with their previous values from the same site for this user. For example you might capture
+   * a habitat sample attribute and expect it to default to the previously entered value when a repeat visit to a
+   * site occurs.
+   * </li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the location select control.
+   */
   public static function location_autocomplete($options) {
     if (empty($options['id']))
       $options['id'] = 'imp-location';
@@ -1586,15 +1586,15 @@ $('#$escaped').change(function(e) {
     if (!$caption && !empty($options['useLocationName']) && $options['useLocationName'] && !empty(self::$entity_to_load['sample:location_name']))
       $caption = self::$entity_to_load['sample:location_name'];
     $options = array_merge(array(
-        'table'=>'location',
-        'fieldname'=>'sample:location_id',
-        'valueField'=>'id',
-        'captionField'=>'name',
-        'defaultCaption'=>$caption,
-        'useLocationName'=>false,
-        'allowCreate'=>false,
-        'searchUpdatesSref'=>false,
-        'fetchLocationAttributesIntoSample'=>true
+      'table'=>'location',
+      'fieldname'=>'sample:location_id',
+      'valueField'=>'id',
+      'captionField'=>'name',
+      'defaultCaption'=>$caption,
+      'useLocationName'=>false,
+      'allowCreate'=>false,
+      'searchUpdatesSref'=>false,
+      'fetchLocationAttributesIntoSample'=>true
     ), $options);
     // Disable warnings for no matches if the user is allowed to input a vague unmatched location name.
     $options['warnIfNoMatch']=!$options['useLocationName'];
@@ -1603,7 +1603,7 @@ $('#$escaped').change(function(e) {
     $r = self::autocomplete($options);
     // put a hidden input in the form to indicate that the location value should be 
     // copied to the location_name field if not linked to a location id.
-    if ($options['useLocationName']) 
+    if ($options['useLocationName'])
       $r = '<input type="hidden" name="useLocationName" value="true"/>'.$r;
     if ($options['allowCreate'] || $options['searchUpdatesSref']) {
       self::add_resource('createPersonalSites');
@@ -1664,50 +1664,50 @@ $('#$escaped').change(function(e) {
     return $r;
   }
 
- /**
-  * Outputs a select control that is dedicated to listing locations and which is bound to any map panel
-  * added to the page. Although it is possible to set all the options of a normal select control, generally
-  * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
-  * sample's location_id field so can normally also be left. If you need to use a report to populate the list of
-  * locations, for example when filtering by a custom attribute, then set the report option to the report name
-  * (e.g. library/reports/locations_list) and provide report parameters in extraParams. You can also override
-  * the captionField and valueField if required.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Optional. The name of the database field this control is bound to.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>extraParams</b><br/>
-  * Required. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>searchUpdatesSref</b>
-  * Optional. If true, then when a location is selected, the location's centroid spatial 
-  * reference is loaded into the spatial_ref control on the form if any exists. Defaults to false.
-  * </li>
-  * </ul>
-  * 
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>select</b></br>
-  * HTML template used to generate the select element.
-  * </li>
-  * <li><b>select_item</b></br>
-  * HTML template used to generate each option element with the select element.
-  * </li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the location select control.
-  */
+  /**
+   * Outputs a select control that is dedicated to listing locations and which is bound to any map panel
+   * added to the page. Although it is possible to set all the options of a normal select control, generally
+   * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
+   * sample's location_id field so can normally also be left. If you need to use a report to populate the list of
+   * locations, for example when filtering by a custom attribute, then set the report option to the report name
+   * (e.g. library/reports/locations_list) and provide report parameters in extraParams. You can also override
+   * the captionField and valueField if required.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Optional. The name of the database field this control is bound to.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>extraParams</b><br/>
+   * Required. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array.</li>
+   * <li><b>cachetimeout</b><br/>
+   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+   * if this is not specified then 1 hour.</li>
+   * <li><b>searchUpdatesSref</b>
+   * Optional. If true, then when a location is selected, the location's centroid spatial
+   * reference is loaded into the spatial_ref control on the form if any exists. Defaults to false.
+   * </li>
+   * </ul>
+   *
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>select</b></br>
+   * HTML template used to generate the select element.
+   * </li>
+   * <li><b>select_item</b></br>
+   * HTML template used to generate each option element with the select element.
+   * </li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the location select control.
+   */
   public static function location_select($options) {
     $options = self::check_options($options);
     // Apply location type filter if specified.
@@ -1715,103 +1715,103 @@ $('#$escaped').change(function(e) {
       $options['extraParams'] += array('location_type_id' => $options['location_type_id']);
     }
     $options = array_merge(array(
-        'table'=>'location',
-        'fieldname'=>'sample:location_id',
-        'valueField'=>'id',
-        'captionField'=>'name',
-        'id'=>'imp-location',
-        'searchUpdatesSref'=>false
-        ), $options);
+      'table'=>'location',
+      'fieldname'=>'sample:location_id',
+      'valueField'=>'id',
+      'captionField'=>'name',
+      'id'=>'imp-location',
+      'searchUpdatesSref'=>false
+    ), $options);
     $options['columns']=$options['valueField'].','.$options['captionField'];
     if ($options['searchUpdatesSref'])
       self::$javascript .= "indiciaData.searchUpdatesSref=true;\n";
     return self::select($options);
   }
 
- /**
-  * An HTML list box control.
-  * Options can be either populated from a web-service call to the Warehouse, e.g. the contents of
-  * a termlist, or can be populated from a fixed supplied array. The list box can
-  * be linked to populate itself when an item is selected in another control by specifying the
-  * parentControlId and filterField options.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>listbox</b></br>
-  * HTML template used to generate the select element.
-  * </li>
-  * <li><b>listbox_item</b></br>
-  * HTML template used to generate each option element with the select element.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Table name to get data from for the select options if the select is being populated by a service call.</li>
-  * <li><b>captionField</b><br/>
-  * Field to draw values to show in the control from if the select is being populated by a service call.</li>
-  * <li><b>valueField</b><br/>
-  * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array if the select is being populated by a service call.</li>
-  * <li><b>lookupValues</b><br/>
-  * If the select is to be populated with a fixed list of values, rather than via a service call, then the
-  * values can be passed into this parameter as an associated array of key=>caption.
-  * </li>
-  * <li><b>size</b><br/>
-  * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
-  * <li><b>multiselect</b><br/>
-  * Optional. Allow multi-select in the list box. Defaults to false.</li>
-  * <li><b>parentControlId</b><br/>
-  * Optional. Specifies a parent control for linked lists. If specified then this control is not
-  * populated until the parent control's value is set. The parent control's value is used to
-  * filter this control's options against the field specified by filterField.</li>
-  * <li><b>parentControlLabel</b><br/>
-  * Optional. Specifies the label of the parent control in a set of linked lists. This allows the child list
-  * to display information about selecting the parent first.</li>
-  * <li><b>filterField</b><br/>
-  * Optional. Specifies the field to filter this control's content against when using a parent
-  * control value to set up linked lists. Defaults to parent_id though this is not active
-  * unless a parentControlId is specified.</li>
-  * <li><b>filterIncludesNulls</b><br/>
-  * Optional. Defaults to false. If true, then null values for the filter field are included in the filter results
-  * when using a linked list.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>template</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for the outer control.</li>
-  * <li><b>itemTemplate</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for each item in the control.</li>
-  * <li><b>captionTemplate</b><br/>
-  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
-  * with each database field represented as {fieldname}.</li>
-  * <li><b>listCaptionSpecialChars</b><br/>
-  * Optional and only relevant when loading content from a data service call. Specifies whether to run the caption through
-  * htmlspecialchars. In some cases there may be format info in the caption, and in others we may wish to keep those
-  * characters as literal.
-  * <li><b>selectedItemTemplate</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for the selected item in the control.</li></ul>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the listbox control.
-  */
+  /**
+   * An HTML list box control.
+   * Options can be either populated from a web-service call to the Warehouse, e.g. the contents of
+   * a termlist, or can be populated from a fixed supplied array. The list box can
+   * be linked to populate itself when an item is selected in another control by specifying the
+   * parentControlId and filterField options.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>listbox</b></br>
+   * HTML template used to generate the select element.
+   * </li>
+   * <li><b>listbox_item</b></br>
+   * HTML template used to generate each option element with the select element.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>table</b><br/>
+   * Table name to get data from for the select options if the select is being populated by a service call.</li>
+   * <li><b>captionField</b><br/>
+   * Field to draw values to show in the control from if the select is being populated by a service call.</li>
+   * <li><b>valueField</b><br/>
+   * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
+   * to the value of captionField.</li>
+   * <li><b>extraParams</b><br/>
+   * Optional. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array if the select is being populated by a service call.</li>
+   * <li><b>lookupValues</b><br/>
+   * If the select is to be populated with a fixed list of values, rather than via a service call, then the
+   * values can be passed into this parameter as an associated array of key=>caption.
+   * </li>
+   * <li><b>size</b><br/>
+   * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
+   * <li><b>multiselect</b><br/>
+   * Optional. Allow multi-select in the list box. Defaults to false.</li>
+   * <li><b>parentControlId</b><br/>
+   * Optional. Specifies a parent control for linked lists. If specified then this control is not
+   * populated until the parent control's value is set. The parent control's value is used to
+   * filter this control's options against the field specified by filterField.</li>
+   * <li><b>parentControlLabel</b><br/>
+   * Optional. Specifies the label of the parent control in a set of linked lists. This allows the child list
+   * to display information about selecting the parent first.</li>
+   * <li><b>filterField</b><br/>
+   * Optional. Specifies the field to filter this control's content against when using a parent
+   * control value to set up linked lists. Defaults to parent_id though this is not active
+   * unless a parentControlId is specified.</li>
+   * <li><b>filterIncludesNulls</b><br/>
+   * Optional. Defaults to false. If true, then null values for the filter field are included in the filter results
+   * when using a linked list.</li>
+   * <li><b>cachetimeout</b><br/>
+   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+   * if this is not specified then 1 hour.</li>
+   * <li><b>template</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for the outer control.</li>
+   * <li><b>itemTemplate</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for each item in the control.</li>
+   * <li><b>captionTemplate</b><br/>
+   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+   * with each database field represented as {fieldname}.</li>
+   * <li><b>listCaptionSpecialChars</b><br/>
+   * Optional and only relevant when loading content from a data service call. Specifies whether to run the caption through
+   * htmlspecialchars. In some cases there may be format info in the caption, and in others we may wish to keep those
+   * characters as literal.
+   * <li><b>selectedItemTemplate</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for the selected item in the control.</li></ul>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the listbox control.
+   */
   public static function listbox($options)
   {
     $options = self::check_options($options);
@@ -1837,43 +1837,43 @@ $('#$escaped').change(function(e) {
   }
 
   /**
-  * Helper function to list the output from a request against the data services, using an HTML template
-  * for each item. As an example, the following outputs an unordered list of surveys:
-  * <pre>echo data_entry_helper::list_in_template(array(
-  *     'label'=>'template',
-  *     'table'=>'survey',
-  *     'extraParams' => $readAuth,
-  *     'template'=>'<li>|title|</li>'
-  * ));</pre>
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>list_in_template</b></br>
-  * HTML template used to generate the outer container.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>template</b><br/>
-  * Required. HTML template which will be emitted for each item. Fields from the data are identified
-  * by wrapping them in ||. For example, |term| would result in the field called term's value being placed inside
-  * the HTML.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the generated list.
-  */
+   * Helper function to list the output from a request against the data services, using an HTML template
+   * for each item. As an example, the following outputs an unordered list of surveys:
+   * <pre>echo data_entry_helper::list_in_template(array(
+   *     'label'=>'template',
+   *     'table'=>'survey',
+   *     'extraParams' => $readAuth,
+   *     'template'=>'<li>|title|</li>'
+   * ));</pre>
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>list_in_template</b></br>
+   * HTML template used to generate the outer container.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>table</b><br/>
+   * Required. Table name to get data from for the select options.</li>
+   * <li><b>extraParams</b><br/>
+   * Optional. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array.</li>
+   * <li><b>template</b><br/>
+   * Required. HTML template which will be emitted for each item. Fields from the data are identified
+   * by wrapping them in ||. For example, |term| would result in the field called term's value being placed inside
+   * the HTML.</li>
+   * <li><b>cachetimeout</b><br/>
+   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+   * if this is not specified then 1 hour.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the generated list.
+   */
   public static function list_in_template($options) {
     $options = self::check_options($options);
     $response = self::get_population_data($options);
@@ -1894,71 +1894,71 @@ $('#$escaped').change(function(e) {
       return lang::get("error loading control");
   }
 
- /**
-  * Generates a map control, with optional data entry fields and location finder powered by the
-  * Yahoo! geoservices API. This is just a shortcut to building a control using a map_panel and the
-  * associated controls.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>presetLayers</b><br/>
-  * Array of preset layers to include. Options are 'google_physical', 'google_streets', 'google_hybrid',
-  * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth' (deprecated, use bing_aerial),
-  * 'bing_aerial', 'bing_hybrid, 'bing_shaded', 'multimap_default', 'multimap_landranger', 
-  * 'osm' (for OpenStreetMap), 'osm_th' (for OpenStreetMap Tiles@Home).</li>
-  * <li><b>edit</b><br/>
-  * True or false to include the edit controls for picking spatial references.</li>
-  * <li><b>locate</b><br/>
-  * True or false to include the geolocate controls.</li>
-  * <li><b>wkt</b><br/>
-  * Well Known Text of a spatial object to add to the map at startup.</li>
-  * <li><b>tabDiv</b><br/>
-  * If the map is on a tab or wizard interface, specify the div the map loads on.</li>
-  * </ul>
-  * 
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>georeference_lookup</b></br>
-  * Template which outputs the HTML for the georeference search input, button placehold and container
-  * for the list of search results. The default template uses JavaScript to write the output, so that 
-  * this control is removed from the page if JavaScript is disabled as it will have no functionality.
-  * </li>
-  * <li><b>button</b></br>
-  * HTML template for the buttons used for the georeference_lookup.
-  * </li>
-  * <li><b>sref_textbox</b></br>
-  * HTML template for the spatial reference input control.
-  * </li>
-  * <li><b>sref_textbox_latlong</b></br>
-  * HTML template for the spatial reference input control used when inputting latitude
-  * and longitude into separate inputs.
-  * </li>
-  * <li><b>select</b></br>
-  * HTML template used by the select control for picking a spatial reference system, if there
-  * is one.
-  * </li>
-  * <li><b>select_item</b></br>
-  * HTML template used by the option items in the select control for picking a spatial 
-  * reference system, if there is one.
-  * </li>
-  * </ul>
-  */
+  /**
+   * Generates a map control, with optional data entry fields and location finder powered by the
+   * Yahoo! geoservices API. This is just a shortcut to building a control using a map_panel and the
+   * associated controls.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>presetLayers</b><br/>
+   * Array of preset layers to include. Options are 'google_physical', 'google_streets', 'google_hybrid',
+   * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth' (deprecated, use bing_aerial),
+   * 'bing_aerial', 'bing_hybrid, 'bing_shaded', 'multimap_default', 'multimap_landranger',
+   * 'osm' (for OpenStreetMap), 'osm_th' (for OpenStreetMap Tiles@Home).</li>
+   * <li><b>edit</b><br/>
+   * True or false to include the edit controls for picking spatial references.</li>
+   * <li><b>locate</b><br/>
+   * True or false to include the geolocate controls.</li>
+   * <li><b>wkt</b><br/>
+   * Well Known Text of a spatial object to add to the map at startup.</li>
+   * <li><b>tabDiv</b><br/>
+   * If the map is on a tab or wizard interface, specify the div the map loads on.</li>
+   * </ul>
+   *
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>georeference_lookup</b></br>
+   * Template which outputs the HTML for the georeference search input, button placehold and container
+   * for the list of search results. The default template uses JavaScript to write the output, so that
+   * this control is removed from the page if JavaScript is disabled as it will have no functionality.
+   * </li>
+   * <li><b>button</b></br>
+   * HTML template for the buttons used for the georeference_lookup.
+   * </li>
+   * <li><b>sref_textbox</b></br>
+   * HTML template for the spatial reference input control.
+   * </li>
+   * <li><b>sref_textbox_latlong</b></br>
+   * HTML template for the spatial reference input control used when inputting latitude
+   * and longitude into separate inputs.
+   * </li>
+   * <li><b>select</b></br>
+   * HTML template used by the select control for picking a spatial reference system, if there
+   * is one.
+   * </li>
+   * <li><b>select_item</b></br>
+   * HTML template used by the option items in the select control for picking a spatial
+   * reference system, if there is one.
+   * </li>
+   * </ul>
+   */
   public static function map($options) {
     $options = self::check_options($options);
     $options = array_merge(array(
-        'div'=>'map',
-        'edit'=>true,
-        'locate'=>true,
-        'wkt'=>null
+      'div'=>'map',
+      'edit'=>true,
+      'locate'=>true,
+      'wkt'=>null
     ), $options);
     $r = '';
     if ($options['edit']) {
       $r .= self::sref_and_system(array(
-          'label'=>lang::get('spatial ref'),
+        'label'=>lang::get('spatial ref'),
       ));
     }
     if ($options['locate']) {
       $r .= self::georeference_lookup(array(
-          'label'=>lang::get('search for place on map')
+        'label'=>lang::get('search for place on map')
       ));
     }
     $mapPanelOptions = array('initialFeatureWkt' => $options['wkt']);
@@ -1968,38 +1968,38 @@ $('#$escaped').change(function(e) {
     return $r;
   }
 
- /**
-  * Outputs a map panel.
-  * @param array $options Refer to map_helper::map_panel documentation.
-  * @param array $olOptions Refer to map_helper::map_panel documentation.
-  * @deprecated Use map_helper::map_panel instead.
-  */
+  /**
+   * Outputs a map panel.
+   * @param array $options Refer to map_helper::map_panel documentation.
+   * @param array $olOptions Refer to map_helper::map_panel documentation.
+   * @deprecated Use map_helper::map_panel instead.
+   */
   public static function map_panel($options, $olOptions=null) {
     require_once('map_helper.php');
     return map_helper::map_panel($options, $olOptions);
   }
 
- /**
-  * Helper function to output an HTML password input. For security reasons, this does not re-load existing values
-  * or display validation error messages and no default can be set.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>password_input</b></br>
-  * Template which outputs the HTML for a password input control.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name by which the password will be passed to the authentication system.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the text input control.
-  */
+  /**
+   * Helper function to output an HTML password input. For security reasons, this does not re-load existing values
+   * or display validation error messages and no default can be set.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>password_input</b></br>
+   * Template which outputs the HTML for a password input control.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name by which the password will be passed to the authentication system.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the text input control.
+   */
   public static function password_input($options) {
     $options = self::check_options($options);
     $options['lockable']=false;
@@ -2009,61 +2009,61 @@ $('#$escaped').change(function(e) {
     return self::apply_template('password_input', $options);
   }
 
- /**
-  * Helper function to output a textbox for determining a locality from an entered postcode.
-  *
-  * <p>The textbox optionally includes hidden fields for the latitude and longitude and can
-  * link to an address control for automatic generation of address information. When the focus
-  * leaves the textbox, the Google AJAX Search API is used to obtain the latitude and longitude
-  * so they can be saved with the record.</p>
-  *
-  * <p>The following example displays a postcode box and an address box, which is auto-populated
-  * when a postcode is given. The spatial reference controls are "hidden" from the user but
-  * are available to post into the database.</p>
-  * <code>
-  * <?php echo data_entry_helper::postcode_textbox(array(
-  *     'label'=>'Postcode',
-  *     'fieldname'=>'smpAttr:8',
-  *     'linkedAddressBoxId'=>'address'
-  * );
-  * echo data_entry_helper::textarea(array(
-  *     'label' => 'Address',
-  *     'id' => 'address',
-  *     'fieldname' => 'smpAttr:9'
-  * ));?>
-  * </code>
-  * <p>The output of this control can be configured using the following templates:</p>
-  * <ul>
-  * <li><b>postcode_textbox</b></br>
-  * Template which outputs the HTML for the text input control used. Must have an onblur event handler
-  * which calls the JavaScript required to search for the post code.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. This should be left to its default value for
-  * integration with other mapping controls to work correctly.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>hiddenFields</b><br/>
-  * Optional. Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
-  * should be separate sref_textbox and sref_system_textbox controls elsewhere on the page. Defaults to true.
-  * <li><b>srefField</b><br/>
-  * Optional. Name of the spatial reference hidden field that will be output by this control if hidddenFields is true.</li>
-  * <li><b>systemField</b><br/>
-  * Optional. Name of the spatial reference system hidden field that will be output by this control if hidddenFields is true.</li>
-  * <li><b>linkedAddressBoxId</b><br/>
-  * Optional. Id of the separate textarea control that will be populated with an address when a postcode is looked up.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the postcode control.
-  */
+  /**
+   * Helper function to output a textbox for determining a locality from an entered postcode.
+   *
+   * <p>The textbox optionally includes hidden fields for the latitude and longitude and can
+   * link to an address control for automatic generation of address information. When the focus
+   * leaves the textbox, the Google AJAX Search API is used to obtain the latitude and longitude
+   * so they can be saved with the record.</p>
+   *
+   * <p>The following example displays a postcode box and an address box, which is auto-populated
+   * when a postcode is given. The spatial reference controls are "hidden" from the user but
+   * are available to post into the database.</p>
+   * <code>
+   * <?php echo data_entry_helper::postcode_textbox(array(
+   *     'label'=>'Postcode',
+   *     'fieldname'=>'smpAttr:8',
+   *     'linkedAddressBoxId'=>'address'
+   * );
+   * echo data_entry_helper::textarea(array(
+   *     'label' => 'Address',
+   *     'id' => 'address',
+   *     'fieldname' => 'smpAttr:9'
+   * ));?>
+   * </code>
+   * <p>The output of this control can be configured using the following templates:</p>
+   * <ul>
+   * <li><b>postcode_textbox</b></br>
+   * Template which outputs the HTML for the text input control used. Must have an onblur event handler
+   * which calls the JavaScript required to search for the post code.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. This should be left to its default value for
+   * integration with other mapping controls to work correctly.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>hiddenFields</b><br/>
+   * Optional. Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
+   * should be separate sref_textbox and sref_system_textbox controls elsewhere on the page. Defaults to true.
+   * <li><b>srefField</b><br/>
+   * Optional. Name of the spatial reference hidden field that will be output by this control if hidddenFields is true.</li>
+   * <li><b>systemField</b><br/>
+   * Optional. Name of the spatial reference system hidden field that will be output by this control if hidddenFields is true.</li>
+   * <li><b>linkedAddressBoxId</b><br/>
+   * Optional. Id of the separate textarea control that will be populated with an address when a postcode is looked up.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the postcode control.
+   */
   public static function postcode_textbox($options) {
     if (empty(self::$google_api_key))
       return 'The postcode textbox control requires a Google API Key in the configuration';
@@ -2072,11 +2072,11 @@ $('#$escaped').change(function(e) {
     $options = self::check_options($options);
     // Merge in the defaults
     $options = array_merge(array(
-        'srefField'=>'sample:entered_sref',
-        'systemField'=>'sample:entered_sref_system',
-        'hiddenFields'=>true,
-        'linkedAddressBoxId'=>''
-        ), $options);
+      'srefField'=>'sample:entered_sref',
+      'systemField'=>'sample:entered_sref_system',
+      'hiddenFields'=>true,
+      'linkedAddressBoxId'=>''
+    ), $options);
     self::add_resource('postcode_search');
     $r = self::apply_template('postcode_textbox', $options);
     if ($options['hiddenFields']) {
@@ -2088,64 +2088,64 @@ $('#$escaped').change(function(e) {
     $r .= self::check_errors($options['fieldname']);
     self::$javascript .= "indiciaData.google_api_key='".self::$google_api_key."';\n";
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
-        self::getRootFolder() . self::client_helper_path() . "proxy.php';\n\n";
+      self::getRootFolder() . self::client_helper_path() . "proxy.php';\n\n";
     return $r;
   }
 
- /**
-  * Helper function to generate a radio group from a Indicia core service query.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Optional. Table name to get data from for the select options. Required unless lookupValues is specified.</li>
-  * <li><b>captionField</b><br/>
-  * Optional. Field to draw values to show in the control from. Required unless lookupValues is specified.</li>
-  * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField. </li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>lookupValues</b><br/>
-  * If the group is to be populated with a fixed list of values, rather than via a service call, then the
-  * values can be passed into this parameter as an associated array of key=>caption.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>template</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for the outer control.</li>
-  * <li><b>itemTemplate</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for each item in the control.</li>
-  * <li><b>captionTemplate</b><br/>
-  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
-  * with each database field represented as {fieldname}.</li>
-  * </ul>
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>check_or_radio_group</b></br>
-  * Container element for the group of checkboxes.
-  * </li>
-  * <li><b>check_or_radio_group_item</b></br>
-  * Template for the HTML element used for each item in the group.
-  * </li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the group of radio buttons.
-  */
+  /**
+   * Helper function to generate a radio group from a Indicia core service query.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>table</b><br/>
+   * Optional. Table name to get data from for the select options. Required unless lookupValues is specified.</li>
+   * <li><b>captionField</b><br/>
+   * Optional. Field to draw values to show in the control from. Required unless lookupValues is specified.</li>
+   * <li><b>valueField</b><br/>
+   * Optional. Field to draw values to return from the control from. Defaults
+   * to the value of captionField. </li>
+   * <li><b>extraParams</b><br/>
+   * Optional. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array.</li>
+   * <li><b>lookupValues</b><br/>
+   * If the group is to be populated with a fixed list of values, rather than via a service call, then the
+   * values can be passed into this parameter as an associated array of key=>caption.</li>
+   * <li><b>cachetimeout</b><br/>
+   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+   * if this is not specified then 1 hour.</li>
+   * <li><b>template</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for the outer control.</li>
+   * <li><b>itemTemplate</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for each item in the control.</li>
+   * <li><b>captionTemplate</b><br/>
+   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+   * with each database field represented as {fieldname}.</li>
+   * </ul>
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>check_or_radio_group</b></br>
+   * Container element for the group of checkboxes.
+   * </li>
+   * <li><b>check_or_radio_group_item</b></br>
+   * Template for the HTML element used for each item in the group.
+   * </li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the group of radio buttons.
+   */
   public static function radio_group($options) {
     $options = self::check_options($options);
     return self::check_or_radio_group($options, 'radio');
@@ -2164,7 +2164,7 @@ $('#$escaped').change(function(e) {
 
   /**
    * Outputs a grid that loads the content of a report or Indicia table.
-   * @param array $options Refer to report_helper::report_grid documentation.   
+   * @param array $options Refer to report_helper::report_grid documentation.
    * @deprecated Use report_helper::report_grid.
    */
   public static function report_grid($options) {
@@ -2182,88 +2182,88 @@ $('#$escaped').change(function(e) {
     return report_helper::report_chart($options);
   }
 
- /**
-  * Helper function to generate a select control from a Indicia core service query. The select control can
-  * be linked to populate itself when an item is selected in another control by specifying the
-  * parentControlId and filterField options.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>select</b></br>
-  * HTML template used to generate the select element.
-  * </li>
-  * <li><b>select_item</b></br>
-  * HTML template used to generate each option element with the select elements.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>  *
-  * <li><b>table</b><br/>
-  * Table name to get data from for the select options if the select is being populated by a service call.</li>
-  * <li><b>report</b><br/>
-  * Report name to get data from for the select options if the select is being populated by a service call using a report.
-  * Mutually exclusive with the table option.</li>
-  * <li><b>captionField</b><br/>
-  * Field to draw values to show in the control from if the select is being populated by a service call.</li>
-  * <li><b>valueField</b><br/>
-  * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array if the select is being populated by a service call.</li>
-  * <li><b>lookupValues</b><br/>
-  * If the select is to be populated with a fixed list of values, rather than via a service call, then the
-  * values can be passed into this parameter as an associated array of key=>caption.
-  * </li>
-  * <li><b>parentControlId</b><br/>
-  * Optional. Specifies a parent control for linked lists. If specified then this control is not
-  * populated until the parent control's value is set. The parent control's value is used to
-  * filter this control's options against the field specified by filterField.</li>
-  * <li><b>parentControlLabel</b><br/>
-  * Optional. Specifies the label of the parent control in a set of linked lists. This allows the child list
-  * to display information about selecting the parent first.</li>
-  * <li><b>filterField</b><br/>
-  * Optional. Specifies the field to filter this control's content against when using a parent
-  * control value to set up linked lists. Defaults to parent_id though this is not active
-  * unless a parentControlId is specified.</li>
-  * <li><b>filterIncludesNulls</b><br/>
-  * Optional. Defaults to false. If true, then null values for the filter field are included in the filter results
-  * when using a linked list.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>blankText</b><br/>
-  * Optional. If specified then the first option in the drop down is the blank text, used when there is no value.</li>
-  * <li><b>template</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for the outer control.</li>
-  * <li><b>itemTemplate</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for each item in the control.</li>
-  * <li><b>captionTemplate</b><br/>
-  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
-  * with each database field represented as {fieldname}.</li>
-  * <li><b>listCaptionSpecialChars</b><br/>
-  * Optional and only relevant when loading content from a data service call. Specifies whether to run the caption through
-  * htmlspecialchars. In some cases there may be format info in the caption, and in others we may wish to keep those
-  * characters as literal.
-  * <li><b>selectedItemTemplate</b><br/>
-  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for the selected item in the control.</li></ul>
-  * 
-  * @return string HTML code for a select control.
-  */
+  /**
+   * Helper function to generate a select control from a Indicia core service query. The select control can
+   * be linked to populate itself when an item is selected in another control by specifying the
+   * parentControlId and filterField options.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>select</b></br>
+   * HTML template used to generate the select element.
+   * </li>
+   * <li><b>select_item</b></br>
+   * HTML template used to generate each option element with the select elements.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>  *
+   * <li><b>table</b><br/>
+   * Table name to get data from for the select options if the select is being populated by a service call.</li>
+   * <li><b>report</b><br/>
+   * Report name to get data from for the select options if the select is being populated by a service call using a report.
+   * Mutually exclusive with the table option.</li>
+   * <li><b>captionField</b><br/>
+   * Field to draw values to show in the control from if the select is being populated by a service call.</li>
+   * <li><b>valueField</b><br/>
+   * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
+   * to the value of captionField.</li>
+   * <li><b>extraParams</b><br/>
+   * Optional. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array if the select is being populated by a service call.</li>
+   * <li><b>lookupValues</b><br/>
+   * If the select is to be populated with a fixed list of values, rather than via a service call, then the
+   * values can be passed into this parameter as an associated array of key=>caption.
+   * </li>
+   * <li><b>parentControlId</b><br/>
+   * Optional. Specifies a parent control for linked lists. If specified then this control is not
+   * populated until the parent control's value is set. The parent control's value is used to
+   * filter this control's options against the field specified by filterField.</li>
+   * <li><b>parentControlLabel</b><br/>
+   * Optional. Specifies the label of the parent control in a set of linked lists. This allows the child list
+   * to display information about selecting the parent first.</li>
+   * <li><b>filterField</b><br/>
+   * Optional. Specifies the field to filter this control's content against when using a parent
+   * control value to set up linked lists. Defaults to parent_id though this is not active
+   * unless a parentControlId is specified.</li>
+   * <li><b>filterIncludesNulls</b><br/>
+   * Optional. Defaults to false. If true, then null values for the filter field are included in the filter results
+   * when using a linked list.</li>
+   * <li><b>cachetimeout</b><br/>
+   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+   * if this is not specified then 1 hour.</li>
+   * <li><b>blankText</b><br/>
+   * Optional. If specified then the first option in the drop down is the blank text, used when there is no value.</li>
+   * <li><b>template</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for the outer control.</li>
+   * <li><b>itemTemplate</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for each item in the control.</li>
+   * <li><b>captionTemplate</b><br/>
+   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+   * with each database field represented as {fieldname}.</li>
+   * <li><b>listCaptionSpecialChars</b><br/>
+   * Optional and only relevant when loading content from a data service call. Specifies whether to run the caption through
+   * htmlspecialchars. In some cases there may be format info in the caption, and in others we may wish to keep those
+   * characters as literal.
+   * <li><b>selectedItemTemplate</b><br/>
+   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+   * for the selected item in the control.</li></ul>
+   *
+   * @return string HTML code for a select control.
+   */
   public static function select($options)
   {
     $options = array_merge(
@@ -2276,45 +2276,45 @@ $('#$escaped').change(function(e) {
     return self::select_or_listbox($options);
   }
 
- /**
-  * Outputs a spatial reference input box and a drop down select control populated with a list of
-  * spatial reference systems for the user to select from. If there is only 1 system available then
-  * the system drop down is ommitted since it is not required.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>sref_textbox</b></br>
-  * Template used for the text input box for the spatial reference.
-  * </li>
-  * <li><b>sref_textbox_latlong</b></br>
-  * Template used for the latitude and longitude input boxes when the splitLatLong option is set
-  * to true.
-  * </li>
-  * <li><b>select</b></br>
-  * Template used for the select element which contains the spatial reference system options available
-  * for input.
-  * </li>
-  * <li><b>select_item</b></br>
-  * Template used for the option elements in the select list of spatial reference system options available
-  * for input.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. Name of the database field that spatial reference will be posted to. Defaults to
-  * sample:entered_sref. The system field is automatically constructed from this.</li>
-  * <li><b>systems</b>
-  * Optional. List of spatial reference systems to display. Associative array with the key
-  * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
-  * the description to display.</li>
-  * <li><b>defaultSystem</b>
-  * Optional. Code for the default system value to load.</li>
-  * <li><b>defaultGeom</b>
-  * Optional. WKT value for the default geometry to load (hidden).</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the spatial reference and system selection control.
-  */
+  /**
+   * Outputs a spatial reference input box and a drop down select control populated with a list of
+   * spatial reference systems for the user to select from. If there is only 1 system available then
+   * the system drop down is ommitted since it is not required.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>sref_textbox</b></br>
+   * Template used for the text input box for the spatial reference.
+   * </li>
+   * <li><b>sref_textbox_latlong</b></br>
+   * Template used for the latitude and longitude input boxes when the splitLatLong option is set
+   * to true.
+   * </li>
+   * <li><b>select</b></br>
+   * Template used for the select element which contains the spatial reference system options available
+   * for input.
+   * </li>
+   * <li><b>select_item</b></br>
+   * Template used for the option elements in the select list of spatial reference system options available
+   * for input.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. Name of the database field that spatial reference will be posted to. Defaults to
+   * sample:entered_sref. The system field is automatically constructed from this.</li>
+   * <li><b>systems</b>
+   * Optional. List of spatial reference systems to display. Associative array with the key
+   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
+   * the description to display.</li>
+   * <li><b>defaultSystem</b>
+   * Optional. Code for the default system value to load.</li>
+   * <li><b>defaultGeom</b>
+   * Optional. WKT value for the default geometry to load (hidden).</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the spatial reference and system selection control.
+   */
   public static function sref_and_system($options) {
     $options = array_merge(array(
       'fieldname'=>'sample:entered_sref'
@@ -2336,7 +2336,7 @@ $('#$escaped').change(function(e) {
     }
     // Output the sref control
     $r = self::sref_textbox($srefOptions);
-    
+
     // tweak the options passed to the system selector
     $options['fieldname']=$options['fieldname']."_system";
     unset($options['label']);
@@ -2359,54 +2359,54 @@ $('#$escaped').change(function(e) {
     return $r;
   }
 
- /**
-  * Outputs a drop down select control populated with a list of spatial reference systems
-  * for the user to select from.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>select</b></br>
-  * Template used for the select element which contains the spatial reference system options available
-  * for input.
-  * </li>
-  * <li><b>select_item</b></br>
-  * Template used for the option elements in the select list of spatial reference system options available
-  * for input.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref_system.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>systems</b>
-  * Optional. List of spatial reference systems to display. Associative array with the key
-  * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
-  * the description to display.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the spatial reference systems selection control.
-  */
+  /**
+   * Outputs a drop down select control populated with a list of spatial reference systems
+   * for the user to select from.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>select</b></br>
+   * Template used for the select element which contains the spatial reference system options available
+   * for input.
+   * </li>
+   * <li><b>select_item</b></br>
+   * Template used for the option elements in the select list of spatial reference system options available
+   * for input.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref_system.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>systems</b>
+   * Optional. List of spatial reference systems to display. Associative array with the key
+   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
+   * the description to display.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the spatial reference systems selection control.
+   */
   public static function sref_system_select($options) {
     global $indicia_templates;
     $options = array_merge(array(
-        'fieldname'=>'sample:entered_sref_system',
-        'systems'=>array('OSGB'=>lang::get('sref:OSGB'), '4326'=>lang::get('sref:4326')),
-        'id'=>'imp-sref-system'
+      'fieldname'=>'sample:entered_sref_system',
+      'systems'=>array('OSGB'=>lang::get('sref:OSGB'), '4326'=>lang::get('sref:4326')),
+      'id'=>'imp-sref-system'
     ), $options);
     $options = self::check_options($options);
     $opts = "";
     foreach ($options['systems'] as $system=>$caption){
       $selected = ($options['default'] == $system ? 'selected' : '');
       $opts .= str_replace(
-          array('{value}', '{caption}', '{selected}'),
-          array($system, $caption, $selected),
-          $indicia_templates['select_item']
+        array('{value}', '{caption}', '{selected}'),
+        array($system, $caption, $selected),
+        $indicia_templates['select_item']
       );
     }
     $options['items'] = $opts;
@@ -2414,58 +2414,58 @@ $('#$escaped').change(function(e) {
     return self::apply_template('select', $options);
   }
 
- /**
-  * Creates a textbox for entry of a spatial reference.
-  * Also generates the hidden geom field required to properly post spatial data. The
-  * box is automatically linked to a map_panel if one is added to the page.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>sref_textbox</b></br>
-  * Template used for the text input box for the spatial reference.
-  * </li>
-  * <li><b>sref_textbox_latlong</b></br>
-  * Template used for the latitude and longitude input boxes when the splitLatLong option is set
-  * to true.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldName</b><br/>
-  * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>defaultGeom</b><br/>
-  * Optional. The default geom (wkt) to store in a hidden input posted with the form data.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>splitLatLong</b><br/>
-  * Optional. If set to true, then 2 boxes are created, one for the latitude and one for the longitude.</li>
-  * <li><b>geomFieldname</b><br/>
-  * Optional. Fieldname to use for the geom (table:fieldname format) where the geom field is not
-  * just called geom, e.g. location:centroid_geom.</li>
-  * <li><b>minGridRef</b><br/>
-  * Optional. Set to a number to enforce grid references to be a certain precision, e.g. provide the value 6 
-  * to enforce a minimum 6 figure grid reference.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the spatial reference control.
-  * @todo This does not work for reloading data at the moment, when using split lat long mode.
-  */
+  /**
+   * Creates a textbox for entry of a spatial reference.
+   * Also generates the hidden geom field required to properly post spatial data. The
+   * box is automatically linked to a map_panel if one is added to the page.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>sref_textbox</b></br>
+   * Template used for the text input box for the spatial reference.
+   * </li>
+   * <li><b>sref_textbox_latlong</b></br>
+   * Template used for the latitude and longitude input boxes when the splitLatLong option is set
+   * to true.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldName</b><br/>
+   * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>defaultGeom</b><br/>
+   * Optional. The default geom (wkt) to store in a hidden input posted with the form data.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>splitLatLong</b><br/>
+   * Optional. If set to true, then 2 boxes are created, one for the latitude and one for the longitude.</li>
+   * <li><b>geomFieldname</b><br/>
+   * Optional. Fieldname to use for the geom (table:fieldname format) where the geom field is not
+   * just called geom, e.g. location:centroid_geom.</li>
+   * <li><b>minGridRef</b><br/>
+   * Optional. Set to a number to enforce grid references to be a certain precision, e.g. provide the value 6
+   * to enforce a minimum 6 figure grid reference.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the spatial reference control.
+   * @todo This does not work for reloading data at the moment, when using split lat long mode.
+   */
   public static function sref_textbox($options) {
     // get the table and fieldname
     $tokens=explode(':', $options['fieldname']);
     // Merge the default parameters
     $options = array_merge(array(
-        'fieldname'=>'sample:entered_sref',
-        'hiddenFields'=>true,
-        'id'=>'imp-sref',
-        'geomid'=>'imp-geom',
-        'geomFieldname'=>$tokens[0].':geom',
-        'default'=>self::check_default_value($options['fieldname']),
-        'splitLatLong'=>false
+      'fieldname'=>'sample:entered_sref',
+      'hiddenFields'=>true,
+      'id'=>'imp-sref',
+      'geomid'=>'imp-geom',
+      'geomFieldname'=>$tokens[0].':geom',
+      'default'=>self::check_default_value($options['fieldname']),
+      'splitLatLong'=>false
     ), $options);
     if (!empty($options['minGridRef']))
       $options['validation']='mingridref['.$options['minGridRef'].']';
@@ -2497,39 +2497,39 @@ $('#$escaped').change(function(e) {
       $r = self::apply_template('sref_textbox', $options);
     return $r;
   }
-  
+
   /**
-  * Outputs hidden controls for entered_sref and sref_system. This is intended for use when
-  * sample positions are to be selected from predefined locations and they are automatically 
-  * populated when a location shown on a map_panel is clicked or a selection is made in a location control. 
-  * Use in conjunction with a map_panel with, e.g.
-  *   clickForSpatialRef=false
-  *   locationLayerName=indicia:detail_locations
-  *   locationLayerFilter=website_id=n
-  * and a location_select with e.g.
-  *   searchUpdatesSref=true
-  *   validation="required"
-  *   blankText="Select..." 
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>hidden_text</b></br>
-  * Template used for the hidden text HTML element.
-  * </li>
-  * </ul>
-  *   
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldame</b><br/>
-  * Required. The name of the database field the sref control is bound to. Defaults to sample:entered_sref.
-  * The system field and geom field is automatically constructed from this.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default spatial reference to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>defaultSys</b><br/>
-  * Optional. The default spatial reference system to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * </ul>
-  * @return string HTML to insert into the page for the location sref control.
-  */
+   * Outputs hidden controls for entered_sref and sref_system. This is intended for use when
+   * sample positions are to be selected from predefined locations and they are automatically
+   * populated when a location shown on a map_panel is clicked or a selection is made in a location control.
+   * Use in conjunction with a map_panel with, e.g.
+   *   clickForSpatialRef=false
+   *   locationLayerName=indicia:detail_locations
+   *   locationLayerFilter=website_id=n
+   * and a location_select with e.g.
+   *   searchUpdatesSref=true
+   *   validation="required"
+   *   blankText="Select..."
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>hidden_text</b></br>
+   * Template used for the hidden text HTML element.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldame</b><br/>
+   * Required. The name of the database field the sref control is bound to. Defaults to sample:entered_sref.
+   * The system field and geom field is automatically constructed from this.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default spatial reference to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>defaultSys</b><br/>
+   * Optional. The default spatial reference system to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * </ul>
+   * @return string HTML to insert into the page for the location sref control.
+   */
   public static function sref_hidden($options) {
 
     $options = array_merge(array(
@@ -2537,8 +2537,8 @@ $('#$escaped').change(function(e) {
       'fieldname' => 'sample:entered_sref',
     ), $options);
     $options['default'] = self::check_default_value($options['fieldname'],
-          array_key_exists('default', $options) ? $options['default'] : '');
-    
+      array_key_exists('default', $options) ? $options['default'] : '');
+
     // remove validation as field will be hidden
     if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
       unset(self::$default_validation_rules[$options['fieldname']]);
@@ -2546,45 +2546,45 @@ $('#$escaped').change(function(e) {
     if (array_key_exists('validation', $options)) {
       unset($options['validation']);
     }
-       
+
     $r = self::hidden_text($options);
-    
+
     $sysOptions['id'] = $options['id'] . '-system';
     $sysOptions['fieldname'] = $options['fieldname'] . '_system';
     $sysOptions['default'] = self::check_default_value($sysOptions['fieldname'],
-          array_key_exists('defaultSys', $options) ? $options['defaultSys'] : '');
+      array_key_exists('defaultSys', $options) ? $options['defaultSys'] : '');
 
     $r .= self::hidden_text($sysOptions);
-        
-    return $r;    
+
+    return $r;
   }
 
   /**
    * A version of the autocomplete control preconfigured for species lookups.
-   * The output of this control can be configured using the following templates: 
-   * * **autocomplete** - Defines a hidden input and a visible input, to hold the underlying database ID and to 
+   * The output of this control can be configured using the following templates:
+   * * **autocomplete** - Defines a hidden input and a visible input, to hold the underlying database ID and to
    *   allow input and display of the text search string respectively.
-   * * **autocomplete_javascript** - Defines the JavaScript which will be inserted onto the page in order to 
+   * * **autocomplete_javascript** - Defines the JavaScript which will be inserted onto the page in order to
    *   activate the autocomplete control.
-   * 
+   *
    * @param type $options Array of configuration options with the following possible entries.
    * * **cacheLookup** - Defaults to true. If true, uses cache_taxon_searchterms for species name lookup
-   *   rather than detail_taxa_taxon_lists. The former is faster and tolerates punctuation and spacing errors, 
+   *   rather than detail_taxa_taxon_lists. The former is faster and tolerates punctuation and spacing errors,
    *   but the available data to lookup against may not be up to date if the cache tables are not populated.
    * * **speciesIncludeBothNames** - include both latin and common names. Default false.
    * * **speciesIncludeTaxonGroup** - include the taxon group for each shown name. Default false.
    * * **speciesIncludeIdDiff** - include identification difficulty icons. Default true.
-   * * **speciesNameFilterMode** - Optional. Method of filtering the available species names (both for 
+   * * **speciesNameFilterMode** - Optional. Method of filtering the available species names (both for
    * * initial population into the grid and additional rows). Options are
    *   * preferred - only preferred names
    *   * currentLanguage - only names in the language identified by the language option are included
    *   * excludeSynonyms - all names except synonyms (non-preferred latin names) are included.
-   * * **extraParams** - Should contain the read authorisation array and taxon_list_id to filter against. 
-   * * **warnIfNoMatch** - Should the autocomplete control warn the user if they leave the control whilst 
+   * * **extraParams** - Should contain the read authorisation array and taxon_list_id to filter against.
+   * * **warnIfNoMatch** - Should the autocomplete control warn the user if they leave the control whilst
    *   searching and then nothing is matched? Default true.
-   * 
+   *
    * @return string Html for the species autocomplete control.
-   */   
+   */
   public static function species_autocomplete($options) {
     global $indicia_templates;
     $options = array_merge(array(
@@ -2617,16 +2617,16 @@ $('#$escaped').change(function(e) {
       $r = self::get_population_data(array(
         'table'=>'cache_taxa_taxon_list',
         'extraParams'=>array('nonce'=>$options['extraParams']['nonce'],'auth_token'=>$options['extraParams']['auth_token'])+
-            array('id'=>$options['default'],'columns'=>"taxon")
+          array('id'=>$options['default'],'columns'=>"taxon")
       ));
       $options['defaultCaption']=$r[0]['taxon'];
     }
     return self::autocomplete($options);
   }
-  
+
   /**
    * Builds a JavaScript function to format the species shown in the species autocomplete.
-   * 
+   *
    * @param array $options Options array with the following entries:
    * * **cacheLookup** - Used cached version of lookup tables for better performance. Default true.
    * * **speciesIncludeBothNames** - include both latin and common names. Default false.
@@ -2648,12 +2648,12 @@ $('#$escaped').change(function(e) {
     extract($db);
 
     $fn = "function(item) { \n".
-        "  var r;\n".
-        "  if (item.$colLanguage!==null && item.$colLanguage.toLowerCase()==='$valLatinLanguage') {\n".
-        "    r = '<em>'+item.$colTaxon+'</em>';\n".
-        "  } else {\n".
-        "    r = '<span>'+item.$colTaxon+'</span>';\n".
-        "  }\n";
+      "  var r;\n".
+      "  if (item.$colLanguage!==null && item.$colLanguage.toLowerCase()==='$valLatinLanguage') {\n".
+      "    r = '<em>'+item.$colTaxon+'</em>';\n".
+      "  } else {\n".
+      "    r = '<span>'+item.$colTaxon+'</span>';\n".
+      "  }\n";
     // This bit optionally adds '- common' or '- latin' depending on what was being searched
     if ($options['speciesIncludeBothNames']) {
       $fn .= "  if (item.preferred==='t' && item.$colCommon!=item.$colTaxon && item.$colCommon) {\n".
@@ -2666,14 +2666,14 @@ $('#$escaped').change(function(e) {
     if ($options['speciesIncludeTaxonGroup'])
       $fn .= "  r += '<br/><strong>' + item.taxon_group + '</strong>'\n";
     if ($options['speciesIncludeIdDiff'])
-    $fn .= "  if (item.identification_difficulty && item.identification_difficulty>1) {\n" . 
+      $fn .= "  if (item.identification_difficulty && item.identification_difficulty>1) {\n" .
         "    item.icon = ' <span class=\"item-icon id-diff id-diff-'+item.identification_difficulty+" .
         "      '\" data-diff=\"'+item.identification_difficulty+'\" data-rule=\"'+item.id_diff_verification_rule_id+'\"></span>';\n" .
         "    r += item.icon;\n" .
         "  }\n";
     // Close the function
     $fn .= "  return r;\n".
-        "}\n";
+      "}\n";
     // Set it into the indicia templates
     $indicia_templates['format_species_autocomplete_fn'] = $fn;
   }
@@ -2933,7 +2933,7 @@ $('#$escaped').change(function(e) {
       $smpIdx=0;
     if ($options['columns'] > 1 && count($options['mediaTypes'])>1)
       throw new Exception('The species_checklist control does not support having more than one occurrence per row (columns option > 0) '.
-          'at the same time has having the mediaTypes option in use.');
+        'at the same time has having the mediaTypes option in use.');
     self::add_resource('json');
     self::add_resource('autocomplete');
     $filterArray = self::get_species_names_filter($options);
@@ -3008,25 +3008,25 @@ $('#$escaped').change(function(e) {
     $subSampleRows = array();
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(self::$entity_to_load['sample:id']) && $options['useLoadedExistingRecords']===false)
-      self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], 
-          $options['mediaTypes'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
-          (isset($options['subSampleSampleMethodID']) ? $options['subSampleSampleMethodID'] : ''));
+      self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'],
+        $options['mediaTypes'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
+        (isset($options['subSampleSampleMethodID']) ? $options['subSampleSampleMethodID'] : ''));
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.  
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
       $attrOptions = array(
-          'id' => null
-           ,'valuetable'=>'occurrence_attribute_value'
-           ,'attrtable'=>'occurrence_attribute'
-           ,'key'=>'occurrence_id'
-           ,'fieldprefix'=>"sc:-idx-::occAttr"
-           ,'extraParams'=>$options['readAuth']
-           ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
+        'id' => null
+      ,'valuetable'=>'occurrence_attribute_value'
+      ,'attrtable'=>'occurrence_attribute'
+      ,'key'=>'occurrence_id'
+      ,'fieldprefix'=>"sc:-idx-::occAttr"
+      ,'extraParams'=>$options['readAuth']
+      ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       );
       if (isset($options['attributeIds'])) {
         // make sure we load the grid ID attribute
-        if (!empty($options['gridIdAttributeId']) && !in_array($options['gridIdAttributeId'], $options['attributeIds'])) 
+        if (!empty($options['gridIdAttributeId']) && !in_array($options['gridIdAttributeId'], $options['attributeIds']))
           $options['attributeIds'][] = $options['gridIdAttributeId'];
         $attrOptions['extraParams'] += array('query'=>json_encode(array('in'=>array('id'=>$options['attributeIds']))));
       }
@@ -3035,7 +3035,7 @@ $('#$escaped').change(function(e) {
       if (isset($options['occAttrOptions'])) {
         foreach ($options['occAttrOptions'] as $attrId => $attr) {
           if (isset($attributes[$attrId]))
-            $attributes[$attrId] = array_merge($attributes[$attrId], $attr); 
+            $attributes[$attrId] = array_merge($attributes[$attrId], $attr);
         }
       }
       // Get the attribute and control information required to build the custom occurrence attribute columns
@@ -3047,7 +3047,7 @@ $('#$escaped').change(function(e) {
       $onlyImages = true;
       if ($options['mediaTypes']) {
         foreach($options['mediaTypes'] as $mediaType) {
-          if (substr($mediaType, 0, 6)!=='Image:') 
+          if (substr($mediaType, 0, 6)!=='Image:')
             $onlyImages=false;
         }
       }
@@ -3067,7 +3067,7 @@ $('#$escaped').change(function(e) {
       // if subspecies are stored, then need to load up the parent species info into the $taxonRows data
       if ($options['subSpeciesColumn']) {
         self::load_parent_species($taxalist, $options);
-        if ($options['subSpeciesRemoveSspRank']) 
+        if ($options['subSpeciesRemoveSspRank'])
           // remove subspecific rank information from the displayed subspecies names by passing a regex
           self::$javascript .= "indiciaData.subspeciesRanksToStrip='".lang::get('(form[a\.]?|var\.?|ssp\.)')."';\n";
       }
@@ -3088,21 +3088,21 @@ $('#$escaped').change(function(e) {
         while ($taxonIdx < count($taxalist) && $taxalist[$taxonIdx]['id'] != $ttlId) {
           $taxonIdx += 1;
         }
-        if ($taxonIdx >= count($taxalist)) 
+        if ($taxonIdx >= count($taxalist))
           continue; // next taxon, as this one was not found in the list
         $taxon = $taxalist[$taxonIdx];
         // If we are using the sub-species column then when the taxon has a parent (=species) this goes in the
         // first column and we put the subsp in the second column in a moment.
-        if (isset($options['subSpeciesColumn']) && $options['subSpeciesColumn'] && !empty($taxon['parent'])) 
+        if (isset($options['subSpeciesColumn']) && $options['subSpeciesColumn'] && !empty($taxon['parent']))
           $firstColumnTaxon=$taxon['parent'];
         else
           $firstColumnTaxon=$taxon;
         // map field names if using a cached lookup       
-        if ($options['cacheLookup']) 
+        if ($options['cacheLookup'])
           $firstColumnTaxon = $firstColumnTaxon + array(
-            'preferred_name' => $firstColumnTaxon['preferred_taxon'],
-            'common' => $firstColumnTaxon['default_common_name']
-          );
+              'preferred_name' => $firstColumnTaxon['preferred_taxon'],
+              'common' => $firstColumnTaxon['default_common_name']
+            );
         // Get the cell content from the taxon_label template
         $firstCell = self::mergeParamsIntoTemplate($firstColumnTaxon, 'taxon_label');
         // If the taxon label template is PHP, evaluate it.
@@ -3120,7 +3120,7 @@ $('#$escaped').change(function(e) {
                      <img class="action-button edit-taxon-name" src='.$imgPath.'nuvola/package_editors-16px.png>';
             if ($options['includeSpeciesGridLinkPage']) {
               $row .= '<img class="species-grid-link-page-icon" title="'.$options['speciesGridPageLinkTooltip'].'" alt="Notes icon" src='.$speciesGridLinkPageIconSource.'>';
-            }          
+            }
             $row .= '</td>';
           } else {
             $row .= '<td class="row-buttons"><img class="action-button remove-row" src='.$imgPath.'nuvola/cancel-16px.png>';
@@ -3152,8 +3152,8 @@ $('#$escaped').change(function(e) {
             }
           }
         }
-        $row .= str_replace(array('{content}','{colspan}','{editClass}','{tableId}','{idx}'), 
-            array($firstCell,$colspan,$editClass,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
+        $row .= str_replace(array('{content}','{colspan}','{editClass}','{tableId}','{idx}'),
+          array($firstCell,$colspan,$editClass,$options['id'],$colIdx), $indicia_templates['taxon_label_cell']);
         $row .= self::species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
         // AlwaysFixed mode means all rows in the default checklist are included as occurrences. Same for
@@ -3161,8 +3161,8 @@ $('#$escaped').change(function(e) {
         // If we are reloading a record there will be an entity_to_load which will indicate whether present should be checked.
         // This has to be evaluated true or false if reloading a submission with errors.
         if ($options['rowInclusionCheck']=='alwaysFixed' || $options['rowInclusionCheck']=='alwaysRemovable' ||
-            (self::$entity_to_load!=null && array_key_exists("sc:$loadedTxIdx:$existing_record_id:present", self::$entity_to_load) &&
-                self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:present"] == true)) {
+          (self::$entity_to_load!=null && array_key_exists("sc:$loadedTxIdx:$existing_record_id:present", self::$entity_to_load) &&
+            self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:present"] == true)) {
           $checked = ' checked="checked"';
         } else {
           $checked='';
@@ -3220,8 +3220,8 @@ $('#$escaped').change(function(e) {
                 // to link each value to existing records, we need to store the value ID in the value data.
                 $valueId = preg_match('/(\d+)$/', $subfieldname, $matches);
                 $control = str_replace('value="'.self::$entity_to_load[$subfieldname].'"',
-                    'value="'.self::$entity_to_load[$subfieldname].':'.$matches[1].'" selected="selected"', $control);
-              } 
+                  'value="'.self::$entity_to_load[$subfieldname].':'.$matches[1].'" selected="selected"', $control);
+              }
               $ctrlId = str_replace('-idx-', "$options[id]-$txIdx", $attributes[$attrId]['fieldname']);
               // remove [] from the end of the fieldname if present, as it is already in the row template
               $ctrlId = preg_replace('/\[\]$/', '', $ctrlId);
@@ -3237,15 +3237,15 @@ $('#$escaped').change(function(e) {
               preg_match("/occAttr:[0-9]+:(?P<valId>[0-9]+)$/", $loadedCtrlFieldName, $matches);
               if (!empty($matches['valId']))
                 $valId = $matches['valId'];
-              else 
+              else
                 $valId = null;
             }
             else {
               // go for the default, which has no suffix.
               $loadedCtrlFieldName = str_replace('-idx-:', $loadedTxIdx.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
               $ctrlId = str_replace('-idx-:', "$options[id]-$txIdx:$existing_record_id", $attributes[$attrId]['fieldname']);
-            } 
-            if (isset(self::$entity_to_load[$loadedCtrlFieldName])) 
+            }
+            if (isset(self::$entity_to_load[$loadedCtrlFieldName]))
               $existing_value = self::$entity_to_load[$loadedCtrlFieldName];
           } else {
             // no existing record, so use a default control ID which excludes the existing record ID.
@@ -3262,7 +3262,7 @@ $('#$escaped').change(function(e) {
             // For select controls, specify which option is selected from the existing value
             if (substr($oc, 0, 7)==='<select') {
               $oc = str_replace('value="'.$existing_value.'"',
-                  'value="'.$existing_value.'" selected="selected"', $oc);
+                'value="'.$existing_value.'" selected="selected"', $oc);
             } else if(strpos($oc, 'type="checkbox"') !== false) {
               if($existing_value=="1")
                 $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);
@@ -3281,8 +3281,8 @@ $('#$escaped').change(function(e) {
           $headers = $options['id']."-attr$attrId-$colIdx";
           $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['untranslatedCaption']);
           $class = $class . 'Cell';
-          $row .= str_replace(array('{label}', '{class}', '{content}', '{headers}'), array(lang::get($attributes[$attrId]['caption']), $class, $oc, $headers), 
-              $indicia_templates[$options['attrCellTemplate']]);
+          $row .= str_replace(array('{label}', '{class}', '{content}', '{headers}'), array(lang::get($attributes[$attrId]['caption']), $class, $oc, $headers),
+            $indicia_templates[$options['attrCellTemplate']]);
           $idx++;
         }
         if ($options['occurrenceComment']) {
@@ -3296,12 +3296,12 @@ $('#$escaped').change(function(e) {
         if ($options['occurrenceSensitivity']) {
           $row .= "\n<td class=\"ui-widget-content scSensitivityCell\" headers=\"".$options['id']."-sensitivity-$colIdx\">";
           $row .= self::select(array(
-              'fieldname'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence:sensitivity_precision", 
-              'default'=>isset(self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"]) 
-                  ? self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"] : false,
-              'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
-                  '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
-              'blankText' => 'Not sensitive'
+            'fieldname'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence:sensitivity_precision",
+            'default'=>isset(self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"])
+              ? self::$entity_to_load["sc:$loadedTxIdx:$existing_record_id:occurrence:sensitivity_precision"] : false,
+            'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'),
+              '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
+            'blankText' => 'Not sensitive'
           ));
           $row .= "</td>\n";
         }
@@ -3311,7 +3311,7 @@ $('#$escaped').change(function(e) {
           $style = (count($existingImages)>0) ? ' style="display: none"' : '';
           $fieldname = "add-media:$options[id]-$txIdx:$existing_record_id";
           $row .= "<a href=\"\"$style class=\"add-media-link button $mediaBtnClass\" id=\"$fieldname\">" .
-              "$mediaBtnLabel</a>";
+            "$mediaBtnLabel</a>";
           $row .= "</td>";
         }
         // Are we in the first column of a multicolumn grid, or doing single column grid? If so start new row. 
@@ -3323,25 +3323,25 @@ $('#$escaped').change(function(e) {
         $rowIdx++;
         if ($options['mediaTypes'] && count($existingImages) > 0) {
           $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + count($occAttrControls)
-              + ($options['occurrenceComment'] ? 1 : 0) + ($options['occurrenceSensitivity'] ? 1 : 0) + (count($options['mediaTypes']) ? 1 : 0);
+            + ($options['occurrenceComment'] ? 1 : 0) + ($options['occurrenceSensitivity'] ? 1 : 0) + (count($options['mediaTypes']) ? 1 : 0);
           $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
-            'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_medium",
-            'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_medium",
-            'mediaTypes' => $options['mediaTypes'],
-            'readAuth' => $options['readAuth']
-          )).'</td>';
+              'table'=>"sc:$options[id]-$txIdx:$existing_record_id:occurrence_medium",
+              'loadExistingRecordKey'=>"sc:$loadedTxIdx:$existing_record_id:occurrence_medium",
+              'mediaTypes' => $options['mediaTypes'],
+              'readAuth' => $options['readAuth']
+            )).'</td>';
           $imageRowIdxs[]=$rowIdx;
           $rowIdx++;
         }
       }
       $grid .= "\n<tbody>\n";
-      if (count($rows)>0) 
+      if (count($rows)>0)
         $grid .= self::species_checklist_implode_rows($rows, $imageRowIdxs);
       $grid .= "</tbody>\n";
       $grid = str_replace(
-          array('{class}', '{id}', '{content}'), 
-          array(' class="'.implode(' ', $classlist).'"', " id=\"$options[id]\"", $grid), 
-          $indicia_templates['data-input-table']
+        array('{class}', '{id}', '{content}'),
+        array(' class="'.implode(' ', $classlist).'"', " id=\"$options[id]\"", $grid),
+        $indicia_templates['data-input-table']
       );
       // in hasData mode, the wrap_species_checklist method must be notified of the different default 
       // way of checking if a row is to be made into an occurrence. This may differ between grids when
@@ -3349,9 +3349,9 @@ $('#$escaped').change(function(e) {
       if ($options['rowInclusionCheck']=='hasData') {
         $grid .= '<input name="rowInclusionCheck-' . $options['id'] . '" value="hasData" type="hidden" />';
         if (!empty($options['hasDataIgnoreAttrs']))
-          $grid .= '<input name="hasDataIgnoreAttrs-' . $options['id'] . '" value="' 
-                . implode(',', $options['hasDataIgnoreAttrs']) . '" type="hidden" />';
-      } 
+          $grid .= '<input name="hasDataIgnoreAttrs-' . $options['id'] . '" value="'
+            . implode(',', $options['hasDataIgnoreAttrs']) . '" type="hidden" />';
+      }
       self::add_resource('addrowtogrid');
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
@@ -3372,9 +3372,9 @@ $('#$escaped').change(function(e) {
         self::$javascript .= "indiciaData.speciesGrid['$options[id]'].numValues=".(!empty($options['numValues']) ? $options['numValues'] : 20).";\n";
         self::$javascript .= "indiciaData.speciesGrid['$options[id]'].selectMode=".(!empty($options['selectMode']) && $options['selectMode'] ? 'true' : 'false').";\n";
         self::$javascript .= "addRowToGrid('$url', '".
-            $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
-            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
-            " formatter);\r\n";
+          $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
+          $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
+          " formatter);\r\n";
       }
       // If options contain a help text, output it at the end if that is the preferred position
       $options['helpTextClass'] = (isset($options['helpTextClass'])) ? $options['helpTextClass'] : 'helpTextLeft';
@@ -3388,9 +3388,9 @@ $('#$escaped').change(function(e) {
       if ($options['subSamplePerRow']) {
         // output a hidden block to contain sub-sample hidden input values.
         $r .= '<div id="'.$options['id'].'-blocks">'.
-            self::get_subsample_per_row_hidden_inputs().
-            '</div>';
-      }     
+          self::get_subsample_per_row_hidden_inputs().
+          '</div>';
+      }
       if ($hasEditedRecord) {
         self::$javascript .= "$('#$options[id] tbody tr').hide();\n";
         self::$javascript .= "$('#$options[id] tbody tr td.edited-record').parent().show();\n";
@@ -3416,11 +3416,11 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
       return $taxalist['error'];
     }
   }
-  
+
   /**
    * Adds HTML to the output for a popup dialog to accept input of external media link URLs
    * to attach to records in the species grid.
-   * 
+   *
    * @staticvar boolean $doneAddLinkPopup
    * @param type $options
    * @return string
@@ -3471,8 +3471,8 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
       return '';
     }
   }
-  
-  /** 
+
+  /**
    * Add sticky table headers, if supported by the host site. Returns the class to add to the table.
    */
   private static function add_sticky_headers($options) {
@@ -3482,11 +3482,11 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
     }
     return '';
   }
-  
+
   /**
-  * For each subsample found in the entity to load, output a block of hidden inputs which contain the required
-  * values for the subsample.
-  */  
+   * For each subsample found in the entity to load, output a block of hidden inputs which contain the required
+   * values for the subsample.
+   */
   private static function get_subsample_per_row_hidden_inputs() {
     $blocks = "";
     if (isset(data_entry_helper::$entity_to_load)) {
@@ -3497,17 +3497,17 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
           $idKey = $a[0].':'.$a[1].':'.$a[2].':sample:id';
           $deletedKey = $a[0].':'.$a[1].':'.$a[2].':sample:deleted';
           $blocks .= '<div id="scm-'.$a[1].'-block" class="scm-block">'.
-                    '<input type="hidden" value="'.$value.'"  name="'.$key.'">'.
-                    '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$geomKey].'" name="'.$geomKey.'">'.
-                    '<input type="hidden" value="'.(isset(data_entry_helper::$entity_to_load[$deletedKey]) ? data_entry_helper::$entity_to_load[$deletedKey] : 'f').'" name="'.$deletedKey.'">'.
-                    (isset(data_entry_helper::$entity_to_load[$idKey]) ? '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$idKey].'" name="'.$idKey.'">' : '');          
+            '<input type="hidden" value="'.$value.'"  name="'.$key.'">'.
+            '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$geomKey].'" name="'.$geomKey.'">'.
+            '<input type="hidden" value="'.(isset(data_entry_helper::$entity_to_load[$deletedKey]) ? data_entry_helper::$entity_to_load[$deletedKey] : 'f').'" name="'.$deletedKey.'">'.
+            (isset(data_entry_helper::$entity_to_load[$idKey]) ? '<input type="hidden" value="'.data_entry_helper::$entity_to_load[$idKey].'" name="'.$idKey.'">' : '');
           $blocks .= '</div>';
         }
       }
     }
     return $blocks;
   }
-  
+
   /**
    * Implode the rows we are putting into the species checklist, with application of classes to image rows.
    */
@@ -3519,22 +3519,22 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
     }
     return $r;
   }
-  
+
   /**
-   * Private function to retrieve the subspecies selection cell for a species_checklist, 
+   * Private function to retrieve the subspecies selection cell for a species_checklist,
    * when the subspeciesColumn option is enabled.
    * @param array Taxon definition as loaded from the database.
    * @param integer Index of the taxon row we are operating on.
-   * @param integer If an existing record, then the record's occurrence ID.   
+   * @param integer If an existing record, then the record's occurrence ID.
    * @param array Options array for the species grid. Used to obtain the row inclusion check mode,
-   * read authorisation and lookup list's ID.   
-   */  
+   * read authorisation and lookup list's ID.
+   */
   private static function species_checklist_get_subsp_cell($taxon, $txIdx, $existing_record_id, $options) {
     if ($options['subSpeciesColumn']) {
       //Disable the sub-species drop-down if the row delete button is not displayed.
       //Also disable if we are preloading our data from a sample.
       $isDisabled=($options['rowInclusionCheck']!='alwaysRemovable' || (!empty($existing_record_id) && !empty($taxon))) ?
-          'disabled="disabled"' : '';
+        'disabled="disabled"' : '';
       //if the taxon has a parent then we need to setup both a child and parent
       if (!empty($taxon['parent_id'])) {
         $selectedChildId=$taxon['id'];
@@ -3557,14 +3557,14 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
         , $selectedChildId
       );\n";
       return '<td class="ui-widget-content scSubSpeciesCell"><select class="scSubSpecies" ' .
-          "id=\"sc:$txIdx:$existing_record_id::occurrence:subspecies\" name=\"sc:$txIdx:$existing_record_id::occurrence:subspecies\" ".
-          "$isDisabled onchange=\"SetHtmlIdsOnSubspeciesChange(this.id);\">" .
-          '</select></td>';
+      "id=\"sc:$txIdx:$existing_record_id::occurrence:subspecies\" name=\"sc:$txIdx:$existing_record_id::occurrence:subspecies\" ".
+      "$isDisabled onchange=\"SetHtmlIdsOnSubspeciesChange(this.id);\">" .
+      '</select></td>';
     }
     // default - no cell returned
     return '';
   }
-  
+
   /**
    * If using a subspecies column then the list of taxa we have loaded will have a parent species
    * that must be displayed in the grid. So load them up...
@@ -3576,14 +3576,14 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
     // get a list of the species parent IDs
     $ids = array();
     foreach($taxalist as $taxon) {
-      if (!empty($taxon['parent_id']))    
+      if (!empty($taxon['parent_id']))
         $ids[]=$taxon['parent_id'];
     }
     if (!empty($ids)) {
       // load each parent from the db in one go
       $loadOpts = array(
         'table'=>'cache_taxa_taxon_list',
-        'extraParams'=>$options['readAuth'] + array('id'=>$ids),      
+        'extraParams'=>$options['readAuth'] + array('id'=>$ids),
       );
       $parents=data_entry_helper::get_population_data($loadOpts);
       // assign the parents back into the relevent places in $taxalist. Not sure if there is a better
@@ -3596,9 +3596,9 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
       }
     }
   }
-  
-  /** 
-   * Builds an array to filter for the appropriate selection of species names, e.g. how it accepts searches for 
+
+  /**
+   * Builds an array to filter for the appropriate selection of species names, e.g. how it accepts searches for
    * common names and synonyms.
    * @param array $options Options array as passed to the species grid.
    */
@@ -3608,7 +3608,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
     $r = array();
     // If we are showing sub-species in a seperate column the then main species column should not include any sub-species.
     // If we had a rank field for each taxon, then this would be replaced by a rank=species filter.
-    if (isset($options['subSpeciesColumn']) && $options['subSpeciesColumn']) 
+    if (isset($options['subSpeciesColumn']) && $options['subSpeciesColumn'])
       $wheres[] = "(parent_id is null)";
     if (isset($options['cacheLookup']) && $options['cacheLookup'])
       $wheres[] = "(simplified='t' or simplified is null)";
@@ -3632,11 +3632,11 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
     }
     if (!empty($wheres))
       $query['where']=array(implode(' AND ', $wheres));
-    if (!empty($query)) 
+    if (!empty($query))
       $r['query']=json_encode($query);
     return $r;
   }
-  
+
   /**
    * Private utility function to extract the fields which need filtering against, plus any complex
    * SQL where clauses, required to do a species name filter according to the current mode (e.g.
@@ -3646,7 +3646,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
    * of any fields than need to be filtered.
    * @param array $filterWheres Pass an array in - this will be populated with a list of any complex
    * where clauses (to put into a service request's query parameter).
-   */   
+   */
   private static function parse_species_name_filter_mode($options, &$filterFields, &$filterWheres) {
     if (isset($options['speciesNameFilterMode'])) {
       $colLanguage = $options['cacheLookup'] ? 'language_iso' : 'language';
@@ -3666,12 +3666,12 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
           }
           break;
         case 'excludeSynonyms':
-            $filterWheres[] = "(preferred='t' or $colLanguage<>'lat')";
-            break;
+          $filterWheres[] = "(preferred='t' or $colLanguage<>'lat')";
+          break;
       }
     }
   }
-  
+
   /**
    * Adds javascript to popup a config box for the current filter on the species you can add to the grid.
    * @param array $options Options array as passed to the species checklist grid.
@@ -3712,11 +3712,11 @@ var applyFilterMode = function(type, group_id, nameFilterMode) {
   }
   //Extend the current query with any taxon group selections the user has made
   switch (type) {\n";
-    if (!empty($options['usersPreferredGroups']))
-      self::$javascript .= "    case 'user':
+      if (!empty($options['usersPreferredGroups']))
+        self::$javascript .= "    case 'user':
         currentFilter.query['in']={\"taxon_group_id\":[".implode(',', $options['usersPreferredGroups'])."]};
         break;\n";
-    self::$javascript .= "    case 'selected':
+      self::$javascript .= "    case 'selected':
       currentFilter.query['in']={\"taxon_group_id\":[group_id]};
   }
   // re-encode the query part
@@ -3770,11 +3770,11 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   $.fancybox('<div id=\"filter-form\"><fieldset class=\"popup-form\">' +
     '<legend>".lang::get('Configure the filter applied to species names you are searching for').":</legend>' +
     '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-default\"'+defaultChecked+'/>$defaultOptionLabel</label>' + \n";
-    if (!empty($options['usersPreferredGroups'])) {
-      self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-user\"'+userChecked+'/>".
+      if (!empty($options['usersPreferredGroups'])) {
+        self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-user\"'+userChecked+'/>".
           lang::get('Input species from the preferred list of species groups from your user account.')."</label>' + \n";
-    }
-    self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-selected\"'+selectedChecked+'/>".
+      }
+      self::$javascript .= "        '<label class=\"auto\"><input type=\"radio\" name=\"filter-mode\" id=\"filter-mode-selected\"'+selectedChecked+'/>".
         lang::get('Input species from the following species group:')."</label>' +
       '<select name=\"filter-group\" id=\"filter-group\"></select>' +
       '<label class=\"auto\" for=\"filter-name\">".
@@ -3787,7 +3787,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       '</select>' +
       '</fieldset><button type=\"button\" class=\"default-button\" id=\"filter-popup-apply\">".lang::get('Apply')."</button><button type=\"button\" class=\"default-button\" id=\"filter-popup-cancel\">".lang::get('Cancel')."</button></div>');
     $.getJSON(\"".self::$base_url."index.php/services/report/requestReport?report=library/taxon_groups/taxon_groups_used_in_checklist.xml&reportSource=local&mode=json".
-      "&taxon_list_id=".$options['lookupListId']."&auth_token=".$options['readAuth']['auth_token']."&nonce=".$options['readAuth']['nonce']."&callback=?\", function(data) {
+        "&taxon_list_id=".$options['lookupListId']."&auth_token=".$options['readAuth']['auth_token']."&nonce=".$options['readAuth']['nonce']."&callback=?\", function(data) {
     var checked;
     $.each(data, function(idx, item) {
       selected = userFilter!==null && (item.id===userFilter.group_id) ? ' selected=\"selected\"' : '';
@@ -3825,11 +3825,11 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       applyFilterMode('selected', $('#filter-group').val()); 
     }
     ";
-    if (!empty($options['usersPreferredGroups']))
-      self::$javascript .= " else if ($('#filter-mode-user').attr('checked')==true) {
+      if (!empty($options['usersPreferredGroups']))
+        self::$javascript .= " else if ($('#filter-mode-user').attr('checked')==true) {
       applyFilterMode('user');
     }";
-    self::$javascript .= "\n    $.fancybox.close();
+      self::$javascript .= "\n    $.fancybox.close();
   });
   $('#filter-popup-cancel').click(function() {
     $.fancybox.close(); 
@@ -3864,35 +3864,35 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         }
       }
       if($useSubSamples){
-        $extraParams += $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );      	
+        $extraParams += $readAuth + array('view'=>'detail','parent_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
         if($subSampleMethodID != '')
           $extraParams['sample_method_id'] = $subSampleMethodID;
         $subSamples = data_entry_helper::get_population_data(array(
-            'table' => 'sample',
-            'extraParams' => $extraParams,
-            'nocache' => true
-        ));   
-      	$subSampleList = array();
-      	foreach($subSamples as $idx => $subsample){
-      		$subSampleList[] = $subsample['id'];
-            data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
-      		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:geom'] = $subsample['wkt'];
-      		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:wkt'] = $subsample['wkt'];
+          'table' => 'sample',
+          'extraParams' => $extraParams,
+          'nocache' => true
+        ));
+        $subSampleList = array();
+        foreach($subSamples as $idx => $subsample){
+          $subSampleList[] = $subsample['id'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:geom'] = $subsample['wkt'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:wkt'] = $subsample['wkt'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:location_id'] = $subsample['location_id'];
-      		data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref'] = $subsample['entered_sref'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref'] = $subsample['entered_sref'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:entered_sref_system'] = $subsample['entered_sref_system'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_start'] = $subsample['date_start'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_end'] = $subsample['date_end'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:date_type'] = $subsample['date_type'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:sample_method_id'] = $subsample['sample_method_id'];
-      	}
-      	unset($extraParams['parent_id']);
-      	unset($extraParams['sample_method_id']);
-      	$extraParams['sample_id']=$subSampleList;
-      	$sampleCount = count($subSampleList);
+        }
+        unset($extraParams['parent_id']);
+        unset($extraParams['sample_method_id']);
+        $extraParams['sample_id']=$subSampleList;
+        $sampleCount = count($subSampleList);
       } else {
         $extraParams += $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );
-      	$sampleCount = 1;
+        $sampleCount = 1;
       }
       if($sampleCount>0) {
         $occurrences = self::get_population_data(array(
@@ -3928,31 +3928,31 @@ $('#".$options['id']." .species-filter').click(function(evt) {
           ));
           foreach($attrValues as $attrValue) {
             self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
-                = $attrValue['raw_value'];
+              = $attrValue['raw_value'];
           }
-            if (count($loadMedia)>0) {   
-              // @todo: Filter to the appropriate list of media types
-              $media = self::get_population_data(array(
-                'table' => 'occurrence_medium',
-                'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
-                'nocache' => true
-              ));
-              foreach($media as $medium) {
-                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:id:'.$medium['id']]
-                    = $medium['id'];
-                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:path:'.$medium['id']]
-                    = $medium['path'];
-                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:caption:'.$medium['id']]
-                    = $medium['caption'];
-                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type_id:'.$medium['id']]
-                    = $medium['media_type_id'];
-                self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type:'.$medium['id']]
-                    = $medium['media_type'];
-              }
+          if (count($loadMedia)>0) {
+            // @todo: Filter to the appropriate list of media types
+            $media = self::get_population_data(array(
+              'table' => 'occurrence_medium',
+              'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+              'nocache' => true
+            ));
+            foreach($media as $medium) {
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:id:'.$medium['id']]
+                = $medium['id'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:path:'.$medium['id']]
+                = $medium['path'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:caption:'.$medium['id']]
+                = $medium['caption'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type_id:'.$medium['id']]
+                = $medium['media_type_id'];
+              self::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type:'.$medium['id']]
+                = $medium['media_type'];
             }
           }
         }
       }
+    }
     return $occurrenceIds;
   }
 
@@ -3975,15 +3975,15 @@ $('#".$options['id']." .species-filter').click(function(evt) {
           global $indicia_templates;
           $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images/" : self::$images_path;
           $speciesColTitle .= '<button type="button" class="species-filter" class="default-button"><img src="'.
-              $imgPath.'/filter.png" alt="'.lang::get('Filter').'" style="vertical-align: middle" title="'.
-              lang::get('Filter the list of species you can search').'" width="16" height="16"/></button>';
+            $imgPath.'/filter.png" alt="'.lang::get('Filter').'" style="vertical-align: middle" title="'.
+            lang::get('Filter the list of species you can search').'" width="16" height="16"/></button>';
         }
         $r .= self::get_species_checklist_col_header($options['id']."-species-$i", $speciesColTitle, $visibleColIdx, $options['colWidths'], $colspan);
         if ($options['subSpeciesColumn'])
           $r .= self::get_species_checklist_col_header($options['id']."-subspecies-$i", lang::get('Subspecies'), $visibleColIdx, $options['colWidths']);
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
-        $r .= self::get_species_checklist_col_header($options['id']."-present-$i", lang::get('species_checklist.present'), 
-            $visibleColIdx, $options['colWidths'], $hidden);
+        $r .= self::get_species_checklist_col_header($options['id']."-present-$i", lang::get('species_checklist.present'),
+          $visibleColIdx, $options['colWidths'], $hidden);
 
         foreach ($occAttrs as $idx=>$a) {
           $r .= self::get_species_checklist_col_header($options['id']."-attr$idx-$i", lang::get($a), $visibleColIdx, $options['colWidths']) ;
@@ -4029,7 +4029,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   private static function get_species_checklist_taxa_list($options, &$taxonRows) {
     // Get the list of species that are always added to the grid, by first building a filter
     if (preg_match('/^(preferred_name|preferred_taxon|taxon_meaning_id|taxa_taxon_list_id|taxon_group|external_key|id)$/', $options['taxonFilterField']))  {
-      if ($options['table']==='cache_taxa_taxon_list' && $options['taxonFilterField']==='taxa_taxon_list_id') 
+      if ($options['table']==='cache_taxa_taxon_list' && $options['taxonFilterField']==='taxa_taxon_list_id')
         $options['taxonFilterField']='id';
       $qry = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
       $options['extraParams']['query']=json_encode($qry);
@@ -4053,7 +4053,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
             $taxonRows[] = array('ttlId'=>$taxon['id']);
         }
       }
-    } else { 
+    } else {
       foreach ($taxalist as $taxon) {
         // create a list of the rows we are going to add to the grid, with the preloaded species names linked to them
         $taxonRows[] = array('ttlId'=>$taxon['id']);
@@ -4116,7 +4116,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
         }
       }
       // load and append the additional taxa to our list of taxa to use in the grid
-      if (!empty($options['lookupListId'])) 
+      if (!empty($options['lookupListId']))
         $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
     }
     return $taxalist;
@@ -4143,35 +4143,35 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     }
     // Apply default values
     $options = array_merge(array(
-        'userControlsTaxonFilter'=>false,
-        'header'=>'true',
-        'columns'=>1,
-        'rowInclusionCheck'=>$rowInclusionCheck,
-        'attrCellTemplate'=>'attribute_cell',
-        'PHPtaxonLabel' => false,
-        'occurrenceComment' => false,
-        'occurrenceSensitivity' => null,
-        'id' => 'species-grid-'.rand(0,1000),
-        'colWidths' => array(),
-        'taxonFilterField' => 'none',
-        'cacheLookup' => false,
-        'reloadExtraParams' => array(),
-        'useLoadedExistingRecords' => false,
-        'subSpeciesColumn' => false,
-        'subSpeciesRemoveSspRank' => false,
-        'speciesControlToUseSubSamples' => false,
-        'subSamplePerRow' => false,
-        'copyDataFromPreviousRow' => false,
-        'previousRowColumnsToInclude' => '',
-        'editTaxaNames' => false,
-        'sticky' => true,
-        'includeSpeciesGridLinkPage' => false,
-        'speciesGridPageLinkUrl' => '',
-        'speciesGridPageLinkParameter' => '',
-        'speciesGridPageLinkTooltip' => '',
-        // legacy - occurrenceImages means just local image support
-        'mediaTypes' => !empty($options['occurrenceImages']) && $options['occurrenceImages'] ?
-            array('Image:Local') : array()
+      'userControlsTaxonFilter'=>false,
+      'header'=>'true',
+      'columns'=>1,
+      'rowInclusionCheck'=>$rowInclusionCheck,
+      'attrCellTemplate'=>'attribute_cell',
+      'PHPtaxonLabel' => false,
+      'occurrenceComment' => false,
+      'occurrenceSensitivity' => null,
+      'id' => 'species-grid-'.rand(0,1000),
+      'colWidths' => array(),
+      'taxonFilterField' => 'none',
+      'cacheLookup' => false,
+      'reloadExtraParams' => array(),
+      'useLoadedExistingRecords' => false,
+      'subSpeciesColumn' => false,
+      'subSpeciesRemoveSspRank' => false,
+      'speciesControlToUseSubSamples' => false,
+      'subSamplePerRow' => false,
+      'copyDataFromPreviousRow' => false,
+      'previousRowColumnsToInclude' => '',
+      'editTaxaNames' => false,
+      'sticky' => true,
+      'includeSpeciesGridLinkPage' => false,
+      'speciesGridPageLinkUrl' => '',
+      'speciesGridPageLinkParameter' => '',
+      'speciesGridPageLinkTooltip' => '',
+      // legacy - occurrenceImages means just local image support
+      'mediaTypes' => !empty($options['occurrenceImages']) && $options['occurrenceImages'] ?
+        array('Image:Local') : array()
     ), $options);
     // subSamplesPerRow can't be set without speciesControlToUseSubSamples
     $options['subSamplePerRow'] = $options['subSamplePerRow'] && $options['speciesControlToUseSubSamples'];
@@ -4181,8 +4181,8 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       $options['extraParams'] += $options['readAuth'];
     } else {
       $options['readAuth'] = array(
-          'auth_token' => $options['extraParams']['auth_token'],
-          'nonce' => $options['extraParams']['nonce']
+        'auth_token' => $options['extraParams']['auth_token'],
+        'nonce' => $options['extraParams']['nonce']
       );
     }
     $options['table'] = $options['cacheLookup'] ? 'cache_taxa_taxon_list' : 'taxa_taxon_list';
@@ -4193,10 +4193,10 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    * Internal function to prepare the list of occurrence attribute columns for a species_checklist control.
    * @param array $options Options array as passed to the species checklist grid control.
    * @param array $attributes Array of custom attributes as loaded from the database.
-   * @param array $occAttrControls Empty array which will be populated with the controls required for each 
+   * @param array $occAttrControls Empty array which will be populated with the controls required for each
    * custom attribute. This copy of the control applies for new data and is populated with defaults.
-   * @param array $occAttrControlsExisting Empty array which will be populated with the controls required for each 
-   * custom attribute. This copy of the control applies for existing data and is not populated with defaults. 
+   * @param array $occAttrControlsExisting Empty array which will be populated with the controls required for each
+   * custom attribute. This copy of the control applies for existing data and is not populated with defaults.
    * @param array $occAttrCaptions Empty array which will be populated with the captions for each custom attribute.
    */
   public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrControlsExisting, &$occAttrCaptions) {
@@ -4218,7 +4218,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       if (isset($options['occAttrOptions'][$occAttrId])) {
         $attrOpts = array_merge($options['occAttrOptions'][$occAttrId]);
       }
-      
+
       // Build array of attribute captions
       if (isset($attrOpts['label'])) {
         // override caption from warehouse with label from client
@@ -4228,7 +4228,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       } else {
         $occAttrCaptions[$occAttrId] = $attrDef['caption'];
       }
-      
+
       // Build array of attribute controls
       $class = self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']);
       $class .= (isset($attrDef['class']) ? ' ' . $attrDef['class'] : '');
@@ -4264,17 +4264,17 @@ $('#".$options['id']." .species-filter').click(function(evt) {
 
   /**
    * Returns the class to apply to a control for an occurrence attribute, identified by an index.
-   * @param array $options Options array which contains the occAttrClasses item, an array of classes 
+   * @param array $options Options array which contains the occAttrClasses item, an array of classes
    * configured for each attribute control.
    * @param integer $idx Index of the custom attribute.
    * @param string $caption Caption of the attribute used to construct a suitable CSS class.
    */
   private static function species_checklist_occ_attr_class($options, $idx, $caption) {
     return (array_key_exists('occAttrClasses', $options) && $idx < count($options['occAttrClasses'])) ?
-          $options['occAttrClasses'][$idx] :
-          'sc' . preg_replace('/[^a-zA-Z0-9]/', '', ucWords($caption)); // provide a default class based on the control caption
+      $options['occAttrClasses'][$idx] :
+      'sc' . preg_replace('/[^a-zA-Z0-9]/', '', ucWords($caption)); // provide a default class based on the control caption
   }
-  
+
   /**
    * When the species checklist grid has a lookup list associated with it, this is a
    * secondary checklist which you can pick species from to add to the grid. As this happens,
@@ -4303,32 +4303,32 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     $r .= '<td class="scPresenceCell" headers="'.$options['id'].'-present-0"'.$hidden.'>';
     $r .= "<input type=\"checkbox\" class=\"scPresence\" name=\"$fieldname:present\" id=\"$fieldname:present\" value=\"\" />";
     // If we have a grid ID attribute, output a hidden
-    if (!empty($options['gridIdAttributeId'])) 
+    if (!empty($options['gridIdAttributeId']))
       $r .= "<input type=\"hidden\" name=\"$fieldname:occAttr:$options[gridIdAttributeId]\" id=\"$fieldname:occAttr:$options[gridIdAttributeId]\" value=\"$options[id]\"/>";
     $r .= '</td>';
     if ($options['speciesControlToUseSubSamples'])
       $r .= '<td class="scSampleCell" style="display:none"><input type="hidden" class="scSample" name="'.
-          $fieldname.':occurrence:sampleIDX" id="'.$fieldname.':occurrence:sampleIDX" value="" /></td>';
+        $fieldname.':occurrence:sampleIDX" id="'.$fieldname.':occurrence:sampleIDX" value="" /></td>';
     $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']);
       $r .= str_replace(array('{content}', '{class}', '{headers}'),
-          array(str_replace('{fieldname}', "$fieldname:occAttr:$attrId", $oc), $class.'Cell', $options['id']."-attr$attrId-0"),
-          $indicia_templates['attribute_cell']
+        array(str_replace('{fieldname}', "$fieldname:occAttr:$attrId", $oc), $class.'Cell', $options['id']."-attr$attrId-0"),
+        $indicia_templates['attribute_cell']
       );
       $idx++;
     }
     if ($options['occurrenceComment']) {
       $r .= '<td class="ui-widget-content scCommentCell" headers="'.$options['id'].'-comment-0"><input class="scComment" type="text" ' .
-          "id=\"$fieldname:occurrence:comment\" name=\"$fieldname:occurrence:comment\" value=\"\" /></td>";
+        "id=\"$fieldname:occurrence:comment\" name=\"$fieldname:occurrence:comment\" value=\"\" /></td>";
     }
     if (isset($options['occurrenceSensitivity']) && $options['occurrenceSensitivity']) {
       $r .= '<td class="ui-widget-content scSCell" headers="'.$options['id'].'-sensitivity-0">'.
-          self::select(array('fieldname'=>"$fieldname:occurrence:sensitivity_precision", 'class'=>'scSensitivity',
-              'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
-                  '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
-              'blankText' => 'Not sensitive')).
-          '</td>';
+        self::select(array('fieldname'=>"$fieldname:occurrence:sensitivity_precision", 'class'=>'scSensitivity',
+          'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'),
+            '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
+          'blankText' => 'Not sensitive')).
+        '</td>';
     }
     if ($options['mediaTypes']) {
       $onlyLocal = true;
@@ -4342,74 +4342,74 @@ $('#".$options['id']." .species-filter').click(function(evt) {
       $label = $onlyImages ? 'Add images' : 'Add media';
       $class = 'sc' . $onlyImages ? 'Image' : 'Media' . 'Link';
       $r .= '<td class="ui-widget-content scAddMediaCell"><a href="" class="add-media-link button '.$class.'" style="display: none" id="add-media:'.$options['id'].'--idx-:">'.
-          lang::get($label).'</a><span class="species-checklist-select-species">'.lang::get('Select a species first').'</span></td>';
+        lang::get($label).'</a><span class="species-checklist-select-species">'.lang::get('Select a species first').'</span></td>';
     }
     $r .= "</tr></tbody></table>\n";
     return $r;
   }
 
- /**
-  * Helper function to output an HTML textarea. This includes re-loading of existing values
-  * and displaying of validation error messages.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>textareat</b></br>
-  * HTML template used to generate the textarea element.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>rows</b><br/>
-  * Optional. HTML rows attribute. Defaults to 4.</li>
-  * <li><b>cols</b><br/>
-  * Optional. HTML cols attribute. Defaults to 80.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the textarea control.
-  */
+  /**
+   * Helper function to output an HTML textarea. This includes re-loading of existing values
+   * and displaying of validation error messages.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>textareat</b></br>
+   * HTML template used to generate the textarea element.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>rows</b><br/>
+   * Optional. HTML rows attribute. Defaults to 4.</li>
+   * <li><b>cols</b><br/>
+   * Optional. HTML cols attribute. Defaults to 80.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the textarea control.
+   */
   public static function textarea($options) {
     $options = array_merge(array(
-        'cols'=>'80',
-        'rows'=>'4'
+      'cols'=>'80',
+      'rows'=>'4'
     ), self::check_options($options));
     return self::apply_template('textarea', $options);
   }
 
- /**
-  * Helper function to output an HTML text input. This includes re-loading of existing values
-  * and displaying of validation error messages.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>readonly</b><br/>
-  * Optional. can be set to 'readonly="readonly"' to set this control as read only.</li>
-  * </ul>
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>text_input</b></br>
-  * HTML template used to generate the input element.
-  * </li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the text input control.
-  */
+  /**
+   * Helper function to output an HTML text input. This includes re-loading of existing values
+   * and displaying of validation error messages.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>readonly</b><br/>
+   * Optional. can be set to 'readonly="readonly"' to set this control as read only.</li>
+   * </ul>
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>text_input</b></br>
+   * HTML template used to generate the input element.
+   * </li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the text input control.
+   */
   public static function text_input($options) {
     $options = array_merge(array(
       'default'=>''
@@ -4417,29 +4417,29 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     return self::apply_template('text_input', $options);
   }
 
- /**
-  * Helper function to output an HTML hidden text input. This includes re-loading of existing values.
-  * Hidden fields should not have any validation.
-  * No Labels allowed, no suffix.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>hidden_text</b></br>
-  * HTML template used to generate the hidden input element.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the hidden text control.
-  */
+  /**
+   * Helper function to output an HTML hidden text input. This includes re-loading of existing values.
+   * Hidden fields should not have any validation.
+   * No Labels allowed, no suffix.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>hidden_text</b></br>
+   * HTML template used to generate the hidden input element.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the hidden text control.
+   */
   public static function hidden_text($options) {
     $options = array_merge(array(
       'default'=>'',
@@ -4449,7 +4449,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     unset($options['label']);
     return self::apply_template('hidden_text', $options);
   }
-  
+
   /**
   * Helper function to output a set of controls for handling the sensitivity of a record. Includes
   * a checkbox plus a control for setting the amount to blur the record by for public viewing.
@@ -4533,36 +4533,36 @@ $('#sensitive-blur').change(function() {
     return $r;
   }
 
- /**
-  * A control for inputting a time value. Provides a text input with a spin control that allows
-  * the time to be input. Reverts to a standard text input when JavaScript disabled.
-  * @param array $options Options array with the following possibilities:
-  * <ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>beforeSetTime</b><br/>
-  * Optional. Set this to the name of a JavaScript function which is called when the user tries to set a time value. This
-  * can be used, for example, to display a warning label when an out of range time value is input. See <a '.
-  * href="http://keith-wood.name/timeEntry.html">jQuery Time Entry</a> then click on the Restricting tab for more information.</li>
-  * <li><b>timeSteps</b><br/>
-  * Optional. An array containing 3 values for the allowable increments in time for hours, minutes and seconds respectively. Defaults to
-  * 1, 15, 0 meaning that the increments allowed are in 15 minute steps and seconds are ignored.</li>
-  * </ul>
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>text_input</b></br>
-  * HTML template used to generate the input element. Time management aspects of this are managed
-  * by JavaScript.
-  * </li>
-  * </ul>
-  */
+  /**
+   * A control for inputting a time value. Provides a text input with a spin control that allows
+   * the time to be input. Reverts to a standard text input when JavaScript disabled.
+   * @param array $options Options array with the following possibilities:
+   * <ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to.</li>
+   * <li><b>id</b><br/>
+   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value to assign to the control. This is overridden when reloading a
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>beforeSetTime</b><br/>
+   * Optional. Set this to the name of a JavaScript function which is called when the user tries to set a time value. This
+   * can be used, for example, to display a warning label when an out of range time value is input. See <a '.
+   * href="http://keith-wood.name/timeEntry.html">jQuery Time Entry</a> then click on the Restricting tab for more information.</li>
+   * <li><b>timeSteps</b><br/>
+   * Optional. An array containing 3 values for the allowable increments in time for hours, minutes and seconds respectively. Defaults to
+   * 1, 15, 0 meaning that the increments allowed are in 15 minute steps and seconds are ignored.</li>
+   * </ul>
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>text_input</b></br>
+   * HTML template used to generate the input element. Time management aspects of this are managed
+   * by JavaScript.
+   * </li>
+   * </ul>
+   */
   public static function time_input($options) {
     $options = array_merge(array(
       'id' => $options['fieldname'],
@@ -4586,40 +4586,40 @@ $('#sensitive-blur').change(function() {
   }
 
   /**
-  * Helper function to generate a treeview from a given list
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
-  * NB the tree itself will have an id of "tr$fieldname".</li>
-  * <li><b>id</b><br/>
-  * Optional. ID of the control. Defaults to the fieldname.</li>
-  * <li><b>table</b><br/>
-  * Required. Name (Kohana-style) of the database entity to be queried.</li>
-  * <li><b>view</b><br/>
-  * Name of the view of the table required (list, detail). This view must contain
-  * the parent field so, for taxa, ensure you set this to detail.</li>
-  * <li><b>captionField</b><br/>
-  * Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Field to draw values to return from the control from. Defaults
-  * to the value of $captionField.</li>
-  * <li><b>parentField</b><br/>
-  * Field used to indicate parent within tree for a record.</li>
-  * <li><b>default</b><br/>
-  * Initial value to set the control to (not currently used).</li>
-  * <li><b>extraParams</b><br/>
-  * Array of key=>value pairs which will be passed to the service
-  * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
-  * queries to the data services.</li>
-  * <li><b>extraClass</b><br/>
-  * main class to be added to UL tag - currently can be treeview, treeview-red,
-  * treeview_black, treeview-gray. The filetree class although present, does not work properly.</li>
-  * </ul>
-  *
-  * TODO
-  * Need to do initial value.
-  */
+   * Helper function to generate a treeview from a given list
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
+   * NB the tree itself will have an id of "tr$fieldname".</li>
+   * <li><b>id</b><br/>
+   * Optional. ID of the control. Defaults to the fieldname.</li>
+   * <li><b>table</b><br/>
+   * Required. Name (Kohana-style) of the database entity to be queried.</li>
+   * <li><b>view</b><br/>
+   * Name of the view of the table required (list, detail). This view must contain
+   * the parent field so, for taxa, ensure you set this to detail.</li>
+   * <li><b>captionField</b><br/>
+   * Field to draw values to show in the control from.</li>
+   * <li><b>valueField</b><br/>
+   * Field to draw values to return from the control from. Defaults
+   * to the value of $captionField.</li>
+   * <li><b>parentField</b><br/>
+   * Field used to indicate parent within tree for a record.</li>
+   * <li><b>default</b><br/>
+   * Initial value to set the control to (not currently used).</li>
+   * <li><b>extraParams</b><br/>
+   * Array of key=>value pairs which will be passed to the service
+   * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
+   * queries to the data services.</li>
+   * <li><b>extraClass</b><br/>
+   * main class to be added to UL tag - currently can be treeview, treeview-red,
+   * treeview_black, treeview-gray. The filetree class although present, does not work properly.</li>
+   * </ul>
+   *
+   * TODO
+   * Need to do initial value.
+   */
   public static function treeview($options)
   {
     global $indicia_templates;
@@ -4637,7 +4637,7 @@ $('#sensitive-blur').change(function() {
       'view'=>'list'
     ), self::check_options($options));
     $default = self::check_default_value($options['fieldname'],
-        array_key_exists('default', $options) ? $options['default'] : null);
+      array_key_exists('default', $options) ? $options['default'] : null);
     // Do stuff with extraParams
     $sParams = '';
     foreach ($options['extraParams'] as $a => $b){
@@ -4646,7 +4646,7 @@ $('#sensitive-blur').change(function() {
     // lop the comma off the end
     $sParams = substr($sParams, 0, -1);
     extract($options, EXTR_PREFIX_ALL, 'o');
-    
+
     $escaped_fieldname = self::jq_esc($o_fieldname);
     self::$javascript .= "jQuery('#tr$escaped_fieldname').treeview({
       url: '$url/$o_table',
@@ -4670,57 +4670,57 @@ $('#sensitive-blur').change(function() {
   }
 
   /**
-  * Helper function to generate a browser control from a given list. The browser
-  * behaves similarly to a treeview, except that the child lists are appended to the control
-  * rather than inserted as list children. This allows controls to be created which allow
-  * selection of an item, then the control is updated with the new list of options after each
-  * item is clicked.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>tree_browser</b></br>
-  * HTML template used to generate container element for the browser.
-  * </li>
-  * <li><b>tree_browser_node</b></br>
-  * HTML template used to generate each node that appears in the browser.
-  * </li>
-  * </ul>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
-  * NB the tree itself will have an id of "tr$fieldname".</li>
-  * <li><b>id</b><br/>
-  * Optional. ID of the hidden input which contains the value. Defaults to the fieldname.</li>
-  * <li><b>divId</b><br/>
-  * Optional. ID of the outer div. Defaults to div_ plus the fieldname.</li>
-  * <li><b>table</b><br/>
-  * Required. Name (Kohana-style) of the database entity to be queried.</li>
-  * <li><b>view</b><br/>
-  * Name of the view of the table required (list, detail).</li>
-  * <li><b>captionField</b><br/>
-  * Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Field to draw values to return from the control from. Defaults
-  * to the value of $captionField.</li>
-  * <li><b>parentField</b><br/>
-  * Field used to indicate parent within tree for a record.</li>
-  * <li><b>default</b><br/>
-  * Initial value to set the control to (not currently used).</li>
-  * <li><b>extraParams</b><br/>
-  * Array of key=>value pairs which will be passed to the service
-  * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
-  * queries to the data services.</li>
-  * <li><b>outerClass</b><br/>
-  * Class to be added to the control's outer div.</li>
-  * <li><b>class</b><br/>
-  * Class to be added to the input control (hidden).</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value for the underlying control.</li>
-  * </ul>
-  * 
-  * TODO
-  * Need to do initial value.
-  */
+   * Helper function to generate a browser control from a given list. The browser
+   * behaves similarly to a treeview, except that the child lists are appended to the control
+   * rather than inserted as list children. This allows controls to be created which allow
+   * selection of an item, then the control is updated with the new list of options after each
+   * item is clicked.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>tree_browser</b></br>
+   * HTML template used to generate container element for the browser.
+   * </li>
+   * <li><b>tree_browser_node</b></br>
+   * HTML template used to generate each node that appears in the browser.
+   * </li>
+   * </ul>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
+   * NB the tree itself will have an id of "tr$fieldname".</li>
+   * <li><b>id</b><br/>
+   * Optional. ID of the hidden input which contains the value. Defaults to the fieldname.</li>
+   * <li><b>divId</b><br/>
+   * Optional. ID of the outer div. Defaults to div_ plus the fieldname.</li>
+   * <li><b>table</b><br/>
+   * Required. Name (Kohana-style) of the database entity to be queried.</li>
+   * <li><b>view</b><br/>
+   * Name of the view of the table required (list, detail).</li>
+   * <li><b>captionField</b><br/>
+   * Field to draw values to show in the control from.</li>
+   * <li><b>valueField</b><br/>
+   * Field to draw values to return from the control from. Defaults
+   * to the value of $captionField.</li>
+   * <li><b>parentField</b><br/>
+   * Field used to indicate parent within tree for a record.</li>
+   * <li><b>default</b><br/>
+   * Initial value to set the control to (not currently used).</li>
+   * <li><b>extraParams</b><br/>
+   * Array of key=>value pairs which will be passed to the service
+   * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
+   * queries to the data services.</li>
+   * <li><b>outerClass</b><br/>
+   * Class to be added to the control's outer div.</li>
+   * <li><b>class</b><br/>
+   * Class to be added to the input control (hidden).</li>
+   * <li><b>default</b><br/>
+   * Optional. The default value for the underlying control.</li>
+   * </ul>
+   *
+   * TODO
+   * Need to do initial value.
+   */
   public static function tree_browser($options) {
     global $indicia_templates;
     self::add_resource('treeBrowser');
@@ -4735,7 +4735,7 @@ $('#sensitive-blur').change(function() {
       'outerClass' => 'ui-widget ui-corner-all ui-widget-content tree-browser',
       'listItemClass' => 'ui-widget ui-corner-all ui-state-default',
       'default' => self::check_default_value($options['fieldname'],
-          array_key_exists('default', $options) ? $options['default'] : ''),
+        array_key_exists('default', $options) ? $options['default'] : ''),
       'view'=>'list'
     ), $options);
     $escaped_divId=str_replace(':','\\\\:',$options['divId']);
@@ -4768,14 +4768,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 });\n";
     return self::apply_template('tree_browser', $options);
   }
-  
+
   /**
    * Outputs a panel and "Precheck my records" button. When clicked, the contents of the
    * current form are sent to the warehouse and run through any data cleaner verification
    * rules. The results are then displayed in the panel allowing the user to provide more
-   * details for records of interest before submitting the form. Requires the data_cleaner 
+   * details for records of interest before submitting the form. Requires the data_cleaner
    * module to be enabled on the warehouse.
-   * The output of this control can be configured using the following templates: 
+   * The output of this control can be configured using the following templates:
    * <ul>
    * <li><b>verification_panel</b></br>
    * HTML template used to generate container element for the verification panel.
@@ -4799,8 +4799,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'panelOnly'=>false
     ), $options);
     $button=$options['panelOnly'] ? '' :
-          self::apply_replacements_to_template($indicia_templates['button'], 
-          array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records'), 'title'=>''));
+      self::apply_replacements_to_template($indicia_templates['button'],
+        array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records'), 'title'=>''));
     $replacements = array(
       'button'=>$button
     );
@@ -4808,60 +4808,60 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     self::$js_read_tokens = $options['readAuth'];
     self::$javascript .= "indiciaData.verifyMessages=[];\n";
     self::$javascript .= "indiciaData.verifyMessages.nothingToCheck='".
-        lang::get('There are no records on this form to check.')."';\n";
+      lang::get('There are no records on this form to check.')."';\n";
     self::$javascript .= "indiciaData.verifyMessages.completeRecordFirst='".
-        lang::get('Before checking, please complete at least the date and grid reference of the record.')."';\n";
+      lang::get('Before checking, please complete at least the date and grid reference of the record.')."';\n";
     self::$javascript .= "indiciaData.verifyMessages.noProblems='".
-        lang::get('Automated verification checks did not find anything of note.')."';\n";
+      lang::get('Automated verification checks did not find anything of note.')."';\n";
     self::$javascript .= "indiciaData.verifyMessages.problems='".
-        lang::get('Automated verification checks resulted in the following messages:')."';\n";
+      lang::get('Automated verification checks resulted in the following messages:')."';\n";
     self::$javascript .= "indiciaData.verifyMessages.problemsFooter='".
-        lang::get('A message not mean that there is anything wrong with the record, but if you can provide as much information '.
-            'as possible, including photos, then it will help with its confirmation.')."';\n";
+      lang::get('A message not mean that there is anything wrong with the record, but if you can provide as much information '.
+        'as possible, including photos, then it will help with its confirmation.')."';\n";
     return self::apply_replacements_to_template($indicia_templates['verification_panel'], $replacements);
   }
 
   /**
-  * Insert buttons which, when clicked, displays the next or previous tab. Insert this inside the tab divs
-  * on each tab you want to have a next or previous button, excluding the last tab.
-  * The output of this control can be configured using the following templates: 
-  * <ul>
-  * <li><b>button</b></br>
-  * HTML template used for buttons other than the form submit button.
-  * </li>
-  * <li><b>submitButton</b></br>
-  * HTML template used for the submit and delete buttons.
-  * </li>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>divId</b><br/>
-  * The id of the div which is tabbed and whose next tab should be selected.</li>
-  * <li><b>captionNext</b><br/>
-  * Optional. The untranslated caption of the next button. Defaults to next step.</li>
-  * <li><b>captionPrev</b><br/>
-  * Optional. The untranslated caption of the previous button. Defaults to prev step.</li>
-  * <li><b>class</b><br/>
-  * Optional. Additional classes to add to the div containing the buttons. Use left, right or
-  * centre to position the div, making sure the containing element is either floated, or has
-  * overflow: auto applied to its style. Default is right.</li>
-  * <li><b>buttonClass</b><br/>
-  * Class to add to the button elements.</li>
-  * <li><b>page</b><br/>
-  * Specify first, middle or last to indicate which page this is for. Use middle (the default) for
-  * all pages other than the first or last.</li>
-  * <li><b>includeDeleteButton</b>
-  * Set to true if allowing deletion of the record.</li>
-  * <li><b>includeVerifyButton</b>
-  * Defaults to false. If set to true, then a Precheck my records button is added to the
-  * button set. There must be a verification_panel control added to the page somewhere
-  * with the panelOnly option set to true. When this button is clicked, the verification
-  * panel will be populated with the output of the automated verification check run
-  * against the proposed records on the form.
-  * </li>
-  * </ul>
-  *
-  * @link http://docs.jquery.com/UI/Tabs
-  */
+   * Insert buttons which, when clicked, displays the next or previous tab. Insert this inside the tab divs
+   * on each tab you want to have a next or previous button, excluding the last tab.
+   * The output of this control can be configured using the following templates:
+   * <ul>
+   * <li><b>button</b></br>
+   * HTML template used for buttons other than the form submit button.
+   * </li>
+   * <li><b>submitButton</b></br>
+   * HTML template used for the submit and delete buttons.
+   * </li>
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>divId</b><br/>
+   * The id of the div which is tabbed and whose next tab should be selected.</li>
+   * <li><b>captionNext</b><br/>
+   * Optional. The untranslated caption of the next button. Defaults to next step.</li>
+   * <li><b>captionPrev</b><br/>
+   * Optional. The untranslated caption of the previous button. Defaults to prev step.</li>
+   * <li><b>class</b><br/>
+   * Optional. Additional classes to add to the div containing the buttons. Use left, right or
+   * centre to position the div, making sure the containing element is either floated, or has
+   * overflow: auto applied to its style. Default is right.</li>
+   * <li><b>buttonClass</b><br/>
+   * Class to add to the button elements.</li>
+   * <li><b>page</b><br/>
+   * Specify first, middle or last to indicate which page this is for. Use middle (the default) for
+   * all pages other than the first or last.</li>
+   * <li><b>includeDeleteButton</b>
+   * Set to true if allowing deletion of the record.</li>
+   * <li><b>includeVerifyButton</b>
+   * Defaults to false. If set to true, then a Precheck my records button is added to the
+   * button set. There must be a verification_panel control added to the page somewhere
+   * with the panelOnly option set to true. When this button is clicked, the verification
+   * panel will be populated with the output of the automated verification check run
+   * against the proposed records on the form.
+   * </li>
+   * </ul>
+   *
+   * @link http://docs.jquery.com/UI/Tabs
+   */
   public static function wizard_buttons($options=array()) {
     global $indicia_templates;
     // Default captions
@@ -4884,7 +4884,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $buttonClass=$options['buttonClass'];
     if (array_key_exists('divId', $options)) {
       if ($options['includeVerifyButton']) {
-        $r .= self::apply_replacements_to_template($indicia_templates['button'], 
+        $r .= self::apply_replacements_to_template($indicia_templates['button'],
           array('href'=>'#', 'id'=>'verify-btn', 'class' => 'class="indicia-button"', 'caption'=>lang::get('Precheck my records'), 'title'=>''));
       }
       if ($options['page']!='first') {
@@ -4919,15 +4919,15 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     return $r;
   }
 
-/********************************/
-/* End of main controls section */
-/********************************/
-  
+  /********************************/
+  /* End of main controls section */
+  /********************************/
+
   /**
    * Returns an array defining various database object names and values required for the species
-   * lookup filtering, depending on whether this is a cached lookup or a standard lookup. Used for 
+   * lookup filtering, depending on whether this is a cached lookup or a standard lookup. Used for
    * both species checklist and species autocompletes.
-   * @param boolean $cached Set to true to use the cached taxon search tables rather than 
+   * @param boolean $cached Set to true to use the cached taxon search tables rather than
    * standard taxa in taxon list views.
    */
   public static function get_species_lookup_db_definition($cached) {
@@ -4956,7 +4956,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       );
     }
   }
-  
+
 
   /**
    * Returns the browser name and version information
@@ -4965,27 +4965,27 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   public static function get_browser_info($agent=null) {
     $browsers = array("firefox", "msie", "opera", "chrome", "safari",
-                            "mozilla", "seamonkey", "konqueror", "netscape",
-                            "gecko", "navigator", "mosaic", "lynx", "amaya",
-                            "omniweb", "avant", "camino", "flock", "aol");
+      "mozilla", "seamonkey", "konqueror", "netscape",
+      "gecko", "navigator", "mosaic", "lynx", "amaya",
+      "omniweb", "avant", "camino", "flock", "aol");
     if (!$agent)
       $agent = $_SERVER['HTTP_USER_AGENT'];
     $agent = strtolower($agent);
-    
+
     // Create a default response in case browser is not found.
     $r = array(
-        'name' => '',
-        'version' => '',
+      'name' => '',
+      'version' => '',
     );
-    
+
     foreach($browsers as $browser)
     {
-        if (preg_match("#($browser)[/ ]?([0-9.]*)#", $agent, $match))
-        {
-            $r['name'] = $match[1] ;
-            $r['version'] = $match[2] ;
-            break ;
-        }
+      if (preg_match("#($browser)[/ ]?([0-9.]*)#", $agent, $match))
+      {
+        $r['name'] = $match[1] ;
+        $r['version'] = $match[2] ;
+        break ;
+      }
     }
     return $r;
   }
@@ -5032,12 +5032,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
 
   /**
-  * Retrieves a data value from the Indicia Session data
-  *
-  * @param string $name Name of the session value to retrieve
-  * @param string $default Default value to return if not set or empty
-  * @link	http://code.google.com/p/indicia/wiki/TutorialDataEntryWizard
-  */
+   * Retrieves a data value from the Indicia Session data
+   *
+   * @param string $name Name of the session value to retrieve
+   * @param string $default Default value to return if not set or empty
+   * @link	http://code.google.com/p/indicia/wiki/TutorialDataEntryWizard
+   */
   public static function get_from_session($name, $default='') {
     $result = '';
     if (array_key_exists("indicia:$name", $_SESSION)) {
@@ -5059,9 +5059,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   protected static function check_options($options) {
     // force some defaults to be present in the options
     $options = array_merge(array(
-        'class'=>'',
-        'multiple'=>''
-        ), $options);
+      'class'=>'',
+      'multiple'=>''
+    ), $options);
     // If fieldname is supplied but not id, then use the fieldname as the id
     if (!array_key_exists('id', $options) && array_key_exists('fieldname', $options)) {
       $options['id']=$options['fieldname'];
@@ -5073,7 +5073,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // Get a default value - either the supplied value in the options, or the loaded value, or nothing.
     if (array_key_exists('fieldname', $options)) {
       $options['default'] = self::check_default_value($options['fieldname'],
-          array_key_exists('default', $options) ? $options['default'] : '');
+        array_key_exists('default', $options) ? $options['default'] : '');
     }
     return $options;
   }
@@ -5084,25 +5084,25 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * @param array $readAuth Read authorisation tokens
    * @param string $entity Name of the entity to load data from.
    * @param integer $id ID of the database record to load
-   * @param string $view Name of the view to load attributes from, normally 'list' or 'detail'. 
-   * @param boolean $sharing Defaults to false. If set to the name of a sharing task 
-   * (reporting, peer_review, verification, data_flow or moderation), then the record can be 
+   * @param string $view Name of the view to load attributes from, normally 'list' or 'detail'.
+   * @param boolean $sharing Defaults to false. If set to the name of a sharing task
+   * (reporting, peer_review, verification, data_flow or moderation), then the record can be
    * loaded from another client website if a sharing agreement is in place.
    * @link https://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/website-agreements.html
    * @param boolean $loadImages If set to true, then image information is loaded as well.
    */
   public static function load_existing_record($readAuth, $entity, $id, $view = 'detail', $sharing = false, $loadImages = false) {
     $records = self::get_population_data(array(
-        'table' => $entity,
-        'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
-        'nocache' => true,
-        'sharing' => $sharing
+      'table' => $entity,
+      'extraParams' => $readAuth + array('id' => $id, 'view' => $view),
+      'nocache' => true,
+      'sharing' => $sharing
     ));
     if (empty($records))
       throw new exception(lang::get('The record you are trying to load does not exist.'));
     self::load_existing_record_from($records[0], $readAuth, $entity, $id, $view, $sharing, $loadImages);
   }
-  
+
   /**
    * Version of load_existing_record which accepts an already queried record array from the database
    * as an input parameter.
@@ -5110,9 +5110,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * @param array $readAuth Read authorisation tokens
    * @param string $entity Name of the entity to load data from.
    * @param integer $id ID of the database record to load
-   * @param string $view Name of the view to load attributes from, normally 'list' or 'detail'. 
-   * @param boolean $sharing Defaults to false. If set to the name of a sharing task 
-   * (reporting, peer_review, verification, data_flow or moderation), then the record can be 
+   * @param string $view Name of the view to load attributes from, normally 'list' or 'detail'.
+   * @param boolean $sharing Defaults to false. If set to the name of a sharing task
+   * (reporting, peer_review, verification, data_flow or moderation), then the record can be
    * loaded from another client website if a sharing agreement is in place.
    * @link https://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/website-agreements.html
    * @param boolean $loadImages If set to true, then image information is loaded as well.
@@ -5161,7 +5161,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Singular table name used when loading from a database entity.
    * </li>
    * <li><b>report</b><br/>
-   * Path to the report file to use when loading data from a report, e.g. "library/occurrences/explore_list", 
+   * Path to the report file to use when loading data from a report, e.g. "library/occurrences/explore_list",
    * excluding the .xml extension.
    * </li>
    * <li><b>orderby</b><br/>
@@ -5169,19 +5169,19 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * to sort by several fields in descending order of precedence.
    * </li>
    * <li><b>sortdir</b><br/>
-   * Optional. Specify ASC or DESC to define ascending or descending sort order respectively. Can 
+   * Optional. Specify ASC or DESC to define ascending or descending sort order respectively. Can
    * be comma separated if several sort fields are specified in the orderby parameter.
    * </li>
    * <li><b>extraParams</b><br/>
-   * Array of extra URL parameters to send with the web service request. Should include key value 
+   * Array of extra URL parameters to send with the web service request. Should include key value
    * pairs for the field filters (for table data) or report parameters (for the report data) as well
    * as the read authorisation tokens. Can also contain a parameter for:
    * orderby - for a non-default sort order, provide the field name to sort by. Can be comma separated
    * to sort by several fields in descending order of precedence.
-   * sortdir - specify ASC or DESC to define ascending or descending sort order respectively. Can 
+   * sortdir - specify ASC or DESC to define ascending or descending sort order respectively. Can
    * be comma separated if several sort fields are specified in the orderby parameter.
    * limit - number of records to return.
-   * offset - number of records to offset by into the dataset, useful when paginating through the 
+   * offset - number of records to offset by into the dataset, useful when paginating through the
    * records.
    * view - use to specify which database view to load for an entity (e.g. list, detail, gv or cache).
    * Defaults to list.
@@ -5196,7 +5196,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * data sharing with other websites for the task. Further information is given in the link below.
    * </li>
    * </ul>
-   * @link https://indicia-docs.readthedocs.org/en/latest/developing/web-services/data-services-entity-list.html  
+   * @link https://indicia-docs.readthedocs.org/en/latest/developing/web-services/data-services-entity-list.html
    * @link https://indicia-docs.readthedocs.org/en/latest/administrating/warehouse/website-agreements.html
    */
   public static function get_population_data($options) {
@@ -5229,7 +5229,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       else
         $request .= '&'.self::array_to_query_string($options['extraParams'], true);
     }
-    if (isset($options['sharing'])) 
+    if (isset($options['sharing']))
       $request .= '&sharing='.$options['sharing'];
     if (!isset($options['caching']))
       $options['caching'] = true; // default
@@ -5250,7 +5250,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     closedir($dh);
   }
-  
+
   /**
    * Internal function to output either a select or listbox control depending on the templates
    * passed.
@@ -5279,7 +5279,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['items'] = str_replace(
             array('{value}', '{caption}', '{selected}'),
             array('', htmlentities($options['blankText'], ENT_COMPAT, "UTF-8")), $indicia_templates[$options['itemTemplate']]
-        ).(isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n");;
+          ).(isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n");;
       }
       $options['items'] .= implode((isset($options['optionSeparator']) ? $options['optionSeparator'] : "\n"), $lookupItems);
     }
@@ -5290,14 +5290,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
 
   /**
-  * When populating a list control (select, listbox, checkbox or radio group), use either the
-  * table, captionfield and valuefield to build the list of values as an array, or if lookupValues
-  * is in the options array use that instead of making a database call.
-  * @param array $options Options array for the control.
-  * @param string $selectedItemAttribute Name of the attribute that should be set in each list element if the item is selected/checked. For 
-  * option elements, pass "selected", for checkbox inputs, pass "checked".
-  * @return array Associative array of the lookup values and templated list items.
-  */
+   * When populating a list control (select, listbox, checkbox or radio group), use either the
+   * table, captionfield and valuefield to build the list of values as an array, or if lookupValues
+   * is in the options array use that instead of making a database call.
+   * @param array $options Options array for the control.
+   * @param string $selectedItemAttribute Name of the attribute that should be set in each list element if the item is selected/checked. For
+   * option elements, pass "selected", for checkbox inputs, pass "checked".
+   * @return array Associative array of the lookup values and templated list items.
+   */
   private static function get_list_items_from_options($options, $selectedItemAttribute) {
     $r = array();
     global $indicia_templates;
@@ -5310,9 +5310,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       foreach ($options['lookupValues'] as $key=>$value) {
         $selected=self::get_list_item_selected_attribute($key, $selectedItemAttribute, $options, $itemFieldname);
         $r[$key] = str_replace(
-            array('{value}', '{caption}', '{'.$selectedItemAttribute.'}', '{title}'),
-            array(htmlspecialchars($key), htmlspecialchars($value), $selected, (isset($hints[$value]) ? ' title="'.$hints[$value].'" ' : '')),
-            $indicia_templates[$options['itemTemplate']]
+          array('{value}', '{caption}', '{'.$selectedItemAttribute.'}', '{title}'),
+          array(htmlspecialchars($key), htmlspecialchars($value), $selected, (isset($hints[$value]) ? ' title="'.$hints[$value].'" ' : '')),
+          $indicia_templates[$options['itemTemplate']]
         );
       }
     } else {
@@ -5344,9 +5344,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
             if ($itemFieldname)
               $value .= ":$itemFieldname";
             $item = str_replace(
-                array('{value}', '{caption}', '{'.$selectedItemAttribute.'}', '{title}'),
-                array($value, $caption, $selected, (isset($hints[$value]) ? ' title="'.$hints[$value].'" ' : '')),
-                $indicia_templates[$options['itemTemplate']]
+              array('{value}', '{caption}', '{'.$selectedItemAttribute.'}', '{title}'),
+              array($value, $caption, $selected, (isset($hints[$value]) ? ' title="'.$hints[$value].'" ' : '')),
+              $indicia_templates[$options['itemTemplate']]
             );
             $r[$record[$options['valueField']]] = $item;
           }
@@ -5355,13 +5355,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     return $r;
   }
-  
+
   /**
    * Returns the selected="selected" or checked="checked" attribute required to set a default item in a list.
    * @param string $value The current item's value.
-   * @param string $selectedItemAttribute Name of the attribute that should be set in each list element if the item is selected/checked. For 
+   * @param string $selectedItemAttribute Name of the attribute that should be set in each list element if the item is selected/checked. For
    * option elements, pass "selected", for checkbox inputs, pass "checked".
-   * @param mixed $itemFieldname Will return the fieldname that must be associated with this particular value if using an array input 
+   * @param mixed $itemFieldname Will return the fieldname that must be associated with this particular value if using an array input
    * such as a listbox (multiselect select).
    * @param array $options Control options array which contains the "default" entry.
    */
@@ -5383,23 +5383,23 @@ $('div#$escaped_divId').indiciaTreeBrowser({
                 $itemFieldname = $defVal['fieldname'];
               }
             }
-          } 
-          elseif ($value == $defVal) 
+          }
+          elseif ($value == $defVal)
             $selected = true;
         }
       } else
         $selected = ($default == $value);
       return $selected ? " $selectedItemAttribute=\"$selectedItemAttribute\"" : '';
     }
-    else 
+    else
       return '';
   }
 
- /**
-  * Where there are 2 linked lists on a page, initialise the JavaScript required to link the lists.
-  *
-  * @param array Options array of the child linked list.
-  */
+  /**
+   * Where there are 2 linked lists on a page, initialise the JavaScript required to link the lists.
+   *
+   * @param array Options array of the child linked list.
+   */
   private static function init_linked_lists($options) {
     global $indicia_templates;
     // setup JavaScript to do the population when the parent control changes
@@ -5435,9 +5435,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (!empty($options['default']) && preg_match('/^[0-9]+$/', $options['default']))
       self::$javascript .= "indiciaData['default$escapedId']=$options[default];\n";
     self::$javascript .= str_replace(
-        array('{fn}','{escapedId}','{request}','{query}','{valueField}','{captionField}','{filterField}','{parentControlId}', '{instruct}'),
-        array($fn, $escapedId, $request,$query,$options['valueField'],$options['captionField'],$options['filterField'],$parentControlId, $instruct),
-        $indicia_templates['linked_list_javascript']
+      array('{fn}','{escapedId}','{request}','{query}','{valueField}','{captionField}','{filterField}','{parentControlId}', '{instruct}'),
+      array($fn, $escapedId, $request,$query,$options['valueField'],$options['captionField'],$options['filterField'],$parentControlId, $instruct),
+      $indicia_templates['linked_list_javascript']
     );
   }
 
@@ -5529,12 +5529,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $otherBoxOptions['fieldname'] = $options['otherValueAttrId'];
       //When the field is populated with existing data, the name includes the sample_attribute_value id, this is used on submission.
       //Don't include it if it isn't pre-populated.
-      if (isset($otherAttributeData[0]['id'])) 
+      if (isset($otherAttributeData[0]['id']))
         $otherBoxOptions['fieldname'] .= ':'.$otherAttributeData[0]['id'];
       //User can provide their own label for the textbox if they wish, otherwise default to "Other".
       if ($options['otherTextboxLabel'])
         $otherBoxOptions['label'] = $options['otherTextboxLabel'];
-      else 
+      else
         $otherBoxOptions['label'] = 'Other';
       //Fill in the textbox with existing value if in edit mode.
       if (isset($otherAttributeData[0]['value']))
@@ -5567,31 +5567,31 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     return $r;
   }
 
- /**
-  * Helper method to enable the support for tabbed interfaces for a div.
-  * The jQuery documentation describes how to specify a list within the div which defines the tabs that are present.
-  * This method also automatically selects the first tab that contains validation errors if the form is being
-  * reloaded after a validation attempt.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>divId</b><br/>
-  * Optional. The id of the div which will be tabbed. If not specified then the caller is
-  * responsible for calling the jQuery tabs plugin - this method just links the appropriate
-  * jQuery files.</li>
-  * <li><b>style</b><br/>
-  * Optional. Possible values are tabs (default) or wizard. If set to wizard, then the tab header
-  * is not displayed and the navigation should be provided by the tab_button control. This
-  * must be manually added to each tab page div.</li>
-  * <li><b>navButtons</b>
-  * Are Next and Previous buttons used to move between pages? Always true for wizard style otherwise
-  * navigation is impossible and defaults to false for tabs style.</li>
-  * <li><b>progressBar</b><br/>
-  * Optional. Set to true to output a progress header above the tabs/wizard which shows which
-  * stage the user is on out of the sequence of steps in the wizard.</li>
-  * </ul>
-  *
-  * @link http://docs.jquery.com/UI/Tabs
-  */
+  /**
+   * Helper method to enable the support for tabbed interfaces for a div.
+   * The jQuery documentation describes how to specify a list within the div which defines the tabs that are present.
+   * This method also automatically selects the first tab that contains validation errors if the form is being
+   * reloaded after a validation attempt.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>divId</b><br/>
+   * Optional. The id of the div which will be tabbed. If not specified then the caller is
+   * responsible for calling the jQuery tabs plugin - this method just links the appropriate
+   * jQuery files.</li>
+   * <li><b>style</b><br/>
+   * Optional. Possible values are tabs (default) or wizard. If set to wizard, then the tab header
+   * is not displayed and the navigation should be provided by the tab_button control. This
+   * must be manually added to each tab page div.</li>
+   * <li><b>navButtons</b>
+   * Are Next and Previous buttons used to move between pages? Always true for wizard style otherwise
+   * navigation is impossible and defaults to false for tabs style.</li>
+   * <li><b>progressBar</b><br/>
+   * Optional. Set to true to output a progress header above the tabs/wizard which shows which
+   * stage the user is on out of the sequence of steps in the wizard.</li>
+   * </ul>
+   *
+   * @link http://docs.jquery.com/UI/Tabs
+   */
   public static function enable_tabs($options) {
     // apply defaults
     $options = array_merge(array(
@@ -5604,7 +5604,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (!empty($options['divId'])) {
       // A jquery selector for the element which must be at the top of the page when moving to the next page. 
       // Could be the progress bar or the tabbed div itself.
-      $topSelector = $options['progressBar'] ? '.wiz-prog' : '#'.$options['divId'];        
+      $topSelector = $options['progressBar'] ? '.wiz-prog' : '#'.$options['divId'];
       $divId = $options['divId'];
       // Scroll to the top of the page. This may be required if subsequent tab pages are longer than the first one, meaning the
       // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
@@ -5658,9 +5658,9 @@ if (errors$uniq.length>0) {
    * Outputs the ul element that needs to go inside a tabified div control to define the header tabs.
    * This is required for wizard interfaces as well.
    * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>tabs</b><br/>
-  * Array of tabs, with each item being the tab title, keyed by the tab ID including the #.</li>
-  */
+   * <li><b>tabs</b><br/>
+   * Array of tabs, with each item being the tab title, keyed by the tab ID including the #.</li>
+   */
   public static function tab_header($options) {
     $options = self::check_options($options);
     // Convert the tabs array to a string of <li> elements
@@ -5682,16 +5682,16 @@ if (errors$uniq.length>0) {
   }
 
   /** Insert a button which, when clicked, displays the previous tab. Insert this inside the tab divs
-  * on each tab you want to have a next button, excluding the first tab.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>divId</b><br/>
-  * The id of the div which is tabbed and whose next tab should be selected.</li>
-  * <li><b>caption</b><br/>
-  * Optional. The untranslated caption of the button. Defaults to previous step.</li>
-  *
-  * @link http://docs.jquery.com/UI/Tabs
-  */
+   * on each tab you want to have a next button, excluding the first tab.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>divId</b><br/>
+   * The id of the div which is tabbed and whose next tab should be selected.</li>
+   * <li><b>caption</b><br/>
+   * Optional. The untranslated caption of the button. Defaults to previous step.</li>
+   *
+   * @link http://docs.jquery.com/UI/Tabs
+   */
   public static function tab_prev_button($options) {
     if (!array_key_exists('caption', $options)) $options['caption'] = 'previous step';
     $options['caption'] = lang::get($options['caption']);
@@ -5741,11 +5741,11 @@ if (errors$uniq.length>0) {
     // This script must precede the other scripts onload, otherwise they may have problems because
     // of assumptions that the controls are visible.
     self::$onload_javascript = "$('.loading-panel').remove();\n".
-        "var panel=$('.loading-hide')[0];\n".
-        "$(panel).hide();\n".
-        "$(panel).removeClass('loading-hide');\n".
-        "$(panel).fadeIn('slow');\n" .
-        self::$onload_javascript;
+      "var panel=$('.loading-hide')[0];\n".
+      "$(panel).hide();\n".
+      "$(panel).removeClass('loading-hide');\n".
+      "$(panel).fadeIn('slow');\n" .
+      self::$onload_javascript;
     return $indicia_templates['loading_block_end'];
   }
 
@@ -5773,7 +5773,7 @@ if (errors$uniq.length>0) {
             if (!empty($_POST[$field]))
               $arr[$field]=$_POST[$field];
           }
-            // put them in a cookie with a 30 day expiry
+          // put them in a cookie with a 30 day expiry
           setcookie('indicia_remembered', serialize($arr), time()+60*60*24*30);
           // cookies are only set when the page is loaded. So if we are reloading the same form after submission,
           // we need to fudge the cookie
@@ -5783,7 +5783,7 @@ if (errors$uniq.length>0) {
           setcookie('indicia_remembered', '');
         }
       }
-      
+
       $media = self::extract_media_data($_POST);
       $request = parent::$base_url."index.php/services/data/$entity";
       $postargs = 'submission='.urlencode(json_encode($submission));
@@ -5798,9 +5798,9 @@ if (errors$uniq.length>0) {
         if (array_key_exists('nonce', $_POST))
           $postargs .= '&nonce='.$_POST['nonce'];
       }
-      
+
       // pass through the user_id if hostsite_get_user_field is implemented
-      if (function_exists('hostsite_get_user_field')) 
+      if (function_exists('hostsite_get_user_field'))
         $postargs .= '&user_id='.hostsite_get_user_field('indicia_user_id');
       // look for media files attached to fields like group:logo_path (*:*_path)
       // which are not in submodels, so not picked up by the extract_media_data code.
@@ -5822,9 +5822,9 @@ if (errors$uniq.length>0) {
         if (isset(self::$final_image_folder) && self::$final_image_folder!='warehouse') {
           // moving the files on the local machine. Find out where from and to
           $interim_image_folder = dirname($_SERVER['SCRIPT_FILENAME']) . '/' . self::relative_client_helper_path().
-              (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
+            (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
           $final_image_folder = dirname($_SERVER['SCRIPT_FILENAME']) . '/' . self::relative_client_helper_path().
-              parent::$final_image_folder;
+            parent::$final_image_folder;
         }
         // submission succeeded. So we also need to move the images to the final location
         $image_overall_success = TRUE;
@@ -5860,28 +5860,28 @@ if (errors$uniq.length>0) {
   }
 
   /**
-  * Wraps data from a species checklist grid (generated by
-  * data_entry_helper::species_checklist) into a suitable format for submission. This will
-  * return an array of submodel entries which can be dropped directly into the subModel
-  * section of the submission array. If there is a field occurrence:determiner_id, occurrence:record_status,
-  * occurrence:training or occurrence:release_status in the main form data, then these values are applied to each new
-  * occurrence created from the grid. For example, place a hidden field in the form named
-  * "occurrence:record_status" with a value "C" to set all new occurrence records to completed
-  * as soon as they are entered.
-  *
-  * @param array $arr Array of data generated by data_entry_helper::species_checklist method.
-  * @param boolean $include_if_any_data If true, then any list entry which has any data
-  * set will be included in the submission. This defaults to false, unless the grid was
-  * created with rowInclusionCheck=hasData in the grid options.
-  * @param array $zero_attrs Set to an array of abundance attribute field IDs that can be
-  * treated as abundances. Alternatively set to true to treat all occurrence custom attributes
-  * as possible zero abundance indicators.
-  * @param array $zero_values Set to an array of values which are considered to indicate a 
-  * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to 
-  * array('0','None','Absent').
-  */
+   * Wraps data from a species checklist grid (generated by
+   * data_entry_helper::species_checklist) into a suitable format for submission. This will
+   * return an array of submodel entries which can be dropped directly into the subModel
+   * section of the submission array. If there is a field occurrence:determiner_id, occurrence:record_status,
+   * occurrence:training or occurrence:release_status in the main form data, then these values are applied to each new
+   * occurrence created from the grid. For example, place a hidden field in the form named
+   * "occurrence:record_status" with a value "C" to set all new occurrence records to completed
+   * as soon as they are entered.
+   *
+   * @param array $arr Array of data generated by data_entry_helper::species_checklist method.
+   * @param boolean $include_if_any_data If true, then any list entry which has any data
+   * set will be included in the submission. This defaults to false, unless the grid was
+   * created with rowInclusionCheck=hasData in the grid options.
+   * @param array $zero_attrs Set to an array of abundance attribute field IDs that can be
+   * treated as abundances. Alternatively set to true to treat all occurrence custom attributes
+   * as possible zero abundance indicators.
+   * @param array $zero_values Set to an array of values which are considered to indicate a
+   * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to
+   * array('0','None','Absent').
+   */
   public static function wrap_species_checklist($arr, $include_if_any_data=false,
-        $zero_attrs = true, $zero_values=array('0','None','Absent')){
+                                                $zero_attrs = true, $zero_values=array('0','None','Absent')){
     if (array_key_exists('website_id', $arr)){
       $website_id = $arr['website_id'];
     } else {
@@ -5914,9 +5914,15 @@ if (errors$uniq.length>0) {
     // $allHasDataIgnoreAttrs will be an array containing an entry for every grid that specified a value
     $subModels = array();
     foreach ($arr as $key => $value){
-      if (substr($key, 0, 3) == 'sc:'){ 
+      if (substr($key, 0, 3) == 'sc:'){
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
+        // skip the hidden clonable row for each grid, which will have -idx- instead of a row number
+        if (preg_match('/-idx-$/', $a[1]))
+          continue;
+        // skip the extra row at the end for input of new rows
+        if (!array_key_exists("$a[0]:$a[1]:$a[2]:present", $arr))
+          continue;
         if (is_array($value) && count($value)>0) {
           // The value is an array, so might contain existing database ID info in the value to link to existing records
           foreach ($value as $idx=>$arrayItem) {
@@ -5930,19 +5936,22 @@ if (errors$uniq.length>0) {
         } else {
           $records[$a[1]][$a[3]] = $value;
           // store any id so update existing record
-          if($a[2]) 
+          if($a[2])
             $records[$a[1]]['id'] = $a[2];
         }
       }
       else if (substr($key, 0, 19) == 'hasDataIgnoreAttrs-') {
         $tableId = substr($key, 19);
-        $allHasDataIgnoreAttrs[$tableId] = explode(',', $value);       
+        $allHasDataIgnoreAttrs[$tableId] = explode(',', $value);
       }
-       else if (substr($key, 0, 18) == 'rowInclusionCheck-') {
+      else if (substr($key, 0, 18) == 'rowInclusionCheck-') {
         $tableId = substr($key, 18);
-        $allRowInclusionCheck[$tableId] = $value;       
+        $allRowInclusionCheck[$tableId] = $value;
       }
     }
+    // get the posted data that might apply species association/interaction information
+    $assocDataKeys = preg_grep('/occurrence_association:\d+:(\d+)?:from_occurrence_id/', array_keys($arr));
+    $assocData = array_intersect_key($arr, array_combine($assocDataKeys, $assocDataKeys));
     foreach ($records as $id => $record) {
       // determine the id of the grid this record is from
       // $id = <grid_id>-<rowIndex> but <grid_id> could contain a hyphen
@@ -5950,14 +5959,14 @@ if (errors$uniq.length>0) {
       array_pop($a);
       $tableId = implode('-', $a);
       // determine any hasDataIgnoreAttrs for this record
-      $hasDataIgnoreAttrs = array_key_exists($tableId, $allHasDataIgnoreAttrs) ? 
-              $allHasDataIgnoreAttrs[$tableId] : array();
+      $hasDataIgnoreAttrs = array_key_exists($tableId, $allHasDataIgnoreAttrs) ?
+        $allHasDataIgnoreAttrs[$tableId] : array();
       // use default value of $include_if_any_data or override with a table specific value
-      $include_if_any_data = array_key_exists($tableId, $allRowInclusionCheck) && $allRowInclusionCheck[$tableId] = 'hasData' ? 
-              true : $include_if_any_data;
+      $include_if_any_data = array_key_exists($tableId, $allRowInclusionCheck) && $allRowInclusionCheck[$tableId] = 'hasData' ?
+          true : $include_if_any_data;
       // determine if this record is for presence, absence or nothing
       $present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
-          $zero_attrs, $zero_values, $hasDataIgnoreAttrs);
+        $zero_attrs, $zero_values, $hasDataIgnoreAttrs);
       if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
         if ($present===null)
           // checkboxes do not appear if not checked. If uncheck, delete record.
@@ -5968,7 +5977,7 @@ if (errors$uniq.length>0) {
         $record['website_id'] = $website_id;
         // don't overwrite settings for existing records.
         if (empty($record['id'])) {
-          if (isset($determiner_id)) 
+          if (isset($determiner_id))
             $record['determiner_id'] = $determiner_id;
           if (isset($training))
             $record['training'] = $training;
@@ -5979,7 +5988,8 @@ if (errors$uniq.length>0) {
         }
         $occ = data_entry_helper::wrap($record, 'occurrence');
         self::attachOccurrenceMediaToModel($occ, $record);
-        $subModels[] = array(
+        self::attachAssociationsToModel($id, $occ, $assocData, $arr);
+        $subModels[$id] = array(
           'fkId' => 'sample_id',
           'model' => $occ
         );
@@ -6009,7 +6019,7 @@ if (errors$uniq.length>0) {
    * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to
    * array('0','None','Absent').
    * @param array Array of grid ids to ignore when building sub-samples for occurrences, useful for creating
-   * customised submissions that only need to build sub-samples for some grids. The grid id comes from the @id option given 
+   * customised submissions that only need to build sub-samples for some grids. The grid id comes from the @id option given
    * to the species grid.
    */
     public static function wrap_species_checklist_with_subsamples($arr, $include_if_any_data=false,
@@ -6057,7 +6067,7 @@ if (errors$uniq.length>0) {
           $occurrenceRecords[$a[1]][$a[3]] = $value;
           if($a[2]) $occurrenceRecords[$a[1]]['id'] = $a[2];
         }
-      }      
+      }
     }
     foreach ($sampleRecords as $id => $sampleRecord) {
       $sampleRecords[$id]['occurrences'] = array();
@@ -6066,7 +6076,7 @@ if (errors$uniq.length>0) {
       $sampleIDX = $record['occurrence:sampleIDX'];
       unset($record['occurrence:sampleIDX']);
       $present = self::wrap_species_checklist_record_present($record, $include_if_any_data,
-          $zero_attrs, $zero_values, array());
+        $zero_attrs, $zero_values, array());
       if (array_key_exists('id', $record) || $present!==null) { // must always handle row if already present in the db
         if ($present===null)
           // checkboxes do not appear if not checked. If uncheck, delete record.
@@ -6117,13 +6127,13 @@ if (errors$uniq.length>0) {
     }
     return $subModels;
   }
-  
+
   /**
    * Test whether the data extracted from the $_POST for a species_checklist grid row refers to an occurrence record.
-   * @param array $record Record submission array from the form post. 
+   * @param array $record Record submission array from the form post.
    * @param boolean $include_if_any_data If set, then records are automatically created if any of the custom
    * attributes are filled in.
-   * @param mixed $zero_attrs Optional array of attribute IDs to restrict checks for zero abundance records to, 
+   * @param mixed $zero_attrs Optional array of attribute IDs to restrict checks for zero abundance records to,
    * or pass true to check all attributes.
    * @param array $zero_values Array of values to consider as zero, which might include localisations of words
    * such as "absent" and "zero" as well as "0".
@@ -6156,7 +6166,7 @@ if (errors$uniq.length>0) {
         if (preg_match("/occAttr:$ids$/", $field)) {
           if (in_array($value, $zero_values))
             $zeroCount++;
-          else 
+          else
             $nonZeroCount++;
         }
       }
@@ -6170,11 +6180,43 @@ if (errors$uniq.length>0) {
       if (is_array($recordField))
         $recordField = implode('',$recordField);
     }
-    $recordData=implode('',$record);  
+    $recordData=implode('',$record);
     $record = ($include_if_any_data && $recordData!='' && !preg_match("/^[0]*$/", $recordData)) ||       // inclusion of record is detected from having a non-zero value in any cell
-        (!$include_if_any_data && $gotTtlId); // inclusion of record detected from the presence checkbox
+      (!$include_if_any_data && $gotTtlId); // inclusion of record detected from the presence checkbox
     // return null if no record to create
     return $record ? true : null;
+  }
+
+  private static function attachAssociationsToModel($id, &$occ, $assocData, $arr) {
+    $assocs = preg_grep("/^$id$/", $assocData);
+    foreach (array_keys($assocs) as $fromRecordKey) {
+      // This species record has an association defined to another species record.
+      // Get all the fields which define this association
+      $fields = array();
+      $regexp = preg_replace('/from_occurrence_id$/', '', $fromRecordKey);
+      $associationDataKeys = preg_grep("/^$regexp/", array_keys($arr));
+      foreach ($associationDataKeys as $thisKey) {
+        if ($thisKey!==$fromRecordKey) {
+          $value = $arr[$thisKey];
+          // to_occurrence_id is a pointer to a key holding an object in the submission. We can't know the
+          // final database ID at this point, so mark it up specially for ORM to do this on the server side.
+          if (preg_match('/to_occurrence_id$/', $thisKey))
+            $value = "||$value||";
+          $fields[preg_replace("/^$regexp/", '', $thisKey)] = $value;
+        }
+      }
+      // Add a submodel to link them.
+      if (!isset($occ['subModels'])) {
+        $occ['subModels'] = array();
+      }
+      $occ['subModels'][] = array(
+        'fkId' => 'from_occurrence_id',
+        'model' => array(
+          'id' => 'occurrence_association',
+          'fields' => $fields
+        )
+      );
+    }
   }
 
   /**
@@ -6195,10 +6237,10 @@ if (errors$uniq.length>0) {
     }
     foreach($media as $item => $data) {
       $occ['subModels'][] = array(
-          'fkId' => 'occurrence_id',
-          'model' => array(
-            'id' => 'occurrence_medium',
-            'fields' => $data
+        'fkId' => 'occurrence_id',
+        'model' => array(
+          'id' => 'occurrence_medium',
+          'fields' => $data
         )
       );
     }
@@ -6222,7 +6264,7 @@ if (errors$uniq.length>0) {
     return submission_builder::wrap($array, $entity);
   }
 
-   /**
+  /**
    * Wraps a set of values for a model into JSON suitable for submission to the Indicia data services,
    * and also grabs the custom attributes (if there are any) and links them to the model.
    *
@@ -6235,7 +6277,7 @@ if (errors$uniq.length>0) {
   public static function wrap_with_attrs($values, $modelName) {
     return submission_builder::wrap_with_attrs($values, $modelName);
   }
-  
+
   /**
    * Helper function to simplify building of a submission that contains a single sample
    * and occurrence record.
@@ -6245,15 +6287,15 @@ if (errors$uniq.length>0) {
    */
   public static function build_sample_occurrence_submission($values) {
     $structure = array(
-        'model' => 'sample',
-        'subModels' => array(
-          'occurrence' => array('fk' => 'sample_id')
-        )
+      'model' => 'sample',
+      'subModels' => array(
+        'occurrence' => array('fk' => 'sample_id')
+      )
     );
     // Either an uploadable file, or a link to an external detail means include the submodel
     if (!empty($values['occurrence:image']) || !empty($values['occurrence_medium:external_details'])) {
       $structure['subModels']['occurrence']['subModels'] = array(
-          'occurrence_medium' => array('fk' => 'occurrence_id')
+        'occurrence_medium' => array('fk' => 'occurrence_id')
       );
     }
     return submission_builder::build_submission($values, $structure);
@@ -6270,8 +6312,8 @@ if (errors$uniq.length>0) {
    * @param array $zero_attrs Set to an array of abundance attribute field IDs that can be
    * treated as abundances. Alternatively set to true to treat all occurrence custom attributes
    * as possible zero abundance indicators.
-   * @param array $zero_values Set to an array of values which are considered to indicate a 
-   * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to 
+   * @param array $zero_values Set to an array of values which are considered to indicate a
+   * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to
    * array('0','None','Absent').
    * of values that can be treated as meaning a zero abundance record. E.g.
    * array('
@@ -6279,11 +6321,11 @@ if (errors$uniq.length>0) {
    * @return array Sample submission array
    */
   public static function build_sample_occurrences_list_submission($values, $include_if_any_data=false,
-      $zero_attrs = true, $zero_values=array('0','None','Absent')) {
+                                                                  $zero_attrs = true, $zero_values=array('0','None','Absent')) {
     // We're mainly submitting to the sample model
     $sampleMod = submission_builder::wrap_with_images($values, 'sample');
     $occurrences = data_entry_helper::wrap_species_checklist($values, $include_if_any_data,
-        $zero_attrs, $zero_values);
+      $zero_attrs, $zero_values);
 
     // Add the occurrences in as subModels without overwriting others such as a sample image
     if (array_key_exists('subModels', $sampleMod)) {
@@ -6291,13 +6333,13 @@ if (errors$uniq.length>0) {
     } else {
       $sampleMod['subModels'] = $occurrences;
     }
-    
+
     return $sampleMod;
   }
 
   /**
    * Helper function to simplify building of a submission that contains a single supersample,
-   * with multiple subsamples, each of which has multiple occurrences records, as generated 
+   * with multiple subsamples, each of which has multiple occurrences records, as generated
    * by a species_checklist control.
    *
    * @param array $values List of the posted values to create the submission from.
@@ -6307,8 +6349,8 @@ if (errors$uniq.length>0) {
    * @param array $zero_attrs Set to an array of abundance attribute field IDs that can be
    * treated as abundances. Alternatively set to true to treat all occurrence custom attributes
    * as possible zero abundance indicators.
-   * @param array $zero_values Set to an array of values which are considered to indicate a 
-   * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to 
+   * @param array $zero_values Set to an array of values which are considered to indicate a
+   * zero abundance record if found for one of the zero_attrs. Values are case-insensitive. Defaults to
    * array('0','None','Absent').
    * of values that can be treated as meaning a zero abundance record. E.g.
    * array('
@@ -6316,12 +6358,12 @@ if (errors$uniq.length>0) {
    * @return array Sample submission array
    */
   public static function build_sample_subsamples_occurrences_submission($values, $include_if_any_data=false,
-       $zero_attrs = true, $zero_values=array('0','None','Absent'))
+                                                                        $zero_attrs = true, $zero_values=array('0','None','Absent'))
   {
     // We're mainly submitting to the sample model
     $sampleMod = submission_builder::wrap_with_images($values, 'sample');
     $subModels = data_entry_helper::wrap_species_checklist_with_subsamples($values, $include_if_any_data,
-        $zero_attrs, $zero_values);
+      $zero_attrs, $zero_values);
 
     // Add the subsamples/occurrences in as subModels without overwriting others such as a sample image
     if (array_key_exists('subModels', $sampleMod)) {
@@ -6356,14 +6398,14 @@ if (errors$uniq.length>0) {
   }
   
   /**
-  * Takes a response from a call to forward_post_to() and outputs any errors from it onto the screen.
-  *
-  * @param string $response Return value from a call to forward_post_to().
-  * @param boolean $inline Set to true if the errors are to be placed alongside the controls rather than at the top of the page.
-  * Default is true.
-  * @see forward_post_to()
-  * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
-  */
+   * Takes a response from a call to forward_post_to() and outputs any errors from it onto the screen.
+   *
+   * @param string $response Return value from a call to forward_post_to().
+   * @param boolean $inline Set to true if the errors are to be placed alongside the controls rather than at the top of the page.
+   * Default is true.
+   * @see forward_post_to()
+   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
+   */
   public static function dump_errors($response, $inline=true)
   {
     $r = "";
@@ -6378,7 +6420,7 @@ if (errors$uniq.length>0) {
           self::$entity_to_load = $_POST;
           if (isset($response['code'])) {
             switch ($response['code']) {
-              case 2003: if (function_exists('hostsite_show_message')) 
+              case 2003: if (function_exists('hostsite_show_message'))
                 hostsite_show_message(lang::get('The data could not be saved.'), 'error');
               else
                 $r .= "<div class=\"ui-widget ui-corner-all ui-state-highlight page-notice\">" . lang::get('The data could not be saved.') . "</div>\n";
@@ -6410,7 +6452,7 @@ if (errors$uniq.length>0) {
       elseif (array_key_exists('warning',$response)) {
         if (function_exists('hostsite_show_message')) {
           hostsite_show_message(lang::get('A warning occurred when the data was submitted.').' '.$response['error'], 'error');
-        } else { 
+        } else {
           $r .= 'A warning occurred when the data was submitted.';
           $r .= '<p class="error">'.$response['error']."</p>\n";
         }
@@ -6450,7 +6492,7 @@ if (errors$uniq.length>0) {
     }
     return $r;
   }
-  
+
   /**
    * Returns the default value for the control with the supplied Id.
    * The default value is taken as either the $_POST value for this control, or the first of the remaining
@@ -6492,11 +6534,11 @@ if (errors$uniq.length>0) {
     // version is lower than that, then emulate it
     if(!defined('PHP_VERSION_ID'))
     {
-        $version = PHP_VERSION;
-        define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
+      $version = PHP_VERSION;
+      define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
     }
     $r = '<div class="ui-widget ui-widget-content ui-state-highlight ui-corner-all">' .
-        '<p class="ui-widget-header"><strong>System check</strong></p><ul>';
+      '<p class="ui-widget-header"><strong>System check</strong></p><ul>';
     // Test PHP version.
     if (PHP_VERSION_ID<50200) {
       $r .= '<li class="ui-state-error">Warning: PHP version is '.phpversion().' which does not support JSON communication with the Indicia Warehouse.</li>';
@@ -6505,7 +6547,7 @@ if (errors$uniq.length>0) {
     }
     if (!function_exists('finfo_open')) {
       $r .= '<li class="ui-state-error">Warning: The Fileinfo PHP library is not installed on the server. Although it is not mandatory, installing this module is recommended as it prevents '.
-          'upload of malicious files masquerading as image files.</li>';
+        'upload of malicious files masquerading as image files.</li>';
     } elseif ($fullInfo) {
       $r .= '<li>Success: PHP Fileinfo extension is installed.</li>';
     }
@@ -6517,7 +6559,7 @@ if (errors$uniq.length>0) {
         $curlVersionArray = curl_version();
         if (is_array($curlVersionArray)) {
           $curlVersion = $curlVersionArray['version'];
-      }
+        }
         else {
           $curlVersion = $curlVersionArray;
         }
@@ -6536,11 +6578,11 @@ if (errors$uniq.length>0) {
           $r .= '<li class="ui-state-error">Warning: The cUrl PHP library could not access the Indicia Warehouse. The error was reported as:';
           $r .= $curl_check['output'].'<br/>';
           $r .= 'Please ensure that this web server is not prevented from accessing the server identified by the ' .
-              'helper_config.php $base_url setting by a firewall. The current setting is '.parent::$base_url.'</li>';
+            'helper_config.php $base_url setting by a firewall. The current setting is '.parent::$base_url.'</li>';
         } else {
           $r .= '<li class="ui-widget ui-state-error">Warning: A request sent to the Indicia Warehouse URL did not respond as expected. ' .
-                'Please ensure that the helper_config.php $base_url setting is correct. ' .
-                'The current setting is '.parent::$base_url.'<br></li>';
+            'Please ensure that the helper_config.php $base_url setting is correct. ' .
+            'The current setting is '.parent::$base_url.'<br></li>';
         }
       }
       $missing_configs = array();
@@ -6550,7 +6592,7 @@ if (errors$uniq.length>0) {
       // don't test $indicia_upload_path and $interim_image_folder as they are assumed to be upload/ if missing.
       self::check_config('$geoserver_url', isset(self::$geoserver_url), empty(self::$geoserver_url), $missing_configs, $blank_configs);
       if (substr(self::$geoserver_url, 0, 4) != 'http') {
-         $r .= '<li class="ui-widget ui-state-error">Warning: The $geoserver_url setting in helper_config.php should include the protocol (e.g. http://).</li>';
+        $r .= '<li class="ui-widget ui-state-error">Warning: The $geoserver_url setting in helper_config.php should include the protocol (e.g. http://).</li>';
       }
       self::check_config('$geoplanet_api_key', isset(self::$geoplanet_api_key), empty(self::$geoplanet_api_key), $missing_configs, $blank_configs);
       self::check_config('$google_api_key', isset(self::$google_api_key), empty(self::$google_api_key), $missing_configs, $blank_configs);
@@ -6558,12 +6600,12 @@ if (errors$uniq.length>0) {
       // Warn the user of the missing ones - the important bit.
       if (count($missing_configs)>0) {
         $r .= '<li class="ui-widget ui-state-error">Error: The following configuration entries are missing from helper_config.php : '.
-            implode(', ', $missing_configs).'. This may prevent the data_entry_helper class from functioning normally.</li>';
+          implode(', ', $missing_configs).'. This may prevent the data_entry_helper class from functioning normally.</li>';
       }
       // Also warn them of blank ones - not so important as it should only affect the one area of functionality
       if (count($blank_configs)>0) {
         $r .= '<li class="ui-widget ui-state-error">Warning: The following configuration entries are not specified in helper_config.php : '.
-            implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
+          implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
       }
       // Test we have a writeable cache directory
       $cacheFolder = parent::$cache_folder ? parent::$cache_folder : self::relative_client_helper_path() . 'cache/';
@@ -6576,14 +6618,14 @@ if (errors$uniq.length>0) {
         $handle = @fopen("$cacheFolder/test.txt", 'wb');
         if ($handle) {
           fclose($handle);
-          if ($fullInfo) 
+          if ($fullInfo)
             $r .= '<li>Success: Cache directory is present and writeable.</li>';
         } else
           $r .= '<li class="ui-state-error">Warning: The cache path setting in helper_config.php points to a directory that I can\'t write a file into (' . $cacheFolder . '). Please change it to writeable.</li>';
-        
+
       }
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-      if (!is_writeable(self::relative_client_helper_path() . $interim_image_folder)) 
+      if (!is_writeable(self::relative_client_helper_path() . $interim_image_folder))
         $r .= '<li class="ui-state-error">The interim_image_folder setting in helper_config.php points to a read only directory (' . $interim_image_folder . '). This will prevent image uploading.</li>';
       elseif ($fullInfo)
         $r .= '<li>Success: Interim image upload directory is writeable.</li>';
@@ -6610,43 +6652,43 @@ if (errors$uniq.length>0) {
   }
 
   /**
-  * Helper function to fetch details of attributes associated with a survey.
-  * This can be used to auto-generated the forum structure for a survey for example.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>survey_id</b><br/>
-  * Optional. The survey that custom attributes are to be loaded for.</li>
-  * <li><b>website_ids</b><br/>
-  * Optional. Used instead of survey_id, allows retrieval of all possible custom attributes
-  * for a set of websites.</li>
-  * <li><b>sample_method_id</b><br/>
-  * Optional. Can be set to the id of a sample method when loading just the attributes that are restricted to
-  * that sample method or are unrestricted, otherwise only loads unrestricted attributes. Ignored unless
-  * loading sample attributes.</li>
-  * <li><b>location_type_id</b><br/>
-  * Optional. Can be set to the id of a location_type when loading just the attributes that are restricted to
-  * that type or are unrestricted, otherwise only loads unrestricted attributes. Ignored unless
-  * loading location attributes.</li>
-  * <li><b>attrtable</b><br/>
-  * Required. Singular name of the table containing the attributes, e.g. sample_attribute.</li>
-  * <li><b>valuetable</b><br/>
-  * Required. Singular name of the table containing the attribute values, e.g. sample_attribute_value.</li>
-  * <li><b>fieldprefix</b><br/>
-  * Required. Prefix to be given to the returned control names, e.g. locAttr:</li>
-  * <li><b>extraParams</b><br/>
-  * Required. Additional parameters used in the web service call, including the read authorisation.</li>
-  * <li><b>multiValue</b><br/>
-  * Defaults to false, in which case this assumes that each attribute only allows one value, and the response array is keyed
-  * by attribute ID. If set to true, multiple values are enabled and the response array is keyed by <attribute ID>:<attribute value ID>
-  * in the cases where there is any data for the attribute.
-  * </ul>
-  * @param optional boolean $indexedArray default true. Determines whether the return value is an array indexed by PK, or whether it
-  * is ordered as it comes from the database (ie block weighting). Needs to be set false if data is to be used by get_attribute_html.
-  * @param string $sharing Set to verification, peer_review, moderation, data_flow or reporting to indicate the task being performed, if
-  * sharing data with other websites. If not set then only data from the current website is available.
-  *
-  * @return Associative array of attributes, keyed by the attribute ID (multiValue=false) or <attribute ID>:<attribute value ID> if multiValue=true.
-  */
+   * Helper function to fetch details of attributes associated with a survey.
+   * This can be used to auto-generated the forum structure for a survey for example.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>survey_id</b><br/>
+   * Optional. The survey that custom attributes are to be loaded for.</li>
+   * <li><b>website_ids</b><br/>
+   * Optional. Used instead of survey_id, allows retrieval of all possible custom attributes
+   * for a set of websites.</li>
+   * <li><b>sample_method_id</b><br/>
+   * Optional. Can be set to the id of a sample method when loading just the attributes that are restricted to
+   * that sample method or are unrestricted, otherwise only loads unrestricted attributes. Ignored unless
+   * loading sample attributes.</li>
+   * <li><b>location_type_id</b><br/>
+   * Optional. Can be set to the id of a location_type when loading just the attributes that are restricted to
+   * that type or are unrestricted, otherwise only loads unrestricted attributes. Ignored unless
+   * loading location attributes.</li>
+   * <li><b>attrtable</b><br/>
+   * Required. Singular name of the table containing the attributes, e.g. sample_attribute.</li>
+   * <li><b>valuetable</b><br/>
+   * Required. Singular name of the table containing the attribute values, e.g. sample_attribute_value.</li>
+   * <li><b>fieldprefix</b><br/>
+   * Required. Prefix to be given to the returned control names, e.g. locAttr:</li>
+   * <li><b>extraParams</b><br/>
+   * Required. Additional parameters used in the web service call, including the read authorisation.</li>
+   * <li><b>multiValue</b><br/>
+   * Defaults to false, in which case this assumes that each attribute only allows one value, and the response array is keyed
+   * by attribute ID. If set to true, multiple values are enabled and the response array is keyed by <attribute ID>:<attribute value ID>
+   * in the cases where there is any data for the attribute.
+   * </ul>
+   * @param optional boolean $indexedArray default true. Determines whether the return value is an array indexed by PK, or whether it
+   * is ordered as it comes from the database (ie block weighting). Needs to be set false if data is to be used by get_attribute_html.
+   * @param string $sharing Set to verification, peer_review, moderation, data_flow or reporting to indicate the task being performed, if
+   * sharing data with other websites. If not set then only data from the current website is available.
+   *
+   * @return Associative array of attributes, keyed by the attribute ID (multiValue=false) or <attribute ID>:<attribute value ID> if multiValue=true.
+   */
   public static function getAttributes($options, $indexedArray = true, $sharing=false) {
     $attrs = array();
     // there is a possiblility that the $options['extraParams'] already features a query entry.
@@ -6660,7 +6702,7 @@ if (errors$uniq.length>0) {
       $query = array('in'=>array());
     self::add_resource('json');
     if (isset($options['website_ids'])) {
-      $query['in']['website_id']=$options['website_ids'];  
+      $query['in']['website_id']=$options['website_ids'];
     } elseif ($options['attrtable']!=='person_attribute') {
       $surveys = array(NULL);
       if (isset($options['survey_id']))
@@ -6683,15 +6725,15 @@ if (errors$uniq.length>0) {
         $methods[] = $options['location_type_id'];
       $query['in']['restrict_to_location_type_id'] = $methods;
     }
-    
+
     $attrOptions = array(
-        'table'=>$options['attrtable'],
-        'extraParams'=> array_merge(array(
-           'deleted' => 'f',
-           'website_deleted' => 'f',
-           'orderby'=>'weight',
-           'query'=>json_encode($query),
-        ), $options['extraParams'])
+      'table'=>$options['attrtable'],
+      'extraParams'=> array_merge(array(
+        'deleted' => 'f',
+        'website_deleted' => 'f',
+        'orderby'=>'weight',
+        'query'=>json_encode($query),
+      ), $options['extraParams'])
     );
     if ($sharing)
       $attrOptions['sharing'] = $sharing;
@@ -6810,7 +6852,7 @@ if (errors$uniq.length>0) {
     );
     unset($options['validation']);
     $default = self::check_default_value($options['fieldname'],
-        array_key_exists('default', $options) ? $options['default'] : '', '0');
+      array_key_exists('default', $options) ? $options['default'] : '', '0');
     $options['default'] = $default;
     $options = array_merge(array('sep' => ''), $options);
     if ($options['class']=='') {
@@ -6821,12 +6863,12 @@ if (errors$uniq.length>0) {
     $buttonList = array(lang::get('No') => '0', lang::get('Yes') => '1');
     $disabled = isset($options['disabled']) ?  $options['disabled'] : '';
     foreach ($buttonList as $caption => $value) {
-          $checked = ($default == $value) ? ' checked="checked" ' : '';
-          $items .= str_replace(
-              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}', '{disabled}', '{itemId}', '{class}'),
-              array($ctrl, $options['fieldname'], $value, $checked, $caption, $options['sep'], $disabled, $options['fieldname'].':'.$value, ''),
-              $indicia_templates['check_or_radio_group_item']
-          );
+      $checked = ($default == $value) ? ' checked="checked" ' : '';
+      $items .= str_replace(
+        array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}', '{disabled}', '{itemId}', '{class}'),
+        array($ctrl, $options['fieldname'], $value, $checked, $caption, $options['sep'], $disabled, $options['fieldname'].':'.$value, ''),
+        $indicia_templates['check_or_radio_group_item']
+      );
     }
     $options['items']=$items;
     $lblTemplate = $indicia_templates['label'];
@@ -6838,24 +6880,24 @@ if (errors$uniq.length>0) {
   }
 
   /**
-  * Helper function to output an attribute.
-  *
-  * @param array $item Attribute definition as returned by a call to getAttributes. The caption of the attribute
-  * will be translated then output as the label.
-  * @param array $options Additional options for the attribute to be output. Array entries can be:
-  *    disabled
-  *    suffixTemplate
-  *    default
-  *    class
-  *    validation
-  *    noBlankText
-  *    extraParams
-  *    booleanCtrl - radio or checkbox for boolean attribute output, default is checkbox. Can also be a checkbox_group, used to
-  *    allow selection of both yes and no, e.g. on a filter form.
-  *    language - iso 639:3 code for the language to output for terms in a termlist. If not set no language filter is used.
-  * @return string HTML to insert into the page for the control.
-  * @todo full handling of the control_type. Only works for text data at the moment.
-  */
+   * Helper function to output an attribute.
+   *
+   * @param array $item Attribute definition as returned by a call to getAttributes. The caption of the attribute
+   * will be translated then output as the label.
+   * @param array $options Additional options for the attribute to be output. Array entries can be:
+   *    disabled
+   *    suffixTemplate
+   *    default
+   *    class
+   *    validation
+   *    noBlankText
+   *    extraParams
+   *    booleanCtrl - radio or checkbox for boolean attribute output, default is checkbox. Can also be a checkbox_group, used to
+   *    allow selection of both yes and no, e.g. on a filter form.
+   *    language - iso 639:3 code for the language to output for terms in a termlist. If not set no language filter is used.
+   * @return string HTML to insert into the page for the control.
+   * @todo full handling of the control_type. Only works for text data at the moment.
+   */
   public static function outputAttribute($item, $options=array()) {
     if (!empty($item['multi_value']) && $item['multi_value']==='t' && !empty($options['controlCount']) ) {
       // don't need an array field - we will make a unique set of control names instead
@@ -6882,15 +6924,15 @@ if (errors$uniq.length>0) {
     }
     return self::internalOutputAttribute($item, $options);
   }
-  
+
   private static function internalOutputAttribute($item, $options) {
     $options = array_merge(array(
       'extraParams' => array()
     ), $options);
     $attrOptions = array(
-        'fieldname'=>$item['fieldname'],
-        'id'=>$item['id'],
-        'disabled'=>'');
+      'fieldname'=>$item['fieldname'],
+      'id'=>$item['id'],
+      'disabled'=>'');
     if (isset($item['caption']))
       $attrOptions['label']=$item['caption']; // no need to translate, as that has already been done by getAttributes. Untranslated caption is in field untranslatedCaption
     $attrOptions = array_merge($attrOptions, $options);
@@ -6901,133 +6943,133 @@ if (errors$uniq.length>0) {
     }
     if(isset($item['default']) && $item['default']!="")
       $attrOptions['default']= $item['default'];
-      //the following two lines are a temporary fix to allow a control_type to be specified via the form's user interface form structure      
+    //the following two lines are a temporary fix to allow a control_type to be specified via the form's user interface form structure
     if(isset($attrOptions['control_type']) && $attrOptions['control_type']!="")
       $item['control_type']= $attrOptions['control_type'];
     unset($ctrl);
     switch ($item['data_type']) {
-        case 'Text':
-        case 'T':
+      case 'Text':
+      case 'T':
+        if (isset($item['control_type']) &&
+          ($item['control_type']=='text_input' || $item['control_type']=='textarea'
+            || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input'
+            || $item['control_type']=='hidden_text' || $item['control_type']=='complex_attr_grid' )) {
+          $ctrl = $item['control_type'];
+        } else {
+          $ctrl = 'text_input';
+        }
+        $output = self::$ctrl($attrOptions);
+        break;
+      case 'Integer':
+      case 'I':
+        // We can use integer fields to store the results of custom lookups, e.g. against species or locations...
+        if (isset($item['control_type']) &&
+          ($item['control_type']=='species_autocomplete' || $item['control_type']=='location_autocomplete')) {
+          $ctrl = $item['control_type'];
+        }
+      // flow through
+      case 'Float':
+      case 'F':
+        if (!isset($ctrl))
+          $ctrl='text_input';
+        $output = self::$ctrl($attrOptions);
+        break;
+      case 'Boolean':
+      case 'B':
+        // A change in template means we can now use a checkbox if desired: in fact this is now the default.
+        // Can also use checkboxes (eg for filters where none selected is a possibility) or radio buttons.
+        $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
+        if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='radio') {
+          $output = self::boolean_attribute('radio', $attrOptions);
+        } elseif(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox_group') {
+          $output = self::boolean_attribute('checkbox', $attrOptions);
+        } else {
+          $output = self::checkbox($attrOptions);
+        }
+        break;
+      case 'D': // Date
+      case 'Specific Date': // Date
+      case 'V': // Vague Date
+      case 'Vague Date': // Vague Date
+        $attrOptions['class'] = ($item['data_type'] == 'D' ? "date-picker " : "vague-date-picker ");
+        if (isset($item['validation_rules']) && strpos($item['validation_rules'],'date_in_past')=== false)
+          $attrOptions['allowFuture']=true;
+        $output = self::date_picker($attrOptions);
+        break;
+      case 'Lookup List':
+      case 'L':
+        if(!array_key_exists('noBlankText', $options)){
+          $attrOptions = $attrOptions + array('blankText' => (array_key_exists('blankText', $options)? $options['blankText'] : ''));
+        }
+        if (array_key_exists('class', $options))
+          $attrOptions['class'] = $options['class'];
+        $dataSvcParams = array('termlist_id' => $item['termlist_id'], 'view' => 'detail');
+        if (array_key_exists('language', $options)) {
+          $dataSvcParams = $dataSvcParams + array('iso'=>$options['language']);
+        }
+        if (!array_key_exists('orderby', $options['extraParams'])) {
+          $dataSvcParams = $dataSvcParams + array('orderby'=>'sort_order');
+        }
+        // control for lookup list can be overriden in function call options
+        if(array_key_exists('lookUpListCtrl', $options)){
+          $ctrl = $options['lookUpListCtrl'];
+        } else {
+          // or specified by the attribute in survey details
           if (isset($item['control_type']) &&
-              ($item['control_type']=='text_input' || $item['control_type']=='textarea'
-              || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input'
-              || $item['control_type']=='hidden_text' || $item['control_type']=='complex_attr_grid' )) {
-            $ctrl = $item['control_type'];
-          } else {
-            $ctrl = 'text_input';
-          }
-          $output = self::$ctrl($attrOptions);
-          break;
-        case 'Integer':
-        case 'I':
-          // We can use integer fields to store the results of custom lookups, e.g. against species or locations...
-          if (isset($item['control_type']) &&
-              ($item['control_type']=='species_autocomplete' || $item['control_type']=='location_autocomplete')) {
-            $ctrl = $item['control_type'];
-          }
-          // flow through
-        case 'Float':
-        case 'F':
-          if (!isset($ctrl))
-            $ctrl='text_input';
-          $output = self::$ctrl($attrOptions);
-          break;
-        case 'Boolean':
-        case 'B':
-          // A change in template means we can now use a checkbox if desired: in fact this is now the default.
-          // Can also use checkboxes (eg for filters where none selected is a possibility) or radio buttons.
-            $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
-            if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='radio') {
-              $output = self::boolean_attribute('radio', $attrOptions);
-            } elseif(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox_group') {
-              $output = self::boolean_attribute('checkbox', $attrOptions);
-            } else {
-              $output = self::checkbox($attrOptions);
-            }
-            break;
-        case 'D': // Date
-        case 'Specific Date': // Date
-        case 'V': // Vague Date
-        case 'Vague Date': // Vague Date
-            $attrOptions['class'] = ($item['data_type'] == 'D' ? "date-picker " : "vague-date-picker ");
-            if (isset($item['validation_rules']) && strpos($item['validation_rules'],'date_in_past')=== false)
-              $attrOptions['allowFuture']=true;
-            $output = self::date_picker($attrOptions);
-            break;
-        case 'Lookup List':
-        case 'L':
-          if(!array_key_exists('noBlankText', $options)){
-            $attrOptions = $attrOptions + array('blankText' => (array_key_exists('blankText', $options)? $options['blankText'] : ''));
-          }
-          if (array_key_exists('class', $options))
-            $attrOptions['class'] = $options['class'];
-          $dataSvcParams = array('termlist_id' => $item['termlist_id'], 'view' => 'detail');
-          if (array_key_exists('language', $options)) {
-            $dataSvcParams = $dataSvcParams + array('iso'=>$options['language']);
-          }
-          if (!array_key_exists('orderby', $options['extraParams'])) {
-            $dataSvcParams = $dataSvcParams + array('orderby'=>'sort_order');
-          }
-          // control for lookup list can be overriden in function call options
-          if(array_key_exists('lookUpListCtrl', $options)){
-            $ctrl = $options['lookUpListCtrl'];
-          } else {
-            // or specified by the attribute in survey details
-            if (isset($item['control_type']) &&
-              ($item['control_type']=='autocomplete' || $item['control_type']=='checkbox_group'
+            ($item['control_type']=='autocomplete' || $item['control_type']=='checkbox_group'
               || $item['control_type']=='listbox' || $item['control_type']=='radio_group' || $item['control_type']=='select'
               || $item['control_type']=='hierarchical_select')) {
-              $ctrl = $item['control_type'];
-            } else {
-              $ctrl = 'select';
-            }
-          }
-          if (isset($item['multi_value']) && $item['multi_value']==='t') 
-            $attrOptions['multiselect']=true;
-          if(array_key_exists('lookUpKey', $options)){
-            $lookUpKey = $options['lookUpKey'];
+            $ctrl = $item['control_type'];
           } else {
-            $lookUpKey = 'id';
+            $ctrl = 'select';
           }
-          $output = "";
-          if($ctrl=='checkbox_group' && isset($attrOptions['default'])){
-            // special case for checkboxes where there are existing values: have to allow them to save unclicked, so need hidden blank field
-            // don't really want to put it in to the main checkbox_group control as don't know what ramifications that would have.
-            if (is_array($attrOptions['default'])) {
-              $checked = false;
-              foreach ($attrOptions['default'] as $defVal) {
-                if(is_array($defVal)){
-                  $output .= '<input type="hidden" value="" name="'.$defVal['fieldname'].'">';
-                } // really need the field name, so ignore when not provided
-              }
-            } 
-          }
-          if($ctrl=='autocomplete' && isset($attrOptions['default'])){
-            // two options: we could be using the id or the meaning_id.
-            if($lookUpKey=='id'){
-            	$attrOptions['defaultCaption'] = $item['displayValue'];
-            } else {
-              $termOptions = array(
-                    'table'=>'termlists_term',
-                    'extraParams'=> $options['extraParams'] + $dataSvcParams);
-              $termOptions['extraParams']['meaning_id']=$attrOptions['default'];
-              $response = self::get_population_data($termOptions);
-              if(count($response)>0)
-                $attrOptions['defaultCaption'] = $response[0]['term'];
+        }
+        if (isset($item['multi_value']) && $item['multi_value']==='t')
+          $attrOptions['multiselect']=true;
+        if(array_key_exists('lookUpKey', $options)){
+          $lookUpKey = $options['lookUpKey'];
+        } else {
+          $lookUpKey = 'id';
+        }
+        $output = "";
+        if($ctrl=='checkbox_group' && isset($attrOptions['default'])){
+          // special case for checkboxes where there are existing values: have to allow them to save unclicked, so need hidden blank field
+          // don't really want to put it in to the main checkbox_group control as don't know what ramifications that would have.
+          if (is_array($attrOptions['default'])) {
+            $checked = false;
+            foreach ($attrOptions['default'] as $defVal) {
+              if(is_array($defVal)){
+                $output .= '<input type="hidden" value="" name="'.$defVal['fieldname'].'">';
+              } // really need the field name, so ignore when not provided
             }
           }
-          $output .= call_user_func(array(get_called_class(), $ctrl), array_merge($attrOptions, array(
-                  'table'=>'termlists_term',
-                  'captionField'=>'term',
-                  'valueField'=>$lookUpKey,
-                  'extraParams' => array_merge($options['extraParams'] + $dataSvcParams))));
-          break;         
-        default:
-            if ($item)
-              $output = '<strong>UNKNOWN DATA TYPE "'.$item['data_type'].'" FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
-            else
-              $output = '<strong>Requested attribute is not available</strong><br />';
-            break;
+        }
+        if($ctrl=='autocomplete' && isset($attrOptions['default'])){
+          // two options: we could be using the id or the meaning_id.
+          if($lookUpKey=='id'){
+            $attrOptions['defaultCaption'] = $item['displayValue'];
+          } else {
+            $termOptions = array(
+              'table'=>'termlists_term',
+              'extraParams'=> $options['extraParams'] + $dataSvcParams);
+            $termOptions['extraParams']['meaning_id']=$attrOptions['default'];
+            $response = self::get_population_data($termOptions);
+            if(count($response)>0)
+              $attrOptions['defaultCaption'] = $response[0]['term'];
+          }
+        }
+        $output .= call_user_func(array(get_called_class(), $ctrl), array_merge($attrOptions, array(
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>$lookUpKey,
+          'extraParams' => array_merge($options['extraParams'] + $dataSvcParams))));
+        break;
+      default:
+        if ($item)
+          $output = '<strong>UNKNOWN DATA TYPE "'.$item['data_type'].'" FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
+        else
+          $output = '<strong>Requested attribute is not available</strong><br />';
+        break;
     }
 
     return $output;
@@ -7046,7 +7088,7 @@ if (errors$uniq.length>0) {
    * for a field named occurrence:image[:n] or similar) will be moved to the interim image upload folder.
    * @param integer If specified, limits media data extraction to media with this media type id.
    */
-  public static function extract_media_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false, $mediaTypeIdToExtract=null) {   
+  public static function extract_media_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false, $mediaTypeIdToExtract=null) {
     $r = array();
     // legacy reasons, the model name might refer to _image model, rather than _medium. 
     $modelName = preg_replace('/^([a-z_]*)_image/', '${1}_medium', $modelName);
@@ -7066,16 +7108,16 @@ if (errors$uniq.length>0) {
             $pathPos = strlen($key)-5;
           }
         }
-        if ($pathPos !==false && ($modelName === null || $modelName == substr($key, 0, strlen($modelName)) || 
+        if ($pathPos !==false && ($modelName === null || $modelName == substr($key, 0, strlen($modelName)) ||
             $legacyModelName == substr($key, 0, strlen($legacyModelName)))) {
           $prefix = substr($key, 0, $pathPos);
           $thisMediaTypeId=isset($values[$prefix.':media_type_id'.$uniqueId]) ? utf8_encode($values[$prefix.':media_type_id'.$uniqueId]) : '';
           //Only extract the media if we are extracting media of any type or the data matches the type we are wanting to extract
-          if ($thisMediaTypeId==$mediaTypeIdToExtract||$mediaTypeIdToExtract===null) {    
+          if ($thisMediaTypeId==$mediaTypeIdToExtract||$mediaTypeIdToExtract===null) {
             $r[] = array(
               // Id is set only when saving over an existing record.
               'id' => array_key_exists($prefix.':id'.$uniqueId, $values) ?
-                  $values[$prefix.':id'.$uniqueId] : '',
+                $values[$prefix.':id'.$uniqueId] : '',
               'path' => $value,
               'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : '',
               'media_type_id' => $thisMediaTypeId,
@@ -7094,7 +7136,7 @@ if (errors$uniq.length>0) {
     if ($simpleFileInputs) {
       foreach($_FILES as $key => $file) {
         if (substr($key, 0, strlen($modelName))==str_replace('_', ':', $modelName)
-            || substr($key, 0, strlen($legacyModelName))==str_replace('_', ':', $legacyModelName)) {
+          || substr($key, 0, strlen($legacyModelName))==str_replace('_', ':', $legacyModelName)) {
           if ($file['error']=='1') {
             // file too big error dur to php.ini setting
             if (self::$validation_errors==null) self::$validation_errors = array();
@@ -7144,8 +7186,8 @@ if (errors$uniq.length>0) {
     }
     return $r;
   }
-  
-/**
+
+  /**
    * Validation rule to test if an uploaded file is allowed by file size.
    * File sizes are obtained from the helper_config maxUploadSize, and defined as:
    * SB, where S is the size (1, 15, 300, etc) and
@@ -7153,7 +7195,7 @@ if (errors$uniq.length>0) {
    * Eg: to limit the size to 1MB or less, you would use "1M".
    *
    * @param array $file Item from the $_FILES array.
-   * @return bool True if the file size is acceptable, otherwise false. 
+   * @return bool True if the file size is acceptable, otherwise false.
    */
   public static function check_upload_size(array $file)
   {
@@ -7233,22 +7275,22 @@ if (errors$uniq.length>0) {
   }
 
   /**
-  * While cookies may be offered for the convenience of clients, an option to prevent
-  * the saving of personal data should also be present.
-  *
-  * Helper function to output an HTML checkbox control. Defaults to false unless
-  * values are loaded from cookie.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>template</b><br/>
-  * Optional. Name of the template entry used to build the HTML for the control. Defaults to checkbox.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the cookie optin control.
-  */
+   * While cookies may be offered for the convenience of clients, an option to prevent
+   * the saving of personal data should also be present.
+   *
+   * Helper function to output an HTML checkbox control. Defaults to false unless
+   * values are loaded from cookie.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * record with existing data for this control.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li>
+   * <li><b>template</b><br/>
+   * Optional. Name of the template entry used to build the HTML for the control. Defaults to checkbox.</li>
+   * </ul>
+   *
+   * @return string HTML to insert into the page for the cookie optin control.
+   */
   public static function remembered_fields_optin($options) {
     $options['fieldname'] = 'cookie_optin';
     $options = self::check_options($options);
@@ -7256,7 +7298,7 @@ if (errors$uniq.length>0) {
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
   }
-  
+
   /**
    * Includes any spatial reference handler JavaScript files that exist for the codes selected
    * for picking spatial references. If a handler file does not exist then the transform is handled
@@ -7281,4 +7323,3 @@ if (errors$uniq.length>0) {
   }
 
 }
-?>
