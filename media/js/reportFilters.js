@@ -944,12 +944,15 @@ jQuery(document).ready(function($) {
           def = "{\"quality\":\"all\",\"my_records\":1}";
           break;
         case 'my-queried-or-not-accepted-records':
+        case 'my-queried-rejected-records':          
           def = "{\"quality\":\"DR\",\"my_records\":1}";
           break;
         case 'my-not-reviewed-records':
+        case 'my-pending-records':
           def = "{\"quality\":\"P\",\"my_records\":1}";
           break;
         case 'my-accepted-records':
+        case 'my-verified-records':
           def = "{\"quality\":\"V\",\"my_records\":1}";
           break;
         case 'my-groups':
