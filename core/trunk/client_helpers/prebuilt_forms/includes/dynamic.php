@@ -539,7 +539,7 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
           $hasControls = true;
         }
         elseif (count($parts)===2) {
-          require_once(dirname($_SERVER['SCRIPT_FILENAME']) . '/' . data_entry_helper::relative_client_helper_path() . '/prebuilt_forms/extensions/'.$parts[0].'.php');
+          include_once(dirname($_SERVER['SCRIPT_FILENAME']) . '/' . data_entry_helper::relative_client_helper_path() . 'prebuilt_forms/extensions/'.$parts[0].'.php');
           if (method_exists('extension_' . $parts[0], $parts[1])) { 
             //outputs a control for which a specific extension function has been written.
             $path = call_user_func(array(self::$called_class, 'getReloadPath')); 
