@@ -41,6 +41,13 @@ class extension_seasearch {
     if (empty($options['drift_start_attr_id']) || empty($options['drift_end_attr_id']))
       return 'The seasearch.drift_dive_position_entry control requires @drift_start_attr_id ' .
           'and @drift_start_attr_id options to be supplied.';
+    $options = array_merge(array(
+      'systems' => array(
+        '4326'=>'Latitude and longitiude (degrees and decimal minutes WGS84)',
+        '4277'=>'Latitude and longitiude (degrees and decimal minutes OSGB36)',
+        'OSGB' => 'Ordnance Survey British National Grid'
+      )
+    ), $options);
     $centreTokens = self::getCentreTokens();
     foreach ($attributes as $attribute) {
       if (preg_match("/^smpAttr:$options[drift_start_attr_id](:\d+)?$/", $attribute['fieldname']))
@@ -62,11 +69,7 @@ class extension_seasearch {
     $r = '<label class="auto">Position format and datum '.
       data_entry_helper::sref_system_select(array(
         'fieldname'=>'sample:entered_sref_system',
-        'systems'=>array(
-          '4326'=>'Latitude and longitiude (degrees and decimal minutes WGS84)',
-          '4277'=>'Latitude and longitiude (degrees and decimal minutes OSGB36)',
-          'OSGB' => 'Ordnance Survey British National Grid'
-        )
+        'systems'=>$options['systems']
       )) . '</label>';
     $r .= '<div><div id="input-ll-container"><p>'.lang::get('Position (degrees and decimal minutes)').'</p>';
     $r .= '<table id="position-data"><thead><th colspan="2"></th><th colspan="2">'.lang::get('Latitude').'</th><th colspan="2">'.lang::get('Longitude').
