@@ -460,6 +460,8 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
     var status = $('#set-status').val(),
       substatus = $('#set-substatus').val(),
       comment = statusLabel(status, substatus);
+    // capitalise status label
+    comment = comment.charAt(0).toUpperCase() + comment.slice(1);
     if ($('#verify-comment').val()!=='') {
       comment += ".\n" + $('#verify-comment').val();
     }
