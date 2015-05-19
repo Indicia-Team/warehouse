@@ -4468,6 +4468,8 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   * <li><b>additionalControls</b><br/>
   * Optional. Any additional controls to include in the div which is disabled when a record is not sensitive. An example use of this
   * might be a Reason for sensitivity custom attribute. Provide the controls as an HTML string.</li>
+  * <li><b>precisions</b><br/>
+  * Array of precisions that are available to pick from. Defaults to [100, 1000, 2000, 1000, 10000].</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the hidden text control.
@@ -4476,7 +4478,8 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     $options = array_merge(array(
       'fieldname'=>'occurrence:sensitivity_precision',
       'defaultBlur' => 10000,
-      'additionalControls' => ''
+      'additionalControls' => '',
+      'precisions' => array(100, 1000, 2000, 1000, 10000)
     ), $options);
     $r = '<fieldset><legend>'.lang::get('Sensitivity').'</legend>';
     $r .= data_entry_helper::checkbox(array(
@@ -4487,12 +4490,14 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     // Put a hidden input out, so that when the select control is disabled we get an empty value posted to clear the sensitivity
     $r .= '<input type="hidden" name="'.$options['fieldname'].'">';
     $r .= '<div id="sensitivity-controls">';
+    $lookupValues = array_intersect_key(array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'),
+        '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
+        array_combine($options['precisions'], $options['precisions']));
     $r .= data_entry_helper::select(array(
       'fieldname'=>$options['fieldname'],
       'id' => 'sensitive-blur',
       'label'=>lang::get('Blur record to'),
-      'lookupValues' => array('100'=>lang::get('Blur to 100m'), '1000'=>lang::get('Blur to 1km'), '2000'=>lang::get('Blur to 2km'), 
-                  '10000'=>lang::get('Blur to 10km'), '100000'=>lang::get('Blur to 100km')),
+      'lookupValues' => $lookupValues,
       'blankText' => 'none',
       'helpText' => lang::get('This is the precision that the record will be shown at for public viewing')
     ));

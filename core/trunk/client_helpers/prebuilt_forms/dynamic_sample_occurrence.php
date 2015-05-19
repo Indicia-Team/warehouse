@@ -2058,8 +2058,9 @@ else
       $attrSpecificOptions = array();
       self::parseForAttrSpecificOptions($options, $ctrlOptions, $attrSpecificOptions);
       $sensitivity_controls = get_attribute_html(self::$occAttrs, $args, $ctrlOptions, 'sensitivity', $attrSpecificOptions);
-      return data_entry_helper::sensitivity_input(array(
-        'additionalControls' => $sensitivity_controls
+      return data_entry_helper::sensitivity_input(array_merge(
+        $options,
+        array('additionalControls' => $sensitivity_controls)
       ));
     }
     else 
