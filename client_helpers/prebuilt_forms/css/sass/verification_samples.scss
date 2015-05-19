@@ -72,11 +72,11 @@ ul.gallery li {
 .action-buttons-row {
   .col-1 {
     width: 20%;
-    @include: inline-block;
+    @include inline-block;
   }
   div.buttons-row {
     width: 80%;
-    @include: inline-block;
+    @include inline-block;
   }
 }
 .header {
