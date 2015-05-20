@@ -214,7 +214,7 @@ class report_standard_params_occurrences {
           array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
           array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status='C' and o.record_substatus is null"),
           array('value'=>'T', 'operator'=>'equal', 'sql'=>"o.record_status='C' and o.record_substatus is null"),
-          array('value'=>'!D', 'operator'=>'equal', 'sql'=>"(o.record_status not in ('R','D') and o.query<>'Q')"),
+          array('value'=>'!D', 'operator'=>'equal', 'sql'=>"(o.record_status not in ('R','D') and (o.query<>'Q' or o.query is null))"),
           array('value'=>'!R', 'operator'=>'equal', 'sql'=>"o.record_status<>'R'"),
           array('value'=>'D', 'operator'=>'equal', 'sql'=>"(o.record_status='D' or o.query='Q')"),
           array('value'=>'A', 'operator'=>'equal', 'sql'=>"o.query='A'"),
