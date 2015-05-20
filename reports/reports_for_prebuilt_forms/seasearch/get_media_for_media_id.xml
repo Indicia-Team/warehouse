@@ -1,0 +1,33 @@
+<report
+    title="Get media for media id"
+    description="List media item including its exif for a given media id."
+>
+  <query>
+    SELECT #columns#
+    FROM samples s
+      --Third level sample, as 1st and 2nd levels are catered for by s--
+      LEFT JOIN sample_media sm on sm.sample_id = s.id AND sm.deleted='f'
+      LEFT JOIN termlists_terms ttsam on ttsam.id = sm.media_type_id
+      LEFT JOIN terms tsam on tsam.id = ttsam.term_id
+      LEFT JOIN samples s3 on s3.parent_id=s.id AND s.parent_id IS NOT NULL AND s.deleted='f' 
+      LEFT JOIN occurrences o on o.sample_id=s3.id AND o.deleted='f'
+      LEFT JOIN occurrence_media om on om.occurrence_id=o.id AND om.deleted='f'
+      LEFT JOIN termlists_terms ttocc on ttocc.id = om.media_type_id
+      LEFT JOIN terms tocc on tocc.id = ttocc.term_id
+    WHERE (sm.id in (#media_ids#) OR om.id in (#media_ids#))
+  </query>
+  <params>
+    <param name='media_ids' display='Media ID' description='ID of the media item to load data for' datatype='text' emptyvalue='-1'/>
+  </params>
+  <columns>
+    <column name='id' display='ID' sql='coalesce(sm.id,om.id)' datatype='integer'/>
+    <column name='media_table' display='Media Table' sql="case WHEN sm.id is not null THEN 'sample_medium' ELSE 'occurrence_medium' END" datatype='string'/>
+    <column name='path' display='Path' sql='coalesce(sm.path,om.path)' datatype='string'/>
+    <column name='caption' display='Caption' sql='coalesce(sm.caption,om.caption)' datatype='string' />
+    <column name='media_type_id' display='Media Type Id' sql='coalesce(sm.media_type_id,om.media_type_id)' datatype='integer' />
+    <column name='media_type' display='Media Type' sql='coalesce(tsam.term,tocc.term)' datatype='string' />
+    <column name='sample_id' display='Sub Sample Id' sql='s.id' datatype='integer'/>
+    <column name='exif' display='Exif' sql='coalesce(sm.exif,om.exif)' datatype='string'/>
+    <column name='level_three_sample_id' display='Third level sample id' sql='s3.id' datatype='integer'/>
+  </columns>
+</report>
