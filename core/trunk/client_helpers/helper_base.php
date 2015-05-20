@@ -663,7 +663,7 @@ class helper_base extends helper_config {
         'reportPicker' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."reportPicker.js")),
         'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js")),
         'treeview_async' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."jquery.treeview.async.js", self::$js_path."jquery.treeview.edit.js")),
-        'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?sensor=false")),
+        'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?v=3&amp;sensor=false")),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
         'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
         'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
