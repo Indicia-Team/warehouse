@@ -3487,7 +3487,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
    * For each subsample found in the entity to load, output a block of hidden inputs which contain the required
    * values for the subsample.
    */
-  private static function get_subsample_per_row_hidden_inputs() {
+  public static function get_subsample_per_row_hidden_inputs() {
     $blocks = "";
     if (isset(data_entry_helper::$entity_to_load)) {
       foreach(data_entry_helper::$entity_to_load as $key => $value){
@@ -3511,7 +3511,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
   /**
    * Implode the rows we are putting into the species checklist, with application of classes to image rows.
    */
-  private static function species_checklist_implode_rows($rows, $imageRowIdxs) {
+  public static function species_checklist_implode_rows($rows, $imageRowIdxs) {
     $r = '';
     foreach ($rows as $idx => $row) {
       $class = in_array($idx, $imageRowIdxs) ? ' class="supplementary-row"' : '';
@@ -3678,7 +3678,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
    * @param array $nameFilter array of optional name filtering modes, with the actual filter to apply
    * as the value.
    */
-  private static function species_checklist_filter_popup($options, $nameFilter) {
+  public static function species_checklist_filter_popup($options, $nameFilter) {
     self::add_resource('fancybox');
     $db=self::get_species_lookup_db_definition(isset($options['cacheLookup']) && $options['cacheLookup']);
     extract($db);
@@ -4019,14 +4019,14 @@ $('#".$options['id']." .species-filter').click(function(evt) {
   }
 
   /**
-   * Private method to build the list of taxa to add to a species checklist grid.
+   * Method to build the list of taxa to add to a species checklist grid.
    * @param array $options Options array for the control
    * @param array $taxonRows Array that is modified by this method to contain a list of
    * the rows to load onto the grid. Each row contains a sub-array with ttlId entry plus
    * occId if the row represents an existing record
    * @return array The taxon list to use in the grid.
    */
-  private static function get_species_checklist_taxa_list($options, &$taxonRows) {
+  public static function get_species_checklist_taxa_list($options, &$taxonRows) {
     // Get the list of species that are always added to the grid, by first building a filter
     if (preg_match('/^(preferred_name|preferred_taxon|taxon_meaning_id|taxa_taxon_list_id|taxon_group|external_key|id)$/', $options['taxonFilterField']))  {
       if ($options['table']==='cache_taxa_taxon_list' && $options['taxonFilterField']==='taxa_taxon_list_id')
@@ -6141,7 +6141,7 @@ if (errors$uniq.length>0) {
    * @access Private
    * @return boolean True if present, false if absent (zero abundance record), null if not defined in the data (no occurrence).
    */
-  private static function wrap_species_checklist_record_present($record, $include_if_any_data, $zero_attrs, $zero_values, $hasDataIgnoreAttrs) {
+  public static function wrap_species_checklist_record_present($record, $include_if_any_data, $zero_attrs, $zero_values, $hasDataIgnoreAttrs) {
     // present should contain the ttl ID, or zero if the present box was unchecked
     $gotTtlId=array_key_exists('present', $record) && $record['present']!='0';
     // as we are working on a copy of the record, discard the ID and taxa_taxon_list_id so it is easy to check if there is any other data for the row.
@@ -6225,7 +6225,7 @@ if (errors$uniq.length>0) {
    * @param array $occ Occurrence submission structure.
    * @param array $record Record information from the form post, which may contain images.
    */
-  private static function attachOccurrenceMediaToModel(&$occ, $record) {
+  public static function attachOccurrenceMediaToModel(&$occ, $record) {
     $media = array();
     foreach ($record as $key=>$value) {
       // look for occurrence media model, or occurrence image for legacy reasons
