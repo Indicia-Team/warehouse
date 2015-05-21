@@ -5,6 +5,47 @@ jQuery(document).ready(function($) {
     return $('#' + id.replace(/:/g, '\\:'));
   }
 
+  /**
+   * Initialise the photo upload control for the habitat identified by the index.
+   * @param habitatIndex
+   */
+  function initHabitatPhotoUploads(habitatIndex, existing) {
+    var options = {
+      id : 'sample_medium-sample_medium-' + habitatIndex,
+      upload : '1',
+      maxFileCount : '4',
+      autoupload : '1',
+      msgUploadError : 'An error occurred uploading the file.',
+      msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
+      runtimes : 'html5,flash,silverlight,html4',
+      imageWidth : '200',
+      uploadScript : '/seasearch/./sites/all/modules/iform/client_helpers/upload.php',
+      destinationFolder : '/seasearch/./sites/all/modules/iform/client_helpers/upload/',
+      finalImageFolder : 'http://testwarehouse.indicia.org.uk/upload/',
+      jsPath : '/seasearch/sites/all/modules/iform/media/js/',
+      buttonTemplate : '<button id="{id}" type="button" title="{title}"{class}>{caption}</button>',
+      table : 'sample_medium' + habitatIndex,
+      maxUploadSize : '4194304',
+      codeGenerated : 'all',
+      mediaTypes : ["Image:Local"],
+      fileTypes : {"image":["jpg","gif","png","jpeg"],"audio":["mp3","wav"]},
+      imgPath : '/seasearch/sites/all/modules/iform/media/images/',
+      addBtnCaption : 'Add {1}',
+      msgPhoto : 'photo',
+      msgFile : 'file',
+      msgLink : 'link',
+      msgNewImage : 'New {1}',
+      msgDelete : 'Delete this item',
+      msgUseAddFileBtn : 'Use the Add file button to select a file from your local disk. Files of type {1} are allowed.',
+      msgUseAddLinkBtn : 'Use the Add link button to add a link to information stored elsewhere on the internet. You can enter links from {1}.',
+      caption : 'Habitat photos'
+    };
+    if (existing.length) {
+      options.existingFiles = existing;
+    }
+    $('#container-sample_medium' + habitatIndex + '-default').uploader(options);
+  }
+
   // On change of the habitat count control, or initial loading of the form, set up all the controls required
   // for data entry of the habitat data.
   function setHabitatCount(targetCount) {
@@ -37,6 +78,7 @@ jQuery(document).ready(function($) {
         $(block).attr('id', '');
 
         $('#habitat-blocks').append(block);
+        initHabitatPhotoUploads(addingHabitatIdx, existingSubsampleData.media);
 
         // Insert columns into the quantitative data grids on the next tab.
         // First put the habitat ID column title in place.
