@@ -158,7 +158,8 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
         'extraParams' => array('parent_sample_id'=>$sample_id)
     ));
     foreach($samples as $sample) {
-      self::$existingSubsampleData['sample:'.$sample['id']] = array('sample_id'=>$sample['id'], 'comment' => $sample['comment'], 'values' => array());
+      self::$existingSubsampleData['sample:'.$sample['id']] = array('sample_id'=>$sample['id'],
+          'comment' => $sample['comment'], 'values' => array(), 'media' => array());
     }
     $values = report_helper::get_report_data(array(
       'dataSource' => 'library/sample_attribute_values/subsample_attribute_values',
@@ -168,6 +169,14 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     foreach ($values as $idx => $value) {
       self::$existingSubsampleData['sample:'.$value['sample_id']]['values']["$idx:$value[sample_attribute_id]"] =
           "$value[id]:$value[value]:$value[data_type]";
+    }
+    $media = report_helper::get_report_data(array(
+      'dataSource' => 'library/sample_media/sample_media_list_for_sample',
+      'readAuth' => $auth['read'],
+      'extraParams' => array('parent_sample_id'=>$sample_id)
+    ));
+    foreach ($media as $medium) {
+      self::$existingSubsampleData['sample:'.$value['sample_id']]['media'][] = $medium;
     }
     data_entry_helper::$javascript .= "indiciaData.existingSubsampleData=" .
         json_encode(array_values(self::$existingSubsampleData)) . ";\n";
@@ -181,10 +190,23 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
   }
 
   protected static function get_control_habitatblocks($auth, $args, $tabAlias, $options) {
+    $habitatName = self::$habitatAttrsByCaption['habitat name'];
+    $biotopeCode = self::$habitatAttrsByCaption['biotope code'];
+    $seabedType = self::$habitatAttrsByCaption['seabed type'];
+    $seabedTypeOther = self::$habitatAttrsByCaption['other seabed type'];
+    $communities = self::$habitatAttrsByCaption['communities'];
+    $animalTurf = self::$habitatAttrsByCaption['animal turf'];
+    $animalBed = self::$habitatAttrsByCaption['animal bed'];
+    $sedimentTypes = self::$habitatAttrsByCaption['sediment types'];
     // build a template for the data entry controls for each habitat
     $template = '<legend title="' . lang::get('Each habitat is numbered. Make sure the description and quantitative data is ' .
         'entered in the correct columns and that you number your sketch or plan in the same way. Each written description ' .
         'should tally with the information entered on the columns and diagrams on the next page.') . '">Habitat habitatIdx</legend>';
+    $template .= data_entry_helper::text_input(array(
+      'fieldname' => "smpAttr:$habitatName[attributeId]::habitatIdx",
+      'label' => lang::get('Habitat name'),
+      'class' => 'control-width-4'
+    ));
     $template .= data_entry_helper::textarea(array(
         'fieldname' => 'sample:comment:habitatIdx',
         'label' => lang::get('DESCRIPTION (physical + community'),
@@ -193,13 +215,7 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
                 'seabed consisting of large boulders up to 1m x 1m with patches of coarse sand collecting between them. Kelp ' .
                 'forest on boulders with pink encrusting algae and red seaweeds beneath".')
     ));
-    $biotopeCode = self::$habitatAttrsByCaption['biotope code'];
-    $seabedType = self::$habitatAttrsByCaption['seabed type'];
-    $seabedTypeOther = self::$habitatAttrsByCaption['other seabed type'];
-    $communities = self::$habitatAttrsByCaption['communities'];
-    $animalTurf = self::$habitatAttrsByCaption['animal turf'];
-    $animalBed = self::$habitatAttrsByCaption['animal bed'];
-    $sedimentTypes = self::$habitatAttrsByCaption['sediment types'];
+
     if (user_access('biotope codes')) {
       $template .= data_entry_helper::text_input(array(
         'fieldname' => "smpAttr:$biotopeCode[attributeId]::habitatIdx",
@@ -271,6 +287,10 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
               'termlist_id'=>$sedimentTypes['termlist_id'],
               'view'=>'cache'
           )
+    ));
+    $template .= data_entry_helper::file_box(array(
+      'table' => 'sample_mediumhabitatIdx',
+      'caption' => lang::get('Habitat photos')
     ));
     // create the control output
     // add the template, wrapped in a hidden div. JS will be used to clone it as many times as is required.
@@ -435,19 +455,16 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     return $r;
   }
 
-  public static function get_control_position($auth, $args, $tabAlias, $options) {
-    // @todo test
-    // @todo draw drift on the map
-    // @todo after validation failure, drift start and end don't reload, because they weren't in the post at all -TEST
-    // @toto saving does not set the entered_sref_system properly
-
-  }
-
+  /**
+   * Builds the special submission format required for seasearch data
+   * @param array $values
+   * @param array $args
+   * @return array
+   * @throws \Exception
+   */
   public static function get_submission($values, $args) {
-    $values['habitat-count']=2;
+    // First, build an array of the field values for each habitat sample.
     $habitatSamples = array();
-    for ($i=1; $i<=$values['habitat-count']; $i++)
-      $habitatSamples["habitat$i"] = array();
     foreach ($values as $key=>$value) {
       if (substr_count($key, ':')===3) {
         $parts = explode(':', $key, 4);
@@ -461,10 +478,20 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
             while (empty($parts[count($parts)-1]))
               array_pop($parts);
             $fieldname = implode(':', $parts);
+            if (!isset($habitatSamples["habitat$id"]))
+              $habitatSamples["habitat$id"]=array();
             $habitatSamples["habitat$id"][$fieldname] = $value;
           }
           unset($values[$key]);
         }
+      }
+      // Also check for habitat photos, attached to a fake table name indicating the habitat index
+      if (preg_match('/^sample_medium(?P<id>\d)/', $key, $matches)) {
+        $parts = explode(':', $key);
+        if (!isset($habitatSamples["habitat$matches[id]"]))
+          $habitatSamples["habitat$matches[id]"]=array();
+        $parts[0] = 'sample_medium';
+        $habitatSamples["habitat$matches[id]"][implode(':', $parts)] = $value;
       }
       $parts = explode(':', $key);
       // For the group_name, the autocomplete functionality needs to be removed from the submission.
@@ -472,6 +499,7 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
       if (array_pop($parts)==='group_name')
         $values[implode(':', $parts)] = $value;
     }
+    $values['habitat-count'] = count($habitatSamples);
     $buddyPairSubmission = submission_builder::wrap_with_images($values, 'sample');
     unset($buddyPairSubmission['fields']['habitat-count']);
     // Get the list of records implied by the SACFOR data for each habitat. At this point we'll create 1 big list and split
@@ -511,13 +539,17 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
         $habitatSample['sample:comment'] = $_POST["sample:comment:$habitatIdx"];
         unset($buddyPairSubmission['fields']["comment:$habitatIdx"]);
       }
-      $habitatSubmission = submission_builder::wrap($habitatSample, 'sample');
-      $habitatSubmission['subModels'] = $habitatOccurrences[$habitatId];
+      $habitatSubmission = submission_builder::wrap_with_images($habitatSample, 'sample');
+      drupal_set_message('<pre>' .var_export($habitatSubmission, true). '</pre>');
+      if (!isset($habitatSubmission['subModels']))
+        $habitatSubmission['subModels'] = array();
+      $habitatSubmission['subModels'] += $habitatOccurrences[$habitatId];
       $buddyPairSubmission['subModels'][] = array(
         'fkId' => 'parent_id',
         'model' => $habitatSubmission
       );
     }
+    drupal_set_message('<pre>' .var_export($buddyPairSubmission, true). '</pre>');
     return $buddyPairSubmission;
   }
 
