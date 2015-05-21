@@ -29,7 +29,7 @@ function auto_verify_scheduled_task($last_run_date, $db) {
     JOIN cache_taxon_searchterms cts on cts.taxa_taxon_list_id = co.taxa_taxon_list_id 
       AND ((".$autoVerifyNullIdDiff."=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty) 
       OR (".$autoVerifyNullIdDiff."=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty))) 
-    WHERE co.data_cleaner_info='pass' AND co.record_status='C'";
+    WHERE co.data_cleaner_info='pass' AND co.record_status='C' AND co.record_substatus IS NULL";
   $verificationTime=gmdate("Y\/m\/d H:i:s");
   //Need to update cache_occurrences, as this table has already been built at this point.
   $query = "
