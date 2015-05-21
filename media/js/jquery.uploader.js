@@ -297,6 +297,7 @@ var checkSubmitInProgress = function () {
           } else {
             tmpl = div.settings.file_box_uploaded_audioTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
           }
+          file.caption = file.caption===null ? '' : file.caption;
           $('#' + uniqueId + ' .media-wrapper').html(tmpl
                 .replace(/\{id\}/g, uniqueId)
                 .replace(/\{thumbnailfilepath\}/g, thumbnailfilepath)
