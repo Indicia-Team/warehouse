@@ -209,7 +209,7 @@ class report_standard_params_occurrences {
         'wheres' => array(
           array('value'=>'V1', 'operator'=>'equal', 'sql'=>"o.record_status='V' and o.record_substatus=1"),
           array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
-          array('value'=>'-3', 'operator'=>'equal', 'sql'=>"o.record_status='V' or o.record_substatus<=3"),
+          array('value'=>'-3', 'operator'=>'equal', 'sql'=>"(o.record_status='V' or o.record_substatus<=3)"),
           array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
           array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
           array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status='C' and o.record_substatus is null"),
