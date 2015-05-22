@@ -56,7 +56,8 @@ level."
         WHEN hab.term='Wet woodland' then 'WW'
         ELSE hab.term 
       END" datatype='text'/>  
-    <column name='total_plots' display='Number of plots' sql='count(distinct(plot.id))' datatype='float'/>
+    <column name='total_plots' display='Number of plots' sql='count(distinct(plot.id))'/>
+    <column name='total_samples' display='Samples' sql='count(distinct(samp.id))'/>
     <column name='total_species_richness' display='Species' sql='count(distinct(ttl.taxon_meaning_id))' datatype='float'/>
     <!-- The species richness is complicated by a few things.
     Firstly the plot habitat is actually only held at the sample level instead of the location itself.
