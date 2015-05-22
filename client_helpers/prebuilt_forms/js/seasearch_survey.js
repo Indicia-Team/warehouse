@@ -51,7 +51,10 @@ jQuery(document).ready(function($) {
   function setHabitatCount(targetCount) {
     var currentCount = $('#habitat-blocks').children('fieldset').length, addingHabitatIdx,
         block, blockHtml, attrType, tbody, existingSubsampleData, attrId, valId, valueData, regexp,
-        data, validationClass, value, checkedBoxes;
+        data, validationClass, value, checkedBoxes,
+        // find the min and max depths allowed for the whole dive, so we can apply them to the habitat depth field validation
+       minDepth = $('#' + indiciaData.depthMinLimitAttrNames[0].replace(':', '\\:')).val(),
+       maxDepth = $('#' + indiciaData.depthMaxLimitAttrNames[0].replace(':', '\\:')).val();
     if (isNaN(targetCount) || targetCount === currentCount || targetCount<1) {
       return;
     }
@@ -66,7 +69,7 @@ jQuery(document).ready(function($) {
         checkedBoxes = [];
         block = $('#habitat-block-template').clone();
         blockHtml = $(block).html().replace(/habitatIdx/g, addingHabitatIdx);
-        existingSubsampleData={"values":{}};
+        existingSubsampleData={"values":{},"media":{}};
         // for existing data, put a hidden which stores the subsample's sample ID.
         if (typeof indiciaData.existingSubsampleData!=="undefined" && typeof indiciaData.existingSubsampleData[currentCount]!=="undefined") {
           existingSubsampleData=indiciaData.existingSubsampleData[currentCount];
@@ -90,20 +93,6 @@ jQuery(document).ready(function($) {
         $('table#depth-limits,table#substratum,table#features').find('tbody tr.checkboxes td.label').before(
             '<td class="input"><input type="hidden" value="0"/><input type="checkbox"/></td>'
         );
-        // find the min and max depths allowed for the whole dive, so we can apply them to the habitat depth field validation
-        var minDepth = false, maxDepth = false, $el;
-        $.each(indiciaData.depthMinLimitAttrNames, function() {
-          $el = getEl(this);
-          if ($el.val()!=='' && (minDepth===false || $el.val()<minDepth)) {
-            minDepth = $el.val();
-          }
-        });
-        $.each(indiciaData.depthMaxLimitAttrNames, function() {
-          $el = getEl(this);
-          if ($el.val()!=='' && (maxDepth===false || $el.val()>maxDepth)) {
-            maxDepth = $el.val();
-          }
-        });
         // finally name the controls using the HTML5 data attribute in the row element to find the attribute ID.
         $.each($('table#depth-limits,table#substratum, table#features').find('tbody tr'), function() {
           attrId = $(this).attr('data-attrid');
@@ -118,18 +107,14 @@ jQuery(document).ready(function($) {
             }
             $(this).attr('name', 'smpAttr:' + attrId + ':' + valId + ':' + addingHabitatIdx);
             // Apply depth range validation for the whole dive to the habitat depths
-            if (attrId==indiciaData.habitatMinDepthSLAttr || attrId==indiciaData.habitatMaxDepthSLAttr) {
-              if (minDepth!==false) {
+            if (attrId==indiciaData.habitatMinDepthSLAttrId || attrId==indiciaData.habitatMaxDepthSLAttrId) {
+              if (minDepth) {
                 validationClass = validationClass.replace('}', ', min:'+minDepth+'}');
               }
-              if (maxDepth!==false) {
+              if (maxDepth) {
                 validationClass = validationClass.replace('}', ', max:'+maxDepth+'}');
               }
-            }
-            if (attrId==indiciaData.habitatMinDepthSLAttr) {
-              $(this).change(function() {
-
-              });
+              $(this).change(correctHabitatDepthFields);
 
               /*bsl = $('#smpAttr\\:'+indiciaData.habitatMinDepthSLAttr).val();
               if (bsl.match(/^\d+(\.\d+)?$/)) {
@@ -176,7 +161,6 @@ jQuery(document).ready(function($) {
     }
     // set the column unit title colspan
     $('table#depth-limits,table#substratum,table#features').find('thead tr:last-child th:first-child').attr('colspan', targetCount);
-
   }
 
   $('#add-habitat').click(function() {
@@ -213,8 +197,10 @@ jQuery(document).ready(function($) {
 
 
   /* Some business logic for chart datum */
-  function changeDepthField() {
+  function correctDiveDepthFields() {
+    // Find the chart datum correction
     var cd=getEl(indiciaData.depthCDAttrName).val(), bsl;
+    // Apply this correction to the 2 dive depth fields
     if (cd.match(/^\d+(\.\d+)?$/)) {
       bsl = getEl(indiciaData.depthMinLimitAttrNames[0]).val();
       if (bsl.match(/^\d+(\.\d+)?$/)) {
@@ -226,9 +212,80 @@ jQuery(document).ready(function($) {
       }
     }
   }
-  getEl(indiciaData.depthCDAttrName).change(changeDepthField);
-  getEl(indiciaData.depthMinLimitAttrNames[0]).change(changeDepthField);
-  getEl(indiciaData.depthMaxLimitAttrNames[0]).change(changeDepthField);
+
+  function correctHabitatDepthFields() {
+    var habitatCount=$('#habitat-count').val(), $table = $('#depth-limits'), i,
+      $minRowSL = $table.find('tr[data-attrid=' + indiciaData.habitatMinDepthSLAttrId + ']'),
+      $maxRowSL = $table.find('tr[data-attrid=' + indiciaData.habitatMaxDepthSLAttrId + ']'),
+      $minRowCD = $table.find('tr[data-attrid=' + indiciaData.habitatMinDepthCDAttrId + ']'),
+      $maxRowCD = $table.find('tr[data-attrid=' + indiciaData.habitatMaxDepthCDAttrId + ']'),
+      cd = getEl(indiciaData.depthCDAttrName).val();
+    for (i=1; i<=habitatCount; i++) {
+      if (cd && $minRowSL.find('td:nth-child(' + i + ') input').val()) {
+        $minRowCD.find('td:nth-child(' + i + ') input').val($minRowSL.find('td:nth-child(' + i + ') input').val() - cd);
+      } else {
+        $minRowCD.find('td:nth-child(' + i + ') input').val('');
+      }
+      if (cd && $maxRowSL.find('td:nth-child(' + i + ') input').val()) {
+        $maxRowCD.find('td:nth-child(' + i + ') input').val($maxRowSL.find('td:nth-child(' + i + ') input').val() - cd);
+      } else {
+        $maxRowCD.find('td:nth-child(' + i + ') input').val('');
+      }
+    }
+  }
+
+  /**
+   * Takes a single habitat depth control and applies the min and max validation rules for the entire dive depth.
+   * @param input The control element
+   * @param min The minimum uncorrected dive depth value, can be '' if not specified
+   * @param max The maximum uncorrected dive depth value, can be '' if not specified
+   */
+  function updateMinMaxValidation(input, min, max) {
+    $(input).rules('remove', 'min max');
+    if (min!=='') {
+      $(input).rules('add', {min: min});
+    }
+    if (max!=='') {
+      $(input).rules('add', {max: max});
+    }
+  }
+
+  function updateHabitatDepthValidation() {
+    var habitatCount=$('#habitat-count').val(), i,
+      $table = $('#depth-limits'),
+      $minRowSL = $table.find('tr[data-attrid=' + indiciaData.habitatMinDepthSLAttrId + ']'),
+      $maxRowSL = $table.find('tr[data-attrid=' + indiciaData.habitatMaxDepthSLAttrId + ']'),
+      cd = getEl(indiciaData.depthCDAttrName).val(), input,
+      validation = ['number:true'],
+      min = getEl(indiciaData.depthMinLimitAttrNames[0]).val(),
+      max = getEl(indiciaData.depthMaxLimitAttrNames[0]).val();
+    if (min!=='') {
+      validation.push('min:'+min);
+    }
+    if (max!=='') {
+      validation.push('max:'+max);
+    }
+    for (i=1; i<=habitatCount; i++) {
+      input = $minRowSL.find('td:nth-child(' + i + ') input');
+      updateMinMaxValidation(input, min, max);
+      input = $maxRowSL.find('td:nth-child(' + i + ') input');
+      updateMinMaxValidation(input, min, max);
+    }
+  }
+
+  function cdCorrectionUpdated() {
+    correctDiveDepthFields();
+    correctHabitatDepthFields();
+  }
+
+  function diveDepthUpdated() {
+    correctDiveDepthFields();
+    updateHabitatDepthValidation();
+  }
+
+  getEl(indiciaData.depthCDAttrName).change(cdCorrectionUpdated);
+  getEl(indiciaData.depthMinLimitAttrNames[0]).change(diveDepthUpdated);
+  getEl(indiciaData.depthMaxLimitAttrNames[0]).change(diveDepthUpdated);
 
   // Add the Dorset Integrated Seabed layers
   function addDorisLayers(div) {
