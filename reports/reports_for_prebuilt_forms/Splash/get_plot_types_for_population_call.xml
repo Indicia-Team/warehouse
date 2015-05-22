@@ -7,8 +7,7 @@
   FROM terms t
   JOIN termlists_terms tt on tt.term_id = t.id
   WHERE 
-    t.term='Square plot - 5 x 5 m, most habitats' OR t.term='Square plot - 10 x 10 m, woodlands' OR t.term='Linear plot' OR
-    t.term='Square' OR t.term='Free draw Linear/Vertical' OR t.term='Rectangle Linear/Vertical'
+    t.term='Square plot - 5 x 5 m, most habitats' OR t.term='Square plot - 10 x 10 m, woodlands' OR t.term='Linear plot'
   </query>
   <columns> 
     <column name='id' sql='tt.id' datatype='integer'/>
