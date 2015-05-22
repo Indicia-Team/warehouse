@@ -45,9 +45,9 @@
     sql="
       case 
         when '#pss_mode#'='0'
-          then l.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#')
+          then l.name || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#')
          else
-          l.centroid_sref 
+          l.name 
       end"
     datatype='text' aggregate="true"/>
     <column name="sc" visible="false" feature_style="strokeColor" sql="'blue'" aggregate='true'/>
