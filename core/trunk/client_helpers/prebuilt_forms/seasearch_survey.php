@@ -540,7 +540,6 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
         unset($buddyPairSubmission['fields']["comment:$habitatIdx"]);
       }
       $habitatSubmission = submission_builder::wrap_with_images($habitatSample, 'sample');
-      drupal_set_message('<pre>' .var_export($habitatSubmission, true). '</pre>');
       if (!isset($habitatSubmission['subModels']))
         $habitatSubmission['subModels'] = array();
       $habitatSubmission['subModels'] += $habitatOccurrences[$habitatId];
@@ -549,7 +548,6 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
         'model' => $habitatSubmission
       );
     }
-    drupal_set_message('<pre>' .var_export($buddyPairSubmission, true). '</pre>');
     return $buddyPairSubmission;
   }
 
