@@ -944,7 +944,7 @@ idlist=';
     $r = '';
     if (!empty($status)) {
       $hint = self::status_label($status, $substatus);
-      $images = [];
+      $images = array();
       if ($status==='V') {
         $images[] = 'ok-16px';
       }
