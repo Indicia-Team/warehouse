@@ -164,15 +164,6 @@ class iform_verification_5 {
             'group' => 'Report Settings',
             'required' => false
           ), array(
-          'name'=>'verifiers_mapping',
-          'caption'=>'Verifiers Mapping',
-          'description'=>'Provide either the ID of a single Indicia user to act as the verifier, or provide a comma separated list '.
-              'of <drupal user id>=<indicia user id> pairs to define the mapping from Drupal to Indicia users. E.g. '.
-              '"1=2,2=3. If the Easy Login feature is enabled then this setting is ignored, as every Drupal user has their '.
-              'own warehouse User ID.',
-          'type'=>'textarea',
-          'default'=>1
-        ), array(
           'name'=>'email_subject_send_to_verifier',
           'caption'=>'Send to Expert Email Subject',
           'description'=>'Default subject for the send to expert email. Replacements allowed include %taxon% and %id%.',
@@ -780,25 +771,8 @@ idlist=';
     // Does the host site provide a warehouse user ID?
     if (function_exists('hostsite_get_user_field') && $userId = hostsite_get_user_field('indicia_user_id'))
       return $userId;
-    // Use the configured mapping from local user ID to warehouse ID.
-    global $user;
-    if (substr(',', $args['verifiers_mapping'])!==false) {
-      $arr = explode(',', $args['verifiers_mapping']);
-      foreach ($arr as $mapping) {
-        $mapArr = explode('=', $mapping);
-        if (count($mapArr) == 0) {
-          return trim($mapping);
-        } else {
-          if (trim($mapArr[0])==$user->uid) {
-            return trim($mapArr[1]);
-          }
-        }
-      }
-    } else {
-      // verifiers mapping is just a single number
-      return trim($args['verifiers_mapping']);
-    }
-	  return 1; // default to admin
+    else
+	    return 1; // default to admin
   }
 
   /**
