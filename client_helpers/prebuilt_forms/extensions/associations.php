@@ -30,6 +30,8 @@ class extension_associations {
    * @param $args
    * @param $tabalias
    * @param $options Array of options provided as @ parameters in the configuration. The possibilities are:
+   *   * from_grid_id - ID of the species checklist grid containing the species associations are being recorded from.
+   *   * to_grid_id - ID of the species checklist grid containing the species associations are being recorded to.
    *   * association_type_termlist - Title of a termlist which is available for selection to set the type of
    *     association. You can alternatively provide association_type_termlist_id if you would prefer to specify
    *     the ID rather than the title, though this is less portable between staging and live warehouses.
@@ -47,12 +49,28 @@ class extension_associations {
   public static function input_associations_list($auth, $args, $tabalias, $options, $path) {
     if (empty($options['association_type_termlist']) && empty($options['association_type_termlist_id']))
       return 'The associations.input_associations_list control requires an association_type_termlist parameter.';
+    if (empty($options['from_grid_id']) || empty($options['to_grid_id']))
+      return 'The associations.input_associations_list control requires a from_grid_id and to_grid_id parameter.';
     $r = '<button type="button" id="associations-add">Add an association</button>';
-    $extraHeadings = '';
     self::read_termlist_details($auth, $options);
     data_entry_helper::$javascript .= "indiciaData.associationCtrlOptions = " . json_encode($options) . ";\n";
     $r .= '<div id="associations-list"></div>';
+    self::load_existing_data($auth);
     return $r;
+  }
+
+  /**
+   * When editing an existing sample, load the associations data.
+   */
+  private static function load_existing_data($auth) {
+    if (!empty(data_entry_helper::$entity_to_load['sample:id'])) {
+      $data = data_entry_helper::get_population_data(array(
+        'table' => 'occurrence_association',
+        'extraParams' => $auth['read'] + array('sample_id' => data_entry_helper::$entity_to_load['sample:id'], 'view'=>'detail'),
+        'caching' => false
+      ));
+      data_entry_helper::$javascript .= "populate_existing_associations(" . json_encode($data) . ");\n";
+    }
   }
 
   /**

@@ -5,6 +5,8 @@
  *
  */
 
+var populate_existing_associations;
+
 jQuery(document).ready(function($) {
   "use strict";
 
@@ -18,7 +20,7 @@ jQuery(document).ready(function($) {
    * @param row The row element
    * @return string The grid ID followed by a hyphen then the row index.
    */
-  function getGridIdAndRowIndex(row) {
+  function get_grid_and_row_index(row) {
     // We can trim some stuff off the beginning and end of the presence control name to get what we need.
     var presenceControlName = $(row).find('.scPresence').attr('name');
     return presenceControlName.replace(/^sc:/, '').replace(/:(\d+)?:present$/, '');
@@ -26,13 +28,9 @@ jQuery(document).ready(function($) {
 
 
   function populate_drop_downs(data, selector) {
-
-
-    // @TODO not hard coded fungi.
-
-
-    var fromList = $('#fungi tr.added-row'), toList = $('#associations tr.added-row'), options='', ctrl,
-      oldVal, presenceControlName;
+    var fromList = $('#' + indiciaData.associationCtrlOptions.from_grid_id + ' tbody tr').not('.scClonableRow'),
+        toList = $('#' + indiciaData.associationCtrlOptions.to_grid_id + ' tbody tr').not('.scClonableRow'), options='', ctrl,
+      oldVal;
     if (typeof selector==="undefined") {
       selector = '#associations-list tbody';
     }
@@ -40,7 +38,7 @@ jQuery(document).ready(function($) {
     ctrl = $(selector).find('select.species-assoc-from');
     if (ctrl) {
       $.each(fromList, function() {
-        options += '<option value="' + getGridIdAndRowIndex(this) + '">' + $(this).find('.scTaxonCell').text().trim() + '</option>';
+        options += '<option value="' + get_grid_and_row_index(this) + '">' + $(this).find('.scTaxonCell').text().trim() + '</option>';
       });
       oldVal = ctrl.val();
       ctrl.html('').append(options);
@@ -50,7 +48,7 @@ jQuery(document).ready(function($) {
     ctrl = $(selector).find('select.species-assoc-to');
     if (ctrl) {
       $.each(toList, function() {
-        options += '<option value="' + getGridIdAndRowIndex(this) + '">' + $(this).find('.scTaxonCell').text().trim() + '</option>';
+        options += '<option value="' + get_grid_and_row_index(this) + '">' + $(this).find('.scTaxonCell').text().trim() + '</option>';
       });
       oldVal = ctrl.val();
       ctrl.html('').append(options);
@@ -60,15 +58,20 @@ jQuery(document).ready(function($) {
 
   hook_species_checklist_new_row.push(populate_drop_downs);
 
-  $('#associations-add').click(function() {
+  function addAssociationRow(associationId) {
     if (!validate_complete()) {
       return;
     }
-    var extraControls = [], options,
+    var extraControls = [], options, row, namePrefix,
       allTermlists = ['association_type', 'position', 'part', 'impact', 'condition'],
-      idx = $('#associations-list div.association-row').length; // ensure zero indexed
+      idx = $('#associations-list').find('div.association-row').length; // ensure zero indexed
     // format of the association field:
     // occurrence_association:<row index>:<occurrence_association_id for existing>:<fieldname>
+    if (typeof associationId==="undefined") {
+      // defaults to a new association row.
+      associationId = '';
+    }
+    namePrefix = 'occurrence_association:' + idx + ':' + associationId + ':';
     // retrieve controls or labels for each termlist linked to by an association record
     $.each(allTermlists, function() {
       if (typeof indiciaData.associationCtrlOptions[this]!=="undefined") {
@@ -78,8 +81,8 @@ jQuery(document).ready(function($) {
         $.each(indiciaData.associationCtrlOptions[this + '_terms'], function(id, term) {
           options.push('<option value="' + id + '">' + term + '</option>');
         });
-        extraControls[this] = '<select class="' + this + '-control" name="occurrence_association:' + idx + '::' + this + '_id">'
-            + options + '</select>';
+        extraControls[this] = '<select class="' + this + '-control" name="' + namePrefix + this + '_id">'
+        + options + '</select>';
         if (this==='impact') {
           extraControls[this] = ' causing ' + extraControls[this];
         }
@@ -92,16 +95,20 @@ jQuery(document).ready(function($) {
       }
     });
     $('#associations-list').append('<div class="association-row">' +
-        '<select class="species-assoc-from" name="occurrence_association:' + idx + '::from_occurrence_id"></select>' +
-        extraControls['association_type'] +
-        '<select class="species-assoc-to" name="occurrence_association:' + idx + '::to_occurrence_id"></select>' +
-        extraControls['position'] +
-        extraControls['part'] +
-        extraControls['impact'] +
-        extraControls['condition'] +
-        '<span class="ind-delete-icon"/></div>');
-    populate_drop_downs(null, $('#associations-list div.association-row:last-child'));
-  });
+    '<select class="species-assoc-from" name="' + namePrefix + 'from_occurrence_id"></select>' +
+    extraControls['association_type'] +
+    '<select class="species-assoc-to" name="' + namePrefix + 'to_occurrence_id"></select>' +
+    extraControls['position'] +
+    extraControls['part'] +
+    extraControls['impact'] +
+    extraControls['condition'] +
+    '<span class="ind-delete-icon"/></div>');
+    row = $('#associations-list').find('div.association-row:last-child');
+    populate_drop_downs(null, row);
+    return row;
+  }
+
+  $('#associations-add').click(addAssociationRow);
 
   /**
    * Check for a click on the associations grid delete button
@@ -111,4 +118,24 @@ jQuery(document).ready(function($) {
       $(e.target).parents('div.association-row').remove();
     }
   });
+
+  populate_existing_associations = function(existingAssociations) {
+    var row, fromFieldName, toFieldName;
+    $.each(existingAssociations, function() {
+      row = addAssociationRow(this.id);
+      // search for the presence fields matching the occurrence we are relating from and to. This gives us the correct grid ID and
+      // row index to use when looking up the association species drop down values.
+      fromFieldName = $('table#' + indiciaData.associationCtrlOptions.from_grid_id + ' input.scPresence[name$=\\:'+this.from_occurrence_id+'\\:present]').attr('name');
+      $(row).find('.species-assoc-from').val(fromFieldName.split(':')[1]);
+      toFieldName = $('table#' + indiciaData.associationCtrlOptions.to_grid_id + ' input.scPresence[name$=\\:'+this.to_occurrence_id+'\\:present]').attr('name');
+      $(row).find('.species-assoc-to').val(toFieldName.split(':')[1]);
+      // Set correct values for the other lookups
+      $(row).find('.association_type-control').val(this.association_type_id);
+      $(row).find('.position-control').val(this.position_id);
+      $(row).find('.part-control').val(this.part_id);
+      $(row).find('.impact-control').val(this.impact_id);
+      $(row).find('.condition-control').val(this.condition_id);
+    });
+  };
+
 });
