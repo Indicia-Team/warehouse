@@ -6205,6 +6205,11 @@ if (errors$uniq.length>0) {
           $fields[preg_replace("/^$regexp/", '', $thisKey)] = $value;
         }
       }
+      // The existing record ID will be the 3rd segment in the key name.
+      $keyParts = explode(':', $fromRecordKey);
+      if (!empty($keyParts[2])) {
+        $fields['id'] = $keyParts[2];
+      }
       // Add a submodel to link them.
       if (!isset($occ['subModels'])) {
         $occ['subModels'] = array();
