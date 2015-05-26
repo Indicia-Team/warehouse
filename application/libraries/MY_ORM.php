@@ -653,7 +653,8 @@ class ORM extends ORM_Core {
         }
       }
     }
-    if (!empty(self::$changedRecords['insert']['occurrence_association'])) {
+    if (!empty(self::$changedRecords['insert']['occurrence_association']) ||
+        !empty(self::$changedRecords['update']['occurrence_association'])) {
       // We've got some associations between occurrences that could not have the to_occurrence_id
       // foreign key filled in yet, since the occurrence referred to did not exist at the time of
       // saving
