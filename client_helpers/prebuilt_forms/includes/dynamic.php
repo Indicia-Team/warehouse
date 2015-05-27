@@ -518,6 +518,10 @@ $('#".data_entry_helper::$validated_form_id."').submit(function() {
             // urlParam is special as it loads the control's default value from $_GET
             if ($option[0]==='urlParam' && isset($_GET[$option[1]]))
               $options['default'] = $_GET[$option[1]];
+            // label and helpText should both get translated
+            if ($option[0]==='label' || $option[0]==='helpText') {
+              $options[$option[0]] = lang::get($options[$option[0]]);
+            }
           }
         }
         // if @permission specified as an option, then check that the user has access to this control
