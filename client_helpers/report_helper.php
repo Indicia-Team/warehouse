@@ -1717,7 +1717,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $addFeaturesJs = "";        
         // No need to pass the default type of vector display, so use empty obj to keep JavaScript size down
         $opts = $options['displaySymbol']==='vector' ? '{}' : json_encode(array('type'=>$options['displaySymbol']));
-        if ($options['clickableLayersOutputMode']<>'popup' && $options['clickableLayersOutputMode']<>'div' && isset($wktCol)) {
+        if ($options['clickableLayersOutputMode']!=='popup' && $options['clickableLayersOutputMode']!=='div'
+            && $options['clickableLayersOutputMode']!=='customFunction' && isset($wktCol)) {
           // If we don't need record data for every row for feature clicks, then only include necessary columns to minimise JS
           $colsToInclude['occurrence_id']='';
           $colsToInclude[$wktCol]='';
