@@ -61,6 +61,9 @@
           if (preg_match('/^occAttr:'.$args['reticules'].'.*/',$occurrenceAttrToMatchKey)) {
             $reticuleToUse = $occurrenceAttrToMatch['value'];
           }
+          if (preg_match('/^occAttr:'.$args['distance_esimate'].'.*/',$occurrenceAttrToMatchKey)) {
+            $distance = $occurrenceAttrToMatch['value'];
+          }
         }   
         //Collect the actual reticules value by looking it up in the termlists_term view as currently we only have an id from the drop-down
         $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
@@ -75,12 +78,10 @@
 
       }
       //We calculate the grid ref of the cetacean by using the reticules/bearing/platform height and the original entered sptial reference. This is stored in the sub-sample associated with the occurrence.  
-      if (empty($platformHeight) || empty($bearing) || empty($reticules)) {
-        $occurrenceAndSubSampleRecord['model']['fields']['entered_sref']['value'] = $enteredSref;
+      if (!empty($bearing) && ((!empty($platformHeight) && !empty($reticules)) || !empty($distance))) {
+        $occurrenceAndSubSampleRecord['model']['fields']['entered_sref']['value'] = calculate_sighting_sref($bearing, $reticules, $platformHeight, $distance, $enteredSref, $args);
       } else {
-        $occurrenceAndSubSampleRecord['model']['fields']['entered_sref']['value'] = calculate_sighting_sref($bearing,$reticules,$platformHeight,$enteredSref, $args); 
-      
-        
+        $occurrenceAndSubSampleRecord['model']['fields']['entered_sref']['value'] = $enteredSref;
       }
       //Sub-sample sample method is always reticule sighting
       $occurrenceAndSubSampleRecord['model']['fields']['sample_method_id']['value'] = $args['reticule_sighting'];
@@ -117,18 +118,23 @@
    * Method that calculates the spatial reference of cetacean sightings by using the spatial reference of 
    * the observer, the bearing to the sighting, the number of reticules and the platform height.
    */
-  function calculate_sighting_sref($bearing,$reticules,$platformHeight,$enteredSref, $args) {
-    //Calculations done assuming Platform Height is in km, however Platform Height is stored in metres, so divide by 1000.
-    $platformHeight=$platformHeight/1000;
+  function calculate_sighting_sref($bearing, $reticules, $platformHeight, $distance, $enteredSref, $args) {
     //Convert the 50N 50E style latitude/longitude spatial reference format into pure numbers so we 
-    //can manipulate it mathemtically.
+    //can manipulate it mathematically.
     $convertedSref = lat_long_conversion_to_numbers($enteredSref);
-    //Mathematical calculations provided by client, so this is merely a straight conversion into php
-    $angleRetDeclination = 0.2865*6.28/360;
     $radians = $bearing*pi()/180;
-    $angleBetween2Radii = acos(6370/(6370+$platformHeight));
-    $simplifiedAngle = $angleBetween2Radii+$reticules*$angleRetDeclination;
-    $radialDistance = (cos($simplifiedAngle )*(6370*sin($simplifiedAngle)-sqrt(pow(6370,2)*(pow(sin($simplifiedAngle),2))-2*6370*$platformHeight*pow(cos($simplifiedAngle),2))))*1000;
+    if (empty($platformHeight) || empty($reticules)) {
+      // use estimated distance if we don't have reticules.
+      $radialDistance = $distance;
+    } else {
+      //Calculations done assuming Platform Height is in km, however Platform Height is stored in metres, so divide by 1000.
+      $platformHeight=$platformHeight/1000;
+      //Mathematical calculations provided by client, so this is merely a straight conversion into php
+      $angleRetDeclination = 0.2865*6.28/360;
+      $angleBetween2Radii = acos(6370/(6370+$platformHeight));
+      $simplifiedAngle = $angleBetween2Radii+$reticules*$angleRetDeclination;
+      $radialDistance = (cos($simplifiedAngle )*(6370*sin($simplifiedAngle)-sqrt(pow(6370,2)*(pow(sin($simplifiedAngle),2))-2*6370*$platformHeight*pow(cos($simplifiedAngle),2))))*1000;
+    }
     $dLat = $radialDistance*(cos($radians)); 
     $angleLat = 2*((($dLat/1000)/(6370*2)));
     $dLong = $radialDistance*(sin($radians));
