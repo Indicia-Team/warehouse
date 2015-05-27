@@ -3649,7 +3649,8 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
    */
   private static function parse_species_name_filter_mode($options, &$filterFields, &$filterWheres) {
     if (isset($options['speciesNameFilterMode'])) {
-      $colLanguage = $options['cacheLookup'] ? 'language_iso' : 'language';
+      $colLanguage = $options['cacheLookup'] || (!empty($options['extraParams']['view']) && $options['extraParams']['view']==='detail')
+          ? 'language_iso' : 'language';
       switch($options['speciesNameFilterMode']) {
         case 'preferred' :
           $filterFields += array('preferred'=>'t');
