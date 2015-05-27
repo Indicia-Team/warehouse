@@ -6,6 +6,7 @@
     SELECT #columns#
     FROM locations l
     LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false
+    #joins#
     WHERE l.deleted=false
     AND (l.public=true or lw.website_id in (#website_ids#))
       #filters#
@@ -23,10 +24,15 @@
       <param name="parent_id" default="" datatype="integer" description="ID of the parent site to filter to">
           <where>l.parent_id=#parent_id#</where>
       </param>
+      <param name="parent_boundary_id" default="" datatype="integer" description="ID of the parent site to filter to">
+          <join>join locations lp on lp.deleted=false and lp.id=#parent_boundary_id#</join>
+          <where>st_intersects(lp.boundary_geom, l.boundary_geom)</where>
+      </param>
   </params>
   <columns>
         <column name="id" visible="false" sql="l.id" datatype="integer" />
         <column name="name" display="Site name" sql="l.name" />
+        <column name="name" display="Site code" sql="l.code" />
         <column name="geom" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l.boundary_geom, l.centroid_geom), #sq_size#/20), 1, 1))" visible="false" mappable="true"/>
         <!-- disable the default 'fattening' of distant objects -->
         <column name="pr" visible="false" feature_style="pointRadius" sql="1" />
