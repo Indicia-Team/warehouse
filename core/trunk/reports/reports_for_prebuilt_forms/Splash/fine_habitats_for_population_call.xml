@@ -7,7 +7,7 @@
   FROM terms hab
     JOIN termlists_terms tt on tt.term_id=hab.id AND tt.deleted=false AND parent_id IS NOT NULL
     JOIN termlists tl on tl.id=tt.termlist_id AND tl.title='NPMS 2015 habitats' AND tl.deleted=false
-  WHERE hab.deleted=false
+  WHERE hab.deleted=false AND hab.term != 'Not in scheme'
   </query>
   <order_bys>
     <order_by>hab.term ASC</order_by>
