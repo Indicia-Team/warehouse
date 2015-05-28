@@ -69,7 +69,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           'type'=>'string',
           'group'=>'Other Settings'
         ),
-        //TODO, this might not be working anymore since we got rid of submit button
         array(
           'name'=>'in_progress_sample_attr_id',
           'caption'=>'In Progress Sample Atrribute Id',
@@ -299,9 +298,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    * Then all previous photos are allocated to the habitat (providing not already allocated in this session).
    * There is a further set of habitat draggers which when dragged to a photo will always override that single photo with the habitat, even
    * if it is already allocated in this session.
-   *
-   * TODO (if possible!)
-   * Once occurrence photos are created, it is not long possible to reallocate images.
    */
   protected static function get_control_linkhabitatstophotos($auth, $args, $tabalias, $options) {
     if (empty($options['imageMediaTypeId']))
@@ -469,7 +465,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $photoResultDecoded2 = json_decode($photoResults[count($photoResults)-1]['exif'],true);
       }
       //The duration attribute should default to the difference between first and last photos (in minutes)
-      //TODO this is probably best placed in a difference method, not the habitat one.
+      //Although the dive duration is not displayed on this tab, it is easiest to calculate it here as this tab processes photos as well.
       if (!empty($photoResultDecoded1['EXIF']['DateTimeOriginal']) && !empty($photoResultDecoded2['EXIF']['DateTimeOriginal'])) {
         $difference = strtotime($photoResultDecoded2['EXIF']['DateTimeOriginal'])-strtotime($photoResultDecoded1['EXIF']['DateTimeOriginal']);
         //Default the duration using minutes.
@@ -538,7 +534,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
     //Use ajax saving so that we can save without full page reload on a lot of pages.
     data_entry_helper::$javascript .= 'indiciaData.ajaxUrl="'.url('iform/ajax/dynamic_progressive_seasearch_survey')."\";\n";
-    //TODO, are these warnings complete?
     if (empty($args['in_progress_sample_attr_id'])) {
       drupal_set_message('Please fill in the edit tab option for the In-Progress Sample attribute id');
       return false;
@@ -549,6 +544,14 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     }
     if (empty($args['photo_order_attr_id'])) {
       drupal_set_message('Please fill in the option for the Photo Order attribute id');
+      return false;
+    } 
+    if (empty($args['habitat_smpAttr_cluster_ids'])) {
+      drupal_set_message('Please fill in the option for the Habitat Sample Attribute Cluster');
+      return false;
+    } 
+    if (empty($args['dive_duration_attr_id'])) {
+      drupal_set_message('Please fill in the option for the Dive Duration attribute id');
       return false;
     } 
     
@@ -569,7 +572,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
        
     // A jquery selector for the element which must be at the top of the page when moving to the next page. Could be the progress bar or the
     // tabbed div itself.
-    //TODO does this bit need cleaning up?
     if (isset($options['progressBar']) && $options['progressBar']==true)
       data_entry_helper::$javascript .= "indiciaData.topSelector="."'.wiz-prog'".";";
     else
@@ -619,22 +621,12 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     iform_load_helpers(array('data_entry_helper'));
     //Build submission
     $Model = self::build_three_level_sample_with_occ_submission($_POST,$website_id, $password,$node->params['gpx_data_attr_id'],$node->params['photo_order_attr_id']);
-    //TODO this can probably be cleaned up as it comes directly from ajax proxy file
-    if (empty($nid))
-      $conn=array('website_id'=>variable_get('indicia_website_id',''), 'password'=>variable_get('indicia_password',''));
-    else {
-      $node = node_load($nid);
-      $conn = iform_get_connection_details($node);
-      if($node->type != 'iform') {
-        $error = t("Drupal node is not an iform node.");
-      }
-    }
+    $node = node_load($nid);
+    $conn = iform_get_connection_details($node);
     $postargs = "website_id=".$conn['website_id'];
     $response = data_entry_helper::http_post(data_entry_helper::$base_url.'/index.php/services/security/get_nonce', $postargs, false);
     $nonce = $response['output'];
     $writeTokens = array('nonce'=>$nonce, 'auth_token' => sha1($nonce.":".$conn['password']));
-    if (isset($_REQUEST['user_id'])) $writeTokens['user_id'] = $_REQUEST['user_id'];
-    if (isset($_REQUEST['sharing'])) $writeTokens['sharing'] = $_REQUEST['sharing'];
     //TODO, when the first page is saved we create a sample but we don't have a spatial reference, this is currently a point on the Isle of Wight (for no particular reason other than we know this
     //isn't in the sea so won't be confused with finished save.
     if (empty($Model['fields']['entered_sref']['value'])) {
@@ -881,37 +873,36 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       //This is then used as the sub-sample's spatial reference.
       $latAcc=0;
       $lonAcc=0;
-      foreach ($mediaSpatialRefs as $mediaSpatialRef) {
-        $gpsDataPair = explode(',', $mediaSpatialRef);
-        $latAcc=$latAcc+floatval($gpsDataPair[0]);
-        $lonAcc=$lonAcc+floatval($gpsDataPair[1]);
-      }
-      $latAcc=round($latAcc/count($mediaSpatialRefs),10);
-      $lonAcc=round($lonAcc/count($mediaSpatialRefs),10);
-      //Convert spatial reference from 50,-1 format to 50N 1W format
-      $northSouthPos=self::convert_to_north_south_lat_lon($latAcc.','.$lonAcc);
-      foreach ($media as $item) {
-        $mediaIds[]=$item['id'];
-        //Only add the media item to the sub-sample, if the item has been assigned to the sub-sample by the user.
-        //TODO, do we need to check if it is assigned now, as haven't we already filter these to only ones for the sub-sample
-        if (!empty($values['sample_medium:'.$item['id'].':sample_id']) &&
-            ($values['sample_medium:'.$item['id'].':sample_id']==$completeValuesCollection[$idx]['sample:id'])) {
-          $wrapped = data_entry_helper::wrap($item, 'sample_medium');
-          
-          $wrappedCollection[$idx]['subModels'][] = array(
+      if (!empty($mediaSpatialRefs)) {
+        foreach ($mediaSpatialRefs as $mediaSpatialRef) {
+          $gpsDataPair = explode(',', $mediaSpatialRef);
+          $latAcc=$latAcc+floatval($gpsDataPair[0]);
+          $lonAcc=$lonAcc+floatval($gpsDataPair[1]);
+        }
+        $latAcc=round($latAcc/count($mediaSpatialRefs),10);
+        $lonAcc=round($lonAcc/count($mediaSpatialRefs),10);
+        //Convert spatial reference from 50,-1 format to 50N 1W format
+        $northSouthPos=self::convert_to_north_south_lat_lon($latAcc.','.$lonAcc);
+        foreach ($media as $item) {
+          $mediaIds[]=$item['id'];
+          //Only add the media item to the sub-sample, if the item has been assigned to the sub-sample by the user.
+          if (!empty($values['sample_medium:'.$item['id'].':sample_id']) &&
+              ($values['sample_medium:'.$item['id'].':sample_id']==$completeValuesCollection[$idx]['sample:id'])) {
+            $wrapped = data_entry_helper::wrap($item, 'sample_medium');
+            $wrappedCollection[$idx]['subModels'][] = array(
               'fkId' => 'sample_id',
               'model' => $wrapped
-          );
+            ); 
+          }
         }
-        //Need to check that $mediaSpatialRefs is empty as we don't want to make the assignment when 
-        //$northSouthPos is "0N 0E" which is what it is if the habitats are created but the photos are not assigned yet.
-        //TODO, can probably move the !empty($mediaSpatialRefs) much earlier, leave for now as I know it is working ok here.
-        if (!empty($northSouthPos) && !empty($mediaSpatialRefs)) {
-          $wrappedCollection[$idx]['fields']['entered_sref']['value']=$northSouthPos;
-        } else {
-          //If the user has used a single spatial reference instead of a GPX file
-          $wrappedCollection[$idx]['fields']['entered_sref']['value']=$values['sample:entered_sref'];
-        }
+      }
+      //Need to check that $mediaSpatialRefs is empty as we don't want to make the assignment when 
+      //$northSouthPos is "0N 0E" which is what it is if the habitats are created but the photos are not assigned yet.
+      if (!empty($northSouthPos) && !empty($mediaSpatialRefs)) {
+        $wrappedCollection[$idx]['fields']['entered_sref']['value']=$northSouthPos;
+      } else {
+        //If the user has used a single spatial reference instead of a GPX file
+        $wrappedCollection[$idx]['fields']['entered_sref']['value']=$values['sample:entered_sref'];
       }
     }
     if (!empty($wrappedCollection)) {     
