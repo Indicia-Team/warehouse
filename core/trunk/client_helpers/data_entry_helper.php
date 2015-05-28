@@ -5806,7 +5806,7 @@ if (errors$uniq.length>0) {
       // look for media files attached to fields like group:logo_path (*:*_path)
       // which are not in submodels, so not picked up by the extract_media_data code.
       foreach ($_FILES as $fieldname => $file) {
-        if (preg_match('/^([a-z_]+:)?[a-z_]+_path$/', $fieldname)) {
+        if (empty($file['error']) && preg_match('/^([a-z_]+:)?[a-z_]+_path$/', $fieldname)) {
           $media[] = array('path' => $file['name']);
         }
       }
