@@ -10,6 +10,48 @@ var populate_existing_associations;
 jQuery(document).ready(function($) {
   "use strict";
 
+  // keys() polyfill from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
+  if (!Object.keys) {
+    Object.keys = (function() {
+      'use strict';
+      var hasOwnProperty = Object.prototype.hasOwnProperty,
+        hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),
+        dontEnums = [
+          'toString',
+          'toLocaleString',
+          'valueOf',
+          'hasOwnProperty',
+          'isPrototypeOf',
+          'propertyIsEnumerable',
+          'constructor'
+        ],
+        dontEnumsLength = dontEnums.length;
+
+      return function(obj) {
+        if (typeof obj !== 'object' && (typeof obj !== 'function' || obj === null)) {
+          throw new TypeError('Object.keys called on non-object');
+        }
+
+        var result = [], prop, i;
+
+        for (prop in obj) {
+          if (hasOwnProperty.call(obj, prop)) {
+            result.push(prop);
+          }
+        }
+
+        if (hasDontEnumBug) {
+          for (i = 0; i < dontEnumsLength; i++) {
+            if (hasOwnProperty.call(obj, dontEnums[i])) {
+              result.push(dontEnums[i]);
+            }
+          }
+        }
+        return result;
+      };
+    }());
+  }
+
   function validate_complete() {
     console.log('Validate_complete to do');
     return true;
@@ -58,11 +100,11 @@ jQuery(document).ready(function($) {
 
   hook_species_checklist_new_row.push(populate_drop_downs);
 
-  function addAssociationRow(associationId) {
+  function addAssociationRow(e, associationId) {
     if (!validate_complete()) {
       return;
     }
-    var extraControls = [], options, row, namePrefix,
+    var extraControls = [], options, optionsList, row, namePrefix,
       allTermlists = ['association_type', 'position', 'part', 'impact', 'condition'],
       idx = $('#associations-list').find('div.association-row').length; // ensure zero indexed
     // format of the association field:
@@ -77,12 +119,22 @@ jQuery(document).ready(function($) {
       if (typeof indiciaData.associationCtrlOptions[this]!=="undefined") {
         extraControls[this] = '<span>' + indiciaData.associationCtrlOptions[this] + '</span>';
       } else if (typeof indiciaData.associationCtrlOptions[this + '_terms']!=="undefined") {
-        options = [];
-        $.each(indiciaData.associationCtrlOptions[this + '_terms'], function(id, term) {
-          options.push('<option value="' + id + '">' + term + '</option>');
-        });
-        extraControls[this] = '<select class="' + this + '-control" name="' + namePrefix + this + '_id">'
-        + options + '</select>';
+        optionsList = indiciaData.associationCtrlOptions[this + '_terms'];
+        // more than 1 choice, so show a drop down
+        if (Object.keys(optionsList).length>1) {
+          options = ['<option value="">&lt;please select&gt;</option>'];
+          $.each(optionsList, function (id, term) {
+            options.push('<option value="' + id + '">' + term + '</option>');
+          });
+          extraControls[this] = '<select class="' + this + '-control" name="' + namePrefix + this + '_id">'
+              + options + '</select>';
+        } else if (Object.keys(optionsList).length===1) {
+          var termlist = this;
+          $.each(optionsList, function (id, term) {
+            extraControls[termlist] = '<span>' + term + '</span>' +
+                '<input type="hidden" name="' + namePrefix + termlist + '_id" value="' + id +'">';
+          });
+        }
         if (this==='impact') {
           extraControls[this] = ' causing ' + extraControls[this];
         }
@@ -122,7 +174,7 @@ jQuery(document).ready(function($) {
   populate_existing_associations = function(existingAssociations) {
     var row, fromFieldName, toFieldName;
     $.each(existingAssociations, function() {
-      row = addAssociationRow(this.id);
+      row = addAssociationRow(null, this.id);
       // search for the presence fields matching the occurrence we are relating from and to. This gives us the correct grid ID and
       // row index to use when looking up the association species drop down values.
       fromFieldName = $('table#' + indiciaData.associationCtrlOptions.from_grid_id + ' input.scPresence[name$=\\:'+this.from_occurrence_id+'\\:present]').attr('name');
