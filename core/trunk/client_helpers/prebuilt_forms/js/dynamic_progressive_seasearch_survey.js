@@ -51,6 +51,10 @@ jQuery(window).load(function($) {
     $('.tab-next').click(function() {
       //currently selected tab number need incrementing    
       current++;
+      //If finished wizard, then set in-progress attribute for sample to false.
+      if (current>6) {
+        $(indiciaData.inProgressAttrSelector).val(0);
+      }
       hideOccurrenceAddphoto();
       //Setup saving without a full php post
       setupAjaxPageSaving(false);
