@@ -98,22 +98,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           'type'=>'string',
           'group'=>'Other Settings'
         ),  
-        //TODO, can probably get rid of this once we have made final decision
-        array(
-          'name'=>'reload_tabs',
-          'caption'=>'Reload Tabs',
-          'description'=>'Comma separated list of tab numbers (starting from 0) for which we need to reload the page when saving.',
-          'type'=>'string',
-          'group'=>'Other Settings'
-        ),
-        //TODO again we probably don't need this, as the occurrence tab position will always be the same
-        array(
-          'name'=>'occ_tab_idx',
-          'caption'=>'Index number of occurrence tab',
-          'description'=>'Number of the occurrences tab.',
-          'type'=>'int',
-          'group'=>'Other Settings'
-        ),
         //TODO could put in a default form structure
       )
     );
@@ -555,10 +539,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //Use ajax saving so that we can save without full page reload on a lot of pages.
     data_entry_helper::$javascript .= 'indiciaData.ajaxUrl="'.url('iform/ajax/dynamic_progressive_seasearch_survey')."\";\n";
     //TODO, are these warnings complete?
-    if (empty($args['occ_tab_idx'])) {
-      drupal_set_message('Please fill in the option for the tab number of the occurrences tab');
-      return false;
-    }
     if (empty($args['in_progress_sample_attr_id'])) {
       drupal_set_message('Please fill in the edit tab option for the In-Progress Sample attribute id');
       return false;
@@ -570,11 +550,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     if (empty($args['photo_order_attr_id'])) {
       drupal_set_message('Please fill in the option for the Photo Order attribute id');
       return false;
-    }
-    if (empty($args['reload_tabs'])) {
-      drupal_set_message('Please fill in the option that specifies which tabs require a full page reload to save');
-      return false;
-    }  
+    } 
     
     $r='';
     //Hide the attribute that holds whether a sample is in progress or not
@@ -613,12 +589,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //Need a jquery selector when referencing the in-progress sample attribute.
     data_entry_helper::$javascript .= "indiciaData.inProgressAttrSelector='#smpAttr\\\\:".$args['in_progress_sample_attr_id']."';";
     
-    //This is configuration, so that we know which tabs will need a full page reload. The tabs are numbered from 0 in comma separated list
-    $reloadTabs=explode(',',$args['reload_tabs']);
     //Need the number of the occurrences tab, so we can hide the Add Photos button in the species grid.
     data_entry_helper::$javascript .= "
-    indiciaData.reloadtabs=".json_encode($reloadTabs).";
-    indiciaData.occTabIdx=".$args['occ_tab_idx'].";\n";
+    indiciaData.reloadtabs=[0,4,5];
+    indiciaData.occTabIdx=6;\n";
     //When the screen loads, if there is a "In Progress" attribute (which there should be) and it is not set explicitely as not
     //In Progress, then it must be in progress, so set the attribute to 1.
     data_entry_helper::$javascript.="
@@ -746,18 +720,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       }
     }
    
-    //If the sample date hasn't been set yet (i.e. we are on first couple of seasearch tabs, then we need to set a sample date automatically, get the date from the exif
-    //of the first uploaded picture. These have not been ordered yet, but will almost certainly be on the same date, it is also just a default and can be corrected as needed.
-    //TODO do we even need this now, isn't sample date on first tab
-    if (empty($values['sample:date'])&&!empty($media[0]['exif'])) {
-      $photoResultDecoded = json_decode($media[0]['exif'],true);
-      if (!empty($photoResultDecoded['EXIF']['DateTimeOriginal'])) {
-        $newformat = date('d/m/Y', strtotime($photoResultDecoded['EXIF']['DateTimeOriginal']));
-        $values['sample:date']=$newformat;
-        $modelWrapped['fields']['date']['value']=$newformat;
-      }
-    }
-    
     // Put any extra occurrences (without images)
     // the user has identified onto the end of the main sample model.
     if (array_key_exists('subModels', $modelWrapped)) {
