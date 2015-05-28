@@ -38,24 +38,17 @@ level. Also each broad habitat can have child fine habitat, so for samples saved
     <column name='habitat' display='Habitat' sql="broadHab.term" datatype='text' in_count="true"/>
     <column name='habitat_abbr' display='Abbreviation' sql="
       CASE 
-        WHEN broadHab.term='Arable field margins' then 'AFM' 
-        WHEN broadHab.term='Blanket bog' then 'BB' 
-        WHEN broadHab.term='Deciduous woodland' then 'DW' 
-        WHEN broadHab.term='Dry acid grassland' then 'DAG'
-        WHEN broadHab.term='Dry calcareous grassland' then 'DCG'
-        WHEN broadHab.term='Dry heath' then 'DH'
-        WHEN broadHab.term='Hedgerows' then 'H'
-        WHEN broadHab.term='Montane acid grassland' then 'MAG'
-        WHEN broadHab.term='Native pinewoods' then 'NP'
-        WHEN broadHab.term='Pastures and meadows' then 'PaM'
-        WHEN broadHab.term='Rivers and streams' then 'RaS'
-        WHEN broadHab.term='Species poor lakes and ponds' then 'SPLaP'
-        WHEN broadHab.term='Species rich lakes and ponds' then 'SRLaP'
-        WHEN broadHab.term='Species rich mires fens and flushes' then 'SRMFaF'
-        WHEN broadHab.term='Urban' then 'U'
-        WHEN broadHab.term='Wet grassland' then 'WG'
-        WHEN broadHab.term='Wet heath' then 'WH'
-        WHEN broadHab.term='Wet woodland' then 'WW'
+        WHEN broadHab.term='Arable margins' then 'AFM' 
+        WHEN broadHab.term='Bog and wet heath' then 'BWH' 
+        WHEN broadHab.term='Broadleaved woodland, hedges and scrub' then 'BW' 
+        WHEN broadHab.term='Coast' then 'C' 
+        WHEN broadHab.term='Freshwater' then 'FW'
+        WHEN broadHab.term='Heathland' then 'H'
+        WHEN broadHab.term='Lowland grassland' then 'LG'
+        WHEN broadHab.term='Marsh and fen' then 'MF' 
+        WHEN broadHab.term='Native pinewood and juniper scrub' then 'NPW'       
+        WHEN broadHab.term='Rock outcrops, cliffs and scree' then 'ROCS'      
+        WHEN broadHab.term='Upland grassland' then 'UG'       
         ELSE broadHab.term
       END" datatype='text'/>  
     <column name='total_plots' display='Number of plots' sql='count(distinct(plot.id))'/>
