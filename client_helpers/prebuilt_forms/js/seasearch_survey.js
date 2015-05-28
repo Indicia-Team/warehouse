@@ -85,7 +85,7 @@ jQuery(document).ready(function($) {
 
         // Insert columns into the quantitative data grids on the next tab.
         // First put the habitat ID column title in place.
-        $('table#depth-limits,table#substratum,table#features').find('thead tr:first-child').append('<th>' + (currentCount+1) + '</th>');
+        $('table#depth-limits,table#substratum,table#features').find('thead tr:first-child').append('<th class="habitat-title-' + (currentCount+1) + '">' + (currentCount+1) + '</th>');
         // now inject <td> elements containing the appropriate control type
         $('table#depth-limits,table#substratum,table#features').find('tbody tr:not(.checkboxes) td.label').before(
             '<td class="input"><input type="text" class="control-width-2"/></td>'
@@ -167,6 +167,19 @@ jQuery(document).ready(function($) {
     setHabitatCount($('#habitat-blocks').children('fieldset').length+1);
   });
   setHabitatCount(indiciaData.initialHabitatCount);
+
+  indiciaFns.on('change', '.habitat-name', {}, function(e) {
+    var habitatIdx, tokens;
+    tokens = $(this).attr('id').split(':');
+    // last part of the field ID is the habitat index
+    habitatIdx = tokens.pop();
+    if ($(e.currentTarget).val().trim() !== '') {
+      $('.habitat-title-' + habitatIdx).html($(e.currentTarget).val().trim());
+    }
+    else {
+      $('.habitat-title-' + habitatIdx).html(habitatIdx);
+    }
+  });
 
   // On load of existing data, ensure that the habitat indexes are loaded into the grid habitat controls properly.
   var habitatInput, row;

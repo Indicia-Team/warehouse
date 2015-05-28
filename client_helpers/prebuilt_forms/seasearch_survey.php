@@ -205,7 +205,7 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     $template .= data_entry_helper::text_input(array(
       'fieldname' => "smpAttr:$habitatName[attributeId]::habitatIdx",
       'label' => lang::get('Habitat name'),
-      'class' => 'control-width-4'
+      'class' => "control-width-4 habitat-name"
     ));
     $template .= data_entry_helper::textarea(array(
         'fieldname' => 'sample:comment:habitatIdx',
