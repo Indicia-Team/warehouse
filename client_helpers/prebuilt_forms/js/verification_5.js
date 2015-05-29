@@ -591,6 +591,8 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
     '</fieldset></form>';
     $.fancybox(html, {
       "onCleanup" : function() {
+        // hide the species dropdown if left in open state
+        $('.ac_results').hide();
         $('#redet-dropdown').appendTo($('#redet-dropdown-ctnr'));
       }
     });
