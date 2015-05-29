@@ -53,7 +53,7 @@ function notify_verifications_and_comments_scheduled_task($last_run_date) {
       $comment = "The record of $notification->taxon at $notification->public_entered_sref on $date was $action.";
     } else {
       if ($notification->auto_generated==='t' && substr($notification->generated_by, 0, 12)==='data_cleaner' && $notification->record_owner==='t') {          
-        $comment = "The following message was attached to your record of $notification->generated_by at $notification->public_entered_sref on $date ".
+        $comment = "The following message was attached to your record of $notification->taxon at $notification->public_entered_sref on $date ".
             "when it was checked using the <a target=\"_blank\" href=\"http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner.aspx\" target=\"_blank\">".
             "NBN Record Cleaner</a>. This does not mean the record is incorrect or is being disputed; the information below is merely a flag against the record that ".
             "might provide useful information for recording and verification purposes.";
