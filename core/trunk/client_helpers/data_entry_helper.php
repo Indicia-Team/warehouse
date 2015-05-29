@@ -2786,7 +2786,7 @@ $('#$escaped').change(function(e) {
   * Optional. If set to true, then an occurrence sensitivity selector is included on each row.</li>
   * <li><b>mediaTypes</b><br/>
   * Optional. Array of media types that can be uploaded. Choose from Audio:Local, Audio:SoundCloud, Image:Flickr,
-  * Image:Instagram, Image:Local, Image:Twitpic, Social:Facebook, Social:Twitter, Video:Youtube,
+  * Image:Instagram, Image:Local, Image:Twitpic, Pdf:Local, Social:Facebook, Social:Twitter, Video:Youtube,
   * Video:Vimeo.
   * Currently not supported for multi-column grids.</li>
   * <li><b>resizeWidth</b><br/>

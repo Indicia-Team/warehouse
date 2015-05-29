@@ -941,7 +941,7 @@ div.note-fail, p.note-fail {
 }
 
 /* social media icons for links in reports */
-.social-icon {
+.social-icon, .file-icon {
   width: 32px;
   height: 32px;
   padding: 8px;
@@ -975,6 +975,9 @@ div.note-fail, p.note-fail {
 }
 .social-icon.vimeo {
   background-image: url(../images/somicro/with_border/vimeo-variation.png);
+}
+.file-icon.pdf {
+  background-image: url(../images/nuvola/pdf-32px.png);
 }
 #filter-form label {
   display: block;
