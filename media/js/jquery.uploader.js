@@ -196,6 +196,9 @@ var checkSubmitInProgress = function () {
           hasLocalFiles = true;
           if (tokens[0]==='Image') {
             fileTypes.push(opts.fileTypes.image.join(','));
+          } else if (tokens[0]==='Pdf') {
+            fileTypes.push(opts.fileTypes.pdf.join(','));
+            caption=opts.msgFile;
           } else if (tokens[0]==='Audio') {
             fileTypes.push(opts.fileTypes.audio.join(','));
             caption=opts.msgFile;
@@ -276,7 +279,7 @@ var checkSubmitInProgress = function () {
           origfilepath = div.settings.finalImageFolder + file.path;
           ext = file.path.split('.').pop().toLowerCase();
           existing = div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, uniqueId)
-              .replace(/\{filename\}/g, file.media_type.match(/^Audio:/) ? div.settings.msgFile : div.settings.msgPhoto)
+              .replace(/\{filename\}/g, file.media_type.match(/^(Audio|Pdf):/) ? div.settings.msgFile : div.settings.msgPhoto)
               .replace(/\{imagewidth\}/g, div.settings.imageWidth);       
           $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(existing);
           $('#' + uniqueId + ' .progress').remove();
@@ -328,7 +331,7 @@ var checkSubmitInProgress = function () {
       });
       
       // Add a box to indicate a file that is added to the list to upload, but not yet uploaded.
-        this.uploader.bind('FilesAdded', function(up, files) {
+      this.uploader.bind('FilesAdded', function(up, files) {
         $(div).parents('form').bind('submit', checkSubmitInProgress);
         // Find any files over the upload limit
         var existingCount = $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').children().length, ext;
@@ -387,11 +390,20 @@ var checkSubmitInProgress = function () {
         } else {
           filepath = div.settings.destinationFolder + file.name;
           uniqueId = $('.filelist .media-wrapper').length - $('.filelist .progress').length;
-          fileType = $.inArray(filepath.split('.').pop().toLowerCase(), div.settings.fileTypes.audio) === -1 ? 'Image' : 'Audio';
-          if (fileType==='Image') {
-            tmpl = div.settings.file_box_uploaded_imageTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
+          ext = filepath.split('.').pop().toLowerCase();
+          if ($.inArray(ext, div.settings.fileTypes.audio)>-1) {
+            fileType = 'Audio';
+          } else if ($.inArray(ext, div.settings.fileTypes.pdf)>-1) {
+            fileType = 'Pdf';
           } else {
+            fileType = 'Image';
+          }
+          if (fileType==='Audio') {
             tmpl = div.settings.file_box_uploaded_audioTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
+          } else if (fileType==='Pdf') {
+            tmpl = div.settings.file_box_uploaded_pdfTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
+          } else {
+            tmpl = div.settings.file_box_uploaded_imageTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
           }
           //If indiciaData.subTypes is supplied then the user is intending to use more than one photo control,
           //each control will have their own media sub-type.
@@ -530,6 +542,7 @@ jQuery.fn.uploader.defaults = {
   file_box_uploaded_linkTemplate : '<div>{embed}</div>',
   file_box_uploaded_imageTemplate : '<a class="fancybox" href="{origfilepath}"><img src="{thumbnailfilepath}" width="{imagewidth}"/></a>',
   file_box_uploaded_audioTemplate : '<audio controls src="{origfilepath}" type="audio/mpeg"/>',
+  file_box_uploaded_pdfTemplate : '<div><a href="{origfilepath}" target="_blank" class="file-icon pdf"></a></div>',
   msgUploadError : 'An error occurred uploading the file.',
   msgFileTooBig : 'The file is too big to upload. Please resize it then try again.',
   msgTooManyFiles : 'Only [0] files can be uploaded.',
@@ -539,6 +552,7 @@ jQuery.fn.uploader.defaults = {
   destinationFolder : '',
   runtimes : 'html5,flash,silverlight,html4',
   mediaTypes : ["Image:Local"],
-  fileTypes : {image : ["jpg", "gif", "png", "jpeg"], 
+  fileTypes : {image : ["jpg", "gif", "png", "jpeg"],
+               pdf : ["pdf"],
                audio : ["mp3", "wav"]}
 };

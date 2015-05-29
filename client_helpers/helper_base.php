@@ -389,6 +389,7 @@ class helper_base extends helper_config {
    */
   public static $upload_file_types = array(
     'image' => array('jpg', 'gif', 'png', 'jpeg'),
+    'pdf' => array('pdf'),
     'audio' => array('mp3', 'wav')
   );
 
@@ -400,6 +401,7 @@ class helper_base extends helper_config {
    */
   public static $upload_mime_types = array(
     'image' => array('jpeg', 'gif', 'png'),
+    'application' => array('pdf'),
     'audio' => array('mpeg', 'x-wav')
   );
 

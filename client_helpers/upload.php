@@ -149,10 +149,10 @@ if ($cleanupTargetDir) {
         unlink("{$filePath}.part");
         die('{"jsonrpc" : "2.0", "error" : {"code": 110, "message": "File type not known."}, "id" : "id"}'); 
       }
-      list($mediaType, $mimeSubType) = split('/', $mimeType);
+      list($mediaType, $mimeSubType) = explode('/', $mimeType);
       if (!in_array($mimeSubType, data_entry_helper::$upload_mime_types[$mediaType], true)) {
         unlink("{$filePath}.part");
-        die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "File type not allowed."}, "id" : "id"}'); 
+        die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "File type not allowed."}, "id" : "id"}');
       }
     }
 
