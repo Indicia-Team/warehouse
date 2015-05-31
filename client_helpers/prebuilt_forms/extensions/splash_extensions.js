@@ -89,6 +89,13 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
     indiciaData.clickMiddleOfPlot=false;
     //Some plot types use a free drawn polygon/Line as the plot.
     if (inArray($('#location\\:location_type_id option:selected').text(),indiciaData.freeDrawPlotTypeNames)) {     
+      //When use linear (free draw) plots, we have two extra boxes to fill if for the start and end grid references
+      //of the plot which are not otherwise saved because it is free draw.
+      //Applies to both "normal" and enhanced modes.
+      if (indiciaData.linearGridRef1 && indiciaData.linearGridRef2) {
+        $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef1+'\"]').show();
+        $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef2+'\"]').show();
+      }
       if (!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked')) {
         show_polygon_line_tool(true);
         //If using drawPolygon/Line in enhanced mode then we don't draw a plot automatically
@@ -113,6 +120,13 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
         indiciaData.mapdiv.settings.noPlotRotation=true;
       }
     } else {
+      //Don't display the two extra boxes for entering linear plot start and end grid references when not in linear (free draw) mode.
+      if (indiciaData.linearGridRef1 && indiciaData.linearGridRef2) {         
+        $('#locAttr\\:'+indiciaData.linearGridRef1).val('');
+        $('#locAttr\\:'+indiciaData.linearGridRef2).val('');
+        $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef1+'\"]').hide();
+        $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef2+'\"]').hide();
+      }
       //Otherwise we auto generate the plot rectangle/square, remove the drawPolygon/Line tool
       show_polygon_line_tool(false);
       //For some plot types the width and length used be be adjusted manually, fill in these fields if they exist. The engine of how this works is still present in case we need to go back.

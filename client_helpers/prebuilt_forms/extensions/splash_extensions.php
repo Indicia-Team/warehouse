@@ -615,6 +615,13 @@ class extension_splash_extensions {
       //in case the client changes their minds. These attributes simply get hidden on screen now, but we could revert to displaying them if needed.
       map_helper::$javascript .= "indiciaData.plotWidthAttrId='".$options['plotWidthAttrId']."';\n";
       map_helper::$javascript .= "indiciaData.plotLengthAttrId='".$options['plotLengthAttrId']."';\n";
+      //When use linear (free draw) plots, we have two extra boxes to fill if for the start and end grid references
+      //of the plot which are not otherwise saved because it is free draw.
+      //Applies to both "normal" and enhanced modes.
+      if (!empty($options['linearGridRef1'])&&!empty($options['linearGridRef2'])) {
+        map_helper::$javascript .= "indiciaData.linearGridRef1='".$options['linearGridRef1']."';\n";
+        map_helper::$javascript .= "indiciaData.linearGridRef2='".$options['linearGridRef2']."';\n";
+      }
       map_helper::$javascript .= "indiciaData.pssMode=true;\n";
     } else {
       map_helper::$javascript .= "indiciaData.noSizeWarning='Please select plot type from the drop-down.';\n";
