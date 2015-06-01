@@ -152,7 +152,7 @@ jQuery(document).ready(function($) {
                 .val(data[1]);
           }
         });
-        //addHabitatColToSpeciesGrid(addingHabitatIdx);
+        addHabitatColToSpeciesGrid(addingHabitatIdx);
         currentCount++;
       }
     }
@@ -161,6 +161,92 @@ jQuery(document).ready(function($) {
     }
     // set the column unit title colspan
     $('table#depth-limits,table#substratum,table#features').find('thead tr:last-child th:first-child').attr('colspan', targetCount);
+  }
+
+  /*
+
+   function addHabitatColToSpeciesGrid(habitatIdx) {
+   var attrSelect, ttlInput, valueId, value, name, possValues = ['S', 'A', 'C', 'F', 'O', 'R', 'P'],
+   options = '<option value=""></option>', selectValidationClass = habitatIdx===1 ? ' class="mustHaveSACFOR"' : '';
+   // add headers to the species grid for the new habitat. Also include the Drupal sticky table header.
+   $('table.sticky-header #species-grid-images-0,table.species-grid #species-grid-images-0').before('<th>Abundance (habitat ' + habitatIdx + ')</th>');
+   // Set up the new input cell for the clonable row. Note, we use the habitat index (currentCount) in the field name
+   // instead of the attribute ID, since this allows us to split the data into different habitats later. There is only
+   // one custom attribute here, but multiple habitat columns so this is necessary.
+   name = 'sc:species-grid--idx-::occAttr:' + habitatIdx;
+   $.each(possValues, function () {
+   options += '<option value="' + this + '">' + this + '</option>';
+   });
+   $('tr#species-grid-scClonableRow .scAddMediaCell').before('<td class="scOccAttrCell habitat-' + habitatIdx + '"><select name="' + name + '">' + options + '</select></td>');
+   // set up the new input cell for the current input row at the bottom of the grid plus existing rows.
+   $('table.species-grid tbody tr .scAddMediaCell').before('<td class="scOccAttrCell habitat-' + habitatIdx +
+   '"><select' + selectValidationClass + '>' + options + '</select></td>');
+   // loop through the rows to setup the names and values of the controls according to their grid position record data.
+   $.each($('table#species-grid tbody tr'), function (row) {
+   attrSelect = $(this).find('td.habitat-' + habitatIdx + ' select');
+   if (attrSelect) {
+   valueId = '';
+   value = '';
+   // look for existing data if doing a reload
+   if (typeof indiciaData.existingOccAttrData !== "undefined" && typeof indiciaData.existingOccAttrData[habitatIdx - 1] !== "undefined") {
+   ttlInput = $(this).find('input.scPresence:checked');
+   if (ttlInput && typeof indiciaData.existingOccAttrData[habitatIdx - 1][$(ttlInput).val()] !== "undefined") {
+   valueId = ':' + indiciaData.existingOccAttrData[habitatIdx - 1][$(ttlInput).val()][0];
+   value = indiciaData.existingOccAttrData[habitatIdx - 1][$(ttlInput).val()][1]
+   }
+   }
+   $(attrSelect).attr('name', 'sc:species-grid-' + row + '::occAttr:' + habitatIdx + valueId);
+   $(attrSelect).val(value);
+   }
+   });
+   }
+   */
+
+  /**
+   * @todo Naming and value of cloned selects for existing records
+   * @param habitatIdx
+   */
+  function addHabitatColToSpeciesGrid(habitatIdx) {
+    var habitatName = 'Habitat '+habitatIdx, tokens, select;
+    // Work out the name of the habitat. Could be set by the habitat's name control, or use a default.
+    $.each($('.habitat-name'), function() {
+      tokens = $(this).attr('name').split(':');
+      if (parseInt(tokens[tokens.length-1])===habitatIdx) {
+        if ($(this).val().trim()!=='') {
+          habitatName = $(this).val();
+        }
+        return false; // from $.each
+      }
+    })
+    // First habitat will already have the abundance control present, so don't need to create new column. Just label the
+    // header and set a class so that habitat name updates will be reflected in it.
+    if (habitatIdx===1) {
+      var headers = $('table.sticky-header #species-grid-images-0,table.species-grid #species-grid-images-0').prev();
+      headers.html(habitatName);
+      headers.addClass('habitat-title-' + habitatIdx);
+    }
+    else {
+      // add headers to the species grid for the new habitat. Also include the Drupal sticky table header.
+      $('table.sticky-header #species-grid-images-0,table.species-grid #species-grid-images-0').before(
+        '<th class="habitat-title-' + habitatIdx + '">'+habitatName+'</th>');
+    }
+    var processRow = function(row, idx) {
+      if (habitatIdx===1) {
+        select = $(row).find('.scSACFORPCell select');
+      }
+      else {
+        select = $(row).find('.scSACFORPCell select').clone();
+        $(row).find('.scAddMediaCell').before($('<td class="scOccAttrCell ui-widget-content scSACFORPCell"></td>').append(select));
+      }
+      $(select).attr('id', 'species-grid-'+idx+':habitat-'+habitatIdx);
+      $(select).attr('name', 'species-grid-'+idx+':habitat-'+habitatIdx);
+      $(select).val('');
+    }
+    // now process the data rows - either modifying the existing attribute control (habitat 1) or inserting new habitat cells
+    $.each($('table#species-grid tbody tr'), function(idx) {
+      processRow(this, idx);
+    });
+    processRow($('#species-grid-scClonableRow'), '-idx-');
   }
 
   $('#add-habitat').click(function() {
@@ -177,7 +263,7 @@ jQuery(document).ready(function($) {
       $('.habitat-title-' + habitatIdx).html($(e.currentTarget).val().trim());
     }
     else {
-      $('.habitat-title-' + habitatIdx).html(habitatIdx);
+      $('.habitat-title-' + habitatIdx).html('Habitat ' + habitatIdx);
     }
   });
 
@@ -318,6 +404,20 @@ jQuery(document).ready(function($) {
     div.map.setLayerIndex(seanames, 1);
   }
 
+  // Unless editing, we don't need the existing records grid
+  if ($('#edit-species-grid tbody tr').length===0) {
+    $('#edit-species').hide();
+    $('#create-species h3').hide();
+  }
+  // The edit grid does not need the row at the bottom for adding species.
+  $('#edit-species-grid .scClonableRow').hide();
+  // The edit grid also needs a column for indicating the habitat.
+  $('#edit-species-grid thead th:first-child').after('<th>Habitat</th>');
+  var habitatIdx;
+  $.each($('#edit-species-grid tbody tr'), function() {
+    habitatIdx = parseInt($(this).find('input.scSample').val()) + 1;
+    $(this).find('.scTaxonCell').after('<td class="habitat-title-' + habitatIdx + '">Habitat ' + habitatIdx + '</td>');
+  });
 
   // enable jQuery UI tooltips
   $(document).tooltip();
