@@ -3333,7 +3333,7 @@ function replot(){
   if(type == 'raw') opts.axes.xaxis.ticks = [".implode(',',$rawTicks)."];
   // copy series from checkboxes.
   jQuery('[name=".$options['chartID']."-series]').each(function(idx, elem){
-      opts.series[idx].show = (jQuery(elem).filter('[checked]').length > 0);
+      opts.series[idx].show = (jQuery(elem).filter(':checked').length > 0);
   });
   for(var i=0; i<seriesData[type].length; i++)
     if(opts.series[i].show)
@@ -3384,7 +3384,7 @@ function replot(){
 // above done due to need to ensure get around field caching on browser refresh.
 setSeriesURLParam = function(){
   var activeSeries = [],
-    active = jQuery('[name=".$options['chartID']."-series]').filter('[checked]'),
+    active = jQuery('[name=".$options['chartID']."-series]').filter(':checked'),
     total = jQuery('[name=".$options['chartID']."-series]');
   if(active.length == total.length) {
     pageURI = rebuild_page_url(pageURI, 'outputSeries', '');
@@ -3399,7 +3399,7 @@ jQuery('[name=".$options['chartID']."-series]').change(function(){
   $.each(seriesData.ids, function(idx, elem){
     if(seriesID == elem) index = idx;
   });
-  if(jQuery(this).filter('[checked]').length){
+  if(jQuery(this).filter(':checked').length){
     if(typeof plots['raw'] != 'undefined') plots['raw'].series[index].show = true;
     if(typeof plots['summary'] != 'undefined') plots['summary'].series[index].show = true;
     if(typeof plots['estimates'] != 'undefined') plots['estimates'].series[index].show = true;
@@ -4427,7 +4427,7 @@ function replot(type){
 "  var opts = {".implode(",\n", $opts)."};
   // copy series from checkboxes.
   $('#".$options['chartID']."-'+type).parent().find('[name=".$options['chartID']."-series]').each(function(idx, elem){
-      opts.series[idx].show = (jQuery(elem).filter('[checked]').length > 0);
+      opts.series[idx].show = (jQuery(elem).filter(':checked').length > 0);
   });
   for(var i=0; i<seriesData[type].length; i++)
     if(opts.series[i].show)
@@ -4437,7 +4437,7 @@ function replot(type){
   opts.axes.yaxis.tickInterval = Math.floor(max/15); // number of ticks - too many takes too long to display
   if(!opts.axes.yaxis.tickInterval) opts.axes.yaxis.tickInterval=1;
   $('.legend-colours').remove();
-  if($('#".$options['chartID']."-'+type).parent().find('[name=".$options['chartID']."-series]').filter('[checked]').length == 0) return;
+  if($('#".$options['chartID']."-'+type).parent().find('[name=".$options['chartID']."-series]').filter(':checked').length == 0) return;
   var plot = $.jqplot('".$options['chartID']."-'+type, seriesData[type], opts);
   for(var i=0; i<plot.series.length; i++){
   	if(plot.series[i].show==true) {
