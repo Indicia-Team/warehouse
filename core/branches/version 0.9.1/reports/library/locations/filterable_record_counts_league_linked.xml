@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Record counts league using standard params for linked locations" description="A filtered league table of record counts by location. Requires the spatial index builder.">
+  <query website_filter_field="o.website_id" standard_params="true">
+    SELECT #columns#
+    FROM locations l1     
+    JOIN (
+    SELECT l.id, count(o.id) as count
+    FROM locations l
+    LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
+    JOIN cache_occurrences o ON o.location_id=l.id
+    #agreements_join#
+    #joins#
+    AND #sharing_filter# 
+    #filters#    
+    WHERE l.deleted=false
+    AND l.location_type_id=#location_type_id#
+    AND (l.public=true or lw.id IS NOT NULL)
+    AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)
+    GROUP BY l.id, l.name
+    ) as l2 ON l2.id=l1.id
+  </query>
+  <order_bys>
+    <order_by>count DESC</order_by>
+  </order_bys>
+  <params>    
+    <param name="location_type_id" display="Location Type" description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
+        population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id="/>
+    </params>
+  <columns>
+        <column name="id" visible="false" sql="l1.id" />
+        <column name="name" display="Site Name" sql="l1.name" />
+        <column name="value" display="No. of Species"  sql="count"/>
+  </columns>
+</report>  
