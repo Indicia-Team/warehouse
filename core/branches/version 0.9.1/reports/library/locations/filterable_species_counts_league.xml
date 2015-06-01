@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Record counts league using standard params" description="A filtered league table of record counts by location. Requires the spatial index builder.">
+<report title="Species counts league using standard params" description="A filtered league table of species counts by location. Requires the spatial index builder.">
   <query website_filter_field="o.website_id" standard_params="true">
     SELECT #columns#
     FROM locations l1 
     JOIN (
-    SELECT l.id, count(o.id) as count
+    SELECT l.id, count(distinct o.taxa_taxon_list_external_key) as count
     FROM locations l
     LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
     JOIN (index_locations_samples ils 
@@ -14,7 +14,6 @@
       #joins#
       AND #sharing_filter# 
       #filters#
-      
     ) ON ils.location_id=l.id    
     WHERE l.deleted=false
     AND l.location_type_id=#location_type_id#
