@@ -3011,7 +3011,7 @@ $('#$escaped').change(function(e) {
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'],
         $options['mediaTypes'], $options['reloadExtraParams'], $subSampleRows, $options['speciesControlToUseSubSamples'],
         (isset($options['subSampleSampleMethodID']) ? $options['subSampleSampleMethodID'] : ''));
-    // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.  
+    // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
     $taxalist = self::get_species_checklist_taxa_list($options, $taxonRows);
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
@@ -3041,7 +3041,7 @@ $('#$escaped').change(function(e) {
       // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrControlsExisting, $occAttrs);
       $beforegrid = '<span style="display: none;">Step 1</span>'."\n";
-      if (isset($options['lookupListId'])) {
+      if (!empty($options['lookupListId'])) {
         $beforegrid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
       $onlyImages = true;
@@ -3108,7 +3108,7 @@ $('#$escaped').change(function(e) {
         // If the taxon label template is PHP, evaluate it.
         if ($options['PHPtaxonLabel']) $firstCell = eval($firstCell);
         // Now create the table cell to contain this.
-        $colspan = isset($options['lookupListId']) && $options['rowInclusionCheck']!='alwaysRemovable' ? ' colspan="2"' : '';
+        $colspan = !empty($options['lookupListId']) && $options['rowInclusionCheck']!='alwaysRemovable' ? ' colspan="2"' : '';
         $row = '';
         // Add a delete button if the user can remove rows, add an edit button if the user has the edit option set, add a page link if user has that option set.
         if ($options['rowInclusionCheck']=='alwaysRemovable') {
@@ -3355,7 +3355,7 @@ $('#$escaped').change(function(e) {
       self::add_resource('addrowtogrid');
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
-      if (isset($options['lookupListId'])) {
+      if (!empty($options['lookupListId'])) {
         // Javascript to add further rows to the grid
         if (isset($indicia_templates['format_species_autocomplete_fn'])) {
           self::$javascript .= 'formatter = '.$indicia_templates['format_species_autocomplete_fn'];
@@ -3970,7 +3970,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     if ($options['header']) {
       $r .= "<thead class=\"ui-widget-header\"><tr>";
       for ($i=0; $i<$options['columns']; $i++) {
-        $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
+        $colspan = !empty($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
         $speciesColTitle = empty($options['speciesColTitle']) ? lang::get('species_checklist.species') : lang::get($options['speciesColTitle']);
         if ($options['userControlsTaxonFilter'] && !empty($options['lookupListId'])) {
           global $indicia_templates;
@@ -4131,7 +4131,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
    */
   public static function get_species_checklist_options($options) {
     // validate some options
-    if (!isset($options['listId']) && !isset($options['lookupListId']))
+    if (empty($options['listId']) && empty($options['lookupListId']))
       throw new Exception('Either the listId or lookupListId parameters must be provided for a species checklist.');
     // CheckBoxCol support is for backwards compatibility
     if (isset($options['checkboxCol']) && $options['checkboxCol']==false) {
@@ -4292,7 +4292,7 @@ $('#".$options['id']." .species-filter').click(function(evt) {
     // group in a multi-column grid, or zero if the grid's columns property is set to default of 1. 
     // Because the clonable row always goes in the first col, this can be always left to 0.
     $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow">';
-    $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
+    $colspan = !empty($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
     $r .= str_replace(array('{colspan}','{tableId}','{idx}','{editClass}'), array($colspan, $options['id'], 0, ''), $indicia_templates['taxon_label_cell']);
     $fieldname = "sc:$options[id]--idx-:";
     if ($options['subSpeciesColumn']) {
