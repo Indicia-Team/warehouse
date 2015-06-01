@@ -23,4 +23,8 @@
  
  
 echo $grid;
+$systemTableEntries = $this->db->select('*')->from('system')->where('name','summary_builder')->get()->as_array(true);
+foreach($systemTableEntries as $systemTableEntry) {
+	echo 'Summary Builder module version : '.$systemTableEntry->version.'<br>Last scheduled tasks ran : '.$systemTableEntry->last_scheduled_task_check.'<span style="display:none;">ID '.$systemTableEntry->id.", last script : ".$systemTableEntry->last_run_script."</span><br>";
+}
 ?>

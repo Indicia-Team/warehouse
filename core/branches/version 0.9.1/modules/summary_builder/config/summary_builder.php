@@ -40,7 +40,6 @@ $config['get_missed_items_query'] = "
 	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.deleted = 'f'
 	LEFT JOIN summary_occurrences so ON so.survey_id = #survey_id# AND so.taxa_taxon_list_id = o.taxa_taxon_list_id AND so.location_id = p.location_id AND so.user_id = p.created_by_id AND p.date_start <= so.date_end AND p.date_start >= so.date_start
     WHERE so.survey_id IS NULL AND o.deleted = 'f'
-	ORDER BY o.id ASC
 	LIMIT #limit#";
 
 $config['get_YearTaxonLocationUser_query'] = "
