@@ -623,9 +623,8 @@ class extension_splash_extensions {
         map_helper::$javascript .= "indiciaData.linearGridRef2='".$options['linearGridRef2']."';\n";
       }
       map_helper::$javascript .= "indiciaData.pssMode=true;\n";
-    } else {
-      map_helper::$javascript .= "indiciaData.noSizeWarning='Please select plot type from the drop-down.';\n";
     }
+    map_helper::$javascript .= "indiciaData.noSizeWarning='Please select plot type from the drop-down.';\n";
     //In edit mode, we need to manually load the plot geom
     map_helper::$javascript .= "$('#imp-boundary-geom').val($('#imp-geom').val());\n";
     //On NPMS/PSS system there is a checkbox for enhanced mode (when this isn't selected, plots are not configurable and default to a 3 x 3 square.
@@ -680,7 +679,7 @@ class extension_splash_extensions {
     data_entry_helper::$javascript .= '
     $("#save-button").click(function() { 
       if (!$("#imp-boundary-geom").val()) {
-        alert("Please select a plot type and create a plot before continuing."); 
+        alert("Please select a plot type and then select a plot position on the map before continuing. If you are using a Linear plot in Enhanced Mode, you will also need to make sure the plot is manually drawn onto the map."); 
         return false; 
       } else { 
         $("#entry_form").submit(); 
