@@ -1547,7 +1547,8 @@ class iform_dynamic_sample_occurrence extends iform_dynamic {
     if ($groups=hostsite_get_user_field('taxon_groups')) {
       $species_ctrl_opts['usersPreferredGroups'] = unserialize($groups);
     }
-    if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
+    if ($args['extra_list_id'] && !isset($options['lookupListId']))
+      $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
     //We only do the work to setup the filter if the user has specified a filter in the box
     if (!empty($args['taxon_filter_field']) && (!empty($args['taxon_filter']))) {
       $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field'];
