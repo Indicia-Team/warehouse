@@ -55,10 +55,11 @@ class extension_event_reports {
       $type='species';
     else
       $type='occurrence';
+    $subtype = empty($options['linked']) || $options['linked'] === false ? '' : '_linked';
     $reportOptions = array_merge(
       iform_report_get_report_options($args, $auth['read']),
       array(
-        'dataSource' => "library/locations/filterable_{$type}_counts_mappable",
+        'dataSource' => "library/locations/filterable_{$type}_counts_mappable{$subtype}",
         'featureDoubleOutlineColour' => '#f7f7f7',
         'rowId' => 'id',
         'caching' => true,
@@ -268,12 +269,14 @@ class extension_event_reports {
   
   public static function species_by_location_league($auth, $args, $tabalias, $options, $path) {
     $label = empty($options['label']) ? 'Location' : $options['label'];
-    return self::league_table($auth, $args, $options, 'locations', 'filterable_species_counts_league', $label);
+    $subtype = empty($options['linked']) || $options['linked'] === false ? '' : '_linked';
+    return self::league_table($auth, $args, $options, 'locations', "filterable_species_counts_league{$subtype}", $label);
   }
   
   public static function records_by_location_league($auth, $args, $tabalias, $options, $path) {
     $label = empty($options['label']) ? 'Location' : $options['label'];
-    return self::league_table($auth, $args, $options, 'locations', 'filterable_record_counts_league', $label, 'Records');
+    $subtype = empty($options['linked']) || $options['linked'] === false ? '' : '_linked';
+    return self::league_table($auth, $args, $options, 'locations', "filterable_record_counts_league{$subtype}", $label, 'Records');
   }
   
   /**
