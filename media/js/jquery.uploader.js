@@ -295,9 +295,11 @@ var checkSubmitInProgress = function () {
               thumbnailfilepath = div.settings.finalImageFolderThumbs + file.path;
             }
           }
-          if ($.inArray(ext, div.settings.fileTypes.audio) === -1) {
+          if ($.inArray(ext, div.settings.fileTypes.audio) === -1 && $.inArray(ext, div.settings.fileTypes.pdf) === -1) {
             tmpl = div.settings.file_box_uploaded_imageTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
-          } else {
+          } else if ($.inArray(ext, div.settings.fileTypes.audio) === -1 && $.inArray(ext, div.settings.fileTypes.image) === -1) {
+            tmpl = div.settings.file_box_uploaded_pdfTemplate + div.settings.file_box_uploaded_extra_fieldsTemplate;
+          } else {    
             tmpl = div.settings.file_box_uploaded_audioTemplate+div.settings.file_box_uploaded_extra_fieldsTemplate;
           }
           file.caption = file.caption===null ? '' : file.caption;
