@@ -5,6 +5,27 @@ class Indicia
     public static function init()
     {
       set_error_handler(array('Indicia', 'indicia_error_handler'));
+      Event::add('system.log', array('Indicia', 'log_rotate'));
+    }
+
+    /**
+     * Implements the deletion of old logs if the indicia.log_rotate config item exists
+     * @throws \Kohana_Exception
+     */
+    public static function log_rotate() {
+      $rotate_days = Kohana::config('indicia.log_rotate', FALSE, FALSE);
+      if ($rotate_days) {
+        $filename = Kohana::log_directory() . date('Y-m-d') . '.log' . EXT;
+        if (!is_file($filename)) {
+          // writing the first message today, so we can go back and delete log files over a certain age
+          $files = glob(Kohana::log_directory()."*");
+          $now   = time();
+          foreach ($files as $file)
+            if (is_file($file) && $now - filemtime($file) >= 60*60*24*$rotate_days) {
+              unlink($file);
+            }
+        }
+      }
     }
 
     /**

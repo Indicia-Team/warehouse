@@ -41,6 +41,12 @@ $config['private_key'] = 'Indicia';
 $config['nonce_life'] = 7200;
 
 /**
+ * Uncomment this line to implement deletion of old log files. The value is the maximum age in days
+ * that a file will be kept for.
+ */
+//$config['log_rotate'] = 60;
+
+/**
  * Maximum size of an upload.
  */
 $config['maxUploadSize'] = '1M';
