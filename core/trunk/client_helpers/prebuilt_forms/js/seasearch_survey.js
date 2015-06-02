@@ -405,7 +405,7 @@ jQuery(document).ready(function($) {
   }
 
   // Unless editing, we don't need the existing records grid
-  if ($('#edit-species-grid tbody tr').length===0) {
+  if ($('#edit-species-grid tbody tr').not('.scClonableRow').length===0) {
     $('#edit-species').hide();
     $('#create-species h3').hide();
   }
