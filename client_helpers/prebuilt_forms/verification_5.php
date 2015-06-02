@@ -976,13 +976,14 @@ idlist=';
   }
 
   private static function get_comments($readAuth, $includeAddNew = true) {
-    iform_load_helpers(array('data_entry_helper'));
-    $comments = data_entry_helper::get_population_data(array(
-      'table' => 'occurrence_comment',
-      'extraParams' => $readAuth + array('occurrence_id'=>$_GET['occurrence_id'], 'sortdir'=>'DESC', 'orderby'=>'updated_on'),
-      'nocache'=>true,
-      'sharing'=>'verification'
-    ));
+    iform_load_helpers(array('report_helper'));
+    $options = array(
+      'dataSource' => 'reports_for_prebuilt_forms/verification_5/occurrence_comments_and_dets',
+      'readAuth' => $readAuth,
+      'sharing' => 'verification',
+      'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'])
+    );
+    $comments = report_helper::get_report_data($options);
     $imgPath = empty(data_entry_helper::$images_path) ? data_entry_helper::relative_client_helper_path()."../media/images/" : data_entry_helper::$images_path;
     $r = '';
     if (count($comments)===0)
@@ -996,7 +997,7 @@ idlist=';
         $hint = lang::get('This is a query');
         $r .= "<img width=\"12\" height=\"12\" src=\"{$imgPath}nuvola/dubious-16px.png\" title=\"$hint\" alt=\"$hint\"/>";
       }
-      $r .= '<strong>'.(empty($comment['person_name']) ? $comment['username'] : $comment['person_name']).'</strong> ';
+      $r .= "<strong>$comment[person_name]</strong> ";
       $commentTime = strtotime($comment['updated_on']);
       // Output the comment time. Skip if in future (i.e. server/client date settings don't match)
       if ($commentTime < time())
