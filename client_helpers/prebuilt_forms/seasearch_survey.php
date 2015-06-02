@@ -526,14 +526,19 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
     foreach (array_keys($habitatSamples) as $habitatId)
       $habitatOccurrences[$habitatId] = array();
     foreach ($occurrences as $uniqueId => $occurrence) {
-      // search the posted data for a habitat SACFOR value for the occurrence row
-      foreach (array_keys($habitatSamples) as $habitatId) {
-        $habitatIdx = str_replace('habitat', '', $habitatId);
-        if (!empty($values["$uniqueId:habitat-$habitatIdx"])) {
-          $thisOccurrence = array_merge($occurrence);
-          $thisOccurrence['model']['fields'][$attributes[0]['fieldname']] = array('value'=>$values["$uniqueId:habitat-$habitatIdx"]);
-          $habitatOccurrences[$habitatId][] = $thisOccurrence;
-          // @todo Ensure that all the existing record IDs are correct
+      // for existing occurrences, they are already linked to a sample via the SampleIDX field.
+      if (!empty($occurrence['model']['fields']['sampleIDX'])) {
+        $habitatOccurrences['habitat' . ($occurrence['model']['fields']['sampleIDX']['value']+1)][] = $occurrence;
+      }
+      else {
+        // search the posted data for a habitat SACFOR value for the occurrence row
+        foreach (array_keys($habitatSamples) as $habitatId) {
+          $habitatIdx = str_replace('habitat', '', $habitatId);
+          if (!empty($values["$uniqueId:habitat-$habitatIdx"])) {
+            $thisOccurrence = array_merge($occurrence);
+            $thisOccurrence['model']['fields'][$attributes[0]['fieldname']] = array('value' => $values["$uniqueId:habitat-$habitatIdx"]);
+            $habitatOccurrences[$habitatId][] = $thisOccurrence;
+          }
         }
       }
 
@@ -564,6 +569,7 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
         'model' => $habitatSubmission
       );
     }
+    drupal_set_message('<pre>' . var_export($buddyPairSubmission, true) . '</pre>');
     return $buddyPairSubmission;
   }
 
