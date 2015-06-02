@@ -1,0 +1,56 @@
+<report
+    title="Comments and determinations merged for a record"
+    description="A single log of determinations and comments for a record"
+>
+  <query website_filter_field="o.website_id">
+      select
+        'comment' as type,
+        oc.updated_on,
+        oc.comment,
+        oc.record_status,
+        oc.record_substatus,
+        oc.query,
+        coalesce(p.surname || coalesce(', ' || p.first_name, ''), oc.person_name) as person_name
+      from occurrence_comments oc
+      left join users u on u.id=oc.created_by_id and u.deleted=false and u.id&lt;&gt;1
+      left join people p on p.id=u.person_id and p.deleted=false
+      where oc.deleted=false
+      and oc.occurrence_id=#occurrence_id#
+      union
+      select
+        'determination' as type,
+        d.updated_on,
+        'Record was determined as ' || ttl.preferred_taxon as comment,
+        null::character as record_status,
+        null::smallint as record_substatus,
+        false as query,
+        p.surname || coalesce(', ' || p.first_name, '') as person_name
+      from determinations d
+      join users u on u.id=d.created_by_id and u.deleted=false
+      join people p on p.id=u.person_id and p.deleted=false
+      join cache_taxa_taxon_lists ttl on ttl.id=d.taxa_taxon_list_id
+      where d.deleted=false
+      and d.occurrence_id=#occurrence_id#
+      union
+      -- if there are any determinations, we need the current view of the record
+      select distinct
+        'current name' as type,
+        o.updated_on,
+        'Record last edited as ' || ttl.preferred_taxon as comment,
+        null::character as record_status,
+        null::smallint as record_substatus,
+        false as query,
+        p.surname || coalesce(', ' || p.first_name, '') as person_name
+      from occurrences o
+      join cache_taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
+      join determinations d on d.occurrence_id=o.id and d.deleted=false
+      join users u on u.id=o.updated_by_id and u.deleted=false
+      join people p on p.id=u.person_id and p.deleted=false
+      where o.deleted=false
+      and o.id=#occurrence_id#
+      order by updated_on desc
+  </query>
+  <params>
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+  </params>
+</report>
