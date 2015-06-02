@@ -1,0 +1,30 @@
+<report
+        title="List of sample media files for a sample"
+        description="Returns details of all media within a sample or parent sample."
+        >
+    <query website_filter_field="su.website_id">
+        SELECT #columns#
+        FROM samples s
+        JOIN sample_media sm on sm.sample_id=s.id and sm.deleted=false
+        JOIN surveys su ON su.id=s.survey_id AND su.deleted=false
+        JOIN cache_termlists_terms t on t.id=sm.media_type_id
+        WHERE s.deleted=false
+        #filters#
+    </query>
+    <params>
+        <param name='sample_id' display='Sample ID' datatype='integer' description='ID of the sample to load media for' default="">
+            <where>s.id=#sample_id#</where>
+        </param>
+        <param name='parent_sample_id' display='Parent sample ID' datatype='integer' description='ID of the parent sample to load media for' default="">
+            <where>s.parent_id=#parent_sample_id#</where>
+        </param>
+    </params>
+    <columns>
+        <column name='id' display='Sample Media ID' sql='sm.id' datatype='integer'/>
+        <column name='sample_id' display='Sample ID' sql='s.id' datatype='integer'/>
+        <column name="caption" display="Caption" sql="sm.caption" datatype="text" />
+        <column name="path" display="Path" sql="sm.path" datatype="text" />
+        <column name="media_type_id" display="Media type ID" sql="sm.media_type_id" datatype="integer" />
+        <column name="media_type" display="Media type" sql="t.term" datatype="text" />
+    </columns>
+</report>
