@@ -78,6 +78,18 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
         var $row = $('#row' + data.data.Record[0].value);
         rowRequest = null;
         currRec = data;
+        if (currRec.extra.created_by_id==="1") {
+          $('.trust-tool').hide();
+        } else {
+          $('.trust-tool').show();
+        }
+        if ($row.find('.row-belongs-to-site').val()==='t') {
+          $row.find('.verify-tools .edit-record').show();
+          $('#btn-edit-record').show();
+        } else {
+          $row.find('.verify-tools .edit-record').hide();
+          $('#btn-edit-record').hide();
+        }
         $('#instructions').hide();
         $('#record-details-content').show();
         if ($row.parents('tbody').length !== 0) {
