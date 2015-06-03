@@ -97,6 +97,15 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           'type'=>'string',
           'group'=>'Other Settings'
         ),  
+        array(
+          'name'=>'gps_sync_warning',
+          'caption'=>'GPS Sync Warning',
+          'description'=>'Warning displayed to the user if they try to upload a GPX file, it should warn them that
+                the time needs to be synchronised between the camera and the GPS device otherwise the automatic GPS selection for images will fail.
+                If this option is not filled in then the warning will not be displayed.',
+          'type'=>'textarea',
+          'group'=>'Other Settings'
+        ), 
         //TODO could put in a default form structure
       )
     );
@@ -595,10 +604,21 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     data_entry_helper::$javascript .= "
     indiciaData.reloadtabs=[0,4,5];
     indiciaData.occTabIdx=6;\n";
-    //When the screen loads, if there is a "In Progress" attribute (which there should be) and it is not set explicitely as not
+    if (!empty($args['gps_sync_warning']))
+      data_entry_helper::$javascript .= "indiciaData.gpsSyncWarning=\"".$args['gps_sync_warning']."\";";
+    //If option is supplied, warn the user that the GPS device and camera need to be synchronised before they upload GPX file.
+    //Also when the screen loads, if there is a "In Progress" attribute (which there should be) and it is not set explicitely as not
     //In Progress, then it must be in progress, so set the attribute to 1.
     data_entry_helper::$javascript.="
     $(window).load(function () {
+      if (indiciaData.gpsSyncWarning) {
+        $('#file_upload').click(function() {
+            var r = confirm(indiciaData.gpsSyncWarning);
+            if (r != true) {
+              return false;
+            }
+        });
+      }
       if ($(indiciaData.inProgressAttrSelector).length && $(indiciaData.inProgressAttrSelector).val()!=='0') {
         $(indiciaData.inProgressAttrSelector).val(1);
       }
