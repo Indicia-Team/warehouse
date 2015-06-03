@@ -212,7 +212,7 @@ jQuery(window).load(function($) {
   //is reloaded correctly in edit mode (like if the user clicks back in the wizard, or reloads the page manually.)
   disableTabContents = function () {
     if (current>2) {
-      $('#tab-otherdiveinformation').remove();
+      $('#other-dive-info-not-date').remove();
     }
 
     if (current>3) {

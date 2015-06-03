@@ -717,6 +717,11 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         if (file_exists($uploadpath.$mediaItem['path'])) {
           $exif = exif_read_data($uploadpath.$mediaItem['path'], 0, true);
           $media[$idx]['exif'] = json_encode($exif);
+          //If we are saving the sample without a date (e.g. on first tab) then default to the date from the first photo
+          if (!empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) {
+            $modelWrapped['fields']['date']['value']=date('d/m/y',strtotime($exif['EXIF']['DateTimeOriginal']));
+            $values['sample:date']=date('d/m/y',strtotime($exif['EXIF']['DateTimeOriginal']));
+          }
         }
       }
     }
