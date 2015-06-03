@@ -437,6 +437,12 @@ idlist=';
         'rowClass' => 'zero-{zero_abundance}'
       )
     );
+    $opts['columns'][] = array(
+      'display'=>'',
+      'template' => '<div class="nowrap">'.
+          '<input type="hidden" class="row-input-form" value="{rootFolder}{input_form}"/><input type="hidden" class="row-belongs-to-site" value="{belongs_to_site}"/>'.
+          '<input type="checkbox" class="check-row no-select" style="display: none" value="{occurrence_id}" /></div>'
+    );
     $params = self::report_filter_panel($args, $auth['read']);
     $opts['zoomMapToOutput']=false;
     $grid = report_helper::report_grid($opts);
