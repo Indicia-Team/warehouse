@@ -170,7 +170,8 @@ HTML;
       '' => array(
         'params' => array(
           'proj_id' => array(
-            'datatype' => 'integer'
+            'datatype' => 'text',
+            'required' => TRUE
           ),
           'page' => array(
             'datatype' => 'integer'
@@ -179,7 +180,8 @@ HTML;
             'datatype' => 'integer'
           ),
           'edited_date_from' => array(
-            'datatype' => 'date'
+            'datatype' => 'date',
+            'required' => TRUE
           ),
           'edited_date_to' => array(
             'datatype' => 'date'
@@ -189,7 +191,7 @@ HTML;
       '{taxon-observation ID}' => array(
         'params' => array(
           'proj_id' => array(
-            'datatype' => 'integer'
+            'datatype' => 'text'
           )
         )
       )
@@ -198,14 +200,14 @@ HTML;
       '' => array(
         'params' => array(
           'proj_id' => array(
-            'datatype' => 'integer'
+            'datatype' => 'text'
           )
         )
       ),
       '{annotation ID}' => array(
         'params' => array(
           'proj_id' => array(
-            'datatype' => 'integer'
+            'datatype' => 'text'
           ),
           'page' => array(
             'datatype' => 'integer'
@@ -252,6 +254,7 @@ HTML;
           $resourceDef['params'] = array_merge(array(
             'system_id' => array(
               'datatype' => 'integer',
+              'required' => TRUE,
               'help' => 'Unique identifier for the client system making the webservice call'
             )
           ), $resourceDef['params']);
@@ -262,6 +265,8 @@ HTML;
             echo "<tr><th scope=\"row\">$name</th>";
             echo "<td>$paramDef[datatype]</td>";
             $help = kohana::lang("rest_api.$resource.$name");
+            if (!empty($paramDef['required']))
+              $help .= ' <strong>' . kohana::lang('Required.') .'</strong>';
             echo "<td>$help</td>";
             echo "</tr>";
           }
@@ -305,15 +310,14 @@ HTML;
       
         $requestForId = null;
         if (count($arguments)>1) {
-          throw new exception('Incorrect number of arguments');
+          $this->fail('Bad request', 400, 'Incorrect number of arguments');
           // @todo: http response
         } elseif (count($arguments)===1) {
           // we only allow a single argument to request a single resource by ID
           if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
             $requestForId = $arguments[0];
           } else {
-            throw new exception('Invalid ID requested');
-            // @todo: http response
+            $this->fail('Bad request', 400, 'Invalid ID requested');
           }
         }
         // apart from requests for a project, we always want a project ID
@@ -323,6 +327,7 @@ HTML;
         if ($requestForId)
           $methodName .= '_id';
         $this->resourceName = $name;
+        $this->validateParameters($resourceName, strtolower($this->method), $requestForId);
         call_user_func(array($this, $methodName), $requestForId);
       }
     } else {
@@ -462,6 +467,42 @@ HTML;
       unset($record['taxon_observation_id']);
     }
     $this->succeed($this->list_response_structure($records, 'annotations'));
+  }
+  
+  /**
+   * Validates that the request parameters provided fullful the requirements of the method being called.
+   * @param string $resourceName
+   * @param string $method Method name, e.g. GET or POST. 
+   */
+  private function validateParameters($resourceName, $method, $requestForId) {
+    $info = $this->http_methods[$resourceName][$method];
+    // if requesting a list, then use the entry keyed '', else use the named entry
+    if ($requestForId) {
+      foreach ($info as $key => $method) {
+        if ($key !== '') {
+          $thisMethod = $method;
+          break;
+        }
+      }
+    } else {
+      $thisMethod = $info[''];
+    }
+    // Check through the known list of parameters to ensure data formats are correct and required parameters are provided.
+    foreach ($thisMethod['params'] as $paramName => $paramDef) {
+      if (!empty($paramDef['required']) && empty($this->request[$paramName])) {
+        $this->fail('Bad request', 400, "Missing $paramName parameter");
+      }
+      if (!empty($this->request[$paramName])) {
+        if ($paramDef['datatype']==='integer' && !preg_match('/^\d+$/', trim($this->request[$paramName]))) {
+          $this->fail('Bad request', 400, "Invalid format for $paramName parameter");
+        }
+        if ($paramDef['datatype']==='date') {
+          $dt = DateTime::createFromFormat("Y-m-d", trim($this->request[$paramName]));
+          if ($dt === false || array_sum($dt->getLastErrors()))
+            $this->fail('Bad request', 400, "Invalid date for $paramName parameter");
+        }
+      }
+    }
   }
   
   /**
