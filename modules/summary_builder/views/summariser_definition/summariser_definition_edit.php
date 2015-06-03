@@ -48,6 +48,19 @@ echo data_entry_helper::text_input(array(
 		'default'=>html::initial_value($other_data, 'survey_title'),
 		'disabled' => 'disabled'
 ));
+echo data_entry_helper::checkbox(array(
+		'label'=>'Check for missing',
+		'fieldname'=>'summariser_definition:check_for_missing',
+		'default'=>html::initial_value($values, 'summariser_definition:check_for_missing'),
+		'helpText' => 'Enable checks for missed data - this is data entered before the last scheduled task run, but which is not yet represented in the summary table. This check has a performance impact. Needs to be selected during any initial catch up period.',
+));
+echo data_entry_helper::text_input(array(
+		'label' => 'Max Number of Records',
+		'fieldname' => 'summariser_definition:max_records_per_cycle',
+		'default' => html::initial_value($values, 'summariser_definition:max_records_per_cycle'),
+		'helpText' => 'The maximum number of occurrence records processed for this survey per invocation of the scheduled task.',
+		'validation' => array('required','integer','minimum[1]')
+));
 ?>
 <p>Only one period option (weekly) available at the moment.</p>
 <?php 

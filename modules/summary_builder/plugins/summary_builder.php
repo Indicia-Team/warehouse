@@ -35,7 +35,7 @@ function summary_builder_scheduled_task($last_run_date, $db) {
     $last_run_date=date('Y-m-d', time()-60*60*24);
   try {
   	// unlike cache builder, summary has a single table.
-    summary_builder::populate_summary_table($db, $last_run_date, (isset($_GET['force_summary_rebuild']) ? ($_GET['force_summary_rebuild'] != '' ? $_GET['force_summary_rebuild'] : true) : false));
+    summary_builder::populate_summary_table($db, $last_run_date, (isset($_GET['force_summary_rebuild']) ? ($_GET['force_summary_rebuild'] != '' ? $_GET['force_summary_rebuild'] : true) : false), (isset($_GET['force_summary_missing_check']) ? ($_GET['force_summary_missing_check'] != '' ? $_GET['force_summary_missing_check'] : true) : false));
   } catch (Exception $e) {
     echo $e->getMessage();
   }

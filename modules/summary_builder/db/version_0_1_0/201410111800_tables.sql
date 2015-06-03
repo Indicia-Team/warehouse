@@ -77,5 +77,3 @@ CREATE TABLE summary_occurrences
 CREATE INDEX ix_summary_occurrences_STLU ON summary_occurrences USING btree (survey_id, taxa_taxon_list_id, location_id, user_id);
 CREATE INDEX ix_summary_occurrences_STU ON summary_occurrences USING btree (survey_id, taxa_taxon_list_id, user_id);
 
---- TODO column comments.
-
