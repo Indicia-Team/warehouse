@@ -1,5 +1,5 @@
 var setupHtmlForLinkingPhotosToHabitats, setupDroppableItemsForLinkingPhotosToHabitats,setupSubSampleAttrsForHabitat, createNewHabitat, setupAjaxPreSubmissionObject;
-var setupAjaxPageSaving, setupClickEvents, inArray, current, next, hideOccurrenceAddphoto, disableTabContents;
+var setupAjaxPageSaving, setupClickEvents, inArray, current, next, hideOccurrenceAddphoto, disableTabContents,makeImageRowOrSpareRow;
 
 jQuery(window).load(function($) {
   //currently selected tab number
@@ -219,6 +219,168 @@ jQuery(window).load(function($) {
       $('#tab-uploadplansandsketches').remove();
     }
   }
+  
+  //Based on the addRowToGrid.js makeSpareRow function (at the time of writing).
+  //Slightly customised for seasearch, but changes not relevant to general code. 
+  //To Do: I have only been partially successful at removing general code that might not be needed for Seasearch (without breaking it), however
+  //that does not mean that further streamlining of this function is not possible.
+  //Makes a row containing an image on the main occurrences grid that is preloaded from second level or third level sample.
+  //On the extra species grid (non image grid), this also handles the addition of new rows to the grid (like makeSpareRow does)
+  makeImageRowOrSpareRow = function(gridId, readAuth, lookupListId, url, evt, scroll, keycode, force, mediaId) {
+    handleSelectedTaxon = function(event, data, value) {
+      var taxonCell, checkbox, rowId, row, label, subSpeciesCellId, regex, deleteAndEditHtml;
+      // on picking a result in the autocomplete, ensure we have a spare row
+      // clear the event handlers
+      $(event.target).unbind('result', handleSelectedTaxon);
+      $(event.target).unbind('return', returnPressedInAutocomplete);
+      taxonCell=event.target.parentNode; 
+      //Create edit icons for taxon cells. Only add the edit icon if the user has this functionality available on the edit tab.
+      //Also create Notes and Delete icons when required
+      var linkPageIconSource = indiciaData.imagesPath + "nuvola/find-22px.png";
+      if (indiciaData['editTaxaNames-'+gridId]==true) {
+        deleteAndEditHtml = "<td class='row-buttons'>\n\
+            <img class='action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n" 
+        deleteAndEditHtml += "<img class='action-button edit-taxon-name' src=" + indiciaData.imagesPath + "nuvola/package_editors-16px.png>\n";
+        if (indiciaData['includeSpeciesGridLinkPage-'+gridId]==true) {
+          deleteAndEditHtml += '<img class="species-grid-link-page-icon" title="'+indiciaData.speciesGridPageLinkTooltip+'" alt="Notes icon" src=' + linkPageIconSource + '>';
+        }
+        deleteAndEditHtml += "</td>";
+      } else {   
+        deleteAndEditHtml = "<td class='row-buttons'>\n\
+            <img class='action-button action-button remove-row' src=" + indiciaData.imagesPath + "nuvola/cancel-16px.png>\n";
+        if (indiciaData['includeSpeciesGridLinkPage-'+gridId]==true) {
+          deleteAndEditHtml += '<img class="species-grid-link-page-icon" title="'+indiciaData.speciesGridPageLinkTooltip+'" alt="Notes icon" src=' + linkPageIconSource + '>';
+        }
+        deleteAndEditHtml += "</td>";
+      }
+      //Put the edit and delete icons just before the taxon name
+      $(taxonCell).before(deleteAndEditHtml);
+      // Note case must be colSpan to work in IE!
+      $(taxonCell).attr('colSpan',1);
+      row=taxonCell.parentNode;
+      //Only add this class if the user is adding new taxa, if they are editing existing taxa we don't add the class so that when the delete icon is used the
+      //row becomes greyed out instead of deleted.
+      if ($(row).hasClass('scClonableRow'))
+        $(taxonCell).parent().addClass('added-row');
+      $(taxonCell).parent().removeClass('scClonableRow');
+      $(taxonCell).parent().find('input,select,textarea').removeClass('inactive');
+      // Do we use a JavaScript fn, or a standard template, to format the species label?      
+      if ($.isFunction(formatter)) {
+        $(taxonCell).html(formatter(data));
+      } else {
+        // Just a simple PHP template
+        label = formatter;
+        // replace each field in the label template
+        $.each(data, function(field, value) {
+          regex = new RegExp('\\{' + field + '\\}', 'g');
+          label = label.replace(regex, value === null ? '' : value);
+        });
+        $(taxonCell).html(label);
+      }
+      $(row).find('.id-diff').hover(indiciaFns.hoverIdDiffIcon);
+      $(row).find('.species-checklist-select-species').hide();
+      $(row).find('.add-media-link').show();
+      // auto-check the row
+      checkbox=$(row).find('.scPresenceCell input.scPresence');
+      checkbox.attr('checked', 'checked');
+      // store the ttlId 
+      checkbox.val(data.id);
+      // Finally, a blank row is added for the next record
+      makeImageRowOrSpareRow(gridId, readAuth, lookupListId, url, null, true);
+      // Allow forms to hook into the event of a new row being added
+      $.each(hook_species_checklist_new_row, function(idx, fn) {
+        fn(data, row);
+      });
+    };
+    
+    if (typeof formatter==="undefined" || !$.isFunction(formatter)) {
+      // provide a default format function
+      formatter = function(item) {
+        return item.taxon;
+      };
+    }
+    // only add a spare row if none already exist, or forced to do so
+    if ($('table#'+gridId + ' tr.scClonableRow').length>=1 && !force) {
+      return;
+    }
+    //If a media id is supplied, we will be preloading an image into the blank row. New for seasearch
+    var extraParams, newRow, selectorId, speciesSelector, attrVal, ctrl;
+    if (mediaId) {
+      newRow = $('tr#'+gridId + '-scOccImageRow-'+mediaId).clone(true);
+      //Remove row after cloning as we don't need it anymore and don't want to pass to submission builder
+      $('tr#'+gridId + '-scOccImageRow-'+mediaId).remove();
+    } else {    
+      newRow = $('tr#'+gridId + '-scClonableRow').clone(true);
+    }
+    // build an auto-complete control for selecting the species to add to the bottom of the grid.
+    // The next line gets a unique id for the autocomplete.
+    selectorId = gridId + '-' + indiciaData['gridCounter-'+gridId];
+    speciesSelector = '<input type="text" id="' + selectorId + '" class="grid-required {speciesMustBeFilled:true}" />';
+    // put this inside the new row template in place of the species label.
+    $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
+    // Replace the tags in the row template with a unique row ID
+    $.each($(newRow).children(), function(i, cell) {
+      $.each($(cell).find('*'), function(idx, child) {
+        attrVal = $(child).attr('name');
+        if (typeof attrVal !== "undefined" && attrVal.indexOf('-idx-') !== -1) {
+          $(child).attr('name', $(child).attr('name').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+        }
+        attrVal = $(child).attr('id');
+        if (typeof attrVal !== "undefined" && attrVal.indexOf('-idx-') !== -1) {
+          $(child).attr('id', $(child).attr('id').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+        }
+        attrVal = $(child).attr('for');
+        if (typeof attrVal !== "undefined" && attrVal.indexOf('-idx-') !== -1) {
+          $(child).attr('for', $(child).attr('for').replace(/-idx-/g, indiciaData['gridCounter-'+gridId]));
+        }
+      });
+    });
+    $(newRow).find("[name$='\:sampleIDX']").each(function(idx, field) {
+      //Allows a sample to be generated for each occurrence in the grid if required.
+      //For Seasearch I have removed the code that checks if we are in sub sample mode, as we will always be in sub-sample mode.
+      var rowNumber=$(field).attr('name').replace('sc:'+gridId+'-','');
+      rowNumber = rowNumber.substring(0,1);
+      $(field).val(rowNumber);
+    });
+    // add the row to the bottom of the grid
+    newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
+    extraParams = {
+      mode : 'json',
+      qfield : indiciaData.speciesGrid[gridId].cacheLookup ? 'searchterm' : 'taxon',
+      auth_token: readAuth.auth_token,
+      nonce: readAuth.nonce,
+      taxon_list_id: lookupListId
+    };
+    if (indiciaData.speciesGrid[gridId].cacheLookup)
+      extraParams.orderby = indiciaData.speciesGrid[gridId].selectMode ? 'original,preferred_taxon' : 'searchterm_length,original,preferred_taxon';
+    else
+      extraParams.orderby = 'taxon';
+    if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") { 
+      $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
+      // a custom query on the list id overrides the standard filter..
+      if (typeof extraParams.query!=="undefined" && extraParams.query.indexOf('taxon_list_id')!==-1) {
+        delete extraParams.taxon_list_id;
+      }
+    }
+    $(newRow).find('input,select').keydown(keyHandler);
+    var autocompleteSettings = getAutocompleteSettings(extraParams, gridId);
+    if ($('#' + selectorId).width()<200) {
+      autocompleteSettings.width = 200;
+    }
+    // Attach auto-complete code to the input
+    ctrl = $('#' + selectorId).autocomplete(url+'/'+(indiciaData.speciesGrid[gridId].cacheLookup ? 'cache_taxon_searchterm' : 'taxa_taxon_list'), autocompleteSettings);
+    ctrl.bind('result', handleSelectedTaxon);
+    ctrl.bind('return', returnPressedInAutocomplete);
+    // Check that the new entry control for taxa will remain in view with enough space for the autocomplete drop down
+    if (scroll && ctrl.offset().top > $(window).scrollTop() + $(window).height() - 180) {
+      var newTop = ctrl.offset().top - $(window).height() + 180;
+      // slide the body upwards so the grid entry box remains in view, as does the drop down content on the autocomplete for taxa
+      $('html,body').animate({scrollTop: newTop}, 500);
+    }
+    // increment the count so it is unique next time and we can generate unique IDs
+    indiciaData['gridCounter-'+gridId]++;
+    return ctrl;
+  };
   
   /*
    * Returns true if an item is found in an array

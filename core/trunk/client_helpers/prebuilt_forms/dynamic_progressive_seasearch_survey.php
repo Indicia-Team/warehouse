@@ -1841,17 +1841,15 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         if (indiciaData.encodedMediaArray) {
           var encodedMediaArray = eval(indiciaData.encodedMediaArray);
           for (var i=0; i<encodedMediaArray.length; i++) {
-            addRowToGrid('$url', '".
-            $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
-            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
-            " formatter, encodedMediaArray[i]);
+            makeImageRowOrSpareRow('".
+            $options['id']."', {'auth_token' : '".
+            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},'".$options['lookupListId']."','$url', null, false, null, null, encodedMediaArray[i]);
           }
         }
         \r\n";      
-        data_entry_helper::$javascript .= "addRowToGrid('$url', '".
-            $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
-            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
-            " formatter);\r\n";
+        data_entry_helper::$javascript .= "makeImageRowOrSpareRow('".
+            $options['id']."', {'auth_token' : '".
+            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},'".$options['lookupListId']."','$url', null, false, null, null);\r\n";
       }
       // If options contain a help text, output it at the end if that is the preferred position
       $options['helpTextClass'] = (isset($options['helpTextClass'])) ? $options['helpTextClass'] : 'helpTextLeft';
