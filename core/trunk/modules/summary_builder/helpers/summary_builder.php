@@ -32,34 +32,40 @@ class summary_builder {
    * Performs the actual task of table population.
    */
 	
-  public static function populate_summary_table($db, $last_run_date, $rebuild) {
+  public static function populate_summary_table($db, $last_run_date, $rebuild, $missing_check) {
+  	if(isset($_GET['verbose'])) {
+  		echo 'Summary Builder module: Optional URL Parameters<br/>';
+  		echo '- verbose : present<br/>';
+  	  	echo '- force_summary_rebuild : '.($rebuild === false ? 'absent' : ($rebuild === true ? 'present (rebuilds all surveys)' : $rebuild.' (Survey ID)')).'<br/>';
+  	  	echo '- force_summary_missing_check : '.($missing_check === false ? 'absent (missing checks as defined in summary definition for individual survey)' : ($missing_check === true ? 'present (missing checks forced on all surveys)' : $missing_check.' (Survey ID, missing checks forced on this survey, for all other surveys missing checks as defined in summary definition)')).'<br/>';
+  	}
   	$queries = kohana::config('summary_builder');
   	$r = $db->query($queries['select_definitions'])->result_array(false);
   	if(count($r)){
   		foreach($r as $row){
   			if($rebuild === true || $rebuild == $row['survey_id']) {
-  				echo 'Rebuilding summary data for survey ID '.$row['survey_id'].'<br/>';
+  				echo date(DATE_ATOM).' Flag rebuild of summary data for survey ID '.$row['survey_id'].'<br/>';
   				$query = "delete from summary_occurrences where ".
   						"survey_id = ".$row['survey_id'];
 	  			$count = $db->query($query)->count();
-  				echo 'Removed '.$count.' records. Rebuild will commence on next invocation of scheduled tasks.<br/>';
+  				if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Removed '.$count.' records. Rebuild will commence on next invocation of scheduled tasks.<br/>';
 	  		} else {
-  				echo 'Processing summariser_definition ID '.$row['id'].' for survey ID '.$row['survey_id'].'<br/>';
-  				self::populate_summary_table_for_survey($db, $last_run_date, $row);
+  				echo date(DATE_ATOM).' Processing summariser_definition ID '.$row['id'].' for survey ID '.$row['survey_id'].'<br/>';
+  				self::populate_summary_table_for_survey($db, $last_run_date, $row, ($missing_check === true || $missing_check == $row['survey_id']));
   			}
   		}
   	} else {
-  		echo 'No summariser_definitions to be processed.';
+  		echo date(DATE_ATOM).' No summariser_definitions to be processed.<br/>';
   	}
   }
 
-  private static function populate_summary_table_for_survey($db, $last_run_date, $definition) {
+  private static function populate_summary_table_for_survey($db, $last_run_date, $definition, $missing_check) {
   	$YearTaxonLocationUser = array();
   	$YearTaxonLocation = array();
   	$YearTaxonUser = array();
   	$YearTaxon = array();
     try {
-      $count=summary_builder::get_changelist($db, $last_run_date, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon);
+      $count=summary_builder::get_changelist($db, $last_run_date, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon, $missing_check);
 	  if($count>0)
 	  	summary_builder::do_summary($db, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon);
     } catch (Exception $e) {
@@ -70,9 +76,10 @@ class summary_builder {
   	return;
   }
   
-  private static function get_changelist($db, $last_run_date, $definition, &$YearTaxonLocationUser, &$YearTaxonLocation, &$YearTaxonUser, &$YearTaxon) {
+  private static function get_changelist($db, $last_run_date, $definition, &$YearTaxonLocationUser, &$YearTaxonLocation, &$YearTaxonUser, &$YearTaxon, $missing_check) {
   	$queries = kohana::config('summary_builder');
-  	$limit = 1000;
+  	$limit = (isset($definition['max_records_per_cycle']) ? $definition['max_records_per_cycle'] : 1000);
+  	if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Record count limit: '.$limit.'<br/>';
   	$query = str_replace(array('#date#','#survey_id#','#limit#'),
   						 array($last_run_date,$definition['survey_id'],$limit),
   						 $queries['get_changed_items_query']);
@@ -80,7 +87,7 @@ class summary_builder {
   	$r = $db->query($query)->result_array(false);
   	$count = count($r);
   	if($count){
-  		echo $count.' new/altered occurrences to be processed.<br/>';
+  		echo date(DATE_ATOM).' '.$count.' new/altered occurrences to be processed.<br/>';
   		foreach($r as $row){
  			$year = substr($row['date_start'], 0, 4);
   			// create list of year/taxon  
@@ -98,16 +105,18 @@ class summary_builder {
   		}
   		$limit = $limit-$count;
    	} else {
-  		echo 'No new/altered occurrences to be processed.<br/>';
+  		if(isset($_GET['verbose'])) echo date(DATE_ATOM).' No new/altered occurrences to be processed.<br/>';
   	}
   	// Now check for any missed data.
-  	$query = str_replace(array('#date#','#survey_id#','#limit#'),
-  						 array($last_run_date,$definition['survey_id'],$limit),
-  						 $queries['get_missed_items_query']);
-  	$r = $db->query($query)->result_array(false);
-  	if(count($r)){
-  		echo count($r).' missed occurrences to be processed.<br/>';
-  		foreach($r as $row){
+  	if ($missing_check || (isset($definition['check_for_missing']) && $definition['check_for_missing'] != 'f')) {
+  	  if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Start of missing query for survey ID '.$definition['survey_id'].'<br/>';
+  	  $query = str_replace(array('#date#','#survey_id#','#limit#'),
+  						   array($last_run_date,$definition['survey_id'],$limit),
+  						   $queries['get_missed_items_query']);
+  	  $r = $db->query($query)->result_array(false);
+  	  if(count($r)){
+  		echo date(DATE_ATOM).' '.count($r).' missed occurrences to be processed.<br/>';
+  	  	foreach($r as $row){
  			$year = substr($row['date_start'], 0, 4);
   			// create list of year/taxon  
  			if(!isset($YearTaxon[$year])) $YearTaxon[$year]=array();
@@ -122,9 +131,10 @@ class summary_builder {
  			if(!isset($YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']] = array();
  			if(!in_array($row['created_by_id'], $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']][] = $row['created_by_id'];
   		}
-  		echo 'Last missed occurrence processed has id '.$r[count($r)-1]['id'].'<br/>';
+  	  } else
+  		if(isset($_GET['verbose'])) echo date(DATE_ATOM).' No missed occurrences to be processed.<br/>';
   	} else
-  		echo 'No missed occurrences to be processed.<br/>';
+  	  if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Missed occurrences processing not active for survey ID '.$definition['survey_id'].'.<br/>';
   	if(count($YearTaxon)>0){
   		ksort($YearTaxon);
   		ksort($YearTaxonUser);
@@ -137,7 +147,7 @@ class summary_builder {
   private static function do_summary($db, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon) {
   	$queries = kohana::config('summary_builder');
 	foreach($YearTaxon as $year=>$taxonList) {
-	  echo "Processing data for ".$year.".<br />";
+	  if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Processing data for '.$year.'<br />';
 	  $yearStart = new DateTime($year.'-01-01');
 	  $yearEnd = new DateTime($year.'-01-01');
 	  // calculate date to period conversions
@@ -148,13 +158,13 @@ class summary_builder {
 	  	if($weekstart[0]=='date'){
 	  	  $weekstart_date = date_create($year."-".$weekstart[1]);
 	  	  if(!$weekstart_date){
-	  		echo "Weekstart month-day combination unrecognised {".$weekstart[1]."}<br />";
+	  		echo date(DATE_ATOM).' ERROR : Weekstart month-day combination unrecognised {'.$weekstart[1].'}<br />';
 	  		return;
 	  	  }
 	  	  $weekstart[1]=$weekstart_date->format('N'); // ISO Day of week - Mon=1, Sun=7
 	  	}
 	  	if(intval($weekstart[1])!=$weekstart[1] || $weekstart[1]<1 || $weekstart[1]>7) {
-	  	  echo "Weekstart unrecognised or out of range {".$weekstart[1]."}<br />";
+	  	  echo date(DATE_ATOM).' ERROR : Weekstart unrecognised or out of range {'.$weekstart[1].'}<br />';
 	  	  return;
 	  	}
 	  	$consider_date = new DateTime($year.'-01-01');
@@ -162,7 +172,7 @@ class summary_builder {
 	  	while($consider_date->format('N')!=$weekstart[1]) $consider_date->modify('-1 day');
 	  	$weekOne_date = date_create($year.'-'.$definition['period_one_contains']);
 	  	if(!$weekOne_date){
-	      echo "Week one month-day combination unrecognised {".$definition['period_one_contains']."}<br />";
+	      echo date(DATE_ATOM).' ERROR : Week one month-day combination unrecognised {'.$definition['period_one_contains'].'}<br />';
 	      return;
 	  	}
 	  	while($weekOne_date->format('N')!=$weekstart[1]) $weekOne_date->modify('-1 day'); // scan back to start of week
@@ -196,13 +206,13 @@ class summary_builder {
 	  		$periodNo++;
 	  	}
 	  } else {
-	  	echo "period_type unrecognised {".$definition['period_type']."}<br />";
+	  	echo date(DATE_ATOM).' ERROR : period_type unrecognised {'.$definition['period_type'].'}<br />';
 	  	return;
 	  }
 	  foreach($taxonList as $taxonID) {
  	  		$taxon = $db->query("SELECT * FROM cache_taxa_taxon_lists WHERE id = $taxonID")->result_array(false);
 	  		if(count($taxon)!=1) {
-	  			echo "Error : Taxon search for id = $taxonID returned wrong number of rows: ".count($taxon)." - expected one row. <br/>";
+	  			echo date(DATE_ATOM)." ERROR : Taxon search for id = $taxonID returned wrong number of rows: ".count($taxon)." - expected one row. <br/>";
 	  			continue;
 	  		}
 	  	foreach($YearTaxonLocation[$year.':'.$taxonID] as $locationID) {
@@ -214,7 +224,7 @@ class summary_builder {
   		  	summary_builder::do_delete($db, $definition, $year, $taxonID, $locationID, $userID);
             summary_builder::load_data($db, $data, $periods, $periodMapping, $query);
   			summary_builder::apply_data_combining($definition, $data);
-  		  	if($definition['calculate_estimates'])
+  		  	if($definition['calculate_estimates'] != 'f')
   		  		summary_builder::apply_estimates($db, $definition, $data);
   		  	//summary_builder::dump_data($data);
   		  	summary_builder::do_insert($db, $definition, $year, $taxonID, $locationID, $userID, $data, $periods, $taxon[0]);
@@ -226,7 +236,7 @@ class summary_builder {
   		  summary_builder::do_delete($db, $definition, $year, $taxonID, $locationID, false);
           summary_builder::load_data($db, $data, $periods, $periodMapping, $query);
   		  summary_builder::apply_data_combining($definition, $data);
-  		  if($definition['calculate_estimates'])
+  		  if($definition['calculate_estimates'] != 'f')
   		  		summary_builder::apply_estimates($db, $definition, $data);
   		  //summary_builder::dump_data($data);
   		  summary_builder::do_insert($db, $definition, $year, $taxonID, $locationID, false, $data, $periods, $taxon[0]);
@@ -249,6 +259,7 @@ class summary_builder {
 	  	summary_builder::do_insert($db, $definition, $year, $taxonID, false, false, $data, $periods, $taxon[0]);
 	  }
 	}
+  	if(isset($_GET['verbose'])) echo date(DATE_ATOM).' End of summarisation for survey ID '.$definition['survey_id'].'<br/>';
   }
   
   private static function load_data($db, &$data, &$periods, &$periodMapping, $query) {

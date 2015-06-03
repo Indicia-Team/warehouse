@@ -46,11 +46,13 @@ class Summariser_definition_Model extends ORM {
     $array->add_rules('interpolation', 'required', 'chars[L]');
     $array->add_rules('first_value', 'required', 'chars[X,H]');
     $array->add_rules('last_value', 'required', 'chars[X,H]');
+    $array->add_rules('max_records_per_cycle', 'required', 'integer', 'minimum[1]');
     
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
     		'occurrence_attribute_id',
     		'calculate_estimates',
+    		'check_for_missing',
     		'season_limits',
     		'deleted'
     );
