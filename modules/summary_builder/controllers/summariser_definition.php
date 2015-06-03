@@ -26,18 +26,17 @@
  * TODO: sample attribute averaging. store as json in a period level record.
  * TODO: new download reports.
  * TODO: Store Weeknumber definitions in a period level record
- * TODO: comment DB columns, and functions
+ * TODO: comment functions
  */
 
 /*
  * Proposed development path
  * 1) Currently only week based summarisation, as that is what UKBMS want. Expand to allow Month based summarisation
  * 2) Allow >1 summarisation per survey
- * 3) Add in gradual rebuild of data
- * 4) Currently deals with super/subsample with locations, as that is what UKBMS want. Expand to handle other cases.
- * 5) Amalgamation of raw data into a daily summary. Would need to store sample list.
- * 6) Make 0-1 rounding configurable
- * 7) Configurable end of year processing: Include data for overlap, include periods that overlap
+ * 3) Currently deals with super/subsample with locations, as that is what UKBMS want. Expand to handle other cases.
+ * 4) Amalgamation of raw data into a daily summary. Would need to store sample list.
+ * 5) Make 0-1 rounding configurable
+ * 6) Configurable end of year processing: Include data for overlap, include periods that overlap
 */
 
 /*
