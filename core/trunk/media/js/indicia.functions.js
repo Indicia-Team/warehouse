@@ -43,6 +43,18 @@ if (typeof window.indiciaData==="undefined") {
           $(this).removeClass('ui-state-hover');
       });
   };
+
+  indiciaFns.findMe = function() {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var lonLat = new OpenLayers.LonLat(position.coords.longitude, position.coords.latitude)
+        .transform(
+          new OpenLayers.Projection("EPSG:4326"), //transform from WGS 1984
+          indiciaData.mapdiv.map.getProjectionObject() //to Spherical Mercator Projection
+        );
+      indiciaData.mapdiv.map.setCenter(lonLat, 17);
+      indiciaData.mapdiv.processLonLatPositionOnMap(lonLat, indiciaData.mapdiv);
+    });
+  }
   
   /**
    * Method to attach to the hover event of an id difficulty warning icon. The icon should have 
