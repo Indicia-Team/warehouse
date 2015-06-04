@@ -92,11 +92,18 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         ),
         array(
           'name'=>'dive_duration_attr_id',
-          'caption'=>'DIve Duration Attribute Id',
+          'caption'=>'Dive Duration Attribute Id',
           'description'=>'The id of the custom attribute that holds the dive duration.',
           'type'=>'string',
           'group'=>'Other Settings'
         ),  
+        array(
+          'name'=>'dive_start_time_attr_id',
+          'caption'=>'Dive Start Time Attribute Id',
+          'description'=>'The id of the custom attribute that holds the dive start time.',
+          'type'=>'string',
+          'group'=>'Other Settings'
+        ),    
         array(
           'name'=>'gps_sync_warning',
           'caption'=>'GPS Sync Warning',
@@ -105,7 +112,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
                 If this option is not filled in then the warning will not be displayed.',
           'type'=>'textarea',
           'group'=>'Other Settings'
-        ), 
+        ),  
         //TODO could put in a default form structure
       )
     );
@@ -563,6 +570,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       drupal_set_message('Please fill in the option for the Dive Duration attribute id');
       return false;
     } 
+    if (empty($args['dive_start_time_attr_id'])) {
+      drupal_set_message('Please fill in the option for the Dive Start Time attribute id');
+      return false;
+    }
     
     $r='';
     //Hide the attribute that holds whether a sample is in progress or not
@@ -640,7 +651,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
   public static function ajax_save($website_id, $password, $node) {
     iform_load_helpers(array('data_entry_helper'));
     //Build submission
-    $Model = self::build_three_level_sample_with_occ_submission($_POST,$website_id, $password,$node->params['gpx_data_attr_id'],$node->params['photo_order_attr_id']);
+    $Model = self::build_three_level_sample_with_occ_submission($_POST,$website_id, $password,$node->params['gpx_data_attr_id'],$node->params['photo_order_attr_id'],$node->params['dive_start_time_attr_id']);
     $node = node_load($nid);
     $conn = iform_get_connection_details($node);
     $postargs = "website_id=".$conn['website_id'];
@@ -676,7 +687,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    * @param array $values List of the posted values to create the submission from.
    */
 
-  public static function build_three_level_sample_with_occ_submission($values,$website_id, $password,$gpxDataAttrId,$photoOrderAttrId) {
+  public static function build_three_level_sample_with_occ_submission($values,$website_id, $password,$gpxDataAttrId,$photoOrderAttrId,$diveStartTimeAttrId) {
     $standardGridValues=[];
     //Create two different $values arrays.
     //The $standardGridValues array contains all the values you would expect from a normal species grid entry form. This contains the species grid we don't have images for.
@@ -717,10 +728,19 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         if (file_exists($uploadpath.$mediaItem['path'])) {
           $exif = exif_read_data($uploadpath.$mediaItem['path'], 0, true);
           $media[$idx]['exif'] = json_encode($exif);
-          //If we are saving the sample without a date (e.g. on first tab) then default to the date from the first photo
-          if (!empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) {
-            $modelWrapped['fields']['date']['value']=date('d/m/y',strtotime($exif['EXIF']['DateTimeOriginal']));
-            $values['sample:date']=date('d/m/y',strtotime($exif['EXIF']['DateTimeOriginal']));
+          $strToTime=strtotime($exif['EXIF']['DateTimeOriginal']);
+          //On the first tab (when we don't have a date field) then collect the date from the exif from the earliest photo
+          //and also set a default on the time field in the same way
+          //Cycle round the media items and only set the date/time if it is the smallest one so far.
+          if ((empty($smallestStrToTime) || $smallestStrToTime > $strToTime)&&
+              !empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) {  
+            $smallestStrToTime=$strToTime;
+            $modelWrapped['fields']['date']['value']=date('d/m/y',$smallestStrToTime);
+            $values['sample:date']=date('d/m/y',$smallestStrToTime);      
+            $time=explode(' ',$exif['EXIF']['DateTimeOriginal']);          
+            $modelWrapped['fields']['smpAttr:'.$diveStartTimeAttrId]['value']=$time[1];
+            $values['smpAttr:'.$diveStartTimeAttrid]=$time[1];
+            
           }
         }
       }
