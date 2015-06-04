@@ -2465,13 +2465,22 @@ $('#$escaped').change(function(e) {
       'geomid'=>'imp-geom',
       'geomFieldname'=>$tokens[0].':geom',
       'default'=>self::check_default_value($options['fieldname']),
-      'splitLatLong'=>false
+      'splitLatLong'=>false,
+      'findMeButton'=>true
     ), $options);
     if (!empty($options['minGridRef']))
       $options['validation']='mingridref['.$options['minGridRef'].']';
     if (!isset($options['defaultGeom']))
       $options['defaultGeom']=self::check_default_value($options['geomFieldname']);
     $options = self::check_options($options);
+    if ($options['findMeButton']) {
+      if (empty($options['afterControl'])) {
+        $options['afterControl'] = '';
+      }
+      $options['findmeTitle'] = lang::get('Find my current location');
+      $options['afterControl'] .= self::apply_static_template('sref_textbox_findmebtn', $options);
+      data_entry_helper::$javascript .= "$('#findme-icon').click(indiciaFns.findMe);\n";
+    }
     if ($options['splitLatLong']) {
       // Outputting separate lat and long fields, so we need a few more options
       if (!empty($options['default'])) {
