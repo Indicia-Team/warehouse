@@ -425,7 +425,7 @@ var destroyAllFeatures;
     
     function switchToSatelliteBaseLayer(map) {
       $.each(map.layers, function() {
-        if (this.isBaseLayer && (this.name.indexOf('Satellite')!==-1 || this.name.indexOf('Hybrid')) && map.baseLayer!==this) {
+        if (this.isBaseLayer && (this.name.indexOf('Satellite')!==-1 || this.name.indexOf('Hybrid')!==-1) && map.baseLayer!==this) {
           map.setBaseLayer(this);
           return false;
         }
@@ -1641,6 +1641,7 @@ var destroyAllFeatures;
       this.getFeaturesByVal = getFeaturesByVal;
       this.removeAllFeatures = removeAllFeatures;
       this.locationSelectedInInput = locationSelectedInInput;
+      this.processLonLatPositionOnMap = processLonLatPositionOnMap;
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
       $(this).before('<div id="map-loading" class="loading-overlay"></div>');
