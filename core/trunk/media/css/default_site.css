@@ -740,11 +740,17 @@ div.olControlEditingToolbar .olControlFullscreenItemActive {
   width: 14px;
 }
 
-.locked-icon, .unlocked-icon {
+.locked-icon, .unlocked-icon, #findme-icon {
   background-repeat: no-repeat;
   display: inline-block;
   margin: 0 0.25em;
   cursor: pointer;
+}
+
+#findme-icon {
+  background-image: url(../images/findme.png);
+  width: 16px;
+  height: 16px;
 }
 
 /* for sub list control */
