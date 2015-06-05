@@ -336,7 +336,7 @@ HTML;
   }
   
   /**
-   * GET handler for the projects/n resource. Outputs a single project's details.
+   * GET handler for the  projects/n resource. Outputs a single project's details.
    * 
    * @param type $id Unique ID for the project to output
    */
@@ -350,7 +350,7 @@ HTML;
      
   /**
    * GET handler for the projects resource. Outputs a list of project details.
-   * @todo Projecst are currently hard coded in the config file, so pagination etc
+   * @todo Projects are currently hard coded in the config file, so pagination etc
    * is just stub code.
    */
   public function projects_get() {
@@ -376,7 +376,13 @@ HTML;
    * @param type $id Unique ID for the taxon-observations to output
    */
   public function taxon_observations_get_id($id) {
-    $params = array('occurrence_id' => $id);
+    if (substr($id, 0, strlen(kohana::config('rest.system_id')))===kohana::config('rest.system_id')) {
+      $occurrence_id = substr($id, strlen(kohana::config('rest.system_id')));
+    } else {
+      // @todo Proper handling, either error if system not recognised, or load correct system record.
+      throw new exception('Only handling load of own observations at the moment');
+    }
+    $params = array('occurrence_id' => $occurrence_id);
     $report = $this->load_report('filterable_nbn_exchange', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
@@ -426,10 +432,10 @@ HTML;
       $this->fail('Internal Server Error', 500);
     } else {
       $record = $report['content']['records'][0];
-      $record['taxonObservation'] = array(
+      $record['taxonobservation'] = array(
         'id' => $record['taxon_observation_id'],
       );
-      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
+      $this->add_item_metadata($record['taxonobservation'], 'taxon-observations');
       $this->add_item_metadata($record, 'annotations');
       $this->succeed($record);
     }
@@ -460,10 +466,10 @@ HTML;
     $records = $report['content']['records'];
     // for each record, restructure the taxon observations sub-object
     foreach ($records as &$record) {
-      $record['taxonObservation'] = array(
+      $record['taxonobservation'] = array(
         'id' => $record['taxon_observation_id'],
       );
-      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
+      $this->add_item_metadata($record['taxonobservation'], 'taxon-observations');
       unset($record['taxon_observation_id']);
     }
     $this->succeed($this->list_response_structure($records, 'annotations'));
@@ -504,6 +510,10 @@ HTML;
       }
     }
   }
+
+  private function notempty($value) {
+    return !empty($value);
+  }
   
   /**
    * Adds metadata such as an href back to the resource to any resource object.
@@ -518,7 +528,7 @@ HTML;
     if (!empty($params['format']))
       $item['href'] .= "&format=$params[format]";
     // strip nulls and empty strings
-    $item = array_filter($item, 'strlen');
+    $item = array_filter($item, array($this, 'notempty'));
   }
   
   /**
