@@ -612,10 +612,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').hide();\n
     $('[for=smpAttr\\\\:".$args['exif_date_time_attr_id']."]').hide();";
     //Clean up the occurrences tab, remove unused images column on the bottom grid
-    //Also change name of images column on main grid.
+    //Also remove the name of the Add photos column on main grid as the column is empty is edit mode, and obvious what it is in add mode.
     data_entry_helper::$javascript .= "
     $('#first-level-smp-occ-grid-images-0').remove();\n
-    $('#third-level-smp-occ-grid-images-0').text('Images');";
+    $('#third-level-smp-occ-grid-images-0').text('');";
     // A jquery selector for the element which must be at the top of the page when moving to the next page. Could be the progress bar or the
     // tabbed div itself.
     if (isset($options['progressBar']) && $options['progressBar']==true)
@@ -1546,7 +1546,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $row = '';
         // Add a delete button if the user can remove rows, add an edit button if the user has the edit option set, add a page link if user has that option set.
         if ($options['rowInclusionCheck']=='alwaysRemovable') {
-          $imgPath = empty(self::$images_path) ? helper_base::relative_client_helper_path()."../media/images/" : self::$images_path;
+          $imgPath = empty(helper_base::$images_path) ? helper_base::relative_client_helper_path()."../media/images/" : helper_base::$images_path;
           $speciesGridLinkPageIconSource = $imgPath."nuvola/find-22px.png";
           if ($options['editTaxaNames']) {
             $row .= '<td class="row-buttons">
