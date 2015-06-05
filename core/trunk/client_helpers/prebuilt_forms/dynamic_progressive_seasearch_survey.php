@@ -945,7 +945,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       foreach ($values as $key =>$value) {
         $explodedKey=explode(':',$key);
         //Get gps data which is already saved in an attribute
-        if (!empty($explodedKey[0]) && !empty($explodedKey[1]) && ($explodedKey[0].':'.$explodedKey[1]=='smpAttr:'.$gpxDataAttrId)) {
+        if (!empty($explodedKey[0]) && !empty($explodedKey[1]) && ($explodedKey[0].':'.$explodedKey[1]=='smpAttr:'.$gpxDataAttrId)&&!empty($value)) {
           $gpsArray=explode(';',$value);
         }
       }
@@ -982,17 +982,17 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $lonAcc=round($lonAcc/count($mediaSpatialRefs),10);
         //Convert spatial reference from 50,-1 format to 50N 1W format
         $northSouthPos=self::convert_to_north_south_lat_lon($latAcc.','.$lonAcc);
-        foreach ($media as $item) {
-          $mediaIds[]=$item['id'];
-          //Only add the media item to the sub-sample, if the item has been assigned to the sub-sample by the user.
-          if (!empty($values['sample_medium:'.$item['id'].':sample_id']) &&
-              ($values['sample_medium:'.$item['id'].':sample_id']==$completeValuesCollection[$idx]['sample:id'])) {
-            $wrapped = data_entry_helper::wrap($item, 'sample_medium');
-            $wrappedCollection[$idx]['subModels'][] = array(
-              'fkId' => 'sample_id',
-              'model' => $wrapped
-            ); 
-          }
+      }
+      foreach ($media as $item) {
+        $mediaIds[]=$item['id'];
+        //Only add the media item to the sub-sample, if the item has been assigned to the sub-sample by the user.
+        if (!empty($values['sample_medium:'.$item['id'].':sample_id']) &&
+            ($values['sample_medium:'.$item['id'].':sample_id']==$completeValuesCollection[$idx]['sample:id'])) {
+          $wrapped = data_entry_helper::wrap($item, 'sample_medium');
+          $wrappedCollection[$idx]['subModels'][] = array(
+            'fkId' => 'sample_id',
+            'model' => $wrapped
+          ); 
         }
       }
       //Need to check that $mediaSpatialRefs is empty as we don't want to make the assignment when 
@@ -1036,10 +1036,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     }
     foreach ($values as $key =>$value) {
       $explodedKey=explode(':',$key);
-      if (!empty($explodedKey[0]) && !empty($explodedKey[1]) && ($explodedKey[0].':'.$explodedKey[1]=='smpAttr:'.$photoOrderAttrId)) {
+      if (!empty($explodedKey[0]) && !empty($explodedKey[1]) && ($explodedKey[0].':'.$explodedKey[1]=='smpAttr:'.$photoOrderAttrId)&&!empty($value)) {
         $imageOrder=explode(',',$value);
       }
-      if (!empty($explodedKey[0]) && !empty($explodedKey[1]) && ($explodedKey[0].':'.$explodedKey[1]=='smpAttr:'.$gpxDataAttrId)) {
+      if (!empty($explodedKey[0]) && !empty($explodedKey[1]) && ($explodedKey[0].':'.$explodedKey[1]=='smpAttr:'.$gpxDataAttrId)&&!empty($value)) {
         $gpsArray=explode(';',$value);
       }
     }
@@ -1111,15 +1111,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
                 );
 
                 $photoResults = data_entry_helper::get_report_data($reportOptions);
-                //Grab the correct spatial reference from the file.
-                //Do this by searching through the trackpoints from the GPS file, then find the one that is closest in time to the image exif time and then
-                //use the spatial reference from the file (don't use the one from the image as the image GPS position is unreliable as it is taken underwater)
-                foreach ($values as $key =>$value) {
-                  $explodedKey=explode(':',$key);
-                  if (!empty($explodedKey[0]) && !empty($explodedKey[1]) && ($explodedKey[0].':'.$explodedKey[1]=='smpAttr:'.$gpxDataAttrId)) {
-                    $gpsArray=explode(';',$value);
-                  }
-                }
                 //TODO this code is very similar to code used earlier, perhaps put in separate method when get chance.
                 $mediaSpatialRefs=[];
                 $smallestTimeDistance=null;
@@ -1143,7 +1134,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
                   $thirdLevelSample['model']['fields']['entered_sref']['value']=$northSouthPos;
                 } else {
                   //If there is no GPS match then fall back on the spatial reference for the main sample (e.g. we didn't upload a GPX file)
-                  $thirdLevelSample['model']['fields']['entered_sref']['value']=$values['sample:entered_sref'];
+                  $thirdLevelSample['model']['fields']['entered_sref']['value']=$modelWrapped['fields']['entered_sref']['value'];
                 }
                 //Add third level sample to second level sample
                 $secondLevelSample['model']['subModels'][]=$thirdLevelSample;
