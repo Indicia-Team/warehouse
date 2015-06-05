@@ -405,10 +405,8 @@ HTML;
       'limit' => $this->request['page_size']+1,
       'offset' => ($this->request['page'] - 1) * $this->request['page_size']
     );
-    if (!empty($this->request['edited_date_from'])) {
-      $this->checkDate($this->request['edited_date_from'], 'edited_date_from');
-      $params['edited_date_from'] = $this->request['edited_date_from'];
-    }
+    $this->checkDate($this->request['edited_date_from'], 'edited_date_from');
+    $params['edited_date_from'] = $this->request['edited_date_from'];
     if (!empty($this->request['edited_date_to'])) {
       $this->checkDate($this->request['edited_date_to'], 'edited_date_to');
       $params['edited_date_to'] = $this->request['edited_date_to'];
@@ -597,6 +595,8 @@ HTML;
   }
   
   private function load_filter_for_project($id) {
+    if (!isset($this->projects[$id]))
+      $this->fail('Bad request', 400, 'Invalid project requested');
     $filterId = $this->projects[$id]['filter_id'];
     $db = new Database();
     $filters = $db->select('definition')->from('filters')->where(array('id'=>$filterId, 'deleted'=>'f'))->get()->result_array();
