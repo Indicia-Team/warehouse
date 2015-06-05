@@ -1,29 +1,31 @@
 <report
     title="Annotations for REST API"
     description="Retrieves record annotations to support the REST api module. Compatible with the standard report filter parameters."
->
+    >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
-select #columns#
-from occurrence_comments oc
-join cache_occurrences o on o.id=oc.occurrence_id
-join users u on u.id=oc.created_by_id and u.deleted=false
-join people p on p.id=u.person_id and p.deleted=false
-#agreements_join#
-#joins#
-where #sharing_filter# 
-and oc.deleted=false
-and o.date_type in ('D','DD','O','OO','Y','YY','-Y','U') 
-and (o.entered_sref_system ilike 'osgb' or o.entered_sref_system ilike 'osie' or o.entered_sref_system = '4326' or o.entered_sref_system = '27700')
-and o.taxa_taxon_list_external_key is not null
-#idlist#
+    select #columns#
+    from occurrence_comments oc
+    join occurrences o on o.id=oc.occurrence_id
+    join cache_taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
+    join users u on u.id=oc.created_by_id and u.deleted=false
+    join people p on p.id=u.person_id and p.deleted=false
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    and oc.deleted=false
+    and ttl.external_key is not null
+    #idlist#
   </query>
-  
+
   <order_bys>
     <order_by>o.id ASC</order_by>
   </order_bys>
   <params>
-    <param name="smpattrs" display="Sample attribute list" description="Comma separated list of sample attribute IDs to include" datatype="smpattrs" default="" />
-    <param name="occattrs" display="Occurrence attribute list" description="Comma separated list of occurrence attribute IDs to include" datatype="occattrs" default="" />
+    <param name='system_id' display='System ID' description='3 character code identifying the system' datatype='text'/>
+    <param name="smpattrs" display="Sample attribute list"
+           description="Comma separated list of sample attribute IDs to include" datatype="smpattrs" default=""/>
+    <param name="occattrs" display="Occurrence attribute list"
+           description="Comma separated list of occurrence attribute IDs to include" datatype="occattrs" default=""/>
     <param name="comment_edited_date_from" datatype="date" default="">
       <where>oc.updated_on>='#comment_edited_date_from#'</where>
     </param>
@@ -32,15 +34,21 @@ and o.taxa_taxon_list_external_key is not null
     </param>
   </params>
   <columns>
-    <column name="id" display="ID" sql="oc.id" datatype="integer" />
-    <column name="taxon_observation_id" display="Occurrence ID" sql="o.id" datatype="integer" />
-    <column name="statusCode" display="Status Code" datatype="text"
-        sql="case when oc.comment like 'Verified%' or oc.comment like 'This record is assumed to be correct' then 'G' 
+    <column name="id" display="ID" sql="'#system_id#' || oc.id::varchar" datatype="text"/>
+    <column name="taxon_observation_id" display="Occurrence ID"
+            sql="COALESCE(o.external_key, '#system_id#' || o.id::varchar)" datatype="integer"/>
+    <column name="statuscode" display="Status Code" datatype="text"
+            sql="case when oc.comment like 'Verified%' or oc.comment like 'This record is assumed to be correct' then 'G'
         when oc.comment like 'Dubiuos%' or oc.comment like 'Query%' then 'A' 
-        when oc.comment like 'Rejected%' then 'R' end" />
-    <column name="taxonversionkey" display="Taxon version key" sql="o.taxa_taxon_list_external_key" datatype="text" />
-    <column name="authorName" display="Author name" datatype="text" 
-        sql="coalesce(oc.person_name, case u.id when 1 then 'anonymous' else p.first_name || ' ' || p.surname end)" />
-    <column name="comment" display="Comment" sql="oc.comment" datatype="text" />
+        when oc.comment like 'Rejected%' then 'R' end"/>
+    <column name="taxonversionkey" display="Taxon version key" sql="ttl.external_key" datatype="text"/>
+    <column name="authorname" display="Author name" datatype="text"
+            sql="coalesce(oc.person_name, case u.id when 1 then 'anonymous' else p.first_name || ' ' || p.surname end)"/>
+    <column name="comment" display="Comment" sql="oc.comment" datatype="text"/>
+    <column name="question" display="Question" sql="oc.query" datatype="boolean" />
+    <!--column name="emailaddress" display="Email" sql="" -->
+    <column name="datetime" sql="to_char(oc.created_on, 'YYYYMMDD&quot;T&quot;HH24:MI:SS')"/>
+    <column name="statuscode" sql="case oc.record_status when 'V' then 'G' when 'R' then 'R' when 'D' then 'A' end" />
+
   </columns>
 </report>
