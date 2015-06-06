@@ -669,7 +669,19 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           var formattedSampleDate;
           //Date has full year yyyy, so split up, chop the year, and then reconstruct
           var sampleDateArray=$('#sample\\\\:date').val().split('/');  
+          //Add some code to be a bit more flexible with shortened user entries (e.g. change 1/1/14 to 01/01/2014 for validation).
+          //Can't user built in javascript functions as not good with uk dates
+          if (sampleDateArray[0].length===1) {
+            sampleDateArray[0]='0'+sampleDateArray[0] 
+          }
+          if (sampleDateArray[1].length===1) {
+            sampleDateArray[1]='0'+sampleDateArray[1]
+          }
+          if (sampleDateArray[2].length===2) {
+            sampleDateArray[2]='20'+sampleDateArray[2]          
+          }
           formattedSampleDate=sampleDateArray[0]+'/'+sampleDateArray[1]+'/'+sampleDateArray[2];
+          $('#sample\\\\:date').val(formattedSampleDate);
           if (formattedSampleDate && $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val()  && 
               $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val().indexOf(formattedSampleDate)===-1) {
             alert('".$args['no_photos_with_date_warning']."');
