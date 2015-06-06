@@ -794,8 +794,14 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       }
     }
     if (!empty($mediaDates)) {
-      $modelWrapped['fields']['smpAttr:'.$exifDateTimeAttrId]['value']=$mediaDates;
-      $values['smpAttr'.$exifDateTimeAttrId]=$mediaDates; 
+     //Need to find the attribute that starts with smpAttr:<exifDateTimeAttrId> as in edit mode it will also have the sample_attribute_value on the end so in that
+     //case we need to overwrite existing value instead of creating new one.
+     foreach ($values as $theKey=>$theValue) {
+        if (substr($theKey, 0, strlen('smpAttr:'.$exifDateTimeAttrId)) === 'smpAttr:'.$exifDateTimeAttrId) {
+          $modelWrapped['fields'][$theKey]['value']=$mediaDates;
+          $values[$theKey]=$mediaDates;   
+        }
+      }  
     }
     foreach ($media as $item) {
       //Only add media to the main sample if it isn't already contained in any sub-sample
