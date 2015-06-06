@@ -663,15 +663,13 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       //When the user changes the date, make sure it is still associated with one of the uploaded photos, if not, then warn the user (although they may still continue).
       //All the exif dates are held in a sample attribute, so just check the date appears somewhere in the attribute.
       //Note that a limitation of this is we assume that the Drupal date format is set to is dd/mm/yyyy.
-      //Note we need to use substr(2) to remove first 2 characters of date as the Drupal date format only supports full years, and we store the exif dates with
-      //only the last 2 characters of the year, so we chop the year to make the comparison
       If (!empty($args['no_photos_with_date_warning'])) {
         data_entry_helper::$javascript.="    
         $('#sample\\\\:date').change(function(evt) {  
           var formattedSampleDate;
           //Date has full year yyyy, so split up, chop the year, and then reconstruct
           var sampleDateArray=$('#sample\\\\:date').val().split('/');  
-          formattedSampleDate=sampleDateArray[0]+'/'+sampleDateArray[1]+'/'+sampleDateArray[2].substr(2);
+          formattedSampleDate=sampleDateArray[0]+'/'+sampleDateArray[1]+'/'+sampleDateArray[2];
           if (formattedSampleDate && $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val()  && 
               $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val().indexOf(formattedSampleDate)===-1) {
             alert('".$args['no_photos_with_date_warning']."');
@@ -779,19 +777,19 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           //and also set a default on the time field in the same way
           //Cycle round the media items and only set the date/time if it is the smallest one so far.
           if ((empty($smallestStrToTime) || $smallestStrToTime > $strToTime)&&
-              !empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) {  
+              !empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) { 
             $smallestStrToTime=$strToTime;
-            $modelWrapped['fields']['date']['value']=date('d/m/y',$smallestStrToTime);
-            $values['sample:date']=date('d/m/y',$smallestStrToTime); 
+            $modelWrapped['fields']['date']['value']=date('d/m/Y',$smallestStrToTime);
+            $values['sample:date']=date('d/m/Y',$smallestStrToTime); 
             $modelWrapped['fields']['smpAttr:'.$diveStartTimeAttrId]['value']=$time[1];
             $values['smpAttr:'.$diveStartTimeAttrid]=$time[1];   
           }      
           //Save the dates and times from the photos into an attribute for easy access by javascript, so contruct a string to save first.
           //Note I didn't use json as that dates include colons. So the format is date,time;date,time;date,time;date,time;date,time;
           if (!empty($mediaDates))
-            $mediaDates=$mediaDates.';'.date('d/m/y',$strToTime).','.$time[1];
+            $mediaDates=$mediaDates.';'.date('d/m/Y',$strToTime).','.$time[1];
           else 
-            $mediaDates=date('d/m/y',$strToTime).','.$time[1];
+            $mediaDates=date('d/m/Y',$strToTime).','.$time[1];
         }
       }
     }
