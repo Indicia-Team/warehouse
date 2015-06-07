@@ -274,7 +274,7 @@ function iform_map_get_map_options($args, $readAuth) {
     'rememberPos'=>isset($args['remember_pos']) ? ($args['remember_pos']==true) : false
   );
   // If they have defined a custom base layer, add it
-  if ($args['wms_base_title'] && $args['wms_base_url'] && $args['wms_base_layer']) {
+  if (!empty($args['wms_base_title']) && !empty($args['wms_base_url']) && !empty($args['wms_base_layer'])) {
     data_entry_helper::$onload_javascript .= "var baseLayer = new OpenLayers.Layer.WMS(
       '".$args['wms_base_title']."',
       '".$args['wms_base_url']."',
@@ -283,7 +283,7 @@ function iform_map_get_map_options($args, $readAuth) {
     $options['layers'][] = 'baseLayer';
   }
   // Also add any tilecaches they have defined
-  if ($args['tile_cache_layers']) {
+  if (!empty($args['tile_cache_layers'])) {
     $options['tilecacheLayers'] = json_decode($args['tile_cache_layers'], true);
   }
   // And any indicia Wms layers from the GeoServer
@@ -384,7 +384,7 @@ SCRIPT;
  * @return array Options array for OpenLayers, or null if not specified.
  */
 function iform_map_get_ol_options($args) {
-  if ($args['openlayers_options']) {
+  if (!empty($args['openlayers_options'])) {
     $opts = json_decode($args['openlayers_options'], true);
   } else {
     $opts = array();
