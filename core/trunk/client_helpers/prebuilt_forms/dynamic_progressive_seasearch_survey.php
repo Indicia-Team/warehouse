@@ -84,13 +84,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           'group'=>'Other Settings'
         ),
         array(
-          'name'=>'photo_order_attr_id',
-          'caption'=>'Photo Order Atrribute Id',
-          'description'=>'The id of the custom attribute that holds the order of the photos, as a comma separated list of media ids.',
-          'type'=>'string',
-          'group'=>'Other Settings'
-        ),
-        array(
           'name'=>'dive_duration_attr_id',
           'caption'=>'Dive Duration Attribute Id',
           'description'=>'The id of the custom attribute that holds the dive duration.',
@@ -383,7 +376,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       'readAuth' => $auth['read'],
       'caption'=>lang::get('Photos'),
       'readAuth'=>$auth['read']
-    ), $options),$habitats,$args['photo_order_attr_id'],$args['dive_duration_attr_id']);
+    ), $options),$habitats,$args['dive_duration_attr_id']);
     
 
     $habitatIds=[];
@@ -420,7 +413,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    * Control which actually displays the taxa photos to link to habitats
    * Displayed as part of get_control_linkhabitatstophotos
    */
-  private static function taxa_image_to_link($options,$habitats,$photoOrderAttrId, $diveDurationAttrId) {
+  private static function taxa_image_to_link($options,$habitats, $diveDurationAttrId) {
     iform_load_helpers(array('report_helper'));
     global $user;  
     //Use this report to return the photos
@@ -438,16 +431,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       $photoResults = data_entry_helper::get_report_data($reportOptions);
       //Order using exif
       $photoResults = self::set_photo_order($photoResults);
-      $prefix = '';
-      $photoList= '';
-      foreach ($photoResults as $photoData) {
-        $photoList .= $prefix.$photoData['id'];
-        $prefix = ', ';
-      }
-      //Save photo order for later
-      if (!empty($photoOrderAttrId))
-        data_entry_helper::$javascript .= "$('#smpAttr\\\\:".$photoOrderAttrId."').val('".$photoList."');";
-      
+     
       //NOTE: This function collects the path from configuration file, so that file needs to be setup correctly
       $uploadFolder = data_entry_helper::get_uploaded_image_folder();
       $r= '<div>';
@@ -522,7 +506,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       return '<h3>Photos</h3>'.$r;
     }
   }
- 
+
   /*
    * Order function used by usort function to sort photo array
    */
@@ -574,10 +558,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       drupal_set_message('Please fill in the edit tab option for the GPX Data attribute id');
       return false;
     }
-    if (empty($args['photo_order_attr_id'])) {
-      drupal_set_message('Please fill in the option for the Photo Order attribute id');
-      return false;
-    } 
     if (empty($args['habitat_smpAttr_cluster_ids'])) {
       drupal_set_message('Please fill in the option for the Habitat Sample Attribute Cluster');
       return false;
@@ -605,9 +585,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     $('#smpAttr\\\\:".$args['gpx_data_attr_id']."').hide();\n
     $('[for=smpAttr\\\\:".$args['gpx_data_attr_id']."]').hide();";
     //etc
-    data_entry_helper::$javascript .= "
-    $('#smpAttr\\\\:".$args['photo_order_attr_id']."').hide();\n
-    $('[for=smpAttr\\\\:".$args['photo_order_attr_id']."]').hide();";
     data_entry_helper::$javascript .= "
     $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').hide();\n
     $('[for=smpAttr\\\\:".$args['exif_date_time_attr_id']."]').hide();";
@@ -706,7 +683,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
   public static function ajax_save($website_id, $password, $node) {
     iform_load_helpers(array('data_entry_helper'));
     //Build submission
-    $Model = self::build_three_level_sample_with_occ_submission($_POST,$website_id, $password,$node->params['gpx_data_attr_id'],$node->params['photo_order_attr_id'],$node->params['dive_start_time_attr_id'],$node->params['exif_date_time_attr_id']);
+    $Model = self::build_three_level_sample_with_occ_submission($_POST,$website_id, $password,$node->params['gpx_data_attr_id'],$node->params['dive_start_time_attr_id'],$node->params['exif_date_time_attr_id']);
     $node = node_load($nid);
     $conn = iform_get_connection_details($node);
     $postargs = "website_id=".$conn['website_id'];
@@ -742,7 +719,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    * @param array $values List of the posted values to create the submission from.
    */
 
-  public static function build_three_level_sample_with_occ_submission($values,$website_id, $password,$gpxDataAttrId,$photoOrderAttrId,$diveStartTimeAttrId,$exifDateTimeAttrId) {
+  public static function build_three_level_sample_with_occ_submission($values,$website_id, $password,$gpxDataAttrId,$diveStartTimeAttrId,$exifDateTimeAttrId) {
     $standardGridValues=[];
     //Create two different $values arrays.
     //The $standardGridValues array contains all the values you would expect from a normal species grid entry form. This contains the species grid we don't have images for.
@@ -805,16 +782,16 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         }
       }
     }
-    if (!empty($mediaDates)) {
-     //Need to find the attribute that starts with smpAttr:<exifDateTimeAttrId> as in edit mode it will also have the sample_attribute_value on the end so in that
-     //case we need to overwrite existing value instead of creating new one.
+      if (!empty($mediaDates)) {
+        //Need to find the attribute that starts with smpAttr:<exifDateTimeAttrId> as in edit mode it will also have the sample_attribute_value on the end so in that
+        //case we need to overwrite existing value instead of creating new one.
      foreach ($values as $theKey=>$theValue) {
         if (substr($theKey, 0, strlen('smpAttr:'.$exifDateTimeAttrId)) === 'smpAttr:'.$exifDateTimeAttrId) {
           $modelWrapped['fields'][$theKey]['value']=$mediaDates;
           $values[$theKey]=$mediaDates;   
         }
-      }  
-    }
+      }
+    }  
     foreach ($media as $item) {
       //Only add media to the main sample if it isn't already contained in any sub-sample
       if (empty($values['sample_medium:'.$item['id'].':sample_id'])||
@@ -836,7 +813,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     }
     
     //Create the third level samples with occurrences
-    $modelWrapped=self::create_third_level_sample_model($modelWrapped,$values,$website_id, $password,$gpxDataAttrId,$photoOrderAttrId);
+    $modelWrapped=self::create_third_level_sample_model($modelWrapped,$values,$website_id, $password,$gpxDataAttrId);
     //TODO Needs further testing
     //The user is can rearrange which third level sample points to which second level sample. When the user does this we just need to attach the
     //change to the parent_id to the end of the submission model
@@ -1030,7 +1007,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    * When the final tab of the form is saved, then the occurrences will have had their taxa identified. At this time we need to create a full model
    * with a main sample, some sub-samples, and then some third level samples with the occurrences attached.
    */
-  private static function create_third_level_sample_model($modelWrapped,$values,$website_id, $password,$gpxDataAttrId,$photoOrderAttrId) {  
+  private static function create_third_level_sample_model($modelWrapped,$values,$website_id, $password,$gpxDataAttrId) {  
     //Initially when the occurrences grid is loaded, it is loaded with sample images held on the 2nd level sample.
     //Convert these into occurrence images.
     //Also collect a list of present taxa on the grid.
@@ -1052,15 +1029,12 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     }
     foreach ($values as $key =>$value) {
       $explodedKey=explode(':',$key);
-      if (!empty($explodedKey[0]) && !empty($explodedKey[1]) && ($explodedKey[0].':'.$explodedKey[1]=='smpAttr:'.$photoOrderAttrId)&&!empty($value)) {
-        $imageOrder=explode(',',$value);
-      }
       if (!empty($explodedKey[0]) && !empty($explodedKey[1]) && ($explodedKey[0].':'.$explodedKey[1]=='smpAttr:'.$gpxDataAttrId)&&!empty($value)) {
         $gpsArray=explode(';',$value);
       }
     }
     //As we have used existing code to create 2nd level samples to hold the occurrences, we need to transfer these to the third level samples
-    $modelWrapped=self::transfer_occurrences_to_third_level_samples($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$imageOrder,$gpsArray,$website_id, $password,$gpxDataAttrId);
+    $modelWrapped=self::transfer_occurrences_to_third_level_samples($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$gpsArray,$website_id, $password,$gpxDataAttrId);
     $multiSubmission['submission_list']['entries']=[];
     //Any third level samples that have been deleted need adding to the model at the top, this because we don't know the parent_id
     //Note, there is a bug in PHP foreach which was causing the foreach to cycle over the first element here twice. From the php docs
@@ -1097,7 +1071,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
  
   //Existing sub-sample creation code is used to create sub-samples on the grid with occurrences attached.
   //So we need to move these occurrences onto thid level samples.
-  private static function transfer_occurrences_to_third_level_samples($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$imageOrder,$gpsArray,$website_id,$password,$gpxDataAttrId) {
+  private static function transfer_occurrences_to_third_level_samples($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$gpsArray,$website_id,$password,$gpxDataAttrId) {
     //Loop through each 2nd level sample.
     foreach ($modelWrapped['subModels'] as $secondLevelSampleIdx=> &$secondLevelSample) {
       //Only work on the second level sample in the situation where there are some third level samples to create for it ready to put an occurrence onto.
@@ -1109,11 +1083,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
               //Add the third level sample to the second level sample, but only if the image added to the third level sample's occurrence matches one on the second level sample (the second level
               //sample image is going to be deleted in a minute)
               if ($subSampleMedium['model']['fields']['path']['value']==$thirdLevelSample['model']['subModels'][0]['model']['subModels'][0]['model']['fields']['path']['value']) {
-                foreach ($imageOrder as $idx => $imageOrderItem) {
-                  if ($imageOrderItem==$subSampleMedium['model']['fields']['id']['value']) {
-                    $imagePosition = $idx;
-                  }
-                }
                 //Need to get exifs for media items
                 $readAuth = data_entry_helper::get_read_auth($website_id, $password);
                 //Use this report to return the photos
