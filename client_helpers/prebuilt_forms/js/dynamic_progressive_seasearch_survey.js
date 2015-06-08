@@ -49,6 +49,13 @@ jQuery(window).load(function($) {
     hideOccurrenceAddphoto();
     //Note for this wizard, we don't have a final submit, we save on everytime the user clicks next.
     $('.tab-next').click(function() {
+      $('.tab-next').each(function() {
+        $(this).text('Please wait, saving previous page');
+      });
+      //Hide button when saving in progress
+      $('.tab-prev').each(function() {
+        $(this).hide();
+      });
       //currently selected tab number need incrementing    
       current++;
       //If finished wizard, then set in-progress attribute for sample to false.
@@ -105,6 +112,13 @@ jQuery(window).load(function($) {
           window.location=urlWithoutParams;
           window.location.href;
         }
+        //Re-enable wizard buttons once saving is complete
+        $('.tab-next').each(function() {
+            $(this).text('Next step >');
+        });
+        $('.tab-prev').each(function() {
+            $(this).show();
+        });
       }
     );
   }
