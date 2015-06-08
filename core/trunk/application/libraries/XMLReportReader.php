@@ -357,7 +357,7 @@ class XMLReportReader_Core implements ReportReader
     foreach ($this->columns as $col=>$def) {
       if (isset($def['sql'])) {
         if (!isset($def['on_demand']) || $def['on_demand']!=="true")
-          $sql[] = $def['sql'] . ' as ' . $col;
+          $sql[] = $def['sql'] . ' as "' . $col . '"';
         if (isset($def['distincton']) && $def['distincton']=='true') {
           $distinctSql[] = $def['internal_sql'];
           // in_count lets the xml file exclude distinct on columns from the count query
