@@ -665,8 +665,8 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           }
         });";   
       }
-    data_entry_helper::$javascript.="
-    });";
+    data_entry_helper::$javascript.="    
+    });";   
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
     data_entry_helper::add_resource('jquery_form');
     return parent::get_form($args, $node);
@@ -693,15 +693,8 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //TODO, when the first page is saved we create a sample but we don't have a spatial reference, this is currently a point on the Isle of Wight (for no particular reason other than we know this
     //isn't in the sea so won't be confused with finished save.
     if (empty($Model['fields']['entered_sref']['value'])) {
-      if (empty($Model['fields']['entered_sref_system']['value'])) {
-        $Model['fields']['entered_sref_system']['value']='4326';
-      }
-      if ($Model['fields']['entered_sref_system']['value']=='4326') {
-        $Model['fields']['entered_sref']['value']='50.68348N 1.28564W';
-      }
-      if ($Model['fields']['entered_sref_system']['value']=='OSGB') {
-        $Model['fields']['entered_sref']['value']='SZ58';
-      }
+        $Model['fields']['entered_sref_system']['value']='4277';
+        $Model['fields']['entered_sref']['value']='50:41.0994N, 1:17.1864W';
     }  
     //Save submission
     $response = data_entry_helper::forward_post_to('save', $Model, $writeTokens);
