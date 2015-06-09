@@ -137,64 +137,60 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //average them to make the spatial reference on the sample (as the main sample only has a single spatial
     //reference it makes sense to use an average of all positions),this can be overridden.
     data_entry_helper::$javascript .= "
-      var input_file = document.getElementById('file_upload');
-      input_file.onchange = function() {
-        $('#imp-sref-system').val(4326);
-        //Need a counter for the length of indiciaData.gpxLatLon as it is a string rather than an array
-        var gpxLatLonLength = 0;
-        var file = this.files[0];
-        var el;
-        var trkTag;
-        var timeTag;
-        var latAcc = 0;
-        var lonAcc = 0;
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-          //Need a double backslash otherwise html interprets this as literally create a new line
-          lines = ev.target.result.split('\\n');
-          //Cucle through lines in file
-          for (i=0; i<lines.length;i++) {
-            //Create fake element
-            el = document.createElement( 'div' );
-            el.innerHTML = lines[i];
-            trkTag=el.getElementsByTagName(\"trkpt\");
-            timeTag=el.getElementsByTagName(\"time\");
-            //Save the spatial references (trackpoints) and times to an attribute.
-            //Format is
-            //lat,lon,time;lat,long,time;lat,lon,time etc (uses a semi-colon as as the time from the file includes colons)
-            for (i2=0;i2<trkTag.length;i2++) {
-              if (indiciaData.gpxLatLon) {
-                indiciaData.gpxLatLon=indiciaData.gpxLatLon+';'+trkTag[i2].getAttribute(\"lat\")+','+trkTag[i2].getAttribute(\"lon\")+','+timeTag[i2].innerHTML;
-                gpxLatLonLength++;
-              } else {
-                indiciaData.gpxLatLon=trkTag[i2].getAttribute(\"lat\")+','+trkTag[i2].getAttribute(\"lon\")+','+timeTag[i2].innerHTML;
-                gpxLatLonLength++;
-              }
-              latAcc = latAcc + parseFloat(trkTag[i2].getAttribute(\"lat\"));
-              lonAcc = lonAcc + parseFloat(trkTag[i2].getAttribute(\"lon\"));
-            }   
-          }
-          latAcc=(latAcc/gpxLatLonLength).toFixed(10);
-          lonAcc=(lonAcc/gpxLatLonLength).toFixed(10);
-          if (latAcc>=0) {
-            latAcc=latAcc+'N';
-          } else {
-            latAcc=(latAcc*-1)+'S';
-          }
-          if (lonAcc>=0) {
-            lonAcc=lonAcc+'E';
-          } else {
-            lonAcc=(lonAcc*-1)+'W';
-          }
-          $('#imp-sref').val(latAcc+ ' ' + lonAcc);";
-          data_entry_helper::$javascript .= '
+    var input_file = document.getElementById('file_upload');
+    input_file.onchange = function() {
+      $('#imp-sref-system').val(4326);
+      //Need a counter for the length of indiciaData.gpxLatLon as it is a string rather than an array
+      var gpxLatLonLength = 0;
+      var file = this.files[0];
+      var el;
+      var trkTag;
+      var timeTag;
+      var latAcc = 0;
+      var lonAcc = 0;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        //Create fake element
+        el = document.createElement( 'div' );
+        el.innerHTML = ev.target.result;
+        //Split up text that has been read from file into the track points
+        trkTag=el.getElementsByTagName(\"trkpt\");
+        //Save the spatial references (trackpoints) and times to an attribute. Cycle through each trackpoint and find the time tags.
+        //Attribute format is lat,lon,time;lat,long,time;lat,lon,time etc (uses a semi-colon as as the time from the file includes colons)
+        for (i=0;i<trkTag.length;i++) {
+          //Get time as text from within trackpoint
+          timeTag=trkTag[i].innerHTML.split('<time>')[1].split('</time>')[0];
           if (indiciaData.gpxLatLon) {
-            $("#smpAttr\\\\:'.$args['gpx_data_attr_id'].'").val(indiciaData.gpxLatLon);
+            indiciaData.gpxLatLon=indiciaData.gpxLatLon+';'+trkTag[i].getAttribute(\"lat\")+','+trkTag[i].getAttribute(\"lon\")+','+timeTag;
+            gpxLatLonLength++;
+          } else {
+            indiciaData.gpxLatLon=trkTag[i].getAttribute(\"lat\")+','+trkTag[i].getAttribute(\"lon\")+','+timeTag;
+            gpxLatLonLength++;
           }
-        };
-        // Read as plain text
-        reader.readAsText(file);  
-      };';
+          latAcc = latAcc + parseFloat(trkTag[i].getAttribute(\"lat\"));
+          lonAcc = lonAcc + parseFloat(trkTag[i].getAttribute(\"lon\"));
+        }   
+        latAcc=(latAcc/gpxLatLonLength).toFixed(10);
+        lonAcc=(lonAcc/gpxLatLonLength).toFixed(10);
+        if (latAcc>=0) {
+          latAcc=latAcc+'N';
+        } else {
+          latAcc=(latAcc*-1)+'S';
+        }
+        if (lonAcc>=0) {
+          lonAcc=lonAcc+'E';
+        } else {
+          lonAcc=(lonAcc*-1)+'W';
+        }
+        $('#imp-sref').val(latAcc+ ' ' + lonAcc);";
+        data_entry_helper::$javascript .= '
+        if (indiciaData.gpxLatLon) {
+          $("#smpAttr\\\\:'.$args['gpx_data_attr_id'].'").val(indiciaData.gpxLatLon);
+        }
+      };
+      // Read as plain text
+      reader.readAsText(file);  
+    };';
     return $r;
   }
  
@@ -665,8 +661,8 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           }
         });";   
       }
-    data_entry_helper::$javascript.="    
-    });";   
+        data_entry_helper::$javascript.="    
+        });";   
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
     data_entry_helper::add_resource('jquery_form');
     return parent::get_form($args, $node);
