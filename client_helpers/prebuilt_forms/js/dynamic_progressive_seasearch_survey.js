@@ -2,6 +2,9 @@ var setupHtmlForLinkingPhotosToHabitats, setupDroppableItemsForLinkingPhotosToHa
 var setupAjaxPageSaving, setupClickEvents, inArray, current, next, hideOccurrenceAddphoto, disableTabContents,makeImageRowOrSpareRow;
 
 jQuery(window).load(function($) {
+  //Once page has finished loading we can hide loading div
+  jQuery('#loading').hide();
+  jQuery('#show').hide();
   //currently selected tab number
   current=parseInt(indiciaData.tabToReloadTo);
   //When linking photos to habitat we use drag and drop. Set this up.
@@ -49,6 +52,13 @@ jQuery(window).load(function($) {
     hideOccurrenceAddphoto();
     //Note for this wizard, we don't have a final submit, we save on everytime the user clicks next.
     $('.tab-next').click(function() {
+      //currently selected tab number need incrementing    
+      current++;
+      //Show Loading div if we need to relod page
+      if (inArray(current-1,indiciaData.reloadtabs)) {
+        $('#loading').show();
+        $('#controls').hide();
+      }
       $('.tab-next').each(function() {
         $(this).text('Please wait, saving previous page');
       });
@@ -56,8 +66,6 @@ jQuery(window).load(function($) {
       $('.tab-prev').each(function() {
         $(this).hide();
       });
-      //currently selected tab number need incrementing    
-      current++;
       //If finished wizard, then set in-progress attribute for sample to false.
       if (current>6) {
         $(indiciaData.inProgressAttrSelector).val(0);
@@ -72,6 +80,9 @@ jQuery(window).load(function($) {
     $('.tab-prev').click(function() {
       //currently selected tab number needs decrementing     
       current--;
+      //Show loading div as we are reloading page.
+      $('#loading').show();
+      $('#controls').hide();
       hideOccurrenceAddphoto();
       setupAjaxPageSaving(true);
       //see detailed notes before method
