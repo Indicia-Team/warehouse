@@ -501,7 +501,7 @@ class helper_base extends helper_config {
    * format so far.
    *
    */
-  public static $date_format='d/m/y';
+  public static $date_format='d/m/Y';
   
   /**
    * @var Boolean indicates if any form controls have specified the lockable option.
