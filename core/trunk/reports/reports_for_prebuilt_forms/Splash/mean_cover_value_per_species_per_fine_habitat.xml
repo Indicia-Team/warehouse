@@ -11,7 +11,7 @@ using a basic integer for the cover, whilst on others this number is represented
       JOIN samples samp on samp.id=co.sample_id AND samp.deleted = false
       JOIN sample_attribute_values savHab on savHab.sample_id=samp.id AND savHab.sample_attribute_id=#habitat_attr_id# AND savHab.deleted=false
       JOIN termlists_terms ttHab ON ttHab.id = savHab.int_value AND ttHab.parent_id IS NOT NULL AND ttHab.deleted=false
-      JOIN terms tHab ON tHab.id = ttHab.term_id AND tHab.deleted=false  
+      JOIN terms tHab ON tHab.id = ttHab.term_id AND tHab.term!='Not in scheme' AND tHab.deleted=false  
       JOIN surveys su on su.id=samp.survey_id AND su.deleted=false
       LEFT JOIN occurrence_attribute_values oavInt on oavInt.occurrence_id=co.id AND oavInt.occurrence_attribute_id=#cover_int_occ_attr_id# AND oavInt.deleted=false
       LEFT JOIN occurrence_attribute_values oavCov on oavCov.occurrence_id=co.id AND oavCov.occurrence_attribute_id=#cover_tt_occ_attr_id# AND oavCov.deleted=false
