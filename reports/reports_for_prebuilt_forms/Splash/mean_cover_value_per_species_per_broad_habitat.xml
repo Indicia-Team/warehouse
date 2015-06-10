@@ -48,6 +48,21 @@ Broad habitat data may include data for samples where a fine scale sub-habitat h
   <columns> 
     <column name='species' display='Species' sql='co.taxon' datatype='text' in_count="true"/>
     <column name='habitat' display='Habitat' sql='tHab.term' datatype='text' in_count="true"/>
+    <column name='habitat_abbr' display='Abbreviation' sql="
+    CASE 
+      WHEN tHab.term='Arable margins' then 'AFM' 
+      WHEN tHab.term='Bog and wet heath' then 'BWH' 
+      WHEN tHab.term='Broadleaved woodland, hedges and scrub' then 'BW' 
+      WHEN tHab.term='Coast' then 'C' 
+      WHEN tHab.term='Freshwater' then 'FW'
+      WHEN tHab.term='Heathland' then 'H'
+      WHEN tHab.term='Lowland grassland' then 'LG'
+      WHEN tHab.term='Marsh and fen' then 'MF' 
+      WHEN tHab.term='Native pinewood and juniper scrub' then 'NPW'       
+      WHEN tHab.term='Rock outcrops, cliffs and scree' then 'ROCS'      
+      WHEN tHab.term='Upland grassland' then 'UG'       
+      ELSE tHab.term
+    END" datatype='text'/> 
     <!-- A few things to note here, firstly, the all the coalesces makes sure we return at least a 0 when doing an addition, as null addition doesn't work. Then NULLIF statement make sures if we detect 0 as a species cover, it does not count towards the mean calculation at all, this behaviour is on request of client and 
     makes sense in the context of this report. Also note that the cover values get translated into percentages before being used in the calculations-->
     <column name='mean_species_cover' display='Mean Cover' sql="
