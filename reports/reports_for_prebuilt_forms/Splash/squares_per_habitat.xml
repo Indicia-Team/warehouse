@@ -12,8 +12,12 @@ broad scale habitat is reported on, we need to work out the related broad scale 
     JOIN samples samp on samp.location_id = plot.id AND samp.deleted = false
     JOIN sample_attribute_values sampHabVal on sampHabVal.sample_attribute_id=#habitat_attr_id# AND sampHabVal.sample_id=samp.id AND sampHabVal.deleted=false
     JOIN termlists_terms habTt on habTt.id = sampHabVal.int_value AND habTt.deleted=false
+    JOIN terms habT on habT.id=habTt.term_id AND habT.term!='Not in scheme' AND habT.deleted=false
+    LEFT JOIN termlists_terms habTtParent on habTtParent.id = habTt.parent_id AND habTtParent.deleted=false
+    LEFT JOIN terms habTParent on habTParent.id=habTtParent.term_id  AND habTParent.deleted=false
   WHERE square.deleted=false
     AND #website_filter#
+    AND (habTParent.id IS NULL OR habTParent.term!='Not in scheme')
   </query>
   <params>
     <param name='broad_habitat' display='Broad Scale Habitat' description='Broad scale habitat to report on.' datatype='lookup' emptyvalue=''
