@@ -22,10 +22,10 @@ Broad habitat data may include data for samples where a fine scale sub-habitat h
     WHERE samp.deleted=false
       #filters#
       AND #website_filter#
-    GROUP BY co.taxon,tHab.term
+    GROUP BY tHab.term
   </query>
   <order_bys>
-    <order_by>co.taxon ASC</order_by>
+    <order_by>tHab.term ASC</order_by>
   </order_bys>
   <params>
     <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
@@ -46,7 +46,6 @@ Broad habitat data may include data for samples where a fine scale sub-habitat h
     </param>
   </params>
   <columns> 
-    <column name='species' display='Species' sql='co.taxon' datatype='text' in_count="true"/>
     <column name='habitat' display='Habitat' sql='tHab.term' datatype='text' in_count="true"/>
     <column name='habitat_abbr' display='Abbreviation' sql="
     CASE 
