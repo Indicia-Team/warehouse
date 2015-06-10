@@ -46,6 +46,38 @@ using a basic integer for the cover, whilst on others this number is represented
   <columns> 
     <column name='species' display='Species' sql='co.taxon' datatype='text' in_count="true"/>
     <column name='habitat' display='Habitat' sql='tHab.term' datatype='text' in_count="true"/>
+    <column name='habitat_abbr' display='Abbreviation' sql="
+    CASE 
+      WHEN tHab.term='Acid fens, mires and springs' then 'AFF' 
+      WHEN tHab.term='Arable field margins' then 'AFM' 
+      WHEN tHab.term='Base-rich fens, mires and springs' then 'BFF' 
+      WHEN tHab.term='Blanket bog' then 'BB' 
+      WHEN tHab.term='Coastal saltmarsh' then 'CS' 
+      WHEN tHab.term='Coastal sand dunes' then 'CSD'
+      WHEN tHab.term='Coastal vegetated shingle' then 'CVS'
+      WHEN tHab.term='Dry acid grassland' then 'DAG'
+      WHEN tHab.term='Dry calcareous grassland' then 'DCG' 
+      WHEN tHab.term='Dry deciduous woodland' then 'DDW' 
+      WHEN tHab.term='Dry heathland' then 'DH'
+      WHEN tHab.term='Montane dry heathland' then 'DMH'
+      WHEN tHab.term='Hedgerows of native species' then 'HNS'
+      WHEN tHab.term='Inland rocks and scree' then 'IRS'
+      WHEN tHab.term='Machair' then 'M'
+      WHEN tHab.term='Maritime cliffs and slopes' then 'MCT'
+      WHEN tHab.term='Montane acid grassland' then 'MAG'
+      WHEN tHab.term='Montane calcareous grassland' then 'MCG'
+      WHEN tHab.term='Montane rocks and scree' then 'MRS'
+      WHEN tHab.term='Native conifer woods and juniper scrub' then 'NPW'
+      WHEN tHab.term='Neutral damp grassland' then 'NDG'
+      WHEN tHab.term='Neutral pastures and meadows' then 'NPM'
+      WHEN tHab.term='Nutrient-poor lakes and ponds' then 'NPL'
+      WHEN tHab.term='Nutrient-rich lakes and ponds' then 'NRL'
+      WHEN tHab.term='Raised bog' then 'RB'
+      WHEN tHab.term='Rivers and streams' then 'RS'
+      WHEN tHab.term='Wet heath' then 'WH'
+      WHEN tHab.term='Wet woodland' then 'WW'
+      ELSE tHab.term 
+    END" datatype='text'/>
     <!-- A few things to note here, firstly, the all the coalesces makes sure we return at least a 0 when doing an addition, as null addition doesn't work. Then NULLIF statement make sures if we detect 0 as a species cover, it does not count towards the mean calculation at all, this behaviour is on request of client and 
     makes sense in the context of this report. Also note that the cover values get translated into percentages before being used in the calculations-->
     <column name='mean_species_cover' display='Mean Cover' sql="
