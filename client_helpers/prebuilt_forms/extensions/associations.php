@@ -79,7 +79,7 @@ class extension_associations {
    * @param $options
    */
   private static function read_termlist_details($auth, &$options) {
-    $allRelevantTermlists = array('association_type', 'position', 'part', 'condition', 'impact');
+    $allRelevantTermlists = array('association_type', 'position', 'part', 'impact');
     // check which of all the termlists we have a title for but no ID so we know to convert them
     $termlistsToConvert = array();
     foreach ($allRelevantTermlists as $termlistToCheck) {
