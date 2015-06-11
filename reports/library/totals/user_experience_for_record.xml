@@ -29,10 +29,15 @@
     sum(case when now()-co.cache_created_on&lt;'1 year'::interval and co.record_status='R' then 1 else 0 end) as r_1year
     from cache_occurrences r 
     left join cache_occurrences co on co.taxon_group_id=r.taxon_group_id and co.created_by_id=r.created_by_id
+      #joins#
     where r.id=#occurrence_id#
     group by r.taxon_group_id, r.taxon_group
   </query>
   <params>
     <param name='occurrence_id' display='Occurrence ID' datatype='integer' />
+    <param name='minimum_taxon_rank_sort_order' display='Minimum taxon rank sort order' datatype='integer'
+        description='Use to limit group data to only species level identifications, for example' default="180">
+      <join>left join cache_taxa_taxon_lists ttl on ttl.id=co.taxa_taxon_list_id and (ttl.taxon_rank_sort_order is null or ttl.taxon_rank_sort_order >= #minimum_taxon_rank_sort_order#)</join>
+    </param>
   </params>
 </report>
