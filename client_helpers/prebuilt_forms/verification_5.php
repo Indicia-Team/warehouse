@@ -107,6 +107,14 @@ class iform_verification_5 {
           'default'=>'reports_for_prebuilt_forms/verification_3/record_data_attributes'
         ),
         array(
+          'name'=>'min_taxon_rank_sort_order',
+          'caption'=>'Minimum taxon rank sort order',
+          'description'=>'For the experience report, specify the minimum taxon rank sort order to include.',
+          'type'=>'text_input',
+          'group'=>'Report Settings',
+          'required'=>false
+        ),
+        array(
             'name' => 'columns_config',
             'caption' => 'Columns Configuration',
             'description' => 'Define a list of columns with various configuration options when you want to override the '.
@@ -1068,10 +1076,13 @@ idlist=';
   public static function ajax_experience($website_id, $password, $node) {
     iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
+    $filter = array('occurrence_id'=>$_GET['occurrence_id']);
+    if (!empty($node->params['min_taxon_rank_sort_order']))
+      $filter['minimum_taxon_rank_sort_order'] = $node->params['min_taxon_rank_sort_order'];
     $data = report_helper::get_report_data(array(
       'dataSource' => 'library/totals/user_experience_for_record',
       'readAuth' => $readAuth,
-      'extraParams' => array('occurrence_id'=>$_GET['occurrence_id'])
+      'extraParams' => $filter
     ));
     $r = '';
     foreach($data as $row) {
@@ -1119,7 +1130,7 @@ idlist=';
    * @return string Either yes, no, maybe or unknown.
    * @throws \Exception
    */
-  public function ajax_do_they_see_notifications($website_id, $password, $node) {
+  public function ajax_do_they_see_notifications($website_id, $password) {
     iform_load_helpers(array('report_helper'));
     $readAuth = report_helper::get_read_auth($website_id, $password);
     $data = report_helper::get_report_data(array(
