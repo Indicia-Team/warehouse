@@ -135,6 +135,7 @@ Record ID',
                 "&nbsp;&nbsp;<strong>[photos]</strong> - photos associated with the occurrence<br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong> - a map that links to the spatial reference and location<br/>".
                 "&nbsp;&nbsp;<strong>[previous determinations]</strong> - a list of previous determinations for this record<br/>".
+                 "&nbsp;&nbsp;<strong>[occurrence associations]</strong> - a list of associated occurrence information (recorded interactions)<br/>".
             "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page (alpha-numeric characters only). ".
             "If the page interface type is set to one page, then each tab/page name is displayed as a seperate section on the page. ".
             "Note that in one page mode, the tab/page names are not displayed on the screen.<br/>".
