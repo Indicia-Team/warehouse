@@ -68,26 +68,31 @@ jQuery(document).ready(function($) {
     return presenceControlName.replace(/^sc:/, '').replace(/:(\d+)?:present$/, '');
   }
 
+  /**
+   * Hook for a new species checklist grid row. Causes all the species selection drop downs in the associations list to
+   * repopulate.
+   */
+  function populate_drop_downs_after_added_species() {
+    populate_drop_downs('#associations-list');
+  }
 
-  function populate_drop_downs(data, selector) {
+  function populate_drop_downs(assocRowSelector) {
     var fromList = $('#' + indiciaData.associationCtrlOptions.from_grid_id + ' tbody tr').not('.scClonableRow'),
         toList = $('#' + indiciaData.associationCtrlOptions.to_grid_id + ' tbody tr').not('.scClonableRow'), options='', ctrl,
-      oldVal;
-    if (typeof selector==="undefined") {
-      selector = '#associations-list tbody';
-    }
-
-    ctrl = $(selector).find('select.species-assoc-from');
+        oldVal;
+    ctrl = $(assocRowSelector).find('select.species-assoc-from');
     if (ctrl) {
       $.each(fromList, function() {
         options += '<option value="' + get_grid_and_row_index(this) + '">' + $(this).find('.scTaxonCell').text().trim() + '</option>';
       });
-      oldVal = ctrl.val();
-      ctrl.html('').append(options);
-      ctrl.val(oldVal);
+      $.each(ctrl, function() {
+        oldVal = $(this).val();
+        $(this).html('').append(options);
+        $(this).val(oldVal);
+      });
     }
     options = '';
-    ctrl = $(selector).find('select.species-assoc-to');
+    ctrl = $(assocRowSelector).find('select.species-assoc-to');
     if (ctrl) {
       $.each(toList, function() {
         options += '<option value="' + get_grid_and_row_index(this) + '">' + $(this).find('.scTaxonCell').text().trim() + '</option>';
@@ -98,7 +103,7 @@ jQuery(document).ready(function($) {
     }
   }
 
-  hook_species_checklist_new_row.push(populate_drop_downs);
+  hook_species_checklist_new_row.push(populate_drop_downs_after_added_species);
 
   function addAssociationRow(e, associationId) {
     if (!validate_complete()) {
@@ -152,7 +157,7 @@ jQuery(document).ready(function($) {
     extraControls['impact'] +
     '<span class="ind-delete-icon"/></div>');
     row = $('#associations-list').find('div.association-row:last-child');
-    populate_drop_downs(null, row);
+    populate_drop_downs(row);
     return row;
   }
 
