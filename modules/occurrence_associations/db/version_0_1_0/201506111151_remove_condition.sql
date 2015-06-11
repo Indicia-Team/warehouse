@@ -1,0 +1,2 @@
+ALTER TABLE occurrence_associations
+DROP COLUMN condition_id;
