@@ -297,6 +297,13 @@ class iform_verification_5 {
           'required' => 'false'
         ),
         array(
+          'name'=>'record_details_path',
+          'caption'=>'Record details page path',
+          'description'=>'Path to page used to show details of a single record, e.g. an instance of the Record Details 2 prebuilt form.',
+          'type'=>'string',
+          'required' => 'false'
+        ),
+        array(
           'name'=>'clear_verification_task_notifications',
           'caption'=>'Clear verification task notifications?',
           'description'=>'Automatically clear any verification task notifications when the user opens the verification screen.',
@@ -838,7 +845,14 @@ idlist=';
     }
 
     $r = "<table class=\"report-grid\">\n";
+    $first = true;
     foreach($data as $heading=>$items) {
+      if ($first && !empty($node->params['record_details_path'])) {
+        $heading .= ' <a title="View full details of the record" target="_blank" href="' .
+          hostsite_get_url($node->params['record_details_path'], array('occurrence_id' => $_GET['occurrence_id'])) .
+          '"><img src="' . data_entry_helper::$images_path . 'nuvola/find-22px.png" width="22" height="22" /></a>';
+        $first = false;
+      }
       $r .= "<tr><td colspan=\"2\" class=\"header\">$heading</td></tr>\n";
       foreach ($items as $item) {
         if (!is_null($item['value']) && $item['value'] != '') {
