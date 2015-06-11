@@ -78,31 +78,33 @@ jQuery(document).ready(function($) {
 
   function populate_drop_downs(assocRowSelector) {
     var fromList = $('#' + indiciaData.associationCtrlOptions.from_grid_id + ' tbody tr').not('.scClonableRow'),
-        toList = $('#' + indiciaData.associationCtrlOptions.to_grid_id + ' tbody tr').not('.scClonableRow'), options='', ctrl,
-        oldVal;
+        toList = $('#' + indiciaData.associationCtrlOptions.to_grid_id + ' tbody tr').not('.scClonableRow'), ctrl;
     ctrl = $(assocRowSelector).find('select.species-assoc-from');
+    populate_drop_down_controls(ctrl, fromList);
+    ctrl = $(assocRowSelector).find('select.species-assoc-to');
+    populate_drop_down_controls(ctrl, toList);
+  }
+
+  function populate_drop_down_controls(ctrl, fromList) {
+    var options='', oldVal, blankOption;
     if (ctrl) {
       $.each(fromList, function() {
         options += '<option value="' + get_grid_and_row_index(this) + '">' + $(this).find('.scTaxonCell').text().trim() + '</option>';
       });
       $.each(ctrl, function() {
         oldVal = $(this).val();
-        $(this).html('').append(options);
+        // a little bit of intelligence as to whether the please select option is required.
+        blankOption = fromList.length > 1 && !oldVal ? '<option>&lt;Please select&gt;</option>' : '';
+        $(this).html('').append(blankOption).append(options);
         $(this).val(oldVal);
       });
     }
-    options = '';
-    ctrl = $(assocRowSelector).find('select.species-assoc-to');
-    if (ctrl) {
-      $.each(toList, function() {
-        options += '<option value="' + get_grid_and_row_index(this) + '">' + $(this).find('.scTaxonCell').text().trim() + '</option>';
-      });
-      oldVal = ctrl.val();
-      ctrl.html('').append(options);
-      ctrl.val(oldVal);
-    }
   }
 
+  /**
+   * Get the species checklists to tell us when a species is added to the page. Then we can update the available species in the
+   * associations drop downs.
+   */
   hook_species_checklist_new_row.push(populate_drop_downs_after_added_species);
 
   function addAssociationRow(e, associationId) {
