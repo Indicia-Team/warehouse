@@ -1,4 +1,6 @@
-﻿CREATE OR REPLACE VIEW list_occurrence_associations AS 
+﻿DROP VIEW IF EXISTS detail_occurrence_associations;
+
+CREATE OR REPLACE VIEW list_occurrence_associations AS 
 select 
   oa.id, oa.from_occurrence_id, oa.to_occurrence_id, cofrom.taxon as from_taxon, coto.taxon as to_taxon, cofrom.sample_id,
   oa.association_type_id, atype.term as association_type, oa.part_id, part.term as part, 
@@ -11,6 +13,8 @@ left join cache_termlists_terms part on part.id=oa.part_id
 left join cache_termlists_terms pos on pos.id=oa.position_id
 left join cache_termlists_terms impact on impact.id=oa.impact_id
 where oa.deleted=false;
+
+DROP VIEW IF EXISTS detail_occurrence_associations;
 
 CREATE OR REPLACE VIEW detail_occurrence_associations AS 
 select 
