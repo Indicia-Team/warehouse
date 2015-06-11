@@ -105,7 +105,7 @@ jQuery(document).ready(function($) {
       return;
     }
     var extraControls = [], options, optionsList, row, namePrefix,
-      allTermlists = ['association_type', 'position', 'part', 'impact', 'condition'],
+      allTermlists = ['association_type', 'position', 'part', 'impact'],
       idx = $('#associations-list').find('div.association-row').length; // ensure zero indexed
     // format of the association field:
     // occurrence_association:<row index>:<occurrence_association_id for existing>:<fieldname>
@@ -138,9 +138,6 @@ jQuery(document).ready(function($) {
         if (this==='impact') {
           extraControls[this] = ' causing ' + extraControls[this];
         }
-        else if (this==='condition') {
-          extraControls[this] = ' (condition ' + extraControls[this] + ')';
-        }
       }
       else {
         extraControls[this] = '';
@@ -153,7 +150,6 @@ jQuery(document).ready(function($) {
     extraControls['position'] +
     extraControls['part'] +
     extraControls['impact'] +
-    extraControls['condition'] +
     '<span class="ind-delete-icon"/></div>');
     row = $('#associations-list').find('div.association-row:last-child');
     populate_drop_downs(null, row);
@@ -186,7 +182,6 @@ jQuery(document).ready(function($) {
       $(row).find('.position-control').val(this.position_id);
       $(row).find('.part-control').val(this.part_id);
       $(row).find('.impact-control').val(this.impact_id);
-      $(row).find('.condition-control').val(this.condition_id);
     });
   };
 
