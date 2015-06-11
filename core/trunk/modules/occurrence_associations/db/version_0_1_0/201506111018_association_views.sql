@@ -1,4 +1,4 @@
-﻿DROP VIEW IF EXISTS detail_occurrence_associations;
+﻿DROP VIEW IF EXISTS list_occurrence_associations;
 
 CREATE OR REPLACE VIEW list_occurrence_associations AS 
 select 
