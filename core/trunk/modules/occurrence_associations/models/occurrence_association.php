@@ -39,7 +39,6 @@ class Occurrence_association_Model extends ORM {
     'to_occurrence'=>'occurrence',
     'assocation_type'=>'termlists_term',
     'part'=>'termlists_term',
-    'condition'=>'termlists_term',
     'position'=>'termlists_term',
     'impact'=>'termlists_term',
   );
@@ -49,7 +48,7 @@ class Occurrence_association_Model extends ORM {
     $array->add_rules('association_type_id', 'required');
     $array->add_rules('from_occurrence_id', 'required');
     $array->add_rules('to_occurrence_id', 'required');
-    $this->unvalidatedFields = array('part_id', 'condition_id', 'position_id', 'impact_id', 'deleted');
+    $this->unvalidatedFields = array('part_id', 'position_id', 'impact_id', 'deleted');
     return parent::validate($array, $save);
   }
 
