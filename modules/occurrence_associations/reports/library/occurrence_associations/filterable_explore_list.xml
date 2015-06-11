@@ -8,7 +8,6 @@
   LEFT JOIN (occurrence_associations oa
     JOIN cache_termlists_terms assoctype on assoctype.id=oa.association_type_id
     LEFT JOIN cache_termlists_terms assocpart on assocpart.id=oa.part_id
-    LEFT JOIN cache_termlists_terms assoccond on assoccond.id=oa.condition_id
     LEFT JOIN cache_termlists_terms assocpos on assocpos.id=oa.position_id
     LEFT JOIN cache_termlists_terms associmpact on associmpact.id=oa.impact_id
   ) on (oa.from_occurrence_id=o.id or oa.to_occurrence_id=o.id) and oa.deleted=false
@@ -54,8 +53,7 @@
             ' ' || assoctype.term ||
             ' ' || case when oa.from_occurrence_id=o.id then oassoc.preferred_taxon else o.preferred_taxon end ||
             coalesce(' ' || assocpos.term, '') ||
-            coalesce(' ' || assocpart.term, '') ||
-            coalesce(' (condition ' || assoccond.term || ')', '') ||
+            coalesce(' ' || assocpart.term, '') ||            
             coalesce(' resulting in ' || associmpact.term, '')
             " />
     <column name='zero_abundance' display='Zero abundance' sql='o.zero_abundance' visible="false" />
