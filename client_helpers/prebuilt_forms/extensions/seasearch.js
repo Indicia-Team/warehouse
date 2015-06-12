@@ -1,3 +1,4 @@
+var setClickedPosition;
 jQuery(document).ready(function($) {
 
   /**
@@ -191,7 +192,7 @@ jQuery(document).ready(function($) {
    * Function called when the user clicks on the map. Reflects the click position into the appropriate lat long control.
    * @param data
    */
-  function setClickedPosition(data) {
+  setClickedPosition = function(data) {
     if ($('#imp-sref-system').val()==='OSGB') {
       $('#input-os-grid').val($('#imp-sref').val());
     }
