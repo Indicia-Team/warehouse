@@ -53,10 +53,14 @@ class filter_what extends filter_base {
     $r .= '<div id="what-tabs">'."\n";
     // data_entry_helper::tab_header breaks inside fancybox. So output manually.
     $r .= '<ul class="ui-helper-hidden">' .
-        '<li id="species-group-tab-tab"><a href="#species-group-tab" rel="address:species-group-tab"><span>Species groups</span></a></li>' .
-        '<li id="families-tab-tab"><a href="#families-tab" rel="address:families-tab"><span>Families and other higher taxa</span></a></li>' . 
-        '<li id="species-tab-tab"><a href="#species-tab" rel="address:species-tab"><span>Species and lower taxa</span></a></li>' . 
-        '<li id="rank-tab-tab"><a href="#rank-tab" rel="address:rank-tab"><span>Level</span></a></li>' .
+        '<li id="species-group-tab-tab"><a href="#species-group-tab" rel="address:species-group-tab"><span>Species groups</span></a></li>';
+    if ($familySortOrder!=='off') {
+      $r .= '<li id="families-tab-tab"><a href="#families-tab" rel="address:families-tab"><span>Families and other higher taxa</span></a></li>';
+      $r .= '<li id="species-tab-tab"><a href="#species-tab" rel="address:species-tab"><span>Species and lower taxa</span></a></li>';
+    } else {
+      $r .= '<li id="species-tab-tab"><a href="#species-tab" rel="address:species-tab"><span>Species</span></a></li>';
+    }
+    $r .= '<li id="rank-tab-tab"><a href="#rank-tab" rel="address:rank-tab"><span>Level</span></a></li>' .
         '<li id="flags-tab-tab"><a href="#flags-tab" rel="address:flags-tab"><span>Other flags</span></a></li>' .
         '</ul>';
     $r .= '<div id="species-group-tab">' . "\n";
@@ -100,31 +104,38 @@ class filter_what extends filter_base {
       'addToTable' => false
     ));
     $r .= "</div>\n";
-    $r .= '<div id="families-tab">' . "\n";
-    $r .= '<p>' . lang::get('Search for and build a list of families or other higher taxa to include') . '</p>' .
+    if ($familySortOrder!=='off') {
+      $r .= '<div id="families-tab">' . "\n";
+      $r .= '<p>' . lang::get('Search for and build a list of families or other higher taxa to include') . '</p>' .
         ' <div class="context-instruct messages warning">' . lang::get('Please note that your access permissions will limit the records returned to the species you are allowed to see.') . '</div>';
-    $subListOptions = array(      
-      'fieldname' => 'higher_taxa_taxon_list_list',
-      'table' => 'cache_taxa_taxon_list',
-      'captionField' => 'taxon',
-      'valueField' => 'id',
-      'extraParams' => $readAuth + array('preferred' => 't', 'query' => '{"where":["taxon_rank_sort_order<='.$familySortOrder.'"]}'),
-      'addToTable' => false
-    );
-    //Use all taxa in the warehouse as there isn't an iform master list so don't need the taxon list id param
-    if (isset($options['taxon_list_id']))
-      $subListOptions['extraParams'] = array_merge(array('taxon_list_id' => $options['taxon_list_id']),$subListOptions['extraParams']);
-    $r .= data_entry_helper::sub_list($subListOptions);
-    $r .= "</div>\n";
+      $subListOptions = array(
+        'fieldname' => 'higher_taxa_taxon_list_list',
+        'table' => 'cache_taxa_taxon_list',
+        'captionField' => 'taxon',
+        'valueField' => 'id',
+        'extraParams' => $readAuth + array(
+            'preferred' => 't',
+            'query' => '{"where":["taxon_rank_sort_order<=' . $familySortOrder . '"]}'
+          ),
+        'addToTable' => FALSE
+      );
+      //Use all taxa in the warehouse as there isn't an iform master list so don't need the taxon list id param
+      if (isset($options['taxon_list_id'])) {
+        $subListOptions['extraParams'] = array_merge(array('taxon_list_id' => $options['taxon_list_id']), $subListOptions['extraParams']);
+      }
+      $r .= data_entry_helper::sub_list($subListOptions);
+      $r .= "</div>\n";
+    }
     $r .= '<div id="species-tab">' . "\n";
     $r .= '<p>' . lang::get('Search for and build a list of species or genera to include.') . '</p>' .
         ' <div class="context-instruct messages warning">' . lang::get('Please note that your access permissions will limit the records returned to the species you are allowed to see.') . '</div>';
-    $subListOptions = array(      
+    $rankFilter = $familySortOrder==='off' ? array() : array('query' => '{"where":["taxon_rank_sort_order>'.$familySortOrder.'"]}');
+    $subListOptions = array(
       'fieldname' => 'taxa_taxon_list_list',
       'table' => 'cache_taxa_taxon_list',
       'captionField' => 'taxon',
       'valueField' => 'preferred_taxa_taxon_list_id',
-      'extraParams' => $readAuth + array('query' => '{"where":["taxon_rank_sort_order>'.$familySortOrder.'"]}'),
+      'extraParams' => $readAuth + $rankFilter,
       'addToTable' => false
     );
     //Use all taxa in the warehouse as there isn't an iform master list so don't need the taxon list id param
