@@ -366,8 +366,8 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
           async: false,
           dataType: 'json',
           success: function (response) {
-              email.body = email.body.replace(/\[Photos\]/g, response.media);
-              email.body = email.body.replace(/\[Comments\]/g, response.comments);
+              email.body = email.body.replace(/\[Photos]/g, response.media);
+              email.body = email.body.replace(/\[Comments]/g, response.comments);
           }
         });
         // save a comment to indicate that the mail was sent
@@ -493,11 +493,8 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
     $('.check-row').attr('checked', false);
     $('#row' + occurrence_id + ' .check-row').attr('checked', true);
     $('.check-row').show();
-    $('#btn-multiple').addClass('active');
-    $('#btn-edit-verify').hide();
     $('#action-buttons-status label').html('With ticked records:');
-    $('#btn-multiple').val('Verify single records');
-    $('#btn-multiple').after($('#action-buttons-status'));
+    $('#btn-multiple').addClass('active').html('Review single records').after($('#action-buttons-status'));
     $('#action-buttons-status button').removeAttr('disabled');
   }
     
@@ -1097,10 +1094,8 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
         showTickList();
       } else {
         $('.check-row').hide();
-        $('#btn-multiple').removeClass('active');
-        $('#btn-edit-verify').show();
+        $('#btn-multiple').removeClass('active').html('Review tick list');
         $('#action-buttons-status label').html('Set status:');
-        $('#btn-multiple').val('Verify tick list');
         $('#action-buttons').prepend($('#action-buttons-status'));
         if (currRec === null) {
           $('#action-buttons-status button').attr('disabled', 'disabled');

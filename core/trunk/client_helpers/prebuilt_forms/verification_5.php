@@ -498,7 +498,6 @@ idlist=';
     // @todo following needs to be disabled if record is not on iRecord.
     $r .= '<button type="button" id="btn-edit-record" class="default-button" title="'.
       lang::get('Edit the record on its original data entry form.').'">'.lang::get('Edit').'</button>';
-    // @todo remove the code related to btn-edit-verify
     $r .= '</div>';
     return $r;
   }
