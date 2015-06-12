@@ -137,59 +137,63 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //average them to make the spatial reference on the sample (as the main sample only has a single spatial
     //reference it makes sense to use an average of all positions),this can be overridden.
     data_entry_helper::$javascript .= "
-      var input_file = document.getElementById('file_upload');
-      input_file.onchange = function() {
-        $('#imp-sref-system').val(4326);
-        //Need a counter for the length of indiciaData.gpxLatLon as it is a string rather than an array
-        var gpxLatLonLength = 0;
-        var file = this.files[0];
-        var el;
-        var trkTag;
-        var timeTag;
-        var latAcc = 0;
-        var lonAcc = 0;
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-          //Create fake element
-          el = document.createElement( 'div' );
-        el.innerHTML = ev.target.result;
-        //Split up text that has been read from file into the track points
-          trkTag=el.getElementsByTagName(\"trkpt\");
-        //Save the spatial references (trackpoints) and times to an attribute. Cycle through each trackpoint and find the time tags.
-        //Attribute format is lat,lon,time;lat,long,time;lat,lon,time etc (uses a semi-colon as as the time from the file includes colons)
-        for (i=0;i<trkTag.length;i++) {
-          //Get time as text from within trackpoint
-          timeTag=trkTag[i].innerHTML.split('<time>')[1].split('</time>')[0];
-            if (indiciaData.gpxLatLon) {
-            indiciaData.gpxLatLon=indiciaData.gpxLatLon+';'+trkTag[i].getAttribute(\"lat\")+','+trkTag[i].getAttribute(\"lon\")+','+timeTag;
-              gpxLatLonLength++;
-            } else {
-            indiciaData.gpxLatLon=trkTag[i].getAttribute(\"lat\")+','+trkTag[i].getAttribute(\"lon\")+','+timeTag;
-              gpxLatLonLength++;
-            }
-          latAcc = latAcc + parseFloat(trkTag[i].getAttribute(\"lat\"));
-          lonAcc = lonAcc + parseFloat(trkTag[i].getAttribute(\"lon\"));
-          }   
-          latAcc=(latAcc/gpxLatLonLength).toFixed(10);
-          lonAcc=(lonAcc/gpxLatLonLength).toFixed(10);
-          if (latAcc>=0) {
-            latAcc=latAcc+'N';
-          } else {
-            latAcc=(latAcc*-1)+'S';
-          }
-          if (lonAcc>=0) {
-            lonAcc=lonAcc+'E';
-          } else {
-            lonAcc=(lonAcc*-1)+'W';
-          }
-          $('#imp-sref').val(latAcc+ ' ' + lonAcc);";
-          data_entry_helper::$javascript .= '
+    var input_file = document.getElementById('file_upload');
+    input_file.onchange = function() {
+      $('#imp-sref-system').val(4326);
+      //Need a counter for the length of indiciaData.gpxLatLon as it is a string rather than an array
+      var gpxLatLonLength = 0;
+      var file = this.files[0];
+      var el;
+      var trkTag;
+      var timeTag;
+      var latAcc = 0;
+      var lonAcc = 0;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        //Create fake element
+        el = document.createElement( 'div' );
+      el.innerHTML = ev.target.result;
+      //Split up text that has been read from file into the track points
+        trkTag=el.getElementsByTagName(\"trkpt\");
+      //Save the spatial references (trackpoints) and times to an attribute. Cycle through each trackpoint and find the time tags.
+      //Attribute format is lat,lon,time;lat,long,time;lat,lon,time etc (uses a semi-colon as as the time from the file includes colons)
+      for (i=0;i<trkTag.length;i++) {
+        //Get time as text from within trackpoint
+        timeTag=trkTag[i].innerHTML.split('<time>')[1].split('</time>')[0];
           if (indiciaData.gpxLatLon) {
-            $("#smpAttr\\\\:'.$args['gpx_data_attr_id'].'").val(indiciaData.gpxLatLon);
+          indiciaData.gpxLatLon=indiciaData.gpxLatLon+';'+trkTag[i].getAttribute(\"lat\")+','+trkTag[i].getAttribute(\"lon\")+','+timeTag;
+            gpxLatLonLength++;
+          } else {
+          indiciaData.gpxLatLon=trkTag[i].getAttribute(\"lat\")+','+trkTag[i].getAttribute(\"lon\")+','+timeTag;
+            gpxLatLonLength++;
+          }
+        latAcc = latAcc + parseFloat(trkTag[i].getAttribute(\"lat\"));
+        lonAcc = lonAcc + parseFloat(trkTag[i].getAttribute(\"lon\"));
+        }   
+        latAcc=(latAcc/gpxLatLonLength).toFixed(10);
+        lonAcc=(lonAcc/gpxLatLonLength).toFixed(10);
+        if (latAcc>=0) {
+          latAcc=latAcc+'N';
+        } else {
+          latAcc=(latAcc*-1)+'S';
+        }
+        if (lonAcc>=0) {
+          lonAcc=lonAcc+'E';
+        } else {
+          lonAcc=(lonAcc*-1)+'W';
+        }
+        //When the GPX data points are created and then averaged, pass in the spatial reference into the existing function that
+        //will calculate the reference in 50:11.1111N 2:22.2222W format, this function will also update the map.
+        var data = new Object();
+        data.sref=latAcc+ ' ' + lonAcc;
+        setClickedPosition(data);";
+        data_entry_helper::$javascript .= '
+        if (indiciaData.gpxLatLon) {
+          $("#smpAttr\\\\:'.$args['gpx_data_attr_id'].'").val(indiciaData.gpxLatLon);
           }
         };
-        // Read as plain text
-        reader.readAsText(file);  
+      // Read as plain text
+      reader.readAsText(file);  
       };';
     return $r;
   }
@@ -472,7 +476,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $photoCountPerRow++;
       }
       
-      if (!empty($photoResults)) {
+      if (!empty($photoResults)) {      
         $photoResultDecoded1 = json_decode($photoResults[0]['exif'],true);
         $photoResultDecoded2 = json_decode($photoResults[count($photoResults)-1]['exif'],true);
       }
@@ -695,8 +699,8 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     $response = data_entry_helper::http_post(data_entry_helper::$base_url.'/index.php/services/security/get_nonce', $postargs, false);
     $nonce = $response['output'];
     $writeTokens = array('nonce'=>$nonce, 'auth_token' => sha1($nonce.":".$conn['password']));
-    //TODO, when the first page is saved we create a sample but we don't have a spatial reference, this is currently a point on the Isle of Wight (for no particular reason other than we know this
-    //isn't in the sea so won't be confused with finished save.
+    //TODO, when the first page is saved we create a sample but we don't have a spatial reference. An attempt is made to read
+    //a position from the first photo exif (elsewhere in code), however if GPS data can't be found on photo, then just fall back on a point on the Isle of Wight (as it is on land it won't get confused with a real position.
     if (empty($Model['fields']['entered_sref']['value'])) {
         $Model['fields']['entered_sref_system']['value']='4277';
         $Model['fields']['entered_sref']['value']='50:41.0994N, 1:17.1864W';
@@ -766,6 +770,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           if ((empty($smallestStrToTime) || $smallestStrToTime > $strToTime)&&
               !empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) { 
             $smallestStrToTime=$strToTime;
+            $gpsFromFirstExif=$exif['GPS'];
             $modelWrapped['fields']['date']['value']=date('d/m/Y',$smallestStrToTime);
             $values['sample:date']=date('d/m/Y',$smallestStrToTime); 
             $modelWrapped['fields']['smpAttr:'.$diveStartTimeAttrId]['value']=$time[1];
@@ -778,6 +783,37 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           else 
             $mediaDates=date('d/m/Y',$strToTime).','.$time[1];
         }
+      }
+      //When the images are first loaded, we don't have a spatial reference to create the main sample with, so try to read one from the earliest picture exif data
+      if (!empty($gpsFromFirstExif['GPSLatitude'])&&!empty($gpsFromFirstExif['GPSLongitude'])&&!empty($gpsFromFirstExif['GPSLatitudeRef'])&&!empty($gpsFromFirstExif['GPSLongitudeRef'])) {
+        //Read from exif, concert from degrees, minutes, seconds to decimal degrees
+        $gpsLat0=explode('/',$gpsFromFirstExif['GPSLatitude'][0]);
+        $gpsLat0=doubleval($gpsLat0[0])/doubleval($gpsLat0[1]);
+        $gpsLat1=explode('/',$gpsFromFirstExif['GPSLatitude'][1]);
+        $gpsLat1=doubleval($gpsLat1[0])/doubleval($gpsLat1[1])/60;
+        $gpsLat2=explode('/',$gpsFromFirstExif['GPSLatitude'][2]);
+        $gpsLat2=doubleval($gpsLat2[0])/doubleval($gpsLat2[1])/3600;
+        $gpsLon0=explode('/',$gpsFromFirstExif['GPSLongitude'][0]);
+        $gpsLon0=doubleval($gpsLon0[0])/doubleval($gpsLon0[1]);
+        $gpsLon1=explode('/',$gpsFromFirstExif['GPSLongitude'][1]);
+        $gpsLon1=doubleval($gpsLon1[0])/doubleval($gpsLon1[1])/60;
+        $gpsLon2=explode('/',$gpsFromFirstExif['GPSLongitude'][2]);
+        $gpsLon2=doubleval($gpsLon2[0])/doubleval($gpsLon2[1])/3600;        
+        
+        $lat=(string)floatval($gpsLat0+$gpsLat1+$gpsLat2);
+        $lon=(string)floatval($gpsLon0+$gpsLon1+$gpsLon2);
+        
+        //Convert back into format that is acceptable to the seasearch on screen spatial reference extension which is again in degrees, minutes
+        $latArray=explode('.',$lat);
+        $lat=$latArray[0].':'.round(floatval('0.'.$latArray[1])*60,4);
+        $lonArray=explode('.',$lon);
+        $lon=$lonArray[0].':'.round(floatval('0.'.$lonArray[1])*60,4);
+        $gpsFromFirstExif=$lat.$gpsFromFirstExif['GPSLatitudeRef'].' '.$lon.$gpsFromFirstExif['GPSLongitudeRef'];
+        
+        $modelWrapped['fields']['entered_sref']['value']=$gpsFromFirstExif;
+        $values['sample:entered_sref']=$gpsFromFirstExif;
+        $modelWrapped['fields']['entered_sref_system']['value']='4277';
+        $values['sample:entered_sref_system']='4277';
       }
     }
       if (!empty($mediaDates)) {
