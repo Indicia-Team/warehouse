@@ -433,8 +433,7 @@ idlist=';
         'paramSuffix'=>'</div>',
         'sharing'=>'verification',
         'ajax'=>TRUE,
-        'callback' => 'verificationGridLoaded',
-        'rowClass' => 'zero-{zero_abundance}'
+        'callback' => 'verificationGridLoaded'
       )
     );
     $opts['columns'][] = array(
@@ -612,7 +611,7 @@ idlist=';
     $reportData = report_helper::get_report_data($options);
     // set some values which must exist in the record
     $record = array_merge(array(
-      'wkt'=>'','sample_id'=>'','date'=>'','entered_sref'=>'','record_status'=>'','zero_abundance'=>''
+      'wkt'=>'','sample_id'=>'','date'=>'','entered_sref'=>'','record_status'=>''
     ), $reportData['records'][0]);
     // build an array of all the data. This allows the JS to insert the data into emails etc. Note we
     // use an array rather than an assoc array to build the JSON, so that order is guaranteed.
@@ -630,8 +629,6 @@ idlist=';
       if ($col==='email' && !empty($record[$col]))
         $email=$record[$col];
     }
-    if ($record['zero_abundance']==='t')
-      $data['Key facts'][] = array('caption'=>lang::get('Absence'), 'value'=> lang::get('This is a record indicating absence.'));
 
     // Do the custom attributes
     $options = array(
