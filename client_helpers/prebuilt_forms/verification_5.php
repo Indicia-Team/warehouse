@@ -290,6 +290,22 @@ class iform_verification_5 {
           'group'=>'Other Map Settings'
         ),
         array(
+          'name'=>'indexed_location_type_ids',
+          'caption'=>'Indexed location type IDs',
+          'description'=>'Comma separated list of location type IDs for location layers that are available to search against.',
+          'type'=>'text_input',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
+        array(
+          'name'=>'other_location_type_ids',
+          'caption'=>'Other location type IDs',
+          'description'=>'Comma separated list of location type IDs for location layers that are available to search against.',
+          'type'=>'text_input',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
+        array(
           'name'=>'view_records_report_path',
           'caption'=>'View records report path',
           'description'=>'Path to page used to show a list of records, e.g. when clicking on the record counts on the Experience tab',
@@ -1306,7 +1322,11 @@ idlist=';
       'sharing' => 'verification',
       'linkToMapDiv'=>'map',
       'filter-quality'=>'P'
-    );   
+    );
+    if (!empty($args['indexed_location_type_ids']))
+      $options['indexedLocationTypeIds'] = explode(',', $args['indexed_location_type_ids']);
+    if (!empty($args['other_location_type_ids']))
+      $options['otherLocationTypeIds'] = explode(',', $args['other_location_type_ids']);
     $r = report_filter_panel($readAuth, $options, $args['website_id'], $hiddenStuff);
     return $r . $hiddenStuff;
   }

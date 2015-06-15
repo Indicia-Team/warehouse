@@ -198,6 +198,22 @@ class iform_verification_samples {
           'group'=>'Other Map Settings'
         ),
         array(
+          'name'=>'indexed_location_type_ids',
+          'caption'=>'Indexed location type IDs',
+          'description'=>'Comma separated list of location type IDs for location layers that are available to search against.',
+          'type'=>'text_input',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
+        array(
+          'name'=>'other_location_type_ids',
+          'caption'=>'Other location type IDs',
+          'description'=>'Comma separated list of location type IDs for location layers that are available to search against.',
+          'type'=>'text_input',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
+        array(
           'name'=>'clear_verification_task_notifications',
           'caption'=>'Clear verification task notifications?',
           'description'=>'Automatically clear any verification task notifications when the user opens the verification screen.',
@@ -375,7 +391,7 @@ idlist=';
    * @param array $args Input parameters.
    * @param array $node Drupal node object
    * @param array $response Response from Indicia services after posting a verification.
-   * @return HTML string
+   * @return string HTML
    */
   public static function get_form($args, $node, $response) {
     if (!self::check_prerequisites())
@@ -941,6 +957,10 @@ idlist=';
       'filter-quality'=>'P',
       'entity'=>'sample'
     );
+    if (!empty($args['indexed_location_type_ids']))
+      $options['indexedLocationTypeIds'] = explode(',', $args['indexed_location_type_ids']);
+    if (!empty($args['other_location_type_ids']))
+      $options['otherLocationTypeIds'] = explode(',', $args['other_location_type_ids']);
     $r = report_filter_panel($readAuth, $options, $args['website_id'], $hiddenStuff);
     return $r . $hiddenStuff;
   }
