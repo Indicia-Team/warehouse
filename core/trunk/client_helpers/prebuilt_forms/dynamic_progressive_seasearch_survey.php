@@ -219,7 +219,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       ));
       $attrOptions = self::get_attr_specific_options($options);
       if (!empty($existingHabitatSubSamples)) {
-        $existingHabitatSubSamplesIds=[];
+        $existingHabitatSubSamplesIds=array();
         //Setup the html as we initially see it on the page
         $r .= self::initial_habitat_html_setup($existingHabitatSubSamples,$args,$auth,$NextHabitatNum,$attrOptions,$existingHabitatSubSamplesIds);
       }
@@ -300,7 +300,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       //Cycle through the attributes for the habitat
       foreach ($habitatSmpAttrIds as $habitatSmpAttrId) {       
         //Only get sample attributes and then store them in an array so they can be passed to the existing function that builds the html
-        $attrbuteArray=[];
+        $attrbuteArray=array();
         foreach ($habitatAttrs as $habitatAttr) {  
           if ($habitatSmpAttrId==$habitatAttr['sample_attribute_id']) {
             $attrbuteArray[]=$habitatAttr;  
@@ -367,10 +367,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         'extraParams'=>array('parent_sample_id' => $_GET['sample_id'], 'description_attr_id'=>$descriptionAttrId)
       ));
     } else {
-      $habitats=[];
+      $habitats=array();
     }
     //Generate a colour for the habitat based on its index
-    $habitatColours=[];
+    $habitatColours=array();
     if (!empty($habitats)) {
       $numberOfHabitats=count($habitats);
       foreach ($habitats as $habIdx=>$habitat) {
@@ -386,7 +386,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     ), $options),$habitats,$args['dive_duration_attr_id'],$habitatColours);
     
 
-    $habitatIds=[];
+    $habitatIds=array();
     $r.='<div class="habitats-div" style="float: left; width: 50%"><h3>Habitats</h3>';
     //Create the html to display the habitats and a splitter for each habitat
     if (!empty($habitats)) {
@@ -555,7 +555,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    */
   private static function set_photo_order($photoResults) {
     //TODO if a photo lacks exif data it currently isn't handled.
-    $photosWithExif=[];
+    $photosWithExif=array();
     //Order pictures by date
     foreach ($photoResults as $photoResult) {
       $photoResultDecoded = json_decode($photoResult['exif'],true);
@@ -565,7 +565,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     if (!empty($photosWithExif)) {
       usort($photosWithExif, "self::orderByDate");
     } else {
-      $photosWithExif = [];
+      $photosWithExif = array();
     }
     return $photosWithExif;
   }
@@ -753,7 +753,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    */
 
   public static function build_three_level_sample_with_occ_submission($values,$website_id, $password,$gpxDataAttrId,$diveStartTimeAttrId,$exifDateTimeAttrId) {
-    $standardGridValues=[];
+    $standardGridValues=array();
     //Create two different $values arrays.
     //The $standardGridValues array contains all the values you would expect from a normal species grid entry form. This contains the species grid we don't have images for.
     //The $values array contains the values from the form and only includes the other three level sample species grid
@@ -882,7 +882,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //TODO Needs further testing
     //The user is can rearrange which third level sample points to which second level sample. When the user does this we just need to attach the
     //change to the parent_id to the end of the submission model
-    $thirdLevelSampleShiftModel=[];
+    $thirdLevelSampleShiftModel=array();
     foreach ($values as $key=>$value) {
       //TODO I think this name is misleading, as it isn't the sample_id for the occurrence, it is the sample_id for the occurrence sample's parent sample.
       //Maybe change name at some point.
@@ -972,7 +972,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
             $media[]=array('id'=>$keyBreakdown[1],'sample_id'=>$value, 'path'=>$values['sample_medium:'.$keyBreakdown[1].':image_path']);
         }
       }
-      $mediaIds=[];
+      $mediaIds=array();
       $mediaIdsSet='';
       //Create a set (string) of media ids ready for use in sql
       foreach ($media as $mediaItem) {
@@ -1007,7 +1007,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           $gpsArray=explode(';',$value);
         }
       }
-      $mediaSpatialRefs=[];
+      $mediaSpatialRefs=array();
       $smallestTimeDistance=null;
       //For each photo, we need to cycle through all the gpx file trackpoints. We then use the trackpoint which is closest in time to the time on the photo exif
       //Save an array containing all these photos and associated spatial references.
@@ -1100,7 +1100,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     }
     //As we have used existing code to create 2nd level samples to hold the occurrences, we need to transfer these to the third level samples
     $modelWrapped=self::transfer_occurrences_to_third_level_samples($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$gpsArray,$website_id, $password,$gpxDataAttrId);
-    $multiSubmission['submission_list']['entries']=[];
+    $multiSubmission['submission_list']['entries']=array();
     //Any third level samples that have been deleted need adding to the model at the top, this because we don't know the parent_id
     //Note, there is a bug in PHP foreach which was causing the foreach to cycle over the first element here twice. From the php docs
     //I think this is caused by previously using foreach ($thirdLevelSamples  as &$thirdLevelSample) {, so using normal "for loop"
@@ -1162,7 +1162,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
 
                 $photoResults = data_entry_helper::get_report_data($reportOptions);
                 //TODO this code is very similar to code used earlier, perhaps put in separate method when get chance.
-                $mediaSpatialRefs=[];
+                $mediaSpatialRefs=array();
                 $smallestTimeDistance=null;
                 $photoResultExifDecoded = json_decode($photoResults[0]['exif'],true);
                 $photoResultExifFormatted = strtotime($photoResultExifDecoded['EXIF']['DateTimeOriginal']);
@@ -1223,7 +1223,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
   //Does two things, one is return an array of present occurrences that have actually been filled in.
   //The other is to convert the sample_media intially present on the grid into occurrence media.
   private static function convert_grid_sample_media_to_occurrence_media_and_return_present_items(&$values) {
-    $presentSpeciesListSubSampleIds=[];
+    $presentSpeciesListSubSampleIds=array();
     foreach ($values as $key=>&$value) {  
       $splitKey=explode(':',$key);
       //If we find a field which is a sample_medium on the occurrences grid then save its current second level sample id for use later
@@ -1494,7 +1494,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       data_entry_helper::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrControlsExisting, $occAttrs);
       $beforegrid = '<span style="display: none;">Step 1</span>'."\n";
       if (isset($options['lookupListId'])) {
-        $subSampleImagesToLoad = [];
+        $subSampleImagesToLoad=array();
         //Cycle through sub-samples of the main parent sample
         foreach ($subSampleRows as $subSampleIdx=>$subSampleRow) {          
           foreach (data_entry_helper::$entity_to_load as $key=>$value) {
@@ -1509,7 +1509,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         //For each sub-sample, add a row to the occurrences grid with the image loaded, this is then ready for the user.
         //To create occurrences with
         if (isset($subSampleImagesToLoad)) {
-          $mediaIdArray = [];     
+          $mediaIdArray = array();     
           foreach ($subSampleImagesToLoad as $subSampleImageIdx=>$subSampleImageToLoad) {
             $mediaIdArray[] = $subSampleImageToLoad;
             $beforegrid .= self::get_species_checklist_empty_row_with_image($options, $occAttrControls, $attributes, $subSampleImageIdx, $subSampleImageToLoad);
@@ -1838,7 +1838,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
             'nocache' => true
         ));   
         if (!empty($useThirdLevelSamples) && $useThirdLevelSamples==true) {
-          $allThirdLevelSamples=[];
+          $allThirdLevelSamples=array();
           foreach ($subSamples as $subSample) {
             $extraParams = $extraParamsCopy + $readAuth + array('view'=>'detail','parent_id'=>$subSample['id'],'deleted'=>'f', 'orderby'=>'id', 'sortdir'=>'ASC' );          
             //if($subSampleMethodID != '')
@@ -1921,7 +1921,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
           }
           if (empty($allThirdLevelSamples)) {
             if (count($loadMedia)>0) {   
-              $media=[];
+              $media=array();
               //TODO: Probably would be better to do this bit with a report but haven't got round to writing it.
               foreach ($subSamples as $subSample) {
                 //TODO: This will currently overwrite previous result, but for now this doesn't matter much, won't happen if I use a report
