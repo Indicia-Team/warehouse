@@ -369,14 +369,21 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     } else {
       $habitats=[];
     }
-    
+    //Generate a colour for the habitat based on its index
+    $habitatColours=[];
+    if (!empty($habitats)) {
+      $numberOfHabitats=count($habitats);
+      foreach ($habitats as $habIdx=>$habitat) {
+        $habitatColours[$habIdx]=self::generateHabitatColour($habIdx,$numberOfHabitats);
+      }
+    }
     //Draw to screen the control that will actually display the taxa images.
     $r .= self::taxa_image_to_link(array_merge(array(
       'table'=>'sample_medium',
       'readAuth' => $auth['read'],
       'caption'=>lang::get('Photos'),
       'readAuth'=>$auth['read']
-    ), $options),$habitats,$args['dive_duration_attr_id']);
+    ), $options),$habitats,$args['dive_duration_attr_id'],$habitatColours);
     
 
     $habitatIds=[];
@@ -387,7 +394,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $habitatIds[]=$habitat['id'];
         //Note we need a specific "color" attribute as well as a style, this is because if we use .css('color') jquery to retrieve a colour, it converts the hex to rgb(<val>,<val>,<val>) automatically. To get the raw hex when we need it, we need to store it in a separate attribute as well
         $r .= '<span id="habitat-'.$habitat['id'].'"><b>'.$habitat['description'].'</b>
-        <span id="habitat-'.$habitat['id'].'-dragzone" color="'.'#00'.dechex(255-(intval($habIdx)*50)).'00'.'" class="habitat-dragzone" style="border: 5px solid ; height: 100px; width: 10px; display: inline-block; color:'.'#00'.dechex(255-(intval($habIdx)*50)).'00'.';"></span></span>';
+        <span id="habitat-'.$habitat['id'].'-dragzone" color="'.'#'.$habitatColours[$habIdx].'" class="habitat-dragzone" style="border: 5px solid ; height: 100px; width: 10px; display: inline-block; color:'.'#'.$habitatColours[$habIdx].';"></span></span>';
       }
     }
     $r.='</div>';
@@ -400,7 +407,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $habitatIds[]=$habitat['id'];
         //Note we need a specific "color" attribute as well as a style, this is because if we use .css('color') jquery to retrieve a colour, it converts the hex to rgb(<val>,<val>,<val>) automatically. To get the raw hex when we need it, we need to store it in a separate attribute as well
         $r .= '<span id="habitat-override-'.$habitat['id'].'"><b>'.$habitat['description'].'</b>
-        <span id="habitat-override-'.$habitat['id'].'-dragzone" color="'.'#00'.dechex(255-(intval($habIdx)*50)).'00'.'" class="habitat-dragzone habitat-override-dragzone"style="border: 5px solid ; height: 100px; width: 10px; display: inline-block; color:'.'#00'.dechex(255-(intval($habIdx)*50)).'00'.';"></span></span>';
+        <span id="habitat-override-'.$habitat['id'].'-dragzone" color="'.'#'.$habitatColours[$habIdx].'" class="habitat-dragzone habitat-override-dragzone"style="border: 5px solid ; height: 100px; width: 10px; display: inline-block; color:'.'#'.$habitatColours[$habIdx].';"></span></span>';
       }
     }
     $r.='</div>';
@@ -413,7 +420,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    * Control which actually displays the taxa photos to link to habitats
    * Displayed as part of get_control_linkhabitatstophotos
    */
-  private static function taxa_image_to_link($options,$habitats, $diveDurationAttrId) {
+  private static function taxa_image_to_link($options,$habitats, $diveDurationAttrId,$habitatColours) {
     iform_load_helpers(array('report_helper'));
     global $user;  
     //Use this report to return the photos
@@ -455,8 +462,8 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
             if (empty($previousPhotoSampleId) || ($previousPhotoSampleId!=$photoData['sample_id'])) {
               foreach ($habitats as $habIdx=>$habitat) {
                 if ($habitat['id']==$photoData['sample_id']) {
-                  $style='border: 5px solid; display: inline-block; color: #00'.dechex(255-(intval($habIdx)*50)).'00;';
-                  $habColour=dechex(255-(intval($habIdx)*50));
+                  $style='border: 5px solid; display: inline-block; color: #'.$habitatColours[$habIdx].';';
+                  $habColour=$habitatColours[$habIdx];
                 }
               }
             }
@@ -506,7 +513,30 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       return '<h3>Photos</h3>'.$r;
     }
   }
-
+  
+  /* 
+   * Generates a colour for each habitat on the assign photo to habitat page by using the habitat index to generate the colour.
+   */
+  private static function generateHabitatColour($habIdx,$numberOfHabitats) {
+    //If number of habitats is greater than 5 then the colour gradient would be too small,
+    //so we can pretend it is 5 and repeat the colours.
+    if ($numberOfHabitats>5) {
+      $numberOfHabitats=5; 
+    }
+    //The size of the colour gradient decreases as the number of habitats increases.
+    //Add 1 so we don't divide by 0.
+    $stepSize=(integer)255/($numberOfHabitats+1);
+    $red=20;
+    //For each habitat colour increase blue and decrease green so we get a green to blue gradient
+    $blue=((($habIdx%$numberOfHabitats)+1)*$stepSize);
+    $green=255-((($habIdx%$numberOfHabitats)+1)*$stepSize);
+    
+    $hexRed=dechex($red);
+    $hexGreen=dechex($green);
+    $hexBlue=dechex($blue);
+    return $hexRed.$hexGreen.$hexBlue;
+  }
+  
   /*
    * Order function used by usort function to sort photo array
    */
@@ -702,8 +732,9 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //TODO, when the first page is saved we create a sample but we don't have a spatial reference. An attempt is made to read
     //a position from the first photo exif (elsewhere in code), however if GPS data can't be found on photo, then just fall back on a point on the Isle of Wight (as it is on land it won't get confused with a real position.
     if (empty($Model['fields']['entered_sref']['value'])) {
-        $Model['fields']['entered_sref_system']['value']='4277';
-        $Model['fields']['entered_sref']['value']='50:41.0994N, 1:17.1864W';
+      drupal_set_message('Unable to find any GPS information, please correct this manually using the GPX upload or map tools');
+      $Model['fields']['entered_sref_system']['value']='4277';
+      $Model['fields']['entered_sref']['value']='50:41.0994N, 1:17.1864W';
     }  
     //Save submission
     $response = data_entry_helper::forward_post_to('save', $Model, $writeTokens);
