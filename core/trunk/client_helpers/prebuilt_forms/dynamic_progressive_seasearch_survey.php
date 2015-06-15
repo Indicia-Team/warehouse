@@ -1141,7 +1141,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     foreach ($modelWrapped['subModels'] as $secondLevelSampleIdx=> &$secondLevelSample) {
       //Only work on the second level sample in the situation where there are some third level samples to create for it ready to put an occurrence onto.
       if (!empty($secondLevelSample['model']['fields']['id']['value']) && !empty($presentSpeciesListSubSampleIds)) {
-        if (in_array($secondLevelSample['model']['fields']['id']['value'],$presentSpeciesListSubSampleIds)) {
+        if (in_array($secondLevelSample['model']['fields']['id']['value'],$presentSpeciesListSubSampleIds)) { 
           foreach ($thirdLevelSamples as $thirdLevelSample) {
             //Add the media currently attached to the second-level sample  to the empty third level sample
             foreach ($secondLevelSample['model']['subModels'] as $subSampleMedium) {
@@ -1185,11 +1185,12 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
                 } else {
                   //If there is no GPS match then fall back on the spatial reference for the main sample (e.g. we didn't upload a GPX file)
                   $thirdLevelSample['model']['fields']['entered_sref']['value']=$modelWrapped['fields']['entered_sref']['value'];
-                }
-                //Add third level sample to second level sample
-                $secondLevelSample['model']['subModels'][]=$thirdLevelSample;
+                }  
+                //Only add third level samples which have had their occurrence setup, else the third level sample isn't intended for this habitat (second level sample)
+                if (!empty($thirdLevelSample['model']['subModels']))
+                  $secondLevelSample['model']['subModels'][]=$thirdLevelSample;
               }
-            }   
+            }
           }
           //Clear any media already associated with the second level sample, as this media will now be held at the 3rd level.
           self::set_sub_sample_media_items_to_deleted($secondLevelSample);
