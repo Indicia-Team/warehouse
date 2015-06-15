@@ -112,6 +112,7 @@ class iform_change_identification {
         'id' => data_entry_helper::$entity_to_load['sample:id'],
         'valuetable'=>'sample_attribute_value',
         'attrtable'=>'sample_attribute',
+        'fieldprefix'=>'smpAttr',
         'key'=>'sample_id',
         'extraParams'=>$auth['read'],
         'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
@@ -120,6 +121,7 @@ class iform_change_identification {
         'id' => $_GET['occurrence_id'],
         'valuetable'=>'occurrence_attribute_value',
         'attrtable'=>'occurrence_attribute',
+        'fieldprefix'=>'occAttr',
         'key'=>'occurrence_id',
         'extraParams'=>$auth['read'],
         'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
