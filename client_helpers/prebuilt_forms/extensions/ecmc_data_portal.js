@@ -1,3 +1,5 @@
+var drawPoints, saveSample;
+
 jQuery(document).ready(function($) {
   
   /* Effort/sightings radio buttons */
@@ -10,6 +12,23 @@ jQuery(document).ready(function($) {
     }
   });
   $('#points-params input:radio').change();
+  
+  /* Transect selection */ 
+  
+  function updateSelectedTransect() {
+    // Make the add new buttons link to the correct transect sample
+    $('#edit-effort,#edit-sighting').attr('href', $('#edit-effort').attr('href')
+        .replace(/transect_sample_id=[0-9]+/, 'transect_sample_id=' + $('#transect-param').val()));
+    if (typeof indiciaData.reports!=="undefined") {
+      indiciaData.reports.dynamic.grid_report_grid_0[0].settings.extraParams.transect_sample_id=$('#transect-param').val();
+      indiciaData.reports.dynamic.grid_report_grid_0.reload(true);
+    }
+  }
+  
+  $('#transect-param').change(updateSelectedTransect);
+  if ($('#transect-param').length>0) {
+    updateSelectedTransect();
+  }
   
   /* New transect button */
   
@@ -93,7 +112,7 @@ jQuery(document).ready(function($) {
         $('#lat_long-lat').val() + ', ' + $('#lat_long-long').val()
       );
     },
-    coords = $('#sample\\:entered_sref').val().split(', ');
+    coords = $('#sample\\:entered_sref').val().split(/, ?/);
     $('#lat_long-lat,#lat_long-long').blur(updateSref);
     // load existing value
     if (coords.length===2) {
@@ -120,5 +139,70 @@ jQuery(document).ready(function($) {
     $('#next-action').change(setRedirect);
     setRedirect();
   }
+  
+  drawPoints = function() {
+    var geoms=[], style = {
+      strokeWidth: 1,
+      strokeColor: "#FF0000"
+    };
+    $.each(indiciaData.reportlayer.features, function() {
+      geoms.push(this.geometry);
+    });
+    
+    indiciaData.reportlayer.addFeatures([new OpenLayers.Feature.Vector(new OpenLayers.Geometry.LineString(geoms), {}, style)]);
+    indiciaData.mapdiv.map.events.on({"featureclick":function(e) {
+      log("Map says: " + e.feature.id + " clicked on " + e.feature.layer.name);
+    }});
+  };
+  
+  saveSample = function(sampleId) {
+    var lat=$('#input-lat-'+sampleId).val(),
+        lng=$('#input-long-'+sampleId).val();
+    if (!lat.match(/^\-?[\d]+(\.[\d]+)?$/) || !lng.match(/^\-?[\d]+(\.[\d]+)?$/)) {
+      alert('The latitude and longitude cannot be saved because values are not of the correct format.');
+      return;
+    }
+    var data = {
+      'website_id': indiciaData.website_id,
+      'sample:id': sampleId,
+      'sample:entered_sref': lat + ', ' + lng,
+      'sample:entered_sref_system':4326
+    };
+    $.post(
+      indiciaData.ajaxFormPostUrl,
+      data,
+      function (data) {
+        if (typeof data.error === "undefined") {
+          $('#input-lat-'+sampleId+',#input-long-'+sampleId).css('border-color','silver');
+        } else {
+          alert(data.error);
+        }
+      },
+      'json'
+    );
+  };
+  
+  // Change inputs on the transect points review screen will recolour to show they are edited.
+  $('body').on('change', '.input-lat,.input-long', function(e) {
+    if ($(e.currentTarget).val().match(/^\-?[\d]+(\.[\d]+)?$/)) {
+      $(e.currentTarget).css('border', 'solid 1px red');
+    }
+    var sampleId = e.currentTarget.id.replace(/input\-(lat|long)\-/, ''),
+        lat=$('#input-lat-'+sampleId).val(),
+        lng=$('#input-long-'+sampleId).val(),
+        point;
+    // if we hav a valid lat long, move the associated point
+    if (lat.match(/^\-?[\d]+(\.[\d]+)?$/) && lng.match(/^\-?[\d]+(\.[\d]+)?$/)) {
+      point = new OpenLayers.Geometry.Point(lng, lat);
+      if (indiciaData.mapdiv.map.projection.getCode() != 4326) {
+        point.transform('EPSG:4326', indiciaData.mapdiv.map.projection);
+      }
+      $.each(indiciaData.reportlayer.features, function() {
+        if (this.id===sampleId) {
+          this.move(new OpenLayers.LonLat(point.x, point.y));
+        }
+      });
+    }
+  });
   
 });
