@@ -292,7 +292,8 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
     else {
       tab1 = '<p>' + indiciaData.popupTranslations.queryProbablyNeedsEmailUnknown + '</p>';
     }
-    tab2 = recorderQueryEmailForm();
+    tab1 += recorderQueryEmailForm();
+    tab2 = recorderQueryCommentForm();
     popupQueryForm(popupTabs({"email":tab1, "comment":tab2}));
     validator = $('#email-form').validate({});
     $('#email-form').submit(processEmail);
