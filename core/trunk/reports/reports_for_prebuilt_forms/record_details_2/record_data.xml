@@ -27,9 +27,21 @@
     <column name='inputter' sql="case p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end 
         when co.recorders then null
         else p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end end" />
-    <column name='record_status' visible="false" 
-        sql="CASE co.record_status WHEN 'C' THEN 'Awaiting verification' WHEN 'I' THEN 'Data entry in progress' WHEN 'R' THEN 'Rejected' WHEN 'D' THEN 'Queried' WHEN 'V' THEN 'Verified' WHEN 'S' THEN 'Email query sent' END
-        || CASE WHEN o.sensitivity_precision IS NOT NULL THEN '&lt;br/&gt;This record is sensitive.' ELSE '' END" />
+    <column name='record_status' visible="false" sql="
+    CASE
+      WHEN co.record_status='V' AND co.record_substatus=1 THEN 'Accepted as correct'
+      WHEN co.record_status='V' AND co.record_substatus=2 THEN 'Accepted as considered correct'
+      WHEN co.record_status='V' THEN 'Accepted'
+      WHEN co.record_status='C' AND co.record_substatus=3 THEN 'Plausible'
+      WHEN co.record_status='C' THEN 'Awaiting review'
+      WHEN co.record_status='D' THEN 'Queried'
+      WHEN co.record_status='I' THEN 'Data entry in progress'
+      WHEN co.record_status='R' AND co.record_substatus=4 THEN 'Rejected as unable to verify'
+      WHEN co.record_status='R' AND co.record_substatus=5 THEN 'Rejected as incorrect'
+      WHEN co.record_status='R' THEN 'Rejected'
+    END
+    || CASE WHEN co.query='Q' AND co.query IS NOT NULL AND co.record_status&lt;&gt;'V' THEN '&lt;br/&gt;Queried.' ELSE '' END"/>
+    <column name='sensitive' sql="CASE WHEN co.sensitivity_precision IS NOT NULL THEN 'This record is sensitive' ELSE '' END" />
     <column name='verifier' sql='co.verifier' />
     <column name='date_start' sql='s.date_start' visible='false' />
     <column name='date_end' sql='s.date_end' visible='false' />
