@@ -3,15 +3,18 @@
   <query website_filter_field="o.website_id">
     select 1 as sort, 'MY_RECORDS' as code, 'My records for survey' as qualifier, count(distinct o.id) as value
     from cache_occurrences o
-    where #website_filter#
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
     and o.created_by_id=#user_id#
     and o.survey_id=#survey_id#
-
     union
     
     select 2 as sort, 'MY_RECORDS_YEAR', 'My records for survey this year' as qualifier, count(distinct o.id) as value
     from cache_occurrences o
-    where #website_filter#
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
     and o.created_by_id=#user_id#
     and o.survey_id=#survey_id#
     and extract(year from o.date_start) = extract(year from now())
@@ -20,7 +23,9 @@
 
     select 3, 'MY_SPECIES', 'My species for survey' as qualifier, count(distinct case o.zero_abundance when true then null else o.taxa_taxon_list_external_key end)
     from cache_occurrences o
-    where #website_filter#
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
     and o.created_by_id=#user_id#
     and o.survey_id=#survey_id#
 
@@ -28,7 +33,9 @@
     
     select 4, 'MY_SPECIES_YEAR', 'My species for survey this year' as qualifier, count(distinct case o.zero_abundance when true then null else o.taxa_taxon_list_external_key end)
     from cache_occurrences o
-    where #website_filter#
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
     and o.created_by_id=#user_id#
     and o.survey_id=#survey_id#
     and extract(year from o.date_start) = extract(year from now())
@@ -37,7 +44,9 @@
 
     select 5, 'MY_RECORDS_VERIFIED', 'My records verified to date' as qualifier, count(distinct o.id)
     from cache_occurrences o
-    where #website_filter#
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
     and o.created_by_id=#user_id# 
     and o.survey_id=#survey_id#
     and o.record_status='V'
@@ -47,7 +56,9 @@
     select 6, 'LEAGUE_POSITION', 'league position' as qualifier, value from (
       select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END) desc) as value
       from cache_occurrences o
-      where #website_filter#
+      #agreements_join#
+      #joins#
+      where #sharing_filter#
       and o.survey_id=#survey_id#
       group by o.created_by_id
     ) as sub
@@ -57,14 +68,18 @@
 
     select 5, 'TOTAL_RECORDS', 'Total records for survey', count(distinct o.id) 
     from cache_occurrences o
-    where #website_filter#
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
     and o.survey_id=#survey_id#
 
     union
 
     select 6, 'MY_RECORDS_ON_SYSTEM', 'My records total', count(distinct o.id)
     from cache_occurrences o
-    where #website_filter#
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
     and o.created_by_id=#user_id#
   </query>
   <order_bys>
