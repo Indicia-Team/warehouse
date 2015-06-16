@@ -670,7 +670,8 @@ class filter_source extends filter_base {
  *   allowSave - set to false to disable the save bar at the foot of the panel.
  *   presets - provide an array of preset filters to provide in the filters drop down. Choose from my-records, my-groups (uses
  *     your list of taxon groups in the user account), my-locality (uses your recording locality from the user account),
- *     my-groups-locality (uses taxon groups and recording locatlity from the user account).
+ *     my-groups-locality (uses taxon groups and recording locality from the user account), my-queried-records, queried-records,
+ *     answered-records, accepted-records, not-accepted-records.
  * @param integer $website_id The current website's warehouse ID.
  * @param string $hiddenStuff Output parameter which will contain the hidden popup HTML that will be shown
  * using fancybox during filter editing. Should be appended AFTER any form element on the page as nested forms are not allowed.
@@ -692,9 +693,27 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
     'allowLoad' => true,
     'allowSave' => true,
     'redirect_on_success' => '',
-    'presets' => array('my-records', 'my-queried-or-not-accepted-records', 'my-not-reviewed-records', 'my-accepted-records', 'my-groups', 'my-locality', 'my-groups-locality'),
+    'presets' => array(
+      'my-records',
+      'my-queried-records',
+      'my-queried-or-not-accepted-records',
+      'my-not-reviewed-records',
+      'my-accepted-records',
+      'my-groups',
+      'my-locality',
+      'my-groups-locality'
+    ),
     'entity' => 'occurrence'
   ), $options);
+  // Introduce some extra quick filters useful for verifiers.
+  if ($options['sharing']==='verification') {
+    $options['presets'] = array_merge(array(
+        'queried-records',
+        'answered-records',
+        'accepted-records',
+        'not-accepted-records'
+      ), $options['presets']);
+  }
   //If in the warehouse we don't need to worry about the iform master list.
   if (function_exists('variable_get'))
     $options=array_merge(array('taxon_list_id' =>variable_get('iform_master_checklist_id', 0)),$options);
@@ -720,6 +739,10 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
           if (hostsite_get_user_field('id'))
             $title = lang::get('My records'); 
           break;
+        case 'my-queried-records':
+          if (hostsite_get_user_field('id'))
+            $title = lang::get('My queried records');
+          break;
         case 'my-queried-or-not-accepted-records':
           if (hostsite_get_user_field('id'))
             $title = lang::get('My not accepted or queried records');
@@ -743,6 +766,18 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
         case 'my-groups-locality':
           if (hostsite_get_user_field('taxon_groups', false, true) && hostsite_get_user_field('location'))
             $title = lang::get('Records of my species groups in my locality'); 
+          break;
+        case 'queried-records':
+          $title = lang::get('Queried records');
+          break;
+        case 'answered-records':
+          $title = lang::get('Records with answers');
+          break;
+        case 'accepted-records':
+          $title = lang::get('Accepted records');
+          break;
+        case 'not-accepted-records':
+          $title = lang::get('Not accepted records');
           break;
         default:
           throw new exception("Unsupported preset $preset for the filter panel");
