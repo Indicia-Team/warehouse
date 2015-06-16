@@ -943,6 +943,9 @@ jQuery(document).ready(function($) {
         case 'my-records':
           def = "{\"quality\":\"all\",\"my_records\":1}";
           break;
+        case 'my-queried-records':
+          def = "{\"quality\":\"D\",\"my_records\":1}";
+          break;
         case 'my-queried-or-not-accepted-records':
         case 'my-queried-rejected-records':
           def = "{\"quality\":\"DR\",\"my_records\":1}";
@@ -963,6 +966,18 @@ jQuery(document).ready(function($) {
           break;
         case 'my-groups-locality':
           def = "{\"quality\":\"all\",\"my_records\":0,\"taxon_group_list\":"+indiciaData.userPrefsTaxonGroups+",\"indexed_location_id\":"+indiciaData.userPrefsLocation+"}";
+          break;
+        case 'queried-records':
+          def = "{\"quality\":\"D\"}";
+          break;
+        case 'answered-records':
+          def = "{\"quality\":\"A\"}";
+          break;
+        case 'accepted-records':
+          def = "{\"quality\":\"V\"}";
+          break;
+        case 'not-accepted-records':
+          def = "{\"quality\":\"R\"}";
           break;
       }
       if (def) {
