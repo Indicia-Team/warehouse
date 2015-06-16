@@ -234,9 +234,10 @@ Record ID',
     $fieldsLower=helper_base::explode_lines(strtolower($args['fields']));
     //Draw the Record Details, but only if they aren't requested as hidden by the administrator
     $detailstemplateHtml = '';
-    $attrsTemplate='<div class="field ui-helper-clearfix"><span>{caption}:</span><span>{value}</span></div>';
+    $attrsTemplate='<div class="field ui-helper-clearfix"><span>{caption}</span><span{class}>{value}</span></div>';
     $test=$args['operator']==='in';
     $availableFields = array(
+      'sensitive'=>'Sensitive',
       'occurrence_id'=>'Record ID',
       'taxon'=>'Species',
       'preferred_taxon'=>'Preferred species name',
@@ -257,8 +258,13 @@ Record ID',
     
     $details_report = '<div class="record-details-fields ui-helper-clearfix">';
     foreach($availableFields as $field=>$caption) {
-      if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field]))
-        $details_report .= str_replace(array('{caption}','{value}'), array($caption, self::$record[$field]), $attrsTemplate);      
+      if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field])) {
+        // special case, sensitive icon
+        $class = self::$record[$field]==='This record is sensitive' ? ' class="ui-state-error"' : '';
+        $caption = self::$record[$field]==='This record is sensitive' ? '' : "$caption:";
+        $details_report .= str_replace(array('{caption}', '{value}', '{class}'),
+          array($caption, lang::get(self::$record[$field]), $class), $attrsTemplate);
+      }
     }
     $created = date('jS F Y \a\t H:i', strtotime(self::$record['created_on']));
     $updated = date('jS F Y \a\t H:i', strtotime(self::$record['updated_on']));
