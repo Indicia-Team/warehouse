@@ -213,15 +213,6 @@ class iform_verification_5 {
           'required'=>false
         ),
         array(
-          'name'=>'show_map',
-          'caption'=>'Show map of the currently selected records',
-          'description'=>'If checked, then a map of currently selected records is shown. This lets the verifier do things like visually spot outliers to check.',
-          'type'=>'checkbox',
-          'default'=>'true',
-          'required'=>false,
-          'group'=>'Other Map Settings'
-        ),
-        array(
           'name'=>'indicia_species_layer_feature_type',
           'caption'=>'Feature type for Indicia species layer',
           'description'=>'Set to the name of a feature type on GeoServer that will be loaded to display the Indicia species data for the selected record. '.

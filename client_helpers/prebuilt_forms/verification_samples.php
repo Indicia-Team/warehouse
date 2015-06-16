@@ -148,54 +148,45 @@ class iform_verification_samples {
           'group' => 'Report Settings',
           'required' => false
         ), array(
-        'name'=>'email_subject_send_to_verifier',
-        'caption'=>'Send to Expert Email Subject',
-        'description'=>'Default subject for the send to expert email. Replacements allowed include %id%.',
-        'type'=>'string',
-        'default' => 'Requesting your opinion on a sample (ID:%id%)',
-        'group' => 'Verifier emails'
-      ), array(
-        'name'=>'email_body_send_to_verifier',
-        'caption'=>'Send to Expert Email Body',
-        'description'=>'Default body for the send to expert email. Replacements allowed include %id% and %record% which is replaced to give details of the record.',
-        'type'=>'textarea',
-        'default' => 'We would appreciate your opinion on the following record. Please reply to this mail with "accepted", "not accepted" or "query" '.
-          'in the email body, followed by any comments you have including the proposed re-identification if relevant on the next line.'.
-          "\n\n%record%",
-        'group' => 'Verifier emails'
-      ), array(
-        'name'=>'email_subject_send_to_recorder',
-        'caption'=>'Send to Recorder Email Subject',
-        'description'=>'Default subject for the send query to recorder email. Replacements allowed include %id%.',
-        'type'=>'string',
-        'default' => 'Query on your sample (ID:%id%)',
-        'group' => 'Recorder emails'
-      ), array(
-        'name'=>'email_body_send_to_recorder',
-        'caption'=>'Send to Recorder Email Body',
-        'description'=>'Default body for the send to recorder email. Replacements allowed include %id% and %record% which is replaced to give details of the record.',
-        'type'=>'textarea',
-        'default' => 'The following record requires confirmation. Please could you reply to this email stating how confident you are that the record is correct '.
-          'and any other information you have which may help to confirm this.'.
-          "\n\n%record%",
-        'group' => 'Recorder emails'
-      ), array(
-        'name'=>'auto_discard_rows',
-        'caption'=>'Automatically remove rows',
-        'description'=>'If checked, then when changing the status of a record the record is removed from the grid if it no '.
-          'longer matches the grid filter.',
-        'type'=>'checkbox',
-        'default'=>'true',
-        'required'=>false
-      ),
-        array(
-          'name'=>'show_map',
-          'caption'=>'Show map of the currently selected records',
-          'description'=>'If checked, then a map of currently selected records is shown. This lets the verifier do things like visually spot outliers to check.',
+          'name'=>'email_subject_send_to_verifier',
+          'caption'=>'Send to Expert Email Subject',
+          'description'=>'Default subject for the send to expert email. Replacements allowed include %id%.',
+          'type'=>'string',
+          'default' => 'Requesting your opinion on a sample (ID:%id%)',
+          'group' => 'Verifier emails'
+        ), array(
+          'name'=>'email_body_send_to_verifier',
+          'caption'=>'Send to Expert Email Body',
+          'description'=>'Default body for the send to expert email. Replacements allowed include %id% and %record% which is replaced to give details of the record.',
+          'type'=>'textarea',
+          'default' => 'We would appreciate your opinion on the following record. Please reply to this mail with "accepted", "not accepted" or "query" '.
+            'in the email body, followed by any comments you have including the proposed re-identification if relevant on the next line.'.
+            "\n\n%record%",
+          'group' => 'Verifier emails'
+        ), array(
+          'name'=>'email_subject_send_to_recorder',
+          'caption'=>'Send to Recorder Email Subject',
+          'description'=>'Default subject for the send query to recorder email. Replacements allowed include %id%.',
+          'type'=>'string',
+          'default' => 'Query on your sample (ID:%id%)',
+          'group' => 'Recorder emails'
+        ), array(
+          'name'=>'email_body_send_to_recorder',
+          'caption'=>'Send to Recorder Email Body',
+          'description'=>'Default body for the send to recorder email. Replacements allowed include %id% and %record% which is replaced to give details of the record.',
+          'type'=>'textarea',
+          'default' => 'The following record requires confirmation. Please could you reply to this email stating how confident you are that the record is correct '.
+            'and any other information you have which may help to confirm this.'.
+            "\n\n%record%",
+          'group' => 'Recorder emails'
+        ), array(
+          'name'=>'auto_discard_rows',
+          'caption'=>'Automatically remove rows',
+          'description'=>'If checked, then when changing the status of a record the record is removed from the grid if it no '.
+            'longer matches the grid filter.',
           'type'=>'checkbox',
           'default'=>'true',
-          'required'=>false,
-          'group'=>'Other Map Settings'
+          'required'=>false
         ),
         array(
           'name'=>'indexed_location_type_ids',
