@@ -714,6 +714,10 @@ function report_filter_panel($readAuth, $options, $website_id, &$hiddenStuff) {
         'not-accepted-records'
       ), $options['presets']);
   }
+  if ($options['entity']==='sample') {
+    unset($options['presets']['my-groups']);
+    unset($options['presets']['my-groups-locality']);
+  }
   //If in the warehouse we don't need to worry about the iform master list.
   if (function_exists('variable_get'))
     $options=array_merge(array('taxon_list_id' =>variable_get('iform_master_checklist_id', 0)),$options);
