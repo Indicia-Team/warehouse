@@ -53,7 +53,7 @@
     
     union
     
-    select 6, 'LEAGUE_POSITION', 'league position' as qualifier, value from (
+    select 6, 'LEAGUE_POSITION', 'League position' as qualifier, value from (
       select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END) desc) as value
       from cache_occurrences o
       #agreements_join#
@@ -62,11 +62,52 @@
       and o.survey_id=#survey_id#
       group by o.created_by_id
     ) as sub
+    where created_by_id=#user_id#
+    
+    union
+    
+    select 7, 'LEAGUE_POSITION_YEAR', 'League position this year' as qualifier, value from (
+      select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END) desc) as value
+      from cache_occurrences o
+      #agreements_join#
+      #joins#
+      where #sharing_filter#
+      and o.survey_id=#survey_id#
+      and extract(year from o.date_start) = extract(year from now())
+      group by o.created_by_id
+    ) as sub
+    where created_by_id=#user_id#   
+    
+    union
+    
+    select 8, 'LEAGUE_POSITION_RECORDS', 'League position for total records' as qualifier, value from (
+      select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.id END) desc) as value
+      from cache_occurrences o
+      #agreements_join#
+      #joins#
+      where #sharing_filter#
+      and o.survey_id=#survey_id#
+      group by o.created_by_id
+    ) as sub
+    where created_by_id=#user_id#
+    
+    union
+    
+    select 9, 'LEAGUE_POSITION_RECORDS_YEAR', 'League position for records this year' as qualifier, value from (
+      select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.id END) desc) as value
+      from cache_occurrences o
+      #agreements_join#
+      #joins#
+      where #sharing_filter#
+      and o.survey_id=#survey_id#
+      and extract(year from o.date_start) = extract(year from now())
+      group by o.created_by_id
+    ) as sub
     where created_by_id=#user_id#   
 
     union 
 
-    select 5, 'TOTAL_RECORDS', 'Total records for survey', count(distinct o.id) 
+    select 10, 'TOTAL_RECORDS', 'Total records for survey', count(distinct o.id) 
     from cache_occurrences o
     #agreements_join#
     #joins#
@@ -75,7 +116,7 @@
 
     union
 
-    select 6, 'MY_RECORDS_ON_SYSTEM', 'My records total', count(distinct o.id)
+    select 11, 'MY_RECORDS_ON_SYSTEM', 'My records total', count(distinct o.id)
     from cache_occurrences o
     #agreements_join#
     #joins#
