@@ -353,18 +353,17 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         indiciaData.subTypes=[['".$options['id']."','".$options['subType']."']];
       }\n";
     
-    //The description of each habitat is saved to a sample attribute (as each habitat has its own sub-sample)
-    $descriptionAttrId=$options['habitatDescriptionId'];
-    //Habitat description is mandatory otherwise the habitat would be nameless
-    if (empty($descriptionAttrId))
-      return '<div><h3>Please fill in the id of the habitat description attribute in the page configuration</h3></div>';
-    
-    //Get the habitat description data
+    //The name of each habitat is saved to a sample attribute (as each habitat has its own sub-sample)
+    $nameAttrId=$options['habitatNameId'];
+    //Habitat name is mandatory otherwise the habitat would be nameless
+    if (empty($nameAttrId))
+      return '<div><h3>Please fill in the id of the habitat name attribute in the page configuration</h3></div>';
+    //Get the habitat name data
     if (!empty($_GET['sample_id'])) {
       $habitats = data_entry_helper::get_report_data(array(
         'dataSource'=>'reports_for_prebuilt_forms/seasearch/habitats_for_parent_sample',
         'readAuth'=>$auth['read'],
-        'extraParams'=>array('parent_sample_id' => $_GET['sample_id'], 'description_attr_id'=>$descriptionAttrId)
+        'extraParams'=>array('parent_sample_id' => $_GET['sample_id'], 'name_attr_id'=>$nameAttrId)
       ));
     } else {
       $habitats=array();
@@ -390,11 +389,17 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     $r.='<div class="habitats-div" style="float: left; width: 50%"><h3>Habitats</h3>';
     //Create the html to display the habitats and a splitter for each habitat
     if (!empty($habitats)) {
+      $habitatCounter=0;
       foreach ($habitats as $habIdx=>$habitat) {
         $habitatIds[]=$habitat['id'];
         //Note we need a specific "color" attribute as well as a style, this is because if we use .css('color') jquery to retrieve a colour, it converts the hex to rgb(<val>,<val>,<val>) automatically. To get the raw hex when we need it, we need to store it in a separate attribute as well
-        $r .= '<span id="habitat-'.$habitat['id'].'"><b>'.$habitat['description'].'</b>
+        $r .= '<span id="habitat-'.$habitat['id'].'"><b>'.$habitat['name'].'</b>
         <span id="habitat-'.$habitat['id'].'-dragzone" color="'.'#'.$habitatColours[$habIdx].'" class="habitat-dragzone" style="border: 5px solid ; height: 100px; width: 10px; display: inline-block; color:'.'#'.$habitatColours[$habIdx].';"></span></span>';
+        $habitatCounter++;
+        if ($habitatCounter>4) {
+          $r .= '<br>';
+          $habitatCounter=0;
+        }
       }
     }
     $r.='</div>';
@@ -403,11 +408,17 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //photo that is it dragged to, even if previously allocated.
     $r.='<div class="habitats-div" style="float: left; width: 50%"><h3>Habitats - Override individual habitats</h3>';
     if (!empty($habitats)) {
+      $habitatCounter=0;
       foreach ($habitats as $habIdx=>$habitat) {
         $habitatIds[]=$habitat['id'];
         //Note we need a specific "color" attribute as well as a style, this is because if we use .css('color') jquery to retrieve a colour, it converts the hex to rgb(<val>,<val>,<val>) automatically. To get the raw hex when we need it, we need to store it in a separate attribute as well
-        $r .= '<span id="habitat-override-'.$habitat['id'].'"><b>'.$habitat['description'].'</b>
+        $r .= '<span id="habitat-override-'.$habitat['id'].'"><b>'.$habitat['name'].'</b>
         <span id="habitat-override-'.$habitat['id'].'-dragzone" color="'.'#'.$habitatColours[$habIdx].'" class="habitat-dragzone habitat-override-dragzone"style="border: 5px solid ; height: 100px; width: 10px; display: inline-block; color:'.'#'.$habitatColours[$habIdx].';"></span></span>';
+        $habitatCounter++;
+        if ($habitatCounter>4) {
+          $r .= '<br>';
+          $habitatCounter=0;
+        }
       }
     }
     $r.='</div>';
