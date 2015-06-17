@@ -355,7 +355,7 @@ class data_entry_helper extends helper_base {
           $fieldnamePrefix = "$attrTypeTag+:$attrId:";
         $fieldname="$fieldnamePrefix:$i:$idx";
         $default = isset(self::$entity_to_load[$fieldname]) ? self::$entity_to_load[$fieldname] :
-          (isset($defaults[$idx]) ? $defaults[$idx] :
+          (array_key_exists($idx, $defaults) ? $defaults[$idx] :
             (isset($def['default']) ? $def['default'] : ''));
         $r .= "<td>";
         if ($def['datatype']==='lookup' && isset($def['control']) && $def['control']) {
