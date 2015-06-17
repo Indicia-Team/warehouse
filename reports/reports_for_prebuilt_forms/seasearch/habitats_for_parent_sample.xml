@@ -5,18 +5,18 @@
 <query>
   SELECT #columns#
   FROM samples s
-  LEFT JOIN sample_attribute_values sav on sav.sample_id=s.id AND sav.sample_attribute_id=#description_attr_id# AND sav.deleted='f'
+  LEFT JOIN sample_attribute_values sav on sav.sample_id=s.id AND sav.sample_attribute_id=#name_attr_id# AND sav.deleted='f'
   WHERE s.parent_id=#parent_sample_id#
   AND s.deleted=false 
 </query>
 <params>
   <param name='parent_sample_id' display='Parent sample ID' datatype='integer' 
       description='ID of the parent sample to load values for' />
-  <param name='description_attr_id' display='Description Attribute ID' datatype='integer' 
-      description='ID of the attribute that holds habitat descriptions.' />
+  <param name='name_attr_id' display='Name Attribute ID' datatype='integer' 
+      description='ID of the attribute that holds the habitat name.' />
 </params>
 <columns>
-  <column name='description' display='Description' sql='sav.text_value' datatype='string'/>
+  <column name='name' display='Name' sql='sav.text_value' datatype='string'/>
   <column name='id' display='ID' sql='s.id' datatype='integer'/>
 </columns>
 </report>
