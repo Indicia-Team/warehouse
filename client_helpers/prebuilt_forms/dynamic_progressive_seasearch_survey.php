@@ -655,7 +655,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     
     //Need the number of the occurrences tab, so we can hide the Add Photos button in the species grid.
     data_entry_helper::$javascript .= "
-    indiciaData.reloadtabs=[0,4,5];
+    indiciaData.reloadtabs=[0,4,5,6];
     indiciaData.occTabIdx=6;\n";
     if (!empty($args['gps_sync_warning']))
       data_entry_helper::$javascript .= "indiciaData.gpsSyncWarning=\"".$args['gps_sync_warning']."\";";
@@ -1016,6 +1016,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $photoResultExifFormatted = strtotime($photoResultExifDecoded['EXIF']['DateTimeOriginal']);
         foreach ($gpsArray as $gpsArrayPosTimeString) {
           $gpsArrayPosTimeArray=explode(',',$gpsArrayPosTimeString);
+          $gpsArrayPosTimeArray[2]=self::convertGPXDateToStrToTimeCompatibleFormat($gpsArrayPosTimeArray[2]);
           $timeDistance = strtotime($gpsArrayPosTimeArray[2]) - $photoResultExifFormatted;
           if ($timeDistance < 0)
             $timeDistance = $timeDistance * -1;
@@ -1138,7 +1139,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
   //Existing sub-sample creation code is used to create sub-samples on the grid with occurrences attached.
   //So we need to move these occurrences onto thid level samples.
   private static function transfer_occurrences_to_third_level_samples($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$gpsArray,$website_id,$password,$gpxDataAttrId) {
-  //Loop through each 2nd level sample.
+    //Loop through each 2nd level sample.
     foreach ($modelWrapped['subModels'] as $secondLevelSampleIdx=> &$secondLevelSample) {
       //Only work on the second level sample in the situation where there are some third level samples to create for it ready to put an occurrence onto.
       if (!empty($secondLevelSample['model']['fields']['id']['value']) && !empty($presentSpeciesListSubSampleIds)) {
@@ -1169,6 +1170,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
                 $photoResultExifFormatted = strtotime($photoResultExifDecoded['EXIF']['DateTimeOriginal']);
                 foreach ($gpsArray as $gpsArrayPosTimeString) {
                   $gpsArrayPosTimeArray=explode(',',$gpsArrayPosTimeString);
+                  $gpsArrayPosTimeArray[2]=self::convertGPXDateToStrToTimeCompatibleFormat($gpsArrayPosTimeArray[2]);
                   $timeDistance = strtotime($gpsArrayPosTimeArray[2]) - $photoResultExifFormatted;
                   //We are only interested in finding the closet GPX time to the exif one, as exif times can be earlier or later than the GPX one, we need 
                   //to ignore whether it is earlier or later and just find cloest match, so if the number is negative then make it positive.
@@ -2157,5 +2159,17 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
       $subModels[] = $subModel;
     }
     return $subModels;
+  }
+  
+  /**
+   * Convert date from GPX file into format suitable for use with PHP strToTime function
+   */
+  private static function convertGPXDateToStrToTimeCompatibleFormat($gpxDate) {
+    //Remove Z off end of GPX date
+    $gpxDate=substr($gpxDate, 0, -1);
+    //Split the date and time which are separated by letter T
+    $gpxDateTimeSplit=explode('T',$gpxDate);
+    //Re-assemble with space between date and time.
+    return $gpxDateTimeSplit[0].' '.$gpxDateTimeSplit[1];
   }
 }
