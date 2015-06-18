@@ -403,6 +403,14 @@ table tr.odd {
   margin: 1px;
 }
 
+#verification-grid .report-grid .single img {
+  width: 40px;
+}
+
+#verification-grid .report-grid .multi img {
+  width: 30px;
+}
+
 td.row-buttons {
   width: 16px;
 }
