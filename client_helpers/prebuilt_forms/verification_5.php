@@ -862,7 +862,8 @@ idlist=';
       $r .= "<tr><td colspan=\"2\" class=\"header\">$heading</td></tr>\n";
       foreach ($items as $item) {
         if (!is_null($item['value']) && $item['value'] != '') {
-          $r .= "<tr><td class=\"caption\">".$item['caption']."</td><td>".$item['value'] ."</td></tr>\n";
+          $value = preg_match('/^http(s)?:\/\//', $item['value']) ? "<a href=\"$item[value]\" target=\"_blank\">$item[value]</a>" : $item['value'];
+          $r .= "<tr><td class=\"caption\">".$item['caption']."</td><td>$value</td></tr>\n";
           if ($email==='' && (strtolower($item['caption'])==='email' || strtolower($item['caption'])==='email address'))
             $email=$item['value'];
         }
