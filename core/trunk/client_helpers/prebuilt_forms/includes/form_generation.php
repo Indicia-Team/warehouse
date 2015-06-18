@@ -211,6 +211,11 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
   $logged_in = $user->uid > 0;
   // If the user is not logged in there is no profile so return early.
   if (!$logged_in) {
+    // mark CMS related profile fields as handled as they can't be filled in anyway
+    foreach($attributes as &$attribute) {
+      if ($attribute['system_function']==='cms_user_id' || $attribute['system_function']==='cms_username')
+        $attribute['handled']=true;
+    }
     return '';
   }
    
@@ -228,7 +233,7 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $exists, $readAuth)
   }
   
   foreach($attributes as &$attribute) {
-    // Constuct the name of the user property (which varies between versions) to match against the attribute caption.
+    // Construct the name of the user property (which varies between versions) to match against the attribute caption.
     $attrPropName = ($version6 ? 'profile_' : 'field_') . strtolower(str_replace(' ', '_', $attribute['caption']));
 
     if (isset($user->$attrPropName) && isset($args['copyFromProfile']) && $args['copyFromProfile'] == true) {
