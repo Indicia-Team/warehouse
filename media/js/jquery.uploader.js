@@ -13,6 +13,11 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  */
 
+/**
+ * Add functions to mediaUploadAddedHooks to recieve a notification when a file is added.
+ */ 
+var mediaUploadAddedHooks = [];
+
  /**
  * Form submit handler that prevents the user clicking save during an upload
  */
@@ -457,6 +462,9 @@ var checkSubmitInProgress = function () {
           );
           // Copy the path into the hidden path input. Watch colon escaping for jQuery selectors.
           $('#' + div.settings.table.replace(/:/g,'\\:') + '\\:path\\:' + uniqueId).val(file.name);
+          $.each(mediaUploadAddedHooks, function() {
+            this(div, file);
+          });
         }
         // reset the form handler if this is the last upload in progress
         if ($('.file-box .progress').length===0) {
