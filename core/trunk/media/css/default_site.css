@@ -747,10 +747,21 @@ div.olControlEditingToolbar .olControlFullscreenItemActive {
   cursor: pointer;
 }
 
+input.findme {
+  padding-right: 18px;
+  box-sizing: border-box;
+}
+
 #findme-icon {
   background-image: url(../images/findme.png);
   width: 16px;
   height: 16px;
+  margin: 6px 0 0 -18px;
+  vertical-align: top;
+}
+
+#findme-icon.spinning {
+  background-image: url(../images/ajax-loader.gif);
 }
 
 /* for sub list control */

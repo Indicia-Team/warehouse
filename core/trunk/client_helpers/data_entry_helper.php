@@ -2473,14 +2473,6 @@ $('#$escaped').change(function(e) {
     if (!isset($options['defaultGeom']))
       $options['defaultGeom']=self::check_default_value($options['geomFieldname']);
     $options = self::check_options($options);
-    if ($options['findMeButton']) {
-      if (empty($options['afterControl'])) {
-        $options['afterControl'] = '';
-      }
-      $options['findmeTitle'] = lang::get('Find my current location');
-      $options['afterControl'] .= self::apply_static_template('sref_textbox_findmebtn', $options);
-      data_entry_helper::$javascript .= "$('#findme-icon').click(indiciaFns.findMe);\n";
-    }
     if ($options['splitLatLong']) {
       // Outputting separate lat and long fields, so we need a few more options
       if (!empty($options['default'])) {
@@ -2502,8 +2494,16 @@ $('#$escaped').change(function(e) {
       ), $options);
       unset($options['label']);
       $r = self::apply_template('sref_textbox_latlong', $options);
-    } else
+    } else {
+      if ($options['findMeButton']) {
+        if (!isset($options['class']))
+          $options['class'] = 'findme';
+        else
+          $options['class'] .= ' findme';
+        data_entry_helper::$javascript .= "indiciaFns.initFindMe('" . lang::get('Find my current location') . "');\n";
+      }
       $r = self::apply_template('sref_textbox', $options);
+    }
     return $r;
   }
 
