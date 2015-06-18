@@ -44,16 +44,28 @@ if (typeof window.indiciaData==="undefined") {
       });
   };
 
+  indiciaFns.initFindMe = function(hint) {
+    $('input.findme').after('<span id="findme-icon" title="' + hint + '">&nbsp;</span>');
+    $('#findme-icon').click(indiciaFns.findMe);
+  }
+
   indiciaFns.findMe = function() {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      var lonLat = new OpenLayers.LonLat(position.coords.longitude, position.coords.latitude)
-        .transform(
+    var onSuccess = function(position) {
+        $('#findme-icon').removeClass('spinning');
+        var lonLat = new OpenLayers.LonLat(position.coords.longitude, position.coords.latitude)
+          .transform(
           new OpenLayers.Projection("EPSG:4326"), //transform from WGS 1984
           indiciaData.mapdiv.map.getProjectionObject() //to Spherical Mercator Projection
         );
-      indiciaData.mapdiv.map.setCenter(lonLat, 17);
-      indiciaData.mapdiv.processLonLatPositionOnMap(lonLat, indiciaData.mapdiv);
-    });
+        indiciaData.mapdiv.map.setCenter(lonLat, 17);
+        indiciaData.mapdiv.processLonLatPositionOnMap(lonLat, indiciaData.mapdiv);
+      },
+      onFail = function() {
+        $('#findme-icon').removeClass('spinning');
+        alert('Your current position could not be found.');
+      };
+    $('#findme-icon').addClass('spinning');
+    navigator.geolocation.getCurrentPosition(onSuccess, onFail);
   }
   
   /**

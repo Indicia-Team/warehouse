@@ -244,7 +244,6 @@ if ($("#{escapedId} option").length===0) {
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{defaultLong}" />' .
         '<input type="hidden" id="{geomid}" name="geomFieldname" value="{defaultGeom}" />'.
         '<input type="hidden" id="{id}" name="{fieldname}" value="{default}" />',
-  'sref_textbox_findmebtn' => '<span id="findme-icon" title="{findmeTitle}">&nbsp;</span>',
   'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\" headers=\"{headers}\">{content}</td>",
   'taxon_label_cell' => "\n<td class=\"scTaxonCell{editClass}\" headers=\"{tableId}-species-{idx}\" {colspan}>{content}</td>",
   'helpText' => "\n<p class=\"{helpTextClass}\">{helpText}</p>",
