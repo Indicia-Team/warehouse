@@ -96,7 +96,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     ORDER BY n.user_id, u.username, n.source_type, n.id
   ")->result_array(false);
   if (empty($notificationsToSendEmailsFor)) {
-    echo 'There are no email notification jobs to run at the moment.<br/>';
+    echo 'There are no email notifications to send at the moment.<br/>';
   } else {
     //Get address to send emails from.
     $email_config=array();
@@ -123,14 +123,17 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     $currentType = '';
     $sourceTypes=array('S'=>'Species alerts','C'=>'Comments on your records','V'=>'Verification of your records','A'=>'Record Cleaner results for your records',
         'VT'=>'Incoming records for you to verify','M'=>'Milestones and achievements you\'ve attained', 'PT'=>'Incoming pending records for you to check',);
-    $recordStatus = array('T' => 'Test', 'I' => 'Data entry in progress', 'C' => 'Pending verification', 'R' => 'Rejected', 'D' => 'Queried', 'V' => 'Verified', 'S' => 'Awaiting response');
+    $recordStatus = array('T' => 'Test', 'I' => 'Data entry in progress', 
+      'V' => 'Accepted', 'V1' => 'Accepted as correct', 'V2' => 'Accepted as considered correct', 
+      'C' => 'Awaiting review', 'C3' => 'Plausible', 'D' => 'Queried', 
+      'R' => 'Not accepted', 'R4' => 'Not accepted as unable to verify', 'R5' => 'Not accepted as incorrect');
     $dataFieldsToOutput = array('username'=>'From', 'occurrence_id'=>'Record ID', 'comment'=>'Message', 'record_status'=>'Record status');
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
       //This user is not the first user but we have detected that it is not the same user we added a notification to the email for last time,
       //this means we need to send out the previous user's email and start building a new email
       if ($notificationToSendEmailsFor['user_id']!=$previousUserId && $previousUserId!==0) {
         if ($currentType!=='')
-          $emailContent .= '</tbody></table>';
+          $emailContent .= "</tbody>\n</table>\n";
         send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl);
         //Used to mark the notifications in an email if an email send is successful, once email send attempt has been made we can reset the list ready for the next email.
         $notificationIds=array();
@@ -144,25 +147,23 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
         // Output a header for the group of notifications of the same type
         if ($currentType!==$notificationToSendEmailsFor['source_type']) {
           if ($currentType!=='')
-            $emailContent .= '</tbody></table>';
+            $emailContent .= "</tbody>\n</table>\n";
           $currentType=$notificationToSendEmailsFor['source_type'];
           $emailContent .= '<h2>'.$sourceTypes[$currentType].'</h2>';
-          $emailContent .= '<table><thead>';
+          $emailContent .= "<table>\n<thead><tr>";
           foreach ($dataFieldsToOutput as $field=>$caption) {
             if (isset($record[$field])) 
               $emailContent .= "<th>$caption</th>";
           }
-          $emailContent .= '</thead><tbody>';
+          $emailContent .= "</tr>\n</thead>\n<tbody>";
         }
         $emailContent .= '<tr>';
         foreach ($dataFieldsToOutput as $field=>$caption) {
           if (isset($record[$field])) { 
             if ($field==='username' && ($record[$field]==='admin' || $record[$field]==='system'))
               $record[$field] = $systemName;
-            elseif ($field==='occurrence_id')
-              $record[$field] = 'Record ID ' . $record[$field];
             elseif ($field==='record_status') 
-              $record[$field] = $recordStatus[$record[$field]];
+              $record[$field] = $recordStatus[$record['record_status'] . (empty($record['record_substatus']) ? '' : $record['record_substatus'])];
             $emailContent .= '<td style="padding-right: 1em;">'.$record[$field].'</td>';
           }
         }
@@ -174,7 +175,7 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
       $previousUserId=$notificationToSendEmailsFor['user_id'];
     }
     if ($currentType!=='')
-      $emailContent .= '</tbody></table>';
+      $emailContent .= "</tbody></table>\n";
     //if we have run out of notifications to send we will have finished going around the loop, so we just need to send out the last email whatever happens
     send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl);
     $emailSentCounter++;
