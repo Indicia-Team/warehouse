@@ -188,6 +188,9 @@ class import_helper extends helper_base {
       $request .= '&website_id='.trim($settings['website_id']);
     if (!empty($settings['survey_id']))
       $request .= '&survey_id='.trim($settings['survey_id']);
+    if (!empty($settings['useAssociations']) && $settings['useAssociations'])
+    	$request .= '&use_associations=true';
+    
     $response = self::http_post($request, array());
     $fields = json_decode($response['output'], true);
     if (!is_array($fields))
@@ -668,6 +671,7 @@ class import_helper extends helper_base {
     */
     $alternatives = array(
       "sample:entered sref"=>array("/(sample)?(spatial|grid)ref(erence)?/"),
+      "occurrence_2:taxa taxon list (lookup existing record)"=>array("/(2nd|second)(species(latin)?|taxon(latin)?|latin)(name)?/"),
       "occurrence:taxa taxon list (lookup existing record)"=>array("/(species(latin)?|taxon(latin)?|latin)(name)?/"),
       "sample:location name"=>array("/(site|location)(name)?/"),
       "smpAttr:eunis habitat (lookup existing record)" => array("/(habitat|eunishabitat)/")
@@ -695,6 +699,7 @@ class import_helper extends helper_base {
               $itWasSaved = 0; 
             else 
               $selected=true;
+            break;
           }
         } 
       }
@@ -758,12 +763,12 @@ class import_helper extends helper_base {
   * @return string $caption A caption for the column drop-down on the import page.
   */
   private static function make_clean_caption($caption, $prefix, $fieldname, $model) {
+  	$captionSuffix = (substr($prefix,strlen($prefix)-2,2)=='_2' ? // in a association situation with a second record
+  						' (2)' : '');
     if (empty($caption)) {
       if (substr($fieldname,0,3)=='fk_') {
-        $captionSuffix=' ('.lang::get('lookup existing record').')';
-      } else {
-        $captionSuffix='';
-      }    
+        $captionSuffix .= ' ('.lang::get('lookup existing record').')';
+      }   
       $fieldname=str_replace(array('fk_','_id'), array('',''), $fieldname);
       if ($prefix==$model || $prefix=="metaFields" || $prefix==substr($fieldname,0,strlen($prefix))) {
         $caption = self::processLabel($fieldname).$captionSuffix;
@@ -771,9 +776,8 @@ class import_helper extends helper_base {
         $caption = self::processLabel("$fieldname").$captionSuffix;
       }
     } else {
-      if (substr($fieldname,0,3)=='fk_') 
-        $caption .=' ('.lang::get('lookup existing record').')'; 
-      }
+        $caption .= (substr($fieldname,0,3)=='fk_' ? ' ('.lang::get('lookup existing record').')' : ''); 
+    }
     return $caption;
   }
   

@@ -54,14 +54,14 @@ class Occurrence_Model extends ORM
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
     'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
     // allow details of 4 images to be uploaded in CSV files
-    'occurrence_image:path:1'=>'Image Path 1',
-    'occurrence_image:caption:1'=>'Image Caption 1',
-    'occurrence_image:path:2'=>'Image Path 2',
-    'occurrence_image:caption:2'=>'Image Caption 2',
-    'occurrence_image:path:3'=>'Image Path 3',
-    'occurrence_image:caption:3'=>'Image Caption 3',
-    'occurrence_image:path:4'=>'Image Path 4',
-    'occurrence_image:caption:4'=>'Image Caption 4'    
+    'occurrence_media:path:1'=>'Media Path 1',
+    'occurrence_media:caption:1'=>'Media Caption 1',
+    'occurrence_media:path:2'=>'Media Path 2',
+    'occurrence_media:caption:2'=>'Media Caption 2',
+    'occurrence_media:path:3'=>'Media Path 3',
+    'occurrence_media:caption:3'=>'Media Caption 3',
+    'occurrence_media:path:4'=>'Media Path 4',
+    'occurrence_media:caption:4'=>'Media Caption 4'    
   );
   
   /**
@@ -419,6 +419,27 @@ class Occurrence_Model extends ORM
         )     
     );
   }
+
+  /**
+   * Returns details of attributes for this model.
+   */
+  public function get_attr_details() {
+	return array('attrs_field_prefix' => $this->attrs_field_prefix);
+  }
+  
+  /*
+   * Determines if the provided module has been activated in the indicia configuration.
+  */
+  private function _check_module_active($module)
+  {
+  	$config=kohana::config_load('core');
+  	foreach ($config['modules'] as $path) {
+  		if(strlen($path) >= strlen($module) &&
+  				substr_compare($path, $module , strlen($path)-strlen($module), strlen($module), true) === 0)
+  					return true;
+  	}
+  	return false;
+  }
   
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
@@ -428,12 +449,13 @@ class Occurrence_Model extends ORM
     $systems = spatial_ref::system_list();
     foreach ($systems as $code=>$title) 
       $srefs[] = "$code:$title";
-    return array(
+    $retVal = array(
       'website_id' => array( 
         'display'=>'Website', 
         'description'=>'Select the website to import records into.', 
         'datatype'=>'lookup',
-        'population_call'=>'direct:website:id:title' 
+        'population_call'=>'direct:website:id:title' ,
+    	'filterIncludesNulls'=>true
       ),
       'survey_id' => array(
         'display'=>'Survey', 
@@ -451,22 +473,52 @@ class Occurrence_Model extends ORM
         'lookup_values'=>implode(',', $srefs)
       ),
       // Also allow a field to be defined which defines the taxon list to look in when searching for species during a csv upload
-      'fkFilter:taxa_taxon_list:taxon_list_id'=>array(
+      'occurrence:fkFilter:taxa_taxon_list:taxon_list_id'=>array(
         'display' => 'Species list',
         'description'=>'Select the species checklist which will be used when attempting to match species names.', 
         'datatype'=>'lookup',
         'population_call'=>'direct:taxon_list:id:title',
         'linked_to'=>'website_id',
-        'linked_filter_field'=>'website_id'
+        'linked_filter_field'=>'website_id',
+    	'filterIncludesNulls'=>true
       ),
       'occurrence:record_status' => array(
         'display' => 'Record Status',
-        'description' => 'Select the initial status for imported records',
+        'description' => 'Select the initial status for imported species records',
         'datatype' => 'lookup',
         'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
         'default' => 'C'
       )
     );
+    if(self::_check_module_active('occurrence_associations'))
+    	$retVal['useAssociations'] = array(
+    			'display' => 'Use Associations',
+    			'description' => 'Select if this import uses occurrence associations: implies two species records uploaded for each entry in the file.',
+    			'datatype' => 'checkbox'); // default off
+    	$retVal['occurrence_association:fkFilter:association_type:termlist_id' ] = array(
+    			'display' => 'Term list for association types',
+    			'description'=>'Select the term list which will be used to match the association types.',
+    			'datatype'=>'lookup',
+    			'population_call'=>'direct:termlist:id:title'
+//    			,'linked_to'=>'website_id',
+//    			'linked_filter_field'=>'website_id',
+//    	        'filterIncludesNulls'=>true
+    			);
+    	$retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id' ] = array(
+    			'display' => 'Second Species list',
+    			'description'=>'Select the species checklist which will be used when attempting to match second species names.',
+    			'datatype'=>'lookup',
+    			'population_call'=>'direct:taxon_list:id:title',
+    			'linked_to'=>'website_id',
+    			'linked_filter_field'=>'website_id',
+    	        'filterIncludesNulls'=>true);
+    	$retVal['occurrence_2:record_status'] = array(
+    			'display' => 'Record Status',
+    			'description' => 'Select the initial status for second imported species records',
+    			'datatype' => 'lookup',
+    			'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
+    			'default' => 'C');
+    return $retVal;
   }
   
 }

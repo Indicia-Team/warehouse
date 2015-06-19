@@ -87,6 +87,9 @@ $default_terms = array(
   // define the captions for fields in the data dictionary
   'dd:occurrence:fk_taxa_taxon_list' => 'Species or taxon name',
   'dd:occurrence:all_info_in_determinations' => 'Use determinations table for identification information (Y/N)',
+  // same for associated occurrences
+  'dd:occurrence_2:fk_taxa_taxon_list' => 'Second species or taxon name',
+  'dd:occurrence_2:all_info_in_determinations' => 'Use determinations table for identification information in second occurrence (Y/N)',
   'dd:sample:entered_sref' => 'Grid ref or other spatial ref',
   'dd:sample:entered_sref_system' => 'Spatial reference system',
   
