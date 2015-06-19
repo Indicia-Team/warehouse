@@ -41,7 +41,12 @@ class report_standard_params_samples {
    * @return array
    */
   public static function getDeprecatedParameters() {
-    return array();
+    return array(
+      array('location_id', 'location_list'),
+      array('survey_id', 'survey_list'),
+      array('indexed_location_id', 'indexed_location_list'),
+      array('input_form', 'input_form_list', TRUE)
+    );
   }
 
   /**
@@ -189,13 +194,14 @@ class report_standard_params_samples {
       'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality',
         'description'=>'Minimum quality of records to include',
         'lookup_values'=>'V:Accepted records only,P:Not reviewed,!D:Exclude queried or not accepted records,' .
-          '!R:Exclude not accepted records,R:Not accepted records only,all:All records',
+          '!R:Exclude not accepted records,R:Not accepted records only,DR:Queried or not accepted records,all:All records',
         'wheres' => array(
           array('value'=>'V', 'operator'=>'equal', 'sql'=>"s.record_status='V'"),
-          array('value'=>'P', 'operator'=>'equal', 'sql'=>"s.record_status in ('C','S')"),
-          array('value'=>'!D', 'operator'=>'equal', 'sql'=>"(s.record_status not in ('R','D') and s.query<>'Q')"),
+          array('value'=>'P', 'operator'=>'equal', 'sql'=>"s.record_status = 'C'"),
+          array('value'=>'!D', 'operator'=>'equal', 'sql'=>"s.record_status not in ('R','D')"),
           array('value'=>'!R', 'operator'=>'equal', 'sql'=>"s.record_status<>'R'"),
-          array('value'=>'R', 'operator'=>'equal', 'sql'=>"s.record_status='R'")
+          array('value'=>'R', 'operator'=>'equal', 'sql'=>"s.record_status='R'"),
+          array('value'=>'DR', 'operator'=>'equal', 'sql'=>"s.record_status in ('R','D')"),
           // The all filter does not need any SQL
         )
       ),
