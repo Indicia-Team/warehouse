@@ -950,13 +950,8 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       }
     }
     //Make one array contain both new and existing sub-samples
-    //Cycle through the existing sub-sample value collection applying them to the main value collection array.
-    //Set the key of the array to the length of the array holding the new sub-samples, but then add a number which relates to the
-    //number of times we have cycled around the $existingValuesCollection
-    $existingValuesCollectionCounter=1;
     foreach ($existingValuesCollections as $existingValuesCollection) {
-      $valuesCollection[count($valuesCollection)+$existingValuesCollectionCounter] = $existingValuesCollection;
-      $existingValuesCollectionCounter++;
+      $valuesCollection[] = $existingValuesCollection;
     }
     $completeValuesCollection=array();
     //Merge each set of sub-sample values with elements required to make a basic sample (such as entered_sref)
