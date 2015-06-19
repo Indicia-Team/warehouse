@@ -71,7 +71,7 @@ class postgreSQL {
     return $db->query(
 "select distinct on (co.id) case when oc.auto_generated=true then 'A' when co.verified_on>'$last_run_date' and co.record_status not in ('I','T','C') then 'V' else 'C' end as source_type,
         co.id, co.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref,
-        co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.cache_updated_on as updated_on, oc.created_by_id as occurrence_comment_created_by_id,
+        co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.record_substatus, co.cache_updated_on as updated_on, oc.created_by_id as occurrence_comment_created_by_id,
         case when oc.auto_generated=true then oc.generated_by else 'oc_id:' || oc.id::varchar end as source_detail, 't' as record_owner
 into temporary records_to_notify
       from cache_occurrences co
@@ -83,7 +83,7 @@ into temporary records_to_notify
       and co.created_by_id<>1
     union
     select distinct 'C' as source_type, co.id, ocprev.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref,
-        co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.cache_updated_on as updated_on, oc.created_by_id as occurrence_comment_created_by_id,
+        co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.record_substatus, co.cache_updated_on as updated_on, oc.created_by_id as occurrence_comment_created_by_id,
         'oc_id:' || oc.id::varchar as source_detail, case ocprev.created_by_id when co.created_by_id then 't' else 'f' end as record_owner
       from cache_occurrences co
       join occurrence_comments ocprev on ocprev.occurrence_id=co.id and ocprev.deleted=false and ocprev.created_by_id<>co.created_by_id and ocprev.created_by_id<>1
