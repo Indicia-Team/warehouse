@@ -64,7 +64,8 @@ class Import_Controller extends Service_Base_Controller {
     $model = ORM::factory($model);
     $website_id = empty($_GET['website_id']) ? null : $_GET['website_id'];
     $survey_id = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
-    echo json_encode($model->getSubmittableFields(true, $website_id, $survey_id));
+    $use_associations = (empty($_GET['use_associations']) ? false : ($_GET['use_associations'] == "true" ? true : false));
+    echo json_encode($model->getSubmittableFields(true, $website_id, $survey_id, null, $use_associations));
   }
   
   /**
@@ -79,7 +80,8 @@ class Import_Controller extends Service_Base_Controller {
     $model = ORM::factory($model);
     $website_id = empty($_GET['website_id']) ? null : $_GET['website_id'];
     $survey_id = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
-    $fields = $model->getRequiredFields(true, $website_id, $survey_id);
+    $use_associations = (empty($_GET['use_associations']) ? false : ($_GET['use_associations'] == "true" ? true : false));
+    $fields = $model->getRequiredFields(true, $website_id, $survey_id, $use_associations);
     foreach ($fields as &$field) {
       $field = preg_replace('/:date_type$/', ':date', $field);
     }
@@ -195,6 +197,20 @@ class Import_Controller extends Service_Base_Controller {
     fclose($mappingHandle);
   }
   
+  /*
+   * Determines if the provided module has been activated in the indicia configuration.
+   */
+  private function _check_module_active($module)
+  {
+  	$config=kohana::config_load('core');
+  	foreach ($config['modules'] as $path) {
+  		if(strlen($path) >= strlen($module) &&
+  				substr_compare($path, $module , strlen($path)-strlen($module), strlen($module), true) === 0)
+  			return true;
+  	}
+  	return false;
+  }
+  
   /**
    * Controller action that performs the import of data in an uploaded CSV file.
    * Allows $_GET parameters to specify the filepos, offset and limit when uploading just a chunk at a time.
@@ -274,13 +290,85 @@ class Import_Controller extends Service_Base_Controller {
             $saveArray['joinsTo:website:'.$saveArray['website_id']]=1;
           }
         }
+        // Check if in an association situation
+        $associationExists = false;
+        if (self::_check_module_active($this->submissionStruct['model'].'_associations')) {
+        	// assume model has attributes.
+        	$attrDetails = $model->get_attr_details();
+        	$associatedSuffix = '_2';
+         	$associatedRecordSubmissionStructure = $this->submissionStruct;
+        	$originalRecordPrefix      = $this->submissionStruct['model'];
+        	$originalAttributePrefix   = $attrDetails['attrs_field_prefix'];
+        	$originalMediaPrefix       = $originalRecordPrefix.'_media';
+        	$associatedRecordPrefix    = $originalRecordPrefix.$associatedSuffix;
+        	$associatedAttributePrefix = $originalAttributePrefix.$associatedSuffix;
+        	$associatedMediaPrefix     = $originalMediaPrefix.$associatedSuffix;
+        	$associationRecordPrefix   = $originalRecordPrefix.'_association';
+        	// find out if association or associated records exist
+        	foreach ($saveArray as $assocField=>$assocValue) {
+        		$associationExists = $associationExists ||
+        			substr($assocField, 0, strlen($associationRecordPrefix)) == $associationRecordPrefix ||
+        			substr($assocField, 0, strlen($associatedRecordPrefix)) == $associatedRecordPrefix;
+        	}
+        }
+        
         // If posting a supermodel, are the details of the supermodel the same as for the previous CSV row? If so, we can link to that
         // record rather than create a new supermodel record.
-        $updatedPreviousCsvSupermodelDetails=$this->checkForSameSupermodel($saveArray, $model);
+        $updatedPreviousCsvSupermodelDetails=$this->checkForSameSupermodel($saveArray, $model, $associationExists);
         // Clear the model, so nothing else from the previous row carries over.
         $model->clear();
         // Save the record
         $model->set_submission_data($saveArray, true);
+        /* At this point, if model has associations (i.e. a module is active called <modelSingular>_associations)
+           we flip the submission so the model becomes the subModel. This way we can bolt any second associated
+           record in, into the submodel array. */
+         // GvB TODO alter automatic mappings to set up secondary occurrences correctly.
+        if ($associationExists && isset($model->submission['superModels']) &&
+        		is_array($model->submission['superModels']) &&
+				count($model->submission['superModels']) === 1){
+            // We are assuming only one superModel, which must exist at this point.
+            // Use key 'record1' into the subModel array so association record knows which is which.
+            unset($associatedRecordSubmissionStructure['superModels']); // we are using the previously wrapped superModel
+            // flip then bolt in as second submodel to the supermodel using key 'record2',
+          	$submissionData = $model->submission;
+            $superModelSubmission = $submissionData['superModels'][0]['model'];
+            $superModelFK = $submissionData['superModels'][0]['fkId'];
+            $superModel  = ORM::Factory($superModelSubmission['id']);
+            $superModel->clear();
+            unset($submissionData['superModels']);
+            // try to wrap second record of original model.
+            // as the submission builder needs a 1-1 match between field prefix and model name, we need to generate an altered saveArray.
+            $associatedArray = array();
+            foreach ($saveArray as $fieldname=>$value){
+				$parts = explode(':',$fieldname);
+				// filter out original model feilds, any of its attributes and media records.
+				if ($parts[0] != $originalRecordPrefix &&
+						$parts[0] != $originalAttributePrefix &&
+						$parts[0] != $originalMediaPrefix) {
+					if ($parts[0] == $associatedRecordPrefix)
+              			$parts[0] = $originalRecordPrefix;
+              		else if ($parts[0] == $associatedAttributePrefix)
+              			$parts[0] = $originalAttributePrefix;
+              		else if ($parts[0] == $associatedMediaPrefix)
+              			$parts[0] = $originalMediaPrefix;
+              		$associatedArray[implode(':',$parts)] = $value;
+              	}
+            }
+            $associatedSubmission = submission_builder::build_submission($associatedArray, $associatedRecordSubmissionStructure); // func already loaded for previous wrap
+            // Map fk_* fields to the looked up id
+            $associatedSubmission = $model->getFkFields($associatedSubmission, $associatedArray);
+            // wrap the association and bolt in as a submodel of original model, using '||record2||' pointer.
+            $association  = ORM::Factory($associationRecordPrefix);
+            $association->set_submission_data($saveArray, true);
+            $association->submission['fields']['to_'.$associatedRecordSubmissionStructure['model'].'_id'] = array('value'=>'||record2||');
+            $submissionData['subModels'] = array(array('fkId' => 'from_'.$associatedRecordSubmissionStructure['model'].'_id',
+            								           'model' => $association->submission));
+            $superModelSubmission['subModels'] =
+              	array('record1' => array('fkId' => $superModelFK, 'model' => $submissionData),
+                       'record2'=> array('fkId' => $superModelFK, 'model' => $associatedSubmission));
+            $superModel->submission = $superModelSubmission;
+            $model = $superModel;
+        } else $associationExists = false;
         if (($id = $model->submit()) == null) {
           // Record has errors - now embedded in model, so dump them into the error file
           $errors = array();
@@ -299,7 +387,7 @@ class Import_Controller extends Service_Base_Controller {
           // now the record has successfully posted, we need to store the details of any new supermodels and their Ids, 
           // in case they are duplicated in the next csv row.
           $this->previousCsvSupermodel['details'] = array_merge($this->previousCsvSupermodel['details'], $updatedPreviousCsvSupermodelDetails);
-          $this->captureSupermodelIds($model);
+          $this->captureSupermodelIds($model, $associationExists);
         }
         // get file position here otherwise the fgetcsv in the while loop will move it one record too far. 
         $filepos = ftell($handle);
@@ -335,11 +423,13 @@ class Import_Controller extends Service_Base_Controller {
     $errorFile = str_replace('.csv','-errors.csv',$_GET['uploaded_csv']);
     $metadata = $this->_get_metadata($_GET['uploaded_csv']);
     echo json_encode(array('problems'=>$metadata['errorCount'], 'file' => url::base().'upload/'.basename($errorFile)));
-    // clean up the uploaded file and mapping file, but not the error file as we will make it downloadable.
+    // clean up the uploaded file and mapping file, but only remove the error file if no errors, otherwise we make it downloadable
     if (file_exists(DOCROOT . "upload/" . $_GET['uploaded_csv']))
       unlink(DOCROOT . "upload/" . $_GET['uploaded_csv']);
     if (file_exists(DOCROOT . "upload/" . $metadataFile))
       unlink(DOCROOT . "upload/" . $metadataFile);
+    if ($metadata['errorCount'] == 0 && file_exists(DOCROOT . "upload/" . $errorFile))
+      unlink(DOCROOT . "upload/" . $errorFile);
     // clean up cached lookups
     $cache= Cache::instance();
     $cache->delete_tag('lookup');
@@ -350,8 +440,10 @@ class Import_Controller extends Service_Base_Controller {
    * then this method checks to see if the supermodel part of the submission is repeated. If so, then rather than create
    * a new record for the supermodel, we just link this new record to the existing supermodel record. E.g. a spreadsheet
    * containing several occurrences in a single sample can repeat the sample details but only one sample gets created.
+   * BUT, there are situations (like building an association based submission) where we need to keep the structure, in which
+   * case we just set the id, rather than remove all the supermodel entries.
    */
-  private function checkForSameSupermodel(&$saveArray, $model) {
+  private function checkForSameSupermodel(&$saveArray, $model, $linkOnly = false) {
     $updatedPreviousCsvSupermodelDetails = array();
     if (isset($this->submissionStruct['superModels'])) {
       // loop through the supermodels
@@ -371,14 +463,19 @@ class Import_Controller extends Service_Base_Controller {
         }
         // if we have previously stored a hash for this supermodel, check if they are the same. If so we can get the ID.
         if (isset($this->previousCsvSupermodel['details'][$modelName]) && $this->previousCsvSupermodel['details'][$modelName]==$hash) {
-          // the details for this supermodel point to an existing record, so we need to re-use it. First, remove the data 
-          // from the submission array so we don't re-submit it.
-          foreach ($saveArray as $field=>$value) {
-            if (substr($field, 0, strlen($modelName)+1)=="$modelName:")
-              unset($saveArray[$field]);
+          // the details for this supermodel point to an existing record, so we need to re-use it. 
+          if($linkOnly) {
+          	// now link the existing supermodel record to the save array
+          	$saveArray[$modelName.':id'] = $this->previousCsvSupermodel['id'][$modelName];
+          } else {
+            // First, remove the data from the submission array so we don't re-submit it.
+            foreach ($saveArray as $field=>$value) {
+              if (substr($field, 0, strlen($modelName)+1)=="$modelName:")
+                unset($saveArray[$field]);
+            }
+            // now link the existing supermodel record to the save array
+            $saveArray[$model->object_name.':'.$modelDetails['fk']] = $this->previousCsvSupermodel['id'][$modelName];
           }
-          // now link the existing supermodel record to the save array
-          $saveArray[$model->object_name.':'.$modelDetails['fk']] = $this->previousCsvSupermodel['id'][$modelName];
         } else {
           // this is a new supermodel (e.g. a new sample for the occurrences). So just save the details in case it is repeated
           $updatedPreviousCsvSupermodelDetails[$modelName]=$hash;
@@ -392,9 +489,15 @@ class Import_Controller extends Service_Base_Controller {
   * When saving a model with supermodels, we don't want to duplicate the supermodel record if all the details are the same across 2
   * spreadsheet rows. So this method captures the ID of the supermodels that we have just posted, in case their details are replicated
   * in the next record.
+  * Handles case where the submission has been flipped (associations), and supermodel has been made the main model.
   */
-  private function captureSupermodelIds($model) {
-    if (isset($this->submissionStruct['superModels'])) {
+  private function captureSupermodelIds($model, $flipped=false) {
+  	if ($flipped) {
+  		// supermodel is now main model - just look for the ID field...
+  		$array = $model->as_array();
+  		$subStruct = $model->get_submission_structure();
+  		$this->previousCsvSupermodel['id'][$subStruct['model']] = $model->id;		
+  	} else if (isset($this->submissionStruct['superModels'])) {
       $array = $model->as_array();
       // loop through the supermodels
       foreach($this->submissionStruct['superModels'] as $modelName=>$modelDetails) {

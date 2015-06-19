@@ -212,6 +212,16 @@ $lang = array (
     'type' => 'The file is not one of the allowed types [png,gif,jpg,jpeg].',
     'default' => 'Invalid file.',
   ),
+  'association_type_id' => Array (
+  	'required' => 'The association type must be supplied.'
+  ),
+  'from_occurrence_id' => Array (
+  	'required' => 'The association from_occurrence_id must be supplied.'
+  ),
+  'to_occurrence_id' => Array (
+  	'required' => 'The association to_occurrence_id must be supplied.'
+  )
+
 );
 
 ?>
