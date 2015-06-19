@@ -41,7 +41,12 @@ class report_standard_params_samples {
    * @return array
    */
   public static function getDeprecatedParameters() {
-    return array();
+    return array(
+      array('location_id', 'location_list'),
+      array('survey_id', 'survey_list'),
+      array('indexed_location_id', 'indexed_location_list'),
+      array('input_form', 'input_form_list', TRUE)
+    );
   }
 
   /**
