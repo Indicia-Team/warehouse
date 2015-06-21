@@ -20,16 +20,14 @@ function auto_verify_scheduled_task($last_run_date, $db) {
     return false;
   }
  
-  //occDelta doesn't have the data_cleaner_info filled in, so join to cache_occurrences
   $subQuery="
-    SELECT od.id
-    FROM occdelta od
-    JOIN cache_occurrences co on co.id=od.id
+    SELECT co.id
+    FROM cache_occurrences co
     JOIN surveys s on s.id = co.survey_id AND s.auto_accept=true AND s.deleted=false
-    JOIN cache_taxon_searchterms cts on cts.taxa_taxon_list_id = co.taxa_taxon_list_id 
-      AND ((".$autoVerifyNullIdDiff."=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty) 
-      OR (".$autoVerifyNullIdDiff."=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty))) 
-    WHERE co.data_cleaner_info='pass' AND co.record_status='C' AND co.record_substatus IS NULL";
+    LEFT JOIN cache_taxon_searchterms cts on cts.taxa_taxon_list_id = co.taxa_taxon_list_id 
+    WHERE co.data_cleaner_info='pass' AND co.record_status='C' AND co.record_substatus IS NULL
+        AND ((".$autoVerifyNullIdDiff."=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty) 
+        OR (".$autoVerifyNullIdDiff."=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))";
   $verificationTime=gmdate("Y\/m\/d H:i:s");
   //Need to update cache_occurrences, as this table has already been built at this point.
   $query = "
@@ -75,13 +73,5 @@ function auto_verify_scheduled_task($last_run_date, $db) {
     echo 'No occurrence records have been auto-verified.</br>';
 }
 
-/*
- * Tell the system that we need the occdelta table to find out which occurrences have been created/changed recently.
- */
-function auto_verify_metadata() {
-  return array(
-    'requires_occurrences_delta'=>TRUE
-  );
-}
 ?> 
  
