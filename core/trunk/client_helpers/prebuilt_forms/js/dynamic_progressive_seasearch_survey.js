@@ -19,9 +19,15 @@ jQuery(window).load(function($) {
   scrollTopIntoView(indiciaData.topSelector);
   //see detailed notes before method
   disableTabContents();
+  //Stop the browser from warning the user each time a reload is done.
+  window.onbeforeunload = confirmExit();
+  function confirmExit()
+  {
+    return '';
+  }
 });
 
-  
+
 (function ($) {
   hideOccurrenceAddphoto = function hideOccurrenceAddphoto() {
     //Hide photos button on species tab as we don't need that.

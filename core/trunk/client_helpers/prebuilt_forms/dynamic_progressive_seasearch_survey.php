@@ -376,13 +376,15 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $habitatColours[$habIdx]=self::generateHabitatColour($habIdx,$numberOfHabitats);
       }
     }
+    if (empty($numberOfHabitats))
+      $numberOfHabitats=0;
     //Draw to screen the control that will actually display the taxa images.
     $r .= self::taxa_image_to_link(array_merge(array(
       'table'=>'sample_medium',
       'readAuth' => $auth['read'],
       'caption'=>lang::get('Photos'),
       'readAuth'=>$auth['read']
-    ), $options),$habitats,$args['dive_duration_attr_id'],$habitatColours);
+    ), $options),$habitats,$args['dive_duration_attr_id'],$habitatColours,$numberOfHabitats);
     
 
     $habitatIds=array();
@@ -412,6 +414,14 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     $r.='</div>';
     $r.='<div style="float: left; width: 50%"><br>Drag these habitats to allocate the habitat to the photo and any previous photos. Note: any photos previously allocated using
       this control in this session will not be overidden, use the Override Individual Habitats control to override if needed.</div>';
+    //If there is only one habitat, then we know all photos can be allocated to that habitat.
+    if ($numberOfHabitats===1 && $_GET['load_tab']==='5') {
+        data_entry_helper::$javascript.="
+        $(window).load(function () {
+          $('#tab-next').trigger('click');\n
+        });";
+      drupal_set_message('Please wait: Only 1 habitat found, so I am automatically allocating the photos to that habitat for you.');
+    }
     return $r;
   }
  
@@ -419,7 +429,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    * Control which actually displays the taxa photos to link to habitats
    * Displayed as part of get_control_linkhabitatstophotos
    */
-  private static function taxa_image_to_link($options,$habitats, $diveDurationAttrId,$habitatColours) {
+  private static function taxa_image_to_link($options,$habitats, $diveDurationAttrId,$habitatColours,$numberOfHabitats) {
     iform_load_helpers(array('report_helper'));
     global $user;  
     //Use this report to return the photos
@@ -444,6 +454,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       $photoCountPerRow=0;
       //Also display a splitter for the user to drag habitats onto
       foreach ($photoResults as $idx=> $photoData) {
+        //If there is only 1 habitat, that means for each time we draw a photo to the screen, we can 
+        //set the sample_id for that photo to be that habitat
+        if ($numberOfHabitats===1) 
+          $photoData['sample_id']=$habitats[0]['id'];
         //New row if too many items in the row
         if ($photoCountPerRow>5) {
           $r .= '<br>';
