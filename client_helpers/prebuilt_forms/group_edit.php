@@ -521,7 +521,8 @@ $('#entry_form').submit(function() {
     if ($args['include_logo_controls'])
       return data_entry_helper::image_upload(array(
         'fieldname' => 'group:logo_path',
-        'label' => lang::get('Logo')
+        'label' => lang::get('Logo'),
+        'existingFilePreset' => 'med'
       ));
     else
       return '';

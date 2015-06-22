@@ -1444,6 +1444,9 @@ $('#$escaped').change(function(e) {
    * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
    * <li><b>class</b><br/>
    * Optional. CSS class names to add to the control.</li>
+   * <li><b>existingFilePreset</b><br/>
+   * Optional. Preset name of the file size to load from the warehouse when loading an
+   * existing file. For example thumb or med, default thumb.</li>
    * </ul>
    *
    * @return string HTML to insert into the page for the file upload control.
@@ -1454,8 +1457,11 @@ $('#$escaped').change(function(e) {
     $alreadyUploadedFile = self::check_default_value($pathField);
     $options = array_merge(array(
       'pathFieldName' => $pathField,
-      'pathFieldValue' => $alreadyUploadedFile
+      'pathFieldValue' => $alreadyUploadedFile,
+      'existingFilePreset' => 'thumb'
     ), $options);
+    if (!empty($options['existingFilePreset']))
+      $options['existingFilePreset'] .= '-';
     $r = self::apply_template('image_upload', $options);
     if ($alreadyUploadedFile) {
       if (self::$form_mode==='ERRORS') {
@@ -1465,7 +1471,7 @@ $('#$escaped').change(function(e) {
       } else {
         // image should be already on the warehouse
         $folder = self::get_uploaded_image_folder();
-        $alreadyUploadedFile = "thumb-$alreadyUploadedFile";
+        $alreadyUploadedFile = "$options[existingFilePreset]-$alreadyUploadedFile";
       }
 
       $r .= "<img width=\"100\" src=\"$folder$alreadyUploadedFile\"/>\n";
