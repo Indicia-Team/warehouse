@@ -478,7 +478,8 @@ var simple_tooltip;
                       } else if ($.inArray(img.split('.').pop(), ['mp3','wav'])>-1) {
                         value += '<audio controls src="'+div.settings.imageFolder+img+'" type="audio/mpeg"/>';
                       } else {
-                        value += '<a href="'+div.settings.imageFolder+img+'" class="fancybox ' + imgclass + '"><img src="'+div.settings.imageFolder+'thumb-'+img+'" /></a>';
+                        value += '<a href="'+div.settings.imageFolder+img+'" class="fancybox ' + imgclass + '"><img src="'+
+                            div.settings.imageFolder+div.settings.imageThumbPreset+'-'+img+'" /></a>';
                       }
                     });
                     row[col.fieldname] = value;
@@ -737,11 +738,6 @@ var simple_tooltip;
       });
       $('#map-loading').show();  
       var matchString, feature, url;
-      if (!indiciaData.includePopupFilter) {  
-        url = request + '&offset=' + offset + (typeof recordCount==="undefined" ? '&wantCount=1' : '');
-      } else {
-        url = request + (typeof recordCount==="undefined" ? '&wantCount=1' : '');
-      }
       // first call- get the record count
       $.ajax({
         dataType: "json",
@@ -956,10 +952,10 @@ var simple_tooltip;
         }
       };
       //In column header is optional popup allowing user to filter out data from the grid.
-      $('.col-popup-filter').click(function(evt) {
+      $('.col-popup-filter').click(function() {
         var dataInColumnCell;
         var dataCellsForFilter=[];
-        var dataRowsForFilter=[]
+        var dataRowsForFilter=[];
         var popupFilterHtml = '<div class="popup-filter-options-container">';
         var splitButtonId = $(this).attr('id').split('-');
         var databaseColumnToGet = splitButtonId[3];
@@ -1012,7 +1008,7 @@ var simple_tooltip;
             delete sortedRowWithoutImageOrGeom.geom;
             delete sortedRowWithoutImageOrGeom.rootFolder;
             sortedRowWithoutImageOrGeomStringified=JSON.stringify(sortedRowWithoutImageOrGeom);
-            recordHasBeenExcluded = false
+            recordHasBeenExcluded = false;
             //If we find a record that was displayed initially when screen first opened is not currently displayed, then
             //we know it has been excluded by the filter
             if ($.inArray(sortedRowWithoutImageOrGeomStringified,gridRecordsWithoutImagesOrGeomStringified)===-1) {
@@ -1035,7 +1031,7 @@ var simple_tooltip;
         popupFilterHtml += '<input type=\"button\" class=\"select-all-popup-filter\" value=\"Select All\"><br>';
         popupFilterHtml += '<input type=\"button\" class=\"apply-popup-filter\" value=\"Apply\">';
         $.fancybox(popupFilterHtml);
-      })
+      });
       
       /*
        * Sort the items on the popup filter
@@ -1067,7 +1063,7 @@ var simple_tooltip;
         if (div.settings.linkFilterToMap && typeof indiciaData.reportlayer!=="undefined") {
           mapRecords(div);
         }
-      }       
+      };
       $(this).find('th .col-filter').focus(function(e) {
         e.target.hasChanged = false;
       });
@@ -1135,7 +1131,7 @@ var simple_tooltip;
                 indiciaData.reportlayer.map.setCenter(extent.getCenterLonLat(), zoom);
                 indiciaData.mapdiv.map.events.triggerEvent('moveend');
               }
-            }
+            };
             if (featureArr.length===0) {
               // feature not available on the map, probably because we are loading just the viewport and
               // and the point is not visible. So try to load it with a callback to zoom in.
@@ -1203,6 +1199,7 @@ jQuery.fn.reportgrid.defaults = {
   altRowClass : 'odd',
   rowId: '',
   imageFolder : '',
+  imageThumbPreset : 'thumb',
   rootFolder: '',
   currentUrl: '',
   callback : '',
