@@ -50,6 +50,7 @@
   </params>
   <columns>
     <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
+    <column name="logo_path" display="Logo" sql="g.logo_path" img="true" visible="false" />
     <column name="title" display="Name" sql="g.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
     <column name="administrator" display="Admin" sql="gu.id is not null AND gu.pending=false AND gu.administrator=true" datatype="boolean" visible="false" />
