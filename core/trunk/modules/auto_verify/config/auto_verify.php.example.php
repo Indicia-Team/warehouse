@@ -20,4 +20,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
 $config['auto_accept_occurrences_with_null_id_difficulty']='false';
+//Do we process any data from chache_occurrences, or just look in occDelta for newly changed data.
+//You would probably only need this mode as a one-off run.
+$config['process_old_data']='false';
 ?>

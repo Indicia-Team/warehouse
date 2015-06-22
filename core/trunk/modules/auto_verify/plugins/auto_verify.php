@@ -14,15 +14,24 @@ function auto_verify_extend_data_services() {
  */
 function auto_verify_scheduled_task($last_run_date, $db) {
   $autoVerifyNullIdDiff=kohana::config('auto_verify.auto_accept_occurrences_with_null_id_difficulty');
+  $processOldData=kohana::config('auto_verify.process_old_data');
   if (empty($autoVerifyNullIdDiff)) {
     print_r("Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty entry is empty.<br>");
     kohana::log('error', 'Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty configuration entry is empty.');
     return false;
   }
- 
+  //Do we need to consider old data (probably as a one-off run) or just newly changed data.
   $subQuery="
-    SELECT co.id
-    FROM cache_occurrences co
+    SELECT co.id";
+  if (!empty($processOldData)&&$processOldData==='true') { 
+    $subQuery.="  
+      FROM cache_occurrences co";
+  } else {
+    $subQuery.="  
+      FROM occdelta od
+      JOIN cache_occurrences co on co.id=od.id";
+  }
+  $subQuery.="
     JOIN surveys s on s.id = co.survey_id AND s.auto_accept=true AND s.deleted=false
     LEFT JOIN cache_taxon_searchterms cts on cts.taxa_taxon_list_id = co.taxa_taxon_list_id 
     WHERE co.data_cleaner_info='pass' AND co.record_status='C' AND co.record_substatus IS NULL
