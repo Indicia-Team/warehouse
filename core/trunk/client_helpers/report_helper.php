@@ -699,7 +699,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   autoParamsForm: '$options[autoParamsForm]',
   rootFolder: '" . $rootFolder . "',
   imageFolder: '" . self::get_uploaded_image_folder() . "',
-  imageThumbPreset: '$options[imageThumbPreset]','
+  imageThumbPreset: '$options[imageThumbPreset]',
   currentUrl: '$currentUrl[path]',
   rowId: '" . (isset($options['rowId']) ? $options['rowId'] : '') . "',
   galleryColCount: $options[galleryColCount],
