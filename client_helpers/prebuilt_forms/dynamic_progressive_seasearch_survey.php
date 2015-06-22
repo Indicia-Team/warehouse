@@ -122,6 +122,15 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           'type'=>'textarea',
           'group'=>'Other Settings'
         ),   
+        array(
+          'name'=>'dive_start_outside_one_hour_warning',
+          'caption'=>'Dive Start Outside One Hour Warning',
+          'description'=>'Warning that is displayed if the Dive Start Time is set to be beyond one hour either side of the first photo time.
+                Note that the user is able to continue anyway, it is simply a warning.
+                If this option is not filled in, then the warning will not be displayed.',
+          'type'=>'textarea',
+          'group'=>'Other Settings'
+        ),   
         //TODO could put in a default form structure
       )
     );
@@ -689,41 +698,75 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $(indiciaData.inProgressAttrSelector).val(1);
       }
       indiciaData.getSampleId = '$getSampleId';";
-      //When the user changes the date, make sure it is still associated with one of the uploaded photos, if not, then warn the user (although they may still continue).
-      //All the exif dates are held in a sample attribute, so just check the date appears somewhere in the attribute.
-      //Note that a limitation of this is we assume that the Drupal date format is set to is dd/mm/yyyy.
       If (!empty($args['no_photos_with_date_warning'])) {
-        data_entry_helper::$javascript.="    
-        $('#sample\\\\:date').change(function(evt) {  
-          var formattedSampleDate;
-          //Date has full year yyyy, so split up, chop the year, and then reconstruct
-          var sampleDateArray=$('#sample\\\\:date').val().split('/');  
-          //Add some code to be a bit more flexible with shortened user entries (e.g. change 1/1/14 to 01/01/2014 for validation).
-          //Can't user built in javascript functions as not good with uk dates
-          if (sampleDateArray[0].length===1) {
-            sampleDateArray[0]='0'+sampleDateArray[0] 
-          }
-          if (sampleDateArray[1].length===1) {
-            sampleDateArray[1]='0'+sampleDateArray[1]
-          }
-          if (sampleDateArray[2].length===2) {
-            sampleDateArray[2]='20'+sampleDateArray[2]          
-          }
-          formattedSampleDate=sampleDateArray[0]+'/'+sampleDateArray[1]+'/'+sampleDateArray[2];
-          $('#sample\\\\:date').val(formattedSampleDate);
-          if (formattedSampleDate && $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val()  && 
-              $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val().indexOf(formattedSampleDate)===-1) {
-            alert('".$args['no_photos_with_date_warning']."');
-          }
-        });";   
+        self::no_photos_with_date_warning($args);
       }
-        data_entry_helper::$javascript.="    
-        });";   
+      
+      If (!empty($args['dive_start_outside_one_hour_warning'])) {
+        self::dive_start_outside_one_hour_warning($args);
+      }
+    data_entry_helper::$javascript.="    
+    });";   
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
     data_entry_helper::add_resource('jquery_form');
     return $r.parent::get_form($args, $node);
   }  
  
+  //When the user changes the date, make sure it is still associated with one of the uploaded photos, if not, then warn the user (although they may still continue).
+  //All the exif dates are held in a sample attribute, so just check the date appears somewhere in the attribute.
+  //Note that a limitation of this is we assume that the Drupal date format is set to is dd/mm/yyyy.
+  public static function no_photos_with_date_warning($args) {
+    data_entry_helper::$javascript.="    
+    $('#sample\\\\:date').change(function(evt) {  
+      var formattedSampleDate;
+      //Date has full year yyyy, so split up, chop the year, and then reconstruct
+      var sampleDateArray=$('#sample\\\\:date').val().split('/');  
+      //Add some code to be a bit more flexible with shortened user entries (e.g. change 1/1/14 to 01/01/2014 for validation).
+      //Can't user built in javascript functions as not good with uk dates
+      if (sampleDateArray[0].length===1) {
+        sampleDateArray[0]='0'+sampleDateArray[0] 
+      }
+      if (sampleDateArray[1].length===1) {
+        sampleDateArray[1]='0'+sampleDateArray[1]
+      }
+      if (sampleDateArray[2].length===2) {
+        sampleDateArray[2]='20'+sampleDateArray[2]          
+      }
+      formattedSampleDate=sampleDateArray[0]+'/'+sampleDateArray[1]+'/'+sampleDateArray[2];
+      $('#sample\\\\:date').val(formattedSampleDate);
+      if (formattedSampleDate && $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val()  && 
+          $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val().indexOf(formattedSampleDate)===-1) {
+        alert('".$args['no_photos_with_date_warning']."');
+      }
+    });";     
+  }
+  
+  //Warn user if they set the dive start time to be more than one hour either side of the date on the first photo exif.
+  public static function dive_start_outside_one_hour_warning($args) {
+    data_entry_helper::$javascript.=" 
+    $('#smpAttr\\\\:".$args['dive_start_time_attr_id']."').change(function(evt) { 
+      if ($('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val() && $('#smpAttr\\\\:".$args['dive_start_time_attr_id']."').val()) {
+        //Get dates associated with all photos
+        var dateTimesToCheck=$('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val().split(';');
+        var dateAnddateAndTimeToCheck, smallestDateTime;
+        for (var i=0; i<dateTimesToCheck.length;i++) {
+          //Get datee/time in suitable format to parse and find the smallest date/time out of all of the photos
+          dateAndTimeToCheck=dateTimesToCheck[i].split(',');
+          dateAndTimeToCheck=dateAndTimeToCheck[0]+' '+dateAndTimeToCheck[1];
+          if (!smallestDateTime || (Date.parse(dateAndTimeToCheck)<Date.parse(smallestDateTime))) {
+            smallestDateTime=dateAndTimeToCheck;
+          }
+        }
+        smallestDateTime=smallestDateTime.split(',');
+        //Check if changed time is one hour either side of first photo time. Note we use 3600000 instead of 3600 seconds as Date.Parse uses milliseconds.
+        if ((Date.parse($('#sample\\\\:date').val()+' '+$('#smpAttr\\\\:".$args['dive_start_time_attr_id']."').val())<(Date.parse(smallestDateTime)-3600000))
+            || (Date.parse($('#sample\\\\:date').val()+' '+$('#smpAttr\\\\:".$args['dive_start_time_attr_id']."').val())>(Date.parse(smallestDateTime)+3600000))) {
+          alert ('".$args['dive_start_outside_one_hour_warning']."');
+        }  
+      }
+    });"; 
+  }
+  
   //Override the get_submission from dyamamic_sample_occurrence to stop it running on reloading pages
   //as we have our own ajax_save method for doing this work.
   public static function get_submission($values, $args) {
