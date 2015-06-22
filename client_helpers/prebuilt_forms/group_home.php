@@ -102,9 +102,16 @@ class iform_group_home extends iform_dynamic_report_explorer {
         $defstring .= "$key=$value\n";
       }
     }
-    $prefix = (empty($_GET['implicit']) || $_GET['implicit']==='true') ? 'implicit_' : '';     
-    // add the group parameters to the preset parameters passed to all reports on this page
-    $args['param_presets']=implode("\n", array($args['param_presets'], $defstring, "{$prefix}group_id=".$_GET['group_id']));
+    if (empty($_GET['implicit'])) {
+      // no need for a group user filter
+      $args['param_presets']=implode("\n", array($args['param_presets'], $defstring));
+    }
+    else {
+      // filter to group users - either implicitly, or only if they explicitly submitted to the group
+      $prefix = ($_GET['implicit']==='true' || $_GET['implicit']==='t') ? 'implicit_' : '';
+      // add the group parameters to the preset parameters passed to all reports on this page
+      $args['param_presets']=implode("\n", array($args['param_presets'], $defstring, "{$prefix}group_id=".$_GET['group_id']));
+    }
     $args['param_presets'] .= "\n";
     if (!empty($args['hide_standard_param_filter']))
       data_entry_helper::$javascript .= "$('#standard-params').hide();\n";

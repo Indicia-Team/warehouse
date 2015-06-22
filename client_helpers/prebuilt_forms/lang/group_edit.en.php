@@ -47,19 +47,18 @@ $custom_terms = array(
     . 'members to explicitly post records into the {1}. You must also link at '
     . 'least one reporting page if you want your members to be able to view '
     . 'the records generated during this {1}.',
-  'LANG_Record_Inclusion_Instruct_1' => 'This option defines whether members '
-    . 'will be expected to use the {2} recording forms to choose to post '
-    . 'records into the {1}, or whether records are automatically included in '
-    . 'the {2} data if the recorder participates in the {1} and the record is '
-    . 'of interest to the {1} members as defined by the filter above, e.g. the '
-    . 'record is of the right species group and/or geographic area for the {1}.',
+  'LANG_Record_Inclusion_Instruct_1' => 'This option defines how records need '
+    . 'to be submitted in order for them to be included on the {2} reporting '
+    . 'pages.',
   'LANG_Record_Inclusion_Instruct_Sensitive' => 'Note that some functionality '
     . 'such as allowing group members to view sensitive records at full record '
-    . 'precision depends on records being explicitly posted into the group.',
+    . 'precision depends on records being submitted via a {1} data entry '
+    . 'form.',
   'LANG_Record_Inclusion_Instruct_2' => 'If you choose to require records to '
-    . 'be explicitly posted into the {1} then make sure that you select at '
-    . 'least 1 data entry form in the <strong>{2} pages</strong> section below '
-    . 'so that {1} members have a means to post records into the {1}.',
+    . 'be submitted into the {1} via a {1} data entry form then make sure that '
+    . 'you select at least 1 data entry form in the <strong>{2} pages</strong> '
+    . 'section below. Otherwise {1} members won\'t have a means to post '
+    . 'records into the {1}.',
   'LANG_Description_Field_Instruct' => 'Description and notes about the {1} '
     . 'which will be shown in the {1} listing pages to help other users find '
     . 'your {1}.',

@@ -565,18 +565,23 @@ $('#entry_form').submit(function() {
         'default' => $implicit
       ));
     } else {
-      $r = '<fieldset><legend>' . lang::get('How to post records for the {1}', self::$groupType) . '</legend>';
-      $r .= '<p>' . lang::get('LANG_Record_Inclusion_Instruct_1', self::$groupType, lang::get("group's")) . ' ';
+      $r = '<fieldset><legend>' . lang::get('How to decide which records to include in the {1} reports', self::$groupType) . '</legend>';
+      $r .= '<p>' . lang::get('LANG_Record_Inclusion_Instruct_1', self::$groupType, lang::get(self::$groupType . "'s")) . ' ';
       if ($args['include_sensitivity_controls'])
-        $r .= lang::get('LANG_Record_Inclusion_Instruct_Sensitive') . ' ';
-      $r .= lang::get('LANG_Record_Inclusion_Instruct_1', self::$groupType, ucfirst(self::$groupType))  . '</p>';
-      $r .= data_entry_helper::select(array(
+        $r .= lang::get('LANG_Record_Inclusion_Instruct_Sensitive', self::$groupType) . ' ';
+      $r .= lang::get('LANG_Record_Inclusion_Instruct_2', self::$groupType, ucfirst(self::$groupType))  . '</p>';
+      $r .= data_entry_helper::radio_group(array(
         'fieldname' => 'group:implicit_record_inclusion',
-        'label' => lang::get('Records are included in the {1} if', self::$groupType),
+        'label' => lang::get('Include records on reports if'),
         'lookupValues' => array(
-          't' => lang::get('they match the filter defined above'),
-          'f' => lang::get('they were recorded on a group data entry form')
-        )
+          'f' => lang::get('they were posted by a group member and match the filter defined above ' .
+            'and they were submitted via a {1} data entry form', self::$groupType),
+          't' => lang::get('they were posted by a group member and match the filter defined above, ' .
+            'but it doesn\'t matter which recording form was used', self::$groupType),
+          '' => lang::get('they match the filter defined above but it doesn\'t matter who ' .
+            'posted the record or via which form', self::$groupType)
+        ),
+        'default' => 'f'
       ));
       $r .= ' </fieldset>';
     }
@@ -677,7 +682,7 @@ $('#entry_form').submit(function() {
     $hiddenPopupDivs='';
     if ($args['include_report_filter']) {
       $r .= '<fieldset><legend>' . lang::get('Records that are of interest to the {1}', lang::get(self::$groupType)) . '</legend>';
-      $r .= '<p>' . lang::get('LANG_Filter_Instruct', lang::get(self::$groupType), lang::get("group's")) . '</p>';
+      $r .= '<p>' . lang::get('LANG_Filter_Instruct', lang::get(self::$groupType), lang::get(self::$groupType . "'s")) . '</p>';
       $indexedLocationTypeIds =  array_map('intval', explode(',', $args['indexed_location_type_ids']));
       $otherLocationTypeIds =  array_map('intval', explode(',', $args['other_location_type_ids']));
       $r .= report_filter_panel($auth['read'], array(
@@ -905,6 +910,7 @@ $('#entry_form').submit(function() {
       'group:private_records'=>$group['private_records'],
       'group:filter_id'=>$group['filter_id'],
       'group:logo_path'=>$group['logo_path'],
+      'group:implicit_record_inclusion'=>$group['implicit_record_inclusion'],
       'filter:id'=>$group['filter_id']
     );
     if ($args['include_report_filter']) {
