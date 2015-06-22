@@ -1471,7 +1471,7 @@ $('#$escaped').change(function(e) {
       } else {
         // image should be already on the warehouse
         $folder = self::get_uploaded_image_folder();
-        $alreadyUploadedFile = "$options[existingFilePreset]-$alreadyUploadedFile";
+        $alreadyUploadedFile = "$options[existingFilePreset]$alreadyUploadedFile";
       }
 
       $r .= "<img width=\"100\" src=\"$folder$alreadyUploadedFile\"/>\n";
