@@ -1,5 +1,5 @@
 <?php
-
+$processOldData=kohana::config('auto_verify.process_old_data');
 function auto_verify_extend_data_services() {
   return array(
     'auto_verify'=>array('allow_full_access'=>true)
@@ -14,6 +14,7 @@ function auto_verify_extend_data_services() {
  */
 function auto_verify_scheduled_task($last_run_date, $db) {
   $autoVerifyNullIdDiff=kohana::config('auto_verify.auto_accept_occurrences_with_null_id_difficulty');
+  global $processOldData;
   $processOldData=kohana::config('auto_verify.process_old_data');
   if (empty($autoVerifyNullIdDiff)) {
     print_r("Unable to automatically verify occurrences when the auto_accept_occurrences_with_null_id_difficulty entry is empty.<br>");
@@ -63,7 +64,7 @@ function auto_verify_scheduled_task($last_run_date, $db) {
     record_substatus='2',
     release_status='R',
     verified_on='".$verificationTime."',
-    verifier='system'
+    verifier='admin, core'
     WHERE id in
     (".$subQuery.");";
   $results=$db->query($query)->result_array(false);
@@ -82,5 +83,15 @@ function auto_verify_scheduled_task($last_run_date, $db) {
     echo 'No occurrence records have been auto-verified.</br>';
 }
 
+/*
+ * Tell the system that we need the occdelta table to find out which occurrences have been created/changed recently.
+ */
+if (empty($processOldData)||$processOldData==='false') { 
+  function auto_verify_metadata() {
+    return array(
+      'requires_occurrences_delta'=>TRUE
+    );
+  }
+}
 ?> 
  
