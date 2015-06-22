@@ -326,6 +326,9 @@ class report_helper extends helper_base {
   * <li><b>pager</b>
   * Include a pager? Default true. Removing the pager can have a big improvement on performance where there are lots of records to count.
   * </li>
+  * <li><b>imageThumbPreset</b>
+  * Defaults to thumb. Preset name for the image to be loaded from the warehouse as the preview thumbnail for images, e.g. thumb or med.
+  * </li>
   * </ul>
   */
   public static function report_grid($options) {
@@ -535,7 +538,7 @@ class report_helper extends helper_base {
                 // http, means an external file
                 $value .= "<a href=\"$img\" class=\"social-icon $matches[site]\"></a>";
               } else {
-                $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath"."thumb-$img\" /></a>";
+                $value .= "<a href=\"$imagePath$img\" class=\"fancybox $imgclass\"><img src=\"$imagePath" . $options['imageThumbPreset'] . "-$img\" /></a>";
               }
             }
             $row[$field['fieldname']] = $value;
@@ -696,6 +699,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   autoParamsForm: '$options[autoParamsForm]',
   rootFolder: '" . $rootFolder . "',
   imageFolder: '" . self::get_uploaded_image_folder() . "',
+  imageThumbPreset: '$options[imageThumbPreset]','
   currentUrl: '$currentUrl[path]',
   rowId: '" . (isset($options['rowId']) ? $options['rowId'] : '') . "',
   galleryColCount: $options[galleryColCount],
@@ -2269,7 +2273,8 @@ if (typeof mapSettingsHooks!=='undefined') {
       'ajax' => false,
       'autoloadAjax' => true,
       'linkFilterToMap' => true,
-      'pager' => true
+      'pager' => true,
+      'imageThumbPreset' => 'thumb'
     ), $options);
     // if using AJAX we are only loading parameters and columns, so may as well use local cache
     if ($options['ajax'])
