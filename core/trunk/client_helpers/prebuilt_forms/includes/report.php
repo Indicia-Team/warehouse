@@ -219,6 +219,20 @@ function iform_report_get_report_options($args, $readAuth) {
   // this can be overridden
   if (isset($args['columns_config']) && !empty($args['columns_config']))
     $columns = json_decode($args['columns_config'], true);
+  // do the form arguments request that certain columns are globally skipped?
+  if (!empty($args['skipped_report_columns'])) {
+    // look for configured columns that should be skipped
+    foreach($columns as &$column) {
+      if (array_key_exists($column['fieldname'], $args['skipped_report_columns'])) {
+        $column['visible']=false;
+        unset($args['skipped_report_columns']);
+      }
+    }
+    // add configurations to hide any remaining columns that should be skipped
+    foreach ($args['skipped_report_columns'] as $fieldname) {
+      $columns[] = array('fieldname' => $fieldname, 'visible' => false);
+    }
+  }
   $reportOptions = array(
     'id' => 'report-grid',
     'reportGroup' => isset($args['report_group']) ? $args['report_group'] : '',
