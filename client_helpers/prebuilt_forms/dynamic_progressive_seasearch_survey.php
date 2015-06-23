@@ -1452,7 +1452,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     }
     if (count($filterArray)) {
       $filterParam = json_encode($filterArray);
-      self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
+      data_entry_helper::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
       // Apply a filter to extraParams that can be used when loading the initial species list, to get just the correct names.
       if (isset($options['speciesNameFilterMode']) && !empty($options['listId'])) {
         $filterFields = array();
