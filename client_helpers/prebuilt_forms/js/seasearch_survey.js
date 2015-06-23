@@ -19,7 +19,7 @@ jQuery(document).ready(function($) {
       msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
       runtimes : 'html5,flash,silverlight,html4',
       imageWidth : '200',
-      uploadScript : '/seasearch/./sites/all/modules/iform/client_helpers/upload.php',
+      uploadScript : indiciaData.uploadSettings.uploadScript,
       destinationFolder : '/seasearch/./sites/all/modules/iform/client_helpers/upload/',
       finalImageFolder : 'http://testwarehouse.indicia.org.uk/upload/',
       jsPath : '/seasearch/sites/all/modules/iform/media/js/',
