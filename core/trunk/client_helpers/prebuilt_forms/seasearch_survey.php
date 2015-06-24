@@ -569,7 +569,6 @@ class iform_seasearch_survey extends iform_dynamic_sample_occurrence {
         'model' => $habitatSubmission
       );
     }
-    drupal_set_message('<pre>' . var_export($buddyPairSubmission, true) . '</pre>');
     return $buddyPairSubmission;
   }
 
