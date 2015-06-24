@@ -1773,21 +1773,22 @@ class ORM extends ORM_Core {
         // E.g. a search in the taxa_taxon_list table may want to filter by the taxon list. This is done
         // by adding a value such as fkFilter:taxa_taxon_list:taxon_list_id=2.
         // Search through the save array for a filter value
-        foreach ($saveArray as $filterfield=>$filterfield) {
-          $arr = explode(':', $filterfield);
+        foreach ($saveArray as $filterfield=>$filtervalue) {
           if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
               substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
-            // found a filter for this fkTable. Extract the field name as the 3rd part and remember the value
-            $submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
-            $submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
-          }
+        		// found a filter for this field or fkTable. So extract the field name as the 3rd part
+        		$arr = explode(':', $filterfield);
+        		$submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
+        		// and remember the value
+        		$submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
+            }
         }
         // Alternative location is in the submission array itself:
         // this allows for multiple records with different filters, E.G. when submitting occurrences as associations,
         // may want different taxon lists, will be entered as occurrence<n>:fkFilter:<table>:<field> = <value>
         foreach ($submission['fields'] as $filterfield=>$filtervalue) {
         	if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
-                substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
+                	substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
         		// found a filter for this field or fkTable. So extract the field name as the 3rd part
         		$arr = explode(':', $filterfield);
         		$submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
