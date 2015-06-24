@@ -221,13 +221,13 @@ jQuery(document).ready(function($) {
     // First habitat will already have the abundance control present, so don't need to create new column. Just label the
     // header and set a class so that habitat name updates will be reflected in it.
     if (habitatIdx===1) {
-      var headers = $('table.sticky-header #species-grid-images-0,table.species-grid #species-grid-images-0').prev();
+      var headers = $('table.sticky-header #species-grid-comment-0,table.species-grid #species-grid-comment-0').prev();
       headers.html(habitatName);
       headers.addClass('habitat-title-' + habitatIdx);
     }
     else {
       // add headers to the species grid for the new habitat. Also include the Drupal sticky table header.
-      $('table.sticky-header #species-grid-images-0,table.species-grid #species-grid-images-0').before(
+      $('table.sticky-header #species-grid-comment-0,table.species-grid #species-grid-comment-0').before(
         '<th class="habitat-title-' + habitatIdx + '">'+habitatName+'</th>');
     }
     var processRow = function(row, idx) {
@@ -236,7 +236,7 @@ jQuery(document).ready(function($) {
       }
       else {
         select = $(row).find('.scSACFORPCell select').clone();
-        $(row).find('.scAddMediaCell').before($('<td class="scOccAttrCell ui-widget-content scSACFORPCell"></td>').append(select));
+        $(row).find('.scCommentCell').before($('<td class="scOccAttrCell ui-widget-content scSACFORPCell"></td>').append(select));
       }
       $(select).attr('id', 'species-grid-'+idx+':habitat-'+habitatIdx);
       $(select).attr('name', 'species-grid-'+idx+':habitat-'+habitatIdx);
