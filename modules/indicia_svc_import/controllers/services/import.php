@@ -256,6 +256,23 @@ class Import_Controller extends Service_Base_Controller {
         fseek($handle, $filepos);
       $model = ORM::Factory($_GET['model']);
       $this->submissionStruct = $model->get_submission_structure();
+      // special date processing.
+      $index = 0;
+      $dayColumn = false; 
+      $monthColumn = false;
+      $yearColumn = false;
+      foreach ($metadata['mappings'] as $col=>$attr) {
+      	// skip cols to do with remembered mappings
+      	if ($col!=='RememberAll' && substr($col, -9)!=='_Remember') {
+      		switch($attr) {
+      			case 'sample:date:day': $dayColumn = $index;
+      			case 'sample:date:month': $monthColumn = $index;
+      			case 'sample:date:year': $yearColumn = $index;
+      		}
+      		$index++;
+      	}
+      }
+      $processDate = $dayColumn !== false && $monthColumn !== false && $yearColumn !== false; // initially has to have all 3 fields: TODO vaguer dates?
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
         if(!array_filter($data))
           // skip empty rows
@@ -279,6 +296,12 @@ class Import_Controller extends Service_Base_Controller {
             }
             $index++;
           }
+        }
+        if((!isset($saveArray['sample:date']) || $saveArray['sample:date']=='') && $processDate) {
+        	$saveArray['sample:date'] = $data[$yearColumn].'-'.sprintf('%02d', $data[$monthColumn]).'-'.sprintf('%02d', $data[$dayColumn]); // initially has to have all 3 fields: TODO vaguer dates?
+      		unset($saveArray['sample:date:day']);
+      		unset($saveArray['sample:date:month']);
+      		unset($saveArray['sample:date:year']);
         }
         // copy across the fixed values, including the website id, into the data to save.
         if ($metadata['settings']) {
@@ -319,6 +342,7 @@ class Import_Controller extends Service_Base_Controller {
         $model->clear();
         // Save the record
         $model->set_submission_data($saveArray, true);
+        
         /* At this point, if model has associations (i.e. a module is active called <modelSingular>_associations)
            we flip the submission so the model becomes the subModel. This way we can bolt any second associated
            record in, into the submodel array. */
