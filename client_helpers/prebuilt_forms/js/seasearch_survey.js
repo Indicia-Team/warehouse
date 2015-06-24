@@ -106,6 +106,7 @@ jQuery(document).ready(function($) {
               valId = valueData[0];
             }
             $(this).attr('name', 'smpAttr:' + attrId + ':' + valId + ':' + addingHabitatIdx);
+            $(this).attr('tabindex', addingHabitatIdx);
             // Apply depth range validation for the whole dive to the habitat depths
             if (attrId==indiciaData.habitatMinDepthSLAttrId || attrId==indiciaData.habitatMaxDepthSLAttrId) {
               if (minDepth) {
@@ -162,45 +163,6 @@ jQuery(document).ready(function($) {
     // set the column unit title colspan
     $('table#depth-limits,table#substratum,table#features').find('thead tr:last-child th:first-child').attr('colspan', targetCount);
   }
-
-  /*
-
-   function addHabitatColToSpeciesGrid(habitatIdx) {
-   var attrSelect, ttlInput, valueId, value, name, possValues = ['S', 'A', 'C', 'F', 'O', 'R', 'P'],
-   options = '<option value=""></option>', selectValidationClass = habitatIdx===1 ? ' class="mustHaveSACFOR"' : '';
-   // add headers to the species grid for the new habitat. Also include the Drupal sticky table header.
-   $('table.sticky-header #species-grid-images-0,table.species-grid #species-grid-images-0').before('<th>Abundance (habitat ' + habitatIdx + ')</th>');
-   // Set up the new input cell for the clonable row. Note, we use the habitat index (currentCount) in the field name
-   // instead of the attribute ID, since this allows us to split the data into different habitats later. There is only
-   // one custom attribute here, but multiple habitat columns so this is necessary.
-   name = 'sc:species-grid--idx-::occAttr:' + habitatIdx;
-   $.each(possValues, function () {
-   options += '<option value="' + this + '">' + this + '</option>';
-   });
-   $('tr#species-grid-scClonableRow .scAddMediaCell').before('<td class="scOccAttrCell habitat-' + habitatIdx + '"><select name="' + name + '">' + options + '</select></td>');
-   // set up the new input cell for the current input row at the bottom of the grid plus existing rows.
-   $('table.species-grid tbody tr .scAddMediaCell').before('<td class="scOccAttrCell habitat-' + habitatIdx +
-   '"><select' + selectValidationClass + '>' + options + '</select></td>');
-   // loop through the rows to setup the names and values of the controls according to their grid position record data.
-   $.each($('table#species-grid tbody tr'), function (row) {
-   attrSelect = $(this).find('td.habitat-' + habitatIdx + ' select');
-   if (attrSelect) {
-   valueId = '';
-   value = '';
-   // look for existing data if doing a reload
-   if (typeof indiciaData.existingOccAttrData !== "undefined" && typeof indiciaData.existingOccAttrData[habitatIdx - 1] !== "undefined") {
-   ttlInput = $(this).find('input.scPresence:checked');
-   if (ttlInput && typeof indiciaData.existingOccAttrData[habitatIdx - 1][$(ttlInput).val()] !== "undefined") {
-   valueId = ':' + indiciaData.existingOccAttrData[habitatIdx - 1][$(ttlInput).val()][0];
-   value = indiciaData.existingOccAttrData[habitatIdx - 1][$(ttlInput).val()][1]
-   }
-   }
-   $(attrSelect).attr('name', 'sc:species-grid-' + row + '::occAttr:' + habitatIdx + valueId);
-   $(attrSelect).val(value);
-   }
-   });
-   }
-   */
 
   /**
    * @todo Naming and value of cloned selects for existing records
