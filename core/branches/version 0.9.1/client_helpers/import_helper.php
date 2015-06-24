@@ -300,6 +300,7 @@ class import_helper extends helper_base {
       // copy the list of required fields
       var fields = $.extend(true, {}, required_fields),
           sampleVagueDates = [],
+    	  locationReference = false,
           fieldTokens, thisValue;
       $('#required-instructions li').remove();
       // strip out the ones we have already allocated
@@ -318,10 +319,19 @@ class import_helper extends helper_base {
         if (select.value.substr(0,12)=='sample:date_') {
           sampleVagueDates.push(thisValue);
         }
+    	// and another special case for samples: can either include the sref or a foreign key reference to a location.
+    	if (select.value.substr(0,18)=='sample:fk_location') { // catches the code based fk as well
+          locationReference = true;
+        }
       });
       if (sampleVagueDates.length==3) {
         // got a full vague date, so can remove the required date field
         delete fields['sample:date'];
+      }
+      if (locationReference) {
+        // got a location foreign key reference, so can remove the required entered sref fields
+        delete fields['sample:entered_sref'];
+    	delete fields['sample:entered_sref_system']
       }
       var output = '';
       $.each(fields, function(field, caption) {

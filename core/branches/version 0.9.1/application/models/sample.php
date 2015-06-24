@@ -53,7 +53,12 @@ class Sample_Model extends ORM_Tree
   // Declare additional fields required when posting via CSV.
   protected $additional_csv_fields=array(
     'survey_id' => 'Survey ID',
-    'website_id' => 'Website ID'
+    'website_id' => 'Website ID',
+  	// extra lookup options
+  	'sample:fk_location:code' => 'Location Code',
+  	'sample:date:day' => 'Day (Builds date)',
+  	'sample:date:month' => 'Month (Builds date)',
+  	'sample:date:year' => 'Year (Builds date)'
   );
   // define underlying fields which the user would not normally see, e.g. so they can be hidden from selection
   // during a csv import
@@ -217,6 +222,17 @@ class Sample_Model extends ORM_Tree
     $systems = spatial_ref::system_list();
     foreach ($systems as $code=>$title) 
       $srefs[] = "$code:$title";
+    
+    $sample_methods = array(":Defined in file");
+    $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
+    foreach ($terms as $term)
+    	$sample_methods[] = $term->id.":".$term->term;
+    
+    $location_types = array(":No filter");
+    $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
+    foreach ($terms as $term)
+    	$location_types[] = $term->id.':'.$term->term;
+    
     return array(
       'website_id' => array( 
         'display'=>'Website', 
@@ -238,6 +254,20 @@ class Sample_Model extends ORM_Tree
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.', 
         'datatype'=>'lookup',
         'lookup_values'=>implode(',', $srefs)
+      ),
+      'sample:sample_method_id' => array(
+        'display'=>'Sample Method', 
+        'description'=>'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a '.
+            'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.', 
+        'datatype'=>'lookup',
+        'lookup_values'=>implode(',', $sample_methods)
+      ),
+      'fkFilter:location:location_type_id' => array(
+        'display'=>'Location Type', 
+        'description'=>'If this import file includes samples which reference locations records, you can restrict the type of locations looked '.
+      		'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
+        'datatype'=>'lookup',
+        'lookup_values'=>implode(',', $location_types)
       )
     );
   }
