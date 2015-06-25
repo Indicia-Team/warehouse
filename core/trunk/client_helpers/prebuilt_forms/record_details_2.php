@@ -393,31 +393,31 @@ Record ID',
    */
   protected static function get_control_comments($auth, $args) {
     iform_load_helpers(array('data_entry_helper'));
-    $r = '<div>'; 
+    $r = '<div>';
     $comments = data_entry_helper::get_population_data(array(
       'table' => 'occurrence_comment',
       'extraParams' => $auth['read'] + array('occurrence_id'=>$_GET['occurrence_id'], 'sortdir'=>'DESC', 'orderby'=>'updated_on'),
       'nocache'=>true
     ));
-    
     if (count($comments)===0) 
       $r .= '<p id="no-comments">'.lang::get('No comments have been made.').'</p>';
+    else {
       $r .= '<div id="comment-list">';
-    foreach($comments as $comment) {
-      $r .= '<div class="comment">';
-      $r .= '<div class="header">';
-      $r .= '<strong>'.(empty($comment['person_name']) ? $comment['username'] : $comment['person_name']).'</strong> ';
-      $commentTime = strtotime($comment['updated_on']);
-      // Output the comment time. Skip if in future (i.e. server/client date settings don't match)
-      if ($commentTime < time())
-        $r .= self::ago($commentTime);
-      $r .= '</div>';
-      $c = str_replace("\n", '<br/>', $comment['comment']);
-      $r .= "<div>$c</div>";
+      foreach($comments as $comment) {
+        $r .= '<div class="comment">';
+        $r .= '<div class="header">';
+        $r .= "<strong>$comment[person_name]</strong> ";
+        $commentTime = strtotime($comment['updated_on']);
+        // Output the comment time. Skip if in future (i.e. server/client date settings don't match)
+        if ($commentTime < time())
+          $r .= self::ago($commentTime);
+        $r .= '</div>';
+        $c = str_replace("\n", '<br/>', $comment['comment']);
+        $r .= "<div>$c</div>";
+        $r .= '</div>';
+      }
       $r .= '</div>';
     }
-    $r .= '</div>';
-    
     global $user;
     $r .= '<form><fieldset><legend>'.lang::get('Add new comment').'</legend>';
     $r .= '<input type="hidden" id="comment-by" value="'.$user->name.'"/>';
