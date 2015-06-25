@@ -1,49 +1,26 @@
 <report
     title="Get taxa for population call."
     description="Report returns a list of taxa limited by particular groups, allowing the species list in report parameters to be populated.
-      This report constructs a list of any species with the same meaning as the selected item.
-      Each preferred items can have one of two contructions,
-        preferred latin - common (taxon group)
-        or
-        common - preferred latin (taxon group)
-      Each species appears in the list in these varieties. Selecting either would have the same effect, however two items are present to
-      allow the user to start typing either the latin or common name and bring the item back.
-      Other items may also appear in the list if they have the same meaning as one of the preferred species."
+      This report constructs a list of any species and returns a list of species IDs with the same meaning as the selected item, this means that
+any report that uses this parameter will return data for all species with the same meaning."
 >
   <query>
   SELECT #columns#
   FROM taxa t
+    JOIN taxa_taxon_lists ttl on ttl.taxon_id=t.id AND ttl.deleted=false
     JOIN taxon_groups tg on tg.id = t.taxon_group_id AND tg.deleted=false  
-      AND 
-        (tg.title='clubmoss'
-        OR
-        tg.title='conifer'
-        OR
-        tg.title='fern'
-        OR
-        tg.title='horsetail'  
-        OR
-        tg.title='flowering plant' 
-        OR
-        tg.title='ginkgo' 
-        OR
-        tg.title='quillwort'  
-        OR
-        tg.title='stonewort') 
     -- Need to return a preferred latin name and then the associated common name
-    LEFT JOIN taxa_taxon_lists ttlPref on ttlPref.taxon_id = t.id AND ttlPref.preferred = true AND ttlPref.deleted=false
+    LEFT JOIN taxa_taxon_lists ttlPref on ttlPref.taxon_meaning_id = ttl.taxon_meaning_id AND ttlPref.preferred = true AND ttlPref.deleted=false
+    LEFT JOIN taxa tPref on tPref.id = ttlPref.taxon_id AND tPref.deleted=false
     LEFT JOIN taxa tPrefCom on tPrefCom.id = ttlPref.common_taxon_id AND tPrefCom.deleted=false
-    -- Need to return an item for the common name followed by preferred latin name also
-    LEFT JOIN taxa_taxon_lists ttlCom on ttlCom.common_taxon_id = t.id AND ttlCom.preferred = true  AND ttlCom.deleted=false
-    LEFT JOIN taxa tComPref on tComPref.id = ttlCom.taxon_id AND tComPref.deleted=false
     -- When user selects an item, we also need to provide in a column the comma separated list of items with the same meaning
-    JOIN taxa_taxon_lists ttlMean on (ttlMean.taxon_meaning_id = ttlPref.taxon_meaning_id) OR  (ttlMean.taxon_meaning_id = ttlCom.taxon_meaning_id) AND ttlMean.deleted=false
+    LEFT JOIN taxa_taxon_lists ttlMean on ttlMean.taxon_meaning_id = ttl.taxon_meaning_id AND ttlMean.deleted=false
   WHERE 
-    (ttlPref.id IS NOT NULL OR ttlCom.id IS NOT NULL) AND t.deleted=false
-  GROUP BY tg.id,t.id, tPrefCom.id, tPrefCom.taxon,tComPref.id, tComPref.taxon
+    t.deleted=false
+  GROUP BY t.taxon,tpref.taxon,tPrefCom.taxon,tg.title
   </query>
   <columns> 
     <column name='id' sql="string_agg(distinct(to_char(ttlMean.taxon_id, '999')),',')" datatype='text'/>
-    <column name='taxon' sql="t.taxon || ' - ' || coalesce(tPrefCom.taxon,tComPref.taxon,t.taxon) || ' ' || '(' || tg.title || ')'" datatype='text'/>
+    <column name='taxon' sql="t.taxon || ' - ' || coalesce(tPref.taxon,' ') || ' (' || coalesce(tPrefCom.taxon,' ') || '), ' || tg.title" datatype='text'/>
   </columns>
-</report>
+</report> 
