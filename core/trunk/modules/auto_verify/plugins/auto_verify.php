@@ -34,12 +34,12 @@ function auto_verify_scheduled_task($last_run_date, $db) {
   }
   $subQuery.="
     JOIN surveys s on s.id = co.survey_id AND s.auto_accept=true AND s.deleted=false
-    LEFT JOIN cache_taxon_searchterms cts on cts.taxa_taxon_list_id = co.taxa_taxon_list_id 
+    LEFT JOIN cache_taxon_searchterms cts on cts.taxon_meaning_id = co.taxon_meaning_id 
     WHERE co.data_cleaner_info='pass' AND co.record_status='C' AND co.record_substatus IS NULL
         AND ((".$autoVerifyNullIdDiff."=false AND cts.identification_difficulty IS NOT NULL AND cts.identification_difficulty<=s.auto_accept_max_difficulty) 
         OR (".$autoVerifyNullIdDiff."=true AND (cts.identification_difficulty IS NULL OR cts.identification_difficulty<=s.auto_accept_max_difficulty)))";
   $verificationTime=gmdate("Y\/m\/d H:i:s");
-  //Need to update cache_occurrences, as this table has already been built at this point.
+  //Need to update cache_occurrences, as this table has already been built at this point. 
   $query = "
     INSERT INTO occurrence_comments (comment, generated_by, occurrence_id,record_status,record_substatus,created_by_id,updated_by_id,created_on,updated_on,auto_generated)
     SELECT 'Automatically accepted', 'system', id,'V','2',1,1,'".$verificationTime."','".$verificationTime."',true
