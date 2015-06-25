@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Filterable contribution summary" description="Similar to user survey contribution summary but supports standard parameters for flexible filtering.">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+    select 1 as sort, 'MY_RECORDS' as code, 'My records for survey' as qualifier, count(distinct o.id) as value
+    from cache_occurrences o
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    and o.created_by_id=#user_id#
+    #filters#
+
+    union
+    
+    select 2 as sort, 'MY_RECORDS_YEAR', 'My records for survey this year' as qualifier, count(distinct o.id) as value
+    from cache_occurrences o
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    and o.created_by_id=#user_id#
+    and extract(year from o.date_start) = extract(year from now())
+    #filters#
+
+    union
+
+    select 3, 'MY_SPECIES', 'My species for survey' as qualifier, count(distinct case o.zero_abundance when true then null else o.taxa_taxon_list_external_key end)
+    from cache_occurrences o
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    and o.created_by_id=#user_id#
+    #filters#
+
+    union
+    
+    select 4, 'MY_SPECIES_YEAR', 'My species for survey this year' as qualifier, count(distinct case o.zero_abundance when true then null else o.taxa_taxon_list_external_key end)
+    from cache_occurrences o
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    and o.created_by_id=#user_id#
+    and extract(year from o.date_start) = extract(year from now())
+    #filters#
+
+    union
+
+    select 5, 'MY_RECORDS_VERIFIED', 'My records verified to date' as qualifier, count(distinct o.id)
+    from cache_occurrences o
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    and o.created_by_id=#user_id#
+    and o.record_status='V'
+    #filters#
+    
+    union
+    
+    select 6, 'LEAGUE_POSITION', 'league position' as qualifier, value from (
+      select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END) desc) as value
+      from cache_occurrences o
+      #agreements_join#
+      #joins#
+      where #sharing_filter#
+      #filters#
+      group by o.created_by_id
+    ) as sub
+    where created_by_id=#user_id#
+
+    union 
+
+    select 5, 'TOTAL_RECORDS', 'Total records for survey', count(distinct o.id) 
+    from cache_occurrences o
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    #filters#
+
+    union
+
+    select 6, 'MY_RECORDS_ON_SYSTEM', 'My records total', count(distinct o.id)
+    from cache_occurrences o
+    #agreements_join#
+    #joins#
+    where #sharing_filter#
+    and o.created_by_id=#user_id#
+    -- no additional filters
+  </query>
+  <order_bys>
+    <order_by>sort ASC</order_by>
+  </order_bys>  
+  <params>
+    <param name='user_id' display='Warehouse user ID' datatype='integer' />
+  </params>
+</report>
