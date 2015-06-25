@@ -688,13 +688,17 @@ class extension_splash_extensions {
   }
   
   /*
-   * Very similar to dynamic_report_explorer control, however in this case the control automatically switches on
+   * Very similar to dynamic_report_explorer report grid control, however in this case the control automatically switches on
    * map zooming for results if the user is using a post code search. This is because we don't want to use this mode when the user
    * is returning all squares as it doesn't seem to work properly on live, it looks likely that because there are so many squares, then it tries
-   * to draw the zoom before all the data is returned and therefore draws the zoom in the wrong place.
+   * to draw the zoom before all the data is returned and therefore draws the zoom in the wrong place. 
    */
-  public static function unallocated_squares_map($auth, $args, $tabalias, $options, $path) {
-    iform_load_helpers(array('map_helper','report_helper'));
+  public static function unallocated_squares_grid($auth, $args, $tabalias, $options, $path) {
+    if (!isset($options['reportGridNumber'])) {
+      drupal_set_message('Please fill in the report grid number option for the unallocated_squares_grid control, starting with 0 for the first grid on the page');
+      return false;
+    }
+    iform_load_helpers(array('report_helper'));
     $args['report_name']='';
     $sharing=empty($args['sharing']) ? 'reporting' : $args['sharing'];
     $reportOptions = array_merge(
@@ -703,33 +707,16 @@ class extension_splash_extensions {
         'reportGroup'=>'dynamic',
         'autoParamsForm'=>false,
         'sharing'=>$sharing,
-        'readAuth' => $auth['read'],
-        'dataSource'=> $options['dataSource'],
-        'rememberParamsReportGroup'=>'dynamic',
-        'clickableLayersOutputMode'=>'report',
-        'rowId'=>'occurrence_id',
-        'ajax'=>TRUE
+        'ajax'=>true,
+        'id'=>'report-grid-'.$options['reportGridNumber']
       ),
       $options
     );
-    $r = report_helper::report_map($reportOptions);
-    $options = array_merge(
-      iform_map_get_map_options($args, $auth['read']),
-      array(
-        'featureIdField'=>'occurrence_id',
-        'clickForSpatialRef'=>false,
-        'reportGroup'=>'explore',
-        'toolbarDiv'=>'top',
-      ),
-      $options
-    );
-    $olOptions = iform_map_get_ol_options($args);
     if (!empty($_GET['dynamic-post_code_geom'])&&!empty($_GET['dynamic-distance_from_post_code'])) {
-      $options['sendOutputToMap']=true;
-      $options['zoomMapToOutput']=true;
+      $reportOptions['sendOutputToMap']=true;
+      $reportOptions['zoomMapToOutput']=true;
     }
-    $r .= map_helper::map_panel($options, $olOptions);
-    return $r;
+    return report_helper::report_grid($reportOptions);
   }
  
   /*
