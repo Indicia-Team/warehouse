@@ -258,12 +258,14 @@ Record ID',
     
     $details_report = '<div class="record-details-fields ui-helper-clearfix">';
     foreach($availableFields as $field=>$caption) {
+      if ($caption==='Species')
+        hostsite_set_page_title(self::$record[$field]);
       if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field])) {
         // special case, sensitive icon
         $class = self::$record[$field]==='This record is sensitive' ? ' class="ui-state-error"' : '';
         $caption = self::$record[$field]==='This record is sensitive' ? '' : "$caption:";
         $details_report .= str_replace(array('{caption}', '{value}', '{class}'),
-          array($caption, lang::get(self::$record[$field]), $class), $attrsTemplate);
+          array(lang::get($caption), lang::get(self::$record[$field]), $class), $attrsTemplate);
       }
     }
     $created = date('jS F Y \a\t H:i', strtotime(self::$record['created_on']));
@@ -271,7 +273,8 @@ Record ID',
     $dateInfo = lang::get('Entered on {1}', $created);
     if ($created!==$updated)
       $dateInfo .= lang::get(' and last updated on {1}', $updated);
-    $details_report .= str_replace(array('{caption}','{value}'), array(lang::get('Submission date'), $dateInfo), $attrsTemplate);
+    $details_report .= str_replace(array('{caption}','{value}','{class}'),
+        array(lang::get('Submission date'), $dateInfo, ''), $attrsTemplate);
     $details_report .= '</div>';
     
     if (!self::$record['sensitivity_precision']) {
@@ -280,7 +283,7 @@ Record ID',
         'readAuth' => $auth['read'],
         'class'=>'record-details-fields ui-helper-clearfix',
         'dataSource'=>$options['dataSource'],
-        'bands'=>array(array('content'=>$attrsTemplate)),
+        'bands'=>array(array('content'=>str_replace('{class}', '', $attrsTemplate))),
         'extraParams'=>array(
           'occurrence_id'=>$_GET['occurrence_id'],
           //the SQL needs to take a set of the hidden fields, so this needs to be converted from an array.
@@ -388,7 +391,7 @@ Record ID',
    * @package    Client
    * @subpackage PrebuiltForms
    */
-  protected static function get_control_comments($auth, $args) { 
+  protected static function get_control_comments($auth, $args) {
     iform_load_helpers(array('data_entry_helper'));
     $r = '<div>'; 
     $comments = data_entry_helper::get_population_data(array(
@@ -404,7 +407,10 @@ Record ID',
       $r .= '<div class="comment">';
       $r .= '<div class="header">';
       $r .= '<strong>'.(empty($comment['person_name']) ? $comment['username'] : $comment['person_name']).'</strong> ';
-      $r .= self::ago(strtotime($comment['updated_on']));
+      $commentTime = strtotime($comment['updated_on']);
+      // Output the comment time. Skip if in future (i.e. server/client date settings don't match)
+      if ($commentTime < time())
+        $r .= self::ago($commentTime);
       $r .= '</div>';
       $c = str_replace("\n", '<br/>', $comment['comment']);
       $r .= "<div>$c</div>";
