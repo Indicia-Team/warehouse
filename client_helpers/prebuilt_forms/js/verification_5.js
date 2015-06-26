@@ -245,7 +245,7 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
   function recorderQueryCommentForm() {
     return '<form class="popup-form"><fieldset><legend>Add new query</legend>' +
         '<textarea id="query-comment-text" rows="30"></textarea><br>' +
-        '<button type="button" class="default-button" onclick="saveComment(jQuery(\'#query-comment-text\').val(), \'t\'); jQuery.fancybox.close();">' +
+        '<button type="button" class="default-button" onclick="saveComment(jQuery(\'#query-comment-text\').val(), \'t\', true); jQuery.fancybox.close();">' +
         'Add query to comments log</button></fieldset></form>';
   }
 
@@ -373,7 +373,7 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
         });
         // save a comment to indicate that the mail was sent
         saveComment(indiciaData.commentTranslations.emailed.replace('{1}', email.subtype==='R' ?
-            indiciaData.commentTranslations.recorder : indiciaData.commentTranslations.expert));
+            indiciaData.commentTranslations.recorder : indiciaData.commentTranslations.expert), 't', true);
       }
 
       sendEmail();
@@ -416,7 +416,7 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
     $('#comment-list').prepend(html);
   }
 
-  saveComment=function(text, query) {
+  saveComment=function(text, query, reloadGridAfterSave) {
     if (typeof query==="undefined") {
       query='f';
     }
@@ -435,6 +435,9 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
           showComment(text, query, indiciaData.username);
           if ($('#comment-text')) {
             $('#comment-text').val('');
+          }
+          if (typeof reloadGridAfterSave!=="undefined" && reloadGridAfterSave===true) {
+            reloadGrid();
           }
         } else {
           alert(data.error);
@@ -552,6 +555,13 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
     }
   }
 
+  function reloadGrid() {
+    rowIdToReselect = occurrence_id;
+    indiciaData.reports.verification.grid_verification_grid[0].settings.callback = 'reselectRow';
+    // Reload grid to remove row if not in your current verification set
+    indiciaData.reports.verification.grid_verification_grid.reload(true);
+  }
+
   function saveRedetComment() {
     if ($('#redet').val()==='') {
       validator.showErrors({'redet:taxon': 'Please type a few characters then choose a name from the list of suggestions'});
@@ -578,10 +588,7 @@ var saveComment, saveVerifyComment, verificationGridLoaded, reselectRow, rowIdTo
               indiciaData.detailsTabs[indiciaFns.activeTab($('#record-details-tabs'))] === 'comments') {
               $('#record-details-tabs').tabs('load', indiciaFns.activeTab($('#record-details-tabs')));
             }
-            rowIdToReselect = occurrence_id;
-            indiciaData.reports.verification.grid_verification_grid[0].settings.callback = 'reselectRow';
-            // Reload grid to remove row if not in your current verification set
-            indiciaData.reports.verification.grid_verification_grid.reload(true);
+            reloadGrid();
           }
         }
       );
