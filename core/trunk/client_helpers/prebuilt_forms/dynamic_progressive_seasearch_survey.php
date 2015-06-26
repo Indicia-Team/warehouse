@@ -602,6 +602,8 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
     //Use ajax saving so that we can save without full page reload on a lot of pages.
     data_entry_helper::$javascript .= 'indiciaData.ajaxUrl="'.url('iform/ajax/dynamic_progressive_seasearch_survey')."\";\n";
+    $paramsSeparator=variable_get('clean_url', 0) ? '?' : '&';
+    data_entry_helper::$javascript .= "indiciaData.paramsSeparator='".$paramsSeparator."';\n";
     if (empty($args['in_progress_sample_attr_id'])) {
       drupal_set_message('Please fill in the edit tab option for the In-Progress Sample attribute id');
       return false;

@@ -120,10 +120,10 @@ jQuery(window).load(function($) {
         //the sample id in the url and also the tab we need to return to.
         //"current" has already been incremented, so need to check the last tab to check if it is in the list of tabs to reload.
         //Always reload when going back in the wizard as some pages contain attributes that need reloading with sample_attribute_values.
-        if (inArray(current-1,indiciaData.reloadtabs)||backButtonUsed===true) {
-          var url = window.location.href.toString().split('?');
+        if (inArray(current-1,indiciaData.reloadtabs)||backButtonUsed===true) {  
+          var url = window.location.href.toString().split(indiciaData.paramsSeparator);
           var urlWithoutParams = url[0];
-          urlWithoutParams += '?sample_id='+sampleIdToUse;
+          urlWithoutParams += indiciaData.paramsSeparator+'sample_id='+sampleIdToUse;
           //Current has already been incremented, so we just need to load the new current tab
           urlWithoutParams += '&load_tab='+current;
           window.location=urlWithoutParams;
