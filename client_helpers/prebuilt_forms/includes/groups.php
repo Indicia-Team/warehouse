@@ -35,11 +35,15 @@ function group_authorise_form($args, $readAuth) {
   if (!empty($_GET['group_id'])) {
     // loading data into a recording group. Are they a member or is the page public?
     // @todo: consider performance - 2 web services hits required to check permissions.
-    $gu = data_entry_helper::get_population_data(array(
-      'table'=>'groups_user',
-      'extraParams'=>$readAuth + array('group_id'=>$_GET['group_id'], 'user_id'=>hostsite_get_user_field('indicia_user_id')),
-      'nocache'=>true
-    ));
+    if (hostsite_get_user_field('indicia_user_id')) {
+      $gu = data_entry_helper::get_population_data(array(
+        'table'=>'groups_user',
+        'extraParams'=>$readAuth + array('group_id'=>$_GET['group_id'], 'user_id'=>hostsite_get_user_field('indicia_user_id')),
+        'nocache'=>true
+      ));
+    } else {
+      $gu = array();
+    }
     $gp = data_entry_helper::get_population_data(array(
       'table'=>'group_page',
       'extraParams'=>$readAuth + array('group_id'=>$_GET['group_id'], 'path'=>drupal_get_path_alias($_GET['q']))
