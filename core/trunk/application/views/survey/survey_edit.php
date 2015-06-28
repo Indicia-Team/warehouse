@@ -65,6 +65,24 @@ echo data_entry_helper::select(array(
   'lookupValues'=>$other_data['websites'],
   'helpText'=>'The survey must belong to a website registration'
 ));
+//Only show fields, if fields have been found in the database (the auto verify module is installed)
+if (array_key_exists('survey:auto_accept',$values)) {
+  echo data_entry_helper::checkbox(array(
+  'label'=>'Auto Accept',
+  'fieldname'=>'survey:auto_accept',
+  'default'=>html::initial_value($values, 'survey:auto_accept'),
+  'helpText'=>'Should the automatic verification module attempt to auto verify records in this survey?'
+  ));
+}
+if (array_key_exists('survey:auto_accept_max_difficulty',$values)) {
+  echo data_entry_helper::text_input(array(
+    'label'=>'Auto Accept Maximum Difficulty',
+    'fieldname'=>'survey:auto_accept_max_difficulty',
+    'class'=>'control-width-1',
+    'default'=> html::initial_value($values, 'survey:auto_accept_max_difficulty'),
+    'helpText'=>'If Auto Accept is set, then this is the minimum identification difficulty that will be auto verified.'
+  ));
+}
 ?>
 </fieldset>
 <?php if (array_key_exists('attributes', $values) && count($values['attributes'])>0) : ?>
