@@ -38,7 +38,9 @@ jQuery(document).ready(function($) {
       msgDelete : 'Delete this item',
       msgUseAddFileBtn : 'Use the Add file button to select a file from your local disk. Files of type {1} are allowed.',
       msgUseAddLinkBtn : 'Use the Add link button to add a link to information stored elsewhere on the internet. You can enter links from {1}.',
-      caption : 'Habitat photos'
+      caption : 'Habitat photos',
+      resizeWidth: 1500,
+      resizeHeight: 1500
     };
     if (existing.length) {
       options.existingFiles = existing;
