@@ -16,6 +16,10 @@
   </query>
   <params>
     <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+    <param name="geom_precision" display="Geometry precision" description="in km, 1, 2 or 10" default="" datatype="integer">
+      <join operator="notequal" value="">join map_squares msq on msq.id = co.map_sq_#geom_precision#km_id</join>
+      <join operator="equal" value="">join map_squares msq on msq.id = co.map_sq_1km_id</join>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' sql='co.id' />
@@ -51,7 +55,7 @@
     <column name='occurrence_comment' sql='o.comment' />
     <column name='location_name' sql="co.location_name" />
     <column name='sample_comment' sql='case when o.sensitivity_precision is null then s.comment else null end' />
-    <column name='geom' sql="st_astext(co.public_geom)" />
+    <column name='geom' sql="case '#geom_precision#' when '' then st_astext(co.public_geom) else st_astext(msq.geom) end" />
     <column name='sensitivity_precision' sql="o.sensitivity_precision" />
     <column name='created_by_id' sql='co.created_by_id' />
     <column name='website_id' sql='co.website_id' />
