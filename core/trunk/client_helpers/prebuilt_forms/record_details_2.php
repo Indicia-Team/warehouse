@@ -273,8 +273,9 @@ Record ID',
     $dateInfo = lang::get('Entered on {1}', $created);
     if ($created!==$updated)
       $dateInfo .= lang::get(' and last updated on {1}', $updated);
-    $details_report .= str_replace(array('{caption}','{value}','{class}'),
-        array(lang::get('Submission date'), $dateInfo, ''), $attrsTemplate);
+    if ($test===in_array('submission date', $fieldsLower))
+      $details_report .= str_replace(array('{caption}','{value}','{class}'),
+          array(lang::get('Submission date'), $dateInfo, ''), $attrsTemplate);
     $details_report .= '</div>';
     
     if (!self::$record['sensitivity_precision']) {
@@ -490,6 +491,33 @@ Record ID',
         'occurrence_id'=> $_GET['occurrence_id']
       )
     )).'</div>';
+  }
+
+  /**
+   * Outputs a login form. Not displayed if already logged in.
+   * @param $auth
+   * @param $args
+   * @param $tabalias
+   * @param $options Options array passed in the configuration to the [login] control.
+   * Possible values include instruct - the instruction to display above the login form.
+   * @return string
+   */
+  protected static function get_control_login($auth, $args, $tabalias, $options) {
+    global $user;
+    $options = array_merge(array(
+      'instruct' => 'Please log in or <a href="user/register">register</a> to see more details of this record.'
+    ), $options);
+    if ($user->uid===0) {
+      $form_state = array('noredirect' => TRUE);
+      $form = drupal_build_form('user_login', $form_state);
+      return '<div class="detail-panel" id="detail-panel-login">' .
+          '<h3>'.lang::get('Login').'</h3>' .
+          '<p>' . lang::get($options['instruct']) . '</p>' .
+          drupal_render($form) .
+          '</div>';
+    }
+    else
+      return '';
   }
   
   /**
