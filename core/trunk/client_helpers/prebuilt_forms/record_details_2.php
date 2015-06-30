@@ -268,8 +268,18 @@ Record ID',
     
     $details_report = '<div class="record-details-fields ui-helper-clearfix">';
     foreach($availableFields as $field=>$caption) {
-      if ($caption==='Species')
-        hostsite_set_page_title(self::$record[$field]);
+      if ($caption==='Species') {
+        $title = lang::get('Record of {1}', self::$record[$field]);
+        hostsite_set_page_title($title);
+        $og_title = array(
+          '#tag' => 'meta',
+          '#attributes' => array(
+            'property' => 'og:title',
+            'content' => $title
+          )
+        );
+        drupal_add_html_head($og_title, 'og_title');
+      }
       if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field])) {
         // special case, sensitive icon
         $class = self::$record[$field]==='This record is sensitive' ? ' class="ui-state-error"' : '';
