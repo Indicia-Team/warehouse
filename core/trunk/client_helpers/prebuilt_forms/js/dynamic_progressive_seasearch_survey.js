@@ -1,5 +1,5 @@
 var setupHtmlForLinkingPhotosToHabitats, setupDroppableItemsForLinkingPhotosToHabitats,setupSubSampleAttrsForHabitat, createNewHabitat, setupAjaxPreSubmissionObject;
-var setupAjaxPageSaving, setupClickEvents, inArray, current, next, hideOccurrenceAddphoto, disableTabContents,makeImageRowOrSpareRow;
+var setupAjaxPageSaving, setupClickEvents, inArray, current, next, hideOccurrenceAddphoto, disableTabContents,makeImageRowOrSpareRow,createNewHabitat;
 
 jQuery(window).load(function($) {
   //Once page has finished loading we can hide loading div
@@ -81,6 +81,10 @@ jQuery(window).load(function($) {
       setupAjaxPageSaving(false);
       //see detailed notes before method
       disableTabContents();
+      //Make sure the habitat tab has a habitat on it ready to fill in if there aren't any existing ones
+      if (!indiciaData.existingHabitatSubSamplesIds && current===4) {
+        createNewHabitat();
+      }
     });  
 
     $('.tab-prev').click(function() {
@@ -138,6 +142,24 @@ jQuery(window).load(function($) {
         });
       }
     );
+  }
+  
+  //When creating a new habitat, we make a clone of a hidden cloneable habitat
+  //Call the function that will setup the names of the attributes so they are ready for submission
+  //Add a hidden field to allow the submission handler to know what the parent of the sub-sample is
+  createNewHabitat = function() {
+    var panelId='habitat-panel-'+indiciaData.nextHabitatNum;     
+    $('#habitats-setup').append('<div id=\"'+panelId+'\" style=\"display:none;\">');
+    $('#habitats-setup').append('<hr width=\"50%\">');
+    $('.habitat-attr-cloneable').each(function(index) {
+      $('#'+panelId).append($(this).clone().show().removeAttr('class'));
+    });
+
+    setupSubSampleAttrsForHabitat(indiciaData.nextHabitatNum,true, null);
+    $('#habitat-panel'+'-'+indiciaData.nextHabitatNum).append('<input id=\"new_sample_sub_sample:'+indiciaData.nextHabitatNum+':sample:parent_id\" name=\"new_sample_sub_sample:'+indiciaData.nextHabitatNum+':sample:parent_id\" type=\"hidden\" value=\"'+indiciaData.mainSampleId+'\">');
+    $('#habitat-panel'+'-'+indiciaData.nextHabitatNum).show();
+    indiciaData.currentHabitatNum++;
+    indiciaData.nextHabitatNum++;
   }
   
   /*

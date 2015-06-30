@@ -130,8 +130,16 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
                 If this option is not filled in, then the warning will not be displayed.',
           'type'=>'textarea',
           'group'=>'Other Settings'
-        ),   
-        //TODO could put in a default form structure
+        ), 
+        /*
+        array(
+          'name'=>'structure',
+          'caption'=>'Form Structure',
+          'description'=>'Define the structure of the form. Please edit the example given to include the attribute IDs appropriate to your website IDs to replace appear in <>.',
+          'type'=>'textarea',
+          'default' => "<ToDo WHEN final structure is know, fill in>",
+          'group' => 'User Interface'
+        ),*/
       )
     );
     return $retVal;
@@ -237,9 +245,9 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     data_entry_helper::$javascript.="$('#tab-definehabitats').append('<input id=\"add-new-habitat\" type=\"button\" value=\"Add New Habitat\">');\n";
     //Pass data to javascript
     if (!empty($_GET['sample_id']))
-      data_entry_helper::$javascript.="var mainSampleId = ".$_GET['sample_id'].";";   
+      data_entry_helper::$javascript.="indiciaData.mainSampleId = ".$_GET['sample_id'].";";   
     else
-      data_entry_helper::$javascript.="var mainSampleId = '';";
+      data_entry_helper::$javascript.="indiciaData.mainSampleId = '';";
     if (!empty($existingHabitatSubSamplesIds))
       data_entry_helper::$javascript.="var existingHabitatSubSamplesIds=".json_encode($existingHabitatSubSamplesIds).";";
     else
@@ -251,11 +259,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //Sorry, when I originally did this I numbered the habitats from 1, possibly should of used 0, as I think that might of been more elegant on second thoughts.
     //Can't move to javascript file easily as PHP variable referenced
     data_entry_helper::$javascript.="
-    var nextHabitatNum=$NextHabitatNum;
-    var currentHabitatNum=nextHabitatNum-1;
-    var nextHabitatIdSampleId;
+    indiciaData.nextHabitatNum=$NextHabitatNum;
+    indiciaData.currentHabitatNum=indiciaData.nextHabitatNum-1;
     //Need nextHabitatNum-1 as the habitats are numbered from 1 not 0
-    for (var i = 0; i<nextHabitatNum-1; i++) {
+    for (var i = 0; i<indiciaData.nextHabitatNum-1; i++) {
       //existingHabitatSubSamplesIds should always exist at this point, but put an extra test anyway
       if (existingHabitatSubSamplesIds) {
         habitatIdSampleId=existingHabitatSubSamplesIds[i];
@@ -266,24 +273,8 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     $('#add-new-habitat').click(function() {
       createNewHabitat();
     });";
-    //When creating a new habitat, we make a clone of a hidden cloneable habitat
-    //Call the function that will setup the names of the attributes so they are ready for submission
-    //Add a hidden field to allow the submission handler to know what the parent of the sub-sample is
-    data_entry_helper::$javascript.="function createNewHabitat() {
-      var panelId='habitat-panel-'+nextHabitatNum;     
-      $('#habitats-setup').append('<div id=\"'+panelId+'\" style=\"display:none;\">');
-      $('#habitats-setup').append('<hr width=\"50%\">');
-      $('.habitat-attr-cloneable').each(function(index) {
-        $('#'+panelId).append($(this).clone().show().removeAttr('class'));
-      });
-      
-      setupSubSampleAttrsForHabitat(nextHabitatNum,true, null);
-      $('#habitat-panel'+'-'+nextHabitatNum).append('<input id=\"new_sample_sub_sample:'+nextHabitatNum+':sample:parent_id\" name=\"new_sample_sub_sample:'+nextHabitatNum+':sample:parent_id\" type=\"hidden\" value=\"'+mainSampleId+'\">');
-      $('#habitat-panel'+'-'+nextHabitatNum).show();
-      currentHabitatNum++;
-      nextHabitatNum++;
-    }";
-    
+    data_entry_helper::$javascript.="indiciaData.existingHabitatSubSamplesIds=existingHabitatSubSamplesIds;\n";
+
     $r .= "</div>\n";  
     $cloneableAttrs=explode(',',$args['habitat_smpAttr_cluster_ids']);
     
@@ -311,8 +302,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         //Only get sample attributes and then store them in an array so they can be passed to the existing function that builds the html
         $attrbuteArray=array();
         foreach ($habitatAttrs as $habitatAttr) {  
-          if ($habitatSmpAttrId==$habitatAttr['sample_attribute_id']) {
-            $attrbuteArray[]=$habitatAttr;  
+          if (!empty($habitatAttr['sample_attribute_id'])) {
+            if ($habitatSmpAttrId==$habitatAttr['sample_attribute_id']) {
+              $attrbuteArray[]=$habitatAttr;  
+            }
           }
         }
         $r .= get_attribute_html($attrbuteArray, $args, array('extraParams' => $auth['read']), null, $attrOptions);
@@ -787,7 +780,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     $response = data_entry_helper::http_post(data_entry_helper::$base_url.'/index.php/services/security/get_nonce', $postargs, false);
     $nonce = $response['output'];
     $writeTokens = array('nonce'=>$nonce, 'auth_token' => sha1($nonce.":".$conn['password']));
-    //TODO, when the first page is saved we create a sample but we don't have a spatial reference. An attempt is made to read
+    //When the first page is saved we create a sample but we don't have a spatial reference. An attempt is made to read
     //a position from the first photo exif (elsewhere in code), however if GPS data can't be found on photo, then just fall back on a point on the Isle of Wight (as it is on land it won't get confused with a real position.
     if (empty($Model['fields']['entered_sref']['value'])) {
       drupal_set_message('Unable to find any GPS information, please correct this manually using the GPX upload or map tools');
@@ -937,7 +930,6 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     
     //Create the third level samples with occurrences
     $modelWrapped=self::create_third_level_sample_model($modelWrapped,$values,$website_id, $password,$gpxDataAttrId);
-    //TODO Needs further testing
     //The user is can rearrange which third level sample points to which second level sample. When the user does this we just need to attach the
     //change to the parent_id to the end of the submission model
     $thirdLevelSampleShiftModel=array();
