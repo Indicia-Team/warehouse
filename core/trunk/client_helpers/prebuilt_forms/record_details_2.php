@@ -529,6 +529,18 @@ Record ID',
     else
       return '';
   }
+
+  protected static function get_control_block($auth, $args, $tabalias, $options) {
+    iform_load_helpers(array('report_helper'));
+    $block = module_invoke($options['module'], $options['hook'], $options['args']);
+    if ($options['module'] === 'addtoany') {
+      self::load_record($auth, $args);
+      report_helper::$javascript .= "$('.a2a_kit').attr('data-a2a-url', window.location.href);\n";
+      $title = 'Check out this record of '.self::$record['taxon'];
+      report_helper::$javascript .= "$('.a2a_kit').attr('data-a2a-title', '$title');\n";
+    }
+    return render($block['content']);
+  }
   
   /**
    * An edit button control which only displays if the user owns the record.
