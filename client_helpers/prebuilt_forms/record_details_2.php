@@ -192,6 +192,16 @@ Record ID',
           'default' => '',
           'group' => 'Path configuration'
         ),
+        array(
+          'name'=>'map_geom_precision',
+          'caption'=>'Map geometry precision',
+          'description'=>'If you want to output a lower precision map geometry than was actually recorded, ' .
+              'select the precision here',
+          'type'=>'select',
+          'options'=>array('1'=>'1km', '2' => '2km', '10' => '10km'),
+          'required' => false,
+          'group' => 'Other Map Settings'
+        )
       )
     );
     return $retVal;
@@ -254,7 +264,7 @@ Record ID',
       'sample_comment'=>'Sample comment',
     );
     
-    self::load_record($auth);
+    self::load_record($auth, $args);
     
     $details_report = '<div class="record-details-fields ui-helper-clearfix">';
     foreach($availableFields as $field=>$caption) {
@@ -362,11 +372,11 @@ Record ID',
    * @subpackage PrebuiltForms
    */
   protected static function get_control_map($auth, $args, $tabalias, $options) {
-    iform_load_helpers(array('data_entry_helper'));
-    self::load_record($auth);
+    iform_load_helpers(array('map_helper'));
+    self::load_record($auth, $args);
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
-      array('maxZoom'=>14),
+      array('maxZoom'=>14, 'maxZoomBuffer' => 4),
       $options
     );
     if (isset(self::$record['geom'])) {
@@ -380,7 +390,7 @@ Record ID',
     
     if (!isset($options['standardControls']))
       $options['standardControls']=array('layerSwitcher','panZoom');
-    return '<div class="detail-panel" id="detail-panel-map"><h3>Map</h3>' . data_entry_helper::map_panel($options, $olOptions) . '</div>';
+    return '<div class="detail-panel" id="detail-panel-map"><h3>Map</h3>' . map_helper::map_panel($options, $olOptions) . '</div>';
     
   }
  
@@ -557,7 +567,7 @@ Record ID',
   protected static function buttons_edit($auth, $args, $tabalias, $options) {
     if (!$args['default_input_form'])
       throw new exception('Please set the default input form path setting before using the [edit button] control');
-    self::load_record($auth);
+    self::load_record($auth, $args);
     $record = self::$record;
     if (($user_id=hostsite_get_user_field('indicia_user_id')) && $user_id==self::$record['created_by_id']
         && variable_get('indicia_website_id', 0)==self::$record['website_id']) {
@@ -718,12 +728,15 @@ Record ID';
   /**
    * Loads the record associated with the page if not already loaded.
    */
-  protected static function load_record($auth) {
+  protected static function load_record($auth, $args) {
     if (!isset(self::$record)) {
+      $params = array('occurrence_id'=>$_GET['occurrence_id'], 'sharing'=>'reporting');
+      if (!empty($args['map_geom_precision']))
+        $params['geom_precision'] = $args['map_geom_precision'];
       $records=report_helper::get_report_data(array(
         'readAuth' => $auth['read'],
         'dataSource'=>'reports_for_prebuilt_forms/record_details_2/record_data',
-        'extraParams'=>array('occurrence_id'=>$_GET['occurrence_id'], 'sharing'=>'reporting')
+        'extraParams'=>$params,
       ));
       self::$record = $records[0];
     }
