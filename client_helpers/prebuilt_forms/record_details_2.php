@@ -271,14 +271,6 @@ Record ID',
       if ($caption==='Species') {
         $title = lang::get('Record of {1}', self::$record[$field]);
         hostsite_set_page_title($title);
-        $og_title = array(
-          '#tag' => 'meta',
-          '#attributes' => array(
-            'property' => 'og:title',
-            'content' => $title
-          )
-        );
-        drupal_add_html_head($og_title, 'og_title');
       }
       if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field])) {
         // special case, sensitive icon
@@ -347,30 +339,38 @@ Record ID',
    * @subpackage PrebuiltForms
    */
   protected static function get_control_photos($auth, $args, $tabalias, $options) {
-    iform_load_helpers(array('report_helper'));
+    iform_load_helpers(array('data_entry_helper'));
     data_entry_helper::add_resource('fancybox');
     $options = array_merge(array(
       'itemsPerPage' => 20,
       'imageSize' => 'thumb',
       'class' => 'detail-gallery'
     ), $options);
-    return '<div class="detail-panel" id="detail-panel-photos"><h3>Photos and media</h3>'.report_helper::freeform_report(array(
-      'readAuth' => $auth['read'],
-      'dataSource'=>'occurrence_image',
-      'itemsPerPage' => $options['itemsPerPage'],
-      'class' => $options['class'],
-      'header'=>'<ul>',
-      'footer'=>'</ul>',
-      'bands'=>array(array('content'=>'<li class="gallery-item"><a href="{imageFolder}{path}" class="fancybox single"><img src="{imageFolder}'.$options['imageSize'].'-{path}" /></a><br/>{caption}</li>')),
-      'emptyText' => '<p>No photos or media files available</p>',
-      //mode direct means the datasource is a table instead of a report
-      'mode' => 'direct',
-      'autoParamsForm' => false,
-      'extraParams' => array(
+    $images = data_entry_helper::get_population_data(array(
+      'table' => 'occurrence_image',
+      'extraParams' => $auth['read'] + array(
         'occurrence_id'=>$_GET['occurrence_id'],
-        'sharing'=>'reporting'        
-      )      
-    )) . '</div>';
+        'sharing'=>'reporting',
+        'limit' => $options['itemsPerPage']
+      ),
+    ));
+    $r = '<div class="detail-panel" id="detail-panel-photos"><h3>Photos and media</h3><div class="'.$options['class'].'"<ul>';
+    if (empty($images))
+      $r .= '<p>No photos or media files available</p>';
+    else {
+      $imageFolder = data_entry_helper::get_uploaded_image_folder();
+      foreach ($images as $idx => $image) {
+        if ($idx===0) {
+          // first image can be flagged as the main content image. Used for FB OpenGraph for example.
+          global $iform_content_image;
+          $iform_content_image = "$imageFolder$image[path]";
+        }
+        $r .= "<li class=\"gallery-item\"><a href=\"$imageFolder$image[path]\" class=\"fancybox single\">" .
+            "<img src=\"$imageFolder$options[imageSize]-$image[path]\" /></a><br/>$image[caption]</li>";
+      }
+      $r .= '</div></ul></div>';
+    }
+    return $r;
   }
   
   
