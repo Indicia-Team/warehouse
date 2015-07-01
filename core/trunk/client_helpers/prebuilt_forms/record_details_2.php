@@ -39,7 +39,6 @@ require_once('includes/report.php');
 
 class iform_record_details_2 extends iform_dynamic {
 
-  private static $sampleLoaded = false;
   protected static $record;
     
   /** 
@@ -206,15 +205,19 @@ Record ID',
     );
     return $retVal;
   }
- 
+
   /**
    * Override the get_form_html function.
    * getForm in dynamic.php will now call this.
    * Vary the display of the page based on the interface type
-   * 
+   *
    * @package    Client
    * @subpackage PrebuiltForms
-   */ 
+   * @param $args
+   * @param $auth
+   * @param $attributes
+   * @return mixed|string
+   */
   protected static function get_form_html($args, $auth, $attributes) {
     if (empty($_GET['occurrence_id'])) {
       return 'This form requires an occurrence_id parameter in the URL.';
@@ -243,7 +246,6 @@ Record ID',
     $fields=helper_base::explode_lines($args['fields']);
     $fieldsLower=helper_base::explode_lines(strtolower($args['fields']));
     //Draw the Record Details, but only if they aren't requested as hidden by the administrator
-    $detailstemplateHtml = '';
     $attrsTemplate='<div class="field ui-helper-clearfix"><span>{caption}</span><span{class}>{value}</span></div>';
     $test=$args['operator']==='in';
     $availableFields = array(
@@ -354,10 +356,11 @@ Record ID',
         'limit' => $options['itemsPerPage']
       ),
     ));
-    $r = '<div class="detail-panel" id="detail-panel-photos"><h3>Photos and media</h3><div class="'.$options['class'].'"<ul>';
+    $r = '<div class="detail-panel" id="detail-panel-photos"><h3>Photos and media</h3><div class="'.$options['class'].'">';
     if (empty($images))
       $r .= '<p>No photos or media files available</p>';
     else {
+      $r .= '<ul>';
       $imageFolder = data_entry_helper::get_uploaded_image_folder();
       foreach ($images as $idx => $image) {
         if ($idx===0) {
@@ -368,8 +371,9 @@ Record ID',
         $r .= "<li class=\"gallery-item\"><a href=\"$imageFolder$image[path]\" class=\"fancybox single\">" .
             "<img src=\"$imageFolder$options[imageSize]-$image[path]\" /></a><br/>$image[caption]</li>";
       }
-      $r .= '</div></ul></div>';
+      $r .= '</ul>';
     }
+    $r .= '</div></div>';
     return $r;
   }
   
@@ -515,10 +519,10 @@ Record ID',
 
   /**
    * Outputs a login form. Not displayed if already logged in.
-   * @param $auth
-   * @param $args
-   * @param $tabalias
-   * @param $options Options array passed in the configuration to the [login] control.
+   * @param array $auth
+   * @param array $args
+   * @param string $tabalias
+   * @param array $options Options array passed in the configuration to the [login] control.
    * Possible values include instruct - the instruction to display above the login form.
    * @return string
    */
@@ -773,4 +777,3 @@ Record ID';
    
    
 }
-?>
