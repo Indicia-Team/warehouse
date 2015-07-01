@@ -42,7 +42,7 @@ function auto_verify_scheduled_task($last_run_date, $db) {
   //Need to update cache_occurrences, as this table has already been built at this point. 
   $query = "
     INSERT INTO occurrence_comments (comment, generated_by, occurrence_id,record_status,record_substatus,created_by_id,updated_by_id,created_on,updated_on,auto_generated)
-    SELECT 'Automatically accepted', 'system', id,'V','2',1,1,'".$verificationTime."','".$verificationTime."',true
+    SELECT 'Accepted based on automatic checks', 'system', id,'V','2',1,1,'".$verificationTime."','".$verificationTime."',true
     FROM occurrences
     WHERE id in
     (".$subQuery.");
