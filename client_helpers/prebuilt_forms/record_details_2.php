@@ -270,16 +270,20 @@ Record ID',
     
     $details_report = '<div class="record-details-fields ui-helper-clearfix">';
     foreach($availableFields as $field=>$caption) {
-      if ($caption==='Species') {
+      if ($caption === 'Species') {
         $title = lang::get('Record of {1}', self::$record[$field]);
         hostsite_set_page_title($title);
       }
-      if ($test===in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field])) {
+      if ($test === in_array(strtolower($caption), $fieldsLower) && !empty(self::$record[$field])) {
         // special case, sensitive icon
-        $class = self::$record[$field]==='This record is sensitive' ? ' class="ui-state-error"' : '';
-        $caption = self::$record[$field]==='This record is sensitive' ? '' : "$caption:";
+        $class = self::$record[$field] === 'This record is sensitive' ? ' class="ui-state-error"' : '';
+        $caption = self::$record[$field] === 'This record is sensitive' ? '' : "$caption:";
         $details_report .= str_replace(array('{caption}', '{value}', '{class}'),
-          array(lang::get($caption), lang::get(self::$record[$field]), $class), $attrsTemplate);
+          array(
+            lang::get($caption),
+            lang::get(self::$record[$field]),
+            $class
+          ), $attrsTemplate);
       }
     }
     $created = date('jS F Y \a\t H:i', strtotime(self::$record['created_on']));
@@ -365,8 +369,10 @@ Record ID',
       foreach ($images as $idx => $image) {
         if ($idx===0) {
           // first image can be flagged as the main content image. Used for FB OpenGraph for example.
-          global $iform_content_image;
-          $iform_content_image = "$imageFolder$image[path]";
+          global $iform_page_metadata;
+          if (!isset($iform_page_metadata))
+            $iform_page_metadata = array();
+          $iform_page_metadata['image'] = "$imageFolder$image[path]";
         }
         $r .= "<li class=\"gallery-item\"><a href=\"$imageFolder$image[path]\" class=\"fancybox single\">" .
             "<img src=\"$imageFolder$options[imageSize]-$image[path]\" /></a><br/>$image[caption]</li>";
@@ -765,6 +771,23 @@ Record ID';
         'extraParams'=>$params,
       ));
       self::$record = $records[0];
+      // set the page metadata
+      global $iform_page_metadata;
+      if (!isset($iform_page_metadata))
+        $iform_page_metadata = array();
+      $species = self::$record['taxon'];
+      if (!empty(self::$record['preferred_taxon']) && $species !== self::$record['preferred_taxon'])
+        $species .= ' (' . self::$record['preferred_taxon'] . ')';
+      $iform_page_metadata['description'] = lang::get('Record of {1} on {2}', $species, self::$record['date']);
+      if (!empty(self::$record['sample_comment']))
+        $iform_page_metadata['description'] .= '. ' . trim(self::$record['sample_comment'], '. \t\n\r\0\x0B') . '.';
+      if (!empty(self::$record['occurrence_comment']))
+        $iform_page_metadata['description'] .= ' ' . trim(self::$record['occurrence_comment'], '. \t\n\r\0\x0B') . '.';
+      drupal_set_message('here '. var_export(self::$record, true));
+      if (empty(self::$record['sensitivity_precision'])) {
+        $iform_page_metadata['latitude'] = number_format((float)self::$record['lat'], 5, '.', '');
+        $iform_page_metadata['longitude'] = number_format((float)self::$record['long'], 5, '.', '');
+      }
     }
   }
   
