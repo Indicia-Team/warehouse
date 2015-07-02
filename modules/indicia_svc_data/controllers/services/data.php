@@ -1098,9 +1098,9 @@ class Data_Controller extends Data_Service_Base_Controller {
           // Build a where for ints, bools or if there is no * in the search string.
           if ($this->view_columns[$param]['type']=='int' || $this->view_columns[$param]['type']=='bool' ||
               strpos($value, '*')===false) {
-            $where[$param]=$value;
+            $where["$this->viewname.$param"] = $value;
           } else {
-            $like[$param]=str_replace('*', '%', $value);
+            $like["$this->viewname.$param"] = str_replace('*', '%', $value);
           }
         } else {
           Kohana::log('debug', "Trying to filter on unknown column $param. Ignoring.");
