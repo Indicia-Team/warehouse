@@ -56,6 +56,8 @@
     <column name='location_name' sql="co.location_name" />
     <column name='sample_comment' sql='case when o.sensitivity_precision is null then s.comment else null end' />
     <column name='geom' sql="case '#geom_precision#' when '' then st_astext(co.public_geom) else st_astext(msq.geom) end" />
+    <column name="lat" sql="st_y(st_transform(st_centroid(public_geom), 4326))" />
+    <column name="long" sql="st_x(st_transform(st_centroid(public_geom), 4326))" />
     <column name='sensitivity_precision' sql="o.sensitivity_precision" />
     <column name='created_by_id' sql='co.created_by_id' />
     <column name='website_id' sql='co.website_id' />
