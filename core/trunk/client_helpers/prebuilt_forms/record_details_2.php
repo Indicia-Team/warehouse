@@ -783,7 +783,6 @@ Record ID';
         $iform_page_metadata['description'] .= '. ' . trim(self::$record['sample_comment'], '. \t\n\r\0\x0B') . '.';
       if (!empty(self::$record['occurrence_comment']))
         $iform_page_metadata['description'] .= ' ' . trim(self::$record['occurrence_comment'], '. \t\n\r\0\x0B') . '.';
-      drupal_set_message('here '. var_export(self::$record, true));
       if (empty(self::$record['sensitivity_precision'])) {
         $iform_page_metadata['latitude'] = number_format((float)self::$record['lat'], 5, '.', '');
         $iform_page_metadata['longitude'] = number_format((float)self::$record['long'], 5, '.', '');
