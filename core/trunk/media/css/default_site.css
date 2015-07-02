@@ -1018,3 +1018,56 @@ div.note-fail, p.note-fail {
   list-style-type: none;
   padding: 0.5em;
 }
+
+.status-icon {
+  background: url(../images/statuses-sprite.png) no-repeat center center;
+  width: 32px;
+  height: 16px;
+}
+.status-icon.status-C.certainty- {
+  background: none;
+}
+
+.status-icon.certainty-C {
+  background-position: 0px -48px;
+}
+.status-icon.certainty-L {
+  background-position: 0px -64px;
+}
+.status-icon.certainty-U {
+  background-position: 0px -80px;
+}
+.status-icon.status-V {
+  background-position: 0px -16px;
+}
+.status-icon.status-V.substatus-1 {
+  background-position: 0px 0px;
+}
+.status-icon.status-R {
+  background-position: 0px -96px;
+}
+.status-icon.status-R.substatus-5 {
+  background-position: 0px -112px;
+}
+
+.status-icon.certainty-C.query-Q, .status-icon.certainty-C.query-A {
+  background-position: -32px -48px;
+}
+.status-icon.certainty-L.query-Q, .status-icon.certainty-L.query-A {
+  background-position: -32px -64px;
+}
+.status-icon.certainty-U.query-Q, .status-icon.certainty-U.query-A {
+  background-position: -32px -80px;
+}
+.status-icon.status-V.query-Q, .status-icon.status-V.query-A {
+  background-position: -32px -16px;
+}
+.status-icon.status-V.substatus-1.query-Q, .status-icon.status-V.substatus-1.query-A {
+  background-position: -32px 0px;
+}
+.status-icon.status-R.query-Q, .status-icon.status-R.query-A {
+  background-position: -32px -96px;
+}
+.status-icon.status-R.substatus-5.query-Q, .status-icon.status-R.substatus-5.query-A {
+  background-position: -32px -112px;
+}
