@@ -21,7 +21,7 @@
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype="integer"
-        template='&lt;div class="status-{record_status} release-{release_status} substatus-{record_substatus} query-{query} certainty-{certainty}"&gt;&lt;/div&gt;&lt;div class="record-id"&gt;{occurrence_id}&lt;/div&gt;'  />
+        template='&lt;div class="status-icon status-{record_status} release-{release_status} substatus-{record_substatus} query-{query} certainty-{certainty}" title="{status_hint}"&gt;&lt;/div&gt;&lt;div class="record-id"&gt;{occurrence_id}&lt;/div&gt;'  />
     <column name='source' display='Source' datatype="text" 
         sql="w.title || ' | ' || case when substring(o.survey_title from 1 for length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
@@ -55,5 +55,11 @@
         end"
     />
     <column name='query' visible='false' sql='o.query' />
+    <column name='status_hint' visible="false"
+            sql="case o.record_status when 'V' then 'Accepted' when 'R' then 'Not accepted' when 'T' then 'Test'
+              when 'C' then case when record_substatus=3 then 'Plausible' when o.certainty='C' then 'Recorder considered this certain' when o.certainty='L' then 'Recorder considered this likely' when o.certainty='U' then 'Recorder considered this uncertain' else 'Not reviewed' end
+            end ||
+            case o.record_substatus when 1 then ' as correct' when 2 then ' as considered correct' when 4 then ' as unable to verify' when 5 then ' as incorrect' else '' end ||
+            case o.query when 'A' then ', query raised and answered' when 'Q' then ', query raised' else '' end" />
   </columns>
 </report>
