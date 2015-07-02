@@ -1023,6 +1023,7 @@ div.note-fail, p.note-fail {
   background: url(../images/statuses-sprite.png) no-repeat center center;
   width: 32px;
   height: 16px;
+  display: inline-block;
 }
 .status-icon.status-C.substatus-.certainty- {
   background: none;
