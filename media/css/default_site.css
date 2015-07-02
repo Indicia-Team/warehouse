@@ -1024,7 +1024,7 @@ div.note-fail, p.note-fail {
   width: 32px;
   height: 16px;
 }
-.status-icon.status-C.certainty- {
+.status-icon.status-C.substatus-.certainty- {
   background: none;
 }
 
@@ -1042,6 +1042,9 @@ div.note-fail, p.note-fail {
 }
 .status-icon.status-V.substatus-1 {
   background-position: 0px 0px;
+}
+.status-icon.status-C.substatus-3 {
+  background-position: 0px -32px;
 }
 .status-icon.status-R {
   background-position: 0px -96px;
@@ -1064,6 +1067,9 @@ div.note-fail, p.note-fail {
 }
 .status-icon.status-V.substatus-1.query-Q, .status-icon.status-V.substatus-1.query-A {
   background-position: -32px 0px;
+}
+.status-icon.status-C.substatus-3.query-Q, .status-icon.status-C.substatus-3.query-A {
+  background-position: -32px -32px;
 }
 .status-icon.status-R.query-Q, .status-icon.status-R.query-A {
   background-position: -32px -96px;
