@@ -21,7 +21,7 @@
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype="integer"
-        template='&lt;div class="status-{record_status} release-{release_status} substatus-{record_substatus}"&gt;&lt;div class="certainty-{certainty} record-id"&gt;{occurrence_id}&lt;/div&gt;&lt;/div&gt;'  />
+        template='&lt;div class="status-{record_status} release-{release_status} substatus-{record_substatus} query-{query} certainty-{certainty}"&gt;&lt;/div&gt;&lt;div class="record-id"&gt;{occurrence_id}&lt;/div&gt;'  />
     <column name='source' display='Source' datatype="text" 
         sql="w.title || ' | ' || case when substring(o.survey_title from 1 for length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
@@ -54,5 +54,6 @@
             replace(replace(replace(replace(o.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;') 
         end"
     />
+    <column name='query' visible='false' sql='o.query' />
   </columns>
 </report>
