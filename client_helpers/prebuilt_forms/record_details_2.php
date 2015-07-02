@@ -265,6 +265,14 @@ Record ID',
       'location_name'=>'Site name',
       'sample_comment'=>'Sample comment',
     );
+    if (!empty(self::$record['sensitivity_precision'])) {
+      unset($availableFields['recorder']);
+      unset($availableFields['inputter']);
+      unset($availableFields['entered_sref']);
+      unset($availableFields['occurrence_comment']);
+      unset($availableFields['location_name']);
+      unset($availableFields['sample_comment']);
+    }
     
     self::load_record($auth, $args);
     
