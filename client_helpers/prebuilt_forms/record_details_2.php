@@ -563,6 +563,9 @@ Record ID',
     $block = module_invoke($options['module'], $options['hook'], $options['args']);
     if ($options['module'] === 'addtoany') {
       self::load_record($auth, $args);
+      // lets not promote sharing of sensitive stuff
+      if (self::$record['sensitivity_precision'])
+        return '';
       report_helper::$javascript .= "$('.a2a_kit').attr('data-a2a-url', window.location.href);\n";
       $title = 'Check out this record of '.self::$record['taxon'];
       report_helper::$javascript .= "$('.a2a_kit').attr('data-a2a-title', '$title');\n";
