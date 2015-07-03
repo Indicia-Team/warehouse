@@ -34,10 +34,12 @@
   <params>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='warehouse_id' display='Warehouse unique ID' default='iBRC' 
+        description='Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key'/>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
-    <column name='recordkey' display='RecordKey' sql="'iBRC' || o.id" datatype="text" />
+    <column name='recordkey' display='RecordKey' sql="'#warehouse_id#' || o.id" datatype="text" />
     <column name='name' display='Species' datatype='text'
           sql="case when o.preferred_taxon=coalesce(o.default_common_name, '') then o.preferred_taxon else o.preferred_taxon || case when o.default_common_name is null then '' else ' - ' || o.default_common_name end end " />
     <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
@@ -74,7 +76,7 @@
     <column name='date' display='Date' datatype='date' />
     <column name='input_date' sql='occ.created_on' display='Input on date' datatype='date' />
     <column name='last_edit_date' sql='occ.updated_on' display='Last edited on date' datatype='date' />
-    <column name='recorder' display='Recorder' sql="o.recorders" datatype="text" />
+    <column name='recorder' display='Recorder' sql="rtrim(o.recorders, ', ')" datatype="text" />
     <column name='determiner' display='Determiner' datatype="text" 
       sql="CASE WHEN det_full_val.text_value IS NULL THEN 
         CASE WHEN det_last_val.text_value IS NULL THEN NULL ELSE det_last_val.text_value || COALESCE(', ' || det_first_val.text_value, '') END
