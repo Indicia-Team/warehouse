@@ -28,6 +28,7 @@
     <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
     <column name='source' on_demand="true" datatype="text" 
         sql="w.title || ' | ' || case when substring(o.survey_title from 1 for length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
+    <column name='source_id' on_demand="true" datatype="text" sql="o.website_id::varchar || '.' || o.survey_id::varchar" />
     <column name='sample_id' sql='o.sample_id' on_demand="true" datatype="integer" />
     <column name='taxon' sql="o.preferred_taxon" on_demand="true" datatype="species" />
     <column name='common' sql="o.default_common_name" on_demand="true" datatype="text" />
