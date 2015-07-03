@@ -21,9 +21,12 @@
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype="integer"
-        template='&lt;div class="status-{record_status} release-{release_status} substatus-{record_substatus}"&gt;&lt;div class="certainty-{certainty} record-id"&gt;{occurrence_id}&lt;/div&gt;&lt;/div&gt;'  />
+        template='&lt;span class="status-icon status-{record_status} release-{release_status} substatus-{record_substatus} query-{query} certainty-{certainty}" title="{status_hint}"&gt;&lt;/span&gt;&lt;span class="record-id"&gt;{occurrence_id}&lt;/span&gt;'  />
     <column name='source' display='Source' datatype="text" 
         sql="w.title || ' | ' || case when substring(o.survey_title from 1 for length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
+    <column name='source_id' display='Source ID' datatype="text" visible="false"
+            sql="o.website_id::varchar || '|' || o.survey_id::varchar"
+            template="&lt;span title=&quot;{source}&quot;&gt;{source_id}&lt;/span&gt;" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
     <column name='taxon' display='Species' datatype="species" sql="o.preferred_taxon" />
     <column name='common' display='Common name' datatype="text" sql="o.default_common_name" />
@@ -37,6 +40,7 @@
     <column name='date_type' sql='o.date_type' visible='false' />
     <column name='date' display='Date' datatype="date" />
     <column name='cache_created_on' sql="to_char(o.cache_created_on,'DD/MM/YYYY')" display='Submitted date' datatype="date" visible="false" />
+    <column name='cache_updated_on' sql="to_char(o.cache_updated_on,'DD/MM/YYYY hh:mm')" display='Last updated' visible="false" />
     <column name='recorder' display='Recorder' sql="CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" datatype="text" />
     <column name='zero_abundance' display='Zero abundance' sql='o.zero_abundance' visible="false" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
@@ -54,5 +58,12 @@
             replace(replace(replace(replace(o.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;') 
         end"
     />
+    <column name='query' visible='false' sql='o.query' />
+    <column name='status_hint' visible="false"
+            sql="case o.record_status when 'V' then 'Accepted' when 'R' then 'Not accepted' when 'T' then 'Test'
+              when 'C' then case when record_substatus=3 then 'Plausible' when o.certainty='C' then 'Recorder considered this certain' when o.certainty='L' then 'Recorder considered this likely' when o.certainty='U' then 'Recorder considered this uncertain' else 'Not reviewed' end
+            end ||
+            case o.record_substatus when 1 then ' as correct' when 2 then ' as considered correct' when 4 then ' as unable to verify' when 5 then ' as incorrect' else '' end ||
+            case o.query when 'A' then ', query raised and answered' when 'Q' then ', query raised' else '' end" />
   </columns>
 </report>

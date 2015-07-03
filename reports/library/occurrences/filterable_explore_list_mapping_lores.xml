@@ -28,6 +28,7 @@
     <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
     <column name='source' on_demand="true" datatype="text" 
         sql="w.title || ' | ' || case when substring(o.survey_title from 1 for length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
+    <column name='source_id' on_demand="true" datatype="text" sql="o.website_id::varchar || '.' || o.survey_id::varchar" />
     <column name='sample_id' sql='o.sample_id' on_demand="true" datatype="integer" />
     <column name='taxon' sql="o.preferred_taxon" on_demand="true" datatype="species" />
     <column name='common' sql="o.default_common_name" on_demand="true" datatype="text" />
@@ -41,6 +42,7 @@
     <column name='date_type' sql='o.date_type' on_demand="true" visible='false' />
     <column name='date' on_demand="true" datatype="date" />
     <column name='cache_created_on' sql='o.cache_created_on' on_demand="true" datatype="date" />
+    <column name='cache_updated_on' sql='o.cache_updated_on' on_demand="true" />
     <column name='recorder' on_demand="true" sql="CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" datatype="text" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
     <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" on_demand="true" datatype="text" />
