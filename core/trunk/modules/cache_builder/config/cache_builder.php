@@ -528,7 +528,7 @@ $config['taxon_searchterms']['insert']['id_diff'] = "update cache_taxon_searchte
       join verification_rules vr ON vr.id=extkey.verification_rule_id AND vr.test_type='IdentificationDifficulty' AND vr.deleted=false
       where cttl.id=cts.taxa_taxon_list_id"; 
 
-$config['taxon_searchterms']['join_needs_update']='join needs_update_taxon_searchterms nu on nu.id=cttl.id';
+$config['taxon_searchterms']['join_needs_update']='join needs_update_taxon_searchterms nu on nu.id=cttl.id and nu.deleted=false';
 $config['taxon_searchterms']['key_field']='cttl.preferred_taxa_taxon_list_id';
 
 $config['taxon_searchterms']['count']='
