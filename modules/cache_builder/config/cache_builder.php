@@ -102,7 +102,7 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
     #join_needs_update#
     where ctlt.id is null";
     
-$config['termlists_terms']['join_needs_update']='join needs_update_termlists_terms nu on nu.id=tlt.id';
+$config['termlists_terms']['join_needs_update']='join needs_update_termlists_terms nu on nu.id=tlt.id and nu.deleted=false';
 $config['termlists_terms']['key_field']='tlt.id';
 
 $config['taxa_taxon_lists']['get_missing_items_query']="
@@ -216,7 +216,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
     #join_needs_update#
     where cttl.id is null and tl.deleted=false";
 
-$config['taxa_taxon_lists']['join_needs_update']='join needs_update_taxa_taxon_lists nu on nu.id=ttl.id';
+$config['taxa_taxon_lists']['join_needs_update']='join needs_update_taxa_taxon_lists nu on nu.id=ttl.id and nu.deleted=false';
 $config['taxa_taxon_lists']['key_field']='ttl.id';
 
 $config['taxa_taxon_lists']['extra_multi_record_updates']=array(
@@ -901,7 +901,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   #join_needs_update#
   where co.id is null";
   
-$config['occurrences']['join_needs_update']='join needs_update_occurrences nu on nu.id=o.id';
+$config['occurrences']['join_needs_update']='join needs_update_occurrences nu on nu.id=o.id and nu.deleted=false';
 $config['occurrences']['key_field']='o.id';
 
 // Additional update statements to pick up the recorder name from various possible custom attribute places. Faster than
