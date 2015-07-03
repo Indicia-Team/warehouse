@@ -15,6 +15,9 @@
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
+      <where>st_intersects(o.public_geom, st_geomfromtext('#bounds#', 900913))</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
