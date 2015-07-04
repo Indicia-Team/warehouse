@@ -58,6 +58,7 @@ jQuery(window).load(function($) {
     hideOccurrenceAddphoto();
     //Note for this wizard, we don't have a final submit, we save on everytime the user clicks next.
     $('.tab-next').click(function() {
+      $('#messages').hide();
       //currently selected tab number need incrementing    
       current++;
       //Show Loading div if we need to relod page
@@ -88,6 +89,7 @@ jQuery(window).load(function($) {
     });  
 
     $('.tab-prev').click(function() {
+      $('#messages').hide();
       //currently selected tab number needs decrementing     
       current--;
       //Show loading div as we are reloading page.
