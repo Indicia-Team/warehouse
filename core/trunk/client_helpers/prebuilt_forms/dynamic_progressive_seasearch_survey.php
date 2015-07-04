@@ -788,8 +788,15 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $ModelOrWarning['fields']['entered_sref_system']['value']='4277';
         $ModelOrWarning['fields']['entered_sref']['value']='50:41.0994N, 1:17.1864W';
       }
-      //Save submission
+      //the submission warning we want to display will be lost during forward_post_to
+      //so assign it to a variable so it can be applied to the response as a workaround.
+      if (!empty($ModelOrWarning['submissionWarning'])) {
+        $submissionWarning=$ModelOrWarning['submissionWarning'];
+        unset($ModelOrWarning['submissionWarning']);
+      }
       $response = data_entry_helper::forward_post_to('save', $ModelOrWarning, $writeTokens);
+      if (!empty($submissionWarning))
+        $response['submissionWarning']=$submissionWarning;
       echo json_encode($response);
     } else {
       echo json_encode($ModelOrWarning);
@@ -852,6 +859,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
             return array('fatalSubmissionError'=>'A photo you have uploaded does not contain suitable date information in the EXIF data and therefore cannot be used.');
           }
           $strToTime=strtotime($exif['EXIF']['DateTimeOriginal']);
+          if (!empty($lastPhotoToCheckDate)&&$lastPhotoToCheckDate!==date('d/m/Y',$strToTime)) {
+            $modelWrapped['submissionWarning']='At least one of the uploaded photos is not on the same date as the other photos. If this needs correcting, please return to the previous tab and adjust the photos that have been uploaded.';
+          }
+          $lastPhotoToCheckDate=date('d/m/Y',$strToTime);
           $time=explode(' ',$exif['EXIF']['DateTimeOriginal']);          
           //On the first tab (when we don't have a date field) then collect the date from the exif from the earliest photo
           //and also set a default on the time field in the same way
@@ -906,7 +917,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         drupal_set_message('The GPS position of your dive has been obtained from the information in the earliest uploaded photo. Please check it is correct before proceeding and correct it if necessary');
       }
     }
-      if (!empty($mediaDates)) {
+    if (!empty($mediaDates)) {
         //Need to find the attribute that starts with smpAttr:<exifDateTimeAttrId> as in edit mode it will also have the sample_attribute_value on the end so in that
         //case we need to overwrite existing value instead of creating new one.
      foreach ($values as $theKey=>$theValue) {
