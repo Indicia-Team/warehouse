@@ -772,24 +772,28 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    */
   public static function ajax_save($website_id, $password, $node) {
     iform_load_helpers(array('data_entry_helper'));
-    //Build submission
-    $Model = self::build_three_level_sample_with_occ_submission($_POST,$website_id, $password,$node->params['gpx_data_attr_id'],$node->params['dive_start_time_attr_id'],$node->params['exif_date_time_attr_id']);
-    $node = node_load($nid);
-    $conn = iform_get_connection_details($node);
-    $postargs = "website_id=".$conn['website_id'];
-    $response = data_entry_helper::http_post(data_entry_helper::$base_url.'/index.php/services/security/get_nonce', $postargs, false);
-    $nonce = $response['output'];
-    $writeTokens = array('nonce'=>$nonce, 'auth_token' => sha1($nonce.":".$conn['password']));
-    //When the first page is saved we create a sample but we don't have a spatial reference. An attempt is made to read
-    //a position from the first photo exif (elsewhere in code), however if GPS data can't be found on photo, then just fall back on a point on the Isle of Wight (as it is on land it won't get confused with a real position.
-    if (empty($Model['fields']['entered_sref']['value'])) {
-      drupal_set_message('Unable to find any GPS information, please correct this manually using the GPX upload or map tools');
-      $Model['fields']['entered_sref_system']['value']='4277';
-      $Model['fields']['entered_sref']['value']='50:41.0994N, 1:17.1864W';
-    }  
-    //Save submission
-    $response = data_entry_helper::forward_post_to('save', $Model, $writeTokens);
-    echo json_encode($response);
+    //Build submission or get a warning/Error
+    $ModelOrWarning = self::build_three_level_sample_with_occ_submission($_POST,$website_id, $password,$node->params['gpx_data_attr_id'],$node->params['dive_start_time_attr_id'],$node->params['exif_date_time_attr_id']);
+    if (empty($ModelOrWarning['fatalSubmissionError'])) {
+      $node = node_load($nid);
+      $conn = iform_get_connection_details($node);
+      $postargs = "website_id=".$conn['website_id'];
+      $response = data_entry_helper::http_post(data_entry_helper::$base_url.'/index.php/services/security/get_nonce', $postargs, false);
+      $nonce = $response['output'];
+      $writeTokens = array('nonce'=>$nonce, 'auth_token' => sha1($nonce.":".$conn['password']));
+      //When the first page is saved we create a sample but we don't have a spatial reference. An attempt is made to read
+      //a position from the first photo exif (elsewhere in code), however if GPS data can't be found on photo, then just fall back on a point on the Isle of Wight (as it is on land it won't get confused with a real position.
+      if (empty($ModelOrWarning['fields']['entered_sref']['value'])) {
+        drupal_set_message('Please specify the location of your dive.');
+        $ModelOrWarning['fields']['entered_sref_system']['value']='4277';
+        $ModelOrWarning['fields']['entered_sref']['value']='50:41.0994N, 1:17.1864W';
+      }
+      //Save submission
+      $response = data_entry_helper::forward_post_to('save', $ModelOrWarning, $writeTokens);
+      echo json_encode($response);
+    } else {
+      echo json_encode($ModelOrWarning);
+    }
   }
  
  
@@ -844,6 +848,9 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         if (file_exists($uploadpath.$mediaItem['path'])) {
           $exif = exif_read_data($uploadpath.$mediaItem['path'], 0, true);
           $media[$idx]['exif'] = json_encode($exif);
+          if (empty($exif['EXIF']['DateTimeOriginal'])) {
+            return array('fatalSubmissionError'=>'A photo you have uploaded does not contain suitable date information in the EXIF data and therefore cannot be used.');
+          }
           $strToTime=strtotime($exif['EXIF']['DateTimeOriginal']);
           $time=explode(' ',$exif['EXIF']['DateTimeOriginal']);          
           //On the first tab (when we don't have a date field) then collect the date from the exif from the earliest photo
@@ -896,6 +903,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $values['sample:entered_sref']=$gpsFromFirstExif;
         $modelWrapped['fields']['entered_sref_system']['value']='4277';
         $values['sample:entered_sref_system']='4277';
+        drupal_set_message('The GPS position of your dive has been obtained from the information in the earliest uploaded photo. Please check it is correct before proceeding and correct it if necessary');
       }
     }
       if (!empty($mediaDates)) {
@@ -1276,17 +1284,17 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       $splitKey=explode(':',$key);
       //If we find a field which is a sample_medium on the occurrences grid then save its current second level sample id for use later
       if (strpos($key,'third-level-smp-occ-grid')!==false) {
-        if (array_key_exists('sample_medium:'.$value.':sample_id',$values)&&
+          if (array_key_exists('sample_medium:'.$value.':sample_id',$values)&&
             $values[$splitKey[0].':'.$splitKey[1].'::present']>0) {
           $presentSpeciesListSubSampleIds[$value]=$values['sample_medium:'.$value.':sample_id'];
-        }
+          }
         //Need occurrence version of the existing sample media that has been initially placed on the occurrence grid.
         //Remove the original sample media from the grid once once occurrence media created.
         //Need to make sure we don't copy the id field accross from the sample medium to the occurrence_medium as it will be wrong.
         if (strpos($key,':sample_medium')!==false&&$splitKey[4]!='id') {
          $values[$splitKey[0].':'.$splitKey[1].'::occurrence_medium:'.$splitKey[4].':'.$splitKey[5]]=$value;
          unset($key);
-       }
+        }
       }
     }
     return $presentSpeciesListSubSampleIds;
@@ -1910,7 +1918,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
           //If we are using third level samples and there are no third level samples yet, then we don't want to load
           //the ids of the second level samples otherwise the system will use these instead of creating the new sub-sample level
           if (!(empty($allThirdLevelSamples)&&!empty($useThirdLevelSamples) && $useThirdLevelSamples==true)) {
-            data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
+          data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
           }
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:geom'] = $subsample['wkt'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:wkt'] = $subsample['wkt'];

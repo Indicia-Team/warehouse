@@ -111,22 +111,33 @@ jQuery(window).load(function($) {
       //Calls ajax_save function in php file.
       indiciaData.ajaxUrl + '/save/' + indiciaData.nid,
       data,
-      function (response) {  
-        var sampleIdToUse;
-        //Get the sample id after save.
-        var getSampleId = indiciaData.getSampleId;
+      function (response) { 
         var responseObject = $.parseJSON(response);
-        //In add mode get the sample id from the response, otherwise get from the URL.
-        if (getSampleId) {
-          sampleIdToUse=getSampleId;
+        //If the response is a fatal error message, then display it and reload the previous tab
+        if (responseObject.fatalSubmissionError) {
+          current--;
+          alert(responseObject.fatalSubmissionError);
         } else {
-          sampleIdToUse=responseObject.outer_id;
+          //If just a warning, then display it and continue as usual
+          if (responseObject.submissionWarning) {
+            alert(responseObject.submissionWarning);
+          }
+          var sampleIdToUse;
+          //Get the sample id after save.
+          var getSampleId = indiciaData.getSampleId;
+          //In add mode get the sample id from the response, otherwise get from the URL.
+          if (getSampleId) {
+            sampleIdToUse=getSampleId;
+          } else {
+            sampleIdToUse=responseObject.outer_id;
+          }
         }
-        //Some tabs need a full reload (perhaps the following tab using php for setup). When the reload takes place then we need to put
+        //Some tabs need a full reload (e.g. the next tab uses php for setup). When the reload takes place then we need to put
         //the sample id in the url and also the tab we need to return to.
         //"current" has already been incremented, so need to check the last tab to check if it is in the list of tabs to reload.
         //Always reload when going back in the wizard as some pages contain attributes that need reloading with sample_attribute_values.
-        if (inArray(current-1,indiciaData.reloadtabs)||backButtonUsed===true) { 
+        //Also need a reload if an fatal submission error message is shown and we want to return to previous tab.
+        if (inArray(current-1,indiciaData.reloadtabs)||backButtonUsed===true||responseObject.fatalSubmissionError) { 
           //Ignore anything after # in the URL, like overlay contexts
           var url = window.location.href.toString().split('#');
           url=url[0];
@@ -134,7 +145,9 @@ jQuery(window).load(function($) {
           //on whether clean URLs are enabled.
           url = url.split(indiciaData.paramsSeparator);
           var urlWithoutParams = url[0];
-          urlWithoutParams += indiciaData.paramsSeparator+'sample_id='+sampleIdToUse;
+          if (sampleIdToUse) {
+              urlWithoutParams += indiciaData.paramsSeparator+'sample_id='+sampleIdToUse;
+          }
           //Current has already been incremented, so we just need to load the new current tab
           urlWithoutParams += '&load_tab='+current;
           window.location=urlWithoutParams;
