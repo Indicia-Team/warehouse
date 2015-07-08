@@ -130,7 +130,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
                 If this option is not filled in, then the warning will not be displayed.',
           'type'=>'textarea',
           'group'=>'Other Settings'
-        ), 
+        ),
         /*
         array(
           'name'=>'structure',
@@ -150,7 +150,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    */
   protected static function get_control_uploadgpxfile($auth, $args, $tabAlias, $options) {
     $r = '<input type="file" id="file_upload"><br>';
-    //Read the file, load it into an attribute, also add up all the trackpoints in the file and then 
+    //Read the file, load it into an attribute, also add up all the trackpoints in the file and then
     //average them to make the spatial reference on the sample (as the main sample only has a single spatial
     //reference it makes sense to use an average of all positions),this can be overridden.
     data_entry_helper::$javascript .= "
@@ -401,7 +401,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       }
     }
     $r.='</div>';
-    //There are two types are draggable habitat, one will set all previous photos to that habitat providing it has not 
+    //There are two types are draggable habitat, one will set all previous photos to that habitat providing it has not
     //already been allocated to a habitat in this session, the "override" drag strip will always override the single
     //photo that is it dragged to, even if previously allocated.
     $r.='<div class="habitats-div" style="float: left; width: 50%"><h3>Habitats - Override individual habitats</h3>';
@@ -456,9 +456,9 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       $photoCountPerRow=0;
       //Also display a splitter for the user to drag habitats onto
       foreach ($photoResults as $idx=> $photoData) {
-        //If there is only 1 habitat, that means for each time we draw a photo to the screen, we can 
+        //If there is only 1 habitat, that means for each time we draw a photo to the screen, we can
         //set the sample_id for that photo to be that habitat
-        if ($numberOfHabitats===1) 
+        if ($numberOfHabitats===1)
           $photoData['sample_id']=$habitats[0]['id'];
         //New row if too many items in the row
         if ($photoCountPerRow>5) {
@@ -528,15 +528,15 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       return '<h3>Photos</h3>'.$r;
     }
   }
-  
-  /* 
+ 
+  /*
    * Generates a colour for each habitat on the assign photo to habitat page by using the habitat index to generate the colour.
    */
   private static function generateHabitatColour($habIdx,$numberOfHabitats) {
     //If number of habitats is greater than 5 then the colour gradient would be too small,
     //so we can pretend it is 5 and repeat the colours.
     if ($numberOfHabitats>5) {
-      $numberOfHabitats=5; 
+      $numberOfHabitats=5;
     }
     //The size of the colour gradient decreases as the number of habitats increases.
     //Add 1 so we don't divide by 0.
@@ -551,7 +551,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     $hexBlue=dechex($blue);
     return $hexRed.$hexGreen.$hexBlue;
   }
-  
+ 
   /*
    * Order function used by usort function to sort photo array
    */
@@ -584,7 +584,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     }
     return $photosWithExif;
   }
-  
+ 
   /*
    * Executed on page load
    */
@@ -608,11 +608,11 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     if (empty($args['habitat_smpAttr_cluster_ids'])) {
       drupal_set_message('Please fill in the option for the Habitat Sample Attribute Cluster');
       return false;
-    } 
+    }
     if (empty($args['dive_duration_attr_id'])) {
       drupal_set_message('Please fill in the option for the Dive Duration attribute id');
       return false;
-    } 
+    }
     if (empty($args['dive_start_time_attr_id'])) {
       drupal_set_message('Please fill in the option for the Dive Start Time attribute id');
       return false;
@@ -621,16 +621,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       drupal_set_message('Please fill in the option for the Exif Date Times attribute id');
       return false;
     }
-    //Hidden and displayed using jQuery
-    $r='<div id="loading">
-    <br>
-    <br>
-    <br>
-    <h3>Preparing page...</h3>
-    <br>
-    <br>
-    <br>
-    </div>';
+    
     //Hide the attribute that holds whether a sample is in progress or not
     //Also need to hide the label associated with the attribute.
     data_entry_helper::$javascript .= "
@@ -704,7 +695,17 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     });";   
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
     data_entry_helper::add_resource('jquery_form');
-    return $r.parent::get_form($args, $node);
+    //Display a loading panel when pages are loading.
+    //This is hidden and shown by jquery.
+    //Note I could not use the loading_block_start and loading_block_end
+    //functions in the data_entry_helper as these seem to display as the page
+    //was being loaded for display, where as I need it to display during actual 
+    //processing.
+    global $indicia_templates;
+    $r = $indicia_templates['loading_block_start'];
+    $r .= $indicia_templates['loading_block_end'];
+    $r .= parent::get_form($args, $node);
+    return $r;
   }  
  
   //When the user changes the date, make sure it is still associated with one of the uploaded photos, if not, then warn the user (although they may still continue).
@@ -719,7 +720,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       //Add some code to be a bit more flexible with shortened user entries (e.g. change 1/1/14 to 01/01/2014 for validation).
       //Can't user built in javascript functions as not good with uk dates
       if (sampleDateArray[0].length===1) {
-        sampleDateArray[0]='0'+sampleDateArray[0] 
+        sampleDateArray[0]='0'+sampleDateArray[0]
       }
       if (sampleDateArray[1].length===1) {
         sampleDateArray[1]='0'+sampleDateArray[1]
@@ -729,17 +730,17 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       }
       formattedSampleDate=sampleDateArray[0]+'/'+sampleDateArray[1]+'/'+sampleDateArray[2];
       $('#sample\\\\:date').val(formattedSampleDate);
-      if (formattedSampleDate && $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val()  && 
+      if (formattedSampleDate && $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val()  &&
           $('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val().indexOf(formattedSampleDate)===-1) {
         alert('".$args['no_photos_with_date_warning']."');
       }
     });";     
   }
-  
+ 
   //Warn user if they set the dive start time to be more than one hour either side of the date on the first photo exif.
   public static function dive_start_outside_one_hour_warning($args) {
-    data_entry_helper::$javascript.=" 
-    $('#smpAttr\\\\:".$args['dive_start_time_attr_id']."').change(function(evt) { 
+    data_entry_helper::$javascript.="
+    $('#smpAttr\\\\:".$args['dive_start_time_attr_id']."').change(function(evt) {
       if ($('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val() && $('#smpAttr\\\\:".$args['dive_start_time_attr_id']."').val()) {
         //Get dates associated with all photos
         var dateTimesToCheck=$('#smpAttr\\\\:".$args['exif_date_time_attr_id']."').val().split(';');
@@ -759,9 +760,9 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           alert ('".$args['dive_start_outside_one_hour_warning']."');
         }  
       }
-    });"; 
+    });";
   }
-  
+ 
   //Override the get_submission from dyamamic_sample_occurrence to stop it running on reloading pages
   //as we have our own ajax_save method for doing this work.
   public static function get_submission($values, $args) {
@@ -806,7 +807,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
  
   /*
    * Build a submission that can be made up of 3 levels of sample and an occurrence.
-   * There can be two types of species grid here, a "normal" species grid which is used 
+   * There can be two types of species grid here, a "normal" species grid which is used
    * to create extra adhoc species sightings and attach them to the main sample, this can be used if there is no
    * species image, this species grid should be given the id "first-level-smp-occ-grid".
    * Or the main species grid where the images are shown from a second-level or third level sample (depending if last tab has been saved yet), this grid should be given the
@@ -848,7 +849,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       }
     }
     // Build sub-models for the sample media files. Also extract the image exif data
-    $media = data_entry_helper::extract_media_data($values, $modelName.'_medium', true, true); 
+    $media = data_entry_helper::extract_media_data($values, $modelName.'_medium', true, true);
     if (function_exists('exif_read_data')) {
       $uploadpath = './sites/all/modules/iform/client_helpers/upload/';
       foreach ($media as $idx => $mediaItem) {
@@ -868,11 +869,11 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           //and also set a default on the time field in the same way
           //Cycle round the media items and only set the date/time if it is the smallest one so far.
           if ((empty($smallestStrToTime) || $smallestStrToTime > $strToTime)&&
-              !empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) { 
+              !empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) {
             $smallestStrToTime=$strToTime;
             $gpsFromFirstExif=$exif['GPS'];
             $modelWrapped['fields']['date']['value']=date('d/m/Y',$smallestStrToTime);
-            $values['sample:date']=date('d/m/Y',$smallestStrToTime); 
+            $values['sample:date']=date('d/m/Y',$smallestStrToTime);
             $modelWrapped['fields']['smpAttr:'.$diveStartTimeAttrId]['value']=$time[1];
             $values['smpAttr:'.$diveStartTimeAttrid]=$time[1];   
           }      
@@ -880,7 +881,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           //Note I didn't use json as that dates include colons. So the format is date,time;date,time;date,time;date,time;date,time;
           if (!empty($mediaDates))
             $mediaDates=$mediaDates.';'.date('d/m/Y',$strToTime).','.$time[1];
-          else 
+          else
             $mediaDates=date('d/m/Y',$strToTime).','.$time[1];
         }
       }
@@ -917,7 +918,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         drupal_set_message('The GPS position of your dive has been obtained from the information in the earliest uploaded photo. Please check it is correct before proceeding and correct it if necessary');
       }
     }
-    if (!empty($mediaDates)) {
+      if (!empty($mediaDates)) {
         //Need to find the attribute that starts with smpAttr:<exifDateTimeAttrId> as in edit mode it will also have the sample_attribute_value on the end so in that
         //case we need to overwrite existing value instead of creating new one.
      foreach ($values as $theKey=>$theValue) {
@@ -1115,10 +1116,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           $wrappedCollection[$idx]['subModels'][] = array(
             'fkId' => 'sample_id',
             'model' => $wrapped
-          ); 
+          );
         }
       }
-      //Need to check that $mediaSpatialRefs is empty as we don't want to make the assignment when 
+      //Need to check that $mediaSpatialRefs is empty as we don't want to make the assignment when
       //$northSouthPos is "0N 0E" which is what it is if the habitats are created but the photos are not assigned yet.
       if (!empty($northSouthPos) && !empty($mediaSpatialRefs)) {
         $wrappedCollection[$idx]['fields']['entered_sref']['value']=$northSouthPos;
@@ -1207,7 +1208,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     foreach ($modelWrapped['subModels'] as $secondLevelSampleIdx=> &$secondLevelSample) {
       //Only work on the second level sample in the situation where there are some third level samples to create for it ready to put an occurrence onto.
       if (!empty($secondLevelSample['model']['fields']['id']['value']) && !empty($presentSpeciesListSubSampleIds)) {
-        if (in_array($secondLevelSample['model']['fields']['id']['value'],$presentSpeciesListSubSampleIds)) { 
+        if (in_array($secondLevelSample['model']['fields']['id']['value'],$presentSpeciesListSubSampleIds)) {
           foreach ($thirdLevelSamples as $thirdLevelSample) {
             //Add the media currently attached to the second-level sample  to the empty third level sample
             foreach ($secondLevelSample['model']['subModels'] as $subSampleMedium) {
@@ -1236,7 +1237,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
                   $gpsArrayPosTimeArray=explode(',',$gpsArrayPosTimeString);
                   $gpsArrayPosTimeArray[2]=self::convertGPXDateToStrToTimeCompatibleFormat($gpsArrayPosTimeArray[2]);
                   $timeDistance = strtotime($gpsArrayPosTimeArray[2]) - $photoResultExifFormatted;
-                  //We are only interested in finding the closet GPX time to the exif one, as exif times can be earlier or later than the GPX one, we need 
+                  //We are only interested in finding the closet GPX time to the exif one, as exif times can be earlier or later than the GPX one, we need
                   //to ignore whether it is earlier or later and just find cloest match, so if the number is negative then make it positive.
                   if ($timeDistance < 0)
                     $timeDistance = $timeDistance * -1;
@@ -1575,17 +1576,17 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         }
         //For each sub-sample, add a row to the occurrences grid with the image loaded, this is then ready for the user.
         //To create occurrences with
-        if (isset($subSampleImagesToLoad)) {
+        if (isset($subSampleImagesToLoad)) {            
           $mediaIdArray = array();     
           foreach ($subSampleImagesToLoad as $subSampleImageIdx=>$subSampleImageToLoad) {
             $mediaIdArray[] = $subSampleImageToLoad;
             $beforegrid .= self::get_species_checklist_empty_row_with_image($options, $occAttrControls, $attributes, $subSampleImageIdx, $subSampleImageToLoad);
-          }
+          }         
 
           $encodedMediaArray = json_encode($mediaIdArray);
           data_entry_helper::$javascript .= "indiciaData.encodedMediaArray=".json_encode($encodedMediaArray).";\n";
         }
-        $beforegrid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
+       $beforegrid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
       $onlyImages = true;
       if ($options['mediaTypes']) {
@@ -2035,9 +2036,9 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
                     = $medium['media_type'];
               }
             }
-          }
         }
       }
+    }
     }
     return $occurrenceIds;
   }
@@ -2165,7 +2166,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
           $occurrenceRecords[$a[1]][$a[3]] = $value;
         }
       }
-    } 
+    }
     $sampleRecords=array();
     foreach ($occurrenceRecords as $id => $record) {
       $present = data_entry_helper::wrap_species_checklist_record_present($record, $include_if_any_data,
@@ -2224,7 +2225,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
     }
     return $subModels;
   }
-  
+ 
   /**
    * Convert date from GPX file into format suitable for use with PHP strToTime function
    */
@@ -2236,4 +2237,4 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
     //Re-assemble with space between date and time.
     return $gpxDateTimeSplit[0].' '.$gpxDateTimeSplit[1];
   }
-}
+} 
