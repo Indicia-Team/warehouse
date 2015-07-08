@@ -2,8 +2,8 @@ var setupHtmlForLinkingPhotosToHabitats, setupDroppableItemsForLinkingPhotosToHa
 var setupAjaxPageSaving, setupClickEvents, inArray, current, next, hideOccurrenceAddphoto, disableTabContents,makeImageRowOrSpareRow,createNewHabitat;
 
 jQuery(window).load(function($) {
-  //Once page has finished loading we can hide loading div
-  jQuery('#loading').hide();
+  //Once page has finished loading we can hide loading panel
+  jQuery('.loading-panel').hide();
   jQuery('#show').hide();
   //currently selected tab number
   current=parseInt(indiciaData.tabToReloadTo);
@@ -58,12 +58,16 @@ jQuery(window).load(function($) {
     hideOccurrenceAddphoto();
     //Note for this wizard, we don't have a final submit, we save on everytime the user clicks next.
     $('.tab-next').click(function() {
-      $('#messages').hide();
+      //Remove any drupal set message when we move page, apart from if there is only 1 habitat the allocated images
+      //to habitat page will warn the user and we want this message to persist.
+      if (current !==5) {
+        $('#messages').hide();
+      }
       //currently selected tab number need incrementing    
       current++;
-      //Show Loading div if we need to relod page
+      //Show Loading panel if we need to relod page
       if (inArray(current-1,indiciaData.reloadtabs)) {
-        $('#loading').show();
+        $('.loading-panel').show();
         $('#controls').hide();
       }
       $('.tab-next').each(function() {
@@ -92,8 +96,8 @@ jQuery(window).load(function($) {
       $('#messages').hide();
       //currently selected tab number needs decrementing     
       current--;
-      //Show loading div as we are reloading page.
-      $('#loading').show();
+      //Show loading panel as we are reloading page.
+      $('.loading-panel').show();
       $('#controls').hide();
       hideOccurrenceAddphoto();
       setupAjaxPageSaving(true);
