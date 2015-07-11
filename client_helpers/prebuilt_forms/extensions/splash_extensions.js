@@ -96,6 +96,11 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
         $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef1+'\"]').show();
         $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef2+'\"]').show();
       }
+      //If using a linear plot, then hide the SW Corner for square plots.
+      if (indiciaData.swGridRef) {         
+        $('#locAttr\\:'+indiciaData.swGridRef).val('');
+        $('[id^=\"container-locAttr\\:'+indiciaData.swGridRef+'\"]').hide();
+      }
       if (!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked')) {
         show_polygon_line_tool(true);
         //If using drawPolygon/Line in enhanced mode then we don't draw a plot automatically
@@ -126,6 +131,13 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
         $('#locAttr\\:'+indiciaData.linearGridRef2).val('');
         $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef1+'\"]').hide();
         $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef2+'\"]').hide();
+      }
+      //When when a non-linear (square) plot is selected, we want to display an extra box for filling in the south-west corner.
+      //However make sure this is not displayed when no plot type is selected at all.
+      if (indiciaData.swGridRef && $('#location\\:location_type_id').val()) {
+        $('[id^=\"container-locAttr\\:'+indiciaData.swGridRef+'\"]').show();
+      } else {
+        $('[id^=\"container-locAttr\\:'+indiciaData.swGridRef+'\"]').hide();
       }
       //Otherwise we auto generate the plot rectangle/square, remove the drawPolygon/Line tool
       show_polygon_line_tool(false);

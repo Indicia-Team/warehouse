@@ -621,6 +621,10 @@ class extension_splash_extensions {
       if (!empty($options['linearGridRef1'])&&!empty($options['linearGridRef2'])) {
         map_helper::$javascript .= "indiciaData.linearGridRef1='".$options['linearGridRef1']."';\n";
         map_helper::$javascript .= "indiciaData.linearGridRef2='".$options['linearGridRef2']."';\n";
+      }      
+      //When using square plots, we have an extra box for the user to fill-in the south-west corner of the plot.
+      if (!empty($options['swGridRef'])) {
+        map_helper::$javascript .= "indiciaData.swGridRef='".$options['swGridRef']."';\n";
       }
       map_helper::$javascript .= "indiciaData.pssMode=true;\n";
     }
