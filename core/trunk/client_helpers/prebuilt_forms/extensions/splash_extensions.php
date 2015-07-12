@@ -609,36 +609,7 @@ class extension_splash_extensions {
     //Javascript needs to know the square sizes for each location type (note that squares can actually be rectangles if required now, however code still refers to
     //squares as this was a late enhancement)
     $squareSizesForJavascript=json_encode($squareSizesArray);
-    map_helper::$javascript .= "indiciaData.squareSizes=$squareSizesForJavascript;\n";
-    if (!empty($options['pssMode'])) {
-      //In NPMS/PSS, the size of the plot types used to be shown on screen, this is no longer the case, however the basic code of how this works remains intact
-      //in case the client changes their minds. These attributes simply get hidden on screen now, but we could revert to displaying them if needed.
-      map_helper::$javascript .= "indiciaData.plotWidthAttrId='".$options['plotWidthAttrId']."';\n";
-      map_helper::$javascript .= "indiciaData.plotLengthAttrId='".$options['plotLengthAttrId']."';\n";
-      //When use linear (free draw) plots, we have two extra boxes to fill if for the start and end grid references
-      //of the plot which are not otherwise saved because it is free draw.
-      //Applies to both "normal" and enhanced modes.
-      if (!empty($options['linearGridRef1'])&&!empty($options['linearGridRef2'])) {
-        map_helper::$javascript .= "indiciaData.linearGridRef1='".$options['linearGridRef1']."';\n";
-        map_helper::$javascript .= "indiciaData.linearGridRef2='".$options['linearGridRef2']."';\n";
-      }      
-      //When using square plots, we have an extra box for the user to fill-in the south-west corner of the plot.
-      if (!empty($options['swGridRef'])) {
-        map_helper::$javascript .= "indiciaData.swGridRef='".$options['swGridRef']."';\n";
-      }
-      map_helper::$javascript .= "indiciaData.pssMode=true;\n";
-    }
-    map_helper::$javascript .= "indiciaData.noSizeWarning='Please select plot type from the drop-down.';\n";
-    //In edit mode, we need to manually load the plot geom
-    map_helper::$javascript .= "$('#imp-boundary-geom').val($('#imp-geom').val());\n";
-    //On NPMS/PSS system there is a checkbox for enhanced mode (when this isn't selected, plots are not configurable and default to a 3 x 3 square.
-    //Note that on splash there is no enhanced mode so plots are fully configurable.
-    if (!empty($options['enhancedModeCheckboxAttrId']))
-      map_helper::$javascript .= "indiciaData.enhancedModeCheckboxAttrId=".$options['enhancedModeCheckboxAttrId'].";\n";
-    //On PSS/NPMS non-enhanced mode the user can define some attributes that should be hidden from view.
-    //Comma separated list.
-    if (!empty($options['hideLocationAttrsInSimpleMode']))
-      map_helper::$javascript .= "indiciaData.hideLocationAttrsInSimpleMode='".$options['hideLocationAttrsInSimpleMode']."';\n";
+    self::draw_map_plot_setup_indiciaData($options,$squareSizesForJavascript);
     //If enhanced mode is toggled, then clear the map and also run the code as if the plot type has changed.
     //This allows the plot drawing to be reset for a new mode.
     map_helper::$javascript .= "  
@@ -689,6 +660,40 @@ class extension_splash_extensions {
         $("#entry_form").submit(); 
       }
     });';
+  }
+  
+  /* Function to setup the data to pass to javascript in the draw_map_plot function */
+  private static function draw_map_plot_setup_indiciaData($options,$squareSizesForJavascript) {
+    map_helper::$javascript .= "indiciaData.squareSizes=$squareSizesForJavascript;\n";
+    if (!empty($options['pssMode'])) {
+      //In NPMS/PSS, the size of the plot types used to be shown on screen, this is no longer the case, however the basic code of how this works remains intact
+      //in case the client changes their minds. These attributes simply get hidden on screen now, but we could revert to displaying them if needed.
+      map_helper::$javascript .= "indiciaData.plotWidthAttrId='".$options['plotWidthAttrId']."';\n";
+      map_helper::$javascript .= "indiciaData.plotLengthAttrId='".$options['plotLengthAttrId']."';\n";
+      //When use linear (free draw) plots, we have two extra boxes to fill if for the start and end grid references
+      //of the plot which are not otherwise saved because it is free draw.
+      //Applies to both "normal" and enhanced modes.
+      if (!empty($options['linearGridRef1'])&&!empty($options['linearGridRef2'])) {
+        map_helper::$javascript .= "indiciaData.linearGridRef1='".$options['linearGridRef1']."';\n";
+        map_helper::$javascript .= "indiciaData.linearGridRef2='".$options['linearGridRef2']."';\n";
+      }      
+      //When using square plots, we have an extra box for the user to fill-in the south-west corner of the plot.
+      if (!empty($options['swGridRef'])) {
+        map_helper::$javascript .= "indiciaData.swGridRef='".$options['swGridRef']."';\n";
+      }
+      map_helper::$javascript .= "indiciaData.pssMode=true;\n";
+    }
+    map_helper::$javascript .= "indiciaData.noSizeWarning='Please select plot type from the drop-down.';\n";
+    //In edit mode, we need to manually load the plot geom
+    map_helper::$javascript .= "$('#imp-boundary-geom').val($('#imp-geom').val());\n";
+    //On NPMS/PSS system there is a checkbox for enhanced mode (when this isn't selected, plots are not configurable and default to a 3 x 3 square.
+    //Note that on splash there is no enhanced mode so plots are fully configurable.
+    if (!empty($options['enhancedModeCheckboxAttrId']))
+      map_helper::$javascript .= "indiciaData.enhancedModeCheckboxAttrId=".$options['enhancedModeCheckboxAttrId'].";\n";
+    //On PSS/NPMS non-enhanced mode the user can define some attributes that should be hidden from view.
+    //Comma separated list.
+    if (!empty($options['hideLocationAttrsInSimpleMode']))
+      map_helper::$javascript .= "indiciaData.hideLocationAttrsInSimpleMode='".$options['hideLocationAttrsInSimpleMode']."';\n";
   }
   
   /*

@@ -89,82 +89,25 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
     indiciaData.clickMiddleOfPlot=false;
     //Some plot types use a free drawn polygon/Line as the plot.
     if (inArray($('#location\\:location_type_id option:selected').text(),indiciaData.freeDrawPlotTypeNames)) {     
-      //When use linear (free draw) plots, we have two extra boxes to fill if for the start and end grid references
-      //of the plot which are not otherwise saved because it is free draw.
-      //Applies to both "normal" and enhanced modes.
-      if (indiciaData.linearGridRef1 && indiciaData.linearGridRef2) {
-        $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef1+'\"]').show();
-        $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef2+'\"]').show();
-      }
-      //If using a linear plot, then hide the SW Corner for square plots.
-      if (indiciaData.swGridRef) {         
-        $('#locAttr\\:'+indiciaData.swGridRef).val('');
-        $('[id^=\"container-locAttr\\:'+indiciaData.swGridRef+'\"]').hide();
-      }
-      if (!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked')) {
-        show_polygon_line_tool(true);
-        //If using drawPolygon/Line in enhanced mode then we don't draw a plot automatically
-        indiciaData.mapdiv.settings.clickForPlot=false;
-        indiciaData.mapdiv.settings.click_zoom=false;  
-      } else {
-        //Otherwise deactivate and hide the line/polygon tool and then select the map point clicking tool.
-        show_polygon_line_tool(false);
-        $.each(indiciaData.mapdiv.map.controls, function(idx, control) {
-          if (control.CLASS_NAME==='OpenLayers.Control.DrawFeature'||control.CLASS_NAME==='OpenLayers.Control.Navigation') {
-            control.deactivate();
-          }
-          if (control.CLASS_NAME==='OpenLayers.Control') {
-            control.activate();
-          }
-        });
-        //In linear mode, default to using a big plot point so people can actually see it in simple mode
-        $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(simpleModePointSize);
-        $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(simpleModePointSize);
-        indiciaData.mapdiv.settings.clickForPlot=true;
-        indiciaData.mapdiv.settings.click_zoom=true;  
-        indiciaData.mapdiv.settings.noPlotRotation=true;
-      }
+      free_draw_plot_select(simpleModePointSize);
     } else {
-      //Don't display the two extra boxes for entering linear plot start and end grid references when not in linear (free draw) mode.
-      if (indiciaData.linearGridRef1 && indiciaData.linearGridRef2) {         
-        $('#locAttr\\:'+indiciaData.linearGridRef1).val('');
-        $('#locAttr\\:'+indiciaData.linearGridRef2).val('');
-        $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef1+'\"]').hide();
-        $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef2+'\"]').hide();
-      }
-      //When when a non-linear (square) plot is selected, we want to display an extra box for filling in the south-west corner.
-      //However make sure this is not displayed when no plot type is selected at all.
-      if (indiciaData.swGridRef && $('#location\\:location_type_id').val()) {
-        $('[id^=\"container-locAttr\\:'+indiciaData.swGridRef+'\"]').show();
-      } else {
-        $('[id^=\"container-locAttr\\:'+indiciaData.swGridRef+'\"]').hide();
-      }
-      //Otherwise we auto generate the plot rectangle/square, remove the drawPolygon/Line tool
+      other_plot_select(simpleModePointSize);
+    }
+  }
+ 
+  /*
+   * What happens when a plot type is selected that needs free drawing onto the map
+   */
+  function free_draw_plot_select(simpleModePointSize) {
+    free_draw_plot_additional_box_display();
+    if (!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked')) {
+      show_polygon_line_tool(true);
+      //If using drawPolygon/Line in enhanced mode then we don't draw a plot automatically
+      indiciaData.mapdiv.settings.clickForPlot=false;
+      indiciaData.mapdiv.settings.click_zoom=false;  
+    } else {
+      //Otherwise deactivate and hide the line/polygon tool and then select the map point clicking tool.
       show_polygon_line_tool(false);
-      //For some plot types the width and length used be be adjusted manually, fill in these fields if they exist. The engine of how this works is still present in case we need to go back.
-      //So the attributes are still defaulted on the page, however these are currently hidden by default so can't be changed for now.
-      if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
-        if ($('#location\\:location_type_id').val()) {
-          $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]);
-        }
-        indiciaData.mapdiv.settings.noPlotRotation=false;
-      } else {
-        $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(simpleModePointSize);
-        indiciaData.mapdiv.settings.noPlotRotation=true;
-      }
-      if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
-        if ($('#location\\:location_type_id').val()) {
-          $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][1]);
-        }
-        indiciaData.mapdiv.settings.noPlotRotation=false;
-      } else {
-        $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(simpleModePointSize);
-        indiciaData.mapdiv.settings.noPlotRotation=true;
-      }
-      //In non-enhanced mode in PSS mode, plots are always a set size non-rotatable square 
-      //In PSS enhanced mode, their size can be configured manually on the page
-      indiciaData.mapdiv.settings.clickForPlot=true;
-      indiciaData.mapdiv.settings.click_zoom=true;
       $.each(indiciaData.mapdiv.map.controls, function(idx, control) {
         if (control.CLASS_NAME==='OpenLayers.Control.DrawFeature'||control.CLASS_NAME==='OpenLayers.Control.Navigation') {
           control.deactivate();
@@ -173,21 +116,106 @@ var private_plots_set_precision,clear_map_features, plot_type_dropdown_change, l
           control.activate();
         }
       });
-      //Only PSS (NPMS) square plots should be drawn so the click point is in the middle of the plot, otherwise the south-west corner is used.
-      //Check that the word linear or vertical does not appear in the selected plot type when setting the clickMiddleOfPlot option.
-      if (indiciaData.pssMode
-          && ($('#location\\:location_type_id option:selected').text().toLowerCase().indexOf('linear')===-1)
-          && ($('#location\\:location_type_id option:selected').text().toLowerCase().indexOf('vertical')===-1)) {
-        //Rectangular PSS plots have the grid reference in the middle of the plot
-        indiciaData.clickMiddleOfPlot=true;
-      }
-      //Splash plots get their rectangle sizes from user configurable options which are not displayed on screen (NPMS used to allow configuration of these on screen, however they are now hidden,
-      //although the attributes remain on screen in case we need to go back.
-      if (!indiciaData.pssMode)
-        indiciaData.plotWidthLength = indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]+ ',' + indiciaData.squareSizes[$('#location\\:location_type_id').val()][1];      
+      //In linear mode, default to using a big plot point so people can actually see it in simple mode
+      $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(simpleModePointSize);
+      $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(simpleModePointSize);
+      indiciaData.mapdiv.settings.clickForPlot=true;
+      indiciaData.mapdiv.settings.click_zoom=true;  
+      indiciaData.mapdiv.settings.noPlotRotation=true;
     }
   }
- 
+  
+  /*
+   * What happens when a plot type is selected that doesn't need free drawing onto the map, such as a square plot which has its plot automatically calculated.
+   */
+  function other_plot_select(simpleModePointSize) {
+    other_plot_additional_box_display();
+    //remove the drawPolygon/Line tool
+    show_polygon_line_tool(false);
+    //For some plot types the width and length used be be adjusted manually, fill in these fields if they exist. The engine of how this works is still present in case we need to go back.
+    //So the attributes are still defaulted on the page, however these are currently hidden by default so can't be changed for now.
+    if ($('#locAttr\\:'+indiciaData.plotWidthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
+      if ($('#location\\:location_type_id').val()) {
+        $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]);
+      }
+      indiciaData.mapdiv.settings.noPlotRotation=false;
+    } else {
+      $('#locAttr\\:'+indiciaData.plotWidthAttrId).val(simpleModePointSize);
+      indiciaData.mapdiv.settings.noPlotRotation=true;
+    }
+    if ($('#locAttr\\:'+indiciaData.plotLengthAttrId).length&&(!$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).length||$('#locAttr\\:'+indiciaData.enhancedModeCheckboxAttrId).is(':checked'))) {
+      if ($('#location\\:location_type_id').val()) {
+        $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(indiciaData.squareSizes[$('#location\\:location_type_id').val()][1]);
+      }
+      indiciaData.mapdiv.settings.noPlotRotation=false;
+    } else {
+      $('#locAttr\\:'+indiciaData.plotLengthAttrId).val(simpleModePointSize);
+      indiciaData.mapdiv.settings.noPlotRotation=true;
+    }
+    //In non-enhanced mode in PSS mode, plots are always a set size non-rotatable square 
+    //In PSS enhanced mode, their size can be configured manually on the page
+    indiciaData.mapdiv.settings.clickForPlot=true;
+    indiciaData.mapdiv.settings.click_zoom=true;
+    $.each(indiciaData.mapdiv.map.controls, function(idx, control) {
+      if (control.CLASS_NAME==='OpenLayers.Control.DrawFeature'||control.CLASS_NAME==='OpenLayers.Control.Navigation') {
+        control.deactivate();
+      }
+      if (control.CLASS_NAME==='OpenLayers.Control') {
+        control.activate();
+      }
+    });
+    //Only PSS (NPMS) square plots should be drawn so the click point is in the middle of the plot, otherwise the south-west corner is used.
+    //Check that the word linear or vertical does not appear in the selected plot type when setting the clickMiddleOfPlot option.
+    if (indiciaData.pssMode
+        && ($('#location\\:location_type_id option:selected').text().toLowerCase().indexOf('linear')===-1)
+        && ($('#location\\:location_type_id option:selected').text().toLowerCase().indexOf('vertical')===-1)) {
+      //Rectangular PSS plots have the grid reference in the middle of the plot
+      indiciaData.clickMiddleOfPlot=true;
+    }
+    //Splash plots get their rectangle sizes from user configurable options which are not displayed on screen (NPMS used to allow configuration of these on screen, however they are now hidden,
+    //although the attributes remain on screen in case we need to go back.
+    if (!indiciaData.pssMode)
+      indiciaData.plotWidthLength = indiciaData.squareSizes[$('#location\\:location_type_id').val()][0]+ ',' + indiciaData.squareSizes[$('#location\\:location_type_id').val()][1];  
+  }
+  
+  /*
+   * In free draw plot draw mode we need to show two extra boxes to enter linear grid references and hide the south-west corner box
+   */
+  function free_draw_plot_additional_box_display() {
+    //When use linear (free draw) plots, we have two extra boxes to fill if for the start and end grid references
+    //of the plot which are not otherwise saved because it is free draw.
+    //Applies to both "normal" and enhanced modes.
+    if (indiciaData.linearGridRef1 && indiciaData.linearGridRef2) {
+      $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef1+'\"]').show();
+      $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef2+'\"]').show();
+    }
+    //If using a linear plot, then hide the SW Corner for square plots.
+    if (indiciaData.swGridRef) {         
+      $('#locAttr\\:'+indiciaData.swGridRef).val('');
+      $('[id^=\"container-locAttr\\:'+indiciaData.swGridRef+'\"]').hide();
+    }
+  }
+  
+  /*
+   * In non-free draw plot draw mode we need to hide two extra boxes to enter linear grid references and show the south-west corner box
+   */
+  function other_plot_additional_box_display() {
+    //Don't display the two extra boxes for entering linear plot start and end grid references when not in linear (free draw) mode.
+    if (indiciaData.linearGridRef1 && indiciaData.linearGridRef2) {         
+      $('#locAttr\\:'+indiciaData.linearGridRef1).val('');
+      $('#locAttr\\:'+indiciaData.linearGridRef2).val('');
+      $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef1+'\"]').hide();
+      $('[id^=\"container-locAttr\\:'+indiciaData.linearGridRef2+'\"]').hide();
+    }
+    //When when a non-linear (square) plot is selected, we want to display an extra box for filling in the south-west corner.
+    //However make sure this is not displayed when no plot type is selected at all.
+    if (indiciaData.swGridRef && $('#location\\:location_type_id').val()) {
+      $('[id^=\"container-locAttr\\:'+indiciaData.swGridRef+'\"]').show();
+    } else {
+      $('[id^=\"container-locAttr\\:'+indiciaData.swGridRef+'\"]').hide();
+    }
+  }
+  
   /*
    * The polygon/line tool on the map needs showing or hiding depending on the plot type selected.
    */
