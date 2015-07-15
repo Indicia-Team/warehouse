@@ -87,6 +87,7 @@ class Occurrence_Model extends ORM
       $array->verified_by_id=null;
       $array->verified_on=null;
       $array->record_status='C';
+      $array->record_substatus=null;
       $this->requeuedForVerification=true;
     }
     $array->pre_filter('trim');
