@@ -699,7 +699,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     //This is hidden and shown by jquery.
     //Note I could not use the loading_block_start and loading_block_end
     //functions in the data_entry_helper as these seem to display as the page
-    //was being loaded for display, where as I need it to display during actual 
+    //was being loaded for display, where as I need it to display during actual
     //processing.
     global $indicia_templates;
     $r = $indicia_templates['loading_block_start'];
@@ -1165,8 +1165,8 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
         $gpsArray=explode(';',$value);
       }
     }
-    //As we have used existing code to create 2nd level samples to hold the occurrences, we need to transfer these to the third level samples
-    $modelWrapped=self::transfer_occurrences_to_third_level_samples($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$gpsArray,$website_id, $password,$gpxDataAttrId);
+    //Take the 3rd level samples (which contain occurrences), find the correct 2nd level sample to add them to, calculate the third level grid ref from GPX file if needed.
+    $modelWrapped=self::transfer_3rd_lev_samps_to_2nd_lev_samples_calc_3rd_lev_grid_refs($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$gpsArray,$website_id, $password,$gpxDataAttrId);
     $multiSubmission['submission_list']['entries']=array();
     //Any third level samples that have been deleted need adding to the model at the top, this because we don't know the parent_id
     //Note, there is a bug in PHP foreach which was causing the foreach to cycle over the first element here twice. From the php docs
@@ -1201,20 +1201,21 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     return $positionSplit[0].' '.$positionSplit[1];
   }
  
-  //Existing sub-sample creation code is used to create sub-samples on the grid with occurrences attached.
-  //So we need to move these occurrences onto thid level samples.
-  private static function transfer_occurrences_to_third_level_samples($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$gpsArray,$website_id,$password,$gpxDataAttrId) {
+  //Take the 3rd level samples (which contain occurrences), find the correct 2nd level sample to add them to, calculate the third level grid ref from GPX file if needed.
+  private static function transfer_3rd_lev_samps_to_2nd_lev_samples_calc_3rd_lev_grid_refs($modelWrapped,$thirdLevelSamples,$presentSpeciesListSubSampleIds,$gpsArray,$website_id,$password,$gpxDataAttrId) {
     //Loop through each 2nd level sample.
     foreach ($modelWrapped['subModels'] as $secondLevelSampleIdx=> &$secondLevelSample) {
       //Only work on the second level sample in the situation where there are some third level samples to create for it ready to put an occurrence onto.
       if (!empty($secondLevelSample['model']['fields']['id']['value']) && !empty($presentSpeciesListSubSampleIds)) {
-        if (in_array($secondLevelSample['model']['fields']['id']['value'],$presentSpeciesListSubSampleIds)) {
+        if (array_key_exists($secondLevelSample['model']['fields']['id']['value'],$presentSpeciesListSubSampleIds)) {
           foreach ($thirdLevelSamples as $thirdLevelSample) {
             //Add the media currently attached to the second-level sample  to the empty third level sample
-            foreach ($secondLevelSample['model']['subModels'] as $subSampleMedium) {
+            foreach ($secondLevelSample['model']['subModels'] as &$subSampleMedium) {
               //Add the third level sample to the second level sample, but only if the image added to the third level sample's occurrence matches one on the second level sample (the second level
               //sample image is going to be deleted in a minute)
-              if ($subSampleMedium['model']['fields']['path']['value']==$thirdLevelSample['model']['subModels'][0]['model']['subModels'][0]['model']['fields']['path']['value']) {
+              if (!empty($subSampleMedium['model']['fields']['path']['value']) && ($subSampleMedium['model']['fields']['path']['value']==$thirdLevelSample['model']['subModels'][0]['model']['subModels'][0]['model']['fields']['path']['value'])) {
+                //When an occurrence media item is created we can delete the old sample media item
+                $subSampleMedium['model']['fields']['deleted']['value']='t';
                 //Need to get exifs for media items
                 $readAuth = data_entry_helper::get_read_auth($website_id, $password);
                 //Use this report to return the photos
@@ -1255,37 +1256,16 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
                   $thirdLevelSample['model']['fields']['entered_sref']['value']=$modelWrapped['fields']['entered_sref']['value'];
                 }  
                 //Only add third level samples which have had their occurrence setup, else the third level sample isn't intended for this habitat (second level sample)
-                if (!empty($thirdLevelSample['model']['subModels']))
+                if (!empty($thirdLevelSample['model']['subModels'])) {
                   $secondLevelSample['model']['subModels'][]=$thirdLevelSample;
+                }
               }
             }
           }
-          //Clear any media already associated with the second level sample, as this media will now be held at the 3rd level.
-          self::set_sub_sample_media_items_to_deleted($secondLevelSample);
         }
       }
     }
     return $modelWrapped;
-  }
- 
-  /*
-   * When we create the occurrences, we create a third level sample to attach it to. We then move the 2nd level sample images to be
-   * occurrence images. This means we need to delete the sample images after they have been moved to be occurrence images.
-   */
-  private static function set_sub_sample_media_items_to_deleted(&$secondLevelSample) {
-    if (!empty($secondLevelSample['model']['subModels'])) {
-      foreach ($secondLevelSample['model']['subModels'] as &$secondLevelSampleSubModel) {
-        if (!empty($secondLevelSampleSubModel['model']['fields']['path']['value'])) {
-          foreach ($secondLevelSampleSubModel['model']['fields'] as $field=>$fieldData) {
-            //For deleting models, then only field we want is the id and the deleted field='t'
-            if ($field!=='id') {
-              unset($secondLevelSampleSubModel['model']['fields'][$field]);
-            }
-          }
-          $secondLevelSampleSubModel['model']['fields']['deleted']['value']='t';
-        }
-      }
-    }
   }
  
   //Does two things, one is return an array of present occurrences that have actually been filled in.
@@ -1296,10 +1276,14 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       $splitKey=explode(':',$key);
       //If we find a field which is a sample_medium on the occurrences grid then save its current second level sample id for use later
       if (strpos($key,'third-level-smp-occ-grid')!==false) {
+        if (strpos($key,'sample_medium:id')!==false) {
           if (array_key_exists('sample_medium:'.$value.':sample_id',$values)&&
-            $values[$splitKey[0].':'.$splitKey[1].'::present']>0) {
-          $presentSpeciesListSubSampleIds[$value]=$values['sample_medium:'.$value.':sample_id'];
+              $values['sc:'.$splitKey[1].'::present']>0) {
+            //Store the second level sample against the present taxa taxon list item so we know we second level sample to attach
+            //the third level sample to when it is created.
+            $presentSpeciesListSubSampleIds[$values['sample_medium:'.$value.':sample_id']]=$values['sc:'.$splitKey[1].'::present'];
           }
+        }
         //Need occurrence version of the existing sample media that has been initially placed on the occurrence grid.
         //Remove the original sample media from the grid once once occurrence media created.
         //Need to make sure we don't copy the id field accross from the sample medium to the occurrence_medium as it will be wrong.
@@ -1561,7 +1545,16 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       // Get the attribute and control information required to build the custom occurrence attribute columns
       data_entry_helper::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrControlsExisting, $occAttrs);
       $beforegrid = '<span style="display: none;">Step 1</span>'."\n";
-      if (isset($options['lookupListId'])) {
+      $onlyImages = true;
+      if ($options['mediaTypes']) {
+        foreach($options['mediaTypes'] as $mediaType) {
+          if (substr($mediaType, 0, 6)!=='Image:')
+            $onlyImages=false;
+        }
+      }
+      $grid = data_entry_helper::get_species_checklist_header($options, $occAttrs, $onlyImages);
+      $mediaIdArray = array();  
+      if ($options['id']=='third-level-smp-occ-grid') {
         $subSampleImagesToLoad=array();
         //Cycle through sub-samples of the main parent sample
         foreach ($subSampleRows as $subSampleIdx=>$subSampleRow) {          
@@ -1574,34 +1567,28 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
             }  
           }
         }
-        //For each sub-sample, add a row to the occurrences grid with the image loaded, this is then ready for the user.
-        //To create occurrences with
+        //For each sub-sample, add a row to the occurrences grid with the image loaded, this is then ready for the user
+        //to create occurrences with
         if (isset($subSampleImagesToLoad)) {            
-          $mediaIdArray = array();     
           foreach ($subSampleImagesToLoad as $subSampleImageIdx=>$subSampleImageToLoad) {
             $mediaIdArray[] = $subSampleImageToLoad;
-            $beforegrid .= self::get_species_checklist_empty_row_with_image($options, $occAttrControls, $attributes, $subSampleImageIdx, $subSampleImageToLoad);
+            $grid .= self::get_species_checklist_empty_row_with_image($options, $occAttrControls, $attributes, $subSampleImageIdx, $subSampleImageToLoad);
           }         
-
-          $encodedMediaArray = json_encode($mediaIdArray);
-          data_entry_helper::$javascript .= "indiciaData.encodedMediaArray=".json_encode($encodedMediaArray).";\n";
         }
+      }
+      if ($options['id']=='third-level-smp-occ-grid') {
+        $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
+      } else {
        $beforegrid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
+
       }
-      $onlyImages = true;
-      if ($options['mediaTypes']) {
-        foreach($options['mediaTypes'] as $mediaType) {
-          if (substr($mediaType, 0, 6)!=='Image:')
-            $onlyImages=false;
-        }
-      }
-      $grid = data_entry_helper::get_species_checklist_header($options, $occAttrs, $onlyImages);
+      $encodedMediaArray = json_encode($mediaIdArray);
+      data_entry_helper::$javascript .= "indiciaData.encodedMediaArray=".json_encode($encodedMediaArray).";\n";
       $rows = array();
       $imageRowIdxs = array();
       $taxonCounter = array();
       $rowIdx = 0;
-      // tell the addTowToGrid javascript how many rows are already used, so it has a unique index for new rows
-      data_entry_helper::$javascript .= "indiciaData['gridCounter-".$options['id']."'] = ".count($taxonRows).";\n";
+      data_entry_helper::$javascript .= "indiciaData['gridCounter-".$options['id']."'] = 0;\n";
       data_entry_helper::$javascript .= "indiciaData['gridSampleCounter-".$options['id']."'] = ".count($subSampleRows).";\n";
       // Loop through all the rows needed in the grid
       // Get the checkboxes (hidden or otherwise) that indicate a species is present
@@ -1834,7 +1821,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       }
       // If options contain a help text, output it at the end if that is the preferred position
       $options['helpTextClass'] = (isset($options['helpTextClass'])) ? $options['helpTextClass'] : 'helpTextLeft';
-      $r = $beforegrid . $grid;
+      $r = $beforegrid.$grid;
       data_entry_helper::$javascript .= "$('#".$options['id']."').find('input,select').keydown(keyHandler);\n";
       //nameFilter is an array containing all the parameters required to return data for each of the
       //"Choose species names available for selection" filter types
@@ -1918,20 +1905,16 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
             ));
             $allThirdLevelSamples=array_merge($allThirdLevelSamples,$thirdLevelSamplesForSingleSubSample);
           }
-          //If there are third level samples then the occurrences grid needs to be loaded from these,
-          //otherwise keep the load from the second level samples as it means we haven't yet saved the occurrences yet (and
-          //as such the third-level samples won't have been created yet).
+          //The occurrence grid will be loaded from a combination of second-level sample (unsubmitted taxa) and third level samples (taxa that has already been submitted)
           if (!empty($allThirdLevelSamples))
-            $subSamples=$allThirdLevelSamples;
+            $subSamples=array_merge($subSamples,$allThirdLevelSamples);
         }
         $subSampleList = array();
         foreach($subSamples as $idx => $subsample)  {
           $subSampleList[] = $subsample['id'];
           //If we are using third level samples and there are no third level samples yet, then we don't want to load
           //the ids of the second level samples otherwise the system will use these instead of creating the new sub-sample level
-          if (!(empty($allThirdLevelSamples)&&!empty($useThirdLevelSamples) && $useThirdLevelSamples==true)) {
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:id'] = $subsample['id'];
-          }
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:geom'] = $subsample['wkt'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:wkt'] = $subsample['wkt'];
           data_entry_helper::$entity_to_load['sc:'.$idx.':'.$subsample['id'].':sample:location_id'] = $subsample['location_id'];
@@ -1987,58 +1970,55 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
             data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
                 = $attrValue['raw_value'];
           }
-          if (empty($allThirdLevelSamples)) {
-            if (count($loadMedia)>0) {   
-              $media=array();
-              //TODO: Probably would be better to do this bit with a report but haven't got round to writing it.
-              foreach ($subSamples as $subSample) {
-                //TODO: This will currently overwrite previous result, but for now this doesn't matter much, won't happen if I use a report
-                $data = data_entry_helper::get_population_data(array(
-                  'table' => 'sample_medium',
-                  'extraParams' => $readAuth + array('sample_id' => $subSample['id']),
-                  'nocache' => true
-                ));
-                foreach ($data as $mediaItem) {
-                  $media[]=$mediaItem;
-                }
-              }
-              //Seasearch specific as only then do we load sample media onto a grrid
-              foreach($media as $rowIdx=>$medium) {
-                data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:id']
-                    = $medium['id'];
-                data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:path']
-                    = $medium['path'];
-                data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:caption']
-                    = $medium['caption'];
-                data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:media_type_id']
-                    = $medium['media_type_id'];
-                data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:media_type']
-                    = $medium['media_type'];
-              }
-            }
-          } else {
-            if (count($loadMedia)>0) {
-              $media = data_entry_helper::get_population_data(array(
-                'table' => 'occurrence_medium',
-                'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+          if (count($loadMedia)>0) {   
+            $media=array();
+            //TODO: Probably would be better to do this bit with a report but haven't got round to writing it.
+            foreach ($subSamples as $subSample) {
+              //TODO: This will currently overwrite previous result, but for now this doesn't matter much, won't happen if I use a report
+              $data = data_entry_helper::get_population_data(array(
+                'table' => 'sample_medium',
+                'extraParams' => $readAuth + array('sample_id' => $subSample['id']),
                 'nocache' => true
               ));
-              foreach($media as $medium) {
-                data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:id:'.$medium['id']]
-                    = $medium['id'];
-                data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:path:'.$medium['id']]
-                    = $medium['path'];
-                data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:caption:'.$medium['id']]
-                    = $medium['caption'];
-                data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type_id:'.$medium['id']]
-                    = $medium['media_type_id'];
-                data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type:'.$medium['id']]
-                    = $medium['media_type'];
+              foreach ($data as $mediaItem) {
+                $media[]=$mediaItem;
               }
             }
+            //Seasearch specific as only then do we load sample media onto a grrid
+            foreach($media as $rowIdx=>$medium) {
+              data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:id']
+                  = $medium['id'];
+              data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:path']
+                  = $medium['path'];
+              data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:caption']
+                  = $medium['caption'];
+              data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:media_type_id']
+                  = $medium['media_type_id'];
+              data_entry_helper::$entity_to_load['sc:'.$gridId.':'.$rowIdx.':'.$medium['id'].':sample_medium:media_type']
+                  = $medium['media_type'];
+            }
+          }
+          if (count($loadMedia)>0) {
+            $media = data_entry_helper::get_population_data(array(
+              'table' => 'occurrence_medium',
+              'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+              'nocache' => true
+            ));
+            foreach($media as $medium) {
+              data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:id:'.$medium['id']]
+                  = $medium['id'];
+              data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:path:'.$medium['id']]
+                  = $medium['path'];
+              data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:caption:'.$medium['id']]
+                  = $medium['caption'];
+              data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type_id:'.$medium['id']]
+                  = $medium['media_type_id'];
+              data_entry_helper::$entity_to_load['sc:'.$occurrenceIds[$medium['occurrence_id']].':'.$medium['occurrence_id'].':occurrence_medium:media_type:'.$medium['id']]
+                  = $medium['media_type'];
+            }
+          }
         }
       }
-    }
     }
     return $occurrenceIds;
   }
@@ -2073,7 +2053,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
   private static function get_species_checklist_empty_row_with_image($options, $occAttrControls, $attributes, $rowIdx, $mediaId) {
     $rowClass='scOccImageRow';
     $rowId=$options['id'].'-scOccImageRow-'.$mediaId;
-    $r='<table><tbody><tr class="'.$rowClass.'" id="'.$rowId.'">';
+    $r='<tr class="'.$rowClass.'" id="'.$rowId.'">';
     $r.=self::get_species_checklist_empty_row($options, $occAttrControls, $attributes);
     if ($options['mediaTypes']) {
       $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + (count($options['mediaTypes']) ? 1 : 0) + count($occAttrControls);
@@ -2085,7 +2065,7 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
         'readAuth' => $options['readAuth']
       )).'</td>';
     }
-    $r .= "</tr></tbody></table>\n";
+    $r .= "</tr>\n";
     return $r;
   }
 
@@ -2146,6 +2126,10 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
     $sampleRecords = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
+      //At this stage we just collect all the information to create a general sample which
+      //can be duplicated for each occurrence. This sample is then altered later in submission to set things like entered_sref.
+      if ($key=='survey_id'||$key=='website_id'||$key=='sample:entered_sref_system'||$key=='sample:date')
+        $sampleRecord[$key]=$value;
       $gridExcluded=false;
       foreach ($gridsToExclude as $gridToExclude) {
         if (substr($key, 0, strlen($gridToExclude)+3)=='sc:'.$gridToExclude) {
@@ -2157,14 +2141,16 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
         $b = explode(':', $a[3], 2);
-        //At this stage we just collected all the information to create a general sample which
-        //can be duplicated for each occurrence. This sample is then altered later in submission to set things like entered_sref.
-        if($b[0] == "sample" || $b[0] == "smpAttr"){
-          $sampleRecord[$a[1]][$a[3]] = $value;
-        } else {
-          //Make a list of occurrences
+        if (!empty($b[1]))
+          $occAttrIds=explode(':',$b[1]);
+        //Occurrence records to process are created from sample_media on the occurrences grid.
+        //occurrence_media items will have already been processed so do not need further processing.
+        //We check for empty($occAttrIds[1]) as we need the occurrence_attribute_value to be empty otherwise we know it is existing
+        //processed data and can be left alone.
+        if($b[0] === "sample_medium" || ($b[0] === "occAttr" && empty($occAttrIds[1])) || $b[0] === "occurrence" || $b[0] === "present" ) {
+          $a[3]=str_replace('sample','occurrence',$a[3]);
           $occurrenceRecords[$a[1]][$a[3]] = $value;
-        }
+        } 
       }
     }
     $sampleRecords=array();
@@ -2187,41 +2173,16 @@ if ($('#$options[id]').parents('.ui-tabs-panel').length) {
         }
         $occ = data_entry_helper::wrap($record, 'occurrence');
         data_entry_helper::attachOccurrenceMediaToModel($occ, $record);
-        //Duplicate the general sample record for each occurrence, these are then altered later in submission specifically for the occurrence
-        $sampleRecords[] = $sampleRecord;
-        //Added the occurrence to the sample
-        $sampleRecords[count($sampleRecords)-1]['occurrences']=array();
-        $sampleRecords[count($sampleRecords)-1]['occurrences'][] = array('fkId' => 'sample_id','model' => $occ);
+        //Add the occurrence to a third level sample, which is taken from our sample template
+        $subSample = data_entry_helper::wrap($sampleRecord, 'sample');
+        if (array_key_exists('subModels', $subSample)) {
+          $subSample['subModels'] = array_merge($sampleMod['subModels'], array('fkId' => 'sample_id','model' => $occ));
+        } else {
+          $subSample['subModels'][] = array('fkId' => 'sample_id','model' => $occ);
+        }
+        $subModel = array('fkId' => 'parent_id', 'model' => $subSample);
+        $subModels[] = $subModel;
       }
-    }
-    foreach ($sampleRecords as $id => $sampleRecord) {
-      $occs = $sampleRecord['occurrences'];
-      unset($sampleRecord['occurrences']);
-      $sampleRecord['website_id'] = $website_id;
-      // copy essentials down to each subsample
-      if (!empty($arr['survey_id']))
-        $sampleRecord['survey_id'] = $arr['survey_id'];
-      if (!empty($arr['sample:date']))
-        $sampleRecord['date'] = $arr['sample:date'];
-      if (!empty($arr['sample:entered_sref_system']))
-        $sampleRecord['entered_sref_system'] = $arr['sample:entered_sref_system'];
-      if (!empty($arr['sample:location_name']) && empty($sampleRecord['location_name']))
-        $sampleRecord['location_name'] = $arr['sample:location_name'];
-      if (!empty($arr['sample:input_form']))
-        $sampleRecord['input_form'] = $arr['sample:input_form'];
-      $subSample = data_entry_helper::wrap($sampleRecord, 'sample');
-      // Add the subsample/soccurrences in as subModels without overwriting others such as a sample image
-      if (array_key_exists('subModels', $subSample)) {
-        $subSample['subModels'] = array_merge($sampleMod['subModels'], $occs);
-      } else {
-        $subSample['subModels'] = $occs;
-      }
-      $subModel = array('fkId' => 'parent_id', 'model' => $subSample);
-      $copyFields = array();
-      if(!isset($sampleRecord['date'])) $copyFields = array('date_start'=>'date_start','date_end'=>'date_end','date_type'=>'date_type');
-      if(!isset($sampleRecord['survey_id'])) $copyFields['survey_id'] = 'survey_id';
-      if(count($copyFields)>0) $subModel['copyFields'] = $copyFields; // from parent->to child
-      $subModels[] = $subModel;
     }
     return $subModels;
   }
