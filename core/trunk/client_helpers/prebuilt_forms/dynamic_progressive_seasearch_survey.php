@@ -70,6 +70,13 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           'group'=>'Other Settings'
         ),
         array(
+          'name'=>'mandatory_habitat_smpAttr_cluster_ids',
+          'caption'=>'Mandatory Cluster Ids',
+          'description'=>'Same as Habitat Attribute Cluster Ids but only list fields you want to be mandatory.',
+          'type'=>'string',
+          'group'=>'Other Settings'
+        ),
+        array(
           'name'=>'in_progress_sample_attr_id',
           'caption'=>'In Progress Sample Atrribute Id',
           'description'=>'The id of the custom attribute that holds whether a sample is in progress.',
@@ -277,7 +284,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
 
     $r .= "</div>\n";  
     $cloneableAttrs=explode(',',$args['habitat_smpAttr_cluster_ids']);
-    
+    data_entry_helper::$javascript.="indiciaData.mandatoryHabitatSmpAttrClusterIds='".$args['mandatory_habitat_smpAttr_cluster_ids']."';";
     foreach ($cloneableAttrs as $cloneableAttrId) {
       data_entry_helper::$javascript.="$('#ctrl-wrap-smpAttr-".$cloneableAttrId."').attr('class','habitat-attr-cloneable').hide();\n";
     }
@@ -607,6 +614,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     }
     if (empty($args['habitat_smpAttr_cluster_ids'])) {
       drupal_set_message('Please fill in the option for the Habitat Sample Attribute Cluster');
+      return false;
+    }
+    if (empty($args['mandatory_habitat_smpAttr_cluster_ids'])) {
+      drupal_set_message('Please fill in the option for the Mandatory Cluster Ids');
       return false;
     }
     if (empty($args['dive_duration_attr_id'])) {

@@ -65,6 +65,24 @@ jQuery(window).load(function($) {
       }
       //currently selected tab number need incrementing    
       current++;
+      //Make sure all the habitat names and descriptions are filled in.
+      if (current===5) {
+        indiciaData.missingTitleOrDesc=false;
+        var mandatoryHabitatSmpAttrClusterIds = indiciaData.mandatoryHabitatSmpAttrClusterIds.split(',');
+        for (var i=1; i<=mandatoryHabitatSmpAttrClusterIds.length; i++) {
+          $('[id*="smpAttr\\:'+mandatoryHabitatSmpAttrClusterIds[i]+'"').each(function() {
+            //Need to make sure the id is not exactly the same as smpAttr:<id> as that is in the invisible habitat cloneable group, which we want to ignore.
+            if (!$(this).val()&&$(this).attr('id')!='smpAttr:'+mandatoryHabitatSmpAttrClusterIds[i]) {
+              indiciaData.missingTitleOrDesc=true;
+            }
+          });
+        }
+        if (indiciaData.missingTitleOrDesc===true) {
+          alert('At least one of the habitats does not have its short name or description filled in.');
+          $('#tab-prev').trigger('click');
+          return false;
+        }
+      }
       //Show Loading panel if we need to relod page
       if (inArray(current-1,indiciaData.reloadtabs)) {
         $('.loading-panel').show();
@@ -96,13 +114,16 @@ jQuery(window).load(function($) {
       $('#messages').hide();
       //currently selected tab number needs decrementing     
       current--;
-      //Show loading panel as we are reloading page.
-      $('.loading-panel').show();
-      $('#controls').hide();
-      hideOccurrenceAddphoto();
-      setupAjaxPageSaving(true);
-      //see detailed notes before method
-      disableTabContents();
+      //Show loading panel as we are reloading page unless we have detected that a habitat name or description is not filled in,
+      //in which case the system triggers the previous button click automatically so the user can quickly move back to the previous tab and correct the problem.
+      if (indiciaData.missingTitleOrDesc!=true) {
+        $('.loading-panel').show();
+        $('#controls').hide();
+        setupAjaxPageSaving(true);
+        hideOccurrenceAddphoto();
+        //see detailed notes before method
+        disableTabContents();
+      }
     });
   }
   
