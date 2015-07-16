@@ -112,6 +112,13 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
           'group'=>'Other Settings'
         ),   
         array(
+          'name'=>'image_media_type_id',
+          'caption'=>'Media Sub Type Used For Photos.',
+          'description'=>'Media sub type id used for photos (not sketches).',
+          'type'=>'string',
+          'group'=>'Other Settings'
+        ),   
+        array(
           'name'=>'gps_sync_warning',
           'caption'=>'GPS Sync Warning',
           'description'=>'Warning displayed to the user if they try to upload a GPX file, it should warn them that
@@ -632,6 +639,10 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
       drupal_set_message('Please fill in the option for the Exif Date Times attribute id');
       return false;
     }
+    if (empty($args['image_media_type_id'])) {
+      drupal_set_message('Please fill in the option for the Image Media Sub Type id');
+      return false;
+    }
     
     //Hide the attribute that holds whether a sample is in progress or not
     //Also need to hide the label associated with the attribute.
@@ -785,7 +796,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
   public static function ajax_save($website_id, $password, $node) {
     iform_load_helpers(array('data_entry_helper'));
     //Build submission or get a warning/Error
-    $ModelOrWarning = self::build_three_level_sample_with_occ_submission($_POST,$website_id, $password,$node->params['gpx_data_attr_id'],$node->params['dive_start_time_attr_id'],$node->params['exif_date_time_attr_id']);
+    $ModelOrWarning = self::build_three_level_sample_with_occ_submission($_POST,$website_id, $password,$node->params['gpx_data_attr_id'],$node->params['dive_start_time_attr_id'],$node->params['exif_date_time_attr_id'],$node->params['image_media_type_id']);
     if (empty($ModelOrWarning['fatalSubmissionError'])) {
       $node = node_load($nid);
       $conn = iform_get_connection_details($node);
@@ -826,7 +837,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
    * @param array $values List of the posted values to create the submission from.
    */
 
-  public static function build_three_level_sample_with_occ_submission($values,$website_id, $password,$gpxDataAttrId,$diveStartTimeAttrId,$exifDateTimeAttrId) {
+  public static function build_three_level_sample_with_occ_submission($values,$website_id, $password,$gpxDataAttrId,$diveStartTimeAttrId,$exifDateTimeAttrId,$imageMediaTypeId) {
     $standardGridValues=array();
     //Create two different $values arrays.
     //The $standardGridValues array contains all the values you would expect from a normal species grid entry form. This contains the species grid we don't have images for.
@@ -864,40 +875,43 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     if (function_exists('exif_read_data')) {
       $uploadpath = './sites/all/modules/iform/client_helpers/upload/';
       foreach ($media as $idx => $mediaItem) {
-        if (file_exists($uploadpath.$mediaItem['path'])) {
-          $exif = exif_read_data($uploadpath.$mediaItem['path'], 0, true);
-          $media[$idx]['exif'] = json_encode($exif);
-          if (empty($exif['EXIF']['DateTimeOriginal'])) {
-            return array('fatalSubmissionError'=>'A photo you have uploaded does not contain suitable date information in the EXIF data and therefore cannot be used.');
+        //Don't do this for sketches
+        if ($mediaItem['media_type_id']==$imageMediaTypeId) {
+          if (file_exists($uploadpath.$mediaItem['path'])) {
+            $exif = exif_read_data($uploadpath.$mediaItem['path'], 0, true);
+            $media[$idx]['exif'] = json_encode($exif);
+            if (empty($exif['EXIF']['DateTimeOriginal'])) {
+              return array('fatalSubmissionError'=>'A photo you have uploaded does not contain suitable date information in the EXIF data and therefore cannot be used.');
+            }
+            $strToTime=strtotime($exif['EXIF']['DateTimeOriginal']);
+            if (!empty($lastPhotoToCheckDate)&&$lastPhotoToCheckDate!==date('d/m/Y',$strToTime)) {
+              $modelWrapped['submissionWarning']='At least one of the uploaded photos is not on the same date as the other photos. If this needs correcting, please return to the previous tab and adjust the photos that have been uploaded.';
+            }
+            $lastPhotoToCheckDate=date('d/m/Y',$strToTime);
+            $time=explode(' ',$exif['EXIF']['DateTimeOriginal']);          
+            //On the first tab (when we don't have a date field) then collect the date from the exif from the earliest photo
+            //and also set a default on the time field in the same way
+            //Cycle round the media items and only set the date/time if it is the smallest one so far.
+            if ((empty($smallestStrToTime) || $smallestStrToTime > $strToTime)&&
+                !empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) {
+              $smallestStrToTime=$strToTime;
+              $gpsFromFirstExif=$exif['GPS'];
+              $modelWrapped['fields']['date']['value']=date('d/m/Y',$smallestStrToTime);
+              $values['sample:date']=date('d/m/Y',$smallestStrToTime);
+              $modelWrapped['fields']['smpAttr:'.$diveStartTimeAttrId]['value']=$time[1];
+              $values['smpAttr:'.$diveStartTimeAttrid]=$time[1];   
+            }      
+            //Save the dates and times from the photos into an attribute for easy access by javascript, so contruct a string to save first.
+            //Note I didn't use json as that dates include colons. So the format is date,time;date,time;date,time;date,time;date,time;
+            if (!empty($mediaDates))
+              $mediaDates=$mediaDates.';'.date('d/m/Y',$strToTime).','.$time[1];
+            else
+              $mediaDates=date('d/m/Y',$strToTime).','.$time[1];
           }
-          $strToTime=strtotime($exif['EXIF']['DateTimeOriginal']);
-          if (!empty($lastPhotoToCheckDate)&&$lastPhotoToCheckDate!==date('d/m/Y',$strToTime)) {
-            $modelWrapped['submissionWarning']='At least one of the uploaded photos is not on the same date as the other photos. If this needs correcting, please return to the previous tab and adjust the photos that have been uploaded.';
-          }
-          $lastPhotoToCheckDate=date('d/m/Y',$strToTime);
-          $time=explode(' ',$exif['EXIF']['DateTimeOriginal']);          
-          //On the first tab (when we don't have a date field) then collect the date from the exif from the earliest photo
-          //and also set a default on the time field in the same way
-          //Cycle round the media items and only set the date/time if it is the smallest one so far.
-          if ((empty($smallestStrToTime) || $smallestStrToTime > $strToTime)&&
-              !empty($exif['EXIF']['DateTimeOriginal'])&&empty($modelWrapped['fields']['sample:date']['value'])) {
-            $smallestStrToTime=$strToTime;
-            $gpsFromFirstExif=$exif['GPS'];
-            $modelWrapped['fields']['date']['value']=date('d/m/Y',$smallestStrToTime);
-            $values['sample:date']=date('d/m/Y',$smallestStrToTime);
-            $modelWrapped['fields']['smpAttr:'.$diveStartTimeAttrId]['value']=$time[1];
-            $values['smpAttr:'.$diveStartTimeAttrid]=$time[1];   
-          }      
-          //Save the dates and times from the photos into an attribute for easy access by javascript, so contruct a string to save first.
-          //Note I didn't use json as that dates include colons. So the format is date,time;date,time;date,time;date,time;date,time;
-          if (!empty($mediaDates))
-            $mediaDates=$mediaDates.';'.date('d/m/Y',$strToTime).','.$time[1];
-          else
-            $mediaDates=date('d/m/Y',$strToTime).','.$time[1];
         }
       }
       //When the images are first loaded, we don't have a spatial reference to create the main sample with, so try to read one from the earliest picture exif data
-      if (!empty($gpsFromFirstExif['GPSLatitude'])&&!empty($gpsFromFirstExif['GPSLongitude'])&&!empty($gpsFromFirstExif['GPSLatitudeRef'])&&!empty($gpsFromFirstExif['GPSLongitudeRef'])) {
+      if (!empty($gpsFromFirstExif['GPSLatitude'])&&!empty($gpsFromFirstExif['GPSLongitude'])&&!empty($gpsFromFirstExif['GPSLatitudeRef'])&&!empty($gpsFromFirstExif['GPSLongitudeRef'])&&empty($values['sample:entered_sref'])) {
         //Read from exif, concert from degrees, minutes, seconds to decimal degrees
         $gpsLat0=explode('/',$gpsFromFirstExif['GPSLatitude'][0]);
         $gpsLat0=doubleval($gpsLat0[0])/doubleval($gpsLat0[1]);
