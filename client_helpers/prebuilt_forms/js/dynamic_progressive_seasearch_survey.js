@@ -175,6 +175,9 @@ jQuery(window).load(function($) {
           }
           //Current has already been incremented, so we just need to load the new current tab
           urlWithoutParams += '&load_tab='+current;
+          if (backButtonUsed===true) {
+            urlWithoutParams += '&used_back_button=true';
+          }
           window.location=urlWithoutParams;
           window.location.href;
         }

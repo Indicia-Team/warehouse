@@ -431,7 +431,7 @@ class iform_dynamic_progressive_seasearch_survey extends iform_dynamic_sample_oc
     $r.='<div style="float: left; width: 50%"><br>Drag these habitats to allocate the habitat to the photo and any previous photos. Note: any photos previously allocated using
       this control in this session will not be overidden, use the Override Individual Habitats control to override if needed.</div>';
     //If there is only one habitat, then we know all photos can be allocated to that habitat.
-    if ($numberOfHabitats===1 && $_GET['load_tab']==='5') {
+    if ($numberOfHabitats===1 && $_GET['load_tab']==='5'&&empty($_GET['used_back_button'])) {
         data_entry_helper::$javascript.="
         $(window).load(function () {
           $('#tab-next').trigger('click');\n
