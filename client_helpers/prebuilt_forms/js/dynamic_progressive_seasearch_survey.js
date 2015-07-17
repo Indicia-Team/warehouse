@@ -317,7 +317,7 @@ jQuery(window).load(function($) {
     }
 
     if (current>3) {
-      $('#tab-uploadplansandsketches').remove();
+      $('#container-sample_medium-seasearch-sketches').remove();
     }
   }
   
