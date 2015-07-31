@@ -1,0 +1,8 @@
+[submodule "client_helpers"]
+	path = client_helpers
+	url = https://github.com/Indicia-Team/client_helpers.git
+	branch = develop
+[submodule "media"]
+	path = media
+	url = https://github.com/Indicia-Team/media.git
+	branch = develop
