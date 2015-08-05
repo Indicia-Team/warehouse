@@ -45,9 +45,20 @@ class Image extends Image_Core {
         $uploadpath = $uploadpath.'/';
       if ($subdir != "" && substr($subdir,-1) != '\\' && substr($subdir,-1) != '/')
         $subdir = $subdir.'/';
+      
+      // Test file extension against allowed types
       $fileParts = explode('.', $filename);
       $ext = strtolower(array_pop($fileParts));
-      if (in_array($ext, Image::$allowed_types)) {
+      $config = kohana::config('indicia.upload_file_type');
+      if (!$config || !array_key_exists('image', $config)) {
+        // Default list if no entry in config.
+        $allowed_image = in_array($ext, array('jpg', 'gif', 'png', 'jpeg'));
+      }
+      else {
+        $allowed_image = in_array($ext, $config['image']);
+      }
+      
+      if ($allowed_image) {
         // website specific config available?
         $config = $website_id ? kohana::config('indicia.image_handling_website_'.$website_id) : false;
         // if not, is there a default config setting
