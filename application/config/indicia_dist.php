@@ -121,6 +121,20 @@ $config['image_handling']=array(
 );
 
 /**
+ * Declare the different file types that can be uploaded by file extension,
+ * grouped according to media type.
+ * Used in modules/indicia_svc_data/controllers/services/data.php to restrict
+ * file types.
+ * Used in application/libraries/MY_Image.php to determine if uploaded file
+ * should have thumbnails created.
+ */
+$config['upload_file_type'] = array(
+    'image' => array('jpg', 'gif', 'png', 'jpeg'),
+    'pdf' => array('pdf'),
+    'audio' => array('mp3', 'wav')
+  );
+
+/**
  * Should the warehouse return http status codes when a web service error occurs. 
  * This setting should be set to false if compatibility with Indicia clients running
  * 0.8.x or earlier is required.

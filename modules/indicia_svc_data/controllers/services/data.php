@@ -836,9 +836,22 @@ class Data_Controller extends Data_Service_Base_Controller {
       // media.
       // Upload size
       $ups = Kohana::config('indicia.maxUploadSize');
+      // Get comma separated list of allowed file types
+      $config = kohana::config('indicia.upload_file_type');
+      if (!$config) {
+        // Default list if no entry in config.
+        $types = 'png,gif,jpg,jpeg,mp3,wav,pdf';
+      }
+      else {
+        // Implode array of arrays.
+        $types = implode(',', array_map(function($a){
+          implode(',', $a);
+        }, $config));
+      }
+
       $_FILES = Validation::factory($_FILES)->add_rules(
         'media_upload', 'upload::valid', 'upload::required',
-        'upload::type[png,gif,jpg,jpeg,mp3,wav,pdf]', "upload::size[$ups]"
+        "upload::type[$types]", "upload::size[$ups]"
       );
       if ($_FILES->validate())
       {
