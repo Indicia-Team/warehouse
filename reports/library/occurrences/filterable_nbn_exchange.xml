@@ -10,6 +10,9 @@ left join (index_locations_samples ils
   join locations l on l.id=ils.location_id
   join cache_termlists_terms ctt on ctt.id=l.location_type_id and ctt.term='Vice County'
 ) on ils.sample_id=o.sample_id
+left join groups g1 on g1.id=o.group_id and g1.deleted=false
+left join group_relations grel on grel.to_group_id=g1.id and grel.deleted=false
+left join groups g2 on g2.id=grel.from_group_id and g2.deleted=false
 #agreements_join#
 #joins#
 where #sharing_filter# 
@@ -57,6 +60,7 @@ and st_y(st_transform(st_centroid(public_geom), 4326)) between -48 and 62
     <column name="vicecounty" display="ViceCounty" sql="array_to_string(array_agg(l.name), ', ')" datatype="text" aggregate="true" />        
     <column name='recorder' display='Recorder' sql='o.recorders' datatype="text" />
     <column name='verifier' display='Verifier' sql='o.verifier' datatype="text" />
+    <column name='source_group' display='SourceGroup' sql="coalesce(g2.title || '::', '') || g1.title" datatype="text" />
         
   </columns>
 </report>
