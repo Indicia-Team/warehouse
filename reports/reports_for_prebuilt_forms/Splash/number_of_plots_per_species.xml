@@ -1,0 +1,36 @@
+<report
+    title="Number of plots per species"
+    description="Return a list of species with the number of plots each species appears in."
+>
+  <query website_filter_field="co2.website_id">
+  SELECT #columns#
+  FROM cache_occurrences co
+    JOIN taxa_taxon_lists ttl ON ttl.id=co.taxa_taxon_list_id AND ttl.deleted=false
+    JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+    JOIN taxa_taxon_lists ttlMean ON ttlMean.taxon_meaning_id=ttl.taxon_meaning_id AND ttlMean.deleted=false
+    JOIN cache_occurrences co2 on co2.taxa_taxon_list_id=ttlMean.id AND co2.cache_created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)
+    JOIN locations plot on plot.id=co2.location_id AND plot.deleted=false 
+    #joins#
+  WHERE 1=1 
+    AND co.cache_created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)
+    AND #website_filter#
+    #filters#
+  </query>
+  <order_bys>
+    <order_by>t.taxon asc</order_by>
+  </order_bys>
+  <params>
+    <param name="survey_id" display="Surveys" datatype="lookup" population_call='report:reports_for_prebuilt_forms/Splash/get_surveys_for_population_call:id:title' emptyvalue=''>
+      <where>co.survey_id=#survey_id# AND co2.survey_id=#survey_id#</where>
+    </param>
+    <param name="taxa_taxon_list_id" display="Species" datatype="lookup" population_call='autocomplete:species' emptyvalue=''>
+      <where>ttl.id = #taxa_taxon_list_id#</where>
+    </param>
+    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this data." datatype="date"/>
+  </params>
+  <columns> 
+    <column name='taxon_id' sql='t.id' datatype='integer' visible='false'/>
+    <column name='taxon' display='Taxon' sql='t.taxon' datatype='text' in_count="true"/>
+    <column name='plot_count' display='Plot Count' sql='count(distinct(plot.id))' datatype='integer' aggregate='true'/>
+  </columns>
+</report>
