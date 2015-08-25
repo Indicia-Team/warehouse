@@ -10,6 +10,7 @@
       LEFT JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
       LEFT JOIN location_attribute_values lav on lav.location_attribute_id=#plot_number_attr_id# AND lav.location_id=plot.id
     WHERE (plot.parent_id = #square_id#)
+    AND plot.created_by_id=#current_user_id#
     AND #website_filter# AND plot.deleted=false
   </query>
   <order_bys>
@@ -17,6 +18,7 @@
   </order_bys>
   <params>
     <param name="plot_number_attr_id" display="Id of the plot number attribute" datatype="integer" default="0"/>
+    <param name="current_user_id" display="Id of the currently logged in user" datatype="integer"/>
     <param name="square_id" display="Square id to get plots for" datatype="integer" emptyvalue="0"/>
   </params>
   <columns>
