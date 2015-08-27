@@ -38,8 +38,6 @@
         <column name="sw" visible="false" feature_style="strokeWidth" sql="3" />
         <column name="so" visible="false" feature_style="strokeOpacity" sql="0.8" />
         <column name="fo" visible="false" feature_style="fillOpacity" sql="0.15" />
-        <column name="sc" visible="false" feature_style="strokeColor"
-                sql="case l.id % 6 when 0 then '#ff0000' when 1 then '#00ff00' when 2 then '#0000ff'
-              when 3 then '#770077' when 4 then '#777700' else '#330055' end" />
+        <column name="sc" visible="false" feature_style="strokeColor" sql="'#ff0000'" />
   </columns>
 </report>  
