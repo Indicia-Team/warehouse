@@ -738,7 +738,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       sref_precision=round(coalesce(spv.int_value, spv.float_value)),
       query=case
         when oc1.id is null then null
-        when oc2.id is null then 'Q'
+        when oc2.id is null and o.updated_on<=oc1.created_on then 'Q'
         else 'A'
       end
     from occurrences o
