@@ -43,7 +43,7 @@ using a basic integer for the cover, whilst on others this number is represented
     </param>
   </params>
   <columns>
-    <column name='habitat' display='Habitat' sql='tHab.term' datatype='text'/>
+    <column name='habitat' display='Habitat' sql='tHab.term' datatype='text' in_count="true"/>
     <column name='habitat_abbr' display='Abbreviation' sql="
     CASE
       WHEN tHab.term='Acid fens, mires and springs' then 'AFF'
