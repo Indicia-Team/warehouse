@@ -44,10 +44,15 @@ class Termlist_export_Controller extends Indicia_Controller {
    * @const SQL_FETCH_ALL_TERMS Query definition which retrieves all the terms for a termlist ID
    * in preparation for export.
    */
-  const SQL_FETCH_ALL_TERMS = "select array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
+  const SQL_FETCH_ALL_TERMS = "select array_to_string(array_agg(entry), '**') as terms from (select t.term || '|' || t.language_iso || '|' ||
+  coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, '')::varchar || '|' ||
+  array_to_string(array_agg(ts.term || '~' || ts.language_iso order by ts.term, ts.language_iso), '`'::varchar) as entry
 from cache_termlists_terms t
 left join cache_termlists_terms tp on tp.id=t.parent_id
-where {where}";
+left join cache_termlists_terms ts on ts.meaning_id=t.meaning_id and ts.termlist_id=t.termlist_id and ts.preferred=false
+where t.preferred=true and {where}
+group by t.term, t.language_iso, t.sort_order, tp.term
+order by t.sort_order, t.term) as list";
 
   /**
    * @const SQL_FIND_EXISTING_TERM = Query definition to find if a term definition already exists in the termlist.
@@ -195,7 +200,7 @@ where {where}";
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
    */
-  public function getTerms($termlistId) {
+  private function getTerms($termlistId) {
     $r = $this->db->query(str_replace('{where}', "t.termlist_id=$termlistId", self::SQL_FETCH_ALL_TERMS))->result_array(FALSE);
     return $r[0];
   }
