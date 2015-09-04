@@ -101,7 +101,8 @@ echo data_entry_helper::select(array(
   'valueField' => 'id',
   'extraParams' => $readAuth,
   'blankText' => '<please select>',
-  'class' => 'required'
+  'class' => 'required',
+  'caching' => false
 ));
 if ($this->uri->method(false)=='edit')
   echo '</div>';
