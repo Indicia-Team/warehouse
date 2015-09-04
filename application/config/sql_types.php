@@ -13,7 +13,8 @@ $config = array
   'mediumint'			=> array('type' => 'int', 'max' => 8388607),
   'int'				=> array('type' => 'int', 'max' => 2147483647),
   'integer'			=> array('type' => 'int', 'max' => 2147483647),
-  'bigint'			=> array('type' => 'int', 'max' => 9223372036854775807),
+  // max bigint reduced by one due to bug in json-c PHP module not accepting max_int_value
+  'bigint'			=> array('type' => 'int', 'max' => 9223372036854775806),
   'float'				=> array('type' => 'float'),
   'float unsigned'	=> array('type' => 'float', 'min' => 0),
   'boolean'			=> array('type' => 'bool'),
