@@ -76,6 +76,28 @@
   }
 }
 
+if( !function_exists('apache_request_headers') ) {
+  function apache_request_headers() {
+    $arh = array();
+    $rx_http = '/\AHTTP_/';
+    foreach($_SERVER as $key => $val) {
+      if( preg_match($rx_http, $key) ) {
+        $arh_key = preg_replace($rx_http, '', $key);
+        $rx_matches = array();
+        // do some nasty string manipulations to restore the original letter case
+        // this should work in most cases
+        $rx_matches = explode('_', $arh_key);
+        if( count($rx_matches) > 0 and strlen($arh_key) > 2 ) {
+          foreach($rx_matches as $ak_key => $ak_val) $rx_matches[$ak_key] = ucfirst($ak_val);
+          $arh_key = implode('-', $rx_matches);
+        }
+        $arh[$arh_key] = $val;
+      }
+    }
+    return( $arh );
+  }
+}
+
 /**
  * Controller class for the RESTful API. Implements handlers for the variuos resource
  * URIs.
@@ -89,6 +111,18 @@ class Rest_Controller extends Controller {
    * @var string
    */
   private $method;
+  
+  /**
+   * The server's user ID (i.e. this REST API)
+   * @var string
+   */
+  private $server_user_id;
+  
+  /**
+   * The client's user ID (i.e. the caller)
+   * @var string
+   */
+  private $client_user_id;
   
   /**
    * The client's website ID (should point to a record in the websites table).
@@ -250,14 +284,7 @@ HTML;
           $extra = $urlSuffix ? "/$urlSuffix" : '';
           $help = kohana::lang("rest_api.resources.$resource$extra");
           echo "<p>$help</p>";
-          // output the documentation for parameters. All requests require a client ID...
-          $resourceDef['params'] = array_merge(array(
-            'system_id' => array(
-              'datatype' => 'integer',
-              'required' => TRUE,
-              'help' => 'Unique identifier for the client system making the webservice call'
-            )
-          ), $resourceDef['params']);
+          // output the documentation for parameters.
           echo '<table><caption>Parameters</caption>';
           echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
           echo '<tbody>';
@@ -345,6 +372,10 @@ HTML;
       $this->fail('No Content', 204);
     }
     $this->add_item_metadata($this->projects[$id], 'projects');
+    // remove fields from the project that are for internal use only
+    unset($this->projects[$id]['filter_id']);
+    unset($this->projects[$id]['website_id']);
+    unset($this->projects[$id]['sharing']);
     $this->succeed($this->projects[$id]);
   }
      
@@ -360,6 +391,7 @@ HTML;
       $this->add_item_metadata($project, 'projects');
       // remove fields from the project that are for internal use only
       unset($project['filter_id']);
+      unset($project['website_id']);
       unset($project['sharing']);
     }
     $this->succeed(array(
@@ -376,14 +408,14 @@ HTML;
    * @param type $id Unique ID for the taxon-observations to output
    */
   public function taxon_observations_get_id($id) {
-    if (substr($id, 0, strlen(kohana::config('rest.system_id')))===kohana::config('rest.system_id')) {
-      $occurrence_id = substr($id, strlen(kohana::config('rest.system_id')));
+    if (substr($id, 0, strlen(kohana::config('rest.user_id')))===kohana::config('rest.user_id')) {
+      $occurrence_id = substr($id, strlen(kohana::config('rest.user_id')));
     } else {
       // @todo Proper handling, either error if system not recognised, or load correct system record.
       throw new exception('Only handling load of own observations at the moment');
     }
     $params = array('occurrence_id' => $occurrence_id);
-    $report = $this->load_report('filterable_nbn_exchange', $params);
+    $report = $this->load_report('filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
@@ -397,6 +429,7 @@ HTML;
   
   /**
    * GET handler for the taxon-observations resource. Outputs a list of taxon observation details.
+   * @todo Ensure delete information is output.
    */
   public function taxon_observations_get() {
     $this->checkPaginationParams();
@@ -430,10 +463,11 @@ HTML;
       $this->fail('Internal Server Error', 500);
     } else {
       $record = $report['content']['records'][0];
-      $record['taxonobservation'] = array(
+      $record['TaxonObservation'] = array(
         'id' => $record['taxon_observation_id'],
+        // @todo href
       );
-      $this->add_item_metadata($record['taxonobservation'], 'taxon-observations');
+      $this->add_item_metadata($record['TaxonObservation'], 'taxon-observations');
       $this->add_item_metadata($record, 'annotations');
       $this->succeed($record);
     }
@@ -444,7 +478,7 @@ HTML;
    */
   public function annotations_get() {
     // @todo Integrate determinations in the output
-    // @todo handle taxonversionkey properly
+    // @todo handle TaxonVersionKey properly
     // @todo handle unansweredQuestion
     $this->checkPaginationParams();
     $params = array(
@@ -461,13 +495,14 @@ HTML;
       $params['comment_edited_date_to'] = $this->request['edited_date_to'];
     }
     $report = $this->load_report('filterable_annotations', $params);
+    kohana::log('debug', var_export($report, true));
     $records = $report['content']['records'];
     // for each record, restructure the taxon observations sub-object
     foreach ($records as &$record) {
-      $record['taxonobservation'] = array(
+      $record['TaxonObservation'] = array(
         'id' => $record['taxon_observation_id'],
       );
-      $this->add_item_metadata($record['taxonobservation'], 'taxon-observations');
+      $this->add_item_metadata($record['TaxonObservation'], 'taxon-observations');
       unset($record['taxon_observation_id']);
     }
     $this->succeed($this->list_response_structure($records, 'annotations'));
@@ -520,7 +555,7 @@ HTML;
    */
   private function add_item_metadata(&$item, $entity) {
     $params = $this->request;
-    $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]?system_id=$params[system_id]";
+    $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]";
     if (!empty($params['proj_id']))
       $item['href'] .= "&proj_id=$params[proj_id]";
     if (!empty($params['format']))
@@ -567,7 +602,7 @@ HTML;
   private function load_report($report, $params) {
     // @todo: rather than use the report engine and its overheads, build the query required directly?
     // Should also return an object to iterate rather than loading the full array
-    $this->reportEngine = new ReportEngine(array($this->website_id));
+    $this->reportEngine = new ReportEngine(array($this->projects[$this->request['proj_id']]['website_id']));
     // load the filter associated with the project ID
     $filter = $this->load_filter_for_project($this->request['proj_id']);
     // The project's filter acts as a context for the report, meaning it defines the limit of all the 
@@ -575,9 +610,9 @@ HTML;
     foreach ($filter as $key=>$value) {
       $params["{$key}_context"] = $value;
     }
+    $params['system_user_id'] = $this->server_user_id;
     // the project defines how records are allowed to be shared with this client
-    $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
-    $params['system_id'] = kohana::config('rest.system_id');
+    //$params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
     $report = $this->reportEngine->requestReport("rest_api/$report.xml", 'local', 'xml', $params);
     return $report;
   }
@@ -597,12 +632,17 @@ HTML;
   private function load_filter_for_project($id) {
     if (!isset($this->projects[$id]))
       $this->fail('Bad request', 400, 'Invalid project requested');
-    $filterId = $this->projects[$id]['filter_id'];
-    $db = new Database();
-    $filters = $db->select('definition')->from('filters')->where(array('id'=>$filterId, 'deleted'=>'f'))->get()->result_array();
-    if (count($filters)!==1)
-      $this->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
-    return json_decode($filters[0]->definition, true);
+    if (isset($this->projects[$id]['filter_id'])) {
+      $filterId = $this->projects[$id]['filter_id'];
+      $db = new Database();
+      $filters = $db->select('definition')->from('filters')->where(array('id'=>$filterId, 'deleted'=>'f'))->get()->result_array();
+      if (count($filters)!==1)
+        $this->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
+      return json_decode($filters[0]->definition, true);
+    }
+    else {
+      return array();
+    }
   }
   
   /**
@@ -637,20 +677,27 @@ HTML;
   }
   
   /**
-   * Checks that the request's system_id and proj_id are valid.
+   * Checks that the request's user_id and proj_id are valid.
    * @todo Implement hash based authentication
    */
   private function authenticate() {
-    // @todo: implement proper hashing test
-    if (empty($_REQUEST['system_id'])) {
-      $this->fail('Bad request', 400, 'Missing system ID');
+    $headers = apache_request_headers();
+    if (!isset($headers['Authorization'])) {
+      $this->fail('Unauthorized', 401, 'Authorization header not provided');
     }
-    $config = kohana::config('rest.clients');
-    if (!array_key_exists($_REQUEST['system_id'], $config)) {
-      $this->fail('Unauthorized', 401, 'System ID not in projects configuration');
+    list($u, $user, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
+    $config = Kohana::config('rest.clients');
+    if (!array_key_exists($user, $config)) {
+      $this->fail('Unauthorized', 401, 'User ID not in projects configuration');
     }
-    $this->website_id=$config[$_REQUEST['system_id']]['website_id'];
-    $this->projects = $config[$_REQUEST['system_id']]['projects'];
+    $request_url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    $correct_hmac = hash_hmac("sha1", $request_url, $config[$user]['shared_secret'], $raw_output=FALSE);
+    if ($supplied_hmac !== $correct_hmac) {
+      $this->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect');
+    }
+    $this->client_user_id=$user;
+    $this->server_user_id=Kohana::config('rest.user_id');
+    $this->projects = $config[$user]['projects'];
   }
   
   /**
@@ -733,8 +780,10 @@ HTML;
       echo str_replace('{css}', $css, $this->html_header);
       $this->output_array_as_html($data);
       echo '</body></html>';
-    } else
+    } else {
+      header('Content-Type: application/json');
       echo json_encode($data);
+    }
   }
 
 }

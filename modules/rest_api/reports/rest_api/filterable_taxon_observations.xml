@@ -4,8 +4,8 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
 select #columns#
-from cache_occurrences o
-join occurrences occ on occ.id=o.id -- for access to external_key
+from occurrences occ -- for access to external_key
+left join cache_occurrences o on o.id=occ.id
 #agreements_join#
 #joins#
 where #sharing_filter# 
@@ -19,35 +19,37 @@ and o.taxa_taxon_list_external_key is not null
     <order_by>o.id ASC</order_by>
   </order_bys>
   <params>
-    <param name='system_id' display='System ID' description='3 character code identifying the system' datatype='text' />
+    <param name='system_user_id' display='System ID' description='3 character code identifying the system' datatype='text' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default="" />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' default="" />
   </params>
   <columns>
-    <column name='id' display='ID' sql="COALESCE(occ.external_key, '#system_id#' || o.id::varchar)" datatype="text" />
-    <column name='taxonversionkey' display='TaxonVersionKey' sql='o.taxa_taxon_list_external_key' datatype="text" />
-    <column name='taxonname' display='Taxon name' sql='o.taxon' datatype="text" />
-    <column name='zeroabundance' display='ZeroAbundance' sql='upper(cast (o.zero_abundance as character))' datatype="text" />
-    <column name='sensitive' display='Sensitive' sql="case when o.sensitivity_precision is null then 'F' else 'T' end" datatype="text" />
-    <column name='startdate' display='StartDate' sql='cast(o.date_start as character varying)' datatype="text" />
-    <column name='enddate' display='EndDate' sql='cast(o.date_end as character varying)' datatype="text" />
-    <column name='datetype' display='DateType' sql='o.date_type' datatype="integer" />
-    <column name='sitekey' display='SiteKey' sql="'#system_id#' || o.location_id::varchar" datatype="text" />
-    <column name='sitename' display='SiteName' sql='substring(o.location_name, 1, 100)' datatype="text" />
-    <column name='gridreference' display='GridReference' sql="case when o.entered_sref_system in ('4326', '27700') then null else replace(o.public_entered_sref, ' ', '') end" datatype="text" />
-    <column name='east' display='East' sql="case when o.entered_sref_system in ('4326', '27700') then st_x(st_transform(st_centroid(public_geom), o.entered_sref_system::int)) else null end" datatype="text" />
-    <column name='north' display='North' sql="case when o.entered_sref_system in ('4326', '27700') then st_y(st_transform(st_centroid(public_geom), o.entered_sref_system::int)) else null end" datatype="text" />
-    <column name='projection' display='Projection' 
+    <column name='id' display='ID' sql="COALESCE(occ.external_key, '#system_user_id#' || o.id::varchar)" datatype="text" />
+    <column name='TaxonVersionKey' display='Taxon Version Key' sql='o.taxa_taxon_list_external_key' datatype="text" />
+    <column name='TaxonName' display='Taxon Name' sql='o.taxon' datatype="text" />
+    <column name='ZeroAbundance' display='Zero Abundance' sql='upper(cast (o.zero_abundance as character))' datatype="text" />
+    <column name='Sensitive' display='Sensitive' sql="case when o.sensitivity_precision is null then 'F' else 'T' end" datatype="text" />
+    <column name='StartDate' display='Start Date' sql='cast(o.date_start as character varying)' datatype="text" />
+    <column name='EndDate' display='End Date' sql='cast(o.date_end as character varying)' datatype="text" />
+    <column name='DateType' display='Date Type' sql='o.date_type' datatype="integer" />
+    <column name='SiteKey' display='SiteKey' sql="'#system_user_id#' || o.location_id::varchar" datatype="text" />
+    <column name='SiteName' display='SiteName' sql='substring(o.location_name, 1, 100)' datatype="text" />
+    <column name='GridReference' display='GridReference' sql="case when o.entered_sref_system in ('4326', '27700') then null else replace(coalesce(o.public_entered_sref, o.output_sref), ' ', '') end" datatype="text" />
+    <column name='East' display='East' sql="case when o.entered_sref_system in ('4326', '27700') then st_x(st_transform(st_centroid(public_geom), o.entered_sref_system::int)) else null end" datatype="text" />
+    <column name='North' display='North' sql="case when o.entered_sref_system in ('4326', '27700') then st_y(st_transform(st_centroid(public_geom), o.entered_sref_system::int)) else null end" datatype="text" />
+    <column name='Projection' display='Projection' 
         sql="case upper(o.entered_sref_system) when '4326' then 'WGS84' when '27700' then 'OSGB36' when 'OSIE' then 'OSI' else upper(o.entered_sref_system) end" 
         datatype="text" />
-    <column name='precision' display='Precision' 
+    <column name='Precision' display='Precision' 
         sql="case o.entered_sref_system
     when '4326' then 50 
     when '27700' then 1
     else case length(replace(o.public_entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(o.public_entered_sref, ' ', '')))/2) end
   end" 
         datatype="text" />
-    <column name='recorder' display='Recorder' sql='o.recorders' datatype="text" />
+    <column name='Recorder' display='Recorder' sql='o.recorders' datatype="text" />
+    <column name='Delete' display='Delete' sql="case occ.deleted when 't' then 'T' end" />
+    <column name='lasteditdate' display='Last Edit Date' sql="substring(replace(occ.updated_on::varchar, ' ', 'T') from 1 for 19)" />
     <!-- @todo determiner -->
   </columns>
 </report>
