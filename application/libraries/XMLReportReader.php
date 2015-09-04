@@ -46,6 +46,7 @@ class XMLReportReader_Core implements ReportReader
   private $websiteFilterField = 'w.id';
   private $trainingFilterField = 'o.training';
   private $createdByField;
+  private $colsToInclude = array();
   
   /**
    * @var boolean Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
@@ -95,8 +96,9 @@ class XMLReportReader_Core implements ReportReader
   * @param array $websiteIds List of websites to include data for
   * @param string $sharing Set to reporting, verification, moderation, peer_review, data_flow or me (=user's data)
   * depending on the type of data from other websites to include in this report.
+  * @param array $colsToInclude Optional list of column names to include in the report output.
   */
-  public function __construct($report, $websiteIds, $sharing='reporting')
+  public function __construct($report, $websiteIds, $sharing='reporting', $colsToInclude = array())
   {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try
@@ -105,6 +107,7 @@ class XMLReportReader_Core implements ReportReader
       $this->name = $a[count($a)-1];
       $reader = new XMLReader();
       $reader->open($report);
+      $this->colsToInclude = $colsToInclude;
       while($reader->read())
       {
         switch($reader->nodeType)
@@ -355,6 +358,8 @@ class XMLReportReader_Core implements ReportReader
     $distinctSql = array();
     $countSql = array();
     foreach ($this->columns as $col=>$def) {
+      if (!empty($this->colsToInclude) && !in_array($col, $this->colsToInclude))
+        continue;
       if (isset($def['sql'])) {
         if (!isset($def['on_demand']) || $def['on_demand']!=="true")
           $sql[] = $def['sql'] . ' as "' . $col . '"';
@@ -529,7 +534,18 @@ class XMLReportReader_Core implements ReportReader
   */
   public function getColumns()
   {
-    return $this->columns;
+    if (empty($this->colsToInclude))
+      return $this->columns;
+    else {
+      // user override of the columns to return
+      $columns = array();
+      foreach ($this->columns as $col => $coldef) {
+        if (in_array($col, $this->colsToInclude)) {
+          $columns[$col] = $coldef;
+        }
+      }
+      return $columns;
+    }
   }
 
   /**

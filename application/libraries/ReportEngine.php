@@ -199,7 +199,9 @@ class ReportEngine {
     switch ($this->reportFormat)
     {
       case 'xml':
-        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->sharingMode);
+        // allow the list of columns to be returned to be passed as a parameter
+        $cols = empty($this->providedParams['columns']) ? array() : explode(',', $this->providedParams['columns']);
+        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->sharingMode, $cols);
         $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
         break;
       default:
