@@ -20,9 +20,13 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
+// apply permissions
+$disabled_input=html::initial_value($values, 'metaFields:disabled_input');
+$disabled = ($disabled_input=='YES') ? 'disabled="disabled"' : '';
 
 $id = html::initial_value($values, 'termlist:id');
 $parent_id = html::initial_value($values, 'termlist:parent_id');
+require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 
 if ($parent_id != null) : ?>
 <h1>Subset of:
@@ -38,47 +42,54 @@ if ($parent_id != null) : ?>
 <legend>List Details</legend>
 <input type="hidden" name="termlist:id" value="<?php echo $id; ?>" />
 <input type="hidden" name="termlist:parent_id" value="<?php echo $parent_id; ?>" />
-<ol>
-<li>
-<label for="title">Title</label>
-<input id="title" name="termlist:title" value="<?php echo html::initial_value($values, 'termlist:title'); ?>"/>
-<?php echo html::error_message($model->getError('termlist:title')); ?>
-</li>
-<li>
-<label for="description">Description</label>
-<textarea rows=7 id="description" name="termlist:description"><?php echo html::initial_value($values, 'termlist:description'); ?></textarea>
-<?php echo html::error_message($model->getError('termlist:description')); ?>
-</li>
-<li>
-<label for="website">Owned by</label>
-<select id="website_id" name="termlist:website_id" 
-<?php if ($parent_id != null && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== null) {
-  echo "disabled='disabled'";
-  $website_id=$values['parent_website_id']; 
+<?php
+echo data_entry_helper::text_input(array(
+  'label' => 'Titlde',
+  'fieldname' => 'termlist:title',
+  'default' => html::initial_value($values, 'termlist:title'),
+  'validation' => 'required',
+  'disabled' => $disabled,
+  ));
+echo data_entry_helper::textarea(array(
+  'label' => 'Description',
+  'fieldname' => 'termlist:description',
+  'default' => html::initial_value($values, 'termlist:description'),
+  'disabled' => $disabled,
+));
+// prevent changing of owner if this is a child termlist
+if ($parent_id != null && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== null) {
+  $disabled = 'disabled="disabled';
+  $website_id = $values['parent_website_id'];
 } else {
   $website_id = html::initial_value($values, 'termlist:website_id');
-} ?> >
-  <option value=''>&lt;Warehouse&gt;</option>
-<?php
-  if (!is_null($this->auth_filter))
-    $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
-  else
-    $websites = ORM::factory('website')->orderby('title','asc')->find_all();
-  foreach ($websites as $website) {
-    echo '	<option value="'.$website->id.'" ';
-    if ($website->id==$website_id)
-      echo 'selected="selected" ';
-    echo '>'.$website->title.'</option>';
-  }
+}
+$options = array();
+if (!is_null($this->auth_filter))
+  $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
+else
+  $websites = ORM::factory('website')->orderby('title','asc')->find_all();
+foreach ($websites as $website) {
+  $options[$website->id] = $website->title;
+}
+echo data_entry_helper::select(array(
+  'label' => 'Owned by',
+  'fieldname' => "termlist:website_id",
+  'default' => $website_id,
+  'disabled' => $disabled,
+  'blankText' => '<Warehouse>',
+  'lookupValues' => $options
+));
 ?>
-</select>
-<?php echo html::error_message($model->getError('termlist:website_id')); ?>
-</li>
-</ol>
 </fieldset>
 <?php
-echo html::form_buttons(html::initial_value($values, 'termlist:id')!=null && html::initial_value($values, 'termlist:id')!='', false, false);  
-echo html::error_message($model->getError('deleted')); 
+echo html::form_buttons(html::initial_value($values, 'termlist:id')!=null && html::initial_value($values, 'termlist:id')!='', false, false);
+echo html::error_message($model->getError('deleted'));
+data_entry_helper::$dumped_resources[] = 'jquery';
+data_entry_helper::$dumped_resources[] = 'jquery_ui';
+data_entry_helper::$dumped_resources[] = 'fancybox';
+data_entry_helper::enable_validation('termlist-edit');
+data_entry_helper::link_default_stylesheet();
+echo data_entry_helper::dump_javascript();
 ?>
 </form>
 </div>
