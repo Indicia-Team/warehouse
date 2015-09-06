@@ -22,7 +22,7 @@
  */
 // apply permissions
 $disabled_input=html::initial_value($values, 'metaFields:disabled_input');
-$disabled = ($disabled_input=='YES') ? 'disabled="disabled"' : '';
+$disabled = ($disabled_input==='YES') ? 'disabled="disabled"' : '';
 
 $id = html::initial_value($values, 'termlist:id');
 $parent_id = html::initial_value($values, 'termlist:parent_id');
@@ -43,6 +43,11 @@ if ($parent_id != null) : ?>
 <input type="hidden" name="termlist:id" value="<?php echo $id; ?>" />
 <input type="hidden" name="termlist:parent_id" value="<?php echo $parent_id; ?>" />
 <?php
+if ($disabled_input==='YES') : ?>
+  <p>The termlist is available to all websites so you don't have permission to change it.
+  Please contact the warehouse owner to request changes.</p>
+<?php
+endif;
 echo data_entry_helper::text_input(array(
   'label' => 'Titlde',
   'fieldname' => 'termlist:title',
