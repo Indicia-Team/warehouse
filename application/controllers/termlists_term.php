@@ -55,6 +55,14 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $list = ORM::factory('termlist',$termlist_id);
     $this->pagetitle = "Terms in ".$list->title;
     $this->internal_index($termlist_id);
+    // Apply permissions. If core admin, or a private website-owned termlist, then its editable.
+    if ($this->auth->logged_in('CoreAdmin') || $list->website_id!==null) {
+      $this->view->readonly = false;
+    } else {
+      // @todo: Could possibly allow editing of a termlist if public but only used by 1 site
+      // disable the termlist from editing, as it is public and user is not core admin
+      $this->view->readonly = true;
+    }
   }
  
   public function children($id) {
