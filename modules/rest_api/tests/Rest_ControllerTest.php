@@ -1,10 +1,9 @@
 <?php
 
 /**
- * Created by PhpStorm.
- * User: john
- * Date: 08/09/2015
- * Time: 08:58
+ * Unit test class for the REST api controller.
+ * @todo Test sharing mode on project filters is respected.
+ *
  */
 class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
 
@@ -46,9 +45,7 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
 
   public function testProjects_get() {
     $response = $this->callService('projects', self::$userId, self::$config['shared_secret']);
-    $this->assertTrue($response['curlErrno']===0 && $response['httpCode']===200,
-      "Invalid response from call to /projects. HTTP Response $response[httpCode]. Curl error " .
-      "$response[curlErrno] ($response[errorMessage]).");
+    $this->assertResponseOk($response, '/projects');
     $viaApi = json_decode($response['response']);
     $viaConfig = self::$config['projects'];
     $this->assertEquals(count($viaConfig), count($viaApi->data), 'Incorrect number of projects returned from /projects.');
@@ -64,9 +61,7 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
   public function testProjects_get_id() {
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("projects/$projDef[id]", self::$userId, self::$config['shared_secret']);
-      $this->assertTrue($response['curlErrno']===0 && $response['httpCode']===200,
-        "Invalid response from call to /projects/$projDef[id]. HTTP Response $response[httpCode]. Curl error " .
-        "$response[curlErrno] ($response[errorMessage]).");
+      $this->assertResponseOk($response, "/projects/$projDef[id]");
       $fromApi = json_decode($response['response']);
       $this->assertEquals($fromApi->Title, $projDef['Title'],
           "Unexpected title $fromApi->Title returned for project $projDef[id] by /projects/$projDef[id].");
@@ -118,15 +113,13 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("taxon-observations", self::$userId, self::$config['shared_secret'],
         array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'));
-      $this->assertTrue($response['curlErrno']===0 && $response['httpCode']===200,
-        "Invalid response from call to /taxon-observations. HTTP Response $response[httpCode]. Curl error " .
-        "$response[curlErrno] ($response[errorMessage]).");
+      $this->assertResponseOk($response, '/taxon-observations');
       $apiResponse = json_decode($response['response'], true);
       $this->assertArrayHasKey('paging', $apiResponse, 'Paging missing from response to call to taxon-observations');
       $this->assertArrayHasKey('data', $apiResponse, 'Data missing from response to call to taxon-observations');
       $data = $apiResponse['data'];
       foreach ($data as $occurrence)
-        $this->checkValidTaxonOccurrence($occurrence);
+        $this->checkValidTaxonObservation($occurrence);
       // only test a single project
       break;
     }
@@ -158,9 +151,7 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("annotations", self::$userId, self::$config['shared_secret'],
         array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'));
-      $this->assertTrue($response['curlErrno']===0 && $response['httpCode']===200,
-        "Invalid response from call to /annotations. HTTP Response $response[httpCode]. Curl error " .
-        "$response[curlErrno] ($response[errorMessage]).");
+      $this->assertResponseOk($response, '/annotations');
       $apiResponse = json_decode($response['response'], true);
       $this->assertArrayHasKey('paging', $apiResponse, 'Paging missing from response to call to annotations');
       $this->assertArrayHasKey('data', $apiResponse, 'Data missing from response to call to annotations');
@@ -173,10 +164,23 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
   }
 
   /**
+   * An assertion that the response object returned by a call to getCurlResponse
+   * indicates a successful request.
+   * @param array $response Response data returned by getCurlReponse().
+   * @param string $apiCall Name of the API method being called, e.g. /projects
+   */
+  private function assertResponseOk($response, $apiCall) {
+    $this->assertTrue($response['curlErrno']===0 && $response['httpCode']===200,
+      "Invalid response from call to $apiCall. HTTP Response $response[httpCode]. Curl error " .
+      "$response[curlErrno] ($response[errorMessage]).");
+  }
+
+  /**
    * Checks that an array retrieved from the API is a valid taxon-occurrence resource.
    * @param $data Array to be tested as a taxon occurrence resource
    */
-  private function checkValidTaxonOccurrence($data) {
+  private function checkValidTaxonObservation($data) {
+    $this->assertTrue(is_array($data), 'Taxon-observation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'TaxonVersionKey', 'TaxonName', 'StartDate', 'EndDate', 'DateType',
         'Projection', 'Precision', 'Recorder', 'lasteditdate');
     foreach ($mustHave as $key) {
@@ -193,6 +197,7 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    * @param $data Array to be tested as an annotation resource
    */
   private function checkValidAnnotation($data) {
+    $this->assertTrue(is_array($data), 'Annotation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'TaxonObservation', 'TaxonVersionKey', 'Comment', 'Question',
         'AuthorName', 'DateTime');
     foreach ($mustHave as $key) {
@@ -202,12 +207,16 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
         "Empty $key in taxon-observation resource" . var_export($data, true));
     }
     // @todo Format tests
+    // We should be able to request the taxon observation associated with the occurrence
+    $session = $this->initCurl($data['TaxonObservation']['href'], self::$userId, self::$config['shared_secret']);
+    $response = $this->getCurlResponse($session);
+    echo $data['TaxonObservation']['href'] . "\n";
+    $this->assertResponseOk($response, '/taxon-observations/id');
+    $apiResponse = json_decode($response['response'], true);
+    $this->checkValidTaxonObservation($apiResponse);
   }
 
-  private function callService($method, $userId, $sharedSecret, $query=false) {
-    $url = url::base(true) . "/services/rest/$method";
-    if ($query)
-      $url .= '?' . http_build_query($query);
+  private function initCurl($url, $userId, $sharedSecret) {
     $session = curl_init();
     // Set the POST options.
     curl_setopt ($session, CURLOPT_URL, $url);
@@ -215,6 +224,10 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $hmac = hash_hmac("sha1", $url, $sharedSecret, $raw_output=FALSE);
     curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
+    return $session;
+  }
+
+  private function getCurlResponse($session) {
     // Do the POST and then close the session
     $response = curl_exec($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
@@ -226,5 +239,21 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
       'httpCode' => $httpCode,
       'response' => $response
     );
+  }
+
+  /**
+   * A generic method to call the REST Api's web services.
+   * @param $method
+   * @param $userId
+   * @param $sharedSecret
+   * @param mixed|FALSE $query
+   * @return array
+   */
+  private function callService($method, $userId, $sharedSecret, $query=false) {
+    $url = url::base(true) . "/services/rest/$method";
+    if ($query)
+      $url .= '?' . http_build_query($query);
+    $session = $this->initCurl($url, $userId, $sharedSecret);
+    return $this->getCurlResponse($session);
   }
 }
