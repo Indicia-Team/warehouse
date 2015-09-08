@@ -587,7 +587,7 @@ HTML;
       $pagination['next'] = $this->generate_link(array('page'=>$this->request['page']+1));
     }
     return array(
-      'pagination' => $pagination,
+      'paging' => $pagination,
       'data' => $list
     );
   }
