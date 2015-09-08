@@ -37,7 +37,7 @@
   <columns>
     <column name="id" sql="'#system_user_id#' || oc.id::varchar" datatype="text"/>
     <column name="taxon_observation_id" 
-            sql="COALESCE(occ.external_key, '#system_id#' || o.id::varchar)" datatype="integer"/>
+            sql="COALESCE(occ.external_key, '#system_user_id#' || o.id::varchar)" datatype="integer"/>
     <column name="TaxonVersionKey" sql="ttl.external_key" datatype="text"/>    
     <column name="Comment" sql="oc.comment" datatype="text"/>
     <column name="StatusCode" sql="case oc.record_status when 'V' then 'G' when 'R' then 'R' when 'D' then 'A' else
