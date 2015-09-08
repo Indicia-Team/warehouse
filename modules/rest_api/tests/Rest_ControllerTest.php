@@ -112,6 +112,7 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
   /**
    * Test the /taxon-observations endpoint in valid use.
    * @todo Test the pagination responses
+   * @todo Test the /taxon-observations/id endpoint
    */
   public function testTaxon_observations_get() {
     foreach (self::$config['projects'] as $projDef) {
@@ -131,6 +132,46 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
     }
   }
 
+  public function testAnnotations_get_incorrect_params() {
+    $response = $this->callService('annotations', self::$userId, '---');
+    $this->assertTrue($response['httpCode'] === 401,
+      'Incorrect shared secret passed to /annotations but request authorised. ' .
+      "Http response $response[httpCode].");
+    $this->assertTrue($response['response'] === 'Unauthorized',
+      'Incorrect shared secret passed to /annotations but data still returned. ' .
+      var_export($response, TRUE));
+    $response = $this->callService('annotations', '---', self::$config['shared_secret']);
+    $this->assertTrue($response['httpCode'] === 401,
+      'Incorrect userId passed to /annotations but request authorised. ' .
+      "Http response $response[httpCode].");
+    $this->assertTrue($response['response'] === 'Unauthorized',
+      'Incorrect userId passed to /annotations but data still returned. ' .
+      var_export($response, TRUE));
+  }
+
+  /**
+   * Test the /annotations endpoint in valid use.
+   * @todo Test the pagination responses
+   * @todo Test the annotations/id endpoint
+   */
+  public function testAnnotations_get() {
+    foreach (self::$config['projects'] as $projDef) {
+      $response = $this->callService("annotations", self::$userId, self::$config['shared_secret'],
+        array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'));
+      $this->assertTrue($response['curlErrno']===0 && $response['httpCode']===200,
+        "Invalid response from call to /annotations. HTTP Response $response[httpCode]. Curl error " .
+        "$response[curlErrno] ($response[errorMessage]).");
+      $apiResponse = json_decode($response['response'], true);
+      $this->assertArrayHasKey('paging', $apiResponse, 'Paging missing from response to call to annotations');
+      $this->assertArrayHasKey('data', $apiResponse, 'Data missing from response to call to annotations');
+      $data = $apiResponse['data'];
+      foreach ($data as $annotation)
+        $this->checkValidAnnotation($annotation);
+      // only test a single project
+      break;
+    }
+  }
+
   /**
    * Checks that an array retrieved from the API is a valid taxon-occurrence resource.
    * @param $data Array to be tested as a taxon occurrence resource
@@ -144,6 +185,23 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
       $this->assertNotEmpty($data[$key],
           "Empty $key in taxon-observation resource" . var_export($data, true));
     }
+    // @todo Format tests
+  }
+
+  /**
+   * Checks that an array retrieved from the API is a valid annotation resource.
+   * @param $data Array to be tested as an annotation resource
+   */
+  private function checkValidAnnotation($data) {
+    $mustHave = array('id', 'href', 'TaxonObservation', 'TaxonVersionKey', 'Comment', 'Question',
+        'AuthorName', 'DateTime');
+    foreach ($mustHave as $key) {
+      $this->assertArrayHasKey($key, $data,
+        "Missing $key from taxon-observation resource. " . var_export($data, true));
+      $this->assertNotEmpty($data[$key],
+        "Empty $key in taxon-observation resource" . var_export($data, true));
+    }
+    // @todo Format tests
   }
 
   private function callService($method, $userId, $sharedSecret, $query=false) {
