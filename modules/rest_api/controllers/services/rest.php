@@ -612,7 +612,7 @@ HTML;
     }
     $params['system_user_id'] = $this->server_user_id;
     // the project defines how records are allowed to be shared with this client
-    //$params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
+    $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
     $report = $this->reportEngine->requestReport("rest_api/$report.xml", 'local', 'xml', $params);
     return $report;
   }
