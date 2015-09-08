@@ -34,9 +34,11 @@ class rest_api_sync {
   }
 
   public static function get_server_taxon_observations_url($server_url, $projectId, $edited_date_from) {
-    return $server_url . '/taxon_observations?' . http_build_query(array(
+    return $server_url . '/taxon-observations?' . http_build_query(array(
       'proj_id' => $projectId,
-      'edited_date_from' => $edited_date_from
+      'edited_date_from' => '2014-03-01', //$edited_date_from
+      'edited_date_to' => '2014-03-02',
+      'page' => 1
     ));
   }
   
@@ -70,7 +72,6 @@ class rest_api_sync {
     curl_setopt ($session, CURLOPT_URL, $url);
     curl_setopt($session, CURLOPT_HEADER, false);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    // @todo Correct password
     $hmac = hash_hmac("sha1", $url, $shared_secret, $raw_output=FALSE);
     curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
     // Do the POST and then close the session
@@ -79,7 +80,7 @@ class rest_api_sync {
     $curlErrno = curl_errno($session);
     // Check for an error, or check if the http response was not OK.
     if ($curlErrno || $httpCode != 200) {
-      echo "Error occurrence accessing $url<br/>";
+      echo "Error occurred accessing $url<br/>";
       kohana::log('error', "Rest API Sync error $httpCode");
       kohana::log('error', 'cUrl POST request failed.');
       if ($curlErrno) {
