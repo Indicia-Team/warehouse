@@ -31,6 +31,7 @@ $config['user_id'] = 'BRC';
 $config['clients']=array(
   // keyed by client system ID
   'BTO' => array(
+    'shared_secret' => 'password',
     'projects' => array(
       // list of available projects keyed by project ID
       'BRC1' => array(
