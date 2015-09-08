@@ -98,6 +98,8 @@ if( !function_exists('apache_request_headers') ) {
   }
 }
 
+class RestApiAbort extends Exception {}
+
 /**
  * Controller class for the RESTful API. Implements handlers for the variuos resource
  * URIs.
@@ -284,20 +286,25 @@ HTML;
           $extra = $urlSuffix ? "/$urlSuffix" : '';
           $help = kohana::lang("rest_api.resources.$resource$extra");
           echo "<p>$help</p>";
-          // output the documentation for parameters.
-          echo '<table><caption>Parameters</caption>';
-          echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
-          echo '<tbody>';
-          foreach ($resourceDef['params'] as $name => $paramDef) {
-            echo "<tr><th scope=\"row\">$name</th>";
-            echo "<td>$paramDef[datatype]</td>";
-            $help = kohana::lang("rest_api.$resource.$name");
-            if (!empty($paramDef['required']))
-              $help .= ' <strong>' . kohana::lang('Required.') .'</strong>';
-            echo "<td>$help</td>";
-            echo "</tr>";
+          if (count($resourceDef['params'])) {
+            // output the documentation for parameters.
+            echo '<table><caption>Parameters</caption>';
+            echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
+            echo '<tbody>';
+            foreach ($resourceDef['params'] as $name => $paramDef) {
+              echo "<tr><th scope=\"row\">$name</th>";
+              echo "<td>$paramDef[datatype]</td>";
+              $help = kohana::lang("rest_api.$resource.$name");
+              if (!empty($paramDef['required'])) {
+                $help .= ' <strong>' . kohana::lang('Required.') . '</strong>';
+              }
+              echo "<td>$help</td>";
+              echo "</tr>";
+            }
+            echo '</tbody></table>';
+          } else {
+            echo '<p><em>There are no parameters for this endpoint.</em></p>';
           }
-          echo '</tbody></table>';
         }
       }
     }
@@ -315,50 +322,61 @@ HTML;
    * @throws exception
    */
   public function __call($name, $arguments) {
-    $resourceName = str_replace('_', '-', $name);
-    $this->authenticate();
-    if (array_key_exists($resourceName, $this->http_methods)) {
-      $this->method = $_SERVER['REQUEST_METHOD'];
-      if ($this->method==='OPTIONS') {
-        // A request for the methods allowed for this resource
-        header('allow: '.strtoupper(implode(',', array_keys($this->http_methods[$resourceName]))));
-      } else {
-        if (!array_key_exists(strtolower($this->method), $this->http_methods[$resourceName])) {
-          $this->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
+    try {
+      $resourceName = str_replace('_', '-', $name);
+      $this->authenticate();
+      if (array_key_exists($resourceName, $this->http_methods)) {
+        $this->method = $_SERVER['REQUEST_METHOD'];
+        if ($this->method === 'OPTIONS') {
+          // A request for the methods allowed for this resource
+          header('allow: ' . strtoupper(implode(',', array_keys($this->http_methods[$resourceName]))));
         }
-        if ($this->method==='GET') {
-          $this->request = $_GET;
-        } elseif ($this->method==='POST') {
-          $this->request = $_POST;
-        }
-        
-        $methodName = $name . '_' . strtolower($this->method);
-        $this->check_version($arguments);
-      
-        $requestForId = null;
-        if (count($arguments)>1) {
-          $this->fail('Bad request', 400, 'Incorrect number of arguments');
-          // @todo: http response
-        } elseif (count($arguments)===1) {
-          // we only allow a single argument to request a single resource by ID
-          if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
-            $requestForId = $arguments[0];
-          } else {
-            $this->fail('Bad request', 400, 'Invalid ID requested');
+        else {
+          if (!array_key_exists(strtolower($this->method), $this->http_methods[$resourceName])) {
+            $this->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
           }
+          if ($this->method === 'GET') {
+            $this->request = $_GET;
+          }
+          elseif ($this->method === 'POST') {
+            $this->request = $_POST;
+          }
+
+          $methodName = $name . '_' . strtolower($this->method);
+          $this->check_version($arguments);
+
+          $requestForId = NULL;
+          if (count($arguments) > 1) {
+            $this->fail('Bad request', 400, 'Incorrect number of arguments');
+            // @todo: http response
+          }
+          elseif (count($arguments) === 1) {
+            // we only allow a single argument to request a single resource by ID
+            if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
+              $requestForId = $arguments[0];
+            }
+            else {
+              $this->fail('Bad request', 400, 'Invalid ID requested '.$arguments[0]);
+            }
+          }
+          // apart from requests for a project, we always want a project ID
+          if ($name !== 'projects' && empty($this->request['proj_id'])) {
+            $this->fail('Bad Request', 400, 'Missing proj_id parameter');
+          }
+          if ($requestForId) {
+            $methodName .= '_id';
+          }
+          $this->resourceName = $name;
+          $this->validateParameters($resourceName, strtolower($this->method), $requestForId);
+          call_user_func(array($this, $methodName), $requestForId);
         }
-        // apart from requests for a project, we always want a project ID
-        if ($name!=='projects' && empty($this->request['proj_id'])) {
-          $this->fail('Bad Request', 400, 'Missing proj_id parameter');
-        }
-        if ($requestForId)
-          $methodName .= '_id';
-        $this->resourceName = $name;
-        $this->validateParameters($resourceName, strtolower($this->method), $requestForId);
-        call_user_func(array($this, $methodName), $requestForId);
       }
-    } else {
-      $this->fail('Not Found', 404, "Resource $name not known");
+      else {
+        $this->fail('Not Found', 404, "Resource $name not known");
+      }
+    }
+    catch (RestApiAbort $e) {
+      // no action if a proper abort
     }
   }
   
@@ -412,7 +430,7 @@ HTML;
       $occurrence_id = substr($id, strlen(kohana::config('rest.user_id')));
     } else {
       // @todo Proper handling, either error if system not recognised, or load correct system record.
-      throw new exception('Only handling load of own observations at the moment');
+      throw new exception('Only handling load of own observations at the moment.');
     }
     $params = array('occurrence_id' => $occurrence_id);
     $report = $this->load_report('filterable_taxon_observations', $params);
@@ -495,7 +513,6 @@ HTML;
       $params['comment_edited_date_to'] = $this->request['edited_date_to'];
     }
     $report = $this->load_report('filterable_annotations', $params);
-    kohana::log('debug', var_export($report, true));
     $records = $report['content']['records'];
     // for each record, restructure the taxon observations sub-object
     foreach ($records as &$record) {
@@ -556,10 +573,13 @@ HTML;
   private function add_item_metadata(&$item, $entity) {
     $params = $this->request;
     $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]";
+    $query = array();
     if (!empty($params['proj_id']))
-      $item['href'] .= "&proj_id=$params[proj_id]";
+      $query['proj_id'] = $params['proj_id'];
     if (!empty($params['format']))
-      $item['href'] .= "&format=$params[format]";
+      $query['format'] = $params['format'];
+    if (!empty($query))
+      $item['href'] .= '?' . http_build_query($query);
     // strip nulls and empty strings
     $item = array_filter($item, array($this, 'notempty'));
   }
@@ -766,7 +786,7 @@ HTML;
     echo $msg;
     if ($info)
       kohana::log('debug', $info);
-    exit;
+    throw new RestApiAbort($msg);
   }
 
   /**
