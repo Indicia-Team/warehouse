@@ -22,6 +22,9 @@ and o.taxa_taxon_list_external_key is not null
     <param name='system_user_id' display='System ID' description='3 character code identifying the system' datatype='text' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default="" />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' default="" />
+    <param name='external_key' display="External system key" descriptipon="UID of this key from the source system" datatype="text" default="">
+      <where>occ.external_key='#external_key#'</where>
+    </param>
   </params>
   <columns>
     <column name='id' display='ID' sql="COALESCE(occ.external_key, '#system_user_id#' || o.id::varchar)" datatype="text" />

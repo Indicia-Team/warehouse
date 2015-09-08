@@ -428,11 +428,12 @@ HTML;
   private function taxon_observations_get_id($id) {
     if (substr($id, 0, strlen(kohana::config('rest.user_id')))===kohana::config('rest.user_id')) {
       $occurrence_id = substr($id, strlen(kohana::config('rest.user_id')));
+      $params = array('occurrence_id' => $occurrence_id);
     } else {
-      // @todo Proper handling, either error if system not recognised, or load correct system record.
-      throw new exception('Only handling load of own observations at the moment.');
+      // @todo What happens if system not recognised?
+      $params = array('external_key' => $id);
     }
-    $params = array('occurrence_id' => $occurrence_id);
+
     $report = $this->load_report('filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
