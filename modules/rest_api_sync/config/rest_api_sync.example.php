@@ -23,7 +23,7 @@
 /**
  * Define the database ID used to identify this system in the network.
  */
-$config['system_id'] = 'ABC';
+$config['user_id'] = 'ABC';
 $config['taxon_list_id'] = 1;
 
 // The following configuration is a temporary definition of the projects available for 
