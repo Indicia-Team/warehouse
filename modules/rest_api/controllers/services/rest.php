@@ -367,7 +367,7 @@ HTML;
    * 
    * @param type $id Unique ID for the project to output
    */
-  public function projects_get_id($id) {
+  private function projects_get_id($id) {
     if (!array_key_exists($id, $this->projects)) {
       $this->fail('No Content', 204);
     }
@@ -384,7 +384,7 @@ HTML;
    * @todo Projects are currently hard coded in the config file, so pagination etc
    * is just stub code.
    */
-  public function projects_get() {
+  private function projects_get() {
     // Add metadata such as href to each project
     foreach ($this->projects as $id => &$project) {
       // Add metadata such as href to each project
@@ -407,7 +407,7 @@ HTML;
    * 
    * @param type $id Unique ID for the taxon-observations to output
    */
-  public function taxon_observations_get_id($id) {
+  private function taxon_observations_get_id($id) {
     if (substr($id, 0, strlen(kohana::config('rest.user_id')))===kohana::config('rest.user_id')) {
       $occurrence_id = substr($id, strlen(kohana::config('rest.user_id')));
     } else {
@@ -431,7 +431,7 @@ HTML;
    * GET handler for the taxon-observations resource. Outputs a list of taxon observation details.
    * @todo Ensure delete information is output.
    */
-  public function taxon_observations_get() {
+  private function taxon_observations_get() {
     $this->checkPaginationParams();
     $params = array(
       // limit set to 1 more than we need, so we can ascertain if next page required
@@ -453,7 +453,7 @@ HTML;
    * 
    * @param type $id Unique ID for the annotations to output
    */
-  public function annotations_get_id($id) {
+  private function annotations_get_id($id) {
     $params = array('id' => $id);
     $report = $this->load_report('filterable_annotations', $params);
     if (empty($report['content']['records'])) {
@@ -476,7 +476,7 @@ HTML;
   /**
    * GET handler for the annotations resource. Outputs a list of annotation details.
    */
-  public function annotations_get() {
+  private function annotations_get() {
     // @todo Integrate determinations in the output
     // @todo handle TaxonVersionKey properly
     // @todo handle unansweredQuestion
