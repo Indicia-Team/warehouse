@@ -33,6 +33,7 @@
     <column name="surveyid" display="Survey ID" sql="sid.int_value" visible="false"/>
     <column name="recordtype" sql="lower(rt.term)" visible="false"/>
     <column name='utc' display='UTC time' sql="utc.text_value" />
+    <column name='utc_valId' visible="false" sql="utc.id" />
     <column name='lat' display='Lat' sql="st_y(st_transform(st_centroid(s.geom), 4326))" />
     <column name='long' display='Long' sql="st_x(st_transform(st_centroid(s.geom), 4326))" />
     <column name="transectid" display="Transect ID" sql="tid.int_value" visible="false"/>
