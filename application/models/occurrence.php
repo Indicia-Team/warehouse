@@ -444,8 +444,12 @@ class Occurrence_Model extends ORM
   
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   * @param array $options Model specific options, including
+   *
+   * * **occurrence_associations** - Set to 't' to enable occurrence associations options. The
+   *   relevant warehouse module must also be enabled.
    */
-  public function fixed_values_form() {
+  public function fixed_values_form($options=array()) {
     $srefs = array();
     $systems = spatial_ref::system_list();
     foreach ($systems as $code=>$title) 
@@ -467,7 +471,7 @@ class Occurrence_Model extends ORM
         'linked_filter_field'=>'website_id'
       ),
       'sample:entered_sref_system' => array(
-        'display'=>'Spatial Ref. System', 
+        'display'=>'Spatial ref. system',
         'description'=>'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.', 
         'datatype'=>'lookup',
@@ -484,41 +488,46 @@ class Occurrence_Model extends ORM
     	'filterIncludesNulls'=>true
       ),
       'occurrence:record_status' => array(
-        'display' => 'Record Status',
+        'display' => 'Record status',
         'description' => 'Select the initial status for imported species records',
         'datatype' => 'lookup',
         'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
         'default' => 'C'
       )
     );
-    if(self::_check_module_active('occurrence_associations'))
-    	$retVal['useAssociations'] = array(
-    			'display' => 'Use Associations',
-    			'description' => 'Select if this import uses occurrence associations: implies two species records uploaded for each entry in the file.',
-    			'datatype' => 'checkbox'); // default off
-    	$retVal['occurrence_association:fkFilter:association_type:termlist_id' ] = array(
-    			'display' => 'Term list for association types',
-    			'description'=>'Select the term list which will be used to match the association types.',
-    			'datatype'=>'lookup',
-    			'population_call'=>'direct:termlist:id:title'
+    if(!empty($options['occurrence_associations']) && $options['occurrence_associations']==='t' &&
+        self::_check_module_active('occurrence_associations')) {
+      $retVal['useAssociations'] = array(
+        'display' => 'Use associations',
+        'description' => 'Select if this import uses occurrence associations: implies two species records uploaded for each entry in the file.',
+        'datatype' => 'checkbox'
+      ); // default off
+      $retVal['occurrence_association:fkFilter:association_type:termlist_id'] = array(
+        'display' => 'Term list for association types',
+        'description' => 'Select the term list which will be used to match the association types.',
+        'datatype' => 'lookup',
+        'population_call' => 'direct:termlist:id:title'
 //    			,'linked_to'=>'website_id',
 //    			'linked_filter_field'=>'website_id',
 //    	        'filterIncludesNulls'=>true
-    			);
-    	$retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id' ] = array(
-    			'display' => 'Second Species list',
-    			'description'=>'Select the species checklist which will be used when attempting to match second species names.',
-    			'datatype'=>'lookup',
-    			'population_call'=>'direct:taxon_list:id:title',
-    			'linked_to'=>'website_id',
-    			'linked_filter_field'=>'website_id',
-    	        'filterIncludesNulls'=>true);
-    	$retVal['occurrence_2:record_status'] = array(
-    			'display' => 'Record Status',
-    			'description' => 'Select the initial status for second imported species records',
-    			'datatype' => 'lookup',
-    			'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
-    			'default' => 'C');
+      );
+      $retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id'] = array(
+        'display' => 'Second species list',
+        'description' => 'Select the species checklist which will be used when attempting to match second species names.',
+        'datatype' => 'lookup',
+        'population_call' => 'direct:taxon_list:id:title',
+        'linked_to' => 'website_id',
+        'linked_filter_field' => 'website_id',
+        'filterIncludesNulls' => TRUE
+      );
+      $retVal['occurrence_2:record_status'] = array(
+        'display' => 'Record status',
+        'description' => 'Select the initial status for second imported species records',
+        'datatype' => 'lookup',
+        'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
+        'default' => 'C'
+      );
+    }
     return $retVal;
   }
   
