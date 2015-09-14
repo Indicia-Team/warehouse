@@ -460,7 +460,7 @@ class Occurrence_Model extends ORM
         'description'=>'Select the website to import records into.', 
         'datatype'=>'lookup',
         'population_call'=>'direct:website:id:title' ,
-    	'filterIncludesNulls'=>true
+        'filterIncludesNulls'=>true
       ),
       'survey_id' => array(
         'display'=>'Survey', 
@@ -485,7 +485,7 @@ class Occurrence_Model extends ORM
         'population_call'=>'direct:taxon_list:id:title',
         'linked_to'=>'website_id',
         'linked_filter_field'=>'website_id',
-    	'filterIncludesNulls'=>true
+        'filterIncludesNulls'=>true
       ),
       'occurrence:record_status' => array(
         'display' => 'Record status',
