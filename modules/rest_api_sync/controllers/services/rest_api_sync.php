@@ -47,6 +47,10 @@ class Rest_Api_Sync_Controller extends Controller {
         }
         $nextPageOfProjectsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
       }
+      /*
+      $project = array('id'=>'BT', 'Title'=>'Sync from BTO');
+      $survey_id = $this->get_survey_id($server, $project);
+      */
       $this->sync_from_project($server, $serverId, $project, $survey_id);
     }
   }
@@ -115,7 +119,11 @@ class Rest_Api_Sync_Controller extends Controller {
           elseif (!empty($observation['SiteName'])) {
             $values['sample:location_name'] = $observation['SiteName'];
           }
-          $existing = $this->link_to_existing_record($values, $survey_id, $recordOriginHere);
+          $existing = $this->find_existing_record($observation['id'], $survey_id);
+          if (count($existing)) {
+            $values['occurrence:id'] = $existing[0]['id'];
+            $values['sample:id'] = $existing[0]['sample_id'];
+          }
 
           $obs = ORM::factory('occurrence');
           $obs->set_submission_data($values);
@@ -145,9 +153,15 @@ class Rest_Api_Sync_Controller extends Controller {
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     while ($nextPageOfAnnotationsUrl) {
       $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $serverId);
-      var_export($data);
-      echo '<br/>';
-      $nextPageOfAnnotationsUrl = false; //isset($data['paging']['next']) ? $data['paging']['next'] : false;
+      $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
+      // @todo Actual sync of annotations
+      foreach ($data as $annotation) {
+        $obs = $this->find_existing_record($annotation['TaxonObservation']['id'], $survey_id);
+        // set up a values array for the annotation post
+        // link to existing annotation if appropriate
+        // submit the annotation
+        // if the most recent annotation for a record, update it's verification status
+      }
     }
     echo "<strong>Annotations</strong><br/><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
   }
@@ -155,14 +169,13 @@ class Rest_Api_Sync_Controller extends Controller {
   /**
    * Link the values we are about to post up to an existing sample and occurrence ID
    * if one exists.
-   * @param array &$values
-   * @param array $observation
-   * @param $survey_id
-   * @param $recordOriginHere
-   * @return boolean True if the record already exists in the database.
+   * @param string $id The taxon-observation's ID as returned by a call to the REST api.
+   * @param integer $survey_id The database survey ID value to lookup within.
+   * @return array Any existing matching records.
    */
-  private function link_to_existing_record(&$values, $observation, $survey_id, $recordOriginHere) {
+  private function find_existing_record($id, $survey_id) {
     $userId = Kohana::config('rest_api_sync.user_id');
+    $recordOriginHere = substr($id, 0, strlen($userId)) === $userId;
     // Look for an existing record to overwrite
     $filter = array(
       'o.deleted' => 'f',
@@ -172,17 +185,13 @@ class Rest_Api_Sync_Controller extends Controller {
     // @todo Do we want to overwrite existing records which originated here?
     // @todo What happens if origin here but record missing?
     if ($recordOriginHere)
-      $filter['o.id'] = substr($observation['id'], strlen($userId)-1);
+      $filter['o.id'] = substr($id, strlen($userId)-1);
     else
-      $filter['o.external_key'] = $observation['id'];
+      $filter['o.external_key'] = $id;
     $existing = $this->db->select('o.id, o.sample_id')
       ->from('occurrences o')
       ->join('samples as s', 'o.sample_id', 's.id')
       ->where($filter)->get()->result_array(false);
-    if (count($existing)) {
-      $values['occurrence:id'] = $existing[0]['id'];
-      $values['sample:id'] = $existing[0]['sample_id'];
-    }
     return $existing;
   }
 
