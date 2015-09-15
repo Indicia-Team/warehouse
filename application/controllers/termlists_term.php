@@ -56,6 +56,23 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "Terms in ".$list->title;
     $this->internal_index($termlist_id);
   }
+
+  /**
+   * Return the default action columns for a grid - just an edit link unless
+   * the user does not have rights to edit this list.
+   */
+  protected function get_action_columns() {
+    if ($this->termlist_authorised($this->uri->argument(1))) {
+      return array(
+        array(
+          'caption' => 'edit',
+          'url' => $this->controllerpath . "/edit/{id}"
+        )
+      );
+    } else {
+      return array();
+    }
+  }
  
   public function children($id) {
     $parentTlt = ORM::factory('termlists_term', $id);
@@ -69,11 +86,6 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
   private function internal_index($termlist_id) {
     // No further filtering of the gridview required as the very fact you can access the parent termlist
     // means you can access all the taxa for it.
-    if (!$this->termlist_authorised($termlist_id))
-    {
-      $this->access_denied('table to view records with a termlist ID='.$termlist_id);
-      return;
-    }
     $this->base_filter['termlist_id'] = $termlist_id;
     parent::index(); 
     $this->view->termlist_id = $termlist_id;
@@ -83,6 +95,9 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       'termlists_term:termlist_id' => $termlist_id
     );
     $this->upload_csv_form->returnPage = $termlist_id;
+    // Apply permissions. If core admin, or a private website-owned termlist, then its editable.
+    // @todo: Could possibly allow editing of a termlist if public but only used by 1 site
+    $this->view->readonly = !$this->termlist_authorised($termlist_id);
   }
 
   /**
@@ -169,14 +184,20 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
 
   protected function termlist_authorised($id)
   {
+    if ($this->auth->logged_in('CoreAdmin'))
+      return true;
     // for this controller, any null ID termlist can not be accessed
     if (is_null($id)) return false;
     $websites = $this->get_allowed_website_id_list('editor');
     if (!is_null($websites))
     {
-      $termlist = new Termlist_Model($id);
+      $termlist = ORM::factory('termlist', $id);
       // for this controller, any termlist that does not exist can not be accessed.
-      if (!$termlist->loaded) return false;
+      if (!$termlist->loaded)
+        return false;
+      // if not core admin, cannot edit terms in a global termlist
+      if ($termlist->website_id===null)
+        return false;
       return (in_array($termlist->website_id, $websites));
     }
     return true;

@@ -76,7 +76,15 @@ class Termlist_Controller extends Gridview_Base_Controller {
     $r = parent::getModelValues();
     if ($this->model->parent_id) {
       $r['parent_website_id']=$this->model->parent->website_id;
-    } 
+    }
+    // Apply permissions. If core admin, or a private website-owned termlist, then its editable.
+    if ($this->auth->logged_in('CoreAdmin') || $this->model->website_id!==null) {
+      $r['metaFields:disabled_input']='NO';
+    } else {
+      // @todo: Could possibly allow editing of a termlist if public but only used by 1 site
+      // disable the termlist from editing, as it is public and user is not core admin
+      $r['metaFields:disabled_input']='YES';
+    }
     return $r;    
   }
 

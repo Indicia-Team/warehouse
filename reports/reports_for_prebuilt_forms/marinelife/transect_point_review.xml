@@ -7,6 +7,7 @@
     FROM samples s
     JOIN sample_attribute_values gid on gid.sample_id=s.id and gid.sample_attribute_id=21 and gid.deleted=false
     JOIN sample_attribute_values utc on utc.sample_id=s.id and utc.sample_attribute_id=27 and utc.deleted=false
+    JOIN sample_attribute_values local on local.sample_id=s.id and local.sample_attribute_id=26 and local.deleted=false
     JOIN sample_attribute_values sid on sid.sample_id=s.id and sid.sample_attribute_id=22 and sid.deleted=false
     JOIN sample_attribute_values tid on tid.sample_id=s.id and tid.sample_attribute_id=24 and tid.deleted=false
     JOIN sample_attribute_values rtv on rtv.sample_id=s.id and rtv.sample_attribute_id=43 and rtv.deleted=false
@@ -33,6 +34,9 @@
     <column name="surveyid" display="Survey ID" sql="sid.int_value" visible="false"/>
     <column name="recordtype" sql="lower(rt.term)" visible="false"/>
     <column name='utc' display='UTC time' sql="utc.text_value" />
+    <column name='local_time_val_id' visible="false" sql="local.id" />
+    <column name='utc_time_val_id' visible="false" sql="utc.id" />
+    <column name="diff" visible="false" sql="extract(hours from (local.text_value::time - utc.text_value::time))" />
     <column name='lat' display='Lat' sql="st_y(st_transform(st_centroid(s.geom), 4326))" />
     <column name='long' display='Long' sql="st_x(st_transform(st_centroid(s.geom), 4326))" />
     <column name="transectid" display="Transect ID" sql="tid.int_value" visible="false"/>

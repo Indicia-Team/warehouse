@@ -64,15 +64,19 @@ endif;
 echo $grid;
 ?>
 <br/>
-<form action="<?php echo url::site().'termlists_term/create/'.$termlist_id; ?>" method="post">
-<?php if (isset($parent_id)): ?>
-<input type="hidden" value="<?php echo $parent_id; ?>" name="termlists_term:parent_id"/>
+<?php if (!$readonly) : ?>
+  <form action="<?php echo url::site().'termlists_term/create/'.$termlist_id; ?>" method="post">
+  <?php if (isset($parent_id)): ?>
+    <input type="hidden" value="<?php echo $parent_id; ?>" name="termlists_term:parent_id"/>
+  <?php endif; ?>
+  <input type="submit" value="New term" class="ui-corner-all ui-state-default button" />
+  </form>
 <?php endif; ?>
-<input type="submit" value="New term" class="ui-corner-all ui-state-default button" />
-</form>
 <br />
 <?php
-echo $upload_csv_form;
+if (!$readonly) {
+  echo $upload_csv_form;
+}
 if (isset($parent_list_id)) {
   if (request::is_ajax()) {
     // When viewing as an AJAX loaded tab, don't reload jQuery as it is already on the page.

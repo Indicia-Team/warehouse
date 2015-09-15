@@ -41,14 +41,19 @@ class Import_Controller extends Service_Base_Controller {
 
   /**
    * Controller function that provides a web service services/import/get_import_settings/model.
+   * Options for the model's specific form can be passed in $_GET.
    * @param string $model Singular name of the model entity to check.
    * @return string JSON Parameters form details for this model, or empty string if no parameters form required.
    */
   public function get_import_settings($model) {
     $this->authenticate('read');
     $model = ORM::factory($model);
-    if (method_exists($model, 'fixed_values_form')) {      
-      echo json_encode($model->fixed_values_form());      
+    if (method_exists($model, 'fixed_values_form')) {
+      // Pass URL parameters through to the fixed values form in case there are model specific settings.
+      $options = array_merge($_GET);
+      unset($options['nonce']);
+      unset($options['auth_token']);
+      echo json_encode($model->fixed_values_form($options));
     }
   }
   

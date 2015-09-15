@@ -301,7 +301,7 @@ class Indicia_Controller extends Template_Controller {
       $this->session->set_flash('flash_error', "You appear to be attempting to edit a page you do not have rights to.");
       $this->redirectToIndex();
     }
-    elseif ($_POST['submit']=='Cancel') {      
+    elseif ($_POST['submit']=='Cancel') {
       $this->redirectToIndex();
     } else {
       // Are we editing an existing record? If so, load it.
@@ -459,7 +459,8 @@ class Indicia_Controller extends Template_Controller {
     else
       $prefix = '';
     $this->session->set_flash('flash_error', "You do not have sufficient permissions to access the $prefix$level.");
-    url::redirect('home');
+    if (url::current()!=='home')
+      url::redirect('home');
   }
 
   /**
