@@ -27,7 +27,7 @@
 class Rest_Api_Sync_Controller extends Controller {
 
   /**
-   *
+   * Main controller method for the rest_api_sync module. Initiates a synchronisation.
    */
   public function index() {
     $this->db = Database::instance();
@@ -37,10 +37,9 @@ class Rest_Api_Sync_Controller extends Controller {
     foreach ($servers as $serverId => $server) {
       echo "<h2>$serverId</h2>";
       $nextPageOfProjectsUrl = rest_api_sync::get_server_projects_url($server['url']);
-      echo $nextPageOfProjectsUrl;
+      echo "$nextPageOfProjectsUrl<br/>";
       while ($nextPageOfProjectsUrl) {
         $data = rest_api_sync::get_server_projects($nextPageOfProjectsUrl, $serverId);
-        var_export($data);
         $projects = $data['data'];
         foreach ($projects as $project) {
           $survey_id = $this->get_survey_id($server, $project);
@@ -48,6 +47,7 @@ class Rest_Api_Sync_Controller extends Controller {
         }
         $nextPageOfProjectsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
       }
+      $this->sync_from_project($server, $serverId, $project, $survey_id);
     }
   }
 
@@ -59,6 +59,8 @@ class Rest_Api_Sync_Controller extends Controller {
   }
   
   private function sync_taxon_observations($server, $serverId, $project, $survey_id) {
+    $datasetNameAttrId = Kohana::config('rest_api_sync.dataset_name_attr_id');
+    $userId = Kohana::config('rest_api_sync.user_id');
     $fromDate = new DateTime('2 months ago');
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $nextPageOfTaxonObservationsUrl = rest_api_sync::get_server_taxon_observations_url(
@@ -81,6 +83,8 @@ class Rest_Api_Sync_Controller extends Controller {
           echo "Could not find taxon for $observation[TaxonVersionKey]<br/>";
         } 
         else {
+          // Find if the record originated here or elsewhere
+          $recordOriginHere = substr($observation['id'], 0, strlen($userId)) === $userId;
           // @todo Reuse the last sample if it matches
           $values = array(
             'website_id' => $server['website_id'],
@@ -95,6 +99,11 @@ class Rest_Api_Sync_Controller extends Controller {
             'occurrence:sensitivity_precision' => $observation['Sensitive']==='T' ? 10000 : null,
             'occurrence:record_status' => 'C'
           );
+          // If the record was originated from a different system, the specified dataset name
+          // needs to be stored
+          if ($datasetNameAttrId && !$recordOriginHere)
+            $values["smpAttr:$datasetNameAttrId"] = $observation['datasetName'];
+
           // Set the spatial reference depending on the projection information supplied.
           $this->set_sref_data($values, $observation, 'sample:entered_sref');
           // @todo Should the precision field be stored in a custom attribute?
@@ -106,20 +115,8 @@ class Rest_Api_Sync_Controller extends Controller {
           elseif (!empty($observation['SiteName'])) {
             $values['sample:location_name'] = $observation['SiteName'];
           }
-          // @todo Lookup matching record and overwrite if it exists
-          $existing = $this->db->select('o.id, o.sample_id')
-            ->from('occurrences o')
-            ->join('samples as s', 'o.sample_id', 's.id')
-            ->where(array(
-              'o.deleted' => 'f',
-              's.deleted' => 'f',
-              'o.external_key' => $observation['id'],
-              's.survey_id' => $survey_id
-            ))->get()->result_array(false);
-          if (count($existing)) {
-            $values['occurrence:id'] = $existing[0]['id'];
-            $values['sample:id'] = $existing[0]['sample_id'];
-          }
+          $existing = $this->link_to_existing_record($values, $survey_id, $recordOriginHere);
+
           $obs = ORM::factory('occurrence');
           $obs->set_submission_data($values);
           $obs->submit();
@@ -153,6 +150,40 @@ class Rest_Api_Sync_Controller extends Controller {
       $nextPageOfAnnotationsUrl = false; //isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
     echo "<strong>Annotations</strong><br/><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
+  }
+
+  /**
+   * Link the values we are about to post up to an existing sample and occurrence ID
+   * if one exists.
+   * @param array &$values
+   * @param array $observation
+   * @param $survey_id
+   * @param $recordOriginHere
+   * @return boolean True if the record already exists in the database.
+   */
+  private function link_to_existing_record(&$values, $observation, $survey_id, $recordOriginHere) {
+    $userId = Kohana::config('rest_api_sync.user_id');
+    // Look for an existing record to overwrite
+    $filter = array(
+      'o.deleted' => 'f',
+      's.deleted' => 'f',
+      's.survey_id' => $survey_id
+    );
+    // @todo Do we want to overwrite existing records which originated here?
+    // @todo What happens if origin here but record missing?
+    if ($recordOriginHere)
+      $filter['o.id'] = substr($observation['id'], strlen($userId)-1);
+    else
+      $filter['o.external_key'] = $observation['id'];
+    $existing = $this->db->select('o.id, o.sample_id')
+      ->from('occurrences o')
+      ->join('samples as s', 'o.sample_id', 's.id')
+      ->where($filter)->get()->result_array(false);
+    if (count($existing)) {
+      $values['occurrence:id'] = $existing[0]['id'];
+      $values['sample:id'] = $existing[0]['sample_id'];
+    }
+    return $existing;
   }
 
   /**
