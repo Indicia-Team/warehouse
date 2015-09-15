@@ -24,7 +24,17 @@
  * Define the database ID used to identify this system in the network.
  */
 $config['user_id'] = 'ABC';
+
+/**
+ * Master species checklist to lookup against.
+ */
 $config['taxon_list_id'] = 1;
+
+/**
+ * Which sample attribute will we use to store the dataset name for records which came from
+ * remote systems?
+ */
+$config['dataset_name_attr_id'] = 99;
 
 // The following configuration is a temporary definition of the projects available for 
 // each website.
