@@ -25,6 +25,12 @@
  */
 $config['user_id'] = 'BRC';
 
+/**
+ * Which sample attribute will we use to store the dataset name for records which came from
+ * remote systems?
+ */
+$config['dataset_name_attr_id'] = 99;
+
 // The following configuration is a temporary definition of the projects available for 
 // each website.
 // @todo Move this configuration into a database table.

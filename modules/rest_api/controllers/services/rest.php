@@ -202,36 +202,40 @@ HTML;
         'params' => array()
       )
     )),
-    'taxon-observations' => array('get'=>array(
-      '' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text',
-            'required' => TRUE
-          ),
-          'page' => array(
-            'datatype' => 'integer'
-          ),
-          'page_size' => array(
-            'datatype' => 'integer'
-          ),
-          'edited_date_from' => array(
-            'datatype' => 'date',
-            'required' => TRUE
-          ),
-          'edited_date_to' => array(
-            'datatype' => 'date'
+    'taxon-observations' => array(
+      'get'=>array(
+        '' => array(
+          'params' => array(
+            'proj_id' => array(
+              'datatype' => 'text',
+              'required' => TRUE
+            ),
+            'page' => array(
+              'datatype' => 'integer'
+            ),
+            'page_size' => array(
+              'datatype' => 'integer'
+            ),
+            'edited_date_from' => array(
+              'datatype' => 'date',
+              'required' => TRUE
+            ),
+            'edited_date_to' => array(
+              'datatype' => 'date'
+            )
+          )
+        ),
+        '{taxon-observation ID}' => array(
+          'params' => array(
+            'proj_id' => array(
+              'datatype' => 'text'
+            )
           )
         )
       ),
-      '{taxon-observation ID}' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text'
-          )
-        )
+      'post' => array(
       )
-    )),
+    ),
     'annotations' => array('get' => array(
       '' => array(
         'params' => array(
@@ -433,6 +437,7 @@ HTML;
       // @todo What happens if system not recognised?
       $params = array('external_key' => $id);
     }
+    $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
 
     $report = $this->load_report('filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
@@ -463,6 +468,7 @@ HTML;
       $this->checkDate($this->request['edited_date_to'], 'edited_date_to');
       $params['edited_date_to'] = $this->request['edited_date_to'];
     }
+    $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
     $report = $this->load_report('filterable_taxon_observations', $params);
     $this->succeed($this->list_response_structure($report['content']['records'], 'taxon-observations'));
   }

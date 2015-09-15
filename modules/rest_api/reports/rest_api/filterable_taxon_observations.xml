@@ -6,6 +6,9 @@
 select #columns#
 from occurrences occ -- for access to external_key
 left join cache_occurrences o on o.id=occ.id
+join websites w on w.id=o.website_id
+left join groups g on g.id=o.group_id
+left join sample_attribute_values dn on dn.sample_id=o.sample_id and dn.deleted=false and dn.sample_attribute_id=#dataset_name_attr_id#
 #agreements_join#
 #joins#
 where #sharing_filter# 
@@ -22,12 +25,16 @@ and o.taxa_taxon_list_external_key is not null
     <param name='system_user_id' display='System ID' description='3 character code identifying the system' datatype='text' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default="" />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' default="" />
-    <param name='external_key' display="External system key" descriptipon="UID of this key from the source system" datatype="text" default="">
+    <param name='external_key' display="External system key" description="UID of this key from the source system" datatype="text" default="">
       <where>occ.external_key='#external_key#'</where>
     </param>
+    <param name="dataset_name_attr_id" display = "Dataset Name Attr ID" description="Sample attribute ID to store dataset name for remotely sourced records"
+           datatype="integer" />"
   </params>
   <columns>
     <column name='id' display='ID' sql="COALESCE(occ.external_key, '#system_user_id#' || o.id::varchar)" datatype="text" />
+    <column name='DatasetName' display='Dataset Name' datatype="text"
+            sql="coalesce(dn.text_value, w.title || '::' || o.survey_title || coalesce('::' || g.title, ''))" />
     <column name='TaxonVersionKey' display='Taxon Version Key' sql='o.taxa_taxon_list_external_key' datatype="text" />
     <column name='TaxonName' display='Taxon Name' sql='o.taxon' datatype="text" />
     <column name='ZeroAbundance' display='Zero Abundance' sql='upper(cast (o.zero_abundance as character))' datatype="text" />
