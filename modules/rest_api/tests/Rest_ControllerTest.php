@@ -198,15 +198,18 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    */
   private function checkValidAnnotation($data) {
     $this->assertTrue(is_array($data), 'Annotation object invalid. ' . var_export($data, true));
-    $mustHave = array('id', 'href', 'TaxonObservation', 'TaxonVersionKey', 'Comment', 'Question',
-        'AuthorName', 'DateTime');
+    $mustHave = array('id', 'href', 'TaxonObservation', 'TaxonVersionKey', 'Comment',
+        'Question', 'AuthorName', 'DateTime');
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
-        "Missing $key from taxon-observation resource. " . var_export($data, true));
+        "Missing $key from annotation resource. " . var_export($data, true));
       $this->assertNotEmpty($data[$key],
-        "Empty $key in taxon-observation resource" . var_export($data, true));
+        "Empty $key in annotation resource" . var_export($data, true));
     }
-    // @todo Format tests
+    if (!empty($data['StatusCode1']))
+      $this->assertRegExp('/[AUN]/', $data['StatusCode1'], 'Invalid StatusCode1 value for annotation');
+    if (!empty($data['StatusCode2']))
+      $this->assertRegExp('/[1-6]/', $data['StatusCode2'], 'Invalid StatusCode2 value for annotation');
     // We should be able to request the taxon observation associated with the occurrence
     $session = $this->initCurl($data['TaxonObservation']['href'], self::$userId, self::$config['shared_secret']);
     $response = $this->getCurlResponse($session);

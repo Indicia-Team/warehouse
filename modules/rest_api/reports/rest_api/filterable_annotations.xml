@@ -40,18 +40,16 @@
             sql="COALESCE(occ.external_key, '#system_user_id#' || o.id::varchar)" datatype="integer"/>
     <column name="TaxonVersionKey" sql="ttl.external_key" datatype="text"/>    
     <column name="Comment" sql="oc.comment" datatype="text"/>
-    <column name="StatusCode" sql="case oc.record_status when 'V' then 'G' when 'R' then 'R' when 'D' then 'A' else
+    <column name="StatusCode1" sql="case oc.record_status when 'V' then 'A' when 'R' then 'N' when 'D' then 'U' else
       /* fallback for old comments */
-      case when oc.comment like 'Verified%' or oc.comment like 'This record is assumed to be correct' then 'G'
-        when oc.comment like 'Dubious%' or oc.comment like 'Query%' then 'A' 
-        when oc.comment like 'Rejected%' then 'R' end
+      case when oc.comment like 'Verified%' or oc.comment like 'This record is assumed to be correct' then 'A'
+        when oc.comment like 'Dubious%' or oc.comment like 'Query%' then 'U'
+        when oc.comment like 'Rejected%' then 'N' end
     end" />
     <column name="Question" sql="oc.query" datatype="boolean" />
     <column name="AuthorName" datatype="text"
             sql="coalesce(oc.person_name, case u.id when 1 then 'anonymous' else p.first_name || ' ' || p.surname end)"/>
     <!--column name="emailaddress" display="Email" sql="" -->
     <column name="DateTime" sql="to_char(oc.created_on, 'YYYYMMDD&quot;T&quot;HH24:MI:SS')"/>
-    
-
   </columns>
 </report>
