@@ -210,9 +210,6 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
     // We should be able to request the taxon observation associated with the occurrence
     $session = $this->initCurl($data['TaxonObservation']['href'], self::$userId, self::$config['shared_secret']);
     $response = $this->getCurlResponse($session);
-    echo $data['TaxonObservation']['href'] . "\n";
-    var_export($response);
-    echo "\n";
     $this->assertResponseOk($response, '/taxon-observations/id');
     $apiResponse = json_decode($response['response'], true);
     $this->checkValidTaxonObservation($apiResponse);
