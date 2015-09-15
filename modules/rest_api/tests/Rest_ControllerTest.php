@@ -181,8 +181,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    */
   private function checkValidTaxonObservation($data) {
     $this->assertTrue(is_array($data), 'Taxon-observation object invalid. ' . var_export($data, true));
-    $mustHave = array('id', 'href', 'TaxonVersionKey', 'TaxonName', 'StartDate', 'EndDate', 'DateType',
-        'Projection', 'Precision', 'Recorder', 'lasteditdate');
+    $mustHave = array('id', 'href', 'DatasetName', 'TaxonVersionKey', 'TaxonName',
+        'StartDate', 'EndDate', 'DateType', 'Projection', 'Precision', 'Recorder', 'lasteditdate');
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
           "Missing $key from taxon-observation resource. " . var_export($data, true));
@@ -211,6 +211,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
     $session = $this->initCurl($data['TaxonObservation']['href'], self::$userId, self::$config['shared_secret']);
     $response = $this->getCurlResponse($session);
     echo $data['TaxonObservation']['href'] . "\n";
+    var_export($response);
+    echo "\n";
     $this->assertResponseOk($response, '/taxon-observations/id');
     $apiResponse = json_decode($response['response'], true);
     $this->checkValidTaxonObservation($apiResponse);
