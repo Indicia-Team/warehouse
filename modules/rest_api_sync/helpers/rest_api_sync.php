@@ -74,8 +74,11 @@ class rest_api_sync {
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $hmac = hash_hmac("sha1", $url, $shared_secret, $raw_output=FALSE);
     curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
+    echo "Authorization: USER:$userId:HMAC:$hmac<br/>";
+    echo "$url";
     // Do the POST and then close the session
     $response = curl_exec($session);
+    var_export($response);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE); 
     $curlErrno = curl_errno($session);
     // Check for an error, or check if the http response was not OK.

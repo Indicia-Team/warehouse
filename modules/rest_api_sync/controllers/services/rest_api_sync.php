@@ -48,10 +48,12 @@ class Rest_Api_Sync_Controller extends Controller {
         $nextPageOfProjectsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
       }
       /*
+       // TEMPORARY TEST CODE
       $project = array('id'=>'BT', 'Title'=>'Sync from BTO');
       $survey_id = $this->get_survey_id($server, $project);
-      */
       $this->sync_from_project($server, $serverId, $project, $survey_id);
+      */
+
     }
   }
 
@@ -119,7 +121,7 @@ class Rest_Api_Sync_Controller extends Controller {
           elseif (!empty($observation['SiteName'])) {
             $values['sample:location_name'] = $observation['SiteName'];
           }
-          $existing = $this->find_existing_record($observation['id'], $survey_id);
+          $existing = $this->find_existing_observation($observation['id'], $survey_id);
           if (count($existing)) {
             $values['occurrence:id'] = $existing[0]['id'];
             $values['sample:id'] = $existing[0]['sample_id'];
@@ -156,24 +158,72 @@ class Rest_Api_Sync_Controller extends Controller {
       $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
       // @todo Actual sync of annotations
       foreach ($data as $annotation) {
-        $obs = $this->find_existing_record($annotation['TaxonObservation']['id'], $survey_id);
+        $this->map_record_status($annotation);
         // set up a values array for the annotation post
-        // link to existing annotation if appropriate
-        // submit the annotation
-        // if the most recent annotation for a record, update it's verification status
+        $values = array(
+          'occurrence_comment:comment' => $annotation['Comment'],
+          'occurrence_comment:record_status' => $annotation['StatusCode1'],
+          'occurrence_comment:record_substatus' => $annotation['StatusCode2'],
+          'occurrence_comment:email_address' => $annotation['EmailAddress'],
+          // @todo Other fields
+
+        );
+        // @todo What to do about TaxonVersionKey? Create a determination record for audit trail?
+        // link to the existing observation
+        $existingObs = $this->find_existing_observation($annotation['TaxonObservation']['id'], $survey_id);
+        if (count($existingObs)) {
+          $values['taxon_occurrence_id'] = $existingObs[0]['id'];
+        } else {
+          // link to existing annotation if appropriate
+          $existing = $this->find_existing_annotation($annotation['id'], $survey_id);
+          if ($existing)
+            $values['occurrence_comment:id'] = $existing[0]['id'];
+
+          // submit the annotation
+          // if the most recent annotation for a record, update it's verification status
+          // @todo Proper error handling as annotation can't be imported. Perhaps should obtain
+          // and import the observation via the API?
+          echo "Attempt to import annotation $annotation[id] but taxon observation not found";
+        }
+
       }
     }
     echo "<strong>Annotations</strong><br/><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
   }
 
   /**
-   * Link the values we are about to post up to an existing sample and occurrence ID
-   * if one exists.
+   * Converts the record status codes in an annotation into Indicia codes.
+   * @param $annotation
+   */
+  private function map_record_status(&$annotation) {
+    if (empty($annotation['StatusCode1']))
+      $annotation['record_status'] = null;
+    else {
+      switch ($annotation['StatusCode1']) {
+        case 'A': // accepted = verified
+          $annotation['record_status'] = 'V';
+          break;
+        case 'N': // not accepted = rejected
+          $annotation['record_status'] = 'R';
+          break;
+        default:
+          $annotation['record_status'] = 'C';
+      }
+    }
+    if (empty($annotation['StatusCode2']))
+      $annotation['record_substatus'] = null;
+    else
+      $annotation['record_substatus'] = $annotation['StatusCode2'];
+  }
+
+  /**
+   * Retrieve existing observation details from the database for an ID supplied by
+   * a call to the REST API.
    * @param string $id The taxon-observation's ID as returned by a call to the REST api.
    * @param integer $survey_id The database survey ID value to lookup within.
-   * @return array Any existing matching records.
+   * @return array Array containing occurrence and sample ID for any existing matching records.
    */
-  private function find_existing_record($id, $survey_id) {
+  private function find_existing_observation($id, $survey_id) {
     $userId = Kohana::config('rest_api_sync.user_id');
     $recordOriginHere = substr($id, 0, strlen($userId)) === $userId;
     // Look for an existing record to overwrite
@@ -196,10 +246,38 @@ class Rest_Api_Sync_Controller extends Controller {
   }
 
   /**
+   * Retrieve existing comment details from the database for an annotation ID supplied by
+   * a call to the REST API.
+   * @param string $id The taxon-observation's ID as returned by a call to the REST api.
+   * @param integer $survey_id The database survey ID value to lookup within.
+   * @return array Array containing occurrence comment ID for any existing matching records.
+   */
+  function find_existing_annotation($id, $survey_id) {
+    // @todo Add external key to comments table? OR do we use the timestamp?
+    $userId = Kohana::config('rest_api_sync.user_id');
+    $recordOriginHere = substr($id, 0, strlen($userId)) === $userId;
+    // Look for an existing record to overwrite
+    $filter = array(
+      'oc.deleted' => 'f',
+      'o.survey_id' => $survey_id
+    );
+    // @todo What happens if origin here but record missing?
+    if ($recordOriginHere)
+      $filter['oc.id'] = substr($id, strlen($userId)-1);
+    else
+      $filter['oc.external_key'] = $id;
+    $existing = $this->db->select('oc.id')
+      ->from('occurrences oc')
+      ->join('cache_occurrences as o', 'o.id', 'oc.occurrence_id')
+      ->where($filter)->get()->result_array(false);
+    return $existing;
+  }
+
+  /**
    * Returns a formatted decimal latitude and longitude string
-   * @param $east
-   * @param $north
-   * @return string
+   * @param float $lat
+   * @param float $long
+   * @return string Formatted lat long.
    */
   private function format_lat_long($lat, $long) {
     $ns = $lat >= 0 ? 'N' : 'S';
