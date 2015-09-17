@@ -67,6 +67,7 @@ class Rest_Api_Sync_Controller extends Controller {
   private function sync_taxon_observations($server, $serverId, $project, $survey_id) {
     $datasetNameAttrId = Kohana::config('rest_api_sync.dataset_name_attr_id');
     $userId = Kohana::config('rest_api_sync.user_id');
+    // @todo Proper handling of the last sync date
     $fromDate = new DateTime('2 months ago');
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $nextPageOfTaxonObservationsUrl = rest_api_sync::get_server_taxon_observations_url(

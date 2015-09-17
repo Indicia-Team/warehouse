@@ -36,9 +36,7 @@ class rest_api_sync {
   public static function get_server_taxon_observations_url($server_url, $projectId, $edited_date_from) {
     return $server_url . '/taxon-observations?' . http_build_query(array(
       'proj_id' => $projectId,
-      'edited_date_from' => '2014-03-01', //$edited_date_from
-      'edited_date_to' => '2014-03-02',
-      'page' => 1
+      'edited_date_from' => $edited_date_from
     ));
   }
   
