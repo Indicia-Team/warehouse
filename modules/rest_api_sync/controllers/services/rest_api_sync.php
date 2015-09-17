@@ -380,7 +380,7 @@ class Rest_Api_Sync_Controller extends Controller {
       // Survey dataset does not exist yet so create it
       $values = array(
         'survey:title' => "$project[id]:$project[Title]",
-        'survey:description' => '$project[id]:$project[Description]',
+        'survey:description' => "$project[id]:$project[Description]",
         'survey:website_id' => $server['website_id']
       );
       $survey = ORM::factory('survey');
