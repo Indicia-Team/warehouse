@@ -156,9 +156,8 @@ class Rest_Api_Sync_Controller extends Controller {
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     while ($nextPageOfAnnotationsUrl) {
       $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $serverId);
-      $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
-      // @todo Actual sync of annotations
-      foreach ($data as $annotation) {
+      $annotations = $data['data'];
+      foreach ($annotations as $annotation) {
         $this->map_record_status($annotation);
         // set up a values array for the annotation post
         $values = array(
@@ -186,8 +185,8 @@ class Rest_Api_Sync_Controller extends Controller {
           // and import the observation via the API?
           echo "Attempt to import annotation $annotation[id] but taxon observation not found";
         }
-
       }
+      $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
     echo "<strong>Annotations</strong><br/><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
   }
