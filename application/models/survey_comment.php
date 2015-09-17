@@ -43,7 +43,8 @@ class Survey_comment_model extends ORM {
     $this->unvalidatedFields = array(
       'email_address',
       'person_name',
-      'deleted'
+      'deleted',
+      'external_key'
     );
     return parent::validate($array, $save);
 
