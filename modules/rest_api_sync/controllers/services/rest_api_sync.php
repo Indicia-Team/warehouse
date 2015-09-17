@@ -269,7 +269,7 @@ class Rest_Api_Sync_Controller extends Controller {
     else
       $filter['oc.external_key'] = $id;
     $existing = $this->db->select('oc.id')
-      ->from('occurrences oc')
+      ->from('occurrence_comments oc')
       ->join('cache_occurrences as o', 'o.id', 'oc.occurrence_id')
       ->where($filter)->get()->result_array(false);
     return $existing;
