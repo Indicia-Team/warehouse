@@ -109,7 +109,7 @@ class Rest_Api_Sync_Controller extends Controller {
           // If the record was originated from a different system, the specified dataset name
           // needs to be stored
           if ($datasetNameAttrId && !$recordOriginHere)
-            $values["smpAttr:$datasetNameAttrId"] = $observation['datasetName'];
+            $values["smpAttr:$datasetNameAttrId"] = $observation['DatasetName'];
 
           // Set the spatial reference depending on the projection information supplied.
           $this->set_sref_data($values, $observation, 'sample:entered_sref');
