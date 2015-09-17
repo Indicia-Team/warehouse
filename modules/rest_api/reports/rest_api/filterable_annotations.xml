@@ -35,7 +35,7 @@
     </param>
   </params>
   <columns>
-    <column name="id" sql="'#system_user_id#' || oc.id::varchar" datatype="text"/>
+    <column name="id" sql="COALESCE(oc.external_key, '#system_user_id#' || oc.id::varchar)" datatype="text"/>
     <column name="taxon_observation_id" 
             sql="COALESCE(occ.external_key, '#system_user_id#' || o.id::varchar)" datatype="integer"/>
     <column name="TaxonVersionKey" sql="ttl.external_key" datatype="text"/>    
