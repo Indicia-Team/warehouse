@@ -26,6 +26,8 @@
  */
 class Rest_Api_Sync_Controller extends Controller {
 
+  private $db;
+
   /**
    * Main controller method for the rest_api_sync module. Initiates a synchronisation.
    */
@@ -162,9 +164,9 @@ class Rest_Api_Sync_Controller extends Controller {
         // set up a values array for the annotation post
         $values = array(
           'occurrence_comment:comment' => $annotation['Comment'],
-          'occurrence_comment:record_status' => $annotation['StatusCode1'],
-          'occurrence_comment:record_substatus' => $annotation['StatusCode2'],
-          'occurrence_comment:email_address' => $annotation['EmailAddress'],
+          'occurrence_comment:record_status' => $this->valueOrNull($annotation, 'StatusCode1'),
+          'occurrence_comment:record_substatus' => $this->valueOrNull($annotation, 'StatusCode2'),
+          'occurrence_comment:email_address' => $this->valueOrNull($annotation, 'EmailAddress'),
           // @todo Other fields
 
         );
@@ -330,6 +332,7 @@ class Rest_Api_Sync_Controller extends Controller {
    * @param array $server The server configuration array which must contain it's website_id.
    * @param array $observation The observation data array.
    * @return integer The ID of the location record created in the database.
+   * @todo Join the location to the server's associated website
    */
   function create_location($server, $observation) {
     $location = ORM::factory('location');
@@ -389,6 +392,16 @@ class Rest_Api_Sync_Controller extends Controller {
       // @todo Error handling on submission.
       return $survey->id;
     }
+  }
+
+  /**
+   * Simple utility function to return a value from an array, or null if not present.
+   * @param $array
+   * @param $key
+   * @return mixed
+   */
+  function valueOrNull($array, $key) {
+    return isset($array[$key]) ? $array[$key] : null;
   }
 
 }
