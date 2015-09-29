@@ -222,6 +222,20 @@ class ReportEngine {
     );
   }
 
+  public function requestMetadata($report) {
+    $this->fetchLocalReport($report);
+    $this->reportReader = new XMLReportReader($this->report, $this->websiteIds);
+    $this->providedParams = array();
+    $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
+    $this->prepareColumns();
+    $r = array(
+      'columns'=>$this->columns,
+      'parameters'=>$this->reportReader->getParams()
+    );
+
+    return $r;
+  }
+
   /**
   * Checks parameters and returns request if they're not all there, else compiles the report.
   *

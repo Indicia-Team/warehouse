@@ -106,6 +106,20 @@ class Report_Controller extends Data_Service_Base_Controller {
     }
   }
 
+  public function requestMetadata() {
+    $this->setup();
+    $data = $this->reportEngine->requestMetadata($_GET['report']);
+    $r = json_encode($data);
+    if (array_key_exists('callback', $_REQUEST))
+    {
+      $r = $_REQUEST['callback']."(".$r.")";
+      $this->content_type = 'Content-Type: application/javascript';
+    } else {
+      $this->content_type = 'Content-Type: application/json';
+    }
+    echo $r;
+  }
+
   /**
    * Method called via report services to return a JSON encoded nested array of the available reporting directory structure.
    */
