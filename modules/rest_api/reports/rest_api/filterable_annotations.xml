@@ -46,6 +46,7 @@
         when oc.comment like 'Dubious%' or oc.comment like 'Query%' then 'U'
         when oc.comment like 'Rejected%' then 'N' end
     end" />
+    <column name="StatusCode2" sql="oc.record_substatus" datatype="integer" />
     <column name="Question" sql="oc.query" datatype="boolean" />
     <column name="AuthorName" datatype="text"
             sql="coalesce(oc.person_name, case u.id when 1 then 'anonymous' else p.first_name || ' ' || p.surname end)"/>
