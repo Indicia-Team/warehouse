@@ -364,10 +364,12 @@ HTML;
             }
           }
           // apart from requests for a project, we always want a project ID
-          if ($name !== 'projects' && empty($this->request['proj_id'])) {
-            $this->fail('Bad Request', 400, 'Missing proj_id parameter');
+          if ($name !== 'projects') {
+            if (empty($this->request['proj_id'])
+              $this->fail('Bad Request', 400, 'Missing proj_id parameter');
+            else
+              $this->checkAllowedResource($this->request['proj_id'], $resourceName);
           }
-          $this->checkAllowedResource($this->request['proj_id'], $resourceName);
           if ($requestForId) {
             $methodName .= '_id';
           }
