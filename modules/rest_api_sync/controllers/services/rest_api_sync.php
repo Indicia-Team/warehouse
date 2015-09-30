@@ -64,7 +64,7 @@ class Rest_Api_Sync_Controller extends Controller {
     echo "<h3>$project[id]</h3>";
     if (!isset($server['resources']) || in_array('taxon-observations', $server['resources']))
       self::sync_taxon_observations($server, $serverId, $project, $survey_id);
-    if (!isset($server['resources']) || in_array('observations', $server['resources']))
+    if (!isset($server['resources']) || in_array('annotations', $server['resources']))
       self::sync_annotations($server, $serverId, $project, $survey_id);
   }
   
