@@ -62,8 +62,10 @@ class Rest_Api_Sync_Controller extends Controller {
   private function sync_from_project($server, $serverId, $project, $survey_id) {
     // @todo Last Sync date handling
     echo "<h3>$project[id]</h3>";
-    self::sync_taxon_observations($server, $serverId, $project, $survey_id);
-    self::sync_annotations($server, $serverId, $project, $survey_id);
+    if (!isset($server['resources']) || in_array('taxon-observations', $server['resources']))
+      self::sync_taxon_observations($server, $serverId, $project, $survey_id);
+    if (!isset($server['resources']) || in_array('observations', $server['resources']))
+      self::sync_annotations($server, $serverId, $project, $survey_id);
   }
   
   private function sync_taxon_observations($server, $serverId, $project, $survey_id) {
