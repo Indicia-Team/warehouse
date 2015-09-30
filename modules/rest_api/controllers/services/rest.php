@@ -399,9 +399,7 @@ HTML;
   private function checkAllowedResource($proj_id, $resourceName) {
     if (isset($this->projects[$proj_id]['resources'])) {
       if (!in_array($resourceName, $this->projects[$proj_id]['resources'])) {
-        if (!array_key_exists($proj_id, $this->projects)) {
-          $this->fail('No Content', 204);
-        }
+        $this->fail('No Content', 204);
       }
     }
   }
