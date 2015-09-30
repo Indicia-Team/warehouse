@@ -367,6 +367,7 @@ HTML;
           if ($name !== 'projects' && empty($this->request['proj_id'])) {
             $this->fail('Bad Request', 400, 'Missing proj_id parameter');
           }
+          $this->checkAllowedResource($this->request['proj_id'], $resourceName);
           if ($requestForId) {
             $methodName .= '_id';
           }
@@ -381,6 +382,25 @@ HTML;
     }
     catch (RestApiAbort $e) {
       // no action if a proper abort
+    }
+  }
+
+  /**
+   * A project can include a configuration of the resources it exposes, for example
+   * it might only expose annotations if the top copy of a record is elsewhere. This
+   * method checks that the requested resource is available for the project and
+   * aborts with 204 No Content if not.
+   * @param integer $proj_id The project ID
+   * @param string $resourceName The resource being requested, e.g. taxon-observations.
+   * @throws \RestApiAbort
+   */
+  private function checkAllowedResource($proj_id, $resourceName) {
+    if (isset($this->projects[$proj_id]['resources'])) {
+      if (!in_array($resourceName, $this->projects[$proj_id]['resources'])) {
+        if (!array_key_exists($proj_id, $this->projects)) {
+          $this->fail('No Content', 204);
+        }
+      }
     }
   }
   
@@ -398,6 +418,7 @@ HTML;
     unset($this->projects[$id]['filter_id']);
     unset($this->projects[$id]['website_id']);
     unset($this->projects[$id]['sharing']);
+    unset($this->projects[$id]['resources']);
     $this->succeed($this->projects[$id]);
   }
      
@@ -415,6 +436,7 @@ HTML;
       unset($project['filter_id']);
       unset($project['website_id']);
       unset($project['sharing']);
+      unset($project['resources']);
     }
     $this->succeed(array(
       'data' => array_values($this->projects),
