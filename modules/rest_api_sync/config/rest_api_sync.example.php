@@ -44,6 +44,11 @@ $config['servers']=array(
   'XYZ' => array(
     // the local website registration used to store each project
     'website_id' => 5,
-    'url' => 'http://localhost/indicia/index.php/services/rest'
+    // remote API URL
+    'url' => 'http://localhost/indicia/index.php/services/rest',
+    // secret shared with the remote API
+    'shared_secret' => '123password',
+    // Optional. Which resources will we try to retrieve from this API?
+    'resources' => array('taxon-observations', 'annotations')
   )
 );
