@@ -39,7 +39,6 @@ class Rest_Api_Sync_Controller extends Controller {
     foreach ($servers as $serverId => $server) {
       echo "<h2>$serverId</h2>";
       $nextPageOfProjectsUrl = rest_api_sync::get_server_projects_url($server['url']);
-      echo "$nextPageOfProjectsUrl<br/>";
       while ($nextPageOfProjectsUrl) {
         $data = rest_api_sync::get_server_projects($nextPageOfProjectsUrl, $serverId);
         $projects = $data['data'];
@@ -96,10 +95,10 @@ class Rest_Api_Sync_Controller extends Controller {
         else {
           // Find if the record originated here or elsewhere
           $recordOriginHere = substr($observation['id'], 0, strlen($userId)) === $userId;
+          $existing = $this->find_existing_observation($observation['id'], $survey_id);
           // @todo Reuse the last sample if it matches
           $values = array(
             'website_id' => $server['website_id'],
-            'sample:survey_id' => $survey_id,
             'sample:date_start'     => $observation['StartDate'],
             'sample:date_end'       => $observation['EndDate'],
             'sample:date_type'      => $observation['DateType'],
@@ -110,6 +109,13 @@ class Rest_Api_Sync_Controller extends Controller {
             'occurrence:sensitivity_precision' => $observation['Sensitive']==='T' ? 10000 : null,
             'occurrence:record_status' => 'C'
           );
+          if (count($existing)) {
+            $values['occurrence:id'] = $existing[0]['id'];
+            $values['sample:id'] = $existing[0]['sample_id'];
+          } else {
+            //
+            $values['sample:survey_id'] = $survey_id;
+          }
           // If the record was originated from a different system, the specified dataset name
           // needs to be stored
           if ($datasetNameAttrId && !$recordOriginHere)
@@ -126,12 +132,6 @@ class Rest_Api_Sync_Controller extends Controller {
           elseif (!empty($observation['SiteName'])) {
             $values['sample:location_name'] = $observation['SiteName'];
           }
-          $existing = $this->find_existing_observation($observation['id'], $survey_id);
-          if (count($existing)) {
-            $values['occurrence:id'] = $existing[0]['id'];
-            $values['sample:id'] = $existing[0]['sample_id'];
-          }
-
           $obs = ORM::factory('occurrence');
           $obs->set_submission_data($values);
           $obs->submit();
@@ -169,26 +169,50 @@ class Rest_Api_Sync_Controller extends Controller {
           'occurrence_comment:record_status' => $this->valueOrNull($annotation, 'StatusCode1'),
           'occurrence_comment:record_substatus' => $this->valueOrNull($annotation, 'StatusCode2'),
           'occurrence_comment:email_address' => $this->valueOrNull($annotation, 'EmailAddress'),
+          'occurrence_comment:record_status' => $this->valueOrNull($annotation, 'record_status'),
+          'occurrence_comment:record_substatus' => $this->valueOrNull($annotation, 'record_substatus'),
+          'occurrence_comment:query' => $annotation['Question'],
+          'occurrence_comment:person_name' => $annotation['AuthorName'],
+          'occurrence_comment:external_key' => $annotation['id']
+
           // @todo Other fields
 
         );
-        // @todo What to do about TaxonVersionKey? Create a determination record for audit trail?
+
         // link to the existing observation
         $existingObs = $this->find_existing_observation($annotation['TaxonObservation']['id'], $survey_id);
-        if (count($existingObs)) {
-          $values['taxon_occurrence_id'] = $existingObs[0]['id'];
-        } else {
-          // link to existing annotation if appropriate
-          $existing = $this->find_existing_annotation($annotation['id'], $survey_id);
-          if ($existing)
-            $values['occurrence_comment:id'] = $existing[0]['id'];
-
-          // submit the annotation
-          // if the most recent annotation for a record, update it's verification status
+        if (!count($existingObs)) {
           // @todo Proper error handling as annotation can't be imported. Perhaps should obtain
           // and import the observation via the API?
-          echo "Attempt to import annotation $annotation[id] but taxon observation not found";
+          echo "Attempt to import annotation $annotation[id] but taxon observation not found<br/>";
+        } else {
+          $values['occurrence_comment:occurrence_id'] = $existingObs[0]['id'];
+          // link to existing annotation if appropriate
+          $existing = $this->find_existing_annotation($annotation['id'], $existingObs[0]['id']);
+          if ($existing) {
+            $values['occurrence_comment:id'] = $existing[0]['id'];
+          }
+
+          $annotation = ORM::factory('occurrence_comment');
+          $annotation->set_submission_data($values);
+          $annotation->submit();
+          if (count($annotation->getAllErrors())!==0) {
+            echo "Error occurred submitting an occurrence<br/>";
+            kohana::log('debug', "REST API Sync error occurred submitting an occurrence");
+            kohana::log('debug', kohana::debug($annotation->getAllErrors()));
+            $tracker['errors']++;
+          } else {
+            if (count($existing))
+              $tracker['updates']++;
+            else
+              $tracker['inserts']++;
+          }
+
+          // @todo Update the main observation record's record status and substatus if the most recent annotation
+          // @todo Update the main observation record's linked taxon if TVK supplied
+          // @todo create a determination if this is not automatic
         }
+
       }
       $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
@@ -228,20 +252,21 @@ class Rest_Api_Sync_Controller extends Controller {
    * @return array Array containing occurrence and sample ID for any existing matching records.
    */
   private function find_existing_observation($id, $survey_id) {
-    $userId = Kohana::config('rest_api_sync.user_id');
-    $recordOriginHere = substr($id, 0, strlen($userId)) === $userId;
+    $thisSystemUserId = Kohana::config('rest_api_sync.user_id');
+    $recordOriginHere = substr($id, 0, strlen($thisSystemUserId)) === $thisSystemUserId;
     // Look for an existing record to overwrite
     $filter = array(
       'o.deleted' => 'f',
-      's.deleted' => 'f',
-      's.survey_id' => $survey_id
+      's.deleted' => 'f'
     );
     // @todo Do we want to overwrite existing records which originated here?
     // @todo What happens if origin here but record missing?
     if ($recordOriginHere)
-      $filter['o.id'] = substr($id, strlen($userId)-1);
-    else
+      $filter['o.id'] = substr($id, strlen($thisSystemUserId));
+    else {
       $filter['o.external_key'] = $id;
+      $filter['s.survey_id'] = $survey_id;
+    }
     $existing = $this->db->select('o.id, o.sample_id')
       ->from('occurrences o')
       ->join('samples as s', 'o.sample_id', 's.id')
@@ -253,17 +278,17 @@ class Rest_Api_Sync_Controller extends Controller {
    * Retrieve existing comment details from the database for an annotation ID supplied by
    * a call to the REST API.
    * @param string $id The taxon-observation's ID as returned by a call to the REST api.
-   * @param integer $survey_id The database survey ID value to lookup within.
+   * @param integer $occ_id The database observation ID value to lookup within.
    * @return array Array containing occurrence comment ID for any existing matching records.
    */
-  function find_existing_annotation($id, $survey_id) {
+  function find_existing_annotation($id, $occ_id) {
     // @todo Add external key to comments table? OR do we use the timestamp?
     $userId = Kohana::config('rest_api_sync.user_id');
     $recordOriginHere = substr($id, 0, strlen($userId)) === $userId;
     // Look for an existing record to overwrite
     $filter = array(
       'oc.deleted' => 'f',
-      'o.survey_id' => $survey_id
+      'occurrence_id' => $occ_id
     );
     // @todo What happens if origin here but record missing?
     if ($recordOriginHere)
