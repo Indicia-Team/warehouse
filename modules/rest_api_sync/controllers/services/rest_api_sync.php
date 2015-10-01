@@ -207,8 +207,9 @@ class Rest_Api_Sync_Controller extends Controller {
             else
               $tracker['inserts']++;
           }
+          $this->update_observation_with_annotation_details($existingObs[0]['id'], $annotation);
 
-          // @todo Update the main observation record's record status and substatus if the most recent annotation
+          // Update the main observation record's record status and substatus if the most recent annotation
           // @todo Update the main observation record's linked taxon if TVK supplied
           // @todo create a determination if this is not automatic
         }
@@ -217,6 +218,43 @@ class Rest_Api_Sync_Controller extends Controller {
       $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
     echo "<strong>Annotations</strong><br/><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
+  }
+
+  /**
+   * If an annotation provides a newer record status or identification than that already
+   * associated with an observation, updates the observation.
+   *
+   * @param integer $occurrence_id ID of the associated occurrence record in the database.
+   * @param array $annotation Annotation object loaded from the REST API.
+   */
+  function update_observation_with_annotation_details($occurrence_id, $annotation) {
+    $result = $this->db
+      ->select('oc.record_status, oc.record_substatus, ' .
+            'o.record_status as orig_record_status, oc.record_substatus as orig_record_substatus')
+      ->from('occurrence_comments oc')
+      ->join('occurrences as o', 'o.id', 'oc.occurrence_id')
+      ->where(array('occurrence_id' => $occurrence_id, 'oc.deleted' => 'f', 'o.deleted' => 'f'))
+      ->where('oc.record_status is not null')
+      ->orderby('oc.created_on', 'DESC')
+      ->limit(1)
+      ->get()->result_array(false);
+    if (count($result) &&
+        ($result[0]['record_status']!==$result[0]['orig_record_status']) ||
+        ($result[0]['record_substatus']!==$result[0]['orig_record_substatus'])) {
+      $this->db->update('occurrences',
+        array(
+          'record_status' => $result[0]['record_status'],
+          'record_substatus' => $result[0]['record_substatus'],
+          'updated_on' => date("Ymd H:i:s"),
+          'verified_on' => date("Ymd H:i:s"),
+          // @todo Verified_by_id needs to be mapped to a proper user account.
+          'verified_by_id' => 1
+        ),
+        array('id' => $occurrence_id)
+      );
+      // @todo Update cache_occurrences
+      // @todo Update for change of species ID
+    }
   }
 
   /**
