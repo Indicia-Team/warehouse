@@ -48,7 +48,7 @@ class Sample_Model extends ORM_Tree
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   protected $attrs_submission_name='smpAttributes';
-  protected $attrs_field_prefix='smpAttr';
+  public $attrs_field_prefix='smpAttr';
 
   // Declare additional fields required when posting via CSV.
   protected $additional_csv_fields=array(
