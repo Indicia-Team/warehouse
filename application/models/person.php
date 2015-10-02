@@ -41,7 +41,7 @@ class Person_Model extends ORM {
   // sample attributes which are not submissable unless linked via a sample_attributes_websites record).
   public $include_public_attributes = true;
   protected $attrs_submission_name='psnAttributes';
-  protected $attrs_field_prefix='psnAttr';
+  public $attrs_field_prefix='psnAttr';
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation

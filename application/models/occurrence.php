@@ -48,7 +48,7 @@ class Occurrence_Model extends ORM
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   protected $attrs_submission_name='occAttributes';
-  protected $attrs_field_prefix='occAttr';
+  public $attrs_field_prefix='occAttr';
   protected $additional_csv_fields=array(
     // extra lookup options
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
