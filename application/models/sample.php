@@ -294,7 +294,7 @@ class Sample_Model extends ORM_Tree
         'comment'=>kohana::lang('misc.recheck_verification'),
         'auto_generated'=>'t'
       );
-      $comment = ORM::factory('sample_id');
+      $comment = ORM::factory('sample_comment');
       $comment->validate(new Validation($data), true);
     }
     return true;
