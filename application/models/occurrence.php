@@ -81,7 +81,8 @@ class Occurrence_Model extends ORM
   public function validate(Validation $array, $save = false) {
     if ($save) 
       $this->logDeterminations($array);
-    if ($this->id && preg_match('/[RDV]/', $this->record_status) && empty($this->submission['fields']['record_status']) && 
+    if ($this->id && preg_match('/[RDV]/', $this->record_status) && 
+        (empty($this->submission['fields']['record_status']) || $this->submission['fields']['record_status']['value']==='C') && 
         empty($this->submission['fields']['release_status']) && $this->wantToUpdateMetadata) {
       // If we update a processed occurrence but don't set the verification or release state, revert it to completed/awaiting verification.
       $array->verified_by_id=null;
