@@ -71,3 +71,52 @@ REFERENCES termlists_terms (id) MATCH SIMPLE
 ON UPDATE NO ACTION ON DELETE NO ACTION;
 COMMENT ON COLUMN termlists_terms.source_id IS
   'Points to a termlists_term which describes where the term originated.';
+
+
+ALTER TABLE taxa_taxon_list_attribute_values
+ADD COLUMN source_id integer,
+ADD CONSTRAINT fk_source_id FOREIGN KEY (source_id) 
+REFERENCES termlists_terms (id) MATCH SIMPLE
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+COMMENT ON COLUMN taxa_taxon_list_attribute_values.source_id IS
+  'Points to a termlists_term which describes where the attribute value originated.';
+
+ALTER TABLE survey_attribute_values
+ADD COLUMN source_id integer,
+ADD CONSTRAINT fk_source_id FOREIGN KEY (source_id) 
+REFERENCES termlists_terms (id) MATCH SIMPLE
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+COMMENT ON COLUMN survey_attribute_values.source_id IS
+  'Points to a termlists_term which describes where the attribute value originated.';
+
+ALTER TABLE sample_attribute_values
+ADD COLUMN source_id integer,
+ADD CONSTRAINT fk_source_id FOREIGN KEY (source_id) 
+REFERENCES termlists_terms (id) MATCH SIMPLE
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+COMMENT ON COLUMN sample_attribute_values.source_id IS
+  'Points to a termlists_term which describes where the attribute value originated.';
+
+ALTER TABLE person_attribute_values
+ADD COLUMN source_id integer,
+ADD CONSTRAINT fk_source_id FOREIGN KEY (source_id) 
+REFERENCES termlists_terms (id) MATCH SIMPLE
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+COMMENT ON COLUMN person_attribute_values.source_id IS
+  'Points to a termlists_term which describes where the attribute value originated.';
+
+ALTER TABLE occurrence_attribute_values
+ADD COLUMN source_id integer,
+ADD CONSTRAINT fk_source_id FOREIGN KEY (source_id) 
+REFERENCES termlists_terms (id) MATCH SIMPLE
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+COMMENT ON COLUMN occurrence_attribute_values.source_id IS
+  'Points to a termlists_term which describes where the attribute value originated.';
+
+ALTER TABLE location_attribute_values
+ADD COLUMN source_id integer,
+ADD CONSTRAINT fk_source_id FOREIGN KEY (source_id) 
+REFERENCES termlists_terms (id) MATCH SIMPLE
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+COMMENT ON COLUMN location_attribute_values.source_id IS
+  'Points to a termlists_term which describes where the attribute value originated.';
