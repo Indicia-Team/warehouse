@@ -7,11 +7,11 @@
       FROM people p
       JOIN users u ON u.person_id=p.id AND u.deleted=false AND u.id&lt;&gt;1
       JOIN cache_occurrences o ON o.created_by_id=u.id
-        #filters#
       #agreements_join#
       #joins#
       WHERE #sharing_filter#
       AND p.deleted=false
+      #filters#
       #group_bys#
     ) AS sub WHERE id=#user_id#
   </query>
@@ -24,6 +24,6 @@
   <columns>
         <column name="id" visible="false" sql="u.id" />
         <column name="position" display="League position" sql="row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END) desc)" aggregate="true" />
-        <column name="value" display="No. of taxa"  sql="count(distinct o.taxa_taxon_list_external_key)" aggregate="true" />
+        <column name="value" display="No. of taxa"  sql="count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END)" aggregate="true" />
   </columns>
 </report>  
