@@ -510,11 +510,11 @@ HTML;
       $this->fail('Internal Server Error', 500);
     } else {
       $record = $report['content']['records'][0];
-      $record['TaxonObservation'] = array(
+      $record['taxonObservation'] = array(
         'id' => $record['taxon_observation_id'],
         // @todo href
       );
-      $this->add_item_metadata($record['TaxonObservation'], 'taxon-observations');
+      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
       $this->add_item_metadata($record, 'annotations');
       $this->succeed($record);
     }
@@ -525,7 +525,7 @@ HTML;
    */
   private function annotations_get() {
     // @todo Integrate determinations in the output
-    // @todo handle TaxonVersionKey properly
+    // @todo handle taxonVersionKey properly
     // @todo handle unansweredQuestion
     $this->checkPaginationParams();
     $params = array(
@@ -545,10 +545,10 @@ HTML;
     $records = $report['content']['records'];
     // for each record, restructure the taxon observations sub-object
     foreach ($records as &$record) {
-      $record['TaxonObservation'] = array(
+      $record['taxonObservation'] = array(
         'id' => $record['taxon_observation_id'],
       );
-      $this->add_item_metadata($record['TaxonObservation'], 'taxon-observations');
+      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
       unset($record['taxon_observation_id']);
     }
     $this->succeed($this->list_response_structure($records, 'annotations'));
@@ -742,7 +742,7 @@ HTML;
     $request_url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
     $correct_hmac = hash_hmac("sha1", $request_url, $config[$user]['shared_secret'], $raw_output=FALSE);
     if ($supplied_hmac !== $correct_hmac) {
-      $this->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect');
+      $this->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
     }
     $this->client_user_id=$user;
     $this->server_user_id=Kohana::config('rest.user_id');
@@ -814,7 +814,7 @@ HTML;
     http_response_code($code);
     echo $msg;
     if ($info)
-      kohana::log('debug', $info);
+      kohana::log('debug', "HTTP code: $code. $info");
     throw new RestApiAbort($msg);
   }
 
