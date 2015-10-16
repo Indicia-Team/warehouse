@@ -12,13 +12,12 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
 
   public static function setUpBeforeClass() {
     // grab the clients registered on this system
-    $clients = Kohana::config('rest.clients');
+    $userIds = array_keys(Kohana::config('rest.clients'));
+    $clientConfigs = array_values(Kohana::config('rest.clients'));
+
     // just test the first client
-    foreach ($clients as $userId => $config) {
-      self::$userId = $userId;
-      self::$config = $config;
-      break;
-    }
+    self::$userId = $userIds[0];
+    self::$config = $clientConfigs[0];
   }
 
   protected function setUp() {
@@ -51,10 +50,10 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals(count($viaConfig), count($viaApi->data), 'Incorrect number of projects returned from /projects.');
     foreach ($viaApi->data as $projDef) {
       $this->assertArrayHasKey($projDef->id, $viaConfig, "Unexpected project $projDef->id returned by /projects.");
-      $this->assertEquals($projDef->Title, $viaConfig[$projDef->id]['Title'],
-          "Unexpected title $projDef->Title returned for project $projDef->id by /projects.");
-      $this->assertEquals($projDef->Description, $viaConfig[$projDef->id]['Description'],
-        "Unexpected description $projDef->Description returned for project $projDef->id by /projects.");
+      $this->assertEquals($projDef->title, $viaConfig[$projDef->id]['title'],
+          "Unexpected title $projDef->title returned for project $projDef->id by /projects.");
+      $this->assertEquals($projDef->description, $viaConfig[$projDef->id]['description'],
+        "Unexpected description $projDef->description returned for project $projDef->id by /projects.");
     }
   }
 
@@ -63,12 +62,12 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
       $response = $this->callService("projects/$projDef[id]", self::$userId, self::$config['shared_secret']);
       $this->assertResponseOk($response, "/projects/$projDef[id]");
       $fromApi = json_decode($response['response']);
-      $this->assertEquals($fromApi->Title, $projDef['Title'],
-          "Unexpected title $fromApi->Title returned for project $projDef[id] by /projects/$projDef[id].");
-      $this->assertEquals($fromApi->Title, $projDef['Title'],
-          "Unexpected title $fromApi->Title returned for project $projDef[id] by /projects/$projDef[id].");
-      $this->assertEquals($fromApi->Description, $projDef['Description'],
-          "Unexpected description $fromApi->Description returned for project $projDef[id] by /projects/$projDef[id].");
+      $this->assertEquals($fromApi->title, $projDef['title'],
+          "Unexpected title $fromApi->title returned for project $projDef[id] by /projects/$projDef[id].");
+      $this->assertEquals($fromApi->title, $projDef['title'],
+          "Unexpected title $fromApi->title returned for project $projDef[id] by /projects/$projDef[id].");
+      $this->assertEquals($fromApi->description, $projDef['description'],
+          "Unexpected description $fromApi->description returned for project $projDef[id] by /projects/$projDef[id].");
     }
   }
 
@@ -181,8 +180,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    */
   private function checkValidTaxonObservation($data) {
     $this->assertTrue(is_array($data), 'Taxon-observation object invalid. ' . var_export($data, true));
-    $mustHave = array('id', 'href', 'DatasetName', 'TaxonVersionKey', 'TaxonName',
-        'StartDate', 'EndDate', 'DateType', 'Projection', 'Precision', 'Recorder', 'lasteditdate');
+    $mustHave = array('id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
+        'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
           "Missing $key from taxon-observation resource. " . var_export($data, true));
@@ -198,20 +197,20 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    */
   private function checkValidAnnotation($data) {
     $this->assertTrue(is_array($data), 'Annotation object invalid. ' . var_export($data, true));
-    $mustHave = array('id', 'href', 'TaxonObservation', 'TaxonVersionKey', 'Comment',
-        'Question', 'AuthorName', 'DateTime');
+    $mustHave = array('id', 'href', 'taxonObservation', 'taxonVersionKey', 'comment',
+        'question', 'authorName', 'dateTime');
     foreach ($mustHave as $key) {
       $this->assertArrayHasKey($key, $data,
         "Missing $key from annotation resource. " . var_export($data, true));
       $this->assertNotEmpty($data[$key],
         "Empty $key in annotation resource" . var_export($data, true));
     }
-    if (!empty($data['StatusCode1']))
-      $this->assertRegExp('/[AUN]/', $data['StatusCode1'], 'Invalid StatusCode1 value for annotation');
-    if (!empty($data['StatusCode2']))
-      $this->assertRegExp('/[1-6]/', $data['StatusCode2'], 'Invalid StatusCode2 value for annotation');
+    if (!empty($data['statusCode1']))
+      $this->assertRegExp('/[AUN]/', $data['statusCode1'], 'Invalid statusCode1 value for annotation');
+    if (!empty($data['statusCode2']))
+      $this->assertRegExp('/[1-6]/', $data['statusCode2'], 'Invalid statusCode2 value for annotation');
     // We should be able to request the taxon observation associated with the occurrence
-    $session = $this->initCurl($data['TaxonObservation']['href'], self::$userId, self::$config['shared_secret']);
+    $session = $this->initCurl($data['taxonObservation']['href'], self::$userId, self::$config['shared_secret']);
     $response = $this->getCurlResponse($session);
     $this->assertResponseOk($response, '/taxon-observations/id');
     $apiResponse = json_decode($response['response'], true);
