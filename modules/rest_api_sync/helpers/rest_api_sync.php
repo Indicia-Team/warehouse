@@ -37,6 +37,7 @@ class rest_api_sync {
     return $server_url . '/taxon-observations?' . http_build_query(array(
       'proj_id' => $projectId,
       'edited_date_from' => $edited_date_from
+      //'edited_date_to' => '2015-05-30'
     ));
   }
   
@@ -86,6 +87,7 @@ class rest_api_sync {
         kohana::log('error', 'Error message: '.curl_error($session));
       }
       echo 'Request failed<br/>';
+      echo "$url<br/>";
       throw new exception('Request to server failed');
     }
     $data = json_decode($response, true);

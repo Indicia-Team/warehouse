@@ -41,6 +41,12 @@ class Rest_Api_Sync_Controller extends Controller {
       $nextPageOfProjectsUrl = rest_api_sync::get_server_projects_url($server['url']);
       while ($nextPageOfProjectsUrl) {
         $data = rest_api_sync::get_server_projects($nextPageOfProjectsUrl, $serverId);
+        if (!isset($data['data'])) {
+          echo 'Invalid response<br/>';
+          echo "URL: $nextPageOfProjectsUrl<br/>";
+          var_export($data);
+          throw new exception('Response did not include data element');
+        }
         $projects = $data['data'];
         foreach ($projects as $project) {
           $survey_id = $this->get_survey_id($server, $project);
@@ -50,10 +56,11 @@ class Rest_Api_Sync_Controller extends Controller {
       }
       /*
        // TEMPORARY TEST CODE
-      $project = array('id'=>'BT', 'Title'=>'Sync from BTO');
+      $project = array('id'=>'BT', 'Title'=>'Sync from BTO', 'Description'=>'Data synced from BTO');
       $survey_id = $this->get_survey_id($server, $project);
       $this->sync_from_project($server, $serverId, $project, $survey_id);
       */
+
 
     }
   }
@@ -71,7 +78,7 @@ class Rest_Api_Sync_Controller extends Controller {
     $datasetNameAttrId = Kohana::config('rest_api_sync.dataset_name_attr_id');
     $userId = Kohana::config('rest_api_sync.user_id');
     // @todo Proper handling of the last sync date
-    $fromDate = new DateTime('2 months ago');
+    $fromDate = new DateTime('2015-05-01');
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $nextPageOfTaxonObservationsUrl = rest_api_sync::get_server_taxon_observations_url(
         $server['url'], $project['id'], $fromDate->format('Y-m-d'));
@@ -79,6 +86,7 @@ class Rest_Api_Sync_Controller extends Controller {
     while ($nextPageOfTaxonObservationsUrl) {
       $data = rest_api_sync::get_server_taxon_observations($nextPageOfTaxonObservationsUrl, $serverId);
       $observations = $data['data'];
+      echo count($observations) . ' records found<br/>';
       foreach ($observations as $observation) {
         $taxa = $this->db->select('id')
           ->from('cache_taxa_taxon_lists')
@@ -89,8 +97,8 @@ class Rest_Api_Sync_Controller extends Controller {
           ))->get()->result_array(false);
         if (count($taxa)!==1) {
           // @todo Error handling
-          kohana::log('debug', "REST API Sync could not find taxon for $observation[TaxonVersionKey]");
-          echo "Could not find taxon for $observation[TaxonVersionKey]<br/>";
+          kohana::log('debug', "REST API Sync could not find taxon for $observation[taxonVersionKey]");
+          echo "Could not find taxon for $observation[taxonVersionKey]<br/>";
         } 
         else {
           // Find if the record originated here or elsewhere
@@ -99,14 +107,17 @@ class Rest_Api_Sync_Controller extends Controller {
           // @todo Reuse the last sample if it matches
           $values = array(
             'website_id' => $server['website_id'],
-            'sample:date_start'     => $observation['StartDate'],
-            'sample:date_end'       => $observation['EndDate'],
-            'sample:date_type'      => $observation['DateType'],
-            'sample:recorder_names' => isset($observation['Recorder']) ? $observation['Recorder'] : 'Unknown',
+            'sample:date_start'     => $observation['startDate'],
+            'sample:date_end'       => $observation['endDate'],
+            'sample:date_type'      => $observation['dateType'],
+            'sample:recorder_names' => isset($observation['recorder'])
+                ? $observation['recorder'] : 'Unknown',
             'occurrence:taxa_taxon_list_id' => $taxa[0]['id'],
             'occurrence:external_key' => $observation['id'],
-            'occurrence:zero_abundance' => $observation['ZeroAbundance'],
-            'occurrence:sensitivity_precision' => $observation['Sensitive']==='T' ? 10000 : null,
+            'occurrence:zero_abundance' => isset($observation['zeroAbundance'])
+                ? strtolower($observation['zeroAbundance']) : 'f',
+            'occurrence:sensitivity_precision' => isset($observation['sensitive'])
+                && strtolower($observation['sensitive'])==='t' ? 10000 : null,
             'occurrence:record_status' => 'C'
           );
           if (count($existing)) {
@@ -119,7 +130,7 @@ class Rest_Api_Sync_Controller extends Controller {
           // If the record was originated from a different system, the specified dataset name
           // needs to be stored
           if ($datasetNameAttrId && !$recordOriginHere)
-            $values["smpAttr:$datasetNameAttrId"] = $observation['DatasetName'];
+            $values["smpAttr:$datasetNameAttrId"] = $observation['datasetName'];
 
           // Set the spatial reference depending on the projection information supplied.
           $this->set_sref_data($values, $observation, 'sample:entered_sref');
@@ -129,8 +140,8 @@ class Rest_Api_Sync_Controller extends Controller {
           if (!empty($observation['SiteKey'])) {
             $values['sample:location_id'] = $this->get_location_id($server, $observation);
           }
-          elseif (!empty($observation['SiteName'])) {
-            $values['sample:location_name'] = $observation['SiteName'];
+          elseif (!empty($observation['siteName'])) {
+            $values['sample:location_name'] = $observation['siteName'];
           }
           $obs = ORM::factory('occurrence');
           $obs->set_submission_data($values);
@@ -149,12 +160,13 @@ class Rest_Api_Sync_Controller extends Controller {
         }
       }
       $nextPageOfTaxonObservationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
+      echo $nextPageOfTaxonObservationsUrl.'--'; throw new exception;
     }
     echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
   }
   
   private function sync_annotations($server, $serverId, $project, $survey_id) {
-    $fromDate = new DateTime('2 months ago');
+    $fromDate = new DateTime('2014-03-01');
     $nextPageOfAnnotationsUrl = rest_api_sync::get_server_annotations_url(
         $server['url'], $project['id'], $fromDate->format('Y-m-d'));
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
@@ -165,10 +177,8 @@ class Rest_Api_Sync_Controller extends Controller {
         $this->map_record_status($annotation);
         // set up a values array for the annotation post
         $values = array(
-          'occurrence_comment:comment' => $annotation['Comment'],
-          'occurrence_comment:record_status' => $this->valueOrNull($annotation, 'StatusCode1'),
-          'occurrence_comment:record_substatus' => $this->valueOrNull($annotation, 'StatusCode2'),
-          'occurrence_comment:email_address' => $this->valueOrNull($annotation, 'EmailAddress'),
+          'occurrence_comment:comment' => $annotation['comment'],
+          'occurrence_comment:email_address' => $this->valueOrNull($annotation, 'emailAddress'),
           'occurrence_comment:record_status' => $this->valueOrNull($annotation, 'record_status'),
           'occurrence_comment:record_substatus' => $this->valueOrNull($annotation, 'record_substatus'),
           'occurrence_comment:query' => $annotation['Question'],
@@ -180,7 +190,7 @@ class Rest_Api_Sync_Controller extends Controller {
         );
 
         // link to the existing observation
-        $existingObs = $this->find_existing_observation($annotation['TaxonObservation']['id'], $survey_id);
+        $existingObs = $this->find_existing_observation($annotation['taxonObservation']['id'], $survey_id);
         if (!count($existingObs)) {
           // @todo Proper error handling as annotation can't be imported. Perhaps should obtain
           // and import the observation via the API?
@@ -262,10 +272,10 @@ class Rest_Api_Sync_Controller extends Controller {
    * @param $annotation
    */
   private function map_record_status(&$annotation) {
-    if (empty($annotation['StatusCode1']))
+    if (empty($annotation['statusCode1']))
       $annotation['record_status'] = null;
     else {
-      switch ($annotation['StatusCode1']) {
+      switch ($annotation['statusCode1']) {
         case 'A': // accepted = verified
           $annotation['record_status'] = 'V';
           break;
@@ -276,10 +286,10 @@ class Rest_Api_Sync_Controller extends Controller {
           $annotation['record_status'] = 'C';
       }
     }
-    if (empty($annotation['StatusCode2']))
+    if (empty($annotation['statusCode2']))
       $annotation['record_substatus'] = null;
     else
-      $annotation['record_substatus'] = $annotation['StatusCode2'];
+      $annotation['record_substatus'] = $annotation['statusCode2'];
   }
 
   /**
@@ -402,8 +412,8 @@ class Rest_Api_Sync_Controller extends Controller {
   function create_location($server, $observation) {
     $location = ORM::factory('location');
     $values = array(
-      'location:code' => $observation['SiteKey'],
-      'location:name' => $observation['SiteName']
+      'location:code' => $observation['siteKey'],
+      'location:name' => $observation['siteName']
     );
     $this->set_sref_data($values, $observation, 'location:centroid_sref');
     $location->set_submission_data($values);
@@ -421,25 +431,26 @@ class Rest_Api_Sync_Controller extends Controller {
    */
   function set_sref_data(&$values, $observation, $fieldname) {
     if ($observation['Projection']==='OSGB' || $observation['Projection']==='OSI') {
-      $values[$fieldname] = strtoupper(str_replace(' ', '', $observation['GridReference']));
+      $values[$fieldname] = strtoupper(str_replace(' ', '', $observation['gridReference']));
       $values[$fieldname . '_system'] = $observation['Projection']==='OSGB' ? 'OSGB' : 'OSIE';
     }
     elseif ($observation['Projection']==='WGS84') {
-      $values[$fieldname] = $this->format_lat_long($observation['North'], $observation['East']);
+      $values[$fieldname] = $this->format_lat_long($observation['north'], $observation['east']);
       $values[$fieldname . '_system'] = 4326;
     }
     elseif ($observation['Projection']==='OSGB36') {
-      $values[$fieldname] = $this->format_east_north($observation['East'], $observation['North']);
+      $values[$fieldname] = $this->format_east_north($observation['east'], $observation['north']);
       $values[$fieldname . '_system'] = 27700;
     }
   }
 
   private function get_survey_id($server, $project) {
+    var_export($project);
     $projects = $this->db->select('id')
       ->from('surveys')
       ->where(array(
         'website_id' => $server['website_id'],
-        'title' => "$project[id]:$project[Title]",
+        'title' => "$project[id]:$project[title]",
         'deleted' => 'f'
       ))->get()->result_array(false);
     if (count($projects))
@@ -447,8 +458,8 @@ class Rest_Api_Sync_Controller extends Controller {
     else {
       // Survey dataset does not exist yet so create it
       $values = array(
-        'survey:title' => "$project[id]:$project[Title]",
-        'survey:description' => "$project[id]:$project[Description]",
+        'survey:title' => "$project[id]:$project[title]",
+        'survey:description' => "$project[id]:$project[description]",
         'survey:website_id' => $server['website_id']
       );
       $survey = ORM::factory('survey');
