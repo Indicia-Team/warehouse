@@ -181,8 +181,8 @@ class Rest_Api_Sync_Controller extends Controller {
           'occurrence_comment:email_address' => $this->valueOrNull($annotation, 'emailAddress'),
           'occurrence_comment:record_status' => $this->valueOrNull($annotation, 'record_status'),
           'occurrence_comment:record_substatus' => $this->valueOrNull($annotation, 'record_substatus'),
-          'occurrence_comment:query' => $annotation['Question'],
-          'occurrence_comment:person_name' => $annotation['AuthorName'],
+          'occurrence_comment:query' => $annotation['question'],
+          'occurrence_comment:person_name' => $annotation['authorName'],
           'occurrence_comment:external_key' => $annotation['id']
 
           // @todo Other fields
