@@ -218,10 +218,6 @@ class Rest_Api_Sync_Controller extends Controller {
               $tracker['inserts']++;
           }
           $this->update_observation_with_annotation_details($existingObs[0]['id'], $annotation);
-
-          // Update the main observation record's record status and substatus if the most recent annotation
-          // @todo Update the main observation record's linked taxon if TVK supplied
-          // @todo create a determination if this is not automatic
         }
 
       }
@@ -239,7 +235,7 @@ class Rest_Api_Sync_Controller extends Controller {
    */
   function update_observation_with_annotation_details($occurrence_id, $annotation) {
     $result = $this->db
-      ->select('oc.record_status, oc.record_substatus, ' .
+      ->select('oc.person_name, oc.record_status, oc.record_substatus, ' .
             'o.record_status as orig_record_status, oc.record_substatus as orig_record_substatus')
       ->from('occurrence_comments oc')
       ->join('occurrences as o', 'o.id', 'oc.occurrence_id')
@@ -262,8 +258,18 @@ class Rest_Api_Sync_Controller extends Controller {
         ),
         array('id' => $occurrence_id)
       );
-      // @todo Update cache_occurrences
-      // @todo Update for change of species ID
+      $this->db->update('cache_occurrences',
+        array(
+          'record_status' => $result[0]['record_status'],
+          'record_substatus' => $result[0]['record_substatus'],
+          'cache_updated_on' => date("Ymd H:i:s"),
+          'verified_on' => date("Ymd H:i:s"),
+          'verifier' => $result[0]['person_name']
+        ),
+        array('id' => $occurrence_id)
+      );
+      // @todo Update the main observation record's linked taxon if TVK supplied
+      // @todo create a determination if this is not automatic
     }
   }
 
