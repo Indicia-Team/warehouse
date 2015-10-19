@@ -28,6 +28,10 @@ class Rest_Api_Sync_Controller extends Controller {
 
   private $db;
 
+  private $fromDateTime;
+
+  private $nextFromDateTime;
+
   /**
    * Main controller method for the rest_api_sync module. Initiates a synchronisation.
    */
@@ -35,6 +39,8 @@ class Rest_Api_Sync_Controller extends Controller {
     $this->db = Database::instance();
     rest_api_sync::$client_user_id = Kohana::config('rest_api_sync.user_id');
     $servers = Kohana::config('rest_api_sync.servers');
+    $this->fromDateTime = variable::get('rest_api_sync_last_run', '2015-01-01');
+    $this->nextFromDateTime = date("Y-m-d\TH:i:s");
     echo "<h1>REST API Sync</h1>";
     foreach ($servers as $serverId => $server) {
       echo "<h2>$serverId</h2>";
@@ -63,10 +69,10 @@ class Rest_Api_Sync_Controller extends Controller {
 
 
     }
+    variable::set('rest_api_sync_last_run', $this->nextFromDateTime);
   }
 
   private function sync_from_project($server, $serverId, $project, $survey_id) {
-    // @todo Last Sync date handling
     echo "<h3>$project[id]</h3>";
     if (!isset($server['resources']) || in_array('taxon-observations', $server['resources']))
       self::sync_taxon_observations($server, $serverId, $project, $survey_id);
@@ -78,10 +84,9 @@ class Rest_Api_Sync_Controller extends Controller {
     $datasetNameAttrId = Kohana::config('rest_api_sync.dataset_name_attr_id');
     $userId = Kohana::config('rest_api_sync.user_id');
     // @todo Proper handling of the last sync date
-    $fromDate = new DateTime('2015-05-01');
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $nextPageOfTaxonObservationsUrl = rest_api_sync::get_server_taxon_observations_url(
-        $server['url'], $project['id'], $fromDate->format('Y-m-d'));
+        $server['url'], $project['id'], $this->fromDateTime);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     while ($nextPageOfTaxonObservationsUrl) {
       $data = rest_api_sync::get_server_taxon_observations($nextPageOfTaxonObservationsUrl, $serverId);
@@ -166,9 +171,8 @@ class Rest_Api_Sync_Controller extends Controller {
   }
   
   private function sync_annotations($server, $serverId, $project, $survey_id) {
-    $fromDate = new DateTime('2014-03-01');
     $nextPageOfAnnotationsUrl = rest_api_sync::get_server_annotations_url(
-        $server['url'], $project['id'], $fromDate->format('Y-m-d'));
+        $server['url'], $project['id'], $this->fromDateTime);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     while ($nextPageOfAnnotationsUrl) {
       $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $serverId);
@@ -202,14 +206,13 @@ class Rest_Api_Sync_Controller extends Controller {
           if ($existing) {
             $values['occurrence_comment:id'] = $existing[0]['id'];
           }
-
-          $annotation = ORM::factory('occurrence_comment');
-          $annotation->set_submission_data($values);
-          $annotation->submit();
-          if (count($annotation->getAllErrors())!==0) {
+          $annotationObj = ORM::factory('occurrence_comment');
+          $annotationObj->set_submission_data($values);
+          $annotationObj->submit();
+          if (count($annotationObj->getAllErrors())!==0) {
             echo "Error occurred submitting an occurrence<br/>";
             kohana::log('debug', "REST API Sync error occurred submitting an occurrence");
-            kohana::log('debug', kohana::debug($annotation->getAllErrors()));
+            kohana::log('debug', kohana::debug($annotationObj->getAllErrors()));
             $tracker['errors']++;
           } else {
             if (count($existing))
@@ -234,41 +237,79 @@ class Rest_Api_Sync_Controller extends Controller {
    * @param array $annotation Annotation object loaded from the REST API.
    */
   function update_observation_with_annotation_details($occurrence_id, $annotation) {
-    $result = $this->db
-      ->select('oc.person_name, oc.record_status, oc.record_substatus, ' .
-            'o.record_status as orig_record_status, oc.record_substatus as orig_record_substatus')
-      ->from('occurrence_comments oc')
-      ->join('occurrences as o', 'o.id', 'oc.occurrence_id')
-      ->where(array('occurrence_id' => $occurrence_id, 'oc.deleted' => 'f', 'o.deleted' => 'f'))
-      ->where('oc.record_status is not null')
-      ->orderby('oc.created_on', 'DESC')
+    // Find the original record to compare against
+    $oldRecords = $this->db
+      ->select('record_status, record_substatus, taxa_taxon_list_id')
+      ->from('cache_occurrences')
+      ->where('id', $occurrence_id)
+      ->get()->result_array(false);
+    if (!count($oldRecords))
+      throw new exception('Could not find cache_occurrences record associated with a comment.');
+
+    // Find the taxon information supplied with the comment's TVK
+    $newTaxa = $this->db
+      ->select('id, taxonomic_sort_order, taxon, authority, preferred_taxon, default_common_name, search_name, ' .
+          'external_key, taxon_meaning_id, taxon_group_id, taxon_group')
+      ->from('cache_taxa_taxon_lists')
+      ->where('taxon_list_id', 1) /***********************/
+      ->where(array('preferred'=>'t', 'external_key'=>$annotation['taxonVersionKey']))
       ->limit(1)
       ->get()->result_array(false);
-    if (count($result) &&
-        ($result[0]['record_status']!==$result[0]['orig_record_status']) ||
-        ($result[0]['record_substatus']!==$result[0]['orig_record_substatus'])) {
+    f (!count($newTaxa))
+      throw new exception('Could not find cache_taxa_taxon_lists record associated with an update from a comment.');
+
+    $oldRecord = $oldRecords[0];
+    $newTaxon = $newTaxa[0];
+
+    $new_status = $annotation['record_status']===$oldRecord['record_status']
+        ? false : $annotation['record_status'];
+    $new_substatus = $annotation['record_substatus']===$oldRecord['record_substatus']
+        ? false : $annotation['record_substatus'];
+    $new_ttlid = $newTaxon['id']===$oldRecord['taxa_taxon_list_id']
+        ? false : $newTaxon['id'];
+
+    // Does the comment imply an allowable change to the occurrence's attributes?
+    if ($new_status || $new_substatus || $new_ttlid) {
+      $oupdate = array('updated_on' => date("Ymd H:i:s"));
+      $coupdate = array('cache_updated_on' => date("Ymd H:i:s"));
+      if ($new_status || $new_substatus) {
+        $oupdate['verified_on'] = date("Ymd H:i:s");
+        // @todo Verified_by_id needs to be mapped to a proper user account.
+        $oupdate['verified_by_id'] = 1;
+        $coupdate['verified_on'] = date("Ymd H:i:s");
+        // @todo Verified_by_id needs to be mapped to a proper user account.
+        $coupdate['verifier'] = $annotation['authorName'];
+      }
+      if ($new_status) {
+        $oupdate['record_status'] = $new_status;
+        $coupdate['record_status'] = $new_status;
+      }
+      if ($new_substatus) {
+        $oupdate['record_substatus'] = $new_substatus;
+        $coupdate['record_substatus'] = $new_substatus;
+      }
+      if ($new_ttlid) {
+        $oupdate['taxa_taxon_list_id'] = $new_ttlid;
+        $coupdate['taxa_taxon_list_id'] = $new_ttlid;
+        $coupdate['taxonomic_sort_order'] = $newTaxon['taxonomic_sort_order'];
+        $coupdate['taxon'] = $newTaxon['taxon'];
+        $coupdate['preferred_taxon'] = $newTaxon['preferred_taxon'];
+        $coupdate['authority'] = $newTaxon['authority'];
+        $coupdate['default_common_name'] = $newTaxon['default_common_name'];
+        $coupdate['search_name'] = $newTaxon['search_name'];
+        $coupdate['taxa_taxon_list_external_key'] = $newTaxon['external_key'];
+        $coupdate['taxon_meaning_id'] = $newTaxon['taxon_meaning_id'];
+        $coupdate['taxon_group_id'] = $newTaxon['taxon_group_id'];
+        $coupdate['taxon_group'] = $newTaxon['taxon_group'];
+      }
       $this->db->update('occurrences',
-        array(
-          'record_status' => $result[0]['record_status'],
-          'record_substatus' => $result[0]['record_substatus'],
-          'updated_on' => date("Ymd H:i:s"),
-          'verified_on' => date("Ymd H:i:s"),
-          // @todo Verified_by_id needs to be mapped to a proper user account.
-          'verified_by_id' => 1
-        ),
+        $oupdate,
         array('id' => $occurrence_id)
       );
       $this->db->update('cache_occurrences',
-        array(
-          'record_status' => $result[0]['record_status'],
-          'record_substatus' => $result[0]['record_substatus'],
-          'cache_updated_on' => date("Ymd H:i:s"),
-          'verified_on' => date("Ymd H:i:s"),
-          'verifier' => $result[0]['person_name']
-        ),
+        $coupdate,
         array('id' => $occurrence_id)
       );
-      // @todo Update the main observation record's linked taxon if TVK supplied
       // @todo create a determination if this is not automatic
     }
   }
