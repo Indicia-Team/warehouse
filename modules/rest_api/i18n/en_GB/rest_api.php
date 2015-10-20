@@ -16,10 +16,8 @@
           '{annotation ID} is replaced by the observation ID.',
     ),
     'projects' => array(
-      'system_id' => 'Your system\'s unique identification code.'
     ),
     'taxon-observations' => array(
-      'system_id' => 'Your system\'s unique identification code.',
       'proj_id' => 'Identifier for the project that contains the observations the client is requesting.',
       'page' => 'The page of records to retrieve when there are more records available than page_size. The first '.
           'page is page 1. Defaults to 1 if not provided.',
@@ -30,7 +28,6 @@
           'Format yyyy-mm-dd.'
     ),
     'annotations' => array(
-      'system_id' => 'Your system\'s unique identification code.',
       'proj_id' => 'Identifier for the project that contains the annotations the client is requesting.',
       'page' => 'The page of records to retrieve when there are more records available than page_size. The first '.
           'page is page 1. Defaults to 1 if not provided.',

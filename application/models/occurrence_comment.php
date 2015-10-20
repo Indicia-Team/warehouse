@@ -48,7 +48,8 @@ class Occurrence_comment_model extends ORM {
       'implies_manual_check_required',
       'query',
       'record_status',
-      'record_substatus'
+      'record_substatus',
+      'external_key'
     );
     return parent::validate($array, $save);
 

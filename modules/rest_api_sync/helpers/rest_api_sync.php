@@ -27,39 +27,69 @@
  */
 class rest_api_sync {
 
-  public static $client_system_id;
+  public static $client_user_id;
 
   public static function get_server_projects_url($server_url) {
-    return $server_url . '/projects?' . http_build_query(array(
-      'system_id' => self::$client_system_id
-    ));
+    return $server_url . '/projects';
   }
 
   public static function get_server_taxon_observations_url($server_url, $projectId, $edited_date_from) {
-    return $server_url . '/taxon_observations?' . http_build_query(array(
-      'system_id' => self::$client_system_id,
+    return $server_url . '/taxon-observations?' . http_build_query(array(
+      'proj_id' => $projectId,
+      'edited_date_from' => $edited_date_from
+      //'edited_date_to' => '2015-05-30'
+    ));
+  }
+  
+  public static function get_server_annotations_url($server_url, $projectId, $edited_date_from) {
+    return $server_url . '/annotations?' . http_build_query(array(
       'proj_id' => $projectId,
       'edited_date_from' => $edited_date_from
     ));
   }
 
-  public static function get_server_projects($url) {
-    return self::get_data_from_rest_url($url);
+  public static function get_server_projects($url, $serverId) {
+    return self::get_data_from_rest_url($url, $serverId);
   }
 
-  public static function get_server_taxon_observations($url) {
-    return self::get_data_from_rest_url($url);
+  public static function get_server_taxon_observations($url, $serverId) {
+    return self::get_data_from_rest_url($url, $serverId);
+  }
+  
+  public static function get_server_annotations($url, $serverId) {
+    return self::get_data_from_rest_url($url, $serverId);
   }
 
 
-  private static function get_data_from_rest_url($url) {
+  private static function get_data_from_rest_url($url, $serverId) {
+    // @todo is this the most optimal place to retrieve config?
+    $servers = Kohana::config('rest_api_sync.servers');
+    $shared_secret = $servers[$serverId]['shared_secret'];
+    $userId = self::$client_user_id;
     $session = curl_init();
     // Set the POST options.
     curl_setopt ($session, CURLOPT_URL, $url);
     curl_setopt($session, CURLOPT_HEADER, false);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    // Do the POST and then close the session
+    $hmac = hash_hmac("sha1", $url, $shared_secret, $raw_output=FALSE);
+    curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
+    // Do the request
     $response = curl_exec($session);
+    $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE); 
+    $curlErrno = curl_errno($session);
+    // Check for an error, or check if the http response was not OK.
+    if ($curlErrno || $httpCode != 200) {
+      echo "Error occurred accessing $url<br/>";
+      kohana::log('error', "Rest API Sync error $httpCode");
+      kohana::log('error', 'cUrl POST request failed.');
+      if ($curlErrno) {
+        kohana::log('error', 'Error number: '.$curlErrno);
+        kohana::log('error', 'Error message: '.curl_error($session));
+      }
+      echo 'Request failed<br/>';
+      echo "$url<br/>";
+      throw new exception('Request to server failed');
+    }
     $data = json_decode($response, true);
     return $data;
   }
