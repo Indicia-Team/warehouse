@@ -83,7 +83,6 @@ class Rest_Api_Sync_Controller extends Controller {
   private function sync_taxon_observations($server, $serverId, $project, $survey_id) {
     $datasetNameAttrId = Kohana::config('rest_api_sync.dataset_name_attr_id');
     $userId = Kohana::config('rest_api_sync.user_id');
-    // @todo Proper handling of the last sync date
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $nextPageOfTaxonObservationsUrl = rest_api_sync::get_server_taxon_observations_url(
         $server['url'], $project['id'], $this->fromDateTime);
@@ -188,9 +187,6 @@ class Rest_Api_Sync_Controller extends Controller {
           'occurrence_comment:query' => $annotation['question'],
           'occurrence_comment:person_name' => $annotation['authorName'],
           'occurrence_comment:external_key' => $annotation['id']
-
-          // @todo Other fields
-
         );
 
         // link to the existing observation
@@ -251,11 +247,14 @@ class Rest_Api_Sync_Controller extends Controller {
       ->select('id, taxonomic_sort_order, taxon, authority, preferred_taxon, default_common_name, search_name, ' .
           'external_key, taxon_meaning_id, taxon_group_id, taxon_group')
       ->from('cache_taxa_taxon_lists')
-      ->where('taxon_list_id', 1) /***********************/
-      ->where(array('preferred'=>'t', 'external_key'=>$annotation['taxonVersionKey']))
+      ->where(array(
+          'preferred'=>'t',
+          'external_key'=>$annotation['taxonVersionKey']),
+          'taxon_list_id', kohana::config('rest_api_sync.taxon_list_id')
+      )
       ->limit(1)
       ->get()->result_array(false);
-    f (!count($newTaxa))
+    if (!count($newTaxa))
       throw new exception('Could not find cache_taxa_taxon_lists record associated with an update from a comment.');
 
     $oldRecord = $oldRecords[0];
@@ -277,7 +276,6 @@ class Rest_Api_Sync_Controller extends Controller {
         // @todo Verified_by_id needs to be mapped to a proper user account.
         $oupdate['verified_by_id'] = 1;
         $coupdate['verified_on'] = date("Ymd H:i:s");
-        // @todo Verified_by_id needs to be mapped to a proper user account.
         $coupdate['verifier'] = $annotation['authorName'];
       }
       if ($new_status) {
