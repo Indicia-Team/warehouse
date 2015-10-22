@@ -100,6 +100,17 @@ echo data_entry_helper::text_input(array(
   'fieldname' => 'sample:external_key',
   'default' => html::initial_value($values, 'sample:external_key')
 ));
+echo data_entry_helper::select(array(
+  'label' => 'Licence',
+  'helpText' => 'Licence which applies to all records and media held within this sample.',
+  'fieldname' => 'sample:licence_id',
+  'default' => html::initial_value($values, 'sample:licence_id'),
+  'table' => 'licence',
+  'valueField' => 'id',
+  'captionField' => 'title',
+  'blankText' => '<Please select>',
+  'extraParams' => $readAuth
+));
  ?>
  </fieldset>
  <fieldset>
