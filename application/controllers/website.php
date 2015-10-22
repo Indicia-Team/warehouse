@@ -81,11 +81,18 @@ class Website_Controller extends Gridview_Base_Controller
    * Return a list of the tabs to display for this controller's actions.
    */
   protected function getTabs($name) {
-    return array(array(
-      'controller' => 'websites_website_agreement',
-      'title' => 'Agreements',
-      'actions'=>array('edit')
-    ));
+    return array(
+      array(
+        'controller' => 'websites_website_agreement',
+        'title' => 'Agreements',
+        'actions'=>array('edit')
+      ),
+      array(
+        'controller' => 'licences_website',
+        'title' => 'Licences',
+        'actions'=>array('edit')
+      )
+    );
   }
 
 }
