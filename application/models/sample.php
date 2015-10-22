@@ -40,6 +40,7 @@ class Sample_Model extends ORM_Tree
   (
     'survey',
     'location',
+    'licence',
     'created_by'=>'user',
     'updated_by'=>'user',
     'sample_method'=>'termlists_term'
