@@ -230,6 +230,25 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
+   * Provides the /services/data/licence service.
+   * Retrieves details of a single location.
+   */
+  public function licence()
+  {
+    $this->handle_call('licence');
+  }
+
+  /**
+   * Provides the /services/data/licences_website service.
+   * Retrieves details of a single location.
+   */
+  public function licences_website()
+  {
+    $this->handle_call('licences_website');
+  }
+
+
+  /**
   * Provides the /services/data/location service.
   * Retrieves details of a single location.
   */
