@@ -46,6 +46,22 @@ class Licence_Controller extends Gridview_Base_Controller {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
 
+  /**
+   * Returns an array of all values from this model and its super models ready to be
+   * loaded into a form. For this controller, we need to also need to flash a warning
+   * about editing existing licence records.
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();
+    if (!empty($r['licence:id'])) {
+      echo ';;;';
+      $this->session->set_flash('flash_error', 'Warning! Editing an existing licence will ' .
+        'affect the licence associated with records that link to this. Do not edit this if ' .
+        'it changes the nature of the licence.');
+    }
+    return $r;
+  }
+
 }
 
 ?>
