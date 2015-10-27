@@ -149,33 +149,81 @@ class Sample_Model extends ORM_Tree
   }
 
   /**
-  * Before submission, map vague dates to their underlying database fields.
+  * Before submission:
+  * * map vague date strings to their underlying database fields.
+  * * fill in the geom field using the supplied spatial reference, if not already filled in
+  * * fill in the licence for the sample, if user has one, and not already filled in
   */
   protected function preSubmit()
   {
+    $this->preSubmitFillInVagueDate();
+    $this->preSubmitFillInGeom();
+    $this->preSubmitFillInLicence();
+    return parent::presubmit();
+  }
+
+  /**
+   * If a date is supplied in a submission as a string, fill in the underlying database
+   * vague date fields.
+   */
+  private function preSubmitFillInVagueDate() {
     if (array_key_exists('date', $this->submission['fields'])) {
       $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
       $this->submission['fields']['date_start']['value'] = $vague_date[0];
       $this->submission['fields']['date_end']['value'] = $vague_date[1];
       $this->submission['fields']['date_type']['value'] = $vague_date[2];
     }
-    // Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
-    // can work out the Geom
+  }
+
+  /**
+   * Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
+   * can work out the geom and fill it in.
+   */
+  private function preSubmitFillInGeom() {
+    //
     if (array_key_exists('entered_sref', $this->submission['fields']) &&
-        array_key_exists('entered_sref_system', $this->submission['fields']) &&
-        !(array_key_exists('geom', $this->submission['fields']) && $this->submission['fields']['geom']['value']) &&
-        $this->submission['fields']['entered_sref']['value'] &&
-        $this->submission['fields']['entered_sref_system']['value']) {
+      array_key_exists('entered_sref_system', $this->submission['fields']) &&
+      !(array_key_exists('geom', $this->submission['fields']) && $this->submission['fields']['geom']['value']) &&
+      $this->submission['fields']['entered_sref']['value'] &&
+      $this->submission['fields']['entered_sref_system']['value']) {
       try {
         $this->submission['fields']['geom']['value'] = spatial_ref::sref_to_internal_wkt(
-            $this->submission['fields']['entered_sref']['value'],
-            $this->submission['fields']['entered_sref_system']['value']
+          $this->submission['fields']['entered_sref']['value'],
+          $this->submission['fields']['entered_sref_system']['value']
         );
       } catch (Exception $e) {
         $this->errors['entered_sref'] = $e->getMessage();
       }
     }
-    return parent::presubmit();
+  }
+
+  /**
+   * If a submission is for an insert and does not contain the licence ID for the data it contains, look it
+   * up from the user's settings and apply it to the submission.
+   */
+  private function preSubmitFillInLicence() {
+    // @todo Real world tests of the performance of this method, in particular the query against users_websites.
+    if (!(array_key_exists('id', $this->submission['fields']) || array_key_exists('licence_id', $this->submission['fields']))) {
+      // @todo This code is shared with metadata code in MyORM so move into method in My_ORM
+      global $remoteUserId;
+      if (isset($remoteUserId))
+        $userId=$remoteUserId;
+      elseif (isset($_SESSION['auth_user']))
+        $userId = $_SESSION['auth_user']->id;
+      if ($userId) {
+        $row = $this->db
+            ->select('licence_id')
+            ->from('users_websites')
+            ->where(array(
+              'user_id' => $userId,
+              'website_id' => $this->identifiers['website_id']
+            ))
+            ->get()->current();
+        if ($row) {
+          $this->submission['fields']['licence_id']['value'] = $row->licence_id;
+        }
+      }
+    }
   }
 
   /**
