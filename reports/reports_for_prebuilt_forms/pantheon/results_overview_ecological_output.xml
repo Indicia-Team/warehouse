@@ -1,0 +1,61 @@
+<report
+    title="Results overview - ecological output"
+    description="A report to display the ecological guild details on the Results Overview page."
+>
+<query website_filter_field="o.website_id">
+  SELECT #columns#
+  from terms tGuild
+    join termlists_terms ttGuild on ttGuild.term_id = tGuild.id AND ttGuild.deleted=false
+    join taxa_taxon_list_attribute_values ttlav on ttlav.int_value = ttGuild.id AND ttlav.deleted = false
+    join occurrences o on o.taxa_taxon_list_id = ttlav.taxa_taxon_list_id
+    left join occurrence_attribute_values oavQuant on oavQuant.occurrence_id = o.id AND oavQuant.occurrence_attribute_id = #quantity_occ_attr_id# AND oavQuant.deleted = false
+    left join occurrence_attribute_values oavStage on oavStage.occurrence_id = o.id AND oavStage.occurrence_attribute_id = #stage_occ_attr_id# AND oavStage.deleted = false
+    left join taxa_taxon_list_attributes ttlaAdult on ttlaAdult.id = ttlav.taxa_taxon_list_attribute_id AND ttlaAdult.id=#adult_attr_id# AND ttlaAdult.deleted=false AND oavStage.int_value = #adult_stage_tt_id#
+    left join taxa_taxon_list_attributes ttlaLarv on ttlaLarv.id = ttlav.taxa_taxon_list_attribute_id AND ttlaLarv.id=#larval_attr_id# AND ttlaLarv.deleted=false AND oavStage.int_value = #larval_stage_tt_id#
+  WHERE o.sample_id=#sample_id# AND (ttlaAdult.id IS NOT NULL OR ttlaLarv.id IS NOT NULL)
+  </query>
+  <params>
+    <param name='sample_id' display='Sample' description='Sample id to retrieve data for.' datatype='integer'/>
+    <param name='quantity_occ_attr_id' display='Quantity Occurrence Attribute Id' description='Occurrance attribute that holds the abundance for an occurrence.' datatype='integer'/>
+    <param name='stage_occ_attr_id' display='Stage Occurrence Attribute Id' description='Occurrance attribute that holds the life stage for an occurrence.' datatype='integer'/>
+    <param name='adult_attr_id' display='Adult Guild Occurrence Attribute Id' description='Occurrance attribute that holds adult guild.' datatype='integer'/>
+    <param name='larval_attr_id' display='Larval Guild Occurrence Attribute Id' description='Occurrance attribute that holds larval guild.' datatype='integer'/>
+    <param name='taxa_taxon_list_trait_attr_ids' display='Trait Attribute Ids' description='Comma separated in of the attribute ids that hold species traits.' datatype='text'/>
+    <param name='adult_stage_tt_id' display='Adult stage termlists term id' description='The termlist_terms id that holds the adult life stage.' datatype='integer'/>
+    <param name='larval_stage_tt_id' display='Larval stage termlists term id' description='The termlist_terms id that holds the arval life stage.' datatype='integer'/>
+  </params>
+  <columns>
+    <column name='guild' sql='tGuild.term' display='Guild' in_count='true'/>
+    <column name='count' sql='
+    sum(case when 
+    (select count(*)
+    from taxa_taxon_list_attribute_values ttlAV 
+    where ttlAV.taxa_taxon_list_id=o.taxa_taxon_list_id AND ttlAV.taxa_taxon_list_attribute_id in (#taxa_taxon_list_trait_attr_ids#) AND ttlAV.deleted = false)
+    > 0 then oavQuant.int_value else 0 END)' display='Count' aggregate='true'/>
+    <column name='percentage' sql='
+    round(
+      (sum(case when 
+    (select count(*)
+    from taxa_taxon_list_attribute_values ttlAV 
+    where ttlAV.taxa_taxon_list_id=o.taxa_taxon_list_id AND ttlAV.taxa_taxon_list_attribute_id in (#taxa_taxon_list_trait_attr_ids#) AND ttlAV.deleted = false)
+    > 0 then oavQuant.int_value else 0 END)) 
+      / 
+      cast
+      (
+        (select sum(oavQuant2.int_value)
+        from occurrences o2
+        join occurrence_attribute_values oavQuant2 on oavQuant2.occurrence_id = o2.id AND oavQuant2.occurrence_attribute_id = #quantity_occ_attr_id# AND oavQuant2.deleted = false
+        where o2.sample_id = #sample_id# AND o2.deleted = false AND o2.id IN
+          (select o3.id
+          from occurrences o3
+          join taxa_taxon_list_attribute_values ttlAV3 on ttlAV3.taxa_taxon_list_id = o3.taxa_taxon_list_id AND ttlAV3.taxa_taxon_list_attribute_id in (#taxa_taxon_list_trait_attr_ids#) AND ttlAV3.deleted = false
+          where o3.sample_id = #sample_id# AND o3.deleted = false
+          )
+        )
+        as numeric
+      )
+      * 100
+    ,0)
+' display='%' aggregate='true'/>
+  </columns>
+</report>
