@@ -118,7 +118,8 @@ class Data_Controller extends Data_Service_Base_Controller {
     'cache_taxon_searchterms',
     'cache_taxa_taxon_lists',
     'index_websites_website_agreements',
-    'verification_rule_data'
+    'verification_rule_data',
+    'users_websites'
   );
   
   /**
@@ -632,6 +633,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function user_identifier()
   {
     $this->handle_call('user_identifier');
+  }
+
+  /**
+   * Provides the /services/data/users_website service.
+   */
+  public function users_website()
+  {
+    $this->handle_call('users_website');
   }
   
   public function user_trust()
