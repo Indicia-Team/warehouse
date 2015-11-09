@@ -131,10 +131,18 @@ where n.id is null;")->result();
       $idlist=implode(',', $ids);
       // Seems much faster to break this into small queries than one big left join.
       $smpInfo = $db->query(
-      "SELECT DISTINCT s.id, st_astext(coalesce(s.geom, l.centroid_geom)) as geom, o.confidential, GREATEST(o.sensitivity_precision, s.privacy_precision, $size) as size, 
+      "SELECT DISTINCT s.id, st_astext(coalesce(s.geom, l.centroid_geom)) as geom, o.confidential,
+          GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size) as size,
           coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system,
-          round(st_x(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, GREATEST(o.sensitivity_precision, s.privacy_precision, $size), s.entered_sref_system)))) as x,
-          round(st_y(st_centroid(reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, GREATEST(o.sensitivity_precision, s.privacy_precision, $size), s.entered_sref_system)))) as y
+          round(st_x(st_centroid(reduce_precision(
+            coalesce(s.geom, l.centroid_geom), o.confidential,
+            GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size),
+            s.entered_sref_system)
+          ))) as x,
+          round(st_y(st_centroid(reduce_precision(
+            coalesce(s.geom, l.centroid_geom), o.confidential,
+            GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size), s.entered_sref_system)
+          ))) as y
         FROM samples s
         JOIN occurrences o ON o.sample_id=s.id
         LEFT JOIN locations l on l.id=s.location_id AND l.deleted=false
