@@ -25,11 +25,11 @@
     <column name='grid_ref' sql='s.entered_sref' display='Grid Ref' />
     <!-- There is a Reference field in the screenshot, what should that contain -->
     <column name='comments' sql='s.comment' display='Comments' />
-    <column name='sample_size' sql='count(distinct o.id)' display='Sample Size' aggregate='true'/>
+    <column name='sample_size' sql='count(distinct o.preferred_taxa_taxon_list_id)' display='Sample Size' aggregate='true'/>
     -- Number Analysed is the summed abundance in the sample that actually have traits, as the user
     can select any species, not just pantheon ones with traits
     <column name='number_analysed' sql='count(distinct ttlav.taxa_taxon_list_id)' display='Number Analysed' aggregate='true'/>
     --What percentage of the sample's summed abundance actually have Pantheon traits.
-    <column name='percent_return' sql='round(count(distinct o.id)::float*100/count(distinct ttlav.taxa_taxon_list_id)::float)' display='% Return' aggregate='true'/>
+    <column name='percent_return' sql='round(count(distinct o.preferred_taxa_taxon_list_id)::float*100/count(distinct ttlav.taxa_taxon_list_id)::float)' display='% Return' aggregate='true'/>
   </columns>
 </report>
