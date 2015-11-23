@@ -330,9 +330,10 @@ class XMLReportReader_Core implements ReportReader
   */ 
   private function getSharedWebsiteList($websiteIds, $sharing) {
     if (count($websiteIds ===1)) {
-      $cacheId = 'website-shares-'.implode('', $websiteIds)."-$sharing";
+      $tag = 'website-shares-'.implode('', $websiteIds);
+      $cacheId = "$tag-$sharing";
       $cache = Cache::instance();
-      if ($cached = $cache->get($cacheId)) 
+      if ($cached = $cache->get($cacheId))
         return $cached;
     }
     $db = new Database();
@@ -346,7 +347,8 @@ class XMLReportReader_Core implements ReportReader
       $ids[] = $row->to_website_id;
     }
     $r = implode(',', $ids);
-    $cache->set($cacheId, $r); 
+    // tag all cache entries for this website so they can be cleared together when changes are saved.
+    $cache->set($cacheId, $r, $tag);
     return $r;
   }
 

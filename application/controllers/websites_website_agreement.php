@@ -101,6 +101,19 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
   public function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
   }
+
+  /**
+   * Override save to clear the relevant cache entries for website agreements to
+   * ensure changes are immediate.
+   */
+  public function save() {
+    if (!empty($_POST['websites_website_agreement:website_id'])) {
+      $cache = Cache::instance();
+      $tag = 'website-shares-'.$_POST['websites_website_agreement:website_id'];
+      $cache->delete_tag($tag);
+    }
+    parent::save();
+  }
   
   /**
    * Define non-standard behaviour for the breadcrumbs, since this is accessed via a website list
