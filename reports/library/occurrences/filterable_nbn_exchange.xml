@@ -7,7 +7,7 @@ select #columns#
 from cache_occurrences o
 join samples s on s.id=o.sample_id
 left join (index_locations_samples ils
-  join locations vc on vc.id=ils.location_id
+  join locations vc on vc.id=ils.location_id and coalesce(vc.code, '') not like '%+%'
   join cache_termlists_terms ctt on ctt.id=vc.location_type_id and ctt.term='Vice County'
 ) on ils.sample_id=o.sample_id and ils.contains=true
 left join groups g1 on g1.id=o.group_id and g1.deleted=false
