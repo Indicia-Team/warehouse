@@ -33,12 +33,14 @@ class request_logging {
    * for outputs (pulling data out).
    * @param string $service Web service that was requested
    * @param string $resource Resource that was accessed if appropriate, e.g. a table or report name.
+   * @param integer $website_id ID of the client website, or null if not known
+   * @param integer $user_id ID of the user making the request, or null if not known
    * @param float $startTime Unix timestamp of the request start, i.e. the value of microtime(true).
    * @param Database $db Kohana database object, or null if none available.
    * @param string $exceptionMsg Optional message if an exception occurred.
    * @throws \Kohana_Database_Exception
    */
-  public static function log($io, $service, $resource, $startTime, $db=null, $exceptionMsg=null) {
+  public static function log($io, $service, $resource, $website_id, $user_id, $startTime, $db=null, $exceptionMsg=null) {
     // Check if this type of request is loggd
     $logged = Kohana::config('request_logging.logged_requests');
     if (in_array("$io.$service", $logged)) {
@@ -53,9 +55,12 @@ class request_logging {
         'resource' => $resource,
         'request_parameters_get' => $get,
         'request_parameters_post' => $post,
+        'website_id' => $website_id,
+        'user_id' => $user_id,
         'start_timestamp' => $startTime,
         'duration' => microtime(TRUE) - $startTime,
-        'exception_msg' => $exceptionMsg
+        'exception_msg' => $exceptionMsg,
+        'response_size' => ob_get_length()
       ));
       $db->query('COMMIT');
     }

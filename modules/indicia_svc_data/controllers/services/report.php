@@ -102,13 +102,15 @@ class Report_Controller extends Data_Service_Base_Controller {
       }
       $this->send_response();
       if (class_exists('request_logging')) {
-        request_logging::log('o', 'report', empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'], $tm);
+        request_logging::log('o', 'report', empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
+          $this->website_id, $this->user_id, $tm);
       }
     }
     catch (Exception $e) {
       $this->handle_error($e);
       if (class_exists('request_logging')) {
-        request_logging::log('o', 'report', empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'], $tm, $e->getMessage());
+        request_logging::log('o', 'report', empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
+          $this->website_id, $this->user_id, $tm, $e->getMessage());
       }
     }
   }
