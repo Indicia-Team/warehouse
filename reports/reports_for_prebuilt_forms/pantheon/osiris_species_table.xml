@@ -28,11 +28,12 @@
     <param name='r_attr_id' display='Resource attribute ID' datatype='integer'/>
   </params>
   <columns>
+    <column name="taxa_taxon_list_id" sql="ttl.id" display="ID" visible="false" in_count="true" />
     <column name="species" sql="ttl.taxon" display="Species" />
     <column name="kingdom" sql="ttl.kingdom_taxon" visible="false" />
     <column name="taxonomic" sql="ttl.order_taxon || '; ' || ttl.family_taxon" display="Taxonomic" />
-    <column name="ecological_division" display="Ecological division" sql="t_ed.term" />
-    <column name="habitat" display="Habitat" sql="t_h.term" />
-    <column name="resource" display="Resource" sql="array_to_string(array_agg(t_r.term), '; ')" aggregate="true" />
+    <column name="ecological_division" display="Ecological division" sql="array_to_string(array_agg(distinct t_ed.term), '; ')" aggregate="true" />
+    <column name="habitat" display="Habitat" sql="array_to_string(array_agg(distinct t_h.term), '; ')" aggregate="true" />
+    <column name="resource" display="Resource" sql="array_to_string(array_agg(distinct t_r.term), '; ')" aggregate="true" />
   </columns>
 </report>

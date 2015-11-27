@@ -16,7 +16,7 @@
   </order_bys>
   <params>
     <param name='sample_id' display='Sample' description='Sample id to retrieve data for.' datatype='integer'/>
-    <param name='trait_attr_ids' display='Trait IDs' description='Comma separated list of traits to return' datatype='integer' default="">
+    <param name='trait_attr_ids' display='Trait IDs' description='Comma separated list of traits to return' datatype='integer[]' default="">
       <where>ttlav.taxa_taxon_list_attribute_id in (#trait_attr_ids#)</where>
     </param>
     <param name="parent_id" display="Parent trait term ID" datatype="integer" default="">
