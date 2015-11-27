@@ -23,7 +23,13 @@
 /**
  * Define the database ID used to identify this system in the network.
  */
-$config['system_id'] = 'BRC';
+$config['user_id'] = 'BRC';
+
+/**
+ * Which sample attribute will we use to store the dataset name for records which came from
+ * remote systems?
+ */
+$config['dataset_name_attr_id'] = 99;
 
 // The following configuration is a temporary definition of the projects available for 
 // each website.
@@ -31,15 +37,19 @@ $config['system_id'] = 'BRC';
 $config['clients']=array(
   // keyed by client system ID
   'BTO' => array(
-    'website_id' => 1,
+    'shared_secret' => 'password',
     'projects' => array(
       // list of available projects keyed by project ID
       'BRC1' => array(
         'id' => 'BRC1',
+        'website_id' => 1,
         'title'=>'BRC birds',
         'description'=>'Bird records entered onto the BRC warehouse made available for verification on iRecord.',
+        // Optional filter ID
         'filter_id' => 53,
-        'sharing' => 'verification'
+        'sharing' => 'verification',
+        // optional, which resources are available? Default is all.
+        'resources' => array('taxon-observations', 'annotations')
       )
     )
   )

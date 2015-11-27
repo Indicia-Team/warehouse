@@ -23,32 +23,26 @@
 /**
  * Define the database ID used to identify this system in the network.
  */
-$config['user_id'] = 'ABC';
-
-/**
- * Master species checklist to lookup against.
- */
-$config['taxon_list_id'] = 1;
-
-/**
- * Which sample attribute will we use to store the dataset name for records which came from
- * remote systems?
- */
-$config['dataset_name_attr_id'] = 99;
+$config['user_id'] = 'WA';
+$config['dataset_name_attr_id'] = 35;
 
 // The following configuration is a temporary definition of the projects available for 
 // each website.
 // @todo Move this configuration into a database table.
-$config['servers']=array(
-  // keyed by server system ID
-  'XYZ' => array(
-    // the local website registration used to store each project
-    'website_id' => 5,
-    // remote API URL
-    'url' => 'http://localhost/indicia/index.php/services/rest',
-    // secret shared with the remote API
-    'shared_secret' => '123password',
-    // Optional. Which resources will we try to retrieve from this API?
-    'resources' => array('taxon-observations', 'annotations')
+$config['clients']=array(
+  // keyed by client system ID
+  'WB' => array(
+    'shared_secret' => 'password',
+    'projects' => array(
+      // list of available projects keyed by project ID
+      'WA1' => array(
+        'id' => 'WA1',
+        'website_id' => 2,
+        'Title'=>'Laptop records',
+        'Description'=>'Records from the MBP',
+        'filter_id' => 2,
+        'sharing' => 'verification'
+      )
+    )
   )
 );

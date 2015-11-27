@@ -9,9 +9,9 @@
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   JOIN samples s on s.id=o.sample_id AND s.deleted=false
   LEFT JOIN (index_locations_samples ils
-    JOIN locations l on l.id=ils.location_id
-    JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id AND ctt.term='Vice County'
-  ) on ils.sample_id=o.sample_id
+    JOIN locations vc on vc.id=ils.location_id and coalesce(vc.code, '') not like '%+%'
+    JOIN cache_termlists_terms ctt on ctt.id=vc.location_type_id AND ctt.term='Vice County'
+  ) on ils.sample_id=o.sample_id and ils.contains=true
   LEFT JOIN (occurrence_attribute_values det_full_val
     JOIN occurrence_attributes det_full on det_full.id=det_full_val.occurrence_attribute_id and det_full.deleted=false and det_full.system_function='det_full_name'
   ) ON det_full_val.occurrence_id=o.id AND det_full_val.deleted=false
@@ -69,10 +69,10 @@
     when '4326' then 50 
     when '27700' then 1
     else case length(replace(s.entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(s.entered_sref, ' ', '')))/2) end
-  end" 
+  end"
         datatype="text" />
     <column name='output_sref' display='Output grid ref' sql="o.output_sref" datatype='text' />
-    <column name="vicecounty" display="Vice county" sql="array_to_string(array_agg(l.name), ', ')" datatype="text" aggregate="true" />
+    <column name="vicecounty" display="Vice county" sql="vc.name" datatype="text" />
     <column name='date_start' sql='o.date_start' visible='false' />
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
@@ -85,6 +85,7 @@
         CASE WHEN det_last_val.text_value IS NULL THEN NULL ELSE det_last_val.text_value || COALESCE(', ' || det_first_val.text_value, '') END
       ELSE det_full_val.text_value END" />
     <column name='verifier' display='Verifier' sql='o.verifier' datatype="text" />
+    <column name='verified_on' display='Verified on' sql='o.verified_on' datatype="text" />
     <column name='sample_comment' display='Sample comment' sql="s.comment" datatype="text" />
     <column name='zeroabundance' display='Zero abundance' sql='upper(cast (o.zero_abundance as character))' datatype="text" />
     <column name='record_status' display='State' 

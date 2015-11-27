@@ -48,7 +48,7 @@ class Sample_Model extends ORM_Tree
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   protected $attrs_submission_name='smpAttributes';
-  protected $attrs_field_prefix='smpAttr';
+  public $attrs_field_prefix='smpAttr';
 
   // Declare additional fields required when posting via CSV.
   protected $additional_csv_fields=array(
@@ -78,8 +78,9 @@ class Sample_Model extends ORM_Tree
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
 
-    if ($this->id && preg_match('/[RDV]/', $this->record_status) && empty($this->submission['fields']['record_status'])
-        && $this->wantToUpdateMetadata) {
+    if ($this->id && preg_match('/[RDV]/', $this->record_status) && 
+        (empty($this->submission['fields']['record_status']) || $this->submission['fields']['record_status']['value']==='C') && 
+        $this->wantToUpdateMetadata) {
       // If we update a processed occurrence but don't set the verification state, revert it to completed/awaiting verification.
       $array->verified_by_id=null;
       $array->verified_on=null;
@@ -294,7 +295,7 @@ class Sample_Model extends ORM_Tree
         'comment'=>kohana::lang('misc.recheck_verification'),
         'auto_generated'=>'t'
       );
-      $comment = ORM::factory('sample_id');
+      $comment = ORM::factory('sample_comment');
       $comment->validate(new Validation($data), true);
     }
     return true;

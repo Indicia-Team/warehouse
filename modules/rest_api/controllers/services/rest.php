@@ -76,6 +76,30 @@
   }
 }
 
+if( !function_exists('apache_request_headers') ) {
+  function apache_request_headers() {
+    $arh = array();
+    $rx_http = '/\AHTTP_/';
+    foreach($_SERVER as $key => $val) {
+      if( preg_match($rx_http, $key) ) {
+        $arh_key = preg_replace($rx_http, '', $key);
+        $rx_matches = array();
+        // do some nasty string manipulations to restore the original letter case
+        // this should work in most cases
+        $rx_matches = explode('_', $arh_key);
+        if( count($rx_matches) > 0 and strlen($arh_key) > 2 ) {
+          foreach($rx_matches as $ak_key => $ak_val) $rx_matches[$ak_key] = ucfirst($ak_val);
+          $arh_key = implode('-', $rx_matches);
+        }
+        $arh[$arh_key] = $val;
+      }
+    }
+    return( $arh );
+  }
+}
+
+class RestApiAbort extends Exception {}
+
 /**
  * Controller class for the RESTful API. Implements handlers for the variuos resource
  * URIs.
@@ -89,6 +113,18 @@ class Rest_Controller extends Controller {
    * @var string
    */
   private $method;
+  
+  /**
+   * The server's user ID (i.e. this REST API)
+   * @var string
+   */
+  private $server_user_id;
+  
+  /**
+   * The client's user ID (i.e. the caller)
+   * @var string
+   */
+  private $client_user_id;
   
   /**
    * The client's website ID (should point to a record in the websites table).
@@ -166,36 +202,40 @@ HTML;
         'params' => array()
       )
     )),
-    'taxon-observations' => array('get'=>array(
-      '' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text',
-            'required' => TRUE
-          ),
-          'page' => array(
-            'datatype' => 'integer'
-          ),
-          'page_size' => array(
-            'datatype' => 'integer'
-          ),
-          'edited_date_from' => array(
-            'datatype' => 'date',
-            'required' => TRUE
-          ),
-          'edited_date_to' => array(
-            'datatype' => 'date'
+    'taxon-observations' => array(
+      'get'=>array(
+        '' => array(
+          'params' => array(
+            'proj_id' => array(
+              'datatype' => 'text',
+              'required' => TRUE
+            ),
+            'page' => array(
+              'datatype' => 'integer'
+            ),
+            'page_size' => array(
+              'datatype' => 'integer'
+            ),
+            'edited_date_from' => array(
+              'datatype' => 'date',
+              'required' => TRUE
+            ),
+            'edited_date_to' => array(
+              'datatype' => 'date'
+            )
+          )
+        ),
+        '{taxon-observation ID}' => array(
+          'params' => array(
+            'proj_id' => array(
+              'datatype' => 'text'
+            )
           )
         )
       ),
-      '{taxon-observation ID}' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text'
-          )
-        )
+      'post' => array(
       )
-    )),
+    ),
     'annotations' => array('get' => array(
       '' => array(
         'params' => array(
@@ -250,27 +290,25 @@ HTML;
           $extra = $urlSuffix ? "/$urlSuffix" : '';
           $help = kohana::lang("rest_api.resources.$resource$extra");
           echo "<p>$help</p>";
-          // output the documentation for parameters. All requests require a client ID...
-          $resourceDef['params'] = array_merge(array(
-            'system_id' => array(
-              'datatype' => 'integer',
-              'required' => TRUE,
-              'help' => 'Unique identifier for the client system making the webservice call'
-            )
-          ), $resourceDef['params']);
-          echo '<table><caption>Parameters</caption>';
-          echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
-          echo '<tbody>';
-          foreach ($resourceDef['params'] as $name => $paramDef) {
-            echo "<tr><th scope=\"row\">$name</th>";
-            echo "<td>$paramDef[datatype]</td>";
-            $help = kohana::lang("rest_api.$resource.$name");
-            if (!empty($paramDef['required']))
-              $help .= ' <strong>' . kohana::lang('Required.') .'</strong>';
-            echo "<td>$help</td>";
-            echo "</tr>";
+          if (count($resourceDef['params'])) {
+            // output the documentation for parameters.
+            echo '<table><caption>Parameters</caption>';
+            echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
+            echo '<tbody>';
+            foreach ($resourceDef['params'] as $name => $paramDef) {
+              echo "<tr><th scope=\"row\">$name</th>";
+              echo "<td>$paramDef[datatype]</td>";
+              $help = kohana::lang("rest_api.$resource.$name");
+              if (!empty($paramDef['required'])) {
+                $help .= ' <strong>' . kohana::lang('Required.') . '</strong>';
+              }
+              echo "<td>$help</td>";
+              echo "</tr>";
+            }
+            echo '</tbody></table>';
+          } else {
+            echo '<p><em>There are no parameters for this endpoint.</em></p>';
           }
-          echo '</tbody></table>';
         }
       }
     }
@@ -288,50 +326,81 @@ HTML;
    * @throws exception
    */
   public function __call($name, $arguments) {
-    $resourceName = str_replace('_', '-', $name);
-    $this->authenticate();
-    if (array_key_exists($resourceName, $this->http_methods)) {
-      $this->method = $_SERVER['REQUEST_METHOD'];
-      if ($this->method==='OPTIONS') {
-        // A request for the methods allowed for this resource
-        header('allow: '.strtoupper(implode(',', array_keys($this->http_methods[$resourceName]))));
-      } else {
-        if (!array_key_exists(strtolower($this->method), $this->http_methods[$resourceName])) {
-          $this->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
+    try {
+      $resourceName = str_replace('_', '-', $name);
+      $this->authenticate();
+      if (array_key_exists($resourceName, $this->http_methods)) {
+        $this->method = $_SERVER['REQUEST_METHOD'];
+        if ($this->method === 'OPTIONS') {
+          // A request for the methods allowed for this resource
+          header('allow: ' . strtoupper(implode(',', array_keys($this->http_methods[$resourceName]))));
         }
-        if ($this->method==='GET') {
-          $this->request = $_GET;
-        } elseif ($this->method==='POST') {
-          $this->request = $_POST;
-        }
-        
-        $methodName = $name . '_' . strtolower($this->method);
-        $this->check_version($arguments);
-      
-        $requestForId = null;
-        if (count($arguments)>1) {
-          $this->fail('Bad request', 400, 'Incorrect number of arguments');
-          // @todo: http response
-        } elseif (count($arguments)===1) {
-          // we only allow a single argument to request a single resource by ID
-          if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
-            $requestForId = $arguments[0];
-          } else {
-            $this->fail('Bad request', 400, 'Invalid ID requested');
+        else {
+          if (!array_key_exists(strtolower($this->method), $this->http_methods[$resourceName])) {
+            $this->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
           }
+          if ($this->method === 'GET') {
+            $this->request = $_GET;
+          }
+          elseif ($this->method === 'POST') {
+            $this->request = $_POST;
+          }
+
+          $methodName = $name . '_' . strtolower($this->method);
+          $this->check_version($arguments);
+
+          $requestForId = NULL;
+          if (count($arguments) > 1) {
+            $this->fail('Bad request', 400, 'Incorrect number of arguments');
+            // @todo: http response
+          }
+          elseif (count($arguments) === 1) {
+            // we only allow a single argument to request a single resource by ID
+            if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
+              $requestForId = $arguments[0];
+            }
+            else {
+              $this->fail('Bad request', 400, 'Invalid ID requested '.$arguments[0]);
+            }
+          }
+          // apart from requests for a project, we always want a project ID
+          if ($name !== 'projects') {
+            if (empty($this->request['proj_id']))
+              $this->fail('Bad Request', 400, 'Missing proj_id parameter');
+            else
+              $this->checkAllowedResource($this->request['proj_id'], $resourceName);
+          }
+          if ($requestForId) {
+            $methodName .= '_id';
+          }
+          $this->resourceName = $name;
+          $this->validateParameters($resourceName, strtolower($this->method), $requestForId);
+          call_user_func(array($this, $methodName), $requestForId);
         }
-        // apart from requests for a project, we always want a project ID
-        if ($name!=='projects' && empty($this->request['proj_id'])) {
-          $this->fail('Bad Request', 400, 'Missing proj_id parameter');
-        }
-        if ($requestForId)
-          $methodName .= '_id';
-        $this->resourceName = $name;
-        $this->validateParameters($resourceName, strtolower($this->method), $requestForId);
-        call_user_func(array($this, $methodName), $requestForId);
       }
-    } else {
-      $this->fail('Not Found', 404, "Resource $name not known");
+      else {
+        $this->fail('Not Found', 404, "Resource $name not known");
+      }
+    }
+    catch (RestApiAbort $e) {
+      // no action if a proper abort
+    }
+  }
+
+  /**
+   * A project can include a configuration of the resources it exposes, for example
+   * it might only expose annotations if the top copy of a record is elsewhere. This
+   * method checks that the requested resource is available for the project and
+   * aborts with 204 No Content if not.
+   * @param integer $proj_id The project ID
+   * @param string $resourceName The resource being requested, e.g. taxon-observations.
+   * @throws \RestApiAbort
+   */
+  private function checkAllowedResource($proj_id, $resourceName) {
+    if (isset($this->projects[$proj_id]['resources'])) {
+      if (!in_array($resourceName, $this->projects[$proj_id]['resources'])) {
+        $this->fail('No Content', 204);
+      }
     }
   }
   
@@ -340,11 +409,16 @@ HTML;
    * 
    * @param type $id Unique ID for the project to output
    */
-  public function projects_get_id($id) {
+  private function projects_get_id($id) {
     if (!array_key_exists($id, $this->projects)) {
       $this->fail('No Content', 204);
     }
     $this->add_item_metadata($this->projects[$id], 'projects');
+    // remove fields from the project that are for internal use only
+    unset($this->projects[$id]['filter_id']);
+    unset($this->projects[$id]['website_id']);
+    unset($this->projects[$id]['sharing']);
+    unset($this->projects[$id]['resources']);
     $this->succeed($this->projects[$id]);
   }
      
@@ -353,14 +427,16 @@ HTML;
    * @todo Projects are currently hard coded in the config file, so pagination etc
    * is just stub code.
    */
-  public function projects_get() {
+  private function projects_get() {
     // Add metadata such as href to each project
     foreach ($this->projects as $id => &$project) {
       // Add metadata such as href to each project
       $this->add_item_metadata($project, 'projects');
       // remove fields from the project that are for internal use only
       unset($project['filter_id']);
+      unset($project['website_id']);
       unset($project['sharing']);
+      unset($project['resources']);
     }
     $this->succeed(array(
       'data' => array_values($this->projects),
@@ -375,15 +451,17 @@ HTML;
    * 
    * @param type $id Unique ID for the taxon-observations to output
    */
-  public function taxon_observations_get_id($id) {
-    if (substr($id, 0, strlen(kohana::config('rest.system_id')))===kohana::config('rest.system_id')) {
-      $occurrence_id = substr($id, strlen(kohana::config('rest.system_id')));
+  private function taxon_observations_get_id($id) {
+    if (substr($id, 0, strlen(kohana::config('rest.user_id')))===kohana::config('rest.user_id')) {
+      $occurrence_id = substr($id, strlen(kohana::config('rest.user_id')));
+      $params = array('occurrence_id' => $occurrence_id);
     } else {
-      // @todo Proper handling, either error if system not recognised, or load correct system record.
-      throw new exception('Only handling load of own observations at the moment');
+      // @todo What happens if system not recognised?
+      $params = array('external_key' => $id);
     }
-    $params = array('occurrence_id' => $occurrence_id);
-    $report = $this->load_report('filterable_nbn_exchange', $params);
+    $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
+
+    $report = $this->load_report('filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
@@ -397,8 +475,9 @@ HTML;
   
   /**
    * GET handler for the taxon-observations resource. Outputs a list of taxon observation details.
+   * @todo Ensure delete information is output.
    */
-  public function taxon_observations_get() {
+  private function taxon_observations_get() {
     $this->checkPaginationParams();
     $params = array(
       // limit set to 1 more than we need, so we can ascertain if next page required
@@ -411,6 +490,7 @@ HTML;
       $this->checkDate($this->request['edited_date_to'], 'edited_date_to');
       $params['edited_date_to'] = $this->request['edited_date_to'];
     }
+    $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
     $report = $this->load_report('filterable_taxon_observations', $params);
     $this->succeed($this->list_response_structure($report['content']['records'], 'taxon-observations'));
   }
@@ -420,7 +500,7 @@ HTML;
    * 
    * @param type $id Unique ID for the annotations to output
    */
-  public function annotations_get_id($id) {
+  private function annotations_get_id($id) {
     $params = array('id' => $id);
     $report = $this->load_report('filterable_annotations', $params);
     if (empty($report['content']['records'])) {
@@ -430,10 +510,11 @@ HTML;
       $this->fail('Internal Server Error', 500);
     } else {
       $record = $report['content']['records'][0];
-      $record['taxonobservation'] = array(
+      $record['taxonObservation'] = array(
         'id' => $record['taxon_observation_id'],
+        // @todo href
       );
-      $this->add_item_metadata($record['taxonobservation'], 'taxon-observations');
+      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
       $this->add_item_metadata($record, 'annotations');
       $this->succeed($record);
     }
@@ -442,9 +523,9 @@ HTML;
   /**
    * GET handler for the annotations resource. Outputs a list of annotation details.
    */
-  public function annotations_get() {
+  private function annotations_get() {
     // @todo Integrate determinations in the output
-    // @todo handle taxonversionkey properly
+    // @todo handle taxonVersionKey properly
     // @todo handle unansweredQuestion
     $this->checkPaginationParams();
     $params = array(
@@ -464,10 +545,10 @@ HTML;
     $records = $report['content']['records'];
     // for each record, restructure the taxon observations sub-object
     foreach ($records as &$record) {
-      $record['taxonobservation'] = array(
+      $record['taxonObservation'] = array(
         'id' => $record['taxon_observation_id'],
       );
-      $this->add_item_metadata($record['taxonobservation'], 'taxon-observations');
+      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
       unset($record['taxon_observation_id']);
     }
     $this->succeed($this->list_response_structure($records, 'annotations'));
@@ -520,11 +601,14 @@ HTML;
    */
   private function add_item_metadata(&$item, $entity) {
     $params = $this->request;
-    $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]?system_id=$params[system_id]";
+    $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]";
+    $query = array();
     if (!empty($params['proj_id']))
-      $item['href'] .= "&proj_id=$params[proj_id]";
+      $query['proj_id'] = $params['proj_id'];
     if (!empty($params['format']))
-      $item['href'] .= "&format=$params[format]";
+      $query['format'] = $params['format'];
+    if (!empty($query))
+      $item['href'] .= '?' . http_build_query($query);
     // strip nulls and empty strings
     $item = array_filter($item, array($this, 'notempty'));
   }
@@ -552,7 +636,7 @@ HTML;
       $pagination['next'] = $this->generate_link(array('page'=>$this->request['page']+1));
     }
     return array(
-      'pagination' => $pagination,
+      'paging' => $pagination,
       'data' => $list
     );
   }
@@ -567,7 +651,7 @@ HTML;
   private function load_report($report, $params) {
     // @todo: rather than use the report engine and its overheads, build the query required directly?
     // Should also return an object to iterate rather than loading the full array
-    $this->reportEngine = new ReportEngine(array($this->website_id));
+    $this->reportEngine = new ReportEngine(array($this->projects[$this->request['proj_id']]['website_id']));
     // load the filter associated with the project ID
     $filter = $this->load_filter_for_project($this->request['proj_id']);
     // The project's filter acts as a context for the report, meaning it defines the limit of all the 
@@ -575,9 +659,9 @@ HTML;
     foreach ($filter as $key=>$value) {
       $params["{$key}_context"] = $value;
     }
+    $params['system_user_id'] = $this->server_user_id;
     // the project defines how records are allowed to be shared with this client
     $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
-    $params['system_id'] = kohana::config('rest.system_id');
     $report = $this->reportEngine->requestReport("rest_api/$report.xml", 'local', 'xml', $params);
     return $report;
   }
@@ -597,12 +681,17 @@ HTML;
   private function load_filter_for_project($id) {
     if (!isset($this->projects[$id]))
       $this->fail('Bad request', 400, 'Invalid project requested');
-    $filterId = $this->projects[$id]['filter_id'];
-    $db = new Database();
-    $filters = $db->select('definition')->from('filters')->where(array('id'=>$filterId, 'deleted'=>'f'))->get()->result_array();
-    if (count($filters)!==1)
-      $this->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
-    return json_decode($filters[0]->definition, true);
+    if (isset($this->projects[$id]['filter_id'])) {
+      $filterId = $this->projects[$id]['filter_id'];
+      $db = new Database();
+      $filters = $db->select('definition')->from('filters')->where(array('id'=>$filterId, 'deleted'=>'f'))->get()->result_array();
+      if (count($filters)!==1)
+        $this->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
+      return json_decode($filters[0]->definition, true);
+    }
+    else {
+      return array();
+    }
   }
   
   /**
@@ -637,20 +726,27 @@ HTML;
   }
   
   /**
-   * Checks that the request's system_id and proj_id are valid.
+   * Checks that the request's user_id and proj_id are valid.
    * @todo Implement hash based authentication
    */
   private function authenticate() {
-    // @todo: implement proper hashing test
-    if (empty($_REQUEST['system_id'])) {
-      $this->fail('Bad request', 400, 'Missing system ID');
+    $headers = apache_request_headers();
+    if (!isset($headers['Authorization'])) {
+      $this->fail('Unauthorized', 401, 'Authorization header not provided');
     }
-    $config = kohana::config('rest.clients');
-    if (!array_key_exists($_REQUEST['system_id'], $config)) {
-      $this->fail('Unauthorized', 401, 'System ID not in projects configuration');
+    list($u, $user, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
+    $config = Kohana::config('rest.clients');
+    if (!array_key_exists($user, $config)) {
+      $this->fail('Unauthorized', 401, 'User ID not in projects configuration');
     }
-    $this->website_id=$config[$_REQUEST['system_id']]['website_id'];
-    $this->projects = $config[$_REQUEST['system_id']]['projects'];
+    $request_url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    $correct_hmac = hash_hmac("sha1", $request_url, $config[$user]['shared_secret'], $raw_output=FALSE);
+    if ($supplied_hmac !== $correct_hmac) {
+      $this->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
+    }
+    $this->client_user_id=$user;
+    $this->server_user_id=Kohana::config('rest.user_id');
+    $this->projects = $config[$user]['projects'];
   }
   
   /**
@@ -718,8 +814,8 @@ HTML;
     http_response_code($code);
     echo $msg;
     if ($info)
-      kohana::log('debug', $info);
-    exit;
+      kohana::log('debug', "HTTP code: $code. $info");
+    throw new RestApiAbort($msg);
   }
 
   /**
@@ -733,8 +829,10 @@ HTML;
       echo str_replace('{css}', $css, $this->html_header);
       $this->output_array_as_html($data);
       echo '</body></html>';
-    } else
+    } else {
+      header('Content-Type: application/json');
       echo json_encode($data);
+    }
   }
 
 }

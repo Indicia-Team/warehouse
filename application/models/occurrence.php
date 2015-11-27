@@ -48,7 +48,7 @@ class Occurrence_Model extends ORM
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   protected $attrs_submission_name='occAttributes';
-  protected $attrs_field_prefix='occAttr';
+  public $attrs_field_prefix='occAttr';
   protected $additional_csv_fields=array(
     // extra lookup options
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
@@ -81,7 +81,8 @@ class Occurrence_Model extends ORM
   public function validate(Validation $array, $save = false) {
     if ($save) 
       $this->logDeterminations($array);
-    if ($this->id && preg_match('/[RDV]/', $this->record_status) && empty($this->submission['fields']['record_status']) && 
+    if ($this->id && preg_match('/[RDV]/', $this->record_status) && 
+        (empty($this->submission['fields']['record_status']) || $this->submission['fields']['record_status']['value']==='C') && 
         empty($this->submission['fields']['release_status']) && $this->wantToUpdateMetadata) {
       // If we update a processed occurrence but don't set the verification or release state, revert it to completed/awaiting verification.
       $array->verified_by_id=null;

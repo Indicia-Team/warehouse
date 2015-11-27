@@ -483,7 +483,7 @@ CREATE TABLE termlists_terms (
 --
 CREATE TABLE terms (
     id integer DEFAULT nextval('terms_id_seq'::regclass) NOT NULL,
-    term character varying(100),
+    term character varying(200),
     language_id integer,
     created_on timestamp without time zone NOT NULL,
     created_by_id integer NOT NULL,

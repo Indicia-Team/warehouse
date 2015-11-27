@@ -40,6 +40,20 @@ class Survey_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "Survey datasets";
     $this->set_website_access('admin');
   }
+
+  public function fields($id) {
+    $this->view = new View('survey/fields');
+    $survey = ORM::factory('survey', $id);
+    $this->view->fields = array_merge(
+        ORM::factory('sample')->getSubmittableFields(true, $survey->website_id, $id, null, false),
+        ORM::factory('occurrence')->getSubmittableFields(true, $survey->website_id, $id, null, false)
+    );
+    $this->view->requiredFields = array_merge(
+      ORM::factory('sample')->getRequiredFields(true, $survey->website_id, $id, false),
+      ORM::factory('occurrence')->getRequiredFields(true, $survey->website_id, $id, false)
+    );
+    $this->template->content = $this->view;
+  }
   
   protected function prepareOtherViewData($values)
   { 
@@ -90,6 +104,11 @@ class Survey_Controller extends Gridview_Base_Controller {
         'controller' => 'survey_medium',
         'title' => 'Media Files',
         'views'=>'survey',
+        'actions'=>array('edit')
+      ),
+      array(
+        'controller' => 'survey/fields',
+        'title' => 'Database fields',
         'actions'=>array('edit')
       )
     );
