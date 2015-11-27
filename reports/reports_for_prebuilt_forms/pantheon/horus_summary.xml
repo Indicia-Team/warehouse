@@ -31,9 +31,10 @@
     ) as subtable
     group by term
     union
-    select 4, 'HORUS conservation score', coalesce(sum(ttlav.int_value)::varchar, '0')
+    select 4, 'HORUS conservation score', coalesce((sum(ttlav.int_value)/count(distinct ttlav.taxa_taxon_list_id))::varchar, '0')
     from cache_occurrences o
-    join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and ttlav.deleted=false
+    join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id
+        and ttlav.deleted=false  and ttlav.int_value&lt;&gt;0
     join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttlav.deleted=false
     and ttla.caption in ('rarity score')
     where o.sample_id=#sample_id#
