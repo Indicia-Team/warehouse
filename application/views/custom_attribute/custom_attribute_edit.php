@@ -42,12 +42,20 @@ This page allows you to specify a new or edit an existing custom attribute for <
 <?php if ($disabled_input=='YES') echo ' class="ui-state-disabled"'; ?>>
 <legend><?php echo $other_data['name']; ?> Attribute details</legend>
 <ol>
-  <li><label for="caption">Caption</label> <input id="caption"
-    name="<?php echo $model->object_name; ?>:caption"
-    value="<?php echo html::initial_value($values, $model->object_name.':caption'); ?>"
+  <li>
+    <label for="caption">Caption</label>
+    <input id="caption" name="<?php echo $model->object_name; ?>:caption"
+        value="<?php echo html::initial_value($values, $model->object_name.':caption'); ?>"
     <?php echo $enabled; ?> /> <?php echo html::error_message($model->getError($model->object_name.':caption')); ?>
   </li>
-  
+  <?php if (array_key_exists('description', $this->model->as_array())) : ?>
+    <li>
+      <label for="description">Description:</label>
+      <textarea id="description" name="<?php echo $model->object_name; ?>:description" <?php echo $enabled; ?>
+        ><?php echo html::initial_value($values, $model->object_name.':description'); ?></textarea>
+        <?php echo html::error_message($model->getError($model->object_name.':description')); ?>
+    </li>
+  <?php endif; ?>
   
   <?php if (method_exists($this->model, 'get_system_functions')) : ?>
   <li><label for="system_function">System function:</label>
@@ -59,6 +67,17 @@ This page allows you to specify a new or edit an existing custom attribute for <
       } ?>
     </select>
   </li>
+  <?php endif; ?>
+  <?php if (array_key_exists('source_id', $this->model->as_array()) && !empty($other_data['source_terms'])) : ?>
+    <li><label for="source_id">Source of attribute:</label>
+      <select name="<?php echo $model->object_name; ?>:source_id" id="source_id">
+        <option value="">-none-</option>
+        <?php foreach($other_data['source_terms'] as $id=>$term) {
+          $selected=html::initial_value($values, $model->object_name.':source_id')==$id ? ' selected="selected"' : '';
+          echo "<option value=\"$id\"$selected>$term</option>\n";
+        } ?>
+      </select>
+    </li>
   <?php endif; ?>
   <li><label for="data_type">Data Type</label> <script
     type="text/javascript">
