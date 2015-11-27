@@ -1,0 +1,32 @@
+<report
+title="Species traits list"
+description="List of all trait values for a species."
+    >
+<query>
+  select #columns#
+  from taxa_taxon_list_attribute_values ttlav
+  join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttla.deleted=false
+  left join cache_termlists_terms t on t.id=ttlav.int_value and ttla.data_type='L'
+  where ttlav.deleted=false
+  and ttlav.taxa_taxon_list_id=#preferred_taxa_taxon_list_id#
+</query>
+<params>
+  <param name='preferred_taxa_taxon_list_id' display='Preferred taxa taxon list ID'  datatype='integer'/>
+</params>
+<columns>
+  <column name="id" sql="ttla.id" display="Attribute ID" visible="false"/>
+  <column name="caption" sql="ttla.caption" display="Attribute caption" />
+  <column name="value" sql="CASE ttla.data_type
+    WHEN 'T'::bpchar THEN ttlav.text_value
+    WHEN 'L'::bpchar THEN t.term::text
+    WHEN 'I'::bpchar THEN ttlav.int_value::character varying::text
+    WHEN 'B'::bpchar THEN ttlav.int_value::character varying::text
+    WHEN 'F'::bpchar THEN ttlav.float_value::character varying::text
+    WHEN 'D'::bpchar THEN ttlav.date_start_value::character varying::text
+    WHEN 'V'::bpchar THEN (ttlav.date_start_value::character varying::text || ' - '::text) || ttlav.date_end_value::character varying::text
+    WHEN 'G'::bpchar THEN st_astext(ttlav.geom_value)::character varying::text
+    ELSE NULL::text
+    END AS value" display="Trait value" />
+</columns>
+
+</report>
