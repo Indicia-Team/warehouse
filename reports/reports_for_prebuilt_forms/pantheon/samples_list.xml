@@ -11,7 +11,7 @@
           and ttla.caption='ecological division'
     ) on ttlav.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and ttlav.deleted=false
     left join cache_termlists_terms t on t.id=ttlav.int_value
-    where ttlav.taxa_taxon_list_attribute_id=3
+    where o.website_id in (#website_ids#)
     #filters#
   </query>
   <order_bys>
