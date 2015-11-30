@@ -56,7 +56,8 @@ class Termlists_term_Model extends Base_Name_Model {
       'parent_id',
       'preferred',
       'deleted',
-      'sort_order'
+      'sort_order',
+      'source_id'
     );
     return parent::validate($array, $save);
   }
