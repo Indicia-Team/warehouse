@@ -58,7 +58,7 @@ class Sample_Controller extends Gridview_Base_Controller
   
   /**
    * Load default values either when creating a sample new or reloading after a validation failure.
-   * This adds the custome attributes list to the data available for the view. 
+   * This adds the custom attributes list to the data available for the view.
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
