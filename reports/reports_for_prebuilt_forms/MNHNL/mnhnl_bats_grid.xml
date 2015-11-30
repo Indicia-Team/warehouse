@@ -8,7 +8,7 @@
   		loccommune.text_value as commune,
   		locvillage.text_value as village,
   		username.text_value as username,
-		regexp_replace(l.centroid_sref, ',|\\.[0-9]*' , '', 'g') as xy,
+		regexp_replace(l.centroid_sref, ',|\.[0-9]*' , '', 'g') as xy,
   		s.date_start,
   		s.date_end,
   		s.date_type

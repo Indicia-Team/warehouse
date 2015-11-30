@@ -6,7 +6,7 @@
   SELECT l2.name as square,
         l.name as site_name,
         l.id as site_id,
-  		regexp_replace(l.centroid_sref, ',|\\.[0-9]*' , '', 'g') as xy
+  		regexp_replace(l.centroid_sref, ',|\.[0-9]*' , '', 'g') as xy
   FROM locations l
   INNER JOIN locations l2 ON (l2.id = l.parent_id AND ST_Within(l.centroid_geom, l2.boundary_geom) = FALSE)
   WHERE l.deleted = FALSE AND l.location_type_id IN (#primary_loc_type_id#, #secondary_loc_type_id#)
