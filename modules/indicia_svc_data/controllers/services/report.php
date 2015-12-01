@@ -74,6 +74,7 @@ class Report_Controller extends Data_Service_Base_Controller {
   public function requestReport()
   { 
     try {
+      $tm = microtime(true);
       $this->setup();
       $this->entity = 'record';
       $this->handle_request();
@@ -100,9 +101,17 @@ class Report_Controller extends Data_Service_Base_Controller {
           echo chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF'));
       }
       $this->send_response();
+      if (class_exists('request_logging')) {
+        request_logging::log('o', 'report', empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
+          $this->website_id, $this->user_id, $tm);
+      }
     }
     catch (Exception $e) {
       $this->handle_error($e);
+      if (class_exists('request_logging')) {
+        request_logging::log('o', 'report', empty($_REQUEST['report']) ? 'unknown' : $_REQUEST['report'],
+          $this->website_id, $this->user_id, $tm, $e->getMessage());
+      }
     }
   }
 

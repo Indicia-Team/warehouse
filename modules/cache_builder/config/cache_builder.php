@@ -723,6 +723,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
         end,
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
         greatest(
+          round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
           o.sensitivity_precision,
           s.privacy_precision,
           -- work out best square size to reflect a lat long's true precision
@@ -864,6 +865,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       end,
       case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
       greatest(
+        round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
         o.sensitivity_precision,
         s.privacy_precision,
         -- work out best square size to reflect a lat long's true precision

@@ -160,6 +160,17 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
   }
 
   /**
+   * Get the list of terms ready for the sources list.
+   */
+  protected function prepareOtherViewData($values)
+  {
+    return array(
+      'source_terms' => $this->get_termlist_terms('indicia:term_sources')
+    );
+  }
+
+
+  /**
    * Reports if editing a term in term list is authorised.
    *
    * @param int $id Id of the termlists_term that is being checked, or null for a new record.

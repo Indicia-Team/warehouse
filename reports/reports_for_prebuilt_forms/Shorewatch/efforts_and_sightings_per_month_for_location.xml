@@ -28,6 +28,9 @@
     <param name="location_id" display="Location ID" description="Location ID to report on." datatype="integer" >
       <where>co.location_id=#location_id#</where>
     </param>
+    <param name="year" display="Year" description="Filter to a given year" datatype="integer">
+      <where>extract(year from co.date_start)=#year#</where>
+    </param>
     <param name="effort_sample_method_id" display="Effort Sample Method Id" description="Id of the Effort Sample Method." datatype="integer"/>
     <param name="sighting_sample_method_id" display="Sighting Sample Method Id" description="Id of the Sighting Sample Method." datatype="integer"/>
   </params>
