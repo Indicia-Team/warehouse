@@ -142,7 +142,7 @@ $BODY$
 
 
 
-CREATE OR REPLACE FUNCTION get_output_system(geom_in geometry, sref_system character varying, default_system character varying)
+CREATE OR REPLACE FUNCTION get_output_system(geom_in geometry, sref_system character varying, default_system character varying default '900913')
   RETURNS character varying AS
 $BODY$
 DECLARE geom geometry;
