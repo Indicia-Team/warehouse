@@ -77,6 +77,17 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('termlists_term', $p
 <input id="sort_order" name="termlists_term:sort_order" class="narrow" value="<?php echo html::initial_value($values, 'termlists_term:sort_order'); ?>" />
 <?php echo html::error_message($model->getError('termlists_term:sort_order')); ?>
 </li>
+<?php if (array_key_exists('source_id', $this->model->as_array()) && !empty($other_data['source_terms'])) : ?>
+  <li><label for="source_id">Source of term:</label>
+    <select name="<?php echo $model->object_name; ?>:source_id" id="source_id">
+      <option value="">-none-</option>
+      <?php foreach($other_data['source_terms'] as $id=>$term) {
+        $selected=html::initial_value($values, $model->object_name.':source_id')==$id ? ' selected="selected"' : '';
+        echo "<option value=\"$id\"$selected>$term</option>\n";
+      } ?>
+    </select>
+  </li>
+<?php endif; ?>
 </fieldset>
 <?php 
 echo html::form_buttons(html::initial_value($values, 'termlists_term:id')!=null);

@@ -45,6 +45,7 @@
       </params>
       <columns>
             <column name="external_key"  sql="cttl.external_key" unique="true" in_count="true" datatype="text" visible="false" />
+            <column name="taxon_meaning_id"  sql="cttl.taxon_meaning_id" datatype="integer" visible="false" />
             <column name='taxon' display='Species' sql="cttl.preferred_taxon" datatype='species' />
             <column name='common_name' display='Common name' sql="cttl.default_common_name" datatype='text' />
             <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype='text' />
