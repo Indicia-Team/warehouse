@@ -90,7 +90,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxon_group',
       'termlists_term',
       'user',      
-      'user_trust'
+      'user_trust',
+      'users_website'
   );
 
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
@@ -1014,23 +1015,21 @@ class Data_Controller extends Data_Service_Base_Controller {
   * associated with the entity, but prefixed by either list, gv or max depending
   * on the GET view parameter, or as is if the table has no views.
   */
-  protected function get_view_name()
+  protected function get_view_name($table='', $prefix='')
   {
-    $table = inflector::plural($this->entity);
+    if (!$table)
+      $table = $this->entity;
+    $table = inflector::plural($table);
     if (in_array($table, $this->tables_without_views)) {
       return $table;
     }
-    $prefix='';
-    if (array_key_exists('view', $_REQUEST))
-    {
+    if (!$prefix && array_key_exists('view', $_REQUEST))
       $prefix = $_REQUEST['view'];
-    }
     // Check for allowed view prefixes, and use 'list' as the default
     if ($prefix!='gv' && $prefix!='detail' && $prefix!='cache')
       $prefix='list';
     return $prefix.'_'.$table;
   }
-
 
   /**
   * Works out what filter and other options to set on the db object according to the
@@ -1330,8 +1329,8 @@ class Data_Controller extends Data_Service_Base_Controller {
     // if $id is null, then we have a new record, so no need to check if we have access to the record
     if (is_null($id))
       return true;
-    $table = inflector::plural($entity);
-    $viewname='list_'.$table;
+    $viewname=$this->get_view_name($entity, 'list');
+
     if (!$this->db)
       $this->db = new Database();
     $fields=postgreSQL::list_fields($viewname, $this->db);
