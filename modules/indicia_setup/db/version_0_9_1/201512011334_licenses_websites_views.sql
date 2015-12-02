@@ -1,7 +1,7 @@
 CREATE OR REPLACE VIEW list_licences_websites AS 
  SELECT lw.id,
     lw.licence_id,
-    l.title AS licence,
+    l.title AS licence_title,
     l.code AS licence_code,
     lw.website_id,
     w.title AS website
@@ -13,7 +13,7 @@ CREATE OR REPLACE VIEW list_licences_websites AS
 CREATE OR REPLACE VIEW detail_licences_websites AS
  SELECT lw.id,
     lw.licence_id,
-    l.title AS licence,
+    l.title AS licence_title,
     l.code AS licence_code,
     coalesce(l.url_readable, l.url_legal) as url_readable,
     coalesce(l.url_legal, l.url_readable) as url_legal,
@@ -31,7 +31,7 @@ CREATE OR REPLACE VIEW detail_licences_websites AS
 CREATE OR REPLACE VIEW gv_licences_websites AS
  SELECT lw.id,
     lw.licence_id,
-    l.title AS licence,
+    l.title AS licence_title,
     l.code AS licence_code,
     lw.website_id
    FROM licences_websites lw
