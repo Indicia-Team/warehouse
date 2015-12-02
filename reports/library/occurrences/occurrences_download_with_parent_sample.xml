@@ -83,5 +83,6 @@
     else 'black' end" />
     <column name='fillcolor' visible='false' feature_style="fillColor" sql="case co.record_status when 'V' then 'green' when 'D' then 'orange' when 'R' then 'red' else 'blue' end" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(co.public_geom)' />
+    <column name='licence_code' sql='co.licence_code' display="Licence" />
   </columns>
 </report>

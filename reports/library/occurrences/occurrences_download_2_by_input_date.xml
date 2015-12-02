@@ -123,5 +123,6 @@
     <column name='determiner_person_id' sql="case when co.recorders = det_last_val.text_value || ', ' || det_first_val.text_value 
         or co.recorders = det_first_val.text_value || ' ' || det_last_val.text_value 
         or co.recorders = det_full_val.text_value then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='licence_code' sql='co.licence_code' display="Licence" />
   </columns>
 </report>
