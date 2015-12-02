@@ -76,8 +76,15 @@ WITH (
 
 COMMENT ON TABLE licences_websites
   IS 'Join table which identifies the licences that are available to each website.';
-COMMENT ON COLUMN licences_websites.licence_id IS 'Foreign key to the licences table. Identifies the filter that is available to the website.';
+COMMENT ON COLUMN licences_websites.licence_id IS 'Foreign key to the licences table. Identifies the licence that is available to the website.';
 COMMENT ON COLUMN licences_websites.website_id IS 'Foreign key to the websites table. Identifies the website that the filter is available to.';
 COMMENT ON COLUMN licences_websites.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN licences_websites.created_by_id IS 'Foreign key to the users table (creator).';
 COMMENT ON COLUMN licences_websites.deleted IS 'Has this record been deleted?';
+
+ALTER TABLE groups
+  ADD COLUMN licence_id integer,
+  ADD CONSTRAINT fk_groups_license FOREIGN KEY (licence_id)
+    REFERENCES licences(id) MATCH SIMPLE;
+
+COMMENT ON COLUMN groups.licence_id IS 'Foreign key to the licences table. Identifies the licence used for records by this group.';
