@@ -141,11 +141,14 @@ class XMLReportReader_Core implements ReportReader
                 if (!$this->occurrences_id_field = $reader->getAttribute('occurrences_id_field'))
                   // default table alias for the occurrences table, so we can join to the id
                   $this->occurrences_id_field = 'o.id';
+                if (!$this->occurrences2_id_field = $reader->getAttribute('occurrences2_id_field'))
+                  // default table alias for the second occurrences table, so we can join to the id 
+                  $this->occurrences2_id_field = 'o2.id';
                 if (!$this->locations_id_field = $reader->getAttribute('locations_id_field'))
                   // default table alias for the locations table, so we can join to the id
                   $this->locations_id_field = 'l.id';
                 if (!$this->locations2_id_field = $reader->getAttribute('locations2_id_field'))
-                  // default table alias for the locations table, so we can join to the id
+                  // default table alias for the second locations table, so we can join to the id: used when geting attributes for both in a parent/child arrangement
                   $this->locations2_id_field = 'l2.id';
                 if (!$this->people_id_field = $reader->getAttribute('people_id_field'))
                   // default table alias for the people table, so we can join to the id

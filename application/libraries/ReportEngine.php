@@ -703,6 +703,8 @@ class ReportEngine {
             $query = $this->mergeAttrListParam($query, 'sample', $value, "2");
           elseif ($paramDefs[$name]['datatype']=='occattrs')
             $query = $this->mergeAttrListParam($query, 'occurrence', $value);
+          elseif ($paramDefs[$name]['datatype']=='occ2attrs')
+            $query = $this->mergeAttrListParam($query, 'occurrence', $value, "2");
           elseif ($paramDefs[$name]['datatype']=='locattrs')
             $query = $this->mergeAttrListParam($query, 'location', $value);
           elseif ($paramDefs[$name]['datatype']=='loc2attrs')
