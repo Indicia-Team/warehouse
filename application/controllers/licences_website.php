@@ -111,8 +111,8 @@ class Licences_website_Controller extends Gridview_Base_Controller
   }
   
   /**
-   * Override the default return page behaviour so that after saving an agreement participation you
-   * are returned to the list of agreements on the sub-tab of the website.
+   * Override the default return page behaviour so that after saving a licence for a website you
+   * are returned to the list of licences on the sub-tab of the website.
    */
   protected function get_return_page() {
     if (array_key_exists('licences_website:website_id', $_POST)) {
@@ -128,7 +128,7 @@ class Licences_website_Controller extends Gridview_Base_Controller
       // after uploading records, the website id is in the URL get parameters
       return "website/edit/".$_GET['licences_website:website_id']."?tab=Licences";
     else
-      // last resort if we don't know the list, just show the whole lot of agreements
+      // last resort if we don't know the list, just show the whole list of licences
       return $this->model->object_name;
   }
 
