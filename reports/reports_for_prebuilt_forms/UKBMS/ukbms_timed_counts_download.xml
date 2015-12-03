@@ -35,8 +35,8 @@
     <param name='date_from' display='Date From' datatype='date'/>
     <param name='date_to' display='Date To' datatype='date'/>
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default='' />
-    <param name='smp2attrs' display='Supersample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smp2attrs' default='' />
+    <param name='smpattrs' display='Subsample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='smp2attrs' display='Supersample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smp2attrs'  />
   </params>
   <columns>
     <column name='sample_id' display='Sample ID' />
