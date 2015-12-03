@@ -98,5 +98,6 @@
         or o.recorders = det_first_val.text_value || ' ' || det_last_val.text_value 
         or o.recorders = det_full_val.text_value then cast(p.id as varchar(20)) else 'unknown' end" />
     <column name='images' display='Images' sql="case when images is null then null else '#uploadFolder#' || replace(images, ',', ', #uploadFolder#') end"/>
+    <column name='licence_code' sql='o.licence_code' display="Licence" />
   </columns>
 </report>

@@ -10,6 +10,7 @@
   join cache_taxa_taxon_lists cttl on cttl.id=co.preferred_taxa_taxon_list_id
   join users u on u.id=o.created_by_id
   join people p on p.id=u.person_id
+  left join licences l on l.id=s.licence_id and l.deleted=false
   #agreements_join#
   #joins#
   where co.id=#occurrence_id#
@@ -65,5 +66,8 @@
     <column name='taxon_meaning_id' sql='co.taxon_meaning_id' />
     <column name='created_on' sql='o.created_on' />
     <column name='updated_on' sql='o.updated_on' />
+    <column name="licence_code" sql="l.code" />
+    <column name="licence_title" sql="l.title" />
+    <column name="licence_url" sql="l.url_readable" />
   </columns>
 </report>

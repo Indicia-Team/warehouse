@@ -22,56 +22,47 @@
  */
 
 /**
- * Model class for the Users_Websites table.
+ * Model class for the Licences_Websites table.
  *
  * @package	Core
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Users_website_Model extends ORM
+class Licences_Website_Model extends ORM
 {
-
-  protected $has_one = array(
-    'user',
-    'website',
-    'site_role'
-  );
+  
   protected $belongs_to = array(
+    'licence',
+    'website',
     'created_by'=>'user',
     'updated_by'=>'user'
   );
 
+  /**
+   * Validate and save the data.
+   */
   public function validate(Validation $array, $save = FALSE) {
-    if ($save)
-      $this->applyLicence($array->as_array());
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
+    $array->add_rules('licence_id', 'required');
+    $array->add_rules('website_id', 'required');
+    // Explicitly add those fields for which we don't do validation
+    $this->unvalidatedFields = array(
+      'deleted'
+    );
 
-    $this->unvalidatedFields = array('user_id', 'website_id', 'site_role_id', 'licence_id');
     return parent::validate($array, $save);
   }
-
-  public function applyLicence($new) {
-    // Are we applying a first time licence for records belonging to this user?
-    if (!empty($new['licence_id']) && empty($this->licence_id)) {
-      $this->db->query("update samples s" .
-        " set licence_id=$new[licence_id]" .
-        " from surveys su" .
-        " where su.website_id=$new[website_id]" .
-        " and s.created_by_id=$new[user_id]" .
-        " and su.id=s.survey_id" .
-        " and licence_id is null"
-      );
-      $this->db->query("update cache_occurrences o" .
-        " set licence_id=l.id, licence_code=l.code" .
-        " from licences l" .
-        " where o.website_id=$new[website_id]" .
-        " and o.created_by_id=$new[user_id]" .
-        " and o.licence_id is null" .
-        " and l.id=$new[licence_id]"
-      );
+  
+  public function caption()
+  {
+    if ($this->id) {
+      return 'Licence '.$this->licence->title.' for '.$this->website->title;
+    } else {
+      return $this->getNewItemCaption();
     }
   }
+
 }
 
 ?>
