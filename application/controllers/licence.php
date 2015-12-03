@@ -40,7 +40,7 @@ class Licence_Controller extends Gridview_Base_Controller {
   }
   
   /**
-   * You can only access the list of groups if at least an editor of one website.
+   * You can only access the list of licences if at least an editor of one website.
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
@@ -54,7 +54,6 @@ class Licence_Controller extends Gridview_Base_Controller {
   protected function getModelValues() {
     $r = parent::getModelValues();
     if (!empty($r['licence:id'])) {
-      echo ';;;';
       $this->session->set_flash('flash_error', 'Warning! Editing an existing licence will ' .
         'affect the licence associated with records that link to this. Do not edit this if ' .
         'it changes the nature of the licence.');

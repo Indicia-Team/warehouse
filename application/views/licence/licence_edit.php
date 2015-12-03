@@ -25,7 +25,7 @@ $id = html::initial_value($values, 'licence:id');
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 ?>
 <p>This page allows you to specify the details of a licence that can be applied to records.</p>
-<form class="cmxform" id="rank-edit" action="<?php echo url::site().'licence/save'; ?>" method="post">
+<form class="cmxform" id="licence-edit" action="<?php echo url::site().'licence/save'; ?>" method="post">
   <?php echo $metadata; ?>
   <fieldset>
     <input type="hidden" name="licence:id" value="<?php echo $id ?>" />
@@ -74,7 +74,7 @@ require_once(DOCROOT.'client_helpers/data_entry_helper.php');
   data_entry_helper::$dumped_resources[] = 'jquery';
   data_entry_helper::$dumped_resources[] = 'jquery_ui';
   data_entry_helper::$dumped_resources[] = 'fancybox';
-  data_entry_helper::enable_validation('rank-edit');
+  data_entry_helper::enable_validation('licence-edit');
   data_entry_helper::link_default_stylesheet();
   echo data_entry_helper::dump_javascript();
   ?>
