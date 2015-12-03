@@ -24,6 +24,9 @@
 // this is not necessarily the case for direct DB access. Direct DB access may lead to
 // a situation where a full rebuild of the cache is required.
 
+$config['summary_truncate'] = "
+  TRUNCATE summary_occurrences";
+
 $config['select_definitions'] = "
   SELECT d.*, s.website_id FROM summariser_definitions d
 	JOIN surveys s ON s.id = d.survey_id AND s.deleted = 'f'

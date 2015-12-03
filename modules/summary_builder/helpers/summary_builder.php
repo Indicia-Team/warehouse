@@ -33,6 +33,15 @@ class summary_builder {
    */
 	
   private static $verbose;
+
+  public static function force_summary_truncate($db, $last_run_date, $verbose) {
+  	 
+  	self::$verbose = $verbose;
+  	 
+  	$queries = kohana::config('summary_builder');
+  	echo date(DATE_ATOM).' Truncating full data set.<br/>';
+  	$r = $db->query($queries['summary_truncate']);
+  }
   
   public static function populate_summary_table($db, $last_run_date, $verbose, $rebuild, $clear, $missing_check) {
   	
