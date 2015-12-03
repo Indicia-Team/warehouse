@@ -6,5 +6,5 @@ ALTER TABLE samples
    ON UPDATE NO ACTION ON DELETE NO ACTION;
 COMMENT ON CONSTRAINT fk_sample_licence ON samples
   IS 'The records within each sample are licenced according to the linked record.';
-CREATE INDEX fki_sample_licence
+CREATE INDEX ix_sample_licence
   ON samples(licence_id);
