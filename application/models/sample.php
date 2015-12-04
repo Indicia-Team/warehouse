@@ -202,15 +202,13 @@ class Sample_Model extends ORM_Tree
    * up from the user's settings and apply it to the submission.
    */
   private function preSubmitFillInLicence() {
-    // @todo Real world tests of the performance of this method, in particular the query against users_websites.
     if (!(array_key_exists('id', $this->submission['fields']) || array_key_exists('licence_id', $this->submission['fields']))) {
-      // @todo This code is shared with metadata code in MyORM so move into method in My_ORM
       global $remoteUserId;
       if (isset($remoteUserId))
         $userId=$remoteUserId;
       elseif (isset($_SESSION['auth_user']))
         $userId = $_SESSION['auth_user']->id;
-      if ($userId) {
+      if (isset($userId)) {
         $row = $this->db
             ->select('licence_id')
             ->from('users_websites')
