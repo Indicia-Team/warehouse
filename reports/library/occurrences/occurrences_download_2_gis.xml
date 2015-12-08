@@ -123,5 +123,6 @@
     <column name='images' display='Images' sql='co.images' img='true' />
     <column name='geom' display='Geometry' sql="st_astext(st_transform(co.public_geom, 4326))" datatype="text" />
     <column name='point_geom' display='Geometry' sql="st_astext(st_transform(st_centroid(co.public_geom), 4326))" datatype="text" />
+    <column name='licence_code' sql='co.licence_code' display="Licence" />
   </columns>
 </report>
