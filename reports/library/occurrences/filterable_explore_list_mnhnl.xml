@@ -24,8 +24,8 @@
     <column name='source' display='Source' datatype="text" 
         sql="w.title || ' | ' || case when substring(o.survey_title from 1 for length(w.title)) = w.title then trim(substring(o.survey_title from length(w.title)+1)) else o.survey_title end" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
-    <column name='taxon' display='Species' datatype="species" sql="o.preferred_taxon" />
-    <column name='common' display='Common Name' datatype="text" sql="o.default_common_name" />
+    <column name='taxon' display='Species' datatype="species" sql="o.preferred_taxon" template='&lt;span class="zero-{zero_abundance}"&gt;{taxon}&lt;/span&gt;' />
+    <column name='common' display='Common Name' datatype="text" sql="o.default_common_name" template='&lt;span class="zero-{zero_abundance}"&gt;{taxon}&lt;/span&gt;' />
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype="text" />
     <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' visible='false' datatype="integer" />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype="integer" />   
