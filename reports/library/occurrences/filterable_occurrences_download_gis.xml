@@ -96,6 +96,5 @@
     <column name='images' display='Images' sql='o.images' img='true' />
     <column name='geom' display='Geometry' sql="st_astext(st_transform(o.public_geom, 4326))" datatype="text" />
     <column name='point_geom' display='Geometry' sql="st_astext(st_transform(st_centroid(o.public_geom), 4326))" datatype="text" />
-    <column name='licence_code' sql='o.licence_code' display="Licence" />
   </columns>
 </report>

@@ -120,18 +120,6 @@ echo $metadata;
 <label>Spatial reference:</label>
 <input readonly="readonly" type="text" value="<?php echo $sample->entered_sref; ?>"/>
 </li>
-<?php if (!empty($sample->licence->code)) : ?>
-<li>
-  <label>Licence:</label>
-  <input readonly="readonly" type="text" value="<?php echo $sample->licence->code; ?>"/>
-  <?php if (!empty($sample->licence->url_readable)) : ?>
-    <a href="<?php echo $sample->licence->url_readable; ?>" target="_blank">more info</a>
-  <?php endif; ?>
-  <?php if (!empty($sample->licence->url_legal)) : ?>
-    <a href="<?php echo $sample->licence->url_legal; ?>" target="_blank">legal</a>
-  <?php endif; ?>
-</li>
-<?php endif; ?>
 </ol>
 </fieldset>
 <fieldset>

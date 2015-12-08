@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Track-a-Tree : Data Download Report v2" description="Details of all sites, trees and visits. To be used to download all the data for analysis.">
+  <query website_filter_field='lw.website_id' locations_id_field="site.id" locations2_id_field="tree.id" samples_id_field="visit.id" occurrences_id_field="visit_occ.id">
+    SELECT #field_sql#
+  	FROM locations site
+    JOIN locations_websites lw
+         ON lw.location_id=site.id
+  	JOIN locations tree
+         ON tree.parent_id=site.id
+         AND tree.deleted=FALSE
+  	JOIN samples registration
+         ON registration.location_id=tree.id
+         AND registration.deleted=FALSE
+         AND registration.survey_id=#survey_id#
+         AND registration.sample_method_id = #registration_sample_method_id#
+  	JOIN occurrences tree_occ
+  	     ON tree_occ.sample_id=registration.id
+  	     AND tree_occ.deleted=FALSE
+  	JOIN cache_taxa_taxon_lists tree_cttl
+  	     ON tree_occ.taxa_taxon_list_id = tree_cttl.id
+  	JOIN samples visit
+         ON visit.location_id = tree.id
+         AND visit.deleted=FALSE
+         AND visit.survey_id=#survey_id#
+         AND visit.sample_method_id = #visit_sample_method_id#
+  	JOIN occurrences visit_occ
+  	     ON visit_occ.sample_id=visit.id
+         AND visit_occ.deleted=FALSE
+  	JOIN cache_taxa_taxon_lists visit_cttl
+  	     ON visit_occ.taxa_taxon_list_id = visit_cttl.id
+  	#joins#
+  	WHERE #website_filter#
+         AND site.deleted=FALSE
+         AND site.location_type_id=#top_type_id#
+  	#filters#
+    #order_by#
+  </query>
+  <field_sql>
+    site.id as site_indicia_location_id,
+    tree.id as tree_indicia_location_id,
+    registration.id as tree_registration_indicia_sample_id,
+    tree_occ.id as tree_selection_indicia_occurrence_id,
+    visit.id as visit_indicia_sample_id,
+    visit_occ.id as taxon_specific_visit_indicia_occurrence_id,
+    site.name as site_name,
+    site.centroid_sref as site_central_grid_ref,
+    tree.name as tree_id,
+    tree.centroid_sref as tree_grid_ref,
+    tree.comment as tree_additional_information,
+    tree_cttl.taxon as tree_species,
+    registration.date_start as tree_selection_date,
+    visit.date_start as visit_date,
+    visit.comment as visit_field_diary,
+    visit_cttl.taxon as taxon
+  </field_sql>
+  <params>
+    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
+        population_call='direct:survey:id:title' />
+    <param name='top_type_id' display='Top Level Location Type ID' description='Select the location_type_id for the top level locations.' datatype="lookup"
+        population_call="report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=" />
+    <param name='siteattrs' display='Site attribute list' description='Comma separated list of location attribute IDs to include for the site' datatype='locattrs' />
+    <param name='treeattrs' display='Tree attribute list' description='Comma separated list of location attribute IDs to include for the tree' datatype='loc2attrs' />
+    <param name='registration_sample_method_id' display='Registration Sample Method' description='Select the registration sample method.' datatype='lookup'
+        population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+    <param name='visit_sample_method_id' display='Visit Sample Method' description='Select the visit sample method.' datatype='lookup'
+        population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+    <param name='visitattrs' display='Visit attribute list' description='Comma separated list of sample attribute IDs to include for the visit' datatype='smpattrs' />
+    <param name='taxonattrs' display='Taxon occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include for the taxa' datatype='occattrs' />
+    <param name='date_from' display='Date From' datatype='date'>
+	  <where>visit.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date)</where>
+	</param>
+    <param name='date_to' display='Date To' datatype='date'>
+	  <where>visit.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date)</where>
+	</param>
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' >
+      <where>visit.created_by_id=#user_id#</where>
+    </param>
+    <param name='site_id' display='Site ID' description='Enter the ID of the site' datatype='int' >
+      <where>site.id=#site_id#</where>
+    </param>
+    <param name='tree_id' display='Tree ID' description='Enter the ID of the tree' datatype='int' >
+      <where>tree.id=#tree_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name='site_indicia_location_id' display='Site Indicia Location ID' />
+    <column name='tree_indicia_location_id' display='Tree Indicia Location ID' />
+    <column name='tree_registration_indicia_sample_id' display='Registration Indicia Sample ID' />
+    <column name='tree_selection_indicia_occurrence_id' display='Registration Indicia Occurrence ID' />
+    <column name='visit_indicia_sample_id' display='Visit Indicia Sample ID' />
+    <column name='taxon_specific_visit_indicia_occurrence_id' display='Record Indicia Occurrence ID'/>
+    <column name='site_name' display='Site Name' />
+    <column name='site_central_grid_ref' display='Site Central Grid Ref' />
+    <column name='tree_id' display='Tree ID' />
+    <column name='tree_grid_ref' display='Tree Grid Ref' />
+    <column name='tree_additional_information' display='Tree Additional Information' />
+    <column name='tree_selection_date' display='Tree Selection Date' />
+    <column name='tree_species' display='Tree Species' />
+    <column name='visit_date' display='Visit Date' />
+    <column name='visit_field_diary' display='Visit Field Diary' />
+    <column name='taxon' display='Record Taxon'/>
+  </columns>
+</report>
