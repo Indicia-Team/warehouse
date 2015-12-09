@@ -143,8 +143,8 @@ function spatial_index_builder_populate($db) {
   $filter=spatial_index_builder_get_type_filter();
   list($join, $where, $surveyRestriction)=$filter;
   // Now the actual population
-  $query = "insert into index_locations_samples (location_id, sample_id, contains)
-    select l.id, s.id, st_contains(l.boundary_geom, s.geom)
+  $query = "insert into index_locations_samples (location_id, sample_id, contains, location_type_id)
+    select l.id, s.id, st_contains(l.boundary_geom, s.geom, location_type_id)
     from locations l
     $join
     join samples s on s.deleted=false
