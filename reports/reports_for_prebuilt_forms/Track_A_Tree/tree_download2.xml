@@ -16,6 +16,8 @@
   	JOIN occurrences tree_occ
   	     ON tree_occ.sample_id=registration.id
   	     AND tree_occ.deleted=FALSE
+  	JOIN cache_taxa_taxon_lists tree_cttl
+  	     ON tree_occ.taxa_taxon_list_id = tree_cttl.id
   	JOIN samples visit
          ON visit.location_id = tree.id
          AND visit.deleted=FALSE
@@ -24,6 +26,8 @@
   	JOIN occurrences visit_occ
   	     ON visit_occ.sample_id=visit.id
          AND visit_occ.deleted=FALSE
+  	JOIN cache_taxa_taxon_lists visit_cttl
+  	     ON visit_occ.taxa_taxon_list_id = visit_cttl.id
   	#joins#
   	WHERE #website_filter#
          AND site.deleted=FALSE
@@ -43,11 +47,11 @@
     tree.name as tree_id,
     tree.centroid_sref as tree_grid_ref,
     tree.comment as tree_additional_information,
-    tree_occ.taxa_taxon_list_id as tree_species,
+    tree_cttl.taxon as tree_species,
     registration.date_start as tree_selection_date,
     visit.date_start as visit_date,
     visit.comment as visit_field_diary,
-    visit_occ.taxa_taxon_list_id as taxon
+    visit_cttl.taxon as taxon
   </field_sql>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
@@ -72,7 +76,10 @@
       <where>visit.created_by_id=#user_id#</where>
     </param>
     <param name='site_id' display='Site ID' description='Enter the ID of the site' datatype='int' >
-      <where>site.id=#location_id#</where>
+      <where>site.id=#site_id#</where>
+    </param>
+    <param name='tree_id' display='Tree ID' description='Enter the ID of the tree' datatype='int' >
+      <where>tree.id=#tree_id#</where>
     </param>
   </params>
   <columns>
