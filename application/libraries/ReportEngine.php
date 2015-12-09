@@ -952,20 +952,22 @@ class ReportEngine {
    * for a particular data type.
    * @param string $entity E.g. occurrence or sample
    * @param string $sysfunc Name of the system function, required to build the correct field alias.
-   * @param string $data_type Character identifying the field's type, e.g. L for lookup.
+   * @param string $dataType Character identifying the field's type, e.g. L for lookup.
+   * @param boolean $forceVarchar Set true if there are mixed datatypes, so non-text will be forced to varchar.
    * @return string
    */
-  private function getSysFuncFieldName($entity, $sysfunc, $data_type) {
-    switch ($data_type) {
+  private function getSysFuncFieldName($entity, $sysfunc, $dataType, $forceVarchar) {
+    $suffix = $forceVarchar ? '::varchar' : '';
+    switch ($dataType) {
       case 'F':
-        return "{$entity}_$sysfunc.float_value\n";
+        return "{$entity}_$sysfunc.float_value$forceVarchar\n";
         break;
       case 'T':
         return "{$entity}_$sysfunc.text_value\n";
         break;
       case 'D':
       case 'V':
-        return "{$entity}_$sysfunc.date_start_value\n";
+        return "{$entity}_$sysfunc.date_start_value$forceVarchar\n";
         break;
       case 'L':
         return "t{$entity}_$sysfunc.term\n";
@@ -1011,7 +1013,8 @@ class ReportEngine {
       $fieldSql = "CASE \n";
       foreach ($metadata['idsByDatatype'] as $data_type => $ids) {
         $ids = implode(',', $ids);
-        $fieldSql .= "  WHEN {$entity}_$sysfunc.{$entity}_attribute_id IN ($ids) THEN " . $this->getSysFuncFieldName($entity, $sysfunc, $data_type);
+        $fieldSql .= "  WHEN {$entity}_$sysfunc.{$entity}_attribute_id IN ($ids) THEN " .
+            $this->getSysFuncFieldName($entity, $sysfunc, $data_type, count($metadata['idsByDatatype'])>1);
       }
       $fieldSql .= "END";
       $query = str_replace('#fields#', ", \n$fieldSql AS $alias#fields#", $query);
