@@ -972,16 +972,52 @@ class ReportEngine {
     }
     return $query;
   }
+
+  /**
+   * Returns the field name that needs to be picked out of the attribute values or terms table
+   * for a particular data type.
+   * @param string $entity E.g. occurrence or sample
+   * @param string $sysfunc Name of the system function, required to build the correct field alias.
+   * @param string $dataType Character identifying the field's type, e.g. L for lookup.
+   * @param boolean $forceVarchar Set true if there are mixed datatypes, so non-text will be forced to varchar.
+   * @return string
+   */
+  private function getSysFuncFieldName($entity, $sysfunc, $dataType, $forceVarchar) {
+    $suffix = $forceVarchar ? '::varchar' : '';
+    switch ($dataType) {
+      case 'F':
+        return "{$entity}_$sysfunc.float_value$forceVarchar\n";
+        break;
+      case 'T':
+        return "{$entity}_$sysfunc.text_value\n";
+        break;
+      case 'D':
+      case 'V':
+        return "{$entity}_$sysfunc.date_start_value$forceVarchar\n";
+        break;
+      case 'L':
+        return "t{$entity}_$sysfunc.term\n";
+        break;
+      default:
+        return "{$entity}_$sysfunc.text_value\n";
+    }
+  }
   
   /**
    * Create the joins and column definitions required to support a set of custom attributes
    * added to the report by specifying one or more system functions.
+   * @param string $query Query string being built, will be modified to add joins and fields.
+   * @param string $entity E.g. occurrence or sample
+   * @param array $attrs List of attribute definitions loaded.
    */
   private function processSysfuncAttrs(&$query, $entity, $attrs, $sysfuncs, $idx) {
     // first, join in all the attribute tables we need
     $done = array();
     $sysfuncsList = array();
-    foreach($attrs as $attr) {
+    $done = array();
+    // find all the system functions in the list of attributes we've been given. Prepare some
+    // metadata required for each sys func's set of joints
+    foreach ($attrs as $attr) {
       // Don't duplicate any attributes as the SQL distinct does not force distinct when loading from a view.
       // Plus, ignore multi-value attributes as too complex to combine with single value attributes.
       if (in_array($attr->id, $done) || $attr->multi_value==='t')
@@ -1022,22 +1058,27 @@ class ReportEngine {
       if (!in_array($datatype, $sysfuncsList[$attr->system_function]['data_types']))
         $sysfuncsList[$attr->system_function]['data_types'][]=$datatype;
     }
-    $modelname = "{$entity}_attribute";
-    $model = ORM::Factory($modelname, -1);
-    $defs = $model->get_system_functions();
     foreach($sysfuncsList as $sysfunc => $metadata) {
       $alias = "attr_$sysfunc";
-      $this->attrColumns[$alias] = array(
-        'display' => empty($defs[$sysfunc]['friendly']) ? $defs[$sysfunc]['title'] : $defs[$sysfunc]['friendly']
-      );
-      // If we have a mixed data type list, COALESCE requires that we cast them
-      if (count($metadata['data_types'])>1) 
-        $fieldlist = 'CAST(' . implode(' AS VARCHAR), CAST(', $metadata['fields']) . ' AS VARCHAR)';
-      else
-        $fieldlist = implode(', ', $metadata['fields']);
-      $query = str_replace('#fields#', ", \nCOALESCE($fieldlist) as $alias#fields#", $query);
-      // this field should also be inserted into any group by part of the query
-      $query = str_replace('#group_bys#', ", \nCOALESCE($fieldlist)#group_bys#", $query);
+      $fieldSql = "CASE \n";
+      foreach ($metadata['idsByDatatype'] as $data_type => $ids) {
+        $ids = implode(',', $ids);
+        $fieldSql .= "  WHEN {$entity}_$sysfunc.{$entity}_attribute_id IN ($ids) THEN " .
+            $this->getSysFuncFieldName($entity, $sysfunc, $data_type, count($metadata['idsByDatatype'])>1);
+      }
+      $fieldSql .= "END";
+      $query = str_replace('#fields#', ", \n$fieldSql AS $alias#fields#", $query);
+      $joinFieldAttr = inflector::plural($entity).'_id_field';
+      $joinToField = $this->reportReader->$joinFieldAttr;
+      $ids = implode(',', $metadata['ids']);
+      $join = "LEFT JOIN {$entity}_attribute_values {$entity}_$sysfunc ON {$entity}_$sysfunc.{$entity}_id=$joinToField AND {$entity}_$sysfunc.deleted=false " .
+          "AND {$entity}_$sysfunc.{$entity}_attribute_id IN ($ids)";
+      $query = str_replace('#joins#', "$join\n#joins#", $query);
+      if ($metadata['hasTerm']) {
+        $join = 'LEFT JOIN '.(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms").
+          " t{$entity}_$sysfunc ON t{$entity}_$sysfunc.id = {$entity}_$sysfunc.int_value";
+        $query = str_replace('#joins#', "$join\n#joins#", $query);
+      }
     }
   }
   
