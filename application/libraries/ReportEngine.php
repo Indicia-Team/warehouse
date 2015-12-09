@@ -986,14 +986,14 @@ class ReportEngine {
     $suffix = $forceVarchar ? '::varchar' : '';
     switch ($dataType) {
       case 'F':
-        return "{$entity}_$sysfunc.float_value$forceVarchar\n";
+        return "{$entity}_$sysfunc.float_value$suffix\n";
         break;
       case 'T':
         return "{$entity}_$sysfunc.text_value\n";
         break;
       case 'D':
       case 'V':
-        return "{$entity}_$sysfunc.date_start_value$forceVarchar\n";
+        return "{$entity}_$sysfunc.date_start_value$suffix\n";
         break;
       case 'L':
         return "t{$entity}_$sysfunc.term\n";
