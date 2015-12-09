@@ -960,12 +960,12 @@ class ReportEngine {
     		foreach($attrs as $attr) 
     			if ((count($ids)>0 && $attr->id == $attrID) ||
     					(count($captions)>0 && $attr->caption == $attrID) ||
-				    	(count($sysfuncs)>0 && $attr->system_function == $attrID))
+				    	(count($sysfuncs)>0 && $attr->system_function == preg_replace('/^#/', '', $attrID)))
     				$newAttrList[] = $attr;
     	$attrs = $newAttrList;
     }
     if (!$allSurveyAttrs && count($sysfuncs)>0)
-      $this->processSysfuncAttrs($query, $entity, $attrs, $sysfuncs, $idx);
+      $this->processSysfuncAttrs($query, $entity, $attrs, $idx);
     else {
       $usingCaptions=count($captions)>0;
       $this->processStandardAttrs($query, $entity, $attrs, $usingCaptions, $idx);    
@@ -1010,11 +1010,10 @@ class ReportEngine {
    * @param string $entity E.g. occurrence or sample
    * @param array $attrs List of attribute definitions loaded.
    */
-  private function processSysfuncAttrs(&$query, $entity, $attrs, $sysfuncs, $idx) {
+  private function processSysfuncAttrs(&$query, $entity, $attrs, $idx) {
     // first, join in all the attribute tables we need
     $done = array();
     $sysfuncsList = array();
-    $done = array();
     // find all the system functions in the list of attributes we've been given. Prepare some
     // metadata required for each sys func's set of joints
     foreach ($attrs as $attr) {
@@ -1024,39 +1023,17 @@ class ReportEngine {
         continue;
       $id = $attr->id;
       $done[]=$id;
-      $joinType = $this->addJoinForAttr($query, $entity, $attr, true, $idx);
-      // keep track of the output fields for each system function
-      if (!isset($sysfuncsList[$attr->system_function])) {
-        $sysfuncsList[$attr->system_function] = array('fields'=>array(), 'data_types'=>array());
-      }
-      if ($attr->data_type=='L') {
-        // lookups need an extra join and a different output field alias
-        $query = str_replace('#joins#', $joinType." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$entity$id.int_value\n #joins#", $query);
-        $sysfuncsList[$attr->system_function]['fields'][] = "ltt$id.term";
-        $datatype='text';
-      } else {
-        switch($attr->data_type) {
-          case 'F' :
-            $field = 'float_value';
-            $datatype='float';
-            break;
-          case 'T' :
-            $field = 'text_value';
-            $datatype='text';
-            break;
-          case 'D' : case 'V' :
-            $field = 'date_start_value';
-            $datatype='date';
-            break;
-          default:
-            $field = 'int_value';
-            $datatype='int';
-        }
-        $sysfuncsList[$attr->system_function]['fields'][] = "$entity$id.$field";
-      }
-      // track the list of data types we are using
-      if (!in_array($datatype, $sysfuncsList[$attr->system_function]['data_types']))
-        $sysfuncsList[$attr->system_function]['data_types'][]=$datatype;
+      if (!isset($sysfuncsList[$attr->system_function]))
+        $sysfuncsList[$attr->system_function] = array('ids'=>array(),'hasTerm'=>false, 'idsByDatatype' => array());
+      // store the ids associated with each sysfunc so we can build the joins
+      $sysfuncsList[$attr->system_function]['ids'][] = $attr->id;
+      // If a lookup attribute, then the join for this system function will need to join cache_termlists_terms
+      if ($attr->data_type==='L')
+        $sysfuncsList[$attr->system_function]['hasTerm'] = true;
+      // store the ids associated with each type of data for each sysfunc so we can efficiently build SQL to output the value
+      if (!isset($sysfuncsList[$attr->system_function]['idsByDatatype'][$attr->data_type]))
+        $sysfuncsList[$attr->system_function]['idsByDatatype'][$attr->data_type] = array();
+      $sysfuncsList[$attr->system_function]['idsByDatatype'][$attr->data_type][] = $attr->id;
     }
     foreach($sysfuncsList as $sysfunc => $metadata) {
       $alias = "attr_$sysfunc";
