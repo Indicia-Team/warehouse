@@ -37,6 +37,9 @@
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='smpattrs' display='Subsample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='smp2attrs' display='Supersample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smp2attrs'  />
+    <param name='user_id' display='Indicia User ID' description='Enter the Indicia ID of the user' datatype='int' >
+      <where>s2.created_by_id=#user_id#</where>
+    </param>
   </params>
   <columns>
     <column name='sample_id' display='Sample ID' />
