@@ -743,7 +743,8 @@ $config['occurrences']['update'] = "update cache_occurrences co
         else 'A'
       end,
       licence_id=li.id,
-      licence_code=li.code
+      licence_code=li.code,
+      family_taxa_taxon_list_id=cttl.family_taxa_taxon_list_id
     from occurrences o
     #join_needs_update#
     join (
@@ -796,7 +797,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
       verifier, verified_on, images, training, location_id, input_form, sensitivity_precision, privacy_precision,
-      group_id, output_sref, sref_precision, licence_id, licence_code
+      group_id, output_sref, sref_precision, licence_id, licence_code, family_taxa_taxon_list_id
     )
   select distinct on (o.id) o.id, o.record_status, o.record_substatus, o.release_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
@@ -880,7 +881,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)),
     round(coalesce(spv.int_value, spv.float_value)),
     li.id,
-    li.code
+    li.code,
+    cttl.family_taxa_taxon_list_id
   from occurrences o
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id
