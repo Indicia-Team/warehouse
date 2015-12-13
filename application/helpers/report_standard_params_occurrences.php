@@ -345,11 +345,8 @@ class report_standard_params_occurrences {
       // version of the above optimised for searching for higher taxa
       'higher_taxa_taxon_list_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Higher taxa taxon list IDs",
         'description'=>'Comma separated list of preferred IDs. Optimised for searches at family level or higher',
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
-        ),
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"prefcttl.family_taxa_taxon_list_id in (#higher_taxa_taxon_list_list#)")
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.family_taxa_taxon_list_id in (#higher_taxa_taxon_list_list#)")
         ),
         'preprocess' => // faster than embedding this query in the report
           "with recursive q as (
