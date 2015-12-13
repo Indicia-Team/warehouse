@@ -1,4 +1,4 @@
--- SLOW SCRIPT
+-- #slow script#
 ALTER TABLE index_locations_samples
   ADD location_type_id integer NULL;
 
