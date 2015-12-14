@@ -475,7 +475,7 @@ class summary_builder {
   				$val = $cnt ? ($val.".0")/$cnt : 0;
   				if($val>0 && $val<1) $val=1;
   				// data rounding only occurs in this option
-  				$data[$period]['summary'] = summary_builder::apply_data_rounding($definition, $val);
+  				$data[$period]['summary'] = summary_builder::apply_data_rounding($definition, $val, true);
   				break;
   			default :
   			case 'A':
@@ -495,14 +495,15 @@ class summary_builder {
   		if($detail['hasData']) {
   			$data[$period]['estimate'] = $detail['summary'];
   			$data[$period]['hasEstimate'] = true;
-  			if($lastDataPeriod===false && ($firstAnchor===false || $period-1>$firstAnchor) && ($lastAnchor===false || $period-1<$lastAnchor) && $definition['first_value']=='H') {
+  			// Half value estimate setup if this is the first count. Previous period (which is where the estimate will be) must be within season limits (anchors)
+  			if($lastDataPeriod===false && ($firstAnchor===false || $period-1>=$firstAnchor) && ($lastAnchor===false || $period-1<=$lastAnchor) && $definition['first_value']=='H') {
   				$lastDataPeriod = $period-2;
   				$lastDataPeriodValue = 0;
   			}
   			if($lastDataPeriod!==false && ($period-$lastDataPeriod > 1)){
   			  for($j=1; $j < ($period-$lastDataPeriod); $j++){ // fill in periods between data points
   			  	$estimate = $data[$lastDataPeriod]['summary']+(($j.".0")*($data[$period]['summary']-$lastDataPeriodValue))/($period-$lastDataPeriod);
-  			  	$data[$lastDataPeriod+$j]['estimate'] = summary_builder::apply_data_rounding($definition, $estimate);
+  			  	$data[$lastDataPeriod+$j]['estimate'] = summary_builder::apply_data_rounding($definition, $estimate, false);
   			  	$data[$lastDataPeriod+$j]['hasEstimate'] = true;
   			  }
   			}
@@ -510,14 +511,15 @@ class summary_builder {
   			$lastDataPeriodValue=$data[$lastDataPeriod]['summary'];
   		}
   	}
-  	if($lastDataPeriod && ($firstAnchor===false || $lastDataPeriod>=$firstAnchor) && ($lastAnchor===false || $lastDataPeriod-1<$lastAnchor) && $lastDataPeriod<count($data) && $definition['last_value']=='H') {
-  		$data[$lastDataPeriod+1]['estimate'] = summary_builder::apply_data_rounding($definition, $data[$lastDataPeriod]['summary']/2.0);
+  	// Have reached end of data, so do half value estimate setup. Next period (which is where the estimate will be) must be within season limits (anchors)
+  	if($lastDataPeriod && ($firstAnchor===false || $lastDataPeriod+1>=$firstAnchor) && ($lastAnchor===false || $lastDataPeriod+1<=$lastAnchor) && $lastDataPeriod<max(array_keys($data)) && $definition['last_value']=='H') {
+  		$data[$lastDataPeriod+1]['estimate'] = summary_builder::apply_data_rounding($definition, $data[$lastDataPeriod]['summary']/2.0, false);
   		$data[$lastDataPeriod+1]['hasEstimate'] = true;
   	} 
   }
   
-  private static function apply_data_rounding($definition, $val) {
-  	if($val>0 && $val<1) $val=1;
+  private static function apply_data_rounding($definition, $val, $special) {
+  	if($special && $val>0 && $val<1) return 1;
   	switch($definition['data_rounding_method']){
   		case 'N':
   			return (int)round($val);
