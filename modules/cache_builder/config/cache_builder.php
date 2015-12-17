@@ -677,7 +677,6 @@ $config['occurrences']['update'] = "update cache_occurrences co
       preferred_taxon=cttl.preferred_taxon, 
       preferred_authority=cttl.preferred_authority, 
       default_common_name=cttl.default_common_name, 
-      search_name=cttl.search_name, 
       taxa_taxon_list_external_key=cttl.external_key,
       taxon_meaning_id=cttl.taxon_meaning_id,
       taxon_group_id = cttl.taxon_group_id,
@@ -794,7 +793,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       public_entered_sref, entered_sref_system, public_geom,
       sample_method, taxa_taxon_list_id, preferred_taxa_taxon_list_id, taxonomic_sort_order, 
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
-      search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
+      taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
       verifier, verified_on, images, training, location_id, input_form, sensitivity_precision, privacy_precision,
       group_id, output_sref, sref_precision, licence_id, licence_code, family_taxa_taxon_list_id
@@ -826,7 +825,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     tmethod.term as sample_method,
     cttl.id as taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id, cttl.taxonomic_sort_order, 
     cttl.taxon, cttl.authority, cttl.preferred_taxon, cttl.preferred_authority, cttl.default_common_name, 
-    cttl.search_name, cttl.external_key as taxa_taxon_list_external_key, cttl.taxon_meaning_id,
+    cttl.external_key as taxa_taxon_list_external_key, cttl.taxon_meaning_id,
     cttl.taxon_group_id, cttl.taxon_group, o.created_by_id, now(), now(),
     case when certainty.sort_order is null then null
         when certainty.sort_order <100 then 'C'
