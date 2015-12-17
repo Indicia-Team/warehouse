@@ -144,13 +144,16 @@ function spatial_index_builder_populate($db) {
   list($join, $where, $surveyRestriction)=$filter;
   // Now the actual population
   $query = "insert into index_locations_samples (location_id, sample_id, contains, location_type_id)
-    select l.id, s.id, st_contains(l.boundary_geom, s.geom, location_type_id)
+    select distinct l.id, s.id, st_contains(l.boundary_geom, s.geom), l.location_type_id
     from locations l
     $join
     join samples s on s.deleted=false
       and (st_intersects(l.boundary_geom, s.geom) and not st_touches(l.boundary_geom, s.geom))
-    where l.deleted=false
-    and (l.id in (select id from loclist) or s.id in (select id from smplist))
+    left join index_locations_samples ils on ils.location_id=l.id and ils.sample_id=s.id
+    where ils.id is null
+    and l.deleted=false
+    and (l.id in (select id from loclist)
+    or s.id in (select sample_id from occdelta))
     $where
     $surveyRestriction";
   $message = $db->query($query)->count().' index_locations_samples entries created.';
