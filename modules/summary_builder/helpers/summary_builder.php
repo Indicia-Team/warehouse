@@ -499,20 +499,22 @@ class summary_builder {
   	$lastDataPeriod=false;
   	$minPeriod = min(array_keys($data));
   	foreach($data as $period=>$detail) { // we assume this comes out in period order
-  		// only consider estimate generation within the season limits.
-  		if($detail['hasData'] && ($season_start===false || $period>=$season_start) && ($season_end===false || $period<=$season_end)) {
+  		if($detail['hasData']) {
   			$data[$period]['estimate'] = $detail['summary'];
   			$data[$period]['hasEstimate'] = true;
   			// Half value estimate setup if this is the first count. Previous period (which is where the estimate will be) must be within season limits
-  			if($lastDataPeriod===false && ($season_start===false || $period-1>=$season_start) && $period-1>=$minPeriod && $definition['first_value']=='H') {
+  			if($lastDataPeriod===false && $definition['first_value']=='H') {
   				$lastDataPeriod = $period-2;
   				$lastDataPeriodValue = 0;
   			}
   			if($lastDataPeriod!==false && ($period-$lastDataPeriod > 1)){
   			  for($j=1; $j < ($period-$lastDataPeriod); $j++){ // fill in periods between data points
-  			  	$estimate = $lastDataPeriodValue+(($j.".0")*($data[$period]['summary']-$lastDataPeriodValue))/($period-$lastDataPeriod);
-  			  	$data[$lastDataPeriod+$j]['estimate'] = summary_builder::apply_data_rounding($definition, $estimate, false);
-  			  	$data[$lastDataPeriod+$j]['hasEstimate'] = true;
+  				// only consider estimate generation within the season limits.
+  			  	if(($season_start===false || ($period+$j)>=$season_start) && ($season_end===false || ($period+$j)<=$season_end)) {
+  			  	  $estimate = $lastDataPeriodValue+(($j.".0")*($data[$period]['summary']-$lastDataPeriodValue))/($period-$lastDataPeriod);
+  			  	  $data[$lastDataPeriod+$j]['estimate'] = summary_builder::apply_data_rounding($definition, $estimate, false);
+  			  	  $data[$lastDataPeriod+$j]['hasEstimate'] = true;
+  			  	}
   			  }
   			}
   			$lastDataPeriod=$period;
@@ -520,7 +522,7 @@ class summary_builder {
   		}
   	}
   	// Have reached end of data, so do half value estimate setup. Next period (which is where the estimate will be) must be within season limits
-  	if($lastDataPeriod && ($season_end===false || $lastDataPeriod+1<=$season_end) && $lastDataPeriod<max(array_keys($data)) && $definition['last_value']=='H') {
+  	if($lastDataPeriod && ($season_start===false || $lastDataPeriod+1>=$season_start) && ($season_end===false || $lastDataPeriod+1<=$season_end) && $lastDataPeriod<max(array_keys($data)) && $definition['last_value']=='H') {
   		$data[$lastDataPeriod+1]['estimate'] = summary_builder::apply_data_rounding($definition, $lastDataPeriodValue/2.0, false);
   		$data[$lastDataPeriod+1]['hasEstimate'] = true;
   	} 
