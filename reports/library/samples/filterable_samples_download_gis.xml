@@ -2,7 +2,7 @@
     title="Samples download using standard filters for GIS"
     description="Download samples with standardised filtering parameters."
 >
-  <query website_filter_field="su.website_id" samples_id_field="s.id" standard_params="samples"
+  <query website_filter_field="su.website_id" standard_params="samples"
          created_by_field="s.created_by_id" training_filter_field="">
   SELECT #columns#
   FROM samples s
