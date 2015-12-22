@@ -2,7 +2,7 @@
     title="Cached occurrence list for location boundary"
     description="A general purpose list of records filtered to the contents of a selected location's boundary. Uses the cache tables so fast, but there is a lag before data appears."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
   SELECT #field_sql#
   FROM cache_occurrences o
   #joins#
