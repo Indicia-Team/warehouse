@@ -334,7 +334,7 @@ class summary_builder {
 	  	// If a value is provided, it is inclusive. UKBMS is nominally 1,26: this differs from the old report_calendar_summary
 	  	// page, where it was exclusive, and the limits where defined as 0,27.
 	  	$season_limits=explode(',',$definition['season_limits']);
-	  	$definition['season_limits'] = array('start' => ((count($season_limits) && $season_limits[0]!='') ? $season_limits[0] : false),
+	  	$definition['season_limits_array'] = array('start' => ((count($season_limits) && $season_limits[0]!='') ? $season_limits[0] : false),
 	  									'end' => ((count($season_limits)>1 && $season_limits[1]!='') ? $season_limits[1] : false));
 	  	$periods=array();
 	  	$periodMapping=array();
@@ -493,8 +493,8 @@ class summary_builder {
   }
 
   private static function apply_estimates($db, $definition, &$data) {
-  	$season_start = $definition['season_limits']['start'];
-  	$season_end = $definition['season_limits']['end'];
+  	$season_start = $definition['season_limits_array']['start'];
+  	$season_end = $definition['season_limits_array']['end'];
   	$thisLocation=false;
   	$lastDataPeriod=false;
   	$minPeriod = min(array_keys($data));
@@ -509,8 +509,8 @@ class summary_builder {
   			}
   			if($lastDataPeriod!==false && ($period-$lastDataPeriod > 1)){
   			  for($j=1; $j < ($period-$lastDataPeriod); $j++){ // fill in periods between data points
-  				// only consider estimate generation within the season limits.
-  			  	if(($season_start===false || ($period+$j)>=$season_start) && ($season_end===false || ($period+$j)<=$season_end)) {
+  			  	// only consider estimate generation within the season limits.
+  			  	if(($season_start===false || ($lastDataPeriod+$j)>=$season_start) && ($season_end===false || ($lastDataPeriod+$j)<=$season_end)) {
   			  	  $estimate = $lastDataPeriodValue+(($j.".0")*($data[$period]['summary']-$lastDataPeriodValue))/($period-$lastDataPeriod);
   			  	  $data[$lastDataPeriod+$j]['estimate'] = summary_builder::apply_data_rounding($definition, $estimate, false);
   			  	  $data[$lastDataPeriod+$j]['hasEstimate'] = true;
