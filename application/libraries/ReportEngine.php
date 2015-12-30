@@ -742,6 +742,12 @@ class ReportEngine {
                   throw new exception('Invalid numeric array parameter value');
               }
             }
+            elseif ($paramDefs[$name]['datatype']==='date') {
+              // force ISO date for SQL safety.
+              // @todo This needs further work for i18n if non-European.
+              $date = DateTime::createFromFormat('d/m/Y', $value);
+              $value = $date->format('Y-m-d');
+            }
             $query = preg_replace("/#$name#/", $value, $query);
           }
         }
