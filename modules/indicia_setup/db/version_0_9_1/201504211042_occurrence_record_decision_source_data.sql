@@ -1,4 +1,4 @@
--- SLOW SCRIPT
+-- #slow script#
 -- all decisions to this point have been human
 UPDATE occurrences o
 	SET record_decision_source='H'
