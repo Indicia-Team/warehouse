@@ -53,6 +53,7 @@ function spatial_index_builder_scheduled_task($last_run_date, $db) {
     echo $message;
     if ($locCount + $sampleCount> 0) 
       spatial_index_builder_populate($db);
+    spatial_index_builder_add_to_cache($db);
     spatial_index_builder_cleanup($db);
   } catch (Exception $e) {
     echo $e->getMessage();
@@ -153,10 +154,11 @@ function spatial_index_builder_populate($db) {
     where ils.id is null
     and l.deleted=false
     and (l.id in (select id from loclist)
-    or s.id in (select sample_id from occdelta))
+    or s.id in (select id from smplist))
     $where
     $surveyRestriction";
   $message = $db->query($query)->count().' index_locations_samples entries created.';
+  echo "$query<br/>";
   echo "$message<br/>";
   Kohana::log('debug', $message);
 }
@@ -164,4 +166,84 @@ function spatial_index_builder_populate($db) {
 function spatial_index_builder_cleanup($db) {
   $db->query('drop table loclist');
   $db->query('drop table smplist');
+}
+
+/**
+ * if cache_builder module installed, then we want to add spatial index info into the cache tables
+ * for best performance.
+ * @param $db
+ */
+function spatial_index_builder_add_to_cache($db) {
+  $config=kohana::config_load('spatial_index_builder', false);
+  if (!array_key_exists('location_types', $config) || !array_key_exists('unique', $config))
+    return;
+  $types = $db->select('id, term')->from('cache_termlists_terms')
+    ->where('termlist_title', 'Location types')
+    ->in('term', $config['location_types'])
+    ->get()->result_array(false);
+  if (!count($types))
+    return;
+  $s_sets = array();
+  $o_sets = array();
+  $joins = array();
+  foreach ($types as $type) {
+    // We can only do this type of indexing for boundary types that occur only once per sample
+    if (!in_array($type['term'], $config['unique']))
+      continue;
+    // Script for handling updated samples can be constructed to do all location types
+    // in one go.
+    $column = 'location_id_' . preg_replace('/[^\da-z]/', '_', strtolower($type['term']));
+    $s_sets[] = "$column = ils$type[id].location_id";
+    $o_sets[] = "$column = s.$column";
+    $joins[] = "LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].sample_id=s.id ".
+        "and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true";
+    // Script for handling updated locations is a bit more complex so we have to run
+    // once per location type
+    $db->query("UPDATE cache_samples_functional u
+SET $column = null
+FROM loclist l
+WHERE l.id=u.$column;
+
+UPDATE cache_occurrences_functional u
+SET $column = null
+FROM loclist l
+WHERE l.id=u.$column;
+
+UPDATE cache_samples_functional u
+SET $column = ils$type[id].location_id
+FROM locations l
+LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
+    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
+JOIN loclist list on list.id=l.id
+WHERE u.id=ils$type[id].sample_id;
+
+UPDATE cache_occurrences_functional u
+SET $column = ils$type[id].location_id
+FROM locations l
+LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
+    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
+JOIN loclist list on list.id=l.id
+WHERE u.sample_id=ils$type[id].sample_id;");
+
+  }
+  if (count($s_sets)) {
+    $s_sets = implode(",\n", $s_sets);
+    $o_sets = implode(",\n", $o_sets);
+    $joins = implode("\n", $joins);
+    $query = "
+UPDATE cache_samples_functional u
+SET $s_sets
+FROM samples s
+$joins
+JOIN smplist list on list.id=s.id
+WHERE u.id=s.id;
+
+UPDATE cache_occurrences_functional u
+SET $o_sets
+FROM cache_samples_functional s
+JOIN smplist list on list.id=s.id
+WHERE s.id=u.sample_id;
+";
+    $db->query($query);
+  }
 }
