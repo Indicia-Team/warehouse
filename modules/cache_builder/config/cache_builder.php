@@ -911,43 +911,28 @@ $config['samples']['key_field']='s.id';
 // loads of left joins. These should be in priority order - i.e. ones where we have recorded the inputter rather than
 // specifically the recorder should come after ones where we have recorded the recorder specifically.
 $config['samples']['extra_multi_record_updates']=array(
-  // nullify the recorders field so it gets an update
-  'Nullify recorders' => 'update cache_samples_nonfunctional cs
-    set recorders=null
-    from needs_update_samples nu
-    where nu.id=cs.id;',
-  // Sample recorder names
-  'Sample recorder names' => 'update cache_samples_nonfunctional cs
-    set recorders=s.recorder_names
-    from samples s, needs_update_samples nu
-    where cs.recorders is null and s.id=cs.id and s.deleted=false and s.recorder_names is not null
-    and nu.id=cs.id;',
+  // s.recorder_names is filled in as a starting point. The rest only proceed if this is null.
   // full recorder name
-  'Full name' => 'update cache_samples_nonfunctional cs
-    set recorders=sav.text_value
-    from needs_update_samples nu, sample_attribute_values sav
-    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-    where cs.recorders is null
-    and sav.sample_id=cs.id and sav.deleted=false and sav.text_value <> \', \'
-    and nu.id=cs.id;',
-  // surname, firstname
-  'First name/surname' => 'update cache_samples_nonfunctional cs
-    set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
-    from needs_update_samples nu, sample_attribute_values sav
-    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-    left join (sample_attribute_values savf
-    join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-    ) on savf.deleted=false
-    where cs.recorders is null and savf.sample_id=cs.id
-    and sav.sample_id=cs.id and sav.deleted=false
-    and nu.id=cs.id;',
+  // or surname, firstname
+  'Sample attrs' => "update cache_samples_nonfunctional cs
+    set recorders=coalesce(
+      nullif(cs.attr_full_name, ''),
+      cs.attr_last_name || coalesce(', ' || cs.attr_first_name, '')
+      )
+    from needs_update_samples nu
+    where cs.recorders is null and nu.id=cs.id
+    and (
+      nullif(cs.attr_full_name, '') is not null or
+      nullif(cs.attr_last_name, '') is not null
+    )
+    and cs.id in (#ids#);",
   // Sample recorder names in parent sample
   'Parent sample recorder names' => 'update cache_samples_nonfunctional cs
     set recorders=sp.recorder_names
     from needs_update_samples nu, samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false and sp.recorder_names is not null
-    where cs.recorders is null and s.id=cs.id and s.deleted=false
-    and nu.id=cs.id;',
+    where cs.recorders is null and nu.id=cs.id
+    and s.id=cs.id and s.deleted=false;',
   // full recorder name in parent sample
   'Parent full name' => 'update cache_samples_nonfunctional cs
     set recorders=sav.text_value
@@ -955,9 +940,8 @@ $config['samples']['extra_multi_record_updates']=array(
     join samples sp on sp.id=s.parent_id and sp.deleted=false
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \'
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-    where cs.recorders is null
-    and s.id=cs.id and s.deleted=false
-    and nu.id=cs.id;',
+    where cs.recorders is null and nu.id=cs.id
+    and s.id=cs.id and s.deleted=false;',
   // firstname and surname in parent sample
   'Parent first name/surname' => 'update cache_samples_nonfunctional cs
     set recorders=coalesce(savf.text_value || \' \', \'\') || sav.text_value
@@ -966,25 +950,25 @@ $config['samples']['extra_multi_record_updates']=array(
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
     left join (sample_attribute_values savf
-    join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
+      join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
     ) on savf.deleted=false
-    where cs.recorders is null and savf.sample_id=sp.id
-    and s.id=cs.id and s.deleted=false
-    and nu.id=cs.id;',
+    where cs.recorders is null and nu.id=cs.id
+    and savf.sample_id=sp.id and s.id=cs.id and s.deleted=false;',
   // warehouse surname, first name
   'Warehouse surname, first name' => 'update cache_samples_nonfunctional cs
     set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
     from needs_update_samples nu, people p, users u
     join cache_samples_functional csf on csf.created_by_id=u.id
-    where cs.recorders is null and csf.id=cs.id and p.id=u.person_id and p.deleted=false
-    and nu.id=cs.id and u.id<>1;',
+    where cs.recorders is null and nu.id=cs.id
+    and csf.id=cs.id and p.id=u.person_id and p.deleted=false
+    and u.id<>1;',
   // CMS username
   'CMS Username' => 'update cache_samples_nonfunctional cs
     set recorders=sav.text_value
     from needs_update_samples nu, sample_attribute_values sav
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-    where cs.recorders is null and sav.sample_id=cs.id and sav.deleted=false
-    and nu.id=cs.id;',
+    where cs.recorders is null and nu.id=cs.id
+    and sav.sample_id=cs.id and sav.deleted=false;',
   // CMS username in parent sample
   'Parent CMS Username' => 'update cache_samples_nonfunctional cs
     set recorders=sav.text_value
@@ -992,50 +976,43 @@ $config['samples']['extra_multi_record_updates']=array(
     join samples sp on sp.id=s.parent_id and sp.deleted=false
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-    where cs.recorders is null and s.id=cs.id and s.deleted=false
-    and nu.id=cs.id;',
+    where cs.recorders is null and nu.id=cs.id
+    and s.id=cs.id and s.deleted=false;',
   // warehouse username
   'Warehouse username' => 'update cache_samples_nonfunctional cs
     set recorders=case u.id when 1 then null else u.username end
     from needs_update_samples nu, users u
     join cache_samples_functional csf on csf.created_by_id=u.id
-    where cs.recorders is null and cs.id=csf.id and u.id<>1
-    and nu.id=cs.id;'
+    where cs.recorders is null and nu.id=cs.id
+    and cs.id=csf.id and u.id<>1;'
 );
 
 // Final statements to pick up after an insert of a single record.
-$config['occurrences']['extra_single_record_updates']=array(
+$config['samples']['extra_single_record_updates']=array(
   // Sample recorder names
-  'Sample recorder names' => "update cache_samples_nonfunctional cs
-    set recorders=s.recorder_names
+  // Or, full recorder name
+  // Or, surname, firstname
+  'Sample recorder names or attrs' => "update cache_samples_nonfunctional cs
+    set recorders=coalesce(
+      nullif(s.recorder_names, ''),
+      nullif(cs.attr_full_name, ''),
+      cs.attr_last_name || coalesce(', ' || cs.attr_first_name, '')
+      )
     from samples s
-    where s.id=cs.id and s.deleted=false and s.recorder_names is not null and s.recorder_names<>''
+    where s.id=cs.id and s.deleted=false
+    and (
+      nullif(s.recorder_names, '') is not null or
+      nullif(cs.attr_full_name, '') is not null or
+      nullif(cs.attr_last_name, '') is not null
+    )
     and cs.id in (#ids#);",
-  // Full recorder name
-  'full name' => 'update cache_samples_nonfunctional cs
-    set recorders=sav.text_value
-    from sample_attribute_values sav
-    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-    where sav.sample_id=cs.id and sav.deleted=false and sav.text_value <> \', \'
-    and cs.id in (#ids#);',
-  // surname, firstname
-  'First name/surname' => 'update cache_samples_nonfunctional cs
-    set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
-    from sample_attribute_values sav
-    join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
-    left join (sample_attribute_values savf
-    join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
-    ) on savf.deleted=false
-    where savf.sample_id=cs.id
-    and sav.sample_id=cs.id and sav.deleted=false
-    and cs.id in (#ids#);',
   // Sample recorder names in parent sample
   'Parent sample recorder names' => "update cache_samples_nonfunctional cs
     set recorders=sp.recorder_names
     from samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false
-    where s.id=cs.id and s.deleted=false and sp.recorder_names is not null and sp.recorder_names<>''
-    and cs.id in (#ids#);",
+    where cs.recorders is null and cs.id in (#ids#)
+    and s.id=cs.id and s.deleted=false and sp.recorder_names is not null and sp.recorder_names<>'';",
   // Full recorder name in parent sample
   'Parent full name' => 'update cache_samples_nonfunctional cs
     set recorders=sav.text_value
@@ -1043,8 +1020,8 @@ $config['occurrences']['extra_single_record_updates']=array(
     join samples sp on sp.id=s.parent_id and sp.deleted=false
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \'
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
-    where s.id=cs.id and s.deleted=false
-    and cs.id in (#ids#);',
+    where cs.recorders is null and cs.id in (#ids#)
+    and s.id=cs.id and s.deleted=false;',
   // surname, firstname in parent sample
   'Parent first name/surname' => 'update cache_samples_nonfunctional cs
     set recorders=sav.text_value || coalesce(\', \' || savf.text_value, \'\')
@@ -1055,24 +1032,23 @@ $config['occurrences']['extra_single_record_updates']=array(
     left join (sample_attribute_values savf
     join sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = \'first_name\' and saf.deleted=false
     ) on savf.deleted=false
-    where savf.sample_id=sp.id
-    and s.id=cs.id and s.deleted=false
-    and cs.id in (#ids#);',
+    where cs.recorders is null and cs.id in (#ids#)
+    and savf.sample_id=sp.id and s.id=cs.id and s.deleted=false;',
   // warehouse surname, firstname
   'Warehouse first name/surname' => 'update cache_samples_nonfunctional cs
     set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
     from users u
     join cache_samples_functional csf on csf.created_by_id=u.id
     join people p on p.id=u.person_id and p.deleted=false
-    where cs.id=csf.id and u.id<>1
-    and cs.id in (#ids#);',
+    where cs.recorders is null and cs.id in (#ids#)
+    and cs.id=csf.id and u.id<>1;',
   // CMS username
   'CMS Username' => 'update cache_samples_nonfunctional cs
     set recorders=sav.text_value
     from sample_attribute_values sav
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-    where sav.sample_id=cs.id and sav.deleted=false
-    and cs.id in (#ids#);',
+    where cs.recorders is null and cs.id in (#ids#)
+    and sav.sample_id=cs.id and sav.deleted=false;',
   // CMS username in parent sample
   'Parent CMS Username' => 'update cache_samples_nonfunctional cs
     set recorders=sav.text_value
@@ -1080,14 +1056,14 @@ $config['occurrences']['extra_single_record_updates']=array(
     join samples sp on sp.id=s.parent_id and sp.deleted=false
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-    where s.id=cs.id and s.deleted=false
-    and cs.id in (#ids#);',
+    where cs.recorders is null and cs.id in (#ids#)
+    and s.id=cs.id and s.deleted=false;',
   'Warehouse username' => 'update cache_samples_nonfunctional cs
     set recorders=u.username
     from users u
     join cache_samples_functional csf on csf.created_by_id=u.id
-    where cs.id=csf.id and u.id<>1
-    and cs.id in (#ids#);'
+    where cs.recorders is null and cs.id in (#ids#)
+    and cs.id=csf.id and u.id<>1;'
 );
 
 $config['occurrences']['get_missing_items_query'] = "
