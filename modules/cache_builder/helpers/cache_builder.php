@@ -125,8 +125,13 @@ class cache_builder {
    * @param array $ids Record IDs to delete from the cache
    */
   public static function delete($db, $table, $ids) {
-    foreach ($ids as $id)
-      $db->delete("cache_$table", array('id'=>$id));
+    foreach ($ids as $id) {
+      if ($table==='occurrences' || $table==='samples') {
+        $db->delete("cache_{$table}_functional", array('id' => $id));
+        $db->delete("cache_{$table}_nonfunctional", array('id' => $id));
+      } else
+        $db->delete("cache_$table", array('id' => $id));
+    }
   }
   
   public static function final_queries($db, $table, $ids) {
@@ -139,7 +144,7 @@ class cache_builder {
           $result=$db->query(str_replace('#ids#', $idlist, $sql));
           $doneCount += $result->count();
           if ($doneCount>=count($idlist)) 
-            break; // we've done an update. So can drop out.
+            break; // we've updated all. So can drop out.
         }
       else {
         $db->query(str_replace('#ids#', $idlist, $queries['extra_single_record_updates']));
