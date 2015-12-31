@@ -52,7 +52,6 @@ SELECT o.id,
   o.group_id,
   onf.privacy_precision,
   onf.output_sref,
-  snf.attr_sref_precision as sref_precision,
   o.record_substatus,
   o.query,
   o.licence_id,
@@ -62,7 +61,18 @@ SELECT o.id,
   onf.attr_stage,
   onf.attr_sex_stage,
   onf.attr_sex_stage_count,
-  snf.attr_biotope
+  onf.attr_certainty,
+  onf.attr_det_first_name,
+  onf.attr_det_last_name,
+  onf.attr_det_full_name,
+  snf.attr_email,
+  snf.attr_cms_user_id,
+  snf.attr_cms_username,
+  snf.attr_first_name,
+  snf.attr_last_name,
+  snf.attr_full_name,
+  snf.attr_biotope,
+  snf.attr_sref_precision
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_functional sf on sf.id=o.sample_id

@@ -12,16 +12,7 @@
     JOIN locations l on l.id=ils.location_id
     JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id AND ctt.term='Vice County'
   ) on ils.sample_id=co.sample_id
-  LEFT JOIN (occurrence_attribute_values det_full_val
-    JOIN occurrence_attributes det_full on det_full.id=det_full_val.occurrence_attribute_id and det_full.deleted=false and det_full.system_function='det_full_name'
-  ) ON det_full_val.occurrence_id=co.id AND det_full_val.deleted=false
-  LEFT JOIN (occurrence_attribute_values det_first_val
-    JOIN occurrence_attributes det_first on det_first.id=det_first_val.occurrence_attribute_id and det_first.deleted=false and det_first.system_function='det_full_name'
-  ) ON det_first_val.occurrence_id=co.id AND det_first_val.deleted=false
-  LEFT JOIN (occurrence_attribute_values det_last_val
-    JOIN occurrence_attributes det_last on det_last.id=det_last_val.occurrence_attribute_id and det_last.deleted=false and det_last.system_function='det_full_name'
-  ) ON det_last_val.occurrence_id=co.id AND det_last_val.deleted=false
-  JOIN websites w on w.id=co.website_id 
+  JOIN websites w on w.id=co.website_id
   JOIN users u ON u.id=o.created_by_id
   JOIN people p ON p.id=u.person_id
   #agreements_join#
@@ -109,10 +100,10 @@
     <column name='date_type' sql='co.date_type' visible='false' />
     <column name='date' display='Date' datatype='date' />
     <column name='recorder' display='Recorder' sql="co.recorders" datatype="text" />
-    <column name='determiner' display='Determiner' datatype="text" 
-      sql="CASE WHEN det_full_val.text_value IS NULL THEN 
-        CASE WHEN det_last_val.text_value IS NULL THEN NULL ELSE det_last_val.text_value || COALESCE(', ' || det_first_val.text_value, '') END
-      ELSE det_full_val.text_value END" />
+    <column name='determiner' display='Determiner' datatype="text"
+            sql="CASE WHEN o.attr_det_full_name IS NULL THEN
+        CASE WHEN o.attr_det_last_name IS NULL THEN NULL ELSE o.attr_det_last_name || COALESCE(', ' || o.attr_det_first_name, '') END
+      ELSE o.attr_det_full_name END" />
     <column name='verifier' display='Verifier' sql='co.verifier' datatype="text" />
     <column name='sample_comment' display='Sample comment' sql="s.comment" datatype="text" />
     <column name='zeroabundance' display='ZeroAbundance' sql='upper(cast (co.zero_abundance as character))' datatype="text" />
@@ -122,9 +113,9 @@
     <column name='certainty' sql="CASE co.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
     <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->
     <column name='recorder_person_id' sql="case when co.recorders = p.surname || ', ' || p.first_name or co.recorders = p.first_name || ' ' || p.surname then cast(p.id as varchar(20)) else 'unknown' end" />
-    <column name='determiner_person_id' sql="case when co.recorders = det_last_val.text_value || ', ' || det_first_val.text_value 
-        or co.recorders = det_first_val.text_value || ' ' || det_last_val.text_value 
-        or co.recorders = det_full_val.text_value then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='determiner_person_id' sql="case when o.recorders = o.attr_det_last_name || ', ' || o.attr_det_first_name
+        or o.recorders = o.attr_det_first_name || ' ' || o.attr_det_last_name
+        or o.recorders = o.attr_det_full_name then cast(p.id as varchar(20)) else 'unknown' end" />
     <column name='licence_code' sql='co.licence_code' display="Licence" />
   </columns>
 </report>
