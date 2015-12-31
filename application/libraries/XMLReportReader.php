@@ -137,7 +137,7 @@ class XMLReportReader_Core implements ReportReader
                   $this->surveys_id_field = 'su.id';
                 if (!$this->samples_id_field = $reader->getAttribute('samples_id_field'))
                   // default table alias for the samples table, so we can join to the id
-                  $this->samples_id_field = 'o.sample_id';
+                  $this->samples_id_field = 's.id';
                 if (!$this->samples2_id_field = $reader->getAttribute('samples2_id_field'))
                   // default table alias for the second samples table, so we can join to the id: used when geting attributes for both in a parent/child arrangement
                   $this->samples2_id_field = 's2.id';

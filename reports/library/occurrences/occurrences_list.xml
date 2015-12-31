@@ -2,7 +2,7 @@
     title="Occurrence list"
     description="A general purpose list of records."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
   SELECT #field_sql#
   FROM cache_occurrences o
   #joins#
