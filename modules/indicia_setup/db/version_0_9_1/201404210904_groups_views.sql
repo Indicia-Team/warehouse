@@ -9,8 +9,8 @@ CREATE OR REPLACE VIEW detail_groups AS
      g.created_by_id, c.username AS created_by, g.updated_by_id, u.username AS updated_by
    FROM groups g
    LEFT JOIN filters f ON f.id=g.filter_id AND f.deleted=false
-   JOIN indicia.users c ON c.id = g.created_by_id
-   JOIN indicia.users u ON u.id = g.updated_by_id
+   JOIN users c ON c.id = g.created_by_id
+   JOIN users u ON u.id = g.updated_by_id
   WHERE g.deleted = false;
 
 CREATE OR REPLACE VIEW list_groups_users AS 
