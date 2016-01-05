@@ -51,8 +51,8 @@ LEFT JOIN occurrence_comments dc
 WHERE o.deleted=false;
 
 UPDATE cache_occurrences_functional o
-SET media_count=count(om.*)
-FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false;
+SET media_count=(SELECT count(om.*)
+FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false);
 
 INSERT INTO cache_occurrences_nonfunctional(
             id, comment, sensitivity_precision, privacy_precision, output_sref, verifier, licence_code,
