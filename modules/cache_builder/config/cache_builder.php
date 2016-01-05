@@ -631,8 +631,7 @@ SET website_id=su.website_id,
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
     else 'A'
-  end,
-  has_media=sm.id is not null
+  end
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -643,8 +642,15 @@ LEFT JOIN sample_comments sc1 ON sc1.sample_id=s.id AND sc1.deleted=false
     AND sc1.query=true AND (s.verified_on IS NULL OR sc1.created_on>s.verified_on)
 LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
     AND sc2.query=false AND (s.verified_on IS NULL OR sc2.created_on>s.verified_on) AND sc2.id>sc1.id
-LEFT JOIN sample_media sm ON sm.sample_id=s.id and sm.deleted=false
 WHERE s.id=s_update.id
+";
+$config['samples']['update']['functional_media'] = "
+UPDATE cache_samples_functional u
+SET media_count=(SELECT COUNT(sm.*)
+FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
+FROM samples s
+#join_needs_update#
+WHERE s.id=u.id
 ";
 $config['samples']['update']['nonfunctional'] = "
 UPDATE cache_samples_nonfunctional
@@ -764,7 +770,7 @@ $config['samples']['insert']['functional'] = "
 INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
-            group_id, record_status, query, has_media)
+            group_id, record_status, query)
 SELECT distinct on (s.id) s.id, su.website_id, s.id, s.input_form, s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
@@ -775,8 +781,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.id, s.input_form, s.location_id
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
     else 'A'
-  end,
-  sm.id is not null
+  end
 FROM samples s
 #join_needs_update#
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -787,10 +792,16 @@ LEFT JOIN sample_comments sc1 ON sc1.sample_id=s.id AND sc1.deleted=false
     AND sc1.query=true AND (s.verified_on IS NULL OR sc1.created_on>s.verified_on)
 LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
     AND sc2.query=false AND (s.verified_on IS NULL OR sc2.created_on>s.verified_on) AND sc2.id>sc1.id
-LEFT JOIN sample_media sm ON sm.sample_id=s.id and sm.deleted=false
 WHERE s.deleted=false
 ";
-
+$config['samples']['insert']['functional_media'] = "
+UPDATE cache_samples_functional u
+SET media_count=(SELECT COUNT(sm.*)
+FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
+FROM samples s
+#join_needs_update#
+WHERE s.id=u.id
+";
 $config['samples']['insert']['nonfunctional'] = "
 INSERT INTO cache_samples_nonfunctional(
             id, website_title, survey_title, group_title, public_entered_sref,
@@ -1172,7 +1183,6 @@ SET sample_id=o.sample_id,
   release_status=o.release_status,
   marine_flag=cttl.marine_flag,
   data_cleaner_result=case when o.last_verification_check_date is null then null else dc.id is null end,
-  has_media=om.id is not null,
   training=o.training,
   zero_abundance=o.zero_abundance,
   licence_id=s.licence_id
@@ -1196,10 +1206,16 @@ LEFT JOIN occurrence_comments dc
     ON dc.occurrence_id=o.id
     AND dc.implies_manual_check_required=true
     AND dc.deleted=false
-LEFT JOIN occurrence_media om
-    ON om.occurrence_id=o.id
-    AND om.deleted=false
 WHERE cache_occurrences_functional.id=o.id
+";
+
+$config['occurrences']['update']['functional_media'] = "
+UPDATE cache_occurrences_functional u
+SET media_count=(SELECT COUNT(om.*)
+FROM occurrence_media om WHERE om.occurrence_id=u.id AND om.deleted=false)
+FROM occurrences s
+#join_needs_update#
+WHERE o.id=u.id
 ";
 
 $config['occurrences']['update']['nonfunctional'] = "
@@ -1367,7 +1383,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_meaning_id, taxa_taxon_list_external_key, family_taxa_taxon_list_id,
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
-            has_media, training, zero_abundance, licence_id)
+            training, zero_abundance, licence_id)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, s.input_form, s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1389,7 +1405,7 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, s.input_
     end,
     o.sensitivity_precision is not null, o.release_status, cttl.marine_flag,
     case when o.last_verification_check_date is null then null else dc.id is null end,
-    om.id is not null, o.training, o.zero_abundance, s.licence_id
+    o.training, o.zero_abundance, s.licence_id
 FROM occurrences o
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
@@ -1409,13 +1425,20 @@ LEFT JOIN occurrence_comments dc
     ON dc.occurrence_id=o.id
     AND dc.implies_manual_check_required=true
     AND dc.deleted=false
-LEFT JOIN occurrence_media om
-    ON om.occurrence_id=o.id
-    AND om.deleted=false
 #join_needs_update#
 WHERE o.deleted=false
 AND co.id IS NULL
 ";
+
+$config['occurrences']['insert']['functional_media'] = "
+UPDATE cache_occurrences_functional u
+SET media_count=(SELECT COUNT(om.*)
+FROM occurrence_media om WHERE om.occurrence_id=u.id AND om.deleted=false)
+FROM occurrences o
+#join_needs_update#
+WHERE o.id=u.id
+";
+
 $config['occurrences']['insert']['nonfunctional'] = "
 INSERT INTO cache_occurrences_nonfunctional(
             id, comment, sensitivity_precision, privacy_precision, output_sref, licence_code,

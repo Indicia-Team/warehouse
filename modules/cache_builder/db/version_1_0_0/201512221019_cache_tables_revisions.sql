@@ -38,7 +38,7 @@ CREATE TABLE cache_occurrences_functional
   release_status character(1),
   marine_flag boolean,
   data_cleaner_result boolean,
-  has_media boolean,
+  media_count integer default 0,
   training boolean,
   zero_abundance boolean,
   licence_id integer,
@@ -122,7 +122,7 @@ CREATE TABLE cache_samples_functional
   group_id integer,
   record_status character(1),
   query character(1),
-  has_media boolean,
+  media_count integer default 0,
   CONSTRAINT pk_cache_samples_functional PRIMARY KEY (id)
 )
 WITH (
