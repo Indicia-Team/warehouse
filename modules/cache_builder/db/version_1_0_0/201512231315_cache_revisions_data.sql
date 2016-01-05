@@ -58,7 +58,7 @@ INSERT INTO cache_occurrences_nonfunctional(
             id, comment, sensitivity_precision, privacy_precision, output_sref, verifier, licence_code,
             attr_sex_stage, attr_sex, attr_stage, attr_sex_stage_count, attr_certainty,
             attr_det_first_name, attr_det_last_name, attr_det_full_name)
-SELECT o.id,
+SELECT distinct on (o.id) o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
   get_output_sref(
