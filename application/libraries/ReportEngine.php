@@ -1045,6 +1045,7 @@ class ReportEngine {
       }
       $fieldSql .= "END";
       $query = str_replace('#fields#', ", \n$fieldSql AS $alias#fields#", $query);
+      $query = str_replace('#group_bys#', ", $fieldSql#group_bys#", $query);
       $joinFieldAttr = inflector::plural($entity).'_id_field';
       $joinToField = $this->reportReader->$joinFieldAttr;
       $ids = implode(',', $metadata['ids']);
