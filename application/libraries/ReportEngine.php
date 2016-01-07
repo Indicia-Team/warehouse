@@ -1295,23 +1295,24 @@ class ReportEngine {
    * switch the sort order back to use date_start.
    */
   private function checkOrderByForVagueDate($order_by) {
-    if ($this->getVagueDateProcessing()) {      
-      $tokens = explode(' ', $order_by);
+    if ($this->getVagueDateProcessing() && !empty(trim($order_by))) {
       $this->prepareColumns();
-      if (count($tokens)>0) {
-        $sortfield = $tokens[0];
-        $cols = array_keys($this->columns);
-        // First find the additional plaintext columns we need to add
-        for ($i=0; $i<count($cols); $i++) {
-          if (substr(($cols[$i]), -10)=='date_start') {
-            $prefix=substr($cols[$i], 0, strlen($cols[$i])-10);
-            if ($sortfield==$prefix.'date') {
-              // switch sort to date start
-              $tokens[0]=$cols[$i];
-              $order_by=implode(' ', $tokens);
-              break; // from loop
+      $cols = array_keys($this->columns);
+      // Find if we have a date_start column to switch date sort fields to.
+      for ($i=0; $i<count($cols); $i++) {
+        if (substr(($cols[$i]), -10) == 'date_start') {
+          // got a date_start field available in the cols, so switch any date sort fields over
+          $sortfields = explode(',', $order_by);
+          $prefix=substr($cols[$i], 0, strlen($cols[$i])-10);
+          foreach ($sortfields as &$field) {
+            $tokens = explode(' ', $field);
+            if ($tokens[0]===$prefix.'date') {
+              $tokens[0] = $cols[$i];
+              $field = implode(' ', $tokens);
             }
           }
+          $order_by = implode(',', $sortfields);
+          break;
         }
       }
     }
