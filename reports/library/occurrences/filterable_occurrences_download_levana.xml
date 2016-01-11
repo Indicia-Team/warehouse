@@ -77,5 +77,6 @@
     <column name='last_edit_date' sql='occ.updated_on' display='Last edited on date' datatype='date' />
     <column name='taxon' display='Species name' sql="o.preferred_taxon" datatype='species' />
     <column name='number_seen' display='Number seen' sql='coalesce(count_val.text_value, count_val_term.term, count_val.int_value::varchar)' datatype='text' />
+    <column name='licence_code' sql='o.licence_code' display="Licence" />
   </columns>
 </report>

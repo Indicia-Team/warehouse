@@ -91,7 +91,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxon_group',
       'termlists_term',
       'user',      
-      'user_trust'
+      'user_trust',
+      'users_website'
   );
 
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
@@ -118,7 +119,8 @@ class Data_Controller extends Data_Service_Base_Controller {
     'cache_taxon_searchterms',
     'cache_taxa_taxon_lists',
     'index_websites_website_agreements',
-    'verification_rule_data'
+    'verification_rule_data',
+    'users_websites'
   );
   
   /**
@@ -229,6 +231,25 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('language');
   }
+
+  /**
+   * Provides the /services/data/licence service.
+   * Retrieves details of a single location.
+   */
+  public function licence()
+  {
+    $this->handle_call('licence');
+  }
+
+  /**
+   * Provides the /services/data/licences_website service.
+   * Retrieves details of a single location.
+   */
+  public function licences_website()
+  {
+    $this->handle_call('licences_website');
+  }
+
 
   /**
   * Provides the /services/data/location service.
@@ -614,6 +635,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('user_identifier');
   }
+
+  /**
+   * Provides the /services/data/users_website service.
+   */
+  public function users_website()
+  {
+    $this->handle_call('users_website');
+  }
   
   public function user_trust()
   {
@@ -974,7 +1003,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         // If we got no record but asked for a specific one, check if this was a permissions issue?
         if (!count($r) && $this->uri->total_arguments()!==0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false)) {
           Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
-          throw new AuthorisationError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1), 1001);
+          throw new EntityAccessError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1), 1001);
         }
         return $r;
       }
@@ -995,23 +1024,21 @@ class Data_Controller extends Data_Service_Base_Controller {
   * associated with the entity, but prefixed by either list, gv or max depending
   * on the GET view parameter, or as is if the table has no views.
   */
-  protected function get_view_name()
+  protected function get_view_name($table='', $prefix='')
   {
-    $table = inflector::plural($this->entity);
+    if (!$table)
+      $table = $this->entity;
+    $table = inflector::plural($table);
     if (in_array($table, $this->tables_without_views)) {
       return $table;
     }
-    $prefix='';
-    if (array_key_exists('view', $_REQUEST))
-    {
+    if (!$prefix && array_key_exists('view', $_REQUEST))
       $prefix = $_REQUEST['view'];
-    }
     // Check for allowed view prefixes, and use 'list' as the default
     if ($prefix!='gv' && $prefix!='detail' && $prefix!='cache')
       $prefix='list';
     return $prefix.'_'.$table;
   }
-
 
   /**
   * Works out what filter and other options to set on the db object according to the
@@ -1311,8 +1338,8 @@ class Data_Controller extends Data_Service_Base_Controller {
     // if $id is null, then we have a new record, so no need to check if we have access to the record
     if (is_null($id))
       return true;
-    $table = inflector::plural($entity);
-    $viewname='list_'.$table;
+    $viewname=$this->get_view_name($entity, 'list');
+
     if (!$this->db)
       $this->db = new Database();
     $fields=postgreSQL::list_fields($viewname, $this->db);

@@ -701,10 +701,16 @@ class ReportEngine {
             $query = preg_replace("/#$name#/", "AND ".$paramDefs[$name]['fieldname']." NOT IN ($value)", $query);
           elseif ($paramDefs[$name]['datatype']=='smpattrs')
             $query = $this->mergeAttrListParam($query, 'sample', $value);
+          elseif ($paramDefs[$name]['datatype']=='smp2attrs')
+            $query = $this->mergeAttrListParam($query, 'sample', $value, "2");
           elseif ($paramDefs[$name]['datatype']=='occattrs')
             $query = $this->mergeAttrListParam($query, 'occurrence', $value);
+          elseif ($paramDefs[$name]['datatype']=='occ2attrs')
+            $query = $this->mergeAttrListParam($query, 'occurrence', $value, "2");
           elseif ($paramDefs[$name]['datatype']=='locattrs')
             $query = $this->mergeAttrListParam($query, 'location', $value);
+          elseif ($paramDefs[$name]['datatype']=='loc2attrs')
+            $query = $this->mergeAttrListParam($query, 'location', $value, "2");
           elseif ($paramDefs[$name]['datatype']=='taxattrs')
             $query = $this->mergeAttrListParam($query, 'taxa_taxon_list', $value);
           elseif ($paramDefs[$name]['datatype']=='srvattrs')
@@ -882,9 +888,10 @@ class ReportEngine {
    * @param string $query SQL query to process
    * @param string $entity Either occurrence, location or sample depending on the type of attributes being loaded.
    * @param string $attrList parameter value, which should be a comma separated list of attribute IDs or attribute names.
+   * @param string an optional index number when dealing with parent/child table arrangements
    * @return string Processed query.
    */
-  private function mergeAttrListParam($query, $entity, $attrList) {
+  private function mergeAttrListParam($query, $entity, $attrList, $idx = "") {
     $this->reportDb
         ->select('distinct a.id, a.data_type, a.caption, a.validation_rules, a.system_function, a.multi_value')
         ->from("{$entity}_attributes as a");
@@ -924,8 +931,16 @@ class ReportEngine {
     }
     unset($attrList['#all_survey_attrs']);
     // a request for all attrs in a selected survey?
-    if ($surveys)
-      $this->reportDb->in('aw.restrict_to_survey_id', $surveys);
+    if ($surveys) {
+      // may have come from warehouse frontend where no website provided, but a survey has been
+      // need aw table.
+      if (!$this->websiteIds) {
+        $this->reportDb
+            ->join("{$entity}_attributes_websites as aw", "aw.{$entity}_attribute_id", 'a.id')
+            ->where(array('aw.deleted' => 'f'));
+        }
+    	$this->reportDb->in('aw.restrict_to_survey_id', $surveys);
+    }
     if ($allSurveyAttrs) {
       // don't auto include email & cms_user_id to keep it private
       $this->reportDb->notin('system_function', array('email','cms_user_id'));
@@ -940,23 +955,69 @@ class ReportEngine {
         $this->reportDb->in('system_function', $sysfuncs);
     }
     $attrs = $this->reportDb->get();
+    // we want the attributes to appear in the order they have been provided in the list. Can't do through SQL.
+    if (!$allSurveyAttrs) { // don't sort if getting all: Note that there isn't a sample_method or location_type style restriction on the attributes fetched.
+      $newAttrList = array();
+      foreach($attrList as $attrID)
+        foreach($attrs as $attr)
+          if ((count($ids)>0 && $attr->id == $attrID) ||
+              (count($captions)>0 && $attr->caption == $attrID) ||
+              (count($sysfuncs)>0 && $attr->system_function == preg_replace('/^#/', '', $attrID)))
+            $newAttrList[] = $attr;
+      $attrs = $newAttrList;
+    }
     if (!$allSurveyAttrs && count($sysfuncs)>0)
-      $this->processSysfuncAttrs($query, $entity, $attrs, $sysfuncs);
+      $this->processSysfuncAttrs($query, $entity, $attrs, $idx);
     else {
       $usingCaptions=count($captions)>0;
-      $this->processStandardAttrs($query, $entity, $attrs, $usingCaptions);    
+      $this->processStandardAttrs($query, $entity, $attrs, $usingCaptions, $idx);
     }
     return $query;
+  }
+
+  /**
+   * Returns the field name that needs to be picked out of the attribute values or terms table
+   * for a particular data type.
+   * @param string $entity E.g. occurrence or sample
+   * @param string $sysfunc Name of the system function, required to build the correct field alias.
+   * @param string $dataType Character identifying the field's type, e.g. L for lookup.
+   * @param boolean $forceVarchar Set true if there are mixed datatypes, so non-text will be forced to varchar.
+   * @return string
+   */
+  private function getSysFuncFieldName($entity, $sysfunc, $dataType, $forceVarchar) {
+    $suffix = $forceVarchar ? '::varchar' : '';
+    switch ($dataType) {
+      case 'F':
+        return "{$entity}_$sysfunc.float_value$suffix\n";
+        break;
+      case 'T':
+        return "{$entity}_$sysfunc.text_value\n";
+        break;
+      case 'D':
+      case 'V':
+      return "{$entity}_$sysfunc.date_start_value$suffix\n";
+        break;
+      case 'L':
+        return "t{$entity}_$sysfunc.term\n";
+        break;
+      default:
+        return "{$entity}_$sysfunc.text_value\n";
+    }
   }
   
   /**
    * Create the joins and column definitions required to support a set of custom attributes
    * added to the report by specifying one or more system functions.
+   * @param string $query Query string being built, will be modified to add joins and fields.
+   * @param string $entity E.g. occurrence or sample
+   * @param array $attrs List of attribute definitions loaded.
    */
-  private function processSysfuncAttrs(&$query, $entity, $attrs, $sysfuncs) {
+  private function processSysfuncAttrs(&$query, $entity, $attrs, $idx) {
     // first, join in all the attribute tables we need
     $done = array();
     $sysfuncsList = array();
+    // find all the system functions in the list of attributes we've been given. Prepare some
+    // metadata required for each sys func's set of joints
     foreach($attrs as $attr) {
       // Don't duplicate any attributes as the SQL distinct does not force distinct when loading from a view.
       // Plus, ignore multi-value attributes as too complex to combine with single value attributes.
@@ -964,56 +1025,40 @@ class ReportEngine {
         continue;
       $id = $attr->id;
       $done[]=$id;
-      $joinType = $this->addJoinForAttr($query, $entity, $attr, true);
-      // keep track of the output fields for each system function
-      if (!isset($sysfuncsList[$attr->system_function])) {
-        $sysfuncsList[$attr->system_function] = array('fields'=>array(), 'data_types'=>array());
-      }
-      if ($attr->data_type=='L') {
-        // lookups need an extra join and a different output field alias
-        $query = str_replace('#joins#', $joinType." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$entity$id.int_value\n #joins#", $query);
-        $sysfuncsList[$attr->system_function]['fields'][] = "ltt$id.term";
-        $datatype='text';
-      } else {
-        switch($attr->data_type) {
-          case 'F' :
-            $field = 'float_value';
-            $datatype='float';
-            break;
-          case 'T' :
-            $field = 'text_value';
-            $datatype='text';
-            break;
-          case 'D' : case 'V' :
-            $field = 'date_start_value';
-            $datatype='date';
-            break;
-          default:
-            $field = 'int_value';
-            $datatype='int';
-        }
-        $sysfuncsList[$attr->system_function]['fields'][] = "$entity$id.$field";
-      }
-      // track the list of data types we are using
-      if (!in_array($datatype, $sysfuncsList[$attr->system_function]['data_types']))
-        $sysfuncsList[$attr->system_function]['data_types'][]=$datatype;
+      if (!isset($sysfuncsList[$attr->system_function]))
+        $sysfuncsList[$attr->system_function] = array('ids'=>array(),'hasTerm'=>false, 'idsByDatatype' => array());
+      // store the ids associated with each sysfunc so we can build the joins
+      $sysfuncsList[$attr->system_function]['ids'][] = $attr->id;
+      // If a lookup attribute, then the join for this system function will need to join cache_termlists_terms
+      if ($attr->data_type==='L')
+        $sysfuncsList[$attr->system_function]['hasTerm'] = true;
+      // store the ids associated with each type of data for each sysfunc so we can efficiently build SQL to output the value
+      if (!isset($sysfuncsList[$attr->system_function]['idsByDatatype'][$attr->data_type]))
+        $sysfuncsList[$attr->system_function]['idsByDatatype'][$attr->data_type] = array();
+      $sysfuncsList[$attr->system_function]['idsByDatatype'][$attr->data_type][] = $attr->id;
     }
-    $modelname = "{$entity}_attribute";
-    $model = ORM::Factory($modelname, -1);
-    $defs = $model->get_system_functions();
     foreach($sysfuncsList as $sysfunc => $metadata) {
       $alias = "attr_$sysfunc";
-      $this->attrColumns[$alias] = array(
-        'display' => empty($defs[$sysfunc]['friendly']) ? $defs[$sysfunc]['title'] : $defs[$sysfunc]['friendly']
-      );
-      // If we have a mixed data type list, COALESCE requires that we cast them
-      if (count($metadata['data_types'])>1) 
-        $fieldlist = 'CAST(' . implode(' AS VARCHAR), CAST(', $metadata['fields']) . ' AS VARCHAR)';
-      else
-        $fieldlist = implode(', ', $metadata['fields']);
-      $query = str_replace('#fields#', ", \nCOALESCE($fieldlist) as $alias#fields#", $query);
-      // this field should also be inserted into any group by part of the query
-      $query = str_replace('#group_bys#', ", \nCOALESCE($fieldlist)#group_bys#", $query);
+      $fieldSql = "CASE \n";
+      foreach ($metadata['idsByDatatype'] as $data_type => $ids) {
+        $ids = implode(',', $ids);
+        $fieldSql .= "  WHEN {$entity}_$sysfunc.{$entity}_attribute_id IN ($ids) THEN " .
+          $this->getSysFuncFieldName($entity, $sysfunc, $data_type, count($metadata['idsByDatatype']) > 1);
+      }
+      $fieldSql .= "END";
+      $query = str_replace('#fields#', ", \n$fieldSql AS $alias#fields#", $query);
+      $query = str_replace('#group_bys#', ", $fieldSql#group_bys#", $query);
+      $joinFieldAttr = inflector::plural($entity) . '_id_field';
+      $joinToField = $this->reportReader->$joinFieldAttr;
+      $ids = implode(',', $metadata['ids']);
+      $join = "LEFT JOIN {$entity}_attribute_values {$entity}_$sysfunc ON {$entity}_$sysfunc.{$entity}_id=$joinToField AND {$entity}_$sysfunc.deleted=false " .
+        "AND {$entity}_$sysfunc.{$entity}_attribute_id IN ($ids)";
+      $query = str_replace('#joins#', "$join\n#joins#", $query);
+      if ($metadata['hasTerm']) {
+        $join = 'LEFT JOIN ' . (class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms") .
+          " t{$entity}_$sysfunc ON t{$entity}_$sysfunc.id = {$entity}_$sysfunc.int_value";
+        $query = str_replace('#joins#', "$join\n#joins#", $query);
+      }
     }
   }
   
@@ -1051,22 +1096,23 @@ class ReportEngine {
    * Create the joins and column definitions required to support a set of custom attributes
    * added to the report by specifying one or more attributes by ID or caption.
    */
-  private function processStandardAttrs(&$query, $entity, $attrs, $usingCaptions) {
-    $done = array();  
+  private function processStandardAttrs(&$query, $entity, $attrs, $usingCaptions, $idx) {
+    $done = array();
+    $idx_ = $idx == '' ? '' : $idx.'_';
     foreach($attrs as $attr) {
       // don't duplicate any attributes as the SQL distinct does not force distinct when loading from a view.
       if (in_array($attr->id, $done))
         continue;
       $id = $attr->id;
       $done[]=$id;
-      $joinType = $this->addJoinForAttr($query, $entity, $attr, false);
+      $joinType = $this->addJoinForAttr($query, $entity, $attr, false, $idx);
       // find the query column(s) required for the attribute
       $cols = $this->getAttrDataColumns($attr);
       // We use the attribute ID or the attribute caption to create the unique column alias, depending on how it was requested.
       $uniqueId = $usingCaptions ? preg_replace('/\W/', '_', strtolower($attr->caption)) : $id;
-      $alias = "attr_id_{$entity}_$uniqueId";
+      $alias = "attr_id_{$entity}{$idx}_$uniqueId";
       // Find out what query field alias we need to join the attribute to (e.g. s.id for samples, l.id for locations).      
-      $joinFieldAttr = inflector::plural($entity).'_id_field';
+      $joinFieldAttr = inflector::plural($entity).$idx.'_id_field';
       $joinToField = $this->reportReader->$joinFieldAttr;      
       // Create the fields required in the SQL. First the attribute value ID(s).      
       if ($attr->multi_value==='t')
@@ -1074,9 +1120,9 @@ class ReportEngine {
   from {$entity}_attribute_values mv$alias 
   where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id) as $alias#fields#", $query);
       else {
-        $query = str_replace('#fields#', ", $entity$id.id as $alias#fields#", $query);
+        $query = str_replace('#fields#', ", $entity${idx_}$id.id as $alias#fields#", $query);
         // this field should also be inserted into any group by part of the query
-        $query = str_replace('#group_bys#', ", $entity$id.id#group_bys#", $query);
+        $query = str_replace('#group_bys#', ", $entity${idx_}$id.id#group_bys#", $query);
       }
       // hide the value ID column
       $this->attrColumns[$alias] = array(
@@ -1085,7 +1131,7 @@ class ReportEngine {
       $doneFilter = false;
       // Now add the attribute data col(s) to the SQL fields
       foreach($cols as $col=>$suffix) {
-        $alias = "attr_{$entity}_$uniqueId";
+        $alias = "attr_{$entity}{$idx}_$uniqueId";
         // vague date cols need to distinguish the different column types.
         if ($attr->data_type=='V') 
           $alias .= $col;
@@ -1100,8 +1146,8 @@ class ReportEngine {
   from {$entity}_attribute_values mv$alias 
   where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id)";
         } else {
-          $field = "$entity$id.$col";
-          $query = str_replace('#group_bys#', ", $entity$id.$col#group_bys#", $query);
+          $field = "$entity${idx_}$id.$col";
+          $query = str_replace('#group_bys#', ", $entity${idx_}$id.$col#group_bys#", $query);
         }
         $query = str_replace('#fields#', ", $field as $alias#fields#", $query);
         
@@ -1117,7 +1163,7 @@ class ReportEngine {
           else 
             $filter = "$field=#filtervalue#";
           // store the filter for later
-          $this->customAttributes["attr_$entity"."_$uniqueId"] = array(
+          $this->customAttributes["attr_$entity{$idx}_$uniqueId"] = array(
             'filter' => $filter,
             'string' =>  $filterIsString
           );
@@ -1126,18 +1172,18 @@ class ReportEngine {
       }
       // add a column to set the caption for vague date processed columns
       if ($attr->data_type=='V') {
-        $this->attrColumns["attr_$entity"."_$uniqueId".'date'] = array(
+        $this->attrColumns["attr_$entity${idx}_$uniqueId".'date'] = array(
           'display' => $attr->caption
         );
       }
       // lookups need special processing for additional joins to include the term data
       elseif ($attr->data_type=='L') {
-        $alias = preg_replace('/\_value$/', '', "attr_$entity"."_term_$uniqueId");
+        $alias = preg_replace('/\_value$/', '', "attr_$entity${idx}_term_$uniqueId");
         if ($attr->multi_value==='f') {
-          $query = str_replace('#joins#', $joinType." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt$id ON ltt$id.id=$entity$id.int_value\n #joins#", $query);       
-          $query = str_replace('#fields#', ", ltt$id.term as $alias#fields#", $query);
-          $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
-          $this->customAttributes["attr_$entity"."_term_$uniqueId"] = array(
+          $query = str_replace('#joins#', $joinType." ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." ltt{$idx_}{$id} ON ltt{$idx_}$id.id={$entity}{$idx_}$id.int_value\n #joins#", $query);
+          $query = str_replace('#fields#', ", ltt{$idx_}{$id}.term as $alias#fields#", $query);
+          $query = str_replace('#group_bys#', ", ltt{$idx_}{$id}.term#group_bys#", $query);
+          $this->customAttributes["attr_$entity${idx}_term_$uniqueId"] = array(
             'filter' => "$field=#filtervalue#",
             'string' => true
           );
@@ -1149,7 +1195,7 @@ class ReportEngine {
   where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id)";
           $query = str_replace('#fields#', ", $field as $alias#fields#", $query);
           // also use an exists subquery to check the multivalue term in the case of filtering against this column
-          $this->customAttributes["attr_$entity"."_term_$uniqueId"] = array(
+          $this->customAttributes["attr_$entity${idx}_term_$uniqueId"] = array(
             'filter' => "exists(select term{$alias}.term
   from {$entity}_attribute_values mv$alias 
   join ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." term{$alias} on term{$alias}.id=mv$alias.int_value
@@ -1157,12 +1203,12 @@ class ReportEngine {
             'string' => true
           );
         }
-        $this->attrColumns["attr_$entity"."_term_$uniqueId"] = array(
+        $this->attrColumns["attr_$entity${idx}_term_$uniqueId"] = array(
           'display' => $attr->caption.' term'
         );
       }
       // if we know an attribute caption, we want to be able to lookup the ID.
-      $this->customAttributeCaptions["$entity:".$attr->caption] = $id;
+      $this->customAttributeCaptions["$entity$idx:".$attr->caption] = $id;
     }
   }
   
@@ -1171,19 +1217,20 @@ class ReportEngine {
    *
    * @return string Either LEFT JOIN (optional attributes) or JOIN (required attributes) so that further related joins can be constructed.
    */
-  private function addJoinForAttr(&$query, $entity, $attr, $forceOuter) {
+  private function addJoinForAttr(&$query, $entity, $attr, $forceOuter, $idx) {
     // can only use an inner join for definitely required fields. If they are required
     // only at the per-survey level, we must use left joins as the survey could vary per record.
+    $idx_ = $idx == '' ? '' : $idx.'_';
     $joinType = (strpos($attr->validation_rules, 'required')===false || $forceOuter) ? 'LEFT JOIN' : 'JOIN';
     // We only need to add a join to the report for single value attributes, as multi-value attributes use a subquery to retrieve the field value
     if ($attr->multi_value==='f') {
       $id = $attr->id;
       // find out what alias and field name the query uses for the table & field we need to join to
       // (samples.id, occurrences.id or locations.id).
-      $joinFieldAttr = inflector::plural($entity).'_id_field';
+      $joinFieldAttr = inflector::plural($entity).$idx.'_id_field';
       $joinToField = $this->reportReader->$joinFieldAttr;
       // construct a join to the attribute values table so we can get the value out.
-      $join = "$joinType {$entity}_attribute_values $entity$id ON $entity$id.{$entity}_id=$joinToField AND $entity$id.{$entity}_attribute_id=$id AND $entity$id.deleted=false";
+      $join = "$joinType {$entity}_attribute_values $entity{$idx_}$id ON $entity{$idx_}$id.{$entity}_id=$joinToField AND $entity{$idx_}$id.{$entity}_attribute_id=$id AND $entity{$idx_}$id.deleted=false";
       $query = str_replace('#joins#', "$join\n #joins#", $query);
     }
     return $joinType;
@@ -1249,23 +1296,24 @@ class ReportEngine {
    * switch the sort order back to use date_start.
    */
   private function checkOrderByForVagueDate($order_by) {
-    if ($this->getVagueDateProcessing()) {      
-      $tokens = explode(' ', $order_by);
+    if ($this->getVagueDateProcessing() && !empty(trim($order_by))) {
       $this->prepareColumns();
-      if (count($tokens)>0) {
-        $sortfield = $tokens[0];
-        $cols = array_keys($this->columns);
-        // First find the additional plaintext columns we need to add
-        for ($i=0; $i<count($cols); $i++) {
-          if (substr(($cols[$i]), -10)=='date_start') {
-            $prefix=substr($cols[$i], 0, strlen($cols[$i])-10);
-            if ($sortfield==$prefix.'date') {
-              // switch sort to date start
-              $tokens[0]=$cols[$i];
-              $order_by=implode(' ', $tokens);
-              break; // from loop
+      $cols = array_keys($this->columns);
+      // Find if we have a date_start column to switch date sort fields to.
+      for ($i=0; $i<count($cols); $i++) {
+        if (substr(($cols[$i]), -10) == 'date_start') {
+          // got a date_start field available in the cols, so switch any date sort fields over
+          $sortfields = explode(',', $order_by);
+          $prefix=substr($cols[$i], 0, strlen($cols[$i])-10);
+          foreach ($sortfields as &$field) {
+            $tokens = explode(' ', $field);
+            if ($tokens[0]===$prefix.'date') {
+              $tokens[0] = $cols[$i];
+              $field = implode(' ', $tokens);
             }
           }
+          $order_by = implode(',', $sortfields);
+          break;
         }
       }
     }

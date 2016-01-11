@@ -138,12 +138,21 @@ class XMLReportReader_Core implements ReportReader
                 if (!$this->samples_id_field = $reader->getAttribute('samples_id_field'))
                   // default table alias for the samples table, so we can join to the id
                   $this->samples_id_field = 's.id';
+                if (!$this->samples2_id_field = $reader->getAttribute('samples2_id_field'))
+                  // default table alias for the second samples table, so we can join to the id: used when geting attributes for both in a parent/child arrangement
+                  $this->samples2_id_field = 's2.id';
                 if (!$this->occurrences_id_field = $reader->getAttribute('occurrences_id_field'))
                   // default table alias for the occurrences table, so we can join to the id
                   $this->occurrences_id_field = 'o.id';
+                if (!$this->occurrences2_id_field = $reader->getAttribute('occurrences2_id_field'))
+                  // default table alias for the second occurrences table, so we can join to the id
+                  $this->occurrences2_id_field = 'o2.id';
                 if (!$this->locations_id_field = $reader->getAttribute('locations_id_field'))
                   // default table alias for the locations table, so we can join to the id
                   $this->locations_id_field = 'l.id';
+                if (!$this->locations2_id_field = $reader->getAttribute('locations2_id_field'))
+                  // default table alias for the second locations table, so we can join to the id: used when geting attributes for both in a parent/child arrangement
+                  $this->locations2_id_field = 'l2.id';
                 if (!$this->people_id_field = $reader->getAttribute('people_id_field'))
                   // default table alias for the people table, so we can join to the id
                   $this->people_id_field = 'p.id';
@@ -330,9 +339,10 @@ class XMLReportReader_Core implements ReportReader
   */ 
   private function getSharedWebsiteList($websiteIds, $sharing) {
     if (count($websiteIds ===1)) {
-      $cacheId = 'website-shares-'.implode('', $websiteIds)."-$sharing";
+      $tag = 'website-shares-'.implode('', $websiteIds);
+      $cacheId = "$tag-$sharing";
       $cache = Cache::instance();
-      if ($cached = $cache->get($cacheId)) 
+      if ($cached = $cache->get($cacheId))
         return $cached;
     }
     $db = new Database();
@@ -346,7 +356,8 @@ class XMLReportReader_Core implements ReportReader
       $ids[] = $row->to_website_id;
     }
     $r = implode(',', $ids);
-    $cache->set($cacheId, $r); 
+    // tag all cache entries for this website so they can be cleared together when changes are saved.
+    $cache->set($cacheId, $r, $tag);
     return $r;
   }
 

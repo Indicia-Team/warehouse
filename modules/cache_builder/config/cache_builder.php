@@ -677,7 +677,6 @@ $config['occurrences']['update'] = "update cache_occurrences co
       preferred_taxon=cttl.preferred_taxon, 
       preferred_authority=cttl.preferred_authority, 
       default_common_name=cttl.default_common_name, 
-      search_name=cttl.search_name, 
       taxa_taxon_list_external_key=cttl.external_key,
       taxon_meaning_id=cttl.taxon_meaning_id,
       taxon_group_id = cttl.taxon_group_id,
@@ -723,6 +722,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
         end,
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
         greatest(
+          round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
           o.sensitivity_precision,
           s.privacy_precision,
           -- work out best square size to reflect a lat long's true precision
@@ -740,7 +740,10 @@ $config['occurrences']['update'] = "update cache_occurrences co
         when oc1.id is null then null
         when oc2.id is null and o.updated_on<=oc1.created_on then 'Q'
         else 'A'
-      end
+      end,
+      licence_id=li.id,
+      licence_code=li.code,
+      family_taxa_taxon_list_id=cttl.family_taxa_taxon_list_id
     from occurrences o
     #join_needs_update#
     join (
@@ -755,6 +758,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       group by o.id, o.last_verification_check_date
     ) sub on sub.id=o.id
     join samples s on s.id=o.sample_id and s.deleted=false
+    left join licences li on li.id=s.licence_id and li.deleted=false
     left join samples sp on sp.id=s.parent_id and sp.deleted=false
     left join locations l on l.id=s.location_id and l.deleted=false
     left join locations lp on lp.id=sp.location_id and lp.deleted=false
@@ -789,10 +793,10 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       public_entered_sref, entered_sref_system, public_geom,
       sample_method, taxa_taxon_list_id, preferred_taxa_taxon_list_id, taxonomic_sort_order, 
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
-      search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
+      taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       created_by_id, cache_created_on, cache_updated_on, certainty, location_name, recorders, 
       verifier, verified_on, images, training, location_id, input_form, sensitivity_precision, privacy_precision,
-      group_id, output_sref, sref_precision
+      group_id, output_sref, sref_precision, licence_id, licence_code, family_taxa_taxon_list_id
     )
   select distinct on (o.id) o.id, o.record_status, o.record_substatus, o.release_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
@@ -821,7 +825,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     tmethod.term as sample_method,
     cttl.id as taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id, cttl.taxonomic_sort_order, 
     cttl.taxon, cttl.authority, cttl.preferred_taxon, cttl.preferred_authority, cttl.default_common_name, 
-    cttl.search_name, cttl.external_key as taxa_taxon_list_external_key, cttl.taxon_meaning_id,
+    cttl.external_key as taxa_taxon_list_external_key, cttl.taxon_meaning_id,
     cttl.taxon_group_id, cttl.taxon_group, o.created_by_id, now(), now(),
     case when certainty.sort_order is null then null
         when certainty.sort_order <100 then 'C'
@@ -861,6 +865,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       end,
       case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
       greatest(
+        round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(s.entered_sref_system)))))::integer,
         o.sensitivity_precision,
         s.privacy_precision,
         -- work out best square size to reflect a lat long's true precision
@@ -873,10 +878,14 @@ $config['occurrences']['insert']="insert into cache_occurrences (
         10 -- default minimum square size
       ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)),
-    round(coalesce(spv.int_value, spv.float_value))
+    round(coalesce(spv.int_value, spv.float_value)),
+    li.id,
+    li.code,
+    cttl.family_taxa_taxon_list_id
   from occurrences o
   left join cache_occurrences co on co.id=o.id
-  join samples s on s.id=o.sample_id 
+  join samples s on s.id=o.sample_id
+  left join licences li on li.id=s.licence_id and li.deleted=false
   left join samples sp on sp.id=s.parent_id and sp.deleted=false
   left join locations l on l.id=s.location_id and l.deleted=false
   left join locations lp on lp.id=sp.location_id and lp.deleted=false

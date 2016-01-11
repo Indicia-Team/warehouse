@@ -8,9 +8,9 @@
   JOIN occurrences occ on occ.id=o.id and occ.deleted=false -- to get comments
   JOIN samples s on s.id=o.sample_id AND s.deleted=false
   LEFT JOIN (index_locations_samples ils
-    JOIN locations l on l.id=ils.location_id
-    JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id AND ctt.term='Vice County'
-  ) on ils.sample_id=o.sample_id
+    JOIN cache_termlists_terms ctt on ctt.id=ils.location_type_id AND ctt.term='Vice County'
+  ) on ils.sample_id=o.sample_id and ils.contains=true
+  LEFT JOIN locations vc on vc.id=ils.location_id and coalesce(vc.code, '') not like '%+%'
   LEFT JOIN (occurrence_attribute_values det_full_val
     JOIN occurrence_attributes det_full on det_full.id=det_full_val.occurrence_attribute_id and det_full.deleted=false and det_full.system_function='det_full_name'
   ) ON det_full_val.occurrence_id=o.id AND det_full_val.deleted=false
@@ -69,7 +69,7 @@
   end" 
         datatype="text" />
     <column name='output_sref' display='Output grid ref' sql="o.output_sref" datatype='text' />
-    <column name="vicecounty" display="Vice county" sql="array_to_string(array_agg(l.name), ', ')" datatype="text" aggregate="true" />
+    <column name="vicecounty" display="Vice county" sql="vc.name" datatype="text" />
     <column name='date_start' sql='o.date_start' visible='false' />
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
@@ -96,5 +96,6 @@
     <column name='images' display='Images' sql='o.images' img='true' />
     <column name='geom' display='Geometry' sql="st_astext(st_transform(o.public_geom, 4326))" datatype="text" />
     <column name='point_geom' display='Geometry' sql="st_astext(st_transform(st_centroid(o.public_geom), 4326))" datatype="text" />
+    <column name='licence_code' sql='o.licence_code' display="Licence" />
   </columns>
 </report>

@@ -589,6 +589,7 @@ class ORM extends ORM_Core {
     Kohana::log('debug', 'Commencing new transaction.');
     $this->db->query('BEGIN;');
     try {
+      $this->errors = array();
       $this->preProcess();
       $res = $this->inner_submit();
       $this->postProcess();

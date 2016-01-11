@@ -8,9 +8,9 @@
   JOIN occurrences o on o.id=co.id AND o.deleted=false
   JOIN samples s on s.id=o.sample_id AND s.deleted=false
   LEFT JOIN (index_locations_samples ils
-    JOIN locations l on l.id=ils.location_id
-    JOIN cache_termlists_terms ctt on ctt.id=l.location_type_id AND ctt.term='Vice County'
+    JOIN cache_termlists_terms ctt on ctt.id=ils.location_type_id AND ctt.term='Vice County'
   ) on ils.sample_id=co.sample_id
+  LEFT JOIN locations l on l.id=ils.location_id
   LEFT JOIN (occurrence_attribute_values det_full_val
     JOIN occurrence_attributes det_full on det_full.id=det_full_val.occurrence_attribute_id and det_full.deleted=false and det_full.system_function='det_full_name'
   ) ON det_full_val.occurrence_id=co.id AND det_full_val.deleted=false
@@ -123,5 +123,6 @@
     <column name='images' display='Images' sql='co.images' img='true' />
     <column name='geom' display='Geometry' sql="st_astext(st_transform(co.public_geom, 4326))" datatype="text" />
     <column name='point_geom' display='Geometry' sql="st_astext(st_transform(st_centroid(co.public_geom), 4326))" datatype="text" />
+    <column name='licence_code' sql='co.licence_code' display="Licence" />
   </columns>
 </report>

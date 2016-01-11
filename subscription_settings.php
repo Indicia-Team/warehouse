@@ -53,7 +53,7 @@ if (empty($_GET['user_id']) || empty($_GET['warehouse_url'])) {
 }
 
 class subscription_settings {
-  private function get_page_configuration() {
+  private static function get_page_configuration() {
     $configuration['frequencies']=array('NONE'=>'NONE', 'IH'=>'Immediate/Hourly','D'=>'Daily','W'=>'Weekly');
     $configuration['sourceTypes']=array('S'=>'Species alerts','C'=>'Comments on your records','V'=>'Verification of your records','A'=>'Record Cleaner results for your records','VT'=>'Incoming records for you to verify','M'=>'Milestones and achievements you\'ve attained');
     $configuration['privateKey']='Indicia';
@@ -158,7 +158,7 @@ class subscription_settings {
   }
 
   //Get an authentication
-  private function getAuth($website_id,$password) {
+  private static function getAuth($website_id,$password) {
     $postargs = "website_id=$website_id";
     $response = self::http_post($_GET['warehouse_url'].'/index.php/services/security/get_read_write_nonces', $postargs);
     $nonces = json_decode($response, true);
@@ -175,7 +175,7 @@ class subscription_settings {
   }
 
   //Allow us to POST a submission
-  private function http_post($url, $postargs=null) {
+  private static function http_post($url, $postargs=null) {
     $session = curl_init();
     // Set the POST options.
     curl_setopt ($session, CURLOPT_URL, $url);

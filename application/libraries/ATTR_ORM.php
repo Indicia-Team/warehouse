@@ -37,7 +37,8 @@ abstract class ATTR_ORM extends Valid_ORM {
     // merge unvalidated fields, in case the subclass has set any.
     if (!isset($this->unvalidatedFields))
       $this->unvalidatedFields = array();
-    $this->unvalidatedFields = array_merge($this->unvalidatedFields, array('validation_rules', 'public', 'multi_value', 'deleted'));
+    $this->unvalidatedFields = array_merge($this->unvalidatedFields,
+      array('validation_rules', 'public', 'multi_value', 'deleted', 'description', 'source_id'));
     $array->add_rules('caption', 'required');
     $array->add_rules('data_type', 'required');
     if (array_key_exists('data_type', $array->as_array()) && $array['data_type'] == 'L') {

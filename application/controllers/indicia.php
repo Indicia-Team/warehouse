@@ -120,6 +120,7 @@ class Indicia_Controller extends Template_Controller {
       if($this->auth->logged_in('CoreAdmin')) {
         $adminMenu['Website agreements']='website_agreement';
         $adminMenu['Languages']='language';
+        $adminMenu['Licences']='licence';
         $adminMenu['Titles']='title';
         $adminMenu['Taxon ranks']='taxon_rank';
         $adminMenu['Taxon relations']='taxon_relation_type';
