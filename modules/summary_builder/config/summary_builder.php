@@ -74,11 +74,11 @@ SELECT distinct location_id, user_id, taxa_taxon_list_id, year
 // Curently not possible to change location or date in UKBMS front end. so not worrying about it.
 
 // first part returns samples that have been deleted since last run date
-// second part returns samples that have been created since last run date
 // don't need to worry about deletion of subsamples, as these are bubbled
 // down to the occurrences, also it is only really the supersamples that impact
 // the calculations.
-$config['get_samples_query'] = "
+// Other non-delete updates to the samples are not actually important: 
+$config['get_deleted_samples_query'] = "
   SELECT p.date_start, p.created_by_id as user_id, p.location_id
 	FROM samples p
 	WHERE p.survey_id = #survey_id#
@@ -86,7 +86,9 @@ $config['get_samples_query'] = "
 		AND p.location_id IS NOT NULL
 		AND p.updated_on >= '#date#'
 		AND p.deleted = 't'
-UNION ALL
+LIMIT #limit#";
+// second part returns samples that have been created since last run date
+$config['get_created_samples_query'] = "
   SELECT p.date_start, p.created_by_id as user_id, p.location_id
 	FROM samples p
 	WHERE p.location_id IS NOT NULL
@@ -100,14 +102,8 @@ LIMIT #limit#";
 //   Only need to pick up deleted parent samples, as deleting the subsample automatically deletes the 
 //   occurrences, which are picked up in the items check. Presence of the (potentially empty) parent sample
 //   is what impacts calculations.
-// Other non-delete updates to the samples are not actually important: 
-// second part returns samples that have been updated since the equivalent summary_created_on was created,
-//   or which have no entries at all. In this case at least one sample for the year must have occurrences
-//   in order for data to be present, otherwise no point in doing it - this sample would always show up.
-//   Making assumption that cache_builder module is active, and location_id in CO points to the location of the
-//   subsample, not the parent
-$config['get_missed_samples_query'] = "
-  SELECT DISTINCT p.date_start, p.created_by_id as user_id, p.location_id
+$config['get_missed_deleted_samples_query'] = "
+  SELECT DISTINCT p.date_start as date_start, p.created_by_id as user_id, p.location_id
 	FROM samples p
 	JOIN summary_occurrences so ON so.survey_id = #survey_id#
 		AND so.location_id = p.location_id
@@ -118,9 +114,16 @@ $config['get_missed_samples_query'] = "
 	WHERE p.parent_id IS NULL
 		AND p.survey_id = #survey_id#
 		AND p.deleted = 't'
-UNION ALL
-  SELECT p.date_start, p.created_by_id as user_id, p.location_id
-	FROM samples p  
+LIMIT #limit#";
+// Other non-delete updates to the samples are not actually important: 
+// second part returns samples that have been created since the equivalent summary_created_on was created,
+//   or which have no entries at all. In this case at least one sample for the year must have occurrences
+//   in order for data to be present, otherwise no point in doing it - this sample would always show up.
+// During a rebuild, it is this query that does the vast majority of the work. The order by allows us to tell
+// how far through the rebuild it has got.
+$config['get_missed_created_samples_query'] = "
+  SELECT p.date_start as date_start, p.created_by_id as user_id, p.location_id
+	FROM samples p
 	LEFT JOIN summary_occurrences so ON so.survey_id = #survey_id#
 		AND so.location_id = p.location_id
 		AND p.date_start BETWEEN so.date_start AND so.date_end
@@ -139,6 +142,7 @@ UNION ALL
 				AND p2.survey_id = #survey_id#
 				AND p2.location_id = p.location_id
 				AND p2.deleted = 'f')
+  ORDER BY date_start
 LIMIT #limit#";
 
 // return all the taxa ever recorded for this location on this year - includes deleted deliberately
@@ -165,7 +169,7 @@ $config['get_taxa_query'] = "
 // also pick up if the sample/parent has been deleted, occurrence left alone.
 // not checking if dates or locations have changed on samples, or change of taxon on occurrence:
 //   cant do at moment - but also not possible through UKBMS front end. 
-$config['get_changed_items_query'] = "
+$config['get_changed_occurrences_query'] = "
   SELECT o.taxa_taxon_list_id, p.date_start, p.created_by_id, p.location_id  
 	FROM occurrences o
 	JOIN samples s ON s.id = o.sample_id
@@ -173,7 +177,7 @@ $config['get_changed_items_query'] = "
 	WHERE o.updated_on>='#date#'
 	LIMIT #limit#";
 
-$config['get_missed_items_query'] = "
+$config['get_missed_changed_occurrences_query'] = "
   SELECT distinct o.taxa_taxon_list_id, p.date_start, p.created_by_id, p.location_id  
 	FROM occurrences o
 	JOIN samples s ON s.id = o.sample_id AND s.deleted = 'f'
@@ -182,7 +186,9 @@ $config['get_missed_items_query'] = "
 		AND so.location_id = p.location_id AND so.user_id = p.created_by_id AND p.date_start <= so.date_end AND p.date_start >= so.date_start
 		AND o.updated_on < so.summary_created_on
     WHERE so.survey_id IS NULL AND o.deleted = 'f'
-  UNION ALL
+	LIMIT #limit#";
+
+$config['get_missed_deleted_occurrences_query'] = "
   SELECT o.taxa_taxon_list_id, p.date_start, p.created_by_id, p.location_id  
 	FROM occurrences o
 	JOIN samples s ON s.id = o.sample_id
@@ -192,7 +198,6 @@ $config['get_missed_items_query'] = "
 		AND o.updated_on>so.summary_created_on
 	WHERE o.deleted = 't'
 	LIMIT #limit#";
-
 
 $config['get_YearTaxonLocationUser_query'] = "
   SELECT 1 AS count, p.id AS sample_id, p.date_start
