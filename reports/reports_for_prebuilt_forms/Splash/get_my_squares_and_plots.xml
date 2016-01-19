@@ -15,6 +15,7 @@ Include only_return_private_plots to only return private plots associated with t
       LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=l.id
       JOIN users u on u.id=#current_user_id#
       JOIN person_attribute_values pav on pav.int_value=square.id AND pav.person_id=u.person_id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
+      JOIN person_attribute_values pavOthers on pavOthers.int_value=square.id AND pavOthers.person_attribute_id=#user_square_attr_id# AND pavOthers.deleted=false
     #joins#
     WHERE (l.id = square.id OR l.parent_id = square.id)
     AND #website_filter# AND l.deleted=false
@@ -44,7 +45,7 @@ Include only_return_private_plots to only return private plots associated with t
     <column name='show_square_edit_control' display='Show Square Edit Control' sql="case when l.parent_id is null AND l.created_by_id=#current_user_id# then true else false end" visible="false"/>
     <column name='show_simple_square_edit_control' display='Show Simple Square Edit Control' description="Show cut-down version of edit square page?" sql="case when l.parent_id is null then true else false end" visible="false"/>
     <column name='show_plot_view_control' display='Show Plot View Control' sql="case when l.parent_id is not null then true else false end" visible="false"/>
-    <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND l.created_by_id=#current_user_id# AND count(locationSamples.id) = 0 then true else false end" visible="false" aggregate="true"/>
+    <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND (l.created_by_id=#current_user_id# OR count(pavOthers.id) &lt; 2) AND count(locationSamples.id) = 0 then true else false end" visible="false" aggregate="true"/>
     <column name='name' display='Location Name' sql="
       case 
         when l.parent_id is null AND #pss_mode#=0
