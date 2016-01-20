@@ -28,7 +28,7 @@
 class Rest_Api_Sync_Controller extends Controller {
 
   /**
-   * @var obj Kohana database object
+   * @var Database_Core Kohana database object
    */
   private $db;
 
@@ -113,14 +113,13 @@ class Rest_Api_Sync_Controller extends Controller {
       $observations = $data['data'];
       $this->log('debug', count($observations) . ' records found');
       foreach ($observations as $observation) {
-        if (!$this->check_mandatory_fields($observation, 'taxon-observation'))
+        if (!$this->check_mandatory_fields($observation, 'taxon-observation', $tracker))
           continue;
         $ttl_id = $this->find_taxon($taxon_list_id, $observation['taxonVersionKey']);
         if (!$ttl_id) {
           $this->log('error', "Could not find taxon for $observation[taxonVersionKey]", $tracker);
           continue;
         }
-        $observation, $user_id, $survey_id, $server, $taxon_list_id,
         $values = $this->get_taxon_observation_values($server, $observation, $ttl_id);
         $existing = $this->find_existing_observation($observation['id'], $survey_id);
         if (count($existing)) {
@@ -149,7 +148,7 @@ class Rest_Api_Sync_Controller extends Controller {
         $obs->set_submission_data($values);
         $obs->submit();
         if (count($obs->getAllErrors())!==0)
-          $this->log('error', "Error occurred submitting an occurrence\n" . kohana::debug($obs->getAllErrors()), $errors);
+          $this->log('error', "Error occurred submitting an occurrence\n" . kohana::debug($obs->getAllErrors()), $tracker);
         else
           $tracker[count($existing) ? 'updates' : 'inserts']++;
       }
@@ -166,12 +165,12 @@ class Rest_Api_Sync_Controller extends Controller {
    * @param array $project Project resource obtained from the server's REST API.
    * @param integer $survey_id Database ID of the survey being imported into.
    */
-  private function sync_annotations($server, $serverId, $project, $survey_id) {
+  private function sync_annotations($server, $server_id, $project, $survey_id) {
     $nextPageOfAnnotationsUrl = rest_api_sync::get_server_annotations_url(
         $server['url'], $project['id'], $this->from_date_time);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     while ($nextPageOfAnnotationsUrl) {
-      $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $serverId);
+      $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $server_id);
       $annotations = $data['data'];
       foreach ($annotations as $annotation) {
         $this->map_record_status($annotation);
@@ -195,7 +194,7 @@ class Rest_Api_Sync_Controller extends Controller {
         $annotationObj->set_submission_data($values);
         $annotationObj->submit();
         if (count($annotationObj->getAllErrors())!==0)
-          $this->error('error', "Error occurred submitting an occurrence comment\n" .
+          $this->log('error', "Error occurred submitting an occurrence comment\n" .
               kohana::debug($annotationObj->getAllErrors()), $tracker);
         else
           $tracker[count($existing) ? 'updates' : 'inserts']++;
@@ -224,7 +223,7 @@ class Rest_Api_Sync_Controller extends Controller {
       return $taxa[0]['id'];
     else {
       if (count($taxa)>1)
-        $this->log("Could not find a unique preferred taxon for key $taxon_version_key")
+        $this->log('debug', "Could not find a unique preferred taxon for key $taxon_version_key");
       return false;
     }
   }
@@ -282,6 +281,7 @@ class Rest_Api_Sync_Controller extends Controller {
    *
    * @param integer $occurrence_id ID of the associated occurrence record in the database.
    * @param array $annotation Annotation object loaded from the REST API.
+   * @throws exception
    */
   function update_observation_with_annotation_details($occurrence_id, $annotation) {
     // Find the original record to compare against
@@ -515,6 +515,7 @@ class Rest_Api_Sync_Controller extends Controller {
     $location->set_submission_data($values);
     $location->submit();
     // @todo Error handling on submission.
+    // @todo Link the location to the website we are importing into?
     return $location->id;
   }
   
