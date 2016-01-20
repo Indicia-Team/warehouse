@@ -22,156 +22,153 @@
  */
 
 /**
- *
+ * Controller class to provide an endpoint for initiating the syncronisation of
+ * two warehouses via the REST API.
  */
 class Rest_Api_Sync_Controller extends Controller {
 
+  /**
+   * @var obj Kohana database object
+   */
   private $db;
 
-  private $fromDateTime;
+  /**
+   * @var string ISO datetime that the sync was last run. Used to filter requests for
+   * records to only get changes.
+   */
+  private $from_date_time;
 
-  private $nextFromDateTime;
+  /**
+   * @var string ISO datetime of the moment when the sync process started. Set into
+   * the variable which remembers the last run so that the next run can filter for
+   * records changed after this moment.
+   */
+  private $next_from_date_time;
 
   /**
    * Main controller method for the rest_api_sync module. Initiates a synchronisation.
    */
   public function index() {
+    kohana::log('debug', 'Initiating REST API Sync');
     $this->db = Database::instance();
     rest_api_sync::$client_user_id = Kohana::config('rest_api_sync.user_id');
     $servers = Kohana::config('rest_api_sync.servers');
-    $this->fromDateTime = variable::get('rest_api_sync_last_run', '2015-01-01');
-    $this->nextFromDateTime = date("Y-m-d\TH:i:s");
+    $this->from_date_time = variable::get('rest_api_sync_last_run', '2015-01-01');
+    $this->next_from_date_time = date("Y-m-d\TH:i:s");
     echo "<h1>REST API Sync</h1>";
-    foreach ($servers as $serverId => $server) {
-      echo "<h2>$serverId</h2>";
-      $nextPageOfProjectsUrl = rest_api_sync::get_server_projects_url($server['url']);
-      while ($nextPageOfProjectsUrl) {
-        $data = rest_api_sync::get_server_projects($nextPageOfProjectsUrl, $serverId);
-        if (!isset($data['data'])) {
-          echo 'Invalid response<br/>';
-          echo "URL: $nextPageOfProjectsUrl<br/>";
-          var_export($data);
-          throw new exception('Response did not include data element');
+    foreach ($servers as $server_id => $server) {
+      echo "<h2>$server_id</h2>";
+      $next_page_of_projects_url = rest_api_sync::get_server_projects_url($server['url']);
+      while ($next_page_of_projects_url) {
+        $response = rest_api_sync::get_server_projects($next_page_of_projects_url, $server_id);
+        if (!isset($response['data'])) {
+          $this->log('error', "Invalid response\nURL: $next_page_of_projects_url\nResponse did not include data element.");
+          var_export($response);
+          continue;
         }
-        $projects = $data['data'];
+        $projects = $response['data'];
         foreach ($projects as $project) {
           $survey_id = $this->get_survey_id($server, $project);
-          $this->sync_from_project($server, $serverId, $project, $survey_id);
+          $this->sync_from_project($server, $server_id, $project, $survey_id);
         }
-        $nextPageOfProjectsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
+        $next_page_of_projects_url = isset($response['paging']['next']) ? $response['paging']['next'] : false;
       }
-      /*
-       // TEMPORARY TEST CODE
-      $project = array('id'=>'BT', 'Title'=>'Sync from BTO', 'Description'=>'Data synced from BTO');
-      $survey_id = $this->get_survey_id($server, $project);
-      $this->sync_from_project($server, $serverId, $project, $survey_id);
-      */
-
-
     }
-    variable::set('rest_api_sync_last_run', $this->nextFromDateTime);
+    variable::set('rest_api_sync_last_run', $this->next_from_date_time);
   }
 
-  private function sync_from_project($server, $serverId, $project, $survey_id) {
+  /**
+   * Synchronises the taxon-observation and annotation data.
+   *
+   * @param array $server Configuration data for the server being called.
+   * @param $server_id string Unique identifier for the server.
+   * @param array $project Project resource obtained from the server's REST API.
+   * @param integer $survey_id Database ID of the survey being imported into.
+   */
+  private function sync_from_project($server, $server_id, $project, $survey_id) {
     echo "<h3>$project[id]</h3>";
     if (!isset($server['resources']) || in_array('taxon-observations', $server['resources']))
-      self::sync_taxon_observations($server, $serverId, $project, $survey_id);
+      self::sync_taxon_observations($server, $server_id, $project, $survey_id);
     if (!isset($server['resources']) || in_array('annotations', $server['resources']))
-      self::sync_annotations($server, $serverId, $project, $survey_id);
+      self::sync_annotations($server, $server_id, $project, $survey_id);
   }
-  
-  private function sync_taxon_observations($server, $serverId, $project, $survey_id) {
-    $datasetNameAttrId = Kohana::config('rest_api_sync.dataset_name_attr_id');
-    $userId = Kohana::config('rest_api_sync.user_id');
-    $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
-    $nextPageOfTaxonObservationsUrl = rest_api_sync::get_server_taxon_observations_url(
-        $server['url'], $project['id'], $this->fromDateTime);
-    $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
-    while ($nextPageOfTaxonObservationsUrl) {
-      $data = rest_api_sync::get_server_taxon_observations($nextPageOfTaxonObservationsUrl, $serverId);
-      $observations = $data['data'];
-      echo count($observations) . ' records found<br/>';
-      foreach ($observations as $observation) {
-        $taxa = $this->db->select('id')
-          ->from('cache_taxa_taxon_lists')
-          ->where(array(
-            'taxon_list_id'=>$taxon_list_id,
-            'external_key' => $observation['TaxonVersionKey'],
-            'preferred' => 't'
-          ))->get()->result_array(false);
-        if (count($taxa)!==1) {
-          // @todo Error handling
-          kohana::log('debug', "REST API Sync could not find taxon for $observation[taxonVersionKey]");
-          echo "Could not find taxon for $observation[taxonVersionKey]<br/>";
-        } 
-        else {
-          // Find if the record originated here or elsewhere
-          $recordOriginHere = substr($observation['id'], 0, strlen($userId)) === $userId;
-          $existing = $this->find_existing_observation($observation['id'], $survey_id);
-          // @todo Reuse the last sample if it matches
-          $values = array(
-            'website_id' => $server['website_id'],
-            'sample:date_start'     => $observation['startDate'],
-            'sample:date_end'       => $observation['endDate'],
-            'sample:date_type'      => $observation['dateType'],
-            'sample:recorder_names' => isset($observation['recorder'])
-                ? $observation['recorder'] : 'Unknown',
-            'occurrence:taxa_taxon_list_id' => $taxa[0]['id'],
-            'occurrence:external_key' => $observation['id'],
-            'occurrence:zero_abundance' => isset($observation['zeroAbundance'])
-                ? strtolower($observation['zeroAbundance']) : 'f',
-            'occurrence:sensitivity_precision' => isset($observation['sensitive'])
-                && strtolower($observation['sensitive'])==='t' ? 10000 : null,
-            'occurrence:record_status' => 'C'
-          );
-          if (count($existing)) {
-            $values['occurrence:id'] = $existing[0]['id'];
-            $values['sample:id'] = $existing[0]['sample_id'];
-          } else {
-            //
-            $values['sample:survey_id'] = $survey_id;
-          }
-          // If the record was originated from a different system, the specified dataset name
-          // needs to be stored
-          if ($datasetNameAttrId && !$recordOriginHere)
-            $values["smpAttr:$datasetNameAttrId"] = $observation['datasetName'];
 
-          // Set the spatial reference depending on the projection information supplied.
-          $this->set_sref_data($values, $observation, 'sample:entered_sref');
-          // @todo Should the precision field be stored in a custom attribute?
-          // Site handling. If a known site with a SiteKey, we can create a record in locations, otherwise use the 
-          // free text location_name field.
-          if (!empty($observation['SiteKey'])) {
-            $values['sample:location_id'] = $this->get_location_id($server, $observation);
-          }
-          elseif (!empty($observation['siteName'])) {
-            $values['sample:location_name'] = $observation['siteName'];
-          }
-          $obs = ORM::factory('occurrence');
-          $obs->set_submission_data($values);
-          $obs->submit();
-          if (count($obs->getAllErrors())!==0) {
-            echo "Error occurred submitting an occurrence<br/>";
-            kohana::log('debug', "REST API Sync error occurred submitting an occurrence");
-            kohana::log('debug', kohana::debug($obs->getAllErrors()));
-            $tracker['errors']++;
-          } else {
-            if (count($existing))
-              $tracker['updates']++;
-            else
-              $tracker['inserts']++;
-          }
+  /**
+   * Synchronises the taxon-observation data.
+   *
+   * @param array $server Configuration data for the server being called.
+   * @param $server_id string Unique identifier for the server.
+   * @param array $project Project resource obtained from the server's REST API.
+   * @param integer $survey_id Database ID of the survey being imported into.
+   */
+  private function sync_taxon_observations($server, $server_id, $project, $survey_id) {
+    $dataset_name_attr_id = Kohana::config('rest_api_sync.dataset_name_attr_id');
+    $user_id = Kohana::config('rest_api_sync.user_id');
+    $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
+    $next_page_of_taxon_observations_url = rest_api_sync::get_server_taxon_observations_url(
+        $server['url'], $project['id'], $this->from_date_time);
+    $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
+    while ($next_page_of_taxon_observations_url) {
+      $data = rest_api_sync::get_server_taxon_observations($next_page_of_taxon_observations_url, $server_id);
+      $observations = $data['data'];
+      $this->log('debug', count($observations) . ' records found');
+      foreach ($observations as $observation) {
+        if (!$this->check_mandatory_fields($observation, 'taxon-observation'))
+          continue;
+        $ttl_id = $this->find_taxon($taxon_list_id, $observation['taxonVersionKey']);
+        if (!$ttl_id) {
+          $this->log('error', "Could not find taxon for $observation[taxonVersionKey]", $tracker);
+          continue;
         }
+        $observation, $user_id, $survey_id, $server, $taxon_list_id,
+        $values = $this->get_taxon_observation_values($server, $observation, $ttl_id);
+        $existing = $this->find_existing_observation($observation['id'], $survey_id);
+        if (count($existing)) {
+          $values['occurrence:id'] = $existing[0]['id'];
+          $values['sample:id'] = $existing[0]['sample_id'];
+        } else {
+          $values['sample:survey_id'] = $survey_id;
+        }
+        // If the record was originated from a different system, the specified dataset name
+        // needs to be stored
+        if ($dataset_name_attr_id && substr($observation['id'], 0, strlen($user_id)) !== $user_id)
+          $values["smpAttr:$dataset_name_attr_id"] = $observation['datasetName'];
+
+        // Set the spatial reference depending on the projection information supplied.
+        $this->set_sref_data($values, $observation, 'sample:entered_sref');
+        // @todo Should the precision field be stored in a custom attribute?
+        // Site handling. If a known site with a SiteKey, we can create a record in locations, otherwise use the
+        // free text location_name field.
+        if (!empty($observation['SiteKey'])) {
+          $values['sample:location_id'] = $this->get_location_id($server, $observation);
+        }
+        elseif (!empty($observation['siteName'])) {
+          $values['sample:location_name'] = $observation['siteName'];
+        }
+        $obs = ORM::factory('occurrence');
+        $obs->set_submission_data($values);
+        $obs->submit();
+        if (count($obs->getAllErrors())!==0)
+          $this->log('error', "Error occurred submitting an occurrence\n" . kohana::debug($obs->getAllErrors()), $errors);
+        else
+          $tracker[count($existing) ? 'updates' : 'inserts']++;
       }
-      $nextPageOfTaxonObservationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
-      echo $nextPageOfTaxonObservationsUrl.'--'; throw new exception;
+      $next_page_of_taxon_observations_url = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
     echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
   }
-  
+
+  /**
+   * Synchronises the annotation data.
+   *
+   * @param array $server Configuration data for the server being called.
+   * @param $server_id string Unique identifier for the server.
+   * @param array $project Project resource obtained from the server's REST API.
+   * @param integer $survey_id Database ID of the survey being imported into.
+   */
   private function sync_annotations($server, $serverId, $project, $survey_id) {
     $nextPageOfAnnotationsUrl = rest_api_sync::get_server_annotations_url(
-        $server['url'], $project['id'], $this->fromDateTime);
+        $server['url'], $project['id'], $this->from_date_time);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     while ($nextPageOfAnnotationsUrl) {
       $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $serverId);
@@ -179,50 +176,104 @@ class Rest_Api_Sync_Controller extends Controller {
       foreach ($annotations as $annotation) {
         $this->map_record_status($annotation);
         // set up a values array for the annotation post
-        $values = array(
-          'occurrence_comment:comment' => $annotation['comment'],
-          'occurrence_comment:email_address' => $this->valueOrNull($annotation, 'emailAddress'),
-          'occurrence_comment:record_status' => $this->valueOrNull($annotation, 'record_status'),
-          'occurrence_comment:record_substatus' => $this->valueOrNull($annotation, 'record_substatus'),
-          'occurrence_comment:query' => $annotation['question'],
-          'occurrence_comment:person_name' => $annotation['authorName'],
-          'occurrence_comment:external_key' => $annotation['id']
-        );
-
+        $values = $this->get_annotation_values($annotation);
         // link to the existing observation
         $existingObs = $this->find_existing_observation($annotation['taxonObservation']['id'], $survey_id);
         if (!count($existingObs)) {
           // @todo Proper error handling as annotation can't be imported. Perhaps should obtain
           // and import the observation via the API?
-          echo "Attempt to import annotation $annotation[id] but taxon observation not found<br/>";
-        } else {
-          $values['occurrence_comment:occurrence_id'] = $existingObs[0]['id'];
-          // link to existing annotation if appropriate
-          $existing = $this->find_existing_annotation($annotation['id'], $existingObs[0]['id']);
-          if ($existing) {
-            $values['occurrence_comment:id'] = $existing[0]['id'];
-          }
-          $annotationObj = ORM::factory('occurrence_comment');
-          $annotationObj->set_submission_data($values);
-          $annotationObj->submit();
-          if (count($annotationObj->getAllErrors())!==0) {
-            echo "Error occurred submitting an occurrence<br/>";
-            kohana::log('debug', "REST API Sync error occurred submitting an occurrence");
-            kohana::log('debug', kohana::debug($annotationObj->getAllErrors()));
-            $tracker['errors']++;
-          } else {
-            if (count($existing))
-              $tracker['updates']++;
-            else
-              $tracker['inserts']++;
-          }
-          $this->update_observation_with_annotation_details($existingObs[0]['id'], $annotation);
+          $this->log('error', "Attempt to import annotation $annotation[id] but taxon observation not found<br/>", $tracker);
+          continue;
         }
-
+        $values['occurrence_comment:occurrence_id'] = $existingObs[0]['id'];
+        // link to existing annotation if appropriate
+        $existing = $this->find_existing_annotation($annotation['id'], $existingObs[0]['id']);
+        if ($existing) {
+          $values['occurrence_comment:id'] = $existing[0]['id'];
+        }
+        $annotationObj = ORM::factory('occurrence_comment');
+        $annotationObj->set_submission_data($values);
+        $annotationObj->submit();
+        if (count($annotationObj->getAllErrors())!==0)
+          $this->error('error', "Error occurred submitting an occurrence comment\n" .
+              kohana::debug($annotationObj->getAllErrors()), $tracker);
+        else
+          $tracker[count($existing) ? 'updates' : 'inserts']++;
+        $this->update_observation_with_annotation_details($existingObs[0]['id'], $annotation);
       }
       $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
     echo "<strong>Annotations</strong><br/><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
+  }
+
+  /**
+   * Retrieves a taxon's ID from the database, looking up using a taxon version key.
+   * @param integer $taxon_list_id
+   * @param string $taxon_version_key
+   * @return integer Taxa_taxon_list_id of the found record.
+   */
+  function find_taxon($taxon_list_id, $taxon_version_key) {
+    $taxa = $this->db->select('id')
+      ->from('cache_taxa_taxon_lists')
+      ->where(array(
+        'taxon_list_id'=>$taxon_list_id,
+        'external_key' => $taxon_version_key,
+        'preferred' => 't'
+      ))->get()->result_array(false);
+    if (count($taxa)===1)
+      return $taxa[0]['id'];
+    else {
+      if (count($taxa)>1)
+        $this->log("Could not find a unique preferred taxon for key $taxon_version_key")
+      return false;
+    }
+  }
+
+  /**
+   * Builds the values array required to post a taxon-observation resource to the local
+   * database.
+   *
+   * @param array $server
+   * @param array $observation taxon-observation resource data.
+   * @param $ttl_id
+   * @return array Values array to use for submission building.
+   * @todo Reuse the last sample if it matches
+   */
+  function get_taxon_observation_values($server, $observation, $ttl_id) {
+    return array(
+      'website_id' => $server['website_id'],
+      'sample:date_start'     => $observation['startDate'],
+      'sample:date_end'       => $observation['endDate'],
+      'sample:date_type'      => $observation['dateType'],
+      'sample:recorder_names' => isset($observation['recorder'])
+        ? $observation['recorder'] : 'Unknown',
+      'occurrence:taxa_taxon_list_id' => $ttl_id,
+      'occurrence:external_key' => $observation['id'],
+      'occurrence:zero_abundance' => isset($observation['zeroAbundance'])
+        ? strtolower($observation['zeroAbundance']) : 'f',
+      'occurrence:sensitivity_precision' => isset($observation['sensitive'])
+      && strtolower($observation['sensitive'])==='t' ? 10000 : null,
+      'occurrence:record_status' => 'C'
+    );
+  }
+
+  /**
+   * Builds the values array required to post an annotation resource to the local
+   * database.
+   *
+   * @param array $annotation annotation resource data.
+   * @return array Values array to use for submission building.
+   */
+  function get_annotation_values($annotation) {
+    return array(
+      'occurrence_comment:comment' => $annotation['comment'],
+      'occurrence_comment:email_address' => $this->value_or_null($annotation, 'emailAddress'),
+      'occurrence_comment:record_status' => $this->value_or_null($annotation, 'record_status'),
+      'occurrence_comment:record_substatus' => $this->value_or_null($annotation, 'record_substatus'),
+      'occurrence_comment:query' => $annotation['question'],
+      'occurrence_comment:person_name' => $annotation['authorName'],
+      'occurrence_comment:external_key' => $annotation['id']
+    );
   }
 
   /**
@@ -475,22 +526,30 @@ class Rest_Api_Sync_Controller extends Controller {
    * @param string $fieldname The name of the spatial reference field to be set in the values array, e.g. sample:entered_sref.
    */
   function set_sref_data(&$values, $observation, $fieldname) {
-    if ($observation['Projection']==='OSGB' || $observation['Projection']==='OSI') {
+    if ($observation['projection']==='OSGB' || $observation['projection']==='OSI') {
       $values[$fieldname] = strtoupper(str_replace(' ', '', $observation['gridReference']));
-      $values[$fieldname . '_system'] = $observation['Projection']==='OSGB' ? 'OSGB' : 'OSIE';
+      $values[$fieldname . '_system'] = $observation['projection']==='OSGB' ? 'OSGB' : 'OSIE';
     }
-    elseif ($observation['Projection']==='WGS84') {
+    elseif ($observation['projection']==='WGS84') {
       $values[$fieldname] = $this->format_lat_long($observation['north'], $observation['east']);
       $values[$fieldname . '_system'] = 4326;
     }
-    elseif ($observation['Projection']==='OSGB36') {
+    elseif ($observation['projection']==='OSGB36') {
       $values[$fieldname] = $this->format_east_north($observation['east'], $observation['north']);
       $values[$fieldname . '_system'] = 27700;
     }
   }
 
+  /**
+   * Retrieves the database survey_id to use when storing the data obtained for a
+   * given project resource. The survey record is looked up using the project's ID
+   * and title and if not found, is created automatically.
+   *
+   * @param array $server The server configuration array
+   * @param array $project A project resource obtained from a REST API.
+   * @return integer Survey_id.
+   */
   private function get_survey_id($server, $project) {
-    var_export($project);
     $projects = $this->db->select('id')
       ->from('surveys')
       ->where(array(
@@ -521,8 +580,65 @@ class Rest_Api_Sync_Controller extends Controller {
    * @param $key
    * @return mixed
    */
-  function valueOrNull($array, $key) {
+  function value_or_null($array, $key) {
     return isset($array[$key]) ? $array[$key] : null;
+  }
+
+  /**
+   * Checks that all the mandatory fields for a given resource type are populated.
+   * @param $array
+   * @param $resourceName
+   * @param $tracker
+   * @return bool
+   */
+  private function check_mandatory_fields($array, $resourceName, $tracker) {
+    $required = array();
+    // deletions have no other mandatory fields except the id to delete
+    if (!empty($resource['delete']) && $resource['delete']==='T')
+      $array[] = 'id';
+    else
+      switch ($resourceName) {
+        case 'taxon-observation':
+          $required = array('id', 'href', 'taxonVersionKey', /*'taxonName', */'startDate',
+            'endDate', 'dateType', 'gridReference', 'projection',
+            'precision', 'recorder');
+          // Conditionally required fields
+          if (empty($array['gridReference'])) {
+            $array[] = 'east';
+            $array[] = 'north';
+          }
+          break;
+        case 'annotation':
+          // @todo Mandatory fields for an annotation.
+          break;
+      }
+    $diff = array_diff($required, array_keys($array));
+    if (count($diff)) {
+      $this->log('error', "Incomplete $resourceName\n" . var_export($array, true) .
+          "\nKeys missing: " . var_export($diff, true), $tracker);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Logs a message.
+   *
+   * The message is displayed on the screen and to the Kohana error log using the
+   * supplied status as the error level. If a tracker array is supplied and the
+   * status indicates an error, $tracker['errors'] is incremented.
+   * @param string $status Message status, either error or debug.
+   * @param string $msg Message to log.
+   * @param array $tracker Array tracking count of inserts, updates and errors.
+   */
+  private function log($status, $msg, $tracker=null) {
+    kohana::log($status, "REST API Sync: $msg");
+    if ($status==='error') {
+      $msg = "ERROR: $msg";
+      if ($tracker)
+        $tracker['errors']++;
+    }
+    echo str_replace("\n", '<br/>', $msg) . '<br/>';
   }
 
 }
