@@ -7,7 +7,7 @@ Broad habitat data may include data for samples where a fine scale sub-habitat h
   <query website_filter_field="co.website_id">
     SELECT #columns#
     FROM cache_occurrences co
-      JOIN samples samp on samp.id=co.sample_id AND samp.deleted = false
+      JOIN samples samp on samp.id=co.sample_id AND samp.survey_id in (#limit_survey_ids#) AND samp.deleted = false
       JOIN sample_attribute_values savHab on savHab.sample_id=samp.id AND savHab.sample_attribute_id=#habitat_attr_id# AND savHab.deleted=false
       JOIN termlists_terms ttHab ON ttHab.id = savHab.int_value AND ttHab.deleted=false
       JOIN termlists_terms ttBroad ON (ttBroad.id=ttHab.parent_id OR (ttBroad.id=ttHab.id AND ttHab.parent_id IS NULL)) AND ttBroad.deleted=false
@@ -43,6 +43,7 @@ Broad habitat data may include data for samples where a fine scale sub-habitat h
     <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">
       <where>samp.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)</where>
     </param>
+    <param name="limit_survey_ids" display="Limit Survey IDs" description="Survey IDs to limit results to when all surveys are being returned by the user." datatype="text"/>
   </params>
   <columns> 
     <column name='habitat' display='Habitat' sql='tHab.term' datatype='text' in_count="true"/>

@@ -18,6 +18,7 @@ level."
       JOIN surveys su on su.id=samp.survey_id 
         AND (su.id=#survey_id# OR #survey_id#=0)
         AND su.deleted=false
+        AND su.id in (#limit_survey_ids#) 
     LEFT JOIN occurrences o on o.sample_id = samp.id AND o.deleted = false
     LEFT JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id AND ttl.deleted=false
     WHERE hab.deleted=false AND hab.term!='Not in scheme'
@@ -31,6 +32,7 @@ level."
         population_call='report:reports_for_prebuilt_forms/Splash/fine_habitats_for_population_call:id:term'/>   
     <param name='survey_id' display='Survey' description='Survey' datatype='lookup' population_call='report:reports_for_prebuilt_forms/Splash/get_surveys_for_population_call:id:title' emptyvalue='0'/>
     <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default=""/>
+    <param name="limit_survey_ids" display="Limit Survey IDs" description="Comma separated list of survey ids to limit the results to." datatype="text"/>
   </params>
   <columns> 
     <column name='habitat' display='Habitat' sql="hab.term" datatype='text' in_count="true"/>
@@ -89,7 +91,7 @@ level."
              AND ttHab2.deleted=false
            JOIN terms tHab2 on tHab2.id = ttHab2.term_id AND tHab2.term!='Not in scheme' AND tHab2.deleted=false      
            JOIN surveys su2 on su2.id=samp2.survey_id AND su2.deleted=false
-             AND (su2.id=#survey_id# OR #survey_id#=0)
+             AND (su2.id=#survey_id# OR #survey_id#=0) AND su2.id in (#limit_survey_ids#) 
 
            LEFT JOIN
 
@@ -100,7 +102,7 @@ level."
               JOIN sample_attribute_values sampHabVal3 on sampHabVal3.sample_id=samp3.id AND sampHabVal3.sample_attribute_id=#habitat_attr_id# AND sampHabVal3.deleted=false         
               JOIN termlists_terms ttHab3 ON ttHab3.id=sampHabVal3.int_value AND ttHab3.parent_id IS NOT NULL AND (ttHab3.id=ttHab.id) AND ttHab3.deleted=false 
               JOIN terms tHab3 on tHab3.id = ttHab3.term_id AND tHab3.term!='Not in scheme' AND tHab3.deleted=false        
-              JOIN surveys su3 on su3.id=samp3.survey_id AND su3.deleted=false AND (su3.id=#survey_id# OR #survey_id#=0) 
+              JOIN surveys su3 on su3.id=samp3.survey_id AND su3.deleted=false AND (su3.id=#survey_id# OR #survey_id#=0) AND su3.id in (#limit_survey_ids#) 
               JOIN occurrences o3 on o3.sample_id=samp3.id AND o3.deleted=false
               JOIN taxa_taxon_lists ttl3 on ttl3.id=o3.taxa_taxon_list_id AND ttl3.deleted=false
               WHERE plot3.deleted=false
@@ -124,7 +126,7 @@ level."
              AND ttHab2.deleted=false
            JOIN terms tHab2 on tHab2.id = ttHab2.term_id AND tHab2.term!='Not in scheme' AND tHab2.deleted=false      
            JOIN surveys su2 on su2.id=samp2.survey_id AND su2.deleted=false
-             AND (su2.id=#survey_id# OR #survey_id#=0)
+             AND (su2.id=#survey_id# OR #survey_id#=0) AND su2.id in (#limit_survey_ids#) 
 
            LEFT JOIN
 
@@ -135,7 +137,7 @@ level."
               JOIN sample_attribute_values sampHabVal3 on sampHabVal3.sample_id=samp3.id AND sampHabVal3.sample_attribute_id=#habitat_attr_id# AND sampHabVal3.deleted=false         
               JOIN termlists_terms ttHab3 ON ttHab3.id=sampHabVal3.int_value AND ttHab3.parent_id IS NOT NULL AND (ttHab3.id=ttHab.id) AND ttHab3.deleted=false 
               JOIN terms tHab3 on tHab3.id = ttHab3.term_id AND tHab3.term!='Not in scheme' AND tHab3.deleted=false              
-              JOIN surveys su3 on su3.id=samp3.survey_id AND su3.deleted=false AND (su3.id=#survey_id# OR #survey_id#=0) 
+              JOIN surveys su3 on su3.id=samp3.survey_id AND su3.deleted=false AND (su3.id=#survey_id# OR #survey_id#=0)  AND su3.id in (#limit_survey_ids#) 
               LEFT JOIN occurrences o3 on o3.sample_id=samp3.id AND o3.deleted=false
               LEFT JOIN taxa_taxon_lists ttl3 on ttl3.id=o3.taxa_taxon_list_id AND ttl3.deleted=false
               WHERE plot3.deleted=false
