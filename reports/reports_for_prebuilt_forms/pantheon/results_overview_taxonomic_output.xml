@@ -16,6 +16,7 @@
            description='Comma separated list of the taxa taxon list attribute ids that hold species traits.' />
   </params>
   <columns>
+    <column name='sample_id' sql='o.sample_id' visible='false' />
     <column name='taxon_group_id' sql='o.taxon_group_id' display='Taxon Group ID' in_count='true' visible='false'/>
     <column name='taxon_group_title' sql='o.taxon_group' display='Taxon Group Title'/>
     <column name='count' sql='count(distinct o.preferred_taxa_taxon_list_id)' display='count' aggregate='true'/>
