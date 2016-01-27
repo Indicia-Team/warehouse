@@ -1,0 +1,37 @@
+<report
+    title="ISIS Summary"
+    description="A summary of broad and specific assemblages associated with a sample."
+>
+  <query website_filter_field="o.website_id">
+    select #columns#
+    from taxa_taxon_list_attribute_values ttlav
+    join cache_termlists_terms t on t.id=ttlav.int_value
+    left join cache_termlists_terms tcode on tcode.meaning_id=t.meaning_id and tcode.preferred=false
+    join cache_occurrences o on o.preferred_taxa_taxon_list_id=ttlav.taxa_taxon_list_id
+    left join pantheon.isis_thresholds it on it.code=tcode.term
+    where ttlav.deleted=false
+    and o.sample_id=#sample_id#
+    and ttlav.taxa_taxon_list_attribute_id in (#bat_attr_id#,#sat_attr_id#)
+    #filters#
+  </query>
+  <order_bys>
+    <order_by>tcode.term</order_by>
+  </order_bys>
+  <params>
+    <param name='sample_id' display='Sample' description='Sample id to retrieve data for.' datatype='integer'/>
+    <param name='bat_attr_id' display='Broad assemblage attr ID' description='Attr ID for broad assemblages' datatype='integer' />
+    <param name='sat_attr_id' display='Specific assemblage attr ID' description='Attr ID for specific assemblages' datatype='integer' />
+  </params>
+  <columns>
+    <column name="sample_id" sql="o.sample_id" visible="false" />
+    <column name="trait_attr_id" sql="ttlav.taxa_taxon_list_attribute_id" visible="false" />
+    <column name="trait_term_id" sql="t.id" visible="false" />
+    <column name="threshold" sql="it.threshold" visible="false" />
+    <column name="code" sql="tcode.term" display="ISIS assemblage" />
+    <column name="type" sql="case ttlav.taxa_taxon_list_attribute_id when #bat_attr_id# then 'BAT' else 'SAT' end" display="Type" />
+    <column name="name" sql="t.term" display="Name" />
+    <column name="count" sql="count(distinct o.preferred_taxa_taxon_list_id)" aggregate="true" display="Count" />
+    <column name="condition" sql="case when count(distinct o.preferred_taxa_taxon_list_id)>=it.threshold then 'Favourable' else 'Unfavourable' end" 
+        aggregate="true" display="Reported condition" />
+  </columns>
+</report>

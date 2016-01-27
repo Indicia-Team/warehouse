@@ -1,0 +1,56 @@
+<report
+    title="Osiris Summary"
+    description="A summary of Osiris habitat data associated with a sample."
+>
+  <query website_filter_field="o.website_id">
+select 
+  t.id as term_id, 
+  t.term || ' ' || count(distinct o.taxon_meaning_id) as ecological_division, 
+  string_agg(distinct habitats, '&lt;br/&gt;') as habitats,
+  string_agg(distinct resources, '&lt;br/&gt;') as resources
+from taxa_taxon_list_attribute_values edv 
+join cache_termlists_terms t on t.id=edv.int_value
+join cache_occurrences o on o.preferred_taxa_taxon_list_id=edv.taxa_taxon_list_id
+join (
+  select t.parent_id as ed_term_id, t.term || ' ' || count(distinct o.taxon_meaning_id) as habitats
+  from taxa_taxon_list_attribute_values edv 
+  join cache_termlists_terms t on t.id=edv.int_value
+  join cache_occurrences o on o.preferred_taxa_taxon_list_id=edv.taxa_taxon_list_id
+  where edv.taxa_taxon_list_attribute_id=#h_attr_id#
+  and edv.deleted=false
+  and o.sample_id=#sample_id#
+  group by t.id, t.term
+) sub1 on sub1.ed_term_id=t.id
+join (
+  select th.parent_id as ed_term_id, tr.term || ' ' || count(distinct o.taxon_meaning_id) as resources
+  from taxa_taxon_list_attribute_values edv 
+  join cache_termlists_terms tr on tr.id=edv.int_value
+  join cache_termlists_terms th on th.id=tr.parent_id -- habitat is parent, parent of habitat is eco div
+  join cache_occurrences o on o.preferred_taxa_taxon_list_id=edv.taxa_taxon_list_id
+  where edv.taxa_taxon_list_attribute_id=#r_attr_id#
+  and edv.deleted=false
+  and o.sample_id=#sample_id#
+  group by th.parent_id, tr.id, tr.term
+) sub2 on sub2.ed_term_id=t.id
+where edv.taxa_taxon_list_attribute_id=#ed_attr_id#
+and edv.deleted=false
+and o.sample_id=#sample_id#
+group by t.id, t.term
+  </query>
+  <order_bys>
+    <order_by>ecological_division</order_by>
+  </order_bys>
+  <params>
+    <param name='sample_id' display='Sample' description='Sample id to retrieve data for.' datatype='integer'/>
+    <param name='ed_attr_id' display='Ecological division attr ID' datatype='integer' />
+    <param name='h_attr_id' display='Habitat attr ID' datatype='integer' />
+    <param name='r_attr_id' display='Resource attr ID' datatype='integer' />
+  </params>
+  <columns>
+    <column name="sample_id" sql="o.sample_id" visible="false" />
+    <column name="term_id" sql="t.id" visible="false" />
+    <column name="ecological_division" sql="t.term || ' ' || count(distinct o.taxon_meaning_id)" />
+    <column name="habitats" sql="string_agg(habitats, '&lt;br/&gt;')" />
+    <column name="resources" sql="string_agg(resources, '&lt;br/&gt;')" />
+  </columns>
+</report>
