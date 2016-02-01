@@ -183,7 +183,7 @@ class api_persist {
    * @param $resourceName
    * @throws \exception
    */
-  private function check_mandatory_fields($array, $resourceName) {
+  private static function check_mandatory_fields($array, $resourceName) {
     $required = array();
     // deletions have no other mandatory fields except the id to delete
     if (!empty($resource['delete']) && $resource['delete']==='T')
