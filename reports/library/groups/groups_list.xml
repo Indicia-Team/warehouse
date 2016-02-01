@@ -24,8 +24,8 @@
         datatype="lookup" default="member" 
         lookup_values='all:All groups,joinable:Groups they can join or request,allvisible:Groups they can join or request or are already a member of,pending:Groups they are pending approval to join,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
       <wheres>
-        <where value="joinable" operator="equal">g.joining_method&lt;&gt;'I'</where>
-        <where value="allvisible" operator="equal">(g.joining_method&lt;&gt;'I' OR gu.id IS NOT NULL)</where>
+        <where value="joinable" operator="equal">g.joining_method not in ('A','I')</where>
+        <where value="allvisible" operator="equal">(g.joining_method not in ('A','I') OR gu.id IS NOT NULL)</where>
         <where value="pending" operator="equal">gu.id is not null AND gu.pending=true</where>
         <where value="member" operator="equal">gu.id is not null AND gu.pending=false</where>
         <where value="admin" operator="equal">gu.id is not null AND gu.pending=false AND gu.administrator=true</where>
@@ -36,7 +36,7 @@
     <param name="group_type_id" display="Group Type" description="Limit the report to a certain type of group" datatype="lookup"
             population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:group_types,termlist_id='
             default="">
-      <where>g.group_type_id=#group_type_id#</where>
+      <where>g.group_type_id in (#group_type_id#)</where>
     </param>
     <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. an organisation which parents a list of projects)."
         datatype="text" default="">
@@ -50,6 +50,8 @@
   </params>
   <columns>
     <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
+    <column name="group_type_id" visible="false" sql="g.group_type_id" datatype="integer" />
+    <column name="joining_method_raw" visible="false" sql="g.joining_method" datatype="text" />
     <column name="title" display="Name" sql="g.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
     <column name="administrator" display="Admin" sql="gu.id is not null AND gu.pending=false AND gu.administrator=true" datatype="boolean" visible="false" />
