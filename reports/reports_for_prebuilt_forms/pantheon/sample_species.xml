@@ -43,7 +43,6 @@ where o.sample_id=#sample_id#
   <columns>
     <column name="species" sql="o.preferred_taxon" display="Species" />
     <column name="order" sql="cttl.order_taxon" display="Order" />
-    <column name="taxon_key" sql="o.taxa_taxon_list_external_key" display="Taxon key" />    
     <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.id::varchar, td.code, td.abbreviation)), ';')" display="Designations" aggregate="true" />
     <column name="isis_code" sql="isiscode.term" display="ISIS code" />
     <column name="osiris_traits" sql="array_to_string(array_agg(distinct osiristerm.term order by osiristerm.term), ';')" display="OSIRIS traits" aggregate="true" />
