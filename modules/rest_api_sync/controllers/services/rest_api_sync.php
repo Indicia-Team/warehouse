@@ -22,7 +22,7 @@
  */
 
 /**
- * Controller class to provide an endpoint for initiating the syncronisation of
+ * Controller class to provide an endpoint for initiating the synchronisation of
  * two warehouses via the REST API.
  */
 class Rest_Api_Sync_Controller extends Controller {
@@ -53,7 +53,7 @@ class Rest_Api_Sync_Controller extends Controller {
     $this->db = Database::instance();
     rest_api_sync::$client_user_id = Kohana::config('rest_api_sync.user_id');
     $servers = Kohana::config('rest_api_sync.servers');
-    $this->from_date_time = variable::get('rest_api_sync_last_run', '2015-01-01');
+    $this->from_date_time = variable::get('rest_api_sync_last_run', '2015-01-01', false);
     $this->next_from_date_time = date("Y-m-d\TH:i:s");
     echo "<h1>REST API Sync</h1>";
     foreach ($servers as $server_id => $server) {
