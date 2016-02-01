@@ -341,7 +341,7 @@ class Import_Controller extends Service_Base_Controller {
       
       // An AJAX upload request will just receive the number of records uploaded and progress
       $this->auto_render=false;      
-      $cache->set(basename($csvTempFile).'previousSupermodels', $this->previousCsvSupermodel);      
+      $cache->set(basename($csvTempFile).'previousSupermodel', $this->previousCsvSupermodel);      
     }
   }
   
