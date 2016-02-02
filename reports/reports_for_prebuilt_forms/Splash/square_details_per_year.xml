@@ -35,13 +35,12 @@ about the square e.g. number of samples recorded in 2015."
     <column name='id' sql='l.id' datatype='integer' visible='false' in_count="true"/>  
     <column name='name' display='Square Name' sql='l.name' datatype='text' /> 
     <column name='excluded_square' display="Excluded?" sql="case when lavEx.id IS NOT NULL AND lavEX.int_value = 1 then 'Excluded' end" datatype='text' />   
-    <column name='number_of_plots' display='Total no of plots for square' sql='count(distinct(plots.id))' datatype='integer' aggregate='true'/>  
-    <column name='allocated_count' display='Total no of users allocated to square' sql='count(distinct(pavTotal.id))' datatype='integer' aggregate='true'/>  
-    <column name='number_samples_2014' display='Total no of samples in 2014 for square' sql='count(distinct(s14.id))' datatype='date' aggregate='true'/>  
-    <column name='number_samples_2015' display='Total no of samples in 2015 for square' sql='count(distinct(s15.id))' datatype='date' aggregate='true'/>  
-    <column name='number_samples_2016' display='Total no of samples in 2016 for square' sql='count(distinct(s16.id))' datatype='date' aggregate='true'/>  
-    <column name='person_name' display='Allocated person name' sql="array_to_string(array_agg(distinct(p.first_name || ' ' || p.surname)), ', ')" datatype='text' aggregate='true'/>  
+    <column name='number_of_plots' display='No of plots' sql='count(distinct(plots.id))' datatype='integer' aggregate='true'/>  
+    <column name='allocated_count' display='No of allocated users' sql='count(distinct(pavTotal.id))' datatype='integer' aggregate='true'/>  
+    <column name='number_samples_2014' display='No of 2014 samples' sql='count(distinct(s14.id))' datatype='date' aggregate='true'/>  
+    <column name='number_samples_2015' display='No of 2015 samples' sql='count(distinct(s15.id))' datatype='date' aggregate='true'/>  
+    <column name='number_samples_2016' display='No of 2016 samples' sql='count(distinct(s16.id))' datatype='date' aggregate='true'/>  
     --Show unapproved square allocations in red
-    <column name='email' display='Allocated person email address' sql="array_to_string(array_agg(distinct(case when pav.updated_by_id=1 then p.email_address else '&lt;b style=&quot;color:red&quot;&gt;' || p.email_address || '&lt;/b&gt;' end)), ', ')" datatype='text' aggregate='true'/>  
+    <column name='allocated_users' display='Allocated users' sql="array_to_string(array_agg(distinct(case when pav.updated_by_id=1 then p.first_name || ' ' || p.surname || ' (' || p.email_address || ')' else '&lt;b style=&quot;color:red&quot;&gt;' || p.first_name || ' ' || p.surname || ' (' || p.email_address || ')' || '&lt;/b&gt;' end)), ', ')" datatype='text' aggregate='true'/>  
   </columns>
 </report>
