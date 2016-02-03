@@ -17,7 +17,8 @@ left join (taxa_taxon_list_attribute_values isisv
 ) on isisv.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and isisv.deleted=false
 left join taxa_taxon_list_attribute_values osirisv on osirisv.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and osirisv.deleted=false
   and osirisv.taxa_taxon_list_attribute_id in (5,6,7) -- parameter for OSIRIS trait IDs
-left join cache_termlists_terms osiristerm on osiristerm.id=osirisv.int_value and osiristerm.term not in ('trees known to be used', 'conifer or broadleaf', 'tree species')
+left join cache_termlists_terms osiristerm on osiristerm.id=osirisv.int_value 
+  and osiristerm.term not in ('trees known to be used', 'conifer or broadleaf', 'tree species', 'terrestrial aspect', 'woodland habitat', 'base status')
 left join taxa_taxon_list_attribute_values lguildv on lguildv.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and lguildv.deleted=false
   and lguildv.taxa_taxon_list_attribute_id=9 -- parameter for larval guild attribute ID
 left join cache_termlists_terms lguildterm on lguildterm.id=lguildv.int_value  
@@ -41,13 +42,13 @@ where o.sample_id=#sample_id#
     </param>
   </params>
   <columns>
-    <column name="species" sql="o.preferred_taxon" display="Species" />
-    <column name="order" sql="cttl.order_taxon" display="Order" />
+    <column name="species" sql="o.preferred_taxon" display="Species" in_count="true" />
+    <column name="order" sql="cttl.order_taxon" display="Order" in_count="true" />
     <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.id::varchar, td.code, td.abbreviation)), ';')" display="Conservation status" aggregate="true" />
-    <column name="isis_code" sql="isiscode.term" display="ISIS code" />
+    <column name="isis_code" sql="isiscode.term" display="ISIS code" in_count="true" />
     <column name="osiris_traits" sql="array_to_string(array_agg(distinct osiristerm.term order by osiristerm.term), ';')" display="OSIRIS traits" aggregate="true" />
-    <column name="larval_guild" sql="lguildterm.term" display="Larval guild" />
-    <column name="adult_guild" sql="aguildterm.term" display="Adult guild" />
+    <column name="larval_guild" sql="string_agg(distinct lguildterm.term,';')" display="Larval guild" aggregate="true" />
+    <column name="adult_guild" sql="string_agg(distinct aguildterm.term,';')" display="Adult guild" aggregate="true" />
     <column name="horus_indicator" sql="array_to_string(array_agg(distinct coalesce(horusa.caption || ': ' || horusv.int_value::varchar)), ', ')" display="HORUS indicator" aggregate="true" />
   </columns>
 </report>
