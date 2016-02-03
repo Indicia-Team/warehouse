@@ -10,11 +10,13 @@ select
   string_agg(distinct resources, '&lt;br/&gt;') as resources
 from taxa_taxon_list_attribute_values edv 
 join cache_termlists_terms t on t.id=edv.int_value
+  and t.term not in ('trees known to be used', 'conifer or broadleaf', 'tree species', 'terrestrial aspect', 'woodland habitat', 'base status')
 join cache_occurrences o on o.preferred_taxa_taxon_list_id=edv.taxa_taxon_list_id
 join (
   select t.parent_id as ed_term_id, t.term || ' ' || count(distinct o.taxon_meaning_id) as habitats
   from taxa_taxon_list_attribute_values edv 
   join cache_termlists_terms t on t.id=edv.int_value
+    and t.term not in ('trees known to be used', 'conifer or broadleaf', 'tree species', 'terrestrial aspect', 'woodland habitat', 'base status')
   join cache_occurrences o on o.preferred_taxa_taxon_list_id=edv.taxa_taxon_list_id
   where edv.taxa_taxon_list_attribute_id=#h_attr_id#
   and edv.deleted=false
@@ -25,6 +27,7 @@ join (
   select th.parent_id as ed_term_id, tr.term || ' ' || count(distinct o.taxon_meaning_id) as resources
   from taxa_taxon_list_attribute_values edv 
   join cache_termlists_terms tr on tr.id=edv.int_value
+    and tr.term not in ('trees known to be used', 'conifer or broadleaf', 'tree species', 'terrestrial aspect', 'woodland habitat', 'base status')
   join cache_termlists_terms th on th.id=tr.parent_id -- habitat is parent, parent of habitat is eco div
   join cache_occurrences o on o.preferred_taxa_taxon_list_id=edv.taxa_taxon_list_id
   where edv.taxa_taxon_list_attribute_id=#r_attr_id#
