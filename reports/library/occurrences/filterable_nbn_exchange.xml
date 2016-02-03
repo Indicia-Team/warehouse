@@ -8,8 +8,8 @@ from cache_occurrences o
 join samples s on s.id=o.sample_id
 left join (index_locations_samples ils
   join cache_termlists_terms ctt on ctt.id=ils.location_type_id and ctt.term='Vice County'
+  join locations vc on vc.id=ils.location_id and coalesce(vc.code, '') not like '%+%'
 ) on ils.sample_id=o.sample_id and ils.contains=true
-left join locations vc on vc.id=ils.location_id and coalesce(vc.code, '') not like '%+%'
 left join groups g1 on g1.id=o.group_id and g1.deleted=false
 left join group_relations grel on grel.to_group_id=g1.id and grel.deleted=false
 left join groups g2 on g2.id=grel.from_group_id and g2.deleted=false

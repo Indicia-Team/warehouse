@@ -9,8 +9,8 @@ from cache_occurrences o
 join samples s on s.id=o.sample_id
 left join (index_locations_samples ils
   join cache_termlists_terms ctt on ctt.id=ils.location_type_id and ctt.term='Vice County'
+  join locations l on l.id=ils.location_id and coalesce(l.code, '') not like '%+%'
 ) on ils.sample_id=o.sample_id and ils.contains=true
-left join locations l on l.id=ils.location_id and coalesce(l.code, '') not like '%+%'
 #agreements_join#
 #joins#
 where #sharing_filter# 
