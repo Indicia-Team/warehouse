@@ -54,7 +54,14 @@ class Rest_Api_Sync_Controller extends Controller {
     rest_api_sync::$client_user_id = Kohana::config('rest_api_sync.user_id');
     $servers = Kohana::config('rest_api_sync.servers');
     $this->from_date_time = variable::get('rest_api_sync_last_run', '2015-01-01', false);
-    $this->next_from_date_time = date("Y-m-d\TH:i:s");
+    // Allow max 1 momth of records per sync run.
+    if (strtotime($this->from_date_time) > strtotime('-1 month'))
+      $this->next_from_date_time = date("Y-m-d\TH:i:s");
+    else {
+      $this->next_from_date_time = date("Y-m-d\TH:i:s", strtotime($this->from_date_time . ' +1 month'));
+      echo 'WARNING: Limited to records changed before ' . $this->next_from_date_time .
+          '. Run again to process 1 month of changed records at a time.<br/>';
+    }
     echo "<h1>REST API Sync</h1>";
     foreach ($servers as $server_id => $server) {
       echo "<h2>$server_id</h2>";
@@ -106,7 +113,7 @@ class Rest_Api_Sync_Controller extends Controller {
     $user_id = Kohana::config('rest_api_sync.user_id');
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $next_page_of_taxon_observations_url = rest_api_sync::get_server_taxon_observations_url(
-        $server['url'], $project['id'], $this->from_date_time);
+        $server['url'], $project['id'], $this->from_date_time, $this->next_from_date_time);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     while ($next_page_of_taxon_observations_url) {
       $data = rest_api_sync::get_server_taxon_observations($next_page_of_taxon_observations_url, $server_id);
@@ -142,7 +149,7 @@ class Rest_Api_Sync_Controller extends Controller {
    */
   private function sync_annotations($server, $server_id, $project, $survey_id) {
     $nextPageOfAnnotationsUrl = rest_api_sync::get_server_annotations_url(
-        $server['url'], $project['id'], $this->from_date_time);
+        $server['url'], $project['id'], $this->from_date_time, $this->next_from_date_time);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     while ($nextPageOfAnnotationsUrl) {
       $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $server_id);
