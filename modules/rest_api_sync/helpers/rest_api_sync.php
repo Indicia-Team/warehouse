@@ -33,18 +33,21 @@ class rest_api_sync {
     return $server_url . '/projects';
   }
 
-  public static function get_server_taxon_observations_url($server_url, $projectId, $edited_date_from) {
+  public static function get_server_taxon_observations_url($server_url, $projectId,
+      $edited_date_from, $edited_date_to) {
     return $server_url . '/taxon-observations?' . http_build_query(array(
       'proj_id' => $projectId,
-      'edited_date_from' => $edited_date_from
-      //'edited_date_to' => '2015-05-30'
+      'edited_date_from' => $edited_date_from,
+      'edited_date_to' => $edited_date_to
     ));
   }
   
-  public static function get_server_annotations_url($server_url, $projectId, $edited_date_from) {
+  public static function get_server_annotations_url($server_url, $projectId,
+      $edited_date_from, $edited_date_to) {
     return $server_url . '/annotations?' . http_build_query(array(
       'proj_id' => $projectId,
-      'edited_date_from' => $edited_date_from
+      'edited_date_from' => $edited_date_from,
+      'edited_date_to' => $edited_date_to
     ));
   }
 
