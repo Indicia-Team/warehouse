@@ -1,11 +1,42 @@
-ALTER TABLE occurrence_comments
-   ADD COLUMN external_key character varying(50);
+-- Add an external_key column to comments tables for external synching
+CREATE OR REPLACE function f_add_ddl (OUT success bool)
+    LANGUAGE plpgsql AS
+$func$
+BEGIN
+
+success := TRUE;
+
+BEGIN
+
+	ALTER TABLE occurrence_comments
+  ADD COLUMN external_key character varying(50);
+
+EXCEPTION
+    WHEN duplicate_column THEN
+      RAISE NOTICE 'column exists.';
+      success := FALSE;
+END;
+
+BEGIN
+
+	ALTER TABLE sample_comments
+  ADD COLUMN external_key character varying(50);
+
+EXCEPTION
+    WHEN duplicate_column THEN
+      RAISE NOTICE 'column exists.';
+      success := FALSE;
+END;
+
+END
+$func$;
+
+SELECT f_add_ddl();
+
+DROP FUNCTION f_add_ddl();
 
 COMMENT ON COLUMN occurrence_comments.external_key IS
   'For comments imported from an external system, provides a field to store the external system''s primary key for the record allowing re-synchronisation.';
-
-ALTER TABLE sample_comments
-   ADD COLUMN external_key character varying(50);
 
 COMMENT ON COLUMN sample_comments.external_key IS
   'For comments imported from an external system, provides a field to store the external system''s primary key for the record allowing re-synchronisation.';
