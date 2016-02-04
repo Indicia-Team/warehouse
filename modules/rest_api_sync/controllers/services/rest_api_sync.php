@@ -56,9 +56,9 @@ class Rest_Api_Sync_Controller extends Controller {
     $this->from_date_time = variable::get('rest_api_sync_last_run', '2015-01-01', false);
     // Allow max 1 momth of records per sync run.
     if (strtotime($this->from_date_time) > strtotime('-1 month'))
-      $this->next_from_date_time = date("Y-m-d\TH:i:s");
+      $this->next_from_date_time = date("Y-m-d");
     else {
-      $this->next_from_date_time = date("Y-m-d\TH:i:s", strtotime($this->from_date_time . ' +1 month'));
+      $this->next_from_date_time = date("Y-m-d", strtotime($this->from_date_time . ' +1 month'));
       echo 'WARNING: Limited to records changed before ' . $this->next_from_date_time .
           '. Run again to process 1 month of changed records at a time.<br/>';
     }
@@ -200,16 +200,6 @@ class Rest_Api_Sync_Controller extends Controller {
       // @todo Error handling on submission.
       return $survey->id;
     }
-  }
-
-  /**
-   * Simple utility function to return a value from an array, or null if not present.
-   * @param $array
-   * @param $key
-   * @return mixed
-   */
-  function value_or_null($array, $key) {
-    return isset($array[$key]) ? $array[$key] : null;
   }
 
   /**

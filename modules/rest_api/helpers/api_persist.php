@@ -477,4 +477,14 @@ class api_persist {
       // @todo create a determination if this is not automatic
     }
   }
+
+  /**
+   * Simple utility function to return a value from an array, or null if not present.
+   * @param $array
+   * @param $key
+   * @return mixed
+   */
+  private static function value_or_null($array, $key) {
+    return isset($array[$key]) ? $array[$key] : null;
+  }
 }
