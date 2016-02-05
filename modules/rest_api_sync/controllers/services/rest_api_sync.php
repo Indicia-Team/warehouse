@@ -96,10 +96,20 @@ class Rest_Api_Sync_Controller extends Controller {
    */
   private function sync_from_project($server, $server_id, $project, $survey_id) {
     echo "<h3>$project[id]</h3>";
-    if (!isset($server['resources']) || in_array('taxon-observations', $server['resources']))
-      self::sync_taxon_observations($server, $server_id, $project, $survey_id);
-    if (!isset($server['resources']) || in_array('annotations', $server['resources']))
-      self::sync_annotations($server, $server_id, $project, $survey_id);
+    $state = variable::get("rest_api_sync_$project[id]_state", 'load-taxon-observations');
+    // unless the config forces a specific resource to load, we must initially load observations
+    // before annotations otherwise we get annotations where the obs has not yet loaded.
+    if ($state!=='load-annotations' || (isset($server['resources']) && count($server['resources'])===1)) {
+      $done = self::sync_taxon_observations($server, $server_id, $project, $survey_id, $state==='load-done');
+      if ($state === 'load-taxon-observations' && $done) // progress to initial load of annotations
+        $state = 'load-annotations';
+    }
+    if ($state!=='load-taxon-observations' || (isset($server['resources']) && count($server['resources'])===1)) {
+      $done = self::sync_annotations($server, $server_id, $project, $survey_id, $state==='load-done');
+      if ($state === 'load-annotations' && $done) // initial loading done
+        $state = 'load-done';
+    }
+    variable::set("rest_api_sync_$project[id]_state", $state);
   }
 
   /**
@@ -109,17 +119,22 @@ class Rest_Api_Sync_Controller extends Controller {
    * @param $server_id string Unique identifier for the server.
    * @param array $project Project resource obtained from the server's REST API.
    * @param integer $survey_id Database ID of the survey being imported into.
+   * @param boolean $load_all True if all data should be loaded, false if being throttled
+   * during initial sync.
+   * @return boolean True if completed all observations, false if didn't finish
    */
-  private function sync_taxon_observations($server, $server_id, $project, $survey_id) {
+  private function sync_taxon_observations($server, $server_id, $project, $survey_id, $load_all) {
+    // abort if not allowed to access this resource by config
+    if (isset($server['resources']) && !in_array('taxon-observations', $server['resources']))
+      return;
     $dataset_name_attr_id = Kohana::config('rest_api_sync.dataset_name_attr_id');
     $user_id = Kohana::config('rest_api_sync.user_id');
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $next_page_of_taxon_observations_url = rest_api_sync::get_server_taxon_observations_url(
         $server['url'], $project['id'], $this->from_date_time, $this->processing_date_limit);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
-    $last_completely_processed_date = null;
-    $last_record_date = null;
-    while ($next_page_of_taxon_observations_url && ($tracker['inserts'] + $tracker['updates'] < MAX_RECORDS_TO_PROCESS)) {
+    $processedCount = 0;
+    while ($next_page_of_taxon_observations_url && ($load_all || $processedCount < MAX_RECORDS_TO_PROCESS)) {
       $data = rest_api_sync::get_server_taxon_observations($next_page_of_taxon_observations_url, $server_id);
       $observations = $data['data'];
       $this->log('debug', count($observations) . ' records found');
@@ -132,23 +147,18 @@ class Rest_Api_Sync_Controller extends Controller {
         }
         try {
           $is_new = api_persist::taxon_observation($this->db, $observation, $server['website_id'], $survey_id, $taxon_list_id);
-          $tracker[$is_new ? 'updates' : 'inserts']++;
+          $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         catch (exception $e) {
-          $this->log('error', "Error occurred submitting an occurrence\n" . $e->getMessage(), $tracker);
+          $this->log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
+              json_encode($observation), $tracker);
         }
-        // We need to know the edit date stamp that's been completely processed to make sure we don't miss any
-        if ($last_record_date && $last_record_date <> $observation['lastEditDate'])
-          $last_completely_processed_date = $last_record_date;
-        $last_record_date = $observation['lastEditDate'];
+        $processedCount++;
       }
       $next_page_of_taxon_observations_url = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
-    // If we were unable to process the entire job, note the limit of where we got to. So, we use the
-    // taxon-observations syncing as a kind of load throttle.
-    if ($tracker['inserts'] + $tracker['updates'] >= MAX_RECORDS_TO_PROCESS)
-      $this->processing_date_limit = $last_completely_processed_date;
     echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
+    return $load_all || $processedCount < MAX_RECORDS_TO_PROCESS;
   }
 
   /**
@@ -158,28 +168,37 @@ class Rest_Api_Sync_Controller extends Controller {
    * @param $server_id string Unique identifier for the server.
    * @param array $project Project resource obtained from the server's REST API.
    * @param integer $survey_id Database ID of the survey being imported into.
+   * @param boolean $load_all True if all data should be loaded, false if being throttled
+   * during initial sync.
+   * @return boolean True if completed all observations, false if didn't finish
    */
-  private function sync_annotations($server, $server_id, $project, $survey_id) {
+  private function sync_annotations($server, $server_id, $project, $survey_id, $load_all) {
+    // abort if not allowed to access this resource by config
+    if (isset($server['resources']) && !in_array('annotations', $server['resources']))
+      return;
     $nextPageOfAnnotationsUrl = rest_api_sync::get_server_annotations_url(
         $server['url'], $project['id'], $this->from_date_time, $this->processing_date_limit);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
-    //  && ($tracker['inserts'] + $tracker['updates'] < MAX_RECORDS_TO_PROCESS)
-    // but not if using a set date range from the obs.
-    while ($nextPageOfAnnotationsUrl) {
+    $processedCount = 0;
+    while ($nextPageOfAnnotationsUrl && ($load_all || $processedCount < MAX_RECORDS_TO_PROCESS)) {
       $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $server_id);
       $annotations = $data['data'];
+      $this->log('debug', count($annotations) . ' records found');
       foreach ($annotations as $annotation) {
         try {
           $is_new = api_persist::annotation($this->db, $annotation, $survey_id);
-          $tracker[$is_new ? 'updates' : 'inserts']++;
+          $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         catch (exception $e) {
-          $this->log('error', "Error occurred submitting an annotation\n" . $e->getMessage(), $tracker);
+          $this->log('error', "Error occurred submitting an annotation\n" . $e->getMessage() . "\n" .
+            json_encode($annotation), $tracker);
         }
+        $processedCount++;
       }
       $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
     echo "<strong>Annotations</strong><br/><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
+    return $load_all || $processedCount < MAX_RECORDS_TO_PROCESS;
   }
 
   /**
@@ -226,7 +245,7 @@ class Rest_Api_Sync_Controller extends Controller {
    * @param string $msg Message to log.
    * @param array $tracker Array tracking count of inserts, updates and errors.
    */
-  private function log($status, $msg, $tracker=null) {
+  private function log($status, $msg, &$tracker=null) {
     kohana::log($status, "REST API Sync: $msg");
     if ($status==='error') {
       $msg = "ERROR: $msg";
