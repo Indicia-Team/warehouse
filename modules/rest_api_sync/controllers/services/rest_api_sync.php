@@ -101,13 +101,22 @@ class Rest_Api_Sync_Controller extends Controller {
     // before annotations otherwise we get annotations where the obs has not yet loaded.
     if ($state!=='load-annotations' || (isset($server['resources']) && count($server['resources'])===1)) {
       $done = self::sync_taxon_observations($server, $server_id, $project, $survey_id, $state==='load-done');
-      if ($state === 'load-taxon-observations' && $done) // progress to initial load of annotations
+      if ($state === 'load-taxon-observations' && $done) {
+        // progress to initial load of annotations
         $state = 'load-annotations';
+        $this->processing_date_limit = '1600-01-01';
+      }
     }
     if ($state!=='load-taxon-observations' || (isset($server['resources']) && count($server['resources'])===1)) {
       $done = self::sync_annotations($server, $server_id, $project, $survey_id, $state==='load-done');
-      if ($state === 'load-annotations' && $done) // initial loading done
+      if ($state === 'load-annotations' && $done) {
+        // initial loading done
         $state = 'load-done';
+        // @todo -1 week is arbitrary. Should really use the time that we switched out of the
+        // loading-taxon-observations state.
+        $this->processing_date_limit = date("Y-m-d\TH:i:s -1 week");
+      }
+
     }
     variable::set("rest_api_sync_$project[id]_state", $state);
   }
@@ -134,6 +143,8 @@ class Rest_Api_Sync_Controller extends Controller {
         $server['url'], $project['id'], $this->from_date_time, $this->processing_date_limit);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     $processedCount = 0;
+    $last_completely_processed_date = null;
+    $last_record_date = null;
     while ($next_page_of_taxon_observations_url && ($load_all || $processedCount < MAX_RECORDS_TO_PROCESS)) {
       $data = rest_api_sync::get_server_taxon_observations($next_page_of_taxon_observations_url, $server_id);
       $observations = $data['data'];
@@ -153,11 +164,16 @@ class Rest_Api_Sync_Controller extends Controller {
           $this->log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
               json_encode($observation), $tracker);
         }
+        if ($last_record_date && $last_record_date <> $observation['lastEditDate'])
+          $last_completely_processed_date = $last_record_date;
+        $last_record_date = $observation['lastEditDate'];
         $processedCount++;
       }
       $next_page_of_taxon_observations_url = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
     echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
+    if (!$load_all && $processedCount >= MAX_RECORDS_TO_PROCESS)
+      $this->processing_date_limit = $last_completely_processed_date;
     return $load_all || $processedCount < MAX_RECORDS_TO_PROCESS;
   }
 
@@ -180,6 +196,8 @@ class Rest_Api_Sync_Controller extends Controller {
         $server['url'], $project['id'], $this->from_date_time, $this->processing_date_limit);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     $processedCount = 0;
+    $last_completely_processed_date = null;
+    $last_record_date = null;
     while ($nextPageOfAnnotationsUrl && ($load_all || $processedCount < MAX_RECORDS_TO_PROCESS)) {
       $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $server_id);
       $annotations = $data['data'];
@@ -193,11 +211,16 @@ class Rest_Api_Sync_Controller extends Controller {
           $this->log('error', "Error occurred submitting an annotation\n" . $e->getMessage() . "\n" .
             json_encode($annotation), $tracker);
         }
+        if ($last_record_date && $last_record_date <> $annotation['lastEditDate'])
+          $last_completely_processed_date = $last_record_date;
+        $last_record_date = $annotation['lastEditDate'];
         $processedCount++;
       }
       $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
     echo "<strong>Annotations</strong><br/><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
+    if (!$load_all && $processedCount >= MAX_RECORDS_TO_PROCESS)
+      $this->processing_date_limit = $last_completely_processed_date;
     return $load_all || $processedCount < MAX_RECORDS_TO_PROCESS;
   }
 
