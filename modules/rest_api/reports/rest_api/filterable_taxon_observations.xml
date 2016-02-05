@@ -19,7 +19,7 @@ and o.taxa_taxon_list_external_key is not null
   </query>
   
   <order_bys>
-    <order_by>o.id ASC</order_by>
+    <order_by>o.cache_updated_on ASC</order_by>
   </order_bys>
   <params>
     <param name='system_user_id' display='System ID' description='3 character code identifying the system' datatype='text' />

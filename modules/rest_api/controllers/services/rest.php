@@ -241,13 +241,6 @@ HTML;
         'params' => array(
           'proj_id' => array(
             'datatype' => 'text'
-          )
-        )
-      ),
-      '{annotation ID}' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text'
           ),
           'page' => array(
             'datatype' => 'integer'
@@ -260,6 +253,13 @@ HTML;
           ),
           'edited_date_to' => array(
             'datatype' => 'date'
+          )
+        )
+      ),
+      '{annotation ID}' => array(
+        'params' => array(
+          'proj_id' => array(
+            'datatype' => 'text'
           )
         )
       )
