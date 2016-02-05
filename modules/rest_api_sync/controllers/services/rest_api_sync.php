@@ -21,6 +21,8 @@
  * @link    http://code.google.com/p/indicia/
  */
 
+define('MAX_RECORDS_TO_PROCESS', 2000);
+
 /**
  * Controller class to provide an endpoint for initiating the synchronisation of
  * two warehouses via the REST API.
@@ -39,11 +41,16 @@ class Rest_Api_Sync_Controller extends Controller {
   private $from_date_time;
 
   /**
-   * @var string ISO datetime of the moment when the sync process started. Set into
-   * the variable which remembers the last run so that the next run can filter for
-   * records changed after this moment.
+   * @var string When a sync run only manages to do part of the job (too many records to process)
+   * this defines the limit of the completely processed edit date range.
    */
-  private $next_from_date_time;
+  private $processing_date_limit;
+
+  /**
+   * @var string Current processing state, used to track initial setup. Can be 'T'
+   * for initial loading of taxon observations
+   */
+  private $state;
 
   /**
    * Main controller method for the rest_api_sync module. Initiates a synchronisation.
@@ -53,15 +60,6 @@ class Rest_Api_Sync_Controller extends Controller {
     $this->db = Database::instance();
     rest_api_sync::$client_user_id = Kohana::config('rest_api_sync.user_id');
     $servers = Kohana::config('rest_api_sync.servers');
-    $this->from_date_time = variable::get('rest_api_sync_last_run', '2015-01-01', false);
-    // Allow max 1 momth of records per sync run.
-    if (strtotime($this->from_date_time) > strtotime('-1 month'))
-      $this->next_from_date_time = date("Y-m-d");
-    else {
-      $this->next_from_date_time = date("Y-m-d", strtotime($this->from_date_time . ' +1 month'));
-      echo 'WARNING: Limited to records changed before ' . $this->next_from_date_time .
-          '. Run again to process 1 month of changed records at a time.<br/>';
-    }
     echo "<h1>REST API Sync</h1>";
     foreach ($servers as $server_id => $server) {
       echo "<h2>$server_id</h2>";
@@ -75,13 +73,17 @@ class Rest_Api_Sync_Controller extends Controller {
         }
         $projects = $response['data'];
         foreach ($projects as $project) {
+          $this->from_date_time = variable::get("rest_api_sync_$project[id]_last_run", '1600-01-01', false);
+          $this->processing_date_limit = date("Y-m-d\TH:i:s");
           $survey_id = $this->get_survey_id($server, $project);
           $this->sync_from_project($server, $server_id, $project, $survey_id);
+          // If we only managed a partial run, set the date limit of the record range we processed for next
+          // time. Otherwise set the time we started processing so nothing is missed.
+          variable::set("rest_api_sync_$project[id]_last_run", $this->processing_date_limit);
         }
         $next_page_of_projects_url = isset($response['paging']['next']) ? $response['paging']['next'] : false;
       }
     }
-    variable::set('rest_api_sync_last_run', $this->next_from_date_time);
   }
 
   /**
@@ -113,9 +115,11 @@ class Rest_Api_Sync_Controller extends Controller {
     $user_id = Kohana::config('rest_api_sync.user_id');
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $next_page_of_taxon_observations_url = rest_api_sync::get_server_taxon_observations_url(
-        $server['url'], $project['id'], $this->from_date_time, $this->next_from_date_time);
+        $server['url'], $project['id'], $this->from_date_time, $this->processing_date_limit);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
-    while ($next_page_of_taxon_observations_url) {
+    $last_completely_processed_date = null;
+    $last_record_date = null;
+    while ($next_page_of_taxon_observations_url && ($tracker['inserts'] + $tracker['updates'] < MAX_RECORDS_TO_PROCESS)) {
       $data = rest_api_sync::get_server_taxon_observations($next_page_of_taxon_observations_url, $server_id);
       $observations = $data['data'];
       $this->log('debug', count($observations) . ' records found');
@@ -133,9 +137,17 @@ class Rest_Api_Sync_Controller extends Controller {
         catch (exception $e) {
           $this->log('error', "Error occurred submitting an occurrence\n" . $e->getMessage(), $tracker);
         }
+        // We need to know the edit date stamp that's been completely processed to make sure we don't miss any
+        if ($last_record_date && $last_record_date <> $observation['lastEditDate'])
+          $last_completely_processed_date = $last_record_date;
+        $last_record_date = $observation['lastEditDate'];
       }
       $next_page_of_taxon_observations_url = isset($data['paging']['next']) ? $data['paging']['next'] : false;
     }
+    // If we were unable to process the entire job, note the limit of where we got to. So, we use the
+    // taxon-observations syncing as a kind of load throttle.
+    if ($tracker['inserts'] + $tracker['updates'] >= MAX_RECORDS_TO_PROCESS)
+      $this->processing_date_limit = $last_completely_processed_date;
     echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
   }
 
@@ -149,8 +161,10 @@ class Rest_Api_Sync_Controller extends Controller {
    */
   private function sync_annotations($server, $server_id, $project, $survey_id) {
     $nextPageOfAnnotationsUrl = rest_api_sync::get_server_annotations_url(
-        $server['url'], $project['id'], $this->from_date_time, $this->next_from_date_time);
+        $server['url'], $project['id'], $this->from_date_time, $this->processing_date_limit);
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
+    //  && ($tracker['inserts'] + $tracker['updates'] < MAX_RECORDS_TO_PROCESS)
+    // but not if using a set date range from the obs.
     while ($nextPageOfAnnotationsUrl) {
       $data = rest_api_sync::get_server_annotations($nextPageOfAnnotationsUrl, $server_id);
       $annotations = $data['data'];
