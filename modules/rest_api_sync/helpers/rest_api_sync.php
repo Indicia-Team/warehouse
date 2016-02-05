@@ -38,7 +38,8 @@ class rest_api_sync {
     return $server_url . '/taxon-observations?' . http_build_query(array(
       'proj_id' => $projectId,
       'edited_date_from' => $edited_date_from,
-      'edited_date_to' => $edited_date_to
+      'edited_date_from' => $edited_date_to,
+      'limit' => 500
     ));
   }
   
@@ -47,7 +48,8 @@ class rest_api_sync {
     return $server_url . '/annotations?' . http_build_query(array(
       'proj_id' => $projectId,
       'edited_date_from' => $edited_date_from,
-      'edited_date_to' => $edited_date_to
+      'edited_date_to' => $edited_date_to,
+      'limit' => 500
     ));
   }
 
