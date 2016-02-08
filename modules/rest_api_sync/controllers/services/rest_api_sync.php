@@ -74,6 +74,8 @@ class Rest_Api_Sync_Controller extends Controller {
         $projects = $response['data'];
         foreach ($projects as $project) {
           $this->from_date_time = variable::get("rest_api_sync_$project[id]_last_run", '1600-01-01', false);
+          // add a second on, since we processed all the records from the last second
+          $this->from_date_time = date("Y-m-d\TH:i:s", strtotime($this->from_date_time . ' +1 second'));
           $this->processing_date_limit = date("Y-m-d\TH:i:s");
           $survey_id = $this->get_survey_id($server, $project);
           $this->sync_from_project($server, $server_id, $project, $survey_id);
