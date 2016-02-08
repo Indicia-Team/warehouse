@@ -185,10 +185,6 @@ LEFT JOIN (occurrence_attribute_values v_det_full_name
 ) on v_det_full_name.occurrence_id=o.id and v_det_full_name.deleted=false
 WHERE o.deleted=false;
 
-UPDATE cache_occurrences_functional o
-SET media_count=(SELECT COUNT(om.*)
-FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false);
-
 UPDATE cache_occurrences_nonfunctional o
 SET data_cleaner_info=
   CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE
@@ -204,7 +200,7 @@ AND occ.deleted=false;
 INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
-            group_id, record_status, query, media_count)
+            group_id, record_status, query)
 SELECT distinct on (s.id) s.id, su.website_id, s.id, s.input_form, s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
@@ -215,8 +211,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.id, s.input_form, s.location_id
     when sc1.id is null then null
     when sc2.id is null and s.updated_on<=sc1.created_on then 'Q'
     else 'A'
-  end,
-  sm.id is not null
+  end
 FROM samples s
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
