@@ -59,7 +59,7 @@ and o.taxa_taxon_list_external_key is not null
         datatype="text" />
     <column name='recorder' display='Recorder' sql='o.recorders' datatype="text" />
     <column name='delete' display='Delete' sql="case occ.deleted when 't' then 'T' end" />
-    <column name='lastEditDate' display='Last Edit Date' sql="substring(replace(occ.updated_on::varchar, ' ', 'T') from 1 for 19)" />
+    <column name='lastEditDate' display='Last Edit Date' sql="to_char(o.cache_updated_on, 'YYYY-MM-DD&quot;T&quot;HH24:MI:SS')" />
     <!-- @todo determiner -->
   </columns>
 </report>

@@ -51,6 +51,7 @@
     <column name="authorName" datatype="text"
             sql="coalesce(oc.person_name, case u.id when 1 then 'anonymous' else p.first_name || ' ' || p.surname end)"/>
     <!--column name="emailaddress" display="Email" sql="" -->
-    <column name="dateTime" sql="to_char(oc.created_on, 'YYYYMMDD&quot;T&quot;HH24:MI:SS')"/>
+    <column name="dateTime" sql="to_char(oc.created_on, 'YYYY-MM-DD&quot;T&quot;HH24:MI:SS')"/>
+    <column name='lastEditDate' display='Last Edit Date' sql="to_char(oc.updated_on, 'YYYY-MM-DD&quot;T&quot;HH24:MI:SS')" />
   </columns>
 </report>
