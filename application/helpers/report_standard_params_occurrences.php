@@ -177,7 +177,7 @@ class report_standard_params_occurrences {
         'description'=>'Last update date of last record to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
-            'sql'=>"('#edited_date_to#'='Click here' OR (o.cache_updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND o.cache_updated_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
+            'sql'=>"('#edited_date_to#'='Click here' OR (o.cache_updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND o.cache_updated_on < cast('#edited_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'edited_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Last update date from time ago',
