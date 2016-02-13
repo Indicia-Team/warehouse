@@ -9,7 +9,7 @@
     JOIN locations square on square.id=plot.parent_id AND (square.location_type_id=#core_square_type_id#) AND square.deleted=false
     #joins#
     WHERE 
-      co.cache_created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)
+      co.date_start &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)
       AND #website_filter# 
       AND square.deleted=false
       AND co.survey_id in (#limit_survey_ids#) 

@@ -12,7 +12,7 @@ level."
         AND ttHab.deleted=false
       JOIN sample_attribute_values sampHabVal on sampHabVal.int_value=ttHab.id AND sampHabVal.sample_attribute_id=#habitat_attr_id# AND sampHabVal.deleted=false
       JOIN samples samp on samp.id = sampHabVal.sample_id 
-        AND (samp.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
+        AND (samp.date_start &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
         AND samp.deleted=false
       JOIN locations plot on plot.id = samp.location_id AND plot.deleted=false
       JOIN surveys su on su.id=samp.survey_id 
@@ -31,7 +31,7 @@ level."
     <param name='fine_habitat' display='Fine Scale Habitat' description='Restrict report to specific habitat.' datatype='lookup' emptyvalue='0'
         population_call='report:reports_for_prebuilt_forms/Splash/fine_habitats_for_population_call:id:term'/>   
     <param name='survey_id' display='Survey' description='Survey' datatype='lookup' population_call='report:reports_for_prebuilt_forms/Splash/get_surveys_for_population_call:id:title' emptyvalue='0'/>
-    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default=""/>
+    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore samples whose date is before this date (we can ignore previous years data)" datatype="date" emptyvalue="" default=""/>
     <param name="limit_survey_ids" display="Limit Survey IDs" description="Comma separated list of survey ids to limit the results to." datatype="text"/>
   </params>
   <columns> 
@@ -84,7 +84,7 @@ level."
          (select plot2.id as plot_id, plot_counts.count as count_richness_per_plot
            FROM locations plot2
            JOIN samples samp2 on samp2.location_id=plot2.id AND samp2.deleted=false
-             AND (samp2.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
+             AND (samp2.date_start &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
            JOIN sample_attribute_values sampHabVal2 on sampHabVal2.sample_id=samp2.id AND sampHabVal2.sample_attribute_id=#habitat_attr_id# AND sampHabVal2.deleted=false
            JOIN termlists_terms ttHab2 ON ttHab2.id=sampHabVal2.int_value AND ttHab2.parent_id IS NOT NULL
              AND (ttHab2.id=ttHab.id)
@@ -98,7 +98,7 @@ level."
             (select plot3.id as plot_id, count(distinct ttl3.taxon_meaning_id) as count
               FROM locations plot3
               JOIN samples samp3 on samp3.location_id = plot3.id AND samp3.deleted=false
-                AND (samp3.created_on >= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')         
+                AND (samp3.date_start >= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')         
               JOIN sample_attribute_values sampHabVal3 on sampHabVal3.sample_id=samp3.id AND sampHabVal3.sample_attribute_id=#habitat_attr_id# AND sampHabVal3.deleted=false         
               JOIN termlists_terms ttHab3 ON ttHab3.id=sampHabVal3.int_value AND ttHab3.parent_id IS NOT NULL AND (ttHab3.id=ttHab.id) AND ttHab3.deleted=false 
               JOIN terms tHab3 on tHab3.id = ttHab3.term_id AND tHab3.term!='Not in scheme' AND tHab3.deleted=false        
@@ -119,7 +119,7 @@ level."
          (select plot2.id as plot_id, plot_counts.count as count_richness_per_plot
            FROM locations plot2
            JOIN samples samp2 on samp2.location_id=plot2.id AND samp2.deleted=false
-             AND (samp2.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
+             AND (samp2.date_start &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')
            JOIN sample_attribute_values sampHabVal2 on sampHabVal2.sample_id=samp2.id AND sampHabVal2.sample_attribute_id=#habitat_attr_id# AND sampHabVal2.deleted=false
            JOIN termlists_terms ttHab2 ON ttHab2.id=sampHabVal2.int_value AND ttHab2.parent_id IS NOT NULL
              AND (ttHab2.id=ttHab.id)
@@ -133,7 +133,7 @@ level."
             (select plot3.id as plot_id, count(distinct ttl3.taxon_meaning_id) as count
               FROM locations plot3
               JOIN samples samp3 on samp3.location_id = plot3.id AND samp3.deleted=false
-                AND (samp3.created_on >= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')         
+                AND (samp3.date_start >= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date) OR '#ignore_dates_before#'='')         
               JOIN sample_attribute_values sampHabVal3 on sampHabVal3.sample_id=samp3.id AND sampHabVal3.sample_attribute_id=#habitat_attr_id# AND sampHabVal3.deleted=false         
               JOIN termlists_terms ttHab3 ON ttHab3.id=sampHabVal3.int_value AND ttHab3.parent_id IS NOT NULL AND (ttHab3.id=ttHab.id) AND ttHab3.deleted=false 
               JOIN terms tHab3 on tHab3.id = ttHab3.term_id AND tHab3.term!='Not in scheme' AND tHab3.deleted=false              

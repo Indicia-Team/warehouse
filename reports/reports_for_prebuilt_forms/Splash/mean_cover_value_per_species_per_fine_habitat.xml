@@ -38,8 +38,8 @@ using a basic integer for the cover, whilst on others this number is represented
         population_call='report:reports_for_prebuilt_forms/Splash/fine_habitats_for_population_call:id:term'>
       <where>savHab.int_value=#habitat#</where>
     </param>
-    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">
-      <where>samp.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)</where>
+    <param name="ignore_dates_before" display="Ignore samples whose date is before this date (we can ignore previous years data)" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">
+      <where>samp.date_start &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)</where>
     </param>
     <param name="limit_survey_ids" display="Limit Survey IDs" description="Survey IDs to limit results to when all surveys are being returned by the user." datatype="text"/>
   </params>
