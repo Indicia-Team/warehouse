@@ -11,12 +11,12 @@ SELECT o.id,
   o.sample_id,
   snf.survey_title,
   snf.website_title,
-  sf.date_start,
-  sf.date_end,
-  sf.date_type,
+  o.date_start,
+  o.date_end,
+  o.date_type,
   snf.public_entered_sref,
   snf.entered_sref_system,
-  sf.public_geom,
+  o.public_geom,
   --sample_method,
   o.taxa_taxon_list_id,
   cttl.preferred_taxa_taxon_list_id,
@@ -75,6 +75,5 @@ SELECT o.id,
   snf.attr_sref_precision
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
-  JOIN cache_samples_functional sf on sf.id=o.sample_id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id;
