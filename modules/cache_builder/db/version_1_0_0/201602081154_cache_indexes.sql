@@ -13,6 +13,11 @@ CREATE INDEX ix_cache_occurrences_functional_date_start
   ON cache_occurrences_functional
   USING btree
   (date_start);
+  
+CREATE INDEX ix_cache_occurrences_functional_date_end
+  ON cache_occurrences_functional
+  USING btree
+  (date_end);
 
 CREATE INDEX ix_cache_samples_functional_survey
   ON cache_samples_functional
