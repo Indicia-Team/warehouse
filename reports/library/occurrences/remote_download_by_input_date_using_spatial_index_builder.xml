@@ -1,13 +1,12 @@
 <report
-    title="Remote Download"
+    title="Remote Download using spatial index builder"
     description="Report suitable for downloading data into remote systems, such as via Indicia2Recorder."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN occurrences occ on occ.id=o.id AND occ.deleted=false
   JOIN samples s on s.id=o.sample_id AND s.deleted=false
-  JOIN websites w on w.id=o.website_id
   JOIN users u ON u.id=o.created_by_id
   JOIN people p ON p.id=u.person_id
   #agreements_join#
@@ -62,7 +61,7 @@
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='recordkey' display='RecordKey' sql="o.id" datatype="text" />
-    <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
+    <column name='source' display='Source' sql="o.website_title || ' | ' || o.survey_title" datatype="text" />
     <column name='sample_id' visible='false' sql='case when o.sensitivity_precision is null then o.sample_id else null end' datatype='integer' />
     <column name='taxon' display='Species' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
@@ -92,7 +91,7 @@
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
     <column name='date' display='Date' datatype='date' />
-    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt;' END || o.recorders" datatype="text" />
+    <column name='recorder' display='Recorder' sql="CASE WHEN o.website_id IN (#website_ids#) THEN '' ELSE o.website_title || '-&gt;' END || o.recorders" datatype="text" />
     <column name='determiner' display='Determiner' datatype="text"
             sql="CASE WHEN o.attr_det_full_name IS NULL THEN
         CASE WHEN o.attr_det_last_name IS NULL THEN NULL ELSE o.attr_det_last_name || COALESCE(', ' || o.attr_det_first_name, '') END

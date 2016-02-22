@@ -2,7 +2,7 @@
     title="NBN Exchange format"
     description="An extract of records in a format suitable for creating NBN Exchange format files in combination with the nbn output format."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
 select #columns#
 from cache_occurrences_functional o
 join cache_occurrences_nonfunctional onf on onf.id=o.id
