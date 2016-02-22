@@ -7,9 +7,8 @@
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-  JOIN locations vc on vc.id=o.location_id_vice_county and vc.deleted=false
-  JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id 
-  JOIN websites w on w.id=o.website_id
+  LEFT JOIN locations vc on vc.id=o.location_id_vice_county and vc.deleted=false
+  JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN users u ON u.id=o.created_by_id
   JOIN people p ON p.id=u.person_id
   #agreements_join#
@@ -74,7 +73,7 @@
       template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
       sql="cttl.default_common_name" datatype='text' />
     <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype='text' />
-    <column name='taxonversionkey' display='TaxonVersionKey' sql='cttl.external_key' datatype="text" />
+    <column name='taxonversionkey' display='TaxonVersionKey' sql='o.taxa_taxon_list_external_key' datatype="text" />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />
     <column name='record_comment' display='Comment' sql="onf.comment" datatype="text" />
     <column name='location_name' display='Site name' sql="case when onf.sensitivity_precision is null and onf.privacy_precision is null then o.location_name else 'Sensitive. Lat long is approximate.' end" datatype='text' />
