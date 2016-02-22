@@ -108,7 +108,7 @@
     <column name='determiner_person_id' sql="case when snf.recorders = onf.attr_det_last_name || ', ' || onf.attr_det_first_name
         or snf.recorders = onf.attr_det_first_name || ' ' || onf.attr_det_last_name
         or snf.recorders = onf.attr_det_full_name then cast(p.id as varchar(20)) else 'unknown' end" />
-    <column name='images' display='Images' sql='onf.images' img='true' />
+    <column name='images' display='Images' sql='onf.media' img='true' />
     <column name='geom' display='Geometry' sql="st_astext(st_transform(o.public_geom, 4326))" datatype="text" />
     <column name='point_geom' display='Geometry' sql="st_astext(st_transform(st_centroid(o.public_geom), 4326))" datatype="text" />
     <column name='licence_code' sql='onf.licence_code' display="Licence" />
