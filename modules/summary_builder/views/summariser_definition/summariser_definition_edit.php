@@ -117,7 +117,7 @@ echo data_entry_helper::select(array(
 							'D'=>'Down: To the integer less than or equal to the value',
 							'X'=>'None (may result in non-integer values)'),
 	'default'=>html::initial_value($values, 'summariser_definition:data_rounding_method'),
-	'helpText' => 'When data is averaged, this determines what rounding is carried out. Note that anything between 0 and 1 will be rounded up to 1.'
+	'helpText' => 'When data is averaged, this determines what rounding is carried out. Note that for summary data (not estimates) anything between 0 and 1 will be rounded up to 1.'
 ));
 ?>
 </fieldset><fieldset><legend>Estimate Generation</legend>

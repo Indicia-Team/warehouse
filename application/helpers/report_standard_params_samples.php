@@ -139,14 +139,16 @@ class report_standard_params_samples {
       ),
       'input_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Input date from',
         'description'=>'Input date of first sample to include in the output',
-        'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"('#input_date_from#'='Click here' OR s.created_on >= CAST('#input_date_from#' as date))")
+        'wheres' =>array(
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#input_date_from#'='Click here' OR s.created_on >= '#input_date_from#'::timestamp)")
         )
       ),
       'input_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Input date to',
         'description'=>'Input date of last sample to include in the output',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"('#input_date_to#'='Click here' OR s.created_on < CAST('#input_date_to#' as date)+'1 day'::interval)")
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#input_date_to#'='Click here' OR (s.created_on <= '#input_date_to#'::timestamp OR (length('#input_date_to#')<=10 AND s.created_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'input_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Input date from time ago',
@@ -157,14 +159,16 @@ class report_standard_params_samples {
       ),
       'edited_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date from',
         'description'=>'Last update date of first sample to include in the output',
-        'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"('#edited_date_from#'='Click here' OR s.updated_on >= CAST('#edited_date_from#' as date))")
+        'wheres' =>array(
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#edited_date_from#'='Click here' OR s.updated_on >= '#edited_date_from#'::timestamp)")
         )
       ),
       'edited_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date to',
         'description'=>'Last update date of last sample to include in the output',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"('#edited_date_to#'='Click here' OR s.updated_on < CAST('#edited_date_to#' as date)+'1 day'::interval)")
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#edited_date_to#'='Click here' OR (s.updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND s.updated_on < cast('#edited_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'edited_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Last update date from time ago',

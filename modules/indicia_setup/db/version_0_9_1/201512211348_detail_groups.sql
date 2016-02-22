@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW indicia.detail_groups AS
+CREATE OR REPLACE VIEW detail_groups AS
  SELECT g.id,
     g.title,
     g.code,
@@ -23,9 +23,9 @@ CREATE OR REPLACE VIEW indicia.detail_groups AS
     g.implicit_record_inclusion,
     g.licence_id,
     l.code AS licence_code
-   FROM indicia.groups g
-     LEFT JOIN indicia.filters f ON f.id = g.filter_id AND f.deleted = false
-     LEFT JOIN indicia.licences l ON l.id = g.licence_id AND l.deleted = false
-     JOIN indicia.users c ON c.id = g.created_by_id
-     JOIN indicia.users u ON u.id = g.updated_by_id
+   FROM groups g
+     LEFT JOIN filters f ON f.id = g.filter_id AND f.deleted = false
+     LEFT JOIN licences l ON l.id = g.licence_id AND l.deleted = false
+     JOIN users c ON c.id = g.created_by_id
+     JOIN users u ON u.id = g.updated_by_id
   WHERE g.deleted = false;
