@@ -99,6 +99,12 @@ class report_standard_params_samples {
           array('value'=>'', 'operator'=>'', 'sql'=>"s.id #sample_id_op# #sample_id#")
         )
       ),
+      'sample_method_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Sample Method ID',
+        'description'=>'Termlists_terms ID for the Sample Method',
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>"s.sample_method_id=#sample_method_id#")
+        )
+      ),
       'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name',
         'description'=>'Name of location to filter to (contains search)',
         'wheres' => array(
