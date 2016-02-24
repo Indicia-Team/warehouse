@@ -3,7 +3,8 @@
     description="Report designed for the All Records administrators using the CEDaR site, same as filterable explore list
 but the location_name is collected from the non-cached version of the occurrences table therefore allowing
 administrators to always see it, even if it has been removed from cache_occurrences by the cache_builder for 
-privacy reasons. We are also display the spatial reference instead of public_entered_sref. Obviously this report should not be publically visible."
+privacy reasons. We are also display the spatial reference instead of public_entered_sref. Obviously this report should not be publically visible.
+The other difference for CEDaR is we allow filtering by taxon_list_id."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
   SELECT #columns#
@@ -19,6 +20,9 @@ privacy reasons. We are also display the spatial reference instead of public_ent
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
+    <param name='taxon_list_id' display='Taxon list id' description='Taxon list to limit report to' datatype='integer' emptyvalue='' default=''>
+      <join>JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id AND ttl.taxon_list_id=#taxon_list_id# AND ttl.deleted=false</join>
+    </param>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
