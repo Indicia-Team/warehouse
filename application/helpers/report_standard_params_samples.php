@@ -48,7 +48,7 @@ class report_standard_params_samples {
       array('input_form', 'input_form_list', TRUE)
     );
   }
-
+  
   /**
    * @return array List of parameters that have an associated operation parameter. E.g. along
    * with the sample_id parameter you can supply sample_id='>=' to define the operation
