@@ -781,7 +781,10 @@ class ReportEngine {
         $query = str_replace('#joins#', "JOIN samples s on s.id=o.sample_id AND s.deleted=false \n#joins#", $query);
       $query = str_replace(array('#sample_sref_field#', '#sample_geom_field#'), array('s.entered_sref', 's.geom'), $query);
     } else {
-      $query = str_replace(array('#sample_sref_field#', '#sample_geom_field#'), array('o.public_entered_sref', 'o.public_geom'), $query);
+      if ($this->reportReader->loadLegacyStandardParamsSet)
+        $query = str_replace(array('#sample_sref_field#', '#sample_geom_field#'), array('o.public_entered_sref', 'o.public_geom'), $query);
+      else
+        $query = str_replace(array('#sample_sref_field#', '#sample_geom_field#'), array('snf.public_entered_sref', 'o.public_geom'), $query);
     }
     // remove the marker left in the query to show where to insert joins
     $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#','#idlist#'), array('','','',''), $query);
