@@ -302,31 +302,37 @@ class XMLReportReader_Core implements ReportReader
     if ($sharing==='me' && empty($userId))
       // revert to website type sharing if we have no known user Id.
       $sharing='website';
-    if ($sharing==='me')
-      // my data only so use the UserId if we have it. Note join to system is just a dummy to keep syntax correct.
-      $query = str_replace(array('#agreements_join#','#sharing_filter#'), array('', "{$this->createdByField}=$userId"), $query);
-    elseif (isset($idList)) {
+    $agreementsJoins = array();
+    $sharingFilters = array();
+    if ($sharing==='me') {
+      // my data only so use the UserId if we have it.
+      $sharingFilters[] = "{$this->createdByField}=$userId";
+      // 'me' is a subtype of reporting
+      $sharing = 'reporting';
+    }
+    if (isset($idList)) {
       if ($sharing==='website') 
-        // this website only
-        $query = str_replace(
-          array('#agreements_join#','#sharing_filter#'), 
-          array('', "{$this->websiteFilterField} in ($idList)"), 
-        $query);
+        $sharingFilters[] = "{$this->websiteFilterField} in ($idList)";
       elseif (!empty($this->websiteFilterField)) {
         // implement the appropriate sharing agreement across websites
         $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
         // add a join to users so we can check their privacy preferences. This does not apply if record input
         // on this website, or for the admin user account.
-        $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=".$this->createdByField;
-        $query = str_replace(array('#agreements_join#','#sharing_filter#','#sharing_website_ids#'), 
-            array($agreementsJoin, 
-            "({$this->websiteFilterField} in ($idList) OR privacyusers.id=1 OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
-            "AND {$this->websiteFilterField} in ($sharedWebsiteIdList)", $sharedWebsiteIdList), $query);
+        $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=".$this->createdByField;
+        $sharingFilters[] = "({$this->websiteFilterField} in ($idList) OR privacyusers.id=1 OR " . 
+            "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
+        $sharingFilters[] = "{$this->websiteFilterField} in ($sharedWebsiteIdList)";
+        $query = str_replace('#sharing_website_ids#', $sharedWebsiteIdList, $query);
       }
     }
-    $query = str_replace('#sharing#', $sharing, $query);
-    // cleanup some of the tokens in the SQL if they haven't already been done
-    $query = str_replace(array('#agreements_join#','#sharing_filter#'), array('','1=1'), $query);
+    // add a dummy sharing filter if nothing else set, for the sake of syntax
+    if (empty($sharingFilters))
+      $sharingFilters[] = '1=1';
+    $query = str_replace(
+      array('#agreements_join#', '#sharing_filter#', '#sharing#'), 
+      array(implode("\n", $agreementsJoins), implode("\n AND ", $sharingFilters), $sharing), 
+      $query
+    );
   }
   
   /**

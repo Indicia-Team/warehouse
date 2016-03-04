@@ -79,12 +79,12 @@ class ReportEngine {
    * @var array A list of additional columns identified from custom attribute parameters.
    */
   private $attrColumns = array();
-  
+
   /**
    * @var array A list of the actual custom attributes, along with a link to the cols they include.
    */
   private $customAttributes = array();
-  
+
   /**
    * @var array A list mappings from known custom attribute captions to the IDs.
    */
@@ -105,14 +105,14 @@ class ReportEngine {
     $this->localReportDir = Kohana::config('indicia.localReportDir');
     $this->reportDb = $db === null ? new Database('report') : $db;
   }
-  
-  /** 
+
+  /**
    * Retrieve all available reports, as a nested associative array.
    */
   public function report_list() {
     $reports = $this->internal_report_list(Kohana::config('indicia.localReportDir'), '/');
     foreach (Kohana::config('config.modules') as $path) {
-      if (is_dir("$path/reports")) 
+      if (is_dir("$path/reports"))
         $reports = array_merge_recursive($reports, $this->internal_report_list("$path/reports", '/'));
     }
     return $reports;
@@ -124,7 +124,7 @@ class ReportEngine {
     if (!is_dir($fullPath))
       throw new Exception("Failed to open reports folder ".$fullPath);
     $dir = opendir($fullPath);
-    
+
     while (false !== ($file = readdir($dir))) {
       if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file"))
         $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list($root, "$path$file/"));
@@ -249,7 +249,7 @@ class ReportEngine {
     $unpopulatedParams = array_diff_key($this->expectedParams, $this->providedParams);
     if (isset($this->providedParams['paramsFormExcludes'])) {
       $includedParams = array_diff_key($this->expectedParams,
-          array_fill_keys(json_decode($this->providedParams['paramsFormExcludes']), ''), 
+          array_fill_keys(json_decode($this->providedParams['paramsFormExcludes']), ''),
           // never ask for params with defaults in the params form.
           $this->reportReader->defaultParamValues);
     }
@@ -286,7 +286,7 @@ class ReportEngine {
       return $r;
     }
   }
-  
+
   public function record_count() {
     if (isset($this->countQuery) && $this->countQuery!==null) {
       $r = $this->reportDb->query($this->countQuery)->result_array(FALSE);
@@ -299,7 +299,7 @@ class ReportEngine {
       return false;
     }
   }
-  
+
   /**
    * Obtain the set of columns from the report reader on demand, so it is only called once.
    */
@@ -433,7 +433,7 @@ class ReportEngine {
         $attrData = $response->result_array(FALSE);
         $newColumns = array();
         // This makes some assumptions about the way the attribute data is stored within the DB tables.
-        // Note that $attributeDefn->id is actually text, which means that the order of data in $row is actually the order in which the 
+        // Note that $attributeDefn->id is actually text, which means that the order of data in $row is actually the order in which the
         // attributes are encountered in the data set.
         // we assume that the attributes are ordered in blocks of each attribute ID, in the order that we wish them to appear in the report.
         foreach ($attrData as $row){
@@ -610,7 +610,7 @@ class ReportEngine {
       }
     }
     if ($this->report===null)
-      throw new exception("Unable to find report $request.");    
+      throw new exception("Unable to find report $request.");
   }
 
   private function fetchRemoteReport($request)
@@ -654,7 +654,7 @@ class ReportEngine {
     $this->query = $this->mergeQueryWithParams($query);
     $this->reportReader->applyPrivilegesFilters($this->query, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId);
   }
-  
+
   private function mergeCountQuery()
   {
     // Grab the query from the report reader
@@ -662,10 +662,10 @@ class ReportEngine {
     if ($query!==null) {
       $this->countQuery = $this->mergeQueryWithParams($query, true);
       $this->reportReader->applyPrivilegesFilters($this->countQuery, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId);
-    } else 
+    } else
       $this->countQuery = null;
   }
-  
+
   private function mergeQueryWithParams($query, $counting=false)
   {
     // Replace each parameter in place
@@ -727,7 +727,7 @@ class ReportEngine {
               // array check on text parameter values
               if (strlen($value)) {
                 $arr = str_getcsv($value, ",", "'");
-                foreach ($arr as &$item) 
+                foreach ($arr as &$item)
                   $item = pg_escape_string($item);
                 $value = "'" . implode("','", $arr) . "'";
               }
@@ -745,7 +745,7 @@ class ReportEngine {
             $query = preg_replace("/#$name#/", $value, $query);
           }
         }
-      }      
+      }
       elseif (isset($this->customAttributes[$name])) {
         // request includes a custom attribute column being used as a filter.
         if ($this->customAttributes[$name]['string'])
@@ -758,7 +758,7 @@ class ReportEngine {
         $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
         $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
       }
-      elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches) 
+      elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches)
           && array_key_exists($matches['prefix'].'date_start', $this->reportReader->columns)
           && array_key_exists($matches['prefix'].'date_end', $this->reportReader->columns)
           && array_key_exists($matches['prefix'].'date_type', $this->reportReader->columns)) {
@@ -771,7 +771,7 @@ class ReportEngine {
     // column replacements and additional join to samples for geometry permissions autoswitching
     if ($this->sharingMode==='me' || $this->sharingMode==='verification' || $this->groupAllowsSensitiveAccess()) {
       // don't add the join to samples when it is not necessary.
-      if (strpos($query, '#sample_sref_field#') || strpos($query, '#sample_geom_field#')) 
+      if (strpos($query, '#sample_sref_field#') || strpos($query, '#sample_geom_field#'))
         $query = str_replace('#joins#', "JOIN samples s on s.id=o.sample_id AND s.deleted=false \n#joins#", $query);
       $query = str_replace(array('#sample_sref_field#', '#sample_geom_field#'), array('s.entered_sref', 's.geom'), $query);
     } else {
@@ -808,7 +808,7 @@ class ReportEngine {
     }
     return $query;
   }
-  
+
   /**
    * Returns true if the report is using standard parameters and is limited to a group ID which allows its members to view
    * sensitive records, only if the current user is a group member.
@@ -834,7 +834,7 @@ class ReportEngine {
     }
     return $value;
   }
-  
+
   /**
    * Retrieve the filter required by a column filter row search
    */
@@ -851,9 +851,9 @@ class ReportEngine {
       if (substr($value, -1)!=='%')
         $value .= '%';
       $operator='ILIKE';
-    } else 
-      $operator = '='; 
-    
+    } else
+      $operator = '=';
+
     if ($datatype!=='text' && $datatype!=='date') {
       //strip spaces so the user can be more flexible about spaces they enter
       //Note: Don't use this for text filter as spacing might be important for the search.
@@ -864,13 +864,13 @@ class ReportEngine {
       if (preg_match('/(?P<from>\d+(\.\d+)?)(-|to)(?<to>\d+(\.\d+)?)/', $value, $matches))
         return "$field BETWEEN ".$matches['from']." AND ".$matches['to'];
       // support <, <=, >, >= operators
-      if (preg_match('/(?P<op>(>|<|>=|<=))(?P<val>\d+(\.\d+)?)/', $value, $matches)) 
+      if (preg_match('/(?P<op>(>|<|>=|<=))(?P<val>\d+(\.\d+)?)/', $value, $matches))
         return "$field ".$matches['op']." ".$matches['val'];
-    } 
+    }
     if ($datatype==='text' || $datatype==='species') {
       // ensure value is escaped for apostrophes
       $value = pg_escape_string($value);
-      // quote text and date values 
+      // quote text and date values
       $value="'".$value."'";
     }
     if ($datatype != 'date') {
@@ -897,13 +897,14 @@ class ReportEngine {
         ->from("{$entity}_attributes as a");
     if ($this->websiteIds) {
       $websiteIds = implode(',', $this->websiteIds);
+      // A 'me' share is basically a subtype of a reporting share mode.
+      $sharingMode = $this->sharingMode === 'me' ? 'reporting' : $this->sharingMode;
       $this->reportDb
           ->join("{$entity}_attributes_websites as aw", "aw.{$entity}_attribute_id", 'a.id')
-          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id', 'LEFT')          
+          ->join('index_websites_website_agreements as wa', 'wa.from_website_id', 'aw.website_id', 'LEFT')
           ->where("(wa.to_website_id in ($websiteIds) or wa.to_website_id is null)")
-          ->where(array('aw.deleted' => 'f'));
-      if ($this->sharingMode!=='me')
-        $this->reportDb->where("(wa.provide_for_{$this->sharingMode}='t' or wa.provide_for_{$this->sharingMode} is null)");
+          ->where(array('aw.deleted' => 'f'))
+          ->where("(wa.provide_for_$sharingMode='t' or wa.provide_for_$sharingMode is null)");
     }
     $ids = array();
     $captions = array();
@@ -924,7 +925,7 @@ class ReportEngine {
         $ids[] = $attr;                 // an attribute ID
       elseif ($attr==='#all_survey_attrs' && $surveys)
         $allSurveyAttrs=true;           // requesting all attributes for a single selected survey
-      elseif (substr($attr, 0, 1)==='#') 
+      elseif (substr($attr, 0, 1)==='#')
         $sysfuncs[] = substr($attr, 1); // a system function
       else
         $captions[] = $attr;            // an attribute caption
@@ -947,11 +948,11 @@ class ReportEngine {
     } else {
       if ((count($ids)===0 ? 0 : 1) + (count($captions)===0 ? 0 : 1) + (count($sysfuncs)===0 ? 0 : 1) > 1)
         throw new exception('Cannot mix numeric IDs, captions and system functions in the list of requested custom attributes');
-      if (count($ids)>0) 
+      if (count($ids)>0)
         $this->reportDb->in('a.id', $ids);
-      elseif (count($captions)>0) 
+      elseif (count($captions)>0)
         $this->reportDb->in('caption', $captions);
-      elseif (count($sysfuncs)>0) 
+      elseif (count($sysfuncs)>0)
         $this->reportDb->in('system_function', $sysfuncs);
     }
     $attrs = $this->reportDb->get();
@@ -1004,7 +1005,7 @@ class ReportEngine {
         return "{$entity}_$sysfunc.text_value\n";
     }
   }
-  
+
   /**
    * Create the joins and column definitions required to support a set of custom attributes
    * added to the report by specifying one or more system functions.
@@ -1061,7 +1062,7 @@ class ReportEngine {
       }
     }
   }
-  
+
   /**
    * Retrieve the columns involved in storing the data for a given attribute, depending on its data type.
    *
@@ -1082,7 +1083,7 @@ class ReportEngine {
       case 'V' :
         $cols = array('date_start_value'=>' start','date_end_value'=>' end','date_type_value'=>' type');
         break;
-      case 'L' :          
+      case 'L' :
         $cols= array('int_value'=>'');
         // lookups will have the join inserted later
         break;
@@ -1091,7 +1092,7 @@ class ReportEngine {
     }
     return $cols;
   }
-  
+
   /**
    * Create the joins and column definitions required to support a set of custom attributes
    * added to the report by specifying one or more attributes by ID or caption.
@@ -1111,13 +1112,13 @@ class ReportEngine {
       // We use the attribute ID or the attribute caption to create the unique column alias, depending on how it was requested.
       $uniqueId = $usingCaptions ? preg_replace('/\W/', '_', strtolower($attr->caption)) : $id;
       $alias = "attr_id_{$entity}{$idx}_$uniqueId";
-      // Find out what query field alias we need to join the attribute to (e.g. s.id for samples, l.id for locations).      
+      // Find out what query field alias we need to join the attribute to (e.g. s.id for samples, l.id for locations).
       $joinFieldAttr = inflector::plural($entity).$idx.'_id_field';
-      $joinToField = $this->reportReader->$joinFieldAttr;      
-      // Create the fields required in the SQL. First the attribute value ID(s).      
+      $joinToField = $this->reportReader->$joinFieldAttr;
+      // Create the fields required in the SQL. First the attribute value ID(s).
       if ($attr->multi_value==='t')
         $query = str_replace('#fields#', ", (select array_to_string(array_agg(mv$alias.id), ', ')
-  from {$entity}_attribute_values mv$alias 
+  from {$entity}_attribute_values mv$alias
   where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id) as $alias#fields#", $query);
       else {
         $query = str_replace('#fields#', ", $entity${idx_}$id.id as $alias#fields#", $query);
@@ -1133,7 +1134,7 @@ class ReportEngine {
       foreach($cols as $col=>$suffix) {
         $alias = "attr_{$entity}{$idx}_$uniqueId";
         // vague date cols need to distinguish the different column types.
-        if ($attr->data_type=='V') 
+        if ($attr->data_type=='V')
           $alias .= $col;
         elseif ($attr->data_type=='L') {
           // main output column for lookups is an ID column, so clarify the caption to reflect this
@@ -1143,24 +1144,24 @@ class ReportEngine {
         if ($attr->multi_value==='t') {
           // multivalue so use a subquery to build a CSV list of the data, no need to group by as this is aggregated
           $field="(select array_to_string(array_agg(mv$alias.$col), ', ')
-  from {$entity}_attribute_values mv$alias 
+  from {$entity}_attribute_values mv$alias
   where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id)";
         } else {
           $field = "$entity${idx_}$id.$col";
           $query = str_replace('#group_bys#', ", $entity${idx_}$id.$col#group_bys#", $query);
         }
         $query = str_replace('#fields#', ", $field as $alias#fields#", $query);
-        
+
         // For each attribute, use the first column to prepare the SQL required should this column be used in a filter later.
         if (!$doneFilter) {
           $doneFilter = true;
           // identify strings, so we can escape values properly
           $filterIsString = preg_match('/[TDV]/', $attr->data_type) || $attr->multi_value==='t';
-          if ($attr->multi_value==='t') 
+          if ($attr->multi_value==='t')
             $filter = "exists(select mv$alias.$col
-  from {$entity}_attribute_values mv$alias 
+  from {$entity}_attribute_values mv$alias
   where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id and mv$alias.$col=#filtervalue#)";
-          else 
+          else
             $filter = "$field=#filtervalue#";
           // store the filter for later
           $this->customAttributes["attr_$entity{$idx}_$uniqueId"] = array(
@@ -1190,14 +1191,14 @@ class ReportEngine {
         } else {
           // multi-value, so use an aggregate to build a CSV list of the terms
           $field="(select array_to_string(array_agg(term{$alias}.term), ', ')
-  from {$entity}_attribute_values mv$alias 
+  from {$entity}_attribute_values mv$alias
   join ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." term{$alias} on term{$alias}.id=mv$alias.int_value
   where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id)";
           $query = str_replace('#fields#', ", $field as $alias#fields#", $query);
           // also use an exists subquery to check the multivalue term in the case of filtering against this column
           $this->customAttributes["attr_$entity${idx}_term_$uniqueId"] = array(
             'filter' => "exists(select term{$alias}.term
-  from {$entity}_attribute_values mv$alias 
+  from {$entity}_attribute_values mv$alias
   join ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." term{$alias} on term{$alias}.id=mv$alias.int_value
   where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id and term{$alias}.term=#filtervalue#)",
             'string' => true
@@ -1211,7 +1212,7 @@ class ReportEngine {
       $this->customAttributeCaptions["$entity$idx:".$attr->caption] = $id;
     }
   }
-  
+
   /**
    * Adds the join required for a custom attribute to the query.
    *
@@ -1235,7 +1236,7 @@ class ReportEngine {
     }
     return $joinType;
   }
-  
+
   /**
    * Add any joins defined by a used parameter to the query.
    */
@@ -1256,18 +1257,18 @@ class ReportEngine {
               $joins[] = "JOIN cache_taxa_taxon_lists prefcttl ON prefcttl.id=o.preferred_taxa_taxon_list_id";
               break;
             default:
-              throw new exception("Unrecognised standard join refered to by report parameter: $joinDef[standard_join]");              
+              throw new exception("Unrecognised standard join refered to by report parameter: $joinDef[standard_join]");
           }
           $this->doneStandardParamJoins[] = $joinDef['standard_join'];
         }
       }
     }
-    // put the param joins after the #joins# token, as we might insert other joins first that are required by the param joins, 
+    // put the param joins after the #joins# token, as we might insert other joins first that are required by the param joins,
     // e.g. the sample table when doing geometry autoswitching.
     $query = str_replace('#joins#', "#joins#\n".implode("\n", $joins), $query);
     return $query;
   }
-  
+
   /**
    * Add any where clause filters defined by a used parameter to the query.
    * @todo: Consider caching of the preprocess output.
@@ -1290,7 +1291,7 @@ class ReportEngine {
     }
     return $query;
   }
-  
+
   /**
    * If sorting on the date column (the extra column added by vague date processing) then
    * switch the sort order back to use date_start.
@@ -1321,15 +1322,15 @@ class ReportEngine {
   }
 
   private function executeQuery()
-  {    
+  {
     Kohana::log('debug', "Running report query : ".$this->query);
     $tm = microtime(true);
     $this->response = $this->reportDb->query($this->query);
-    $tm = microtime(true) - $tm;  
+    $tm = microtime(true) - $tm;
     if ($tm>5) {
       kohana::log('alert', "Report query took $tm seconds.");
       kohana::log('alert', $this->report);
-      kohana::log('alert', $this->query);    
+      kohana::log('alert', $this->query);
     }
   }
 
