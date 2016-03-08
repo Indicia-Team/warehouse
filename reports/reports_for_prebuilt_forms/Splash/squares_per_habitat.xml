@@ -9,11 +9,15 @@ broad scale habitat is reported on, we need to work out the related broad scale 
   FROM locations square
     LEFT JOIN locations_websites square_w on square_w.location_id=square.id AND square_w.deleted=false
     JOIN locations plot on plot.parent_id=square.id AND plot.deleted=false
-    JOIN samples samp on samp.location_id = plot.id AND samp.deleted = false
+    JOIN samples samp on samp.location_id = plot.id AND samp.survey_id in (#limit_survey_ids#) AND samp.deleted = false
     JOIN sample_attribute_values sampHabVal on sampHabVal.sample_attribute_id=#habitat_attr_id# AND sampHabVal.sample_id=samp.id AND sampHabVal.deleted=false
     JOIN termlists_terms habTt on habTt.id = sampHabVal.int_value AND habTt.deleted=false
+    JOIN terms habT on habT.id=habTt.term_id AND habT.term!='Not in scheme' AND habT.deleted=false
+    LEFT JOIN termlists_terms habTtParent on habTtParent.id = habTt.parent_id AND habTtParent.deleted=false
+    LEFT JOIN terms habTParent on habTParent.id=habTtParent.term_id  AND habTParent.deleted=false
   WHERE square.deleted=false
     AND #website_filter#
+    AND (habTParent.id IS NULL OR habTParent.term!='Not in scheme')
   </query>
   <params>
     <param name='broad_habitat' display='Broad Scale Habitat' description='Broad scale habitat to report on.' datatype='lookup' emptyvalue=''
@@ -25,13 +29,14 @@ broad scale habitat is reported on, we need to work out the related broad scale 
       <where>sampHabVal.int_value=#fine_habitat#</where>
     </param>
     <param name='habitat_attr_id' display='Habitat Sample Attribute Id' description='Id of the sample attribute that holds the habitat.' datatype='integer'/>
-    <param name="ignore_sample_dates_before" display="Ignore Sample Dates Before" description="Ignore any samples created before this date." datatype="date" emptyvalue="" default="">
-      <where>samp.created_on &gt;= CAST(COALESCE('#ignore_sample_dates_before#','1500-01-01') as date)</where>  
+    <param name="ignore_sample_dates_before" display="Ignore Sample Dates Before" description="Ignore samples whose date is before this date (we can ignore previous years data)." datatype="date" emptyvalue="" default="">
+      <where>samp.date_start &gt;= CAST(COALESCE('#ignore_sample_dates_before#','1500-01-01') as date)</where>  
     </param>      
-    <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any sqaures created before this date.
+    <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any squares created before this date.
 Useful if old squares are left on the system but are not currently active." datatype="date" emptyvalue="" default="">
       <where>square.created_on &gt;= CAST(COALESCE('#ignore_square_dates_before#','1500-01-01') as date)</where>
     </param>
+    <param name="limit_survey_ids" display="Limit Survey IDs" description="Comma separated list of survey ids to limit the results to." datatype="text"/>
   </params>
   <columns> 
     <column name='id' sql='distinct(square.id)' datatype='integer' visible='false'/>

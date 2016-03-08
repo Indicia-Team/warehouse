@@ -6,7 +6,7 @@ using a basic integer for the cover, whilst on others this number is represented
   <query website_filter_field="co.website_id">
     SELECT #columns#
     FROM cache_occurrences co
-      JOIN samples samp on samp.id=co.sample_id AND samp.deleted = false
+      JOIN samples samp on samp.id=co.sample_id AND samp.survey_id in (#limit_survey_ids#) AND samp.deleted = false
       JOIN sample_attribute_values savHab on savHab.sample_id=samp.id AND savHab.sample_attribute_id=#habitat_attr_id# AND savHab.deleted=false
       JOIN termlists_terms ttHab ON ttHab.id = savHab.int_value AND ttHab.parent_id IS NOT NULL AND ttHab.deleted=false
       JOIN terms tHab ON tHab.id = ttHab.term_id AND tHab.term!='Not in scheme' AND tHab.deleted=false  
@@ -38,9 +38,10 @@ using a basic integer for the cover, whilst on others this number is represented
         population_call='report:reports_for_prebuilt_forms/Splash/fine_habitats_for_population_call:id:term'>
       <where>savHab.int_value=#habitat#</where>
     </param>
-    <param name="ignore_dates_before" display="Ignore Dates Before" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">
-      <where>samp.created_on &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)</where>
+    <param name="ignore_dates_before" display="Ignore samples whose date is before this date (we can ignore previous years data)" description="Ignore data created before this date." datatype="date" emptyvalue="" default="">
+      <where>samp.date_start &gt;= CAST(COALESCE('#ignore_dates_before#','1500-01-01') as date)</where>
     </param>
+    <param name="limit_survey_ids" display="Limit Survey IDs" description="Survey IDs to limit results to when all surveys are being returned by the user." datatype="text"/>
   </params>
   <columns>
     <column name='habitat' display='Habitat' sql='tHab.term' datatype='text' in_count="true"/>

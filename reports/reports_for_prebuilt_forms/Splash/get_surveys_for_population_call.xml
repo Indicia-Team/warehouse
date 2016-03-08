@@ -1,14 +1,15 @@
 <report
     title="Get surveys for population call."
     description="Report returns a list of surveys, allowing the surveys list in report parameters to be populated. Note this report has hard-coded
-survey names, as the system cannot provide parameters to this kind of report."
+survey names, as the system cannot provide parameters to this kind of report. The hard-coded surveys are currently setup for testing and will need
+adjusting for live."
 >
   <query>
   SELECT #columns#
   FROM surveys s
   WHERE 
     s.deleted=false
-  AND s.title in ('Wildflower Survey','Indicator Survey version 2','Inventory Survey version 2')
+  AND s.title in ('2015 Wildflower Survey','2015 Indicator Survey','2015 Inventory Survey')
   GROUP BY s.id
   </query>
   <columns> 
