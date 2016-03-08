@@ -1297,7 +1297,8 @@ class ReportEngine {
    * switch the sort order back to use date_start.
    */
   private function checkOrderByForVagueDate($order_by) {
-    if ($this->getVagueDateProcessing() && !empty(trim($order_by))) {
+    $order_by = trim($order_by);
+    if ($this->getVagueDateProcessing() && !empty($order_by)) {
       $this->prepareColumns();
       $cols = array_keys($this->columns);
       // Find if we have a date_start column to switch date sort fields to.
