@@ -1,7 +1,10 @@
 <report
     title="Get my squares and plots"
     description="Get a list of Core Squares and Additional Squares that have been assigned to the user and list them with their associated plots. Only plots without samples are editable.
-Include only_return_private_plots to only return private plots associated with the user (no parent squares or public plots)."
+Include only_return_private_plots to only return private plots associated with the user (no parent squares or public plots).
+Include only_show_my_useable_plots_squares to only return plots and squares the user is allowed save data against, the current rule is:
+any squares they are assigned to, any plot the user created, 
+or any plot they are assigned to which they didn't create (as long as they are the only person assigned to the plot's square)."
 >
   <query website_filter_field="lw.website_id">
     SELECT #columns#
@@ -14,13 +17,16 @@ Include only_return_private_plots to only return private plots associated with t
       LEFT JOIN location_attribute_values lav on lav.location_id=square.id AND lav.location_attribute_id = #vice_county_location_attribute_id#
       LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=l.id
       JOIN users u on u.id=#current_user_id#
+      JOIN person_attribute_values pavOthers on pavOthers.int_value=square.id AND pavOthers.person_attribute_id=#user_square_attr_id# AND pavOthers.deleted=false
       JOIN person_attribute_values pav on pav.int_value=square.id AND pav.person_id=u.person_id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
     #joins#
     WHERE (l.id = square.id OR l.parent_id = square.id)
     AND #website_filter# AND l.deleted=false
+    GROUP BY square.id,l.parent_id,l.id,lav.text_value,lavplotname.text_value,termplottype.term,pav.updated_by_id,u.id
+    HAVING (l.parent_id IS NULL OR (#only_show_my_useable_plots_squares#=0 OR (#only_show_my_useable_plots_squares#=1 AND (l.created_by_id=#current_user_id# OR count(pavOthers.id) &lt; 2))))
   </query>
   <order_bys>
-    <order_by>square.id</order_by>
+    <order_by>square.id,l.parent_id desc</order_by>
   </order_bys>
   <params>
     <param name="plot_number_attr_id" display="Id of the plot number attribute" datatype="integer" default="0"/>
@@ -35,6 +41,7 @@ Include only_return_private_plots to only return private plots associated with t
     <param name='only_return_private_plots' description='Only return private plots' datatype='integer' emptyvalue='' default=''>
       <join>JOIN location_attribute_values lavPriv on lavPriv.location_id=l.id AND lavPriv.location_attribute_id = #private_plot_attr_id# AND lavPriv.int_value=1 AND lavPriv.deleted=false</join>
     </param>
+    <param name='only_show_my_useable_plots_squares' description='Only return plots the user created, currently used in the location select on the Extra Species page.' emptyvalue='0' default='0'/>
   </params>
   <columns>
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" in_count="true"/>
@@ -44,7 +51,7 @@ Include only_return_private_plots to only return private plots associated with t
     <column name='show_square_edit_control' display='Show Square Edit Control' sql="case when l.parent_id is null AND l.created_by_id=#current_user_id# then true else false end" visible="false"/>
     <column name='show_simple_square_edit_control' display='Show Simple Square Edit Control' description="Show cut-down version of edit square page?" sql="case when l.parent_id is null then true else false end" visible="false"/>
     <column name='show_plot_view_control' display='Show Plot View Control' sql="case when l.parent_id is not null then true else false end" visible="false"/>
-    <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND l.created_by_id=#current_user_id# AND count(locationSamples.id) = 0 then true else false end" visible="false" aggregate="true"/>
+    <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND (l.created_by_id=#current_user_id# OR count(pavOthers.id) &lt; 2) AND count(locationSamples.id) = 0 then true else false end" visible="false"/>
     <column name='name' display='Location Name' sql="
       case 
         when l.parent_id is null AND #pss_mode#=0
