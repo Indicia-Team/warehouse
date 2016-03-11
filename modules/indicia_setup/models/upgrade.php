@@ -90,12 +90,12 @@ class Upgrade_Model extends Model
         while ($stuffToDo) {
           // Get a version name, to search for a suitable script upgrade folder or an upgrade method with this name
           $version_name = 'version_'.implode('_', $currentVersionNumbers);
-          kohana::log('debug', "upgrading to $version_name");
+          kohana::log('debug', "upgrading $appName to $version_name");
           if (method_exists($this, $version_name)) {
             // dynamically execute an upgrade method with this version name
             $this->$version_name();
             $updatedTo = implode('.', $currentVersionNumbers);
-            kohana::log('debug', "Method ran for $version_name");
+            kohana::log('debug', "Method ran for $appName $version_name");
           }
           if (file_exists($baseDir . "db/" . $version_name)) {
             // start transaction for each folder full of scripts
@@ -112,7 +112,7 @@ class Upgrade_Model extends Model
             // only tell the user if there are superuser or slow scripts, when the transaction has been committed.
             $this->pgUserScriptsToBeApplied .= $this->scriptsForPgUser;
             $this->slowScriptsToBeApplied .= $this->slowScripts;
-            kohana::log('info', "Scripts ran for $version_name");
+            kohana::log('info', "Scripts ran for $appName $version_name");
           }
           
           // Now find the next version number. We start by incrementing the smallest part of the version (level=2), if that does not work
@@ -136,7 +136,7 @@ class Upgrade_Model extends Model
         }
         // update system table entry to new version
         if (isset($updatedTo)) {
-          kohana::log('debug', "Upgrade completed to $updatedTo");
+          kohana::log('debug', "Upgrade of $appName completed to $updatedTo");
           kohana::log('debug', "Upgrade committed");
         }
       }
