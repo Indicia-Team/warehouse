@@ -27,7 +27,7 @@
 function sref_mtb_sref_systems() {
   return array('mtbqqq' => array(
     'title' => 'Messtischblattquadranten',
-    'srid' => 4745,
+    'srid' => 4314,
     'treat_srid_as_x_y_metres' => false
   ));
 }
