@@ -39,8 +39,12 @@
       <where>g.group_type_id in (#group_type_id#)</where>
     </param>
     <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. an organisation which parents a list of projects)."
-        datatype="text" default="">
+        datatype="integer" default="">
       <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>      
+    </param>
+    <param name="to_group_id" display="To child group" description="Only include groups which are the parent of a group (e.g. the organisation containing a project)."
+        datatype="integer" default="">
+      <join>JOIN group_relations grto ON grto.from_group_id=g.id AND grto.to_group_id=#to_group_id# AND grto.deleted=false</join>      
     </param>
     <param name="pending_path" display="Handle pending requests page path" description="Path to the page which will let admins handle pending requests, e.g. /groups/pending?group_id=" 
         datatype="text" default="" />
