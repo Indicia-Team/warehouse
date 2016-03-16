@@ -270,17 +270,23 @@ class Sample_Model extends ORM_Tree
     $srefs = array();
     $systems = spatial_ref::system_list();
     foreach ($systems as $code=>$title) 
-      $srefs[] = "$code:$title";
+    	$srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
+    				":".
+    				str_replace(array(',',':'), array('&#44', '&#56'), $title);
     
     $sample_methods = array(":Defined in file");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term)
-    	$sample_methods[] = $term->id.":".$term->term;
+    	$sample_methods[] = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
+    						":".
+    						str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
     
     $location_types = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term)
-    	$location_types[] = $term->id.':'.$term->term;
+    	$location_types[] = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
+    						":".
+    						str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
     
     return array(
       'website_id' => array( 
