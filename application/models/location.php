@@ -176,8 +176,11 @@ class Location_Model extends ORM_Tree {
   public function fixed_values_form() {
     $srefs = array();
     $systems = spatial_ref::system_metadata();
-    foreach ($systems as $code=>$metadata) 
-      $srefs[] = "$code:".$metadata['title'];
+    foreach ($systems as $code=>$metadata)
+      $srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
+    				":".
+    				str_replace(array(',',':'), array('&#44', '&#56'), $metadata['title']);
+    	 
     return array(
       'website_id' => array( 
         'display'=>'Website', 

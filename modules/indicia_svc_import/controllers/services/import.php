@@ -66,11 +66,19 @@ class Import_Controller extends Service_Base_Controller {
    */
   public function get_import_fields($model) {
     $this->authenticate('read');
+    switch($model){
+    	case 'sample': $attrTypeFilter = empty($_GET['sample_method_id']) ? null : $_GET['sample_method_id'];
+    		break;
+    	case 'location': $attrTypeFilter = empty($_GET['location_type_id']) ? null : $_GET['location_type_id'];
+    		break;
+    	default: $attrTypeFilter = null;
+    		break;
+    }
     $model = ORM::factory($model);
     $website_id = empty($_GET['website_id']) ? null : $_GET['website_id'];
     $survey_id = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
     $use_associations = (empty($_GET['use_associations']) ? false : ($_GET['use_associations'] == "true" ? true : false));
-    echo json_encode($model->getSubmittableFields(true, $website_id, $survey_id, null, $use_associations));
+    echo json_encode($model->getSubmittableFields(true, $website_id, $survey_id, $attrTypeFilter, $use_associations));
   }
   
   /**

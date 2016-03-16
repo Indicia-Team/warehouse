@@ -453,8 +453,10 @@ class Occurrence_Model extends ORM
   public function fixed_values_form($options=array()) {
     $srefs = array();
     $systems = spatial_ref::system_list();
-    foreach ($systems as $code=>$title) 
-      $srefs[] = "$code:$title";
+    foreach ($systems as $code=>$title)
+    	$srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
+    				":".
+    				str_replace(array(',',':'), array('&#44', '&#56'), $title);
     $retVal = array(
       'website_id' => array( 
         'display'=>'Website', 
