@@ -1,6 +1,6 @@
 <report
     title="View Data"
-    description="Report to display the View Data page on Earthworm Watch, excludes location information."
+    description="Report to display the View Data page on Earthworm Watch for admin users. Includes location information."
 >
   <query website_filter_field="su.website_id">
   SELECT #columns#
@@ -52,6 +52,8 @@
     <column name='sample_id' display='ID' sql='s.id' datatype="integer" visible='false' in_count="true"/>
     <column name='person_visible_name' display='Name' sql='pav.text_value' datatype="text"/>
     <column name='pit_num' display='Pit Number' sql="case when pitNumAttr.int_value is null OR pitNumAttr.int_value = 0 then 'Pit 1' else 'Pit 2' End" datatype="text"/>
+    <column name='location_name' display='Location Name' sql='s.location_name' datatype="text"/>
+    <column name='entered_sref' display='Spatial Reference' sql='s.entered_sref' datatype="text"/>
     <column name='date_start' sql='s.date_start' visible='false' />
     <column name='date_end' sql='s.date_end' visible='false' />
     <column name='date_type' sql='s.date_type' visible='false' />

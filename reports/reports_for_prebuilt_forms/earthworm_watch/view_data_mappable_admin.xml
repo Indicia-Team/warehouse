@@ -1,0 +1,22 @@
+<report
+    title="View Data"
+    description="Report to display the map on the View Data page on Earthworm Watch. Shows full precision."
+>
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples s
+  JOIN cache_occurrences co on co.sample_id=s.id
+  JOIN surveys su on su.id=s.survey_id and su.id = #survey_id# and su.deleted=false
+  JOIN websites w on w.id=su.website_id and w.deleted=false
+  WHERE 
+  #website_filter#
+  AND s.deleted=false
+  </query>
+  <params>
+    <param name='survey_id' display='Survey ID' description='ID of the survey to show data for.' datatype='int'/>
+  </params>
+  <columns>
+    <column name='occurrence_id' display='Occurrence ID' sql='co.id' datatype="integer"/>
+    <column name="geom" visible="false" mappable="true" sql="st_astext(s.geom)" in_count="true" />
+  </columns>
+</report>
