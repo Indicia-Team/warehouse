@@ -266,10 +266,9 @@ class DateParser_Core {
   }
 
   public function getIsoDate(){
-    if ($this->aResult['tm_year'] == null) return null;
-    if (!checkdate($this->tm_mon + 1,$this->tm_mday,$this->tm_year))
-      throw new InvalidArgumentException('Invalid date');
-    return date("Y-m-d", mktime(0,0,0,$this->tm_mon + 1,$this->tm_mday,$this->tm_year));
+    if ($this->aResult['tm_year'] == null)
+      return null;
+    return $this->formatDate($this->tm_year, $this->tm_mon + 1, $this->tm_mday);
   }
 
   public function getImpreciseDateStart(){
@@ -280,9 +279,7 @@ class DateParser_Core {
       $aStart['tm_year'] = 100*($a-1);
       $aStart['tm_mon'] = 0;
       $aStart['tm_mday'] = 1;
-      if (!checkdate($this->tm_mon + 1,$this->tm_mday,$this->tm_year))
-        throw new InvalidArgumentException('Invalid date');
-      return date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], $aStart['tm_year']));
+      return $this->formatDate($aStart['tm_year'], $aStart['tm_mon'] + 1, $aStart['tm_mday']);
     }
 
     // Do we have a year, else set it to this year
@@ -292,16 +289,16 @@ class DateParser_Core {
     if (($a = $aStart['tm_season']) != null){
       switch ($a) {
         case 'spring':
-          return date("Y-m-d", mktime(0,0,0,3,1,$aStart['tm_year']));
+          return $this->formatDate($aStart['tm_year'], 3, 1);
           break;
         case 'summer':
-          return date("Y-m-d", mktime(0,0,0,6,1,$aStart['tm_year']));
+          return $this->formatDate($aStart['tm_year'], 6, 1);
           break;
         case 'autumn':
-          return date("Y-m-d", mktime(0,0,0,9,1,$aStart['tm_year']));
+          return $this->formatDate($aStart['tm_year'], 9, 1);
           break;
         case 'winter':
-          return date("Y-m-d", mktime(0,0,0,12,1,$aStart['tm_year']-1));
+          return $this->formatDate($aStart['tm_year'], 12, 1);
           break;
       }
     }
@@ -312,20 +309,15 @@ class DateParser_Core {
     // If no day is given, set it to the first
     if ($aStart['tm_mday'] == null) $aStart['tm_mday'] = 1;
 
-    // Because dates before 1970 can't be handled by mktime, we use 2000 as a dummy date then swap it for the real year
-    $date = date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], 2000));
-    return str_replace('2000', $aStart['tm_year'], $date);
+    return $this->formatDate($aStart['tm_year'], $aStart['tm_mon'] + 1, $aStart['tm_mday']);
   }
 
   public function getImpreciseDateEnd(){
     // Copy the date array
     $aStart = $this->aResult;
     // If we're a century
-    if (($a = $aStart['tm_century']) !== null){
-      $aStart['tm_year'] = 100*($a)-1;
-      $aStart['tm_mon'] = 11;
-      $aStart['tm_mday'] = 31;
-      return date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], $aStart['tm_year']));
+    if (($a = $aStart['tm_century']) !== null) {
+      return $this->formatDate(100*($a)-1, 12, 31);
     }
 
     // Do we have a year, else set it to this year
@@ -335,17 +327,16 @@ class DateParser_Core {
     if (($a = $aStart['tm_season']) !== null){
       switch ($a) {
         case 'spring':
-          return date("Y-m-d", mktime(0,0,0,6,0, $aStart['tm_year']));
-          break;
+          return $this->formatDate($aStart['tm_year'], 5, 31);
         case 'summer':
-          return date("Y-m-d", mktime(0,0,0,9,0, $aStart['tm_year']));
-          break;
+          return $this->formatDate($aStart['tm_year'], 8, 31);
         case 'autumn':
-          return date("Y-m-d", mktime(0,0,0,12,0, $aStart['tm_year']));
-          break;
+          return $this->formatDate($aStart['tm_year'], 11, 30);
         case 'winter':
-          return date("Y-m-d", mktime(0,0,0,3,0, $aStart['tm_year']));
-          break;
+          // End of winter into next year
+          $year = $aStart['tm_year'] + 1;
+          $day = $this->isLeapYear($year) ? 29 : 28;
+          return $this->formatDate($year, 2, $day);
       }
     }
 
@@ -353,19 +344,17 @@ class DateParser_Core {
     if ($aStart['tm_mon'] === null)
       $aStart['tm_mon'] = 11;
 
-    // Because dates before 1970 can't be handled by mktime, we use another year as a dummy date then swap it for the real year.
-    // To ensure the calculation is correct for Feb-29, the dummy year must also be a leap year if the actual year is.
-    $dummy = date('L', strtotime($aStart['tm_year']."-01-01")) ? 2000 : 2001;
-
-    // If no day is given, set day to end of the month using the 't' format which gets the days in the month
+    // If no day is given, set day to end of the month using the 't' format which gets the days in the month.
+    // Since we can't use mktime for historic dates, use the year 2000 arbitrarily and handle feb specially
     if ($aStart['tm_mday'] === null) {
-      $aStart['tm_mday'] = date('t', mktime(0,0,0,$aStart['tm_mon']+1, 1, $dummy));
+      if ($aStart['tm_mon']+1===2)
+        $aStart['tm_mday'] = $this->isLeapYear($aStart['tm_year']) ? 29 : 28;
+      else
+        $aStart['tm_mday'] = date('t', mktime(0,0,0,$aStart['tm_mon']+1, 1, 2000));
     }
 
     // Build our date
-    $date = date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], $dummy));
-    // Swap back to the correct year and return
-    return str_replace($dummy, $aStart['tm_year'], $date);
+    return $this->formatDate($aStart['tm_year'], $aStart['tm_mon'] + 1, $aStart['tm_mday']);
   }
 
   /**
@@ -377,6 +366,26 @@ class DateParser_Core {
       if ($res != null) return $key;
     }
     return null;
+  }
+
+  /**
+   * Formats a year, month and day as a Y-m-d format date string.
+   * @param integer $year
+   * @param integer $month
+   * @param integer $day
+   * @param string $format Date format string, defaults to Y-m-d
+   * @return string
+   */
+  private function formatDate($year, $month, $day, $format='Y-m-d') {
+    if (!checkdate($month, $day, $year))
+      throw new InvalidArgumentException('Invalid date');
+    // avoid mktime approach because of need to support historic dates.
+    $date = new DateTime();
+    return $date->setDate($year, $month, $day)->format($format);
+  }
+
+  private function isLeapYear($year) {
+    return ((($year % 4) == 0) && ((($year % 100) != 0) || (($year %400) == 0)));
   }
 
 
