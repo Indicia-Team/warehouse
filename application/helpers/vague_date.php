@@ -147,6 +147,7 @@ class vague_date {
    *
    * @param array $date Vague date in the form array(start_date, end_date, date_type), where
    * start_date and end_date are DateTime objects or strings.
+   * @return string Vague date expressed as a string.
    */
   public static function vague_date_to_string(array $date)
   {
@@ -182,6 +183,7 @@ class vague_date {
     case 'C-':	return self::vague_date_to_century_from($start, $end);
     case '-C':	return self::vague_date_to_century_to($start, $end);
     }
+    throw new exception("Invalid date type $type");
   }
 
   /**
@@ -569,7 +571,7 @@ class vague_date {
   }
 
   /**
-   * Convert a vague date to a string representing a month in an unkown year
+   * Convert a vague date to a string representing a month in an unknown year
    */
   protected static function vague_date_to_month($start, $end)
   {
@@ -801,4 +803,3 @@ class vague_date {
   }
 
 }
-?>
