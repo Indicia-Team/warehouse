@@ -1,12 +1,13 @@
 <report
     title="View Data"
-    description="Report to display the View Data page on Earthworm Watch, excludes location information."
+    description="Report to display the View Data page on Earthworm Watch, excludes location information.
+Note, the report directly displays sample.recorder_names, this is fine for this project as this just contains a nickname
+and isn't exposing the user's name when it shouldn't"
 >
   <query website_filter_field="su.website_id">
   SELECT #columns#
   FROM samples s
   LEFT JOIN sample_attribute_values pitNumAttr ON pitNumAttr.sample_id=s.id AND pitNumAttr.sample_attribute_id=#s1AttrID# AND pitNumAttr.deleted=false
-  LEFT JOIN person_attribute_values pav ON pav.person_id=s.created_by_id AND pav.person_attribute_id=#visible_name_attr_id# AND pav.deleted=false
   JOIN cache_occurrences co on co.sample_id=s.id
   JOIN occurrence_attribute_values countAttr ON countAttr.occurrence_id=co.id AND countAttr.occurrence_attribute_id=#occ_count_attr_id# AND countAttr.deleted=false
   JOIN sample_attribute_values livePlantAttr ON livePlantAttr.sample_id=s.id AND livePlantAttr.sample_attribute_id=#live_plant_cover_attr_id# AND livePlantAttr.deleted=false
@@ -45,12 +46,11 @@
     <param name='texture_attr_id' display='Soil Texture Attribute ID' description='The ID of the attribute that holds the recorded soil texture.' datatype='int' />
     <param name='colour_attr_id' display='Soil Colour Attribute ID' description='The ID of the attribute that holds the recorded soil colour.' datatype='int' />
     <param name='occ_count_attr_id' display='Eathworm Count Attribute ID' description='The ID of the attribute that holds the Earthworm count.' datatype='int' />
-    <param name='visible_name_attr_id' display='Visible Name Person Attribute ID' description='The ID of the attribute that holds the visible name of the person.' datatype='int'/>
     <param name='survey_id' display='Survey ID' description='ID of the survey to show data for.' datatype='int'/>
   </params>
   <columns>
     <column name='sample_id' display='ID' sql='s.id' datatype="integer" visible='false' in_count="true"/>
-    <column name='person_visible_name' display='Name' sql='pav.text_value' datatype="text"/>
+    <column name='person_visible_name' display='Name' sql='s.recorder_names' datatype="text"/>
     <column name='pit_num' display='Pit Number' sql="case when pitNumAttr.int_value is null OR pitNumAttr.int_value = 0 then 'Pit 1' else 'Pit 2' End" datatype="text"/>
     <column name='date_start' sql='s.date_start' visible='false' />
     <column name='date_end' sql='s.date_end' visible='false' />
