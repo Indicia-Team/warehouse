@@ -35,27 +35,32 @@ class vague_date {
   private static function dateRangeStrings() {
     return Array(
       array(
-          'regex' => '/( to | - )/i', // date to date
+          'regex' => '/(?P<sep> to )/i', // date to date
           'start' => -1,
           'end' => 1
       ),
       array(
-          'regex' => '/(to|pre|before[\.]?)/i',
+        'regex' => '/^[^-]+(?P<sep>-)[^-]+$/', // date - date (matches a single hyphen)
+        'start' => -1,
+        'end' => 1
+      ),
+      array(
+          'regex' => '/(?P<sep>to|pre|before[\.]?)/i',
           'start' => 0,
           'end' => 1
       ),
       array(
-          'regex' => '/(from|after)/i',
+          'regex' => '/(?P<sep>from|after)/i',
           'start' => 1,
           'end' => 0
       ),
       array(
-          'regex' => '/-$/',
+          'regex' => '/(?P<sep>-)$/',
           'start' => -1,
           'end' => 0
       ),
       array(
-          'regex' => '/^-/',
+          'regex' => '/^(?P<sep>-)/',
           'start' => 0,
           'end' => 1
       ),
@@ -201,25 +206,24 @@ class vague_date {
     $startDate = false;
     $endDate = false;
     $matched = false;
-    $vagueDate = array('', '', '');
     foreach (self::dateRangeStrings() as $a) {
       if (preg_match($a['regex'], $string, $regs) != false) {
         switch ($a['start']) {
         case -1:
-          $start = substr($string,0,strpos($string, $regs[0]));
+          $start = trim(substr($string,0,strpos($string, $regs['sep'])));
           break;
         case 1:
-          $start = substr($string, strpos($string, $regs[0]) + strlen($regs[0]));
+          $start = trim(substr($string, strpos($string, $regs['sep']) + strlen($regs['sep'])));
           break;
         default:
           $start = false;
         }
         switch ($a['end']){
         case -1:
-          $end = substr($string,0,strpos($string, $regs[0]));
+          $end = trim(substr($string,0,strpos($string, $regs['sep'])));
           break;
         case 1:
-          $end = substr($string, strpos($string, $regs[0]) + strlen($regs[0]));
+          $end = trim(substr($string, strpos($string, $regs['sep']) + strlen($regs['sep'])));
           break;
         default:
           $end = false;
