@@ -11,9 +11,11 @@
   WHERE 
   #website_filter#
   AND s.deleted=false
+  AND ((co.training=false AND #training_records#!=1) or (co.training=true AND #training_records#=1))
   </query>
   <params>
     <param name='survey_id' display='Survey ID' description='ID of the survey to show data for.' datatype='int'/>
+    <param name='training_records' display='Training records?' description='Show training records instead?.' datatype='int' emptyvalue='0' default='0'/>
   </params>
   <columns>
     <column name='occurrence_id' display='Occurrence ID' sql='co.id' datatype="integer"/>
