@@ -31,6 +31,7 @@
   WHERE
   #website_filter#
   AND s.deleted=false
+  AND ((co.training=false AND #training_records#!=1) or (co.training=true AND #training_records#=1))
   </query>
   <order_bys>
     <order_by>s.id DESC</order_by>
@@ -45,6 +46,7 @@
     <param name='colour_attr_id' display='Soil Colour Attribute ID' description='The ID of the attribute that holds the recorded soil colour.' datatype='int' />
     <param name='occ_count_attr_id' display='Eathworm Count Attribute ID' description='The ID of the attribute that holds the Earthworm count.' datatype='int' />
     <param name='survey_id' display='Survey ID' description='ID of the survey to show data for.' datatype='int'/>
+    <param name='training_records' display='Training records?' description='Show training records instead?.' datatype='int' emptyvalue='0' default='0'/>
   </params>
   <columns>
     <column name='sample_id' display='ID' sql='s.id' datatype="integer" visible='false' in_count="true"/>
