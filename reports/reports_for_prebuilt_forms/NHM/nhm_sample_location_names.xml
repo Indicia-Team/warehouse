@@ -1,0 +1,23 @@
+<report
+    title="Distinct Sample Location Names"
+    description="A very simple report to return the distinct location_names recorder on samples within a given radius of a given point"
+>
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples sp
+  JOIN surveys su on su.id=sp.survey_id and su.deleted=false
+  WHERE #website_filter#
+  AND sp.deleted=false
+  AND ST_Distance(st_transform(sp.geom,27700), st_transform(ST_PointFromText('#centre#', 3857),27700)) &lt; #maxradius#
+  </query>
+  <params>
+    <param name='exclude_sample_id' display='Exclude Sample ID' description='Exclude Sample ID' datatype='int' >
+      <where>sp.id != #exclude_sample_id#</where>
+    </param>
+    <param name='centre' display='Centre of Search' description='Text representation of point geometry used as centre of search' datatype='text' />
+    <param name='maxradius' display='Max radius of search' description='Maximum distance from centre point to search for locations, in metres' datatype='int' />
+  </params>
+  <columns>
+    <column name='name' sql='distinct(sp.location_name)' />
+  </columns>
+</report>
