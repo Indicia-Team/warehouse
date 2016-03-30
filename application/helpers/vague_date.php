@@ -73,8 +73,10 @@ class vague_date {
    */
   private static function singleDayFormats() { return Array(
     '%Y-%m-%d', // ISO 8601 date format
-    '%d/%m/%Y', // UK style date format (full year)
-    '%d/%m/%y', // UK style date format
+    '%d/%m/%Y', // Slash style date format (full year)
+    '%d/%m/%y', // Slash style date format
+    '%d.%m.%Y', // Period style date format (full year)
+    '%d.%m.%y', // Period style date format
     '%A %e %B %Y', // Monday 12 October 1997
     '%a %e %B %Y', // Mon 12 October 1997
     '%A %e %b %Y', // Monday 12 Oct 1997
