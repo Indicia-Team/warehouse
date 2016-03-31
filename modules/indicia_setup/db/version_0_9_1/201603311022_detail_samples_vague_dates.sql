@@ -32,7 +32,12 @@
     s.verified_by_id,
     s.licence_id,
     li.code AS licence_code,
-    vague_date_to_string(s.date_start, s.date_end, s.date_type) as display_date
+    -- format sample date as a vague date string if required. Note that standard dates are returned in ISO format
+    -- and should therefore be reformatted to local settings on the client.
+    case s.date_type 
+      when 'D' then s.date_start::varchar
+      else vague_date_to_string(s.date_start, s.date_end, s.date_type)
+    end as display_date
    FROM samples s
      JOIN surveys su ON s.survey_id = su.id
      LEFT JOIN locations l ON l.id = s.location_id AND l.deleted = false
