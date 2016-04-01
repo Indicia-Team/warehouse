@@ -16,6 +16,7 @@
   </params>
   <columns>
     <column name='occurrence_id' display='Occurrence ID' sql='co.id' datatype="integer"/>
+    <column name='sample_id' display='Sample ID' sql='co.sample_id' datatype="integer"/>
     <column name="geom" visible="false" mappable="true" sql="st_astext(co.public_geom)" in_count="true" />
   </columns>
 </report>
