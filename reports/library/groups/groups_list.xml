@@ -41,7 +41,7 @@
           ((g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval))
         </where>
         <where value="expired" operator="equal">
-          g.to_date&lt;now()-'1 day'::interval)
+          g.to_date&lt;now()-'1 day'::interval
         </where>
         <where value="upcoming" operator="equal">
           g.from_date&gt;now()
