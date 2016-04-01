@@ -9,10 +9,6 @@
     LEFT JOIN group_pages gp ON gp.group_id=g.id AND gp.deleted=false AND (((gp.administrator=false OR gu.administrator=true) and gu.id is not null AND gu.pending=false) OR gp.administrator is null)
     #joins#
     WHERE g.deleted = false
-    AND ( -- user is admin, or group within defined date range
-        (gu.id is not null AND gu.pending=false AND gu.administrator=true) or 
-        (g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval)
-    )
     AND #website_filter#
   </query>
   <order_bys>
@@ -33,18 +29,33 @@
         <where value="create_admin" operator="equal">gu.id is not null AND (gu.created_by_id=#currentUser# OR gu.administrator=true)</where>
       </wheres>
     </param>
+    <param name="dateHandling" description="How should group date limits be handled?"
+        datatype="lookup" default="adminOrCurrent"
+        lookup_values="all:No date filter,adminOrCurrent:user is group admin or group is currently active,current:Group is current,expired:Group has expired,upcoming:Group is not yet active">
+      <wheres>
+        <where value="adminOrCurrent" operator="equal">( -- user is admin, or group within defined date range
+          (gu.id is not null AND gu.pending=false AND gu.administrator=true) or
+          ((g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval))
+          )</where>
+        <where value="current" operator="equal"> -- group within defined date range
+          ((g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval))
+        </where>
+        <where value="expired" operator="equal">
+          g.to_date&lt;now()-'1 day'::interval
+        </where>
+        <where value="upcoming" operator="equal">
+          g.from_date&gt;now()
+        </where>
+      </wheres>
+    </param>
     <param name="group_type_id" display="Group Type" description="Limit the report to a certain type of group" datatype="lookup"
             population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:group_types,termlist_id='
             default="">
       <where>g.group_type_id in (#group_type_id#)</where>
     </param>
     <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. an organisation which parents a list of projects)."
-        datatype="integer" default="">
+        datatype="text" default="">
       <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>      
-    </param>
-    <param name="to_group_id" display="To child group" description="Only include groups which are the parent of a group (e.g. the organisation containing a project)."
-        datatype="integer" default="">
-      <join>JOIN group_relations grto ON grto.from_group_id=g.id AND grto.to_group_id=#to_group_id# AND grto.deleted=false</join>      
     </param>
     <param name="pending_path" display="Handle pending requests page path" description="Path to the page which will let admins handle pending requests, e.g. /groups/pending?group_id=" 
         datatype="text" default="" />
