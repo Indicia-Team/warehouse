@@ -178,8 +178,8 @@ class Location_Model extends ORM_Tree {
     $systems = spatial_ref::system_metadata();
     foreach ($systems as $code=>$metadata)
       $srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
-    				":".
-    				str_replace(array(',',':'), array('&#44', '&#56'), $metadata['title']);
+          ":".
+          str_replace(array(',',':'), array('&#44', '&#56'), $metadata['title']);
     	 
     return array(
       'website_id' => array( 
