@@ -62,7 +62,7 @@ foreach ($request['parameterRequest'] as $name => $det)
       $values = $det['lookup_values'];
 
       foreach ($values as $row=>$data) {
-        echo '<option value="'.$data->id.'">'.$data->caption.'</option>"';
+        echo '<option value="'.str_replace(array('&#44', '&#56'), array(',',':'), $data->id).'">'.$data->caption.'</option>"';
       }
       echo "</select>";
       break;
