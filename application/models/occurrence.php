@@ -429,8 +429,8 @@ class Occurrence_Model extends ORM
     $systems = spatial_ref::system_list();
     foreach ($systems as $code=>$title)
     	$srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
-    				":".
-    				str_replace(array(',',':'), array('&#44', '&#56'), $title);
+          ":".
+          str_replace(array(',',':'), array('&#44', '&#56'), $title);
     return array(
       'website_id' => array( 
         'display'=>'Website', 
