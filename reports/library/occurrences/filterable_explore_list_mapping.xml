@@ -20,6 +20,15 @@
     <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
       <where>st_intersects(o.public_geom, st_geomfromtext('#bounds#', 900913))</where>
     </param>
+    <param name="max_sq_size" display="Max square size" description="Specify either 1000, 2000 or 10000 for the max square size to show if low precision grid refs in dataset" datatype="integer" default="">
+      <wheres>
+        <where value="2000" operator="equal">o.map_sq_2km_id&lt;&gt;o.map_sq_10km_id</where>
+        <where value="1000" operator="equal">o.map_sq_1km_id&lt;&gt;o.map_sq_2km_id</where>
+      </wheres>
+      <joins>
+        <join value="10000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_10km_id and msq.size=10000</join>
+      </joins>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
