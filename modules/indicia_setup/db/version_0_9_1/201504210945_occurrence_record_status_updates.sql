@@ -1,4 +1,4 @@
--- SLOW SCRIPT
+-- #slow script#
 ALTER TABLE occurrences
    ADD COLUMN record_substatus smallint CONSTRAINT occurrences_record_substatus_check CHECK (record_substatus BETWEEN 1 AND 5),  
    ADD COLUMN record_decision_source character CONSTRAINT record_decision_source_check CHECK (record_decision_source IN ('H', 'M'));

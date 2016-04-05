@@ -10,18 +10,9 @@
   JOIN samples s on s.id=o.sample_id AND s.deleted=false
   LEFT JOIN (index_locations_samples ils
     JOIN cache_termlists_terms ctt on ctt.id=ils.location_type_id AND ctt.term='Vice County'
-    JOIN locations vc on vc.id=ils.location_id and coalesce(vc.code, '') not like '%+%'
   ) on ils.sample_id=o.sample_id and ils.contains=true
-  LEFT JOIN (occurrence_attribute_values det_full_val
-    JOIN occurrence_attributes det_full on det_full.id=det_full_val.occurrence_attribute_id and det_full.deleted=false and det_full.system_function='det_full_name'
-  ) ON det_full_val.occurrence_id=o.id AND det_full_val.deleted=false
-  LEFT JOIN (occurrence_attribute_values det_first_val
-    JOIN occurrence_attributes det_first on det_first.id=det_first_val.occurrence_attribute_id and det_first.deleted=false and det_first.system_function='det_full_name'
-  ) ON det_first_val.occurrence_id=o.id AND det_first_val.deleted=false
-  LEFT JOIN (occurrence_attribute_values det_last_val
-    JOIN occurrence_attributes det_last on det_last.id=det_last_val.occurrence_attribute_id and det_last.deleted=false and det_last.system_function='det_full_name'
-  ) ON det_last_val.occurrence_id=o.id AND det_last_val.deleted=false
-  JOIN websites w on w.id=o.website_id 
+  LEFT JOIN locations vc on vc.id=ils.location_id and coalesce(vc.code, '') not like '%+%'
+  JOIN websites w on w.id=o.website_id
   JOIN users u ON u.id=o.created_by_id
   JOIN people p ON p.id=u.person_id
   #agreements_join#
@@ -80,10 +71,10 @@
     <column name='input_date' sql='occ.created_on' display='Input on date' datatype='date' />
     <column name='last_edit_date' sql='occ.updated_on' display='Last edited on date' datatype='date' />
     <column name='recorder' display='Recorder' sql="rtrim(o.recorders, ', ')" datatype="text" />
-    <column name='determiner' display='Determiner' datatype="text" 
-      sql="CASE WHEN det_full_val.text_value IS NULL THEN 
-        CASE WHEN det_last_val.text_value IS NULL THEN NULL ELSE det_last_val.text_value || COALESCE(', ' || det_first_val.text_value, '') END
-      ELSE det_full_val.text_value END" />
+    <column name='determiner' display='Determiner' datatype="text"
+            sql="CASE WHEN o.attr_det_full_name IS NULL THEN
+        CASE WHEN o.attr_det_last_name IS NULL THEN NULL ELSE o.attr_det_last_name || COALESCE(', ' || o.attr_det_first_name, '') END
+      ELSE o.attr_det_full_name END" />
     <column name='verifier' display='Verifier' sql='o.verifier' datatype="text" />
     <column name='verified_on' display='Verified on' sql='o.verified_on' datatype="text" />
     <column name='sample_comment' display='Sample comment' sql="s.comment" datatype="text" />
@@ -94,9 +85,9 @@
     <column name='certainty' display="Recorder certainty" sql="CASE o.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
     <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->
     <column name='recorder_person_id' sql="case when o.recorders = p.surname || ', ' || p.first_name or o.recorders = p.first_name || ' ' || p.surname then cast(p.id as varchar(20)) else 'unknown' end" />
-    <column name='determiner_person_id' sql="case when o.recorders = det_last_val.text_value || ', ' || det_first_val.text_value 
-        or o.recorders = det_first_val.text_value || ' ' || det_last_val.text_value 
-        or o.recorders = det_full_val.text_value then cast(p.id as varchar(20)) else 'unknown' end" />
+    <column name='determiner_person_id' sql="case when o.recorders = o.attr_det_last_name || ', ' || o.attr_det_first_name
+        or o.recorders = o.attr_det_first_name || ' ' || o.attr_det_last_name
+        or o.recorders = o.attr_det_full_name then cast(p.id as varchar(20)) else 'unknown' end" />
     <column name='images' display='Images' sql="case when images is null then null else '#uploadFolder#' || replace(images, ',', ', #uploadFolder#') end"/>
     <column name='licence_code' sql='o.licence_code' display="Licence" />
   </columns>

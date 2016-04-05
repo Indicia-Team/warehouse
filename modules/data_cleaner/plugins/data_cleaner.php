@@ -133,23 +133,28 @@ where occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')";
  */ 
 function data_cleaner_set_cache_fields($db) {
   if (in_array(MODPATH.'cache_builder', Kohana::config('config.modules'))) {
-    $query = "update cache_occurrences co
-set data_cleaner_info=case when o.last_verification_check_date is null then null else case sub.info when '' then 'pass' else sub.info end end
-from occdelta
-join occurrences o on o.id=occdelta.id
-join (
-      select o.id, o.last_verification_check_date, 
-        array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ') as info
-      from occurrences o
-      join occdelta on occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')
-            left join occurrence_comments oc 
-            on oc.occurrence_id=o.id 
-            and oc.implies_manual_check_required=true 
-            and oc.deleted=false
-      group by o.id, o.last_verification_check_date
-    ) sub on sub.id=o.id
-where occdelta.id=co.id and occdelta.record_status not in ('I','V','R','D')";
-  $db->query($query);
+    $query = "UPDATE cache_occurrences_nonfunctional co
+SET data_cleaner_info=
+  CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE
+    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
+      FROM occurrence_comments oc
+      WHERE oc.occurrence_id=o.id
+         AND oc.implies_manual_check_required=true
+         AND oc.deleted=false), 'pass') END
+FROM occdelta o
+JOIN occurrences occ on occ.id=o.id
+WHERE co.id=o.id";
+    $db->query($query);
+    $query = "UPDATE cache_occurrences_functional co
+SET data_cleaner_result=CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE dc.id IS NULL END
+FROM occdelta o
+JOIN occurrences occ on occ.id=o.id
+LEFT JOIN occurrence_comments dc
+    ON dc.occurrence_id=o.id
+    AND dc.implies_manual_check_required=true
+    AND dc.deleted=false
+WHERE co.id=o.id";
+    $db->query($query);
   }
 }
 

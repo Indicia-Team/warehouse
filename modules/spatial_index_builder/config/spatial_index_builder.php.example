@@ -20,7 +20,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-// List the location type terms that area available for indexing againts. Typically these will need to be those
+// List the location type terms that area available for indexing against. Typically these will need to be those
 // which are frequently reported against especially where the boundaries are large and/or complex.
 $config['location_types']=array(
   'Vice County',
@@ -29,6 +29,16 @@ $config['location_types']=array(
 
 // If any of the indexed location types only need indexing for certain surveys then that can be configured here.
 // Omit this configuration if not required.
-$config['survey_restrictions'] => array(
+$config['survey_restrictions']=array(
   'Local wildlife site' => array(25, 26, 27) // only build an index for surveys 25, 26 and 27 for local wildlife sites
+);
+
+// Any site types that should be only linked once per sample (i.e. non-overlapping boundaries) can be specified here.
+// This adds a foreign key for the location_id directly to cache_occurrences_functional and cache_samples_functional.
+// IMPORTANT - if you change this configuration, then please visit /index.php/spatial_index_builder/generate_scripts
+// and run the scripts provided to ensure the required indexation columns are created.
+// IMPORTANT - the location ID foreign keys added to the cache tables are populated globally and are not affected
+// by the settings in $config['survey_restrictions'].
+$config['unique']=array(
+  'Vice County'
 );

@@ -157,7 +157,8 @@ where n.id is null;")->result();
         }
         else 
           $msqId=$existing[0]['id'];
-        $db->query("UPDATE cache_occurrences co SET map_sq_{$km}km_id=$msqId WHERE sample_id={$s->id}");
+        $db->query("UPDATE cache_occurrences_functional SET map_sq_{$km}km_id=$msqId WHERE sample_id={$s->id}");
+        $db->query("UPDATE cache_samples_functional SET map_sq_{$km}km_id=$msqId WHERE id={$s->id}");
       }
     }
   }

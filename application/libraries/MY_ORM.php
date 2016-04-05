@@ -631,10 +631,16 @@ class ORM extends ORM_Core {
       if (!empty(self::$changedRecords['delete']['occurrence']))
         cache_builder::delete($this->db, 'occurrences', self::$changedRecords['delete']['occurrence']);
       $samples=array();
-      if (!empty(self::$changedRecords['insert']['sample']))
+      if (!empty(self::$changedRecords['insert']['sample'])) {
         $samples = self::$changedRecords['insert']['sample'];
-      if (!empty(self::$changedRecords['update']['sample']))
+        cache_builder::insert($this->db, 'samples', self::$changedRecords['insert']['sample']);
+      }
+      if (!empty(self::$changedRecords['update']['sample'])) {
         $samples += self::$changedRecords['update']['sample'];
+        cache_builder::update($this->db, 'samples', self::$changedRecords['update']['sample']);
+      }
+      if (!empty(self::$changedRecords['delete']['sample']))
+        cache_builder::delete($this->db, 'samples', self::$changedRecords['']['occurrence']);
       if (!empty($samples)) {
         postgreSQL::insertMapSquaresForSamples($samples, 1000, $this->db);
         postgreSQL::insertMapSquaresForSamples($samples, 2000, $this->db);
