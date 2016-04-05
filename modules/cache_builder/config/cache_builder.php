@@ -1212,8 +1212,8 @@ WHERE cache_occurrences_functional.id=o.id
 $config['occurrences']['update']['functional_media'] = "
 UPDATE cache_occurrences_functional u
 SET media_count=(SELECT COUNT(om.*)
-FROM occurrence_media om WHERE om.occurrence_id=u.id AND om.deleted=false)
-FROM occurrences s
+FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
+FROM occurrences o
 #join_needs_update#
 WHERE o.id=u.id
 ";
