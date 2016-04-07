@@ -1,0 +1,71 @@
+<report
+    title="Explore occurrence comments using standard filters"
+    description="Provides a log of all comments &amp; verification decisions taken against records matching the filter."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
+  SELECT #columns#
+  FROM cache_occurrences_functional o
+  JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+  JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  JOIN occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false
+  JOIN users u on u.id=oc.created_by_id and u.deleted=false
+  JOIN people p on p.id=u.person_id and p.deleted=false
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>oc.id desc</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+  </params>
+  <columns>
+    <column name='occurrence_comment_id' display='Comment ID' sql='oc.id' datatype="integer"
+        template='&lt;span class="status-icon status-{record_status} release-{release_status} substatus-{record_substatus} query-{query} certainty-" title="{status_hint}"&gt;&lt;/span&gt;&lt;span class="comment-id"&gt;{occurrence_comment_id}&lt;/span&gt;'  />
+    <column name='record_status' display='State' sql='oc.record_status' visible="false" />
+    <column name='record_substatus' display='State' sql='oc.record_substatus' visible="false" />
+    <column name='query' visible='false' sql='oc.query' />
+    <column name='status_hint' visible="false"
+            sql="case o.record_status when 'V' then 'Accepted' when 'R' then 'Not accepted' when 'T' then 'Test'
+              when 'C' then case when oc.record_substatus=3 then 'Plausible' else 'Not reviewed' end
+            end ||
+            case oc.record_substatus when 1 then ' as correct' when 2 then ' as considered correct' when 4 then ' as unable to verify' when 5 then ' as incorrect' else '' end ||
+            case oc.query when true then ', query raised' else '' end" />
+    <column name="comment" sql="oc.comment" display="Comment" datatype="text"/>
+    <column name="comment_date" sql="o.created_on" display="Log date" datatype="date" />
+    <column name="comment_user" sql="case u.id when 1 then 'system' else p.surname || ', ' || p.first_name end" display="By" datatype="text" />
+    <column name="occurrence_id" display="Record ID" sql="o.id" datatype="integer" />
+    <column name='source' display='Source' datatype="text" visible="false"
+        sql="snf.website_title || ' | ' || case when substring(snf.survey_title from 1 for length(snf.website_title)) = w.title then trim(substring(snf.survey_title from length(snf.website_title)+1)) else snf.survey_title end" />
+    <column name='source_id' display='Source ID' datatype="text" visible="false"
+            sql="o.website_id::varchar || '|' || o.survey_id::varchar"
+            template="&lt;span title=&quot;{source}&quot;&gt;{source_id}&lt;/span&gt;" />
+    <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
+    <column name='taxon' display='Species' datatype="species" sql="cttl.preferred_taxon" template='&lt;span class="zero-{zero_abundance}"&gt;{taxon}&lt;/span&gt;' />
+    <column name='common' display='Common name' datatype="text" sql="cttl.default_common_name" template='&lt;span class="zero-{zero_abundance}"&gt;{common}&lt;/span&gt;' />
+    <column name='taxon_group' display='Taxon group' sql='cttl.taxon_group' datatype="text" visible="false" />
+    <column name='taxon_group_id' display='Taxon group ID' sql='o.taxon_group_id' visible='false' datatype="integer" />
+    <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype="integer" />   
+    <column name='location_name' display='Site name' sql='o.location_name' datatype="text" visible="false" />
+    <column name='entered_sref' display='Grid ref' sql="coalesce(snf.public_entered_sref, regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g'))" datatype="text" />
+    <column name='date_start' sql='o.date_start' visible='false' />
+    <column name='date_end' sql='o.date_end' visible='false' />
+    <column name='date_type' sql='o.date_type' visible='false' />
+    <column name='date' display='Date' datatype="date" />
+    <column name='cache_created_on' sql="to_char(o.created_on,'DD/MM/YYYY')" display='Submitted date' datatype="date" visible="false" />
+    <column name='cache_updated_on' sql="to_char(o.updated_on,'DD/MM/YYYY hh:mm')" display='Last updated' visible="false" />
+    <column name='recorder' display='Recorder' sql="CASE WHEN LENGTH(snf.recorders)>30 THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name='zero_abundance' display='Zero abundance' sql='o.zero_abundance' visible="false" />
+    <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
+    <column name='release_status' display='State' sql='o.release_status' visible="false" />
+    <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
+    <column name='belongs_to_user' display='Belongs to user' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#user_id#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='belongs_to_site' display='Belongs to site' sql="CASE WHEN o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+  </columns>
+</report>
