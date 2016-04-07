@@ -155,9 +155,9 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           ->where('id', $_POST['occurrence:id'])
           ->update();
       // since we bypass ORM here for performance, update the cache_occurrences table.
-      $updates = array('record_status'=>$_POST['occurrence:record_status'], 'verified_on'=>date('Y-m-d H:i:s'), 'cache_updated_on'=>date('Y-m-d H:i:s'),
+      $updates = array('record_status'=>$_POST['occurrence:record_status'], 'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s'),
         'record_substatus' => empty($_POST['occurrence:record_substatus']) ? null : $_POST['occurrence:record_substatus']);
-      $db->from('cache_occurrences')
+      $db->from('cache_occurrences_functional')
           ->set($updates)
           ->where('id', $_POST['occurrence:id'])
           ->update();
