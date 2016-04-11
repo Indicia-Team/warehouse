@@ -17,7 +17,7 @@
   <params>
     <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" emptyvalue="0"/>
     <param name="userFilterMode" display="userFilterMode" description="Include which groups for the user?"
-        datatype="lookup" default="member" 
+        datatype="lookup" default="member"
         lookup_values='all:All groups,joinable:Groups they can join or request,allvisible:Groups they can join or request or are already a member of,pending:Groups they are pending approval to join,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
       <wheres>
         <where value="joinable" operator="equal">g.joining_method not in ('A','I')</where>
@@ -53,11 +53,15 @@
             default="">
       <where>g.group_type_id in (#group_type_id#)</where>
     </param>
-    <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. an organisation which parents a list of projects)."
+    <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. find the children of a parent group)."
         datatype="text" default="">
-      <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>      
+      <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>
     </param>
-    <param name="pending_path" display="Handle pending requests page path" description="Path to the page which will let admins handle pending requests, e.g. /groups/pending?group_id=" 
+    <param name="to_group_id" display="From parent group" description="Only include groups which are linked from to another group (e.g. find the parent(s) of a child group)."
+        datatype="text" default="">
+      <join>JOIN group_relations grto ON grto.from_group_id=g.id AND grto.to_group_id=#to_group_id# AND grto.deleted=false</join>
+    </param>
+    <param name="pending_path" display="Handle pending requests page path" description="Path to the page which will let admins handle pending requests, e.g. /groups/pending?group_id="
         datatype="text" default="" />
     <param name="search_text" display="Search for" default="">
       <where>(g.title ilike '%#search_text#%' or g.description ilike '%#search_text#%')</where>
