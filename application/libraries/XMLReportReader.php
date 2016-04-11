@@ -64,6 +64,12 @@ class XMLReportReader_Core implements ReportReader
    */
   public $loadStandardParamsSet = false;
   
+  /** 
+   * @var boolean True if loading the legacy set of standard parameters for reporting occurrences against the
+   * old cache structure via the cache_occurrences view which simulates the structure for backwards compatibility.
+   */
+  public $loadLegacyStandardParamsSet = false;
+  
   /**
    * @var boolean Identify if we have got SQL defined for aggregated fields. If so we need to implement a group by for
    * the other fields.
@@ -161,6 +167,9 @@ class XMLReportReader_Core implements ReportReader
                 if ($standardParams!==null)
                   // default to loading the occurrences standard parameters set. But this can be overridden.
                   $this->loadStandardParamsSet = $standardParams==='true' ? 'occurrences' : $standardParams;
+                // reports using the old cache_occurrences structure set standard params to true rather than occurrences
+                if ($standardParams==='true')
+                  $this->loadLegacyStandardParamsSet = true;
                 $reader->read();
                 $this->query = $reader->value;
                 break;
@@ -801,6 +810,12 @@ class XMLReportReader_Core implements ReportReader
           $this->params["{$param}_op_context"] = $cfg;
       }
       $params = $standardParamsHelper::getParameters();
+      if ($this->loadLegacyStandardParamsSet) {
+        $legacy = $standardParamsHelper::getLegacyStructureParameters();
+        foreach ($legacy as $param => $array) {
+          $params[$param] = array_merge($params[$param], $array);
+        }
+      }
       $this->defaultParamValues = array_merge($standardParamsHelper::getDefaultParameterValues(), $this->defaultParamValues);
       $providedParams = array_merge($this->defaultParamValues, $providedParams);
       // load up the params for any which have a value provided

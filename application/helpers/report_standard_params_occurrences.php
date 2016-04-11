@@ -44,7 +44,7 @@ class report_standard_params_occurrences {
       array('input_form', 'input_form_list', TRUE)
     );
   }
-
+  
   /**
    * @return array List of parameters that have an associated operation parameter. E.g. along
    * with the occurrence_id parameter you can supply occurrence_id_op='>=' to define the operation
@@ -150,40 +150,40 @@ class report_standard_params_occurrences {
         'description'=>'Input date of first record to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
-            'sql'=>"('#input_date_from#'='Click here' OR o.cache_created_on >= '#input_date_from#'::timestamp)")
+            'sql'=>"('#input_date_from#'='Click here' OR o.created_on >= '#input_date_from#'::timestamp)")
         )
       ),
       'input_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Input date to',
         'description'=>'Input date of last record to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
-            'sql'=>"('#input_date_to#'='Click here' OR (o.cache_created_on <= '#input_date_to#'::timestamp OR (length('#input_date_to#')<=10 AND o.cache_created_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
+            'sql'=>"('#input_date_to#'='Click here' OR (o.created_on <= '#input_date_to#'::timestamp OR (length('#input_date_to#')<=10 AND o.created_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'input_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Input date from time ago',
         'description'=>'E.g. enter "1 week" or "3 days" to define the how long ago records can be input before they are dropped from the report.',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"o.cache_created_on>now()-'#input_date_age#'::interval")
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.created_on>now()-'#input_date_age#'::interval")
         )
       ),
       'edited_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date from',
         'description'=>'Last update date of first record to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
-            'sql'=>"('#edited_date_from#'='Click here' OR o.cache_updated_on >= '#edited_date_from#'::timestamp)")
+            'sql'=>"('#edited_date_from#'='Click here' OR o.updated_on >= '#edited_date_from#'::timestamp)")
         )
       ),
       'edited_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date to',
         'description'=>'Last update date of last record to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
-            'sql'=>"('#edited_date_to#'='Click here' OR (o.cache_updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND o.cache_updated_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
+            'sql'=>"('#edited_date_to#'='Click here' OR (o.updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND o.updated_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'edited_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Last update date from time ago',
         'description'=>'E.g. enter "1 week" or "3 days" to define the how long ago records can be last updated before they are dropped from the report.',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"o.cache_updated_on>now()-'#edited_date_age#'::interval")
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.updated_on>now()-'#edited_date_age#'::interval")
         )
       ),
       'verified_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Verification status change date from',
@@ -244,7 +244,7 @@ class report_standard_params_occurrences {
       'exclude_sensitive'=>array('datatype'=>'boolean', 'default'=>'', 'display'=>'Exclude sensitive records',
         'description'=>'Exclude sensitive records?',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"o.sensitivity_precision is null")
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.sensitive=false")
         )
       ),
       'release_status' => array('datatype'=>'lookup', 'default'=>'R', 'display'=>'Release status',
@@ -262,12 +262,9 @@ class report_standard_params_occurrences {
       'marine_flag' => array('datatype'=>'lookup', 'default'=>'All', 'display'=>'Marine flag',
         'description'=>'Marine species filtering?',
         'lookup_values'=>'A:Include marine and non-marine species,Y:Only marine species,N:Exclude marine species',
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
-        ),
         'wheres' => array(
-          array('value'=>'Y', 'operator'=>'equal', 'sql'=>"prefcttl.marine_flag=true"),
-          array('value'=>'N', 'operator'=>'equal', 'sql'=>"(prefcttl.marine_flag is null or prefcttl.marine_flag=false)"),
+          array('value'=>'Y', 'operator'=>'equal', 'sql'=>"o.marine_flag=true"),
+          array('value'=>'N', 'operator'=>'equal', 'sql'=>"(o.marine_flag is null or o.marine_flag=false)"),
           // The all filter does not need any SQL
         ),
       ),
@@ -275,14 +272,14 @@ class report_standard_params_occurrences {
         'description'=>'Filter to only include records that have passed or failed automated checks',
         'lookup_values'=>'N:Not filtered,F:Include only records that fail checks,P:Include only records which pass checks',
         'wheres' => array(
-          array('value'=>'F', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info is not null and o.data_cleaner_info<>'pass'"),
-          array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info = 'pass'")
+          array('value'=>'F', 'operator'=>'equal', 'sql'=>"o.data_cleaner_result = 'f'"),
+          array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.data_cleaner_result = 't'")
         )
       ),
       'has_photos' => array('datatype'=>'boolean', 'default'=>'', 'display'=>'Photo records only',
         'description'=>'Only include records which have photos?',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"o.images is not null")
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.media_count>0")
         )
       ),
       'user_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"Current user's warehouse ID"),
@@ -379,6 +376,76 @@ class report_standard_params_occurrences {
     join cache_taxa_taxon_lists tc on tc.parent_id = q.id
   ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q"
       )
+    );
+  }
+  
+  /**
+   * When the cache tables were restructured some of the fields and logic in the SQL for parameters changed. This 
+   * function allows filter SQL to be mapped back to SQL compatible with the old structure and is used by reports
+   * that have not been migrated to benefit from the new structure (e.g. if they use the cache_occurrences view). 
+   * Not implemented for samples.
+   */
+  public static function getLegacyStructureParameters() {
+    return array(
+       'input_date_from' => array(
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#input_date_from#'='Click here' OR o.cache_created_on >= '#input_date_from#'::timestamp)")
+        )
+      ),
+      'input_date_to' => array(
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#input_date_to#'='Click here' OR (o.cache_created_on <= '#input_date_to#'::timestamp OR (length('#input_date_to#')<=10 AND o.cache_created_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
+        )
+      ),
+      'input_date_age' => array(
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.cache_created_on>now()-'#input_date_age#'::interval")
+        )
+      ),
+      'edited_date_from' => array(
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#edited_date_from#'='Click here' OR o.cache_updated_on >= '#edited_date_from#'::timestamp)")
+        )
+      ),
+      'edited_date_to' => array(
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#edited_date_to#'='Click here' OR (o.cache_updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND o.cache_updated_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
+        )
+      ),
+      'edited_date_age' => array(
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.cache_updated_on>now()-'#edited_date_age#'::interval")
+        )
+      ),
+      'exclude_sensitive'=>array('wheres' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.sensitivity_precision is null")
+        )
+      ),
+      'marine_flag' => array(
+        'joins' => array(
+          array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
+        ),
+        'wheres' => array(
+          array('value'=>'Y', 'operator'=>'equal', 'sql'=>"prefcttl.marine_flag=true"),
+          array('value'=>'N', 'operator'=>'equal', 'sql'=>"(prefcttl.marine_flag is null or prefcttl.marine_flag=false)"),
+          // The all filter does not need any SQL
+        ),
+      ),
+      'autochecks' => array(
+        'wheres' => array(
+          array('value'=>'F', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info is not null and o.data_cleaner_info<>'pass'"),
+          array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.data_cleaner_info = 'pass'")
+        )
+      ),
+      'has_photos' => array(
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.images is not null")
+        )
+      ),
     );
   }
 

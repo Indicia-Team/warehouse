@@ -3,37 +3,34 @@
     description="An extract of records in a format suitable for creating NBN Exchange format files in combination with the nbn output format, filtered by input date.
         Requires the spatial index builder for location filters."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
 select #columns#
-from cache_occurrences o
-join samples s on s.id=o.sample_id
-left join (index_locations_samples ils
-  join cache_termlists_terms ctt on ctt.id=ils.location_type_id and ctt.term='Vice County'
-  join locations l on l.id=ils.location_id and coalesce(l.code, '') not like '%+%'
-) on ils.sample_id=o.sample_id and ils.contains=true
+from cache_occurrences_functional o
+join cache_occurrences_nonfunctional onf on onf.id=o.id
+join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+left join locations vc on vc.id=o.location_id_vice_county and vc.deleted=false
+join cache_samples_nonfunctional snf on snf.id=o.sample_id 
 #agreements_join#
 #joins#
 where #sharing_filter# 
 and o.date_type in ('D','DD','O','OO','Y','YY','-Y','U') 
 and (#ownData#=0 or CAST(o.created_by_id as character varying)='#currentUser#')
-and (o.entered_sref_system ilike 'osgb' or o.entered_sref_system ilike 'osie' or o.entered_sref_system = '4326' or o.entered_sref_system = '27700')
-and (trim('#date_from#')='' or '#date_from#'='Click here' 
-    or o.cache_created_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date) or o.cache_updated_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date) )
-and (trim('#date_to#')='' or '#date_to#'='Click here' 
-    or o.cache_created_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date) or o.cache_updated_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date) )
+and (snf.entered_sref_system ilike 'osgb' or snf.entered_sref_system ilike 'osie' or snf.entered_sref_system = '4326' or snf.entered_sref_system = '27700')
 and quality_check('#quality#', o.record_status, o.certainty)=true
 and o.taxa_taxon_list_external_key is not null
 and st_x(st_transform(st_centroid(o.public_geom), 4326)) between -14 and 13
-and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
- 
+and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62 
   </query>
-  
   <order_bys>
     <order_by>o.id ASC</order_by>
   </order_bys>
   <params>
-    <param name='date_from' display='Date From' datatype='date' description="Filter by record added or updated date" />
-    <param name='date_to' display='Date To' datatype='date' description="Filter by record added or updated date" />
+    <param name='date_from' display='Date From' datatype='date' description="Filter by record added or updated date">
+      <where>('#date_from#'='Click here' or o.updated_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
+    </param>
+    <param name='date_to' display='Date To' datatype='date' description="Filter by record added or updated date">
+      <where>('#date_to#'='Click here' or o.updated_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
+    </param>
     <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
@@ -42,16 +39,16 @@ and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
     <param name="ownData" display="My data only?" datatype="checkbox" />
     <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
         population_call='direct:location:id:name' />
-    <param name="ownLocality" display="My locality only?" datatype="checkbox">
+    <param name="ownLocality" display="My locality only?" datatype="checkbox" emptyvalue="0">
       <join value="1">JOIN index_locations_samples lfilter ON lfilter.sample_id=o.sample_id and lfilter.location_id=#location_id#</join>  
     </param>
     <param name="taxon_groups" display="Taxon Groups" description="List of taxon group IDs to view data for" datatype="integer[]" emptyvalue="0"/>
     <param name="ownGroups" display="My species groups only?" datatype="checkbox">      
-      <join value="1">JOIN taxon_groups tgfilter ON tgfilter.id=o.taxon_group_id AND tgfilter.id IN (#taxon_groups#)</join>
+      <where value="1">o.taxon_group_id IN (#taxon_groups#)</where>
     </param>
     <param name="surveys" display="Surveys" description="List of survey IDs to view data for" datatype="integer[]" emptyvalue="0"/>
     <param name="ownSurveys" display="My surveys only?" datatype="checkbox">      
-      <join value="1">JOIN surveys su ON su.id=o.survey_id AND su.id IN (#surveys#)</join>
+      <where value="1">o.survey_id IN (#surveys#)</where>
     </param>
   </params>
   <columns>
@@ -61,28 +58,27 @@ and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
     <column name='samplekey' display='SampleKey' sql='o.sample_id' datatype="integer" />
     <column name='taxonversionkey' display='TaxonVersionKey' sql='o.taxa_taxon_list_external_key' datatype="text" />
     <column name='zeroabundance' display='ZeroAbundance' sql='upper(cast (o.zero_abundance as character))' datatype="text" />
-    <column name='sensitive' display='Sensitive' sql="case when o.sensitivity_precision is null then 'F' else 'T' end" datatype="text" />
+    <column name='sensitive' display='Sensitive' sql="case when onf.sensitivity_precision is null then 'F' else 'T' end" datatype="text" />
     <column name='startdate' display='StartDate' sql='cast(o.date_start as character varying)' datatype="text" />
     <column name='enddate' display='EndDate' sql='cast(o.date_end as character varying)' datatype="text" />
     <column name='datetype' display='DateType' sql='o.date_type' datatype="integer" />
     <column name='sitekey' display='SiteKey' sql='o.location_id' datatype="integer" />
     <column name='sitename' display='SiteName' sql='o.location_name' datatype="text" />
-    <column name='gridreference' display='GridReference' sql="case when o.entered_sref_system in ('4326', '27700') then null else replace(s.entered_sref, ' ', '') end" datatype="text" />
-    <column name='east' display='East' sql="case when o.entered_sref_system in ('4326', '27700') then st_x(st_transform(st_centroid(public_geom), o.entered_sref_system::int)) else null end" datatype="text" />
-    <column name='north' display='North' sql="case when o.entered_sref_system in ('4326', '27700') then st_y(st_transform(st_centroid(public_geom), o.entered_sref_system::int)) else null end" datatype="text" />
+    <column name='gridreference' display='GridReference' sql="case when snf.entered_sref_system in ('4326', '27700') then null else replace(snf.public_entered_sref, ' ', '') end" datatype="text" />
+    <column name='east' display='East' sql="case when snf.entered_sref_system in ('4326', '27700') then st_x(st_transform(st_centroid(public_geom), snf.entered_sref_system::int)) else null end" datatype="text" />
+    <column name='north' display='North' sql="case when snf.entered_sref_system in ('4326', '27700') then st_y(st_transform(st_centroid(public_geom), snf.entered_sref_system::int)) else null end" datatype="text" />
     <column name='projection' display='Projection' 
-        sql="case upper(o.entered_sref_system) when '4326' then 'WGS84' when '27700' then 'OSGB36' when 'OSIE' then 'OSI' else upper(o.entered_sref_system) end" 
+        sql="case upper(snf.entered_sref_system) when '4326' then 'WGS84' when '27700' then 'OSGB36' when 'OSIE' then 'OSI' else upper(snf.entered_sref_system) end" 
         datatype="text" />
     <column name='precision' display='Precision' 
-        sql="case o.entered_sref_system
+        sql="case snf.entered_sref_system
     when '4326' then 50 
     when '27700' then 1
-    else case length(replace(s.entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(s.entered_sref, ' ', '')))/2) end
+    else case length(replace(snf.public_entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(snf.public_entered_sref, ' ', '')))/2) end
   end" 
         datatype="text" />
-    <column name="vicecounty" display="ViceCounty" sql="array_to_string(array_agg(l.name), ', ')" datatype="text" aggregate="true" />        
-    <column name='recorder' display='Recorder' sql='o.recorders' datatype="text" />
-    <column name='verifier' display='Verifier' sql='o.verifier' datatype="text" />
-        
+    <column name="vicecounty" display="ViceCounty" sql="vc.name" datatype="text" />
+    <column name='recorder' display='Recorder' sql='snf.recorders' datatype="text" />
+    <column name='verifier' display='Verifier' sql='onf.verifier' datatype="text" />
   </columns>
 </report>

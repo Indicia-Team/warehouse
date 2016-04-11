@@ -593,6 +593,10 @@ QRY
         // Own the occurrences
         $userPersonObj->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
         $userPersonObj->db->update('occurrences', array('updated_by_id'=>$uid), array('updated_by_id'=>$userIdToMerge));
+        if (in_array(MODPATH.'cache_builder', Kohana::config('config.modules'))) {
+          $userPersonObj->db->update('cache_occurrences_functional', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
+          $userPersonObj->db->update('cache_samples_functional', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
+        }
         // delete the old user
         $uidsToDelete[] = $userIdToMerge;
         kohana::log('debug', "User merge operation resulted in deletion of user $userIdToMerge plus the related person");
