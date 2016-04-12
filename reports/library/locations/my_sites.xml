@@ -6,43 +6,45 @@
       FROM locations l
       LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-      LEFT JOIN (samples s 
+      LEFT JOIN (samples s
         JOIN cache_occurrences o ON o.created_by_id=#user_id# AND o.created_by_id&lt;&gt;1 and o.sample_id=s.id
         AND o.website_id in (#website_ids#)
-      ) ON s.created_by_id=#user_id# 
+      ) ON s.created_by_id=#user_id#
           AND s.created_by_id&lt;&gt;1
           AND ST_INTERSECTS(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
           AND NOT ST_TOUCHES(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
       LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
-      LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
+      LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#
       #joins#
       #agreements_join#
       WHERE (o.id is null or (#sharing_filter#))
       AND (l.public=true or lw.website_id in (#website_ids#))
       AND l.deleted=false
       AND l.created_by_id=#user_id#
-      #filters#      
+      #idlist#
+      #filters#
       #group_bys#
     UNION
       SELECT #columns#
       FROM locations l
       LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-      LEFT JOIN (samples s 
+      LEFT JOIN (samples s
         JOIN cache_occurrences o ON o.created_by_id=#user_id# AND o.created_by_id&lt;&gt;1 and o.sample_id=s.id
         AND o.website_id in (#website_ids#)
-      ) ON s.created_by_id=#user_id# 
+      ) ON s.created_by_id=#user_id#
           AND s.created_by_id&lt;&gt;1
           AND ST_INTERSECTS(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
           AND NOT ST_TOUCHES(s.geom, COALESCE(l.boundary_geom, l.centroid_geom))
       LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
-      LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#  
+      LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#
       #joins#
       #agreements_join#
       WHERE (o.id is null or (#sharing_filter#))
       AND (l.public=true or lw.website_id in (#website_ids#))
       AND l.deleted=false
       AND u.id IS NOT NULL
+      #idlist#
       #filters#
       #group_bys#
       </query>
@@ -56,6 +58,7 @@
         <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
         <param name="user_id" display="User ID" description="The warehouse user's ID" datatype="integer" />
         <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
+        <param name='idlist' display='List of IDs' description='Comma separated list of location IDs to filter to.' datatype='idlist' fieldname='l.id' alias='id' default='' />
       </params>
       <columns>
         <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
