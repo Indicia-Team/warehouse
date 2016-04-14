@@ -51,15 +51,32 @@
     <column name='date' on_demand="true" datatype="date" />
     <column name='cache_created_on' sql='o.cache_created_on' on_demand="true" datatype="date" />
     <column name='recorder' on_demand="true" sql="CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" datatype="text" />
-    <column name='associated_with' on_demand="true" datatype="string" sql="oassoc.preferred_taxon" />
-    <column name='association_detail' on_demand="true" datatype="string"
-              sql="case when oa.from_occurrence_id=o.id then o.preferred_taxon else oassoc.preferred_taxon end ||
-            ' ' || assoctype.term ||
-            ' ' || case when oa.from_occurrence_id=o.id then oassoc.preferred_taxon else o.preferred_taxon end ||
-            coalesce(' ' || assocpos.term, '') ||
-            coalesce(' ' || assocpart.term, '') ||
-            coalesce(' resulting in ' || associmpact.term, '')
-            " /><column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
+    <column name='associated_with' on_demand="true" datatype="text" sql="(select string_agg(case when oassoc.default_common_name is null then '&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;' else oassoc.default_common_name || ' (&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;)' end, ', ') 
+  from occurrence_associations oa 
+  join cache_occurrences oassoc on oassoc.id=oa.to_occurrence_id 
+  where oa.from_occurrence_id=o.id
+)" />
+    <column name='association_detail' on_demand="true" datatype="text"
+              sql="(select string_agg(
+  case when oa.from_occurrence_id=o.id then 
+    case when o.default_common_name is null then 'c' || o.preferred_taxon || '&lt;/em&gt;' else o.default_common_name || ' (&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;)' end
+  else 
+    case when oassoc.default_common_name is null then '&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;' else oassoc.default_common_name || ' (&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;)' end 
+  end || ' ' || assoctype.term || ' ' || 
+  case when oa.to_occurrence_id=o.id then 
+    case when o.default_common_name is null then '&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;' else o.default_common_name || ' (&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;)' end
+  else 
+    case when oassoc.default_common_name is null then '&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;' else oassoc.default_common_name || ' (&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;)' end 
+  end || coalesce(' ' || assocpos.term, '') || coalesce(' ' || assocpart.term, '') || coalesce(' resulting in ' || associmpact.term, ''), ', ') 
+  from occurrence_associations oa 
+  join cache_occurrences oassoc on oassoc.id=oa.to_occurrence_id 
+  JOIN cache_termlists_terms assoctype on assoctype.id=oa.association_type_id
+  LEFT JOIN cache_termlists_terms assocpart on assocpart.id=oa.part_id
+  LEFT JOIN cache_termlists_terms assocpos on assocpos.id=oa.position_id
+  LEFT JOIN cache_termlists_terms associmpact on associmpact.id=oa.impact_id
+  where oa.from_occurrence_id=o.id
+)" />
+    <column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
     <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" on_demand="true" datatype="text" />
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
     <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />

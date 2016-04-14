@@ -5,15 +5,6 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
   SELECT #columns#
   FROM cache_occurrences o
-  LEFT JOIN (occurrence_associations oa
-    JOIN cache_termlists_terms assoctype on assoctype.id=oa.association_type_id
-    LEFT JOIN cache_termlists_terms assocpart on assocpart.id=oa.part_id
-    LEFT JOIN cache_termlists_terms assocpos on assocpos.id=oa.position_id
-    LEFT JOIN cache_termlists_terms associmpact on associmpact.id=oa.impact_id
-  ) on (oa.from_occurrence_id=o.id or oa.to_occurrence_id=o.id) and oa.deleted=false
-  LEFT JOIN cache_occurrences oassoc
-      on (oassoc.id=oa.to_occurrence_id and oa.from_occurrence_id=o.id)
-      or (oassoc.id=oa.from_occurrence_id and oa.to_occurrence_id=o.id)
   JOIN websites w on w.id=o.website_id and w.deleted=false
   #agreements_join#
   #joins#
@@ -47,15 +38,31 @@
     <column name='date' display='Date' datatype="date" />
     <column name='cache_created_on' sql="to_char(o.cache_created_on,'DD/MM/YYYY')" display='Submitted date' datatype="date" visible="false" />
     <column name='recorder' display='Recorder' sql="CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" datatype="text" />
-    <column name='associated_with' display='Associated with' datatype="string" sql="oassoc.preferred_taxon" />
-    <column name='association_detail' display='Association detail' datatype="string" visible="false"
-            sql="case when oa.from_occurrence_id=o.id then o.preferred_taxon else oassoc.preferred_taxon end ||
-            ' ' || assoctype.term ||
-            ' ' || case when oa.from_occurrence_id=o.id then oassoc.preferred_taxon else o.preferred_taxon end ||
-            coalesce(' ' || assocpos.term, '') ||
-            coalesce(' ' || assocpart.term, '') ||            
-            coalesce(' resulting in ' || associmpact.term, '')
-            " />
+    <column name='associated_with' display='Associated with' datatype="text" sql="(select string_agg(case when oassoc.default_common_name is null then '&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;' else oassoc.default_common_name || ' (&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;)' end, ', ') 
+  from occurrence_associations oa 
+  join cache_occurrences oassoc on oassoc.id=oa.to_occurrence_id 
+  where oa.from_occurrence_id=o.id
+)" />
+    <column name='association_detail' display='Association detail' datatype="text" visible="false"
+            sql="(select string_agg(
+  case when oa.from_occurrence_id=o.id then 
+    case when o.default_common_name is null then 'c' || o.preferred_taxon || '&lt;/em&gt;' else o.default_common_name || ' (&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;)' end
+  else 
+    case when oassoc.default_common_name is null then '&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;' else oassoc.default_common_name || ' (&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;)' end 
+  end || ' ' || assoctype.term || ' ' || 
+  case when oa.to_occurrence_id=o.id then 
+    case when o.default_common_name is null then '&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;' else o.default_common_name || ' (&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;)' end
+  else 
+    case when oassoc.default_common_name is null then '&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;' else oassoc.default_common_name || ' (&lt;em&gt;' || oassoc.preferred_taxon || '&lt;/em&gt;)' end 
+  end || coalesce(' ' || assocpos.term, '') || coalesce(' ' || assocpart.term, '') || coalesce(' resulting in ' || associmpact.term, ''), ', ') 
+  from occurrence_associations oa 
+  join cache_occurrences oassoc on oassoc.id=oa.to_occurrence_id 
+  JOIN cache_termlists_terms assoctype on assoctype.id=oa.association_type_id
+  LEFT JOIN cache_termlists_terms assocpart on assocpart.id=oa.part_id
+  LEFT JOIN cache_termlists_terms assocpos on assocpos.id=oa.position_id
+  LEFT JOIN cache_termlists_terms associmpact on associmpact.id=oa.impact_id
+  where oa.from_occurrence_id=o.id
+)" />
     <column name='zero_abundance' display='Zero abundance' sql='o.zero_abundance' visible="false" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
@@ -64,7 +71,7 @@
     <column name='belongs_to_user' display='Belongs to user' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#user_id#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
     <column name='belongs_to_site' display='Belongs to site' sql="CASE WHEN o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
     <column name='can_edit' display='Can edit' 
-      sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#user_id#' AND o.website_id IN (#website_ids#) and (oa.from_occurrence_id=o.id or oa.from_occurrence_id is null) THEN true ELSE false END" visible="false" />
+      sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#user_id#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
     <column name='images' display='Images' sql='o.images' img='true' />
     <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" datatype="text" />
     <column name='pass' visible='false' sql="CASE WHEN o.data_cleaner_info='pass' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
