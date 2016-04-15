@@ -52,10 +52,24 @@ class Spatial_Controller extends Service_Base_Controller {
         $output = $_GET['output'];
       else
         $output = null;
-      if (array_key_exists('wktsystem',$_GET))
-        $wkt = spatial_ref::wkt_to_internal_wkt($_GET['wkt'], $_GET['wktsystem']);
-      else
-        $wkt = $_GET['wkt'];
+
+      // Test/escape parameters that are passed in to queries to prevent 
+      // SQL injection.
+      // system is validated in internal_wkt_to_sref() and sref_to_internal_wkt()
+      // mapsystem is validated in internal_wkt_to_wkt()
+      // precision, output and metresAccuracy are not used in queries.
+      $wkt = pg_escape_string ($_GET['wkt']);
+      
+      if (array_key_exists('wktsystem',$_GET)) {
+        // Optionally convert WKT from wktsystem.
+        $wktsystem = security::checkParam($_GET['wktsystem'], 'int');
+        if ($wktsystem === FALSE) {
+          Kohana::log('alert', "Invalid parameter, wktsystem, with value '{$_GET['wktsystem']}' in request to spatial/wkt_to_sref service.");
+          throw new Exception('Invalid request.');
+        }
+        $wkt = spatial_ref::wkt_to_internal_wkt($wkt, $wktsystem);
+      }
+      
       $sref = spatial_ref::internal_wkt_to_sref($wkt, $_GET['system'], $precision, $output, $metresAccuracy);
       // Note we also need to return the wkt of the actual sref, which may be a square now.
       $wkt = spatial_ref::sref_to_internal_wkt($sref, $_GET['system']);
@@ -120,8 +134,12 @@ class Spatial_Controller extends Service_Base_Controller {
         $r = $params['wkt'];
       else {
         $db = new Database;
-        $wkt = $params['wkt'];
-        $buffer = $params['buffer'];
+        $wkt = pg_escape_string ($params['wkt']);
+        $buffer = security::checkParam($params['buffer'], 'int');
+        if ($buffer === FALSE) {
+          Kohana::log('alert', "Invalid parameter, buffer, with value '{$params['buffer']}' in request to spatial/buffer service.");
+          throw new Exception('Invalid request.');
+        }
         $result = $db->query("SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;")->current();
         $r = $result->wkt;
       }
