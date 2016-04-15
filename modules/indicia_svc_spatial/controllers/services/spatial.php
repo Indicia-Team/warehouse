@@ -33,8 +33,27 @@ class Spatial_Controller extends Service_Base_Controller {
    * into a spatial reference, though this can optionally be overriden by providing a wktsystem.
    * Returns the sref, plus new WKTs representing the returned sref in the internal SRID and an optional map system.
    * Note that if you pass in a point and convert it to a grid square, then the returned
-   * wkts will reflect the grid square not the point. GET parameters allowed are wkt, system, precision
-   * wktsystem, mapsystem, and callback (for JSONP).
+   * wkts will reflect the grid square not the point. GET parameters allowed are 
+   * 
+   * wkt: string, The WKT to convert.
+   * 
+   * wktsystem: int, Optional SRID for the WKT if different from internal.
+   * 
+   * system: int/string, The sref system code of the returned sref.
+   * 
+   * precision: int, For systems which define accuracy in a reducing 10*10 grid
+   * (e.g. osgb), the number of digits to return.
+   * 
+   * metresAccuracy: float, Approximate number of metres the point can be 
+   * expected to be accurate by. E.g.may be set according to the current zoom 
+   * scale of the map. Provided as an alternative to precision.
+   * 
+   * mapsystem: int/string, sref system code for return of optional extra WKT. 
+   * 
+   * output: string, Options are DMS, DM, or D for degrees, minutes, seconds,
+   * degrees and minutes, or decimal degrees (default).  
+   * 
+   * callback: For returning JSONP.
    */
   public function wkt_to_sref()
   {
@@ -73,10 +92,13 @@ class Spatial_Controller extends Service_Base_Controller {
       $sref = spatial_ref::internal_wkt_to_sref($wkt, $_GET['system'], $precision, $output, $metresAccuracy);
       // Note we also need to return the wkt of the actual sref, which may be a square now.
       $wkt = spatial_ref::sref_to_internal_wkt($sref, $_GET['system']);
-      $r = array('sref'=>$sref,'wkt'=>$wkt);
+      $r = array('sref' => $sref,'wkt' => $wkt);
+
       if (array_key_exists('mapsystem', $_GET)){
+        // Optionally output WKT of sref in mapsystem as well.
         $r['mapwkt'] = spatial_ref::internal_wkt_to_wkt($r['wkt'], $_GET['mapsystem']);
       }
+
       $r = json_encode($r);
       // enable a JSONP request
       if (array_key_exists('callback', $_GET)){

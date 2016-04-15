@@ -213,7 +213,8 @@ class spatial_ref {
    * @param string $wkt Well-known text string.
    * @param string $sref_system Spatial reference system code to convert to.
    * @param int $precision For systems which define accuracy in a reducing 10*10 grid (e.g. osgb), the number of digits to return.
-   * @param string $output
+   * @param string $output Options are DMS, DM, or D for degrees, minutes, seconds,
+   * degrees and minutes, or decimal degrees (default).
    * @param float $metresAccuracy Approximate number of metres the point can be expected to be accurate by. E.g.
    * may be set according to the current zoom scale of the map. Provided as an alternative to $precision.
    */
