@@ -2,14 +2,26 @@
 class Spatial_Controller extends Service_Base_Controller {
 
   /**
-   * Handle a service request to convert a spatial reference into WKT representing the reference
-   * using the internal SRID (normally spherical mercator since it is compatible with Google Maps).
-   * The response is in JSON. Provide a callback in the GET request to use JSONP.
+   * Handle a service request to convert a spatial reference into WKT 
+   * representing the reference using the internal SRID (normally spherical 
+   * mercator since it is compatible with Google Maps). Optionally returns an 
+   * additional WKT in an alternate sref system. The response is in JSON. 
+   * Provide a callback in the GET request to use JSONP.  
+   * GET parameters allowed are 
+   * sref: The spatial reference to convert.
+   * system: The sref system code of the spatial reference.
+   * mapsystem: (optional) Sref system code for additional WKT in response.
+   * callback: For returning JSONP.
    */
   public function sref_to_wkt()
   {
     try
     {
+      // Test/escape parameters that are passed in to queries to prevent 
+      // SQL injection.
+      // sref is not passed to query
+      // system is validated in sref_to_internal_wkt()
+      // mapsystem is validated in internal_wkt_to_wkt()
       $r = array('wkt'=>spatial_ref::sref_to_internal_wkt($_GET['sref'], $_GET['system']));
       if (array_key_exists('mapsystem', $_GET)){
         $r['mapwkt'] = spatial_ref::internal_wkt_to_wkt($r['wkt'], $_GET['mapsystem']);
@@ -34,25 +46,17 @@ class Spatial_Controller extends Service_Base_Controller {
    * Returns the sref, plus new WKTs representing the returned sref in the internal SRID and an optional map system.
    * Note that if you pass in a point and convert it to a grid square, then the returned
    * wkts will reflect the grid square not the point. GET parameters allowed are 
-   * 
    * wkt: string, The WKT to convert.
-   * 
    * wktsystem: int, Optional SRID for the WKT if different from internal.
-   * 
    * system: int/string, The sref system code of the returned sref.
-   * 
    * precision: int, For systems which define accuracy in a reducing 10*10 grid
-   * (e.g. osgb), the number of digits to return.
-   * 
+   *   (e.g. osgb), the number of digits to return.
    * metresAccuracy: float, Approximate number of metres the point can be 
-   * expected to be accurate by. E.g.may be set according to the current zoom 
-   * scale of the map. Provided as an alternative to precision.
-   * 
+   *   expected to be accurate by. E.g.may be set according to the current zoom 
+   *   scale of the map. Provided as an alternative to precision.
    * mapsystem: int/string, sref system code for return of optional extra WKT. 
-   * 
    * output: string, Options are DMS, DM, or D for degrees, minutes, seconds,
-   * degrees and minutes, or decimal degrees (default).  
-   * 
+   *   degrees and minutes, or decimal degrees (default).  
    * callback: For returning JSONP.
    */
   public function wkt_to_sref()
@@ -113,16 +117,26 @@ class Spatial_Controller extends Service_Base_Controller {
   }
 
   /**
-   * Allow a service request to triangulate between 2 systems. GET parameters are:
-   * 	from_sref
-   * 	from_system
-   * 	to_system
-   *  to_precision (optional)
+   * Allow a service request to triangulate between 2 systems. GET parameters are
+   * from_sref: The spatial reference to convert from.
+   * from_system: The sref system code of from_sref.
+   * to_system: The sref system code to convert to.
+   * precision: (optional) For systems which define accuracy in a reducing 10*10 
+   *   grid (e.g. osgb), the number of digits to return.
+   * metresAccuracy: (optional) Approximate number of metres the point can be 
+   *   expected to be accurate by. E.g.may be set according to the current zoom 
+   *   scale of the map. Provided as an alternative to precision.
    */
   public function convert_sref()
   {
     try
     {
+      // Test/escape parameters that are passed in to queries to prevent 
+      // SQL injection.
+      // from_sref is not passed to query
+      // from_system is validated in sref_to_internal_wkt()
+      // to_systen us validated in internal_wkt_to_sref() 
+      // precision and metresAccuracy are not used in queries.
       $wkt = spatial_ref::sref_to_internal_wkt($_GET['from_sref'], $_GET['from_system']);
       if (array_key_exists('precision',$_GET))
         $precision = $_GET['precision'];
@@ -156,6 +170,8 @@ class Spatial_Controller extends Service_Base_Controller {
         $r = $params['wkt'];
       else {
         $db = new Database;
+        // Test/escape parameters that are passed in to queries to prevent 
+        // SQL injection.
         $wkt = pg_escape_string ($params['wkt']);
         $buffer = security::checkParam($params['buffer'], 'int');
         if ($buffer === FALSE) {
