@@ -83,7 +83,7 @@ class Spatial_Controller extends Service_Base_Controller {
         // Optionally convert WKT from wktsystem.
         $wktsystem = security::checkParam($_GET['wktsystem'], 'int');
         if ($wktsystem === FALSE) {
-          Kohana::log('alert', "Invalid parameter, wktsystem, with value '{$_GET['wktsystem']}' in request to wkt_to_sref.");
+          Kohana::log('alert', "Invalid parameter, wktsystem, with value '{$_GET['wktsystem']}' in request to spatial/wkt_to_sref service.");
           throw new Exception('Invalid request.');
         }
         $wkt = spatial_ref::wkt_to_internal_wkt($wkt, $wktsystem);
@@ -156,8 +156,12 @@ class Spatial_Controller extends Service_Base_Controller {
         $r = $params['wkt'];
       else {
         $db = new Database;
-        $wkt = $params['wkt'];
-        $buffer = $params['buffer'];
+        $wkt = pg_escape_string ($params['wkt']);
+        $buffer = security::checkParam($params['buffer'], 'int');
+        if ($buffer === FALSE) {
+          Kohana::log('alert', "Invalid parameter, buffer, with value '{$params['buffer']}' in request to spatial/buffer service.");
+          throw new Exception('Invalid request.');
+        }
         $result = $db->query("SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;")->current();
         $r = $result->wkt;
       }
