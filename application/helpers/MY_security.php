@@ -64,6 +64,4 @@ class Security extends security_Core {
   }
   
 }
-
-
  ?>
