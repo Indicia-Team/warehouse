@@ -4,7 +4,7 @@
 >
   <query website_filter_field="o.website_id">
   select 
-      DISTINCT ON (a.id) o.id, 'Record' as attribute_type, a.system_function, a.id as attr_id, oaw.weight as w1, fsb1.weight as w2, fsb2.weight as w3,
+      DISTINCT ON (av.id) o.id, 'Record' as attribute_type, a.system_function, a.id as attr_id, oaw.weight as w1, fsb1.weight as w2, fsb2.weight as w3,
       CASE a.data_type
               WHEN 'T'::bpchar THEN 'Text'::bpchar
               WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -51,7 +51,7 @@
   union
 
   select 
-    DISTINCT ON (a.id) o.id, 'Parent sample' as attribute_type, a.system_function, a.id as attr_id, saw.weight, fsb1.weight, fsb2.weight,
+    DISTINCT ON (av.id) o.id, 'Parent sample' as attribute_type, a.system_function, a.id as attr_id, saw.weight, fsb1.weight, fsb2.weight,
     CASE a.data_type
             WHEN 'T'::bpchar THEN 'Text'::bpchar
             WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -96,7 +96,7 @@
   union
 
   select 
-    DISTINCT ON (a.id) o.id, 'Sample' as attribute_type, a.system_function, a.id as attr_id, saw.weight, fsb1.weight, fsb2.weight,
+    DISTINCT ON (av.id) o.id, 'Sample' as attribute_type, a.system_function, a.id as attr_id, saw.weight, fsb1.weight, fsb2.weight,
     CASE a.data_type
             WHEN 'T'::bpchar THEN 'Text'::bpchar
             WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
