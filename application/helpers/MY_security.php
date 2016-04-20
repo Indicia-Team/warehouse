@@ -34,8 +34,34 @@ class Security extends security_Core {
     $cache->set($nonce, $website_id, $type, Kohana::config('indicia.nonce_life'));
     return $nonce;
   }
+
+  /**
+   * Takes a value and ensures it is matches an expected pattern. Used to 
+   * check parameters passed to web services to inhibit SQL injection.
+   * 
+   * @param string $value The value to check.
+   * @param string $type The type of parameter, [int|str], for integer or
+   * string.
+   * @param string $regex The pattern for a valid string parameter to match.
+   * @return string The value or false if the check fails
+   */
+  public static function checkParam($value, $type, $regex = NULL) {
+    switch ($type) {
+      case 'int':
+        // Value must be an integer (though stored in a string).
+        if (ctype_digit($value)) {
+          return $value;
+        }
+        break;
+      case 'str':
+        // Value must match regexp.
+        $value = trim($value);
+        if (preg_match($regex, $value) === 1) {
+          return $value;
+        }
+    }
+    return FALSE;
+  }
   
 }
-
-
  ?>
