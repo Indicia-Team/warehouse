@@ -554,7 +554,7 @@ select co.*,
 into temporary occdelta
 from occlist ol
 join occurrences o on o.id=ol.id
-join cache_occurrences co on co.id=o.id
+join cache_occurrences_functional co on co.id=o.id
 join samples s on s.id=o.sample_id and s.deleted=false
 left join samples sp on sp.id=s.parent_id and sp.deleted=false
 join websites w on w.id=o.website_id and w.deleted=false;
