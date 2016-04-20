@@ -30,20 +30,21 @@ function species_alerts_scheduled_task($last_run_date, $db) {
   $newOccDataForSpeciesAlert = $db->query("
     SELECT DISTINCT
       od.id as occurrence_id,
-      onf.taxon as taxon,
+      cttl.taxon as taxon,
       od.record_status as record_status,
       snf.public_entered_sref as entered_sref,
       od.cud as cud,
       od.record_status as record_status,
-      od.cache_created_on as created_on,
-      od.cache_updated_on as updated_on,
+      od.created_on,
+      od.updated_on,
       sa.user_id as alerted_user_id,
       u.username as username
     FROM occdelta od
-      JOIN cache_occurrences_nonfunctional onf on onf.id=od.id
       JOIN cache_samples_nonfunctional snf on snf.id=od.sample_id
+      JOIN cache_taxa_taxon_lists cttl on cttl.id=od.taxa_taxon_list_id
       LEFT JOIN index_locations_samples ils on ils.sample_id=od.sample_id
-      LEFT JOIN cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id=od.taxon_meaning_id
+      -- join to find any taxon list that this taxon occurs on
+      LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=od.taxon_meaning_id
       JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=od.website_id and iwwa.receive_for_reporting=true
       JOIN species_alerts sa ON 
         (sa.location_id IS NULL OR sa.location_id=ils.location_id)
@@ -52,7 +53,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
           OR
           sa.external_key = od.taxa_taxon_list_external_key
           OR
-          sa.taxon_list_id = cttl.taxon_list_id)
+          sa.taxon_list_id = cttlall.taxon_list_id)
         AND
           (sa.alert_on_entry='t' AND od.cud='C'
           OR
