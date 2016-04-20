@@ -62,7 +62,7 @@ class Data_cleaner_Controller extends Service_Base_Controller {
     else {
       $db = new Database();
       // Create an empty template table
-      $db->query("select * into temporary occdelta from cache_occurrences limit 0;");
+      $db->query("select * into temporary occdelta from cache_occurrences_functional limit 0;");
       try {
         $this->prepareOccdelta($db, $sample, $occurrences);
         $r = $this->runRules($db);
@@ -108,7 +108,7 @@ class Data_cleaner_Controller extends Service_Base_Controller {
       $date_start=$vd[0];
       $date_end=$vd[1];
       $date_type=$vd[2];
-      $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_entered_sref, entered_sref_system, public_geom, taxa_taxon_list_id)
+      $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id)
           values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type', '$sref', '$sref_system', st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
     }
     // patch in some extra details about the taxon required for each cache entry

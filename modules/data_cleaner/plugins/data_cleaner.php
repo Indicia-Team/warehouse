@@ -129,7 +129,8 @@ where occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')";
 }
 
 /**
- * Update the cache_occurrences.data_cleaner_info field.
+ * Update the cache_occurrences_functional.data_cleaner_result and
+ * cache_occurrences_nonfunctional.data_cleaner_info fields.
  */ 
 function data_cleaner_set_cache_fields($db) {
   if (in_array(MODPATH.'cache_builder', Kohana::config('config.modules'))) {
