@@ -776,6 +776,8 @@ class ReportEngine {
     }
     // column replacements and additional join to samples for geometry permissions autoswitching
     if ($this->sharingMode==='me' || $this->sharingMode==='verification' || $this->groupAllowsSensitiveAccess()) {
+        //In these mode, reports can use the recorder details in full (private_recorder field) even if these are anonymous, so replace this in the query
+        $query = str_replace(array('recorders'), array('private_recorders'), $query);
       // don't add the join to samples when it is not necessary.
       if (strpos($query, '#sample_sref_field#') || strpos($query, '#sample_geom_field#'))
         $query = str_replace('#joins#', "JOIN samples s on s.id=o.sample_id AND s.deleted=false \n#joins#", $query);
