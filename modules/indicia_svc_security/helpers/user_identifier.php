@@ -23,56 +23,92 @@
 class user_identifier {
   protected $db;
   /**
-   * Helper method that takes a list of user identifiers such as email addresses and returns the appropriate user ID
-   * from the warehouse, which can then be used in subsequent calls to save the data. Takes the 
-   * following parameters in the $request (which is a merge of $_GET or $_POST data) in addition to a nonce and auth_token for a write operation:<ul>
+   * Helper method that takes a list of user identifiers such as email addresses
+   * and returns the appropriate user ID from the warehouse, which can then be 
+   * used in subsequent calls to save the data. Takes the following parameters 
+   * in the $request (which is a merge of $_GET or $_POST data) in addition to a
+   * nonce and auth_token for a write operation:<ul>
    * <li><strong>identifiers</strong/><br/>
-   * Required. A JSON encoded array of identifiers known for the user. Each array entry is an object 
-   * with a type property (e.g. twitter, openid) and identifier property (e.g. twitter account). An identifier of type
-   * email must be provided in case a new user account has to be created on the warehouse.</li>
+   * Required. A JSON encoded array of identifiers known for the user. Each 
+   * array entry is an object with a type property (e.g. twitter, openid) and 
+   * identifier property (e.g. twitter account). An identifier of type email 
+   * must be provided in case a new user account has to be created on the 
+   * warehouse.</li>
    * <li><strong>surname</strong/><br/>
-   * Required. Surname of the user, enabling a new user account to be created on the warehouse.</li>
+   * Required. Surname of the user, enabling a new user account to be created on
+   * the warehouse.</li>
    * <li><strong>first_name</strong/><br/>
-   * Optional. First name of the user, enabling a new user account to be created on the warehouse.</li>
+   * Optional. First name of the user, enabling a new user account to be created
+   * on the warehouse.</li>
    * <li><strong>cms_user_id</strong/><br/>
-   * Optional. User ID from the client website's login system. Allows existing records to be linked to the created account when migrating from a 
-   * CMS user ID based authentication to Easy Login based authentication.</li>
+   * Optional. User ID from the client website's login system. Allows existing 
+   * records to be linked to the created account when migrating from a CMS user 
+   * ID based authentication to Easy Login based authentication.</li>
    * <li><strong>warehouse_user_id</strong/><br/>
-   * Optional. Where a user ID is already known but a new identifier is being provided (e.g. an email switch), provide the warehouse user ID.</li>
+   * Optional. Where a user ID is already known but a new identifier is being 
+   * provided (e.g. an email switch), provide the warehouse user ID.</li>
    * <li><strong>force</strong/><br/>
-   * Optional. Only relevant after a request has returned an array of several possible matches. Set to 
-   * merge or split to define the action.</li>
+   * Optional. Only relevant after a request has returned an array of several 
+   * possible matches. Set to merge or split to define the action.</li>
    * <li><strong>users_to_merge</strong/><br/>
-   * If force=merge, then this parameter can be optionally used to limit the list of users in the merge operation.
-   * Pass a JSON encoded array of user IDs.</li>
+   * If force=merge, then this parameter can be optionally used to limit the 
+   * list of users in the merge operation. Pass a JSON encoded array of user 
+   * IDs.</li>
    * <li><strong>attribute_values</strong>
-   * Optional list of custom attribute values for the person which have been modified on the client website
-   * and should be synchronised into the warehouse person record. The custom attributes must already exist
-   * on the warehouse and have a matching caption, as well as being marked as synchronisable or the attribute
-   * values will be ignored. Provide this as a JSON object with the properties being the caption of the 
-   * attribute and the values being the values to change.
+   * Optional list of custom attribute values for the person which have been 
+   * modified on the client website and should be synchronised into the 
+   * warehouse person record. The custom attributes must already exist on the 
+   * warehouse and have a matching caption, as well as being marked as 
+   * synchronisable or the attribute values will be ignored. Provide this as a 
+   * JSON object with the properties being the caption of the attribute and the 
+   * values being the values to change.
    * </li>
    * <li><strong>shares_to_prevent</strong>
    * If the user has opted out of allowing their records to be shared with other 
-   * websites, the sharing tasks which they have opted out of should be passed as a comma separated list
-   * here. Valid sharing tasks are: reporting, peer_review, verification, data_flow, moderation. They 
-   * will then be stored against the user account. </li>
+   * websites, the sharing tasks which they have opted out of should be passed 
+   * as a comma separated list here. Valid sharing tasks are: reporting, 
+   * peer_review, verification, data_flow, moderation. They will then be stored 
+   * against the user account. </li>
    * </ul>
    * @return JSON JSON object containing the following properties:
-   *   userId - If a single user account has been identified then returns the Indicia user ID for the existing 
-   *     or newly created account. Otherwise not returned.
-   *   attrs - If a single user account has been identifed then returns a list of captions and values for the 
-   *     attributes to update on the client account.
-   *   possibleMatches - If a list of possible users has been identified then this property includes a list of people that 
-   *     match from the warehouse - each with the user ID, website ID and website title they are
-   *     members of. If this happens then the client must ask the user to confirm that they 
-   *     are the same person as the users of this website and if so, the response is sent back with a force=merge
-   *     parameter to force the merge of the people. If they are the same person as only some of the other users,
-   *     then use users_to_merge to supply an array of the user IDs that should be merged. Alternatively, if 
-   *     force=split is passed through then the best fit user ID is returned and no merge operation occurs.
+   *   userId - If a single user account has been identified then returns the 
+   *     Indicia user ID for the existing or newly created account. Otherwise 
+   *     not returned.
+   *   attrs - If a single user account has been identifed then returns a list 
+   *     of captions and values for the attributes to update on the client 
+   *     account.
+   *   possibleMatches - If a list of possible users has been identified then 
+   *     this property includes a list of people that match from the warehouse -
+   *     each with the user ID, website ID and website title they are members 
+   *     of. If this happens then the client must ask the user to confirm that 
+   *     they are the same person as the users of this website and if so, the 
+   *     response is sent back with a force=merge parameter to force the merge 
+   *     of the people. If they are the same person as only some of the other 
+   *     users, then use users_to_merge to supply an array of the user IDs that 
+   *     should be merged. Alternatively, if force=split is passed through then 
+   *     the best fit user ID is returned and no merge operation occurs.
    *   error - Error string if an error occurred.
    */
   public static function get_user_id($request, $websiteId) {
+  // Test/escape $request parameters that are passed in to queries to prevent 
+  // SQL injection.
+  // identifiers: looks like these are explicitly escaped and go through ORM.
+  // surname: looks like only goes through ORM so escaped.
+  // first_name: looks like only goes through ORM so escaped.
+  // cms_user_id: Must be an integer
+  // warehouse_user_id: only goes through query builder so escaped.
+  // force: not passed to any query.
+  // users_to_merge: looks like these all go through query builder so are escaped.
+  // attribute_values: looks like these all go through ORM so are escaped.
+  // shares_to_prevent: not passed to any query
+  if (array_key_exists('cms_user_id',$request)) {
+    $cms_user_id = security::checkParam($request['cms_user_id'], 'int');
+    if ($cms_user_id === FALSE) {
+      Kohana::log('alert', "Invalid parameter, cms_user_id, with value '{$request['cms_user_id']}' in request to user_identifier/get_user_id service.");
+      throw new Exception('Invalid request.');
+    }
+  }
+  
     if (!array_key_exists('identifiers', $request))
       throw new exception('Error: missing identifiers parameter');
     $identifiers = json_decode($request['identifiers']);
@@ -487,11 +523,12 @@ QRY
   }
   
   /**
-   * Handle the case when multiple possible users are found for a list of identifiers. 
-   * Outcome depends on the settings in $_REQUEST, with options to set force=merge or force=split. If not
-   * forced, then the list of possible user IDs along with the websites they belong to are returned so the user
-   * can consider the best action. If force=merge then users_to_merge can be set to an array of user IDs that the
-   * merge applies to.
+   * Handle the case when multiple possible users are found for a list of 
+   * identifiers. Outcome depends on the settings in $_REQUEST, with options to 
+   * set force=merge or force=split. If not forced, then the list of possible 
+   * user IDs along with the websites they belong to are returned so the user 
+   * can consider the best action. If force=merge then users_to_merge can be set
+   * to an array of user IDs that the merge applies to.
    */
   private static function resolveMultipleUsers($identifiers, $existingUsers, $userPersonObj) {
     if (isset($_REQUEST['force'])) {
@@ -500,7 +537,8 @@ QRY
         return array('userId'=>$uid);
       } elseif ($_REQUEST['force']==='merge') {
         $uid = self::findBestFit($identifiers, $existingUsers, $userPersonObj);
-        // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be used to limit which are merged.
+        // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be 
+        // used to limit which are merged.
         self::mergeUsers($uid, $existingUsers, $userPersonObj);
         return array('userId'=>$uid);
       }
@@ -525,11 +563,11 @@ QRY
   }
   
   /**
-   * In the case where there are 2 users identified by a single list of identifiers, 
-   * resolve the situation. Returns the best matching user (based on first_name and surname match then
-   * number of matching identifiers)
-   * @todo Note that in conjunction with this, a tool must be provided in the warehouse for admin to 
-   * check for and merge potential duplicate users.
+   * In the case where there are 2 users identified by a single list of 
+   * identifiers, resolve the situation. Returns the best matching user (based 
+   * on first_name and surname match then number of matching identifiers)
+   * @todo Note that in conjunction with this, a tool must be provided in the 
+   * warehouse for admin to check for and merge potential duplicate users.
    */
   private static function findBestFit($identifiers, $existingUsers, $userPersonObj) {
     $nameMatches = array();    
@@ -585,7 +623,8 @@ QRY
   }
   
   /**
-   * If a request is received with the force parameter set to merge, this means we can merge the detected users into one.
+   * If a request is received with the force parameter set to merge, this means 
+   * we can merge the detected users into one.
    */
   private static function mergeUsers($uid, $existingUsers, $userPersonObj) {
     foreach($existingUsers as $userIdToMerge=>$websites) {
