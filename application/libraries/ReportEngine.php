@@ -213,11 +213,35 @@ class ReportEngine {
     $this->expectedParams = $this->reportReader->getParams();
     // some have defaults in the report XML file
     $this->providedParams = array_merge($this->reportReader->defaultParamValues, $this->providedParams);
-    // Pull out special case params for limit and offset
-    $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : null;
-    $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : null;
-    $this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : null;
-    $this->sortdir = isset($this->providedParams['sortdir']) ? $this->providedParams['sortdir'] : null;
+
+    // Special case params for limit, offset, ordeby and sortdir must be 
+    // checked to prevent SQL injection.
+    // Limit and Offset must be integers.
+    // Sortdir must be ASC|DESC.
+    // Orderby must be a single valid identifer.
+    $check_params = array(
+      'limit' => array('type' => 'int', 'regex' => NULL),
+      'offset' => array('type' => 'int', 'regex' => NULL),
+      'sortdir' => array('type' => 'str', 'regex' => '/^(ASC|DESC)$/i'),
+      'orderby' => array('type' => 'str', 'regex' => '/^[A-Z_][A-Z0-9_]*$/i'),
+    );
+    foreach ($check_params as $param => $check)
+    if (isset($this->providedParams[$param])) {
+      $value = $this->providedParams[$param];
+      $checked_value = security::checkParam($value, $check['type'], $check['regex']);
+      if ($checked_value !== FALSE) {
+        $this->$param = $checked_value;
+      }
+      else {
+        Kohana::log('alert', "Invalid parameter, $param, with value '$value' in request for report, $report.");
+        throw new Exception('Invalid request.');
+      }
+    }
+    else {
+      // Potential for DoS if limit is null and results are massive.
+      $this->$param = NULL;
+    }
+    
     return array(
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
       'content' => $this->compileReport()
