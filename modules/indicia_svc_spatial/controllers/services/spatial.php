@@ -148,8 +148,14 @@ class Spatial_Controller extends Service_Base_Controller {
         $r = $params['wkt'];
       else {
         $db = new Database;
-        $wkt = $params['wkt'];
-        $buffer = $params['buffer'];
+        // Test/escape parameters that are passed in to queries to prevent 
+        // SQL injection.
+        $wkt = pg_escape_string ($params['wkt']);
+        $buffer = security::checkParam($params['buffer'], 'int');
+        if ($buffer === FALSE) {
+          Kohana::log('alert', "Invalid parameter, buffer, with value '{$params['buffer']}' in request to spatial/buffer service.");
+          throw new Exception('Invalid request.');
+        }
         $result = $db->query("SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;")->current();
         $r = $result->wkt;
       }
