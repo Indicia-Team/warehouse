@@ -1,5 +1,4 @@
--- This should really be a DROP if we are feeling confident...
-ALTER TABLE cache_occurrences RENAME TO cache_occurrences_deprecated;
+DROP TABLE cache_occurrences;
 
 -- Create a view to ease the migration path to the new cache occurrences structure.
 CREATE OR REPLACE VIEW cache_occurrences AS

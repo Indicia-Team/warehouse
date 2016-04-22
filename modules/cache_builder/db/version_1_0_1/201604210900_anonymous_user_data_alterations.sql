@@ -14,22 +14,6 @@ EXCEPTION
 END;
 
 BEGIN
-	ALTER TABLE cache_occurrences_deprecated ADD COLUMN private_recorders varchar;
-EXCEPTION
-    WHEN duplicate_column THEN 
-      RAISE NOTICE 'column exists.';
-      success := FALSE;
-END;
-
-BEGIN
-	ALTER TABLE cache_occurrences_deprecated ADD COLUMN anonymous boolean default false NOT NULL;
-EXCEPTION
-    WHEN duplicate_column THEN 
-      RAISE NOTICE 'column exists.';
-      success := FALSE;
-END;
-
-BEGIN
 	ALTER TABLE cache_samples_nonfunctional ADD COLUMN private_recorders varchar;
 EXCEPTION
     WHEN duplicate_column THEN 
@@ -48,12 +32,6 @@ END;
 COMMENT ON COLUMN users_websites.anonymous IS
   'Should the user data be anonymous when their records are viewed.';
 
-COMMENT ON COLUMN cache_occurrences_deprecated.private_recorders IS
-  'Displays recorders even when the data is anonymised, for use with verification/administration reports.';
-
-COMMENT ON COLUMN cache_occurrences_deprecated.anonymous IS
-  'Indication that occurrence has been marked with an anonymous recorder.';
-
 COMMENT ON COLUMN cache_samples_nonfunctional.private_recorders IS
   'Displays recorders even when the data is anonymised, for use with verification/administration reports.';
 
@@ -70,13 +48,6 @@ DROP FUNCTION f_add_anon_col();
 CREATE OR REPLACE FUNCTION update_cache_anon_data() RETURNS TRIGGER AS $$
   BEGIN
     IF (OLD.anonymous = false AND NEW.anonymous = true) THEN
-      UPDATE cache_occurrences_deprecated co 
-      SET anonymous=true, recorders=null
-      FROM users_websites uw
-      WHERE uw.id=NEW.id
-      AND uw.website_id=co.website_id
-      AND uw.user_id=co.created_by_id;
-
       with update_data as (
         select csf.id as id
         from cache_samples_functional csf
@@ -88,12 +59,6 @@ CREATE OR REPLACE FUNCTION update_cache_anon_data() RETURNS TRIGGER AS $$
       WHERE uw.id=NEW.id
       AND csn.id in (select id from update_data);
     ELSEIF (OLD.anonymous = true AND NEW.anonymous = false) THEN
-      UPDATE cache_occurrences_deprecated co SET anonymous=false, recorders=private_recorders
-      FROM users_websites uw
-      WHERE uw.id=NEW.id
-      AND uw.website_id=co.website_id
-      AND uw.user_id=co.created_by_id;
-
       with update_data as (
         select csf.id as id
         from cache_samples_functional csf
