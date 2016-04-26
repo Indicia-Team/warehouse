@@ -27,7 +27,7 @@ class variable {
   /**
    * Set a variable value for later retrieval.
    * @param $name string Name of the variable to set.
-   * @param variant $value Value to set.
+   * @param mixed $value Value to set.
    * @param $caching boolean Set to true to enable use of the Kohana cache.
    */
   public static function set($name, $value, $caching=true) {
