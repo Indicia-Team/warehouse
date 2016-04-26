@@ -100,13 +100,19 @@ class Upgrade_Model extends Model
           if (file_exists($baseDir . "db/" . $version_name)) {
             // start transaction for each folder full of scripts
             $this->begin();
-            $this->scriptsForPgUser = '';
-            $this->slowScripts = '';
-            // we have a folder containing scripts
-            $this->execute_sql_scripts($baseDir, $version_name, $appName, $last_run_script);
-            $updatedTo = implode('.', $currentVersionNumbers);
-            // update the version number of the db since we succeeded
-            $this->set_new_version($updatedTo, $appName);
+            try {
+              $this->scriptsForPgUser = '';
+              $this->slowScripts = '';
+              // we have a folder containing scripts
+              $this->execute_sql_scripts($baseDir, $version_name, $appName, $last_run_script);
+              $updatedTo = implode('.', $currentVersionNumbers);
+              // update the version number of the db since we succeeded
+              $this->set_new_version($updatedTo, $appName);
+            }
+            catch (Exception $e) {
+              $this->rollback();
+              throw $e;
+            }
             // commit transaction
             $this->commit();
             // only tell the user if there are superuser or slow scripts, when the transaction has been committed.
