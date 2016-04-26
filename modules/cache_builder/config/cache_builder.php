@@ -908,7 +908,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
         and spa.system_function='sref_precision'
   ) on spv.sample_id=s.id and spv.deleted=false
   #join_needs_update#
-  where co.id is null";
+  where o.deleted=false
+  and co.id is null";
   
 $config['occurrences']['join_needs_update']='join needs_update_occurrences nu on nu.id=o.id and nu.deleted=false';
 $config['occurrences']['key_field']='o.id';
