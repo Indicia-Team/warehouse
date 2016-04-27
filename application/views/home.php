@@ -33,8 +33,8 @@ $(document).ready(function(){
 </script>
 <h2>Welcome to the Indicia Warehouse!</h2>
 <?php if ($db_version<$app_version) : ?>
-<div class="ui-state-error ui-corner-all page-notice">Your database needs to be upgraded as the application version is <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.
-<a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a></div>  
+<div class="ui-state-error ui-corner-all page-notice"><p>Your database needs to be upgraded as the application version is <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.
+<a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a></p></div>
 <?php 
 endif;
 $problems = config_test::check_config(true, true);
@@ -53,8 +53,12 @@ foreach($problems as $problem) {
 </div>
 <?php endif; ?>
 <p>Indicia is a toolkit that simplifies the construction of new websites which allow data entry, mapping and reporting
-of wildlife records. Indicia is an Open Source project funded by the Open Air Laboratories Network (of which the NBN is a partner) and managed by the 
-Centre for Ecology and Hydrology.</p>
+of wildlife records. Indicia is an Open Source project managed by the <a href="http://www.brc.ac.uk/">Biological
+Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for Ecology & Hydrology<a/>.</p>
+<ul>
+  <li><a href="http://www.indicia.org.uk">Indicia project website<a/></li>
+  <li><a href="https://github.com/Indicia-Team">Indicia on GitHub<a/></li>
+</ul>
 
 <?php 
 if (count($notifications)!==0) {
