@@ -241,13 +241,6 @@ HTML;
         'params' => array(
           'proj_id' => array(
             'datatype' => 'text'
-          )
-        )
-      ),
-      '{annotation ID}' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text'
           ),
           'page' => array(
             'datatype' => 'integer'
@@ -260,6 +253,13 @@ HTML;
           ),
           'edited_date_to' => array(
             'datatype' => 'date'
+          )
+        )
+      ),
+      '{annotation ID}' => array(
+        'params' => array(
+          'proj_id' => array(
+            'datatype' => 'text'
           )
         )
       )
@@ -582,7 +582,10 @@ HTML;
           $this->fail('Bad request', 400, "Invalid format for $paramName parameter");
         }
         if ($paramDef['datatype']==='date') {
-          $dt = DateTime::createFromFormat("Y-m-d", trim($this->request[$paramName]));
+          if (strpos($this->request[$paramName], 'T')===false)
+            $dt = DateTime::createFromFormat("Y-m-d", trim($this->request[$paramName]));
+          else
+            $dt = DateTime::createFromFormat("Y-m-d\TH:i:s", trim($this->request[$paramName]));
           if ($dt === false || array_sum($dt->getLastErrors()))
             $this->fail('Bad request', 400, "Invalid date for $paramName parameter");
         }
