@@ -13,4 +13,4 @@ CREATE OR REPLACE VIEW lookup_taxa_taxon_lists AS
    FROM taxa_taxon_lists tt
      JOIN taxa t ON tt.taxon_id = t.id AND t.deleted = false
   WHERE tt.deleted = false
-  ORDER BY tt.preferred DESC;
+  ORDER BY tt.allow_data_entry DESC, tt.preferred DESC;
