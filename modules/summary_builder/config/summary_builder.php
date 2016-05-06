@@ -200,14 +200,14 @@ $config['get_missed_deleted_occurrences_query'] = "
 	LIMIT #limit#";
 
 $config['get_YearTaxonLocationUser_query'] = "
-  SELECT 1 AS count, p.id AS sample_id, p.date_start
+  SELECT 1 AS count, p.id AS sample_id, p.date_start, 't' as present
 	FROM occurrences o
 	JOIN samples s ON s.id = o.sample_id AND s.deleted = 'f'
 	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id = #location_id# AND p.created_by_id = #user_id# AND p.deleted = 'f' AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
 	WHERE o.taxa_taxon_list_id = #taxon_id#
 		AND o.deleted = 'f' AND o.zero_abundance = 'f'
   UNION ALL
-  SELECT 0 AS count, p.id AS sample_id, p.date_start
+  SELECT 0 AS count, p.id AS sample_id, p.date_start, 'f' as present
 	FROM samples p
 	WHERE p.survey_id = #survey_id#
 		AND p.location_id = #location_id#
@@ -217,7 +217,7 @@ $config['get_YearTaxonLocationUser_query'] = "
   ";
 
 $config['get_YearTaxonLocationUser_Attr_query'] = "
-  SELECT oav.int_value AS count, p.id AS sample_id, p.date_start
+  SELECT oav.int_value AS count, p.id AS sample_id, p.date_start, 't' as present
 	FROM occurrences o
 	JOIN occurrence_attribute_values oav ON oav.occurrence_id = o.id AND oav.deleted = 'f' AND oav.occurrence_attribute_id = #attr_id# 
 	JOIN samples s ON s.id = o.sample_id AND s.deleted = 'f'
@@ -225,7 +225,7 @@ $config['get_YearTaxonLocationUser_Attr_query'] = "
 	WHERE o.taxa_taxon_list_id = #taxon_id#
 		AND o.deleted = 'f' AND o.zero_abundance = 'f'
   UNION ALL
-  SELECT 0 AS count, p.id AS sample_id, p.date_start
+  SELECT 0 AS count, p.id AS sample_id, p.date_start, 'f' as present
 	FROM samples p
 	WHERE p.survey_id = #survey_id#
 		AND p.location_id = #location_id#
@@ -235,14 +235,14 @@ $config['get_YearTaxonLocationUser_Attr_query'] = "
   ";
 
 $config['get_YearTaxonLocation_query'] = "
-  SELECT 1 AS count, p.id AS sample_id, p.date_start
+  SELECT 1 AS count, p.id AS sample_id, p.date_start, 't' as present
 	FROM occurrences o
 	JOIN samples s ON s.id = o.sample_id AND s.deleted = 'f'
 	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id = #location_id# AND p.deleted = 'f' AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
 	WHERE o.taxa_taxon_list_id = #taxon_id#
 		AND o.deleted = 'f' AND o.zero_abundance = 'f'
   UNION ALL
-  SELECT 0 AS count, p.id AS sample_id, p.date_start
+  SELECT 0 AS count, p.id AS sample_id, p.date_start, 'f' as present
 	FROM samples p
 	WHERE p.survey_id = #survey_id#
 		AND p.location_id = #location_id#
@@ -251,7 +251,7 @@ $config['get_YearTaxonLocation_query'] = "
   ";
 
 $config['get_YearTaxonLocation_Attr_query'] = "
-  SELECT oav.int_value AS count, p.id AS sample_id, p.date_start
+  SELECT oav.int_value AS count, p.id AS sample_id, p.date_start, 't' as present
 	FROM occurrences o
 	JOIN occurrence_attribute_values oav ON oav.occurrence_id = o.id AND oav.deleted = 'f' AND oav.occurrence_attribute_id = #attr_id# 
 	JOIN samples s ON s.id = o.sample_id AND s.deleted = 'f'
@@ -259,7 +259,7 @@ $config['get_YearTaxonLocation_Attr_query'] = "
 	WHERE o.taxa_taxon_list_id = #taxon_id#
 		AND o.deleted = 'f' AND o.zero_abundance = 'f'
   UNION ALL
-  SELECT 0 AS count, p.id AS sample_id, p.date_start
+  SELECT 0 AS count, p.id AS sample_id, p.date_start, 'f' as present
 	FROM samples p
 	WHERE p.survey_id = #survey_id#
 		AND p.location_id = #location_id#
