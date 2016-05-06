@@ -676,9 +676,7 @@ SET website_title=w.title,
     end
   end,
   entered_sref_system=case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-  recorders = case WHEN uw.anonymous=true THEN null ELSE s.recorder_names END,
-  private_recorders = s.recorder_names,
-  anonymous=case WHEN uw.anonymous=true THEN true ELSE false END,
+  recorders = s.recorder_names,
   comment=s.comment,
   privacy_precision=s.privacy_precision,
   licence_code=li.code,
@@ -808,7 +806,7 @@ WHERE s.id=u.id
 $config['samples']['insert']['nonfunctional'] = "
 INSERT INTO cache_samples_nonfunctional(
             id, website_title, survey_title, group_title, public_entered_sref,
-            entered_sref_system, recorders, private_recorders, anonymous, comment, privacy_precision, licence_code,
+            entered_sref_system, recorders, comment, privacy_precision, licence_code,
             attr_email, attr_cms_user_id, attr_cms_username, attr_first_name,
             attr_last_name, attr_full_name, attr_biotope, attr_sref_precision)
 SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
@@ -831,10 +829,7 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
     end
   end,
   case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-  case WHEN uw.anonymous=true THEN null ELSE s.recorder_names END,
-  s.recorder_names,
-  case WHEN uw.anonymous=true THEN true ELSE false END,
-  s.comment, s.privacy_precision, li.code,
+  s.recorder_names, s.comment, s.privacy_precision, li.code,
   CASE a_email.data_type
       WHEN 'T'::bpchar THEN v_email.text_value
       ELSE NULL::text
@@ -933,16 +928,10 @@ $config['samples']['extra_multi_record_updates']=array(
   // full recorder name
   // or surname, firstname
   'Sample attrs' => "update cache_samples_nonfunctional cs
-    set 
-    case WHEN uw.anonymous=true THEN null ELSE recorders=coalesce(
+    set recorders = coalesce(
       nullif(cs.attr_full_name, ''),
       cs.attr_last_name || coalesce(', ' || cs.attr_first_name, '')
-      ) END,
-    private_recorders = coalesce(
-      nullif(cs.attr_full_name, ''),
-      cs.attr_last_name || coalesce(', ' || cs.attr_first_name, '')
-      ),
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END   
+    )
     from needs_update_samples nu
     join surveys su on su.id=nu.survey_id and su.deleted=false
     left join users_websites uw on uw.website_id=su.website_id and uw.user_id=nu.created_by_id';
@@ -954,37 +943,25 @@ $config['samples']['extra_multi_record_updates']=array(
     and cs.id in (#ids#);",
   // Sample recorder names in parent sample
   'Parent sample recorder names' => 'update cache_samples_nonfunctional cs
-    set
-    recorders = case WHEN uw.anonymous=true THEN null ELSE sp.recorder_names END,
-    private_recorders = sp.recorder_names,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders=sp.recorder_names
     from needs_update_samples nu, samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false and sp.recorder_names is not null
-    #join_get_anon_with_sample_parent#
     where cs.recorders is null and nu.id=cs.id
     and s.id=cs.id and s.deleted=false;',
   // full recorder name in parent sample
   'Parent full name' => 'update cache_samples_nonfunctional cs
-    set
-    recorders = case WHEN uw.anonymous=true THEN null ELSE sav.text_value END,
-    private_recorders = sav.text_value,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders=sav.text_value
     from needs_update_samples nu, samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false
-    #join_get_anon_with_sample_parent#
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \'
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
     where cs.recorders is null and nu.id=cs.id
     and s.id=cs.id and s.deleted=false;',
   // firstname and surname in parent sample
   'Parent first name/surname' => 'update cache_samples_nonfunctional cs
-    set
-    recorders = case WHEN uw.anonymous=true THEN null ELSE coalesce(savf.text_value || \' \', \'\') || sav.text_value END,
-    private_recorders = coalesce(savf.text_value || \' \', \'\') || sav.text_value,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders = coalesce(savf.text_value || \' \', \'\') || sav.text_value
     from needs_update_samples nu, samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false
-    #join_get_anon_with_sample_parent#
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
     left join (sample_attribute_values savf
@@ -994,48 +971,33 @@ $config['samples']['extra_multi_record_updates']=array(
     and savf.sample_id=sp.id and s.id=cs.id and s.deleted=false;',
   // warehouse surname, first name
   'Warehouse surname, first name' => 'update cache_samples_nonfunctional cs
-    set
-    recorders = case WHEN uw.anonymous=true THEN null ELSE p.surname || coalesce(\', \' || p.first_name, \'\') END,
-    private_recorders = p.surname || coalesce(\', \' || p.first_name, \'\')
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders = p.surname || coalesce(\', \' || p.first_name, \'\')
     from needs_update_samples nu, people p, users u
     join cache_samples_functional csf on csf.created_by_id=u.id
-    #join_get_anon_with_sample_csf#
     where cs.recorders is null and nu.id=cs.id
     and csf.id=cs.id and p.id=u.person_id and p.deleted=false
     and u.id<>1;',
   // CMS username
   'CMS Username' => 'update cache_samples_nonfunctional cs
-    set 
-    recorders = case WHEN uw.anonymous=true THEN null ELSE sav.text_value END,
-    private_recorders = sav.text_value,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders = sav.text_value
     from needs_update_samples nu, sample_attribute_values sav
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
     where cs.recorders is null and nu.id=cs.id
     and sav.sample_id=cs.id and sav.deleted=false;',
   // CMS username in parent sample
   'Parent CMS Username' => 'update cache_samples_nonfunctional cs
-    set 
-    recorders = case WHEN uw.anonymous=true THEN null ELSE sav.text_value END,
-    private_recorders = sav.text_value,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders = sav.text_value
     from needs_update_samples nu, samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false
-    #join_get_anon_with_sample_parent#
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
     where cs.recorders is null and nu.id=cs.id
     and s.id=cs.id and s.deleted=false;',
   // warehouse username
   'Warehouse username' => 'update cache_samples_nonfunctional cs
-    set
-    recorders = case WHEN uw.anonymous=true or u.id = 1 THEN null ELSE u.username END,
-    private_recorders = case u.id when 1 then null else u.username end,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders=u.username
     from needs_update_samples nu users u
     join cache_samples_functional csf on csf.created_by_id=u.id
-    #join_get_anon_with_sample_csf#
     where cs.recorders is null and nu.id=cs.id
     and cs.id=csf.id and u.id<>1;'
 );
@@ -1046,17 +1008,11 @@ $config['samples']['extra_single_record_updates']=array(
   // Or, full recorder name
   // Or, surname, firstname
   'Sample recorder names or attrs' => "update cache_samples_nonfunctional cs
-    set recorders=case WHEN uw.anonymous=true THEN null ELSE coalesce(
+    set recorders=coalesce(
       nullif(s.recorder_names, ''),
       nullif(cs.attr_full_name, ''),
       cs.attr_last_name || coalesce(', ' || cs.attr_first_name, '')
-      ) END,
-    private_recorders=coalesce(
-      nullif(s.recorder_names, ''),
-      nullif(cs.attr_full_name, ''),
-      cs.attr_last_name || coalesce(', ' || cs.attr_first_name, '')
-      ),
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    )
     from samples s
     join surveys su on su.id=s.survey_id and su.deleted=false
     left join users_websites uw on uw.website_id=su.website_id and uw.user_id=s.created_by_id
@@ -1069,36 +1025,25 @@ $config['samples']['extra_single_record_updates']=array(
     and cs.id in (#ids#);",
   // Sample recorder names in parent sample
   'Parent sample recorder names' => "update cache_samples_nonfunctional cs
-    set recorders = case WHEN cs.anonymous=true THEN null ELSE sp.recorder_names END,
-    private_recorders = sp.recorder_names,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders = sp.recorder_names
     from samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false
-    #join_get_anon_with_sample_parent#
     where cs.recorders is null and cs.id in (#ids#)
     and s.id=cs.id and s.deleted=false and sp.recorder_names is not null and sp.recorder_names<>'';",
   // Full recorder name in parent sample
   'Parent full name' => 'update cache_samples_nonfunctional cs
-    set    
-    recorders = case WHEN uw.anonymous=true THEN null ELSE sav.text_value END,
-    private_recorders = sav.text_value,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders = sav.text_value
     from samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false
-    #join_get_anon_with_sample_parent#
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> \', \'
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'full_name\' and sa.deleted=false
     where cs.recorders is null and cs.id in (#ids#)
     and s.id=cs.id and s.deleted=false;',
   // surname, firstname in parent sample
   'Parent first name/surname' => 'update cache_samples_nonfunctional cs
-    set
-    recorders = case WHEN uw.anonymous=true THEN null ELSE sav.text_value || coalesce(\', \' || savf.text_value, \'\') END,
-    private_recorders = sav.text_value || coalesce(\', \' || savf.text_value, \'\'),
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders = sav.text_value || coalesce(\', \' || savf.text_value, \'\')
     from samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false
-    #join_get_anon_with_sample_parent#
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'last_name\' and sa.deleted=false
     left join (sample_attribute_values savf
@@ -1108,44 +1053,32 @@ $config['samples']['extra_single_record_updates']=array(
     and savf.sample_id=sp.id and s.id=cs.id and s.deleted=false;',
   // warehouse surname, firstname
   'Warehouse first name/surname' => 'update cache_samples_nonfunctional cs
-    set recorders = case WHEN cs.anonymous=true THEN null ELSE p.surname || coalesce(\', \' || p.first_name, \'\') END,
-    private_recorders = p.surname || coalesce(\', \' || p.first_name, \'\'),
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders=p.surname || coalesce(\', \' || p.first_name, \'\')
     from users u
     join cache_samples_functional csf on csf.created_by_id=u.id
     join people p on p.id=u.person_id and p.deleted=false
-    #join_get_anon_with_sample_csf#
     where cs.recorders is null and cs.id in (#ids#)
     and cs.id=csf.id and u.id<>1;',
   // CMS username
   'CMS Username' => 'update cache_samples_nonfunctional cs
-    set recorders = case WHEN cs.anonymous=true THEN null ELSE sav.text_value END,
-    private_recorders = sav.text_value,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders=sav.text_value
     from sample_attribute_values sav
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
-    #join_get_anon_with_sample_attribute_value#
     where cs.recorders is null and cs.id in (#ids#)
     and sav.sample_id=cs.id and sav.deleted=false;',
   // CMS username in parent sample
   'Parent CMS Username' => 'update cache_samples_nonfunctional cs
-    set recorders = case WHEN cs.anonymous=true THEN null ELSE sav.text_value END,
-    private_recorders = sav.text_value,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders=sav.text_value
     from samples s
     join samples sp on sp.id=s.parent_id and sp.deleted=false
-    #join_get_anon_with_sample_parent#
     join sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
     join sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = \'cms_username\' and sa.deleted=false
     where cs.recorders is null and cs.id in (#ids#)
     and s.id=cs.id and s.deleted=false;',
   'Warehouse username' => 'update cache_samples_nonfunctional cs
-    set recorders = case WHEN cs.anonymous=true THEN null ELSE u.username END,
-    private_recorders = u.username,
-    anonymous=case WHEN uw.anonymous=true THEN true ELSE false END
+    set recorders=u.username
     from users u
     join cache_samples_functional csf on csf.created_by_id=u.id
-    #join_get_anon_with_sample_csf#
     where cs.recorders is null and cs.id in (#ids#)
     and cs.id=csf.id and u.id<>1;'
 );
@@ -1673,18 +1606,5 @@ AND occ.deleted=false
 
 $config['occurrences']['join_needs_update']='join needs_update_occurrences nu on nu.id=o.id and nu.deleted=false';
 $config['occurrences']['key_field']='o.id';
-//join to get anonymous user information when a parent sample is used in the query
-$config['samples']['join_get_anon_with_sample_parent']='
-  JOIN surveys su on su.id=sp.survey_id and su.deleted=false
-  LEFT JOIN users_websites uw on uw.website_id=su.website_id and uw.user_id=sp.created_by_id';
-//join to get anonymous user information when cache_sample_functional is used in the query
-$config['samples']['join_get_anon_with_sample_csf']='
-  LEFT JOIN users_websites uw on uw.website_id=csf.website_id and uw.user_id=csf.created_by_id
-';
-//join to get anonymous user information when only sample attribute values are used in the query
-$config['samples']['join_get_anon_with_sample_attribute_value']='
-  LEFT JOIN cache_samples_functional csf on csf.id=sav.sample_id
-  LEFT JOIN users_websites uw on uw.website_id=csf.website_id and uw.user_id=csf.created_by_id
-';
 
 ?>

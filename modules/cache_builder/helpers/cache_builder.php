@@ -51,20 +51,8 @@ class cache_builder {
         else
           $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $queries['insert']);
         cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
-        if (isset($queries['extra_multi_record_updates'])) {
-          if (is_array($queries['insert'])) {
-            foreach($queries['extra_multi_record_updates'] as $key=>&$sql) {
-              $sql = str_replace('#join_get_anon_with_sample_parent#', $queries['join_get_anon_with_sample_parent'], $sql);
-              $sql = str_replace('#join_get_anon_with_sample_csf#', $queries['join_get_anon_with_sample_csf'], $sql);
-              $sql = str_replace('#join_get_anon_with_sample_attribute_value#', $queries['join_get_anon_with_sample_attribute_value'], $sql);
-            }
-          } else {
-            $queries['insert'] = str_replace('#join_get_anon_with_sample_parent#', $queries['join_get_anon_with_sample_parent'], $queries['insert']);
-            $queries['insert'] = str_replace('#join_get_anon_with_sample_csf#', $queries['join_get_anon_with_sample_csf'], $queries['insert']);
-            $queries['insert'] = str_replace('#join_get_anon_with_sample_attribute_value#', $queries['join_get_anon_with_sample_attribute_value'], $queries['insert']);
-          }
-          cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');      
-        }
+        if (isset($queries['extra_multi_record_updates'])) 
+          cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
         if (!variable::get("populated-$table")) {
           $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
           if (isset($queries['count']))
@@ -153,17 +141,12 @@ class cache_builder {
       $idlist=implode(',', $ids);
       if (is_array($queries['extra_single_record_updates'])) 
         foreach($queries['extra_single_record_updates'] as $key=>&$sql) {
-          $sql = str_replace('#join_get_anon_with_sample_parent#', $queries['join_get_anon_with_sample_parent'], $sql);
-          $sql = str_replace('#join_get_anon_with_sample_csf#', $queries['join_get_anon_with_sample_csf'], $sql);
-          $sql = str_replace('#join_get_anon_with_sample_attribute_value#', $queries['join_get_anon_with_sample_attribute_value'], $sql);
           $result=$db->query(str_replace('#ids#', $idlist, $sql));
           $doneCount += $result->count();
           if ($doneCount>=count($idlist)) 
             break; // we've updated all. So can drop out.
         }
       else {
-        $queries['extra_single_record_updates'] = str_replace('#join_get_anon_with_sample_parent#', $queries['join_get_anon_with_sample_parent'], $queries['insert']);
-        $queries['extra_single_record_updates'] = str_replace('#join_get_anon_with_sample_csf#', $queries['join_get_anon_with_sample_csf'], $queries['insert']);
         $db->query(str_replace('#ids#', $idlist, $queries['extra_single_record_updates']));
       }
     }
