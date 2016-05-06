@@ -934,7 +934,6 @@ $config['samples']['extra_multi_record_updates']=array(
     )
     from needs_update_samples nu
     join surveys su on su.id=nu.survey_id and su.deleted=false
-    left join users_websites uw on uw.website_id=su.website_id and uw.user_id=nu.created_by_id';
     where cs.recorders is null and nu.id=cs.id
     and (
       nullif(cs.attr_full_name, '') is not null or
