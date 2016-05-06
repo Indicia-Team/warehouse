@@ -718,7 +718,6 @@ FROM samples s
 #join_needs_update#
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
-LEFT JOIN users_websites uw on uw.website_id=w.id and uw.user_id=s.created_by_id
 LEFT JOIN groups g on g.id=s.group_id and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
@@ -868,7 +867,6 @@ FROM samples s
 #join_needs_update#
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
-LEFT JOIN users_websites uw on uw.website_id=w.id and uw.user_id=s.created_by_id
 LEFT JOIN groups g on g.id=s.group_id and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
@@ -933,7 +931,6 @@ $config['samples']['extra_multi_record_updates']=array(
       cs.attr_last_name || coalesce(', ' || cs.attr_first_name, '')
     )
     from needs_update_samples nu
-    join surveys su on su.id=nu.survey_id and su.deleted=false
     where cs.recorders is null and nu.id=cs.id
     and (
       nullif(cs.attr_full_name, '') is not null or
@@ -1013,8 +1010,6 @@ $config['samples']['extra_single_record_updates']=array(
       cs.attr_last_name || coalesce(', ' || cs.attr_first_name, '')
     )
     from samples s
-    join surveys su on su.id=s.survey_id and su.deleted=false
-    left join users_websites uw on uw.website_id=su.website_id and uw.user_id=s.created_by_id
     where s.id=cs.id and s.deleted=false
     and (
       nullif(s.recorder_names, '') is not null or
