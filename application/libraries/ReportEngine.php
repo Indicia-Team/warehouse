@@ -766,7 +766,7 @@ class ReportEngine {
                   throw new exception('Invalid numeric array parameter value');
               }
             }
-            elseif ($paramDefs[$name]['datatype']==='date') {
+            elseif ($paramDefs[$name]['datatype']==='date' && preg_match('/\d{4}$/', $value)) {
               // force ISO date for SQL safety.
               // @todo This needs further work for i18n if non-European.
               $date = DateTime::createFromFormat('d/m/Y', $value);
