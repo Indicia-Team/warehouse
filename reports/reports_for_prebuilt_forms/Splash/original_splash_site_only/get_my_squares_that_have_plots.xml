@@ -1,0 +1,31 @@
+<report
+    title="Get my square that have plots"
+    description="Get a list of core Squares and additional squares that have been assigned to the user and also have at least one plot assigned to the square."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations square
+      LEFT JOIN locations_websites lw on lw.location_id=square.id AND lw.deleted=false
+      LEFT JOIN location_attribute_values lav on lav.location_id=square.id AND lav.location_attribute_id = #vice_county_location_attribute_id#
+      JOIN locations plot on plot.parent_id=square.id
+      JOIN users u on u.id=#current_user_id#
+      JOIN person_attribute_values pav on pav.int_value=square.id AND pav.person_id=u.person_id AND pav.deleted=false
+    WHERE (square.location_type_id=#core_square_location_type_id# OR square.location_type_id=#additional_square_location_type_id#)
+    AND #website_filter# AND square.deleted=false
+  </query>
+  <order_bys>
+    <order_by>square.id</order_by>
+  </order_bys>
+  <params>
+    <param name="core_square_location_type_id" display="Core Square location type id" datatype="integer"/>
+    <param name="additional_square_location_type_id" display="Additional Square location type id" datatype="integer"/>
+    <param name="current_user_id" display="Id of the currently logged in user" datatype="integer"/>
+    <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
+    <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Square ID' sql="square.id" datatype='integer' visible="false" in_count="true"/>
+    <column name='plot_id' display='Plot ID' sql="count(plot.id)" datatype='integer' visible="false" aggregate="true"/>
+    <column name='name' display='Square Name' sql="square.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#')" datatype='text' />
+  </columns>
+</report>

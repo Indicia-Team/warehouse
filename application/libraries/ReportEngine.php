@@ -1026,6 +1026,9 @@ class ReportEngine {
       case 'F':
         return "{$entity}_$sysfunc.float_value$suffix\n";
         break;
+      case 'I':
+        return "{$entity}_$sysfunc.int_value$suffix\n";
+        break;
       case 'T':
         return "{$entity}_$sysfunc.text_value\n";
         break;
