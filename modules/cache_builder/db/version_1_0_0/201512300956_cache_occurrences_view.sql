@@ -1,3 +1,4 @@
+-- #slow script#
 -- This should really be a DROP if we are feeling confident...
 ALTER TABLE cache_occurrences RENAME TO cache_occurrences_deprecated;
 
