@@ -717,6 +717,12 @@ class ReportEngine {
           $query = preg_replace("/#$name#/", $empty, $query);
         }
         else {
+          if (!empty($paramDefs[$name]['preprocess']) && !empty($value) && $value!=="null") {
+            // use a preprocessing query to calculate the actual param value to use
+            $prequery = str_replace("#$name#", $value, $paramDefs[$name]['preprocess']);
+            $output = $this->reportDb->query($prequery)->result_array(FALSE);
+            $value = implode(',', $output[0]);
+          }
           if ($paramDefs[$name]['datatype']=='idlist')
             // idlist is a special parameter type which creates an IN (...) clause. Lets you optionally provide a list
             // of ids for a report.
@@ -1367,7 +1373,6 @@ class ReportEngine {
    */
   private function addParamWheres($query, $paramName, $paramDef, $value) {
     if ($value && isset($paramDef['custom']) && $paramDef['custom']==='unique_location_index') {
-      kohana::log('debug', 'testing ' . $paramName);
       // special case for this parameter when the location is a unique indexed location type,
       // since we can use a more effective where clause instead of the join.
       $typeTerm = $this->locationIdUniquelyIndexedType($value);
@@ -1377,12 +1382,6 @@ class ReportEngine {
         }
       else
         return $query;
-    }
-    if (!empty($paramDef['preprocess']) && !empty($value) && $value!=="null") {
-      // use a preprocessing query to calculate the actual param value to use
-      $prequery = str_replace("#$paramName#", $value, $paramDef['preprocess']);
-      $output = $this->reportDb->query($prequery)->result_array(FALSE);
-      $value = implode(',', $output[0]);
     }
     foreach($paramDef['wheres'] as $whereDef) {
       if ((!empty($whereDef['operator']) && (($whereDef['operator']==='equal' && $whereDef['value']===$value) ||
