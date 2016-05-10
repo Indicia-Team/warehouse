@@ -15,7 +15,7 @@
   #idlist#
   </query>
   <order_bys>
-    <order_by>o.date_start DESC, o.id DESC</order_by>
+    <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
