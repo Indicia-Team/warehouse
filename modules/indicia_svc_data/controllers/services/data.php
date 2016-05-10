@@ -874,7 +874,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       else {
         // Implode array of arrays.
         $types = implode(',', array_map(function($a){
-          implode(',', $a);
+          return implode(',', $a);
         }, $config));
       }
 
