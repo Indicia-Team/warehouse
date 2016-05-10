@@ -6,7 +6,7 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
   SELECT #columns#
-  FROM cache_occurrences o
+  FROM cache_occurrences_functional o
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   JOIN websites w on w.id=o.website_id 
