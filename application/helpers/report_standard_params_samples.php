@@ -119,10 +119,14 @@ class report_standard_params_samples {
             "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom)")
         )
       ),
-      'indexed_location_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Location IDs (indexed)',
+      'indexed_location_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Location IDs (indexed)', 'custom'=>'unique_location_index',
         'description'=>'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
         'joins' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ilsfilt# on #alias:ilsfilt#.sample_id=s.id and #alias:ilsfilt#.location_id #indexed_location_list_op# (#indexed_location_list#)")
+        ),
+        'wheres' => array(
+          // where will be used only if using a uniquely indexed location type
+          array('value'=>'', 'operator'=>'', 'sql'=>"s.location_id_#typealias# #indexed_location_list_op# (#indexed_location_list#)")
         )
       ),
       'date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date from',

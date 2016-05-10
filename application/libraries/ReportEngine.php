@@ -702,7 +702,7 @@ class ReportEngine {
     {
       if (isset($paramDefs[$name])) {
         if (array_key_exists('joins', $paramDefs[$name]))
-          $query = $this->addParamJoins($query, $name, $paramDefs[$name], $value);
+          $query = $this->addParamJoins($query, $paramDefs[$name], $value);
         if (array_key_exists('wheres', $paramDefs[$name]))
           $query = $this->addParamWheres($query, $name, $paramDefs[$name], $value);
       }
@@ -1298,9 +1298,41 @@ class ReportEngine {
   }
 
   /**
+   * When filtering against a location type that is indexed by the spatial index builder, if the
+   * location type has a unique index there will be a location_id_* column pointing to the id
+   * in cache_occurrences_functional. This switches from the standard join method to a direct
+   * filter on this field as its much faster.
+   * @param $id
+   * @return null
+   */
+  private function locationIdUniquelyIndexedType($id) {
+    if (preg_match('/^\d+$/', $id)) {
+      $config=kohana::config_load('spatial_index_builder', false);
+      if (array_key_exists('unique', $config)) {
+        $r = $this->reportDb->select('cache_termlists_terms.term')
+          ->from('locations l')
+          ->join('cache_termlists_terms', array('cache_termlists_terms.id' => 'l.location_type_id'))
+          ->where('l.id', $id)
+          ->in('cache_termlists_terms.term', $config['unique'])
+          ->get();
+        if ($r->count()>0) {
+          return $r->current()->term;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Add any joins defined by a used parameter to the query.
    */
-  private function addParamJoins($query, $paramName, $paramDef, $value) {
+  private function addParamJoins($query, $paramDef, $value) {
+    if ($value && isset($paramDef['custom']) && $paramDef['custom']==='unique_location_index') {
+      // special case for this parameter when the location is a unique indexed location type,
+      // since we can use a more effective where clause instead of the join.
+      if ($this->locationIdUniquelyIndexedType($value))
+        return $query;
+    }
     $joins = array();
     foreach($paramDef['joins'] as $joinDef) {
       if ((!empty($joinDef['operator']) && (($joinDef['operator']==='equal' && $joinDef['value']===$value) ||
@@ -1334,6 +1366,18 @@ class ReportEngine {
    * @todo: Consider caching of the preprocess output.
    */
   private function addParamWheres($query, $paramName, $paramDef, $value) {
+    if ($value && isset($paramDef['custom']) && $paramDef['custom']==='unique_location_index') {
+      kohana::log('debug', 'testing ' . $paramName);
+      // special case for this parameter when the location is a unique indexed location type,
+      // since we can use a more effective where clause instead of the join.
+      $typeTerm = $this->locationIdUniquelyIndexedType($value);
+      if ($typeTerm)
+        foreach($paramDef['wheres'] as &$whereDef) {
+          $whereDef['sql'] = str_replace('#typealias#', strtolower(str_replace(' ', '_', $typeTerm)), $whereDef['sql']);
+        }
+      else
+        return $query;
+    }
     if (!empty($paramDef['preprocess']) && !empty($value) && $value!=="null") {
       // use a preprocessing query to calculate the actual param value to use
       $prequery = str_replace("#$paramName#", $value, $paramDef['preprocess']);
