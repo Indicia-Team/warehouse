@@ -717,12 +717,6 @@ class ReportEngine {
           $query = preg_replace("/#$name#/", $empty, $query);
         }
         else {
-          if (!empty($paramDefs[$name]['preprocess']) && !empty($value) && $value!=="null") {
-            // use a preprocessing query to calculate the actual param value to use
-            $prequery = str_replace("#$name#", $value, $paramDefs[$name]['preprocess']);
-            $output = $this->reportDb->query($prequery)->result_array(FALSE);
-            $value = implode(',', $output[0]);
-          }
           if ($paramDefs[$name]['datatype']=='idlist')
             // idlist is a special parameter type which creates an IN (...) clause. Lets you optionally provide a list
             // of ids for a report.
@@ -777,6 +771,12 @@ class ReportEngine {
               // @todo This needs further work for i18n if non-European.
               $date = DateTime::createFromFormat('d/m/Y', $value);
               $value = $date->format('Y-m-d');
+            }
+            if (!empty($paramDefs[$name]['preprocess']) && !empty($value) && $value!=="null") {
+              // use a preprocessing query to calculate the actual param value to use
+              $prequery = str_replace("#$name#", $value, $paramDefs[$name]['preprocess']);
+              $output = $this->reportDb->query($prequery)->result_array(FALSE);
+              $value = implode(',', $output[0]);
             }
             $query = preg_replace("/#$name#/", $value, $query);
           }
