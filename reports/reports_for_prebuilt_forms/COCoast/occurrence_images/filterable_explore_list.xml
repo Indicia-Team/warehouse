@@ -1,0 +1,61 @@
+<report
+    title="CoCoast: Explore record images using standard filters"
+    description="Report designed for the explore records facility in iRecord, with augmented standardised filtering parameters."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN occurrence_media om on om.occurrence_id=o.id and om.deleted=false
+  JOIN cache_termlists_terms mtype on mtype.id=om.media_type_id
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' default='' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' default='' />
+    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name='user_id_list' display='User Id List' description='List of User IDs assigned to selected Hubs' default='' emptyvalue=''>
+      <where>o.created_by_id IN (#user_id_list#)</where>
+    </param>
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} certainty-{certainty} record-id'&gt;{occurrence_id}&lt;/div&gt;" datatype="integer" />
+    <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
+    <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
+    <column name='taxon' display='Species' datatype="text" sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" />
+    <column name='formatted' display="Formatted name" sql="CASE WHEN o.preferred_taxon=o.default_common_name then '&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;' 
+	      ELSE '&lt;em&gt;' || o.preferred_taxon || '&lt;/em&gt;' || COALESCE('&lt;br/&gt;' || o.default_common_name, '') END" datatype='text' />	
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype="text" />
+    <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' visible='false' datatype="integer" />
+    <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype="integer" />   
+    <column name='location_name' display='Site name' sql='o.location_name' datatype="text" />
+    <column name='entered_sref' display='Grid Ref' sql="regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g')" datatype="text" />
+    <column name='date_start' sql='o.date_start' visible='false' />
+    <column name='date_end' sql='o.date_end' visible='false' />
+    <column name='date_type' sql='o.date_type' visible='false' />
+    <column name='date' display='Date' datatype="date" />
+    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" datatype="text" />
+    <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
+    <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
+    <column name='record_status' display='State' sql='o.record_status' visible="false" />
+    <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
+    <column name='belongs_to_user' display='Belongs to User' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#user_id#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='belongs_to_site' display='Belongs to Site' sql="CASE WHEN o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='media' display='Media' sql='om.path' img='true' />
+    <column name='caption' display='Caption' sql='om.caption' />
+    <column name='mtype' display='Media type' sql='mtype.term' />
+    <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" datatype="text" />
+    <column name='pass' visible='false' sql="CASE WHEN o.data_cleaner_info='pass' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
+    <column name='fails' display='Check' template="{pass}{fails}"
+        sql="case when o.data_cleaner_info is not null and o.data_cleaner_info&lt;&gt;'pass' then 
+            replace(replace(replace(replace(o.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;') 
+        end"
+    />
+  </columns>
+</report>
