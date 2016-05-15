@@ -4,8 +4,7 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
   SELECT #columns#
-  FROM cache_occurrences o
-  JOIN websites w on w.id=o.website_id and w.deleted=false
+  FROM cache_occurrences_functional o
   JOIN cache_taxa_taxon_lists cttl on cttl.external_key=o.taxa_taxon_list_external_key and cttl.taxon_list_id=#master_taxon_list_id# and cttl.preferred=true
   #agreements_join#
   #joins#

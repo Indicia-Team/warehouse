@@ -6,17 +6,18 @@
         SELECT case position(',' in recorders) when 0 then recorders 
             else regexp_replace(recorders, '(.+), ', '') || ' ' || regexp_replace(recorders, ',(.+)', '') end as recorders, 
             count(id) as records
-        FROM (SELECT o.id, o.recorders
-          FROM cache_occurrences o
+        FROM (SELECT o.id, snf.recorders
+          FROM cache_occurrences_functional o
+          JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
           #agreements_join#
           #joins#
-          WHERE COALESCE(o.recorders, '') not in ('admin', '', ',')
+          WHERE COALESCE(snf.recorders, '') not in ('admin', '', ',')
           AND #sharing_filter#
           #filters#
           ORDER BY id DESC
           LIMIT #records_to_scan#) list
-        GROUP BY case position(',' in recorders) when 0 then recorders 
-            else regexp_replace(recorders, '(.+), ', '') || ' ' || regexp_replace(recorders, ',(.+)', '') end
+        GROUP BY case position(',' in snf.recorders) when 0 then snf.ecorders
+            else regexp_replace(snf.recorders, '(.+), ', '') || ' ' || regexp_replace(snf.recorders, ',(.+)', '') end
         ORDER BY count(id) DESC
         LIMIT #recorders_to_return#
       ) AS list ORDER BY recorders ASC

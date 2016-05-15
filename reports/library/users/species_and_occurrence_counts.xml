@@ -2,7 +2,7 @@
 <report title="Species &amp; occurrence counts by user" description="Lists users and the number of species and occurrences entered by each of them.">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM cache_occurrences o
+      FROM cache_occurrences_functional o
       JOIN users u on u.id=o.created_by_id and u.id&lt;&gt;1
       JOIN people p on p.id=u.person_id and p.deleted=false
       #agreements_join#

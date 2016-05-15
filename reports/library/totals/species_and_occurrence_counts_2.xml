@@ -3,7 +3,7 @@
     filtered to multiple surveys or locations for the survey summary module.">
       <query website_filter_field="o.website_id">
       SELECT count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count
-      FROM cache_occurrences o
+      FROM cache_occurrences_functional o
       WHERE o.zero_abundance='f'
       AND #website_filter#
       AND ('#survey_ids#'='0' OR o.survey_id in (#survey_ids#))

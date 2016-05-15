@@ -2,7 +2,7 @@
 <report title="Species &amp; occurrence counts by user 3" description="Lists users and the number of species and occurrences entered by each of them, with simple date filters.">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM cache_occurrences o
+      FROM cache_occurrences_functional o
       JOIN users u on u.id=o.created_by_id and u.id&lt;&gt;1
       JOIN people p on p.id=u.person_id and p.deleted=false
       #agreements_join#
@@ -17,9 +17,9 @@
     </param>
     <param name="date_range" display="Show league for" datatype="lookup" lookup_values="all:All time,year:Last year,month:Last month,week:Last week" emptyvalue="all">
       <wheres>
-        <where operator="equal" value="year">o.cache_created_on &gt; now()-'1 year'::interval</where>
-        <where operator="equal" value="month">o.cache_created_on &gt; now()-'1 month'::interval</where>
-        <where operator="equal" value="week">o.cache_created_on &gt; now()-'1 week'::interval</where>
+        <where operator="equal" value="year">o.created_on &gt; now()-'1 year'::interval</where>
+        <where operator="equal" value="month">o.created_on &gt; now()-'1 month'::interval</where>
+        <where operator="equal" value="week">o.created_on &gt; now()-'1 week'::interval</where>
       </wheres>
     </param>
     <param name="website_exclusions" display="List of website IDs to exclude" default=""
