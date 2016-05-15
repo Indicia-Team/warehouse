@@ -16,8 +16,8 @@
           #filters#
           ORDER BY id DESC
           LIMIT #records_to_scan#) list
-        GROUP BY case position(',' in snf.recorders) when 0 then snf.ecorders
-            else regexp_replace(snf.recorders, '(.+), ', '') || ' ' || regexp_replace(snf.recorders, ',(.+)', '') end
+        GROUP BY case position(',' in recorders) when 0 then recorders
+            else regexp_replace(recorders, '(.+), ', '') || ' ' || regexp_replace(recorders, ',(.+)', '') end
         ORDER BY count(id) DESC
         LIMIT #recorders_to_return#
       ) AS list ORDER BY recorders ASC
