@@ -6,7 +6,7 @@
       FROM locations l
       LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-      LEFT JOIN cache_occurrences_functional ON o.sample_id=s.id AND o.website_id in (#website_ids#)
+      LEFT JOIN cache_occurrences_functional o ON o.website_id in (#website_ids#)
         AND o.created_by_id=#user_id# AND o.created_by_id&lt;&gt;1
         AND ST_INTERSECTS(o.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
         AND NOT ST_TOUCHES(o.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
@@ -26,7 +26,7 @@
       FROM locations l
       LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-        LEFT JOIN cache_occurrences_functional ON o.sample_id=s.id AND o.website_id in (#website_ids#)
+      LEFT JOIN cache_occurrences_functional o ON o.website_id in (#website_ids#)
         AND o.created_by_id=#user_id# AND o.created_by_id&lt;&gt;1
         AND ST_INTERSECTS(o.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
         AND NOT ST_TOUCHES(o.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))

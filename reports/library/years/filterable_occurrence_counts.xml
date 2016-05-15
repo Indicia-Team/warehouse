@@ -3,7 +3,7 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
     select #columns#
     from generate_series(#from_year#, date_part('year', now())::integer) as years(no)
-    left join (cache_occurrences o 
+    left join (cache_occurrences_functional o
     #agreements_join#
     #joins#
     AND #sharing_filter#

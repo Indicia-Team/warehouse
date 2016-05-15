@@ -3,7 +3,7 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
     select #columns#
     from taxon_groups tg
-    join (cache_occurrences o 
+    join (cache_occurrences_functioal o
     #agreements_join#
     #joins#
     AND #sharing_filter#

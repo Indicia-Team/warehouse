@@ -3,7 +3,7 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
     select #columns#
     from generate_series(1,12) as months(no)
-    left join (cache_occurrences o 
+    left join (cache_occurrences_functional o
     #agreements_join#
     #joins#
     AND #sharing_filter#
