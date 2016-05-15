@@ -353,7 +353,7 @@ class XMLReportReader_Core implements ReportReader
   * website reporting anyway.
   */ 
   private function getSharedWebsiteList($websiteIds, $sharing) {
-    if (count($websiteIds ===1)) {
+    if (count($websiteIds) ===1) {
       $tag = 'website-shares-'.implode('', $websiteIds);
       $cacheId = "$tag-$sharing";
       $cache = Cache::instance();

@@ -10,6 +10,7 @@ about the square e.g. number of samples recorded in 2015."
     LEFT JOIN person_attribute_values pavTotal on pavTotal.int_value=l.id AND pavTotal.person_attribute_id=#user_square_attr_id# AND pavTotal.deleted=false
     LEFT JOIN person_attribute_values pav on pav.int_value=l.id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
     LEFT JOIN people p on p.id=pav.person_id AND p.deleted=false
+    LEFT JOIN users u on u.person_id=pav.person_id AND u.deleted=false
     LEFT JOIN location_attribute_values lavEx on lavEx.location_id=l.id AND lavEx.location_attribute_id=#excluded_square_attr_id# AND lavEx.deleted=false
     LEFT JOIN locations plots on plots.parent_id=l.id AND plots.deleted=false
     LEFT JOIN samples s14 on s14.location_id=plots.id AND s14.date_start &gt;= '#2014_start_date#' AND s14.date_start &lt; '#2015_start_date#'  AND s14.survey_id in (#survey_ids#) AND s14.deleted=false
@@ -41,6 +42,6 @@ about the square e.g. number of samples recorded in 2015."
     <column name='number_samples_2015' display='No of 2015 samples' sql='count(distinct(s15.id))' datatype='date' aggregate='true'/>  
     <column name='number_samples_2016' display='No of 2016 samples' sql='count(distinct(s16.id))' datatype='date' aggregate='true'/>  
     --Show unapproved square allocations in red
-    <column name='allocated_users' display='Allocated users' sql="array_to_string(array_agg(distinct(case when pav.updated_by_id=1 then p.first_name || ' ' || p.surname || ' (' || p.email_address || ')' else '&lt;b style=&quot;color:red&quot;&gt;' || p.first_name || ' ' || p.surname || ' (' || p.email_address || ')' || '&lt;/b&gt;' end)), ', ')" datatype='text' aggregate='true'/>  
+    <column name='allocated_users' display='Allocated users' sql="array_to_string(array_agg(distinct(case when pav.updated_by_id!=u.id then p.first_name || ' ' || p.surname || ' (' || p.email_address || ')' else '&lt;b style=&quot;color:red&quot;&gt;' || p.first_name || ' ' || p.surname || ' (' || p.email_address || ')' || '&lt;/b&gt;' end)), ', ')" datatype='text' aggregate='true'/>  
   </columns>
 </report>

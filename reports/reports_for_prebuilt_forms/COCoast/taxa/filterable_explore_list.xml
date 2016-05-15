@@ -1,0 +1,35 @@
+<report
+    title="CoCoast: Explore distinct species using standard filters"
+    description="Report designed for the explore records facility in iRecord, with augmented standardised filtering parameters."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.preferred_taxa_taxon_list_id
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  AND o.zero_abundance=false
+  #idlist#
+  </query>
+  <params>
+    <param name='user_id_list' display='User Id List' description='List of User IDs assigned to selected Hubs' default='' emptyvalue=''>
+      <where>o.created_by_id IN (#user_id_list#)</where>
+    </param>
+  </params>
+  <order_bys>
+    <order_by>o.taxon_group, max(o.preferred_taxon) ASC</order_by>
+  </order_bys>
+  <columns>
+    <column name='taxon_meaning_id' display='ID' sql='o.taxon_meaning_id' visible="false" in_count="true" />
+    <column name='taxon' display='Preferred name' sql="max(o.preferred_taxon)" aggregate="true" />
+    <column name='common' display='Common name' sql="max(o.default_common_name)" aggregate="true" />
+    <column name='taxon_group' display='Taxon group' sql='o.taxon_group' />
+    <column name='taxon_group_id' display='Taxon group ID' sql='o.taxon_group_id' on_demand="true" visible="false" />
+    <column name='taxonomy' display="Taxonomy" sql="COALESCE(cttl.kingdom_taxon || ' :: ', '') || COALESCE(cttl.order_taxon, '-') || ' :: ' || COALESCE(cttl.family_taxon, '-')" />
+    <column name="first_date" display="First record date" sql="min(coalesce(o.date_start, o.date_end))" aggregate="true" />
+    <column name="last_date" display="Last record date" sql="max(coalesce(o.date_end, o.date_start))" aggregate="true" />
+    <column name="count" display="Records" sql="count(distinct o.id)" aggregate="true" />
+  </columns>
+</report>
