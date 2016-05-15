@@ -10,7 +10,7 @@
     FROM locations l
     LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
     LEFT JOIN (index_locations_samples ils 
-      JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
+      JOIN cache_occurrences_functional o ON o.sample_id=ils.sample_id
       #agreements_join#
       #joins#
       AND #sharing_filter# 

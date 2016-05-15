@@ -6,8 +6,7 @@
       FROM (SELECT l.id as id, count(distinct o.taxon_meaning_id) as value
           FROM locations l
           LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
-          JOIN samples s ON s.location_id=l.id AND s.deleted=false
-          JOIN cache_occurrences o ON o.sample_id=s.id
+          JOIN cache_occurrences_functional o ON o.location_id=l.id
           #agreements_join# 
           #joins#
           WHERE l.deleted=false AND l.boundary_geom IS NOT NULL

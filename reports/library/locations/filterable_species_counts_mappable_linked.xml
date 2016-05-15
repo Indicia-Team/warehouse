@@ -8,7 +8,7 @@
     SELECT l.id, count(distinct o.taxon_meaning_id) as count
     FROM locations l
     LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
-    JOIN cache_occurrences o ON o.location_id=l.id
+    JOIN cache_occurrences_functional o ON o.location_id=l.id
     #agreements_join#
     #joins#
     AND #sharing_filter# 

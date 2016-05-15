@@ -5,9 +5,8 @@
   <query>
   SELECT #columns#
     FROM notifications n
-      LEFT JOIN cache_occurrences o ON o.id=n.linked_id AND (n.source='Verifications and comments' OR n.source_type='S')
-      LEFT JOIN cache_occurrences coFilter ON n.linked_id=coFilter.id
-      LEFT JOIN samples s on s.id = o.sample_id
+      LEFT JOIN cache_occurrences_functional o ON o.id=n.linked_id AND (n.source='Verifications and comments' OR n.source_type='S')
+      LEFT JOIN cache_occurrences_functional coFilter ON n.linked_id=coFilter.id
       #joins#
     WHERE n.acknowledged=false
       and n.user_id=#user_id#  
@@ -46,7 +45,7 @@
     <param name="group_ids" display="Group Ids" 
         description="Comma separated list of groups ids, or blank to allow all. Only notifications associated with these group ids will be displayed." datatype="text" default=''>
       <wheres>
-        <where>s.group_id in (#group_ids#)</where>
+        <where>o.group_id in (#group_ids#)</where>
       </wheres>
     </param>
   </params>
