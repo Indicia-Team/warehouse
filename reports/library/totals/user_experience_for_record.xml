@@ -30,7 +30,7 @@
     sum(case when now()-co.created_on&lt;'1 year'::interval and co.record_status='R' then 1 else 0 end) as r_1year
     from cache_occurrences_functional r
     join cache_taxa_taxon_lists cttl on cttl.id=r.taxa_taxon_list_id
-    left join cache_occurrences_nonfunctional co on co.taxon_group_id=r.taxon_group_id and co.created_by_id=r.created_by_id
+    left join cache_occurrences_functional co on co.taxon_group_id=r.taxon_group_id and co.created_by_id=r.created_by_id
     #filters#
     where r.id=#occurrence_id#
     group by r.taxon_group_id, cttl.taxon_group
