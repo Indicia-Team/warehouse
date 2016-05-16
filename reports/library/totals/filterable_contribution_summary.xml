@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Filterable contribution summary" description="Similar to user survey contribution summary but supports standard parameters for flexible filtering.">
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     select 1 as sort, 'MY_RECORDS' as code, 'My records for survey' as qualifier, count(distinct o.id) as value
     from cache_occurrences_functional o
     #agreements_join#

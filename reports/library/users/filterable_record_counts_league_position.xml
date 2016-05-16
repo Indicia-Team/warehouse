@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <report title="Records counts league position for records, with standard params" description="Retrieves your position in the league table for count of records.">
-  <query website_filter_field="o.website_id" standard_params="true">
+  <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT * FROM (
       SELECT #columns#
       FROM people p

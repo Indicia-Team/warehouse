@@ -3,7 +3,7 @@
 <report title="Record counts by location using standard filter params 2"
         description="Lists locations with mappable boundary output and the number of records within them.
         Requires a public and indexed location type which is flagged as unique in the location index builder.">
-  <query website_filter_field="o.website_id" standard_params="true">
+  <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
     FROM locations l1 
     JOIN (

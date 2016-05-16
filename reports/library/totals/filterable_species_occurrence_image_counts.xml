@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Filterable Species, Occurrence and Image Counts" description="Gives a total number of species, occurrence and photos for a filter (e.g. a survey/date range). 
     Filterable by standard params.">
-      <query website_filter_field="o.website_id" standard_params="true">
+      <query website_filter_field="o.website_id" standard_params="occurrences">
       SELECT #columns#
       FROM cache_occurrences_functional o
       #agreements_join#

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Record counts for my sites map using standard filter params"
         description="Lists locations with mappable boundary output and the number of records within them.">
-  <query website_filter_field="o.website_id" standard_params="true">
+  <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
     FROM locations l1
     JOIN (

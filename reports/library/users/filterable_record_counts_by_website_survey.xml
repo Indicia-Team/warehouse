@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <report title="Record counts by survey with standard params" description="A  filtered league table of record counts by warehouse user.">
-  <query website_filter_field="w.id" standard_params="true">
+  <query website_filter_field="w.id" standard_params="occurrences">
     SELECT #columns#
     FROM people p
     JOIN users u ON u.person_id=p.id AND u.deleted=false AND u.id&lt;&gt;1

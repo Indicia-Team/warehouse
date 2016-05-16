@@ -2,7 +2,7 @@
     title="Filterable occurrence taxa count per user/website."
     description="Return a count of distinct taxa associated with occurrences a user has created for a given website. Report can be supplied a filter from the filters table."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     SELECT #columns#
     FROM cache_occurrences_nonfunctional o
     #agreements_join#

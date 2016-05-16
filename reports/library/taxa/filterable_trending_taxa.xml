@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Trending species using standard filters" description="Gives a list of top 10 recent taxa, with their number of records. Ideal for populating
         a 'trends cloud'.">
-      <query website_filter_field="o.website_id" standard_params="true">
+      <query website_filter_field="o.website_id" standard_params="occurrences">
       SELECT COALESCE(default_common_name, preferred_taxon) as species, records, greatest(11, cast((15 - (sqrt(#records_to_scan#) / sqrt(records)))*2.5 as integer)) as font_size 
       FROM (
         SELECT default_common_name, preferred_taxon, count(id) as records
