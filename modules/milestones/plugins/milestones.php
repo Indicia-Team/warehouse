@@ -65,7 +65,7 @@ function get_user_website_combinations_with_unawarded_milestones_for_changed_occ
   $usersWebsiteCombos = $db->query("
     SELECT DISTINCT co.created_by_id, co.website_id, u.username, f.id,f.definition, m.id as milestone_id, m.count, m.awarded_by, m.entity as milestone_entity, m.success_message
     FROM cache_occurrences_functional co
-    JOIN system s on (co.cache_created_on > s.last_scheduled_task_check or co.verified_on > s.last_scheduled_task_check) AND s.name = 'milestones'
+    JOIN system s on (co.created_on > s.last_scheduled_task_check or co.verified_on > s.last_scheduled_task_check) AND s.name = 'milestones'
     JOIN milestones m on m.website_id=co.website_id and m.deleted=false AND (m.entity = 'T' OR m.entity='O')
     LEFT JOIN milestone_awards ma on ma.milestone_id = m.id AND ma.user_id=co.created_by_id  AND ma.deleted=false
     JOIN filters f on f.id=m.filter_id
