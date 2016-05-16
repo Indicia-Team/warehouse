@@ -6,7 +6,7 @@
       FROM locations l
       LEFT JOIN cache_termlists_terms lt on lt.id=l.location_type_id
       JOIN locations_websites lw on lw.location_id = l.id and lw.deleted = false
-      LEFT JOIN cache_occurrences co on ST_INTERSECTS(co.public_geom, COALESCE(l.boundary_geom, l.centroid_geom)) and co.website_id=lw.website_id
+      LEFT JOIN cache_occurrences_functional co on ST_INTERSECTS(co.public_geom, COALESCE(l.boundary_geom, l.centroid_geom)) and co.website_id=lw.website_id
       #joins#
       WHERE l.deleted=false
       AND lw.website_id = '#website_id#'  

@@ -3,21 +3,22 @@
         a 'trends cloud'.">
       <query website_filter_field="o.website_id">
       SELECT *, greatest(11, cast((15 - (sqrt(#records_to_scan#) / sqrt(records)))*2 as integer)) as font_size FROM (
-        SELECT case position(',' in recorders) when 0 then recorders 
-            else regexp_replace(recorders, '(.+), ', '') || ' ' || regexp_replace(recorders, ',(.+)', '') end as recorders, 
+        SELECT case position(',' in snf.recorders) when 0 then snf.recorders
+            else regexp_replace(snf.recorders, '(.+), ', '') || ' ' || regexp_replace(snf.recorders, ',(.+)', '') end as recorders,
             count(id) as records
-        FROM (SELECT o.id, o.recorders
-          FROM cache_occurrences o
+        FROM (SELECT o.id, snf.recorders
+          FROM cache_occurrences_functional o
+          JOIN cache_samples_nonfunctional snf on csn.id=o.sample_id
           #agreements_join#
           #joins#
           WHERE #sharing_filter#
           #filters#
           ORDER BY id DESC
           LIMIT #records_to_scan#) list
-        GROUP BY recorders
+        GROUP BY snf.recorders
         ORDER BY count(id) DESC
         LIMIT #recorders_to_return#
-      ) AS list ORDER BY recorders ASC
+      ) AS list ORDER BY snf.recorders ASC
       </query>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'

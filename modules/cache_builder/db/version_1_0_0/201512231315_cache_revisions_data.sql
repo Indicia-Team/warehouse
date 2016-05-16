@@ -336,32 +336,24 @@ FROM samples smp
 WHERE smp.id=s.id
 AND smp.deleted=false;
 
+-- Queries to update the recorder names - highest priority approach first
 UPDATE cache_samples_nonfunctional cs
-    SET recorders=s.recorder_names
-    from samples s
-    WHERE s.id=cs.id and s.deleted=false and s.recorder_names is not null and s.recorder_names<>'';
-
-UPDATE cache_samples_nonfunctional cs
-    SET recorders=sav.text_value
-    FROM sample_attribute_values sav
-    JOIN sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = 'full_name' and sa.deleted=false
-    WHERE sav.sample_id=cs.id and sav.deleted=false and sav.text_value <> ', ';
-
-UPDATE cache_samples_nonfunctional cs
-    SET recorders=sav.text_value || coalesce(', ' || savf.text_value, '')
-    FROM sample_attribute_values sav
-    JOIN sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = 'last_name' and sa.deleted=false
-    LEFT JOIN (sample_attribute_values savf
-    JOIN sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = 'first_name' and saf.deleted=false
-    ) on savf.deleted=false
-    WHERE savf.sample_id=cs.id
-    and sav.sample_id=cs.id and sav.deleted=false;
+SET recorders = COALESCE(
+  NULLIF(cs.attr_full_name, ''),
+  cs.attr_last_name || COALESCE(', ' || cs.attr_first_name, '')
+)
+WHERE cs.recorders is null
+AND (
+  NULLIF(cs.attr_full_name, '') IS NOT NULL OR
+  NULLIF(cs.attr_last_name, '') IS NOT NULL
+);
 
 UPDATE cache_samples_nonfunctional cs
     SET recorders=sp.recorder_names
     FROM samples s
     JOIN samples sp on sp.id=s.parent_id and sp.deleted=false
-    WHERE s.id=cs.id and s.deleted=false and sp.recorder_names is not null and sp.recorder_names<>'';
+    WHERE cs.recorders IS NULL
+    and s.id=cs.id and s.deleted=false and sp.recorder_names is not null and sp.recorder_names<>'';
 
 UPDATE cache_samples_nonfunctional cs
     SET recorders=sav.text_value
@@ -369,7 +361,8 @@ UPDATE cache_samples_nonfunctional cs
     JOIN samples sp on sp.id=s.parent_id and sp.deleted=false
     JOIN sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false and sav.text_value <> ', '
     JOIN sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = 'full_name' and sa.deleted=false
-    WHERE s.id=cs.id and s.deleted=false;
+    WHERE cs.recorders IS NULL
+    AND s.id=cs.id AND s.deleted=false;
 
 UPDATE cache_samples_nonfunctional cs
     SET recorders=sav.text_value || coalesce(', ' || savf.text_value, '')
@@ -380,8 +373,9 @@ UPDATE cache_samples_nonfunctional cs
     LEFT JOIN (sample_attribute_values savf
     JOIN sample_attributes saf on saf.id=savf.sample_attribute_id and saf.system_function = 'first_name' and saf.deleted=false
     ) on savf.deleted=false
-    WHERE savf.sample_id=sp.id
-    and s.id=cs.id and s.deleted=false;
+    WHERE cs.recorders IS NULL
+    AND savf.sample_id=sp.id
+    AND s.id=cs.id AND s.deleted=false;
 
 UPDATE cache_samples_nonfunctional cs
     SET recorders=p.surname || coalesce(', ' || p.first_name, '')
@@ -394,7 +388,8 @@ UPDATE cache_samples_nonfunctional cs
     SET recorders=sav.text_value
     FROM sample_attribute_values sav
     JOIN sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = 'cms_username' and sa.deleted=false
-    WHERE sav.sample_id=cs.id and sav.deleted=false;
+    WHERE cs.recorders IS NULL
+    AND sav.sample_id=cs.id AND sav.deleted=false;
 
 UPDATE cache_samples_nonfunctional cs
     SET recorders=sav.text_value
@@ -402,13 +397,15 @@ UPDATE cache_samples_nonfunctional cs
     JOIN samples sp on sp.id=s.parent_id and sp.deleted=false
     JOIN sample_attribute_values sav on sav.sample_id=sp.id and sav.deleted=false
     JOIN sample_attributes sa on sa.id=sav.sample_attribute_id and sa.system_function = 'cms_username' and sa.deleted=false
-    WHERE s.id=cs.id and s.deleted=false;
+    WHERE cs.recorders IS NULL
+    AND s.id=cs.id AND s.deleted=false;
 
 UPDATE cache_samples_nonfunctional cs
     SET recorders=u.username
     FROM users u
     JOIN cache_samples_functional csf on csf.created_by_id=u.id
-    WHERE cs.id=csf.id and u.id<>1;
+    WHERE cs.recorders IS NULL
+    AND cs.id=csf.id AND u.id<>1;
 
 -- map squares, the quickest way to populate is to use the existing cache
 UPDATE cache_occurrences_functional

@@ -2,20 +2,20 @@
 <report title="Species, record and verified record counts for a user" description="Gives count of species, record and verified records for a user. Filters by warehouse user.">
       <query website_filter_field="o.website_id">
       SELECT 0 as weight, 'Number of different species that I have recorded' as count_of, count(DISTINCT o.taxon_meaning_id) as count
-      FROM cache_occurrences o
+      FROM occurrences o
       #agreements_join#
       WHERE o.zero_abundance='f'
       AND o.created_by_id=#user_id#
       AND #sharing_filter#      
       UNION
       SELECT 1 as weight, 'Number of records I have entered' as count_of, count(DISTINCT o.id) as count
-      FROM cache_occurrences o      
+      FROM occurrences o
       #agreements_join#
       WHERE o.created_by_id=#user_id#
       AND #sharing_filter#
       UNION
       SELECT 2 as weight, 'Number of my records that have been verified' as count_of, count(DISTINCT o.id) as count
-      FROM cache_occurrences o      
+      FROM occurrences o
       #agreements_join#
       WHERE o.created_by_id=#user_id# AND o.record_status='V'
       AND #sharing_filter#

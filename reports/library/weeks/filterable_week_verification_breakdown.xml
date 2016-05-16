@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Fitlerable Week verification breakdown" description="Breaks down records by week and verification status for the last year with standard params support.">
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     select #columns#
     from generate_series(0,52) as weeks(no)
-    left join (cache_occurrences o
+    left join (cache_occurrences_functional o
       #agreements_join#
       and #sharing_filter#
     ) on date_trunc('week', o.verified_on)=date_trunc('week', CURRENT_DATE - (weeks.no*7))

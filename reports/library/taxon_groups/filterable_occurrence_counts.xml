@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Filterable records by taxon group" description="Counts records by taxon group with standard params support.">
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     select #columns#
     from taxon_groups tg
-    join (cache_occurrences o 
+    join (cache_occurrences_functional o
     #agreements_join#
     #joins#
     AND #sharing_filter#

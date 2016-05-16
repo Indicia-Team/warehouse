@@ -3,7 +3,7 @@
 <report title="Record counts by month for species" description="Phenology - lists months and the number of records for each for a given species selected by preferred name external key or taxon meaning ID. ">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM cache_occurrences o
+      FROM cache_occurrences_functional o
       #agreements_join#
       #joins#
       WHERE #sharing_filter#

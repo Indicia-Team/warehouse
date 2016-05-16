@@ -1,28 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Group counts for an event" description="Gives the count of species groups recorded at an event.">
       <query website_filter_field="o.website_id">
-      (SELECT taxon_group, count(*) as count
-      FROM cache_occurrences o
+      (SELECT cttl.taxon_group, count(o.*) as count
+      FROM cache_occurrences_functional o
+      JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
       #agreements_join#
       #joins#
       WHERE #sharing_filter#
       #filters#
-      GROUP BY taxon_group
-      ORDER BY count(*) DESC
+      GROUP BY cttl.taxon_group
+      ORDER BY count(o.*) DESC
       LIMIT #top_n_groups_to_include#)
       UNION
       SELECT 'Others', sum(count) FROM (
-        SELECT taxon_group, count(*)
-        FROM cache_occurrences o
+        SELECT cttl.taxon_group, count(o.*)
+        FROM cache_occurrences_functional o
+        JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
         #agreements_join#
         #joins#
         WHERE #sharing_filter#
         #filters#
-        GROUP BY taxon_group
-        ORDER BY count(*) DESC
+        GROUP BY cttl.taxon_group
+        ORDER BY count(o.*) DESC
         OFFSET #top_n_groups_to_include#
       ) as sub
-      ORDER BY taxon_group
+      ORDER BY ctll.taxon_group
       </query>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'

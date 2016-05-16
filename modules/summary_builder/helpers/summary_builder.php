@@ -414,7 +414,10 @@ class summary_builder {
             $data = array();
 	  		if(self::$verbose) echo date(DATE_ATOM).' Processing data for Y'.$year.' T'.$taxonID.' L'.$locationID.' U'.$userID.'<br />';
 	  		summary_builder::do_delete($db, $definition, $year, $taxonID, $locationID, $userID);
-	  		summary_builder::load_data($db, $data, $periods, $periodMapping, $query);
+	  		if(!summary_builder::load_data($db, $data, $periods, $periodMapping, $query)) {
+	  			if(self::$verbose) echo date(DATE_ATOM).' Data cleared, none inserted<br />';
+	  			continue;
+	  		}
 	  		summary_builder::apply_data_combining($definition, $data);
   		  	if($definition['calculate_estimates'] != 'f')
   		  		summary_builder::apply_estimates($db, $definition, $data);
@@ -427,7 +430,10 @@ class summary_builder {
   		  						 $definition['occurrence_attribute_id'] != '' ? $queries['get_YearTaxonLocation_Attr_query'] : $queries['get_YearTaxonLocation_query']);
           $data = array();
           summary_builder::do_delete($db, $definition, $year, $taxonID, $locationID, false);
-          summary_builder::load_data($db, $data, $periods, $periodMapping, $query);
+          if(!summary_builder::load_data($db, $data, $periods, $periodMapping, $query)) {
+	  		if(self::$verbose) echo date(DATE_ATOM).' Data cleared, none inserted<br />';
+	  		continue;
+	  	  }
           summary_builder::apply_data_combining($definition, $data);
   		  if($definition['calculate_estimates'] != 'f')
   		  		summary_builder::apply_estimates($db, $definition, $data);
@@ -440,18 +446,24 @@ class summary_builder {
 	  				array($year, $definition['survey_id'], $taxonID, $userID), $queries['get_YearTaxonUser_query']);
 	  		$data = array();
 	  		summary_builder::do_delete($db, $definition, $year, $taxonID, false, $userID);
-	  		summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query);
+	  		if(!summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query)) {
+	  			if(self::$verbose) echo date(DATE_ATOM).' Data cleared, none inserted<br />';
+	  			continue;
+	  		}
 	  		//summary_builder::dump_data($data);
-	  		summary_builder::do_insert($db, $definition, $year, $taxonID, false, $userID, $data, $periods, $taxon[0]);
+		  	summary_builder::do_insert($db, $definition, $year, $taxonID, false, $userID, $data, $periods, $taxon[0]);
 	  	}
 	  	if(self::$verbose) echo date(DATE_ATOM).' Processing data for Y'.$year.' T'.$taxonID.'<br />';
 	  	$query = str_replace(array('#year#', '#survey_id#', '#taxon_id#'),
 	  				array($year, $definition['survey_id'], $taxonID), $queries['get_YearTaxon_query']);
 	  	$data = array();
 	  	summary_builder::do_delete($db, $definition, $year, $taxonID, false, false);
-	  	summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query);
-	  	//summary_builder::dump_data($data);
-	  	summary_builder::do_insert($db, $definition, $year, $taxonID, false, false, $data, $periods, $taxon[0]);
+	  	if(summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query)) {
+	  	  //summary_builder::dump_data($data);
+	  	  summary_builder::do_insert($db, $definition, $year, $taxonID, false, false, $data, $periods, $taxon[0]);
+	  	} else  {
+	  		if(self::$verbose) echo date(DATE_ATOM).' Data cleared, none inserted<br />';
+	  	}
 	  }
 	  $db->commit();
 	}
@@ -459,6 +471,7 @@ class summary_builder {
   }
   
   private static function load_data(&$db, &$data, &$periods, &$periodMapping, $query) {
+  	$present = false;
    	$r = $db->query($query)->result_array(false);
     foreach($periods as $periodNo=>$defn)
     	$data[$periodNo] = array('summary'=>0, 'hasData'=>false, 'hasEstimate'=>false,'samples'=>array());
@@ -469,11 +482,15 @@ class summary_builder {
   	  $data[$period]['hasData'] = true;
   	  if(isset($data[$period]['samples'][$row['sample_id']])) $data[$period]['samples'][$row['sample_id']] += $row['count'];
   	  else $data[$period]['samples'][$row['sample_id']] = $row['count'];
+  	  if(!isset($row['present']) || $row['present']=='t')
+  	  	$present = true;
     }
+    return $present;
   }
   
   private static function load_summary_data(&$db, &$data, &$periods, &$periodMapping, $query) {
   	$r = $db->query($query)->result_array(false);
+  	$present = false;
   	foreach($periods as $periodNo=>$defn)
   		$data[$periodNo] = array('summary'=>0, 'hasData'=>false, 'estimate'=>0, 'hasEstimate'=>false,'samples'=>array());
   	foreach($r as $row) {
@@ -483,12 +500,15 @@ class summary_builder {
   		if($row['count']!= null) {
   			$data[$period]['summary'] += $row['count'];
   			$data[$period]['hasData'] = true;
+  			$present = true;
   		}
   		if($row['estimate']!= null) {
   			$data[$period]['estimate'] += $row['estimate'];
   			$data[$period]['hasEstimate'] = true;
-  		}
+			$present = true;
+ 		}
   	}
+    return $present;
   }
   private static function dump_data(&$data) {
   	echo "<br/><br/><table><tr>";

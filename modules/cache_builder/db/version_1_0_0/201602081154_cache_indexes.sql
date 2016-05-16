@@ -1,3 +1,4 @@
+-- #slow script#
 CREATE INDEX ix_cache_occurrences_functional_family_taxa_taxon_list_id
   ON cache_occurrences_functional
   USING btree

@@ -6,7 +6,6 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
   SELECT #columns#
   FROM cache_occurrences o
-  JOIN occurrences occ on occ.id=o.id AND occ.sensitivity_precision is null
   JOIN websites w on w.id=o.website_id and w.deleted=false
   JOIN map_squares msq on msq.id=o.map_sq_#precision#_id
   #agreements_join#

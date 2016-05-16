@@ -3,14 +3,14 @@
 <report title="Record counts by location using standard filter params 2"
         description="Lists locations with mappable boundary output and the number of records within them.
         Requires a public and indexed location type which is flagged as unique in the location index builder.">
-  <query website_filter_field="o.website_id" standard_params="true">
+  <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
     FROM locations l1 
     JOIN (
     SELECT l.id, count(distinct o.id) as count
     FROM locations l
     LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false --and lw.website_id in (#website_ids#)
-    JOIN cache_occurrences o ON o.#location_type_field#=l.id
+    JOIN cache_occurrences_functional o ON o.#location_type_field#=l.id
       #agreements_join#
       #joins#
       AND #sharing_filter# 

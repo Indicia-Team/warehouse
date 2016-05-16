@@ -4,7 +4,7 @@
       <query website_filter_field="o.website_id">
       SELECT #columns#
       FROM cache_taxa_taxon_lists cttl
-      JOIN cache_occurrences o on o.taxon_meaning_id=cttl.taxon_meaning_id
+      JOIN cache_occurrences_functional o on o.taxon_meaning_id=cttl.taxon_meaning_id
 	  JOIN samples s on s.id=o.sample_id and s.deleted=false
       #agreements_join# 
       #joins#

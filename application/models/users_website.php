@@ -47,7 +47,7 @@ class Users_website_Model extends ORM
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
 
-    $this->unvalidatedFields = array('user_id', 'website_id', 'site_role_id', 'licence_id', 'anonymous');
+    $this->unvalidatedFields = array('user_id', 'website_id', 'site_role_id', 'licence_id');
     return parent::validate($array, $save);
   }
 
@@ -62,7 +62,7 @@ class Users_website_Model extends ORM
         " and su.id=s.survey_id" .
         " and licence_id is null"
       );
-      $this->db->query("update cache_occurrences o" .
+      $this->db->query("update cache_occurrences_functional o" .
         " set licence_id=l.id, licence_code=l.code" .
         " from licences l" .
         " where o.website_id=$new[website_id]" .

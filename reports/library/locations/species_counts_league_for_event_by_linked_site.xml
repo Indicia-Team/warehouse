@@ -8,7 +8,7 @@
     JOIN (
     SELECT l.id, count(distinct o.taxon_meaning_id) as count
     FROM locations l
-    LEFT JOIN (cache_occurrences o
+    LEFT JOIN (cache_occurrences_functional o
       #agreements_join#
     ) ON o.location_id=l.id
       AND o.record_status&lt;&gt;'R'

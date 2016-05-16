@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Group verification breakdown" description="Breaks down records by taxon group and verification status.">
   <query website_filter_field="o.website_id">
-    select #columns#
-    from cache_occurrences o
+    SELECT #columns#
+    FROM cache_occurrences_functional o
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
     #agreements_join#
     #joins#
-    where #sharing_filter#
+    WHERE #sharing_filter#
   </query>
   <order_bys>
-    <order_by>count(distinct o.id) desc</order_by>
+    <order_by>COUNT(distinct o.id) desc</order_by>
   </order_bys>    
   <params>
     <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
@@ -32,7 +33,7 @@
     </param>
   </params>
   <columns>
-    <column name="taxongroup" display="Taxon Group" sql="o.taxon_group" in_count="true" />
+    <column name="taxongroup" display="Taxon Group" sql="cttl.taxon_group" in_count="true" />
     <column name="pending" display="Pending" sql="count(case record_status when 'C' then o.id else null end)" aggregate="true" />
     <column name="queried" display="Queried" sql="count(case record_status when 'D' then o.id when 'S' then o.id else null end)" aggregate="true" />
     <column name="verified" display="Verified" sql="count(case record_status when 'V' then o.id else null end)" aggregate="true" />

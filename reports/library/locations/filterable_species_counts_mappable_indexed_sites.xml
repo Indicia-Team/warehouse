@@ -2,7 +2,7 @@
 
 <report title="Species counts for indexed sites map using standard filter params" 
         description="Lists locations with mappable boundary output and the number of species within them.">
-  <query website_filter_field="o.website_id" standard_params="true">
+  <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
     FROM locations l1 
     JOIN (
@@ -10,7 +10,7 @@
     FROM locations l
     LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
     LEFT JOIN (index_locations_samples ils 
-      JOIN cache_occurrences o ON o.sample_id=ils.sample_id 
+      JOIN cache_occurrences_functional o ON o.sample_id=ils.sample_id
       #agreements_join#
       #joins#
       AND #sharing_filter# 

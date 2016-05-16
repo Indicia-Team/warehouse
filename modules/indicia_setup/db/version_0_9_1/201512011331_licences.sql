@@ -81,10 +81,3 @@ COMMENT ON COLUMN licences_websites.website_id IS 'Foreign key to the websites t
 COMMENT ON COLUMN licences_websites.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN licences_websites.created_by_id IS 'Foreign key to the users table (creator).';
 COMMENT ON COLUMN licences_websites.deleted IS 'Has this record been deleted?';
-
-ALTER TABLE groups
-  ADD COLUMN licence_id integer,
-  ADD CONSTRAINT fk_groups_license FOREIGN KEY (licence_id)
-    REFERENCES licences(id) MATCH SIMPLE;
-
-COMMENT ON COLUMN groups.licence_id IS 'Foreign key to the licences table. Identifies the licence used for records by this group.';

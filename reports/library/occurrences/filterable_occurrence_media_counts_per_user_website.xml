@@ -2,10 +2,9 @@
     title="Filterable occurrence media count per user/website."
     description="Return a count of occurrence media a user has created per user/website combination. Report can be supplied a filter from the filters table."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     SELECT #columns#
-    FROM cache_occurrences o
-    JOIN occurrence_media om ON om.occurrence_id = o.id AND om.created_by_id = #user_id# AND om.deleted='f'
+    FROM cache_occurrences_functional o
       #agreements_join#
       #joins#
     WHERE 
@@ -21,6 +20,6 @@
     <param name="website_id" display="Website Id" description="Website Id" datatype="text" />
   </params>
   <columns>
-    <column name="count" display="Count" sql="count(om.id)" datatype="integer" aggregate="true"/>
+    <column name="count" display="Count" sql="sum(o.media_count)" datatype="integer" aggregate="true"/>
   </columns>
 </report>

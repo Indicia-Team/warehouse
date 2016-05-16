@@ -702,7 +702,7 @@ class ReportEngine {
     {
       if (isset($paramDefs[$name])) {
         if (array_key_exists('joins', $paramDefs[$name]))
-          $query = $this->addParamJoins($query, $name, $paramDefs[$name], $value);
+          $query = $this->addParamJoins($query, $paramDefs[$name], $value);
         if (array_key_exists('wheres', $paramDefs[$name]))
           $query = $this->addParamWheres($query, $name, $paramDefs[$name], $value);
       }
@@ -766,11 +766,17 @@ class ReportEngine {
                   throw new exception('Invalid numeric array parameter value');
               }
             }
-            elseif ($paramDefs[$name]['datatype']==='date') {
+            elseif ($paramDefs[$name]['datatype']==='date' && preg_match('/\d{4}$/', $value)) {
               // force ISO date for SQL safety.
               // @todo This needs further work for i18n if non-European.
               $date = DateTime::createFromFormat('d/m/Y', $value);
               $value = $date->format('Y-m-d');
+            }
+            if (!empty($paramDefs[$name]['preprocess']) && !empty($value) && $value!=="null") {
+              // use a preprocessing query to calculate the actual param value to use
+              $prequery = str_replace("#$name#", $value, $paramDefs[$name]['preprocess']);
+              $output = $this->reportDb->query($prequery)->result_array(FALSE);
+              $value = implode(',', $output[0]);
             }
             $query = preg_replace("/#$name#/", $value, $query);
           }
@@ -800,8 +806,6 @@ class ReportEngine {
     }
     // column replacements and additional join to samples for geometry permissions autoswitching
     if ($this->sharingMode==='me' || $this->sharingMode==='verification' || $this->groupAllowsSensitiveAccess()) {
-        //In these mode, reports can use the recorder details in full (private_recorder field) even if these are anonymous, so replace this in the query
-        $query = str_replace(array('recorders'), array('private_recorders'), $query);
       // don't add the join to samples when it is not necessary.
       if (strpos($query, '#sample_sref_field#') || strpos($query, '#sample_geom_field#'))
         $query = str_replace('#joins#', "JOIN samples s on s.id=o.sample_id AND s.deleted=false \n#joins#", $query);
@@ -1300,9 +1304,41 @@ class ReportEngine {
   }
 
   /**
+   * When filtering against a location type that is indexed by the spatial index builder, if the
+   * location type has a unique index there will be a location_id_* column pointing to the id
+   * in cache_occurrences_functional. This switches from the standard join method to a direct
+   * filter on this field as its much faster.
+   * @param $id
+   * @return null
+   */
+  private function locationIdUniquelyIndexedType($id) {
+    if (preg_match('/^\d+$/', $id)) {
+      $config=kohana::config_load('spatial_index_builder', false);
+      if (array_key_exists('unique', $config)) {
+        $r = $this->reportDb->select('cache_termlists_terms.term')
+          ->from('locations l')
+          ->join('cache_termlists_terms', array('cache_termlists_terms.id' => 'l.location_type_id'))
+          ->where('l.id', $id)
+          ->in('cache_termlists_terms.term', $config['unique'])
+          ->get();
+        if ($r->count()>0) {
+          return $r->current()->term;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Add any joins defined by a used parameter to the query.
    */
-  private function addParamJoins($query, $paramName, $paramDef, $value) {
+  private function addParamJoins($query, $paramDef, $value) {
+    if ($value && isset($paramDef['custom']) && $paramDef['custom']==='unique_location_index') {
+      // special case for this parameter when the location is a unique indexed location type,
+      // since we can use a more effective where clause instead of the join.
+      if ($this->locationIdUniquelyIndexedType($value))
+        return $query;
+    }
     $joins = array();
     foreach($paramDef['joins'] as $joinDef) {
       if ((!empty($joinDef['operator']) && (($joinDef['operator']==='equal' && $joinDef['value']===$value) ||
@@ -1336,11 +1372,16 @@ class ReportEngine {
    * @todo: Consider caching of the preprocess output.
    */
   private function addParamWheres($query, $paramName, $paramDef, $value) {
-    if (!empty($paramDef['preprocess']) && !empty($value) && $value!=="null") {
-      // use a preprocessing query to calculate the actual param value to use
-      $prequery = str_replace("#$paramName#", $value, $paramDef['preprocess']);
-      $output = $this->reportDb->query($prequery)->result_array(FALSE);
-      $value = implode(',', $output[0]);
+    if ($value && isset($paramDef['custom']) && $paramDef['custom']==='unique_location_index') {
+      // special case for this parameter when the location is a unique indexed location type,
+      // since we can use a more effective where clause instead of the join.
+      $typeTerm = $this->locationIdUniquelyIndexedType($value);
+      if ($typeTerm)
+        foreach($paramDef['wheres'] as &$whereDef) {
+          $whereDef['sql'] = str_replace('#typealias#', strtolower(str_replace(' ', '_', $typeTerm)), $whereDef['sql']);
+        }
+      else
+        return $query;
     }
     foreach($paramDef['wheres'] as $whereDef) {
       if ((!empty($whereDef['operator']) && (($whereDef['operator']==='equal' && $whereDef['value']===$value) ||

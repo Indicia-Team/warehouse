@@ -2,7 +2,7 @@
 <report title="User survey contribution summary" description="A breakdown of totals describing a user's contribution within the context of a survey.">
   <query website_filter_field="o.website_id">
     select 1 as sort, 'MY_RECORDS' as code, 'My records for survey' as qualifier, count(distinct o.id) as value
-    from cache_occurrences o
+    from occurrences o
     #agreements_join#
     #joins#
     where #sharing_filter#
@@ -11,7 +11,7 @@
     union
     
     select 2 as sort, 'MY_RECORDS_YEAR', 'My records for survey this year' as qualifier, count(distinct o.id) as value
-    from cache_occurrences o
+    from occurrences o
     #agreements_join#
     #joins#
     where #sharing_filter#
@@ -22,7 +22,7 @@
     union
 
     select 3, 'MY_SPECIES', 'My species for survey' as qualifier, count(distinct case o.zero_abundance when true then null else o.taxa_taxon_list_external_key end)
-    from cache_occurrences o
+    from occurrences o
     #agreements_join#
     #joins#
     where #sharing_filter#
@@ -32,7 +32,7 @@
     union
     
     select 4, 'MY_SPECIES_YEAR', 'My species for survey this year' as qualifier, count(distinct case o.zero_abundance when true then null else o.taxa_taxon_list_external_key end)
-    from cache_occurrences o
+    from occurrences o
     #agreements_join#
     #joins#
     where #sharing_filter#
@@ -43,7 +43,7 @@
     union
 
     select 5, 'MY_RECORDS_VERIFIED', 'My records verified to date' as qualifier, count(distinct o.id)
-    from cache_occurrences o
+    from occurrences o
     #agreements_join#
     #joins#
     where #sharing_filter#
@@ -55,7 +55,7 @@
     
     select 6, 'LEAGUE_POSITION', 'League position' as qualifier, value from (
       select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END) desc) as value
-      from cache_occurrences o
+      from occurrences o
       #agreements_join#
       #joins#
       where #sharing_filter#
@@ -68,7 +68,7 @@
     
     select 7, 'LEAGUE_POSITION_YEAR', 'League position this year' as qualifier, value from (
       select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.taxa_taxon_list_external_key END) desc) as value
-      from cache_occurrences o
+      from occurrences o
       #agreements_join#
       #joins#
       where #sharing_filter#
@@ -82,7 +82,7 @@
     
     select 8, 'LEAGUE_POSITION_RECORDS', 'League position for total records' as qualifier, value from (
       select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.id END) desc) as value
-      from cache_occurrences o
+      from occurrences o
       #agreements_join#
       #joins#
       where #sharing_filter#
@@ -95,7 +95,7 @@
     
     select 9, 'LEAGUE_POSITION_RECORDS_YEAR', 'League position for records this year' as qualifier, value from (
       select o.created_by_id, row_number() over (order by count(DISTINCT CASE o.zero_abundance WHEN true THEN NULL ELSE o.id END) desc) as value
-      from cache_occurrences o
+      from occurrences o
       #agreements_join#
       #joins#
       where #sharing_filter#
@@ -108,7 +108,7 @@
     union 
 
     select 10, 'TOTAL_RECORDS', 'Total records for survey', count(distinct o.id) 
-    from cache_occurrences o
+    from occurrences o
     #agreements_join#
     #joins#
     where #sharing_filter#
@@ -117,7 +117,7 @@
     union
 
     select 11, 'MY_RECORDS_ON_SYSTEM', 'My records total', count(distinct o.id)
-    from cache_occurrences o
+    from occurrences o
     #agreements_join#
     #joins#
     where #sharing_filter#
