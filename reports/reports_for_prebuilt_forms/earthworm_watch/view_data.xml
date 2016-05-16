@@ -21,9 +21,6 @@ and isn't exposing the user's name when it shouldn't"
   LEFT JOIN occurrence_attribute_values countMustardAttr ON countMustardAttr.occurrence_id=co.id AND (gridIdAttr.text_value='#adult_mustard_grid_name#' OR gridIdAttr.text_value='#immature_mustard_grid_name#') AND countMustardAttr.occurrence_attribute_id=#occ_count_attr_id# AND countMustardAttr.deleted=false
   LEFT JOIN occurrence_attribute_values countAttr ON countAttr.occurrence_id=co.id AND countAttr.occurrence_attribute_id=#occ_count_attr_id# AND countAttr.deleted=false
  
-  JOIN sample_attribute_values coverTypeAttr ON coverTypeAttr.sample_id=s.id AND coverTypeAttr.sample_attribute_id=#coverage_type_attr_id# AND coverTypeAttr.deleted=false
-  JOIN termlists_terms ttCoverType on ttCoverType.id = coverTypeAttr.int_value AND ttCoverType.deleted=false
-  JOIN terms tCoverType on tCoverType.id = ttCoverType.term_id AND tCoverType.deleted=false
   JOIN sample_attribute_values moistAttr ON moistAttr.sample_id=s.id AND moistAttr.sample_attribute_id=#moisture_attr_id# AND moistAttr.deleted=false
   JOIN termlists_terms ttMoist on ttMoist.id = moistAttr.int_value AND ttMoist.deleted=false
   JOIN terms tMoist on tMoist.id = ttMoist.term_id AND tMoist.deleted=false  
@@ -46,7 +43,6 @@ and isn't exposing the user's name when it shouldn't"
   </order_bys>
   <params>
     <param name='s1AttrID' display='Sample 1 Attribute ID' description='The ID of the sample attribute that links pit 2 to the first' datatype='int' />
-    <param name='coverage_type_attr_id' display='Square coverage' description='The ID of the attribute that holds the recorded square coverage.' datatype='int' />
     <param name='moisture_attr_id' display='Soil moisture' description='The ID of the attribute that holds the recorded soil moisture.' datatype='int' />
     <param name='texture_attr_id' display='Soil texture' description='The ID of the attribute that holds the recorded soil texture.' datatype='int' />
     <param name='colour_attr_id' display='Soil colour' description='The ID of the attribute that holds the recorded soil colour.' datatype='int' />
@@ -66,7 +62,6 @@ There are 4 grids for different life stages and before/after mustard water added
   <columns>
     <column name='sample_id' display='ID' sql='s.id' datatype="integer" visible='false' in_count="true"/>
     <column name='person_visible_name' display='Name' sql='s.recorder_names' datatype="text"/>
-    <column name='square_coverage' display='What covers most of square?' sql='tCoverType.term' datatype="text"/>
     <column name='moisture' display='Soil moisture' sql='tMoist.term' datatype="text"/>
     <column name='colour' display='Soil colour' sql="tColour.term" datatype="text"/>
     <column name='texture' display='Soil texture' sql="tTexture.term" datatype="text"/>

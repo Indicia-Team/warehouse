@@ -7,6 +7,10 @@ and isn't exposing the user's name when it shouldn't"
   <query website_filter_field="su.website_id">
   SELECT #columns#
   FROM samples s
+    
+  JOIN users uCreator on uCreator.id=s.created_by_id AND uCreator.deleted=false
+  JOIN people pCreator on pCreator.id=uCreator.person_id AND pCreator.deleted=false
+    
   LEFT JOIN sample_attribute_values pitNumAttr ON pitNumAttr.sample_id=s.id AND pitNumAttr.sample_attribute_id=#s1AttrID# AND pitNumAttr.deleted=false
   
   JOIN cache_occurrences co on co.sample_id=s.id
@@ -66,6 +70,7 @@ There are 4 grids for different life stages and before/after mustard water added
   <columns>
     <column name='sample_id' display='ID' sql='s.id' datatype="integer" visible='false' in_count="true"/>
     <column name='person_visible_name' display='Name' sql='s.recorder_names' datatype="text"/>
+    <column name='email_address' display='Email' sql='pCreator.email_address' datatype="text"/>
     <column name='pit_num' display='Pit Num' sql="case when pitNumAttr.int_value is null OR pitNumAttr.int_value = 0 then 'Pit 1' else 'Pit 2' End" datatype="text"/>
     <column name='date_start' sql='s.date_start' visible='false' />
     <column name='date_end' sql='s.date_end' visible='false' />
