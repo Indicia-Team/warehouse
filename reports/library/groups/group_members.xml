@@ -25,6 +25,6 @@
     <column name="pending" visible="false" sql="gu.pending" datatype="boolean" /> 
     <column name="member" visible="false" sql="NOT gu.administrator" datatype="boolean" /> 
     <column name="administrator" visible="false" sql="gu.administrator" datatype="boolean" />
-    <column name="access_level" visible="false" sql="gu.access_level" datatype="integer" />
+    <column name="access_level" display="Access level" sql="gu.access_level" datatype="integer" />
   </columns>
 </report>
