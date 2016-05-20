@@ -783,7 +783,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, s.input_form, s.loca
     else 'A'
   end
 FROM samples s
-#join_needs_update#
+LEFT JOIN cache_samples_functional cs on cs.id=s.id
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
@@ -792,7 +792,9 @@ LEFT JOIN sample_comments sc1 ON sc1.sample_id=s.id AND sc1.deleted=false
     AND sc1.query=true AND (s.verified_on IS NULL OR sc1.created_on>s.verified_on)
 LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
     AND sc2.query=false AND (s.verified_on IS NULL OR sc2.created_on>s.verified_on) AND sc2.id>sc1.id
+#join_needs_update#
 WHERE s.deleted=false
+AND cs.id IS NULL
 ";
 
 $config['samples']['insert']['functional_media'] = "
@@ -830,13 +832,15 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
   s.recorder_names, s.comment, s.privacy_precision, li.code
 FROM samples s
-#join_needs_update#
+LEFT JOIN cache_samples_nonfunctional cs on cs.id=s.id
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
 LEFT JOIN groups g on g.id=s.group_id and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
-WHERE s.deleted=false";
+#join_needs_update#
+WHERE s.deleted=false
+AND cs.id IS NULL";
 
 
 $config['samples']['insert']['nonfunctional_attrs'] = "
