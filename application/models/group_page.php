@@ -37,6 +37,7 @@ class Group_page_Model extends ORM {
     $array->add_rules('group_id', 'required');
     $array->add_rules('caption', 'required');
     $array->add_rules('path', 'required');
+    $array->add_rules('access_level', 'integer');
     $this->unvalidatedFields = array('administrator', 'deleted');
     return parent::validate($array, $save);
   }
