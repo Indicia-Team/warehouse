@@ -50,15 +50,15 @@ LEFT JOIN occurrence_comments dc
     AND dc.deleted=false
 WHERE o.deleted=false;
 
-UPDATE cache_occurrences_functional o
-SET media_count=(SELECT count(om.*)
-FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false);
+UPDATE cache_occurrences_functional u
+SET media_count=(SELECT COUNT(om.*)
+FROM occurrence_media om WHERE om.occurrence_id=u.id AND om.deleted=false)
+FROM occurrences o
+WHERE o.id=u.id;
 
 INSERT INTO cache_occurrences_nonfunctional(
-            id, comment, sensitivity_precision, privacy_precision, output_sref, verifier, licence_code,
-            attr_sex_stage, attr_sex, attr_stage, attr_sex_stage_count, attr_certainty,
-            attr_det_first_name, attr_det_last_name, attr_det_full_name)
-SELECT distinct on (o.id) o.id,
+            id, comment, sensitivity_precision, privacy_precision, output_sref, licence_code)
+SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
   get_output_sref(
@@ -96,30 +96,44 @@ SELECT distinct on (o.id) o.id,
     ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
     case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
   ),
-  pv.surname || ', ' || pv.first_name, li.code,
-  CASE a_sex_stage.data_type
+  li.code
+FROM occurrences o
+JOIN samples s ON s.id=o.sample_id AND s.deleted=false
+LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
+LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
+LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
+LEFT JOIN licences li on li.id=s.licence_id
+LEFT JOIN (sample_attribute_values spv
+  JOIN sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
+      and spa.system_function='sref_precision'
+) on spv.sample_id=s.id and spv.deleted=false
+WHERE o.deleted=false;
+
+UPDATE cache_occurrences_nonfunctional
+SET
+  attr_sex_stage=CASE a_sex_stage.data_type
       WHEN 'T'::bpchar THEN v_sex_stage.text_value
       WHEN 'L'::bpchar THEN t_sex_stage.term
       ELSE NULL::text
   END,
-  CASE a_sex.data_type
+  attr_sex=CASE a_sex.data_type
       WHEN 'T'::bpchar THEN v_sex.text_value
       WHEN 'L'::bpchar THEN t_sex.term
       ELSE NULL::text
   END,
-  CASE a_stage.data_type
+  attr_stage=CASE a_stage.data_type
       WHEN 'T'::bpchar THEN v_stage.text_value
       WHEN 'L'::bpchar THEN t_stage.term
       ELSE NULL::text
   END,
-  CASE a_sex_stage_count.data_type
+  attr_sex_stage_count=CASE a_sex_stage_count.data_type
       WHEN 'T'::bpchar THEN v_sex_stage_count.text_value
       WHEN 'L'::bpchar THEN t_sex_stage_count.term
       WHEN 'I'::bpchar THEN v_sex_stage_count.int_value::text
       WHEN 'F'::bpchar THEN v_sex_stage_count.float_value::text
       ELSE NULL::text
   END,
-  CASE a_certainty.data_type
+  attr_certainty=CASE a_certainty.data_type
       WHEN 'T'::bpchar THEN v_certainty.text_value
       WHEN 'L'::bpchar THEN t_certainty.term
       WHEN 'I'::bpchar THEN v_certainty.int_value::text
@@ -127,30 +141,19 @@ SELECT distinct on (o.id) o.id,
       WHEN 'F'::bpchar THEN v_certainty.float_value::text
       ELSE NULL::text
   END,
-  CASE a_det_first_name.data_type
+  attr_det_first_name=CASE a_det_first_name.data_type
       WHEN 'T'::bpchar THEN v_det_first_name.text_value
       ELSE NULL::text
   END,
-  CASE a_det_last_name.data_type
+  attr_det_last_name=CASE a_det_last_name.data_type
       WHEN 'T'::bpchar THEN v_det_last_name.text_value
       ELSE NULL::text
   END,
-  CASE a_det_full_name.data_type
+  attr_det_full_name=CASE a_det_full_name.data_type
       WHEN 'T'::bpchar THEN v_det_full_name.text_value
       ELSE NULL::text
   END
 FROM occurrences o
-JOIN samples s ON s.id=o.sample_id AND s.deleted=false
-LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
-LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
-LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
-LEFT JOIN users uv on uv.id=o.verified_by_id and uv.deleted=false
-LEFT JOIN people pv on pv.id=uv.person_id and pv.deleted=false
-LEFT JOIN licences li on li.id=s.licence_id
-LEFT JOIN (sample_attribute_values spv
-  JOIN sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
-      and spa.system_function='sref_precision'
-) on spv.sample_id=s.id and spv.deleted=false
 LEFT JOIN (occurrence_attribute_values v_sex_stage
   JOIN occurrence_attributes a_sex_stage on a_sex_stage.id=v_sex_stage.occurrence_attribute_id and a_sex_stage.deleted=false and a_sex_stage.system_function='sex_stage'
   LEFT JOIN cache_termlists_terms t_sex_stage on a_sex_stage.data_type='L' and t_sex_stage.id=v_sex_stage.int_value
@@ -183,7 +186,14 @@ LEFT JOIN (occurrence_attribute_values v_det_full_name
   JOIN occurrence_attributes a_det_full_name on a_det_full_name.id=v_det_full_name.occurrence_attribute_id and a_det_full_name.deleted=false and a_det_full_name.system_function='det_full_name'
   LEFT JOIN cache_termlists_terms t_det_full_name on a_det_full_name.data_type='L' and t_det_full_name.id=v_det_full_name.int_value
 ) on v_det_full_name.occurrence_id=o.id and v_det_full_name.deleted=false
-WHERE o.deleted=false;
+WHERE cache_occurrences_nonfunctional.id=o.id;
+
+UPDATE cache_occurrences_nonfunctional o
+SET media=(SELECT array_to_string(array_agg(om.path), ',')
+FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
+FROM occurrences occ
+WHERE occ.id=o.id
+AND occ.deleted=false;
 
 UPDATE cache_occurrences_nonfunctional o
 SET data_cleaner_info=
@@ -201,7 +211,7 @@ INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
             group_id, record_status, query)
-SELECT distinct on (s.id) s.id, su.website_id, s.id, s.input_form, s.location_id,
+SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, s.input_form, s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
@@ -221,18 +231,17 @@ LEFT JOIN sample_comments sc1 ON sc1.sample_id=s.id AND sc1.deleted=false
     AND sc1.query=true AND (s.verified_on IS NULL OR sc1.created_on>s.verified_on)
 LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
     AND sc2.query=false AND (s.verified_on IS NULL OR sc2.created_on>s.verified_on) AND sc2.id>sc1.id
-LEFT JOIN sample_media sm ON sm.sample_id=s.id and sm.deleted=false
 WHERE s.deleted=false;
 
-UPDATE cache_samples_functional s
+UPDATE cache_samples_functional u
 SET media_count=(SELECT COUNT(sm.*)
-FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false);
+FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
+FROM samples s
+WHERE s.id=u.id;
 
 INSERT INTO cache_samples_nonfunctional(
             id, website_title, survey_title, group_title, public_entered_sref,
-            entered_sref_system, recorders, comment, privacy_precision, licence_code,
-            attr_email, attr_cms_user_id, attr_cms_username, attr_first_name,
-            attr_last_name, attr_full_name, attr_biotope, attr_sref_precision)
+            entered_sref_system, recorders, comment, privacy_precision, licence_code)
 SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   case when s.privacy_precision is not null then null else
     case
@@ -253,48 +262,52 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
     end
   end,
   case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
-  s.recorder_names,
-  s.comment, s.privacy_precision, li.code,
-  CASE a_email.data_type
-      WHEN 'T'::bpchar THEN v_email.text_value
-      ELSE NULL::text
-  END,
-  CASE a_cms_user_id.data_type
-      WHEN 'I'::bpchar THEN v_cms_user_id.int_value
-      ELSE NULL::integer
-  END,
-  CASE a_cms_username.data_type
-      WHEN 'T'::bpchar THEN v_cms_username.text_value
-      ELSE NULL::text
-  END,
-  CASE a_first_name.data_type
-      WHEN 'T'::bpchar THEN v_first_name.text_value
-      ELSE NULL::text
-  END,
-  CASE a_last_name.data_type
-      WHEN 'T'::bpchar THEN v_last_name.text_value
-      ELSE NULL::text
-  END,
-  CASE a_full_name.data_type
-      WHEN 'T'::bpchar THEN v_full_name.text_value
-      ELSE NULL::text
-  END,
-  CASE a_biotope.data_type
-      WHEN 'T'::bpchar THEN v_biotope.text_value
-      WHEN 'L'::bpchar THEN t_biotope.term
-      ELSE NULL::text
-  END,
-  CASE a_sref_precision.data_type
-      WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
-      WHEN 'F'::bpchar THEN v_sref_precision.float_value
-      ELSE NULL::double precision
-  END
+  s.recorder_names, s.comment, s.privacy_precision, li.code
 FROM samples s
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
 LEFT JOIN groups g on g.id=s.group_id and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
+WHERE s.deleted=false;
+
+UPDATE cache_samples_nonfunctional
+SET
+  attr_email=CASE a_email.data_type
+      WHEN 'T'::bpchar THEN v_email.text_value
+      ELSE NULL::text
+  END,
+  attr_cms_user_id=CASE a_cms_user_id.data_type
+      WHEN 'I'::bpchar THEN v_cms_user_id.int_value
+      ELSE NULL::integer
+  END,
+  attr_cms_username=CASE a_cms_username.data_type
+      WHEN 'T'::bpchar THEN v_cms_username.text_value
+      ELSE NULL::text
+  END,
+  attr_first_name=CASE a_first_name.data_type
+      WHEN 'T'::bpchar THEN v_first_name.text_value
+      ELSE NULL::text
+  END,
+  attr_last_name=CASE a_last_name.data_type
+      WHEN 'T'::bpchar THEN v_last_name.text_value
+      ELSE NULL::text
+  END,
+  attr_full_name=CASE a_full_name.data_type
+      WHEN 'T'::bpchar THEN v_full_name.text_value
+      ELSE NULL::text
+  END,
+  attr_biotope=CASE a_biotope.data_type
+      WHEN 'T'::bpchar THEN v_biotope.text_value
+      WHEN 'L'::bpchar THEN t_biotope.term
+      ELSE NULL::text
+  END,
+  attr_sref_precision=CASE a_sref_precision.data_type
+      WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
+      WHEN 'F'::bpchar THEN v_sref_precision.float_value
+      ELSE NULL::double precision
+  END
+FROM samples s
 LEFT JOIN (sample_attribute_values v_email
   JOIN sample_attributes a_email on a_email.id=v_email.sample_attribute_id and a_email.deleted=false and a_email.system_function='email'
   LEFT JOIN cache_termlists_terms t_email on a_email.data_type='L' and t_email.id=v_email.int_value
@@ -327,12 +340,11 @@ LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
 ) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
-WHERE s.deleted=false;
+WHERE s.id=cache_samples_nonfunctional.id;
 
 UPDATE cache_samples_nonfunctional s
 SET media=(SELECT array_to_string(array_agg(sm.path), ',')
 FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false)
-FROM samples smp
 WHERE smp.id=s.id
 AND smp.deleted=false;
 
