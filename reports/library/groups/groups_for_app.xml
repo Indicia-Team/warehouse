@@ -4,7 +4,8 @@
     SELECT #columns#
     FROM groups g
     JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#user_id#
-    JOIN group_pages gp ON gp.group_id=g.id AND gp.deleted=false AND (gp.administrator=false OR gu.administrator=true)
+    JOIN group_pages gp ON gp.group_id=g.id AND gp.deleted=false
+        AND (gp.administrator=false OR gp.administrator IS NULL OR gu.administrator=true)
         AND gp.path = '#path#'
     JOIN cache_termlists_terms gt on gt.id=g.group_type_id
     #joins#
