@@ -90,7 +90,9 @@
 || count(DISTINCT guc.user_id)::varchar 
 || case when count(DISTINCT gucp.user_id)&gt;0 and gu.administrator=true then ' (' || count(DISTINCT gucp.user_id)::varchar || ' pending)' else '' end
 || case when gu.administrator=true and '#pending_path#'&lt;&gt;'' then '&lt;/a&gt;' else '' end" />
-    <column name="pages" display="Links" sql="array_to_string(array_agg(distinct '&lt;a class=&quot;button&quot; href=&quot;{rootFolder}' || gp.path || '{sep}group_id=' || g.id || '&amp;implicit=' || coalesce(g.implicit_record_inclusion::char, '') || '&quot;&gt;' || gp.caption || '&lt;/a&gt;'), ' ')"
-        aggregate="true" template="{pages}"/>
+    <column name="pages" display="Links" sql="array_to_string(array_agg(distinct '&lt;a class=&quot;button ' || lower(regexp_replace(path, '[^a-zA-Z0-9]', '-')) || '&quot; href=&quot;{rootFolder}' || gp.path || '{sep}group_id=' || g.id || '&amp;implicit=' || coalesce(g.implicit_record_inclusion::char, '') || '&quot;&gt;' || gp.caption || '&lt;/a&gt;'), ' ')"
+            aggregate="true" template="{pages}"/>
+    <column name="page_classes" visible="false" sql="array_to_string(array_agg(distinct lower(regexp_replace(path, '[^a-zA-Z0-9]', '-'))), ' ')"
+            aggregate="true"/>
   </columns>
 </report>
