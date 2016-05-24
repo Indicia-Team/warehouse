@@ -7,7 +7,7 @@
     LEFT JOIN groups_users gucp ON gucp.group_id=g.id AND gucp.deleted=false and gucp.pending=true
     LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#
     LEFT JOIN group_pages gp ON gp.group_id=g.id AND gp.deleted=false AND (((gp.administrator=false OR gu.administrator=true) and gu.id is not null AND gu.pending=false) OR gp.administrator is null)
-    LEFT JOIN group_pages gpall ON gp.group_id=g.id AND gp.deleted=false
+    LEFT JOIN group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
     #joins#
     WHERE g.deleted = false
     AND #website_filter#
