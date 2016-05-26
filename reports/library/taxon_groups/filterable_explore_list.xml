@@ -12,7 +12,7 @@
   #idlist#
   </query>
   <order_bys>
-    <order_by>cttl.taxon_group</order_by>
+    <order_by>countcttl.taxon_group</order_by>
   </order_bys>
   <params>
     <param name="restrict_to_taxon_list_id" datatype="integer" default="">
@@ -24,7 +24,7 @@
   </params>
   <columns>
     <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' visible="false" in_count="true" />
-    <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype="text" />
+    <column name='taxon_group' display='Taxon Group' sql='countcttl.taxon_group' datatype="text" />
     <column name="count" display="Number of Records" sql="count(distinct o.id)" aggregate="true" datatype="integer" />
     <column name="taxon_count" display="Number of Taxa" sql="count(distinct COALESCE(o.taxa_taxon_list_external_key, o.taxon_meaning_id::varchar))" aggregate="true" datatype="integer" />
   </columns>
