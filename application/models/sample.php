@@ -340,7 +340,7 @@ class Sample_Model extends ORM_Tree
         // This sample is associated with a group that does not release its records. So ensure the release_status flag 
         // is set.
         $this->db->update('occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
-        $this->db->update('cache_occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
+        $this->db->update('cache_occurrences_functional', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
       }
     }
     if ($this->requeuedForVerification && !$isInsert) {
