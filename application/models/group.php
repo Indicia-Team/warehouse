@@ -66,7 +66,7 @@ set release_status='$status'
 from samples s
 where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
       $this->db->query(str_replace('#table#', 'occurrences', $sql));
-      $this->db->query(str_replace('#table#', 'cache_occurrences', $sql));
+      $this->db->query(str_replace('#table#', 'cache_occurrences_functional', $sql));
     }
     $this->processIndexGroupsLocations();
     $this->processIndexGroupsTaxonGroups();
