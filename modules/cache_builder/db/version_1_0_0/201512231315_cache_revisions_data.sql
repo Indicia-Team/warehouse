@@ -239,6 +239,8 @@ FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
 FROM samples s
 WHERE s.id=u.id;
 
+
+
 INSERT INTO cache_samples_nonfunctional(
             id, website_title, survey_title, group_title, public_entered_sref,
             entered_sref_system, recorders, comment, privacy_precision, licence_code)
@@ -345,6 +347,7 @@ WHERE s.id=cache_samples_nonfunctional.id;
 UPDATE cache_samples_nonfunctional s
 SET media=(SELECT array_to_string(array_agg(sm.path), ',')
 FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false)
+FROM samples smp
 WHERE smp.id=s.id
 AND smp.deleted=false;
 
