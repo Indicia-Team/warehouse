@@ -33,7 +33,7 @@ $config['termlists_terms']['get_missing_items_query']="
       left join needs_update_termlists_terms nu on nu.id=tlt.id 
       where ctlt.id is null and nu.id is null
       and (tl.deleted or tlt.deleted or tltpref.deleted or t.deleted or l.deleted or tpref.deleted or lpref.deleted) = false";
-      
+
 $config['termlists_terms']['get_changed_items_query']="
     select distinct on (tlt.id) tlt.id, tl.deleted or tlt.deleted or tltpref.deleted or t.deleted or l.deleted or tpref.deleted or lpref.deleted as deleted
       from termlists tl
@@ -101,7 +101,7 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
     join languages lpref on lpref.id=tpref.language_id
     #join_needs_update#
     where ctlt.id is null";
-    
+
 $config['termlists_terms']['join_needs_update']='join needs_update_termlists_terms nu on nu.id=tlt.id and nu.deleted=false';
 $config['termlists_terms']['key_field']='tlt.id';
 
@@ -121,7 +121,7 @@ $config['taxa_taxon_lists']['get_missing_items_query']="
       where cttl.id is null and nu.id is null 
       and (tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
         or l.deleted or tpref.deleted or tg.deleted or lpref.deleted) = false ";
-      
+
 $config['taxa_taxon_lists']['get_changed_items_query']="
       select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
       from (
@@ -143,7 +143,7 @@ $config['taxa_taxon_lists']['get_changed_items_query']="
       where ttlpref.updated_on>'#date#' or tpref.updated_on>'#date#' or lpref.updated_on>'#date#' or tg.updated_on>'#date#'      
       ) as sub
       group by id";
-      
+
 $config['taxa_taxon_lists']['delete_query']['taxa']="
   delete from cache_taxa_taxon_lists where id in (select id from needs_update_taxa_taxon_lists where deleted=true)";
 
@@ -220,7 +220,7 @@ $config['taxa_taxon_lists']['join_needs_update']='join needs_update_taxa_taxon_l
 $config['taxa_taxon_lists']['key_field']='ttl.id';
 
 $config['taxa_taxon_lists']['extra_multi_record_updates']=array(
-    'Ranks' => "
+  'Ranks' => "
 with recursive q as (
   select ttl1.id, ttl1.id as child_id, ttl1.taxon as child_taxon, ttl2.parent_id, 
       t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
@@ -279,7 +279,7 @@ $config['taxon_searchterms']['get_missing_items_query']="
       and ttl.allow_data_entry=true
       and (tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
         or l.deleted or tpref.deleted or tg.deleted or lpref.deleted) = false";
-      
+
 $config['taxon_searchterms']['get_changed_items_query']="
       select sub.id, sub.allow_data_entry, cast(max(cast(deleted as int)) as boolean) as deleted       
       from (
@@ -439,7 +439,7 @@ $config['taxon_searchterms']['update']['id_diff'] = "update cache_taxon_searchte
       #join_needs_update#
       join verification_rule_data extkey ON extkey.key=LOWER(cttl.external_key) AND extkey.header_name='Data' AND extkey.deleted=false
       join verification_rules vr ON vr.id=extkey.verification_rule_id AND vr.test_type='IdentificationDifficulty' AND vr.deleted=false
-      where cttl.id=cts.taxa_taxon_list_id"; 
+      where cttl.id=cts.taxa_taxon_list_id";
 
 $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxon_searchterms (
       taxa_taxon_list_id, taxon_list_id, searchterm, original, taxon_group_id, taxon_group, taxon_meaning_id, preferred_taxon,
@@ -526,7 +526,7 @@ $config['taxon_searchterms']['insert']['id_diff'] = "update cache_taxon_searchte
       #join_needs_update#
       join verification_rule_data extkey ON extkey.key=LOWER(cttl.external_key) AND extkey.header_name='Data' AND extkey.deleted=false
       join verification_rules vr ON vr.id=extkey.verification_rule_id AND vr.test_type='IdentificationDifficulty' AND vr.deleted=false
-      where cttl.id=cts.taxa_taxon_list_id"; 
+      where cttl.id=cts.taxa_taxon_list_id";
 
 $config['taxon_searchterms']['join_needs_update']='join needs_update_taxon_searchterms nu on nu.id=cttl.id and nu.deleted=false';
 $config['taxon_searchterms']['key_field']='cttl.preferred_taxa_taxon_list_id';
@@ -644,6 +644,7 @@ LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
     AND sc2.query=false AND (s.verified_on IS NULL OR sc2.created_on>s.verified_on) AND sc2.id>sc1.id
 WHERE s.id=s_update.id
 ";
+
 $config['samples']['update']['functional_media'] = "
 UPDATE cache_samples_functional u
 SET media_count=(SELECT COUNT(sm.*)
@@ -652,6 +653,16 @@ FROM samples s
 #join_needs_update#
 WHERE s.id=u.id
 ";
+
+$config['samples']['update']['functional_sensitive'] = "
+UPDATE cache_samples_functional
+SET location_id=null, location_name=null
+FROM samples s
+#join_needs_update#
+JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false AND o.sensitivity_precision IS NOT NULL
+WHERE s.id=cache_samples_functional.id
+";
+
 $config['samples']['update']['nonfunctional'] = "
 UPDATE cache_samples_nonfunctional
 SET website_title=w.title,
@@ -757,13 +768,21 @@ WHERE s.id=cache_samples_nonfunctional.id
 ";
 
 $config['samples']['update']['nonfunctional_media'] = "
-UPDATE cache_samples_nonfunctional s
+UPDATE cache_samples_nonfunctional
 SET media=(SELECT array_to_string(array_agg(sm.path), ',')
 FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false)
-FROM samples smp
+FROM samples s
 #join_needs_update#
-WHERE smp.id=s.id
-AND smp.deleted=false
+WHERE s.id=cache_samples_nonfunctional.id
+";
+
+$config['samples']['update']['nonfunctional_sensitive'] = "
+UPDATE cache_samples_nonfunctional
+SET public_entered_sref=null
+FROM samples s
+#join_needs_update#
+JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false AND o.sensitivity_precision IS NOT NULL
+WHERE s.id=cache_samples_nonfunctional.id
 ";
 
 $config['samples']['insert']['functional'] = "
@@ -804,6 +823,15 @@ FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
 FROM samples s
 #join_needs_update#
 WHERE s.id=u.id
+";
+
+$config['samples']['insert']['functional_sensitive'] = "
+UPDATE cache_samples_functional
+SET location_id=null, location_name=null
+FROM samples s
+#join_needs_update#
+JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false AND o.sensitivity_precision IS NOT NULL
+WHERE s.id=cache_samples_functional.id
 ";
 
 $config['samples']['insert']['nonfunctional'] = "
@@ -917,13 +945,21 @@ LEFT JOIN (sample_attribute_values v_sref_precision
 WHERE s.id=cache_samples_nonfunctional.id";
 
 $config['samples']['insert']['nonfunctional_media'] = "
-UPDATE cache_samples_nonfunctional s
+UPDATE cache_samples_nonfunctional
 SET media=(SELECT array_to_string(array_agg(sm.path), ',')
 FROM sample_media sm WHERE sm.sample_id=s.id AND sm.deleted=false)
-FROM samples smp
+FROM samples s
 #join_needs_update#
-WHERE smp.id=s.id
-AND smp.deleted=false
+WHERE s.id=cache_samples_nonfunctional.id
+";
+
+$config['samples']['insert']['nonfunctional_sensitive'] = "
+UPDATE cache_samples_nonfunctional
+SET public_entered_sref=null
+FROM samples s
+#join_needs_update#
+JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false AND o.sensitivity_precision IS NOT NULL
+WHERE s.id=cache_samples_nonfunctional.id
 ";
 
 $config['samples']['join_needs_update']='join needs_update_samples nu on nu.id=s.id and nu.deleted=false';
@@ -1101,7 +1137,7 @@ $config['occurrences']['get_missing_items_query'] = "
     left join needs_update_occurrences nu on nu.id=o.id
     where co.id is null and nu.id is null
     and (o.deleted or s.deleted or coalesce(sp.deleted, false) or su.deleted or (cttl.id is null)) = false";
-    
+
 $config['occurrences']['get_changed_items_query'] = "
   select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
     from (select o.id, o.deleted 
@@ -1152,7 +1188,6 @@ $config['occurrences']['get_changed_items_query'] = "
     ) as sub
     group by id";
 
-// @todo Occurrences update
 $config['occurrences']['update']['functional'] = "
 UPDATE cache_occurrences_functional
 SET sample_id=o.sample_id,
@@ -1228,6 +1263,16 @@ FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
 FROM occurrences o
 #join_needs_update#
 WHERE o.id=u.id
+";
+
+$config['occurrences']['update']['functional_sensitive'] = "
+UPDATE cache_samples_functional cs
+SET location_id=null, location_name=null
+FROM occurrences o
+#join_needs_update#
+WHERE o.sample_id=cs.id
+AND o.deleted=false
+AND o.sensitivity_precision IS NOT NULL
 ";
 
 $config['occurrences']['update']['nonfunctional'] = "
@@ -1387,6 +1432,16 @@ WHERE occ.id=o.id
 AND occ.deleted=false
 ";
 
+$config['occurrences']['update']['nonfunctional_sensitive'] = "
+UPDATE cache_samples_nonfunctional cs
+SET public_entered_sref=null
+FROM occurrences o
+#join_needs_update#
+WHERE o.sample_id=cs.id
+AND o.deleted=false
+AND o.sensitivity_precision IS NOT NULL
+";
+
 $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_functional(
             id, sample_id, website_id, survey_id, input_form, location_id,
             location_name, public_geom,
@@ -1449,6 +1504,16 @@ FROM occurrence_media om WHERE om.occurrence_id=u.id AND om.deleted=false)
 FROM occurrences o
 #join_needs_update#
 WHERE o.id=u.id
+";
+
+$config['occurrences']['insert']['functional_sensitive'] = "
+UPDATE cache_samples_functional cs
+SET location_id=null, location_name=null
+FROM occurrences o
+#join_needs_update#
+WHERE o.sample_id=cs.id
+AND o.deleted=false
+AND o.sensitivity_precision IS NOT NULL
 ";
 
 $config['occurrences']['insert']['nonfunctional'] = "
@@ -1616,7 +1681,15 @@ WHERE occ.id=o.id
 AND occ.deleted=false
 ";
 
+$config['occurrences']['insert']['nonfunctional_sensitive'] = "
+UPDATE cache_samples_nonfunctional cs
+SET public_entered_sref=null
+FROM occurrences o
+#join_needs_update#
+WHERE o.sample_id=cs.id
+AND o.deleted=false
+AND o.sensitivity_precision IS NOT NULL
+";
+
 $config['occurrences']['join_needs_update']='join needs_update_occurrences nu on nu.id=o.id and nu.deleted=false';
 $config['occurrences']['key_field']='o.id';
-
-?>
