@@ -11,7 +11,7 @@
       
   LEFT JOIN sample_attribute_values pitNumAttr ON pitNumAttr.sample_id=s.id AND pitNumAttr.sample_attribute_id=#s1AttrID# AND pitNumAttr.deleted=false  
     
-  JOIN cache_occurrences co on co.sample_id=s.id
+  JOIN cache_occurrences co on co.sample_id=s.id and co.survey_id=s.survey_id and co.website_id in (#website_ids#)
   JOIN occurrence_attribute_values gridIdAttr ON gridIdAttr.occurrence_id=co.id AND gridIdAttr.occurrence_attribute_id=#grid_id_attr_id# AND gridIdAttr.deleted=false
     
   LEFT JOIN occurrence_attribute_values countAdultSoilAttr ON countAdultSoilAttr.occurrence_id=co.id AND gridIdAttr.text_value='#adult_top_soil_grid_name#' AND countAdultSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countAdultSoilAttr.deleted=false
