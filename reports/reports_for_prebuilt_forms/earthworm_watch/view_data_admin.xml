@@ -8,8 +8,8 @@ and isn't exposing the user's name when it shouldn't"
   SELECT #columns#
   FROM samples s
   LEFT JOIN sample_attribute_values pitNumAttr ON pitNumAttr.sample_id=s.id AND pitNumAttr.sample_attribute_id=#s1AttrID# AND pitNumAttr.deleted=false
-  
-  JOIN cache_occurrences co on co.sample_id=s.id
+
+  JOIN cache_occurrences co on co.sample_id=s.id and co.survey_id=s.survey_id and co.website_id in (#website_ids#)
   JOIN occurrence_attribute_values gridIdAttr ON gridIdAttr.occurrence_id=co.id AND gridIdAttr.occurrence_attribute_id=#grid_id_attr_id# AND gridIdAttr.deleted=false
     
   LEFT JOIN occurrence_attribute_values countPaleAttr ON countPaleAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND countPaleAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleAttr.deleted=false
