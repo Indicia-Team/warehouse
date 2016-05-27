@@ -99,7 +99,7 @@ There are 4 grids for the different life stages and before/after mustard water a
     <column name='site_type_other' display='Type of site (other)' sql='siteTypeOtherAttr.text_value' datatype="text"/> 
     <column name='further_site_info' display='Further site information' sql='furtherSiteInfoAttr.text_value' datatype="text"/> 
     <column name='team_size' display='Survey team size' sql='teamAttr.int_value' datatype="integer"/> 
-    <column name='pit_distance' display='Distance between pits (m)' sql='distanceAttr.int_value' datatype="integer"/> 
+    <column name='pit_distance' display='Distance between pits (m)' sql='distanceAttr.float_value' datatype="integer"/> 
     <column name='cover_type' display='What covers most of square?' sql='tCoverType.term' datatype="text"/>
     <column name='cover_type_other' display='What covers most of square? (other)' sql='coverTypeOtherAttr.text_value' datatype="text"/>
     <column name='other_info' display='Other information' sql='otherInfoAttr.text_value' datatype="text"/>
