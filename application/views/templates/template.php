@@ -97,7 +97,7 @@ echo html::stylesheet(
 <div id="wrapper" class="ui-widget">
 
     <!-- BEGIN: banner -->
-    <div id="banner"><img id="logo" src="media/images/indicia_logo.png" width="248" height="100" alt="Indicia"/></div>
+    <div id="banner"><img id="logo" src="<?php echo url::base();?>media/images/indicia_logo.png" width="248" height="100" alt="Indicia"/></div>
     <!-- END: banner -->
 
     <!-- BEGIN: main menu (jquery/superfish) -->
