@@ -397,7 +397,8 @@ UPDATE cache_samples_nonfunctional cs
     FROM users u
     JOIN cache_samples_functional csf on csf.created_by_id=u.id
     JOIN people p on p.id=u.person_id and p.deleted=false
-    WHERE cs.id=csf.id and u.id<>1;
+    WHERE cs.recorders IS NULL
+    AND cs.id=csf.id and u.id<>1;
 
 UPDATE cache_samples_nonfunctional cs
     SET recorders=sav.text_value
@@ -436,3 +437,18 @@ SET map_sq_1km_id=co.map_sq_1km_id,
   map_sq_10km_id=co.map_sq_10km_id
 FROM cache_occurrences co
 WHERE co.sample_id=cache_samples_functional.id;
+
+-- ensure samples containing sensitive records don't give anything away
+update cache_samples_nonfunctional snf
+set public_entered_sref=null where id in (
+  select s.id from samples s
+  join cache_occurrences_functional o on o.sample_id=s.id
+  where o.sensitive=true
+)
+
+update cache_samples_functional snf
+set location_name=null, location_id=null where id in (
+  select s.id from samples s
+  join cache_occurrences_functional o on o.sample_id=s.id
+  where o.sensitive=true
+)
