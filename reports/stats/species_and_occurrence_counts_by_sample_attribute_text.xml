@@ -13,7 +13,7 @@
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       GROUP BY sav.text_value
     UNION
-      SELECT 'Total' as taxongroup, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      SELECT 'Total', count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
       FROM occurrences o
       JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id
       JOIN samples s on s.id=o.sample_id and s.deleted=false      
