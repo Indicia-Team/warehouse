@@ -36,6 +36,11 @@ CREATE INDEX ix_cache_occurrences_functional_taxon_group_id
   USING btree
   (taxon_group_id);
 
+CREATE INDEX ix_cache_occurrences_functional_group_id
+  ON cache_occurrences_functional
+  USING btree
+  (group_id);
+
 CREATE INDEX ix_cache_occurrences_functional_created_by_id
   ON cache_occurrences_functional
   USING btree
