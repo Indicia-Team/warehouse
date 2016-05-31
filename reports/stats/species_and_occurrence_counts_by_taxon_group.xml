@@ -2,7 +2,7 @@
 <report title="Species &amp; Occurrence Counts by Taxon Group" description="Lists taxon groups and the number of species and occurrences within them. Optional date range and survey filters.">
       <query>
       SELECT o.taxon_group as taxongroup, count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
-      FROM cache_occurrences o
+      FROM cache_occurrences_functional o
       WHERE o.website_id=#website_id#
       AND o.record_status&lt;&gt;'R'
       AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
@@ -11,7 +11,7 @@
       GROUP BY taxongroup
     UNION
       SELECT 'Total' as taxongroup, count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
-      FROM cache_occurrences o
+      FROM cache_occurrences_functional o
       WHERE o.website_id=#website_id#
       AND o.record_status&lt;&gt;'R'
       AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
