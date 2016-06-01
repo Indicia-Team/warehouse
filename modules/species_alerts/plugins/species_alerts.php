@@ -133,4 +133,9 @@ function species_alerts_metadata() {
     'requires_occurrences_delta'=>TRUE
   );
 }
- 
+
+function species_alerts_extend_data_services() {
+  return array(
+    'species_alerts'=>array()
+  );
+}

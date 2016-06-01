@@ -63,7 +63,7 @@ class subscription_settings {
   }
 
   //Display the notification settings boxes
-  public function notificationEmailSettings() {
+  public static function notificationEmailSettings() {
     $configuration = self::get_page_configuration();
     $cssPath=$configuration['cssPath'];
     $dataEntryHelperPath=$configuration['dataEntryHelperPath'];
@@ -110,7 +110,7 @@ class subscription_settings {
   /*
    * Draw a species alerts grid so the user can delete species alerts
    */
-  public function speciesAlertSettings() {
+  public static function speciesAlertSettings() {
     $configuration = self::get_page_configuration();
     $auth=self::getAuth(0-$_GET['user_id'],$configuration['privateKey']);
     $extraParams=array('user_id'=>$_GET['user_id'],'view'=>'gv');
@@ -230,8 +230,8 @@ class subscription_settings {
     }
     $r = json_decode($response, true);
     if (!is_array($r)) {
-      $response['request'] = $request;
-      throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
+      $info = array('request' => $request, 'response' => $response);
+      throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($info, true));
     }
     return $r;
   }
