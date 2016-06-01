@@ -33,8 +33,9 @@ function data_cleaner_without_polygon_data_cleaner_rules() {
     'queries' => array(
       array(
         'joins' => 
+            "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
             "join verification_rule_metadata vrm on (vrm.key='DataRecordId' and vrm.value=co.taxa_taxon_list_external_key) ".
-            "or (vrm.key='Taxon' and vrm.value=co.preferred_taxon) ".
+            "or (vrm.key='Taxon' and vrm.value=cttl.preferred_taxon) ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='WithoutPolygon' ".
             "join verification_rule_metadata isSpecies on isSpecies.value='Species' and isSpecies.key='DataFieldName' and isSpecies.verification_rule_id=vr.id ".
             "join verification_rule_data vrd on vrd.verification_rule_id=vr.id and vrd.header_name='geom' and ".

@@ -33,6 +33,7 @@ function data_cleaner_new_species_for_site_data_cleaner_rules() {
     'queries' => array(
       array(
         'joins' => 
+            "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
             "join verification_rule_metadata vrsurvey on vrsurvey.key='SurveyId' 
                 and vrsurvey.value=cast(co.survey_id as character varying) and vrsurvey.deleted=false
             join verification_rules vr on vr.id=vrsurvey.verification_rule_id and vr.test_type='NewSpeciesForSite' and vr.deleted=false
@@ -49,7 +50,7 @@ function data_cleaner_new_species_for_site_data_cleaner_rules() {
             -- Is there any taxon filter in place?
             left join verification_rule_data filteringtaxa on filteringtaxa.verification_rule_id=vr.id and filteringtaxa.header_name='Taxa' and filteringtaxa.deleted=false
             -- if so, does this record match the filter?
-            left join verification_rule_data taxa on taxa.verification_rule_id=vr.id and taxa.header_name='Taxa' and upper(taxa.key)=upper(co.preferred_taxon) and taxa.deleted=false",
+            left join verification_rule_data taxa on taxa.verification_rule_id=vr.id and taxa.header_name='Taxa' and upper(taxa.key)=upper(cttl.preferred_taxon) and taxa.deleted=false",
         'where' =>
             "sprev.id is null
             and (filteringtaxa.id is null or taxa.id is not null)"
