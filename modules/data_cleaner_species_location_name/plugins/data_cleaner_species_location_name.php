@@ -34,8 +34,9 @@ function data_cleaner_species_location_name_data_cleaner_rules() {
     'queries' => array(
       array(
         'joins' => 
+            "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
             "join verification_rule_metadata vrm on (upper(vrm.value)=upper(co.taxa_taxon_list_external_key) and upper(vrm.key)='TVK') 
-            or (upper(vrm.value)=upper(co.preferred_taxon) and upper(vrm.key)='TAXON') 
+            or (upper(vrm.value)=upper(cttl.preferred_taxon) and upper(vrm.key)='TAXON') 
             or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') 
             join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='SpeciesLocationName' 
             join verification_rule_metadata vrml on vrml.verification_rule_id = vr.id and vrml.deleted=false and upper(vrml.key)='LOCATIONNAMES' 
