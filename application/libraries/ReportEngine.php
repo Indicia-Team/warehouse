@@ -420,11 +420,13 @@ class ReportEngine {
     foreach($col_sets as $col_set) {
       for ($r=0; $r<$dataCount; $r++) {
         $row=$data[$r];
-        $data[$r][$col_set.'date'] = vague_date::vague_date_to_string(array(
-          $row[$col_set.'date_start'],
-          $row[$col_set.'date_end'],
-          $row[$col_set.'date_type']
-        ));
+        if (!empty($row[$col_set.'date_type'])) {
+          $data[$r][$col_set.'date'] = vague_date::vague_date_to_string(array(
+            $row[$col_set.'date_start'],
+            $row[$col_set.'date_end'],
+            $row[$col_set.'date_type']
+          ));
+        }
       }
     }
   }
