@@ -18,7 +18,7 @@
   #idlist#
   </query>
   <order_bys>
-    <order_by>o.taxon_group, o.preferred_taxon ASC</order_by>
+    <order_by>cttl.taxon_group, cttl.preferred_taxon ASC</order_by>
   </order_bys>
   <params>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
