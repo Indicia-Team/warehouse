@@ -763,13 +763,15 @@ class ReportEngine {
               $arr = explode(',', $value);
               foreach ($arr as $item) {
                 if (!is_numeric($item))
-                  throw new exception('Invalid numeric array parameter value');
+                  throw new exception("Invalid numeric array parameter value $value");
               }
             }
             elseif ($paramDefs[$name]['datatype']==='date' && preg_match('/\d{4}$/', $value)) {
               // force ISO date for SQL safety.
               // @todo This needs further work for i18n if non-European.
               $date = DateTime::createFromFormat('d/m/Y', $value);
+              if (!$date)
+                throw new exception("Invalid date parameter value $value");
               $value = $date->format('Y-m-d');
             }
             if (!empty($paramDefs[$name]['preprocess']) && !empty($value) && $value!=="null") {
