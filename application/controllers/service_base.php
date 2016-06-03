@@ -223,7 +223,7 @@ class Service_Base_Controller extends Controller {
    */
   protected function handle_error($e, $transaction_id = null)
   {
-    if($e instanceof ValidationError)
+    if($e instanceof ValidationError || $e instanceof InvalidArgumentException)
       $statusCode = 400;
     elseif($e instanceof AuthenticationError || $e instanceof AuthorisationError) 
       $statusCode = 403; // not 401 as not using browser or official digest authentication
