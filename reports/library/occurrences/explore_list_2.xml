@@ -63,8 +63,8 @@
     <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
     <column name='taxon' display='Species' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
-      sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
-    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
+      sql="CASE WHEN cttl.preferred_taxon=cttl.default_common_name then cttl.preferred_taxon ELSE cttl.preferred_taxon || COALESCE(' | ' || cttl.default_common_name, '') END" datatype='text' />
+    <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype='text' />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   
     <column name='location_name' display='Site name' sql='o.location_name' datatype='text' />
     <column name='entered_sref' display='Grid Ref' sql="regexp_replace(snf.public_entered_sref, ',[^ ]', ', ', 'g')" datatype='text' />
@@ -78,7 +78,7 @@
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#currentUser#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
-    <column name='images' display='Images' sql='o.images' img='true' />
+    <column name='images' display='Images' sql='onf.media' img='true' />
     <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" />
   </columns>
 </report>
