@@ -57,7 +57,7 @@ FROM occurrences o
 WHERE o.id=u.id;
 
 INSERT INTO cache_occurrences_nonfunctional(
-            id, comment, sensitivity_precision, privacy_precision, output_sref, licence_code)
+            id, comment, sensitivity_precision, privacy_precision, output_sref, verifier, licence_code)
 SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
@@ -96,12 +96,15 @@ SELECT o.id,
     ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
     case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
   ),
+  pv.surname || ', ' || pv.first_name,
   li.code
 FROM occurrences o
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
 LEFT JOIN locations lp ON lp.id=sp.location_id AND lp.deleted=false
+LEFT JOIN users uv on uv.id=o.verified_by_id and uv.deleted=false
+LEFT JOIN people pv on pv.id=uv.person_id and pv.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id
 LEFT JOIN (sample_attribute_values spv
   JOIN sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
