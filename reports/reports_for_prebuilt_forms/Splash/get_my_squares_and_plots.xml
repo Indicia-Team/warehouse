@@ -23,7 +23,7 @@ or any plot they are assigned to which they didn't create (as long as they are t
     WHERE (l.id = square.id OR l.parent_id = square.id)
     AND #website_filter# AND l.deleted=false
     GROUP BY square.id,l.parent_id,l.id,lav.text_value,lavplotname.text_value,termplottype.term,pav.updated_by_id,u.id
-    HAVING (l.parent_id IS NULL OR (#only_show_my_useable_plots_squares#=0 OR (#only_show_my_useable_plots_squares#=1 AND (l.created_by_id=#current_user_id# OR count(pavOthers.id) &lt; 2))))
+    HAVING (l.parent_id IS NULL OR (#only_show_my_useable_plots_squares#=0 OR (#only_show_my_useable_plots_squares#=1 AND (l.created_by_id=#current_user_id# OR count(distinct pavOthers.id) &lt; 2))))
   </query>
   <order_bys>
     <order_by>square.id,l.parent_id desc</order_by>
@@ -48,10 +48,10 @@ or any plot they are assigned to which they didn't create (as long as they are t
     <column name='square_id' display='Square ID' sql="square.id" datatype='integer' visible="false"/>
     <column name='parent_id' display='Parent ID' sql="l.parent_id" datatype='integer' visible="false"/>
     <column name='show_square_add_plot_control' display='Show Square Add Plot Control' sql="case when l.parent_id is null then true else false end" visible="false"/>
-    <column name='show_square_edit_control' display='Show Square Edit Control' sql="case when l.parent_id is null AND l.created_by_id=#current_user_id# then true else false end" visible="false"/>
-    <column name='show_simple_square_edit_control' display='Show Simple Square Edit Control' description="Show cut-down version of edit square page?" sql="case when l.parent_id is null then true else false end" visible="false"/>
-    <column name='show_plot_view_control' display='Show Plot View Control' sql="case when l.parent_id is not null then true else false end" visible="false"/>
-    <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND (l.created_by_id=#current_user_id# OR count(pavOthers.id) &lt; 2) AND count(locationSamples.id) = 0 then true else false end" visible="false"/>
+    <column name='show_square_edit_control' display='Show Square Edit Control' sql="case when l.parent_id is null AND l.created_by_id=#current_user_id# AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
+    <column name='show_simple_square_edit_control' display='Show Simple Square Edit Control' description="Show cut-down version of edit square page?" sql="case when l.parent_id is null AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
+    <column name='show_plot_view_control' display='Show Plot View Control' sql="case when l.parent_id is not null AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
+    <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND (l.created_by_id=#current_user_id# OR count(distinct pavOthers.id) &lt; 2) AND count(locationSamples.id) = 0 AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
     <column name='name' display='Location Name' sql="
       case 
         when l.parent_id is null AND #pss_mode#=0
