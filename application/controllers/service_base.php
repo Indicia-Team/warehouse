@@ -235,7 +235,7 @@ class Service_Base_Controller extends Controller {
     $mode = $this->get_output_mode();
     // Set the HTTP response code only if configured to do so and not JSONP. JSONP will need
     // to check the response error instead.
-    if (kohana::config('indicia.http_status_responses')===true && empty($_GET['callback'])
+    if (kohana::config('indicia.http_status_responses')===true && empty($_GET['callback']))
       header(' ', true, $statusCode);
     if ($mode=='xml') {
       $view = new View("services/error");
