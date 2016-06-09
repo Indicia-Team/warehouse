@@ -139,7 +139,7 @@ function milestones_scheduled_task($last_run_date, $db) {
       $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Error occurred when creating verification notifications based on new occurrences and user\'s filters.', $e);
+      error_logger::log_error('Error occurred when creating verification notifications based on new occurrences and user\'s filters.', $e);
     }
     foreach($data['content']['records'] as $milestoneCountData) {
       if ($milestoneCountData['count']>=$milestoneToCheck['count']) {
@@ -164,7 +164,7 @@ function milestones_scheduled_task($last_run_date, $db) {
       $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Error occurred when creating verification notifications based on new occurrences and user\'s filters.', $e);
+      error_logger::log_error('Error occurred when creating verification notifications based on new occurrences and user\'s filters.', $e);
     }
     foreach($data['content']['records'] as $milestoneCountData) {
       if ($milestoneCountData['count']>=$milestoneToCheck['count']) {

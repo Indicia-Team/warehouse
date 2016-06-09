@@ -124,7 +124,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         'verified_on'=>date('Y-m-d H:i:s'), 'cache_updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during bulk verify', $e);
+      error_logger::log_error('Exception during bulk verify', $e);
     }
   }
   
@@ -177,7 +177,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       echo 'OK';
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during single record verify', $e);
+      error_logger::log_error('Exception during single record verify', $e);
     }
   }
 
@@ -217,7 +217,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       echo 'OK';
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during single sample verify', $e);
+      error_logger::log_error('Exception during single sample verify', $e);
     }
   }
 
@@ -257,7 +257,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       echo count($ids);
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during bulk verify of samples', $e);
+      error_logger::log_error('Exception during bulk verify of samples', $e);
     }
   }
 

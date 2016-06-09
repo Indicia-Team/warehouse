@@ -78,7 +78,7 @@ function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
         $wktList[]="(st_geomfromtext('".spatial_ref::sref_to_internal_wkt($gridSquare->key, $system)."', $srid))";
       } catch (Exception $e) {
         kohana::debug('alert', 'Did not import grid square '.$gridSquare->key." for rule $id");
-        error::log_error('Importing without polygon rules', $e);
+        error_logger::log_error('Importing without polygon rules', $e);
       }
     }
     if (!empty($wktList))

@@ -26,7 +26,7 @@
  * @package	Core
  * @subpackage Helpers
  */
-class error {
+class error_logger {
 
   /**
    * Standardise the dumping of an exception message into the kohana log. E.g.

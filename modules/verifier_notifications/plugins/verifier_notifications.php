@@ -150,7 +150,7 @@ function loop_through_filters_and_create_notifications($db, $filters, $params) {
       }
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Error occurred when creating notifications based on new occurrences and user\'s filters.', $e);
+      error_logger::log_error('Error occurred when creating notifications based on new occurrences and user\'s filters.', $e);
     }
   }
   //Display message to show how many notifications were created.

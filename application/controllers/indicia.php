@@ -372,7 +372,7 @@ class Indicia_Controller extends Template_Controller {
       }
       $this->template->content = $view;
     } catch (Exception $e) {
-      error::log_error("Problem displaying view $name", $e);
+      error_logger::log_error("Problem displaying view $name", $e);
       throw $e;
     }
   }
@@ -490,7 +490,7 @@ class Indicia_Controller extends Template_Controller {
     catch (Exception $e)
     {
       // Put the error out
-      error::log_error('Error occurred when loading view.', $e);
+      error_logger::log_error('Error occurred when loading view.', $e);
       // Can't set a flash message here, as view has already failed to load.
       echo "<div class=\"ui-widget-content ui-corner-all ui-state-error page-notice\">".
           "<strong>Error occurred when loading page.</strong><br/>".$e->getMessage().

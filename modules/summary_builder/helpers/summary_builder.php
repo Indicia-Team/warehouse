@@ -114,7 +114,7 @@ class summary_builder {
 	  if($count>0)
 	  	summary_builder::do_summary($db, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon);
     } catch (Exception $e) {
-      error::log_error('Building summary', $e);
+      error_logger::log_error('Building summary', $e);
       echo $e->getMessage();
     }
    
