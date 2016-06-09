@@ -112,7 +112,7 @@ where {where}";
         $this->db->query('COMMIT;');
       } catch (Exception $e) {
         $this->db->query('ROLLBACK;');
-        error::log_error('Exception during termlist content import', $e);
+        error_logger::log_error('Exception during termlist content import', $e);
         $this->template->title = 'Error during termlist content import';
         $this->view = new View('templates/error_message');
         $this->view->message='An error occurred during the termlist content import and no changes have been made to the database. ' .
