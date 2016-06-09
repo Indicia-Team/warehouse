@@ -33,7 +33,7 @@ class error_logger {
    * try {
    *	   ... code that throws exception ...
    * } catch (Exception $e) {
-   *   error::log_error('Error occurred whilst running some code', $e);
+   *   error_logger::log_error('Error occurred whilst running some code', $e);
    * }
    *
    * @param string $msg A description of where the error occurred.
