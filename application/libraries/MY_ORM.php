@@ -902,8 +902,8 @@ class ORM extends ORM_Core {
           ->where($where)
           ->limit(1)
           ->get();
-      if (count($matches)===0) {
-        // try a slower case insensitive search before giving up
+      if (count($matches)===0 && $fkArr['fkSearchField']!='id') {
+        // try a slower case insensitive search before giving up, but don't bother if id specified as ints don't like ilike
         $this->db
           ->select('id')
           ->from(inflector::plural($fkArr['fkTable']))
@@ -1742,18 +1742,20 @@ class ORM extends ORM_Core {
    * @return array The submission structure containing the fkFields element.
    */
   public function getFkFields($submission, $saveArray) {
+    // Can't use 'this' to access the FK or parent, as that doesn't work for the supermodels of 'this'
+    $submissionModel = ORM::Factory($submission['id']);
   	foreach ($submission['fields'] as $field=>$value) {
       if (substr($field, 0, 3)=='fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
         // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
         $fieldTokens = explode(':', substr($field,3));
         $fieldName = $fieldTokens[0];
-        if (array_key_exists($fieldName, $this->belongs_to)) {
-          $fkTable = $this->belongs_to[$fieldName];
-        } elseif (array_key_exists($fieldName, $this->has_one)) { // this ignores the ones which are just models in list: the key is used to point to another model
-          $fkTable = $this->has_one[$fieldName];
-        } elseif ($this instanceof ORM_Tree && $fieldName == 'parent') {
-          $fkTable = inflector::singular($this->getChildren());
+        if (array_key_exists($fieldName, $submissionModel->belongs_to)) {
+          $fkTable = $submissionModel->belongs_to[$fieldName];
+        } elseif (array_key_exists($fieldName, $submissionModel->has_one)) { // this ignores the ones which are just models in list: the key is used to point to another model
+          $fkTable = $submissionModel->has_one[$fieldName];
+        } elseif ($submissionModel instanceof ORM_Tree && $fieldName == 'parent') {
+          $fkTable = inflector::singular($submissionModel->getChildren());
         } else {
            $fkTable = $fieldName;
         }
