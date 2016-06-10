@@ -380,6 +380,15 @@ class report_standard_params_occurrences {
     from q
     join cache_taxa_taxon_lists tc on tc.parent_id = q.id
   ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q"
+      ),
+      'taxon_designation_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Taxon designations',
+        'description'=>'Comma separated list of taxon designation IDs',
+        'joins' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>
+            "join taxa_taxon_lists ttlpref on ttlpref.id=o.preferred_taxa_taxon_list_id and ttlpref.deleted=false\n" .
+            "join taxa_taxon_designations ttd on ttd.taxon_id=ttlpref.taxon_id and ttd.deleted=false " .
+            "and ttd.taxon_designation_id in (#taxon_designation_list#)")
+        ),
       )
     );
   }
