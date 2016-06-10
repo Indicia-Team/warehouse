@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Species &amp; Occurrence Counts by Taxon Group" description="Lists taxon groups and the number of species and occurrences within them. Optional date range and survey filters.">
       <query>
-      SELECT o.recorders as recorder_name, count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      SELECT snf.recorders as recorder_name, count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
       FROM cache_occurrences_functional o
+      JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
       WHERE o.website_id=#website_id#
       AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-      AND o.recorders is not null AND o.recorders &lt;&gt; ''
+      AND snf.recorders is not null AND snf.recorders &lt;&gt; ''
       GROUP BY recorder_name
     UNION
       SELECT 'Total' as recorder_name, count(DISTINCT o.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
