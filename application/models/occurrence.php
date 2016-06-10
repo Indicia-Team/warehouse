@@ -457,6 +457,25 @@ class Occurrence_Model extends ORM
     	$srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
     				":".
     				str_replace(array(',',':'), array('&#44', '&#56'), $title);
+
+    $sample_methods = array(":Defined in file");
+    $parent_sample_methods = array();
+    $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
+    foreach ($terms as $term) {
+    	$sample_method = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
+    	":".
+    	str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
+    	$sample_methods[] = $sample_method;
+    	$parent_sample_methods[] = $sample_method;
+    }
+    
+    $location_types = array(":No filter");
+    $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
+    foreach ($terms as $term)
+    	$location_types[] = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
+    	":".
+    	str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
+    
     $retVal = array(
       'website_id' => array( 
         'display'=>'Website', 
@@ -479,6 +498,27 @@ class Occurrence_Model extends ORM
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.', 
         'datatype'=>'lookup',
         'lookup_values'=>implode(',', $srefs)
+      ),
+      'sample:sample_method_id' => array(
+        'display'=>'Sample Method',
+        'description'=>'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a '.
+            'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
+        'datatype'=>'lookup',
+        'lookup_values'=>implode(',', $sample_methods)
+      ),
+      'fkFilter:sample:sample_method_id' => array(
+        'display'=>'Parent Sample Method',
+        'description'=>'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked '.
+            'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
+        'datatype'=>'lookup',
+        'lookup_values'=>implode(',', $parent_sample_methods)
+      ),
+      'fkFilter:location:location_type_id' => array(
+        'display'=>'Location Type',
+        'description'=>'If this import file includes samples which reference locations records, you can restrict the type of locations looked '.
+            'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
+        'datatype'=>'lookup',
+        'lookup_values'=>implode(',', $location_types)
       ),
       // Also allow a field to be defined which defines the taxon list to look in when searching for species during a csv upload
       'occurrence:fkFilter:taxa_taxon_list:taxon_list_id'=>array(
