@@ -36,6 +36,7 @@ class Groups_user_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('group_id', 'required');
     $array->add_rules('user_id', 'required');
+    $array->add_rules('access_level', 'integer');
     $this->unvalidatedFields = array('administrator', 'deleted', 'pending');
     return parent::validate($array, $save);
   }
