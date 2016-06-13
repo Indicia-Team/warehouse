@@ -71,7 +71,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $params = implode(', ', $action['parameters']);      
       print_r($db->query("select $action[stored_procedure]($params);")->result_array(true));
     } catch (Exception $e) {
-      error::log_error('Exception during single verify', $e);
+      error_logger::log_error('Exception during single verify', $e);
       $this->handle_error($e);
     }
   }
@@ -126,7 +126,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
       $db->from('cache_occurrences_nonfunctional')->set(array('verifier'=>$verifier))->in('id', array_keys($ids))->update();
     } catch (Exception $e) {
-      error::log_error('Exception during bulk verify', $e);
+      error_logger::log_error('Exception during bulk verify', $e);
       $this->handle_error($e);
     }
   }
@@ -186,7 +186,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       echo 'OK';
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during single record verify', $e);
+      error_logger::log_error('Exception during single record verify', $e);
     }
   }
 
@@ -232,7 +232,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       echo 'OK';
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during single sample verify', $e);
+      error_logger::log_error('Exception during single sample verify', $e);
     }
   }
 
@@ -275,7 +275,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       echo count($ids);
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during bulk verify of samples', $e);
+      error_logger::log_error('Exception during bulk verify of samples', $e);
     }
   }
   

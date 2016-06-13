@@ -171,7 +171,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
         $this->db->query('COMMIT;');
       } catch (Exception $e) {
         $this->db->query('ROLLBACK;');
-        error::log_error('Exception during survey structure import', $e);
+        error_logger::log_error('Exception during survey structure import', $e);
         $this->template->title = 'Error during survey structure import';
         $this->view = new View('templates/error_message');
         $this->view->message='An error occurred during the survey structure import and no changes have been made to the database. ' .

@@ -595,7 +595,7 @@ class ORM extends ORM_Core {
       $this->postProcess();
     } catch (Exception $e) {
       $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
-      error::log_error('Exception during inner_submit.', $e);
+      error_logger::log_error('Exception during inner_submit.', $e);
       $res = null;
     }
     if ($res) {
@@ -801,9 +801,9 @@ class ORM extends ORM_Core {
         $v=$this->validate(new Validation($vArray), true);
       }
     } catch (Exception $e) {
-        $v=false;
-        $this->errors['general']=$e->getMessage();
-        error::log_error('Exception during validation', $e);
+      $v=false;
+      $this->errors['general']=$e->getMessage();
+      error_logger::log_error('Exception during validation', $e);
     }
     if ($v) {
       // Record has successfully validated so return the id.
@@ -1623,7 +1623,7 @@ class ORM extends ORM_Core {
     } catch (Exception $e) {
       $v=false;
       $this->errors[$fieldId]=$e->getMessage();
-      error::log_error('Exception during validation', $e);
+      error_logger::log_error('Exception during validation', $e);
     }
     if (!$v) {
       foreach($attrValueModel->errors as $key=>$value) {
