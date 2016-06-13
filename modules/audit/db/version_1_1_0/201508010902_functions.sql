@@ -120,8 +120,7 @@ BEGIN
 END;
 $body$
 LANGUAGE plpgsql
-SECURITY DEFINER
- 
+SECURITY DEFINER;
  
 COMMENT ON FUNCTION audit.if_modified_func() IS $body$
 Track changes TO a TABLE at the statement AND/OR ROW level.
