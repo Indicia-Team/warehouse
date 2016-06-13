@@ -26,14 +26,14 @@
  * @package	Core
  * @subpackage Helpers
  */
-class error {
+class error_logger {
 
   /**
    * Standardise the dumping of an exception message into the kohana log. E.g.
    * try {
    *	   ... code that throws exception ...
    * } catch (Exception $e) {
-   *   error::log_error('Error occurred whilst running some code', $e);
+   *   error_logger::log_error('Error occurred whilst running some code', $e);
    * }
    *
    * @param string $msg A description of where the error occurred.

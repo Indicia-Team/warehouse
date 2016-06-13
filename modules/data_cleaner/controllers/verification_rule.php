@@ -359,7 +359,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       try {
         $response['files'][] = $this->internal_upload_rule_file($totaldone, $cacheArr);      
       } catch (Exception $e) {
-        error::log_error('Verification rule import', $e);
+        error_logger::log_error('Verification rule import', $e);
         $response['errors'][]=$e->getMessage();
       }
       $totaldone++;
@@ -551,7 +551,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
               $this->read_rule_content($ruleSettings, $uniqueId, 'csv');
             } catch (Exception $e) {
               $errors[]=$e->getMessage();
-              error::log_error('Error during Data Cleaner module CSV upload.', $e);
+              error_logger::log_error('Error during Data Cleaner module CSV upload.', $e);
             }
         }
       }
@@ -565,7 +565,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       echo json_encode($r);
       fclose($handle);
     } catch (Exception $e) {
-      error::log_error('Error during Data Cleaner module CSV upload.', $e);
+      error_logger::log_error('Error during Data Cleaner module CSV upload.', $e);
       throw $e;
     }
   }

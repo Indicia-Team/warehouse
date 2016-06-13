@@ -42,7 +42,7 @@ class Indicia
       try {
         throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
       } catch (Exception $e) {
-        error::log_error('Error converted to exception', $e);
+        error_logger::log_error('Error converted to exception', $e);
         throw $e;
       }
     }

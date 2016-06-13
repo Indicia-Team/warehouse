@@ -72,7 +72,7 @@ class Data_cleaner_Controller extends Service_Base_Controller {
       } catch (Exception $e) {
         $db->query('drop table occdelta');
         $this->response = "Query failed";
-        error::log_error('Error occurred calling verification rule service', $e);
+        error_logger::log_error('Error occurred calling verification rule service', $e);
       }
     }
     $this->send_response();
