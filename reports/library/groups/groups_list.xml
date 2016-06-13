@@ -8,7 +8,7 @@
     LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#
     LEFT JOIN group_pages gp ON gp.group_id=g.id AND gp.deleted=false AND
       (((gp.administrator=false OR gu.administrator=true) and gu.id is not null AND gu.pending=false) OR gp.administrator is null) AND
-      COALESCE(gu.access_level, 0)&gt;=COALESCE(gp.access_level, 0)
+      (gu.administrator=true OR COALESCE(gu.access_level, 0)&gt;=COALESCE(gp.access_level, 0))
     LEFT JOIN group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
     #joins#
     WHERE g.deleted = false
