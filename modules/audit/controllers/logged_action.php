@@ -51,12 +51,13 @@ class Logged_action_Controller extends Indicia_Controller {
 		parent::__construct();
 
 		$this->columns = array(
-				'id' => 'Event ID',
-				'updated_by' => 'Updated By',
-				'search_table_name' => 'Table',
-				'search_key' => 'ID',
-				'action_tstamp_tx' => 'When',
-				'website_title'      => 'Website'
+			  'id' => 'Event ID',
+			  'updated_by' => 'Updated By',
+			  'search_table_name' => 'Table',
+			  'search_key' => 'ID',
+			  'action' => 'Action',
+			  'action_tstamp_tx' => 'When',
+			  'website_title'      => 'Website'
 		);
 		$this->pagetitle = "Audited data changes";
 		$this->set_website_access('admin');
@@ -152,16 +153,15 @@ class Logged_action_Controller extends Indicia_Controller {
   					"event_record_id" => $init_model->search_key))
   		->orderby(array("transaction_id"=>'ASC'))
   		->get()->as_array(true);
-  						
   	// Try to load all non-TLR which match the search
   	$subtableData = $this->db
   		->select('*')
   		->from(inflector::plural($init_model->object_name))
   		->where(array("transaction_id" => $init_model->transaction_id,
   				"search_table_name" => $init_model->search_table_name,
-  				"search_key" => $init_model->search_key,
-  				"event_table_name !=" => $init_model->search_table_name,
-  				"event_record_id !=" => $init_model->search_key))
+  				"search_key" => $init_model->search_key
+			))
+			->where("(event_table_name != '$init_model->search_table_name' OR event_record_id != '$init_model->search_key')")
   		->orderby(array("transaction_id"=>'ASC'))
   		->get()->as_array(true);
 
