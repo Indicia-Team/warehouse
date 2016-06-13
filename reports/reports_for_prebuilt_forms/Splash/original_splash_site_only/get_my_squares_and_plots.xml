@@ -1,0 +1,39 @@
+<report
+    title="Get my squares and plots"
+    description="Get a list of Core Squares and Additional Squares that have been assigned to the user and list them with their associated plots. Only plots without samples are editable."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations l
+      LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+      LEFT JOIN samples locationSamples on locationSamples.location_id = l.id
+      LEFT JOIN termlists_terms ttPlotType on ttPlotType.id = l.location_type_id
+      LEFT JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
+      JOIN locations square on (square.id=l.id OR square.id=l.parent_id) AND square.location_type_id=#core_square_location_type_id# OR square.location_type_id=#additional_square_location_type_id#
+      LEFT JOIN location_attribute_values lav on lav.location_id=square.id AND lav.location_attribute_id = #vice_county_location_attribute_id#
+      JOIN users u on u.id=#current_user_id#
+      JOIN person_attribute_values pav on pav.int_value=square.id AND pav.person_id=u.person_id AND pav.deleted=false
+    WHERE (l.id = square.id OR l.parent_id = square.id)
+    AND #website_filter# AND l.deleted=false
+  </query>
+  <order_bys>
+    <order_by>square.id</order_by>
+  </order_bys>
+  <params>
+    <param name="core_square_location_type_id" display="Core Square location type id" datatype="integer"/>
+    <param name="additional_square_location_type_id" display="Additional Square location type id" datatype="integer"/>
+    <param name="current_user_id" display="Id of the currently logged in user" datatype="integer"/>
+    <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
+    <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" in_count="true"/>
+    <column name='square_id' display='Square ID' sql="square.id" datatype='integer' visible="false"/>
+    <column name='parent_id' display='Parent ID' sql="l.parent_id" datatype='integer' visible="false"/>
+    <column name='show_square_add_plot_control' display='Show Square Add Plot Control' sql="case when l.parent_id is null then true else false end" visible="false"/>
+    <column name='show_square_edit_control' display='Show Square Edit Control' sql="case when l.parent_id is null AND l.created_by_id=#current_user_id# then true else false end" visible="false"/>
+    <column name='show_plot_view_control' display='Show Plot View Control' sql="case when l.parent_id is not null then true else false end" visible="false"/>
+    <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND count(locationSamples.id) = 0 then true else false end" visible="false" aggregate="true"/>
+    <column name='name' display='Location Name' sql="case when l.parent_id is null then '&lt;b&gt;' || square.centroid_sref || ' - ' || coalesce(lav.text_value,'#no_vice_county_found_message#') || '&lt;/b&gt;' else '&lt;i&gt;' || 'Plot at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' end" datatype='text' />
+  </columns>
+</report>

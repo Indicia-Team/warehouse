@@ -19,7 +19,7 @@
   </query>
 
   <order_bys>
-    <order_by>oc.updated_on ASC</order_by>
+    <order_by>o.id ASC</order_by>
   </order_bys>
   <params>
     <param name='system_user_id' display='System ID' description='3 character code identifying the system' datatype='text'/>
@@ -28,10 +28,10 @@
     <param name="occattrs" display="Occurrence attribute list"
            description="Comma separated list of occurrence attribute IDs to include" datatype="occattrs" default=""/>
     <param name="comment_edited_date_from" datatype="date" default="">
-      <where>oc.updated_on&gt;='#comment_edited_date_from#'</where>
+      <where>oc.updated_on>='#comment_edited_date_from#'</where>
     </param>
     <param name="comment_edited_date_to" datatype="date" default="">
-      <where>oc.updated_on&lt;='#comment_edited_date_to#'</where>
+      <where>oc.updated_on>='#comment_edited_date_from#'</where>
     </param>
   </params>
   <columns>
@@ -51,7 +51,6 @@
     <column name="authorName" datatype="text"
             sql="coalesce(oc.person_name, case u.id when 1 then 'anonymous' else p.first_name || ' ' || p.surname end)"/>
     <!--column name="emailaddress" display="Email" sql="" -->
-    <column name="dateTime" sql="to_char(oc.created_on, 'YYYY-MM-DD&quot;T&quot;HH24:MI:SS')"/>
-    <column name='lastEditDate' display='Last Edit Date' sql="to_char(oc.updated_on, 'YYYY-MM-DD&quot;T&quot;HH24:MI:SS')" />
+    <column name="dateTime" sql="to_char(oc.created_on, 'YYYYMMDD&quot;T&quot;HH24:MI:SS')"/>
   </columns>
 </report>

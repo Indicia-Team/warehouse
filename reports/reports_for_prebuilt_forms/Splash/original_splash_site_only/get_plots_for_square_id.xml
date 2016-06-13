@@ -1,0 +1,29 @@
+<report
+    title="Get plots for square id"
+    description="Get a list of plots associated with a given square ID."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+    FROM locations plot
+      LEFT JOIN locations_websites lw on lw.location_id=plot.id AND lw.deleted=false
+      JOIN termlists_terms ttPlotType on ttPlotType.id = plot.location_type_id
+      JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
+      JOIN users u on u.id = #current_user_id# AND u.deleted=false
+      JOIN people p on p.id = u.person_id AND p.deleted =false    
+      JOIN person_attribute_values pav on pav.person_id = p.id AND pav.int_value=plot.parent_id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
+    WHERE (plot.parent_id = #square_id#)
+    AND #website_filter# AND plot.deleted=false
+  </query>
+  <order_bys>
+    <order_by>plot.id</order_by>
+  </order_bys>
+  <params>
+    <param name="current_user_id" display="Id of the currently logged in user" datatype="integer"/>
+    <param name="square_id" display="Square id to get plots for" datatype="integer" emptyvalue="0"/>
+    <param name="user_square_attr_id" display="Allocated Squares Attr ID" datatype="integer"/>
+  </params>
+  <columns>
+    <column name='id' display='Plot ID' sql="plot.id" datatype='integer' visible="false" in_count="true"/>
+    <column name='name' display='Plot Name' sql="'Plot at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') '" datatype='text' />
+  </columns>
+</report>

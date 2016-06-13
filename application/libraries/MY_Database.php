@@ -11,11 +11,14 @@ class Database extends Database_Core {
       // applies this to the default connection.
       $_schema = Kohana::config('database.report.schema');
 
+      $query = '';
       if(!empty($_schema) && kohana::config('indicia.apply_schema')!==false)
       {
         $query = "SET search_path TO $_schema, public, pg_catalog;\n";
-        $this->query($query);
       }
+      // Force a read only connection for reporting.
+      $query .= "SET default_transaction_read_only TO true;\n";
+      $this->query($query);
     }
   }
   

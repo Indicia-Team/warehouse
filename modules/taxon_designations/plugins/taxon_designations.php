@@ -54,7 +54,7 @@ function taxon_designations_extend_orm() {
 
 function taxon_designations_extend_data_services() {
   return array(
-    'taxon_designations'=>array(),
+    'taxon_designations'=>array('allow_full_access' => 1),
     'taxa_taxon_designations'=>array()
   );
 }

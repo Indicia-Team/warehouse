@@ -57,6 +57,8 @@ class Sample_Model extends ORM_Tree
     'website_id' => 'Website ID',
   	// extra lookup options
   	'sample:fk_location:code' => 'Location Code',
+  	'sample:fk_location:external_key' => 'Location external key',
+  	'sample:fk_parent:external_key' => 'Parent sample external key',
   	'sample:date:day' => 'Day (Builds date)',
   	'sample:date:month' => 'Month (Builds date)',
   	'sample:date:year' => 'Year (Builds date)'
@@ -275,11 +277,15 @@ class Sample_Model extends ORM_Tree
     				str_replace(array(',',':'), array('&#44', '&#56'), $title);
     
     $sample_methods = array(":Defined in file");
+    $parent_sample_methods = array();
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
-    foreach ($terms as $term)
-    	$sample_methods[] = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
+    foreach ($terms as $term) {
+    	$sample_method = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
     						":".
     						str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
+    	$sample_methods[] = $sample_method;
+    	$parent_sample_methods[] = $sample_method;
+    }
     
     $location_types = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
@@ -316,6 +322,13 @@ class Sample_Model extends ORM_Tree
             'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.', 
         'datatype'=>'lookup',
         'lookup_values'=>implode(',', $sample_methods)
+      ),
+      'fkFilter:sample:sample_method_id' => array(
+        'display'=>'Parent Sample Method', 
+        'description'=>'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked '.
+      		'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
+        'datatype'=>'lookup',
+      	'lookup_values'=>implode(',', $parent_sample_methods)
       ),
       'fkFilter:location:location_type_id' => array(
         'display'=>'Location Type', 
