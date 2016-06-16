@@ -404,12 +404,15 @@ class Import_Controller extends Service_Base_Controller {
               	array('record1' => array('fkId' => $superModelFK, 'model' => $submissionData),
                        'record2'=> array('fkId' => $superModelFK, 'model' => $associatedSubmission));
             $superModel->submission = $superModelSubmission;
-            $model = $superModel;
-        } else $associationExists = false;
-        if (($id = $model->submit()) == null) {
+            $modelToSubmit = $superModel;
+        } else {
+          $associationExists = false;
+          $modelToSubmit = $model;
+        }
+        if (($id = $modelToSubmit->submit()) == null) {
           // Record has errors - now embedded in model, so dump them into the error file
           $errors = array();
-          foreach($model->getAllErrors() as $field=>$msg) {
+          foreach($modelToSubmit->getAllErrors() as $field=>$msg) {
             $fldTitle = array_search($field, $metadata['mappings']);
             $fldTitle = $fldTitle ? $fldTitle : $field;
             $errors[] = "$fldTitle: $msg";
@@ -424,7 +427,7 @@ class Import_Controller extends Service_Base_Controller {
           // now the record has successfully posted, we need to store the details of any new supermodels and their Ids, 
           // in case they are duplicated in the next csv row.
           $this->previousCsvSupermodel['details'] = array_merge($this->previousCsvSupermodel['details'], $updatedPreviousCsvSupermodelDetails);
-          $this->captureSupermodelIds($model, $associationExists);
+          $this->captureSupermodelIds($modelToSubmit, $associationExists);
         }
         // get file position here otherwise the fgetcsv in the while loop will move it one record too far. 
         $filepos = ftell($handle);
