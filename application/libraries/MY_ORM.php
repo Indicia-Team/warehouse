@@ -1742,8 +1742,10 @@ class ORM extends ORM_Core {
    * @return array The submission structure containing the fkFields element.
    */
   public function getFkFields($submission, $saveArray) {
-    // Can't use 'this' to access the FK or parent, as that doesn't work for the supermodels of 'this'
-    $submissionModel = ORM::Factory($submission['id']);
+  	if($this->object_name != $submission['id'])
+    	$submissionModel = ORM::Factory($submission['id'], -1);
+    else $submissionModel = $this;
+    
   	foreach ($submission['fields'] as $field=>$value) {
       if (substr($field, 0, 3)=='fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
