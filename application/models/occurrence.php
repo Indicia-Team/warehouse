@@ -457,6 +457,25 @@ class Occurrence_Model extends ORM
     	$srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
     				":".
     				str_replace(array(',',':'), array('&#44', '&#56'), $title);
+
+    $sample_methods = array(":Defined in file");
+    $parent_sample_methods = array(":No filter");
+    $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
+    foreach ($terms as $term) {
+    	$sample_method = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
+    	":".
+    	str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
+    	$sample_methods[] = $sample_method;
+    	$parent_sample_methods[] = $sample_method;
+    }
+    
+    $location_types = array(":No filter");
+    $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
+    foreach ($terms as $term)
+    	$location_types[] = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
+    	":".
+    	str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
+    
     $retVal = array(
       'website_id' => array( 
         'display'=>'Website', 
@@ -498,6 +517,31 @@ class Occurrence_Model extends ORM
         'default' => 'C'
       )
     );
+    if(!empty($options['activate_global_sample_method']) && $options['activate_global_sample_method']==='t')
+    	$retVal['sample:sample_method_id'] = array(
+    			'display'=>'Sample Method',
+    			'description'=>'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a '.
+    			'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
+    			'datatype'=>'lookup',
+    			'lookup_values'=>implode(',', $sample_methods)
+    	);
+    if(!empty($options['activate_parent_sample_method_filter']) && $options['activate_parent_sample_method_filter']==='t')
+    	$retVal['fkFilter:sample:sample_method_id'] = array(
+    			'display'=>'Parent Sample Method',
+    			'description'=>'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked '.
+    			'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
+    			'datatype'=>'lookup',
+    			'lookup_values'=>implode(',', $parent_sample_methods)
+    	);
+    if(!empty($options['activate_location_location_type_filter']) && $options['activate_location_location_type_filter']==='t')
+    	$retVal['fkFilter:location:location_type_id'] = array(
+    			'display'=>'Location Type',
+    			'description'=>'If this import file includes samples which reference locations records, you can restrict the type of locations looked '.
+    			'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
+    			'datatype'=>'lookup',
+    			'lookup_values'=>implode(',', $location_types)
+    	);
+    	 
     if(!empty($options['occurrence_associations']) && $options['occurrence_associations']==='t' &&
         self::_check_module_active('occurrence_associations')) {
       $retVal['useAssociations'] = array(
