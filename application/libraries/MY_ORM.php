@@ -1479,11 +1479,11 @@ class ORM extends ORM_Core {
     }
 
     $fk = false;
+    $value=trim($value);
     if (substr($attrId, 0, 3) == 'fk_') {
       // value is a term that needs looking up
       $fk = true;
       $attrId = substr($attrId, 3);
-      $value=trim($value);
     }
     // Create a attribute value, loading the existing value id if it exists, or search for the existing record
     // if not multivalue but no id supplied and not a new record
