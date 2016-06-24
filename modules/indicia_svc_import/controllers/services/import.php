@@ -326,6 +326,11 @@ class Import_Controller extends Service_Base_Controller {
             $saveArray['joinsTo:website:'.$saveArray['website_id']]=1;
           }
         }
+        // Save the upload filename (which is a guid) in a field so the results of each
+        // individual upload can be grouped together. Relies on the model being imported
+        // into having a text field called import_guid otherwise it's just ignored.
+        $fileNameParts = explode('.', basename($csvTempFile));
+        $saveArray['import_guid'] = $fileNameParts[0];
         // Check if in an association situation
         $associationExists = false;
         if (self::_check_module_active($this->submissionStruct['model'].'_associations')) {
