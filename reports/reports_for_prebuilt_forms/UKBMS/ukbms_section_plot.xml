@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="UKBMS Section Plot" description="UKBMS specific: Lists occurrences at a section level.">
+      <query website_filter_field='o.website_id'>
+      SELECT #columns#
+      FROM locations transect
+      JOIN locations section ON section.parent_id=transect.id
+      JOIN samples ps ON ps.location_id = transect.id
+      JOIN samples ss ON ss.parent_id=ps.id AND ss.location_id = section.id
+      JOIN occurrences o ON o.sample_id=ss.id AND o.zero_abundance='f'
+      JOIN cache_taxa_taxon_lists cttl ON o.taxa_taxon_list_id = cttl.id
+      #joins#
+      WHERE transect.deleted=false AND transect.id = #location_id#
+      AND #website_filter#
+      AND transect.location_type_id = #location_type_id#
+      </query>
+      <params>
+        <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' />
+        <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+    	<param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' />
+    	<param name='date_from' display='Date From' datatype='date' >
+	      <where>ps.date_start &gt;= CAST('#date_from#' as date)</where>
+		</param>
+    	<param name='date_to' display='Date To' datatype='date' >
+	      <where>ps.date_start &lt;= CAST('#date_to#' as date)</where>
+		</param>
+        <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    	<param name='taxon_list_id' display='Taxon List ID' datatype='int' >
+	      <where>cttl.taxon_list_id = #taxon_list_id#</where>
+		</param>
+      </params>
+      <columns>
+            <column name="location_id" display="ID" sql="transect.id" in_count="true" datatype="integer" />
+            <column name="section_id" display="Section ID" sql="section.id" in_count="true" datatype="integer" />
+            <column name="parent_sample_id" display="Parent Sample ID" sql="section.id" in_count="true" datatype="integer" />
+            <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="transect.name" datatype="text" />
+            <column name="taxon" display="Taxon" sql="coalesce(cttl.default_common_name, cttl.preferred_taxon, cttl.taxon)" datatype="text" />
+            <column name="preferred_taxon" display="Preferred Taxon" sql="cttl.taxon" datatype="text" />
+            <column name="taxon_meaning_id" display="Taxon Meaning ID" sql="cttl.taxon_meaning_id" datatype="integer" />
+            <column name="date" display="Count" sql="ps.date_start" datatype="text" />
+      </columns>
+</report>
