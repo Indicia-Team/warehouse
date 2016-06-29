@@ -47,6 +47,9 @@ class summary_builder {
   	
   	self::$verbose = $verbose;
   	
+ 	// this has to be done only once
+ 	self::init_lastval($db);
+  	  	
   	$queries = kohana::config('summary_builder');
   	$r = $db->query($queries['select_definitions'])->result_array(false);
   	if(count($r)){
@@ -160,7 +163,6 @@ class summary_builder {
   		  	summary_builder::do_delete($db, $definition, $year, $row['taxa_taxon_list_id'], $row['location_id'], $row['user_id']);
  			summary_builder::do_delete($db, $definition, $year, $row['taxa_taxon_list_id'], $row['location_id'], false);
   		}
-  		$limit = $limit-$count;
    	} else {
   		if(self::$verbose) echo date(DATE_ATOM).' No deleted locations records processed.<br/>';
   	}
@@ -328,7 +330,6 @@ class summary_builder {
 
   private static function do_summary(&$db, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon) {
   	$queries = kohana::config('summary_builder');
-  	self::init_lastval($db);
   	foreach($YearTaxon as $year=>$taxonList) {
 	  $db->begin();
 	  echo date(DATE_ATOM).' Processing data for '.$year.'<br />';
