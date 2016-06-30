@@ -56,6 +56,7 @@ function spatial_index_builder_scheduled_task($last_run_date, $db) {
     spatial_index_builder_add_to_cache($db);
     spatial_index_builder_cleanup($db);
   } catch (Exception $e) {
+    error_logger::log_error('Spatial index builder scheduled task', $e);
     echo $e->getMessage();
   }
   
