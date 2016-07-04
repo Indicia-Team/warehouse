@@ -45,7 +45,7 @@ class vague_date {
         'end' => 1
       ),
       array(
-          'regex' => '/(?P<sep>to|pre|before[\.]?)/i',
+          'regex' => '/^(?P<sep>to|pre|before[\.]?)/i',
           'start' => 0,
           'end' => 1
       ),
