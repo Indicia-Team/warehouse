@@ -35,7 +35,7 @@ class vague_date {
   private static function dateRangeStrings() {
     return Array(
       array(
-          'regex' => '/(?P<sep> to )/i', // date to date
+          'regex' => '/(?P<sep> to | - )/i', // date to date
           'start' => -1,
           'end' => 1
       ),
