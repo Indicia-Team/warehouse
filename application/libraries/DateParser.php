@@ -298,7 +298,9 @@ class DateParser_Core {
           return $this->formatDate($aStart['tm_year'], 9, 1);
           break;
         case 'winter':
-          return $this->formatDate($aStart['tm_year'], 12, 1);
+          // End of winter into previous year
+          // E.g Winter 2010 is from 1/12/2009 to 28/2/2010
+          return $this->formatDate($aStart['tm_year'] - 1, 12, 1);
           break;
       }
     }
@@ -333,8 +335,7 @@ class DateParser_Core {
         case 'autumn':
           return $this->formatDate($aStart['tm_year'], 11, 30);
         case 'winter':
-          // End of winter into next year
-          $year = $aStart['tm_year'] + 1;
+          $year = $aStart['tm_year'];
           $day = $this->isLeapYear($year) ? 29 : 28;
           return $this->formatDate($year, 2, $day);
       }
