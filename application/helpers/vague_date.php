@@ -35,12 +35,20 @@ class vague_date {
   private static function dateRangeStrings() {
     return Array(
       array(
-          'regex' => '/(?P<sep> to | - )/i', // date to date
+          // date to date or date - date
+          'regex' => '/(?P<sep> to | - )/i', 
           'start' => -1,
           'end' => 1
       ),
       array(
-        'regex' => '/^[^-]+(?P<sep>-)[^-]+$/', // date - date (matches a single hyphen)
+        // date-date i.e without spaces (dates not ISO format)
+        // Negative lookahead prevents yyyy-mm being mistaken for a range.
+        // \d{4}-\d{2} matches yyyy-mm
+        // (?!.+) negative lookahead on any further characters
+        // (?!\d{4}-\d{2}(?!.+)) negative lookahead on exactly yyyy-mm
+        // [^-]+ a string of any characters excluding hyphen
+        // [^-]+(?P<sep>-)[^-] two such strings separated by a hyphen.
+        'regex' => '/^(?!\d{4}-\d{2}(?!.+))[^-]+(?P<sep>-)[^-]+$/',
         'start' => -1,
         'end' => 1
       ),
