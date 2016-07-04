@@ -128,18 +128,22 @@ class DateParser_Core {
           $this->aResult['tm_year']  = ($nValue);
           break;
           // ----------
-        case '%y': // 2digit year
+        case '%y': // 2-digit year
           sscanf($sDate, "%2d%[^\\n]", $nValue, $sDateAfter);
 
-          if (strlen($nValue) != 2) return false;
+          if (!isset($nValue)) return false;
+          if (strlen($nValue) == 1) {
+            // Must be in range 0-9
+            $nValue = '0' . $nValue;
+          }
           // Get the century as %C not supported on Windows
-          $c=substr(strftime("%Y"),0,2);
+          $c=substr(strftime("%Y"), 0, 2);
           if ($nValue <= strftime("%y")) {
             // This century.
             $nValue = "$c$nValue";
           } else {
             // Last century.
-            $nValue = ($c - 1).$nValue;
+            $nValue = ($c - 1) . $nValue;
           }
 
           $this->aResult['tm_year'] = $nValue;

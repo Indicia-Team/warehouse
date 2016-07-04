@@ -72,11 +72,11 @@ class vague_date {
    * function - see http://uk2.php.net/manual/en/function.strptime.php
    */
   private static function singleDayFormats() { return Array(
-    '%Y-%m-%d', // ISO 8601 date format
-    '%d/%m/%Y', // Slash style date format (full year)
-    '%d/%m/%y', // Slash style date format
-    '%d.%m.%Y', // Period style date format (full year)
-    '%d.%m.%y', // Period style date format
+    '%Y-%m-%d', // ISO 8601 date format 1997-10-12
+    '%d/%m/%Y', // 12/10/1997
+    '%d/%m/%y', // 12/10/97
+    '%d.%m.%Y', // 12.10.1997
+    '%d.%m.%y', // 12.10.97
     '%A %e %B %Y', // Monday 12 October 1997
     '%a %e %B %Y', // Mon 12 October 1997
     '%A %e %b %Y', // Monday 12 Oct 1997
@@ -102,9 +102,9 @@ class vague_date {
    * with the strptime() function - see http://uk2.php.net/manual/en/function.strptime.php
    */
   private static function singleMonthInYearFormats() { return Array(
-    '%Y-%m', // ISO 8601 format - truncated to month
-    '%m/%Y', // British style truncated
-    '%m/%y', // British style truncated - 4 digit year
+    '%Y-%m', // ISO 8601 format - truncated to month 1998-06
+    '%m/%Y', // 06/1998
+    '%m/%y', // 06/96
     '%B %Y', // June 1998
     '%b %Y', // Jun 1998
     '%B %y', // June 98
