@@ -12,5 +12,4 @@ SELECT audit.audit_table('sample_media', true, 'sample_id');
 
 SELECT audit.audit_table('locations'); 
 SELECT audit.audit_table('location_attribute_values', true, 'location_id'); 
-SELECT audit.audit_table('location_media', true, 'location_id'); 
-SELECT audit.audit_table('locations_websites', true, 'location_id'); 
+SELECT audit.audit_table('location_media', true, 'location_id');
