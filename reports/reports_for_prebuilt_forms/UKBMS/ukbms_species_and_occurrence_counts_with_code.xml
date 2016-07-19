@@ -3,16 +3,20 @@
 <report title="UKBMS specific species and occurrence counts by site" description="UKBMS specific: Lists locations and the number of species and occurrences within them. This report includes the location code, and relies on the record being input with a link to the site and will not pick up records where the spatial reference is in the site boundary but without a direct reference to the site.">
       <query website_filter_field='lw.website_id'>
       SELECT #columns#
-      FROM locations_websites lw
-      JOIN locations l ON l.id=lw.location_id and l.deleted=false 
-        AND (l.code = '' OR l.code IS NULL OR '#blank_code#'!='yes')
-      LEFT JOIN (locations section
-        JOIN cache_occurrences o on o.location_id=section.id AND o.zero_abundance='f'
-      ) on section.parent_id=l.id
+      FROM (
+            SELECT lcount.id, COUNT(DISTINCT o.id) AS occurrences, COUNT(DISTINCT o.taxon_meaning_id) AS taxa, COUNT(DISTINCT o.taxon_group_id) AS groups
+            FROM locations_websites lw
+            JOIN locations lcount ON lcount.id=lw.location_id AND lcount.deleted=false
+                  AND (lcount.code = '' OR lcount.code IS NULL OR '#blank_code#'!='yes')
+            LEFT JOIN locations section on section.parent_id=lcount.id
+            LEFT JOIN cache_occurrences_functional o on o.location_id=section.id AND o.zero_abundance='f'
+            WHERE lw.deleted=false
+            AND lcount.location_type_id=#location_type_id#
+            AND #website_filter#
+            GROUP BY lcount.id
+      ) AS lsub
+      JOIN locations l on l.id=lsub.id
       #joins#
-      WHERE lw.deleted=false
-      AND #website_filter#
-      AND l.location_type_id = #location_type_id#
       </query>
       <order_bys>
             <order_by>occurrences DESC</order_by>
@@ -29,9 +33,9 @@
             <column name="id" display="ID" sql="l.id" in_count="true" datatype="integer" />
             <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" datatype="text" />
             <column name="centroid_sref" display="Site Sref" sql="l.centroid_sref" datatype="text" />
-            <column name="occurrences" display="No. of Occurrences" sql="COUNT(DISTINCT o.id)" aggregate="true" datatype="integer" />
-            <column name="taxa" display="No. of Taxa" sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true" datatype="integer" />
-            <column name="groups" display="No. of Taxon Groups" sql="COUNT(DISTINCT o.taxon_group_id)" aggregate="true" datatype="integer" />
+            <column name="occurrences" display="No. of Occurrences" sql="lsub.occurrences" datatype="integer" />
+            <column name="taxa" display="No. of Taxa" sql="lsub.taxa" datatype="integer" />
+            <column name="groups" display="No. of Taxon Groups" sql="lsub.groups" datatype="integer" />
             <column name="code" display="Code" sql="l.code" datatype="text" />
       </columns>
 </report>
