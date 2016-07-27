@@ -232,9 +232,13 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       $query=$this->db->select('ttl.id')
           ->from('taxa_taxon_lists as ttl')
           ->join('taxa as t', 't.id', 'ttl.taxon_id')
-          ->where('t.external_key', $parentExtKey)
-          ->where('ttl.taxon_list_id', $this->taxon_list_id)
-          ->where('ttl.preferred', 't');
+          ->where(array(
+            't.external_key' => $parentExtKey,
+            'ttl.taxon_list_id' => $this->taxon_list_id,
+            'ttl.preferred' => 't',
+            't.deleted' => 'f',
+            'ttl.deleted' => 'f'
+          ));
       $result=$query->get()->result_array(false);
       // only set the parent id if there is a unique hit within the list's preferred taxa
       if (count($result)===1) {
