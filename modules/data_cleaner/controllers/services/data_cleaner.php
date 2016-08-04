@@ -114,7 +114,7 @@ class Data_cleaner_Controller extends Service_Base_Controller {
           values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type', '$sref', '$sref_system', st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
     }
     // patch in some extra details about the taxon required for each cache entry
-    $db->query("update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxon=ttl.taxon, taxa_taxon_list_external_key=ttl.external_key ".
+    $db->query("update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxa_taxon_list_external_key=ttl.external_key ".
         "from list_taxa_taxon_lists ttl where ttl.id=o.taxa_taxon_list_id");
   }
   
