@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Group counts using standard parameters"
+        description="Gives the count of species groups recorded at an event. Uses the external key to map across multiple checklists back to a single master list."
+    >
+  <query website_filter_field="o.website_id" standard_params="occurrences">
+      (SELECT cttl.taxon_group, count(o.*) as count
+      FROM cache_occurrences_functional o
+      JOIN cache_taxa_taxon_lists cttl on cttl.external_key=o.taxa_taxon_list_external_key and cttl.taxon_list_id=#master_taxon_list_id# and cttl.preferred=true
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter#
+      #filters#
+      GROUP BY cttl.taxon_group
+      ORDER BY count(o.*) DESC
+      LIMIT #top_n_groups_to_include#)
+      UNION
+      SELECT 'Others', sum(count) FROM (
+        SELECT cttl.taxon_group, count(o.*)
+        FROM cache_occurrences_functional o
+        JOIN cache_taxa_taxon_lists cttl on cttl.external_key=o.taxa_taxon_list_external_key and cttl.taxon_list_id=#master_taxon_list_id# and cttl.preferred=true
+        #agreements_join#
+        #joins#
+        WHERE #sharing_filter#
+        #filters#
+        GROUP BY cttl.taxon_group
+        ORDER BY count(o.*) DESC
+        OFFSET #top_n_groups_to_include#
+      ) as sub
+      ORDER BY taxon_group
+  </query>
+  <params>
+    <param name="top_n_groups_to_include" datatype="integer" default="8" />
+    <param name='master_taxon_list_id' display='Master taxon list' description='ID of the list to map all species back to when obtaining the preferred species details' datatype='integer' />
+  </params>
+</report>

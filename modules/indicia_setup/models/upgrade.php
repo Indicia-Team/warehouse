@@ -123,13 +123,18 @@ class Upgrade_Model extends Model
       // Run the core upgrade
       $last_run_script = $system->getLastRunScript('Indicia');
       $this->apply_update_scripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version, $new_version, $last_run_script);
+      $this->set_new_version($new_version, 'Indicia');
       // need to look for any module with a db folder, then read its system version and apply the updates.
       foreach (Kohana::config('config.modules') as $path) {
         // skip the indicia_setup module db files since they are for the main app
-        if (basename($path)!=='indicia_setup' && file_exists("$path/db/")) {
-          $old_version = $system->getVersion(basename($path));
-          $last_run_script = $system->getLastRunScript(basename($path));
-          $this->apply_update_scripts("$path/", basename($path), $old_version, $new_version, $last_run_script);
+        if (basename($path)!=='indicia_setup') {
+          if (file_exists("$path/db/")) {
+            $old_version = $system->getVersion(basename($path));
+            $last_run_script = $system->getLastRunScript(basename($path));
+            $this->apply_update_scripts("$path/", basename($path), $old_version, $new_version, $last_run_script);
+          } else
+            // update the system table to reflect version of all modules without db folders
+            $this->set_new_version($new_version, basename($path));
         }
       }
       // In case the upgrade involves changes to supported spatial systems...

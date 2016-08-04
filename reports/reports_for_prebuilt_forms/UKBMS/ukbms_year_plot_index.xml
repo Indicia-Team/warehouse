@@ -3,7 +3,7 @@
 <report title="UKBMS Year Index Plot report" description="UKBMS specific: Lists occurrences at a section level.">
   <query>
       SELECT #columns#
-      FROM year_index_values yiv
+      FROM ukbms_year_index_values yiv
       JOIN cache_taxa_taxon_lists cttl ON yiv.taxa_taxon_list_id = cttl.id
       #joins#
       WHERE yiv.location_id = #location_id#
