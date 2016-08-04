@@ -330,7 +330,7 @@ class summary_builder {
 
   private static function do_summary(&$db, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon) {
   	$queries = kohana::config('summary_builder');
-   	foreach($YearTaxon as $year=>$taxonList) {
+  	foreach($YearTaxon as $year=>$taxonList) {
 	  $db->begin();
 	  echo date(DATE_ATOM).' Processing data for '.$year.'<br />';
 	  $yearStart = new DateTime($year.'-01-01');

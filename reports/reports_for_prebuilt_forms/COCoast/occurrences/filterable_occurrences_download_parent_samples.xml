@@ -34,7 +34,7 @@
   </order_bys>
   <params>
     <param name='smpattrs' display='Quadrat Level Sample attribute list' description='Comma separated list of Quadrat Level sample attribute IDs to include' datatype='smpattrs' />
-    <param name='smp2attrs' display='Transect Level Sample attribute list' description='Comma separated list of Transect Level sample attribute IDs to include' datatype='smpattrs' />
+    <param name='smp2attrs' display='Transect Level Sample attribute list' description='Comma separated list of Transect Level sample attribute IDs to include' datatype='smp2attrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='uploadFolder' display='Image upload folder' description='Image upload folder on the warehouse including the trailing slash' datatype='string' default='' />
     <param name='warehouse_id' display='Warehouse unique ID' default='iBRC' 
