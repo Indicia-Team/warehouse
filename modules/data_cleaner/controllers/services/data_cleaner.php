@@ -62,7 +62,9 @@ class Data_cleaner_Controller extends Service_Base_Controller {
     else {
       $db = new Database();
       // Create an empty template table
-      $db->query("select * into temporary occdelta from cache_occurrences_functional limit 0;");
+      $db->query("SELECT * INTO TEMPORARY occdelta FROM cache_occurrences_functional LIMIT 0;");
+      // Ensure the verify service always performs checks
+      $db->query("ALTER TABLE occdelta ADD COLUMN verification_checks_enabled boolean NOT NULL DEFAULT true;");
       try {
         $this->prepareOccdelta($db, $sample, $occurrences);
         $r = $this->runRules($db);
