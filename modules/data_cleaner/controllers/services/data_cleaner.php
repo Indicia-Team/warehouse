@@ -111,7 +111,7 @@ class Data_cleaner_Controller extends Service_Base_Controller {
       $date_end = $vd[1];
       $date_type = $vd[2];
       $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id)
-          values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type', '$sref', '$sref_system', st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
+          values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type',  st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
     }
     // patch in some extra details about the taxon required for each cache entry
     $db->query("update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxa_taxon_list_external_key=ttl.external_key ".
