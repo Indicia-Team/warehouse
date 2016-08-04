@@ -86,30 +86,30 @@ class Data_cleaner_Controller extends Service_Base_Controller {
    * scheduled_tasks process when auto-checks are being run on the schedule.
    */
   private function prepareOccdelta($db, $sample, $occurrences) {
-    $website_id=$this->website_id;
-    $srid=kohana::config('sref_notations.internal_srid');
-    $last_sref='';
-    $last_sref_system='';
+    $website_id = $this->website_id;
+    $srid = kohana::config('sref_notations.internal_srid');
+    $last_sref = '';
+    $last_sref_system = '';
     foreach($occurrences as $occurrence) {
       $record = array_merge($sample, $occurrence);
-      $survey_id=$record['sample:survey_id'];
-      $sref=$record['sample:entered_sref'];
-      $sref_system=$record['sample:entered_sref_system'];
-      $taxa_taxon_list_id=$record['occurrence:taxa_taxon_list_id'];
+      $survey_id = $record['sample:survey_id'];
+      $sref = $record['sample:entered_sref'];
+      $sref_system = $record['sample:entered_sref_system'];
+      $taxa_taxon_list_id = $record['occurrence:taxa_taxon_list_id'];
       if (isset($record['sample:geom']))
-        $geom=$record['sample:geom'];
+        $geom = $record['sample:geom'];
       else {
         // avoid recalculating the geom if we don't have to as this is relatively expensive
-        if ($sref!==$last_sref || $sref_system!==$last_sref_system)
-          $geom=spatial_ref::sref_to_internal_wkt($sref, $sref_system);
+        if ($sref !== $last_sref || $sref_system !== $last_sref_system)
+          $geom = spatial_ref::sref_to_internal_wkt($sref, $sref_system);
         $last_sref = $sref;
         $last_sref_system = $sref_system;
       }
-      $date=$record['sample:date'];
-      $vd=vague_date::string_to_vague_date($date);      
-      $date_start=$vd[0];
-      $date_end=$vd[1];
-      $date_type=$vd[2];
+      $date = $record['sample:date'];
+      $vd = vague_date::string_to_vague_date($date);      
+      $date_start = $vd[0];
+      $date_end = $vd[1];
+      $date_type = $vd[2];
       $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id)
           values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type', '$sref', '$sref_system', st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
     }
