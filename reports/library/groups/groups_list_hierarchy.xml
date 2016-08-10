@@ -3,7 +3,7 @@
   <query website_filter_field="g.website_id">
     with recursive first_level as (
     (
-    select g.id, g.title, null::integer as parent_id, null::varchar as ancestors
+    select g.id, g.title, 0 as level, null::integer as parent_id, null::varchar as ancestors
     from groups g
     where g.id=#parent_group_id#
     and g.deleted=false
@@ -11,7 +11,7 @@
     #filters#
     )
     union
-    select g.id, g.title, gr.from_group_id, coalesce(fl.ancestors || '::', '') || p.title as ancestors
+    select g.id, g.title, fl.level + 1, gr.from_group_id, coalesce(fl.ancestors || '::', '') || p.title as ancestors
     from first_level fl, groups g
     join group_relations gr on gr.to_group_id=g.id and gr.deleted=false
     join groups p on p.id=gr.from_group_id and p.deleted=false
@@ -34,6 +34,7 @@
   <columns>
     <column name="id" sql="id" datatype="integer" in_count="true" />
     <column name="title" sql="title" datatype="text" />
+    <column name="level" sql="level" datatype="integer" />
     <column name="parent_id" sql="parent_id" datatype="integer" />
     <column name="ancestors" sql="ancestors" datatype="text" />
   </columns>
