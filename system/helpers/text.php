@@ -10,6 +10,12 @@
  * @license    http://kohanaphp.com/license.html
  */
 class text_Core {
+  
+  /**
+   * @var string used to pass replacement in to censor_replace_callback
+   * as the function signature is fixed.
+   */
+  private static $replacement;
 
 	/**
 	 * Limits a phrase to a given number of words.
@@ -202,13 +208,23 @@ class text_Core {
 
 		if (utf8::strlen($replacement) == 1)
 		{
-			$regex .= 'e';
-			return preg_replace($regex, 'str_repeat($replacement, utf8::strlen(\'$1\'))', $str);
-		}
+      self::$replacement = $replacement;
+      return preg_replace_callback($regex, 'self::censor_replace_callback', $str);
+ 		}
 
 		return preg_replace($regex, $replacement, $str);
 	}
 
+	/**
+	 * Callback function for the preg_replace in censor().
+	 *
+	 * @param   array    matches from the regex
+	 * @return  string
+	 */
+  private static function censor_replace_callback($matches) {
+    return str_repeat(self::$replacement, utf8::strlen($matches[1]));
+  }
+  
 	/**
 	 * Finds the text that is similar between a set of words.
 	 *
