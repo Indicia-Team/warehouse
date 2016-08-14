@@ -34,7 +34,8 @@
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='recordkey' display='RecordKey' sql="'#warehouse_id#' || o.id" datatype="text" />
     <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
-    <column name='sample_id' visible='false' sql='case when occ.sensitivity_precision is null then o.sample_id else null end' datatype='integer' />
+    <column name='sample_id' sql='case when occ.sensitivity_precision is null then o.sample_id else null end' datatype='integer' />
+    <column name='parent_sample_id' sql='case when occ.sensitivity_precision is null then s.parent_id else null end' datatype='integer' />
     <column name='taxon' display='Species' 
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
       sql="o.preferred_taxon" datatype='species' />
