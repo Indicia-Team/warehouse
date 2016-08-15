@@ -129,6 +129,10 @@ class cache_builder {
       if ($table==='occurrences' || $table==='samples') {
         $db->delete("cache_{$table}_functional", array('id' => $id));
         $db->delete("cache_{$table}_nonfunctional", array('id' => $id));
+        if ($table==='samples') {
+          $db->delete("cache_occurrences_functional", array('sample_id' => $id));
+          $db->query("delete from cache_occurrences_nonfunctional where id in (select id from occurrences where sample_id=$id)");
+        }
       } else
         $db->delete("cache_$table", array('id' => $id));
     }

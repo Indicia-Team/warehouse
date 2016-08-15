@@ -84,6 +84,7 @@ CREATE TABLE ecobat_occurrences
   roost_within_25m boolean NOT NULL DEFAULT FALSE,
   activity_elevated_by_roost boolean NOT NULL DEFAULT FALSE,
   roost_species character varying,
+<<<<<<< HEAD
   linear_feature_adjacent_id integer,
   linear_feature_25m_id integer,
   anthropogenic_feature_adjacent_id integer,
@@ -91,6 +92,16 @@ CREATE TABLE ecobat_occurrences
   temperature_c numeric(4,2),
   rainfall_id integer,
   wind_speed_mph integer,
+=======
+  linear_feature_adjacent_id integer NOT NULL,
+  linear_feature_25m_id integer NOT NULL,
+  anthropogenic_feature_adjacent_id integer NOT NULL,
+  anthropogenic_feature_25m_id integer NOT NULL,
+  temperature_c numeric(4,2),
+  rainfall_id integer,
+  wind_speed integer,
+  wind_speed_unit_id integer,
+>>>>>>> 2c86b3335173e0a2d929e82cb3982400a2ba5fa1
   notes character varying,
   occurrence_id integer,
   group_id integer,

@@ -176,7 +176,7 @@ $(document).ready(function() {
     <option value=''>&lt;Please Select&gt;</option>
     <?php
     if (!is_null($this->auth_filter))
-    $termlists = ORM::factory('termlist')->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
+    $termlists = ORM::factory('termlist')->where('deleted','f')->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
     else
     $termlists = ORM::factory('termlist')->where('deleted','f')->orderby('title','asc')->find_all();
     foreach ($termlists as $termlist) {

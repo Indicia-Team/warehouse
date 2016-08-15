@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <report
     title="List of Ecobat reference range imports"
     description="Lists each import event and the count of records added by it."
@@ -25,3 +26,32 @@
   </columns>
 </report>
 
+=======
+<report
+    title="List of Ecobat reference range imports"
+    description="Lists each import event and the count of records added by it."
+>
+  <query>
+    SELECT #columns#
+    FROM ecobat_occurrences o
+    JOIN users u ON u.id=o.created_by_id
+    JOIN people p ON p.id=u.person_id
+    WHERE import_guid IS NOT NULL
+  </query>  
+  <order_bys>
+    <order_by>min(o.created_on)</order_by>
+  </order_bys>
+  <params>
+    <param name="map_sq_10km_id_list" display="Map square list" description="List of 10km map squares to include" datatype="integer[]" default="" >
+      <where>map_sq_10km_id in (#idlist#)</where>
+    </param>
+  </params>
+  <columns>
+    <column name="import_guid" visible="false" sql="import_guid" in_count="true" />
+    <column name="date_time" display="Date time" sql="min(o.created_on)" aggregate="true" />
+    <column name="imported_by" display="Imported by" sql="p.surname || coalesce(', ' || p.first_name, '')" />
+    <column name="records" display="# Records" sql="count(o.*)" aggregate="true" />
+  </columns>
+</report>
+
+>>>>>>> 2c86b3335173e0a2d929e82cb3982400a2ba5fa1

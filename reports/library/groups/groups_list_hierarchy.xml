@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Hierarchical groups list within parent" description="Lists groups that are a child of a given parent.">
+  <query website_filter_field="g.website_id">
+    with recursive first_level as (
+    (
+    select g.id, g.title, 0 as level, null::integer as parent_id, null::varchar as ancestors
+    from groups g
+    where g.id=#parent_group_id#
+    and g.deleted=false
+    and #website_filter#
+    #filters#
+    )
+    union
+    select g.id, g.title, fl.level + 1, gr.from_group_id, coalesce(fl.ancestors || '::', '') || p.title as ancestors
+    from first_level fl, groups g
+    join group_relations gr on gr.to_group_id=g.id and gr.deleted=false
+    join groups p on p.id=gr.from_group_id and p.deleted=false
+    where gr.from_group_id=fl.id
+    and g.deleted=false
+    and #website_filter#
+    #filters#
+    )
+    select #columns# from first_level
+  </query>
+  <order_bys>
+    <order_by>ancestors || '::' || title nulls first</order_by>
+  </order_bys>
+  <params>
+    <param name="group_type_ids" display="Group Types" description="Limit the report to certain types of groups. Comma separated list of IDs." default="">
+      <where>g.group_type_id in (#group_type_ids#)</where>
+    </param>
+    <param name="parent_group_id" display="From parent group" description="ID of the group at the top level of the branch to return." datatype="integer" />
+  </params>
+  <columns>
+    <column name="id" sql="id" datatype="integer" in_count="true" />
+    <column name="title" sql="title" datatype="text" />
+    <column name="level" sql="level" datatype="integer" />
+    <column name="parent_id" sql="parent_id" datatype="integer" />
+    <column name="ancestors" sql="ancestors" datatype="text" />
+  </columns>
+</report>

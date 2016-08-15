@@ -1,0 +1,61 @@
+<report
+    title="Explore records using standard filters - mapping blurred to 10km"
+    description="Report designed for mapping on the explore records facility in iRecord, with standardised filtering parameters. Aggregated to 10km grid squares."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
+  SELECT #columns#
+  FROM cache_occurrences_functional o
+  JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+  JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  JOIN map_squares msq on msq.id=o.map_sq_#blur#km_id and msq.size=#blur#*1000
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <params>
+    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
+      <where>st_intersects(msq.geom, st_geomfromtext('#bounds#', 900913))</where>
+    </param>
+    <param name="blur" display="Blur to" description="Grid square size to blur to" default="10" datatype="lookup"
+           lookup_values="10:10km,2:2km,1:1km" />
+  </params>
+  <columns>
+    <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
+    <column name='source' on_demand="true" datatype="text" 
+        sql="snf.website_title || ' | ' || case when substring(snf.survey_title from 1 for length(snf.website_title)) = snf.website_title then trim(substring(snf.survey_title from length(snf.website_title)+1)) else snf.survey_title end" />
+    <column name='source_id' on_demand="true" datatype="text" sql="o.website_id::varchar || '.' || o.survey_id::varchar" />
+    <column name='sample_id' sql='o.sample_id' on_demand="true" datatype="integer" />
+    <column name='taxon' sql="cttl.preferred_taxon" on_demand="true" datatype="species" />
+    <column name='common' sql="cttl.default_common_name" on_demand="true" datatype="text" />
+    <column name='taxon_group' sql='cttl.taxon_group' on_demand="true" datatype="text" />
+    <column name='taxon_group_id' sql='o.taxon_group_id' on_demand="true" datatype="integer" />
+    <column name='taxa_taxon_list_id' sql='o.taxa_taxon_list_id' on_demand="true" datatype="integer" />    
+    <column name='entered_sref' on_demand="true" datatype="text" sql="case
+  when length(substring(onf.output_sref from '^[A-Z]{2}([0-9]{2})?[A-Z]?$'))>0 then
+    substring(onf.output_sref from 1 for case #blur# when 10 then 4 else 5 end)
+  when length(substring(onf.output_sref from '^[A-Z]{2}([0-9]{2})*$'))>0 then
+    substring(onf.output_sref from 1 for case #blur# when 1 then 4 else 3 end) || substring(substring(onf.output_sref from 3) from length(substring(onf.output_sref from 3))/2+1 for case #blur# when 1 then 2 else 1 end)
+  when length(substring(onf.output_sref from '^[A-Z]([0-9]{2})?[A-Z]?$'))>0 then
+    substring(onf.output_sref from 1 for case #blur# when 10 then 3 else 4 end)
+  when length(substring(onf.output_sref from '^[A-Z]([0-9]{2})*$'))>0 then
+    substring(onf.output_sref from 1 for case #blur# when 1 then 3 else 2 end) || substring(substring(onf.output_sref from 2) from length(substring(onf.output_sref from 2))/2+1 for case #blur# when 1 then 2 else 1 end)
+  else
+    'n/a'
+  end" />
+    <column name='date_start' sql='o.date_start' on_demand="true" visible='false' />
+    <column name='date_end' sql='o.date_end' on_demand="true" visible='false' />
+    <column name='date_type' sql='o.date_type' on_demand="true" visible='false' />
+    <column name='date' on_demand="true" datatype="date" />
+    <column name='cache_created_on' sql='o.created_on' on_demand="true" datatype="date" />
+    <column name='cache_updated_on' sql='o.updated_on' on_demand="true" />
+    <column name='recorder' on_demand="true" sql="CASE WHEN LENGTH(snf.recorders)>30 THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
+    <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" on_demand="true" datatype="text" />
+    <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
+    <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" in_count="true" />
+  </columns>
+</report>
