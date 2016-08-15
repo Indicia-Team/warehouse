@@ -51,7 +51,7 @@ class Database_Mysql_Driver extends Database_Driver {
 		extract($this->db_config['connection']);
 
 		// Persistent connections enabled?
-		$connect = ($this->db_config['persistent'] == TRUE) ? 'mysql_pconnect' : 'mysql_connect';
+		$connect = ($this->db_config['persistent'] == TRUE) ? 'mysql_pconnect' : 'mysqli_connect';
 
 		// Build the connection info
 		$host = isset($host) ? $host : $socket;

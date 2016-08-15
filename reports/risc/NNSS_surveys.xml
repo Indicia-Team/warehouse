@@ -1,0 +1,21 @@
+<report
+    title="Report for triggers against RISC surveys"
+    description="Lists the most recent recordings for
+      all species in the selected survey."
+>
+  <query>
+  SELECT  id, 
+          title
+  FROM surveys 
+  WHERE website_id = 3 
+  AND deleted = FALSE
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>title ASC</order_by>
+  </order_bys>
+  <columns>
+    <column name='id' display='ID' />
+    <column name='title' display='Survey' />
+  </columns>
+</report>

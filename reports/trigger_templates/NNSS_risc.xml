@@ -1,0 +1,47 @@
+<report
+    title="Report for triggers against RISC surveys"
+    description="Lists the most recent recordings for
+      all species in the selected survey."
+>
+  <query>
+  SELECT 
+    co.sample_id,
+    co.survey_title, 
+    co.taxon,
+    co.date_start, 
+    co.public_entered_sref, 
+    co.location_name,
+    o.comment,
+    co.website_id
+  FROM cache_occurrences co
+  JOIN occurrences o ON o.id = co.id
+  WHERE co.survey_id = '#survey#'
+  AND o.created_on > '#date#'
+  AND co.record_status NOT IN ('I','T')
+  AND co.zero_abundance = FALSE
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>sample_id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey' display='Survey' 
+      description='Select the survey to return data for' 
+      datatype='lookup'
+      population_call='report:risc/NNSS_surveys:id:title'/>
+    <param name='date' 
+      display='Date' 
+      description='Date &amp; time of last check' 
+      datatype='datetime' />
+  </params>
+  <columns>
+    <column name='sample_id' display='ID' />
+    <column name='survey_title' display='Survey' />
+    <column name='taxon' display='Taxon' />
+    <column name='date_start' display='Date' />
+    <column name='public_entered_sref' display='Spatial Ref.' />
+    <column name='location_name' display='Location' />
+    <column name='comment' display='Comment' />
+    <column name='website_id' visible='false' />
+  </columns>
+</report>

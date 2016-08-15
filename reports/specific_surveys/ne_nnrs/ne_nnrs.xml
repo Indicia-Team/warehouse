@@ -1,0 +1,81 @@
+<report
+    title="NE NNR Summary Report"
+    description="A progress summary report for the NE NNR survey."
+>
+
+<query website_filter_field="o.website_id">
+select ctt.id as termlists_term_id, ctt.term as team, 
+    count(distinct l.id) as sites_count, count(distinct case when o.id is null then null else l.id end) as sites_with_records_count,
+	count(distinct o.taxon_meaning_id) as species_count, count(o.id) as record_count, 
+	count(case o.record_status when 'V' then o.id else null end) as verified_record_count,
+	count(case o.record_status when 'D' then o.id else null end) as dubious_record_count,
+	count(case o.record_status when 'R' then o.id else null end) as rejected_record_count,
+	count(case o.record_status when 'C' then o.id else null end) as pending_record_count,
+	'#historic#' as historic
+from cache_termlists_terms ctt
+join location_attribute_values lav on lav.int_value=ctt.id and lav.location_attribute_id=#location_attribute_id# and lav.deleted=false
+join locations l on l.id=lav.location_id and l.deleted=false
+left join (cache_occurrences o
+#agreements_join#
+#joins#
+) on o.location_id=l.id and o.survey_id=#survey_id#
+AND #sharing_filter#
+WHERE ctt.termlist_id=#termlist_id#
+GROUP BY ctt.id, ctt.term
+UNION
+select null as termlists_term_id, 'Total' as team, 
+    count(distinct l.id) as sites_count, count(distinct case when o.id is null then null else l.id end) as sites_with_records_count,
+	count(distinct o.taxon_meaning_id) as species_count, count(o.id) as record_count, 
+	count(case o.record_status when 'V' then o.id else null end) as verified_record_count,
+	count(case o.record_status when 'D' then o.id else null end) as dubious_record_count,
+	count(case o.record_status when 'R' then o.id else null end) as rejected_record_count,
+	count(case o.record_status when 'C' then o.id else null end) as pending_record_count,
+	'#historic#' as historic
+from cache_termlists_terms ctt
+join location_attribute_values lav on lav.int_value=ctt.id and lav.location_attribute_id=#location_attribute_id# and lav.deleted=false
+join locations l on l.id=lav.location_id and l.deleted=false
+left join (cache_occurrences o
+#agreements_join#
+#joins#
+) on o.location_id=l.id and o.survey_id=#survey_id#
+WHERE #sharing_filter#
+AND ctt.termlist_id=#termlist_id#
+</query>
+
+<order_bys>
+  <order_by>termlists_term_id</order_by>
+</order_bys>
+
+<params>
+  <param name='termlist_id' display='Region termlist' description='Provide the termlist which holds the region terms to report against' datatype='lookup' emptyvalue="0"
+        population_call='direct:termlist:id:title' />
+  <param name='survey_id' display='Survey' description='Select the survey holding the records to report' datatype='lookup' emptyvalue="0"
+        population_call='direct:survey:id:title' />
+  <param name='location_attribute_id' display='Region attribute' description='Select the attribute used to tag each location with a region' datatype='lookup' emptyvalue="0"
+        population_call='direct:location_attribute:id:caption' />
+  <param name='historic' display='Modern &amp; Historic record handling' description='Select whether to output modern records, historic records or both' datatype='lookup' emptyvalue="0"
+        lookup_values='all:All records,modern:Modern records only,historic:Historic records only'>
+	  <joins>
+        <join value="historic" operator="equal">JOIN sample_attribute_values savhist on savhist.sample_id=o.sample_id and savhist.sample_attribute_id=409 and savhist.int_value=1</join>
+        <join value="modern" operator="equal">LEFT JOIN sample_attribute_values savhist on savhist.sample_id=o.sample_id and savhist.sample_attribute_id=409 and savhist.int_value=1</join>
+		<where value="modern" operator="equal">savhist.id is null</where>
+      </joins>	
+  </param>
+</params>
+
+<columns>
+  <column name='termlists_term_id' display='ID'  visible="false" />
+  <column name='team' display='Delivery Team' />
+  <column name='sites_count' display='No. of sites' />
+  <column name='sites_with_records_count' display='No. of sites with records' />
+  <column name='species_count' display='Total no. species' />
+  <column name='record_count' display='Total no. records' />
+  <column name='verified_record_count' display='Total no. verified records' />
+  <column name='dubious_record_count' display='Total no. dubious records' />
+  <column name='rejected_record_count' display='Total no. rejected records' />
+  <column name='pending_record_count' display='Total no. unchecked records' />
+  <column name='historic' visible='false' />
+</columns>
+
+</report>
+
