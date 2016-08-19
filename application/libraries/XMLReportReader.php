@@ -441,9 +441,9 @@ class XMLReportReader_Core implements ReportReader
     // can add more, e.g. if there are custom attribute columns, and also has a suitable place for a HAVING clause.
     if (count($sql)>0) {
       if (strpos($this->query, '#group_bys#')===FALSE)
-        $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys#';
+        $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys# #having#';
       else
-        $this->query = str_replace('#group_bys#', "GROUP BY " . implode(', ', $sql) . '#group_bys#', $this->query);
+        $this->query = str_replace('#group_bys#', "GROUP BY " . implode(', ', $sql) . '#group_bys# #having#', $this->query);
     }
   }
 

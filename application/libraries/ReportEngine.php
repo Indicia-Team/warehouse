@@ -74,6 +74,10 @@ class ReportEngine {
   private $userId = null;
   private $sharingMode='reporting';
   private $doneStandardParamJoins = array();
+  /**
+   * @var array List of filters to put in HAVING
+   */
+  private $having = [];
 
   /**
    * @var array A list of additional columns identified from custom attribute parameters.
@@ -313,6 +317,13 @@ class ReportEngine {
 
   public function record_count() {
     if (isset($this->countQuery) && $this->countQuery!==null) {
+      // If there is a HAVING clause in the query, then we cannot count aggregate queries in the normal way which is to
+      // strip the group by and count the appropriate fields. We have to run the full grouped query with the HAVING
+      // clause included, then use a subquery to count the rows.
+      if (!empty($this->having)) {
+        $unlimitedQuery = preg_replace('/LIMIT \d+/i', '', $this->query);
+        $this->countQuery = "SELECT count(*) FROM ($unlimitedQuery) AS subquery";
+      }
       $r = $this->reportDb->query($this->countQuery)->result_array(FALSE);
       // query could return no rows, in which case return zero. Or multiple if counting several UNIONED queries.
       $count=0;
@@ -796,7 +807,11 @@ class ReportEngine {
       elseif (isset($this->reportReader->filterableColumns[$name])) {
         $field = $this->reportReader->filterableColumns[$name]['sql'];
         $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
-        $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
+        if (isset($this->reportReader->columns[$name]['aggregate'])
+            && $this->reportReader->columns[$name]['aggregate']==='true')
+          $this->having[] = $filterClause;
+        else
+          $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
       }
       elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches)
           && array_key_exists($matches['prefix'].'date_start', $this->reportReader->columns)
@@ -820,8 +835,13 @@ class ReportEngine {
       else
         $query = str_replace(array('#sample_sref_field#', '#sample_geom_field#'), array('snf.public_entered_sref', 'o.public_geom'), $query);
     }
-    // remove the marker left in the query to show where to insert joins
-    $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#','#idlist#'), array('','','',''), $query);
+    $having = empty($this->having) ? '' : "\nHAVING " . implode(' AND ', $this->having);
+    // remove the markers left in the query to show where to insert joins, filters etc. This also sets up the query
+    // HAVING clause where relevant.
+    $query = str_replace(
+      array('#joins#','#fields#','#group_bys#','#having#','#filters#','#idlist#'),
+      array('','','',$having,'',''),
+    $query);
     // allow the URL to provide a sort order override
     if (!$counting) {
       // prioritise any URL provided sort order, but still keep any other sort ordering in the report.
