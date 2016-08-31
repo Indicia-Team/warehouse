@@ -158,7 +158,6 @@ function spatial_index_builder_populate($db) {
     $where
     $surveyRestriction";
   $message = $db->query($query)->count().' index_locations_samples entries created.';
-  echo "$query<br/>";
   echo "$message<br/>";
   Kohana::log('debug', $message);
 }
@@ -195,11 +194,15 @@ function spatial_index_builder_add_to_cache($db) {
     $column = 'location_id_' . preg_replace('/[^\da-z]/', '_', strtolower($type['term']));
     $s_sets[] = "$column = ils$type[id].location_id";
     $o_sets[] = "$column = s.$column";
-    $joins[] = "LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].sample_id=s.id ".
-        "and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true";
+    $joins[] = <<<JOIN
+LEFT JOIN (index_locations_samples ils$type[id]
+  JOIN locations l ON l.id=ils.location_id AND l.deleted=false AND (l.code IS NULL OR l.code NOT LIKE '%+%')
+) ON ils$type[id].sample_id=s.id AND ils$type[id].location_type_id=$type[id] AND ils$type[id].contains=true";
+JOIN;
     // Script for handling updated locations is a bit more complex so we have to run
     // once per location type
-    $db->query("UPDATE cache_samples_functional u
+    $query = <<<LOCQRY
+UPDATE cache_samples_functional u
 SET $column = null
 FROM loclist l
 WHERE l.id=u.$column;
@@ -215,7 +218,8 @@ FROM locations l
 LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
     and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 JOIN loclist list on list.id=l.id
-WHERE u.id=ils$type[id].sample_id;
+WHERE u.id=ils$type[id].sample_id
+AND (l.code IS NULL OR l.code NOT LIKE '%+%');
 
 UPDATE cache_occurrences_functional u
 SET $column = ils$type[id].location_id
@@ -223,14 +227,17 @@ FROM locations l
 LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
     and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 JOIN loclist list on list.id=l.id
-WHERE u.sample_id=ils$type[id].sample_id;");
-
+WHERE u.sample_id=ils$type[id].sample_id
+AND (l.code IS NULL OR l.code NOT LIKE '%+%');
+LOCQRY;
+    echo '<br/>'.$query;
+    $db->query($query);
   }
   if (count($s_sets)) {
     $s_sets = implode(",\n", $s_sets);
     $o_sets = implode(",\n", $o_sets);
     $joins = implode("\n", $joins);
-    $query = "
+    $query = <<<SMPQRY
 UPDATE cache_samples_functional u
 SET $s_sets
 FROM samples s
@@ -243,7 +250,8 @@ SET $o_sets
 FROM cache_samples_functional s
 JOIN smplist list on list.id=s.id
 WHERE s.id=u.sample_id;
-";
+SMPQRY;
+    echo '<br/>'.$query;
     $db->query($query);
   }
 }
