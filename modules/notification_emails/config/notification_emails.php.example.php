@@ -27,4 +27,9 @@ $config['top_of_email_body']='You have the following new notifications.';
 $config['email_sender_address']='unique@abcdefg.com';
 $config['notifications_page_url']='http://localhost/instant-indicia/my-notifications';
 $config['notifications_page_url_text']='Click for notifications';
+
+// same again but for pending check/moderation tasks
+$config['record_details_page_urls'] = array(
+  array('website_id' => 23, 'url' => 'http://www.brc.ac.uk/irecord/record-details?occurrence_id=#id#')
+);
 ?>
