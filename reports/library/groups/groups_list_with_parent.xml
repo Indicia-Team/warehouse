@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<report title="Groups list" description="Lists groups.">
+<report title="Groups list with parent" description="Lists groups including the parent of each group. Should be used when listing the children of 1 group.">
   <query website_filter_field="g.website_id">
     SELECT #columns#
     FROM groups g
@@ -10,6 +10,8 @@
     (((gp.administrator=false OR gu.administrator=true) and gu.id is not null AND gu.pending=false) OR gp.administrator is null) AND
     (gu.administrator=true OR COALESCE(gu.access_level, 0)&gt;=COALESCE(gp.access_level, 0))
     LEFT JOIN group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
+    LEFT JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.deleted=false
+    LEFT JOIN groups gparent ON gparent.id=grfrom.from_group_id AND gparent.deleted=false
     #joins#
     WHERE g.deleted = false
     AND #website_filter#
@@ -58,7 +60,7 @@
     </param>
     <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. find the children of a parent group)."
            datatype="text" default="">
-      <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>
+      <where>grfrom.from_group_id=#from_group_id#</where>
     </param>
     <param name="to_group_id" display="From parent group" description="Only include groups which are linked from to another group (e.g. find the parent(s) of a child group)."
            datatype="text" default="">
@@ -76,7 +78,6 @@
     <column name="group_type_id" visible="false" sql="g.group_type_id" datatype="integer" />
     <column name="joining_method_raw" visible="false" sql="g.joining_method" datatype="text" />
     <column name="title" display="Name" sql="g.title" datatype="text" />
-    <column name="parent_title" visible="false" sql="gparent.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
     <column name="administrator" display="Admin" sql="gu.id is not null AND gu.pending=false AND gu.administrator=true" datatype="boolean" visible="false" />
     <!-- following is required to meet group by requirements -->
