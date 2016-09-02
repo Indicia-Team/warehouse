@@ -1209,7 +1209,7 @@ class ReportEngine {
       if ($attr->multi_value==='t')
         $query = str_replace('#fields#', ", (select array_to_string(array_agg(mv$alias.id), ', ')
   from {$entity}_attribute_values mv$alias
-  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id) as $alias#fields#", $query);
+  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id AND deleted = FALSE) as $alias#fields#", $query);
       else {
         $query = str_replace('#fields#', ", $entity${idx_}$id.id as $alias#fields#", $query);
         // this field should also be inserted into any group by part of the query
@@ -1235,7 +1235,7 @@ class ReportEngine {
           // multivalue so use a subquery to build a CSV list of the data, no need to group by as this is aggregated
           $field="(select array_to_string(array_agg(mv$alias.$col), ', ')
   from {$entity}_attribute_values mv$alias
-  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id)";
+  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id AND deleted = FALSE)";
         } else {
           $field = "$entity${idx_}$id.$col";
           $query = str_replace('#group_bys#', ", $entity${idx_}$id.$col#group_bys#", $query);
@@ -1283,7 +1283,7 @@ class ReportEngine {
           $field="(select array_to_string(array_agg(term{$alias}.term), ', ')
   from {$entity}_attribute_values mv$alias
   join ".(class_exists('cache_builder') ? "cache_termlists_terms" : "list_termlists_terms")." term{$alias} on term{$alias}.id=mv$alias.int_value
-  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id)";
+  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id AND mv$alias.deleted = FALSE)";
           $query = str_replace('#fields#', ", $field as $alias#fields#", $query);
           // also use an exists subquery to check the multivalue term in the case of filtering against this column
           $this->customAttributes["attr_$entity${idx}_term_$uniqueId"] = array(
