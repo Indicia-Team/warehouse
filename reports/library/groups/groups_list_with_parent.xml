@@ -78,6 +78,7 @@
     <column name="group_type_id" visible="false" sql="g.group_type_id" datatype="integer" />
     <column name="joining_method_raw" visible="false" sql="g.joining_method" datatype="text" />
     <column name="title" display="Name" sql="g.title" datatype="text" />
+    <column name="parent_title" visible="false" sql="gparent.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
     <column name="administrator" display="Admin" sql="gu.id is not null AND gu.pending=false AND gu.administrator=true" datatype="boolean" visible="false" />
     <!-- following is required to meet group by requirements -->
