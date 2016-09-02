@@ -77,6 +77,7 @@
 }
 
 if( !function_exists('apache_request_headers') ) {
+  Kohana::log('debug', 'PHP apache_request_headers() function does not exist. Replacement function used.');
   function apache_request_headers() {
     $arh = array();
     $rx_http = '/\AHTTP_/';
@@ -88,7 +89,7 @@ if( !function_exists('apache_request_headers') ) {
         // this should work in most cases
         $rx_matches = explode('_', $arh_key);
         if( count($rx_matches) > 0 and strlen($arh_key) > 2 ) {
-          foreach($rx_matches as $ak_key => $ak_val) $rx_matches[$ak_key] = ucfirst($ak_val);
+          foreach($rx_matches as $ak_key => $ak_val) $rx_matches[$ak_key] = ucfirst(strtolower($ak_val));
           $arh_key = implode('-', $rx_matches);
         }
         $arh[$arh_key] = $val;
@@ -481,7 +482,7 @@ HTML;
     $this->checkPaginationParams();
     $params = array(
       // limit set to 1 more than we need, so we can ascertain if next page required
-      'limit' => $this->request['page_size']+1,
+      'limit' => $this->request['page_size'] + 1,
       'offset' => ($this->request['page'] - 1) * $this->request['page_size']
     );
     $this->checkDate($this->request['edited_date_from'], 'edited_date_from');
@@ -530,7 +531,7 @@ HTML;
     $this->checkPaginationParams();
     $params = array(
       // limit set to 1 more than we need, so we can ascertain if next page required
-      'limit' => $this->request['page_size']+1,
+      'limit' => $this->request['page_size'] + 1,
       'offset' => ($this->request['page'] - 1) * $this->request['page_size']
     );
     if (!empty($this->request['edited_date_from'])) {
@@ -659,7 +660,7 @@ HTML;
     $filter = $this->load_filter_for_project($this->request['proj_id']);
     // The project's filter acts as a context for the report, meaning it defines the limit of all the 
     // records that are available for this project.
-    foreach ($filter as $key=>$value) {
+    foreach ($filter as $key => $value) {
       $params["{$key}_context"] = $value;
     }
     $params['system_user_id'] = $this->server_user_id;
@@ -735,6 +736,7 @@ HTML;
   private function authenticate() {
     $headers = apache_request_headers();
     if (!isset($headers['Authorization'])) {
+      Kohana::log('debug', 'Headers received: ' . print_r($headers, TRUE));
       $this->fail('Unauthorized', 401, 'Authorization header not provided');
     }
     list($u, $user, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
@@ -743,12 +745,13 @@ HTML;
       $this->fail('Unauthorized', 401, 'User ID not in projects configuration');
     }
     $request_url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-    $correct_hmac = hash_hmac("sha1", $request_url, $config[$user]['shared_secret'], $raw_output=FALSE);
+    $correct_hmac = hash_hmac("sha1", $request_url, $config[$user]['shared_secret'], $raw_output = FALSE);
     if ($supplied_hmac !== $correct_hmac) {
       $this->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
     }
-    $this->client_user_id=$user;
-    $this->server_user_id=Kohana::config('rest.user_id');
+    Kohana::log('debug', "Rest_api module authenticated $user");
+    $this->client_user_id = $user;
+    $this->server_user_id = Kohana::config('rest.user_id');
     $this->projects = $config[$user]['projects'];
   }
   
