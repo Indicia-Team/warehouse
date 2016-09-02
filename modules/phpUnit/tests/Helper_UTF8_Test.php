@@ -80,9 +80,9 @@ class Helper_UTF8_Test extends PHPUnit_Framework_TestCase
 				array('résumé', 'Résumé', 0),
 
 				// Not Equal
-				array('Your resume', 'Resume', 7),
+				array('Your resume', 'Resume', 1),
 				array('Your résumé', 'résumé', 1),
-				array('áaaa test', 'Áaaa', 5),
+				array('áaaa test', 'Áaaa', 1),
 				array('a', 'b', -1),
 			);
 	}
@@ -96,7 +96,15 @@ class Helper_UTF8_Test extends PHPUnit_Framework_TestCase
 	public function strcasecmp($str, $str2, $expected_result)
 	{
 		$result = utf8::strcasecmp($str, $str2);
-		$this->assertEquals($expected_result, $result);
+    if ($expected_result == 0) {
+      $this->assertEquals($expected_result, $result);
+    }
+    else if ($expected_result == 1) {
+      $this->assertGreaterThanOrEqual($expected_result, $result);
+    }
+    else if ($expected_result == -1) {
+      $this->assertLessThanOrEqual($expected_result, $result);
+    }
 	}
 
 	/**
@@ -126,7 +134,7 @@ class Helper_UTF8_Test extends PHPUnit_Framework_TestCase
 	{
 		if ($pad_type === -1)
 		{
-			$this->setExpectedException('PHPUnit_Framework_Error');
+			$this->setExpectedException('ErrorException');
 			$result = utf8::str_pad($str, $final_str_length, $pad_str, $pad_type);
 		}
 		else

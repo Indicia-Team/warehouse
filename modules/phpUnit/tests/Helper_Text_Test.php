@@ -58,7 +58,7 @@ class Helper_Text_Test extends PHPUnit_Framework_TestCase
 	{
 		return array(
 				//wiki example
-				array('The rain in Spain falls mainly in the plain.', 4,  '&amp;nbsp;', FALSE, TRUE, 'The&amp;nbsp;'),
+				array('The rain in Spain falls mainly in the plain.', 4,  '&amp;nbsp;', TRUE, 'The&amp;nbsp;'),
 
 				//stress preparation
 				array('  ', 100, NULL, TRUE, '  '),
@@ -155,7 +155,6 @@ class Helper_Text_Test extends PHPUnit_Framework_TestCase
 				array('Å‘Å±Ã¡Ã©-+!%', 23),		// As of PHP 5.3, bug #47229 has been fixed and preg_quote *will* escape a hyphen (-).
 				array('Å‘Å±Ã¡Ã©+!%-', 23),
 				array(FALSE, 6),
-				array(array(), 6),
 			);
 	}
 
@@ -259,13 +258,13 @@ class Helper_Text_Test extends PHPUnit_Framework_TestCase
 	{
 		return array(
 				//wiki example
-				array('The income tax is a three letter word, but telemarketers are scum.', array('tax', 'scum'), '*', TRUE, 'The income *** is a three letter word, but telemarketers are ****.'),
+				array('The income tax is a three letter word, but telemarketers are scum.', array('tax', 'scum'), '*', FALSE, 'The income *** is a three letter word, but telemarketers are ****.'),
 
 				//more
-				array('Tax is a bad word, but taxi isn\'t.', array('tax'), '*', FALSE, '*** is a bad word, but taxi isn\'t.'),
-				array('Tax, taxi, and post-tax are censored.', array('tax'), '*', TRUE, '***, ***i, and post-*** are censored.'),
+				array('Tax is a bad word, but taxi isn\'t.', array('tax'), '*', TRUE, '*** is a bad word, but taxi isn\'t.'),
+				array('Tax, taxi, and post-tax are censored.', array('tax'), '*', FALSE, '***, ***i, and post-*** are censored.'),
 
-				array('Tax, taxi, and post-tax are censored.', array('tax'), '[censored]', TRUE, '[censored], [censored]i, and post-[censored] are censored.'),
+				array('Tax, taxi, and post-tax are censored.', array('tax'), '[censored]', FALSE, '[censored], [censored]i, and post-[censored] are censored.'),
 			);
 	}
 
@@ -465,133 +464,6 @@ class Helper_Text_Test extends PHPUnit_Framework_TestCase
 	public function widont($str, $expected_result)
 	{
 		$result = text::widont($str);
-		$this->assertEquals($expected_result, $result);
-	}
-
-	/**
-	 * DataProvider for the text::distance() test
-	 */
-	public function distance_provider()
-	{
-		return array(
-				array('peolpe', 'people', 1),
-				array('speling', 'spelling', 1),
-				array('different', 'difference', 2),
-				array('Kohana', 'rocks', 5),
-				array('$&(#', '', 4),
-			);
-	}
-
-	/**
-	 * Tests the text::distance() function.
-	 * @dataProvider distance_provider
-	 * @group core.helpers.text.distance
-	 * @test
-	 */
-	public function distance($str1, $str2, $expected_result)
-	{
-		$result = text::distance($str1, $str2);
-		$this->assertEquals($expected_result, $result);
-	}
-
-	/**
-	 * DataProvider for the text::is_ascii() test
-	 */
-	public function is_ascii_provider()
-	{
-		return array(
-				array('Hello world', TRUE),
-				array('', TRUE),
-				array('Your résumé', FALSE),
-				array('áaaa test', FALSE),
-				array(array('testing'), FALSE),
-			);
-	}
-
-	/**
-	 * Tests the text::is_ascii() function.
-	 * @dataProvider is_ascii_provider
-	 * @group core.helpers.text.is_ascii
-	 * @test
-	 */
-	public function is_ascii($str, $expected_result)
-	{
-		$result = text::is_ascii($str);
-		$this->assertEquals($expected_result, $result);
-	}
-
-	/**
-	 * DataProvider for the text::strip_non_ascii() test
-	 */
-	public function strip_non_ascii_provider()
-	{
-		return array(
-				array('Hello world', 'Hello world'),
-				array('', ''),
-				array('Your résumé', 'Your rsum'),
-				array('áaaa test', 'aaa test'),
-			);
-	}
-
-	/**
-	 * Tests the text::strip_non_ascii() function.
-	 * @dataProvider strip_non_ascii_provider
-	 * @group core.helpers.text.strip_non_ascii
-	 * @test
-	 */
-	public function strip_non_ascii($str, $expected_result)
-	{
-		$result = text::strip_non_ascii($str);
-		$this->assertEquals($expected_result, $result);
-	}
-
-	/**
-	 * DataProvider for the text::strip_ascii_ctrl() test
-	 */
-	public function strip_ascii_ctrl_provider()
-	{
-		return array(
-				array("Hello\f world", 'Hello world'),
-				array('', ''),
-				array('Your résumé', 'Your résumé'),
-			);
-	}
-
-	/**
-	 * Tests the text::strip_ascii_ctrl() function.
-	 * @dataProvider strip_ascii_ctrl_provider
-	 * @group core.helpers.text.strip_ascii_ctrl
-	 * @test
-	 */
-	public function strip_ascii_ctrl($str, $expected_result)
-	{
-		$result = text::strip_ascii_ctrl($str);
-		$this->assertEquals($expected_result, $result);
-	}
-
-	/**
-	 * DataProvider for the text::transliterate_to_ascii() test
-	 */
-	public function transliterate_to_ascii_provider()
-	{
-		return array(
-				array('Hello world', 0, 'Hello world'),
-				array('', 0, ''),
-				array('Your résumé', 0, 'Your resume'),
-				array('áaaa test', 2, 'áaaa test'),
-				array('Ô á test', -1, 'Ô a test'),
-			);
-	}
-
-	/**
-	 * Tests the text::transliterate_to_ascii() function.
-	 * @dataProvider transliterate_to_ascii_provider
-	 * @group core.helpers.text.transliterate_to_ascii
-	 * @test
-	 */
-	public function transliterate_to_ascii($str, $case, $expected_result)
-	{
-		$result = text::transliterate_to_ascii($str, $case);
 		$this->assertEquals($expected_result, $result);
 	}
 }
