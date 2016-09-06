@@ -451,11 +451,46 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     }
   }
   
+  /*
+   * Create new groups with data passed in from the website
+   */
   public function create_new_group() {
     $db = new Database();
-    $name = (isset($_GET['name']) ? $_GET['name'] : false);
-    $termlistId = (isset($_GET['groupTermlistId']) ? $_GET['groupTermlistId'] : false);
-    $db->query("insert_term('".$name."',1,".$termlistId.")")->result();
+    $groupName = (isset($_GET['name']) ? $_GET['name'] : false);
+    $groupType = (isset($_GET['groupType']) ? $_GET['groupType'] : false);
+    $userId = (isset($_GET['userId']) ? $_GET['userId'] : false);
+    $personAttributeIdToHoldGroups = (isset($_GET['personAttributeId']) ? $_GET['personAttributeId'] : false);
+    if ($userId!==false && $personAttributeIdToHoldGroups!==false) {
+      //Groups are terms, we have built in database function for adding those (and associated termlists_terms etc)
+      if ($groupType==='sample_group') {
+        $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_sample_groups');")->result();
+      }
+      if ($groupType==='plot_group') {
+        $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_plot_groups');")->result();
+      }
+      self::assign_user_to_new_group($db,$groupName,$userId,$personAttributeIdToHoldGroups);
+    }
+  }
+  
+  /*
+   * After creating the groups, we actually need to assign the group to the user automatically (as they have just imported the group this makes sense to do)
+   */
+  private function assign_user_to_new_group($db,$groupName,$userId,$personAttributeIdToHoldGroups) {
+    $db->query("
+      insert into person_attribute_values (person_id,person_attribute_id,int_value, created_on, created_by_id, updated_on, updated_by_id)
+      values ((select u.person_id from users u where u.id = ".$userId."), 
+      ".$personAttributeIdToHoldGroups.",
+      (select tt.id
+      from termlists_terms tt
+      join terms t on t.id = tt.term_id AND t.term = '".$groupName."' AND t.deleted=false
+      where tt.deleted=false
+      order by tt.id desc
+      limit 1),
+      now(),
+      1,
+      now(),
+      1)
+    ")->result();
   }
   
   /**
