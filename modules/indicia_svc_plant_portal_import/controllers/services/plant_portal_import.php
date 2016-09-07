@@ -456,19 +456,24 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
    */
   public function create_new_group() {
     $db = new Database();
-    $groupName = (isset($_GET['name']) ? $_GET['name'] : false);
+    $groupNames = (isset($_GET['names']) ? $_GET['names'] : false);
+    //Groups names set in batches, these are comma separated so explode them to deal with them
+    $explodedGroupNames = explode(',',$groupNames);
     $groupType = (isset($_GET['groupType']) ? $_GET['groupType'] : false);
     $userId = (isset($_GET['userId']) ? $_GET['userId'] : false);
     $personAttributeIdToHoldGroups = (isset($_GET['personAttributeId']) ? $_GET['personAttributeId'] : false);
     if ($userId!==false && $personAttributeIdToHoldGroups!==false) {
-      //Groups are terms, we have built in database function for adding those (and associated termlists_terms etc)
-      if ($groupType==='sample_group') {
-        $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_sample_groups');")->result();
+      foreach ($explodedGroupNames as $groupName) {
+        //Groups are terms, we have built in database function for adding those (and associated termlists_terms etc)
+        if ($groupType==='sample_group') {
+          $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_sample_groups');")->result();
+        }
+        if ($groupType==='plot_group') {
+          $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_plot_groups');")->result();
+        }
+        //We must assign the group to a user once it is created
+        self::assign_user_to_new_group($db,$groupName,$userId,$personAttributeIdToHoldGroups);
       }
-      if ($groupType==='plot_group') {
-        $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_plot_groups');")->result();
-      }
-      self::assign_user_to_new_group($db,$groupName,$userId,$personAttributeIdToHoldGroups);
     }
   }
   
