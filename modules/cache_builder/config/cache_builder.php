@@ -613,7 +613,7 @@ $config['samples']['update']['functional'] = "
 UPDATE cache_samples_functional s_update
 SET website_id=su.website_id,
   survey_id=s.survey_id,
-  input_form=s.input_form,
+  input_form=COALESCE(sp.input_form, s.input_form),
   location_id= s.location_id,
   location_name=CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   public_geom=reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
@@ -790,7 +790,7 @@ INSERT INTO cache_samples_functional(
             id, website_id, survey_id, input_form, location_id, location_name,
             public_geom, date_start, date_end, date_type, created_on, updated_on, verified_on, created_by_id,
             group_id, record_status, query)
-SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, s.input_form, s.location_id,
+SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
   CASE WHEN s.privacy_precision IS NOT NULL THEN NULL ELSE COALESCE(l.name, s.location_name, lp.name, sp.location_name) END,
   reduce_precision(coalesce(s.geom, l.centroid_geom), false, s.privacy_precision,
         case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
@@ -1193,7 +1193,7 @@ UPDATE cache_occurrences_functional
 SET sample_id=o.sample_id,
   website_id=o.website_id,
   survey_id=s.survey_id,
-  input_form=s.input_form,
+  input_form=COALESCE(sp.input_form, s.input_form),
   location_id=s.location_id,
   location_name=case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
       then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1451,7 +1451,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
             training, zero_abundance, licence_id)
-SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, s.input_form, s.location_id,
+SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
     reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
