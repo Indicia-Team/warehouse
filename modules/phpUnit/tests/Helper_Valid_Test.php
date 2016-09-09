@@ -105,12 +105,21 @@ class Helper_Valid_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function ip_provider()
 	{
-		return array(array('75.125.175.50',   FALSE, TRUE),
-		             array('127.0.0.1',       FALSE, TRUE),
+		$provider = array(array('75.125.175.50',   FALSE, TRUE),
+		             array('127.0.0.1',       FALSE, FALSE),
 		             array('256.257.258.259', FALSE, FALSE),
 		             array('255.255.255.255', FALSE, FALSE),
-		             array('192.168.0.1',     FALSE, FALSE),
-		             array('192.168.0.1',     TRUE,  TRUE));
+		             array('192.168.0.1',     FALSE, FALSE));
+    // From 5.6.25 192.168.0.1 is reserved
+    // https://github.com/php/php-src/commit/6fc7817558db2016b160277e410381f286fe127a#diff-a61ab806f8c2193851acdd3eb5f37232
+    if (version_compare(PHP_VERSION, '5.6.25') >= 0) {
+		  $provider[] = array('192.168.0.1', TRUE, FALSE);
+    } 
+    else {
+		  $provider[] = array('192.168.0.1', TRUE, TRUE);
+    }
+    
+    return $provider;
 	}
 
 	/**
@@ -336,62 +345,4 @@ class Helper_Valid_Test extends PHPUnit_Framework_TestCase
 		$this->assertEquals($expected_result, $result);
 	}
 	
-	/**
-	 * DataProvider for the valid::range() test
-	 */
-	public function range_provider()
-	{
-		return array(
-						array(1, array(0,2), TRUE),
-						array(-1, array(-5, 0), TRUE),
-						array(-1, array(0, 1), FALSE),
-						array(1, array(0), TRUE),
-						array(2147483647, array(0, 200000000000000), TRUE),
-						array(-2147483647, array(-2147483655, 2147483645), TRUE)
-					);
-	}
-
-	/**
-	 * Tests the valid::range() function.
-	 * @dataProvider range_provider
-	 * @group core.helpers.valid.range
-	 * @test
-	 */
-	public function range($input_number, array $input_range, $expected_result)
-	{
-		$result = valid::range($input_number, $input_range);
-		$this->assertEquals($expected_result, $result);
-	}
-	
-	/**
-	 * DataProvider for the valid::color() test
-	 */
-	public function color_provider()
-	{
-		return array(
-						array('#000000', TRUE),
-						array('#GGGGGG', FALSE),
-						array('#AbCdEf', TRUE),
-						array('#000', TRUE),
-						array('#abc', TRUE),
-						array('#DEF', TRUE),
-						array('000000', TRUE),
-						array('GGGGGG', FALSE),
-						array('AbCdEf', TRUE),
-						array('000', TRUE),
-						array('DEF', TRUE)
-					);
-	}
-
-	/**
-	 * Tests the valid::color() function.
-	 * @dataProvider color_provider
-	 * @group core.helpers.valid.color
-	 * @test
-	 */
-	public function color($input_color, $expected_result)
-	{
-		$result = valid::color($input_color);
-		$this->assertEquals($expected_result, $result);
-	}
 }

@@ -30,103 +30,156 @@
 
 require_once 'client_helpers/data_entry_helper.php';
 
-class Controllers_Services_Data_Cleaner_Test extends PHPUnit_Framework_TestCase {
-  protected $auth;
+/**
+ * These are required to ensure that the PDO object in the class is able to work correctly
+ * @backupGlobals disabled
+ * @backupStaticAttributes disabled
+ */
+class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
+  
   protected $request;
-  protected $ttl;
-  protected $db;
   
-  
-  public function setup() {
-    $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
-    $token=$this->auth['read']['auth_token'];
-    $nonce=$this->auth['read']['nonce'];
-    $this->request = data_entry_helper::$base_url."index.php/services/data_cleaner/verify?auth_token=$token&nonce=$nonce";
-    $this->db = new Database();
-    $qry=$this->db->query('select id from taxon_groups limit 1')->result_array(false);
-    $taxon_group_id=$qry[0]['id'];
-    $species = array(
-      'taxon:taxon'=>'test species',
-      'taxon:language_id'=>2,
-      'taxon:taxon_group_id'=>$taxon_group_id,
-      'taxon:external_key'=>'TESTKEY',
-      'taxa_taxon_list:taxon_list_id'=>1,
-      'taxa_taxon_list:preferred'=>'t'
+  /**
+   * @return PHPUnit_Extensions_Database_DataSet_IDataSet
+   */
+  public function getDataSet()
+  {
+    $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+   
+    // Create a rule to test against
+    $ds2 = new Indicia_ArrayDataSet(
+      array(
+        'verification_rules' => array(
+          array(
+            'title' => 'Test PeriodWithinYear rule',
+            'description' => 'Test rule for unit testing',
+            'test_type' => 'PeriodWithinYear',
+            'error_message' => 'PeriodWithinYear test failed',
+            'source_url' => null,
+            'source_filename' => null,
+            'created_on' => '2016-07-22:16:00:00',
+            'created_by_id' => 1,
+            'updated_on' => '2016-07-22:16:00:00',
+            'updated_by_id' => 1,
+            'reverse_rule' => 'F',
+          ),
+        ),
+        'verification_rule_metadata' => array(
+          array(
+            'verification_rule_id' => '1',
+            'key' => 'Tvk',
+            'value' => 'TESTKEY',
+            'created_on' => '2016-07-22:16:00:00',
+            'created_by_id' => 1,
+            'updated_on' => '2016-07-22:16:00:00',
+            'updated_by_id' => 1,
+          ),
+          array(
+            'verification_rule_id' => '1',
+            'key' => 'StartDate',
+            'value' => '0801',
+            'created_on' => '2016-07-22:16:00:00',
+            'created_by_id' => 1,
+            'updated_on' => '2016-07-22:16:00:00',
+            'updated_by_id' => 1,
+          ),
+          array(
+            'verification_rule_id' => '1',
+            'key' => 'EndDate',
+            'value' => '0831',
+            'created_on' => '2016-07-22:16:00:00',
+            'created_by_id' => 1,
+            'updated_on' => '2016-07-22:16:00:00',
+            'updated_by_id' => 1,
+          ),
+        ),
+      )  
     );
-    $this->ttl = ORM::Factory('taxa_taxon_list');
-    $this->ttl->set_submission_data($species, false);
-    if (!$this->ttl->submit()) {
-      echo kohana::debug($this->ttl->getAllErrors());
-      throw new exception('Failed to create species');
-    }
-    $cache= Cache::instance();
+    
+    $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
+    $compositeDs->addDataSet($ds1);
+    $compositeDs->addDataSet($ds2); 
+    return $compositeDs;
+  }
+
+  public function setUp() {
+    // Calling parent::setUp() will build the database fixture.
+    parent::setUp();
+    
+    $auth = data_entry_helper::get_read_auth(1, 'password');
+    $token = $auth['auth_token'];
+    $nonce = $auth['nonce'];
+    $this->request = data_entry_helper::$base_url .
+            "index.php/services/data_cleaner/verify?auth_token=$token&nonce=$nonce";
+        
+    $cache = Cache::instance();
     $cache->delete('data-cleaner-rules');
   }
   
-  public function tearDown() {
-    // clean up the species we created to test against
-    $taxon=$this->ttl->taxon;
-    $taxon_meaning=$this->ttl->taxon_meaning;
-    $this->ttl->delete();    
-    $taxon->delete();
-    $taxon_meaning->delete();
-  }
-  
   /**
-   * A quick check that the functionality to report errors if the parameters are incomplete or wrong works.
+   * A quick check that the functionality to report errors if the parameters are
+   * incomplete or wrong works.
    */
   public function testIncorrectParams() {
-    $token=$this->auth['read']['auth_token'];
-    $nonce=$this->auth['read']['nonce'];
-    $request = data_entry_helper::$base_url."index.php/services/data_cleaner/verify?auth_token=$token&nonce=$nonce";
     $response = data_entry_helper::http_post($this->request, null);
     $this->assertEquals($response['output'], 'Invalid parameters');
   }
+
+  /** 
+   * PeriodWithinYear Rule.
+   * Check that a date out of range is identified as an error.
+   * data_cleaner_period_within_year module must be enabled.
+   */
+  public function testPeriodWithinYearFail() {
+    $response = data_entry_helper::http_post($this->request, array(
+      'sample'=>json_encode(array(
+        'sample:survey_id'=>1,
+        'sample:date'=>'12/09/2012', 
+        'sample:entered_sref'=>'SU1234',
+        'sample:entered_sref_system'=>'osgb'
+      )),
+      'occurrences'=>json_encode(array(
+        array(
+          'occurrence:taxa_taxon_list_id'=>1
+        ))
+      ),
+      'rule_types'=>json_encode(array('PeriodWithinYear'))
+    ));
+    $errors = json_decode($response['output'], true);
+    
+    $this->assertTrue($response['result'], 'Invalid response');
+    $this->assertInternalType('array', $errors, 'Errors list not returned');
+    $this->assertArrayHasKey('taxa_taxon_list_id', $errors[0], 'Errors list missing taxa_taxon_list_id');
+    $this->assertEquals('1', $errors[0]['taxa_taxon_list_id'], 'Incorrect taxa_taxon_list_id returned');
+    $this->assertArrayHasKey('message', $errors[0], 'Errors list missing message');
+    $this->assertEquals('PeriodWithinYear test failed', $errors[0]['message'], 'Incorrect message returned');
+  }
   
   /** 
-   * Test that a basic date out of range test works.
+   * PeriodWithinYear Rule.
+   * Check that a date in range is identified as okay.
+   * data_cleaner_period_within_year module must be enabled.
    */
-  public function testDateOutOfRange() {
-    // Need a test rule we can use to check it works
-    $ruleArr=array(
-      'verification_rule:title'=>'test',
-      'verification_rule:test_type'=>'PeriodWithinYear',
-      'verification_rule:error_message'=>'test error',
-      'metaFields:metadata'=>"Tvk=TESTKEY\nStartDate=0801\nEndDate=0831",
-      'metaFields:data'=>""
-    );
-    $rule = ORM::Factory('verification_rule');
-    $rule->set_submission_data($ruleArr, false);
-    if (!$rule->submit()) {
-      echo kohana::debug($rule->getAllErrors());
-      throw new exception('Failed to create test rule');
-    }
-    try {
-      $response = data_entry_helper::http_post($this->request, array(
-        'sample'=>json_encode(array(
-          'sample:survey_id'=>1,
-          'sample:date'=>'12/09/2012', 
-          'sample:entered_sref'=>'SU1234',
-          'sample:entered_sref_system'=>'osgb'
-        )),
-        'occurrences'=>json_encode(array(
-          array(
-            'occurrence:taxa_taxon_list_id'=>$this->ttl->id
-          ))
-        ),
-        'rule_types'=>json_encode(array('PeriodWithinYear'))
-      ));
-      $errors = json_decode($response['output'], true);
-      $this->assertTrue(is_array($errors), 'Errors list not returned');
-      $this->assertTrue(isset($errors[0]['taxa_taxon_list_id']) && $errors[0]['taxa_taxon_list_id']===$this->ttl->id, 'Incorrect taxa_taxon_list_id returned');
-      $this->assertTrue(isset($errors[0]['message']) && $errors[0]['message']==='test error', 'Incorrect message returned');
-      foreach($rule->verification_rule_metadata as $m)
-        $m->delete();
-      $rule->delete();
-    } catch (Exception $e) {
-      foreach($rule->verification_rule_metadata as $m)
-        $m->delete();
-      $rule->delete();
-    }
+  public function testPeriodWithinYearPass() {
+    $response = data_entry_helper::http_post($this->request, array(
+      'sample'=>json_encode(array(
+        'sample:survey_id'=>1,
+        'sample:date'=>'12/08/2012', 
+        'sample:entered_sref'=>'SU1234',
+        'sample:entered_sref_system'=>'osgb'
+      )),
+      'occurrences'=>json_encode(array(
+        array(
+          'occurrence:taxa_taxon_list_id'=>1
+        ))
+      ),
+      'rule_types'=>json_encode(array('PeriodWithinYear'))
+    ));
+    $errors = json_decode($response['output'], true);
+    
+    $this->assertTrue($response['result'], 'Invalid response');
+    $this->assertInternalType('array', $errors, 'Errors list not returned');
+    $this->assertCount(0, $errors, 'Errors contanied in list');
   }
+  
 }

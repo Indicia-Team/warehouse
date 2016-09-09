@@ -51,13 +51,13 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function test_offset_get()
 	{
-		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2 UNION SELECT 3')->as_array();
+		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2 UNION SELECT 3');
+    
+		$this->assertEquals((object) array('value' => 1), $result->offsetGet(0));
+		$this->assertEquals((object) array('value' => 3), $result->offsetGet(2));
 
-		$this->assertEquals(array('value' => 1), $result->offsetGet(0));
-		$this->assertEquals(array('value' => 3), $result->offsetGet(2));
-
-		$this->assertNull($result->offsetGet(-1));
-		$this->assertNull($result->offsetGet(3));
+		$this->assertFalse($result->offsetGet(-1));
+		$this->assertFalse($result->offsetGet(3));
 	}
 
 	/**
@@ -89,12 +89,12 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function test_current()
 	{
-		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2')->as_array();
+		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2');
 
-		$this->assertEquals(array('value' => 1), $result->current());
+		$this->assertEquals((object) array('value' => 1), $result->current());
 
 		// Repeated calls should not advance, see #1817
-		$this->assertEquals(array('value' => 1), $result->current());
+		$this->assertEquals((object) array('value' => 1), $result->current());
 	}
 
 	/**
@@ -102,12 +102,12 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function test_next()
 	{
-		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2')->as_array();
+		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2');
 
 		$result->next();
 
 		$this->assertSame(1, $result->key());
-		$this->assertEquals(array('value' => 2), $result->current());
+		$this->assertEquals((object) array('value' => 2), $result->current());
 
 		$result->next();
 
@@ -119,13 +119,13 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function test_prev()
 	{
-		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2')->as_array();
+		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2');
 
 		$result->seek(1);
 
 		$result->prev();
 
-		$this->assertEquals(array('value' => 1), $result->current());
+		$this->assertEquals((object) array('value' => 1), $result->current());
 		$this->assertSame(0, $result->key());
 
 		$result->prev();
@@ -138,13 +138,13 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function test_rewind()
 	{
-		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2')->as_array();
+		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2');
 
 		$result->next();
 
 		$result->rewind();
 
-		$this->assertEquals(array('value' => 1), $result->current());
+		$this->assertEquals((object) array('value' => 1), $result->current());
 		$this->assertSame(0, $result->key());
 	}
 
@@ -153,16 +153,16 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function test_seek()
 	{
-		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2 UNION SELECT 3')->as_array();
+		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2 UNION SELECT 3');
 
 		$result->seek(2);
 
-		$this->assertEquals(array('value' => 3), $result->current());
+		$this->assertEquals((object) array('value' => 3), $result->current());
 		$this->assertSame(2, $result->key());
 
 		$result->seek(0);
 
-		$this->assertEquals(array('value' => 1), $result->current());
+		$this->assertEquals((object) array('value' => 1), $result->current());
 		$this->assertSame(0, $result->key());
 
 		$this->assertFalse($result->seek(-1));
@@ -174,24 +174,24 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function test_iteration()
 	{
-		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2 UNION SELECT 3')->as_array();
+		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2 UNION SELECT 3');
 
 		$result->rewind();
 
 		$this->assertTrue($result->valid());
-		$this->assertEquals(array('value' => 1), $result->current());
+		$this->assertEquals((object) array('value' => 1), $result->current());
 		$this->assertSame(0, $result->key());
 
 		$result->next();
 
 		$this->assertTrue($result->valid());
-		$this->assertEquals(array('value' => 2), $result->current());
+		$this->assertEquals((object) array('value' => 2), $result->current());
 		$this->assertSame(1, $result->key());
 
 		$result->next();
 
 		$this->assertTrue($result->valid());
-		$this->assertEquals(array('value' => 3), $result->current());
+		$this->assertEquals((object) array('value' => 3), $result->current());
 		$this->assertSame(2, $result->key());
 
 		$result->next();
@@ -199,24 +199,17 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 		$this->assertFalse($result->valid());
 	}
 
-	public function test_get()
-	{
-		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2');
-
-		$this->assertEquals(1, $result->get('value'));
-		$this->assertEquals(1, $result->get('value'));
-	}
-
 	public function test_array()
 	{
-		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2')->as_array(TRUE);
+//		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2')->as_array(TRUE);
+		$result = $this->db->query('SELECT 1 AS value UNION SELECT 2')->result_array(FALSE);
 
 		$this->assertEquals(array(array('value' => 1), array('value' => 2)), $result);
 	}
 
 	public function test_object()
 	{
-		$result = $this->db->query('SELECT 1 AS value')->as_object();
+		$result = $this->db->query('SELECT 1 AS value');
 
 		$row = $result->current();
 
@@ -224,37 +217,4 @@ class Library_Database_Result_Test extends PHPUnit_Framework_TestCase
 		$this->assertEquals(1, $row->value);
 	}
 
-	public function test_object_array()
-	{
-		$result = $this->db->query('SELECT 1 AS value')->as_object(NULL, TRUE);
-
-		$this->assertEquals(array( (object) array('value' => 1)), $result);
-	}
-
-	public function test_class()
-	{
-		$result = $this->db->query('SELECT 1 AS value')->as_object('Library_Database_Result_Test_Class');
-
-		$row = $result->current();
-
-		$this->assertTrue($row instanceof Library_Database_Result_Test_Class);
-		$this->assertObjectHasAttribute('value', $row);
-		$this->assertEquals(1, $row->value);
-	}
-
-	public function test_class_array()
-	{
-		$result = $this->db->query('SELECT 1 AS value')->as_object('Library_Database_Result_Test_Class', TRUE);
-
-		$obj = new Library_Database_Result_Test_Class;
-		$obj->value = 1;
-
-		$this->assertEquals(array($obj), $result);
-	}
 }
-
-
-/**
- * Used to test object fetching
- */
-final class Library_Database_Result_Test_Class {}
