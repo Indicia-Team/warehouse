@@ -198,8 +198,10 @@ function spatial_index_builder_add_to_cache($db) {
     $o_sets[] = "$column = s.$column";
     $joins[] = <<<JOIN
 LEFT JOIN (index_locations_samples ils$type[id]
-  JOIN locations l ON l.id=ils.location_id AND l.deleted=false AND (l.code IS NULL OR l.code NOT LIKE '%+%')
-) ON ils$type[id].sample_id=s.id AND ils$type[id].location_type_id=$type[id] AND ils$type[id].contains=true";
+  JOIN locations l$type[id] 
+      ON l$type[id].id=ils.location_id AND l$type[id].deleted=false AND 
+      (l$type[id].code IS NULL OR l$type[id].code NOT LIKE '%+%')
+) ON ils$type[id].sample_id=s.id AND ils$type[id].location_type_id=$type[id] AND ils$type[id].contains=true
 JOIN;
     // Script for handling updated locations is a bit more complex so we have to run
     // once per location type
