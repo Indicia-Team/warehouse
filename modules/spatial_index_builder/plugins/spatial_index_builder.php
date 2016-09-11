@@ -197,7 +197,7 @@ function spatial_index_builder_add_to_cache($db) {
     $joins[] = <<<JOIN
 LEFT JOIN (index_locations_samples ils$type[id]
   JOIN locations l$type[id] 
-      ON l$type[id].id=ils.location_id AND l$type[id].deleted=false AND 
+      ON l$type[id].id=ils$type[id].location_id AND l$type[id].deleted=false AND 
       (l$type[id].code IS NULL OR l$type[id].code NOT LIKE '%+%')
 ) ON ils$type[id].sample_id=s.id AND ils$type[id].location_type_id=$type[id] AND ils$type[id].contains=true
 JOIN;
