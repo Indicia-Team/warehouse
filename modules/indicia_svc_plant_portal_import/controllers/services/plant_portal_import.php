@@ -355,6 +355,9 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
         // Clear the model, so nothing else from the previous row carries over.
         $model->clear();
         // Save the record
+        // To DO AVB - Double check, but I think this line needs removing with the custom plant portal wrap
+        //$model->set_submission_data($saveArray, true);
+        // Save the record
         //Changed wrap method to static (compared to the "normal" importer module,
         //otherwise its errors because the plant_portal wrapper isn't a known function for the object
         //$model->submission=self::plant_portal_wrap($model,$saveArray, true);
@@ -452,9 +455,60 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   }
   
   /*
+   * Create new plots with data passed in from the website
+   */
+  public function create_new_plots() {
+    $db = new Database();
+    //The plot names, srefs and sref systems are passed in from the website in the warehouse call, these can be collected from the $_GET
+    $plotNames = (isset($_GET['plotNames']) ? $_GET['plotNames'] : false);
+    $plotSrefs = (isset($_GET['plotSrefs']) ? $_GET['plotSrefs'] : false);
+    $plotSrefSystems = (isset($_GET['plotSrefSystems']) ? $_GET['plotSrefSystems'] : false);
+    $websiteId = (isset($_GET['websiteId']) ? $_GET['websiteId'] : false);
+    //Date is in batches with several items sent together, these are comma separated so explode them to deal with them
+    $explodedPlotNames = explode(',',$plotNames);
+    $explodedPlotSrefs = explode(',',$plotSrefs);
+    $explodedPlotSrefSystems = explode(',',$plotSrefSystems);
+    //Foreach plot name we need to create create the location record ans an associated locations_websites row
+    foreach ($explodedPlotNames as $idx=>$plotName) {
+      $db->query("insert into locations "
+              . "("
+                  . "name,"
+                  . "centroid_sref,"
+                  . "centroid_sref_system,"
+                  . "created_on,"
+                  . "created_by_id,"
+                  . "updated_on,"
+                  . "updated_by_id"
+              . ")"
+              . "values("
+                  . "'".$plotName."',"
+                  . "'".$explodedPlotSrefs[$idx]."',"
+                  . "'".$explodedPlotSrefSystems[$idx]."'"
+                  . ",now()"
+                  . ",1"
+                  . ",now(),"
+                  . "1"
+              . ");"
+              . "insert into locations_websites"
+              . "("
+                  . "location_id,"
+                  . "website_id,"
+                  . "created_on,"
+                  . "created_by_id"
+              . ")"
+              . "values("
+                  . "(select id from locations where name = '".$plotName."' AND deleted=false order by id desc limit 1),"
+                  . "".$websiteId.","
+                  . "now(),"
+                  . "1"
+              . ")");
+    }
+  }
+  
+  /*
    * Create new groups with data passed in from the website
    */
-  public function create_new_group() {
+  public function create_new_groups() {
     $db = new Database();
     $groupNames = (isset($_GET['names']) ? $_GET['names'] : false);
     //Groups names set in batches, these are comma separated so explode them to deal with them
@@ -682,7 +736,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   * @param bool $fkLink=false Link foreign keys?
   * @return array Wrapped array
   */
-  /*private static function plant_portal_wrap($model,$saveArray, $fkLink = false)
+  private static function plant_portal_wrap($model,$saveArray, $fkLink = false)
   {
     // share the wrapping library with the client helpers
     require_once(DOCROOT.'client_helpers/submission_builder.php');
@@ -690,7 +744,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       // Map fk_* fields to the looked up id
     if ($fkLink) {
       $r = $model->getFkFields($r, $saveArray);
-      $r=self::plant_portal_intercept_Fk_fields($r, $saveArray);
+      //$r=self::plant_portal_intercept_Fk_fields($r, $saveArray);
     }
     if (array_key_exists('superModels', $r)) {
       $idx=0;
@@ -703,7 +757,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     return $r;
   }
   
-  private static function plant_portal_intercept_Fk_fields($singleSubmissionLevel, $saveArray) {
+  /*private static function plant_portal_intercept_Fk_fields($singleSubmissionLevel, $saveArray) {
     $readAuth = data_entry_helper::get_read_auth(1, 'password');
     foreach ($singleSubmissionLevel['fkFields'] as $fkFieldData) {
       if ($fkFieldData['fkIdField']==='location_id') {
