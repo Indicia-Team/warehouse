@@ -41,10 +41,6 @@ class Ecobat_occurrence_Model extends ORM {
     'anthropogenic_feature_adjacent'=>'termlists_term',
     'anthropogenic_feature_25m'=>'termlists_term',
     'rainfall'=>'termlists_term',
-<<<<<<< HEAD
-=======
-    'wind_speed_unit'=>'termlists_term',
->>>>>>> 2c86b3335173e0a2d929e82cb3982400a2ba5fa1
     'group'
   );
 
@@ -70,12 +66,7 @@ class Ecobat_occurrence_Model extends ORM {
     $array->add_rules('anthropogenic_feature_25m_id', 'integer');
     $array->add_rules('temperature_c', 'maximum[45]');
     $array->add_rules('rainfall_id', 'integer');
-<<<<<<< HEAD
     $array->add_rules('wind_speed_mph', 'integer');
-=======
-    $array->add_rules('wind_speed', 'integer');
-    $array->add_rules('wind_speed_unit_id', 'integer');
->>>>>>> 2c86b3335173e0a2d929e82cb3982400a2ba5fa1
     $array->add_rules('occurrence_id', 'integer');
     $array->add_rules('group_id', 'integer');
     $this->unvalidatedFields = array('external_key', 'geom', 'detector_make_other',
@@ -136,17 +127,7 @@ class Ecobat_occurrence_Model extends ORM {
         'datatype' => 'lookup',
         'lookup_values' => '1:Public,2:Blur records to 10km grid square,3:Do not publish',
         'default'=>'100'
-<<<<<<< HEAD
       )
-=======
-      ),
-      'ecobat_occurrence:wind_speed_unit_id' => array(
-        'display' => 'Wind speed unit',
-        'description' => 'Select the unit used for the wind speed.',
-        'datatype' => 'lookup',
-        'population_call' => 'report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=ecobat:wind_speed_units,termlist_id='
-      ),
->>>>>>> 2c86b3335173e0a2d929e82cb3982400a2ba5fa1
     );
     return $retVal;
   }

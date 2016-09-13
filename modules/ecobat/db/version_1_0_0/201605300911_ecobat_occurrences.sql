@@ -54,13 +54,6 @@ select insert_term('Drizzle', 'eng', 2, null, 'ecobat:rainfall');
 select insert_term('Heavy', 'eng', 3, null, 'ecobat:rainfall');
 select insert_term('Other', 'eng', 4, null, 'ecobat:rainfall');
 
-INSERT INTO termlists (title, description, created_on, created_by_id, updated_on, updated_by_id, external_key)
-VALUES ('Ecobat wind speed units', 'List of units for measuring wind speed.', now(), 1, now(), 1, 'ecobat:wind_speed_units');
-
-select insert_term('Beaufort', 'eng', 1, null, 'ecobat:wind_speed_units');
-select insert_term('Mph', 'eng', 2, null, 'ecobat:wind_speed_units');
-select insert_term('Other', 'eng', 3, null, 'ecobat:wind_speed_units');
-
 CREATE TABLE ecobat_occurrences
 (
   id serial NOT NULL,
@@ -78,13 +71,11 @@ CREATE TABLE ecobat_occurrences
   passes integer NOT NULL,
   pass_definition_id integer NOT NULL,
   detector_make_id integer,
-  detector_make_other character varying,
   detector_model character varying NOT NULL,
   detector_height_m numeric(4,2),
   roost_within_25m boolean NOT NULL DEFAULT FALSE,
   activity_elevated_by_roost boolean NOT NULL DEFAULT FALSE,
   roost_species character varying,
-<<<<<<< HEAD
   linear_feature_adjacent_id integer,
   linear_feature_25m_id integer,
   anthropogenic_feature_adjacent_id integer,
@@ -92,16 +83,6 @@ CREATE TABLE ecobat_occurrences
   temperature_c numeric(4,2),
   rainfall_id integer,
   wind_speed_mph integer,
-=======
-  linear_feature_adjacent_id integer NOT NULL,
-  linear_feature_25m_id integer NOT NULL,
-  anthropogenic_feature_adjacent_id integer NOT NULL,
-  anthropogenic_feature_25m_id integer NOT NULL,
-  temperature_c numeric(4,2),
-  rainfall_id integer,
-  wind_speed integer,
-  wind_speed_unit_id integer,
->>>>>>> 2c86b3335173e0a2d929e82cb3982400a2ba5fa1
   notes character varying,
   occurrence_id integer,
   group_id integer,
@@ -136,9 +117,6 @@ CREATE TABLE ecobat_occurrences
       REFERENCES termlists_terms (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_ecobat_occurrence_rainfall_id FOREIGN KEY (rainfall_id)
-      REFERENCES termlists_terms (id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT fk_ecobat_occurrence_wind_speed_unit FOREIGN KEY (wind_speed_unit_id)
       REFERENCES termlists_terms (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_ecobat_occurrence_occurrences FOREIGN KEY (occurrence_id)
@@ -183,8 +161,7 @@ COMMENT ON COLUMN ecobat_occurrences.anthropogenic_feature_adjacent_id IS 'Type 
 COMMENT ON COLUMN ecobat_occurrences.anthropogenic_feature_25m_id IS 'Type of anthropogenic feature within 25m of the detector.';
 COMMENT ON COLUMN ecobat_occurrences.temperature_c IS 'Temperature at sunset (degrees centigrade)';
 COMMENT ON COLUMN ecobat_occurrences.rainfall_id IS 'Type of rainfall at sunset';
-COMMENT ON COLUMN ecobat_occurrences.wind_speed IS 'Wind speed at sunset in the unit defined by wind_speed_unit_id';
-COMMENT ON COLUMN ecobat_occurrences.wind_speed_unit_id IS 'Unit used for the wind speed measurement.';
+COMMENT ON COLUMN ecobat_occurrences.wind_speed_mph IS 'Wind speed at sunset in mph';
 COMMENT ON COLUMN ecobat_occurrences.occurrence_id IS 'Foreign key to the occurrences table. Identifies the occurrence lodged in the main occurrences table for reference range records which are made publically available.';
 COMMENT ON COLUMN ecobat_occurrences.group_id IS 'Foreign key to the groups table. Identifies the Consultants Portal project the record belongs to  .';
 COMMENT ON COLUMN ecobat_occurrences.created_on IS 'Date this record was created.';
