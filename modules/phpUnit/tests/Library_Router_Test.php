@@ -20,10 +20,10 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 	protected function setUp()
 	{
 		// Save config
-		$this->kohana_config['core.url_suffix'] = Kohana_Config::instance()->get('core.url_suffix');
+		$this->kohana_config['core.url_suffix'] = Kohana::config('core.url_suffix');
 
 		// Save Server API
-		$this->kohana_server_api = Kohana::$server_api;
+//		$this->kohana_server_api = Kohana::$server_api;
 
 		// Save Router members
 		$this->router_vars = array(
@@ -53,11 +53,11 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 		// Restore config
 		foreach ($this->kohana_config as $key => $value)
 		{
-			Kohana_Config::instance()->set($key, $value);
+			Kohana::config_set($key, $value);
 		}
 
 		// Restore Server API
-		Kohana::$server_api = $this->kohana_server_api;
+//		Kohana::$server_api = $this->kohana_server_api;
 
 		// Restore Router members
 		foreach ($this->router_vars as $key => $value)
@@ -68,7 +68,7 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 
 	public function find_uri_cli_provider()
 	{
-		return array(
+		$provider = array(
 			array(array(KOHANA), ''),
 
 			array(array(KOHANA, ''), ''),
@@ -78,10 +78,14 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 
 			array(array(KOHANA, 'default?'), 'default'),
 			array(array(KOHANA, 'default?a=first&b=2nd'), 'default', array('a' => 'first', 'b' => '2nd')),
-
-			// URL may contain KOHANA, see #1810
-			array(array(KOHANA, '/default/index/'.KOHANA), 'default/index/'.KOHANA),
 		);
+    // URL may contain KOHANA, see #1810
+    // Fixed in v2.4.0. https://github.com/kohana/kohana2/commit/e08b64d668ce5bac4cf2890fc954efaede6d58fe
+    if (KOHANA_VERSION != '2.3.4') {
+      $provider[] = array(array(KOHANA, '/default/index/'.KOHANA), 'default/index/'.KOHANA);
+    }
+
+    return $provider;
 	}
 
 	/**
@@ -90,7 +94,7 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function find_uri_cli($argv, $current_uri, $get = array())
 	{
-		Kohana::$server_api = 'cli';
+//		Kohana::$server_api = 'cli';
 
 		$_SERVER['argc'] = count($argv);
 		$_SERVER['argv'] = $argv;
@@ -277,9 +281,12 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function find_uri_cgi($request_uri, $current_uri, $server_vars)
 	{
-		Kohana::$server_api = 'cgi-fcgi';
+//		Kohana::$server_api = 'cgi-fcgi';
+		if (PHP_SAPI === 'cli') {
+      $this->markTestSkipped("CGI Route tests don't work in Kohana 2.3.4");
+    }
 
-		parse_str(arr::get($server_vars, 'QUERY_STRING'), $_GET);
+		parse_str((array_key_exists('QUERY_STRING', $server_vars) ? $server_vars['QUERY_STRING'] : ''), $_GET);
 
 		$_SERVER = array_merge(
 			$_SERVER,
@@ -304,9 +311,12 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function find_uri_suffix()
 	{
-		Kohana::$server_api = 'cgi-fcgi';
+//		Kohana::$server_api = 'cgi-fcgi';
+		if (PHP_SAPI === 'cli') {
+      $this->markTestSkipped("CGI Route tests don't work in Kohana 2.3.4");
+    }
 
-		Kohana_Config::instance()->set('core.url_suffix', '.html');
+		Kohana::config_set('core.url_suffix', '.html');
 
 		$_SERVER = array_merge(
 			$_SERVER,
@@ -321,17 +331,17 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 		);
 
 		Router::find_uri();
-
-		$this->assertEquals('default/index', Router::$current_uri);
+    $this->assertEquals('default/index', Router::$current_uri);
 		$this->assertEquals('.html', Router::$url_suffix);
 	}
 
 	public function setup_test_provider()
 	{
-		return array(
+    $default = Kohana::config('routes._default');
+		$provider =  array(
 			array(
 				array('', ''),
-				array('', '', array())
+				array($default, '', array())
 			),
 			array(
 				array('.', ''),
@@ -371,28 +381,39 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 			),
 			array(
 				array('', 'key=value&'),
-				array('', '?key=value', array())
+				array($default, '?key=value', array())
 			),
+		);
 
-			array(
+    // see #1712
+    // Fixed in v2.4.0. https://github.com/kohana/kohana2/commit/6f2c03e67a03be44094b00cbb9a43bbf2f94e64e
+    if (KOHANA_VERSION != '2.3.4') {
+      $provider[] = array(
 				array('привет/index/" onclick="alert()"', ''),
 				array('привет/index/" onclick="alert()"', '', array('привет', 'index', '" onclick="alert()"'))
-			),
+			);
+    }
 
-			// see #1887
-			// Apache 2.2, lighttpd 1.4.20
-			array(
+    // see #1887
+		// Apache 2.2, lighttpd 1.4.20    
+    // Fixed in v2.4.0. https://github.com/kohana/kohana2/commit/323db5fcf7084a226338a7e76a4a14ba125257b3 
+    if (KOHANA_VERSION != '2.3.4') {
+      $provider[] = array(
 				array('', 'sample=%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82'),
-				array('', '?sample=привет', array())
-			),
+				array($default, '?sample=привет', array())
+			);
+    }
 
-			// see #2404
-			array(
+  	// see #2404
+    // Fixed in v2.4.0. https://github.com/kohana/kohana2/commit/323db5fcf7084a226338a7e76a4a14ba125257b3  
+    if (KOHANA_VERSION != '2.3.4') {
+      $provider[] = array(
 				array('', 'sample=%26%2f'),
-				array('', '?sample=&/', array())
-			),
-
-		);
+				array($default, '?sample=&/', array())
+			);
+    }
+    
+    return $provider;
 	}
 
 	/**
@@ -403,7 +424,7 @@ class Library_Router_Test extends PHPUnit_Framework_TestCase
 	{
 		list(Router::$current_uri, $_SERVER['QUERY_STRING']) = $input;
 
-		if ($expected[0] === '')
+		if ($input[0] === '')
 		{
 			// The default route should exist. No 404 will be thrown.
 			Router::setup();

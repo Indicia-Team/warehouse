@@ -39,7 +39,7 @@ class Security extends security_Core {
    * Takes a value and ensures it is matches an expected pattern. Used to 
    * check parameters passed to web services to inhibit SQL injection.
    * 
-   * @param string $value The value to check.
+   * @param mixed $value The value to check.
    * @param string $type The type of parameter, [int|str], for integer or
    * string.
    * @param string $regex The pattern for a valid string parameter to match.
@@ -48,7 +48,11 @@ class Security extends security_Core {
   public static function checkParam($value, $type, $regex = NULL) {
     switch ($type) {
       case 'int':
-        // Value must be an integer (though stored in a string).
+        // Value can by of type integer
+        if (is_int($value)) {
+          return (string) $value;
+        }
+        // Or value can be of type string containing an integer.
         if (ctype_digit($value)) {
           return $value;
         }

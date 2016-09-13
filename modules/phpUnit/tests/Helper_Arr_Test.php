@@ -347,32 +347,4 @@ class Helper_Arr_Test extends PHPUnit_Framework_TestCase
 		$this->assertEquals($expected_result, $result);
 	}
 	
-	/**
-	 * DataProvider for the arr::pluck() test
-	 */
-	public function pluck_provider()
-	{
-		$array1 = array ('foo' => 1, 'bar' => 2);
-		$array2 = array('foo' => 3, 'bar' => 4);
-		$array3 = array('foo');
-
-		return array(
-			array('foo', array($array1, $array2, $array3), array (0 => 1, 1 => 3, 2 => NULL)),
-			array('snuff', array($array1, $array2, $array3), array (0 => NULL, 1 => NULL, 2 => NULL)),
-			array('bar', array($array2, $array3), array (0 => 4, 1 => NULL))
-		);
-	}
-
-	/**
-	 * Tests the arr::pluck() function.
-	 * @dataProvider pluck_provider
-	 * @group core.helpers.arr.pluck
-	 * @test
-	 */
-	public function pluck($input_key, $input_array, $expected_result)
-	{
-		$result = arr::pluck($input_key, $input_array);
-
-		$this->assertEquals($expected_result, $result);
-	}
 }

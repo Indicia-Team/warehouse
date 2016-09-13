@@ -68,6 +68,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'group_invitation',
       'group_relation',
       'location',
+      'location_attribute_value',
       'location_medium',
       'notification',
       'occurrence',

@@ -20,11 +20,15 @@
  * @link 	http://code.google.com/p/indicia/
  */
  
-$config['system_name']='iRecord';
+$config['system_name']='System name';
 $config['email_subject']='You have new notifications.';
-$config['how_to_address_username']='I hope you are having a good day';
+$config['how_to_address_username']='Dear';
 $config['top_of_email_body']='You have the following new notifications.';
-$config['email_sender_address']='unique@abcdefg.com';
-$config['notifications_page_url']='http://localhost/instant-indicia/my-notifications';
+$config['email_sender_address']='sender@example.com';
+$config['notifications_page_url']='http://example.com/my-notifications';
 $config['notifications_page_url_text']='Click for notifications';
-?>
+
+// same again but for pending check/moderation tasks
+$config['record_details_page_urls'] = array(
+  array('website_id' => 23, 'url' => 'http://www.brc.ac.uk/irecord/record-details?occurrence_id=#id#')
+);

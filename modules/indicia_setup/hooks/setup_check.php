@@ -23,10 +23,18 @@
 
 class setup_check {
 
+  public function __construct()
+  {
+    // Hook into routing, but not if running unit tests
+    if (!class_exists('PHPUnit_Util_Filter')) {
+      Event::add('system.routing', array($this, 'setup_check'));      
+    }
+  }
+
   /**
    * If not in the setup pages, but the indicia config file is missing, go to system setup.
    */
-  public static function _setup_check() {
+  public static function setup_check() {
     $uri = URI::instance();
     $isOk = $uri->segment(1) == 'setup' || $uri->segment(1) == 'setup_check' || 
         kohana::config('indicia.private_key', false, false) !== null;
@@ -37,6 +45,6 @@ class setup_check {
 
 }
 
-Event::add('system.routing', array('setup_check', '_setup_check'));
+new setup_check;
 
  ?>
