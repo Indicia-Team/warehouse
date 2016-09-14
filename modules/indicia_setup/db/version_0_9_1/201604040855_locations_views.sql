@@ -8,8 +8,10 @@ CREATE OR REPLACE VIEW list_locations AS
    FROM locations l
      LEFT JOIN locations_websites lw ON l.id = lw.location_id and lw.deleted=false
   WHERE l.deleted = false;
-  
-CREATE OR REPLACE VIEW gv_locations AS 
+
+-- drop required as term has new field length.
+DROP VIEW gv_locations;
+CREATE VIEW gv_locations AS
  SELECT l.id,
     l.name,
     l.code,
