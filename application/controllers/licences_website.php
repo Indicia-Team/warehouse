@@ -67,10 +67,9 @@ class Licences_website_Controller extends Gridview_Base_Controller
     }
     return $r;
   }
-
   
   /**
-   * Licenses_websites only editable by core admin or admin of website.
+   * Licences_websites only editable by core admin or admin of website.
    */
   public function record_authorised ($id) {
     if ($this->auth->logged_in('CoreAdmin'))
@@ -78,7 +77,7 @@ class Licences_website_Controller extends Gridview_Base_Controller
     else {
       if (!is_null($this->auth_filter))
       {
-        $lw = new Licenses_Website_Model($id);
+        $lw = new Licences_Website_Model($id);
         return (in_array($lw->website_id, $this->auth_filter['values']));
       }
     }
