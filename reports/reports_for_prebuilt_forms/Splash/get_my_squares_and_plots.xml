@@ -16,14 +16,14 @@ or any plot they are assigned to which they didn't create (as long as they are t
       JOIN locations square on (square.id=l.id OR square.id=l.parent_id) AND square.location_type_id=#core_square_location_type_id# OR square.location_type_id=#additional_square_location_type_id#
       LEFT JOIN location_attribute_values lav on lav.location_id=square.id AND lav.location_attribute_id = #vice_county_location_attribute_id#
       LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=l.id
-      JOIN users u on u.id=#current_user_id#
+      JOIN users u on u.id=#current_user_id# or u.id=#user_id#
       JOIN person_attribute_values pavOthers on pavOthers.int_value=square.id AND pavOthers.person_attribute_id=#user_square_attr_id# AND pavOthers.deleted=false
       JOIN person_attribute_values pav on pav.int_value=square.id AND pav.person_id=u.person_id AND pav.person_attribute_id=#user_square_attr_id# AND pav.deleted=false
     #joins#
     WHERE (l.id = square.id OR l.parent_id = square.id)
     AND #website_filter# AND l.deleted=false
     GROUP BY square.id,l.parent_id,l.id,lav.text_value,lavplotname.text_value,termplottype.term,pav.updated_by_id,u.id
-    HAVING (l.parent_id IS NULL OR (#only_show_my_useable_plots_squares#=0 OR (#only_show_my_useable_plots_squares#=1 AND (l.created_by_id=#current_user_id# OR count(distinct pavOthers.id) &lt; 2))))
+    HAVING (l.parent_id IS NULL OR (#only_show_my_useable_plots_squares#=0 OR (#only_show_my_useable_plots_squares#=1 AND ((l.created_by_id=#current_user_id# or l.created_by_id=#user_id#) OR count(distinct pavOthers.id) &lt; 2))))
   </query>
   <order_bys>
     <order_by>square.id,l.parent_id desc</order_by>
@@ -32,7 +32,11 @@ or any plot they are assigned to which they didn't create (as long as they are t
     <param name="plot_number_attr_id" display="Id of the plot number attribute" datatype="integer" default="0"/>
     <param name="core_square_location_type_id" display="Core Square location type id" datatype="integer"/>
     <param name="additional_square_location_type_id" display="Additional Square location type id" datatype="integer"/>
-    <param name="current_user_id" display="Id of the currently logged in user" datatype="integer"/>
+    <param name="current_user_id" display="Id of the currently logged in user" datatype="integer" default="0" emptyvalue="0"/>
+    <param name="user_id" display="Also provides a user_id to pass to the report. 
+        This is for flexibility as the application can pass either current_user_id (main website) or user_id (app).
+        The app was developed later and needed to use user_id, 
+        so ideally the main website should be changed to use that parameter" datatype="integer" default="0" emptyvalue="0"/>
     <param name="no_vice_county_found_message" display="Some words to use in the square's name if a vice county cannot be found." datatype="text"/>
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
     <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
@@ -47,11 +51,13 @@ or any plot they are assigned to which they didn't create (as long as they are t
     <column name='id' display='Location ID' sql="l.id" datatype='integer' visible="false" in_count="true"/>
     <column name='square_id' display='Square ID' sql="square.id" datatype='integer' visible="false"/>
     <column name='parent_id' display='Parent ID' sql="l.parent_id" datatype='integer' visible="false"/>
+    <column name='square_entered_sref' display='Square spatial reference' sql="square.centroid_sref" visible="false"/>
+    <column name='location_entered_sref' display='Location spatial reference (plot or square)' sql="l.centroid_sref" visible="false"/>
     <column name='show_square_add_plot_control' display='Show Square Add Plot Control' sql="case when l.parent_id is null then true else false end" visible="false"/>
-    <column name='show_square_edit_control' display='Show Square Edit Control' sql="case when l.parent_id is null AND l.created_by_id=#current_user_id# AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
+    <column name='show_square_edit_control' display='Show Square Edit Control' sql="case when l.parent_id is null AND (l.created_by_id=#current_user_id# or l.created_by_id=#user_id#) AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
     <column name='show_simple_square_edit_control' display='Show Simple Square Edit Control' description="Show cut-down version of edit square page?" sql="case when l.parent_id is null AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
     <column name='show_plot_view_control' display='Show Plot View Control' sql="case when l.parent_id is not null AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
-    <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND (l.created_by_id=#current_user_id# OR count(distinct pavOthers.id) &lt; 2) AND count(locationSamples.id) = 0 AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
+    <column name='show_plot_edit_control' display='Show Plot Edit Control' sql="case when l.parent_id is not null AND ((l.created_by_id=#current_user_id# or l.created_by_id=#user_id#) OR count(distinct pavOthers.id) &lt; 2) AND count(locationSamples.id) = 0 AND pav.updated_by_id!=u.id then true else false end" visible="false"/>
     <column name='name' display='Location Name' sql="
       case 
         when l.parent_id is null AND #pss_mode#=0
@@ -65,6 +71,6 @@ or any plot they are assigned to which they didn't create (as long as they are t
       end" datatype='text' />
     <column name='allocation_updater' display='Person who updated allocation' sql="pav.updated_by_id" datatype='integer' visible="false"/>
     <column name='allocated_to' display='Person who allocation is for' sql="u.id" datatype='integer' visible="false"/>
-    <column name='my_plot' display='My Plot?' sql="case when l.parent_id IS NOT NULL AND l.created_by_id=#current_user_id# then 'YES' when l.parent_id IS NOT NULL AND l.created_by_id!=#current_user_id# then 'NO' else '' end"/>
+    <column name='my_plot' display='My Plot?' sql="case when l.parent_id IS NOT NULL AND (l.created_by_id=#current_user_id# or l.created_by_id=#user_id#) then 'YES' when l.parent_id IS NOT NULL AND (l.created_by_id!=#current_user_id# and l.created_by_id!=#user_id#) then 'NO' else '' end"/>
   </columns> 
 </report>
