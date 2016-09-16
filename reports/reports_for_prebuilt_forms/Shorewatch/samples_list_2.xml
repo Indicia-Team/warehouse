@@ -35,7 +35,7 @@
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
   </params>
   <columns>
-    <column name='sample_id' display='ID' sql="s.id" datatype="integer" />
+    <column name='sample_id' display='Effort ID' sql="s.id" datatype="integer" />
     <column name='survey' display='Survey' sql="su.title" datatype="text" />
     <column name='location_name' display='Site name' sql="COALESCE(l.name, s.location_name)" datatype="text"  />
     <column name='code' display='Site code' sql="l.code" datatype="text" />
