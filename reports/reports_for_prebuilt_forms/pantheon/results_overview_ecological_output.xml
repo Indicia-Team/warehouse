@@ -2,14 +2,17 @@
     title="Results overview - ecological output"
     description="A report to display the ecological guild details on the Results Overview page."
 >
-<query website_filter_field="o.website_id">
-  select #columns#
-  from cache_occurrences o
-  join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and ttlav.deleted=false
-  and ttlav.taxa_taxon_list_attribute_id in (#adult_attr_id#, #larval_attr_id#)
-  join cache_termlists_terms tguild on tguild.id=ttlav.int_value
-  where sample_id=#sample_id#
-</query>
+  <query website_filter_field="o.website_id">
+    select #columns#
+    from cache_occurrences o
+    join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and ttlav.deleted=false
+    and ttlav.taxa_taxon_list_attribute_id in (#adult_attr_id#, #larval_attr_id#)
+    join cache_termlists_terms tguild on tguild.id=ttlav.int_value
+    where sample_id=#sample_id#
+  </query>
+  <order_bys>
+    <order_by>count(distinct o.preferred_taxa_taxon_list_id) desc</order_by>
+  </order_bys>
   <params>
     <param name='sample_id' display='Sample' description='Sample id to retrieve data for.' datatype='integer'/>
     <param name='adult_attr_id' display='Adult Guild Occurrence Attribute Id' description='Occurrance attribute that holds adult guild.' datatype='integer'/>
