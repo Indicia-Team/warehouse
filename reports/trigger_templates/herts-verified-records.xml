@@ -1,0 +1,45 @@
+<report
+    title="Verified herts records"
+    description="Notifications for verified records on Herts Flora."
+>
+  <query>
+  SELECT o.survey_title, o.website_id, o.id as occurrence_id, o.date_start, o.date_end, o.date_type, o.taxon, 
+  o.public_entered_sref, o.location_name, oi.path, 
+  CASE o.record_status 
+    WHEN 'C' THEN 'Data Entry Complete' 
+    WHEN 'V' THEN 'Verified'
+    WHEN 'R' THEN 'Rejected'
+    WHEN 'I' THEN 'In Progress'
+    WHEN 'T' THEN 'Test'
+    ELSE ''
+  END AS record_status,
+  o.verifier as verified_by
+  FROM cache_occurrences o
+  JOIN occurrences o2 on o2.id=o.id
+  LEFT JOIN occurrence_images oi ON oi.occurrence_id=o.id
+  WHERE o.survey_id = '#survey#'
+  AND o2.verified_on > '#date#'
+  AND o.record_status NOT IN ('I','T')
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>date_start DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey' display='Survey' description='Select the survey to return data for' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+    <param name='date' display='Date' description='Date &amp; time of last check' datatype='datetime' />
+  </params>
+  <columns>
+    <column name='survey_title' display='Survey' />
+    <column name='website_id' visible='false' />
+    <column name='occurrence_id' display="Record ID" />
+    <column name='date' display='Date' orderby='date_start' />
+    <column name='taxon' display='Taxon' class='sci binomial' />
+    <column name='entered_sref' display='Spatial Ref.' />
+    <column name='location_name' display='Location' />
+    <column name='path' display='Photo' img='true' />
+    <column name='record_status' display='Record Status' />
+    <column name='verified_by' display='Verified By' />
+  </columns>
+</report>

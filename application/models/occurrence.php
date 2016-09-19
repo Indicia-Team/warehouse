@@ -79,17 +79,25 @@ class Occurrence_Model extends ORM
   }
   
   public function validate(Validation $array, $save = false) {
-    if ($save) 
+    if ($save) {
       $this->logDeterminations($array);
-    if ($this->id && preg_match('/[RDV]/', $this->record_status) && 
-        (empty($this->submission['fields']['record_status']) || $this->submission['fields']['record_status']['value']==='C') && 
-        empty($this->submission['fields']['release_status']) && $this->wantToUpdateMetadata) {
-      // If we update a processed occurrence but don't set the verification or release state, revert it to completed/awaiting verification.
-      $array->verified_by_id=null;
-      $array->verified_on=null;
-      $array->record_status='C';
-      $array->record_substatus=null;
-      $this->requeuedForVerification=true;
+      $fields = $this->submission['fields'];
+      // If updating an existing record that has been checked by a verifier, without setting a new record status and
+      // without changing the release status (i.e. releasing the record from a silo) then reset the current verification
+      // status.
+      $isChecked = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
+      $settingNewRecordStatus =
+        (!empty($fields['record_status']) && $fields['record_status']['value'] !== 'C') ||
+        (!empty($fields['record_substatus']) && $fields['record_status']['value'] == 4);
+      $releasing = !empty($fields['release_status']);
+      if ($this->id && $isChecked && !$settingNewRecordStatus && !$releasing && $this->wantToUpdateMetadata) {
+        // If we update a processed occurrence but don't set the verification or release state, revert it to completed/awaiting verification.
+        $array->verified_by_id = NULL;
+        $array->verified_on = NULL;
+        $array->record_status = 'C';
+        $array->record_substatus = NULL;
+        $this->requeuedForVerification = TRUE;
+      }
     }
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');

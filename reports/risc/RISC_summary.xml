@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="RISC Summary" description="Lists number of records, verified records and records awaiting verification for RISC species">
+  <query>
+      SELECT #columns#
+      FROM cache_occurrences o
+      WHERE o.website_id = 3
+  </query>
+  <order_bys>
+    <order_by>COUNT(NULLIF(o.zero_abundance, true)) DESC</order_by>
+  </order_bys>  
+  <columns>
+    <column name="taxon" display="Taxon" sql="o.taxon" />
+    <column name="num_absence" display="Absence records" sql="COUNT(NULLIF(o.zero_abundance, false))" aggregate="true" />
+    <column name="num_presence" display="Submitted records"  sql="COUNT(NULLIF(o.zero_abundance, true))" aggregate="true"  />
+    <column name="num_verified" display="Verified records" sql="(COUNT(o.id) - COUNT(NULLIF(record_status, 'V')))" aggregate="true" />
+    <column name="num_waiting" display="Awaiting verification" sql="COUNT(NULLIF(images, '') || NULLIF(record_status, 'V') || NULLIF(record_status, 'R'))"  aggregate="true" />
+  </columns>
+  </report>

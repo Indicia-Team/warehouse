@@ -21,6 +21,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+ini_set('gd.jpeg_ignore_warning', 1);
+
 /**
  * Extension to the image library class which adds functionality to create multiple sized
  * images for an uploaded image file.

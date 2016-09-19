@@ -5,10 +5,49 @@
  * @todo Test sharing mode on project filters is respected.
  *
  */
-class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
+class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
   private static $userId;
   private static $config;
+
+  public function getDataSet()
+  {
+    $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+  
+    /* Create a filter for the test project defined in config/rest.php.travis.
+     * Create an occurrence comment for annotation testing.
+     */
+    $ds2 = new Indicia_ArrayDataSet(
+      array(
+        'filters' => array(
+          array(
+            'title' => 'Test filter',
+            'description' => 'Filter for unit testing',
+            'definition' => '{"quality":"!R"}',
+            'created_on' => '2016-07-22:16:00:00',
+            'created_by_id' => 1,
+            'updated_on' => '2016-07-22:16:00:00',
+            'updated_by_id' => 1,
+          ),
+        ),
+        'occurrence_comments' => array(
+          array(
+            'comment' => 'Occurrence comment for unit testing',
+            'created_on' => '2016-07-22:16:00:00',
+            'created_by_id' => 1,
+            'updated_on' => '2016-07-22:16:00:00',
+            'updated_by_id' => 1,
+            'occurrence_id' => 1,
+          ),
+        ),
+      )
+    );
+    
+    $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
+    $compositeDs->addDataSet($ds1);
+    $compositeDs->addDataSet($ds2); 
+    return $compositeDs;
+  }
 
   public static function setUpBeforeClass() {
     // grab the clients registered on this system
@@ -21,7 +60,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
   }
 
   protected function setUp() {
-
+    // Calling parent::setUp() will build the database fixture.
+    parent::setUp();
   }
 
   protected function tearDown() {
@@ -29,6 +69,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testProjects_getUnauthorised() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_getUnauthorised");
+    
     // deliberately incorrect shared secret
     $response = $this->callService('projects', self::$userId, '---');
     $this->assertTrue($response['httpCode']===401, 'Incorrect shared secret passed to /projects but request authorised. ' .
@@ -43,6 +85,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testProjects_get() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_get");
+    
     $response = $this->callService('projects', self::$userId, self::$config['shared_secret']);
     $this->assertResponseOk($response, '/projects');
     $viaApi = json_decode($response['response']);
@@ -58,6 +102,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testProjects_get_id() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_get_id");
+
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("projects/$projDef[id]", self::$userId, self::$config['shared_secret']);
       $this->assertResponseOk($response, "/projects/$projDef[id]");
@@ -72,6 +118,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testTaxon_observations_get_incorrect_params() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxon_observations_get_incorrect_params");
+
     $response = $this->callService('taxon-observations', self::$userId, '---');
     $this->assertTrue($response['httpCode']===401,
       'Incorrect shared secret passed to /taxon-observations but request authorised. ' .
@@ -109,6 +157,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    * @todo Test the /taxon-observations/id endpoint
    */
   public function testTaxon_observations_get() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxon_observations_get");
+
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("taxon-observations", self::$userId, self::$config['shared_secret'],
         array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'));
@@ -117,6 +167,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
       $this->assertArrayHasKey('paging', $apiResponse, 'Paging missing from response to call to taxon-observations');
       $this->assertArrayHasKey('data', $apiResponse, 'Data missing from response to call to taxon-observations');
       $data = $apiResponse['data'];
+      $this->assertInternalType('array', $data, 'Taxon-observations data invalid. ' . var_export($data, true));
+      $this->assertNotCount(0, $data, 'Taxon-observations data absent. ' . var_export($data, true));
       foreach ($data as $occurrence)
         $this->checkValidTaxonObservation($occurrence);
       // only test a single project
@@ -125,6 +177,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testAnnotations_get_incorrect_params() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAnnotations_get_incorrect_params");
+
     $response = $this->callService('annotations', self::$userId, '---');
     $this->assertTrue($response['httpCode'] === 401,
       'Incorrect shared secret passed to /annotations but request authorised. ' .
@@ -147,6 +201,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    * @todo Test the annotations/id endpoint
    */
   public function testAnnotations_get() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAnnotations_get");
+
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("annotations", self::$userId, self::$config['shared_secret'],
         array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'));
@@ -155,6 +211,8 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
       $this->assertArrayHasKey('paging', $apiResponse, 'Paging missing from response to call to annotations');
       $this->assertArrayHasKey('data', $apiResponse, 'Data missing from response to call to annotations');
       $data = $apiResponse['data'];
+      $this->assertInternalType('array', $data, 'Annotations data invalid. ' . var_export($data, true));
+      $this->assertNotCount(0, $data, 'Annotations data absent. ' . var_export($data, true));
       foreach ($data as $annotation)
         $this->checkValidAnnotation($annotation);
       // only test a single project
@@ -169,7 +227,10 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    * @param string $apiCall Name of the API method being called, e.g. /projects
    */
   private function assertResponseOk($response, $apiCall) {
-    $this->assertTrue($response['curlErrno']===0 && $response['httpCode']===200,
+    $this->assertEquals($response['httpCode'], 200,
+      "Invalid response from call to $apiCall. HTTP Response $response[httpCode]. Curl error " .
+      "$response[curlErrno] ($response[errorMessage]).");
+    $this->assertEquals($response['curlErrno'], 0,
       "Invalid response from call to $apiCall. HTTP Response $response[httpCode]. Curl error " .
       "$response[curlErrno] ($response[errorMessage]).");
   }
@@ -179,7 +240,7 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    * @param $data Array to be tested as a taxon occurrence resource
    */
   private function checkValidTaxonObservation($data) {
-    $this->assertTrue(is_array($data), 'Taxon-observation object invalid. ' . var_export($data, true));
+    $this->assertInternalType('array', $data, 'Taxon-observation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'datasetName', 'taxonVersionKey', 'taxonName',
         'startDate', 'endDate', 'dateType', 'projection', 'precision', 'recorder', 'lastEditDate');
     foreach ($mustHave as $key) {
@@ -196,7 +257,7 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
    * @param $data Array to be tested as an annotation resource
    */
   private function checkValidAnnotation($data) {
-    $this->assertTrue(is_array($data), 'Annotation object invalid. ' . var_export($data, true));
+    $this->assertInternalType('array', $data, 'Annotation object invalid. ' . var_export($data, true));
     $mustHave = array('id', 'href', 'taxonObservation', 'taxonVersionKey', 'comment',
         'question', 'authorName', 'dateTime');
     foreach ($mustHave as $key) {
@@ -254,7 +315,10 @@ class Rest_ControllerTest extends PHPUnit_Framework_TestCase {
     $url = url::base(true) . "/services/rest/$method";
     if ($query)
       $url .= '?' . http_build_query($query);
+    Kohana::log('debug', "Making request to $url");
     $session = $this->initCurl($url, $userId, $sharedSecret);
-    return $this->getCurlResponse($session);
+    $response = $this->getCurlResponse($session);
+    Kohana::log('debug', "Received response " . print_r($response, TRUE));
+    return $response;
   }
 }

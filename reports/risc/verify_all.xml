@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report
+  title="RISC Verification"
+  description="Lists all unverified occurrences with or without photos for given survey and taxon."
+>
+  <comment>
+    This report depends upon this function having been created in the database.
+    CREATE AGGREGATE CONCAT (
+        BASETYPE = text,
+        SFUNC = textcat,
+        STYPE = text,
+        INITCOND = ''
+    );
+  </comment>
+  <query>
+    SELECT  s.id AS sample_id,
+            s.date_start AS date,
+            (
+              (SELECT text_value FROM sample_attribute_values
+               WHERE sample_id = s.id AND sample_attribute_id = 6)
+              || ' ' ||
+              (SELECT text_value FROM sample_attribute_values
+               WHERE sample_id = s.id AND sample_attribute_id = 7)
+            )AS name,
+            (SELECT text_value FROM sample_attribute_values
+               WHERE sample_id = s.id AND sample_attribute_id = 8) AS email,
+            'Grid ref: ' ||s.entered_sref || '. ' || s.location_name AS location,
+            o.comment AS occ_comment,
+            (SELECT CONCAT('&lt;a class="fancybox" href="http://warehouse1.indicia.org.uk/upload/' ||
+                                        oi.path ||
+                                        '"&gt;' ||
+                                        '&lt;img src="http://warehouse1.indicia.org.uk/upload/thumb-' ||
+                                        oi.path ||
+                                        '" /&gt;' ||
+                                        '&lt;/a&gt;')
+              FROM occurrence_images oi WHERE occurrence_id = o.id) AS photos,
+              o.id as occurrence_id,
+              (
+                SELECT t.taxon
+                FROM indicia.taxa t
+                JOIN indicia.taxa_taxon_lists ttl ON t.id = ttl.taxon_id
+                WHERE ttl.id = #taxon#) AS taxon
+    FROM samples as s
+    JOIN occurrences o on o.sample_id = s.id
+    WHERE s.survey_id = #survey# AND
+          s.deleted = FALSE AND
+          o.record_status = 'C' AND
+          o.taxa_taxon_list_id = #taxon#
+  </query>
+
+  <params>
+    <param name="survey" />
+    <param name="taxon" />
+  </params>
+
+  <order_bys>
+    <order_by>s.id ASC</order_by>
+  </order_bys>
+
+  <columns>
+    <column name="sample_id" display="Sample" />
+    <column name="date" display="Date" />
+    <column name="name" display="Name" />
+    <column name="email" display="Email" />
+    <column name="location" display="Location" />
+    <column name="occ_comment" display="Comment" />
+    <column name="photos" display="Photos" />
+    <column name="occurrence_id" visible="false" />
+    <column name="taxon" visible="false" />
+  </columns>
+
+  </report>
