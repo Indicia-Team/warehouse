@@ -20,7 +20,7 @@ from (
 ) sub
   </query>
   <order_bys>
-    <order_by>sub.caption</order_by>
+    <order_by>sub.count desc, sub.caption</order_by>
   </order_bys>
   <params>
     <param name='sample_id' display='Sample ID'  datatype='integer'/>
