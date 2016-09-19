@@ -50,22 +50,23 @@ where (av_bb.id is not null or av_sb.id is not null or av_r.id is not null
   </params>
   <columns>
     <column name="species" sql="cttl.preferred_taxon" display="Species" in_count="true" datatype="text" />
+    <column name="family" sql="cttl.family_taxon" display="Family" in_count="true" datatype="text" />
     <column name="order" sql="cttl.order_taxon" display="Order" in_count="true" datatype="text" />
     <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.id::varchar, td.code, td.abbreviation)), ';')"
             display="Conservation status" aggregate="true" datatype="text" />
-    <column name="isis_bat_code" sql="isisbatcode.term" display="ISIS BAT code" datatype="text" />
-    <column name="isis_sat_code" sql="isissatcode.term" display="ISIS SAT code" datatype="text" />
-    <column name="broad_biotope" display="Broad habitat" sql="array_to_string(array_agg(distinct t_bb.term), '; ')"
-            aggregate="true" datatype="text" />
-    <column name="specific_biotope" display="Specific biotope" sql="array_to_string(array_agg(distinct t_sb.term), '; ')"
-            aggregate="true" datatype="text" />
-    <column name="resource" display="Resource" aggregate="true" datatype="text"
-            sql="'[' || array_to_string(array_agg(distinct '[' || t_r.id || ',' || case when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then 0 else t_r.parent_id end || ',&quot;' || t_r.term || '&quot;]'), ',') || ']'" />
+    <column name="horus_indicator" sql="array_to_string(array_agg(distinct coalesce(horusa.caption || ': ' || horusv.int_value::varchar)), ', ')"
+            display="HORUS indicator" aggregate="true" datatype="text" />
     <column name="larval_guild" sql="string_agg(distinct lguildterm.term,';')" display="Larval guild" aggregate="true"
             datatype="text" />
     <column name="adult_guild" sql="string_agg(distinct aguildterm.term,';')" display="Adult guild" aggregate="true"
             datatype="text" />
-    <column name="horus_indicator" sql="array_to_string(array_agg(distinct coalesce(horusa.caption || ': ' || horusv.int_value::varchar)), ', ')"
-            display="HORUS indicator" aggregate="true" datatype="text" />
+    <column name="broad_biotope" display="Broad biotope (Osiris)" sql="array_to_string(array_agg(distinct t_bb.term), '; ')"
+            aggregate="true" datatype="text" />
+    <column name="specific_biotope" display="Specific biotope (Osiris)" sql="array_to_string(array_agg(distinct t_sb.term), '; ')"
+            aggregate="true" datatype="text" />
+    <column name="resource" display="Resources and traits (Osiris)" aggregate="true" datatype="text"
+            sql="'[' || array_to_string(array_agg(distinct '[' || t_r.id || ',' || case when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then 0 else t_r.parent_id end || ',&quot;' || t_r.term || '&quot;]'), ',') || ']'" />
+    <column name="isis_bat_code" sql="isisbatcode.term" display="ISIS BAT code" datatype="text" />
+    <column name="isis_sat_code" sql="isissatcode.term" display="ISIS SAT code" datatype="text" />
   </columns>
 </report>
