@@ -29,6 +29,8 @@ left join (taxa_taxon_list_attribute_values horusv
   join taxa_taxon_list_attributes horusa on horusa.id=horusv.taxa_taxon_list_attribute_id and horusa.deleted=false 
   and horusa.caption like '%score%' and horusa.caption&lt;&gt;'rarity score'
 ) on horusv.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and horusv.deleted=false
+left join taxa_taxon_list_attribute_values allattrs on allattrs.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and allattrs.deleted=false
+    and allattrs.taxa_taxon_list_attribute_id in (#all_trait_attr_ids#)
 where o.sample_id=#sample_id#
 #filters#
   </query>
@@ -40,6 +42,14 @@ where o.sample_id=#sample_id#
     <param name='taxon_group_id' display='Taxon group' description='ID of taxon group to filter to' datatype='integer' default=''>
       <where>o.taxon_group_id=#taxon_group_id#</where>
     </param>
+    <param name='analysed' display='Analysed' description='Include or exclude analysed species' datatype='boolean' default=''>
+      <wheres>
+        <where value="t" operator="equal">allattrs.id is not null</where>
+        <where value="f" operator="equal">allattrs.id is null</where>
+      </wheres>
+    </param>
+    <param name='all_trait_attr_ids' display='Trait Attribute Ids' datatype='text'
+           description='Comma separated list of the taxa taxon list attribute ids that hold species traits.' />
   </params>
   <columns>
     <column name="species" sql="o.preferred_taxon" display="Species" in_count="true" />

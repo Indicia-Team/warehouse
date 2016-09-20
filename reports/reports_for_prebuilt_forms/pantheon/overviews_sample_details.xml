@@ -30,6 +30,8 @@
     -- Number Analysed is the summed abundance in the sample that actually have traits, as the user
     can select any species, not just pantheon ones with traits
     <column name='number_analysed' sql='count(distinct ttlav.taxa_taxon_list_id)' display='Number Analysed' aggregate='true'/>
+    <column name='number_not_analysed' display='Not analysed' aggregate='true'
+            sql='count(distinct o.preferred_taxa_taxon_list_id) - count(distinct ttlav.taxa_taxon_list_id)' />
     --What percentage of the sample's summed abundance actually have Pantheon traits.
     <column name='percent_return' sql='round(count(distinct ttlav.taxa_taxon_list_id)::float*100/count(distinct o.preferred_taxa_taxon_list_id)::float)' display='% Return' aggregate='true'/>
   </columns>
