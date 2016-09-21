@@ -27,12 +27,8 @@ left join cache_termlists_terms lguildterm on lguildterm.id=lguildv.int_value
 left join taxa_taxon_list_attribute_values aguildv on aguildv.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and aguildv.deleted=false
   and aguildv.taxa_taxon_list_attribute_id=8 -- parameter for adult guild attribute ID
 left join cache_termlists_terms aguildterm on aguildterm.id=aguildv.int_value
-left join (taxa_taxon_list_attribute_values horusv
-  join taxa_taxon_list_attributes horusa on horusa.id=horusv.taxa_taxon_list_attribute_id and horusa.deleted=false 
-  and horusa.caption like '%score%' and horusa.caption&lt;&gt;'rarity score'
-) on horusv.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and horusv.deleted=false
 where (av_bb.id is not null or av_sb.id is not null or av_r.id is not null
-    or lguildv.id is not null or aguildv.id is not null or horusv is not null)
+    or lguildv.id is not null or aguildv.id is not null)
     and cttl.preferred=true
 #filters#
   </query>
@@ -53,8 +49,6 @@ where (av_bb.id is not null or av_sb.id is not null or av_r.id is not null
     <column name="order" sql="cttl.order_taxon" display="Order" in_count="true" datatype="text" />
     <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.id::varchar, td.code, td.abbreviation)), ';')"
             display="Conservation status" aggregate="true" datatype="text" />
-    <column name="horus_indicator" sql="array_to_string(array_agg(distinct coalesce(horusa.caption || ': ' || horusv.int_value::varchar)), ', ')"
-            display="HORUS indicator" aggregate="true" datatype="text" />
     <column name="larval_guild" sql="string_agg(distinct lguildterm.term,';')" display="Larval guild" aggregate="true"
             datatype="text" />
     <column name="adult_guild" sql="string_agg(distinct aguildterm.term,';')" display="Adult guild" aggregate="true"
