@@ -12,7 +12,6 @@ join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=fals
 left join taxa_taxon_list_attribute_values av_bb on av_bb.taxa_taxon_list_id=ttl.id and av_bb.deleted=false
 and av_bb.taxa_taxon_list_attribute_id=#bb_attr_id#
 left join cache_termlists_terms t_bb on t_bb.id=av_bb.int_value
-left join cache_termlists_terms isisbatcode on isisbatcode.meaning_id=t_bb.meaning_id and isisbatcode.preferred=false
 left join taxa_taxon_list_attribute_values av_sb on av_sb.taxa_taxon_list_id=ttl.id and av_sb.deleted=false
 and av_sb.taxa_taxon_list_attribute_id=#sb_attr_id#
 left join cache_termlists_terms t_sb on t_sb.id=av_sb.int_value
@@ -66,7 +65,6 @@ where (av_bb.id is not null or av_sb.id is not null or av_r.id is not null
             aggregate="true" datatype="text" />
     <column name="resource" display="Resources and traits (Osiris)" aggregate="true" datatype="text"
             sql="'[' || array_to_string(array_agg(distinct '[' || t_r.id || ',' || case when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then 0 else t_r.parent_id end || ',&quot;' || t_r.term || '&quot;]'), ',') || ']'" />
-    <column name="isis_bat_code" sql="isisbatcode.term" display="ISIS BAT code" datatype="text" />
     <column name="isis_sat_code" sql="isissatcode.term" display="ISIS SAT code" datatype="text" />
   </columns>
 </report>
