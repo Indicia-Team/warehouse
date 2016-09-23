@@ -256,7 +256,11 @@ class Import_Controller extends Service_Base_Controller {
       // create the file pointer, plus one for errors
       $handle = fopen($csvTempFile, "r");
       $this->checkIfUtf8($metadata, $handle);
-      $errorHandle = $this->getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid);
+      $existingProblemColIdx = FALSE;
+      $existingErrorRowNoColIdx = FALSE;
+      $existingImportGuidColIdx = FALSE;
+      $errorHandle = $this->getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid,
+          $existingProblemColIdx, $existingErrorRowNoColIdx, $existingImportGuidColIdx);
       $count = 0;
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : FALSE);
       $filepos = (isset($_GET['filepos']) ? $_GET['filepos'] : 0);
@@ -336,11 +340,17 @@ class Import_Controller extends Service_Base_Controller {
           }
         }
         if ($supportsImportGuid) {
-          // Save the upload filename (which is a guid) in a field so the results of each
-          // individual upload can be grouped together. Relies on the model being imported
-          // into having a text field called import_guid otherwise it's just ignored.
-          $fileNameParts = explode('.', basename($csvTempFile));
-          $saveArray['import_guid'] = $fileNameParts[0];
+          if ($existingImportGuidColIdx === FALSE) {
+            // Save the upload filename (which is a guid) in a field so the results of each
+            // individual upload can be grouped together. Relies on the model being imported
+            // into having a text field called import_guid otherwise it's just ignored.
+            $fileNameParts = explode('.', basename($csvTempFile));
+            $saveArray['import_guid'] = $fileNameParts[0];
+          } else {
+            // This is a reimport of error records which want to link back to the original import. So use the original
+            // guid as supplied in the data rather than the uploaded file name.
+            $saveArray['import_guid'] = $data[$existingImportGuidColIdx];
+          }
         }
         // Check if in an association situation
         $associationExists = FALSE;
@@ -450,9 +460,15 @@ class Import_Controller extends Service_Base_Controller {
             $errors[] = "$fldTitle: $msg";
           }
           $errors = implode("\n", array_unique($errors));
-          $data[] = $errors;
-          $data[] = $count + $offset + 1; // 1 for header
-          if ($supportsImportGuid)
+          if ($existingProblemColIdx === FALSE)
+            $data[] = $errors;
+          else
+            $data[$existingProblemColIdx] = $errors;
+          if ($existingErrorRowNoColIdx === FALSE)
+            $data[] = $count + $offset + 1; // 1 for header
+          else
+            $data[$existingErrorRowNoColIdx] = $count + $offset + 1;
+          if ($supportsImportGuid && $existingImportGuidColIdx === FALSE)
             $data[] = $fileNameParts[0];
           fputcsv($errorHandle, $data);
           kohana::log('debug', 'Failed to import CSV row: ' . $errors);
@@ -628,21 +644,37 @@ class Import_Controller extends Service_Base_Controller {
    * @param resource $handle File handle
    * @param Boolean $supportsImportGuid True if the model supports tracking imports by GUID, therefore the error file
    * needs to link the error row to its original GUID.
+   * @param integer $existingProblemColIdx Returns the column index that the current row's error message is in.
+   * @param integer $existingProblemRowNoColIdx Returns the column index that the current row's error source row number is
+   * in.
+   * @param integer $existingImportGuidColIdx Returns the column index that the current row's import GUID is in.
    * @return resource The error file's handle.
    */
-  private function getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid) {
+  private function getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid,
+       &$existingProblemColIdx, &$existingProblemRowNoColIdx, &$existingImportGuidColIdx) {
     // move the file to the beginning, so we can load the first row of headers.
     fseek($handle, 0);
     $errorFile = str_replace('.csv', '-errors.csv', $csvTempFile);
     $needHeaders = !file_exists($errorFile);
     $errorHandle = fopen($errorFile, "a");
-    // skip the header row, but add it to the errors file with additional field for row number.
+    // skip the header row, but add it to the errors file with additional field for row number unless already present.
     $headers = fgetcsv($handle, 1000, ",");
+    $existingImportGuidColIdx = FALSE;
     if ($needHeaders) {
-      $headers[] = 'Problem';
-      $headers[] = 'Row no.';
-      if ($supportsImportGuid)
-        $headers[] = 'Import ID';
+      $existingProblemColIdx = array_search('Problem', $headers);
+      if ($existingProblemColIdx === FALSE)
+        $headers[] = 'Problem';
+      $existingProblemRowNoColIdx = array_search('Row no.', $headers);
+      if ($existingProblemRowNoColIdx === FALSE)
+        $headers[] = 'Row no.';
+      if ($supportsImportGuid) {
+        $existingImportGuidColIdx = array_search('Import ID', $headers);
+        if ($existingImportGuidColIdx === FALSE) {
+          // If not re-importing errors, store the file ID as an import guid in the errors, to link errors to their
+          // original import.
+          $headers[] = 'Import ID';
+        }
+      }
       fputcsv($errorHandle, $headers);
     }
     return $errorHandle;
