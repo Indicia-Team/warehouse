@@ -251,10 +251,12 @@ class Import_Controller extends Service_Base_Controller {
     if (file_exists($csvTempFile)) {
       // Following helps for files from Macs
       ini_set('auto_detect_line_endings', 1);
+      $model = ORM::Factory($_GET['model']);
+      $supportsImportGuid = in_array('import_guid', $model->as_array());
       // create the file pointer, plus one for errors
       $handle = fopen($csvTempFile, "r");
       $this->checkIfUtf8($metadata, $handle);
-      $errorHandle = $this->getErrorFileHandle($csvTempFile, $handle);
+      $errorHandle = $this->getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid);
       $count = 0;
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : FALSE);
       $filepos = (isset($_GET['filepos']) ? $_GET['filepos'] : 0);
@@ -270,7 +272,6 @@ class Import_Controller extends Service_Base_Controller {
       {
         fseek($handle, $filepos);
       }
-      $model = ORM::Factory($_GET['model']);
       $this->submissionStruct = $model->get_submission_structure();
       // special date processing.
       $index = 0;
@@ -334,11 +335,13 @@ class Import_Controller extends Service_Base_Controller {
             $saveArray['joinsTo:website:' . $saveArray['website_id']] = 1;
           }
         }
-        // Save the upload filename (which is a guid) in a field so the results of each
-        // individual upload can be grouped together. Relies on the model being imported
-        // into having a text field called import_guid otherwise it's just ignored.
-        $fileNameParts = explode('.', basename($csvTempFile));
-        $saveArray['import_guid'] = $fileNameParts[0];
+        if ($supportsImportGuid) {
+          // Save the upload filename (which is a guid) in a field so the results of each
+          // individual upload can be grouped together. Relies on the model being imported
+          // into having a text field called import_guid otherwise it's just ignored.
+          $fileNameParts = explode('.', basename($csvTempFile));
+          $saveArray['import_guid'] = $fileNameParts[0];
+        }
         // Check if in an association situation
         $associationExists = FALSE;
         if (self::_check_module_active($this->submissionStruct['model'] . '_associations')) {
@@ -449,6 +452,8 @@ class Import_Controller extends Service_Base_Controller {
           $errors = implode("\n", array_unique($errors));
           $data[] = $errors;
           $data[] = $count + $offset + 1; // 1 for header
+          if ($supportsImportGuid)
+            $data[] = $fileNameParts[0];
           fputcsv($errorHandle, $data);
           kohana::log('debug', 'Failed to import CSV row: ' . $errors);
           $metadata['errorCount'] = $metadata['errorCount'] + 1;
@@ -621,9 +626,11 @@ class Import_Controller extends Service_Base_Controller {
    * along with a header for the problem description and row number.
    * @param string $csvTempFile File name of the imported CSV file.
    * @param resource $handle File handle
+   * @param Boolean $supportsImportGuid True if the model supports tracking imports by GUID, therefore the error file
+   * needs to link the error row to its original GUID.
    * @return resource The error file's handle.
    */
-  private function getErrorFileHandle($csvTempFile, $handle) {
+  private function getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid) {
     // move the file to the beginning, so we can load the first row of headers.
     fseek($handle, 0);
     $errorFile = str_replace('.csv', '-errors.csv', $csvTempFile);
@@ -634,6 +641,8 @@ class Import_Controller extends Service_Base_Controller {
     if ($needHeaders) {
       $headers[] = 'Problem';
       $headers[] = 'Row no.';
+      if ($supportsImportGuid)
+        $headers[] = 'Import ID';
       fputcsv($errorHandle, $headers);
     }
     return $errorHandle;
