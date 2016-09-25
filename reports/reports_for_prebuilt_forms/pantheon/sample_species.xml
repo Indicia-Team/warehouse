@@ -27,7 +27,8 @@ left join taxa_taxon_list_attribute_values aguildv on aguildv.taxa_taxon_list_id
 left join cache_termlists_terms aguildterm on aguildterm.id=aguildv.int_value  
 left join (taxa_taxon_list_attribute_values horusv
   join taxa_taxon_list_attributes horusa on horusa.id=horusv.taxa_taxon_list_attribute_id and horusa.deleted=false 
-  and horusa.caption like '%score%' and horusa.caption&lt;&gt;'rarity score'
+    and horusa.caption like '%score%' and horusa.caption&lt;&gt;'rarity score'
+  left join cache_termlists_terms horust on horust.id=horusv.int_value and horusa.data_type='L'
 ) on horusv.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and horusv.deleted=false
 left join taxa_taxon_list_attribute_values allattrs on allattrs.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and allattrs.deleted=false
     and allattrs.taxa_taxon_list_attribute_id in (#all_trait_attr_ids#)
@@ -59,6 +60,7 @@ where o.sample_id=#sample_id#
     <column name="osiris_traits" sql="array_to_string(array_agg(distinct osiristerm.term order by osiristerm.term), ';')" display="OSIRIS traits" aggregate="true" />
     <column name="larval_guild" sql="string_agg(distinct lguildterm.term,';')" display="Larval guild" aggregate="true" />
     <column name="adult_guild" sql="string_agg(distinct aguildterm.term,';')" display="Adult guild" aggregate="true" />
-    <column name="horus_indicator" sql="array_to_string(array_agg(distinct coalesce(horusa.caption || ': ' || horusv.int_value::varchar)), ', ')" display="HORUS indicator" aggregate="true" />
+    <column name="horus_indicator" display="Published indices (HORUS)" aggregate="true"
+            sql="array_to_string(array_agg(distinct coalesce(horusa.caption || ': ' || coalesce(horust.term, horusv.int_value::varchar))), ', ')" />
   </columns>
 </report>
