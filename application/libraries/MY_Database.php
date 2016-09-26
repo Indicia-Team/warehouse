@@ -58,16 +58,13 @@ class Database extends Database_Core {
       $escaped_values = array();
       foreach ($values as $v)
       {
-        if (is_numeric($v))
-        {
-          $escaped_values[] = $v;
-        }
-        else if ($v == null)
+        if ($v == null)
         {
           $null_value = true;
         }
         else
         {
+          // note that we escape strings and numerics the same. See Github #163.
           $escaped_values[] = "'".$this->driver->escape_str($v)."'";
         }
       }
