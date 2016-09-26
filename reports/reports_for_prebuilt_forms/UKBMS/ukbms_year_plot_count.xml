@@ -17,7 +17,7 @@
       </params>
       <columns>
             <column name="location_id" display="ID" sql="so.location_id" in_count="true" datatype="integer" />
-            <column name="taxon" display="Taxon" sql="so.default_common_name" datatype="text" />
+            <column name="taxon" display="Taxon" sql="coalesce(so.default_common_name, so.preferred_taxon, so.taxon)" datatype="text" />
             <column name="preferred_taxon" display="Preferred Taxon" sql="so.preferred_taxon" datatype="text" />
             <column name="taxon_meaning_id" display="Taxon Meaning ID" sql="so.taxon_meaning_id" datatype="text" />
             <column name="year" display="Year" sql="so.year" datatype="text" />
