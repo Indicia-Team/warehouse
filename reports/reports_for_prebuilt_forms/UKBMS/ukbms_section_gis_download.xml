@@ -13,7 +13,7 @@
       #joins#
       WHERE lw.deleted=false AND #website_filter#
       AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='' OR t.term='#location_type_id#')
-      AND GeometryType(section.boundary_geom) = 'LINESTRING'
+      AND (GeometryType(section.boundary_geom) = 'LINESTRING' OR GeometryType(section.boundary_geom) = 'MULTILINESTRING')
     </query>
     <order_bys>
         <order_by>name</order_by>

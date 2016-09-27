@@ -366,9 +366,10 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
           {
             $element = $this->entity;
           }
-          // Check if we can provide links to the related models. $this->entity is not set for reports, where this cannot be done.
-          if ((substr($element, -3)=='_id') && (array_key_exists(substr($element, 0, -3), $array)) && isset($this->entity))
-          {
+          // Check if we can provide links to the related models. $this->entity is set to 'record' for reports, where
+          // this cannot be done.
+          if ((substr($element, -3)=='_id') && (array_key_exists(substr($element, 0, -3), $array)) &&
+              (isset($this->entity) && $this->entity !== 'record')) {
             // create the model on demand, because it can tell us about relationships between things, but we don't want the overhead
             // of creation when not required.
             if (!isset($this->model))
