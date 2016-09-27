@@ -1233,9 +1233,16 @@ class ReportEngine {
         // Work out the field to insert into the query, and potentially the group by if required
         if ($attr->multi_value==='t') {
           // multivalue so use a subquery to build a CSV list of the data, no need to group by as this is aggregated
-          $field="(select array_to_string(array_agg(mv$alias.$col), ', ')
+          $field=<<<FLDQRY
+(select array_to_string(array_agg(
+    case 
+      when mv$alias.$col::varchar like '%,%' then'"' || replace(mv$alias.$col::varchar, '"', '""') || '"' 
+      else mv$alias.$col::varchar 
+    end
+  ), ', ')
   from {$entity}_attribute_values mv$alias
-  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id AND deleted = FALSE)";
+  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id AND deleted = FALSE)
+FLDQRY;
         } else {
           $field = "$entity${idx_}$id.$col";
           $query = str_replace('#group_bys#', ", $entity${idx_}$id.$col#group_bys#", $query);
