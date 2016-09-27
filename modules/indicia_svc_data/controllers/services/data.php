@@ -760,7 +760,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     if (isset($this->extensionOpts) && (!isset($this->extensionOpts['readOnly']) || $this->extensionOpts['readOnly']!==true))
       $this->allow_updates[] = $entity;
-    //Allow modules to provide an option when extending data services to allow tables without website ids to be written to
+    // Allow modules to provide an option when extending data services to allow tables without website ids to be written to
     if (isset($this->extensionOpts['allow_full_access'])&&$this->extensionOpts['allow_full_access']==1)
       $this->allow_full_access[] = $entity;
     return $extensions;
@@ -1317,19 +1317,22 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     if (!in_array($entity, $this->allow_updates)) {
       // check if an extension module declares write access to this entity
-      $extensions = $this->loadExtensions($entity);
+      $this->loadExtensions($entity);
     }
     if (!in_array($entity, $this->allow_updates)) {
-      Kohana::log('info', 'Attempt to write to entity '.$entity.' by website '.$this->website_id.': no write access allowed through services.');
-      throw new EntityAccessError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.', 2002);
+      $msg = "Attempt to update entity $entity by website $this->website_id: no write access allowed through services.";
+      Kohana::log('info', $msg);
+      throw new EntityAccessError($msg, 2002);
     }
-    if(array_key_exists('id', $s['fields']))
+    if (array_key_exists('id', $s['fields']))
       if (is_numeric($s['fields']['id']['value']))
         // there is an numeric id field so modifying an existing record
-        if (!$this->check_record_access($entity, $s['fields']['id']['value'], isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false))
-        {
-          Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
-          throw new AuthorisationError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value'], 2001);
+        if (!$this->check_record_access($entity, $s['fields']['id']['value'],
+            isset($_REQUEST['sharing']) && $_REQUEST['sharing'] !== 'reporting' ? $_REQUEST['sharing'] : false)) {
+          $msg = "Attempt to update existing record failed - website_id $this->website_id does not match website for " .
+              "$entity id ".$s['fields']['id']['value'];
+          Kohana::log('info', $msg);
+          throw new AuthorisationError($msg, 2001);
         }
     return true;
   }
