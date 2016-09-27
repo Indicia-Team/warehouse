@@ -1326,7 +1326,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     if(array_key_exists('id', $s['fields']))
       if (is_numeric($s['fields']['id']['value']))
         // there is an numeric id field so modifying an existing record
-        if (!$this->check_record_access($entity, $s['fields']['id']['value'], $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false))
+        if (!$this->check_record_access($entity, $s['fields']['id']['value'], isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false))
         {
           Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
           throw new AuthorisationError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value'], 2001);
@@ -1334,7 +1334,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     return true;
   }
 
-  protected function check_record_access($entity, $id, $website_id, $sharing=false)
+  protected function check_record_access($entity, $id, $sharing=false)
   {
     // if $id is null, then we have a new record, so no need to check if we have access to the record
     if (is_null($id))
@@ -1343,7 +1343,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
     if (!$this->db)
       $this->db = new Database();
-    $fields=postgreSQL::list_fields($viewname, $this->db);
+    $fields = postgreSQL::list_fields($viewname, $this->db);
     if(empty($fields)) {
       Kohana::log('info', $viewname.' not present so cannot access entity');
       throw new EntityAccessError('Access to entity '.$entity.' not available via requested view.', 1003);
@@ -1351,8 +1351,8 @@ class Data_Controller extends Data_Service_Base_Controller {
     $this->db->from("$viewname as record");
     $this->db->where(array('record.id' => $id));
 
-    if(!in_array ($entity, $this->allow_full_access)) {
-      if(array_key_exists ('website_id', $fields)) {
+    if (!in_array($entity, $this->allow_full_access)) {
+      if (array_key_exists('website_id', $fields)) {
         // check if a request for shared data is being made. Also check this is valid to prevent injection.
         if ($sharing && preg_match('/[reporting|peer_review|verification|data_flow|moderation]/', $sharing)) {
           // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So 
@@ -1368,7 +1368,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         }
       } elseif (!$this->in_warehouse) {
         Kohana::log('info', $viewname.' does not have a website_id - access denied');
-        throw new EntityAccessError('No access to entity '.$entity.' allowed.', 1004);
+        throw new EntityAccessError('No access to entity ' . $entity . ' allowed.', 1004);
       }
     }
     $number_rec = $this->db->count_records();
