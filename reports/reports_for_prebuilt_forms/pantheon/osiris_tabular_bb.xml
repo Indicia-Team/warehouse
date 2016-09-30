@@ -23,12 +23,14 @@
     <column name="term_id" sql="t_bb.id" visible="false" />
     <column name="term" sql="t_bb.term" display="Broad biotope" />
     <column name="count" sql="count(distinct o.preferred_taxa_taxon_list_id)" display="Count" aggregate="true"/>
-    <column name="ret" display="% return" aggregate="true"
+    <column name="rep" display="% representation" aggregate="true"
             sql="count(distinct o.preferred_taxa_taxon_list_id) * 100 / (
-      select count(osub.id) from cache_samples_functional ssub
-      join cache_occurrences_functional osub
-        on osub.website_id=ssub.website_id and osub.survey_id=ssub.survey_id and osub.sample_id=ssub.id
-      where ssub.id=#sample_id#
+      select count(distinct ttlsub.preferred_taxa_taxon_list_id)
+      from cache_taxa_taxon_lists ttlsub
+      join taxa_taxon_list_attribute_values avsub
+        on avsub.taxa_taxon_list_id=ttlsub.id
+        and avsub.taxa_taxon_list_attribute_id=#bb_attr_id#
+        and avsub.int_value=t_bb.id
     )" />
   </columns>
 </report>
