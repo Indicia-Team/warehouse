@@ -9,7 +9,7 @@
     join taxa_taxon_lists ttl on ttl.id=cttl.id
     left join (taxa_taxon_designations ttd
       join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false and td.title like 'IUCN%'
-    ) on ttd.taxon_id=ttl.taxon_id
+    ) on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
     left join taxa_taxon_list_attribute_values av_bb on av_bb.taxa_taxon_list_id=ttl.id and av_bb.deleted=false
       and av_bb.taxa_taxon_list_attribute_id=#bb_attr_id#
     left join cache_termlists_terms t_bb on t_bb.id=av_bb.int_value
@@ -70,7 +70,7 @@
     <column name="species" sql="cttl.preferred_taxon" display="Species" in_count="true" datatype="text" />
     <column name="family" sql="cttl.family_taxon" display="Family" in_count="true" datatype="text" />
     <column name="order" sql="cttl.order_taxon" display="Order" in_count="true" datatype="text" />
-    <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.id::varchar, td.code, td.abbreviation)), ';')"
+    <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.code, td.abbreviation, td.id::varchar)), ';')"
             display="Conservation status" aggregate="true" datatype="text" />
     <column name="larval_guild" sql="string_agg(distinct lguildterm.term,';')" display="Larval guild" aggregate="true"
             datatype="text" template="&lt;span&gt;{larval_guild}&lt;/span&gt;" />
