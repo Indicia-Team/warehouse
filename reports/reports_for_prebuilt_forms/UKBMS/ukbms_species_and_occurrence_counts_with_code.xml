@@ -17,6 +17,7 @@
       ) AS lsub
       JOIN locations l on l.id=lsub.id
       #joins#
+      WHERE 1=1
       </query>
       <order_bys>
             <order_by>occurrences DESC</order_by>
