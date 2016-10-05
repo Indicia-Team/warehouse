@@ -30,6 +30,9 @@
   LEFT JOIN occurrence_attribute_values countShortImmMustAttr ON countShortImmMustAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_mustard_grid_name#' AND countShortImmMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortImmMustAttr.deleted=false
   LEFT JOIN occurrence_attribute_values countLongImmMustAttr ON countLongImmMustAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_mustard_grid_name#' AND countLongImmMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongImmMustAttr.deleted=false
  
+  JOIN sample_attribute_values whoWithAttr ON whoWithAttr.sample_id=s.id AND whoWithAttr.sample_attribute_id=#who_with_attr_id# AND whoWithAttr.deleted=false
+  JOIN termlists_terms ttWhoWith on ttWhoWith.id = whoWithAttr.int_value AND ttWhoWith.deleted=false
+  JOIN terms tWhoWith on tWhoWith.id = ttWhoWith.term_id AND tWhoWith.deleted=false
   JOIN sample_attribute_values coverTypeAttr ON coverTypeAttr.sample_id=s.id AND coverTypeAttr.sample_attribute_id=#coverage_type_attr_id# AND coverTypeAttr.deleted=false
   JOIN termlists_terms ttCoverType on ttCoverType.id = coverTypeAttr.int_value AND ttCoverType.deleted=false
   JOIN terms tCoverType on tCoverType.id = ttCoverType.term_id AND tCoverType.deleted=false
@@ -79,6 +82,7 @@
     <param name='colour_attr_id' display='Soil colour attribute ID' description='The ID of the attribute that holds the recorded soil colour.' datatype='int' />
     <param name='fizz_attr_id' display='Soil fizz attribute ID' description='The ID of the attribute that holds the recorded soil fizz.' datatype='int' />
     <param name='plant_cover_attr_id' display='Plant cover attribute ID' description='The ID of the attribute that holds the recorded plant cover.' datatype='int' />
+    <param name='who_with_attr_id' display='Who are you with? attribute ID' description='The ID of the attribute that holds who the user is with.' datatype='int' />
     <param name='site_type_attr_id' display='Site type attribute ID' description='The ID of the attribute that holds the recorded site type.' datatype='int' />
     <param name='site_type_other_attr_id' display='Site type other attribute ID' description='The ID of the attribute that holds the recorded site type other details.' datatype='int' />
     <param name='further_site_info_attr_id' display='Further site info attribute ID' description='The ID of the attribute that holds the further site information.' datatype='int' />
@@ -102,6 +106,7 @@ There are 4 grids for the different life stages and before/after mustard water a
   <columns>
     <column name='sample_id' display='ID' sql='s.id' datatype="integer" visible='false' in_count="true"/>
     <column name='email_address' display='Email' sql='pCreator.email_address' datatype="text"/>
+    <column name='who_are_you_with' display='Who are you with?' sql='tWhoWith.term' datatype="text"/>
     <column name='date_start' sql='s.date_start' visible='false' />
     <column name='date_end' sql='s.date_end' visible='false' />
     <column name='date_type' sql='s.date_type' visible='false' />
