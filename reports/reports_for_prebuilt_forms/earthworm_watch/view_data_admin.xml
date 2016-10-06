@@ -55,6 +55,7 @@
   JOIN termlists_terms ttSiteType on ttSiteType.id = siteTypeAttr.int_value AND ttSiteType.deleted=false
   JOIN terms tSiteType on tSiteType.id = ttSiteType.term_id AND tSiteType.deleted=false   
   
+  LEFT JOIN sample_attribute_values whoWithOtherAttr ON whoWithOtherAttr.sample_id=s.id AND whoWithOtherAttr.sample_attribute_id=#who_with_other_attr_id# AND whoWithOtherAttr.deleted=false
   --I think we need left join here even though field is mandatory, as field was late addition so there might still be data without it
   LEFT JOIN sample_attribute_values teamAttr ON teamAttr.sample_id=s.id AND teamAttr.sample_attribute_id=#team_attr_id# AND teamAttr.deleted=false  
   LEFT JOIN sample_attribute_values coverTypeOtherAttr ON coverTypeOtherAttr.sample_id=s.id AND coverTypeOtherAttr.sample_attribute_id=#cover_type_other_attr_id# AND coverTypeOtherAttr.deleted=false
@@ -83,6 +84,8 @@
     <param name='fizz_attr_id' display='Soil fizz attribute ID' description='The ID of the attribute that holds the recorded soil fizz.' datatype='int' />
     <param name='plant_cover_attr_id' display='Plant cover attribute ID' description='The ID of the attribute that holds the recorded plant cover.' datatype='int' />
     <param name='who_with_attr_id' display='Who are you with? attribute ID' description='The ID of the attribute that holds who the user is with.' datatype='int' />
+    <param name='who_with_other_attr_id' display='Attr ID for Who are you with? Other info' description='The ID of the attribute that holds additional information on
+who the user is with if "other" is selected.' datatype='int' />
     <param name='site_type_attr_id' display='Site type attribute ID' description='The ID of the attribute that holds the recorded site type.' datatype='int' />
     <param name='site_type_other_attr_id' display='Site type other attribute ID' description='The ID of the attribute that holds the recorded site type other details.' datatype='int' />
     <param name='further_site_info_attr_id' display='Further site info attribute ID' description='The ID of the attribute that holds the further site information.' datatype='int' />
@@ -107,6 +110,7 @@ There are 4 grids for the different life stages and before/after mustard water a
     <column name='sample_id' display='ID' sql='s.id' datatype="integer" visible='false' in_count="true"/>
     <column name='email_address' display='Email' sql='pCreator.email_address' datatype="text"/>
     <column name='who_are_you_with' display='Who are you with?' sql='tWhoWith.term' datatype="text"/>
+    <column name='who_are_you_with_other' display='Who are you with? (other)' sql='whoWithOtherAttr.text_value' datatype="text"/>
     <column name='date_start' sql='s.date_start' visible='false' />
     <column name='date_end' sql='s.date_end' visible='false' />
     <column name='date_type' sql='s.date_type' visible='false' />
