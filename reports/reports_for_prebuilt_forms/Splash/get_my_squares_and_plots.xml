@@ -42,7 +42,7 @@ or any plot they are assigned to which they didn't create (as long as they are t
     <param name="vice_county_location_attribute_id" display="The location attribute id that hold's the Vice County name." datatype="integer"/>
     <param name="pss_mode" display="Is the page running on the NPMS (PSS) system rather than splash." datatype="integer" emptyvalue='0' default='0'/>
     <param name='user_square_attr_id' description='Id of the person attribute that holds user squares' datatype='integer'/>
-    <param name='private_plot_attr_id' description='Private plot attribute id.' datatype='integer' emptyvalue='' default=''/>
+    <param name='private_plot_attr_id' description='Private plot attribute id.' datatype='integer' emptyvalue='0' default='0'/>
     <param name='only_return_private_plots' description='Only return private plots' datatype='integer' emptyvalue='' default=''>
       <join>JOIN location_attribute_values lavPrivOnly on lavPrivOnly.location_id=l.id AND lavPrivOnly.location_attribute_id = #private_plot_attr_id# AND lavPrivOnly.int_value=1 AND lavPrivOnly.deleted=false</join>
     </param>
