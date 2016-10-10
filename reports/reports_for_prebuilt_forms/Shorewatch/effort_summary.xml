@@ -1,0 +1,33 @@
+<report
+    title="Efforts summary for a Shorewatch recorder"
+    description="Summary of effort counts for this recorder and total."
+    >
+  <query website_filter_field="co.website_id">
+    select 1 as sequence, 'me' as who, count(distinct case when s.date_start > now() - '1 month'::interval then s.id else null end) as this_month, count(s.*) as total
+    from samples s
+    where s.survey_id=#effort_survey_id#
+    and s.parent_id is null
+    and s.deleted=false
+    and s.created_by_id=#current_user#
+    union
+    select 2, 'everyone', count(distinct case when s.date_start > now() - '1 month'::interval then s.id else null end), count(s.*)
+    from samples s
+    where s.survey_id=#effort_survey_id#
+    and s.parent_id is null
+    and s.deleted=false
+  </query>
+  <order_bys>
+    <order_by>sequence</order_by>
+  </order_bys>
+  <params>
+    <param name="effort_survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
+           population_call="direct:survey:id:title"/>     
+    <param name="current_user" display="User ID" description="User ID to report on." datatype="integer" />
+  </params>
+  <columns>
+    <column name='sequence' datatype='integer' visible="false"/>
+    <column name='who' datatype='string'/>
+    <column name='this_month' display='Efforts this month' datatype='integer'/>
+    <column name='total' display='Total efforts' datatype='integer'/>
+  </columns>
+</report>
