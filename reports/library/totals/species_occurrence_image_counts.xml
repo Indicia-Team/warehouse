@@ -32,6 +32,6 @@
   <columns>
         <column name="species_count" display="Species" sql="count(DISTINCT o.taxon_meaning_id)"  />
         <column name="occurrences_count" display="Records" sql="count(DISTINCT o.id)" />
-        <column name="photos_count" display="Photos" sql="COALESCE(sum(length(images)-length(replace(images,',',''))+1), 0)" />
+        <column name="photos_count" display="Photos" sql="sum(o.media_count)" />
   </columns>
 </report>
