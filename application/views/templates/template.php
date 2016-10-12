@@ -41,7 +41,7 @@ echo html::stylesheet(
   array(
     'media/css/site',
     'media/css/forms',
-    'media/js/fancybox/jquery.fancybox.css',
+    'media/js/fancybox/source/jquery.fancybox.css',
     'media/css/jquery.autocomplete',
     'media/themes/'.$theme.'/jquery-ui.custom'
   ),
@@ -54,7 +54,7 @@ echo html::stylesheet(
       'media/js/json2.js',
       'media/js/jquery.js',
       'media/js/jquery.url.js',
-      'media/js/fancybox/jquery.fancybox.pack.js',
+      'media/js/fancybox/source/jquery.fancybox.pack.js',
       'media/js/hasharray.js',
       'media/js/superfish.js',
       'media/js/jquery-ui.custom.min.js'
