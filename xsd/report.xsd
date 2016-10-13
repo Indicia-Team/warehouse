@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://www.indicia.org.uk/report/1.0"
+	targetNamespace="http://www.indicia.org.uk/report/1.0" version="1.0.0">
+	<complexType name="ReportType">
+		<annotation>
+			<documentation>This is the top level element of the XML document.
+			</documentation>
+		</annotation>
+		<sequence>
+			<element name="query" type="tns:QueryType" minOccurs="1" maxOccurs="1"></element>
+			<element name="params" type="tns:ParamsType"></element>
+			<element name="field_sql" type="string"></element>
+			<element name="order_bys" type="tns:OrderBysType"></element>
+			<element name="columns" type="tns:ColumnsType"/>
+		</sequence>
+		<attribute name="title" type="string" use="optional">
+			<annotation>
+				<documentation>
+					the display title of the report
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="description" type="string" use="optional">
+			<annotation>
+				<documentation>
+					the description of the report
+				</documentation>
+			</annotation>
+		</attribute>
+	</complexType>
+	<element name="report" type="tns:ReportType"></element>
+	<complexType name="QueryType">
+		<annotation>
+			<documentation>
+				There is a single element called query in the XML
+				document, which should be a direct child of the report
+				element. This contains the SQL statement to run, which
+				may contain modifications and replacement tokens to
+				allow it to integrate with the reporting system, as
+				described elsewhere.
+			</documentation>
+		</annotation>
+		<simpleContent>
+			<extension base="string">
+				<attribute name="website_filter_field" type="string">
+					<annotation>
+						<documentation>
+							field name, including the table alias, used
+							for identifying and filtering websites
+							within the query. Defaults to “w.id” which
+							is based on the assumption that the websites
+							table is joined into the query with a table
+							alias “w”
+						</documentation>
+					</annotation>
+				</attribute>
+				<attribute name="created_by_field" type="string">
+					<annotation>
+						<documentation>
+							created_by_field identifies the field in the
+							SQL query which is used to filter for the
+							current user when using the option
+							sharing=me. Defaults to o.created_by_id
+							which is based on the assumption that the
+							occurrences table is joined into the query
+							with a table alias “o”.
+						</documentation>
+					</annotation>
+				</attribute>
+				<attribute name="samples_id_field" type="string">
+					<annotation>
+						<documentation>
+							samples_id_field - identifies the field in
+							the SQL query which is used to join to the
+							sample_attribute_values table in order to
+							include sample custom attributes in the
+							report output. Use in conjunction with the
+							smpattrs datatype for a report parameter.
+							Defaults to “s.id” which is based on the
+							assumption that the samples table is joined
+							into the query with a table alias “s”. See
+							Optional custom attributes for more info.
+						</documentation>
+					</annotation>
+				</attribute>
+				<attribute name="occurrences_id_field" type="string">
+					<annotation>
+						<documentation>
+							occurrences_id_field - identifies the field
+							in the SQL query which is used to join to
+							the occurrence_attribute_values table in
+							order to include occurrence custom
+							attributes in the report output. Use in
+							conjunction with the occattrs datatype for a
+							report parameter. Defaults to “o.id” which
+							is based on the assumption that the samples
+							table is joined into the query with a table
+							alias “o”. See Optional custom attributes
+							for more info.
+						</documentation>
+					</annotation>
+				</attribute>
+				<attribute name="locations_id_field" type="string">
+					<annotation>
+						<documentation>
+							locations_id_field - identifies the field in
+							the SQL query which is used to join to the
+							location_attribute_values table in order to
+							include location custom attributes in the
+							report output. Use in conjunction with the
+							locattrs datatype for a report parameter.
+							Defaults to “l.id” which is based on the
+							assumption that the locations table is
+							joined into the query with a table alias
+							“l”. See Optional custom attributes for more
+							info.
+						</documentation>
+					</annotation>
+				</attribute>
+				<attribute name="standard_param" type="boolean"
+					use="optional">
+					<annotation>
+						<documentation>
+							standard_param - set to true to enable a
+							standardised set of filter parameters for
+							filtering occurrence records. This includes
+							a range of filter options such as date,
+							species group, geography etc. They are
+							designed to integrate with the filter panel
+							provided in the reporting client helpers.
+							See Standard Report Parameters for more
+							information.
+						</documentation>
+					</annotation>
+				</attribute>
+				<attribute name="surveys_id_field" type="string"></attribute>
+			</extension>
+		</simpleContent>
+
+	</complexType>
+	<complexType name="OrderBysType">
+		<annotation>
+			<documentation>Contains elements defining the default sort order of
+				the report. This can be overriding by an ascending or descending
+				sort on any column, e.g. when clicking on a report grid title.
+			</documentation>
+		</annotation>
+		<sequence>
+			<element name="order_by" type="string" minOccurs="1"
+				maxOccurs="1">
+				<annotation>
+					<documentation>Contains the SQL for a single sort order field or
+						comma separated group of fields, e.g. s.date_start ASC.
+					</documentation>
+				</annotation>
+			</element>
+		</sequence>
+	</complexType>
+	<complexType name="FieldSQLType">
+		<annotation>
+			<documentation>When the #field_sql# replacement token is used in the
+				query, provide the SQL for the list of fields in this element which
+				will be replaced into the token when the query is run. The
+				#field_sql# token should go immediately after the SELECT keyword and
+				before the FROM keyword to form a valid SQL statement when it is
+				replaced. This approach provides a quick way of allowing Indicia to
+				perform a count of the records in a report without running the
+				entire report query. For a fully featured paginator to be shown for
+				any report grids, Indicia needs to know the total count of rows in
+				the report result. Although this is achievable by simply loading the
+				entire results of a query and counting rows, Indicia does not take
+				this approach as it could lead to severe performance impacts on the
+				server for inefficient queries or large result sets. Using a
+				count(*) query is much faster.
+			</documentation>
+		</annotation>
+		<simpleContent>
+			<extension base="string">
+			</extension>
+		</simpleContent>
+	</complexType>
+	<complexType name="ParamsType">
+		<annotation>
+			<documentation>
+				The &lt;params&gt; element provides an area within the
+				report definition to list parameters for the query and
+				provide configuration for each.
+			</documentation>
+		</annotation>
+		<sequence>
+			<element name="param" type="tns:ParamType" minOccurs="0" maxOccurs="unbounded"></element>
+		</sequence>
+	</complexType>
+	<complexType name="ColumnsType">
+		<sequence>
+			<element name="column" type="tns:ColumnType" minOccurs="0" maxOccurs="unbounded"></element>
+		</sequence>
+	</complexType>
+	<complexType name="VagueDateType">
+		<simpleContent>
+			<extension base="string">
+			</extension>
+		</simpleContent>
+	</complexType>
+	<complexType name="ColumnType">
+		<attribute name="name" type="string">
+			<annotation>
+				<documentation>
+					Should match the name used in the query:
+
+					SELECT foo FROM websites should have name foo SELECT
+					bar AS baz FROM websites should have name baz (not
+					bar) SELECT w.foo FROM websites should have name
+					foo, not w.foo, though where there is ambiguity
+					renaming your columns with ‘AS’ is the recommended
+					solution. Failing to match this correctly may leave
+					phantom columns in the report.
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="display" type="string" />
+		<attribute name="style" type="string"></attribute>
+		<attribute name="class" type="string"></attribute>
+		<attribute name="visible" type="boolean"></attribute>
+		<attribute name="img" type="boolean"></attribute>
+		<attribute name="mappable" type="boolean"></attribute>
+		<attribute name="orderby" type="string"></attribute>
+		<attribute name="datatype">
+			<simpleType>
+				<restriction base="string">
+					<enumeration value="text"></enumeration>
+					<enumeration value="species"></enumeration>
+					<enumeration value="date"></enumeration>
+					<enumeration value="integer"></enumeration>
+					<enumeration value="float"></enumeration>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="sql" type="string"></attribute>
+		<attribute name="aggregate" type="boolean"></attribute>
+		<attribute name="distincton" type="boolean"></attribute>
+		<attribute name="in_count" type="boolean"></attribute>
+		<attribute name="on_demand" type="boolean"></attribute>
+		<attribute name="internal_sql" type="string"></attribute>
+		<attribute name="template" type="string"></attribute>
+		<attribute name="feature_style" type="string"></attribute>		
+	</complexType>
+	<complexType name="ParamType">
+		<sequence>
+			<element name="where" type="string"></element>
+			<element name="join" type="string"></element>
+		</sequence>
+		<attribute name="name" type="string" use="required">
+			<annotation>
+				<documentation>
+					The name of the attribute. Must consist of
+					alphabetic characters, numbers and underscores only.
+					The attribute is wrapped in hashes to create the
+					replacement token which will be replaced in the
+					query. For example, if
+
+					a parameter named “startdate” is passed a value
+					01/10/2012 when the report is run the report include
+					a clause WHERE date&gt;'#startdate#' in the SQL
+
+					then the clause would be replaced when the report is
+					run to form the SQL WHERE date&gt;'01/10/2012'.
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="display" type="string">
+			<annotation>
+				<documentation>
+					The text used to label the parameter in the input
+					parameters form displayed to the user before running
+					the report.
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="description" type="string">
+			<annotation>
+				<documentation>
+					Gives a further description displayed alongside the
+					parameter in the form.
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="datatype">
+			<annotation>
+				<documentation>
+					Used in determining the type of control to show when
+					requesting the parameter. Currently, the core module
+					report interface supports datatypes ‘text’,
+					‘text[]’, ‘integer’, ‘integer[]’, ‘lookup’, ‘date’,
+					‘geometry’, ‘polygon’, ‘line’, ‘point’, ‘idlist’,
+					‘smpattrs’, ‘occattrs’, ‘locattrs’. All other values
+					default to text. Date will show a datepicker
+					control. Lookup will show a select box. Geometry,
+					Polygon, Line and Point all require a map for the
+					user to draw the input parameter shape onto.
+					Finally, idlist, smpattrs, occattrs and locattrs are
+					special datatypes that are described in the section
+					Optional custom attributes. When viewing the
+					parameters form in the Warehouse interface, the
+					contents of the lookup are populated using the query
+					in the query attribute. When using the report_grid
+					control in the data_entry_helper class, the contents
+					of the lookup are populated using the
+					population_call attribute. Alternatively a fixed set
+					of values can be specified by using the
+					lookup_values attribute. Note that the datatypes
+					with [] appended indicate cases where a list of
+					comma separated values is provided to use in an SQL
+					IN clause, allowing the system to sanitise
+					individual list elements.
+				</documentation>
+			</annotation>
+			<simpleType>
+				<restriction base="string">
+					<enumeration value="text"></enumeration>
+					<enumeration value="text[]"></enumeration>
+					<enumeration value="integer"></enumeration>
+					<enumeration value="integer[]"></enumeration>
+					<enumeration value="lookup"></enumeration>
+					<enumeration value="date"></enumeration>
+					<enumeration value="geometry"></enumeration>
+					<enumeration value="polygon"></enumeration>
+					<enumeration value="line"></enumeration>
+					<enumeration value="point"></enumeration>
+					<enumeration value="idlist"></enumeration>
+					<enumeration value="smpattrs"></enumeration>
+					<enumeration value="occattrs"></enumeration>
+					<enumeration value="locattrs"></enumeration>
+					<enumeration value="srvattrs"></enumeration>
+				</restriction>
+			</simpleType>
+		</attribute>
+		<attribute name="query" type="string">
+			<annotation>
+				<documentation>
+					Used to provide an SQL query used to populate the
+					select box for lookup parameters. The query should
+					return 2 fields, the key and display value. This
+					only works on the warehouse and does not work for
+					reports run from client websites, since they cannot
+					directly issue SQL queries, so it is recommended
+					that you use the population_call attribute instead.
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="population_call" type="string">
+			<annotation>
+				<documentation>
+					Allows report parameter forms on client websites to
+					populate the select boxes shown in the report’s
+					input parameters form. The format of the value
+					specified for this attribute should be either of the
+					following, replacing the values in &lt;&gt; as
+					appropriate:
+
+					direct:&lt;table name&gt;:&lt;value
+					field&gt;:&lt;caption field&gt; report:&lt;report
+					name&gt;:&lt;value field&gt;:&lt;caption field&gt;
+
+					The first part of the value is set to direct or
+					report to indicate loading data from a table or
+					report respectively. This is followed by the table
+					name or report name (including path), then the name
+					of the field which provides the underlying parameter
+					value to pass into the report, then finally the name
+					of the field which provides the caption to display
+					to the user for this value in the drop down.
+					Examples include “direct:survey:id:title” or
+					“report:my_reports/taxon_groups:id:title” where
+					my_reports/taxon_groups.xml is a report which must
+					return fields named id and title. At the moment
+					additional parameters cannot be provided.
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="lookup_values" type="string">
+			<annotation>
+				<documentation>
+					Allows specification of a fixed list of values for a
+					parameter with the lookup datatype. This is an
+					alternative to using population_call to populate the
+					select box in the parameters input form from the
+					database. Specify each entry as key:value with
+					commas between them, for example
+					“all:All,C:Complete,S:Sent for
+					verification,V:Verified”.
+				</documentation>
+			</annotation>
+		</attribute>
+		<attribute name="liked_to" type="string"></attribute>
+		<attribute name="linked_filter_field" type="string"></attribute>
+		<attribute name="emptyvalue" type="string"></attribute>
+		<attribute name="default" type="string"></attribute>
+		<attribute name="fieldname" type="string"></attribute>
+		<attribute name="alias" type="string"></attribute>
+	</complexType>
+</schema>
