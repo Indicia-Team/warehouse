@@ -1,0 +1,1 @@
+ALTER TABLE cache_samples_nonfunctional ADD COLUMN attr_linked_location_id integer;
