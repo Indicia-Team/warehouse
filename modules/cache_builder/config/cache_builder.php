@@ -724,6 +724,8 @@ SET website_title=w.title,
       WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
       WHEN 'F'::bpchar THEN v_sref_precision.float_value
       ELSE NULL::double precision
+  END,
+  attr_linked_location_id=v_linked_location_id.int_value
   END
 FROM samples s
 #join_needs_update#
@@ -764,6 +766,10 @@ LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
 ) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+LEFT JOIN (sample_attribute_values v_linked_location_id
+  JOIN sample_attributes a_linked_location_id on a_linked_location_id.id=v_linked_location_id.sample_attribute_id 
+    and a_linked_location_id.deleted=false and a_linked_location_id.system_function='linked_location_id'
+) ON v_linked_location_id.sample_id=s.id and v_linked_location_id.deleted=false
 WHERE s.id=cache_samples_nonfunctional.id
 ";
 
@@ -907,7 +913,8 @@ SET
       WHEN 'I'::bpchar THEN v_sref_precision.int_value::double precision
       WHEN 'F'::bpchar THEN v_sref_precision.float_value
       ELSE NULL::double precision
-  END
+  END,
+  attr_linked_location_id=v_linked_location_id.int_value
 FROM samples s
 #join_needs_update#
 LEFT JOIN (sample_attribute_values v_email
@@ -942,6 +949,10 @@ LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
 ) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+LEFT JOIN (sample_attribute_values v_linked_location_id
+  JOIN sample_attributes a_linked_location_id on a_linked_location_id.id=v_linked_location_id.sample_attribute_id 
+    and a_linked_location_id.deleted=false and a_linked_location_id.system_function='linked_location_id'
+) ON v_linked_location_id.sample_id=s.id and v_linked_location_id.deleted=false
 WHERE s.id=cache_samples_nonfunctional.id";
 
 $config['samples']['insert']['nonfunctional_media'] = "
