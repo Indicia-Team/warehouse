@@ -726,7 +726,6 @@ SET website_title=w.title,
       ELSE NULL::double precision
   END,
   attr_linked_location_id=v_linked_location_id.int_value
-  END
 FROM samples s
 #join_needs_update#
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
