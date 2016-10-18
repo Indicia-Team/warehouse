@@ -130,7 +130,9 @@ class ReportEngine {
     $dir = opendir($fullPath);
 
     while (false !== ($file = readdir($dir))) {
-      if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file"))
+      // The following skips the tmp folder in the report root as this is used for provided reports.
+      if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file") &&
+          ($file !== 'tmp' || $path!=='/'))
         $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list($root, "$path$file/"));
       elseif (substr($file, -4)=='.xml') {
         $metadata = XMLReportReader::loadMetadata("$fullPath$file");
