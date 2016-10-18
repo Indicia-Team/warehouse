@@ -327,7 +327,9 @@
 					<enumeration value="polygon"></enumeration>
 					<enumeration value="line"></enumeration>
 					<enumeration value="point"></enumeration>
-					<enumeration value="idlist"></enumeration>
+					<enumeration value="idlist">
+						<annotation>
+							<documentation>http://indicia-docs.readthedocs.io/en/latest/developing/reporting/report-file-format.html#more-information-on-the-idlist-datatype</documentation></annotation></enumeration>
 					<enumeration value="smpattrs"></enumeration>
 					<enumeration value="occattrs"></enumeration>
 					<enumeration value="locattrs"></enumeration>
@@ -392,11 +394,24 @@
 				</documentation>
 			</annotation>
 		</attribute>
-		<attribute name="linked_to" type="string"></attribute>
-		<attribute name="linked_filter_field" type="string"></attribute>
-		<attribute name="emptyvalue" type="string"></attribute>
-		<attribute name="default" type="string"></attribute>
-		<attribute name="fieldname" type="string"></attribute>
-		<attribute name="alias" type="string"></attribute>
+		<attribute name="linked_to" type="string">
+			<annotation>
+				<documentation>Available only for select parameters and allows another select to be specified as the parent. In this case, the values in this select are filtered using the value in the parent select. For example, a select for survey might be linked to a select for website, meaning that selecting a website repopulates the list of available surveys.</documentation></annotation></attribute>
+		<attribute name="linked_filter_field" type="string">
+			<annotation>
+				<documentation>Applies when using linked_to, and allows the filtered field in the entity accessed by the population_call to be specified. In the above example of a survey lookup linked to a website lookup, the survey lookup would specify this as website_id.</documentation></annotation></attribute>
+		<attribute name="emptyvalue" type="string">
+			<annotation>
+				<documentation>Allows a special value to be used when the parameter is left blank by the user. As an example, take an integer parameter, with SQL syntax WHERE id=#id#. If the user leaves this parameter blank, then invalid SQL is generated (WHERE id=). But, if emptyvalue=‘0’ is specified in the parameter definition, then the SQL generated will be WHERE id=0, which is valid and in most cases will return no records. Consider replacing the SQL with WHERE (id=#id# OR #id#=0) to create a filter that will return all records when left blank.</documentation></annotation></attribute>
+		<attribute name="default" type="string">
+			<annotation>
+				<documentation>A parameter with a default valueA parameter with a default value</documentation>
+			</annotation></attribute>
+		<attribute name="fieldname" type="string">
+			<annotation>
+				<documentation>Use in conjunction with the idlist datatype. For more information see More information on the idlist datatype</documentation></annotation></attribute>
+		<attribute name="alias" type="string">
+			<annotation>
+				<documentation>Use in conjunction with the idlist datatype. For more information see More information on the idlist datatype</documentation></annotation></attribute>
 	</complexType>
 </schema>
