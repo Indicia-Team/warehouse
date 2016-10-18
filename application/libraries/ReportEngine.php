@@ -1003,7 +1003,8 @@ class ReportEngine {
             ->join("{$entity}_attributes_websites as aw", "aw.{$entity}_attribute_id", 'a.id')
             ->where(array('aw.deleted' => 'f'));
         }
-    	$this->reportDb->in('aw.restrict_to_survey_id', $surveys);
+    	$this->reportDb->where(
+    	    '(aw.restrict_to_survey_id in (' . implode(',', $surveys) . ') or aw.restrict_to_survey_id is null)');
     }
     if ($allSurveyAttrs) {
       // don't auto include email & cms_user_id to keep it private
