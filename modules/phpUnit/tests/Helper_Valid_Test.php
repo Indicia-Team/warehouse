@@ -110,9 +110,11 @@ class Helper_Valid_Test extends PHPUnit_Framework_TestCase
 		             array('256.257.258.259', FALSE, FALSE),
 		             array('255.255.255.255', FALSE, FALSE),
 		             array('192.168.0.1',     FALSE, FALSE));
-    // From 5.6.25 192.168.0.1 is reserved
+    // In PHP versions 5.6.25 and 26 and 7.0.10 and 11, the address 192.168.0.1 is reserved. See
     // https://github.com/php/php-src/commit/6fc7817558db2016b160277e410381f286fe127a#diff-a61ab806f8c2193851acdd3eb5f37232
-    if (version_compare(PHP_VERSION, '5.6.25') >= 0) {
+    // https://github.com/php/php-src/commit/9834978a8b80dace62adfc82b41918dc239e9e85#diff-a61ab806f8c2193851acdd3eb5f37232
+    if (version_compare(PHP_VERSION, '5.6.25', '>=') && version_compare(PHP_VERSION, '5.6.26', '<=') ||
+        version_compare(PHP_VERSION, '7.0.10', '>=') && version_compare(PHP_VERSION, '7.0.11', '<=')) {
 		  $provider[] = array('192.168.0.1', TRUE, FALSE);
     } 
     else {
