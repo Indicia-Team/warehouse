@@ -123,8 +123,10 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     $notificationIds=array();
     $emailContent=start_building_new_email($notificationsToSendEmailsFor[0]);
     $currentType = '';
-    $sourceTypes=array('S'=>'Species alerts','C'=>'Comments on your records','V'=>'Verification of your records','A'=>'Record Cleaner results for your records',
-        'VT'=>'Incoming records for you to verify','M'=>'Milestones and achievements you\'ve attained', 'PT'=>'Incoming pending records for you to check',);
+    $sourceTypes=array('S' => 'Species alerts', 'C' => 'Comments on your records', 'V' => 'Verification of your records',
+        'A' => 'Record Cleaner results for your records', 'VT' => 'Incoming records for you to verify',
+        'M' => 'Milestones and achievements you\'ve attained', 'PT' => 'Incoming pending records for you to check',
+        'GU' => 'Pending users in groups you administer');
     $recordStatus = array('T' => 'Test', 'I' => 'Data entry in progress', 
       'V' => 'Accepted', 'V1' => 'Accepted as correct', 'V2' => 'Accepted as considered correct', 
       'C' => 'Awaiting review', 'C3' => 'Plausible', 'D' => 'Queried', 
