@@ -32,7 +32,9 @@
     <column name='recorder' display='Key facts:Recorder' sql='snf.recorders' />
     <column name='entered_sref' display='Key facts:Map ref.' sql='coalesce(s.entered_sref, l.centroid_sref)' />
     <column name="output_sref" display="Key facts:Output map ref." sql="onf.output_sref" />
-    <column name='location_name' display='Key facts:Site Name' sql="case when o.location_name=s.location_name then o.location_name else o.location_name || COALESCE(' - ' || s.location_name, '') end" />
+    <column name='location_name' display='Key facts:Site Name'
+            sql="case when o.location_name=s.location_name then o.location_name else o.location_name || COALESCE(' - ' || s.location_name, '') end" />
+    <column name="localities" display="Key facts:Locality" sql="array_to_string(array_agg(locality.name), '|')" aggregate="true" />
     <column name='date' display='Key facts:Date' sql='s.date_start' />
     <column name='occurrence_id' display='Record:ID' sql='o.id' />
     <column name='email' visible='false' sql='p.email_address' />
@@ -56,7 +58,6 @@
     <column name="survey_id" sql="o.survey_id" visible="false" />
     <column name="taxon_group" sql="cttl.taxon_group" visible="false" />
     <column name="taxon_group_id" sql="cttl.taxon_group_id" visible="false" />
-    <column name="localities" sql="array_to_string(array_agg(locality.name), '|')" aggregate="true" visible="false" />
     <column name="locality_ids" sql="array_to_string(array_agg(locality.id), '|')" aggregate="true" visible="false" />
   </columns>
 </report>
