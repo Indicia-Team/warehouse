@@ -163,17 +163,20 @@ order by t.sort_order, t.term) as list";
     foreach ($terms as $term) {
       // the tokens defining the term are separated by pipes.
       $term = explode('|', $term);
+      // SQL escaping
+      $escapedTerm = pg_escape_string($term[0]);
+      $escapedParent = pg_escape_string($term[3]);
       // does the term already exist in the list?
       $existing = $this->db->query(str_replace(
           array('{termlist_id}', '{term}', '{language_iso}', '{sort_order}', '{parent}'),
-          array($_POST['termlist_id'], $term[0], $term[1], $term[2], $term[3]),
+          array($_POST['termlist_id'], $escapedTerm, $term[1], $term[2], $escapedParent),
           self::SQL_FIND_EXISTING_TERM))->result()->count();
 
       if (!$existing) {
         $this->log[] = $this->db->last_query();
         // sanitise the sort order
         $term[2] = empty($term[2]) ? 'null' : $term[2];
-        $this->db->query("select insert_term('$term[0]', '$term[1]', $term[2], $termlist_id, null);");
+        $this->db->query("select insert_term('$escapedTerm', '$term[1]', $term[2], $termlist_id, null);");
         $this->log[] = "Added term $term[0]";
       } else {
         $this->log[] = "Term $term[0] already exists";
@@ -184,10 +187,13 @@ order by t.sort_order, t.term) as list";
       // the tokens defining the term are separated by pipes.
       $term = explode('|', $term);
       if (!empty($term[3])) {
+        // SQL escaping
+        $escapedTerm = pg_escape_string($term[0]);
+        $escapedParent = pg_escape_string($term[3]);
         $this->db->query("update termlists_terms tlt set parent_id=tltp.id, updated_on=now()
           from terms t, termlists_terms tltp
-          join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$term[3]'
-          where tlt.termlist_id=$termlist_id and t.id=tlt.term_id and t.deleted=false and t.term='$term[0]'
+          join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$escapedParent'
+          where tlt.termlist_id=$termlist_id and t.id=tlt.term_id and t.deleted=false and t.term='$escapedTerm'
           and tltp.termlist_id=tlt.termlist_id and tltp.deleted=false");
       }
     }
