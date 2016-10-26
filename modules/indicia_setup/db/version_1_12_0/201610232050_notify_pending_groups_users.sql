@@ -5,8 +5,8 @@ ALTER TABLE notifications
   ADD CONSTRAINT chk_notification_source_type CHECK (source_type::text = 'T'::bpchar::text
   OR source_type::text = 'V'::bpchar::text OR source_type::text = 'C'::bpchar::text
   OR source_type::text = 'A'::bpchar::text OR source_type::text = 'S'::bpchar::text
-  OR source_type::text = 'VT'::bpchar::text OR source_type::text = 'AC'::bpchar::text
-  OR source_type::text = 'GU'::bpchar::text);
+  OR source_type::text = 'VT'::bpchar::text OR source_type::text = 'M'::bpchar::text
+  OR source_type::text = 'PT'::bpchar::text OR source_type::text = 'GU'::bpchar::text);
 
 COMMENT ON COLUMN notifications.source_type
   IS
