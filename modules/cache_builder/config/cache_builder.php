@@ -1232,7 +1232,7 @@ SET sample_id=o.sample_id,
       else 'U'
   end,
   query=case
-      when oc1.id is null then null
+      when oc1.id is null or o.record_status in ('V','R') then null
       when oc2.id is null and o.updated_on<=oc1.created_on then 'Q'
       else 'A'
   end,
@@ -1476,7 +1476,7 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
         else 'U'
     end,
     case
-        when oc1.id is null then null
+        when oc1.id is null or o.record_status in ('C','V') then null
         when oc2.id is null and o.updated_on<=oc1.created_on then 'Q'
         else 'A'
     end,
