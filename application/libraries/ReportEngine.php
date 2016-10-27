@@ -998,15 +998,17 @@ class ReportEngine {
     unset($attrList['#all_survey_attrs']);
     // a request for all attrs in a selected survey?
     if ($surveys) {
-      // may have come from warehouse frontend where no website provided, but a survey has been
-      // need aw table.
-      if (!$this->websiteIds) {
+      if (isset($websiteIds)) {
+        $this->reportDb->where("(aw.restrict_to_survey_id in ($surveys) " .
+          "or (aw.restrict_to_survey_id is null and aw.website_id in ($websiteIds)))");
+      } else {
+        // may have come from warehouse frontend where no website provided, but a survey has been
+        // need aw table.
         $this->reportDb
             ->join("{$entity}_attributes_websites as aw", "aw.{$entity}_attribute_id", 'a.id')
             ->where(array('aw.deleted' => 'f'));
-        }
-    	$this->reportDb->where(
-    	    "(aw.restrict_to_survey_id in ($surveys) or aw.restrict_to_survey_id is null)");
+        $this->reportDb->where("aw.restrict_to_survey_id in ($surveys)");
+      }
     }
     if ($allSurveyAttrs) {
       // don't auto include email & cms_user_id to keep it private
