@@ -978,9 +978,9 @@ class ReportEngine {
     $allSurveyAttrs=false;
     // Find an attribute that supports survey filtering as this allows us to retrieve the specific set of attributes for the survey
     if (!empty($this->providedParams['survey_list']))
-      $surveys = explode(',', $this->providedParams['survey_list']);
+      $surveys = $this->providedParams['survey_list'];
     elseif (!empty($this->providedParams['surveys']))
-      $surveys = explode(',', $this->providedParams['surveys']);
+      $surveys = $this->providedParams['surveys'];
     elseif (!empty($this->providedParams['survey_id']))
       $surveys = $this->providedParams['survey_id'];
     else
@@ -1006,7 +1006,7 @@ class ReportEngine {
             ->where(array('aw.deleted' => 'f'));
         }
     	$this->reportDb->where(
-    	    '(aw.restrict_to_survey_id in (' . implode(',', $surveys) . ') or aw.restrict_to_survey_id is null)');
+    	    "(aw.restrict_to_survey_id in ($surveys) or aw.restrict_to_survey_id is null)");
     }
     if ($allSurveyAttrs) {
       // don't auto include email & cms_user_id to keep it private
