@@ -36,6 +36,7 @@
         and avsub.taxa_taxon_list_attribute_id=#sb_attr_id#
         and avsub.int_value=t_sb.id
     )" />
-    <column name="cons" display="Conservation status" aggregate="true" sql="string_agg(td.code, '|' order by td.code)" />
+    <column name="cons" display="Conservation status" aggregate="true"
+            sql="string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code)" />
   </columns>
 </report>

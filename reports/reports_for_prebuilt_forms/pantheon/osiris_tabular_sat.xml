@@ -48,7 +48,8 @@
         and avsub.taxa_taxon_list_attribute_id=#sat_attr_id#
         and avsub.int_value=t_sat.id
     )" />
-    <column name="cons" display="Conservation status" aggregate="true" sql="string_agg(td.code, '|' order by td.code)" />
+    <column name="cons" display="Conservation status" aggregate="true"
+            sql="string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code)" />
     <column name="threshold" sql="it.threshold" visible="false" />
     <column name="code" sql="tcode.term" display="Code" />
     <column name="condition" sql="case when count(distinct o.preferred_taxa_taxon_list_id)&gt;=it.threshold then 'Favourable' else 'Unfavourable' end"

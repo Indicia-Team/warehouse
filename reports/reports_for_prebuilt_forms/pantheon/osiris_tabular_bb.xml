@@ -35,8 +35,7 @@
         and avsub.taxa_taxon_list_attribute_id=#bb_attr_id#
         and avsub.int_value=t_bb.id
     )" />
-    <column name="cons" display="Conservation status" aggregate="true" sql="string_agg(td.code, '|' order by td.code)" />
-    <column name="condition" sql="case when count(distinct o.preferred_taxa_taxon_list_id)>=it.threshold then 'Favourable' else 'Unfavourable' end"
-            aggregate="true" display="Reported condition" />
+    <column name="cons" display="Conservation status" aggregate="true"
+            sql="string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code)" />
   </columns>
 </report>
