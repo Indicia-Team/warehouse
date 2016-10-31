@@ -84,11 +84,15 @@ class XMLReportReader_Core implements ReportReader
     $reader = new XMLReader();
     if ($reader->open($report)===false)
       throw new Exception("Report $report could not be opened.");
-    $metadata = array();
+    $metadata = array('title' => 'Untitled (' . $report . ')', 'description' => 'No description provided');
     while($reader->read()) {
       if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='report') {
         $metadata['title'] = $reader->getAttribute('title');
         $metadata['description'] = $reader->getAttribute('description');
+        if (!$metadata['title'])
+          $metadata['title'] = 'Untitled (' . basename($report) . ')';
+        if (!$metadata['description'])
+          $metadata['description'] = 'No description provided';
         break;
       }
     }

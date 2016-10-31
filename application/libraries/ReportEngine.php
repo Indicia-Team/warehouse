@@ -130,7 +130,9 @@ class ReportEngine {
     $dir = opendir($fullPath);
 
     while (false !== ($file = readdir($dir))) {
-      if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file"))
+      // The following skips the tmp folder in the report root as this is used for provided reports.
+      if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file") &&
+          ($file !== 'tmp' || $path!=='/'))
         $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list($root, "$path$file/"));
       elseif (substr($file, -4)=='.xml') {
         $metadata = XMLReportReader::loadMetadata("$fullPath$file");
@@ -976,9 +978,9 @@ class ReportEngine {
     $allSurveyAttrs=false;
     // Find an attribute that supports survey filtering as this allows us to retrieve the specific set of attributes for the survey
     if (!empty($this->providedParams['survey_list']))
-      $surveys = explode(',', $this->providedParams['survey_list']);
+      $surveys = $this->providedParams['survey_list'];
     elseif (!empty($this->providedParams['surveys']))
-      $surveys = explode(',', $this->providedParams['surveys']);
+      $surveys = $this->providedParams['surveys'];
     elseif (!empty($this->providedParams['survey_id']))
       $surveys = $this->providedParams['survey_id'];
     else
@@ -996,14 +998,17 @@ class ReportEngine {
     unset($attrList['#all_survey_attrs']);
     // a request for all attrs in a selected survey?
     if ($surveys) {
-      // may have come from warehouse frontend where no website provided, but a survey has been
-      // need aw table.
-      if (!$this->websiteIds) {
+      if (isset($websiteIds)) {
+        $this->reportDb->where("(aw.restrict_to_survey_id in ($surveys) " .
+          "or (aw.restrict_to_survey_id is null and aw.website_id in ($websiteIds)))");
+      } else {
+        // may have come from warehouse frontend where no website provided, but a survey has been
+        // need aw table.
         $this->reportDb
             ->join("{$entity}_attributes_websites as aw", "aw.{$entity}_attribute_id", 'a.id')
             ->where(array('aw.deleted' => 'f'));
-        }
-    	$this->reportDb->in('aw.restrict_to_survey_id', $surveys);
+        $this->reportDb->where("aw.restrict_to_survey_id in ($surveys)");
+      }
     }
     if ($allSurveyAttrs) {
       // don't auto include email & cms_user_id to keep it private

@@ -10,7 +10,7 @@
               JOIN people p ON p.id = pav.person_id
               JOIN users u ON u.person_id = p.id AND u.id = #user_id#
             ) ON pav.int_value=l.id AND pav.deleted=false
-          WHERE l.deleted=false
+          WHERE l.deleted=false AND l.name NOT LIKE '!%' -- exclude previous site versions
             AND #website_filter#
             AND (u.id = #user_id# OR u.id IS NULL)
             AND ((l.location_type_id IN (#location_type_ids#)) OR ('#location_type_ids#'='-1'))

@@ -57,11 +57,13 @@ class Sample_Attribute_Model extends ATTR_ORM {
       ),
       'cms_user_id' => array(
         'title'=>'CMS User ID',
-        'description'=>'An integer attribute corresponding to the user ID on the client website\'s content management system.'
+        'description'=>'An integer attribute corresponding to the user ID on the client website\'s content ' .
+          'management system.'
       ),
       'cms_username' => array(
         'title' => 'CMS Username',
-        'description'=>'A text attribute corresponding to the user login name on the client website\'s content management system'
+        'description'=>'A text attribute corresponding to the user login name on the client website\'s content ' .
+          'management system'
       ),
       'first_name' => array(
         'title' => 'First name',
@@ -78,11 +80,19 @@ class Sample_Attribute_Model extends ATTR_ORM {
       'biotope' => array(
         'title' => 'Biotope',
         'friendly'=>'Habitat',
-        'description'=>'A text or lookup attribute where the value describes the biotope (often described as the habitat) of the sample.'
+        'description'=>'A text or lookup attribute where the value describes the biotope (often described as the ' .
+          'habitat) of the sample.'
       ),
       'sref_precision' => array(
         'title' => 'Spatial precision',
         'description' => 'A numeric attribute describing the precision of a map reference in metres.'
+      ),
+      'linked_location_id' => array(
+        'title' => 'Linked location ID',
+        'description' => 'ID of a location that has been manually linked to a record. This is used to force ' .
+          'selection of a single location boundary when a sample\'s grid square overlaps 2 different boundaries in ' .
+          'the locations being spatially indexed. For example, if a record overlaps 2 vice counties this allows the ' .
+          'recorder to identify which applies to the record.'
       )
     );
   }
