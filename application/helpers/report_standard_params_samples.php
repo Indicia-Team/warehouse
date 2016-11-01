@@ -48,7 +48,7 @@ class report_standard_params_samples {
       array('input_form', 'input_form_list', TRUE)
     );
   }
-
+  
   /**
    * @return array List of parameters that have an associated operation parameter. E.g. along
    * with the sample_id parameter you can supply sample_id='>=' to define the operation
@@ -99,6 +99,12 @@ class report_standard_params_samples {
           array('value'=>'', 'operator'=>'', 'sql'=>"s.id #sample_id_op# #sample_id#")
         )
       ),
+      'sample_method_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Sample Method ID',
+        'description'=>'Termlists_terms ID for the Sample Method',
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>"s.sample_method_id=#sample_method_id#")
+        )
+      ),
       'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name',
         'description'=>'Name of location to filter to (contains search)',
         'wheres' => array(
@@ -113,10 +119,14 @@ class report_standard_params_samples {
             "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom)")
         )
       ),
-      'indexed_location_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Location IDs (indexed)',
+      'indexed_location_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Location IDs (indexed)', 'custom'=>'unique_location_index',
         'description'=>'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
         'joins' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ilsfilt# on #alias:ilsfilt#.sample_id=s.id and #alias:ilsfilt#.location_id #indexed_location_list_op# (#indexed_location_list#)")
+        ),
+        'wheres' => array(
+          // where will be used only if using a uniquely indexed location type
+          array('value'=>'', 'operator'=>'', 'sql'=>"s.location_id_#typealias# #indexed_location_list_op# (#indexed_location_list#)")
         )
       ),
       'date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date from',
@@ -139,14 +149,16 @@ class report_standard_params_samples {
       ),
       'input_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Input date from',
         'description'=>'Input date of first sample to include in the output',
-        'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"('#input_date_from#'='Click here' OR s.created_on >= CAST('#input_date_from#' as date))")
+        'wheres' =>array(
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#input_date_from#'='Click here' OR s.created_on >= '#input_date_from#'::timestamp)")
         )
       ),
       'input_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Input date to',
         'description'=>'Input date of last sample to include in the output',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"('#input_date_to#'='Click here' OR s.created_on < CAST('#input_date_to#' as date)+'1 day'::interval)")
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#input_date_to#'='Click here' OR (s.created_on <= '#input_date_to#'::timestamp OR (length('#input_date_to#')<=10 AND s.created_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'input_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Input date from time ago',
@@ -157,14 +169,16 @@ class report_standard_params_samples {
       ),
       'edited_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date from',
         'description'=>'Last update date of first sample to include in the output',
-        'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"('#edited_date_from#'='Click here' OR s.updated_on >= CAST('#edited_date_from#' as date))")
+        'wheres' =>array(
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#edited_date_from#'='Click here' OR s.updated_on >= '#edited_date_from#'::timestamp)")
         )
       ),
       'edited_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date to',
         'description'=>'Last update date of last sample to include in the output',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"('#edited_date_to#'='Click here' OR s.updated_on < CAST('#edited_date_to#' as date)+'1 day'::interval)")
+          array('value'=>'', 'operator'=>'', 
+            'sql'=>"('#edited_date_to#'='Click here' OR (s.updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND s.updated_on < cast('#edited_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'edited_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Last update date from time ago',

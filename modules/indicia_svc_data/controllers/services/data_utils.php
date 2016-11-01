@@ -71,6 +71,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $params = implode(', ', $action['parameters']);      
       print_r($db->query("select $action[stored_procedure]($params);")->result_array(true));
     } catch (Exception $e) {
+      error_logger::log_error('Exception during single verify', $e);
       $this->handle_error($e);
     }
   }
@@ -88,6 +89,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     $params['sharing'] = 'verification';
     $websites = $this->website_id ? array($this->website_id) : null;
     $reportEngine = new ReportEngine($websites, $this->user_id);
+    $verifier = $this->getVerifierName($db);
     try {
       // Load the report used for the verification grid with the same params
       $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
@@ -119,12 +121,13 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $db->from('occurrences')->set(array('record_status'=>'V', 'record_substatus'=>$substatus, 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
           'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
       echo count($ids);
-      // since we bypass ORM here for performance, update the cache_occurrences table.
-      $db->from('cache_occurrences')->set(array('record_status'=>'V', 'record_substatus'=>$substatus,
-        'verified_on'=>date('Y-m-d H:i:s'), 'cache_updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+      // since we bypass ORM here for performance, update the cache_occurrences_* tables.
+      $db->from('cache_occurrences_functional')->set(array('record_status'=>'V', 'record_substatus'=>$substatus,
+        'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+      $db->from('cache_occurrences_nonfunctional')->set(array('verifier'=>$verifier))->in('id', array_keys($ids))->update();
     } catch (Exception $e) {
-      echo $e->getMessage();
-      error::log_error('Exception during bulk verify', $e);
+      error_logger::log_error('Exception during bulk verify', $e);
+      $this->handle_error($e);
     }
   }
   
@@ -146,6 +149,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     else try {
       $db = new Database();
       $this->authenticate('write');
+      $verifier = $this->getVerifierName($db);
       $updates = array('record_status'=>$_POST['occurrence:record_status'], 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
         'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s'),
         'record_substatus' => empty($_POST['occurrence:record_substatus']) ? null : $_POST['occurrence:record_substatus'],
@@ -154,10 +158,17 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           ->set($updates)
           ->where('id', $_POST['occurrence:id'])
           ->update();
-      // since we bypass ORM here for performance, update the cache_occurrences table.
-      $updates = array('record_status'=>$_POST['occurrence:record_status'], 'verified_on'=>date('Y-m-d H:i:s'), 'cache_updated_on'=>date('Y-m-d H:i:s'),
-        'record_substatus' => empty($_POST['occurrence:record_substatus']) ? null : $_POST['occurrence:record_substatus']);
-      $db->from('cache_occurrences')
+      // since we bypass ORM here for performance, update the cache_occurrences_* tables.
+      $updates = array('record_status'=>$_POST['occurrence:record_status'],
+        'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s'),
+        'record_substatus' => empty($_POST['occurrence:record_substatus']) ? null : $_POST['occurrence:record_substatus'],
+        'query' => NULL);
+      $db->from('cache_occurrences_functional')
+          ->set($updates)
+          ->where('id', $_POST['occurrence:id'])
+          ->update();
+      $updates = array('verifier'=>$verifier);
+      $db->from('cache_occurrences_nonfunctional')
           ->set($updates)
           ->where('id', $_POST['occurrence:id'])
           ->update();
@@ -177,7 +188,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       echo 'OK';
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during single record verify', $e);
+      error_logger::log_error('Exception during single record verify', $e);
     }
   }
 
@@ -202,6 +213,12 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         ->set($updates)
         ->where('id', $_POST['sample:id'])
         ->update();
+      // since we bypass ORM here for performance, update the cache_samples_* table.
+      $updates = array('record_status'=>$_POST['sample:record_status'], 'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s'));
+      $db->from('cache_samples_functional')
+        ->set($updates)
+        ->where('id', $_POST['sample:id'])
+        ->update();
 
       if (!empty($_POST['sample_comment:comment'])) {
         $db->insert('sample_comments', array(
@@ -217,7 +234,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       echo 'OK';
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during single sample verify', $e);
+      error_logger::log_error('Exception during single sample verify', $e);
     }
   }
 
@@ -252,16 +269,28 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           ));
         }
       }
-      $db->from('samples')->set(array('record_status'=>'V', 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
-        'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+      $updates = array('record_status'=>'V', 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
+          'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s'));
+      $db->from('samples')->set($updates)->in('id', array_keys($ids))->update();
+      $updates = array('record_status'=>'V', 'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s'));
+      $db->from('cache_samples_functional')->set($updates)->in('id', array_keys($ids))->update();
       echo count($ids);
     } catch (Exception $e) {
       echo $e->getMessage();
-      error::log_error('Exception during bulk verify of samples', $e);
+      error_logger::log_error('Exception during bulk verify of samples', $e);
     }
+  }
+  
+  /**
+   * Retrieves the current user's name (the verifier name) for bulk verify operations.
+   */
+  private function getVerifierName($db) {
+    $qryVerifiers = $db->select(array("p.surname", "p.first_name"))
+        ->from('users as u')
+        ->join('people as p', 'p.id', 'u.person_id')
+        ->where('u.id', $this->user_id)
+        ->get()->result_array(false);
+    return $qryVerifiers[0]['surname'] . ', ' . $qryVerifiers[0]['first_name'];
   }
 
 }
- 
- 
- 

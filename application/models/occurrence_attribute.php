@@ -41,6 +41,8 @@ class Occurrence_Attribute_Model extends ATTR_ORM {
   /**
    * Get the list of known system functions for occurrence attributes, each with a title and description
    * of their usage.
+   * Note that any entry in this list should be replicated as a field called attr_* in the
+   * cache_occurrences_nonfunctional table.
    * @return array List of the system known functions that an occurrence attribute can have.
    */
   public function get_system_functions() {

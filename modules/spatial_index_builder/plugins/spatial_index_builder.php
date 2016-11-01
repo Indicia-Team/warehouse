@@ -24,12 +24,10 @@
  * Plugin module which creates an index of the associations between locations and the overlapping
  * samples (allowing records to be easily found). 
  * @todo Initial population after installation
- * @todo Filter to a config file defined list of location types
  */
 
 function spatial_index_builder_metadata() {
   return array(
-    'requires_occurrences_delta'=>TRUE,
     'always_run'=>TRUE // don't skip this plugin as the scheduled tasks runner does not take into account changed locations
   );
 }
@@ -46,13 +44,19 @@ function spatial_index_builder_scheduled_task($last_run_date, $db) {
   elseif ($last_run_date===null)
     // first run, so get all records changed in last day. Query will automatically gradually pick up the rest.
     $last_run_date=date('Y-m-d', time()-60*60*24);
-  try {
-    $recordCount = $db->count_records('occdelta');
+  try {  
     $locCount = spatial_index_builder_get_location_list($last_run_date, $db);
-    if ($recordCount + $locCount > 0) 
+    $sampleCount = spatial_index_builder_get_sample_list($last_run_date, $db);
+    $message = "Building spatial index for $locCount locations and $sampleCount samples(s)<br/>";
+    kohana::log('debug', $message);
+    echo $message;
+    if ($locCount + $sampleCount> 0) {
       spatial_index_builder_populate($db);
+      spatial_index_builder_add_to_cache($db);
+    }
     spatial_index_builder_cleanup($db);
   } catch (Exception $e) {
+    error_logger::log_error('Spatial index builder scheduled task', $e);
     echo $e->getMessage();
   }
   
@@ -75,12 +79,28 @@ where l.deleted=false
 and l.updated_on>'$last_run_date'
 $where";
   $db->query($query);
-  $r = $db->query('select count(*) as count from loclist')->result_array(false);
-  $message = "Building spatial index for ".$r[0]['count']." locations(s)";
-  echo "$message<br/>";
-  Kohana::log('debug', $message);
+  $r = $db->query('select count(*) as count from loclist')->result_array(false);  
   return $r[0]['count'];
 }
+
+/**
+ * Build a temporary table with the list of new and changed samples we will process, so that we have
+ * consistency if changes are happening concurrently.
+ * @param $last_run_date Timestamp when this was last run, used to get DB changed records
+ * @param object $db Database object
+ * @return integer Count of samples found
+ */
+function spatial_index_builder_get_sample_list($last_run_date, $db) {
+  $query = "select s.id, now() as timepoint into temporary smplist 
+from samples s
+where s.deleted=false 
+and s.updated_on>'$last_run_date'
+";
+  $db->query($query);
+  $r = $db->query('select count(*) as count from smplist')->result_array(false);
+  return $r[0]['count'];
+}
+
 
 /** 
  * Reads the config file, if any, and returns details of the join and where clause that must be added
@@ -117,7 +137,7 @@ function spatial_index_builder_populate($db) {
     );";
   $db->query($query);
   $query = "delete from index_locations_samples where sample_id in (
-      select sample_id from occdelta union select id from samples where deleted=true
+      select id from smplist union select id from samples where deleted=true
     );";
   $db->query($query);
   Kohana::log('debug', "Cleaned up index_locations_samples before populating new values.");
@@ -125,15 +145,26 @@ function spatial_index_builder_populate($db) {
   $filter=spatial_index_builder_get_type_filter();
   list($join, $where, $surveyRestriction)=$filter;
   // Now the actual population
-  $query = "insert into index_locations_samples (location_id, sample_id, contains)
-    select l.id, s.id, st_contains(l.boundary_geom, s.geom)
+  $query = "insert into index_locations_samples (location_id, sample_id, contains, location_type_id)
+    select distinct 
+      l.id, s.id, coalesce(linked.id, 0) = l.id or st_contains(l.boundary_geom, s.geom), l.location_type_id
     from locations l
     $join
     join samples s on s.deleted=false
       and (st_intersects(l.boundary_geom, s.geom) and not st_touches(l.boundary_geom, s.geom))
-    where l.deleted=false
+    left join index_locations_samples ils on ils.location_id=l.id and ils.sample_id=s.id
+    join cache_samples_nonfunctional snf on snf.id=s.id
+    left join locations linked on linked.id=snf.attr_linked_location_id and linked.deleted=false
+    where ils.id is null
+    and l.deleted=false
+    and (
+      -- if a linked_location_id specified, then limit the indexing to the linked location for this location type.
+      snf.attr_linked_location_id is null 
+      or linked.id = l.id 
+      or linked.location_type_id <> l.location_type_id 
+      )
     and (l.id in (select id from loclist)
-    or s.id in (select sample_id from occdelta))
+    or s.id in (select id from smplist))
     $where
     $surveyRestriction";
   $message = $db->query($query)->count().' index_locations_samples entries created.';
@@ -143,4 +174,94 @@ function spatial_index_builder_populate($db) {
 
 function spatial_index_builder_cleanup($db) {
   $db->query('drop table loclist');
+  $db->query('drop table smplist');
+}
+
+/**
+ * if cache_builder module installed, then we want to add spatial index info into the cache tables
+ * for best performance.
+ * @param $db
+ */
+function spatial_index_builder_add_to_cache($db) {
+  $config=kohana::config_load('spatial_index_builder', false);
+  if (!array_key_exists('location_types', $config) || !array_key_exists('unique', $config))
+    return;
+  $types = $db->select('id, term')->from('cache_termlists_terms')
+    ->where('termlist_title', 'Location types')
+    ->in('term', $config['location_types'])
+    ->get()->result_array(false);
+  if (!count($types))
+    return;
+  $s_sets = array();
+  $o_sets = array();
+  $joins = array();
+  foreach ($types as $type) {
+    // We can only do this type of indexing for boundary types that occur only once per sample
+    if (!in_array($type['term'], $config['unique']))
+      continue;
+    // Script for handling updated samples can be constructed to do all location types
+    // in one go.
+    $column = 'location_id_' . preg_replace('/[^\da-z]/', '_', strtolower($type['term']));
+    $s_sets[] = "$column = ils$type[id].location_id";
+    $o_sets[] = "$column = s.$column";
+    $joins[] = <<<JOIN
+LEFT JOIN (index_locations_samples ils$type[id]
+  JOIN locations l$type[id] 
+      ON l$type[id].id=ils$type[id].location_id AND l$type[id].deleted=false AND 
+      (l$type[id].code IS NULL OR l$type[id].code NOT LIKE '%+%')
+) ON ils$type[id].sample_id=s.id AND ils$type[id].location_type_id=$type[id] AND ils$type[id].contains=true
+JOIN;
+    // Script for handling updated locations is a bit more complex so we have to run
+    // once per location type
+    $query = <<<LOCQRY
+UPDATE cache_samples_functional u
+SET $column = null
+FROM loclist l
+WHERE l.id=u.$column;
+
+UPDATE cache_occurrences_functional u
+SET $column = null
+FROM loclist l
+WHERE l.id=u.$column;
+
+UPDATE cache_samples_functional u
+SET $column = ils$type[id].location_id
+FROM locations l
+LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
+    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
+JOIN loclist list on list.id=l.id
+WHERE u.id=ils$type[id].sample_id
+AND (l.code IS NULL OR l.code NOT LIKE '%+%');
+
+UPDATE cache_occurrences_functional u
+SET $column = ils$type[id].location_id
+FROM locations l
+LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
+    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
+JOIN loclist list on list.id=l.id
+WHERE u.sample_id=ils$type[id].sample_id
+AND (l.code IS NULL OR l.code NOT LIKE '%+%');
+LOCQRY;
+    $db->query($query);
+  }
+  if (count($s_sets)) {
+    $s_sets = implode(",\n", $s_sets);
+    $o_sets = implode(",\n", $o_sets);
+    $joins = implode("\n", $joins);
+    $query = <<<SMPQRY
+UPDATE cache_samples_functional u
+SET $s_sets
+FROM samples s
+$joins
+JOIN smplist list on list.id=s.id
+WHERE u.id=s.id;
+
+UPDATE cache_occurrences_functional u
+SET $o_sets
+FROM cache_samples_functional s
+JOIN smplist list on list.id=s.id
+WHERE s.id=u.sample_id;
+SMPQRY;
+    $db->query($query);
+  }
 }

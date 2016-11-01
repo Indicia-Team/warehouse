@@ -1,0 +1,28 @@
+  <report
+    title="Get Map Hierarchy To Current Position."
+    description="Returns the hierarchy of the Cudi Site Hierarchy Navigator to the currently selected
+                 map layer. This is used to build the map breadcrumb. Note this is ordered correctly in 
+                 the application code rather than the SQL."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT DISTINCT #columns#
+    FROM locations l
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id and lw.deleted=false
+      LEFT JOIN locations selectedLoc on selectedLoc.id=#location_id#
+    WHERE 
+      --select a location if its centroid falls inside the parent boundary, or if the location_id is a count unit boundary, then we need to get
+      --the parent count unit by finding the count unit whose centroid falls within that boundary
+      (st_intersects(selectedLoc.centroid_geom, COALESCE(l.boundary_geom,l.centroid_geom)) 
+      OR st_intersects(l.centroid_geom, COALESCE(selectedLoc.boundary_geom,selectedLoc.centroid_geom)))
+      AND l.deleted = false AND #website_filter# and l.location_type_id in (#location_type_ids#)
+  </query>
+  <params>
+    <param name="location_type_ids" datatype="integer[]"/>
+    <param name="location_id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="id" display="ID" sql="l.id"/>
+    <column name="name" display="Name" sql="l.name"/>
+    <column name="location_type_id" display="Location Type Id" sql="l.location_type_id"/>
+  </columns>
+</report>

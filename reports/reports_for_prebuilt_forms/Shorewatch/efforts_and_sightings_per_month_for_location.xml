@@ -1,0 +1,43 @@
+<report
+    title="Efforts and sightings per month for location."
+    description="Report designed to display all sightings and efforts for a location on a month to month basis.
+                 Note that private/favourite site support is not included as it is intended that code supporting private/favourite
+                 sites prevents the user from ever seeing the page with this chart on. If you wish to extend the use of this report
+                 then private/favourite site support must be considered."
+>
+  <query website_filter_field="co.website_id">
+  SELECT #columns#
+  FROM cache_occurrences co
+    LEFT JOIN samples sSighting ON sSighting.id=co.sample_id AND sSighting.sample_method_id = #sighting_sample_method_id# AND sSighting.deleted=false
+        LEFT JOIN samples sEffort ON sEffort.id=sSighting.parent_id AND sEffort.sample_method_id = #effort_sample_method_id# AND sEffort.deleted=false
+    WHERE 1=1
+    #filters#
+    AND #website_filter#
+  GROUP BY month, monthval
+  ORDER BY monthval
+  </query>
+  <params>
+    <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
+        population_call="direct:survey:id:title">
+      <where>co.survey_id=#survey_id#</where>
+    </param>
+    <param name="taxon_meaning_id" display="Species" description="Species name to filter by." datatype="lookup"
+        population_call='report:library/taxa/get_species_names_for_website:taxon_meaning_id:name_common_preferred'>
+      <where>co.taxon_meaning_id=#taxon_meaning_id#</where>
+    </param>
+    <param name="location_id" display="Location ID" description="Location ID to report on." datatype="integer" >
+      <where>co.location_id=#location_id#</where>
+    </param>
+    <param name="year" display="Year" description="Filter to a given year" datatype="integer">
+      <where>extract(year from co.date_start)=#year#</where>
+    </param>
+    <param name="effort_sample_method_id" display="Effort Sample Method Id" description="Id of the Effort Sample Method." datatype="integer"/>
+    <param name="sighting_sample_method_id" display="Sighting Sample Method Id" description="Id of the Sighting Sample Method." datatype="integer"/>
+  </params>
+  <columns>
+    <column name='month' display='Month' sql="to_char(co.date_start, 'MONTH') || ' ' || to_char(co.date_start, 'YYYY')" datatype='integer'/>
+    <column name='monthval' visible="false" sql="to_char(co.date_start, 'YYYY') || to_char(co.date_start, 'MM')" datatype='integer'/>
+    <column name='efforts' display='Efforts' sql='count(DISTINCT(sEffort.id))' datatype='integer'/>
+    <column name='sightings' display='Sightings' sql='count(DISTINCT(sSighting.id))' datatype='integer'/>
+  </columns>
+</report>

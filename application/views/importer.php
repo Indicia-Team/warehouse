@@ -30,7 +30,11 @@ $auth = import_helper::get_read_write_auth(0-$_SESSION['auth_user']->id, kohana:
 
 echo import_helper::importer(array(
   'model' => $this->controllerpath,
-  'auth' => $auth  
+  'auth' => $auth,
+  'switches' => array('activate_parent_sample_method_filter' => 't',
+  						'activate_global_sample_method' => 't',
+  						'activate_location_location_type_filter' => 't',
+  						'occurrence_associations' => 't')  
 ));
 import_helper::$dumped_resources[] = 'jquery';
 import_helper::$dumped_resources[] = 'jquery-ui';

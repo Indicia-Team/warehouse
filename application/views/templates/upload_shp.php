@@ -30,7 +30,7 @@ if (function_exists('dbase_open') && function_exists('zip_open')) {
   }
 ?>
 <fieldset>
-<label for="zip_upload" class="auto">Upload a Zipped up SHP fileset into this list:</label>
+<label for="zip_upload" class="auto wide">Upload a Zipped up SHP fileset into this list:</label>
 <input type="file" name="zip_upload" id="zip_upload" size="40" />
 <input type="submit" value="Upload ZIP File" />
 </fieldset>

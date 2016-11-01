@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="My Sites" description="A list of sites I've created, or has to my list of sites (a custom person attribute).">
+      <query website_filter_field="lw.website_id">
+        SELECT #columns#
+        FROM locations l
+          LEFT JOIN cache_termlists_terms lt ON lt.id=l.location_type_id
+          LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+          LEFT JOIN users u ON (u.id=#the_user_id#)
+          LEFT JOIN person_attribute_values pav ON pav.person_id=u.person_id AND pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false          
+          LEFT JOIN location_attribute_values lav ON lav.location_id=l.id AND lav.location_attribute_id=#private_location_attr_id#
+          LEFT JOIN location_attributes la ON la.id=lav.location_attribute_id 
+        #joins#
+        WHERE l.deleted=false
+        AND #website_filter#
+        AND (l.location_type_id=#shorewatch_location_type_id# or #shorewatch_location_type_id#='-1') 
+        AND (l.name not like '!%' OR #hide_previous_sites#&lt;&gt;1)
+        AND
+        (l.created_by_id=#the_user_id# 
+          OR
+         ((((la.id=#private_location_attr_id# AND lav.int_value=0)
+               OR
+             (pav.int_value=l.id)
+               OR
+             (lav.id is null)
+           )
+          AND #hide_all_other_users_private_sites# = '1')
+            OR
+          ('#hide_all_other_users_private_sites#' = '-1')
+         )
+        )      
+      </query>
+      <order_bys>
+        <order_by>l.name ASC</order_by>
+      </order_bys>
+      <params>
+        <param name='shorewatch_location_type_id' display='Location Types' description='ID of the Shorewatch location type in the database.' datatype="text" emptyvalue="-1"/>
+        <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+        <param name="the_user_id" display="User Name" description="Name of user to return sites for." datatype="lookup" population_call='report:library/users/get_people_details_for_website_or_user:id:fullname_surname_first' emptyvalue="-1"/>
+        <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
+        <param name="private_location_attr_id" display="Private Location Attribute ID" description="The location attribute ID used to store whether a site is private" datatype="integer" />
+        <param name="hide_all_other_users_private_sites" display="Hide all other users private sites" description="Hide all private sites in the sites list that are not 'my sites' for the supplied user." datatype="integer" emptyvalue='-1'/>
+        <param name="hide_previous_sites" display="Hide sites that are no longer used" description="Hide all sites where the site name starts with !, denoting a site that is no longer in use." datatype="integer" emptyvalue='-1'/>
+      </params>
+      <columns>
+        <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
+        <column name="name" display="Site Name" sql="l.name" datatype="text" />
+        <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" />
+        <column name="created_by_user" visible="false" sql="CASE l.created_by_id WHEN #the_user_id# THEN true ELSE false END" />
+        <column name="linked_to_user" visible="false" sql="CASE WHEN u.person_id = pav.person_id THEN true ELSE false END" />
+        <column name="pav_id" visible="false" sql="pav.id" />
+      </columns>
+</report>

@@ -7,3 +7,4 @@ ALTER TABLE occurrences
   
 UPDATE occurrences co
 SET release_status='R'
+

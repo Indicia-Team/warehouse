@@ -42,12 +42,20 @@ This page allows you to specify a new or edit an existing custom attribute for <
 <?php if ($disabled_input=='YES') echo ' class="ui-state-disabled"'; ?>>
 <legend><?php echo $other_data['name']; ?> Attribute details</legend>
 <ol>
-  <li><label for="caption">Caption</label> <input id="caption"
-    name="<?php echo $model->object_name; ?>:caption"
-    value="<?php echo html::initial_value($values, $model->object_name.':caption'); ?>"
+  <li>
+    <label for="caption">Caption</label>
+    <input id="caption" name="<?php echo $model->object_name; ?>:caption"
+        value="<?php echo html::initial_value($values, $model->object_name.':caption'); ?>"
     <?php echo $enabled; ?> /> <?php echo html::error_message($model->getError($model->object_name.':caption')); ?>
   </li>
-  
+  <?php if (array_key_exists('description', $this->model->as_array())) : ?>
+    <li>
+      <label for="description">Description:</label>
+      <textarea id="description" name="<?php echo $model->object_name; ?>:description" <?php echo $enabled; ?>
+        ><?php echo html::initial_value($values, $model->object_name.':description'); ?></textarea>
+        <?php echo html::error_message($model->getError($model->object_name.':description')); ?>
+    </li>
+  <?php endif; ?>
   
   <?php if (method_exists($this->model, 'get_system_functions')) : ?>
   <li><label for="system_function">System function:</label>
@@ -59,6 +67,17 @@ This page allows you to specify a new or edit an existing custom attribute for <
       } ?>
     </select>
   </li>
+  <?php endif; ?>
+  <?php if (array_key_exists('source_id', $this->model->as_array()) && !empty($other_data['source_terms'])) : ?>
+    <li><label for="source_id">Source of attribute:</label>
+      <select name="<?php echo $model->object_name; ?>:source_id" id="source_id">
+        <option value="">-none-</option>
+        <?php foreach($other_data['source_terms'] as $id=>$term) {
+          $selected=html::initial_value($values, $model->object_name.':source_id')==$id ? ' selected="selected"' : '';
+          echo "<option value=\"$id\"$selected>$term</option>\n";
+        } ?>
+      </select>
+    </li>
   <?php endif; ?>
   <li><label for="data_type">Data Type</label> <script
     type="text/javascript">
@@ -83,7 +102,7 @@ function toggleOptions(data_type)
       disable_list = ['valid_digit','valid_integer','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past'];
       break;
     case "L": // Lookup List
-      $('select#termlist_id').attr('disabled', '');
+      $('select#termlist_id').removeAttr('disabled');
       enable_list = ['valid_required'];
       disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_digit','valid_integer','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_time'];      
       break;
@@ -157,7 +176,7 @@ $(document).ready(function() {
     <option value=''>&lt;Please Select&gt;</option>
     <?php
     if (!is_null($this->auth_filter))
-    $termlists = ORM::factory('termlist')->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
+    $termlists = ORM::factory('termlist')->where('deleted','f')->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
     else
     $termlists = ORM::factory('termlist')->where('deleted','f')->orderby('title','asc')->find_all();
     foreach ($termlists as $termlist) {

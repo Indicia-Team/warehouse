@@ -1,0 +1,22 @@
+<report
+    title="View Data"
+    description="Report to display the map on the View Data page on Earthworm Watch. Respects privacy precision."
+>
+  <query website_filter_field="co.website_id">
+  SELECT #columns#
+  FROM cache_occurrences co
+  WHERE 
+  #website_filter#
+  AND co.survey_id = #survey_id#
+  AND ((co.training=false AND #training_records#!=1) or (co.training=true AND #training_records#=1))
+  </query>
+  <params>
+    <param name='survey_id' display='Survey ID' description='ID of the survey to show data for.' datatype='int'/>
+    <param name='training_records' display='Training records?' description='Show training records instead?.' datatype='int' emptyvalue='0' default='0'/>
+  </params>
+  <columns>
+    <column name='occurrence_id' display='Occurrence ID' sql='co.id' datatype="integer"/>
+    <column name='sample_id' display='Sample ID' sql='co.sample_id' datatype="integer"/>
+    <column name="geom" visible="false" mappable="true" sql="st_astext(co.public_geom)" in_count="true" />
+  </columns>
+</report>

@@ -1,0 +1,16 @@
+<report
+    title="Max occattr val for parent sample"
+    description="Retrives the maximum value of an integer occurrence attribute for samples within a parent sample."
+>
+  <query>
+  SELECT max(oav.int_value) as maxval
+  FROM occurrence_attribute_values oav
+  JOIN occurrences o on o.id=oav.occurrence_id and o.deleted=false
+  JOIN samples s on s.id=o.sample_id and s.deleted=false
+  WHERE s.parent_id=#parent_sample_id#
+  </query>
+  <params>
+    <param name="parent_sample_id" display="Parent sample ID" description="Sample ID for the parent sample" dataype="integer" />
+    <param name="attr_id" display="Attribute ID" description="Attribute ID to retrieve" dataype="integer" />
+  </params>
+</report>

@@ -3,6 +3,22 @@ class Database extends Database_Core {
 
   protected $in_trans = false; 
   
+	public function __construct($config = array()) {
+    parent::__construct($config);
+
+    if ($config == 'report' && !$this->link) {
+      // Add schema to the search path as Indicia::prepare_connection() only 
+      // applies this to the default connection.
+      $_schema = Kohana::config('database.report.schema');
+
+      if(!empty($_schema) && kohana::config('indicia.apply_schema')!==false)
+      {
+        $query = "SET search_path TO $_schema, public, pg_catalog;\n";
+        $this->query($query);
+      }
+    }
+  }
+  
   public function __destruct() {
     self::rollback(); 
   } 
@@ -42,16 +58,13 @@ class Database extends Database_Core {
       $escaped_values = array();
       foreach ($values as $v)
       {
-        if (is_numeric($v))
-        {
-          $escaped_values[] = $v;
-        }
-        else if ($v == null)
+        if ($v == null)
         {
           $null_value = true;
         }
         else
         {
+          // note that we escape strings and numerics the same. See Github #163.
           $escaped_values[] = "'".$this->driver->escape_str($v)."'";
         }
       }

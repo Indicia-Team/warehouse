@@ -86,12 +86,14 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
   $frequencyToRunString = substr($frequencyToRunString, 0, -1);
   //Get all the notifications where the source_type is listed as needing running today and the notification id is later than the last notification that was sent by that job
   $notificationsToSendEmailsFor = $db->query("
-    SELECT distinct n.id,n.user_id, n.source_type, n.source, n.data, u.username, coalesce(p.first_name, u.username) as name_to_use
+    SELECT distinct n.id, n.user_id, n.source_type, n.source, n.data, u.username, 
+      coalesce(p.first_name, u.username) as name_to_use, o.website_id
     FROM notifications n
       JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND unf.notification_frequency in (".$frequencyToRunString.") AND unf.deleted='f'
       JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL)
       JOIN users u ON u.id = n.user_id AND u.deleted=false
       JOIN people p ON p.id = u.person_id AND p.deleted=false
+      LEFT JOIN occurrences o on o.id=n.linked_id
     WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f'
     ORDER BY n.user_id, u.username, n.source_type, n.id
   ")->result_array(false);
@@ -121,8 +123,10 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     $notificationIds=array();
     $emailContent=start_building_new_email($notificationsToSendEmailsFor[0]);
     $currentType = '';
-    $sourceTypes=array('S'=>'Species alerts','C'=>'Comments on your records','V'=>'Verification of your records','A'=>'Record Cleaner results for your records',
-        'VT'=>'Incoming records for you to verify','M'=>'Milestones and achievements you\'ve attained', 'PT'=>'Incoming pending records for you to check',);
+    $sourceTypes=array('S' => 'Species alerts', 'C' => 'Comments on your records', 'V' => 'Verification of your records',
+        'A' => 'Record Cleaner results for your records', 'VT' => 'Incoming records for you to verify',
+        'M' => 'Milestones and achievements you\'ve attained', 'PT' => 'Incoming pending records for you to check',
+        'GU' => 'Pending users in groups you administer');
     $recordStatus = array('T' => 'Test', 'I' => 'Data entry in progress', 
       'V' => 'Accepted', 'V1' => 'Accepted as correct', 'V2' => 'Accepted as considered correct', 
       'C' => 'Awaiting review', 'C3' => 'Plausible', 'D' => 'Queried', 
@@ -160,10 +164,16 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
         $emailContent .= '<tr>';
         foreach ($dataFieldsToOutput as $field=>$caption) {
           if (isset($record[$field])) { 
-            if ($field==='username' && ($record[$field]==='admin' || $record[$field]==='system'))
+            if ($field === 'username' && ($record[$field] === 'admin' || $record[$field] === 'system'))
               $record[$field] = $systemName;
-            elseif ($field==='record_status') 
-              $record[$field] = $recordStatus[$record['record_status'] . (empty($record['record_substatus']) ? '' : $record['record_substatus'])];
+            elseif ($field === 'record_status')
+              $record[$field] = $recordStatus[$record['record_status'] . (empty($record['record_substatus']) ?
+                  '' : $record['record_substatus'])];
+            elseif ($field === 'occurrence_id')
+              $record[$field] = notificationEmailsHyperlinkId(
+                  $record[$field],
+                  $notificationToSendEmailsFor['website_id']
+              );
             $emailContent .= '<td style="padding-right: 1em;">'.$record[$field].'</td>';
           }
         }
@@ -190,6 +200,55 @@ function runEmailNotificationJobs($db, $frequenciesToRun) {
     else 
       echo $emailSentCounter.' new notification emails have been sent.<br/>';
   }
+}
+
+/**
+ * Converts a record ID into a hyperlink to the details page, if a suitable link provided in the configuration.
+ * @param $id integer Record ID
+ * @param $websiteId integer Website the record came from
+ * @return string
+ */
+function notificationEmailsHyperlinkId($id, $websiteId) {
+  try {
+    $recordDetailsPages = kohana::config('notification_emails.record_details_page_urls');
+    //Handle config file not present
+  } catch (Exception $e) {
+    $recordDetailsPages = array();
+  }
+  foreach ($recordDetailsPages as $page) {
+    $found = $page['website_id'] == $websiteId;
+    if (!$found) {
+      $ids = explode(',', notificationEmailsGetSharedWebsiteList($websiteId));
+      $found = in_array($websiteId, $ids);
+    }
+    if ($found) {
+      $url = str_replace('#id#', $id, $page['url']);
+      return "<a title=\"View details of record $id\" href=\"$url\">$id</a>";
+    }
+  }
+  return $id;
+}
+
+function notificationEmailsGetSharedWebsiteList($websiteId) {
+  $tag = "website-shares-$websiteId";
+  $cacheId = "$tag-reporting";
+  $cache = Cache::instance();
+  if ($cached = $cache->get($cacheId))
+    return $cached;
+  $db = new Database();
+  $qry = $db->select('to_website_id')
+    ->from('index_websites_website_agreements')
+    ->where("receive_for_reporting", 't')
+    ->in('from_website_id', $websiteId)
+    ->get()->result();
+  $ids = array();
+  foreach($qry as $row) {
+    $ids[] = $row->to_website_id;
+  }
+  $r = implode(',', $ids);
+  // tag all cache entries for this website so they can be cleared together when changes are saved.
+  $cache->set($cacheId, $r, $tag);
+  return $r;
 }
 
 /*

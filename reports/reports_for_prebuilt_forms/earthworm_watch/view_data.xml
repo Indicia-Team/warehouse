@@ -1,0 +1,75 @@
+<report
+    title="View Data"
+    description="Report to display the View Data page on Earthworm Watch, excludes location information.
+Note, the report directly displays sample.recorder_names, this is fine for this project as this just contains a nickname
+and isn't exposing the user's name when it shouldn't"
+>
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples s
+  LEFT JOIN sample_attribute_values pitNumAttr ON pitNumAttr.sample_id=s.id AND pitNumAttr.sample_attribute_id=#s1AttrID# AND pitNumAttr.deleted=false
+  
+  JOIN cache_occurrences co on co.sample_id=s.id and co.survey_id=s.survey_id and co.website_id in (#website_ids#)
+  JOIN occurrence_attribute_values gridIdAttr ON gridIdAttr.occurrence_id=co.id AND gridIdAttr.occurrence_attribute_id=#grid_id_attr_id# AND gridIdAttr.deleted=false
+    
+  LEFT JOIN occurrence_attribute_values countPaleAttr ON countPaleAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND countPaleAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countShortAttr ON countShortAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND countShortAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countLongAttr ON countLongAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND countLongAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongAttr.deleted=false     
+  LEFT JOIN occurrence_attribute_values countAdultAttr ON countAdultAttr.occurrence_id=co.id AND (gridIdAttr.text_value='#adult_top_soil_grid_name#' OR gridIdAttr.text_value='#adult_mustard_grid_name#') AND countAdultAttr.occurrence_attribute_id=#occ_count_attr_id# AND countAdultAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countImmatureAttr ON countImmatureAttr.occurrence_id=co.id AND (gridIdAttr.text_value='#immature_top_soil_grid_name#' OR gridIdAttr.text_value='#immature_mustard_grid_name#') AND countImmatureAttr.occurrence_attribute_id=#occ_count_attr_id# AND countImmatureAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countTopSoilAttr ON countTopSoilAttr.occurrence_id=co.id AND (gridIdAttr.text_value='#adult_top_soil_grid_name#' OR gridIdAttr.text_value='#immature_top_soil_grid_name#') AND countTopSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countTopSoilAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countMustardAttr ON countMustardAttr.occurrence_id=co.id AND (gridIdAttr.text_value='#adult_mustard_grid_name#' OR gridIdAttr.text_value='#immature_mustard_grid_name#') AND countMustardAttr.occurrence_attribute_id=#occ_count_attr_id# AND countMustardAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countAttr ON countAttr.occurrence_id=co.id AND countAttr.occurrence_attribute_id=#occ_count_attr_id# AND countAttr.deleted=false
+ 
+  JOIN sample_attribute_values moistAttr ON moistAttr.sample_id=s.id AND moistAttr.sample_attribute_id=#moisture_attr_id# AND moistAttr.deleted=false
+  JOIN termlists_terms ttMoist on ttMoist.id = moistAttr.int_value AND ttMoist.deleted=false
+  JOIN terms tMoist on tMoist.id = ttMoist.term_id AND tMoist.deleted=false  
+  JOIN sample_attribute_values textureAttr ON textureAttr.sample_id=s.id AND textureAttr.sample_attribute_id=#texture_attr_id# AND textureAttr.deleted=false
+  JOIN termlists_terms ttTexture on ttTexture.id = textureAttr.int_value AND ttTexture.deleted=false
+  JOIN terms tTexture on tTexture.id = ttTexture.term_id AND tTexture.deleted=false  
+  JOIN sample_attribute_values colourAttr ON colourAttr.sample_id=s.id AND colourAttr.sample_attribute_id=#colour_attr_id# AND colourAttr.deleted=false
+  JOIN termlists_terms ttColour on ttColour.id = colourAttr.int_value AND ttColour.deleted=false
+  JOIN terms tColour on tColour.id = ttColour.term_id AND tColour.deleted=false 
+    
+  JOIN surveys su on su.id=s.survey_id and su.id = #survey_id# and su.deleted=false
+  JOIN websites w on w.id=su.website_id and w.deleted=false
+  WHERE
+    #website_filter#
+    AND s.deleted=false
+    AND ((co.training=false AND #training_records#!=1) or (co.training=true AND #training_records#=1))
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='s1AttrID' display='Sample 1 Attribute ID' description='The ID of the sample attribute that links pit 2 to the first' datatype='int' />
+    <param name='moisture_attr_id' display='Soil moisture' description='The ID of the attribute that holds the recorded soil moisture.' datatype='int' />
+    <param name='texture_attr_id' display='Soil texture' description='The ID of the attribute that holds the recorded soil texture.' datatype='int' />
+    <param name='colour_attr_id' display='Soil colour' description='The ID of the attribute that holds the recorded soil colour.' datatype='int' />
+    <param name='occ_count_attr_id' display='Earthworm Count Attribute ID' description='The ID of the attribute that holds the Earthworm count.' datatype='int' />
+    <param name='grid_id_attr_id' display='Earthworm Grid Attribute ID' description='The ID of the attribute that holds the id of the grid. 
+There are 4 grids for different life stages and before/after mustard water added.' datatype='int' />
+    <param name='adult_top_soil_grid_name' display='Adult top soil grid name' description='Name given to the adult top soil grid' datatype='text' />
+    <param name='immature_top_soil_grid_name' display='Immature top soil grid name' description='Name given to the immature top soil grid' datatype='text' />
+    <param name='adult_mustard_grid_name' display='Adult mustard grid name' description='Name given to the adult mustard grid' datatype='text' />
+    <param name='immature_mustard_grid_name' display='Immature mustard grid name' description='Name given to the immature mustard grid' datatype='text' />
+    <param name='pale_taxa_taxon_list_id' display='Taxa Taxon List Id For Pale Earthworms' description='The taxa taxon list id for pale earthworms.' datatype='int' />
+    <param name='short_taxa_taxon_list_id' display='Taxa Taxon List Id For Short Red Earthworms' description='The taxa taxon list id for short red earthworms.' datatype='int' />
+    <param name='long_taxa_taxon_list_id' display='Taxa Taxon List Id For Long Red Earthworms' description='The taxa taxon list id for long red earthworms.' datatype='int' />
+    <param name='survey_id' display='Survey ID' description='ID of the survey to show data for.' datatype='int'/>
+    <param name='training_records' display='Training records?' description='Show training records instead?.' datatype='int' emptyvalue='0' default='0'/>
+  </params>
+  <columns>
+    <column name='sample_id' display='ID' sql='s.id' datatype="integer" visible='false' in_count="true"/>
+    <column name='person_visible_name' display='Name' sql='s.recorder_names' datatype="text"/>
+    <column name='moisture' display='Soil moisture' sql='tMoist.term' datatype="text"/>
+    <column name='colour' display='Soil colour' sql="tColour.term" datatype="text"/>
+    <column name='texture' display='Soil texture' sql="tTexture.term" datatype="text"/>
+    <column name='pale_count' display='Pale' sql="to_char(sum(countPaleAttr.int_value),'999')" datatype="text" aggregate="true"/>
+    <column name='short_red_count' display='Short red' sql="to_char(sum(countShortAttr.int_value),'999')" datatype="text" aggregate="true"/>
+    <column name='long_red_count' display='Long red' sql="to_char(sum(countLongAttr.int_value),'999')" datatype="text" aggregate="true"/>
+    <column name='soil_mustard_count' display='Top soil vs Mustard' sql="to_char(sum(countTopSoilAttr.int_value),'999') || '/' || to_char(sum(countMustardAttr.int_value),'999')" datatype="text" aggregate="true"/>
+    <column name='adult_imm_count' display='Adult vs Immature' sql="to_char(sum(countAdultAttr.int_value),'999') || '/' || to_char(sum(countImmatureAttr.int_value),'999')" datatype="text" aggregate="true"/>
+    <column name='total_count' display='Total count' sql='sum(countAttr.int_value)' datatype="integer" aggregate="true"/>
+  </columns>
+</report>

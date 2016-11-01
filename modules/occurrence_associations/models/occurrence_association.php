@@ -37,7 +37,7 @@ class Occurrence_association_Model extends ORM {
   protected $has_one = array(
     'from_occurrence'=>'occurrence',
     'to_occurrence'=>'occurrence',
-    'assocation_type'=>'termlists_term',
+    'association_type'=>'termlists_term',
     'part'=>'termlists_term',
     'position'=>'termlists_term',
     'impact'=>'termlists_term',
@@ -82,4 +82,11 @@ class Occurrence_association_Model extends ORM {
     return true;
   }
 
+  // define underlying fields which the user would not normally see, e.g. so they can be hidden from selection
+  // during a csv import
+  protected $hidden_fields=array(
+    'from_occurrence_id',
+    'to_occurrence_id'
+  );
+  
 }

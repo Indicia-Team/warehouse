@@ -1,0 +1,18 @@
+<report
+    title="Species Data"
+    description="Report used to retrieve description of a species and images associated with its taxon_meaning_id."
+>
+  <query website_filter_field="o.website_id">
+   SELECT 'description', description as the_text, cast(null as varchar) as caption
+    FROM taxa_taxon_lists
+    WHERE id=#taxa_taxon_list_id#
+   UNION
+    SELECT 'image', path as the_text, caption
+    FROM taxon_images
+    WHERE taxon_meaning_id=#taxon_meaning_id#
+  </query>
+  <params>
+    <param name='taxa_taxon_list_id' display='Taxon ID' description='ID of the taxon to loads notes for' datatype='text' emptyvalue='-1'/>
+    <param name='taxon_meaning_id' display='Taxon meaning ID' description='The meaning ID of the taxon' datatype='text' emptyvalue='-1' />
+  </params>
+</report>

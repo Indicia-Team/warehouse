@@ -5,20 +5,20 @@
         Spatial Index Builder module to index the list of locations that users can set in their preferences
         as their locality, for significantly improved performance."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
   SELECT distinct #columns#
-  FROM cache_occurrences o
-  JOIN websites w on w.id=o.website_id 
+  FROM cache_occurrences_functional o
+  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
   AND ('#record_status#'&lt;&gt;'' OR (o.record_status not in ('I','T') AND (#ownData#=1 OR o.record_status not in ('D','R'))))
-  AND ('#searchArea#'='' OR st_intersects(o.public_geom, st_geomfromtext('#searchArea#',900913)))
+  AND ('#searchArea#'='' OR st_intersects(o.public_geom, ST_MakeValid(st_geomfromtext('#searchArea#',900913))))
   AND (#ownData#=0 OR CAST(o.created_by_id AS character varying)='#currentUser#')
   #idlist#
   </query>
   <order_bys>
-    <order_by>o.taxon_group, o.preferred_taxon ASC</order_by>
+    <order_by>cttl.taxon_group, cttl.preferred_taxon ASC</order_by>
   </order_bys>
   <params>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
@@ -65,9 +65,9 @@
   </params>
   <columns>
     <column name='taxon_meaning_id' display='ID' sql='o.taxon_meaning_id' datatype='integer' visible="false" in_count="true" />
-    <column name='taxon' display='Preferred Name' sql="o.preferred_taxon" datatype='text' />
-    <column name='common' display='Common Name' sql="o.default_common_name" datatype='text' />
-    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
+    <column name='taxon' display='Preferred Name' sql="cttl.preferred_taxon" datatype='text' />
+    <column name='common' display='Common Name' sql="cttl.default_common_name" datatype='text' />
+    <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype='text' />
     <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' datatype='integer' on_demand="true" />
     <column name="first_date" display="First Recorded Date" sql="min(coalesce(o.date_start, o.date_end))" aggregate="true" datatype="date" />
     <column name="last_date" display="Last Recorded Date" sql="max(coalesce(o.date_end, o.date_start))" aggregate="true" datatype="date" />

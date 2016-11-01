@@ -56,7 +56,8 @@ class Termlists_term_Model extends Base_Name_Model {
       'parent_id',
       'preferred',
       'deleted',
-      'sort_order'
+      'sort_order',
+      'source_id'
     );
     return parent::validate($array, $save);
   }
@@ -109,7 +110,6 @@ class Termlists_term_Model extends Base_Name_Model {
 
         Kohana::log("info", "Synonyms remaining to add: ".count($arrSyn));
         $sm = ORM::factory('termlists_term');
-        kohana::log('debug', $arrSyn);
         foreach ($arrSyn as $lang => $term) {
           $sm->clear();
           $syn = array();
@@ -154,7 +154,7 @@ class Termlists_term_Model extends Base_Name_Model {
         }
       } catch (Exception $e) {
         $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
-        error::log_error('Exception during postSubmit in termlists_term model.', $e);
+        error_logger::log_error('Exception during postSubmit in termlists_term model.', $e);
         $success = false;
       }
     }

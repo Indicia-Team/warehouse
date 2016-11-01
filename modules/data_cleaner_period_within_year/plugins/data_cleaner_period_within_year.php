@@ -38,9 +38,10 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
       // Also a warning - these queries are case-sensitive, but performance is miserable if they are made insensitive since this kills the use of indexes.
       array(
         'joins' => 
+            "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
             "join verification_rule_metadata vrm ".
             "  on (vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk')".
-            "  or (vrm.value=co.preferred_taxon and vrm.key='Taxon') ".
+            "  or (vrm.value=cttl.preferred_taxon and vrm.key='Taxon') ".
             "  or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
             "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=4 ".
@@ -58,9 +59,10 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
       array(
         // repeat the test, this time filtered by stage
         'joins' => 
+            "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
             "join verification_rule_metadata vrm ".
             "  on (vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk')".
-            "  or (vrm.value=co.preferred_taxon and vrm.key='Taxon') ".
+            "  or (vrm.value=cttl.preferred_taxon and vrm.key='Taxon') ".
             "  or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
             "join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key='Stage' ".

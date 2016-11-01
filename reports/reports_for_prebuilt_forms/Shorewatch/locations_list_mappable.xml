@@ -1,0 +1,37 @@
+<report
+    title="Locations list"
+    description="A general purpose list of locations."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+  FROM locations l
+  LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+  JOIN cache_termlists_terms cttl ON cttl.id=l.location_type_id
+  #joins#
+  WHERE l.deleted=false
+  AND #website_filter#
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id='>
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+    <param name="linked_location_id" display="Location Id" description="Location to filter to" datatype="integer">
+      <where>l.id=#linked_location_id#</where>
+    </param>
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
+  </params>
+  <columns>
+    <column name='location_id' display='ID' datatype='integer' sql='l.id' />
+    <column name='name' display='Name' datatype='text' sql='l.name' />
+    <column name='location_type_id' visible='false' datatype='integer' sql='l.location_type_id' />
+    <column name='location_type' display='Type' datatype='text' sql='cttl.term' />
+    <column name='centroid_sref' display='Centroid' datatype='text' sql='l.centroid_sref' />
+    <column name='centroid_sref_system' visible='false' datatype='text' sql='l.centroid_sref_system' />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(coalesce(l.boundary_geom, l.centroid_geom))" />
+  </columns>
+</report>

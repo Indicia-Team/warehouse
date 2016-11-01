@@ -100,7 +100,32 @@ left join notifications n on n.linked_id=o.id
           and n.source_detail=rn.source_detail
 join users u on u.id=coalesce(rn.occurrence_comment_created_by_id, o.verified_by_id)
 where n.id is null;")->result();
-  }  
+  }
+
+  /**
+   * Runs a query to select the notification data to generate for verification and comment status updates since the
+   * last run date. This allows recorders to be notified of verification actions and/or comments on their records.
+   */
+  public static function selectPendingGroupsUsersNotifications($last_run_date, $db=null) {
+    if (!$db) {
+      $db = new Database();
+    }
+    // note this query excludes user 1 from the notifications (admin user) as they are records which don't
+    // have a warehouse user ID.
+    return $db->query(
+"select gu.id as groups_user_id, g.id as group_id, 
+  p.surname, p.first_name, g.title as group_title, a.user_id as notify_user_id
+from groups_users gu
+join users u on u.id=gu.user_id and u.deleted=false
+join people p on p.id=u.person_id and p.deleted=false
+join groups g on g.id=gu.group_id and g.deleted=false
+join groups_users a on a.group_id=g.id and a.deleted=false and a.administrator=true
+left join notifications n on n.source_type='GU' and n.linked_id=gu.id
+where gu.created_on>'$last_run_date'
+and gu.pending=true
+and n.id is null"
+    )->result();
+  }
   
   /** 
    * Function to be called on postSubmit of a sample, to make sure that any changed occurrences are linked to their map square entries properly.
@@ -157,7 +182,8 @@ where n.id is null;")->result();
         }
         else 
           $msqId=$existing[0]['id'];
-        $db->query("UPDATE cache_occurrences co SET map_sq_{$km}km_id=$msqId WHERE sample_id={$s->id}");
+        $db->query("UPDATE cache_occurrences_functional SET map_sq_{$km}km_id=$msqId WHERE sample_id={$s->id}");
+        $db->query("UPDATE cache_samples_functional SET map_sq_{$km}km_id=$msqId WHERE id={$s->id}");
       }
     }
   }

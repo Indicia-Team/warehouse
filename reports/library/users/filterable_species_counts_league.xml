@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <report title="Species counts league with standard params" description="A  filtered league table of taxon counts by warehouse user.">
-  <query website_filter_field="o.website_id" standard_params="true">
+  <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
     FROM people p
     JOIN users u ON u.person_id=p.id AND u.deleted=false AND u.id&lt;&gt;1
-    JOIN cache_occurrences o ON o.created_by_id=u.id
+    JOIN cache_occurrences_functional o ON o.created_by_id=u.id
     #agreements_join#
     #joins#
     WHERE #sharing_filter#

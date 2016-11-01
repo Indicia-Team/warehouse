@@ -4,7 +4,7 @@
       <query website_filter_field="o.website_id">
       SELECT #columns#
       FROM taxon_groups tg
-      LEFT JOIN cache_occurrences o on o.taxon_group_id=tg.id
+      LEFT JOIN cache_occurrences_functional o on o.taxon_group_id=tg.id
       #agreements_join# 
       #joins#
       WHERE tg.deleted=false

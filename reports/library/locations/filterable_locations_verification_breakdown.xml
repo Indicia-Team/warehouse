@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Locations verification breakdown (filterable)" description="Verification breakdown by indexed locality with standard filters.">
-  <query website_filter_field="o.website_id" standard_params="true">
+  <query website_filter_field="o.website_id" standard_params="occurrences">
     select #columns#
-    from cache_occurrences o
+    from cache_occurrences_functional o
     join index_locations_samples ils on ils.sample_id=o.sample_id
     join locations l on l.id=ils.location_id and l.deleted=false
     #agreements_join#

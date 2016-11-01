@@ -7,7 +7,7 @@
           FROM locations l
           LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
           JOIN samples s ON s.location_id=l.id AND s.deleted=false
-          JOIN cache_occurrences o ON o.sample_id=s.id
+          JOIN cache_occurrences_functional o ON o.sample_id=s.id
           #agreements_join# 
           #joins#
           WHERE l.deleted=false AND l.boundary_geom IS NOT NULL

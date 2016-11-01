@@ -1,40 +1,3 @@
-CREATE OR REPLACE FUNCTION calc_sighting_sref(bearing double precision, reticules double precision, platformheight double precision, geom geometry)
-  RETURNS character varying AS
-$BODY$
-DECLARE convertedSref integer[];
-DECLARE lat float;
-DECLARE lng float;
-DECLARE angleRetDeclination float;
-DECLARE radians float;
-DECLARE angleBetween2Radii float;
-DECLARE simplifiedAngle float;
-DECLARE radialDistance float;
-DECLARE dLat float;
-DECLARE angleLat float;
-DECLARE dLong float;
-DECLARE angleLong float;
-BEGIN
-  platformHeight = platformHeight / 1000;
-  lat = st_y(st_transform(st_centroid(geom), 4326));
-  lng = st_x(st_transform(st_centroid(geom), 4326));
-  angleRetDeclination = 0.2865*6.28/360;
-  radians = bearing*pi()/180;
-  angleBetween2Radii = acos(6370/(6370+platformHeight));
-  simplifiedAngle = angleBetween2Radii+reticules*angleRetDeclination;
-  radialDistance = (cos(simplifiedAngle )*(6370*sin(simplifiedAngle)-sqrt(pow(6370,2)*(pow(sin(simplifiedAngle),2))-2*6370*platformHeight*pow(cos(simplifiedAngle),2))))*1000;
-  dLat = radialDistance*(cos(radians)); 
-  angleLat = 2*(((dLat/1000)/(6370*2)));
-  dLong = radialDistance*(sin(radians));
-  angleLong = 2*(((dLong/1000)/(6370*2)));
-  return (angleLat * (180/pi()) + lat)::varchar || ', ' || (angleLong * (180/pi()) + lng)::varchar;
-RETURN r;
-END;
-$BODY$
-  LANGUAGE plpgsql IMMUTABLE
-  COST 100;
-
-
-
 CREATE OR REPLACE FUNCTION convert_east_north_to_osgb(east double precision, north double precision, accuracy integer)
   RETURNS character varying AS
 $BODY$
@@ -179,7 +142,7 @@ $BODY$
 
 
 
-CREATE OR REPLACE FUNCTION get_output_system(geom_in geometry, sref_system character varying, default_system character varying)
+CREATE OR REPLACE FUNCTION get_output_system(geom_in geometry, sref_system character varying, default_system character varying default '900913')
   RETURNS character varying AS
 $BODY$
 DECLARE geom geometry;

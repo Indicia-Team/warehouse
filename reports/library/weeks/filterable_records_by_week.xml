@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Filterable records by week" description="Counts records by week for the last year with standard params support.">
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     select #columns#
     from generate_series(0,52) as weeks(no)
-    left join cache_occurrences o on date_trunc('week', o.cache_created_on)=date_trunc('week', CURRENT_DATE - (weeks.no*7))
+    left join cache_occurrences_functional o on date_trunc('week', o.created_on)=date_trunc('week', CURRENT_DATE - (weeks.no*7))
     #agreements_join#
     #joins#
     where #sharing_filter#

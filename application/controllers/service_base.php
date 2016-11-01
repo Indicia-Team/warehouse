@@ -223,7 +223,7 @@ class Service_Base_Controller extends Controller {
    */
   protected function handle_error($e, $transaction_id = null)
   {
-    if($e instanceof ValidationError)
+    if($e instanceof ValidationError || $e instanceof InvalidArgumentException)
       $statusCode = 400;
     elseif($e instanceof AuthenticationError || $e instanceof AuthorisationError) 
       $statusCode = 403; // not 401 as not using browser or official digest authentication
@@ -233,7 +233,9 @@ class Service_Base_Controller extends Controller {
       $statusCode = 500;
     $message=kohana::lang('general_errors.'.$e->getMessage());
     $mode = $this->get_output_mode();
-    if (kohana::config('indicia.http_status_responses')===true)
+    // Set the HTTP response code only if configured to do so and not JSONP. JSONP will need
+    // to check the response error instead.
+    if (kohana::config('indicia.http_status_responses')===true && empty($_GET['callback']))
       header(' ', true, $statusCode);
     if ($mode=='xml') {
       $view = new View("services/error");

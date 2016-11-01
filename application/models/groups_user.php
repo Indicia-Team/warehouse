@@ -36,8 +36,31 @@ class Groups_user_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('group_id', 'required');
     $array->add_rules('user_id', 'required');
+    $array->add_rules('access_level', 'integer');
     $this->unvalidatedFields = array('administrator', 'deleted', 'pending');
     return parent::validate($array, $save);
   }
+
+  /**
+   * Override preSubmit to implement an UPSERT. This prevents multiple instances of
+   * groups_users records being created e.g. when adding an admin to a group if the
+   * user already a member.
+   */
+  protected function preSubmit() {
+    if (empty($this->submission['fields']['id']['value'])) {
+      $existing = $this->db->select('id')->from('groups_users')
+          ->where(array(
+            'group_id' => $this->submission['fields']['group_id']['value'],
+            'user_id' => $this->submission['fields']['user_id']['value'],
+            'deleted' => 'f'
+          ))
+          ->get()->as_array(false);
+      if (count($existing)) {
+        $this->submission['fields']['id']['value'] = $existing[0]['id'];
+      }
+    }
+    parent::preSubmit();
+  }
+
 
 }

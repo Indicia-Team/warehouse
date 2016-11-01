@@ -8,7 +8,7 @@
       LEFT JOIN cache_termlists_terms lt on lt.id=l.location_type_id
       LEFT JOIN (
         index_locations_samples ils        
-        JOIN cache_occurrences co on co.sample_id=ils.sample_id
+        JOIN cache_occurrences_functional co on co.sample_id=ils.sample_id
       ) on ils.location_id=l.id
       #joins#
       WHERE l.deleted=false

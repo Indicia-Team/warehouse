@@ -1,0 +1,37 @@
+<report
+    title="List of filterable unique map square and species combinations"
+    description="Outputs a list of every map square for every species in the filter."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
+  SELECT #columns#
+  FROM cache_occurrences_functional o
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <params>
+    <param name="sq_size" display="Grid square size" description="Specify either 1000, 2000 or 10000 for the grid square resolution as 1km, 2km or 10km grid" datatype="integer">
+      <joins>
+        <join value="1000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_1km_id and msq.size=1000</join>
+        <join value="2000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_2km_id and msq.size=2000</join>
+        <join value="10000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_10km_id and msq.size=10000</join>
+      </joins>
+    </param>
+    <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
+      <where>st_intersects(msq.geom, st_geomfromtext('#bounds#', 900913))</where>
+    </param>
+  </params>
+  <columns>
+    <column name='taxon' sql="cttl.preferred_taxon" datatype="species" />
+    <column name='common' sql="cttl.default_common_name" datatype="text" />
+    <column name='taxon_group' sql='cttl.taxon_group' datatype="text" />
+    <column name='external_key' sql='o.taxa_taxon_list_external_key' datatype="text" />
+    <column name='record_count' sql='count(o.id)' datatype="text" aggregate="true" />
+    <column name='lat' sql='st_y(st_transform(st_centroid(msq.geom), 4326))' datatype='integer' />
+    <column name='lng' sql='st_x(st_transform(st_centroid(msq.geom), 4326))' datatype='integer' />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" in_count="true" />
+  </columns>
+</report>

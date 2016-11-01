@@ -44,10 +44,15 @@ class Termlist_export_Controller extends Indicia_Controller {
    * @const SQL_FETCH_ALL_TERMS Query definition which retrieves all the terms for a termlist ID
    * in preparation for export.
    */
-  const SQL_FETCH_ALL_TERMS = "select array_to_string(array_agg((t.term || '|' || t.language_iso || '|' || coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, ''))::varchar order by t.sort_order, t.term), '**') as terms
+  const SQL_FETCH_ALL_TERMS = "select array_to_string(array_agg(entry), '**') as terms from (select t.term || '|' || t.language_iso || '|' ||
+  coalesce(t.sort_order::varchar, '') || '|' || coalesce(tp.term::varchar, '')::varchar || '|' ||
+  array_to_string(array_agg(ts.term || '~' || ts.language_iso order by ts.term, ts.language_iso), '`'::varchar) as entry
 from cache_termlists_terms t
 left join cache_termlists_terms tp on tp.id=t.parent_id
-where {where}";
+left join cache_termlists_terms ts on ts.meaning_id=t.meaning_id and ts.termlist_id=t.termlist_id and ts.preferred=false
+where t.preferred=true and {where}
+group by t.term, t.language_iso, t.sort_order, tp.term
+order by t.sort_order, t.term) as list";
 
   /**
    * @const SQL_FIND_EXISTING_TERM = Query definition to find if a term definition already exists in the termlist.
@@ -112,7 +117,7 @@ where {where}";
         $this->db->query('COMMIT;');
       } catch (Exception $e) {
         $this->db->query('ROLLBACK;');
-        error::log_error('Exception during termlist content import', $e);
+        error_logger::log_error('Exception during termlist content import', $e);
         $this->template->title = 'Error during termlist content import';
         $this->view = new View('templates/error_message');
         $this->view->message='An error occurred during the termlist content import and no changes have been made to the database. ' .
@@ -158,17 +163,20 @@ where {where}";
     foreach ($terms as $term) {
       // the tokens defining the term are separated by pipes.
       $term = explode('|', $term);
+      // SQL escaping
+      $escapedTerm = pg_escape_string($term[0]);
+      $escapedParent = pg_escape_string($term[3]);
       // does the term already exist in the list?
       $existing = $this->db->query(str_replace(
           array('{termlist_id}', '{term}', '{language_iso}', '{sort_order}', '{parent}'),
-          array($_POST['termlist_id'], $term[0], $term[1], $term[2], $term[3]),
+          array($_POST['termlist_id'], $escapedTerm, $term[1], $term[2], $escapedParent),
           self::SQL_FIND_EXISTING_TERM))->result()->count();
 
       if (!$existing) {
         $this->log[] = $this->db->last_query();
         // sanitise the sort order
         $term[2] = empty($term[2]) ? 'null' : $term[2];
-        $this->db->query("select insert_term('$term[0]', '$term[1]', $term[2], $termlist_id, null);");
+        $this->db->query("select insert_term('$escapedTerm', '$term[1]', $term[2], $termlist_id, null);");
         $this->log[] = "Added term $term[0]";
       } else {
         $this->log[] = "Term $term[0] already exists";
@@ -179,10 +187,13 @@ where {where}";
       // the tokens defining the term are separated by pipes.
       $term = explode('|', $term);
       if (!empty($term[3])) {
+        // SQL escaping
+        $escapedTerm = pg_escape_string($term[0]);
+        $escapedParent = pg_escape_string($term[3]);
         $this->db->query("update termlists_terms tlt set parent_id=tltp.id, updated_on=now()
           from terms t, termlists_terms tltp
-          join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$term[3]'
-          where tlt.termlist_id=$termlist_id and t.id=tlt.term_id and t.deleted=false and t.term='$term[0]'
+          join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$escapedParent'
+          where tlt.termlist_id=$termlist_id and t.id=tlt.term_id and t.deleted=false and t.term='$escapedTerm'
           and tltp.termlist_id=tlt.termlist_id and tltp.deleted=false");
       }
     }
@@ -195,7 +206,7 @@ where {where}";
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
    */
-  public function getTerms($termlistId) {
+  private function getTerms($termlistId) {
     $r = $this->db->query(str_replace('{where}', "t.termlist_id=$termlistId", self::SQL_FETCH_ALL_TERMS))->result_array(FALSE);
     return $r[0];
   }

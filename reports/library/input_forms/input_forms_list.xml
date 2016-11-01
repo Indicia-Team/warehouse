@@ -1,21 +1,20 @@
 <report
     title="Input forms list"
     description="A general purpose list of input forms."
->
-  <query website_filter_field="o.website_id">
-  SELECT #columns#
-  FROM cache_occurrences o
-  #agreements_join#
-  #joins#
-  WHERE #sharing_filter# 
-  </query>  
+    >
+  <query>
+    SELECT #columns#
+    FROM samples s
+    JOIN surveys su on su.id=s.survey_id and su.deleted=false
+    WHERE s.deleted=false
+    AND su.website_id in (#website_ids#)
+  </query>
   <order_bys>
-    <order_by>o.input_form ASC</order_by>
-  </order_bys>  
+    <order_by>s.input_form ASC</order_by>
+  </order_bys>
   <columns>
-    <column name="input_form" sql="o.input_form" display="Input form" distincton="true"/>
-    <column name="survey_id" visible="false" sql="o.survey_id" />
-    <column name="website_id" visible="false" sql="o.website_id" />
+    <column name="input_form" sql="s.input_form" display="Input form" distincton="true"/>
+    <column name="survey_id" visible="false" sql="s.survey_id" />
+    <column name="website_id" visible="false" sql="su.website_id" />
   </columns>
 </report>
-

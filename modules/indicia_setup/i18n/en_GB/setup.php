@@ -62,7 +62,6 @@ $lang = array
     'name_required' => 'Please specify the PopstgreSQL database name.',
     'user_required' => 'Please specify the PopstgreSQL database user.',
     'password_required' => 'Please specify the PopstgreSQL database password.',
-    'demo_configuration' => 'Demo Configuration',
     'test_email_title' => 'Email to test the Indicia server email configuration. Do not reply to this email.',
     'test_email_failed' => 'Please check your email configuration. The test email was not sent successfully.',
     'skip_email_config' => 'Skip Email Configuration',

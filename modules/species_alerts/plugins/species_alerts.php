@@ -1,10 +1,24 @@
 <?php
-
-function species_alerts_extend_data_services() {
-  return array(
-    'species_alerts'=>array()
-  );
-}
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Modules
+ * @subpackage Species alerts
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
+ */
 
 /*
  * Scheduled task for generating species alerts, scans occdelta for any new occurrences matching species alert records and then
@@ -16,18 +30,22 @@ function species_alerts_scheduled_task($last_run_date, $db) {
   $newOccDataForSpeciesAlert = $db->query("
     SELECT DISTINCT
       od.id as occurrence_id,
-      od.taxon as taxon,
+      cttl.taxon as taxon,
       od.record_status as record_status,
-      od.public_entered_sref as entered_sref,
+      snf.public_entered_sref as entered_sref,
       od.cud as cud,
       od.record_status as record_status,
-      od.cache_created_on as created_on,
-      od.cache_updated_on as updated_on,
+      od.created_on,
+      od.updated_on,
       sa.user_id as alerted_user_id,
       u.username as username
     FROM occdelta od
+      JOIN cache_samples_nonfunctional snf on snf.id=od.sample_id
+      JOIN cache_taxa_taxon_lists cttl on cttl.id=od.taxa_taxon_list_id
       LEFT JOIN index_locations_samples ils on ils.sample_id=od.sample_id
-      LEFT JOIN cache_taxa_taxon_lists cttl on cttl.taxon_meaning_id=od.taxon_meaning_id
+      -- join to find any taxon list that this taxon occurs on
+      LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=od.taxon_meaning_id 
+          OR (cttlall.external_key IS NOT NULL AND od.taxa_taxon_list_external_key IS NOT NULL AND cttlall.external_key=od.taxa_taxon_list_external_key)
       JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=od.website_id and iwwa.receive_for_reporting=true
       JOIN species_alerts sa ON 
         (sa.location_id IS NULL OR sa.location_id=ils.location_id)
@@ -36,7 +54,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
           OR
           sa.external_key = od.taxa_taxon_list_external_key
           OR
-          sa.taxon_list_id = cttl.taxon_list_id)
+          sa.taxon_list_id = cttlall.taxon_list_id)
         AND
           (sa.alert_on_entry='t' AND od.cud='C'
           OR
@@ -116,5 +134,9 @@ function species_alerts_metadata() {
     'requires_occurrences_delta'=>TRUE
   );
 }
-?> 
- 
+
+function species_alerts_extend_data_services() {
+  return array(
+    'species_alerts'=>array()
+  );
+}

@@ -1,0 +1,41 @@
+  <report
+    title="Count Units Review - Unverified"
+    description="A list of Count Unit Boundaries which are not the preferred boundary (the latest boundary is assumed preferred if one isn't set)."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+       FROM locations cub
+         LEFT JOIN locations_websites lw ON lw.location_id=cub.id
+         LEFT JOIN location_attribute_values lavStartDate ON lavStartDate.location_id=cub.id AND lavStartDate.location_attribute_id=#count_unit_boundary_start_date_id# and lavStartDate.deleted = false
+         LEFT JOIN location_attribute_values lavEndDate ON lavEndDate.location_id=cub.id AND lavEndDate.location_attribute_id=#count_unit_boundary_end_date_id# and lavEndDate.deleted = false
+         LEFT JOIN locations cu ON cub.parent_id = cu.id
+         LEFT JOIN locations latestBoundary on latestBoundary.id in (select max(id) from locations where parent_id=cu.id and location_type_id=#count_unit_boundary_type_id#)
+         LEFT JOIN location_attribute_values lavPreferred ON lavPreferred.location_id=cu.id AND lavPreferred.location_attribute_id=#preferred_attribute_id# and lavPreferred.deleted = false
+    WHERE cub.deleted = false AND lw.deleted = false
+    AND cub.location_type_id=#count_unit_boundary_type_id#
+    AND ((lavPreferred.int_value is not null AND lavPreferred.int_value != cub.id) OR (lavPreferred.int_value is null AND latestBoundary.id!=cub.id))
+  </query>
+  <params>
+    <param name="preferred_attribute_id" datatype="integer"/>
+    <param name="count_unit_boundary_type_id" datatype="integer"/>
+    <param name="count_unit_boundary_start_date_id" datatype="integer"/>
+    <param name="count_unit_boundary_end_date_id" datatype="integer"/>
+    <param name="cudi_form_url" datatype="string"/>
+    <param name="drupal_installation_folder" datatype="string"/>
+    <param name="clean_url" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="cu_name" display="Count Unit Name" sql="
+      case '#clean_url#'
+        WHEN '1'
+          THEN '&lt;a href=&quot;'||#drupal_installation_folder#||#cudi_form_url#||'?location_id='||cub.id||'&amp;parent_id='||cu.id||'&quot;&gt;' || cu.name
+        ELSE
+          '&lt;a href=&quot;'||#drupal_installation_folder#||'?q='||#cudi_form_url#||'&amp;location_id='||cub.id||'&amp;parent_id='||cu.id||'&quot;&gt;' || cu.name
+      END
+    "/> 
+    <column name="id" display="Count Unit Boundary Id" sql="cub.id" in_count="true"/> 
+    <column name="start_date" display="Count Unit Boundary Start Date" sql="to_char(lavStartDate.date_start_value, 'DD/MM/YYYY')" /> 
+    <column name="end_date" display="Count Unit Boundary End Date" sql="to_char(lavEndDate.date_start_value, 'DD/MM/YYYY')" /> 
+  </columns>
+</report>
+

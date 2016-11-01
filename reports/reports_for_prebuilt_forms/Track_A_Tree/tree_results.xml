@@ -5,6 +5,8 @@
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
     SELECT #columns#
     FROM cache_occurrences o
+    JOIN samples s on s.id=o.sample_id and s.deleted=false
+    LEFT JOIN cache_termlists_terms t on t.id=s.sample_method_id
     JOIN websites w on w.id=o.website_id 
     #joins#
     WHERE o.survey_id=#survey_id#
@@ -20,7 +22,7 @@
       <where>('#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
     <param name="sample_method" display="Sample Method" description="Select the sample method." >
-      <where>(o.sample_method = '#sample_method#')</where>
+      <where>(t.term = '#sample_method#')</where>
     </param>
   </params>
   <columns>

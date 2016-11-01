@@ -120,6 +120,7 @@ class Indicia_Controller extends Template_Controller {
       if($this->auth->logged_in('CoreAdmin')) {
         $adminMenu['Website agreements']='website_agreement';
         $adminMenu['Languages']='language';
+        $adminMenu['Licences']='licence';
         $adminMenu['Titles']='title';
         $adminMenu['Taxon ranks']='taxon_rank';
         $adminMenu['Taxon relations']='taxon_relation_type';
@@ -301,7 +302,7 @@ class Indicia_Controller extends Template_Controller {
       $this->session->set_flash('flash_error', "You appear to be attempting to edit a page you do not have rights to.");
       $this->redirectToIndex();
     }
-    elseif ($_POST['submit']=='Cancel') {      
+    elseif ($_POST['submit']=='Cancel') {
       $this->redirectToIndex();
     } else {
       // Are we editing an existing record? If so, load it.
@@ -371,7 +372,7 @@ class Indicia_Controller extends Template_Controller {
       }
       $this->template->content = $view;
     } catch (Exception $e) {
-      error::log_error("Problem displaying view $name", $e);
+      error_logger::log_error("Problem displaying view $name", $e);
       throw $e;
     }
   }
@@ -459,7 +460,8 @@ class Indicia_Controller extends Template_Controller {
     else
       $prefix = '';
     $this->session->set_flash('flash_error', "You do not have sufficient permissions to access the $prefix$level.");
-    url::redirect('home');
+    if (url::current()!=='home')
+      url::redirect('home');
   }
 
   /**
@@ -489,7 +491,7 @@ class Indicia_Controller extends Template_Controller {
     catch (Exception $e)
     {
       // Put the error out
-      error::log_error('Error occurred when loading view.', $e);
+      error_logger::log_error('Error occurred when loading view.', $e);
       // Can't set a flash message here, as view has already failed to load.
       echo "<div class=\"ui-widget-content ui-corner-all ui-state-error page-notice\">".
           "<strong>Error occurred when loading page.</strong><br/>".$e->getMessage().

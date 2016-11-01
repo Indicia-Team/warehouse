@@ -62,7 +62,9 @@ class Data_cleaner_Controller extends Service_Base_Controller {
     else {
       $db = new Database();
       // Create an empty template table
-      $db->query("select * into temporary occdelta from cache_occurrences limit 0;");
+      $db->query("SELECT * INTO TEMPORARY occdelta FROM cache_occurrences_functional LIMIT 0;");
+      // Ensure the verify service always performs checks
+      $db->query("ALTER TABLE occdelta ADD COLUMN verification_checks_enabled boolean NOT NULL DEFAULT true;");
       try {
         $this->prepareOccdelta($db, $sample, $occurrences);
         $r = $this->runRules($db);
@@ -72,7 +74,7 @@ class Data_cleaner_Controller extends Service_Base_Controller {
       } catch (Exception $e) {
         $db->query('drop table occdelta');
         $this->response = "Query failed";
-        error::log_error('Error occurred calling verification rule service', $e);
+        error_logger::log_error('Error occurred calling verification rule service', $e);
       }
     }
     $this->send_response();
@@ -80,38 +82,39 @@ class Data_cleaner_Controller extends Service_Base_Controller {
   
   /**
    * Fills the temporary table called occdelta, which contains details of each proposed record to 
-   * verify.
+   * verify. This is only done when calling verify directly, since occdelta is prepared by the 
+   * scheduled_tasks process when auto-checks are being run on the schedule.
    */
   private function prepareOccdelta($db, $sample, $occurrences) {
-    $website_id=$this->website_id;
-    $srid=kohana::config('sref_notations.internal_srid');
-    $last_sref='';
-    $last_sref_system='';
+    $website_id = $this->website_id;
+    $srid = kohana::config('sref_notations.internal_srid');
+    $last_sref = '';
+    $last_sref_system = '';
     foreach($occurrences as $occurrence) {
       $record = array_merge($sample, $occurrence);
-      $survey_id=$record['sample:survey_id'];
-      $sref=$record['sample:entered_sref'];
-      $sref_system=$record['sample:entered_sref_system'];
-      $taxa_taxon_list_id=$record['occurrence:taxa_taxon_list_id'];
+      $survey_id = $record['sample:survey_id'];
+      $sref = $record['sample:entered_sref'];
+      $sref_system = $record['sample:entered_sref_system'];
+      $taxa_taxon_list_id = $record['occurrence:taxa_taxon_list_id'];
       if (isset($record['sample:geom']))
-        $geom=$record['sample:geom'];
+        $geom = $record['sample:geom'];
       else {
         // avoid recalculating the geom if we don't have to as this is relatively expensive
-        if ($sref!==$last_sref || $sref_system!==$last_sref_system)
-          $geom=spatial_ref::sref_to_internal_wkt($sref, $sref_system);
+        if ($sref !== $last_sref || $sref_system !== $last_sref_system)
+          $geom = spatial_ref::sref_to_internal_wkt($sref, $sref_system);
         $last_sref = $sref;
         $last_sref_system = $sref_system;
       }
-      $date=$record['sample:date'];
-      $vd=vague_date::string_to_vague_date($date);      
-      $date_start=$vd[0];
-      $date_end=$vd[1];
-      $date_type=$vd[2];
-      $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_entered_sref, entered_sref_system, public_geom, taxa_taxon_list_id)
-          values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type', '$sref', '$sref_system', st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
+      $date = $record['sample:date'];
+      $vd = vague_date::string_to_vague_date($date);      
+      $date_start = $vd[0];
+      $date_end = $vd[1];
+      $date_type = $vd[2];
+      $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id)
+          values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type',  st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
     }
     // patch in some extra details about the taxon required for each cache entry
-    $db->query("update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxon=ttl.taxon, taxa_taxon_list_external_key=ttl.external_key ".
+    $db->query("update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxa_taxon_list_external_key=ttl.external_key ".
         "from list_taxa_taxon_lists ttl where ttl.id=o.taxa_taxon_list_id");
   }
   

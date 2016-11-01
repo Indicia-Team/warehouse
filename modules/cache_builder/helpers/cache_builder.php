@@ -41,14 +41,14 @@ class cache_builder {
         if (is_array($queries['update']))
           foreach($queries['update'] as $key=>&$sql)
             $sql = str_replace('#join_needs_update#', $queries['join_needs_update'], $sql);
-        else 
+        else
           $queries['update'] = str_replace('#join_needs_update#', $queries['join_needs_update'], $queries['update']);
         cache_builder::run_statement($db, $table, $queries['update'], 'update');
         // preprocess some of the tags in the queries
         if (is_array($queries['insert']))
           foreach($queries['insert'] as $key=>&$sql)
             $sql = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $sql);
-        else 
+        else
           $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $queries['insert']);
         cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
         if (isset($queries['extra_multi_record_updates'])) 
@@ -66,9 +66,9 @@ class cache_builder {
       }
       $db->query("drop table needs_update_$table");
     } catch (Exception $e) {
-      $db->query("drop table needs_update_$table");
-      error::log_error('Building cache', $e);
+      error_logger::log_error('Building cache', $e);
       echo $e->getMessage();
+      $db->query("drop table needs_update_$table");
     }
   }
   
@@ -84,9 +84,13 @@ class cache_builder {
       $queries = kohana::config("cache_builder.$table");
       if (!isset($queries['key_field']))
         throw new exception('Cannot do a specific record insert into cache as the key_field configuration not defined in cache_builder configuration');
-      $insertSql = str_replace('#join_needs_update#', '', $queries['insert']);
-      $insertSql .= ' and '.$queries['key_field']." in ($idlist)";
-      $db->query($insertSql);
+      if (!is_array($queries['insert']))
+        $queries['insert'] = array($queries['insert']);
+      foreach ($queries['insert'] as $query) {
+        $insertSql = str_replace('#join_needs_update#', '', $query);
+        $insertSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
+        $db->query($insertSql);
+      }
       self::final_queries($db, $table, $ids);
     }
   }
@@ -103,9 +107,13 @@ class cache_builder {
       $queries = kohana::config("cache_builder.$table");
       if (!isset($queries['key_field']))
         throw new exception('Cannot do a specific record update into cache as the key_field configuration not defined in cache_builder configuration');
-      $updateSql = str_replace('#join_needs_update#', '', $queries['update']);
-      $updateSql .= ' and '.$queries['key_field']." in ($idlist)";
-      $db->query($updateSql);
+      if (!is_array($queries['update']))
+        $queries['update'] = array($queries['update']);
+      foreach ($queries['update'] as $query) {
+        $updateSql = str_replace('#join_needs_update#', '', $query);
+        $updateSql .= ' and ' . $queries['key_field'] . " in ($idlist)";
+        $db->query($updateSql);
+      }
       self::final_queries($db, $table, $ids);
     }
   }
@@ -117,8 +125,17 @@ class cache_builder {
    * @param array $ids Record IDs to delete from the cache
    */
   public static function delete($db, $table, $ids) {
-    foreach ($ids as $id)
-      $db->delete("cache_$table", array('id'=>$id));
+    foreach ($ids as $id) {
+      if ($table==='occurrences' || $table==='samples') {
+        $db->delete("cache_{$table}_functional", array('id' => $id));
+        $db->delete("cache_{$table}_nonfunctional", array('id' => $id));
+        if ($table==='samples') {
+          $db->delete("cache_occurrences_functional", array('sample_id' => $id));
+          $db->query("delete from cache_occurrences_nonfunctional where id in (select id from occurrences where sample_id=$id)");
+        }
+      } else
+        $db->delete("cache_$table", array('id' => $id));
+    }
   }
   
   public static function final_queries($db, $table, $ids) {
@@ -131,7 +148,7 @@ class cache_builder {
           $result=$db->query(str_replace('#ids#', $idlist, $sql));
           $doneCount += $result->count();
           if ($doneCount>=count($idlist)) 
-            break; // we've done an update. So can drop out.
+            break; // we've updated all. So can drop out.
         }
       else {
         $db->query(str_replace('#ids#', $idlist, $queries['extra_single_record_updates']));

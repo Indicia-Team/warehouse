@@ -55,7 +55,9 @@ class Survey_Model extends ORM_Tree {
       'description',
       'deleted',
       'parent_id',
-      'owner_id'
+      'owner_id',
+      'auto_accept',
+      'auto_accept_max_difficulty'
     );
     return parent::validate($array, $save);
   }

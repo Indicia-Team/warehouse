@@ -37,6 +37,7 @@ class Locations_website_Model extends ORM
   );
   protected $belongs_to = array(
     'created_by'=>'user',
+    'updated_by'=>'user'
   );
 
   public function validate(Validation $array, $save = FALSE) {

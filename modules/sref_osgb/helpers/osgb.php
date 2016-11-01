@@ -144,7 +144,6 @@ class osgb {
     }
     $secondLetter = "";
     $index = 65 + ((4 - ($hundredKmN % 5)) * 5) + ($hundredKmE % 5);
-    $ti = $index;
     // Shift index along if letter is greater than I, since I is skipped
     if ($index >= 73) $index++;
     $secondLetter = chr($index);

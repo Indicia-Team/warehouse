@@ -40,13 +40,13 @@ function individuals_and_associations_extend_ui() {
  */
 function individuals_and_associations_alter_menu ($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('editor')) {
-    $menu['Entered Data']['Known Subjects'] = 'known_subject';
-    $menu['Entered Data']['Identifiers'] = 'identifier';
-    $menu['Entered Data']['Subject Observations'] = 'subject_observation';
-    $menu['Custom Attributes']['Known Subject Attributes'] = 'known_subject_attribute';
-    $menu['Custom Attributes']['Identifiers Attributes'] = 'identifier_attribute';
-    $menu['Custom Attributes']['Identifiers Subject Observation Attributes'] = 'identifiers_subject_observation_attribute';
-    $menu['Custom Attributes']['Subject Observation Attributes'] = 'subject_observation_attribute';
+    $menu['Entered data']['Known subjects'] = 'known_subject';
+    $menu['Entered data']['Identifiers'] = 'identifier';
+    $menu['Entered data']['Subject observations'] = 'subject_observation';
+    $menu['Custom attributes']['Known subject attributes'] = 'known_subject_attribute';
+    $menu['Custom attributes']['Identifiers attributes'] = 'identifier_attribute';
+    $menu['Custom attributes']['Identifiers subject observation attributes'] = 'identifiers_subject_observation_attribute';
+    $menu['Custom attributes']['Subject observation attributes'] = 'subject_observation_attribute';
   }
   return $menu;
 }

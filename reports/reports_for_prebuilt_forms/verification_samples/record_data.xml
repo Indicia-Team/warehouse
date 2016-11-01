@@ -18,7 +18,7 @@
   left join users uv on uv.id=s.verified_by_id and uv.deleted=false
   left join people pv on pv.id=uv.person_id and pv.deleted=false
   left join (sample_attribute_values srecv
-      left join sample_attributes sreca on sreca.id=srecv.sample_attribute_id and sreca.deleted=false
+      join sample_attributes sreca on sreca.id=srecv.sample_attribute_id and sreca.deleted=false
       and sreca.system_function='full_name'
   ) on srecv.sample_id=s.id and srecv.deleted=false
   #agreements_join#
@@ -31,11 +31,7 @@
   </params>
   <columns>
     <column name='record_status' display="Key facts:Sample status" sql='s.record_status' />
-
-
     <column name='recorder' display='Key facts:Recorder' sql='srecv.text_value' />
-
-
     <column name='entered_sref' display='Key facts:Map ref.' sql='coalesce(s.entered_sref, l.centroid_sref)' />
     <column name='location_name' display='Key facts:Site Name' sql="COALESCE(l.name, s.location_name)" />
     <column name='date' display='Key facts:Date' sql='s.date_start' />

@@ -122,8 +122,8 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
   
   protected function prepareOtherViewData($values)
   { 
-    $survey = new Survey_Model($values['summariser_definition:survey_id']);
-    $attrsRet = array(''=>'(Each occurrence has count=1)');
+	$survey = new Survey_Model($values['summariser_definition:survey_id']);
+  	$attrsRet = array(''=>'(Each occurrence has count=1)');
     
     $models = ORM::factory('occurrence_attributes_website')->
     		where(array('restrict_to_survey_id'=>$values['summariser_definition:survey_id'],'deleted'=>'f'))->
@@ -132,12 +132,12 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
 	    $attrIds = array();
     	foreach ($models as $model)
     		$attrIds[] = $model->occurrence_attribute_id;
-		$attrs = ORM::factory('occurrence_attribute')->
+	    $attrs = ORM::factory('occurrence_attribute')->
     			where('deleted','f')->in('data_type',array('I','F'))->in('id',$attrIds)->
-				orderby('caption')->find_all();
+    			orderby('caption')->find_all();
 	    if(count($attrs)>0)
-			foreach ($attrs as $attr) 
-				$attrsRet[$attr->id] = $attr->caption.' (ID '.$attr->id.')';
+	    	foreach ($attrs as $attr) 
+    			$attrsRet[$attr->id] = $attr->caption.' (ID '.$attr->id.')';
     }
     
     return array(

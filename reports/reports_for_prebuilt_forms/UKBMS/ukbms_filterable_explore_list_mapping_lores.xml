@@ -1,0 +1,57 @@
+<report
+    title="Explore records using standard filters - lores mapping"
+    description="Report designed for mapping on the explore records facility in iRecord, with standardised filtering parameters. Aggregated to grid squares."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  JOIN samples sc on sc.id=o.sample_id and sc.deleted=false
+  JOIN samples sp on sp.id=sc.parent_id and sp.deleted=false
+  LEFT JOIN location_attribute_values lav on lav.location_id=sp.location_id and lav.location_attribute_id=#sensitive_attr_id#
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  AND (lav.id IS NULL or lav.int_value=0)
+  #idlist#
+  </query>
+  <params>
+    <param name="smpattrs" display="Sample attribute list" description="Comma separated list of sample attribute IDs to include" datatype="smpattrs" />
+    <param name="occattrs" display="Occurrence attribute list" description="Comma separated list of occurrence attribute IDs to include" datatype="occattrs" />
+    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name='sensitive_attr_id' display="Sensitive location attribute" description="ID of the sensitive location attribute" datatype="integer" />
+    <param name="sq_size" display="Grid square size" description="Specify either 1000, 2000 or 10000 for the grid square resolution as 1km, 2km or 10km grid" datatype="integer">
+      <joins>
+        <join value="1000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_1km_id and msq.size=1000</join>
+        <join value="2000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_2km_id and msq.size=2000</join>
+        <join value="10000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_10km_id and msq.size=10000</join>
+      </joins>
+    </param>
+    <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
+      <where>st_intersects(msq.geom, st_geomfromtext('#bounds#', 900913))</where>
+    </param>
+  </params>
+  <columns>
+    <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
+    <column name='source' sql="w.title || ' | ' || o.survey_title" on_demand="true" datatype="text" />
+    <column name='sample_id' sql='o.sample_id' on_demand="true" datatype="integer" />
+    <column name='taxon' sql="o.preferred_taxon" on_demand="true" datatype="species" />
+    <column name='common' sql="o.default_common_name" on_demand="true" datatype="text" />
+    <column name='taxon_group' sql='o.taxon_group' on_demand="true" datatype="text" />
+    <column name='taxon_group_id' sql='o.taxon_group_id' on_demand="true" datatype="integer" />
+    <column name='taxa_taxon_list_id' sql='o.taxa_taxon_list_id' on_demand="true" datatype="integer" />    
+    <column name='location_name' sql='o.location_name' on_demand="true" datatype="text" />
+    <column name='entered_sref' sql="regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g')" on_demand="true" datatype="text" />
+    <column name='date_start' sql='o.date_start' on_demand="true" visible='false' />
+    <column name='date_end' sql='o.date_end' on_demand="true" visible='false' />
+    <column name='date_type' sql='o.date_type' on_demand="true" visible='false' />
+    <column name='date' on_demand="true" datatype="date" />
+    <column name='recorder' on_demand="true" 
+        sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" datatype="text" />
+    <column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
+    <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" on_demand="true" datatype="text" />
+    <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
+    <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" in_count="true" />
+  </columns>
+</report>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Groups list with parent" description="Lists groups including the parent of each group. Should be used when listing the children of 1 group.">
+  <query website_filter_field="g.website_id">
+    SELECT #columns#
+    FROM groups g
+    LEFT JOIN groups_users guc ON guc.group_id=g.id AND guc.deleted=false and guc.pending=false
+    LEFT JOIN groups_users gucp ON gucp.group_id=g.id AND gucp.deleted=false and gucp.pending=true
+    LEFT JOIN groups_users gu ON gu.group_id=g.id AND gu.deleted=false AND gu.user_id=#currentUser#
+    LEFT JOIN group_pages gp ON gp.group_id=g.id AND gp.deleted=false AND
+    (((gp.administrator=false OR gu.administrator=true) and gu.id is not null AND gu.pending=false) OR gp.administrator is null) AND
+    (gu.administrator=true OR COALESCE(gu.access_level, 0)&gt;=COALESCE(gp.access_level, 0))
+    LEFT JOIN group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
+    LEFT JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.deleted=false
+    LEFT JOIN groups gparent ON gparent.id=grfrom.from_group_id AND gparent.deleted=false
+    #joins#
+    WHERE g.deleted = false
+    AND #website_filter#
+  </query>
+  <order_bys>
+    <order_by>g.title</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" emptyvalue="0"/>
+    <param name="userFilterMode" display="userFilterMode" description="Include which groups for the user?"
+           datatype="lookup" default="member"
+           lookup_values='all:All groups,joinable:Groups they can join or request,allvisible:Groups they can join or request or are already a member of,pending:Groups they are pending approval to join,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
+      <wheres>
+        <where value="joinable" operator="equal">g.joining_method not in ('A','I')</where>
+        <where value="allvisible" operator="equal">(g.joining_method not in ('A','I') OR gu.id IS NOT NULL)</where>
+        <where value="pending" operator="equal">gu.id is not null AND gu.pending=true</where>
+        <where value="member" operator="equal">gu.id is not null AND gu.pending=false</where>
+        <where value="admin" operator="equal">gu.id is not null AND gu.pending=false AND gu.administrator=true</where>
+        <where value="create" operator="equal">gu.id is not null AND gu.created_by_id=#currentUser#</where>
+        <where value="create_admin" operator="equal">gu.id is not null AND (gu.created_by_id=#currentUser# OR gu.administrator=true)</where>
+      </wheres>
+    </param>
+    <param name="dateHandling" description="How should group date limits be handled?"
+           datatype="lookup" default="adminOrCurrent"
+           lookup_values="all:No date filter,adminOrCurrent:user is group admin or group is currently active,current:Group is current,expired:Group has expired,upcoming:Group is not yet active">
+      <wheres>
+        <where value="adminOrCurrent" operator="equal">( -- user is admin, or group within defined date range
+          (gu.id is not null AND gu.pending=false AND gu.administrator=true) or
+          ((g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval))
+          )</where>
+        <where value="current" operator="equal"> -- group within defined date range
+          ((g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval))
+        </where>
+        <where value="expired" operator="equal">
+          g.to_date&lt;now()-'1 day'::interval
+        </where>
+        <where value="upcoming" operator="equal">
+          g.from_date&gt;now()
+        </where>
+      </wheres>
+    </param>
+    <param name="group_type_id" display="Group Type" description="Limit the report to a certain type of group" datatype="lookup"
+           population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:group_types,termlist_id='
+           default="">
+      <where>g.group_type_id in (#group_type_id#)</where>
+    </param>
+    <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. find the children of a parent group)."
+           datatype="text" default="">
+      <where>grfrom.from_group_id=#from_group_id#</where>
+    </param>
+    <param name="to_group_id" display="From parent group" description="Only include groups which are linked from to another group (e.g. find the parent(s) of a child group)."
+           datatype="text" default="">
+      <join>JOIN group_relations grto ON grto.from_group_id=g.id AND grto.to_group_id=#to_group_id# AND grto.deleted=false</join>
+    </param>
+    <param name="pending_path" display="Handle pending requests page path" description="Path to the page which will let admins handle pending requests, e.g. /groups/pending?group_id="
+           datatype="text" default="" />
+    <param name="search_text" display="Search for" default="">
+      <where>(g.title ilike '%#search_text#%' or g.description ilike '%#search_text#%')</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
+    <column name="logo_path" display="Logo" sql="g.logo_path" img="true" visible="false" />
+    <column name="group_type_id" visible="false" sql="g.group_type_id" datatype="integer" />
+    <column name="joining_method_raw" visible="false" sql="g.joining_method" datatype="text" />
+    <column name="title" display="Name" sql="g.title" datatype="text" />
+    <column name="parent_title" visible="false" sql="gparent.title" datatype="text" />
+    <column name="description" display="Description" sql="g.description" datatype="text" />
+    <column name="administrator" display="Admin" sql="gu.id is not null AND gu.pending=false AND gu.administrator=true" datatype="boolean" visible="false" />
+    <!-- following is required to meet group by requirements -->
+    <column name="administrator_raw" display="Admin" sql="gu.administrator" datatype="boolean" visible="false" />
+    <column name="pending" display="Pending" sql="gu.id is not null AND gu.pending=true" datatype="boolean" visible="false" />
+    <column name="member" display="Member" sql="gu.id is not null AND gu.pending=false" datatype="boolean" visible="false" />
+    <column name="nonmember" display="Non-member" sql="gu.id is null or gu.pending=false" datatype="boolean" visible="false" />
+    <column name="canrequestorjoin" display="Can request membership or join" datatype="boolean" visible="false"
+            sql="gu.id is null and g.joining_method in ('R','P') and (g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval)" />
+    <column name="private_records" display="Records released" sql="not g.private_records" datatype="boolean" />
+    <column name="role" display="My role" sql="case when gu.administrator=true then 'Administrator' when gu.id is not null and gu.pending=false then 'Member' when gu.id is not null and gu.pending=true then 'Awaiting approval' else 'Non-member' end" datatype="text" />
+    <column name="joining_method" display="Can anyone join?" sql="case g.joining_method when 'P' then 'Yes' when 'R' then 'By request only' when 'I' then 'By invite only' end" datatype="text" />
+    <column name="members" display="Members" datatype="text" aggregate="true"
+            sql="case when gu.administrator=true and '#pending_path#'&lt;&gt;'' then '&lt;a href=&quot;#pending_path#' || g.id || '&quot;&gt;' else '' end
+|| count(DISTINCT guc.user_id)::varchar 
+|| case when count(DISTINCT gucp.user_id)&gt;0 and gu.administrator=true then ' (' || count(DISTINCT gucp.user_id)::varchar || ' pending)' else '' end
+|| case when gu.administrator=true and '#pending_path#'&lt;&gt;'' then '&lt;/a&gt;' else '' end" />
+    <column name="pages" display="Links" sql="array_to_string(array_agg(distinct '&lt;a class=&quot;button ' || lower(regexp_replace(gp.path, '[^a-zA-Z0-9]', '-')) || '&quot; href=&quot;{rootFolder}' || gp.path || '{sep}group_id=' || g.id || '&amp;implicit=' || coalesce(g.implicit_record_inclusion::char, '') || '&quot;&gt;' || gp.caption || '&lt;/a&gt;'), ' ')"
+            aggregate="true" template="{pages}"/>
+    <column name="page_classes" visible="false" sql="array_to_string(array_agg(distinct lower(regexp_replace(gpall.path, '[^a-zA-Z0-9]', '-'))), ' ')"
+            aggregate="true"/>
+  </columns>
+</report>

@@ -58,7 +58,7 @@ class Sample_Controller extends Gridview_Base_Controller
   
   /**
    * Load default values either when creating a sample new or reloading after a validation failure.
-   * This adds the custome attributes list to the data available for the view. 
+   * This adds the custom attributes list to the data available for the view.
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
@@ -94,12 +94,10 @@ class Sample_Controller extends Gridview_Base_Controller
         'controller' => 'occurrence',
         'title' => 'Occurrences',
         'actions'=>array('edit')
-// This will add the sample comments tab but I haven't enabled it as I am
-// not able to test it at present.
-//      ), array(
-//        'controller' => 'sample_comment',
-//        'title' => 'Comments',
-//        'actions'=>array('edit')
+      ), array(
+        'controller' => 'sample_comment',
+        'title' => 'Comments',
+        'actions'=>array('edit')
       ), array(
         'controller' => 'sample_medium',
         'title' => 'Media Files',

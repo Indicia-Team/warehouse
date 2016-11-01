@@ -4,7 +4,7 @@
 >
   <query>
   select 
-    ttl.id, 'Record' as attribute_type, a.system_function,
+    distinct ttl.id, 'Record' as attribute_type, a.system_function,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar

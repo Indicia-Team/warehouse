@@ -1,0 +1,18 @@
+  <report
+    title="Get layer List Names"
+    description="Return a list of location type names for a provided comma seperated list of location type ids."
+>
+  <query>
+    SELECT #columns#
+    FROM termlists_terms tt
+    LEFT JOIN terms t on t.id = tt.term_id
+    where tt.id in (#layer_ids#)
+  </query>
+  <params>
+    <param name="layer_ids" datatype="integer[]"/>
+  </params>
+  <columns>
+    <column name="name" display="Name" sql="t.term"/>
+    <column name="id" display="Id" sql="tt.id"/>
+  </columns>
+</report>

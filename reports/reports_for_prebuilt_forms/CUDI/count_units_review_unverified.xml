@@ -1,0 +1,31 @@
+  <report
+    title="Count Units Review - Unverified"
+    description="A list of Count Units which do not have their Verified attribute set."
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns#
+       FROM locations cu
+         LEFT JOIN locations_websites lw ON lw.location_id=cu.id
+         LEFT JOIN location_attribute_values lav ON lav.location_id=cu.id AND lav.location_attribute_id=#unverified_attribute_id# and lav.deleted = false
+    WHERE cu.deleted = false AND lw.deleted = false
+    AND cu.location_type_id=#count_unit_location_type_id#
+    AND (lav.int_value is null OR lav.int_value=0)
+  </query>
+  <params>
+    <param name="unverified_attribute_id" datatype="integer"/>
+    <param name="count_unit_location_type_id" datatype="integer"/>
+    <param name="cudi_form_url" datatype="string"/>
+    <param name="drupal_installation_folder" datatype="string"/>
+    <param name="clean_url" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="name" display="Count Unit Name" sql="
+      case '#clean_url#'
+        WHEN '1'
+          THEN '&lt;a href=&quot;'||#drupal_installation_folder#||#cudi_form_url#||'?location_id='||cu.id||'&quot;&gt;' || cu.name
+        ELSE
+          '&lt;a href=&quot;'||#drupal_installation_folder#||'?q='||#cudi_form_url#||'&amp;location_id='||cu.id||'&quot;&gt;' || cu.name
+      END
+    " /> 
+  </columns>
+</report>

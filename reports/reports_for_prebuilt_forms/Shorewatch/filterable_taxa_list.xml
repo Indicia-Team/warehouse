@@ -1,0 +1,33 @@
+<report
+    title="Explore distinct species using standard filters"
+    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  JOIN samples s on s.id=o.sample_id and s.deleted=false
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <params>
+    <param name="linked_location_id" display="Location Id" description="Location to filter to" datatype="integer">
+      <where>s.location_id=#linked_location_id#</where>
+    </param>
+  </params>
+  <order_bys>
+    <order_by>o.taxon_group, o.preferred_taxon ASC</order_by>
+  </order_bys>
+  <columns>
+    <column name='taxon_meaning_id' display='ID' sql='o.taxon_meaning_id' visible="false" in_count="true" />
+    <column name='taxon' display='Preferred Name' sql="o.preferred_taxon" />
+    <column name='common' display='Common Name' sql="o.default_common_name" />
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' />
+    <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' on_demand="true" visible="false" />
+    <column name="first_date" display="First Recorded Date" sql="min(coalesce(o.date_start, o.date_end))" aggregate="true" />
+    <column name="last_date" display="Last Recorded Date" sql="max(coalesce(o.date_end, o.date_start))" aggregate="true" />
+    <column name="count" display="Number of Records" sql="count(distinct o.id)" aggregate="true" />
+  </columns>
+</report>

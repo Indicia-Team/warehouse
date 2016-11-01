@@ -5,9 +5,8 @@
   <query>
   SELECT #columns#
     FROM notifications n
-      LEFT JOIN cache_occurrences o ON o.id=n.linked_id AND (n.source='Verifications and comments' OR n.source_type='S')
-      LEFT JOIN cache_occurrences coFilter ON n.linked_id=coFilter.id
-      LEFT JOIN samples s on s.id = o.sample_id
+      LEFT JOIN cache_occurrences_functional o ON o.id=n.linked_id AND (n.source='Verifications and comments' OR n.source_type='S')
+      LEFT JOIN cache_occurrences_functional coFilter ON n.linked_id=coFilter.id
       #joins#
     WHERE n.acknowledged=false
       and n.user_id=#user_id#  
@@ -21,13 +20,15 @@
   <params>
     <param name="user_id" display="User ID" description="Warehouse user ID" datatype="text" />
     <!-- parameter for grid drop-down filter -->
-    <param name="source_filter" display="Show notifications for" datatype='lookup' lookup_values='all:Anything,verifications:Verifications,rejections_queries:Rejections and queries,record_cleaner:Record Cleaner,record_comments:Record comments'>
+    <param name="source_filter" display="Show notifications for" datatype='lookup'
+           lookup_values='all:Anything,verifications:Verifications,rejections_queries:Rejections and queries,record_cleaner:Record Cleaner,record_comments:Record comments,pending_groups_users:Requests to join a group you administer'>
       <wheres>
         <where value="all" operator="equal">n.source_type != ''</where>
         <where value="verifications" operator="equal">n.source_type='V' AND coFilter.record_status='V'</where>
         <where value="rejections_queries" operator="equal">n.source_type='V' AND (coFilter.record_status='R' or coFilter.record_status='D')</where>
         <where value="record_cleaner" operator="equal">n.source_type ='A'</where>
         <where value="record_comments" operator="equal">n.source_type='C'</where>
+        <where value="pending_groups_users" operator="equal">n.source_type='GU'</where>
         <!--<where value="achievements" operator="equal">n.source_type='AC'</where>-->
         <!--<where value="other" operator="equal">n.source_type!='V' AND n.source_type!='A' AND n.source_type!='C' AND n.source_type!='AC'</where>-->
       </wheres>
@@ -42,11 +43,13 @@
     <param name="system_name" display="System Name" description="Name to display instead of admin for system generated notifications" datatype="text" />
     <param name="default_edit_page_path" display="Default edit page path" description="The default page that the notification edit link goes to if the input_form is blank and the user has rights to perform the edit" datatype="text"/>
     <param name="view_record_page_path" display="View record page path" description="The default page that the notification view link goes to if the user has rights to view the record" datatype="text"/>
+    <param name="groups_admin_page_path" display="Groups admin page path" datatype="text" default=""
+           description="The path to the page which allows group admins to manage membership" />
     <param name="website_id" display="Website Id for the occurrence record." datatype="integer"/>
     <param name="group_ids" display="Group Ids" 
         description="Comma separated list of groups ids, or blank to allow all. Only notifications associated with these group ids will be displayed." datatype="text" default=''>
       <wheres>
-        <where>s.group_id in (#group_ids#)</where>
+        <where>o.group_id in (#group_ids#)</where>
       </wheres>
     </param>
   </params>
@@ -56,14 +59,16 @@
     <column name="source_type" display='Source type' visible="false" datatype="text" sql="n.source_type" />
     <column name="data" display="Message" datatype="text" sql="replace(replace(n.data, '\n', '&lt;br/&gt;'), '&quot;username&quot;:&quot;admin&quot;', '&quot;username&quot;:&quot;#system_name#&quot;')" />
     <column name="occurrence_id" display="Record ID" datatype="integer" sql="o.id" />
+    <column name="linked_id" display="Linked ID" datatype="integer" sql="n.linked_id" />
     <column name="acknowledged" display="Acknowledged" datatype="boolean" sql="n.acknowledged" visible="false" />
     <column name="user_id" display="User ID" visible="false" datatype="integer" sql="n.user_id" />
     <column name="triggered_on" display="Notification date" datatype="date" sql="n.triggered_on" visible="false" />    
     <column name="triggered_date" display="Notification date" datatype="date" sql="to_char(n.triggered_on, 'DD/MM/YYYY')" orderby="triggered_on" />
     <column name="editing_form" visible="false" sql="case when o.input_form is null AND o.website_id=#website_id# AND o.created_by_id=#user_id# then'#default_edit_page_path#'else o.input_form end" />
     <column name="viewing_form" visible="false" sql="case when o.website_id=#website_id# then '#view_record_page_path#' else null end" />
-    <column name='editable_flag' visible='false' sql="case when o.website_id=#website_id# AND o.created_by_id=#user_id# AND ('#default_edit_page_path#' &lt;&gt; 'null' OR o.input_form IS NOT null) then true else false end" />
-    <column name='viewable_flag' visible='false' sql="case when o.website_id=#website_id# AND '#view_record_page_path#' &lt;&gt; 'null' then true else false end" />
-    <column name='reply_flag' visible='false' sql="case when o.website_id=#website_id# then true else false end" />
+    <column name="editable_flag" visible="false" sql="case when o.website_id=#website_id# AND o.created_by_id=#user_id# AND ('#default_edit_page_path#' &lt;&gt; 'null' OR o.input_form IS NOT null) then true else false end" />
+    <column name="viewable_flag" visible="false" sql="case when o.website_id=#website_id# AND '#view_record_page_path#' &lt;&gt; 'null' then true else false end" />
+    <column name="reply_flag" visible="false" sql="case when o.website_id=#website_id# then true else false end" />
+    <column name="manage_members_flag" visible="false" sql="case when n.source_type='GU' then true else false end" />
   </columns>
 </report>

@@ -3,7 +3,7 @@
 <report title="Record counts by year" description="Lists years and the number of records for each. ">
       <query website_filter_field="o.website_id">
         SELECT #columns#
-        FROM cache_occurrences o
+        FROM cache_occurrences_functional o
         #agreements_join#   
         #joins#
         WHERE #sharing_filter#

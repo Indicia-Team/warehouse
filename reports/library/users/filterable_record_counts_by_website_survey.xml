@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <report title="Record counts by survey with standard params" description="A  filtered league table of record counts by warehouse user.">
-  <query website_filter_field="w.id" standard_params="true">
+  <query website_filter_field="w.id" standard_params="occurrences">
     SELECT #columns#
     FROM people p
     JOIN users u ON u.person_id=p.id AND u.deleted=false AND u.id&lt;&gt;1
     JOIN users_websites uw on uw.user_id=u.id 
     JOIN websites w on w.id=uw.website_id and w.deleted=false
     JOIN surveys su on su.website_id=uw.website_id and su.deleted=false
-    LEFT JOIN cache_occurrences o on o.created_by_id=u.id and o.survey_id=su.id and o.website_id=uw.website_id
+    LEFT JOIN cache_occurrences_functional o on o.created_by_id=u.id and o.survey_id=su.id and o.website_id=uw.website_id
       #filters#
     #agreements_join#
     #joins#

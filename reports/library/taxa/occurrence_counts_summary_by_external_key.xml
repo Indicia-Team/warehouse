@@ -3,7 +3,7 @@
 <report title="Record counts by taxon external key" description="Lists taxa and the number of records of each. Uses the external key to identify each unique taxon">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM cache_occurrences o
+      FROM cache_occurrences_functional o
       JOIN cache_taxa_taxon_lists cttl 
           ON cttl.external_key=o.taxa_taxon_list_external_key
           AND cttl.preferred=true
@@ -45,9 +45,10 @@
       </params>
       <columns>
             <column name="external_key"  sql="cttl.external_key" unique="true" in_count="true" datatype="text" visible="false" />
+            <column name="taxon_meaning_id"  sql="cttl.taxon_meaning_id" datatype="integer" visible="false" />
             <column name='taxon' display='Species' sql="cttl.preferred_taxon" datatype='species' />
             <column name='common_name' display='Common name' sql="cttl.default_common_name" datatype='text' />
             <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype='text' />
-            <column name="value" display="No. of Records" sql="count(*)" aggregate="true" datatype="int"/>
+            <column name="value" display="No. of Records" sql="count(o.*)" aggregate="true" datatype="int"/>
       </columns>
 </report>

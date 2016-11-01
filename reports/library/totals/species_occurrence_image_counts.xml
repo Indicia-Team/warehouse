@@ -2,7 +2,7 @@
 <report title="Species, Occurrence and Image Counts" description="Gives a total number of species, occurrence and photos for a filter (e.g. a survey/date range).">
       <query website_filter_field="o.website_id">
       SELECT #columns#
-      FROM cache_occurrences o
+      FROM cache_occurrences_functional o
       #agreements_join#
       #joins#
       WHERE #sharing_filter# 
@@ -32,6 +32,6 @@
   <columns>
         <column name="species_count" display="Species" sql="count(DISTINCT o.taxon_meaning_id)"  />
         <column name="occurrences_count" display="Records" sql="count(DISTINCT o.id)" />
-        <column name="photos_count" display="Photos" sql="COALESCE(sum(length(images)-length(replace(images,',',''))+1), 0)" />
+        <column name="photos_count" display="Photos" sql="sum(o.media_count)" />
   </columns>
 </report>

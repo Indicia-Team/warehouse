@@ -1,0 +1,61 @@
+<report
+    title="Samples List for npms_sample_occurrences form"
+    description="Used by the Samples grid to retrieve the samples associated with a survey and user. User can be identified by 
+        their Indicia User ID. A second sample may be linked to a first sample, the id of which is stored in a custom attribute. The id
+        of that custom attribute is passed as a parameter to the report.">
+  <query>
+    WITH samples1 AS (
+      SELECT s.id as sample_id1,
+        COALESCE(
+        case 
+        when lavPlotName.text_value IS null 
+          then '&lt;i&gt;' || 'Plot at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+        else 
+          '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || l.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+        end
+        , s.location_name, s.entered_sref) as location_name,
+        s.date_start,
+        s.date_end,
+        s.date_type
+      FROM samples s
+      JOIN locations l ON l.id = s.location_id
+      LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=l.id AND lavPlotName.deleted=false
+      JOIN termlists_terms ttPlotType on ttPlotType.id = l.location_type_id
+      JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
+      JOIN sample_attribute_values sav ON sav.sample_id = s.id AND sav.sample_attribute_id = #s1AttrID# AND sav.int_value = 0
+      #joins#
+      WHERE s.survey_id = #survey_id# AND s.deleted = FALSE
+      AND s.created_by_id = #iUserID#
+    ), samples2 AS (
+      SELECT s.id AS sample_id2,
+        sav.int_value AS sample_id1
+      FROM samples s
+      JOIN sample_attribute_values sav ON sav.sample_id = s.id AND sav.sample_attribute_id = #s1AttrID# AND sav.int_value != 0
+      WHERE s.survey_id = #survey_id# AND s.deleted = FALSE
+      AND s.created_by_id = #iUserID#
+    ) 
+    SELECT s1.*,
+      s2.sample_id2,
+      CASE WHEN sample_id2 IS null THEN true ELSE false END AS done1,
+      CASE WHEN sample_id2 IS null THEN false ELSE true END AS done2
+    FROM samples1 s1
+    LEFT JOIN samples2 s2 ON s2.sample_id1 = s1.sample_id1
+    #order_by#
+  </query>
+    <order_bys>
+      <order_by>s1.sample_id1 DESC</order_by>
+    </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='iUserID' display='Indicia User ID' description='Indicia User ID: use 0 to ignore' datatype='int' />
+    <param name='s1AttrID' display='Sample 1 Attribute ID' description='The ID of the sample attribute that links a second sample to a first' datatype='int' />
+    <param name='plot_number_attr_id' display='Plot number attribute Id' description='Id of the location attribute that holds the plot number label' datatype='int' default='0' empytvalue='0'/>
+  </params>
+  <columns>
+    <column name='sample_id1' display='ID' />
+    <column name='location_name' display='Plot' />
+    <column name='date' display='Date' />
+    <column name='sample_id2' visible='false' />
+  </columns>
+</report>

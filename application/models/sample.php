@@ -40,6 +40,7 @@ class Sample_Model extends ORM_Tree
   (
     'survey',
     'location',
+    'licence',
     'created_by'=>'user',
     'updated_by'=>'user',
     'sample_method'=>'termlists_term'
@@ -56,6 +57,8 @@ class Sample_Model extends ORM_Tree
     'website_id' => 'Website ID',
   	// extra lookup options
   	'sample:fk_location:code' => 'Location Code',
+  	'sample:fk_location:external_key' => 'Location external key',
+  	'sample:fk_parent:external_key' => 'Parent sample external key',
   	'sample:date:day' => 'Day (Builds date)',
   	'sample:date:month' => 'Month (Builds date)',
   	'sample:date:year' => 'Year (Builds date)'
@@ -105,7 +108,8 @@ class Sample_Model extends ORM_Tree
       'privacy_precision',
       'record_status',
       'verified_by_id',
-      'verified_on'
+      'verified_on',
+      'licence_id'
     );
     $array->add_rules('survey_id', 'required');
     // when deleting a sample, only need the id and the deleted flag, don't need the date or location details, but copy over if they are there.
@@ -147,33 +151,79 @@ class Sample_Model extends ORM_Tree
   }
 
   /**
-  * Before submission, map vague dates to their underlying database fields.
+  * Before submission:
+  * * map vague date strings to their underlying database fields.
+  * * fill in the geom field using the supplied spatial reference, if not already filled in
+  * * fill in the licence for the sample, if user has one, and not already filled in
   */
   protected function preSubmit()
   {
+    $this->preSubmitFillInVagueDate();
+    $this->preSubmitFillInGeom();
+    $this->preSubmitFillInLicence();
+    return parent::presubmit();
+  }
+
+  /**
+   * If a date is supplied in a submission as a string, fill in the underlying database
+   * vague date fields.
+   */
+  private function preSubmitFillInVagueDate() {
     if (array_key_exists('date', $this->submission['fields'])) {
       $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
       $this->submission['fields']['date_start']['value'] = $vague_date[0];
       $this->submission['fields']['date_end']['value'] = $vague_date[1];
       $this->submission['fields']['date_type']['value'] = $vague_date[2];
     }
-    // Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
-    // can work out the Geom
+  }
+
+  /**
+   * Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
+   * can work out the geom and fill it in.
+   */
+  private function preSubmitFillInGeom() {
+    //
     if (array_key_exists('entered_sref', $this->submission['fields']) &&
-        array_key_exists('entered_sref_system', $this->submission['fields']) &&
-        !(array_key_exists('geom', $this->submission['fields']) && $this->submission['fields']['geom']['value']) &&
-        $this->submission['fields']['entered_sref']['value'] &&
-        $this->submission['fields']['entered_sref_system']['value']) {
+      array_key_exists('entered_sref_system', $this->submission['fields']) &&
+      !(array_key_exists('geom', $this->submission['fields']) && $this->submission['fields']['geom']['value']) &&
+      $this->submission['fields']['entered_sref']['value'] &&
+      $this->submission['fields']['entered_sref_system']['value']) {
       try {
         $this->submission['fields']['geom']['value'] = spatial_ref::sref_to_internal_wkt(
-            $this->submission['fields']['entered_sref']['value'],
-            $this->submission['fields']['entered_sref_system']['value']
+          $this->submission['fields']['entered_sref']['value'],
+          $this->submission['fields']['entered_sref_system']['value']
         );
       } catch (Exception $e) {
         $this->errors['entered_sref'] = $e->getMessage();
       }
     }
-    return parent::presubmit();
+  }
+
+  /**
+   * If a submission is for an insert and does not contain the licence ID for the data it contains, look it
+   * up from the user's settings and apply it to the submission.
+   */
+  private function preSubmitFillInLicence() {
+    if (!(array_key_exists('id', $this->submission['fields']) || array_key_exists('licence_id', $this->submission['fields']))) {
+      global $remoteUserId;
+      if (isset($remoteUserId))
+        $userId=$remoteUserId;
+      elseif (isset($_SESSION['auth_user']))
+        $userId = $_SESSION['auth_user']->id;
+      if (isset($userId)) {
+        $row = $this->db
+            ->select('licence_id')
+            ->from('users_websites')
+            ->where(array(
+              'user_id' => $userId,
+              'website_id' => $this->identifiers['website_id']
+            ))
+            ->get()->current();
+        if ($row) {
+          $this->submission['fields']['licence_id']['value'] = $row->licence_id;
+        }
+      }
+    }
   }
 
   /**
@@ -218,23 +268,33 @@ class Sample_Model extends ORM_Tree
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
-  public function fixed_values_form() {
+  public function fixed_values_form($options=array()) {
     $srefs = array();
     $systems = spatial_ref::system_list();
     foreach ($systems as $code=>$title) 
-      $srefs[] = "$code:$title";
+    	$srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
+    				":".
+    				str_replace(array(',',':'), array('&#44', '&#56'), $title);
     
     $sample_methods = array(":Defined in file");
+    $parent_sample_methods = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
-    foreach ($terms as $term)
-    	$sample_methods[] = $term->id.":".$term->term;
+    foreach ($terms as $term) {
+    	$sample_method = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
+    						":".
+    						str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
+    	$sample_methods[] = $sample_method;
+    	$parent_sample_methods[] = $sample_method;
+    }
     
     $location_types = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term)
-    	$location_types[] = $term->id.':'.$term->term;
+    	$location_types[] = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
+    						":".
+    						str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
     
-    return array(
+    $retval = array(
       'website_id' => array( 
         'display'=>'Website', 
         'description'=>'Select the website to import records into.', 
@@ -271,6 +331,16 @@ class Sample_Model extends ORM_Tree
         'lookup_values'=>implode(',', $location_types)
       )
     );
+    if(!empty($options['activate_parent_sample_method_filter']) && $options['activate_parent_sample_method_filter']==='t')
+    	$retval['fkFilter:sample:sample_method_id'] = array(
+    			'display'=>'Parent Sample Method',
+    			'description'=>'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked '.
+    			'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
+    			'datatype'=>'lookup',
+    			'lookup_values'=>implode(',', $parent_sample_methods)
+    	);
+    	 
+    return $retval;
   }
   
   /**
@@ -286,7 +356,7 @@ class Sample_Model extends ORM_Tree
         // This sample is associated with a group that does not release its records. So ensure the release_status flag 
         // is set.
         $this->db->update('occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
-        $this->db->update('cache_occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
+        $this->db->update('cache_occurrences_functional', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
       }
     }
     if ($this->requeuedForVerification && !$isInsert) {
@@ -295,7 +365,7 @@ class Sample_Model extends ORM_Tree
         'comment'=>kohana::lang('misc.recheck_verification'),
         'auto_generated'=>'t'
       );
-      $comment = ORM::factory('sample_id');
+      $comment = ORM::factory('sample_comment');
       $comment->validate(new Validation($data), true);
     }
     return true;

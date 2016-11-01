@@ -12,7 +12,7 @@
       LEFT JOIN (samples sp 
         JOIN samples s ON s.parent_id=sp.id
       ) ON sp.location_id=l.id
-      LEFT JOIN cache_occurrences o ON o.sample_id = s.id
+      LEFT JOIN cache_occurrences_functional o ON o.sample_id = s.id and o.survey_id=s.survey_id and o.website_id in (#website_ids#)
       #joins#
       WHERE #website_filter#
       AND (o.zero_abundance='f' OR o.id IS NULL)

@@ -18,8 +18,6 @@ CREATE OR REPLACE VIEW list_termlists_terms AS
   WHERE tlt.deleted = false
   ORDER BY tlt.sort_order, t.term;
 
--- ALTER TABLE list_termlists_terms OWNER TO indicia_user;
-
 -- View: detail_termlists_terms
 
 DROP VIEW detail_termlists_terms;
@@ -36,7 +34,3 @@ CREATE OR REPLACE VIEW detail_termlists_terms AS
    LEFT JOIN terms tp ON tp.id = tltp.term_id
   WHERE tlt.deleted = false
   ORDER BY tlt.sort_order, t.term;
-
--- ALTER TABLE detail_termlists_terms OWNER TO indicia_user;
-
-

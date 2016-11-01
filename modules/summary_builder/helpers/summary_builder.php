@@ -32,23 +32,59 @@ class summary_builder {
    * Performs the actual task of table population.
    */
 	
-  public static function populate_summary_table($db, $last_run_date, $rebuild, $missing_check) {
-  	if(isset($_GET['verbose'])) {
-  		echo 'Summary Builder module: Optional URL Parameters<br/>';
-  		echo '- verbose : present<br/>';
-  	  	echo '- force_summary_rebuild : '.($rebuild === false ? 'absent' : ($rebuild === true ? 'present (rebuilds all surveys)' : $rebuild.' (Survey ID)')).'<br/>';
-  	  	echo '- force_summary_missing_check : '.($missing_check === false ? 'absent (missing checks as defined in summary definition for individual survey)' : ($missing_check === true ? 'present (missing checks forced on all surveys)' : $missing_check.' (Survey ID, missing checks forced on this survey, for all other surveys missing checks as defined in summary definition)')).'<br/>';
-  	}
+  private static $verbose;
+
+  public static function force_summary_truncate(&$db, $last_run_date, $verbose) {
+  	 
+  	self::$verbose = $verbose;
+  	 
+  	$queries = kohana::config('summary_builder');
+  	echo date(DATE_ATOM).' Truncating full data set.<br/>';
+  	$r = $db->query($queries['summary_truncate']);
+  }
+  
+  public static function populate_summary_table(&$db, $last_run_date, $verbose, $rebuild, $clear, $missing_check) {
+  	
+  	self::$verbose = $verbose;
+  	
+ 	// this has to be done only once
+ 	self::init_lastval($db);
+  	  	
   	$queries = kohana::config('summary_builder');
   	$r = $db->query($queries['select_definitions'])->result_array(false);
   	if(count($r)){
   		foreach($r as $row){
-  			if($rebuild === true || $rebuild == $row['survey_id']) {
-  				echo date(DATE_ATOM).' Flag rebuild of summary data for survey ID '.$row['survey_id'].'<br/>';
-  				$query = "delete from summary_occurrences where ".
-  						"survey_id = ".$row['survey_id'];
+  			if($clear == $row['survey_id']) {
+  				echo date(DATE_ATOM).' Clearing of summary data for survey ID '.$row['survey_id'].' requested.<br/>';
+  				if(isset($_GET['location_id']) && $_GET['location_id'] != '')
+	  				$query = str_replace(array('#survey_id#','#location_id#'), array($row['survey_id'], $_GET['location_id']), $queries['clear_survey_location']);
+  				else
+	  				$query = str_replace(array('#survey_id#'), array($row['survey_id']), $queries['clear_survey']);
 	  			$count = $db->query($query)->count();
-  				if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Removed '.$count.' records. Rebuild will commence on next invocation of scheduled tasks.<br/>';
+  				if(self::$verbose) {
+  					echo date(DATE_ATOM).' Removed '.$count.' records. Rebuild will commence on next invocation of scheduled tasks.<br/>';
+	  				if (!isset($row['check_for_missing']) || $row['check_for_missing'] == 'f') return;
+  						echo ' Missing check not currently enabled in the definition.<br/>';
+  				}
+  			} else if($rebuild === true || $rebuild == $row['survey_id']) {
+  				echo date(DATE_ATOM).' Rebuild of summary data for survey ID '.$row['survey_id'].' requested.<br/>';
+  				$query = str_replace(array('#survey_id#'), array($row['survey_id']), $queries['first_sample_creation_date']);
+  				$sample_date = $db->query($query)->result_array(false);
+  				if(count($sample_date)){
+  					$query = str_replace(array('#survey_id#','#date#'),
+	  						array($row['survey_id'], $sample_date[0]['first_date']),
+	  						$queries['rebuild_survey']);
+	  				$count = $db->query($query)->count();
+  					if(self::$verbose){
+  						echo date(DATE_ATOM).' Date altered on '.$count.' records. Rebuild will commence on next invocation of scheduled tasks.<br/>';
+  					  	if (!isset($row['check_for_missing']) || $row['check_for_missing'] == 'f') return;
+  							echo ' Missing check not currently enabled in the definition.<br/>';
+	  				}
+  				} else {
+  					$query = str_replace(array('#survey_id#'), array($row['survey_id']), $queries['clear_survey']);
+	  				$count = $db->query($query)->count();
+  					if(self::$verbose) echo date(DATE_ATOM).' No samples detected for Survey '.$row['survey_id'].'. Precautionary clearance of summary data attempted: '.$count.' summary records removed.<br/>';
+  				}
 	  		} else {
   				echo date(DATE_ATOM).' Processing summariser_definition ID '.$row['id'].' for survey ID '.$row['survey_id'].'<br/>';
   				self::populate_summary_table_for_survey($db, $last_run_date, $row, ($missing_check === true || $missing_check == $row['survey_id']));
@@ -59,82 +95,230 @@ class summary_builder {
   	}
   }
 
-  private static function populate_summary_table_for_survey($db, $last_run_date, $definition, $missing_check) {
+  /*
+   * Bit of an oddball situation. Our table does not have a sequence. When inserting, The database driver sets
+   * the insert_id for the pg_result from the lastval function - with no sequence this returns an error, and the error
+   * is ignored from a PHP point of view. However from Postgres POV, this causes a transaction abort/rollback,
+   * so we can't wrap a transaction around it. We need a transaction though, so this is a hack to populate
+   * the lastval. Use a temporary sequence, as lastval gives an error if the sequence has been dropped.
+   */
+  private static function init_lastval(&$db) {
+  	$db->query("CREATE TEMPORARY SEQUENCE summary_builder_dummy_sequence;"); // dropped automatically at end of process
+  	$db->query("SELECT NEXTVAL('summary_builder_dummy_sequence');");
+  }
+  
+  private static function populate_summary_table_for_survey(&$db, $last_run_date, $definition, $missing_check) {
   	$YearTaxonLocationUser = array();
   	$YearTaxonLocation = array();
   	$YearTaxonUser = array();
-  	$YearTaxon = array();
+  	$YearTaxon = array(); // list of taxa in a given year.
     try {
       $count=summary_builder::get_changelist($db, $last_run_date, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon, $missing_check);
 	  if($count>0)
 	  	summary_builder::do_summary($db, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon);
     } catch (Exception $e) {
-      error::log_error('Building summary', $e);
+			error_logger::log_error('Building summary', $e);
       echo $e->getMessage();
     }
    
   	return;
   }
   
-  private static function get_changelist($db, $last_run_date, $definition, &$YearTaxonLocationUser, &$YearTaxonLocation, &$YearTaxonUser, &$YearTaxon, $missing_check) {
+  private static function check_deleted_locations(&$db, $last_run_date, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon, $missing_check)
+  {
+  	// Can't pick up setting of locations_websites deleted since last_run as it doesn't have an updated_on field.
+  	//   Means can't really do a "location has been deleted since last run": just do a sweep up.
+  	//
+  	// Pick up if a deleted location has any entries in the summary_occurrences (sweeps up all).
+  	//   if yes, the link to the sample will have been broken by the cascade trigger, which also doesn't set the updated_on date...
+  	// Retrieve all the users (ulist) which have entries in the cache for this location.
+  	// Need to delete all the entries which have a location_id set to the deleted location (user and non user specific).
+  	// Need to rebuild all the entries which have a user_id in ulist.
+  	// Need to rebuild all the top level global entries.
+  	// Can't put a limit on the numbers returned, as need all from each location processed at the same time.
+  	
+  	// TODO only do this if the first run in the day
+
+  	if (!$missing_check && (!isset($definition['check_for_missing']) || $definition['check_for_missing'] == 'f')) return;
+  		 
   	$queries = kohana::config('summary_builder');
-  	$limit = (isset($definition['max_records_per_cycle']) ? $definition['max_records_per_cycle'] : 1000);
-  	if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Record count limit: '.$limit.'<br/>';
-  	$query = str_replace(array('#date#','#survey_id#','#limit#'),
-  						 array($last_run_date,$definition['survey_id'],$limit),
-  						 $queries['get_changed_items_query']);
-  	 
-  	$r = $db->query($query)->result_array(false);
+  	$query = str_replace(array('#survey_id#','#website_id#'),
+  						 array($definition['survey_id'], $definition['website_id']),
+  						 $queries['get_deleted_locations_query']);
+  	
+  	$r = $db->query($query)->result_array(false); // returns location_id, user_id, taxa_taxon_list_id, year
+  	
   	$count = count($r);
   	if($count){
-  		echo date(DATE_ATOM).' '.$count.' new/altered occurrences to be processed.<br/>';
+  		if(self::$verbose) echo date(DATE_ATOM).' '.$count.' deleted locations records to be processed.<br/>';
   		foreach($r as $row){
- 			$year = substr($row['date_start'], 0, 4);
-  			// create list of year/taxon  
+ 			$year = $row['year'];
+  			// Flag the rebuild of a top level year/taxon combination.
  			if(!isset($YearTaxon[$year])) $YearTaxon[$year]=array();
  			if(!in_array($row['taxa_taxon_list_id'], $YearTaxon[$year])) $YearTaxon[$year][] = $row['taxa_taxon_list_id'];
- 			// create list of year/taxon/user: TBC user is determined by the creator of the parent sample.
+  			// Flag the rebuild of a top level year/taxon/user combination.
  			if(!isset($YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']])) $YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']] = array();
- 			if(!in_array($row['created_by_id'], $YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']])) $YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']][] = $row['created_by_id'];
-  			// create list of year/taxon/location
- 			if(!isset($YearTaxonLocation[$year.':'.$row['taxa_taxon_list_id']])) $YearTaxonLocation[$year.':'.$row['taxa_taxon_list_id']] = array();
- 			if(!in_array($row['location_id'], $YearTaxonLocation[$year.':'.$row['taxa_taxon_list_id']])) $YearTaxonLocation[$year.':'.$row['taxa_taxon_list_id']][] = $row['location_id'];
-  			// create list of year/taxon/location/user
- 			if(!isset($YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']] = array();
- 			if(!in_array($row['created_by_id'], $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']][] = $row['created_by_id'];
+ 			if(!in_array($row['user_id'], $YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']])) $YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']][] = $row['user_id'];
+  			// no rebuild for location entries, as the location is deleted, so just remove them immediately.
+  		  	summary_builder::do_delete($db, $definition, $year, $row['taxa_taxon_list_id'], $row['location_id'], $row['user_id']);
+ 			summary_builder::do_delete($db, $definition, $year, $row['taxa_taxon_list_id'], $row['location_id'], false);
   		}
-  		$limit = $limit-$count;
    	} else {
-  		if(isset($_GET['verbose'])) echo date(DATE_ATOM).' No new/altered occurrences to be processed.<br/>';
+  		if(self::$verbose) echo date(DATE_ATOM).' No deleted locations records processed.<br/>';
   	}
-  	// Now check for any missed data.
+  }
+
+  	private static $locationYearUser; // cache
+  	
+  private static function check_samples(&$db, $last_run_date, $definition, &$limit, &$YearTaxonLocationUser, &$YearTaxonLocation, &$YearTaxonUser, &$YearTaxon, $missing_check)
+  {
+  	// 2 modes: since last run and sweep.
+
+  	self::$locationYearUser = array();
+
+	// Pick up if a top level sample or subsample has been deleted -> user_id and location_id.
+	//   May or may not have occurrence records, but still affects calculations.
+	// Need to rebuild all the entries which have a location_id set to the location (user and non user specific) for all taxa that have been visited at that location that year..
+	// Need to rebuild all the entries which have the user_id and no location set for all taxa that have been visited at that location that year..
+	// Need to rebuild all the top level global entries (there are no new taxa).
+  	  	 
+  	$queries = kohana::config('summary_builder');
+ 
   	if ($missing_check || (isset($definition['check_for_missing']) && $definition['check_for_missing'] != 'f')) {
-  	  if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Start of missing query for survey ID '.$definition['survey_id'].'<br/>';
-  	$query = str_replace(array('#date#','#survey_id#','#limit#'),
-  						 array($last_run_date,$definition['survey_id'],$limit),
-  						 $queries['get_missed_items_query']);
-  	$r = $db->query($query)->result_array(false);
-  	if(count($r)){
-  		echo date(DATE_ATOM).' '.count($r).' missed occurrences to be processed.<br/>';
-  		foreach($r as $row){
- 			$year = substr($row['date_start'], 0, 4);
-  			// create list of year/taxon  
- 			if(!isset($YearTaxon[$year])) $YearTaxon[$year]=array();
- 			if(!in_array($row['taxa_taxon_list_id'], $YearTaxon[$year])) $YearTaxon[$year][] = $row['taxa_taxon_list_id'];
- 			// create list of year/taxon/user: TBC user is determined by the creator of the parent sample.
- 			if(!isset($YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']])) $YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']] = array();
- 			if(!in_array($row['created_by_id'], $YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']])) $YearTaxonUser[$year.':'.$row['taxa_taxon_list_id']][] = $row['created_by_id'];
-  			// create list of year/taxon/location
- 			if(!isset($YearTaxonLocation[$year.':'.$row['taxa_taxon_list_id']])) $YearTaxonLocation[$year.':'.$row['taxa_taxon_list_id']] = array();
- 			if(!in_array($row['location_id'], $YearTaxonLocation[$year.':'.$row['taxa_taxon_list_id']])) $YearTaxonLocation[$year.':'.$row['taxa_taxon_list_id']][] = $row['location_id'];
-  			// create list of year/taxon/location/user
- 			if(!isset($YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']] = array();
- 			if(!in_array($row['created_by_id'], $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']])) $YearTaxonLocationUser[$year.':'.$row['taxa_taxon_list_id'].':'.$row['location_id']][] = $row['created_by_id'];
+  		if(self::$verbose) echo date(DATE_ATOM).' Running missed deleted sample check for survey ID '.$definition['survey_id'].'<br/>';
+  		$query = $queries['get_missed_deleted_samples_query'];
+  	} else {
+  		if(self::$verbose) echo date(DATE_ATOM).' Running deleted sample check for survey ID '.$definition['survey_id'].'<br/>';
+  		$query = $queries['get_deleted_samples_query'];
+  	}
+  	self::run_samples_query($db, $query, $last_run_date, $definition, $limit, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon);
+  	if($limit <= 0 ) return;
+  		 
+  	if ($missing_check || (isset($definition['check_for_missing']) && $definition['check_for_missing'] != 'f')) {
+  		if(self::$verbose) echo date(DATE_ATOM).' Running missed created sample check for survey ID '.$definition['survey_id'].'<br/>';
+  		$query = $queries['get_missed_created_samples_query'];
+  	} else {
+  		if(self::$verbose) echo date(DATE_ATOM).' Running created sample check for survey ID '.$definition['survey_id'].'<br/>';
+  		$query = $queries['get_created_samples_query'];
+  	}
+  	self::run_samples_query($db, $query, $last_run_date, $definition, $limit, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon);  	
+  }
+
+  private static function run_samples_query(&$db, $query, $last_run_date, $definition, &$limit, &$YearTaxonLocationUser, &$YearTaxonLocation, &$YearTaxonUser, &$YearTaxon)
+  {
+  	$query = str_replace(array('#survey_id#', '#date#', '#limit#'),
+  							array($definition['survey_id'], $last_run_date, $limit),
+  							$query);
+  	$r = $db->query($query)->result_array(false); // returns date_start, created_by_id, location_id
+  	
+  	$count = count($r);
+  	$actual = 0;
+  	if($count){
+  		if(self::$verbose) echo date(DATE_ATOM).' Maximum of '.$count.' sample records to be processed (limit = '.$limit.').<br/>';
+  		foreach($r as $row) {
+			$c = summary_builder::flag_all_taxa ($db, $definition['survey_id'], $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon, substr($row['date_start'], 0, 4), $row['location_id'], $row['user_id']);
+  			$limit = $limit-$c;
+  			$actual++;
+  			if($limit <= 0 ) {
+  				if(self::$verbose) echo date(DATE_ATOM).' '.$actual.' sample records processed, record count limit reached.<br/>';
+  				if(self::$verbose) echo date(DATE_ATOM).' Date on sample last processed : '.$row['date_start'].'<br/>';
+  				$limit = 0;
+  				return;
+  			}
   		}
-  	} else
-  		if(isset($_GET['verbose'])) echo date(DATE_ATOM).' No missed occurrences to be processed.<br/>';
-  	} else
-  	  if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Missed occurrences processing not active for survey ID '.$definition['survey_id'].'.<br/>';
+  		if(self::$verbose) echo date(DATE_ATOM).' Record count limit '.$limit.' after sample records processing.<br/>';
+  	} else {
+  		if(self::$verbose) echo date(DATE_ATOM).' No sample records processed.<br/>';
+  	}
+  }
+
+  private static function flag_one_taxa (&$YearTaxonLocationUser, &$YearTaxonLocation, &$YearTaxonUser, &$YearTaxon, $year, $taxon, $location_id, $user_id)
+  {
+ 	if(!isset($YearTaxon[$year])) $YearTaxon[$year]=array();
+ 	if(!in_array($taxon, $YearTaxon[$year])) $YearTaxon[$year][] = $taxon;
+ 	// create list of year/taxon/user
+ 	if(!isset($YearTaxonUser[$year.':'.$taxon])) $YearTaxonUser[$year.':'.$taxon] = array();
+ 	if(!in_array($user_id, $YearTaxonUser[$year.':'.$taxon])) $YearTaxonUser[$year.':'.$taxon][] = $user_id;
+  	// create list of year/taxon/location
+ 	if(!isset($YearTaxonLocation[$year.':'.$taxon])) $YearTaxonLocation[$year.':'.$taxon] = array();
+ 	if(!in_array($location_id, $YearTaxonLocation[$year.':'.$taxon])) $YearTaxonLocation[$year.':'.$taxon][] = $location_id;
+  	// create list of year/taxon/location/user
+ 	if(!isset($YearTaxonLocationUser[$year.':'.$taxon.':'.$location_id])) $YearTaxonLocationUser[$year.':'.$taxon.':'.$location_id] = array();
+ 	if(!in_array($user_id, $YearTaxonLocationUser[$year.':'.$taxon.':'.$location_id])) $YearTaxonLocationUser[$year.':'.$taxon.':'.$location_id][] = $user_id;
+  }
+  
+  private static function flag_all_taxa (&$db, $survey_id, &$YearTaxonLocationUser, &$YearTaxonLocation, &$YearTaxonUser, &$YearTaxon, $year, $location_id, $user_id)
+  {
+  	if(isset(self::$locationYearUser[$year.':'.$location_id.':'.$user_id]))
+  		return 0; // previously processed a sample for this year/location/user, so no need to do again
+
+  	$queries = kohana::config('summary_builder');
+  	$query = str_replace(array('#survey_id#', '#location_id#', '#year#'),
+  							array($survey_id, $location_id, $year),
+  							$queries['get_taxa_query']);
+  	$r = $db->query($query)->result_array(false); // returns all taxa_taxon_list_id for this year/location combination
+  	self::$locationYearUser[$year.':'.$location_id.':'.$user_id] = true;
+    
+  	$count = count($r);
+  	if($count){
+  		foreach($r as $row){
+  			// create list of year/taxon
+  			$taxon = $row['taxa_taxon_list_id'];
+  			summary_builder::flag_one_taxa ($YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon, $year, $taxon, $location_id, $user_id);
+  		}
+  	}
+  	return $count;
+  }
+  
+  private static function get_changelist(&$db, $last_run_date, $definition, &$YearTaxonLocationUser, &$YearTaxonLocation, &$YearTaxonUser, &$YearTaxon, $missing_check) {
+  	$queries = kohana::config('summary_builder');
+  	$limit = (isset($definition['max_records_per_cycle']) ? $definition['max_records_per_cycle'] : 1000);
+  	if(self::$verbose) echo date(DATE_ATOM).' Record count limit: '.$limit.'<br/>';
+  	
+  	// the location deletion does not lead to any new calculations, just re-summarising existing data, so no impact on limit.
+  	if(!isset($_GET['only']) || $_GET['only'] == 'locations')
+  		summary_builder::check_deleted_locations($db, $last_run_date, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon, $missing_check);
+
+  	if(!isset($_GET['only']) || $_GET['only'] == 'samples')
+  		summary_builder::check_samples($db, $last_run_date, $definition, $limit, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon, $missing_check);
+  	
+  	// Now check occurrences
+  	if($limit > 0 && (!isset($_GET['only']) || $_GET['only'] == 'occurrences')) {
+  		if ($missing_check || (isset($definition['check_for_missing']) && $definition['check_for_missing'] != 'f')) {
+  			if(self::$verbose) echo date(DATE_ATOM).' Start of missing occurrence query for survey ID '.$definition['survey_id'].'<br/>';
+  			$query = str_replace(array('#date#','#survey_id#','#limit#'),
+  					array($last_run_date,$definition['survey_id'],$limit),
+  					$queries['get_missed_changed_occurrences_query']);
+  		} else {
+  			if(self::$verbose) echo date(DATE_ATOM).' Start of occurrence query for survey ID '.$definition['survey_id'].'<br/>';
+  			$query = str_replace(array('#date#','#survey_id#','#limit#'),
+  					array($last_run_date,$definition['survey_id'],$limit),
+  					$queries['get_changed_occurrences_query']);
+  		}
+		$r = $db->query($query)->result_array(false);
+	  	$count = count($r);
+  		if($count){
+  			if(self::$verbose) echo date(DATE_ATOM).' '.$count.' occurrences to be processed.<br/>';
+  			foreach($r as $row)
+  				summary_builder::flag_one_taxa ($YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon, substr($row['date_start'], 0, 4), $row['taxa_taxon_list_id'], $row['location_id'], $row['created_by_id']);
+	  		$limit = $limit-$count;
+	   	} else if(self::$verbose) echo date(DATE_ATOM).' No occurrences to be processed.<br/>';
+
+  	  	if($limit > 0 && (!isset($_GET['only']) || $_GET['only'] == 'occurrences') && ($missing_check || (isset($definition['check_for_missing']) && $definition['check_for_missing'] != 'f'))) {
+  			if(self::$verbose) echo date(DATE_ATOM).' Start of missing deleted occurrence query for survey ID '.$definition['survey_id'].'<br/>';
+  			$query = str_replace(array('#date#','#survey_id#','#limit#'),
+  					array($last_run_date,$definition['survey_id'],$limit),
+  					$queries['get_missed_deleted_occurrences_query']);
+			$r = $db->query($query)->result_array(false);
+	  		$count = count($r);
+ 			if($count){
+ 				if(self::$verbose) echo date(DATE_ATOM).' '.$count.' occurrences to be processed.<br/>';
+  				foreach($r as $row)
+  					summary_builder::flag_one_taxa ($YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon, substr($row['date_start'], 0, 4), $row['taxa_taxon_list_id'], $row['location_id'], $row['created_by_id']);
+	   		} else if(self::$verbose) echo date(DATE_ATOM).' No occurrences to be processed.<br/>';
+	  	}
+  	}
+  	
   	if(count($YearTaxon)>0){
   		ksort($YearTaxon);
   		ksort($YearTaxonUser);
@@ -144,10 +328,11 @@ class summary_builder {
   	return count($YearTaxon);
   }
 
-  private static function do_summary($db, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon) {
+  private static function do_summary(&$db, $definition, $YearTaxonLocationUser, $YearTaxonLocation, $YearTaxonUser, $YearTaxon) {
   	$queries = kohana::config('summary_builder');
-	foreach($YearTaxon as $year=>$taxonList) {
-	  if(isset($_GET['verbose'])) echo date(DATE_ATOM).' Processing data for '.$year.'<br />';
+  	foreach($YearTaxon as $year=>$taxonList) {
+	  $db->begin();
+	  echo date(DATE_ATOM).' Processing data for '.$year.'<br />';
 	  $yearStart = new DateTime($year.'-01-01');
 	  $yearEnd = new DateTime($year.'-01-01');
 	  // calculate date to period conversions
@@ -180,9 +365,16 @@ class summary_builder {
 	  	  $weekOne_date->modify('-7 days');
 	  	  $weekNoOffset++;
 	  	}
-	  	$anchors=explode(',',$definition['season_limits']);
-	  	$definition['anchors'] = array((count($anchors) && $anchors[0]!='') ? $anchors[0] : false,
-	  									(count($anchors)>1 && $anchors[1]!='') ? $anchors[1] : false);
+	  	
+	  	// the season limits define the start and end of the recording season. The generation of estimates
+	  	// is restricted to these weeks.
+	  	// if no value is provided for either the start or the end, then the relevant value is assume to be either the start of the year
+	  	// or the end of the year.
+	  	// If a value is provided, it is inclusive. UKBMS is nominally 1,26: this differs from the old report_calendar_summary
+	  	// page, where it was exclusive, and the limits where defined as 0,27.
+	  	$season_limits=explode(',',$definition['season_limits']);
+	  	$definition['season_limits_array'] = array('start' => ((count($season_limits) && $season_limits[0]!='') ? $season_limits[0] : false),
+	  									'end' => ((count($season_limits)>1 && $season_limits[1]!='') ? $season_limits[1] : false));
 	  	$periods=array();
 	  	$periodMapping=array();
 	  	// Build day number to period mapping. first period = 1, days 1st Jan = 0
@@ -214,54 +406,73 @@ class summary_builder {
 	  			echo date(DATE_ATOM)." ERROR : Taxon search for id = $taxonID returned wrong number of rows: ".count($taxon)." - expected one row. <br/>";
 	  			continue;
 	  		}
+	  		 
 	  	foreach($YearTaxonLocation[$year.':'.$taxonID] as $locationID) {
 	  	  foreach($YearTaxonLocationUser[$year.':'.$taxonID.':'.$locationID] as $userID){
   		  	$query = str_replace(array('#year#', '#survey_id#', '#taxon_id#', '#location_id#', '#user_id#', '#attr_id#'),
   		  						 array($year, $definition['survey_id'], $taxonID, $locationID, $userID, $definition['occurrence_attribute_id']),
   		  						 $definition['occurrence_attribute_id'] != '' ? $queries['get_YearTaxonLocationUser_Attr_query'] : $queries['get_YearTaxonLocationUser_query']);
             $data = array();
-  		  	summary_builder::do_delete($db, $definition, $year, $taxonID, $locationID, $userID);
-            summary_builder::load_data($db, $data, $periods, $periodMapping, $query);
-  			summary_builder::apply_data_combining($definition, $data);
+	  		if(self::$verbose) echo date(DATE_ATOM).' Processing data for Y'.$year.' T'.$taxonID.' L'.$locationID.' U'.$userID.'<br />';
+	  		summary_builder::do_delete($db, $definition, $year, $taxonID, $locationID, $userID);
+	  		if(!summary_builder::load_data($db, $data, $periods, $periodMapping, $query)) {
+	  			if(self::$verbose) echo date(DATE_ATOM).' Data cleared, none inserted<br />';
+	  			continue;
+	  		}
+	  		summary_builder::apply_data_combining($definition, $data);
   		  	if($definition['calculate_estimates'] != 'f')
   		  		summary_builder::apply_estimates($db, $definition, $data);
-  		  	//summary_builder::dump_data($data);
+//  		  	summary_builder::dump_data($data);
   		  	summary_builder::do_insert($db, $definition, $year, $taxonID, $locationID, $userID, $data, $periods, $taxon[0]);
-  		  }
+	  	  }
+	      if(self::$verbose) echo date(DATE_ATOM).' Processing data for Y'.$year.' T'.$taxonID.' L'.$locationID.'<br />';
   		  $query = str_replace(array('#year#', '#survey_id#', '#taxon_id#', '#location_id#', '#attr_id#'),
   		  						 array($year, $definition['survey_id'], $taxonID, $locationID, $definition['occurrence_attribute_id']),
   		  						 $definition['occurrence_attribute_id'] != '' ? $queries['get_YearTaxonLocation_Attr_query'] : $queries['get_YearTaxonLocation_query']);
           $data = array();
-  		  summary_builder::do_delete($db, $definition, $year, $taxonID, $locationID, false);
-          summary_builder::load_data($db, $data, $periods, $periodMapping, $query);
-  		  summary_builder::apply_data_combining($definition, $data);
+          summary_builder::do_delete($db, $definition, $year, $taxonID, $locationID, false);
+          if(!summary_builder::load_data($db, $data, $periods, $periodMapping, $query)) {
+	  		if(self::$verbose) echo date(DATE_ATOM).' Data cleared, none inserted<br />';
+	  		continue;
+	  	  }
+          summary_builder::apply_data_combining($definition, $data);
   		  if($definition['calculate_estimates'] != 'f')
   		  		summary_builder::apply_estimates($db, $definition, $data);
   		  //summary_builder::dump_data($data);
   		  summary_builder::do_insert($db, $definition, $year, $taxonID, $locationID, false, $data, $periods, $taxon[0]);
 	  	}
 	  	foreach($YearTaxonUser[$year.':'.$taxonID] as $userID){
+	  		if(self::$verbose) echo date(DATE_ATOM).' Processing data for Y'.$year.' T'.$taxonID.' U'.$userID.'<br />';
 	  		$query = str_replace(array('#year#', '#survey_id#', '#taxon_id#', '#user_id#'),
 	  				array($year, $definition['survey_id'], $taxonID, $userID), $queries['get_YearTaxonUser_query']);
 	  		$data = array();
 	  		summary_builder::do_delete($db, $definition, $year, $taxonID, false, $userID);
-	  		summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query);
+	  		if(!summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query)) {
+	  			if(self::$verbose) echo date(DATE_ATOM).' Data cleared, none inserted<br />';
+	  			continue;
+	  		}
 	  		//summary_builder::dump_data($data);
-	  		summary_builder::do_insert($db, $definition, $year, $taxonID, false, $userID, $data, $periods, $taxon[0]);
+		  	summary_builder::do_insert($db, $definition, $year, $taxonID, false, $userID, $data, $periods, $taxon[0]);
 	  	}
+	  	if(self::$verbose) echo date(DATE_ATOM).' Processing data for Y'.$year.' T'.$taxonID.'<br />';
 	  	$query = str_replace(array('#year#', '#survey_id#', '#taxon_id#'),
 	  				array($year, $definition['survey_id'], $taxonID), $queries['get_YearTaxon_query']);
 	  	$data = array();
 	  	summary_builder::do_delete($db, $definition, $year, $taxonID, false, false);
-	  	summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query);
-	  	//summary_builder::dump_data($data);
-	  	summary_builder::do_insert($db, $definition, $year, $taxonID, false, false, $data, $periods, $taxon[0]);
+	  	if(summary_builder::load_summary_data($db, $data, $periods, $periodMapping, $query)) {
+	  	  //summary_builder::dump_data($data);
+	  	  summary_builder::do_insert($db, $definition, $year, $taxonID, false, false, $data, $periods, $taxon[0]);
+	  	} else  {
+	  		if(self::$verbose) echo date(DATE_ATOM).' Data cleared, none inserted<br />';
+	  	}
 	  }
+	  $db->commit();
 	}
-  	if(isset($_GET['verbose'])) echo date(DATE_ATOM).' End of summarisation for survey ID '.$definition['survey_id'].'<br/>';
+  	if(self::$verbose) echo date(DATE_ATOM).' End of summarisation for survey ID '.$definition['survey_id'].'<br/>';
   }
   
-  private static function load_data($db, &$data, &$periods, &$periodMapping, $query) {
+  private static function load_data(&$db, &$data, &$periods, &$periodMapping, $query) {
+  	$present = false;
    	$r = $db->query($query)->result_array(false);
     foreach($periods as $periodNo=>$defn)
     	$data[$periodNo] = array('summary'=>0, 'hasData'=>false, 'hasEstimate'=>false,'samples'=>array());
@@ -272,11 +483,15 @@ class summary_builder {
   	  $data[$period]['hasData'] = true;
   	  if(isset($data[$period]['samples'][$row['sample_id']])) $data[$period]['samples'][$row['sample_id']] += $row['count'];
   	  else $data[$period]['samples'][$row['sample_id']] = $row['count'];
+  	  if(!isset($row['present']) || $row['present']=='t')
+  	  	$present = true;
     }
+    return $present;
   }
   
-  private static function load_summary_data($db, &$data, &$periods, &$periodMapping, $query) {
-   	$r = $db->query($query)->result_array(false);
+  private static function load_summary_data(&$db, &$data, &$periods, &$periodMapping, $query) {
+  	$r = $db->query($query)->result_array(false);
+  	$present = false;
   	foreach($periods as $periodNo=>$defn)
   		$data[$periodNo] = array('summary'=>0, 'hasData'=>false, 'estimate'=>0, 'hasEstimate'=>false,'samples'=>array());
   	foreach($r as $row) {
@@ -286,12 +501,15 @@ class summary_builder {
   		if($row['count']!= null) {
   			$data[$period]['summary'] += $row['count'];
   			$data[$period]['hasData'] = true;
+  			$present = true;
   		}
   		if($row['estimate']!= null) {
   			$data[$period]['estimate'] += $row['estimate'];
   			$data[$period]['hasEstimate'] = true;
-  		}
+			$present = true;
+ 		}
   	}
+    return $present;
   }
   private static function dump_data(&$data) {
   	echo "<br/><br/><table><tr>";
@@ -324,7 +542,7 @@ class summary_builder {
   				$val = $cnt ? ($val.".0")/$cnt : 0;
   				if($val>0 && $val<1) $val=1;
   				// data rounding only occurs in this option
-  				$data[$period]['summary'] = summary_builder::apply_data_rounding($definition, $val);
+  				$data[$period]['summary'] = summary_builder::apply_data_rounding($definition, $val, true);
   				break;
   			default :
   			case 'A':
@@ -335,38 +553,44 @@ class summary_builder {
   	}
   }
 
-  private static function apply_estimates($db, $definition, &$data) {
-  	$firstAnchor = $definition['anchors'][0];
-  	$lastAnchor = $definition['anchors'][1];
+  private static function apply_estimates(&$db, $definition, &$data) {
+  	$season_start = $definition['season_limits_array']['start'];
+  	$season_end = $definition['season_limits_array']['end'];
   	$thisLocation=false;
   	$lastDataPeriod=false;
-  	foreach($data as $period=>$detail) {
+  	$minPeriod = min(array_keys($data));
+  	foreach($data as $period=>$detail) { // we assume this comes out in period order
   		if($detail['hasData']) {
   			$data[$period]['estimate'] = $detail['summary'];
   			$data[$period]['hasEstimate'] = true;
-  			if($lastDataPeriod===false && ($firstAnchor===false || $period-1>$firstAnchor) && ($lastAnchor===false || $period-1<$lastAnchor) && $definition['first_value']=='H') {
+  			// Half value estimate setup if this is the first count. Previous period (which is where the estimate will be) must be within season limits
+  			if($lastDataPeriod===false && $definition['first_value']=='H') {
   				$lastDataPeriod = $period-2;
   				$lastDataPeriodValue = 0;
   			}
   			if($lastDataPeriod!==false && ($period-$lastDataPeriod > 1)){
   			  for($j=1; $j < ($period-$lastDataPeriod); $j++){ // fill in periods between data points
-  			  	$estimate = $data[$lastDataPeriod]['summary']+(($j.".0")*($data[$period]['summary']-$lastDataPeriodValue))/($period-$lastDataPeriod);
-  			  	$data[$lastDataPeriod+$j]['estimate'] = summary_builder::apply_data_rounding($definition, $estimate);
-  			  	$data[$lastDataPeriod+$j]['hasEstimate'] = true;
+  			  	// only consider estimate generation within the season limits.
+  			  	if(($season_start===false || ($lastDataPeriod+$j)>=$season_start) && ($season_end===false || ($lastDataPeriod+$j)<=$season_end)) {
+  			  	  $estimate = $lastDataPeriodValue+(($j.".0")*($data[$period]['summary']-$lastDataPeriodValue))/($period-$lastDataPeriod);
+  			  	  $data[$lastDataPeriod+$j]['estimate'] = summary_builder::apply_data_rounding($definition, $estimate, false);
+  			  	  $data[$lastDataPeriod+$j]['hasEstimate'] = true;
+  			  	}
   			  }
   			}
   			$lastDataPeriod=$period;
   			$lastDataPeriodValue=$data[$lastDataPeriod]['summary'];
   		}
   	}
-  	if($lastDataPeriod && ($firstAnchor===false || $lastDataPeriod>=$firstAnchor) && ($lastAnchor===false || $lastDataPeriod-1<$lastAnchor) && $lastDataPeriod<count($data) && $definition['last_value']=='H') {
-  		$data[$lastDataPeriod+1]['estimate'] = summary_builder::apply_data_rounding($definition, $data[$lastDataPeriod]['summary']/2.0);
+  	// Have reached end of data, so do half value estimate setup. Next period (which is where the estimate will be) must be within season limits
+  	if($lastDataPeriod && ($season_start===false || $lastDataPeriod+1>=$season_start) && ($season_end===false || $lastDataPeriod+1<=$season_end) && $lastDataPeriod<max(array_keys($data)) && $definition['last_value']=='H') {
+  		$data[$lastDataPeriod+1]['estimate'] = summary_builder::apply_data_rounding($definition, $lastDataPeriodValue/2.0, false);
   		$data[$lastDataPeriod+1]['hasEstimate'] = true;
   	} 
   }
   
-  private static function apply_data_rounding($definition, $val) {
-  	if($val>0 && $val<1) $val=1;
+  private static function apply_data_rounding($definition, $val, $special) {
+  	if($special && $val>0 && $val<1) return 1;
   	switch($definition['data_rounding_method']){
   		case 'N':
   			return (int)round($val);
@@ -381,7 +605,7 @@ class summary_builder {
   	return $val;
   }
   
-  private static function do_delete($db, $definition, $year, $taxonID, $locationID, $userID) {
+  private static function do_delete(&$db, $definition, $year, $taxonID, $locationID, $userID) {
     // set up a default delete query if none are specified
     $query = "delete from summary_occurrences where year = '".$year."' AND ".
              "survey_id = ".$definition['survey_id']." AND ".
@@ -391,7 +615,7 @@ class summary_builder {
     $count = $db->query($query)->count();
   }
 
-  private static function do_insert($db, $definition, $year, $taxonID, $locationID, $userID, &$data, &$periods, $taxon) {
+  private static function do_insert(&$db, $definition, $year, $taxonID, $locationID, $userID, &$data, &$periods, $taxon) {
   	// set up a default delete query if none are specified
   	$rows = array();
   	foreach($data as $period=>$details){

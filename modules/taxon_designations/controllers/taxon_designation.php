@@ -147,8 +147,9 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         $designationAbbr = $this->findValue($data, array('designation abbr', 'designation abbreviation'), $obj);
         $designationDescription = $this->findValue($data, array('designation description'), $obj);
         $designationCategory = $this->findValue($data, array('designation category','reporting category'), $obj);
-        $taxonExternalKey = $this->findValue($data, array('taxon external key', 'taxon version key'), $obj);
-        $taxon = $this->findValue($data, array('taxon', 'current taxon name'), $obj);
+        $taxonExternalKey = $this->findValue(
+            $data, array('taxon external key', 'taxon version key', 'recommended taxon version key'), $obj);
+        $taxon = $this->findValue($data, array('taxon', 'current taxon name', 'recommended taxon'), $obj);
         $startDate = $this->findValue($data, array('start date', 'year'), $obj);
         $source = $this->findValue($data, array('source'), $obj);
         $geographicConstraint = $this->findValue($data, array('geographic constraint'), $obj);

@@ -65,20 +65,9 @@ class Setup_Check_Controller extends Template_Controller {
   }
 
   /**
-   * Load the configuration of the demo pages view.
+   * Save the helper_config configuration settings so that the local client_helpers can work.
    */
-  public function config_demo()
-  {
-    $this->template->title = Kohana::lang('setup.demo_configuration');
-    $this->template->content = new View('fixers/config_demo');
-    $this->template->content->error = $this->error;
-    $this->error=null;
-  }
-
-  /**
-   * Save the demo configuration settings.
-   */
-  public function config_demo_save() {
+  public function save_helper_config() {
     $source = dirname(dirname(__file__ )) . '/config_files/_helper_config.php';
     $dest = dirname(dirname(dirname(dirname(__file__)))) . "/client_helpers/helper_config.php";
     try {
@@ -88,10 +77,6 @@ class Setup_Check_Controller extends Template_Controller {
     }
     try {
       $_source_content = file_get_contents($source);
-      // Now save the POST form values into the config file
-      foreach ($_POST as $field => $value) {
-        $_source_content = str_replace("*$field*", $value, $_source_content);
-      }
       $base_url=kohana::config('config.site_domain');
       if (substr($base_url, 0, 4)!='http')
         $base_url = "http://$base_url";
@@ -99,10 +84,6 @@ class Setup_Check_Controller extends Template_Controller {
         $base_url = $base_url.'/';
       $_source_content = str_replace("*base_url*", $base_url, $_source_content);
       file_put_contents($dest, $_source_content);
-      // To get the demo working, we also need to copy over the data_entry_config.php file.
-      $source = dirname(dirname(__file__ )) . '/config_files/_data_entry_config.php';
-      $dest = dirname(dirname(dirname(__file__))) . "/demo/data_entry_config.php";
-      copy($source, $dest);
       url::redirect('setup_check');
     } catch (Exception $e) {
       kohana::log('error', $e->getMessage());
@@ -326,27 +307,20 @@ class Setup_Check_Controller extends Template_Controller {
       echo "and ";
         // check postgres version. at least 8.2 required
         //
-        if(true !== ($version = $this->db->check_postgres_version()))
-        {
-            if(false !== $version)
-            {
-                $this->error = Kohana::lang('setup.error_db_wrong_postgres_version1') . $version . '. '.
-                    Kohana::lang('setup.error_db_wrong_postgres_version2');
-                Kohana::log("error", "Setup failed: wrong postgres version {$version}. At least 8.2 required");
-                return false;
-            }
-            else
-            {
-                $this->error = Kohana::lang('setup.error_db_unknown_postgres_version') + '. ' .
-                    Kohana::lang('setup.error_db_wrong_postgres_version2');
-                Kohana::log("error", "Setup failed: unknown postgres version ");
-                return false;
-            }
+        if(true !== ($version = $this->db->check_postgres_version())) {
+          if (FALSE !== $version) {
+            $this->error = Kohana::lang('setup.error_db_wrong_postgres_version1') . $version . '. ' .
+              Kohana::lang('setup.error_db_wrong_postgres_version2');
+            Kohana::log("error", "Setup failed: wrong postgres version {$version}. At least 8.2 required");
+            return FALSE;
+          }
+          else {
+            $this->error = Kohana::lang('setup.error_db_unknown_postgres_version') + '. ' .
+              Kohana::lang('setup.error_db_wrong_postgres_version2');
+            Kohana::log("error", "Setup failed: unknown postgres version ");
+            return FALSE;
+          }
         }
-
-        // start transaction
-        //
-        $this->db->begin();
 
         // empty or public schema isnt allowed
         //
@@ -368,7 +342,6 @@ class Setup_Check_Controller extends Template_Controller {
         }
 
         // check postgis installation
-        //
         if( true !== ($result = $this->db->checkPostgis()))
         {
             $this->view_var['error_general'][] = Kohana::lang('setup.error_db_postgis');
@@ -376,33 +349,48 @@ class Setup_Check_Controller extends Template_Controller {
             return false;
         }
 
-        // postgis alterations
-        if (!$this->run_script($this->db_file_postgis_alterations)) return false;
+        // start transaction
+        $this->db->begin();
 
-        // create sequences
-        if (!$this->run_script($this->db_file_indicia_sequences)) return false;
+        try {
 
-        // create tables
-        if (!$this->run_script($this->db_file_indicia_tables)) return false;
+          // postgis alterations
+          if (!$this->run_script($this->db_file_postgis_alterations)) {
+            return FALSE;
+          }
 
-        // create views
-        if (!$this->run_script($this->db_file_indicia_views)) return false;
+          // create sequences
+          if (!$this->run_script($this->db_file_indicia_sequences)) {
+            return FALSE;
+          }
 
-        // insert default data
-        if (!$this->run_script($this->db_file_indicia_data)) return false;
+          // create tables
+          if (!$this->run_script($this->db_file_indicia_tables)) {
+            return FALSE;
+          }
 
-        // insert indicia version values into system table
-        //
-        if(true !== ($result = $this->db->insertSystemInfo()))
-        {
+          // create views
+          if (!$this->run_script($this->db_file_indicia_views)) {
+            return FALSE;
+          }
+
+          // insert default data
+          if (!$this->run_script($this->db_file_indicia_data)) {
+            return FALSE;
+          }
+
+          // insert indicia version values into system table
+          //
+          if (TRUE !== ($result = $this->db->insertSystemInfo())) {
+            $this->db->rollback();
             $this->view_var['error_general'][] = Kohana::lang('setup.error_db_setup') . '<br />' . $result;
             Kohana::log("error", "Setup failed: {$result}");
-            return false;
+            return FALSE;
+          }
+        } catch (Exception $e) {
+          $this->db->rollback();
+          throw $e;
         }
-
-        // end transaction
-        //
-        $this->db->commit();
 
         if(false === $this->write_indicia_config())
         {
@@ -412,8 +400,11 @@ class Setup_Check_Controller extends Template_Controller {
             return false;
         }
 
-        // If write termlist config fails, don't worry as the config test will help the user fix it.
-        // TODO: $this->write_termlist_config();
+        // end transaction
+        $this->db->commit();
+        
+        // now seems a good time to create the helper config file
+        $this->save_helper_config();
 
         return true;
     }

@@ -34,7 +34,7 @@ class Location_Model extends ORM_Tree {
 
   protected $ORM_Tree_children = "locations";
   protected $has_and_belongs_to_many = array('websites', 'groups');
-  protected $has_many = array('samples', 'location_attribute_values', 'location_images');
+  protected $has_many = array('samples', 'location_attribute_values', 'location_media');
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'location_type'=>'termlists_term');
 
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
@@ -176,8 +176,11 @@ class Location_Model extends ORM_Tree {
   public function fixed_values_form() {
     $srefs = array();
     $systems = spatial_ref::system_metadata();
-    foreach ($systems as $code=>$metadata) 
-      $srefs[] = "$code:".$metadata['title'];
+    foreach ($systems as $code=>$metadata)
+      $srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
+    				":".
+    				str_replace(array(',',':'), array('&#44', '&#56'), $metadata['title']);
+    	 
     return array(
       'website_id' => array( 
         'display'=>'Website', 

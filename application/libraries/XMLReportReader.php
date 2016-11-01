@@ -46,6 +46,7 @@ class XMLReportReader_Core implements ReportReader
   private $websiteFilterField = 'w.id';
   private $trainingFilterField = 'o.training';
   private $createdByField;
+  private $colsToInclude = array();
   
   /**
    * @var boolean Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
@@ -63,6 +64,12 @@ class XMLReportReader_Core implements ReportReader
    */
   public $loadStandardParamsSet = false;
   
+  /** 
+   * @var boolean True if loading the legacy set of standard parameters for reporting occurrences against the
+   * old cache structure via the cache_occurrences view which simulates the structure for backwards compatibility.
+   */
+  public $loadLegacyStandardParamsSet = false;
+  
   /**
    * @var boolean Identify if we have got SQL defined for aggregated fields. If so we need to implement a group by for
    * the other fields.
@@ -77,11 +84,15 @@ class XMLReportReader_Core implements ReportReader
     $reader = new XMLReader();
     if ($reader->open($report)===false)
       throw new Exception("Report $report could not be opened.");
-    $metadata = array();
+    $metadata = array('title' => 'Untitled (' . $report . ')', 'description' => 'No description provided');
     while($reader->read()) {
       if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='report') {
         $metadata['title'] = $reader->getAttribute('title');
         $metadata['description'] = $reader->getAttribute('description');
+        if (!$metadata['title'])
+          $metadata['title'] = 'Untitled (' . basename($report) . ')';
+        if (!$metadata['description'])
+          $metadata['description'] = 'No description provided';
         break;
       }
     }
@@ -95,8 +106,9 @@ class XMLReportReader_Core implements ReportReader
   * @param array $websiteIds List of websites to include data for
   * @param string $sharing Set to reporting, verification, moderation, peer_review, data_flow or me (=user's data)
   * depending on the type of data from other websites to include in this report.
+  * @param array $colsToInclude Optional list of column names to include in the report output.
   */
-  public function __construct($report, $websiteIds, $sharing='reporting')
+  public function __construct($report, $websiteIds, $sharing='reporting', $colsToInclude = array())
   {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try
@@ -105,6 +117,7 @@ class XMLReportReader_Core implements ReportReader
       $this->name = $a[count($a)-1];
       $reader = new XMLReader();
       $reader->open($report);
+      $this->colsToInclude = $colsToInclude;
       while($reader->read())
       {
         switch($reader->nodeType)
@@ -135,12 +148,21 @@ class XMLReportReader_Core implements ReportReader
                 if (!$this->samples_id_field = $reader->getAttribute('samples_id_field'))
                   // default table alias for the samples table, so we can join to the id
                   $this->samples_id_field = 's.id';
+                if (!$this->samples2_id_field = $reader->getAttribute('samples2_id_field'))
+                  // default table alias for the second samples table, so we can join to the id: used when geting attributes for both in a parent/child arrangement
+                  $this->samples2_id_field = 's2.id';
                 if (!$this->occurrences_id_field = $reader->getAttribute('occurrences_id_field'))
                   // default table alias for the occurrences table, so we can join to the id
                   $this->occurrences_id_field = 'o.id';
+                if (!$this->occurrences2_id_field = $reader->getAttribute('occurrences2_id_field'))
+                  // default table alias for the second occurrences table, so we can join to the id
+                  $this->occurrences2_id_field = 'o2.id';
                 if (!$this->locations_id_field = $reader->getAttribute('locations_id_field'))
                   // default table alias for the locations table, so we can join to the id
                   $this->locations_id_field = 'l.id';
+                if (!$this->locations2_id_field = $reader->getAttribute('locations2_id_field'))
+                  // default table alias for the second locations table, so we can join to the id: used when geting attributes for both in a parent/child arrangement
+                  $this->locations2_id_field = 'l2.id';
                 if (!$this->people_id_field = $reader->getAttribute('people_id_field'))
                   // default table alias for the people table, so we can join to the id
                   $this->people_id_field = 'p.id';
@@ -149,6 +171,9 @@ class XMLReportReader_Core implements ReportReader
                 if ($standardParams!==null)
                   // default to loading the occurrences standard parameters set. But this can be overridden.
                   $this->loadStandardParamsSet = $standardParams==='true' ? 'occurrences' : $standardParams;
+                // reports using the old cache_occurrences structure set standard params to true rather than occurrences
+                if ($standardParams==='true')
+                  $this->loadLegacyStandardParamsSet = true;
                 $reader->read();
                 $this->query = $reader->value;
                 break;
@@ -277,7 +302,7 @@ class XMLReportReader_Core implements ReportReader
       $query = str_replace(array('#website_filter#', '#website_ids#'), array($filter, $idList), $query);
     } else
       // use a dummy filter to return all websites if core admin
-      $query = str_replace(array('#website_filter#', '#website_ids#'), array('1=1', '1=1'), $query);
+      $query = str_replace(array('#website_filter#', '#website_ids#'), array('1=1', 'SELECT id FROM websites'), $query);
     if (!empty($this->trainingFilterField)) {
       if ($training==='true')
         $query = str_replace('#sharing_filter#', "({$this->trainingFilterField}=true OR {$this->trainingFilterField} IS NULL) AND #sharing_filter#", $query); 
@@ -290,31 +315,37 @@ class XMLReportReader_Core implements ReportReader
     if ($sharing==='me' && empty($userId))
       // revert to website type sharing if we have no known user Id.
       $sharing='website';
-    if ($sharing==='me')
-      // my data only so use the UserId if we have it. Note join to system is just a dummy to keep syntax correct.
-      $query = str_replace(array('#agreements_join#','#sharing_filter#'), array('', "{$this->createdByField}=$userId"), $query);
-    elseif (isset($idList)) {
+    $agreementsJoins = array();
+    $sharingFilters = array();
+    if ($sharing==='me') {
+      // my data only so use the UserId if we have it.
+      $sharingFilters[] = "{$this->createdByField}=$userId";
+      // 'me' is a subtype of reporting
+      $sharing = 'reporting';
+    }
+    if (isset($idList)) {
       if ($sharing==='website') 
-        // this website only
-        $query = str_replace(
-          array('#agreements_join#','#sharing_filter#'), 
-          array('', "{$this->websiteFilterField} in ($idList)"), 
-        $query);
+        $sharingFilters[] = "{$this->websiteFilterField} in ($idList)";
       elseif (!empty($this->websiteFilterField)) {
         // implement the appropriate sharing agreement across websites
         $sharedWebsiteIdList = self::getSharedWebsiteList($websiteIds, $sharing);
         // add a join to users so we can check their privacy preferences. This does not apply if record input
         // on this website, or for the admin user account.
-        $agreementsJoin = "JOIN users privacyusers ON privacyusers.id=".$this->createdByField;
-        $query = str_replace(array('#agreements_join#','#sharing_filter#','#sharing_website_ids#'), 
-            array($agreementsJoin, 
-            "({$this->websiteFilterField} in ($idList) OR privacyusers.id=1 OR privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)\n".
-            "AND {$this->websiteFilterField} in ($sharedWebsiteIdList)", $sharedWebsiteIdList), $query);
+        $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=".$this->createdByField;
+        $sharingFilters[] = "({$this->websiteFilterField} in ($idList) OR privacyusers.id=1 OR " . 
+            "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
+        $sharingFilters[] = "{$this->websiteFilterField} in ($sharedWebsiteIdList)";
+        $query = str_replace('#sharing_website_ids#', $sharedWebsiteIdList, $query);
       }
     }
-    $query = str_replace('#sharing#', $sharing, $query);
-    // cleanup some of the tokens in the SQL if they haven't already been done
-    $query = str_replace(array('#agreements_join#','#sharing_filter#'), array('','1=1'), $query);
+    // add a dummy sharing filter if nothing else set, for the sake of syntax
+    if (empty($sharingFilters))
+      $sharingFilters[] = '1=1';
+    $query = str_replace(
+      array('#agreements_join#', '#sharing_filter#', '#sharing#'), 
+      array(implode("\n", $agreementsJoins), implode("\n AND ", $sharingFilters), $sharing), 
+      $query
+    );
   }
   
   /**
@@ -326,10 +357,11 @@ class XMLReportReader_Core implements ReportReader
   * website reporting anyway.
   */ 
   private function getSharedWebsiteList($websiteIds, $sharing) {
-    if (count($websiteIds ===1)) {
-      $cacheId = 'website-shares-'.implode('', $websiteIds)."-$sharing";
+    if (count($websiteIds) ===1) {
+      $tag = 'website-shares-'.implode('', $websiteIds);
+      $cacheId = "$tag-$sharing";
       $cache = Cache::instance();
-      if ($cached = $cache->get($cacheId)) 
+      if ($cached = $cache->get($cacheId))
         return $cached;
     }
     $db = new Database();
@@ -343,7 +375,8 @@ class XMLReportReader_Core implements ReportReader
       $ids[] = $row->to_website_id;
     }
     $r = implode(',', $ids);
-    $cache->set($cacheId, $r); 
+    // tag all cache entries for this website so they can be cleared together when changes are saved.
+    $cache->set($cacheId, $r, $tag);
     return $r;
   }
 
@@ -355,9 +388,11 @@ class XMLReportReader_Core implements ReportReader
     $distinctSql = array();
     $countSql = array();
     foreach ($this->columns as $col=>$def) {
+      if (!empty($this->colsToInclude) && !in_array($col, $this->colsToInclude))
+        continue;
       if (isset($def['sql'])) {
         if (!isset($def['on_demand']) || $def['on_demand']!=="true")
-          $sql[] = $def['sql'] . ' as ' . $col;
+          $sql[] = $def['sql'] . ' as "' . $col . '"';
         if (isset($def['distincton']) && $def['distincton']=='true') {
           $distinctSql[] = $def['internal_sql'];
           // in_count lets the xml file exclude distinct on columns from the count query
@@ -410,9 +445,9 @@ class XMLReportReader_Core implements ReportReader
     // can add more, e.g. if there are custom attribute columns, and also has a suitable place for a HAVING clause.
     if (count($sql)>0) {
       if (strpos($this->query, '#group_bys#')===FALSE)
-        $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys#';
+        $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys# #having#';
       else
-        $this->query = str_replace('#group_bys#', "GROUP BY " . implode(', ', $sql) . '#group_bys#', $this->query);
+        $this->query = str_replace('#group_bys#', "GROUP BY " . implode(', ', $sql) . '#group_bys# #having#', $this->query);
     }
   }
 
@@ -529,7 +564,18 @@ class XMLReportReader_Core implements ReportReader
   */
   public function getColumns()
   {
-    return $this->columns;
+    if (empty($this->colsToInclude))
+      return $this->columns;
+    else {
+      // user override of the columns to return
+      $columns = array();
+      foreach ($this->columns as $col => $coldef) {
+        if (in_array($col, $this->colsToInclude)) {
+          $columns[$col] = $coldef;
+        }
+      }
+      return $columns;
+    }
   }
 
   /**
@@ -768,6 +814,12 @@ class XMLReportReader_Core implements ReportReader
           $this->params["{$param}_op_context"] = $cfg;
       }
       $params = $standardParamsHelper::getParameters();
+      if ($this->loadLegacyStandardParamsSet) {
+        $legacy = $standardParamsHelper::getLegacyStructureParameters();
+        foreach ($legacy as $param => $array) {
+          $params[$param] = array_merge($params[$param], $array);
+        }
+      }
       $this->defaultParamValues = array_merge($standardParamsHelper::getDefaultParameterValues(), $this->defaultParamValues);
       $providedParams = array_merge($this->defaultParamValues, $providedParams);
       // load up the params for any which have a value provided

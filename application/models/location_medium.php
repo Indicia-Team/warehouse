@@ -40,7 +40,7 @@ class Location_Medium_Model extends ORM {
     $array->add_rules('location_id', 'required');
     $array->add_rules('path', 'required');
 
-    $this->unvalidatedFields = array('caption', 'external_details', 'media_type_id');
+    $this->unvalidatedFields = array('caption', 'external_details', 'media_type_id', 'exif');
     return parent::validate($array, $save);
   }
 

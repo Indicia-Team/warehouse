@@ -25,7 +25,7 @@
  */
 function log_browser_alter_menu($menu, $auth) {
   if ($auth->has_any_website_access('admin') || $auth->logged_in('CoreAdmin'))
-    $menu['Admin']['Browse Server Logs']='browse_server_logs';
+    $menu['Admin']['Browse server logs']='browse_server_logs';
   return $menu;
 }
 

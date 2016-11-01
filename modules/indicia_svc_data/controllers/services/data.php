@@ -68,6 +68,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'group_invitation',
       'group_relation',
       'location',
+      'location_attribute_value',
       'location_medium',
       'notification',
       'occurrence',
@@ -83,6 +84,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'survey',
       'survey_attribute',
       'survey_attribute_value',
+      'sample_comment',      
       'survey_medium',
       'taxa_taxon_list',
       'taxon_rank',
@@ -90,7 +92,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxon_group',
       'termlists_term',
       'user',      
-      'user_trust'
+      'user_trust',
+      'users_website'
   );
 
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
@@ -117,7 +120,8 @@ class Data_Controller extends Data_Service_Base_Controller {
     'cache_taxon_searchterms',
     'cache_taxa_taxon_lists',
     'index_websites_website_agreements',
-    'verification_rule_data'
+    'verification_rule_data',
+    'users_websites'
   );
   
   /**
@@ -228,6 +232,25 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('language');
   }
+
+  /**
+   * Provides the /services/data/licence service.
+   * Retrieves details of a single location.
+   */
+  public function licence()
+  {
+    $this->handle_call('licence');
+  }
+
+  /**
+   * Provides the /services/data/licences_website service.
+   * Retrieves details of a single location.
+   */
+  public function licences_website()
+  {
+    $this->handle_call('licences_website');
+  }
+
 
   /**
   * Provides the /services/data/location service.
@@ -443,6 +466,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
   
   /**
+  * Provides the /services/data/survey_comment service.
+  */
+  public function survey_comment()
+  {
+    $this->handle_call('survey_comment');
+  }
+  
+  /**
   * Provides the /service/data/survey_medium service.
   * Retrieves details of sample media.
   */
@@ -605,6 +636,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('user_identifier');
   }
+
+  /**
+   * Provides the /services/data/users_website service.
+   */
+  public function users_website()
+  {
+    $this->handle_call('users_website');
+  }
   
   public function user_trust()
   {
@@ -721,7 +760,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     if (isset($this->extensionOpts) && (!isset($this->extensionOpts['readOnly']) || $this->extensionOpts['readOnly']!==true))
       $this->allow_updates[] = $entity;
-    //Allow modules to provide an option when extending data services to allow tables without website ids to be written to
+    // Allow modules to provide an option when extending data services to allow tables without website ids to be written to
     if (isset($this->extensionOpts['allow_full_access'])&&$this->extensionOpts['allow_full_access']==1)
       $this->allow_full_access[] = $entity;
     return $extensions;
@@ -965,7 +1004,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         // If we got no record but asked for a specific one, check if this was a permissions issue?
         if (!count($r) && $this->uri->total_arguments()!==0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false)) {
           Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
-          throw new AuthorisationError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1), 1001);
+          throw new EntityAccessError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1), 1001);
         }
         return $r;
       }
@@ -986,23 +1025,21 @@ class Data_Controller extends Data_Service_Base_Controller {
   * associated with the entity, but prefixed by either list, gv or max depending
   * on the GET view parameter, or as is if the table has no views.
   */
-  protected function get_view_name()
+  protected function get_view_name($table='', $prefix='')
   {
-    $table = inflector::plural($this->entity);
+    if (!$table)
+      $table = $this->entity;
+    $table = inflector::plural($table);
     if (in_array($table, $this->tables_without_views)) {
       return $table;
     }
-    $prefix='';
-    if (array_key_exists('view', $_REQUEST))
-    {
+    if (!$prefix && array_key_exists('view', $_REQUEST))
       $prefix = $_REQUEST['view'];
-    }
     // Check for allowed view prefixes, and use 'list' as the default
     if ($prefix!='gv' && $prefix!='detail' && $prefix!='cache')
       $prefix='list';
     return $prefix.'_'.$table;
   }
-
 
   /**
   * Works out what filter and other options to set on the db object according to the
@@ -1102,9 +1139,9 @@ class Data_Controller extends Data_Service_Base_Controller {
           // Build a where for ints, bools or if there is no * in the search string.
           if ($this->view_columns[$param]['type']=='int' || $this->view_columns[$param]['type']=='bool' ||
               strpos($value, '*')===false) {
-            $where[$param]=$value;
+            $where["$this->viewname.$param"] = $value;
           } else {
-            $like[$param]=str_replace('*', '%', $value);
+            $like["$this->viewname.$param"] = str_replace('*', '%', $value);
           }
         } else {
           Kohana::log('debug', "Trying to filter on unknown column $param. Ignoring.");
@@ -1280,33 +1317,36 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     if (!in_array($entity, $this->allow_updates)) {
       // check if an extension module declares write access to this entity
-      $extensions = $this->loadExtensions($entity);
+      $this->loadExtensions($entity);
     }
     if (!in_array($entity, $this->allow_updates)) {
-      Kohana::log('info', 'Attempt to write to entity '.$entity.' by website '.$this->website_id.': no write access allowed through services.');
-      throw new EntityAccessError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.', 2002);
+      $msg = "Attempt to update entity $entity by website $this->website_id: no write access allowed through services.";
+      Kohana::log('info', $msg);
+      throw new EntityAccessError($msg, 2002);
     }
-    if(array_key_exists('id', $s['fields']))
+    if (array_key_exists('id', $s['fields']))
       if (is_numeric($s['fields']['id']['value']))
         // there is an numeric id field so modifying an existing record
-        if (!$this->check_record_access($entity, $s['fields']['id']['value'], $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false))
-        {
-          Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
-          throw new AuthorisationError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value'], 2001);
+        if (!$this->check_record_access($entity, $s['fields']['id']['value'],
+            isset($_REQUEST['sharing']) && $_REQUEST['sharing'] !== 'reporting' ? $_REQUEST['sharing'] : false)) {
+          $msg = "Attempt to update existing record failed - website_id $this->website_id does not match website for " .
+              "$entity id ".$s['fields']['id']['value'];
+          Kohana::log('info', $msg);
+          throw new AuthorisationError($msg, 2001);
         }
     return true;
   }
 
-  protected function check_record_access($entity, $id, $website_id, $sharing=false)
+  protected function check_record_access($entity, $id, $sharing=false)
   {
     // if $id is null, then we have a new record, so no need to check if we have access to the record
     if (is_null($id))
       return true;
-    $table = inflector::plural($entity);
-    $viewname='list_'.$table;
+    $viewname=$this->get_view_name($entity, 'list');
+
     if (!$this->db)
       $this->db = new Database();
-    $fields=postgreSQL::list_fields($viewname, $this->db);
+    $fields = postgreSQL::list_fields($viewname, $this->db);
     if(empty($fields)) {
       Kohana::log('info', $viewname.' not present so cannot access entity');
       throw new EntityAccessError('Access to entity '.$entity.' not available via requested view.', 1003);
@@ -1314,8 +1354,8 @@ class Data_Controller extends Data_Service_Base_Controller {
     $this->db->from("$viewname as record");
     $this->db->where(array('record.id' => $id));
 
-    if(!in_array ($entity, $this->allow_full_access)) {
-      if(array_key_exists ('website_id', $fields)) {
+    if (!in_array($entity, $this->allow_full_access)) {
+      if (array_key_exists('website_id', $fields)) {
         // check if a request for shared data is being made. Also check this is valid to prevent injection.
         if ($sharing && preg_match('/[reporting|peer_review|verification|data_flow|moderation]/', $sharing)) {
           // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So 
@@ -1331,7 +1371,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         }
       } elseif (!$this->in_warehouse) {
         Kohana::log('info', $viewname.' does not have a website_id - access denied');
-        throw new EntityAccessError('No access to entity '.$entity.' allowed.', 1004);
+        throw new EntityAccessError('No access to entity ' . $entity . ' allowed.', 1004);
       }
     }
     $number_rec = $this->db->count_records();

@@ -35,27 +35,40 @@ class vague_date {
   private static function dateRangeStrings() {
     return Array(
       array(
-          'regex' => '/( to | - )/i', // date to date
+          // date to date or date - date
+          'regex' => '/(?P<sep> to | - )/i', 
           'start' => -1,
           'end' => 1
       ),
       array(
-          'regex' => '/(to|pre|before[\.]?)/i',
+        // date-date i.e without spaces (dates not ISO format)
+        // Negative lookahead prevents yyyy-mm being mistaken for a range.
+        // \d{4}-\d{2} matches yyyy-mm
+        // (?!.+) negative lookahead on any further characters
+        // (?!\d{4}-\d{2}(?!.+)) negative lookahead on exactly yyyy-mm
+        // [^-]+ a string of any characters excluding hyphen
+        // [^-]+(?P<sep>-)[^-] two such strings separated by a hyphen.
+        'regex' => '/^(?!\d{4}-\d{2}(?!.+))[^-]+(?P<sep>-)[^-]+$/',
+        'start' => -1,
+        'end' => 1
+      ),
+      array(
+          'regex' => '/^(?P<sep>to|pre|before[\.]?)/i',
           'start' => 0,
           'end' => 1
       ),
       array(
-          'regex' => '/(from|after)/i',
+          'regex' => '/(?P<sep>from|after)/i',
           'start' => 1,
           'end' => 0
       ),
       array(
-          'regex' => '/-$/',
+          'regex' => '/(?P<sep>-)$/',
           'start' => -1,
           'end' => 0
       ),
       array(
-          'regex' => '/^-/',
+          'regex' => '/^(?P<sep>-)/',
           'start' => 0,
           'end' => 1
       ),
@@ -67,9 +80,11 @@ class vague_date {
    * function - see http://uk2.php.net/manual/en/function.strptime.php
    */
   private static function singleDayFormats() { return Array(
-    '%Y-%m-%d', // ISO 8601 date format
-    '%d/%m/%Y', // UK style date format (full year)
-    '%d/%m/%y', // UK style date format
+    '%Y-%m-%d', // ISO 8601 date format 1997-10-12
+    '%d/%m/%Y', // 12/10/1997
+    '%d/%m/%y', // 12/10/97
+    '%d.%m.%Y', // 12.10.1997
+    '%d.%m.%y', // 12.10.97
     '%A %e %B %Y', // Monday 12 October 1997
     '%a %e %B %Y', // Mon 12 October 1997
     '%A %e %b %Y', // Monday 12 Oct 1997
@@ -95,9 +110,9 @@ class vague_date {
    * with the strptime() function - see http://uk2.php.net/manual/en/function.strptime.php
    */
   private static function singleMonthInYearFormats() { return Array(
-    '%Y-%m', // ISO 8601 format - truncated to month
-    '%m/%Y', // British style truncated
-    '%m/%y', // British style truncated - 4 digit year
+    '%Y-%m', // ISO 8601 format - truncated to month 1998-06
+    '%m/%Y', // 06/1998
+    '%m/%y', // 06/96
     '%B %Y', // June 1998
     '%b %Y', // Jun 1998
     '%B %y', // June 98
@@ -142,6 +157,7 @@ class vague_date {
    *
    * @param array $date Vague date in the form array(start_date, end_date, date_type), where
    * start_date and end_date are DateTime objects or strings.
+   * @return string Vague date expressed as a string.
    */
   public static function vague_date_to_string(array $date)
   {
@@ -177,6 +193,7 @@ class vague_date {
     case 'C-':	return self::vague_date_to_century_from($start, $end);
     case '-C':	return self::vague_date_to_century_to($start, $end);
     }
+    throw new exception("Invalid date type $type");
   }
 
   /**
@@ -201,25 +218,24 @@ class vague_date {
     $startDate = false;
     $endDate = false;
     $matched = false;
-    $vagueDate = array('', '', '');
     foreach (self::dateRangeStrings() as $a) {
       if (preg_match($a['regex'], $string, $regs) != false) {
         switch ($a['start']) {
         case -1:
-          $start = substr($string,0,strpos($string, $regs[0]));
+          $start = trim(substr($string,0,strpos($string, $regs['sep'])));
           break;
         case 1:
-          $start = substr($string, strpos($string, $regs[0]) + strlen($regs[0]));
+          $start = trim(substr($string, strpos($string, $regs['sep']) + strlen($regs['sep'])));
           break;
         default:
           $start = false;
         }
         switch ($a['end']){
         case -1:
-          $end = substr($string,0,strpos($string, $regs[0]));
+          $end = trim(substr($string,0,strpos($string, $regs['sep'])));
           break;
         case 1:
-          $end = substr($string, strpos($string, $regs[0]) + strlen($regs[0]));
+          $end = trim(substr($string, strpos($string, $regs['sep']) + strlen($regs['sep'])));
           break;
         default:
           $end = false;
@@ -565,7 +581,7 @@ class vague_date {
   }
 
   /**
-   * Convert a vague date to a string representing a month in an unkown year
+   * Convert a vague date to a string representing a month in an unknown year
    */
   protected static function vague_date_to_month($start, $end)
   {
@@ -797,4 +813,3 @@ class vague_date {
   }
 
 }
-?>

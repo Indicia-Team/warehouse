@@ -10,7 +10,7 @@
   #joins#
   WHERE #sharing_filter# 
   AND ('#records#'&lt;&gt;'fail' OR (o.data_cleaner_info is not null and o.data_cleaner_info &lt;&gt;'pass'))
-  AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
+  AND ('#searchArea#'='' OR st_intersects(s.geom, ST_MakeValid(st_geomfromtext('#searchArea#',900913))))
   #idlist#
   </query>
   <order_bys>

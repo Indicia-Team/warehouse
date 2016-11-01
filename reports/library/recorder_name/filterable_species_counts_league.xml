@@ -3,7 +3,8 @@
 <report title="Species counts league with standard params" description="An event (date and survey) filtered league table of taxon counts by warehouse user.">
   <query website_filter_field="o.website_id">
     SELECT #columns#
-    FROM cache_occurrences o             
+    FROM cache_occurrences_functional o
+    JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
@@ -16,7 +17,7 @@
   <params>
   </params>
   <columns>
-        <column name="name" display="Recorder" sql="o.recorders" />
+        <column name="name" display="Recorder" sql="snf.recorders" />
         <column name="value" display="No. of Species"  sql="COUNT(DISTINCT o.taxon_meaning_id)" aggregate="true"/>
   </columns>
 </report>  

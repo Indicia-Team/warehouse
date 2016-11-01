@@ -6,6 +6,65 @@
  */
 
 /**
+ * Filter helper class to find folders in a db folder that are named version_x_x_x
+ * and therefore contain scripts to run for that version.
+ * @param string $folder
+ * @return boolean
+ */
+class FolderFilter {
+  private $minVersion;
+  private $maxVersion;
+
+  /**
+   * Capture the current version on construct to allow this effectively as a
+   * parameter to the callback filter functions.
+   * @param string $min_version Version string for the first version to apply, e.g. 0.9.0
+   * @param string $max_version Version string for the last version to apply, e.g. 1.0.0
+   */
+  function __construct($min_version, $max_version) {
+    $this->minVersion = $min_version;
+    $this->maxVersion = $max_version;
+  }
+
+  /**
+   * Does this folder match the naming convention for a database version folder?
+   * @param string $folder Folder name
+   * @return bool
+   */
+  private function isDbVersionFolder($folder) {
+    return preg_match('/^version_(\d+)_(\d+)_(\d+)/', $folder) ? true : false;
+  }
+
+  /**
+   * Checks if a folder's file name is for a version between the range of versions
+   * we are applying.
+   * @param string $folder Folder name
+   * @return bool
+   */
+  private function isCurrentVersionOrAbove($folder) {
+    // convert the folder name to a version string
+    preg_match('/^version_(\d+)_(\d+)_(\d+)/', $folder, $matches);
+    array_shift($matches);
+    $this_version = implode('.', $matches);
+    // use a natural string comparison as it works nicely with 1.10.0 being higher than 1.2.0
+    return strnatcasecmp($this_version, $this->minVersion) >=0
+        && strnatcasecmp($this_version, $this->maxVersion) <= 0;
+  }
+
+  /**
+   * Function that can be used in an array_filter callback to determine if a folder
+   * needs to be included in the current upgrade or not.
+   * @param string $path File path
+   * @return bool Include the folder?
+   */
+  function wantFolder($path) {
+    $path_parts = explode('/', $path);
+    $folder = array_pop($path_parts);
+    return $this->isDbVersionFolder($folder) && $this->isCurrentVersionOrAbove($folder);
+  }
+}
+
+/**
  * Upgrade Model
  *
  * @package Indicia
@@ -17,8 +76,6 @@
 class Upgrade_Model extends Model
 {
 
-    private $upgrade_error = array();
-    
     private $scriptsForPgUser = '';
     
     private $slowScripts = '';
@@ -52,7 +109,7 @@ class Upgrade_Model extends Model
       }
       // version in the file system
       $new_version = kohana::config('version.version');
-      // version in the database
+      // version in the database for the main warehouse code
       $old_version = $system->getVersion();
       // Downgrade not possible if the new version is lower than the database version      
       if (1 == version_compare($old_version, $new_version) )
@@ -60,93 +117,75 @@ class Upgrade_Model extends Model
         Kohana::log('error', "Current application version ($new_version) is lower than the database version ($old_version). Downgrade not possible.");
         return Kohana::lang('setup.error_downgrade_not_possible');
       }
-      // This upgrade process was only introduced in version 0.2.3
-      if (1 == version_compare('0.2.3', $old_version) ) {
-        $old_version='0.2.3';
-      }
+      // if less than 1000 occurrences, then no script is likely to be slow so we can run the whole upgrade. If more than 1000, then
+      // scripts which perform a lot of processing on occurrences can be marked as slow and run after the upgrade.
+      $this->couldBeSlow = $this->db->count_records('occurrences')>1000;
+      // Run the core upgrade
       $last_run_script = $system->getLastRunScript('Indicia');
-      $this->applyUpdateScripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version, $last_run_script);
+      $this->apply_update_scripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version, $new_version, $last_run_script);
+      $this->set_new_version($new_version, 'Indicia');
       // need to look for any module with a db folder, then read its system version and apply the updates.
       foreach (Kohana::config('config.modules') as $path) {
         // skip the indicia_setup module db files since they are for the main app
-        if (basename($path)!=='indicia_setup' && file_exists("$path/db/")) {
-          $old_version = $system->getVersion(basename($path));
-          $last_run_script = $system->getLastRunScript(basename($path));
-          $this->applyUpdateScripts("$path/", basename($path), $old_version, $last_run_script);
+        if (basename($path)!=='indicia_setup') {
+          if (file_exists("$path/db/")) {
+            $old_version = $system->getVersion(basename($path));
+            $last_run_script = $system->getLastRunScript(basename($path));
+            $this->apply_update_scripts("$path/", basename($path), $old_version, $new_version, $last_run_script);
+          } else
+            // update the system table to reflect version of all modules without db folders
+            $this->set_new_version($new_version, basename($path));
         }
       }
       // In case the upgrade involves changes to supported spatial systems...
       $this->populate_spatial_systems_table();
     }
 
-    private function applyUpdateScripts($baseDir, $appName, $old_version, $last_run_script) {
-      try
-      {
-        // if less than 1000 occurrences, then no script is likely to be slow so we can run the whole upgrade. If more than 1000, then 
-        // scripts which perform a lot of processing on occurrences can be marked as slow and run after the upgrade. 
-        $this->couldBeSlow = $this->db->count_records('occurrences')>1000;
-        $currentVersionNumbers = explode('.', $old_version);
-        $stuffToDo = true;
-        while ($stuffToDo) {
-          // Get a version name, to search for a suitable script upgrade folder or an upgrade method with this name
-          $version_name = 'version_'.implode('_', $currentVersionNumbers);
-          kohana::log('debug', "upgrading to $version_name");
-          if (method_exists($this, $version_name)) {
-            // dynamically execute an upgrade method with this version name
-            $this->$version_name();
-            $updatedTo = implode('.', $currentVersionNumbers);
-            kohana::log('debug', "Method ran for $version_name");
-          }
-          if (file_exists($baseDir . "db/" . $version_name)) {
-            // start transaction for each folder full of scripts
-            $this->begin();
+  /**
+   * Returns the list of currently relevant db version folders, i.e. ones that
+   * might contain a script which needs applying.
+   * @param $base_dir
+   * @param $currentVersionNumbers
+   * @return array
+   */
+    private function get_db_versions($base_dir, $from_version, $to_version) {
+      $all = scandir("$base_dir/db");
+      $folders = array_filter($all, array(new FolderFilter($from_version, $to_version), "wantFolder"));
+      natsort($folders);
+      return $folders;
+    }
+
+    private function apply_update_scripts($base_dir, $app_name, $old_version, $new_version, $last_run_script) {
+      $db_versions = $this->get_db_versions($base_dir, $old_version, $new_version);
+      foreach ($db_versions as $version_folder) {
+        kohana::log('debug', "upgrading $app_name database to $version_folder");
+        if (file_exists($base_dir . "db/" . $version_folder)) {
+          // start transaction for each folder full of scripts
+          $this->begin();
+          try {
             $this->scriptsForPgUser = '';
             $this->slowScripts = '';
             // we have a folder containing scripts
-            $this->execute_sql_scripts($baseDir, $version_name, $appName, $last_run_script);
-            $updatedTo = implode('.', $currentVersionNumbers);
+            $this->execute_sql_scripts($base_dir, $version_folder, $app_name, $last_run_script);
             // update the version number of the db since we succeeded
-            $this->set_new_version($updatedTo, $appName);
-            // commit transaction
-            $this->commit();
-            // only tell the user if there are superuser or slow scripts, when the transaction has been committed.
-            $this->pgUserScriptsToBeApplied .= $this->scriptsForPgUser;
-            $this->slowScriptsToBeApplied .= $this->slowScripts;
-            kohana::log('info', "Scripts ran for $version_name");
+            $this->set_new_version($new_version, $app_name);
           }
-          
-          // Now find the next version number. We start by incrementing the smallest part of the version (level=2), if that does not work
-          // then we look to the next largest part (level 1) then finally the major version (level 0).
-          $level=2;
-          $stuffToDo=false;
-          while ($level>=0 && $stuffToDo==false) {
-            $currentVersionNumbers[$level]++;
-            $version_name = 'version_'.implode('_', $currentVersionNumbers);
-            if (file_exists($baseDir . "db/" . $version_name) || (method_exists($this, $version_name))) {
-              $stuffToDo = true;
-              // reset last run script - as we are starting in a new folder.
-              $last_run_script = '';
-            }
-            else {
-              // Couldn't find anything of this version name. Move up a level (e.g. we have searched 0.2.5 and found nothing, so try 0.3.0)            
-              $currentVersionNumbers[$level]=0;
-              $level--;
-            }
-          }        
-        }
-        // update system table entry to new version
-        if (isset($updatedTo)) {
-          kohana::log('debug', "Upgrade completed to $updatedTo");
-          kohana::log('debug', "Upgrade committed");
+          catch (Exception $e) {
+            $this->rollback();
+            throw $e;
+          }
+          // commit transaction
+          $this->commit();
+          // only tell the user if there are superuser or slow scripts, when the transaction has been committed.
+          $this->pgUserScriptsToBeApplied .= $this->scriptsForPgUser;
+          $this->slowScriptsToBeApplied .= $this->slowScripts;
+          kohana::log('info', "Scripts ran for $app_name $version_folder");
+          // reset last run script - if there are more version folders then we start at the top.
+          $last_run_script = '';
         }
       }
-      catch(Exception $e)
-      {
-        $this->rollback();
-        kohana::log('error', 'Updates have been rolled back');
-        throw $e;
-      }      
-    }   
+      kohana::log('debug', "Upgrade of $app_name completed to $new_version");
+    }
 
     /**
      * start transaction
@@ -305,33 +344,6 @@ class Upgrade_Model extends Model
         unlink( $file );
     }
     if (is_dir($dir)) rmdir( $dir );   
-  }
-  
-  /**
-   * Method to handle the upgrade from 0.2.3 to 0.2.4.
-   * This needs to clean up the old upgrade 0_1_to_0_2 folder plus move the last upgrade script
-   * marker into the new version 0_2_3 folder. 
-   */
-  private function version_0_2_3 () {
-    // Only bother if the old script upgrade folder still exists.
-    if (file_exists($this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/')) {
-      $last_executed_marker_file = $this->get_last_executed_sql_file_name(
-          $this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/'
-      );
-      if ($last_executed_marker_file) {
-        if (false === @file_put_contents($this->base_dir . '/modules/indicia_setup/db/version_0_2_3/'.basename($last_executed_marker_file), 'nop' ))
-        {
-          throw new  Exception("Couldn't write last executed file name: ". $full_upgrade_folder . '/____' . str_replace(".sql", "", $prev) . '____');
-        }
-      }
-      // remove the old database upgrade folder
-      try {
-        $this->deltree($this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/');
-      } catch (Exception $e) {
-        $session = new Session();
-        $session->set_flash('flash_error', kohana::lang('setup.failed_delete_old_upgrade_folder'));
-      }
-    }
   }
   
   /**

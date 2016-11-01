@@ -1,0 +1,65 @@
+language: php
+
+php:
+  - '5.4'
+  - '5.5'
+  - '5.6'
+  - '7.0'
+#  - hhvm
+
+services:
+  - postgresql
+
+before_install:
+  - php -r "echo phpinfo();"
+  
+  # From https://docs.travis-ci.com/user/languages/php
+  # Currently Travis CI does not support mod_php for apache, but you can 
+  # configure php-fpm for your integration tests.
+  
+  # Update the package list.
+  - sudo apt-get update
+  # Install Apache.
+  - sudo apt-get install apache2 libapache2-mod-fastcgi
+  # Enable php-fpm.
+  - sudo cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf.default ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.conf
+  - if [[ ${TRAVIS_PHP_VERSION:0:3} == "7.0" ]]; then sudo cp ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.d/www.conf.default ~/.phpenv/versions/$(phpenv version-name)/etc/php-fpm.d/www.conf; fi
+  - sudo a2enmod rewrite actions fastcgi alias
+  - echo "cgi.fix_pathinfo = 1" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - ~/.phpenv/versions/$(phpenv version-name)/sbin/php-fpm
+  # Configure apache virtual hosts.
+  - sudo cp -f .travis/travis-ci-apache /etc/apache2/sites-available/default
+  - sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-available/default
+  - sudo service apache2 restart  
+
+install:
+  # Grant execute on scripts
+  - chmod +x .travis/postgres_setup.sh
+  # Set up database.
+  - .travis/postgres_setup.sh
+
+before_script:
+  # Enable the phpunit module in config.php (meaning initialise() is not tested)
+  - cp application/config/config.php.travis application/config/config.php
+  # Provide a config file for the rest_api module
+  - cp modules/rest_api/config/rest.php.travis  modules/rest_api/config/rest.php
+
+script:
+  # Try the config_test on the travis environment.
+  - phpunit --bootstrap=index.php ConfigTestTest modules/indicia_setup/tests/helpers/config_test_test.php
+  # Set up the config and database.
+  - phpunit --bootstrap=index.php SetupCheckControllerTest modules/indicia_setup/tests/controllers/setup_check_test.php
+  # Upgrade the database.
+  - phpunit --bootstrap=index.php Home_Controller_Test application/tests/controllers/homeTest.php
+  # Run the application tests.
+  - phpunit --bootstrap=index.php application/tests/helpers
+  # Run the module tests.
+  - phpunit --bootstrap=index.php modules/data_cleaner/tests
+  - phpunit --bootstrap=index.php modules/indicia_svc_data/tests
+  - phpunit --bootstrap=index.php modules/indicia_svc_security/tests
+  - phpunit --bootstrap=index.php modules/phpUnit/tests
+  - phpunit --bootstrap=index.php modules/rest_api/tests
+  - phpunit --bootstrap=index.php modules/sref_mtb/tests
+
+after_script:
+  - cat application/logs/*

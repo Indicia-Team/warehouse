@@ -39,7 +39,7 @@ function taxon_designations_extend_ui() {
  */
 function taxon_designations_alter_menu($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin')) 
-    $menu['Admin']['Taxon Designations']='taxon_designation';
+    $menu['Admin']['Taxon designations']='taxon_designation';
   return $menu;
 }
 
@@ -54,7 +54,7 @@ function taxon_designations_extend_orm() {
 
 function taxon_designations_extend_data_services() {
   return array(
-    'taxon_designations'=>array(),
+    'taxon_designations'=>array('allow_full_access' => 1),
     'taxa_taxon_designations'=>array()
   );
 }

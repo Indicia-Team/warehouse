@@ -1,0 +1,21 @@
+  <report
+    title="Get Preferred Boundary ID"
+    description="Get the location id of the preferred boundary for a count unit. 
+                 This is the either from a location attribute, or if that doesn't exist, then the system assumes the latest boundary is the preferred one." 
+>
+  <query website_filter_field="lw.website_id">
+    SELECT #columns# 
+    FROM locations l
+    LEFT JOIN location_attribute_values lav on lav. location_id=l.id AND lav.location_attribute_id=#preferred_boundary_location_attribute_id# AND lav.deleted=false
+    LEFT JOIN locations lLatestBoundaryChild on lLatestBoundaryChild.id in (select max(id) from locations where parent_id=#count_unit_id# and location_type_id=#count_unit_boundary_location_type_id#)
+    WHERE (l.id=#count_unit_id#) AND l.deleted=false;
+  </query>
+  <params>
+    <param name="count_unit_id" datatype="integer"/>
+    <param name="preferred_boundary_location_attribute_id" datatype="integer"/>
+    <param name="count_unit_boundary_location_type_id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="preferred_boundary" display="Preferred Boundary" sql="COALESCE(lav.int_value, lLatestBoundaryChild.id)"/>
+  </columns>
+</report>

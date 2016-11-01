@@ -171,7 +171,7 @@ order by aw.website_id is null, aw.website_id={websiteId}";
         $this->db->query('COMMIT;');
       } catch (Exception $e) {
         $this->db->query('ROLLBACK;');
-        error::log_error('Exception during survey structure import', $e);
+        error_logger::log_error('Exception during survey structure import', $e);
         $this->template->title = 'Error during survey structure import';
         $this->view = new View('templates/error_message');
         $this->view->message='An error occurred during the survey structure import and no changes have been made to the database. ' .
@@ -340,19 +340,24 @@ order by aw.website_id is null, aw.website_id={websiteId}";
       foreach ($terms as $term) {
         // the tokens defining the term are separated by pipes. 
         $term = explode('|', $term);
+        // SQL escaping
+        $escapedTerm = pg_escape_string($term[0]);
         // sanitise the sort order
         $term[2] = empty($term[2]) ? 'null' : $term[2];
-        $this->db->query("select insert_term('$term[0]', '$term[1]', $term[2], {$tl->id}, null);");
+        $this->db->query("select insert_term('$escapedTerm', '$term[1]', $term[2], {$tl->id}, null);");
       }
       // Now re-iterate through the terms and set the term parents
       foreach ($terms as $term) {
         // the tokens defining the term are separated by pipes. 
         $term = explode('|', $term);
         if (!empty($term[3])) {
+          // SQL escaping
+          $escapedTerm = pg_escape_string($term[0]);
+          $escapedParent = pg_escape_string($term[3]);
           $this->db->query("update termlists_terms tlt set parent_id=tltp.id 
             from terms t, termlists_terms tltp
-            join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$term[3]'
-            where tlt.termlist_id={$tl->id} and t.id=tlt.term_id and t.deleted=false and t.term='$term[0]'
+            join terms tp on tp.id=tltp.term_id and tp.deleted=false and tp.term='$escapedParent'
+            where tlt.termlist_id={$tl->id} and t.id=tlt.term_id and t.deleted=false and t.term='$escapedTerm'
             and tltp.termlist_id=tlt.termlist_id and tltp.deleted=false");
         }
       }

@@ -1,0 +1,55 @@
+<report
+    title="Shorewatch efforts"
+    description="Report designed for displaying user's efforts (samples) for Shorewatch. Note that the report does not currently
+support private sites for Shorewatch as it is not initially intended for use by non-administrators to view efforts of other. If you
+wish to add a page where non-administrators are able to view efforts that are not their own, then private site support with need to be
+added."
+>
+  <query website_filter_field="sv.website_id">
+  SELECT #columns#
+  FROM samples s
+    LEFT JOIN locations l on l.id=s.location_id
+    LEFT JOIN samples sp on sp.parent_id=s.id
+    LEFT JOIN cache_occurrences co on co.sample_id=sp.id
+    JOIN sample_attribute_values sav_start on sav_start.sample_id=s.id
+    JOIN sample_attribute_values sav_end on sav_end.sample_id=s.id  
+    JOIN sample_attributes sa_start on sa_start.id=sav_start.sample_attribute_id
+    JOIN sample_attributes sa_end on sa_end.id=sav_end.sample_attribute_id  
+    JOIN surveys sv on sv.id=s.survey_id   
+    #joins#
+  WHERE #website_filter#
+    AND sav_start.sample_attribute_id=#start_time_id# 
+    AND sav_end.sample_attribute_id=#end_time_id#
+    AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+    AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date)) 
+    AND (s.sample_method_id=#effort_termlists_term_id#)
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="current_user" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
+    <param name="effort_termlists_term_id" display="Effort Sample Method ID" description="Sample Method ID for the effort sample method." datatype="integer" />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name="start_time_id" display="Start Time ID" description="ID of the Start Time sample attribute." datatype="integer" />
+    <param name="end_time_id" display="End Time ID" description="ID of the End Time sample attribute." datatype="integer" />
+        <param name="my_own_data" display="My data only?" datatype="checkbox">
+      <where value="1">s.created_by_id=#current_user#</where>
+    </param>
+  </params>
+  <columns>
+    <column name='id' display='ID' sql='s.id' datatype='integer' in_count="true"/>
+    <column name='survey' display='Survey' sql='sv.title' datatype='text'/>
+    <column name='location_name' display='Site Name' sql='coalesce(l.name, s.location_name)' datatype='text' emptyvalue='-1'/>
+    <column name='entered_sref' display='Grid Ref' sql="regexp_replace(s.entered_sref, ',[^ ]', ', ', 'g')" datatype='text' />
+    <column name='start_time' display='Start Time' sql="CASE WHEN sa_start.id IN (#start_time_id#) THEN sav_start.text_value ELSE '' END" datatype='text' />
+    <column name='date_start' sql='s.date_start' visible='false' />
+    <column name='date_end' sql='s.date_end' visible='false' />
+    <column name='date_type' sql='s.date_type' visible='false' />
+    <column name='date' display='Date' datatype='date' />
+    <column name='species' display='Species' sql="array_to_string(array_agg(distinct coalesce(co.default_common_name, '&lt;em&gt;'||co.taxon||'&lt;/em&gt;')), ', ')" datatype='text' aggregate="true" />
+    <column name='geom' visible='false' mappable="true" sql='st_astext(s.geom)' />
+    <column name='input_form' visible="false" sql="case when s.input_form is null then '#default_input_form#' else s.input_form end" />
+  </columns>
+</report>

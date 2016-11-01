@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Record counts for my sites map using standard filter params"
         description="Lists locations with mappable boundary output and the number of records within them.">
-  <query website_filter_field="o.website_id" standard_params="true">
+  <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
     FROM locations l1
     JOIN (
@@ -10,7 +10,7 @@
     JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
     LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
     LEFT JOIN users u on u.person_id=pav.person_id AND u.id=#user_id#
-    LEFT JOIN (cache_occurrences o
+    LEFT JOIN (cache_occurrences_functional o
       #agreements_join#
       #joins#
       AND #sharing_filter#

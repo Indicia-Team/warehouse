@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <report title="Record counts league using standard params for linked locations" description="A filtered league table of record counts by location. Requires the spatial index builder.">
-  <query website_filter_field="o.website_id" standard_params="true">
+  <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
     FROM locations l1     
     JOIN (
     SELECT l.id, count(o.id) as count
     FROM locations l
     LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
-    JOIN cache_occurrences o ON o.location_id=l.id
+    JOIN cache_occurrences_functional o ON o.location_id=l.id
     #agreements_join#
     #joins#
     AND #sharing_filter# 

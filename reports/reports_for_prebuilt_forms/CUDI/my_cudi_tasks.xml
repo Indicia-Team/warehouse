@@ -1,0 +1,55 @@
+  <report
+    title="My Cudi Tasks"
+    description="Report that returns a list of tasks for a normal user. There are any Count Units not marked as complete whose preferred boundary or centroid
+    intersects one of their preferred sites."
+>
+  <query website_filter_field="lw.website_id">
+  --Firstly get a list of incomplete count units
+  SELECT #columns#
+     FROM locations cu
+       LEFT JOIN locations_websites lw ON lw.location_id=cu.id
+       JOIN location_attribute_values lavComplete ON lavComplete.location_id = cu.id and lavComplete.location_attribute_id = #is_complete_attribute_id# AND (lavComplete.int_value = 0 or lavComplete.int_value = null)   
+     WHERE cu.location_type_id=#count_unit_type_id#    
+       AND lw.deleted = false AND lavComplete.deleted = false AND cu.deleted = false
+       AND cu.id in
+         --Get all the locations of any type that intersect the current user's preferred sites
+         --Once we have this list we just intersect the locations ids with the incomplete count units
+         (SELECT myLocationsIntersectingSites.id
+          FROM locations myLocationsIntersectingSites
+            --The boundaries of Count Units are not held on the Count Unit location row itself, so we need to get the preferred boundary
+            LEFT JOIN locations latestCuBoundary on latestCuBoundary.id in 
+              (select max(latestBoundary.id) from locations latestBoundary where latestBoundary.parent_id=myLocationsIntersectingSites.id AND latestBoundary.deleted=false AND latestBoundary.location_type_id=#count_unit_boundary_type_id#)
+            LEFT JOIN location_attribute_values preferredBoundryLav on preferredBoundryLav.location_id = myLocationsIntersectingSites.id AND preferredBoundryLav.location_attribute_id=#preferred_boundary_attribute_id#
+            LEFT JOIN locations actualPrefBound on actualPrefBound.id = coalesce(preferredBoundryLav.int_value,latestCuBoundary.id)
+            --Get the person's preferred sites
+            LEFT JOIN person_attribute_values pavPreferredSites ON  pavPreferredSites.person_attribute_id = #preferred_sites_attribute_id# and pavPreferredSites.person_id = #current_user_id# 
+            LEFT JOIN locations mySites ON mySites.id = pavPreferredSites.int_value
+            LEFT JOIN location_attribute_values deactivateSiteLav on deactivateSiteLav.location_attribute_id=#deactivate_site_attribute_id# AND deactivateSiteLav.int_value = 1
+            --Deactivated sites override the preferred sites
+            LEFT JOIN locations deactivatedSites on deactivatedSites.id=deactivateSiteLav.location_id
+            WHERE st_intersects(coalesce(mySites.boundary_geom, mySites.centroid_geom),coalesce(actualPrefBound.boundary_geom,myLocationsIntersectingSites.boundary_geom, myLocationsIntersectingSites.centroid_geom)) AND
+            (deactivatedSites.id IS NULL OR NOT st_intersects(coalesce(deactivatedSites.boundary_geom, deactivatedSites.centroid_geom),coalesce(actualPrefBound.boundary_geom,myLocationsIntersectingSites.boundary_geom, myLocationsIntersectingSites.centroid_geom))))    
+  </query>
+  <params>
+    <param name="clean_url" datatype="string"/>
+    <param name="cudi_form_url" datatype="string"/>
+    <param name="current_user_id" datatype="integer"/>
+    <param name="preferred_sites_attribute_id" datatype="integer"/>
+    <param name="is_complete_attribute_id" datatype="integer"/>
+    <param name="count_unit_type_id" datatype="integer"/>
+    <param name="count_unit_boundary_type_id" datatype="integer"/>
+    <param name="preferred_boundary_attribute_id" datatype="integer"/>
+    <param name="deactivate_site_attribute_id" datatype="integer"/>
+  </params>
+  <columns>
+    <column name="id" display="Count Unit Id" sql="cu.id" visible="false" in_count="true"/>  
+    <column name="name" display="Please provide details of the following Count Units" sql="
+      case '#clean_url#'
+        WHEN '1'
+          THEN '&lt;a href=&quot;'||#cudi_form_url#||'?location_id='||cu.id||'&quot;&gt;' || cu.name
+        ELSE
+          '&lt;a href=&quot;?q='||#cudi_form_url#||'&amp;location_id='||cu.id||'&quot;&gt;' || cu.name
+      END
+    "/>  
+  </columns>
+</report>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Check existing person_attribute values" description="Check for existing person_attribute_value, as can't use the list person_attribute_value list view as
+that returns details of the person_attributes even when the person_attribute_values database table is empty.">
+  <query website_filter_field="paw.website_id">
+    SELECT #columns#
+      FROM person_attribute_values pav
+      JOIN person_attributes_websites paw on paw.person_attribute_id = pav.person_attribute_id AND paw.deleted=false
+      WHERE #website_filter# AND pav.deleted=false
+      #filters#
+  </query>
+  <params>
+    <param name="person_id" display="Person id" description="id of the person to return data for" datatype="integer" emptyvalue="" default="">
+      <where>pav.person_id=#person_id#</where>
+    </param>
+    <param name="person_attribute_id" display="Person attribute id" description="Id of the person attribute to return data for." datatype="integer" emptyvalue="" default="">
+      <where>pav.person_attribute_id=#person_attribute_id#</where>
+    </param>  
+  </params>
+  <columns>
+    <column name="id" sql="pav.id"/>
+  </columns>
+</report>
