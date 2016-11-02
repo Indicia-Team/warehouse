@@ -11,6 +11,7 @@
     left join cache_termlists_terms t_bb on t_bb.id=t_sb.parent_id
     left join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
     left join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
+    #joins#
     where s.id=#sample_id#
   </query>
   <order_bys>
@@ -19,6 +20,9 @@
   <params>
     <param name="sample_id" display="Sample ID"  datatype="integer"/>
     <param name="sb_attr_id" display="Specific biotope attribute ID" datatype="integer"/>
+    <param name="conservation_group_id" display="Conservation group" datatype="integer" default="">
+      <join>join pantheon.conservation_groups_termlist_terms cg on cg.termlist_term_id=t_sb.id</join>
+    </param>
   </params>
   <columns>
     <column name="bb_term" sql="t_bb.term" display="Broad biotope" />
