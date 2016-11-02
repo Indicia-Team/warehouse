@@ -378,7 +378,9 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
 $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon_searchterms cts
     set taxa_taxon_list_id=cttl.id,
       taxon_list_id=cttl.taxon_list_id,
-      searchterm=regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon || coalesce(cttl.authority, '')), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
+      searchterm=regexp_replace(lower(
+          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+        ), E'[^a-z0-9\\\\?\\\\+]', '', 'g'),                 
       original=cttl.taxon,
       taxon_group_id=cttl.taxon_group_id,
       taxon_group=cttl.taxon_group,
@@ -396,7 +398,9 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
       code_type_id=null,
       source_id=null,
       preferred=cttl.preferred,
-      searchterm_length=length(regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
+      searchterm_length=length(regexp_replace(lower(
+          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+        ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       parent_id=cttl.parent_id,
       preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
       marine_flag=cttl.marine_flag,
@@ -492,7 +496,9 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
       marine_flag, external_key, authority
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, 
-      regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon || coalesce(cttl.authority, '')), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
+      regexp_replace(lower(
+          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+        ), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
       cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
       cttl.default_common_name, cttl.authority, cttl.language_iso, 
       case
@@ -500,7 +506,9 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
         when cttl.language_iso='lat' and cttl.id<>cttl.preferred_taxa_taxon_list_id then 'S' 
         else 'V'
       end, true, null, cttl.preferred, 
-      length(regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
+      length(regexp_replace(lower(
+          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+        ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       cttl.parent_id, cttl.preferred_taxa_taxon_list_id, cttl.marine_flag, cttl.external_key, cttl.authority
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
@@ -998,8 +1006,7 @@ $config['samples']['extra_multi_record_updates']=array(
     and (
       nullif(cs.attr_full_name, '') is not null or
       nullif(cs.attr_last_name, '') is not null
-    )
-    and cs.id in (#ids#);",
+    );",
   // Sample recorder names in parent sample
   'Parent sample recorder names' => 'update cache_samples_nonfunctional cs
     set recorders=sp.recorder_names
@@ -1055,7 +1062,7 @@ $config['samples']['extra_multi_record_updates']=array(
   // warehouse username
   'Warehouse username' => 'update cache_samples_nonfunctional cs
     set recorders=u.username
-    from needs_update_samples nu users u
+    from needs_update_samples nu, users u
     join cache_samples_functional csf on csf.created_by_id=u.id
     where cs.recorders is null and nu.id=cs.id
     and cs.id=csf.id and u.id<>1;'
