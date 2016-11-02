@@ -147,7 +147,7 @@ class cache_builder {
         foreach($queries['extra_single_record_updates'] as $key=>&$sql) {
           $result=$db->query(str_replace('#ids#', $idlist, $sql));
           $doneCount += $result->count();
-          if ($doneCount>=count($idlist)) 
+          if ($doneCount>=count($ids))
             break; // we've updated all. So can drop out.
         }
       else {
