@@ -1006,8 +1006,7 @@ $config['samples']['extra_multi_record_updates']=array(
     and (
       nullif(cs.attr_full_name, '') is not null or
       nullif(cs.attr_last_name, '') is not null
-    )
-    and cs.id in (#ids#);",
+    );",
   // Sample recorder names in parent sample
   'Parent sample recorder names' => 'update cache_samples_nonfunctional cs
     set recorders=sp.recorder_names
@@ -1063,7 +1062,7 @@ $config['samples']['extra_multi_record_updates']=array(
   // warehouse username
   'Warehouse username' => 'update cache_samples_nonfunctional cs
     set recorders=u.username
-    from needs_update_samples nu users u
+    from needs_update_samples nu, users u
     join cache_samples_functional csf on csf.created_by_id=u.id
     where cs.recorders is null and nu.id=cs.id
     and cs.id=csf.id and u.id<>1;'
