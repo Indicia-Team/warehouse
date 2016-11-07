@@ -1162,10 +1162,8 @@ $config['occurrences']['get_missing_items_query'] = "
 
 $config['occurrences']['get_changed_items_query'] = "
   select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
-    from (select o.id, o.deleted 
-    from occurrences o
-    where o.updated_on>'#date#' 
-    union
+    from (
+    -- don't pick up changes to occurrences at this point, as they are updated immediately
     select o.id, s.deleted 
     from occurrences o
     join samples s on s.id=o.sample_id
@@ -1194,12 +1192,6 @@ $config['occurrences']['get_changed_items_query'] = "
     join taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
     where ttl.updated_on>'#date#' 
     union
-    select o.id, false
-    from occurrences o
-    join samples s on s.id=o.sample_id
-    join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
-    where tmethod.cache_updated_on>'#date#'
-    union
     select om.occurrence_id, false
     from occurrence_media om
     where om.updated_on>'#date#'
@@ -1209,6 +1201,11 @@ $config['occurrences']['get_changed_items_query'] = "
     where oc.auto_generated=false and oc.updated_on>'#date#'
     ) as sub
     group by id";
+
+$config['occurrences']['delete_query']=array("
+delete from cache_occurrences_functional where id in (select id from needs_update_occurrences where deleted=true);
+delete from cache_occurrences_nonfunctional where id in (select id from needs_update_occurrences where deleted=true);
+");
 
 $config['occurrences']['update']['functional'] = "
 UPDATE cache_occurrences_functional
@@ -1430,28 +1427,28 @@ WHERE cache_occurrences_nonfunctional.id=o.id
 ";
 
 $config['occurrences']['update']['nonfunctional_media'] = "
-UPDATE cache_occurrences_nonfunctional o
+UPDATE cache_occurrences_nonfunctional onf
 SET media=(SELECT array_to_string(array_agg(om.path), ',')
-FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
-FROM occurrences occ
+FROM occurrence_media om WHERE om.occurrence_id=onf.id AND om.deleted=false)
+FROM occurrences o
 #join_needs_update#
-WHERE occ.id=o.id
-AND occ.deleted=false
+WHERE o.id=onf.id
+AND o.deleted=false
 ";
 
 $config['occurrences']['update']['nonfunctional_data_cleaner_info'] = "
-UPDATE cache_occurrences_nonfunctional o
+UPDATE cache_occurrences_nonfunctional onf
 SET data_cleaner_info=
-  CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE
+  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
     COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
       FROM occurrence_comments oc
-      WHERE oc.occurrence_id=o.id
+      WHERE oc.occurrence_id=onf.id
          AND oc.implies_manual_check_required=true
          AND oc.deleted=false), 'pass') END
-FROM occurrences occ
+FROM occurrences o
 #join_needs_update#
-WHERE occ.id=o.id
-AND occ.deleted=false
+WHERE o.id=onf.id
+AND o.deleted=false
 ";
 
 $config['occurrences']['update']['nonfunctional_sensitive'] = "
@@ -1679,28 +1676,28 @@ WHERE cache_occurrences_nonfunctional.id=o.id
 ";
 
 $config['occurrences']['insert']['nonfunctional_media'] = "
-UPDATE cache_occurrences_nonfunctional o
+UPDATE cache_occurrences_nonfunctional onf
 SET media=(SELECT array_to_string(array_agg(om.path), ',')
-FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
-FROM occurrences occ
+FROM occurrence_media om WHERE om.occurrence_id=onf.id AND om.deleted=false)
+FROM occurrences o
 #join_needs_update#
-WHERE occ.id=o.id
-AND occ.deleted=false
+WHERE o.id=onf.id
+AND o.deleted=false
 ";
 
 $config['occurrences']['insert']['nonfunctional_data_cleaner_info'] = "
-UPDATE cache_occurrences_nonfunctional o
+UPDATE cache_occurrences_nonfunctional onf
 SET data_cleaner_info=
-  CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE
+  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
     COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
       FROM occurrence_comments oc
-      WHERE oc.occurrence_id=o.id
+      WHERE oc.occurrence_id=onf.id
          AND oc.implies_manual_check_required=true
          AND oc.deleted=false), 'pass') END
-FROM occurrences occ
+FROM occurrences o
 #join_needs_update#
-WHERE occ.id=o.id
-AND occ.deleted=false
+WHERE o.id=onf.id
+AND o.deleted=false
 ";
 
 $config['occurrences']['insert']['nonfunctional_sensitive'] = "
