@@ -13,7 +13,9 @@ class Helper_Date_Test extends PHPUnit_Framework_TestCase
 	public function offset_provider()
 	{
 		return array(
-			array('Europe/Berlin', 'America/Chicago', 25200),
+			array('Europe/Berlin', 'Europe/Paris', 0),
+			array('America/New_York', 'America/Los_Angeles', 10800),
+			array('America/Los_Angeles', 'America/New_York', -10800),
 		);
 	}
 
