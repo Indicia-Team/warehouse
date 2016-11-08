@@ -31,7 +31,11 @@
 class Filter_Model extends ORM {
   public $search_field='title';
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user');
+  protected $belongs_to = array(
+    'website',
+    'created_by' => 'user',
+    'updated_by' => 'user'
+  );
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
@@ -39,6 +43,7 @@ class Filter_Model extends ORM {
     $array->add_rules('title', 'required');
     $array->add_rules('definition', 'required');
     $array->add_rules('sharing', 'required', 'chars[R,V,D,M]');
+    $array->add_rules('website_id', 'integer');
     $this->unvalidatedFields = array('description', 'public', 'defines_permissions');
     return parent::validate($array, $save);
   }
