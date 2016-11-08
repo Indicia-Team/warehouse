@@ -298,7 +298,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals($filter->description, $filterData['filter:description']);
     $this->assertEquals($filter->definition, $filterData['filter:definition']);
     $this->assertEquals($filter->sharing, $filterData['filter:sharing']);
-    $this->assertEquals($filter->defines_permissions, TRUE);
+    $this->assertEquals($filter->defines_permissions, 't');
     $this->assertEquals($filter->website_id, $filterData['filter:website_id']);
   }
 }
