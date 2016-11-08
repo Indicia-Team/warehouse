@@ -53,8 +53,8 @@ class vague_date {
         'end' => 1
       ),
       array(
-        // yy(yy)-yy(yy)
-        'regex' => '/^\d{2}(\d{2})?(?P<sep>-)\d{2}(\d{2})?$/',
+        // yyyy-yyyy
+        'regex' => '/^\d{4}(?P<sep>-)\d{4}$/',
         'start' => -1,
         'end' => 1
       ),
