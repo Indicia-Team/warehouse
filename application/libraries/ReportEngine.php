@@ -434,11 +434,16 @@ class ReportEngine {
       for ($r=0; $r<$dataCount; $r++) {
         $row=$data[$r];
         if (!empty($row[$col_set.'date_type'])) {
-          $data[$r][$col_set.'date'] = vague_date::vague_date_to_string(array(
-            $row[$col_set.'date_start'],
-            $row[$col_set.'date_end'],
-            $row[$col_set.'date_type']
-          ));
+          try {
+            $data[$r][$col_set . 'date'] = vague_date::vague_date_to_string(array(
+              $row[$col_set . 'date_start'],
+              $row[$col_set . 'date_end'],
+              $row[$col_set . 'date_type']
+            ));
+          } catch (Exception $e) {
+            kohana::log('error', 'Error in report vague date conversion: ' . $e->getMessage());
+            $data[$r][$col_set . 'date'] = 'Invalid';
+          }
         }
       }
     }

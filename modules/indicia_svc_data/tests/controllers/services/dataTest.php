@@ -275,5 +275,31 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     ORM::Factory('person', $personId)->delete();
   }
 
+  public function testCreateFilter() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateFilter");
+    // post a filter
+    $filterData=array(
+      'filter:title' => 'Test',
+      'filter:description' => 'Test descrtiption',
+      'filter:definition' => '{"testfield":"testvalue"}',
+      'filter:sharing' => 'V',
+      'filter:defines_permissions' => 't',
+      'filter:website_id' => 1,
+    );
+    $s = submission_builder::build_submission($filterData, array('model' => 'filter'));
+    $r = data_entry_helper::forward_post_to('filter', $s, $this->auth['write_tokens']);
+
+    Kohana::log('debug', "Submission response to filter save " . print_r($r, TRUE));
+    $this->assertTrue(isset($r['success']), 'Submitting a new filter did not work');
+
+    $filterId = $r['success'];
+    $filter = ORM::factory('filter', $filterId);
+    $this->assertEquals($filter->title, $filterData['filter:title']);
+    $this->assertEquals($filter->description, $filterData['filter:description']);
+    $this->assertEquals($filter->definition, $filterData['filter:definition']);
+    $this->assertEquals($filter->sharing, $filterData['filter:sharing']);
+    $this->assertEquals($filter->defines_permissions, 't');
+    $this->assertEquals($filter->website_id, $filterData['filter:website_id']);
+  }
 }
 ?>

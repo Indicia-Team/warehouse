@@ -9,7 +9,8 @@
   JOIN users u on u.id=fu.user_id and u.deleted=false
   JOIN people p on p.id=u.person_id and p.deleted=false
   #joins#
-  WHERE f.deleted=false
+  WHERE (f.website_id in (#website_ids#) or f.website_id is null)
+  AND f.deleted=false
   #order_by#
   </query>  
   <order_bys>

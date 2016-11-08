@@ -293,6 +293,7 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
         'Date 34/3/73' => ['34/3/73'],
         'Date 34 march 73' => ['34 march 73'],
         'Date 100/13/2001' => ['100/13/2001'],
+        'Date 06/1992-1996' => ['06/1992-1996'],
     ];
   }
   
