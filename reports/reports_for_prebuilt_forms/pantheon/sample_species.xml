@@ -71,6 +71,9 @@
     </param>
     <param name="all_trait_attr_ids" display="All traits" default="0"  datatype="integer[]"
            description="List of IDs of all traits to consider as analysed"/>
+    <param name="has_any_designation" display="Has any designation" default="" datatype="boolean">
+      <where>ttd.id is not null</where>
+    </param>
   </params>
   <columns>
     <column name="species" sql="cttl.preferred_taxon" display="Species" in_count="true" datatype="text" />
