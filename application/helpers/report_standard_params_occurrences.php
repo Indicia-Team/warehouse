@@ -395,12 +395,9 @@ class report_standard_params_occurrences {
       ),
       'identification_difficulty' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Identification difficulty',
         'description'=>'Identification difficulty on a scale of 1 to 5',
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
-        ),
         'wheres' => array(
           array('value'=>'', 'operator'=>'',
-            'sql'=>"coalesce(cttl.identification_difficulty, 0) #identification_difficulty_op# #identification_difficulty#")
+            'sql'=>"coalesce(o.identification_difficulty, 0) #identification_difficulty_op# #identification_difficulty#")
         )
       ),
     );
