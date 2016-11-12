@@ -75,6 +75,9 @@ class report_standard_params_occurrences {
         'description'=>'Mode for filtering by taxon rank in the hierarchy',
         'lookup_values'=>'=:include only this level in the hierarchy,>=:include this level and lower,<=:include this level and higher'
       ),
+      'identification_difficulty' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Identification difficulty operation',
+        'description'=>'Identification difficulty lookup operation', 'lookup_values'=>'=:is,>=:is at least,<=:is at most'
+      ),
     );
   }
 
@@ -389,7 +392,17 @@ class report_standard_params_occurrences {
             "join taxa_taxon_designations ttd on ttd.taxon_id=ttlpref.taxon_id and ttd.deleted=false " .
             "and ttd.taxon_designation_id in (#taxon_designation_list#)")
         ),
-      )
+      ),
+      'identification_difficulty' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Identification difficulty',
+        'description'=>'Identification difficulty on a scale of 1 to 5',
+        'joins' => array(
+          array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
+        ),
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'',
+            'sql'=>"coalesce(cttl.identification_difficulty, 0) #identification_difficulty_op# #identification_difficulty#")
+        )
+      ),
     );
   }
   
@@ -427,7 +440,8 @@ class report_standard_params_occurrences {
       'edited_date_to' => array(
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
-            'sql'=>"('#edited_date_to#'='Click here' OR (o.cache_updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND o.cache_updated_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
+            'sql'=>"('#edited_date_to#'='Click here' OR (o.cache_updated_on <= '#edited_date_to#'::timestamp ' .
+                'OR (length('#edited_date_to#')<=10 AND o.cache_updated_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'edited_date_age' => array(
@@ -459,7 +473,7 @@ class report_standard_params_occurrences {
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.images is not null")
         )
-      ),
+      )
     );
   }
 
@@ -476,12 +490,14 @@ class report_standard_params_occurrences {
       'input_form_list_op'=>'in',
       'location_list_op'=>'in',
       'indexed_location_list_op'=>'in',
+      'identification_difficulty_op'=>'=',
       'occurrence_id_op_context'=>'=',
       'website_list_op_context'=>'in',
       'survey_list_op_context'=>'in',
       'input_form_list_op_context'=>'in',
       'location_list_op_context'=>'in',
       'indexed_location_list_op_context'=>'in',
+      'identification_difficulty_op_context'=>'=',
       'release_status'=>'R'
     );
   }
