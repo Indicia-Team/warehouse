@@ -21,9 +21,17 @@
     <order_by>oc.id desc</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
-    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name='smpattrs' display='Sample attribute list'
+           description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list'
+           description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='default_input_form' display='Default input form'
+           description='Input form path to use when no other available' default='' />
+    <param name="data_cleaner_filter" display="Data cleaner comments" datatype="boolean" default=""
+           description="Limit to data cleaner comments (t) or other (f) comments">
+      <where value="t" operator="equal">oc.generated_by like 'data_cleaner_%'</where>
+      <where value="f" operator="equal">(oc.generated_by not like 'data_cleaner_%' or oc.generated_by is null)</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_comment_id' display='Comment ID' sql='oc.id' datatype="integer"
