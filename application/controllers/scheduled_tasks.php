@@ -564,7 +564,6 @@ join websites w on w.id=o.website_id and w.deleted=false;
 
 drop table occlist;";
         $this->db->query($query);
-        echo "<br/>$query<br/>";
         $this->occdeltaStartTimestamp=$timestamp;
         $this->occdeltaEndTimestamp=$currentTime;
         // if processing more than 200 records at a time, things will slow down. So we'll cut off the delta at the second which 
@@ -579,7 +578,7 @@ drop table occlist;";
    */
   private function limitDeltaSize() {
     $this->occdeltaCount=$this->db->count_records('occdelta');
-    $max = 4;
+    $max = 200;
     if ($this->occdeltaCount>$max) {
       $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max");
       foreach ($qry as $t) {
