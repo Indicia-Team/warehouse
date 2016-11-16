@@ -523,6 +523,7 @@ class Scheduled_Tasks_Controller extends Controller {
    * @param type $timestamp
    * @param string $currentTime Timepoint of the scheduled task run, so we can be absolutely clear about not including
    * records added which overlap the scheduled task.
+   * @link http://indicia-docs.readthedocs.io/en/latest/developing/warehouse/plugins.html#scheduled-task-hook
    */
   private function loadOccurrencesDelta($plugin, $timestamp, $currentTime) {
     if ($this->pluginMetadata['requires_occurrences_delta']) {
@@ -549,7 +550,10 @@ order by id;
 
 select co.*, 
 	case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
-	greatest(o.updated_on, s.updated_on, sp.updated_on) as timestamp,
+	case 
+	  when o.created_on>'$timestamp' then o.created_on 
+	  else greatest(o.updated_on, s.updated_on, sp.updated_on) 
+	end as timestamp,
 	w.verification_checks_enabled
 into temporary occdelta
 from occlist ol
