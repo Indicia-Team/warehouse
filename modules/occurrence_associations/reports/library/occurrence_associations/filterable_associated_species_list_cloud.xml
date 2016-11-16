@@ -8,7 +8,7 @@
       FROM (
         SELECT default_common_name, preferred_taxon, taxon_meaning_id, count(id) as records
         FROM (SELECT oassoc.id, oassoc.default_common_name, oassoc.preferred_taxon, oassoc.taxon_meaning_id
-          FROM cache_occurrences o
+          FROM cache_occurrences_functional o
           JOIN occurrence_associations oa on (oa.from_occurrence_id=o.id or oa.to_occurrence_id=o.id) and oa.deleted=false
           JOIN cache_termlists_terms ctt on ctt.id=oa.association_type_id
           JOIN cache_occurrences oassoc
