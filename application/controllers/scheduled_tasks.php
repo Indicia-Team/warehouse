@@ -549,7 +549,10 @@ order by id;
 
 select co.*, 
 	case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
-	greatest(o.updated_on, s.updated_on, sp.updated_on) as timestamp,
+	case 
+	  when o.created_on>'$timestamp' then o.created_on 
+	  else greatest(o.updated_on, s.updated_on, sp.updated_on) 
+	end as timestamp,
 	w.verification_checks_enabled
 into temporary occdelta
 from occlist ol
@@ -561,6 +564,7 @@ join websites w on w.id=o.website_id and w.deleted=false;
 
 drop table occlist;";
         $this->db->query($query);
+        echo "<br/>$query<br/>";
         $this->occdeltaStartTimestamp=$timestamp;
         $this->occdeltaEndTimestamp=$currentTime;
         // if processing more than 200 records at a time, things will slow down. So we'll cut off the delta at the second which 
@@ -575,7 +579,7 @@ drop table occlist;";
    */
   private function limitDeltaSize() {
     $this->occdeltaCount=$this->db->count_records('occdelta');
-    $max = 200;
+    $max = 4;
     if ($this->occdeltaCount>$max) {
       $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max");
       foreach ($qry as $t) {
