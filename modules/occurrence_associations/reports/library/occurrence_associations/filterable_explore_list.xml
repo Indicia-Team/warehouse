@@ -56,7 +56,7 @@
     <column name='association_detail' display='Association detail' datatype="text" visible="false"
             sql="(select string_agg(
   case when oa.from_occurrence_id=o.id then 
-    case when cttl.default_common_name is null then 'c' || ctll.preferred_taxon || '&lt;/em&gt;' else cttl.default_common_name || ' (&lt;em&gt;' || cttl.preferred_taxon || '&lt;/em&gt;)' end
+    case when cttl.default_common_name is null then 'c' || cttl.preferred_taxon || '&lt;/em&gt;' else cttl.default_common_name || ' (&lt;em&gt;' || cttl.preferred_taxon || '&lt;/em&gt;)' end
   else 
     case when cttlassoc.default_common_name is null then '&lt;em&gt;' || cttlassoc.preferred_taxon || '&lt;/em&gt;' else cttlassoc.default_common_name || ' (&lt;em&gt;' || cttlassoc.preferred_taxon || '&lt;/em&gt;)' end 
   end || ' ' || assoctype.term || ' ' || 
