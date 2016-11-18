@@ -1,0 +1,86 @@
+<report
+    title="Full Precision Data for Sunset Sunrise Admin."
+    description="Get full precision data for the sunset sunrise project."
+    >
+  <query website_filter_field="su.website_id">
+  SELECT #columns#
+  FROM samples s
+    JOIN surveys su on su.id = s.survey_id AND su.deleted=false
+    JOIN sample_attribute_values savFirstName on savFirstName.sample_id = s.id AND savFirstName.sample_attribute_id = #first_name_attr_id# AND savFirstName.deleted=false
+    JOIN sample_attribute_values savLastName on savLastName.sample_id = s.id AND savLastName.sample_attribute_id = #last_name_attr_id# AND savLastName.deleted=false
+    JOIN sample_attribute_values savEmail on savEmail.sample_id = s.id AND savEmail.sample_attribute_id = #email_attr_id# AND savEmail.deleted=false
+    JOIN sample_attribute_values savSurveyorNum on savSurveyorNum.sample_id = s.id AND savSurveyorNum.sample_attribute_id = #suveyor_num_attr_id# AND savSurveyorNum.deleted=false
+    JOIN sample_attribute_values savSunsetOrRise on savSunsetOrRise.sample_id = s.id AND savSunsetOrRise.sample_attribute_id = #sunset_or_sunrise_attr_id# AND savSunsetOrRise.deleted=false
+    JOIN termlists_terms ttSunsetOrRise on ttSunsetOrRise.id = savSunsetOrRise.int_value AND ttSunsetOrRise.deleted=false
+    JOIN terms tSunsetOrRise on tSunsetOrRise.id = ttSunsetOrRise.term_id AND tSunsetOrRise.deleted=false
+    JOIN sample_attribute_values savSeeBats on savSeeBats.sample_id = s.id AND savSeeBats.sample_attribute_id = #see_bats_attr_id# AND savSeeBats.deleted=false
+    JOIN termlists_terms ttSeeBats on ttSeeBats.id = savSeeBats.int_value AND ttSeeBats.deleted=false
+    JOIN terms tSeeBats on tSeeBats.id = ttSeeBats.term_id AND tSeeBats.deleted=false
+    LEFT JOIN sample_attribute_values savAddress on savAddress.sample_id = s.id AND savAddress.sample_attribute_id = #address_attr_id# AND savAddress.deleted=false
+    LEFT JOIN sample_attribute_values savPostCode on savPostCode.sample_id = s.id AND savPostCode.sample_attribute_id = #post_code_attr_id# AND savPostCode.deleted=false
+    LEFT JOIN sample_attribute_values savContact on savContact.sample_id = s.id AND savContact.sample_attribute_id = #contact_attr_id# AND savContact.deleted=false
+    
+    LEFT JOIN cache_occurrences o on o.sample_id=s.id and o.survey_id=s.survey_id AND o.training=false and o.website_id in (#website_ids#)
+    LEFT JOIN occurrence_attribute_values oavBatId on oavBatId.occurrence_id = o.id AND oavBatId.occurrence_attribute_id = #bat_id_attr_id# AND oavBatId.deleted=false
+    LEFT JOIN termlists_terms ttBatId on ttBatId.id = oavBatId.int_value AND ttBatId.deleted=false
+    LEFT JOIN terms tBatId on tBatId.id = ttBatId.term_id AND tBatId.deleted=false
+    LEFT JOIN occurrence_attribute_values oavSightingType on oavSightingType.occurrence_id = o.id AND oavSightingType.occurrence_attribute_id = #sighting_type_attr_id# AND oavSightingType.deleted=false
+    LEFT JOIN termlists_terms ttSightingType on ttSightingType.id = oavSightingType.int_value AND ttSightingType.deleted=false
+    LEFT JOIN terms tSightingType on tSightingType.id = ttSightingType.term_id AND tSightingType.deleted=false
+    LEFT JOIN occurrence_attribute_values oavGridId on oavGridId.occurrence_id = o.id AND oavGridId.occurrence_attribute_id = #grid_name_attr_id# AND oavGridId.deleted=false
+  WHERE s.survey_id=#survey_id# AND s.deleted=false 
+  AND #website_filter#
+  <order_bys>
+    <order_by>
+        s.id,        
+        case when oavGridId.text_value = 'bat-grid' then 'Bat (grid 1)' 
+        when oavGridId.text_value = 'other-pre-loaded-grid' then 'Other (grid 2 pre-populated)' 
+        when oavGridId.text_value = 'other-free-text-grid' then 'Other (grid 3 free entry)' 
+        else '' end,
+        o.id asc</order_by>
+  </order_bys>
+  </query>
+  <params>
+    <param name="first_name_attr_id" display="First name attr id" description="The id of the attribute that holds the user's first name." datatype="integer"/>
+    <param name="last_name_attr_id" display="Last name attr id" description="The id of the attribute that holds the user's last name." datatype="integer"/>
+    <param name="address_attr_id" display="Address attr id" description="The id of the attribute that holds the address of the user." datatype="integer"/>
+    <param name="post_code_attr_id" display="Post code attr id" description="The id of the attribute that holds the post code of the user." datatype="integer"/>
+    <param name="email_attr_id" display="Email attr id" description="The id of the attribute that holds the email address of the user." datatype="integer"/>
+    <param name="contact_attr_id" display="Contact attr id" description="The id of the attribute that holds the contact preference of the user." datatype="integer"/>
+    <param name="suveyor_num_attr_id" display="Surveyor num attr id" description="The id of the attribute that holds the number of surveyors." datatype="integer"/>
+    <param name="sunset_or_sunrise_attr_id" display="Sunset sunrise attr id" description="The id of the attribute that holds whether the data was collected as sunset or sunrise." datatype="integer"/>
+    <param name="see_bats_attr_id" display="See bats attr id" description="The id of the attribute that holds whether bats were seen." datatype="integer"/>
+    <param name="bat_id_attr_id" display="Bat ID attr id" description="The id of the attribute that holds how the bat was identified." datatype="integer"/>
+    <param name="sighting_type_attr_id" display="Sighting type attr id" description="The id of the attribute that holds the sighting type." datatype="integer"/>
+    <param name="grid_name_attr_id" display="Grid name attr id" description="The id of the attribute that hold the grid attribute name." datatype="integer"/>
+    <param name="survey_id" display="Survey id" description="The id of the survey." datatype="integer"/>
+  </params>
+  <columns>
+    <column name="sample_id" sql="s.id" display="Sample ID"/>
+    <column name="occurrence_id" sql="o.id" display="Occurrence ID" in_count="true"/>
+    <column name="taxon" sql="o.taxon" display="Species"/>
+    <column name="common_name" sql="o.default_common_name" display="Common name"/>
+    <column name="taxon_group" sql="o.taxon_group" display="Taxon group"/>
+    <column name="full_precision_spatial_Ref" sql="s.entered_sref" display="Entered sref"/>
+    <column name="date" sql="to_char(o.date_start,'DD/MM/YYYY')" display="Date"/>
+    <column name="first_name" sql="savFirstName.text_value" display="First name"/>
+    <column name="last_name" sql="savLastName.text_value" display="Last name"/>
+    <column name="address" sql="savAddress.text_value" display="Address"/>
+    <column name="post_code" sql="savPostCode.text_value" display="Post code"/>
+    <column name="email" sql="savEmail.text_value" display="Email"/>
+    <column name="happy_to_be_contacted" sql="case when savContact.int_value IS NULL OR savContact.int_value=0 THEN 'No' else 'Yes' END" display="Happy to be contacted?"/>
+    <column name="sunset_or_sunrise" sql="tSunsetOrRise.term" display="Sunset or sunrise?"/>
+    <column name="number_of_surveyors" sql="savSurveyorNum.int_value" display="Number of surveyors?"/>
+    <column name="did_you_see_bats" sql="tSeeBats.term" display="Did you see bats?"/>
+    <column name="bat_id" sql="tBatId.term" display="How was bat identified?"/>
+    <column name="sighting_type" sql="tSightingType.term" display="Type of sighting"/>
+    <column name="entry_grid" sql="
+      case when oavGridId.text_value = 'bat-grid' then 'Bat (grid 1)' 
+        when oavGridId.text_value = 'other-pre-loaded-grid' then 'Other (grid 2 pre-populated)' 
+        when oavGridId.text_value = 'other-free-text-grid' then 'Other (grid 3 free entry)' 
+        else '' end" display="Entry grid"/>
+    <column name="record_status_and_substatus" sql="coalesce(cast (o.record_status as character varying),'') || coalesce(cast (o.record_substatus as character varying),'')" display="Record status"/>
+    <column name="geom" visible="false" mappable="true" sql="st_astext(s.geom)"/>
+    <column name="sref_precision" visible="false" sql="1" />
+  </columns>
+</report>

@@ -34,6 +34,7 @@
       join cache_termlists_terms p on p.id=t_r.parent_id and (p.parent_id=t_sb.id or t_r.parent_id=t_sb.id)
       left join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
       left join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
+      #joins#
       where s.id=#sample_id#
       group by t_r.id, s.id, t_r.id, case when p.id=t_sb.id then 0 else t_r.parent_id end, t_bb.term, t_sb.term,
         case when p.id=t_sb.id then '' else '&lt;span&gt;' || p.term || '&lt;/span&gt; &gt;&gt; ' end || '&lt;span&gt;' || t_r.term || '&lt;/span&gt;'
@@ -47,6 +48,9 @@
     <param name='bb_attr_id' display='Broad biotope attribute ID' datatype='integer'/>
     <param name='sb_attr_id' display='Specific biotope attribute ID' datatype='integer'/>
     <param name='r_attr_id' display='Resource attribute ID' datatype='integer'/>
+    <param name="conservation_group_id" display="Conservation group" datatype="integer" default="">
+      <join>join pantheon.conservation_groups_termlist_terms cg on cg.termlist_term_id=t_r.id</join>
+    </param>
   </params>
   <columns>
     <column name="id" sql="id" visible="false" in_count="true" />

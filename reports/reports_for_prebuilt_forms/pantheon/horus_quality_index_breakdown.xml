@@ -1,7 +1,7 @@
 <report
     title="HORUS quality index breakdown"
     description="Breakdown of values for an HORUS quality index."
-    >
+>
   <query>
     select #columns#
     from taxa_taxon_list_attribute_values ttlav

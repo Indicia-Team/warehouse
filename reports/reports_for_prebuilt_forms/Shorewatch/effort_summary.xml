@@ -21,7 +21,7 @@
   </order_bys>
   <params>
     <param name="effort_survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup"
-           population_call="direct:survey:id:title"/>
+           population_call="direct:survey:id:title"/>     
     <param name="current_user" display="User ID" description="User ID to report on." datatype="integer" />
   </params>
   <columns>

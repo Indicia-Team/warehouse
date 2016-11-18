@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Group membership by parents"
+        description="Identifies if a user is a member and administrator of a group or any of its parents.">
+  <query website_filter_field="g.website_id">
+    WITH RECURSIVE relations(from_group_id) AS (
+      SELECT #group_id# as from_group_id
+      UNION ALL
+      SELECT gr.from_group_id
+      FROM relations r, group_relations gr
+      WHERE r.from_group_id=gr.to_group_id
+    )
+    SELECT bool_or(case when u.id is null then false else true end) as member, bool_or(coalesce(u.administrator, false)) as admin
+    FROM relations r
+    LEFT JOIN groups_users u on u.group_id=r.from_group_id and u.user_id=#user_id# and u.deleted=false
+    JOIN groups g on g.id = r.from_group_id and g.deleted=false
+  </query>
+  <params>
+    <param name="group_id" display="Group" description="Select the child group to check" datatype="lookup"
+           population_call="direct:group:id:title"/>
+    <param name="user_id" display="User ID" description="User ID to lookup membership for" datatype="integer" />
+  </params>
+</report>

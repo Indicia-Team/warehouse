@@ -14,6 +14,7 @@
         WHERE l.deleted=false
         AND #website_filter#
         AND (l.location_type_id=#shorewatch_location_type_id# or #shorewatch_location_type_id#='-1') 
+        AND (l.name not like '!%' OR #hide_previous_sites#&lt;&gt;1)
         AND
         (l.created_by_id=#the_user_id# 
           OR
@@ -39,6 +40,7 @@
         <param name="person_site_attr_id" display="Person Sites Attribute ID" description="The person attribute ID used to store My Sites" datatype="integer" />
         <param name="private_location_attr_id" display="Private Location Attribute ID" description="The location attribute ID used to store whether a site is private" datatype="integer" />
         <param name="hide_all_other_users_private_sites" display="Hide all other users private sites" description="Hide all private sites in the sites list that are not 'my sites' for the supplied user." datatype="integer" emptyvalue='-1'/>
+        <param name="hide_previous_sites" display="Hide sites that are no longer used" description="Hide all sites where the site name starts with !, denoting a site that is no longer in use." datatype="integer" emptyvalue='-1'/>
       </params>
       <columns>
         <column name="id" visible="false" sql="l.id" unique="true" in_count="true" />
