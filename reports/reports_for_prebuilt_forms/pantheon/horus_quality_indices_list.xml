@@ -6,8 +6,8 @@
     select #columns#
     from taxa_taxon_list_attributes ttla
     join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_attribute_id=ttla.id and ttlav.deleted=false
-    join cache_occurrences o on o.preferred_taxa_taxon_list_id=ttlav.taxa_taxon_list_id
-    where ttla.caption='quality indices'
+    join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=ttlav.taxa_taxon_list_id
+    where ttla.description='Pantheon quality indices'
     and o.sample_id=#sample_id#
     and ttla.deleted=false
   </query>
@@ -19,6 +19,7 @@
   </params>
   <columns>
     <column name="id" sql="ttla.id" display="Attribute ID" />
-    <column name="description" sql="ttla.description" display="Quality index" />
+    <column name="caption" sql="ttla.caption" display="Quality index" />
+    <column name="count" sql="count(distinct o.preferred_taxa_taxon_list_id)" display="Count" aggregate="true" />
   </columns>
 </report>
