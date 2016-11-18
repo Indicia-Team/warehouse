@@ -11,21 +11,20 @@
     from cache_occurrences o
     join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and ttlav.deleted=false
     join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttlav.deleted=false
-    and ttla.caption in ('rarity score', 'quality indices')
+    and (ttla.caption='rarity score' or ttla.description='Pantheon quality indices')
     where o.sample_id=#sample_id#
     union
     select 3, term, array_to_string(array_agg(count::varchar || ' ' || code), '; ')
     from (
-    select cat.term, td.code, count(distinct ttl.taxon_meaning_id)
-    from taxa_taxon_lists ttl
-    join taxa_taxon_lists ttl2 on ttl2.taxon_meaning_id=ttl.taxon_meaning_id
-    join occurrences o on o.taxa_taxon_list_id=ttl2.id and o.deleted=false
-    join taxa t on t.id=ttl.taxon_id and t.deleted=false
-    join taxa_taxon_designations ttd on ttd.taxon_id=t.id and ttd.deleted=false
-    join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
-    left join list_termlists_terms cat on cat.id=td.category_id
-    where ttl.deleted=false
-    and ttl.taxon_list_id=#taxon_list_id#
+    select cat.term, td.code, count(distinct o.preferred_taxa_taxon_list_id)
+    from taxon_designations td
+    join taxa_taxon_designations ttd on ttd.taxon_designation_id=td.id and ttd.deleted=false
+    join taxa_taxon_lists ttl on ttl.taxon_id=ttd.taxon_id and ttl.deleted=false
+    join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
+    join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+    join cache_termlists_terms cat on cat.id=td.category_id
+    where td.deleted=false
+    and ttl.taxon_list_id=#
     and o.sample_id=#sample_id#
     group by cat.term, td.code
     ) as subtable

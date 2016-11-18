@@ -25,10 +25,10 @@ left join cache_termlists_terms t_r on t_r.id=av_r.int_value
 left join cache_termlists_terms t_r_parent on t_r_parent.id=t_r.parent_id
 left join cache_termlists_terms t_r_grandparent on t_r_grandparent.id=t_r_parent.parent_id
 left join taxa_taxon_list_attribute_values lguildv on lguildv.taxa_taxon_list_id=ttl.id and lguildv.deleted=false
-  and lguildv.taxa_taxon_list_attribute_id=9 -- parameter for larval guild attribute ID
+  and lguildv.taxa_taxon_list_attribute_id=#larval_guild_attr_id# -- parameter for larval guild attribute ID
 left join cache_termlists_terms lguildterm on lguildterm.id=lguildv.int_value  
 left join taxa_taxon_list_attribute_values aguildv on aguildv.taxa_taxon_list_id=ttl.id and aguildv.deleted=false
-  and aguildv.taxa_taxon_list_attribute_id=8 -- parameter for adult guild attribute ID
+  and aguildv.taxa_taxon_list_attribute_id=#adult_guild_attr_id# -- parameter for adult guild attribute ID
 left join cache_termlists_terms aguildterm on aguildterm.id=aguildv.int_value
 left join (taxa_taxon_list_attribute_values horusv
     join taxa_taxon_list_attributes horusa on horusa.id=horusv.taxa_taxon_list_attribute_id and horusa.deleted=false
@@ -47,6 +47,8 @@ where cttl.preferred=true
     <param name='sb_attr_id' display='Specific biotope attribute ID' datatype='integer'/>
     <param name='r_attr_id' display='Resource attribute ID' datatype='integer'/>
     <param name='sat_attr_id' display='SAT attribute ID' datatype='integer'/>
+    <param name='adult_guild_attr_id' display='Adult guild attribute ID' datatype='integer'/>
+    <param name='larval_guild_attr_id' display='Larval guild attribute ID' datatype='integer'/>
     <param name='taxon_group_id' display='Taxon group' description='ID of taxon group to filter to' datatype='integer' default=''>
       <where>cttl.taxon_group_id=#taxon_group_id#</where>
     </param>
