@@ -2,16 +2,33 @@
         description="Tabular output for Osiris broad biotopes for a sample.">
   <query website_filter_field="o.website_id">
     select #columns#
-    from cache_samples_functional s
-    join cache_occurrences_functional o on o.website_id=s.website_id and o.survey_id=s.survey_id and o.sample_id=s.id
-    join taxa_taxon_lists ttl on ttl.id=o.preferred_taxa_taxon_list_id
-    join taxa_taxon_list_attribute_values av_bb on av_bb.taxa_taxon_list_id=ttl.id and av_bb.deleted=false
-      and av_bb.taxa_taxon_list_attribute_id=#bb_attr_id#
-    join cache_termlists_terms t_bb on t_bb.id=av_bb.int_value
-    left join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
-    left join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
-    left join pantheon.isis_thresholds it on it.code=tcode.term
-    where s.id=#sample_id#
+    from (
+      select t_bb.id as "id",
+        s.id as "sample_id",
+        t_bb.id as "term_id",
+        t_bb.term as "term",
+        count(distinct o.preferred_taxa_taxon_list_id) as "speciescount",
+        count(distinct o.preferred_taxa_taxon_list_id)::float * 100 / (
+          select count(distinct ttlsub.preferred_taxa_taxon_list_id)
+          from cache_taxa_taxon_lists ttlsub
+          join taxa_taxon_list_attribute_values avsub
+          on avsub.taxa_taxon_list_id=ttlsub.id
+          and avsub.taxa_taxon_list_attribute_id=#bb_attr_id#
+          and avsub.int_value=t_bb.id
+        ) as "rep",
+        string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code) as "cons"
+      from cache_samples_functional s
+      join cache_occurrences_functional o on o.website_id=s.website_id and o.survey_id=s.survey_id and o.sample_id=s.id
+      join cache_taxa_taxon_lists cttl on cttl.preferred_taxa_taxon_list_id=o.preferred_taxa_taxon_list_id
+      join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
+      join taxa_taxon_list_attribute_values av_bb on av_bb.taxa_taxon_list_id=cttl.id and av_bb.deleted=false
+        and av_bb.taxa_taxon_list_attribute_id=#bb_attr_id#
+      join cache_termlists_terms t_bb on t_bb.id=av_bb.int_value
+      left join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
+      left join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
+      where s.id=#sample_id#
+      group by t_bb.id, s.id, t_bb.id, t_bb.term
+    ) as sub
   </query>
   <order_bys>
     <order_by>count desc</order_by>
@@ -21,22 +38,12 @@
     <param name="bb_attr_id" display="Broad biotope attribute ID" datatype="integer"/>
   </params>
   <columns>
-    <column name="id" sql="t_bb.id" visible="false" in_count="true" />
-    <column name="sample_id" sql="s.id" visible="false" />
-    <column name="term_id" sql="t_bb.id" visible="false" />
-    <column name="term" sql="t_bb.term" display="Broad biotope" />
-    <column name="count" sql="count(distinct o.preferred_taxa_taxon_list_id)" display="Count" aggregate="true"/>
-    <column name="rep" display="% representation" aggregate="true"
-            sql="count(distinct o.preferred_taxa_taxon_list_id) * 100 / (
-      select count(distinct ttlsub.preferred_taxa_taxon_list_id)
-      from cache_taxa_taxon_lists ttlsub
-      join taxa_taxon_list_attribute_values avsub
-        on avsub.taxa_taxon_list_id=ttlsub.id
-        and avsub.taxa_taxon_list_attribute_id=#bb_attr_id#
-        and avsub.int_value=t_bb.id
-    )" />
-    <column name="cons" display="Conservation status" aggregate="true" sql="string_agg(td.code, '|' order by td.code)" />
-    <column name="condition" sql="case when count(distinct o.preferred_taxa_taxon_list_id)>=it.threshold then 'Favourable' else 'Unfavourable' end"
-            aggregate="true" display="Reported condition" />
+    <column name="id" sql="id" visible="false" in_count="true" />
+    <column name="sample_id" sql="sample_id" visible="false" />
+    <column name="term_id" sql="term_id" visible="false" />
+    <column name="term" sql="term" display="Broad biotope" />
+    <column name="count" sql="speciescount" display="Count" />
+    <column name="rep" display="% representation" sql="case when sub.rep&lt;1 then '&lt;1' else round(sub.rep)::varchar end" />
+    <column name="cons" display="Conservation status" sql="cons" />
   </columns>
 </report>
