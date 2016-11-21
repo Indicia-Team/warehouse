@@ -246,8 +246,8 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
   }
 
   private function getReportResponse($report, $params = []) {
-    $params = array(
-      'report' => $params,
+    $requestParams = array(
+      'report' => $report,
       'reportSource' => 'local',
       'mode' => 'json',
       'auth_token' => $this->auth['read']['auth_token'],
@@ -255,7 +255,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'params' => json_encode($params)
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
-    $response = self::getResponse($url, TRUE, $params);
+    $response = self::getResponse($url, TRUE, $requestParams);
     // valid json response will decode
     return json_decode($response, true);
   }
