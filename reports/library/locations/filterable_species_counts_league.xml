@@ -8,10 +8,8 @@
     SELECT l.id, count(distinct o.taxa_taxon_list_external_key) as count
     FROM locations l
     LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
-    JOIN (index_locations_samples ils
-      JOIN samples s on s.id=ils.sample_id
-      JOIN surveys su on su.id=s.survey_id
-      JOIN cache_occurrences_functional o ON o.website_id=su.website_id and o.survey_id=su.id and o.sample_id=ils.sample_id
+    JOIN (index_locations_samples ils 
+      JOIN cache_occurrences_functional o ON o.sample_id=ils.sample_id
       #agreements_join#
       #joins#
       AND #sharing_filter# 

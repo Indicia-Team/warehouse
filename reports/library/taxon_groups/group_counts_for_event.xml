@@ -24,7 +24,7 @@
         ORDER BY count(o.*) DESC
         OFFSET #top_n_groups_to_include#
       ) as sub
-      ORDER BY cttl.taxon_group
+      ORDER BY ctll.taxon_group
       </query>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
