@@ -149,6 +149,7 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
     
     $this->assertTrue($response['result'], 'Invalid response');
     $this->assertInternalType('array', $errors, 'Errors list not returned');
+    $this->assertEquals(1, count($errors), 'Errors list empty. Is the data_cleaner_period_within_year module installed?');
     $this->assertArrayHasKey('taxa_taxon_list_id', $errors[0], 'Errors list missing taxa_taxon_list_id');
     $this->assertEquals('1', $errors[0]['taxa_taxon_list_id'], 'Incorrect taxa_taxon_list_id returned');
     $this->assertArrayHasKey('message', $errors[0], 'Errors list missing message');
