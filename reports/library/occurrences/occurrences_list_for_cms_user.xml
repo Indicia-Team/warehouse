@@ -2,7 +2,7 @@
     title="Occurrence list for a CMS user"
     description="A general purpose list of records filtered according to the ID of the user when logged into the content management system."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" count_field="o.*">
   SELECT #field_sql#
   FROM cache_occurrences o
   JOIN occurrences occ ON occ.id=o.id AND occ.deleted = FALSE

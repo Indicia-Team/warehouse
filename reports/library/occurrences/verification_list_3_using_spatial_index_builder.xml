@@ -4,7 +4,7 @@
         This version depends on the Spatial Index Builder module to index the list of locations that users can set in their preferences
         as their locality, for significantly improved performance."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN samples s on s.id=o.sample_id
