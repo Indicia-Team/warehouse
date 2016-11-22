@@ -896,13 +896,13 @@ class ReportEngine {
    * @link http://stackoverflow.com/questions/6037843/extremely-slow-postgresql-query-with-order-and-limit-clauses
    */
   private function optimiseQueryPlan($orderBy) {
-    if (strtolower($orderBy) === 'o.id desc'
+    if (preg_match('/o.id (desc|asc)/i', $orderBy)
         && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount']==='1') || isset($_REQUEST['knownCount']))) {
       // grab the count now. If less than the limit, we fudge the order by to switch query plan.
       $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->record_count();
       if ($count !== false && $count < $this->limit) {
         kohana::log('debug', 'Optimising query plan by changing sort order to o.id+0.');
-        return 'o.id+0 DESC';
+        return str_replace('.id', '.id+0', $orderBy);
       }
     }
     return $orderBy;
