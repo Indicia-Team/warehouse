@@ -260,10 +260,10 @@ class report_standard_params_occurrences {
         'lookup_values'=>'R:Released,RM:Released by other recorders plus my own unreleased records;U:Unreleased because part of a project that has not yet released the records,' .
           'P:Recorder has requested a precheck before release,A:All',
         'wheres' => array(
-          array('value'=>'R', 'operator'=>'equal', 'sql'=>"(o.release_status='R' or o.release_status is null)"),
-          array('value'=>'U', 'operator'=>'equal', 'sql'=>"(o.release_status='U' or o.release_status is null)"),
-          array('value'=>'P', 'operator'=>'equal', 'sql'=>"(o.release_status='P' or o.release_status is null)"),
-          array('value'=>'RM', 'operator'=>'equal', 'sql'=>"(o.release_status='R' or o.release_status is null or o.created_by_id=#user_id#)"),
+          array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.release_status='R'"),
+          array('value'=>'U', 'operator'=>'equal', 'sql'=>"o.release_status='U'"),
+          array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.release_status='P'"),
+          array('value'=>'RM', 'operator'=>'equal', 'sql'=>"o.release_status='R' or o.created_by_id=#user_id#"),
           // The all filter does not need any SQL
         ),
       ),
