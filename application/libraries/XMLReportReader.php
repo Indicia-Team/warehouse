@@ -166,6 +166,9 @@ class XMLReportReader_Core implements ReportReader
                 if (!$this->people_id_field = $reader->getAttribute('people_id_field'))
                   // default table alias for the people table, so we can join to the id
                   $this->people_id_field = 'p.id';
+                if (!$this->count_field = $reader->getAttribute('count_field'))
+                  // field used in count queries unless in_count fields are specified
+                  $this->count_field = '*';
                 // load the standard set of parameters for consistent filtering of reports?
                 $standardParams = $reader->getAttribute('standard_params');
                 if ($standardParams!==null)
@@ -271,7 +274,7 @@ class XMLReportReader_Core implements ReportReader
         // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
         // otherwise the same.
         if (!empty($field_sql)) {
-          $this->countQuery = str_replace('#field_sql#', ' count(*) ', $this->query);
+          $this->countQuery = str_replace('#field_sql#', ' count(' . $this->count_field . ') ', $this->query);
           $this->query = str_replace('#field_sql#', $field_sql, $this->query);
         }
         // column SQL is part of the SQL statement, or defined in a field_sql element.
@@ -419,7 +422,7 @@ class XMLReportReader_Core implements ReportReader
       $this->countQuery = str_replace('#columns#', ' count(distinct ' . $countSql[0] . ') ', $this->query);
     }
     else {
-      $this->countQuery = str_replace('#columns#', ' count(*) ', $this->query);
+      $this->countQuery = str_replace('#columns#', ' count(' . $this->count_field . ') ', $this->query);
     }
     // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to
     // add custom attribute fields.
