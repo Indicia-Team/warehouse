@@ -104,11 +104,8 @@ class report_standard_params_occurrences {
       ),
       'taxon_rank_sort_order' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Taxon rank',
         'description'=>'Rank of the identified taxon in the taxonomic hierarchy',
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
-        ),
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"prefcttl.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
         )
       ),
       'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name',
@@ -260,10 +257,10 @@ class report_standard_params_occurrences {
         'lookup_values'=>'R:Released,RM:Released by other recorders plus my own unreleased records;U:Unreleased because part of a project that has not yet released the records,' .
           'P:Recorder has requested a precheck before release,A:All',
         'wheres' => array(
-          array('value'=>'R', 'operator'=>'equal', 'sql'=>"(o.release_status='R' or o.release_status is null)"),
-          array('value'=>'U', 'operator'=>'equal', 'sql'=>"(o.release_status='U' or o.release_status is null)"),
-          array('value'=>'P', 'operator'=>'equal', 'sql'=>"(o.release_status='P' or o.release_status is null)"),
-          array('value'=>'RM', 'operator'=>'equal', 'sql'=>"(o.release_status='R' or o.release_status is null or o.created_by_id=#user_id#)"),
+          array('value'=>'R', 'operator'=>'equal', 'sql'=>"o.release_status='R'"),
+          array('value'=>'U', 'operator'=>'equal', 'sql'=>"o.release_status='U'"),
+          array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.release_status='P'"),
+          array('value'=>'RM', 'operator'=>'equal', 'sql'=>"o.release_status='R' or o.created_by_id=#user_id#"),
           // The all filter does not need any SQL
         ),
       ),
@@ -470,7 +467,15 @@ class report_standard_params_occurrences {
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.images is not null")
         )
-      )
+      ),
+      'taxon_rank_sort_order' => array(
+        'joins' => array(
+          array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
+        ),
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>"prefcttl.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
+        )
+      ),
     );
   }
 
