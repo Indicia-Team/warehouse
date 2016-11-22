@@ -900,11 +900,9 @@ class ReportEngine {
         && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount']==='1') || isset($_REQUEST['knownCount']))) {
       // grab the count now. If less than the limit, we fudge the order by to switch query plan.
       $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->record_count();
-      if ($count) {
-        if ($count < $this->limit) {
-          kohana::log('debug', 'Optimising query plan by changing sort order.');
-          return 'o.id+0 DESC';
-        }
+      if ($count !== false && $count < $this->limit) {
+        kohana::log('debug', 'Optimising query plan by changing sort order to o.id+0.');
+        return 'o.id+0 DESC';
       }
     }
     return $orderBy;
