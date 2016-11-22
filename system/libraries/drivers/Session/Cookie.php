@@ -61,7 +61,13 @@ class Session_Cookie_Driver implements Session_Driver {
 
 	public function destroy($id)
 	{
-		return cookie::delete($this->cookie_name);
+		if ( ! isset($_COOKIE[$this->cookie_name])) {
+			// Cookie is already destroyed
+			return TRUE;
+		}
+		else {
+			return cookie::delete($this->cookie_name);
+		}
 	}
 
 	public function regenerate()

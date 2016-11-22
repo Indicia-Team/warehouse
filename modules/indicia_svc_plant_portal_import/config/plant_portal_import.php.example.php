@@ -14,20 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Config
- * @author  Indicia Team
- * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link  http://code.google.com/p/indicia/
+ * @package	Core
+ * @subpackage Data Cleaner
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
  */
 
 defined('SYSPATH') or die('No direct script access.');
 
-/**
- * @var string The application files version number.
- */
-$config['version'] = '1.16.5';
-$config['release_date']  = '2016-11-21';
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+$config['sample_group_smp_attr_id'] = 1;
+$config['plot_group_smp_attr_id'] = 2;
+$config['sample_group_perm_psn_attr_id'] = 3;
+$config['plot_group_perm_psn_attr_id'] = 4;
 
 ?>
