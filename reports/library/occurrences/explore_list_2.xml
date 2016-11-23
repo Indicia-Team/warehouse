@@ -3,7 +3,7 @@
     description="Report designed for the explore records facility in iRecord, with additional parameters. This must be used alongside 
     Explore records 2 mapping if maps are required. Uses a spatial intersection to determine the records in the supplied boundary."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id

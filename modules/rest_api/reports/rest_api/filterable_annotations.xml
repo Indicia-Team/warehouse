@@ -2,7 +2,7 @@
     title="Annotations for REST API"
     description="Retrieves record annotations to support the REST api module. Compatible with the standard report filter parameters."
     >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true" count_field="oc.*">
     select #columns#
     from occurrence_comments oc
     join cache_occurrences o on o.id=oc.occurrence_id

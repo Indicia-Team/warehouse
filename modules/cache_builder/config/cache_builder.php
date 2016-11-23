@@ -378,7 +378,9 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
 $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon_searchterms cts
     set taxa_taxon_list_id=cttl.id,
       taxon_list_id=cttl.taxon_list_id,
-      searchterm=regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon || coalesce(cttl.authority, '')), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
+      searchterm=regexp_replace(lower(
+          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+        ), E'[^a-z0-9\\\\?\\\\+]', '', 'g'),                 
       original=cttl.taxon,
       taxon_group_id=cttl.taxon_group_id,
       taxon_group=cttl.taxon_group,
@@ -396,7 +398,9 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
       code_type_id=null,
       source_id=null,
       preferred=cttl.preferred,
-      searchterm_length=length(regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
+      searchterm_length=length(regexp_replace(lower(
+          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+        ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       parent_id=cttl.parent_id,
       preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
       marine_flag=cttl.marine_flag,
@@ -492,7 +496,9 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
       marine_flag, external_key, authority
     )
     select distinct on (cttl.id) cttl.id, cttl.taxon_list_id, 
-      regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon || coalesce(cttl.authority, '')), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
+      regexp_replace(lower(
+          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+        ), E'[^a-z0-9\\\\?\\\\+]', '', 'g'), 
       cttl.taxon, cttl.taxon_group_id, cttl.taxon_group, cttl.taxon_meaning_id, cttl.preferred_taxon,
       cttl.default_common_name, cttl.authority, cttl.language_iso, 
       case
@@ -500,7 +506,9 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
         when cttl.language_iso='lat' and cttl.id<>cttl.preferred_taxa_taxon_list_id then 'S' 
         else 'V'
       end, true, null, cttl.preferred, 
-      length(regexp_replace(regexp_replace(regexp_replace(lower(cttl.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
+      length(regexp_replace(lower(
+          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+        ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       cttl.parent_id, cttl.preferred_taxa_taxon_list_id, cttl.marine_flag, cttl.external_key, cttl.authority
     from cache_taxa_taxon_lists cttl
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
@@ -998,8 +1006,7 @@ $config['samples']['extra_multi_record_updates']=array(
     and (
       nullif(cs.attr_full_name, '') is not null or
       nullif(cs.attr_last_name, '') is not null
-    )
-    and cs.id in (#ids#);",
+    );",
   // Sample recorder names in parent sample
   'Parent sample recorder names' => 'update cache_samples_nonfunctional cs
     set recorders=sp.recorder_names
@@ -1055,7 +1062,7 @@ $config['samples']['extra_multi_record_updates']=array(
   // warehouse username
   'Warehouse username' => 'update cache_samples_nonfunctional cs
     set recorders=u.username
-    from needs_update_samples nu users u
+    from needs_update_samples nu, users u
     join cache_samples_functional csf on csf.created_by_id=u.id
     where cs.recorders is null and nu.id=cs.id
     and cs.id=csf.id and u.id<>1;'
@@ -1155,10 +1162,8 @@ $config['occurrences']['get_missing_items_query'] = "
 
 $config['occurrences']['get_changed_items_query'] = "
   select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
-    from (select o.id, o.deleted 
-    from occurrences o
-    where o.updated_on>'#date#' 
-    union
+    from (
+    -- don't pick up changes to occurrences at this point, as they are updated immediately
     select o.id, s.deleted 
     from occurrences o
     join samples s on s.id=o.sample_id
@@ -1187,12 +1192,6 @@ $config['occurrences']['get_changed_items_query'] = "
     join taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id
     where ttl.updated_on>'#date#' 
     union
-    select o.id, false
-    from occurrences o
-    join samples s on s.id=o.sample_id
-    join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
-    where tmethod.cache_updated_on>'#date#'
-    union
     select om.occurrence_id, false
     from occurrence_media om
     where om.updated_on>'#date#'
@@ -1202,6 +1201,11 @@ $config['occurrences']['get_changed_items_query'] = "
     where oc.auto_generated=false and oc.updated_on>'#date#'
     ) as sub
     group by id";
+
+$config['occurrences']['delete_query']=array("
+delete from cache_occurrences_functional where id in (select id from needs_update_occurrences where deleted=true);
+delete from cache_occurrences_nonfunctional where id in (select id from needs_update_occurrences where deleted=true);
+");
 
 $config['occurrences']['update']['functional'] = "
 UPDATE cache_occurrences_functional
@@ -1423,28 +1427,28 @@ WHERE cache_occurrences_nonfunctional.id=o.id
 ";
 
 $config['occurrences']['update']['nonfunctional_media'] = "
-UPDATE cache_occurrences_nonfunctional o
+UPDATE cache_occurrences_nonfunctional onf
 SET media=(SELECT array_to_string(array_agg(om.path), ',')
-FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
-FROM occurrences occ
+FROM occurrence_media om WHERE om.occurrence_id=onf.id AND om.deleted=false)
+FROM occurrences o
 #join_needs_update#
-WHERE occ.id=o.id
-AND occ.deleted=false
+WHERE o.id=onf.id
+AND o.deleted=false
 ";
 
 $config['occurrences']['update']['nonfunctional_data_cleaner_info'] = "
-UPDATE cache_occurrences_nonfunctional o
+UPDATE cache_occurrences_nonfunctional onf
 SET data_cleaner_info=
-  CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE
+  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
     COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
       FROM occurrence_comments oc
-      WHERE oc.occurrence_id=o.id
+      WHERE oc.occurrence_id=onf.id
          AND oc.implies_manual_check_required=true
          AND oc.deleted=false), 'pass') END
-FROM occurrences occ
+FROM occurrences o
 #join_needs_update#
-WHERE occ.id=o.id
-AND occ.deleted=false
+WHERE o.id=onf.id
+AND o.deleted=false
 ";
 
 $config['occurrences']['update']['nonfunctional_sensitive'] = "
@@ -1672,28 +1676,28 @@ WHERE cache_occurrences_nonfunctional.id=o.id
 ";
 
 $config['occurrences']['insert']['nonfunctional_media'] = "
-UPDATE cache_occurrences_nonfunctional o
+UPDATE cache_occurrences_nonfunctional onf
 SET media=(SELECT array_to_string(array_agg(om.path), ',')
-FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
-FROM occurrences occ
+FROM occurrence_media om WHERE om.occurrence_id=onf.id AND om.deleted=false)
+FROM occurrences o
 #join_needs_update#
-WHERE occ.id=o.id
-AND occ.deleted=false
+WHERE o.id=onf.id
+AND o.deleted=false
 ";
 
 $config['occurrences']['insert']['nonfunctional_data_cleaner_info'] = "
-UPDATE cache_occurrences_nonfunctional o
+UPDATE cache_occurrences_nonfunctional onf
 SET data_cleaner_info=
-  CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE
+  CASE WHEN o.last_verification_check_date IS NULL THEN NULL ELSE
     COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
       FROM occurrence_comments oc
-      WHERE oc.occurrence_id=o.id
+      WHERE oc.occurrence_id=onf.id
          AND oc.implies_manual_check_required=true
          AND oc.deleted=false), 'pass') END
-FROM occurrences occ
+FROM occurrences o
 #join_needs_update#
-WHERE occ.id=o.id
-AND occ.deleted=false
+WHERE o.id=onf.id
+AND o.deleted=false
 ";
 
 $config['occurrences']['insert']['nonfunctional_sensitive'] = "
