@@ -245,6 +245,25 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       "testReportLibraryLocationsFilterableRecordCountsLeague returned error. See log for details");
   }
 
+  public function testReportLibraryLocationsLocationsList() {
+    Kohana::log('debug',
+      "Running unit test, Controllers_Services_Report_Test::testReportLibraryLocationsLocationsList");
+    $response = $this->getReportResponse(
+      'library/locations/locations_list.xml', array('location_type_id' => 2, 'locattrs' => ''));
+    // Simply testing that the report parses and the SQL runs
+    $this->assertFalse(isset($response['error']),
+      "testReportLibraryLocationsLocationsList returned error when passed integer location type id. See log for details");
+    $this->assertCount(1, $response, 'Report response should only include 1 record');
+    $this->assertEquals($response[0]['name'], 'Test location', 'Locations list report returned incorrect location name.');
+    $response = $this->getReportResponse(
+      'library/locations/locations_list.xml', array('location_type_id' => 'Test location type', 'locattrs' => ''));
+    // Simply testing that the report parses and the SQL runs
+    $this->assertFalse(isset($response['error']),
+      "testReportLibraryLocationsLocationsList returned error when passed a string location type id. See log for details");
+    $this->assertCount(1, $response, 'Report response should only include 1 record');
+    $this->assertEquals($response[0]['name'], 'Test location', 'Locations list report returned incorrect location name.');
+  }
+
   private function getReportResponse($report, $params = []) {
     $requestParams = array(
       'report' => $report,
