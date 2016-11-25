@@ -1,0 +1,42 @@
+<report
+    title="Locations list 2"
+    description="A general purpose list of locations including option to filter by an intersecting point."
+>
+  <query website_filter_field="" training_filter_field="">
+    SELECT #columns#
+    FROM locations l
+    LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+    LEFT JOIN cache_termlists_terms ttype ON ttype.id=l.location_type_id
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+    AND l.deleted=false
+    AND (l.public=true or lw.website_id in (#website_ids#))
+    #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="location_type_id" display="Location Type" datatype="lookup" default=""
+           description="Select the location type, or leave blank to not filter by location type."
+           population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=">
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+    <param name="locattrs" display="Location attribute list" datatype="locattrs" default=""
+           description="Comma separated list of location attribute IDs to include" />
+    <param name="intersects" display="Intersects with" datatype="text" default=""
+           description="Geometry to filter to locations intersecting with as WKT, Web Mercator projection">
+      <where>st_intersects(l.boundary_geom, st_geomfromtext('#intersects#', 900913))
+        and not st_touches(l.boundary_geom, st_geomfromtext('#intersects#', 900913))</where>
+    </param>
+  </params>
+  <columns>
+    <column name="location_id" display="ID" sql="l.id" />
+    <column name="name" display="Name" sql="l.name" />
+    <column name="location_type_id" visible="false" sql="l.location_type_id" />
+    <column name="location_type" display="Type" sql="ttype.term" />
+    <column name="centroid_sref" display="Centroid" sql="l.centroid_sref" />
+    <column name="centroid_sref_system" visible="false" sql="l.centroid_sref_system" />
+  </columns>
+</report>
