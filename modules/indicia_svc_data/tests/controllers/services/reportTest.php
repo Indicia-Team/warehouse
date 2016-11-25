@@ -271,14 +271,14 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'library/locations/locations_list_2.xml', array('location_type_id' => 2, 'locattrs' => ''));
     // Simply testing that the report parses and the SQL runs
     $this->assertFalse(isset($response['error']),
-      "testReportLibraryLocationsLocationsList returned error when passed a string location type id. See log for details");
+      "testReportLibraryLocationsLocationsList2 returned an error. See log for details");
     $this->assertCount(1, $response, 'Report response should only include 1 record');
     $this->assertEquals($response[0]['name'], 'Test location', 'Locations list report returned incorrect location name.');
     $response = $this->getReportResponse(
       'library/locations/locations_list_2.xml', array('location_type_id' => 99999, 'locattrs' => ''));
     // Simply testing that the report parses and the SQL runs
     $this->assertFalse(isset($response['error']),
-      "testReportLibraryLocationsLocationsList returned error when passed a string location type id. See log for details");
+      "testReportLibraryLocationsLocationsList2 returned an error when filtering for a missing location type ID. See log for details");
     $this->assertCount(0, $response, 'Report response be empty, location type filter failed');
   }
 
