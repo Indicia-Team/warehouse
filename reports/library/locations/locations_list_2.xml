@@ -2,7 +2,7 @@
     title="Locations list 2"
     description="A general purpose list of locations including option to filter by an intersecting point."
 >
-  <query website_filter_field="lw.website_id">
+  <query website_filter_field="" training_filter_field="">
     SELECT #columns#
     FROM locations l
     LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
@@ -11,6 +11,7 @@
     #joins#
     WHERE #sharing_filter#
     AND l.deleted=false
+    AND (l.public=true or lw.website_id in (#website_ids#))
     #order_by#
   </query>
   <order_bys>
@@ -24,6 +25,11 @@
     </param>
     <param name="locattrs" display="Location attribute list" datatype="locattrs" default=""
            description="Comma separated list of location attribute IDs to include" />
+    <param name="intersects" display="Intersects with" datatype="text" default=""
+           description="Geometry to filter to locations intersecting with as WKT, Web Mercator projection">
+      <where>st_intersects(l.boundary_geom, st_geomfromtext('#intersects#', 900913))
+        and not st_touches(l.boundary_geom, st_geomfromtext('#intersects#', 900913))</where>
+    </param>
   </params>
   <columns>
     <column name="location_id" display="ID" sql="l.id" />
