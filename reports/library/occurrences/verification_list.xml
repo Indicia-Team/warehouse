@@ -2,7 +2,7 @@
     title="Occurrence list for verification"
     description="List of occurrences for verification."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" count_field="o.*">
   SELECT #field_sql#
   FROM occurrences o
   JOIN samples s ON s.id=o.sample_id AND s.deleted = FALSE

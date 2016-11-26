@@ -2,7 +2,7 @@
     title="Auto-checked verification data"
     description="List of occurrences for verification with support for mapping the occurrences and the verification check system."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN occurrences xo ON xo.id=o.id AND xo.deleted=false

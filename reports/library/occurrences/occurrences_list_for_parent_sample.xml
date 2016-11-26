@@ -2,7 +2,7 @@
     title="Occurrence list for parent supersample"
     description="A general purpose list of records, filtered to all those contained within a top level sample, in a 2 level sample hierarchy."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" count_field="o.*">
   SELECT #field_sql#
   FROM cache_occurrences o
   JOIN samples s ON s.id=o.sample_id AND s.deleted = FALSE
