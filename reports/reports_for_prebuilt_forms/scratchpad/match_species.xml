@@ -6,16 +6,21 @@
     SELECT #columns#
     FROM cache_taxa_taxon_lists cttl
     WHERE cttl.taxon_list_id=#taxon_list_id#
-    AND (LOWER(cttl.external_key) IN (#list#))
+    AND (
+      (LOWER(cttl.external_key) IN (#list#) and preferred=true)
+      OR cttl.search_name IN (#simplified_list#)
+    )
   </query>
   <params>
     <param name="taxon_list_id" datatype="integer" />
     <param name="list" datatype="text[]" />
+    <param name="simplified_list" datatype="text[]" />
   </params>
   <columns>
     <column name='id' display='Name' sql='cttl.preferred_taxa_taxon_list_id' datatype='integer' />
-    <column name='label' display='Species' sql="cttl.taxon" />
-    <column name="search_value" display="Searched value" />
+    <column name='external_key' display='External key' sql="coalesce(cttl.external_key, '')" />
+    <column name='taxon' display='Species' sql="cttl.taxon" />
+    <column name='simplified' display='Simplified' sql="cttl.search_name" />
   </columns>
 </report>
 
