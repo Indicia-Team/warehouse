@@ -66,7 +66,7 @@
     </param>
     <param name="from_group_id" display="From parent group" description="Only include groups which are linked to from another group (e.g. find the children of a parent group)."
            datatype="text" default="">
-      <join>JOIN group_relations grfrom ON grfrom.to_group_id=g.id AND grfrom.from_group_id=#from_group_id# AND grfrom.deleted=false</join>
+      <where>grparent1.from_group_id=#from_group_id#</where>
     </param>
     <param name="to_group_id" display="From parent group" description="Only include groups which are linked from to another group (e.g. find the parent(s) of a child group)."
            datatype="text" default="">
