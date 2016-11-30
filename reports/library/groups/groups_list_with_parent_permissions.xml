@@ -17,6 +17,7 @@
       (((gp.administrator=false OR gu.administrator=true) and gu.id is not null AND gu.pending=false) OR gp.administrator is null) AND
       (gu.administrator=true OR COALESCE(gu.access_level, 0)&gt;=COALESCE(gp.access_level, 0))
     LEFT JOIN group_pages gpall ON gpall.group_id=g.id AND gpall.deleted=false
+    LEFT JOIN groups gparent ON gparent.id=grparent1.from_group_id AND gparent.deleted=false
     #joins#
     WHERE g.deleted = false
     AND #website_filter#
@@ -83,6 +84,7 @@
     <column name="group_type_id" visible="false" sql="g.group_type_id" datatype="integer" />
     <column name="joining_method_raw" visible="false" sql="g.joining_method" datatype="text" />
     <column name="title" display="Name" sql="g.title" datatype="text" />
+    <column name="parent_title" visible="false" sql="gparent.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
     <column name="administrator" display="Admin" datatype="boolean" visible="false" aggregate="true"
             sql="case max(case guincparents.administrator when true then 1 else 0 end) when 1 then true else false end" />
