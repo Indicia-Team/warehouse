@@ -77,7 +77,7 @@ class ReportEngine {
   /**
    * @var array List of filters to put in HAVING
    */
-  private $having = [];
+  private $having = array();
 
   /**
    * @var array A list of additional columns identified from custom attribute parameters.
