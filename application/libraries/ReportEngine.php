@@ -875,7 +875,9 @@ class ReportEngine {
           $orderBy = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
       if ($orderBy) {
         $orderBy = $this->checkOrderByForVagueDate($orderBy);
-        $orderBy = $this->optimiseQueryPlan($orderBy);
+        if (strpos($query, 'distinct on')===FALSE) {
+          $orderBy = $this->optimiseQueryPlan($orderBy);
+        }
         // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
         $count=0;
         $query = preg_replace("/#order_by#/",  "ORDER BY $orderBy", $query, -1, $count);
