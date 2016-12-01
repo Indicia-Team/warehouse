@@ -333,7 +333,14 @@ class ReportEngine {
         $unlimitedQuery = preg_replace('/LIMIT \d+/i', '', $this->query);
         $this->countQuery = "SELECT count(*) FROM ($unlimitedQuery) AS subquery";
       }
+      $tm = microtime(true);
       $r = $this->reportDb->query($this->countQuery)->result_array(FALSE);
+      $tm = microtime(true) - $tm;
+      if ($tm>5) {
+        kohana::log('alert', "Count query took $tm seconds.");
+        kohana::log('alert', $this->report);
+        kohana::log('alert', $this->countQuery);
+      }
       // query could return no rows, in which case return zero. Or multiple if counting several UNIONED queries.
       $count=0;
       foreach ($r as $row)
@@ -868,7 +875,9 @@ class ReportEngine {
           $orderBy = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
       if ($orderBy) {
         $orderBy = $this->checkOrderByForVagueDate($orderBy);
-        $orderBy = $this->optimiseQueryPlan($orderBy);
+        if (strpos($query, 'distinct on')===FALSE) {
+          $orderBy = $this->optimiseQueryPlan($orderBy);
+        }
         // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
         $count=0;
         $query = preg_replace("/#order_by#/",  "ORDER BY $orderBy", $query, -1, $count);
@@ -1490,7 +1499,6 @@ class ReportEngine {
 
   private function executeQuery()
   {
-    Kohana::log('debug', "Running report query : ".$this->query);
     $tm = microtime(true);
     $this->response = $this->reportDb->query($this->query);
     $tm = microtime(true) - $tm;
@@ -1498,6 +1506,8 @@ class ReportEngine {
       kohana::log('alert', "Report query took $tm seconds.");
       kohana::log('alert', $this->report);
       kohana::log('alert', $this->query);
+    } else {
+      Kohana::log('debug', "Run report query : ".$this->query);
     }
   }
 
