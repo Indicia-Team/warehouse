@@ -417,7 +417,8 @@ class report_standard_params_occurrences {
       'input_date_to' => array(
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
-            'sql'=>"('#input_date_to#'='Click here' OR (o.cache_created_on <= '#input_date_to#'::timestamp OR (length('#input_date_to#')<=10 AND o.cache_created_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
+            'sql'=>"('#input_date_to#'='Click here' OR (o.cache_created_on <= '#input_date_to#'::timestamp " .
+                "OR (length('#input_date_to#')<=10 AND o.cache_created_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'input_date_age' => array(
@@ -434,8 +435,8 @@ class report_standard_params_occurrences {
       'edited_date_to' => array(
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
-            'sql'=>"('#edited_date_to#'='Click here' OR (o.cache_updated_on <= '#edited_date_to#'::timestamp ' .
-                'OR (length('#edited_date_to#')<=10 AND o.cache_updated_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
+            'sql'=>"('#edited_date_to#'='Click here' OR (o.cache_updated_on <= '#edited_date_to#'::timestamp " .
+                "OR (length('#edited_date_to#')<=10 AND o.cache_updated_on < cast('#edited_date_to#' as date) + '1 day'::interval)))")
         )
       ),
       'edited_date_age' => array(
