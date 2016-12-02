@@ -161,7 +161,12 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("taxon-observations", self::$userId, self::$config['shared_secret'],
-        array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'));
+        array(
+          'proj_id' => $projDef['id'],
+          'edited_date_from' => '2015-01-01',
+          'edited_date_to' => date("Y-m-d\TH:i:s")
+        )
+      );
       $this->assertResponseOk($response, '/taxon-observations');
       $apiResponse = json_decode($response['response'], true);
       $this->assertArrayHasKey('paging', $apiResponse, 'Paging missing from response to call to taxon-observations');
