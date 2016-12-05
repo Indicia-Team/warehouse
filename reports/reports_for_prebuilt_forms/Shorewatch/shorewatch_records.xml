@@ -80,6 +80,9 @@
     <param name="my_own_locality" display="My sites only?" datatype="checkbox" emptyvalue="">
       <where value="1">l.created_by_id=#current_user# OR pav.id IS NOT NULL</where>  
     </param>
+    <param name="my_own_data" display="My data only?" datatype="checkbox" emptyvalue="">
+      <where value="1">o.created_by_id=#current_user#</where>
+    </param>
     <param name="high_certainty_only" display="Verified and High Certainty Sightings Only" datatype="checkbox" emptyvalue="" default=''>
       <where value="1">(o.record_status = 'V' OR (o.record_status not in ('R', 'T') AND o.certainty='C'))</where>  
     </param>
