@@ -41,6 +41,9 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
+    <param name="idlist" display="List of IDs" description="Comma separated list of occurrence IDs to filter by." datatype="idlist" emptyvalue="" default="">
+      <where>o.id IN (#idlist#)</where>
+    </param>
     <param name="taxon_meaning_id" display="Species" description="Species name to filter by." datatype="lookup"
         population_call='report:library/taxa/get_species_names_for_website:taxon_meaning_id:name_common_preferred'>
       <where>o.taxon_meaning_id=#taxon_meaning_id#</where>
@@ -76,9 +79,6 @@
     <param name='my_sites_person_attr_id' display='My Sites Person Attribute Id' description='Id of the my sites person attribute' datatype='integer' default=''/>
     <param name="my_own_locality" display="My sites only?" datatype="checkbox" emptyvalue="">
       <where value="1">l.created_by_id=#current_user# OR pav.id IS NOT NULL</where>  
-    </param>
-    <param name="my_own_data" display="My data only?" datatype="checkbox" emptyvalue="">
-      <where value="1">o.created_by_id=#current_user#</where>
     </param>
     <param name="high_certainty_only" display="Verified and High Certainty Sightings Only" datatype="checkbox" emptyvalue="" default=''>
       <where value="1">(o.record_status = 'V' OR (o.record_status not in ('R', 'T') AND o.certainty='C'))</where>  
