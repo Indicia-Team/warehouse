@@ -23,7 +23,6 @@
       LEFT JOIN samples s1
         ON s1.location_id=l2.id
           AND s1.deleted=false
-          AND s1.survey_id = #survey_id#
           AND s1.sample_method_id = #effort_sample_method_id#
           AND (#current_year# = 0 OR EXTRACT(YEAR FROM s1.date_start) = EXTRACT(YEAR FROM now()))
           AND (#observer_functionality_flag# &lt;= 0 OR s1.created_by_id = #observer_functionality_flag#)
@@ -70,13 +69,15 @@
             description='Select the location type, or leave blank to not filter by location type.'
             datatype='lookup'
             population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' >
-        <where>l2.location_type_id=#location_type_id#</where>
+        <where>l2.location_type_id = #location_type_id#</where>
     </param>
     <param name='survey_id'
             display='Survey'
-            description='Select the survey. Mandatory.'
+            description='Select the survey.'
             datatype='lookup'
-            population_call='direct:survey:id:title' />
+            population_call='direct:survey:id:title' >
+        <where>s1.survey_id = #survey_id#</where>
+    </param>
     <param name='effort_sample_method_id'
             display='Effort Sample Method'
             description='Select the effort sample method. Mandatory.'

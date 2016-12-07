@@ -13,7 +13,7 @@
           COUNT(distinct s1.id) AS number_watches,
           MAX(s1.date_start) AS last_watch,
           COUNT(distinct sav1.id) AS number_cetacean_watches,
-          COUNT(distinct s2.id) AS number_sightings,
+          COUNT(distinct co.id) AS number_sightings,
           string_agg(distinct co.taxon || ' (' || co.preferred_taxon || ')', ',') AS species_seen
       FROM samples s1
       LEFT JOIN samples s2
@@ -29,7 +29,6 @@
       #joins#
       WHERE s1.deleted=false
         AND (#current_year# = 0 OR EXTRACT(YEAR FROM s1.date_start) = EXTRACT(YEAR FROM now()))
-        AND s1.survey_id = #survey_id#
         AND s1.sample_method_id = #effort_sample_method_id#
         #filters#
       GROUP by s1.created_by_id, year, month
@@ -44,9 +43,11 @@
   <params>
     <param name='survey_id'
             display='Survey'
-            description='Select the survey. Mandatory.'
+            description='Select the survey.'
             datatype='lookup'
-            population_call='direct:survey:id:title' />
+            population_call='direct:survey:id:title' >
+        <where>s1.survey_id = #survey_id#</where>
+    </param>
     <param name='effort_sample_method_id'
             display='Effort Sample Method'
             description='Select the effort sample method. Mandatory.'
