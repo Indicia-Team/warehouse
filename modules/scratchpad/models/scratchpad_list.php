@@ -47,4 +47,52 @@ class Scratchpad_list_Model extends ORM {
     return parent::validate($array, $save);
   }
 
+  /**
+   * Return the submission structure, which includes defining taxon and taxon_meaning
+   * as the parent (super) models, and the synonyms and commonNames as metaFields which
+   * are specially handled.
+   *
+   * @return array Submission structure for a taxa_taxon_list entry.
+   */
+  public function get_submission_structure()
+  {
+    return array(
+      'model'=>$this->object_name,
+      'metaFields'=>array('entries')
+    );
+  }
+
+  public function postSubmit($isInsert) {
+    kohana::log('debug', 'Submission: ' . var_export($this->submission, true));
+    if (array_key_exists('metaFields', $this->submission) &&
+        array_key_exists('entries', $this->submission['metaFields'])) {
+      $entries = explode(';', $this->submission['metaFields']['entries']['value']);
+      kohana::log('debug', var_export($entries, true));
+      if (!$isInsert) {
+        $this->db->query('delete from scratchpad_list_entries where scratchpad_list_id=' . $this->id .
+            ' and entry_id not in (' . implode(',', $entries) . ')');
+        kohana::log('debug', 'delete from scratchpad_list_entries where scratchpad_list_id=' . $this->id .
+          ' and entry_id not in (' . implode(',', $entries) . ')');
+      }
+      foreach ($entries as $entry_id) {
+        // insert any from the list that are not in the database.
+        $this->db->query(<<<SQL
+insert into scratchpad_list_entries (scratchpad_list_id, entry_id)
+select $this->id, $entry_id where not exists (
+  select true from scratchpad_list_entries where scratchpad_list_id=$this->id and entry_id=$entry_id
+)
+SQL
+        );
+        kohana::log('debug', <<<SQL
+insert into scratchpad_list_entries (scratchpad_list_id, entry_id)
+select $this->id, $entry_id where not exists (
+  select true from scratchpad_list_entries where scratchpad_list_id=$this->id and entry_id=$entry_id
+)
+SQL
+        );
+      }
+    }
+    return true;
+  }
+
 }
