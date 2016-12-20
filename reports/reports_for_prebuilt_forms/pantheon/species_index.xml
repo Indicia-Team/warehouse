@@ -53,7 +53,7 @@ where cttl.preferred=true
       <where>cttl.taxon_group_id=#taxon_group_id#</where>
     </param>
     <param name="pantheon_linked_only" datatype="boolean" default="1">
-      <where>(av_bb.id is not null or av_sb.id is not null or av_r.id is not null
+      <where>(av_bb.id is not null or av_sb.id is not null or av_r.id is not null or av_sat.id is not null
         or lguildv.id is not null or aguildv.id is not null or horusv.id is not null)</where>
     </param>
     <param name="trait_attr_id" display="Trait attribute Id" default=""
