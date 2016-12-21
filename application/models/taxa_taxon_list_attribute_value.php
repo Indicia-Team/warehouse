@@ -31,13 +31,18 @@
 class Taxa_Taxon_List_Attribute_Value_Model extends Attribute_Value_ORM {
   public $search_field='text_value';
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'taxa_taxon_list', 'taxa_taxon_list_attribute');
+  protected $belongs_to = array(
+    'created_by'=>'user',
+    'updated_by'=>'user',
+    'taxa_taxon_list',
+    'taxa_taxon_list_attribute'
+  );
 
   /**
    * Override the validate method to call the standard attribute validation code.
    * @param Validation $array Validation object.
    * @param boolean $save Should the data be saved?
-   * @return booleab 
+   * @return boolean
    */
   public function validate(Validation $array, $save = FALSE) {
     self::attribute_validation($array, 'taxa_taxon_list');    
