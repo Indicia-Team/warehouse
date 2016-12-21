@@ -22,11 +22,11 @@
  */
 
 /**
- * Declares a model simply to expose the gv_occurrence_attribute view to ORM.
+ * Declares a model simply to expose the gv_taxa_taxon_list_attribute view to ORM.
  *
  * @package	Core
  * @subpackage GridModels
  */
-class gv_occurrence_attribute_Model extends ORM {
+class gv_taxa_taxon_list_attribute_Model extends ORM {
 
 }
