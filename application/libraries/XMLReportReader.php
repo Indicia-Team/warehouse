@@ -883,9 +883,12 @@ class XMLReportReader_Core implements ReportReader
       $providedParams[$to.'_context']=$quote . $providedParams[$from.'_context'] . $quote;
     if (!empty($providedParams['paramsFormExcludes'])) {
       $excludes=json_decode($providedParams['paramsFormExcludes'], true);
-      if (in_array($from, $excludes)) {
-        $excludes[]=$to;
-        $providedParams['paramsFormExcludes']=json_encode($excludes);
+      if (in_array($from, $excludes) || in_array("{$from}_context", $excludes)) {
+        if (in_array($from, $excludes))
+          $excludes[] = $to;
+        if (in_array("{$from}_context", $excludes))
+          $excludes[] = "{$to}_context";
+        $providedParams['paramsFormExcludes'] = json_encode($excludes);
       }
     }
   }
