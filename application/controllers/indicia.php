@@ -103,7 +103,8 @@ class Indicia_Controller extends Template_Controller {
           'Location attributes'=>'location_attribute',
           'Survey attributes'=>'survey_attribute',
           'Person attributes'=>'person_attribute',
-          'Taxon attributes'=>'taxa_taxon_list_attribute'
+          'Taxon attributes'=>'taxa_taxon_list_attribute',
+          'Term attributes'=>'termlists_term_attribute'
         );
       if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin'))
         $menu['Entered data'] = array(
