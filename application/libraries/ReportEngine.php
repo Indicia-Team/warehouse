@@ -772,6 +772,8 @@ class ReportEngine {
             $query = $this->mergeAttrListParam($query, 'location', $value, "2");
           elseif ($paramDefs[$name]['datatype']=='taxattrs')
             $query = $this->mergeAttrListParam($query, 'taxa_taxon_list', $value);
+          elseif ($paramDefs[$name]['datatype']=='trmattrs')
+            $query = $this->mergeAttrListParam($query, 'termlists_term', $value);
           elseif ($paramDefs[$name]['datatype']=='srvattrs')
             $query = $this->mergeAttrListParam($query, 'survey', $value);
           elseif ($paramDefs[$name]['datatype']=='psnattrs')

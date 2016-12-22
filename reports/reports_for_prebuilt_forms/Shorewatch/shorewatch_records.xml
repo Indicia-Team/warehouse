@@ -41,6 +41,9 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
+    <param name="idlist" display="List of IDs" description="Comma separated list of occurrence IDs to filter by." datatype="idlist" emptyvalue="" default="">
+      <where>o.id IN (#idlist#)</where>
+    </param>
     <param name="taxon_meaning_id" display="Species" description="Species name to filter by." datatype="lookup"
         population_call='report:library/taxa/get_species_names_for_website:taxon_meaning_id:name_common_preferred'>
       <where>o.taxon_meaning_id=#taxon_meaning_id#</where>

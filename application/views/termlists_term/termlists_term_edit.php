@@ -22,7 +22,8 @@
  */
 
 ?>
-<?php 
+<?php
+require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 echo html::error_message($model->getError('termlist_id'));
 $term_id=html::initial_value($values, 'termlists_term:term_id'); 
 ?>
@@ -89,6 +90,54 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('termlists_term', $p
   </li>
 <?php endif; ?>
 </fieldset>
+  <fieldset>
+    <legend>Term attributes</legend>
+    <ol>
+      <?php
+      foreach ($values['attributes'] as $attr) {
+        $name = 'trmAttr:'.$attr['termlists_term_attribute_id'];
+        // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
+        if ($attr['id']) $name .= ':'.$attr['id'];
+        switch ($attr['data_type']) {
+          case 'D':
+          case 'V':
+            echo data_entry_helper::date_picker(array(
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value']
+            ));
+            break;
+          case 'L':
+
+            echo '<p>Check if this should be lookup_termlist_id</p>';
+
+            echo data_entry_helper::select(array(
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['raw_value'],
+              'lookupValues' => $values['terms_'.$attr['termlist_id']],
+              'blankText' => '<Please select>'
+            ));
+            break;
+          case 'B':
+            echo data_entry_helper::checkbox(array(
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value']
+            ));
+            break;
+          default:
+            echo data_entry_helper::text_input(array(
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value']
+            ));
+        }
+
+      }
+      ?>
+    </ol>
+  </fieldset>
 <?php 
 echo html::form_buttons(html::initial_value($values, 'termlists_term:id')!=null);
 echo html::error_message($model->getError('deleted')); 
