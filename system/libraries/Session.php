@@ -218,35 +218,45 @@ class Session_Core {
 	}
 
 	/**
-	 * Regenerates the global session id.
+	 * Regenerates the global session id. 
+	 * 
+	 * This can be triggered by the Session::$config['regenerate'] value being reached, where automatic regeneration is
+	 * enabled, or logging in and logging out. 
 	 *
 	 * @return  void
 	 */
 	public function regenerate()
 	{
-		if (Session::$config['driver'] === 'native')
+		static $run;
+		// No point regenerating the session id more than once per page load.
+		if ($run === NULL)
 		{
-			// Generate a new session id
-			// Note: also sets a new session cookie with the updated id
-			session_regenerate_id(TRUE);
+			$run = TRUE;
+    
+			if (Session::$config['driver'] === 'native')
+			{
+				// Generate a new session id
+				// Note: also sets a new session cookie with the updated id
+				session_regenerate_id(TRUE);
 
-			// Update session with new id
-			$_SESSION['session_id'] = session_id();
-		}
-		else
-		{
-			// Pass the regenerating off to the driver in case it wants to do anything special
-			$_SESSION['session_id'] = Session::$driver->regenerate();
-		}
+				// Update session with new id
+				$_SESSION['session_id'] = session_id();
+			}
+			else
+			{
+				// Pass the regenerating off to the driver in case it wants to do anything special
+				$_SESSION['session_id'] = Session::$driver->regenerate();
+			}
 
-		// Get the session name
-		$name = session_name();
+			// Get the session name
+			$name = session_name();
 
-		if (isset($_COOKIE[$name]))
-		{
-			// Change the cookie value to match the new session id to prevent "lag"
-			$_COOKIE[$name] = $_SESSION['session_id'];
-		}
+			if (isset($_COOKIE[$name]))
+			{
+				// Change the cookie value to match the new session id to prevent "lag"
+				$_COOKIE[$name] = $_SESSION['session_id'];
+			}
+		  }
 	}
 
 	/**

@@ -2,7 +2,8 @@
     title="Explore records using standard filters"
     description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="occurrences" count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id

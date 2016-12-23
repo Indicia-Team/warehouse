@@ -166,6 +166,9 @@ class XMLReportReader_Core implements ReportReader
                 if (!$this->people_id_field = $reader->getAttribute('people_id_field'))
                   // default table alias for the people table, so we can join to the id
                   $this->people_id_field = 'p.id';
+                if (!$this->count_field = $reader->getAttribute('count_field'))
+                  // field used in count queries unless in_count fields are specified
+                  $this->count_field = '*';
                 // load the standard set of parameters for consistent filtering of reports?
                 $standardParams = $reader->getAttribute('standard_params');
                 if ($standardParams!==null)
@@ -271,7 +274,7 @@ class XMLReportReader_Core implements ReportReader
         // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
         // otherwise the same.
         if (!empty($field_sql)) {
-          $this->countQuery = str_replace('#field_sql#', ' count(*) ', $this->query);
+          $this->countQuery = str_replace('#field_sql#', ' count(' . $this->count_field . ') ', $this->query);
           $this->query = str_replace('#field_sql#', $field_sql, $this->query);
         }
         // column SQL is part of the SQL statement, or defined in a field_sql element.
@@ -304,10 +307,8 @@ class XMLReportReader_Core implements ReportReader
       // use a dummy filter to return all websites if core admin
       $query = str_replace(array('#website_filter#', '#website_ids#'), array('1=1', 'SELECT id FROM websites'), $query);
     if (!empty($this->trainingFilterField)) {
-      if ($training==='true')
-        $query = str_replace('#sharing_filter#', "({$this->trainingFilterField}=true OR {$this->trainingFilterField} IS NULL) AND #sharing_filter#", $query); 
-      else 
-        $query = str_replace('#sharing_filter#', "({$this->trainingFilterField}=false OR {$this->trainingFilterField} IS NULL) AND #sharing_filter#", $query); 
+      $boolStr = $training==='true' ? 'true' : 'false';
+      $query = str_replace('#sharing_filter#', "{$this->trainingFilterField}=$boolStr AND #sharing_filter#", $query);
     }
     // an alternative way to inform a query about training mode....
     $query = str_replace('#training#', $training, $query); 
@@ -419,7 +420,7 @@ class XMLReportReader_Core implements ReportReader
       $this->countQuery = str_replace('#columns#', ' count(distinct ' . $countSql[0] . ') ', $this->query);
     }
     else {
-      $this->countQuery = str_replace('#columns#', ' count(*) ', $this->query);
+      $this->countQuery = str_replace('#columns#', ' count(' . $this->count_field . ') ', $this->query);
     }
     // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to
     // add custom attribute fields.
@@ -882,9 +883,12 @@ class XMLReportReader_Core implements ReportReader
       $providedParams[$to.'_context']=$quote . $providedParams[$from.'_context'] . $quote;
     if (!empty($providedParams['paramsFormExcludes'])) {
       $excludes=json_decode($providedParams['paramsFormExcludes'], true);
-      if (in_array($from, $excludes)) {
-        $excludes[]=$to;
-        $providedParams['paramsFormExcludes']=json_encode($excludes);
+      if (in_array($from, $excludes) || in_array("{$from}_context", $excludes)) {
+        if (in_array($from, $excludes))
+          $excludes[] = $to;
+        if (in_array("{$from}_context", $excludes))
+          $excludes[] = "{$to}_context";
+        $providedParams['paramsFormExcludes'] = json_encode($excludes);
       }
     }
   }

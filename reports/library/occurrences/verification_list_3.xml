@@ -2,7 +2,7 @@
     title="Verification grid report 3"
     description="List of occurrences for verification with support for mapping the occurrences and the verification check system, plus expert-survey associations."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN samples s on s.id=o.sample_id

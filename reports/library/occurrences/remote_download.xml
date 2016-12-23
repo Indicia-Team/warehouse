@@ -2,7 +2,7 @@
     title="Remote Download"
     description="Report suitable for downloading data into remote systems, such as via Indicia2Recorder."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN occurrences occ on occ.id=o.id AND occ.deleted=false

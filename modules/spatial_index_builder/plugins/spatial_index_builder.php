@@ -213,17 +213,21 @@ LEFT JOIN (index_locations_samples ils$type[id]
 JOIN;
     // Script for handling updated locations is a bit more complex so we have to run
     // once per location type
-    $query = <<<LOCQRY
+    $db->query(<<<QRY
 UPDATE cache_samples_functional u
 SET $column = null
 FROM loclist l
 WHERE l.id=u.$column;
-
+QRY
+    );
+    $db->query(<<<QRY
 UPDATE cache_occurrences_functional u
 SET $column = null
 FROM loclist l
 WHERE l.id=u.$column;
-
+QRY
+    );
+    $db->query(<<<QRY
 UPDATE cache_samples_functional u
 SET $column = ils$type[id].location_id
 FROM locations l
@@ -232,7 +236,9 @@ LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
 JOIN loclist list on list.id=l.id
 WHERE u.id=ils$type[id].sample_id
 AND (l.code IS NULL OR l.code NOT LIKE '%+%');
-
+QRY
+    );
+    $db->query(<<<QRY
 UPDATE cache_occurrences_functional u
 SET $column = ils$type[id].location_id
 FROM locations l
@@ -241,27 +247,29 @@ LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
 JOIN loclist list on list.id=l.id
 WHERE u.sample_id=ils$type[id].sample_id
 AND (l.code IS NULL OR l.code NOT LIKE '%+%');
-LOCQRY;
-    $db->query($query);
+QRY
+    );
   }
   if (count($s_sets)) {
     $s_sets = implode(",\n", $s_sets);
     $o_sets = implode(",\n", $o_sets);
     $joins = implode("\n", $joins);
-    $query = <<<SMPQRY
+    $db->query(<<<QRY
 UPDATE cache_samples_functional u
 SET $s_sets
 FROM samples s
 $joins
 JOIN smplist list on list.id=s.id
 WHERE u.id=s.id;
-
+QRY
+    );
+    $db->query(<<<QRY
 UPDATE cache_occurrences_functional u
 SET $o_sets
 FROM cache_samples_functional s
 JOIN smplist list on list.id=s.id
 WHERE s.id=u.sample_id;
-SMPQRY;
-    $db->query($query);
+QRY
+    );
   }
 }

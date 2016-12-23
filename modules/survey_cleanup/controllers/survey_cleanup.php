@@ -76,7 +76,8 @@ class Survey_cleanup_Controller extends Indicia_Controller {
     // the number of occurrences deleted is the fact we need to report back
     $qry = $this->database->query('delete from occurrences where id in (select id from occlist)');
     $count=$qry->count();
-    $this->database->query('delete from cache_occurrences where id in (select id from occlist)');
+    $this->database->query('delete from cache_occurrences_functional where id in (select id from occlist)');
+    $this->database->query('delete from cache_occurrences_nonfunctional where id in (select id from occlist)');
     // remove any samples that this query has left as empty
     $this->database->query('select s.id, s.parent_id into temporary smplist from samples s '.
         'join occlist o on o.sample_id=s.id ' .
@@ -87,6 +88,8 @@ class Survey_cleanup_Controller extends Indicia_Controller {
     $this->database->query('delete from sample_comments where sample_id in (select id from smplist)');
     $this->database->query('delete from sample_images where sample_id in (select id from smplist)');
     $this->database->query('delete from samples where id in (select id from smplist)');
+    $this->database->query('delete from cache_samples_functional where id in (select id from smplist)');
+    $this->database->query('delete from cache_samples_nonfunctional where id in (select id from smplist)');
     // then the parents
     $this->database->query('select s.id into temporary parentlist from samples s '.
         'join smplist child on child.parent_id=s.id ' .
@@ -96,6 +99,8 @@ class Survey_cleanup_Controller extends Indicia_Controller {
     $this->database->query('delete from sample_comments where sample_id in (select id from parentlist)');
     $this->database->query('delete from sample_images where sample_id in (select id from parentlist)');
     $this->database->query('delete from samples where id in (select id from parentlist)');
+    $this->database->query('delete from cache_samples_functional where id in (select id from parentlist)');
+    $this->database->query('delete from cache_samples_nonfunctional where id in (select id from parentlist)');
     // cleanup
     $this->database->query('drop table occlist');
     $this->database->query('drop table smplist');

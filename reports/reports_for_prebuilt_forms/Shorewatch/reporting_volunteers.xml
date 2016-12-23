@@ -1,0 +1,89 @@
+<report
+    title="Shorewatch Reporting: Volunteer summary"
+    description="A list of volunteers summary data, broken down by year and optionally month."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+    FROM users u 
+    JOIN people p ON p.id = u.person_id
+    JOIN (
+      SELECT s1.created_by_id,
+          EXTRACT(YEAR FROM s1.date_start) AS year,
+          CASE #month_breakdown# WHEN 0 THEN NULL ELSE EXTRACT(MONTH FROM s1.date_start) END AS month,
+          COUNT(distinct s1.id) AS number_watches,
+          MAX(s1.date_start) AS last_watch,
+          COUNT(distinct sav1.id) AS number_cetacean_watches,
+          COUNT(distinct co.id) AS number_sightings,
+          string_agg(distinct co.taxon || ' (' || co.preferred_taxon || ')', ',') AS species_seen
+      FROM samples s1
+      LEFT JOIN samples s2
+        ON s2.parent_id = s1.id
+        AND s2.deleted = false
+      LEFT JOIN sample_attribute_values sav1
+        ON sav1.sample_id=s1.id
+          AND sav1.deleted=false
+          AND sav1.sample_attribute_id = #cetaceans_seen_attr_id#
+          AND sav1.int_value = #seen_yes_id#
+      LEFT JOIN cache_occurrences co
+        ON co.sample_id = s2.id
+      #joins#
+      WHERE s1.deleted=false
+        AND (#current_year# = 0 OR EXTRACT(YEAR FROM s1.date_start) = EXTRACT(YEAR FROM now()))
+        AND s1.sample_method_id = #effort_sample_method_id#
+        #filters#
+      GROUP by s1.created_by_id, year, month
+    ) AS data ON data.created_by_id=u.id
+  </query>
+  <order_bys>
+    <order_by>p.surname ASC</order_by>
+    <order_by>p.first_name ASC</order_by>
+    <order_by>data.year ASC</order_by>
+    <order_by>data.month ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id'
+            display='Survey'
+            description='Select the survey.'
+            datatype='lookup'
+            population_call='direct:survey:id:title' >
+        <where>s1.survey_id = #survey_id#</where>
+    </param>
+    <param name='effort_sample_method_id'
+            display='Effort Sample Method'
+            description='Select the effort sample method. Mandatory.'
+            datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+    <param name='cetaceans_seen_attr_id'
+            display='Cetaceans seen attribute'
+            description='Select the sample attribute which holds the &quot;cetaceans seen&quot; flag (this parameter is the attribute id, not the caption). Mandatory. This must be a lookup list attrbute - yes/no.'
+            datatype='lookup'
+            population_call='direct:sample_attribute:id:caption' />
+    <param name='seen_yes_id'
+            display='Seen yes'
+            description='Select the yes term used by the two seen attributes (this parameter is the id, not the caption). Mandatory.'
+            datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_id=' />
+    <param name="current_year"
+            display="Current years data only?"
+            description='Optional boolean: value 0 (default) to include all data, value 1 to included only the current year.'
+            datatype="boolean"
+            emptyvalue="0" />
+    <param name="month_breakdown"
+            display="Breakdown data by month?"
+            description='Optional boolean: value 0 (default) to only breakdown data by year, value 1 to break down the data further to month granularity.'
+            datatype="boolean"
+            emptyvalue="0" />
+  </params>
+  <columns>
+    <column name="user_id" display="User Indicia ID" sql="u.id" />
+    <column name="first_name" display="First name" sql="p.first_name" />
+    <column name="surname" display="Surname" sql="p.surname" />
+    <column name="year" display="Year" sql="data.year" />
+    <column name="month" display="Month" sql="data.month" />
+    <column name="last_watch" display="Last watch in period" sql="data.last_watch" />
+    <column name="number_watches" display="Number of watches recorded" sql="data.number_watches" />
+    <column name="number_cetacean_watches" display="Number of cetacean-positive watches" sql="data.number_cetacean_watches" />
+    <column name="number_sightings" display="Number of sightings" sql="data.number_sightings" />
+    <column name="species_seen" display="Species seen during the watches" sql="data.species_seen" />
+  </columns>
+</report>

@@ -1,0 +1,138 @@
+<report
+    title="Shorewatch Reporting: Effort summary"
+    description="A list of locations, plus effort based summary data, broken down by year and optionally month and/or user. All data or just this year&#39;s."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+    FROM locations l1 
+    JOIN (
+      SELECT l2.id,
+          EXTRACT(YEAR FROM s1.date_start) AS year,
+          CASE #month_breakdown# WHEN 0 THEN NULL ELSE EXTRACT(MONTH FROM s1.date_start) END AS month,
+          CASE #observer_functionality_flag# WHEN 0 THEN '' ELSE (p.first_name||' '||p.surname) END AS observer,
+          COUNT(distinct s1.id) AS number_watches,
+          COUNT(distinct s1.created_by_id) AS number_observers,
+          COUNT(distinct sav1.id) AS number_cetacean_watches,
+          COUNT(distinct sav2.id) AS number_non_cetacean_watches,
+          SUM(sav3.int_value) AS number_people_spoken_to,
+          string_agg(distinct co.taxon || ' (' || co.preferred_taxon || ')', ',') as species_seen
+      FROM locations l2
+      LEFT JOIN locations_websites lw
+        ON lw.location_id=l2.id
+          AND lw.deleted=false
+      LEFT JOIN samples s1
+        ON s1.location_id=l2.id
+          AND s1.deleted=false
+          AND s1.sample_method_id = #effort_sample_method_id#
+          AND (#current_year# = 0 OR EXTRACT(YEAR FROM s1.date_start) = EXTRACT(YEAR FROM now()))
+          AND (#observer_functionality_flag# &lt;= 0 OR s1.created_by_id = #observer_functionality_flag#)
+      LEFT JOIN users u
+        ON s1.created_by_id = u.id
+      LEFT JOIN people p
+        ON u.person_id = p.id
+      LEFT JOIN samples s2
+        ON s2.parent_id = s1.id
+        AND s2.deleted = false
+      LEFT JOIN sample_attribute_values sav1
+        ON sav1.sample_id=s1.id
+          AND sav1.deleted=false
+          AND sav1.sample_attribute_id = #cetaceans_seen_attr_id#
+          AND sav1.int_value = #seen_yes_id#
+      LEFT JOIN sample_attribute_values sav2
+        ON sav2.sample_id=s1.id
+          AND sav2.deleted=false
+          AND sav2.sample_attribute_id = #non_cetaceans_seen_attr_id#
+          AND sav2.int_value = #seen_yes_id#
+      LEFT JOIN sample_attribute_values sav3
+        ON sav3.sample_id=s1.id
+          AND sav3.deleted=false
+          AND sav3.sample_attribute_id = #speak_to_attr_id#
+      LEFT JOIN cache_occurrences co
+        ON co.location_id = l2.id
+        AND co.sample_id = s2.id
+      #joins#
+      WHERE l2.deleted=false
+        AND #website_filter#
+        #filters#
+      GROUP BY l2.id, year, month, CASE #observer_functionality_flag# WHEN 0 THEN '' ELSE (p.first_name||' '||p.surname) END
+    ) AS ldata ON ldata.id=l1.id
+  </query>
+  <order_bys>
+    <order_by>l1.name ASC</order_by>
+    <order_by>ldata.year ASC</order_by>
+    <order_by>ldata.month ASC</order_by>
+    <order_by>ldata.observer ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='location_type_id'
+            display='Location Type'
+            description='Select the location type, or leave blank to not filter by location type.'
+            datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' >
+        <where>l2.location_type_id = #location_type_id#</where>
+    </param>
+    <param name='survey_id'
+            display='Survey'
+            description='Select the survey.'
+            datatype='lookup'
+            population_call='direct:survey:id:title' >
+        <where>s1.survey_id = #survey_id#</where>
+    </param>
+    <param name='effort_sample_method_id'
+            display='Effort Sample Method'
+            description='Select the effort sample method. Mandatory.'
+            datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+    <param name='cetaceans_seen_attr_id'
+            display='Cetaceans seen attribute'
+            description='Select the sample attribute which holds the &quot;cetaceans seen&quot; flag (this parameter is the attribute id, not the caption). Mandatory. This must be a lookup list attrbute - yes/no.'
+            datatype='lookup'
+            population_call='direct:sample_attribute:id:caption' />
+    <param name='non_cetaceans_seen_attr_id'
+            display='Non Cetaceans seen attribute'
+            description='Select the non-cetacean marine mammal seen sample attribute (this parameter is the attribute id, not the caption). Mandatory. This must be a lookup list attrbute - yes/no.'
+            datatype='lookup'
+            population_call='direct:sample_attribute:id:caption' />
+    <param name='speak_to_attr_id'
+            display='Number of people spoken to attribute'
+            description='Select the Number of people spoken to sample attribute (this parameter is the attribute id, not the caption). Mandatory. This must be an integer attrbute.'
+            datatype='lookup'
+            population_call='direct:sample_attribute:id:caption' />
+    <param name='seen_yes_id'
+            display='Seen yes'
+            description='Select the yes term used by the two seen attributes (this parameter is the id, not the caption). Mandatory.'
+            datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_id=' />
+    <param name="current_year"
+            display="Current years data only?"
+            description='Optional boolean: value 0 (default) to include all data, value 1 to included only the current year.'
+            datatype="boolean"
+            emptyvalue="0" />
+    <param name="month_breakdown"
+            display="Breakdown data by month?"
+            description='Optional boolean: value 0 (default) to only breakdown data by year, value 1 to break down the data further to month granularity.'
+            datatype="boolean"
+            emptyvalue="0" />
+    <param name="observer_functionality_flag"
+            display="Observer Functionality flag"
+            description='Select observer functionality. Optional. -1 breaks down data by observer who created the effort, 0 (default if not provided) ignores observer, positive number filters by that observer.'
+            emptyvalue="0"
+            datatype="boolean" />
+  </params>
+  <columns>
+    <column name="location_id" display="Location Indicia ID" sql="l1.id" />
+    <column name="name" display="Name" sql="l1.name" />
+    <column name="location_type_id" visible="false" sql="l1.location_type_id" />
+    <column name="centroid_sref" display="Location" sql="l1.centroid_sref" />
+    <column name="centroid_sref_system" visible="false" sql="l1.centroid_sref_system" />
+    <column name="year" display="Year" sql="ldata.year" />
+    <column name="month" display="Month" sql="ldata.month" />
+    <column name="observer" display="Observer" sql="ldata.observer" />
+    <column name="number_watches" display="Number of watches" sql="ldata.number_watches" />
+    <column name="number_observers" display="Number of observers" sql="ldata.number_observers" />
+    <column name="number_cetacean_watches" display="Number of cetacean-positive watches" sql="ldata.number_cetacean_watches" />
+    <column name="number_non_cetacean_watches" display="Number of non-cetacean marine mammal positive watches" sql="ldata.number_non_cetacean_watches" />
+    <column name="number_people_spoken_to" display="Number of people spoken to during the watches" sql="ldata.number_people_spoken_to" />
+    <column name="species_seen" display="Species seen during the watches" sql="ldata.species_seen" />
+  </columns>
+</report>

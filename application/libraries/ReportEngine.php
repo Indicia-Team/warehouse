@@ -95,6 +95,11 @@ class ReportEngine {
   private $customAttributeCaptions = array();
 
   /**
+   * @var integer If the record count has been queried, store it so we don't ask twice.
+   */
+  private $recordCountResult;
+
+  /**
    * Constructor
    * @param array $websiteIds List of websites you are loading the report for. Normally a single, but can be a list
    * when logged in on the warehouse.
@@ -295,13 +300,13 @@ class ReportEngine {
     else
     {
       // Okay, all the parameters have been provided.
+      $this->mergeCountQuery();
       $this->mergeQuery();
       if ($this->limit===0 || $this->limit==='0' || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords']===0)) {
         // optimisation for zero limited queries
         $data=array();
       }
       else {
-        $this->mergeCountQuery();
         $this->executeQuery();
         $data = $this->response->result_array(FALSE);
       }
@@ -319,6 +324,8 @@ class ReportEngine {
 
   public function record_count() {
     if (isset($this->countQuery) && $this->countQuery!==null) {
+      if (isset($this->recordCountResult))
+        return $this->recordCountResult;
       // If there is a HAVING clause in the query, then we cannot count aggregate queries in the normal way which is to
       // strip the group by and count the appropriate fields. We have to run the full grouped query with the HAVING
       // clause included, then use a subquery to count the rows.
@@ -326,11 +333,19 @@ class ReportEngine {
         $unlimitedQuery = preg_replace('/LIMIT \d+/i', '', $this->query);
         $this->countQuery = "SELECT count(*) FROM ($unlimitedQuery) AS subquery";
       }
+      $tm = microtime(true);
       $r = $this->reportDb->query($this->countQuery)->result_array(FALSE);
+      $tm = microtime(true) - $tm;
+      if ($tm>5) {
+        kohana::log('alert', "Count query took $tm seconds.");
+        kohana::log('alert', $this->report);
+        kohana::log('alert', $this->countQuery);
+      }
       // query could return no rows, in which case return zero. Or multiple if counting several UNIONED queries.
       $count=0;
       foreach ($r as $row)
         $count += $row['count'];
+      $this->recordCountResult = $count;
       return $count;
     } else {
       return false;
@@ -434,11 +449,16 @@ class ReportEngine {
       for ($r=0; $r<$dataCount; $r++) {
         $row=$data[$r];
         if (!empty($row[$col_set.'date_type'])) {
-          $data[$r][$col_set.'date'] = vague_date::vague_date_to_string(array(
-            $row[$col_set.'date_start'],
-            $row[$col_set.'date_end'],
-            $row[$col_set.'date_type']
-          ));
+          try {
+            $data[$r][$col_set . 'date'] = vague_date::vague_date_to_string(array(
+              $row[$col_set . 'date_start'],
+              $row[$col_set . 'date_end'],
+              $row[$col_set . 'date_type']
+            ));
+          } catch (Exception $e) {
+            kohana::log('error', 'Error in report vague date conversion: ' . $e->getMessage());
+            $data[$r][$col_set . 'date'] = 'Invalid';
+          }
         }
       }
     }
@@ -752,6 +772,8 @@ class ReportEngine {
             $query = $this->mergeAttrListParam($query, 'location', $value, "2");
           elseif ($paramDefs[$name]['datatype']=='taxattrs')
             $query = $this->mergeAttrListParam($query, 'taxa_taxon_list', $value);
+          elseif ($paramDefs[$name]['datatype']=='trmattrs')
+            $query = $this->mergeAttrListParam($query, 'termlists_term', $value);
           elseif ($paramDefs[$name]['datatype']=='srvattrs')
             $query = $this->mergeAttrListParam($query, 'survey', $value);
           elseif ($paramDefs[$name]['datatype']=='psnattrs')
@@ -847,19 +869,22 @@ class ReportEngine {
     // allow the URL to provide a sort order override
     if (!$counting) {
       // prioritise any URL provided sort order, but still keep any other sort ordering in the report.
-      $order_by=$this->reportReader->getOrderClause();
-      if($order_by){
+      $orderBy=$this->reportReader->getOrderClause();
+      if($orderBy){
         if (isset($this->orderby))
-          $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '') . ', ' . $order_by;
+          $orderBy = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '') . ', ' . $orderBy;
       } else if (isset($this->orderby))
-          $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
-      if ($order_by) {
-        $order_by = $this->checkOrderByForVagueDate($order_by);
+          $orderBy = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
+      if ($orderBy) {
+        $orderBy = $this->checkOrderByForVagueDate($orderBy);
+        if (strpos($query, 'distinct on')===FALSE) {
+          $orderBy = $this->optimiseQueryPlan($orderBy);
+        }
         // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
         $count=0;
-        $query = preg_replace("/#order_by#/",  "ORDER BY $order_by", $query, -1, $count);
+        $query = preg_replace("/#order_by#/",  "ORDER BY $orderBy", $query, -1, $count);
         if ($count==0) {
-          $query .= " ORDER BY $order_by";
+          $query .= " ORDER BY $orderBy";
         }
       } else {
         $query = preg_replace("/#order_by#/",  "", $query);
@@ -872,6 +897,26 @@ class ReportEngine {
       $query = preg_replace("/#order_by#/",  "", $query);
     }
     return $query;
+  }
+
+  /**
+   * Forces a switch of query plan to avoid slow queries where the record count is less than the limit, causing a
+   * walk through the entire table.
+   * @param string $orderBy Current query order by setting
+   * @return string
+   * @link http://stackoverflow.com/questions/6037843/extremely-slow-postgresql-query-with-order-and-limit-clauses
+   */
+  private function optimiseQueryPlan($orderBy) {
+    if (preg_match('/o.id (desc|asc)/i', $orderBy)
+        && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount']==='1') || isset($_REQUEST['knownCount']))) {
+      // grab the count now. If less than the limit, we fudge the order by to switch query plan.
+      $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->record_count();
+      if ($count !== false && $count < $this->limit) {
+        kohana::log('debug', 'Optimising query plan by changing sort order to o.id+0.');
+        return str_replace('.id', '.id+0', $orderBy);
+      }
+    }
+    return $orderBy;
   }
 
   /**
@@ -1456,7 +1501,6 @@ class ReportEngine {
 
   private function executeQuery()
   {
-    Kohana::log('debug', "Running report query : ".$this->query);
     $tm = microtime(true);
     $this->response = $this->reportDb->query($this->query);
     $tm = microtime(true) - $tm;
@@ -1464,6 +1508,8 @@ class ReportEngine {
       kohana::log('alert', "Report query took $tm seconds.");
       kohana::log('alert', $this->report);
       kohana::log('alert', $this->query);
+    } else {
+      Kohana::log('debug', "Run report query : ".$this->query);
     }
   }
 

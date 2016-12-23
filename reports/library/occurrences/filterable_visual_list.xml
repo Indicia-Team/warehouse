@@ -3,7 +3,8 @@
     description="Report designed for visualising a flow of records, e.g. on a home page. 
     Compatible with standard parameters and includes basic species details plus media and map data."
 >
-  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="true" count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences o
   JOIN websites w on w.id=o.website_id and w.deleted=false

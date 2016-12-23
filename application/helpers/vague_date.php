@@ -41,14 +41,26 @@ class vague_date {
           'end' => 1
       ),
       array(
-        // date-date i.e without spaces (dates not ISO format)
-        // Negative lookahead prevents yyyy-mm being mistaken for a range.
-        // \d{4}-\d{2} matches yyyy-mm
-        // (?!.+) negative lookahead on any further characters
-        // (?!\d{4}-\d{2}(?!.+)) negative lookahead on exactly yyyy-mm
-        // [^-]+ a string of any characters excluding hyphen
-        // [^-]+(?P<sep>-)[^-] two such strings separated by a hyphen.
-        'regex' => '/^(?!\d{4}-\d{2}(?!.+))[^-]+(?P<sep>-)[^-]+$/',
+        // dd/mm/yy(yy)-dd/mm/yy(yy) or dd.mm.yy(yy)-dd.mm.yy(yy)
+        'regex' => '/^\d{2}[\/\.]\d{2}[\/\.]\d{2}(\d{2})?(?P<sep>-)\d{2}[\/\.]\d{2}[\/\.]\d{2}(\d{2})?$/',
+        'start' => -1,
+        'end' => 1
+      ),
+      array(
+        // mm/yy(yy)-mm/yy(yy) or mm.yy(yy)-mm.yy(yy)
+        'regex' => '/^\d{2}[\/\.]\d{2}(\d{2})?(?P<sep>-)\d{2}[\/\.]\d{2}(\d{2})?$/',
+        'start' => -1,
+        'end' => 1
+      ),
+      array(
+        // yyyy-yyyy
+        'regex' => '/^\d{4}(?P<sep>-)\d{4}$/',
+        'start' => -1,
+        'end' => 1
+      ),
+      array(
+        // century to century
+        'regex' => '/^\d{2}c-\d{2}c?$/',
         'start' => -1,
         'end' => 1
       ),
@@ -147,7 +159,7 @@ class vague_date {
 
   private static function centuryFormats() {
     return array(
-      '%C', //August
+      '%C', //20C
     );
   }
 

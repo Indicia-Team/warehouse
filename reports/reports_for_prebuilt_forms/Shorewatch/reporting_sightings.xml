@@ -1,0 +1,127 @@
+<report
+    title="Shorewatch Reporting: Sightings summary"
+    description="A list of species summary data broken down by location and year, and optionally month and/or user. All data or just this year&#39;s.."
+>
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+    FROM locations l1 
+    JOIN (
+      SELECT l2.id,
+          EXTRACT(YEAR FROM s1.date_start) AS year,
+          CASE #month_breakdown# WHEN 0 THEN NULL ELSE EXTRACT(MONTH FROM s1.date_start) END AS month,
+          CASE #observer_functionality_flag# WHEN 0 THEN '' ELSE (p.first_name||' '||p.surname) END AS observer,
+          co.taxon,
+          co.preferred_taxon,
+          COUNT(distinct s1.id) AS number_watches,
+          COUNT(distinct co.id) AS number_sightings,
+          COUNT(distinct s1.created_by_id) AS number_observers,
+          coalesce(sum(oav1.int_value), 0) AS number_adults,
+          coalesce(sum(oav2.int_value), 0) AS number_calves,
+          coalesce(sum(oav1.int_value), 0)+coalesce(sum(oav2.int_value), 0) AS total_individuals
+      FROM locations l2
+      LEFT JOIN locations_websites lw
+        ON lw.location_id=l2.id
+          AND lw.deleted=false
+      LEFT JOIN samples s1
+        ON s1.location_id=l2.id
+          AND s1.deleted=false
+          AND s1.sample_method_id = #effort_sample_method_id#
+          AND (#current_year# = 0 OR EXTRACT(YEAR FROM s1.date_start) = EXTRACT(YEAR FROM now()))
+          AND (#observer_functionality_flag# &lt;= 0 OR s1.created_by_id = #observer_functionality_flag#)
+      LEFT JOIN users u
+        ON s1.created_by_id = u.id
+      LEFT JOIN people p
+        ON u.person_id = p.id
+      LEFT JOIN samples s2
+        ON s2.parent_id = s1.id
+          AND s2.deleted = false
+      LEFT JOIN cache_occurrences co
+        ON co.location_id = l2.id
+          AND co.sample_id = s2.id
+      LEFT JOIN occurrence_attribute_values oav1
+        ON oav1.occurrence_id=co.id
+          AND oav1.deleted=false
+          AND oav1.occurrence_attribute_id = #adults_attr_id#
+      LEFT JOIN occurrence_attribute_values oav2
+        ON oav2.occurrence_id=co.id
+          AND oav2.deleted=false
+          AND oav2.occurrence_attribute_id = #calves_attr_id#
+      #joins#
+      WHERE l2.deleted=false
+        AND #website_filter#
+        #filters#
+      GROUP BY l2.id, year, month, CASE #observer_functionality_flag# WHEN 0 THEN '' ELSE (p.first_name||' '||p.surname) END, co.taxon, co.preferred_taxon
+    ) AS ldata ON ldata.id=l1.id
+    WHERE ldata.preferred_taxon is NOT NULL
+  </query>
+  <order_bys>
+    <order_by>l1.name ASC</order_by>
+    <order_by>ldata.year ASC</order_by>
+    <order_by>ldata.month ASC</order_by>
+    <order_by>ldata.observer ASC</order_by>
+    <order_by>ldata.preferred_taxon ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='location_type_id'
+            display='Location Type'
+            description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=' >
+        <where>l2.location_type_id=#location_type_id#</where>
+    </param>
+    <param name='survey_id'
+            display='Survey'
+            description='Select the survey.'
+            datatype='lookup'
+            population_call='direct:survey:id:title' >
+        <where>s1.survey_id = #survey_id#</where>
+    </param>
+    <param name='effort_sample_method_id'
+            display='Effort Sample Method'
+            description='Select the effort sample method. Mandatory.'
+            datatype='lookup'
+            population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
+    <param name='adults_attr_id'
+            display='Number of adults attribute'
+            description='Select the occurrence attribute for "Number of adults" (this parameter is the attribute id, not the caption). Mandatory. This must be an integer attrbute.'
+            datatype='lookup'
+            population_call='direct:occurrence_attribute:id:caption' />
+    <param name='calves_attr_id'
+            display='Number of calves attribute'
+            description='Select the occurrence attribute for "Number of calves" (this parameter is the attribute id, not the caption). Mandatory. This must be an integer attrbute.'
+            datatype='lookup'
+            population_call='direct:occurrence_attribute:id:caption' />
+    <param name="current_year"
+            display="Current years data only?"
+            description='Optional boolean: value 0 (default) to include all data, value 1 to included only the current year.'
+            datatype="boolean"
+            emptyvalue="0" />
+    <param name="month_breakdown"
+            display="Breakdown data by month?"
+            description='Optional boolean: value 0 (default) to only breakdown data by year, value 1 to break down the data further to month granularity.'
+            datatype="boolean"
+            emptyvalue="0" />
+    <param name="observer_functionality_flag"
+            display="Observer Functionality flag"
+            description='Select observer functionality. Optional. -1 breaks down data by observer who created the effort, 0 (default if not provided) ignores observer, positive number filters by that observer.'
+            emptyvalue="0"
+            datatype="boolean" />
+  </params>
+  <columns>
+    <column name="location_id" display="Location Indicia ID" sql="l1.id" />
+    <column name="name" display="Name" sql="l1.name" />
+    <column name="location_type_id" visible="false" sql="l1.location_type_id" />
+    <column name="centroid_sref" display="Location" sql="l1.centroid_sref" />
+    <column name="centroid_sref_system" visible="false" sql="l1.centroid_sref_system" />
+    <column name="year" display="Year" sql="ldata.year" />
+    <column name="month" display="Month" sql="ldata.month" />
+    <column name="common_name" display="Common name" sql="ldata.taxon" />
+    <column name="species" display="Species" sql="ldata.preferred_taxon" />
+    <column name="observer" display="Observer" sql="ldata.observer" />
+    <column name="number_observers" display="Number of observers" sql="ldata.number_observers" />
+    <column name="number_watches" display="Number of watches seen on" sql="ldata.number_watches" />
+    <column name="number_sightings" display="Number of sightings" sql="ldata.number_sightings" />
+    <column name="number_adults" display="Number of Adults" sql="ldata.number_adults" />
+    <column name="number_calves" display="Number of Calves" sql="ldata.number_calves" />
+    <column name="total_individuals" display="Total Number of Individuals" sql="ldata.total_individuals" />
+  </columns>
+</report>

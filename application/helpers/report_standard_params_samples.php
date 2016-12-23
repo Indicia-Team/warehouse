@@ -84,34 +84,34 @@ class report_standard_params_samples {
    */
   public static function getParameters() {
     return array(
-      'idlist' => array('datatype'=>'idlist', 'default'=>'', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'s.id', 'alias'=>'sample_id',
+      'idlist' => array('datatype'=>'idlist', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'s.id', 'alias'=>'sample_id',
         'description'=>'Comma separated list of sample IDs to filter to'
       ),
-      'searchArea' => array('datatype'=>'geometry', 'default'=>'', 'display'=>'Boundary',
+      'searchArea' => array('datatype'=>'geometry', 'display'=>'Boundary',
         'description'=>'Boundary to search within',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(s.geom, st_makevalid(st_geomfromtext('#searchArea#',900913)))")
         )
       ),
-      'sample_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'ID',
+      'sample_id' => array('datatype'=>'integer', 'display'=>'ID',
         'description'=>'Sample ID',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"s.id #sample_id_op# #sample_id#")
         )
       ),
-      'sample_method_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>'Sample Method ID',
+      'sample_method_id' => array('datatype'=>'integer', 'display'=>'Sample Method ID',
         'description'=>'Termlists_terms ID for the Sample Method',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"s.sample_method_id=#sample_method_id#")
         )
       ),
-      'location_name' => array('datatype'=>'text', 'default'=>'', 'display'=>'Location name',
+      'location_name' => array('datatype'=>'text', 'display'=>'Location name',
         'description'=>'Name of location to filter to (contains search)',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"(s.location_name ilike '%#location_name#%' or l.name ilike '%#location_name#%')")
         )
       ),
-      'location_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Location IDs',
+      'location_list' => array('datatype'=>'integer[]', 'display'=>'Location IDs',
         'description'=>'Comma separated list of location IDs',
         'joins' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"JOIN locations #alias:lfilt# on #alias:lfilt#.id #location_list_op# (#location_list#) and #alias:lfilt#.deleted=false " .
@@ -119,7 +119,7 @@ class report_standard_params_samples {
             "and not st_touches(coalesce(#alias:lfilt#.boundary_geom, #alias:lfilt#.centroid_geom), s.geom)")
         )
       ),
-      'indexed_location_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>'Location IDs (indexed)', 'custom'=>'unique_location_index',
+      'indexed_location_list' => array('datatype'=>'integer[]', 'display'=>'Location IDs (indexed)', 'custom'=>'unique_location_index',
         'description'=>'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
         'joins' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"JOIN index_locations_samples #alias:ilsfilt# on #alias:ilsfilt#.sample_id=s.id and #alias:ilsfilt#.location_id #indexed_location_list_op# (#indexed_location_list#)")
@@ -129,83 +129,83 @@ class report_standard_params_samples {
           array('value'=>'', 'operator'=>'', 'sql'=>"s.location_id_#typealias# #indexed_location_list_op# (#indexed_location_list#)")
         )
       ),
-      'date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date from',
+      'date_from' => array('datatype'=>'date', 'display'=>'Date from',
         'description'=>'Date of first sample to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"('#date_from#'='Click here' OR s.date_end >= CAST(COALESCE('#date_from#','1500-01-01') as date))")
         )
       ),
-      'date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Date to',
+      'date_to' => array('datatype'=>'date', 'display'=>'Date to',
         'description'=>'Date of last sample to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"('#date_to#'='Click here' OR s.date_start <= CAST(COALESCE('#date_to#','1500-01-01') as date))")
         )
       ),
-      'date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Date from time ago',
+      'date_age' => array('datatype'=>'text', 'display'=>'Date from time ago',
         'description'=>'E.g. enter "1 week" or "3 days" to define the how old samples can be before they are dropped from the report.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"s.date_start>now()-'#date_age#'::interval")
         )
       ),
-      'input_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Input date from',
+      'input_date_from' => array('datatype'=>'date', 'display'=>'Input date from',
         'description'=>'Input date of first sample to include in the output',
         'wheres' =>array(
           array('value'=>'', 'operator'=>'', 
             'sql'=>"('#input_date_from#'='Click here' OR s.created_on >= '#input_date_from#'::timestamp)")
         )
       ),
-      'input_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Input date to',
+      'input_date_to' => array('datatype'=>'date', 'display'=>'Input date to',
         'description'=>'Input date of last sample to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
             'sql'=>"('#input_date_to#'='Click here' OR (s.created_on <= '#input_date_to#'::timestamp OR (length('#input_date_to#')<=10 AND s.created_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
         )
       ),
-      'input_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Input date from time ago',
+      'input_date_age' => array('datatype'=>'text', 'display'=>'Input date from time ago',
         'description'=>'E.g. enter "1 week" or "3 days" to define the how long ago samples can be input before they are dropped from the report.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"s.created_on>now()-'#input_date_age#'::interval")
         )
       ),
-      'edited_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date from',
+      'edited_date_from' => array('datatype'=>'date', 'display'=>'Last update date from',
         'description'=>'Last update date of first sample to include in the output',
         'wheres' =>array(
           array('value'=>'', 'operator'=>'', 
             'sql'=>"('#edited_date_from#'='Click here' OR s.updated_on >= '#edited_date_from#'::timestamp)")
         )
       ),
-      'edited_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Last update date to',
+      'edited_date_to' => array('datatype'=>'date', 'display'=>'Last update date to',
         'description'=>'Last update date of last sample to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 
             'sql'=>"('#edited_date_to#'='Click here' OR (s.updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND s.updated_on < cast('#edited_date_to#' as date) + '1 day'::interval)))")
         )
       ),
-      'edited_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Last update date from time ago',
+      'edited_date_age' => array('datatype'=>'text', 'display'=>'Last update date from time ago',
         'description'=>'E.g. enter "1 week" or "3 days" to define the how long ago samples can be last updated before they are dropped from the report.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"s.updated_on>now()-'#edited_date_age#'::interval")
         )
       ),
-      'verified_date_from' => array('datatype'=>'date', 'default'=>'', 'display'=>'Verification status change date from',
+      'verified_date_from' => array('datatype'=>'date', 'display'=>'Verification status change date from',
         'description'=>'Verification status change date of first sample to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"('#verified_date_from#'='Click here' OR s.verified_on >= CAST('#verified_date_from#' as date))")
         )
       ),
-      'verified_date_to' => array('datatype'=>'date', 'default'=>'', 'display'=>'Verification status change date to',
+      'verified_date_to' => array('datatype'=>'date', 'display'=>'Verification status change date to',
         'description'=>'Verification status change date of last sample to include in the output',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"('#verified_date_to#'='Click here' OR s.verified_on < CAST('#verified_date_to#' as date)+'1 day'::interval)")
         )
       ),
-      'verified_date_age' => array('datatype'=>'text', 'default'=>'', 'display'=>'Verification status change date from time ago',
+      'verified_date_age' => array('datatype'=>'text', 'display'=>'Verification status change date from time ago',
         'description'=>'E.g. enter "1 week" or "3 days" to define the how long ago samples can have last had their status changed before they are dropped from the report.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"s.verified_on>now()-'#verified_date_age#'::interval")
         )
       ),
-      'quality' => array('datatype'=>'lookup', 'default'=>'', 'display'=>'Quality',
+      'quality' => array('datatype'=>'lookup', 'display'=>'Quality',
         'description'=>'Minimum quality of records to include',
         'lookup_values'=>'V:Accepted records only,P:Not reviewed,!D:Exclude queried or not accepted records,' .
           '!R:Exclude not accepted records,R:Not accepted records only,DR:Queried or not accepted records,all:All records',
@@ -219,13 +219,13 @@ class report_standard_params_samples {
           // The all filter does not need any SQL
         )
       ),
-      'user_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"Current user's warehouse ID"),
-      'my_records' => array('datatype'=>'boolean', 'default'=>'', 'display'=>"Only include my records",
+      'user_id' => array('datatype'=>'integer', 'display'=>"Current user's warehouse ID"),
+      'my_records' => array('datatype'=>'boolean', 'display'=>"Only include my records",
         'wheres' => array(
           array('value'=>'1', 'operator'=>'equal', 'sql'=>"s.created_by_id=#user_id#")
         )
       ),
-      'group_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"ID of a group to filter to the members of",
+      'group_id' => array('datatype'=>'integer', 'display'=>"ID of a group to filter to the members of",
         'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
         'joins' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=s.created_by_id and #alias:gu#.group_id=#group_id# and #alias:gu#.deleted=false")
@@ -234,25 +234,25 @@ class report_standard_params_samples {
           array('value'=>'', 'operator'=>'', 'sql'=>"s.group_id=#group_id#")
         )
       ),
-      'implicit_group_id' => array('datatype'=>'integer', 'default'=>'', 'display'=>"ID of a group to filter to the members of",
+      'implicit_group_id' => array('datatype'=>'integer', 'display'=>"ID of a group to filter to the members of",
         'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
         'joins' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=s.created_by_id and #alias:gu#.group_id=#implicit_group_id# and #alias:gu#.deleted=false")
         )
       ),
-      'website_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Website IDs",
+      'website_list' => array('datatype'=>'integer[]', 'display'=>"Website IDs",
         'description'=>'Comma separated list of IDs',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"su.website_id #website_list_op# (#website_list#)")
         )
       ),
-      'survey_list' => array('datatype'=>'integer[]', 'default'=>'', 'display'=>"Survey IDs",
+      'survey_list' => array('datatype'=>'integer[]', 'display'=>"Survey IDs",
         'description'=>'Comma separated list of IDs',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"su.id #survey_list_op# (#survey_list#)")
         )
       ),
-      'input_form_list' => array('datatype'=>'text[]', 'default'=>'', 'display'=>"Input forms",
+      'input_form_list' => array('datatype'=>'text[]', 'display'=>"Input forms",
         'description'=>'Comma separated list of input form paths',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"s.input_form #input_form_list_op# (#input_form_list#)")
