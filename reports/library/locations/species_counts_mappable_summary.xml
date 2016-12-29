@@ -7,7 +7,9 @@
           FROM locations l
           LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false 
           JOIN index_locations_samples ils on ils.location_id=l.id
-          JOIN cache_occurrences_functional o ON o.sample_id=ils.sample_id
+          JOIN samples s on s.id=ils.sample_id
+          JOIN surveys su on su.id=s.survey_id
+          JOIN cache_occurrences_functional o ON o.website_id=su.website_id AND o.survey_id=su.id AND o.sample_id=ils.sample_id
           #agreements_join# 
           #joins#
           WHERE l.deleted=false 
