@@ -30,6 +30,7 @@ function taxon_associations_extend_orm() {
 }
 
 function taxon_associations_extend_data_services() {
+  echo 'extending data services';
   return array(
     'taxon_associations'=>array()
   );
