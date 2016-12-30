@@ -86,21 +86,25 @@
   having count(*)>1
 )</where>
     </param>
+    <param name="associated_with" display="Limit to species associated with" default=""
+           description="Taxon meaning ID of species" datatype="integer">
+      <join>join taxon_associations ta on ta.from_taxon_meaning_id=cttl.taxon_meaning_id and ta.to_taxon_meaning_id=#associated_with#</join>
+    </param>
   </params>
   <columns>
     <column name="species" sql="cttl.preferred_taxon" display="Species" in_count="true" datatype="text" />
     <column name="family_taxon" sql="cttl.family_taxon" display="Family" in_count="true" datatype="text" />
     <column name="order_taxon" sql="cttl.order_taxon" display="Order" in_count="true" datatype="text" />
     <column name="rarity_score" sql="rscv.int_value" display="SQI" datatype="integer" />
-    <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.code, td.abbreviation, td.id::varchar)), ';')"
+    <column name="designations" sql="string_agg(distinct coalesce(td.code, td.abbreviation, td.id::varchar), ';')"
             display="Conservation status" aggregate="true" datatype="text" />
     <column name="larval_guild" sql="string_agg(distinct lguildterm.term,';')" display="Larval guild" aggregate="true"
             datatype="text" template="&lt;span&gt;{larval_guild}&lt;/span&gt;" />
     <column name="adult_guild" sql="string_agg(distinct aguildterm.term,';')" display="Adult guild" aggregate="true"
             datatype="text" template="&lt;span&gt;{adult_guild}&lt;/span&gt;" />
-    <column name="broad_biotope" display="Broad biotope (Osiris)" sql="array_to_string(array_agg(distinct t_bb.term), '; ')"
+    <column name="broad_biotope" display="Broad biotope (Osiris)" sql="string_agg(distinct t_bb.term, '; ')"
             aggregate="true" datatype="text" template="&lt;span&gt;{broad_biotope}&lt;/span&gt;" />
-    <column name="specific_biotope" display="Habitat (Osiris)" sql="array_to_string(array_agg(distinct t_sb.term), '; ')"
+    <column name="specific_biotope" display="Habitat (Osiris)" sql="string_agg(distinct t_sb.term, '; ')"
             aggregate="true" datatype="text" template="&lt;span&gt;{specific_biotope}&lt;/span&gt;" />
     <column name="resource" display="Resources and traits (Osiris)" aggregate="true" datatype="text"
             sql="'[' || array_to_string(array_agg(distinct '[' || t_r.id || ',' || case when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then 0 else t_r.parent_id end || ',&quot;' || t_r.term || '&quot;]'), ',') || ']'" />
