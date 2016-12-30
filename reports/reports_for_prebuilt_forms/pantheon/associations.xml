@@ -1,0 +1,25 @@
+<report
+    title="Associated taxa by kingdom"
+    description="List of associations for a sample grouped by kingdom."
+>
+  <query website_filter_field="o.website_id">
+    select #columns#
+    from cache_occurrences_functional o
+    join taxon_associations ta on ta.from_taxon_meaning_id=o.taxon_meaning_id
+    join cache_taxa_taxon_lists cttlto on cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
+    and cttlto.taxon_list_id=34
+    and cttlto.preferred=true
+    where o.sample_id=#sample_id#
+  </query>
+  <order_bys>
+    <order_by>cttlto.kingdom_taxon, count(distinct o.taxon_meaning_id) desc</order_by>
+  </order_bys>
+  <params>
+    <param name='sample_id' display='Sample' description='Sample id to retrieve data for.' datatype='integer'/>
+  </params>
+  <columns>
+    <column name="kingdom_taxon" display="Kingdom" sql="cttlto.kingdom_taxon" />
+    <column name="taxon" display="Associated taxon" sql="cttlto.taxon" />
+    <column name="species_count" display="Species count" sql="count(distinct o.taxon_meaning_id)" aggregate="true"/>
+  </columns>
+</report>
