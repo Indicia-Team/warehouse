@@ -9,6 +9,9 @@
     join cache_taxa_taxon_lists cttlto on cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
     and cttlto.taxon_list_id=#taxon_list_id#
     and cttlto.preferred=true
+    join taxa_taxon_lists ttl on ttl.id=cttlto.id and ttl.deleted=false
+    left join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
+    left join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
     where o.sample_id=#sample_id#
   </query>
   <order_bys>
@@ -23,7 +26,7 @@
     <column name="taxon_meaning_id" sql="cttlto.taxon_meaning_id" visible="false"/>
     <column name="kingdom_taxon" display="Kingdom" sql="cttlto.kingdom_taxon" distincton="true" />
     <column name="taxon" display="Associated taxon" sql="cttlto.taxon" distincton="true" />
-    <column name="species_count" display="Species count" sql="count(distinct o.taxon_meaning_id)"
-            aggregate="true" distincton="true" />
+    <column name="species_count" display="Species count" sql="count(distinct o.taxon_meaning_id)" aggregate="true" distincton="true" />
+    <column name="cons" display="Conservation status" sql="string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code)" aggregate="true" />
   </columns>
 </report>
