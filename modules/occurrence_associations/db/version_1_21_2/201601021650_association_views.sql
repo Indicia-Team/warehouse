@@ -29,6 +29,6 @@ join cache_termlists_terms atype on atype.id=oa.association_type_id
 left join cache_termlists_terms part on part.id=oa.part_id
 left join cache_termlists_terms pos on pos.id=oa.position_id
 left join cache_termlists_terms impact on impact.id=oa.impact_id
-JOIN users c ON c.id = oa.created_by_ida
+JOIN users c ON c.id = oa.created_by_id
 JOIN users u ON u.id = oa.updated_by_id
 where oa.deleted=false;
