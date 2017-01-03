@@ -52,8 +52,10 @@
         where o.sample_id=#sample_id#
         group by av_sat1.int_value
       ) as sqi on sqi.sat_id=av_sat.int_value
-      left join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
-      left join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
+      left join (taxa_taxon_designations ttd
+        join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
+          and coalesce(td.code, td.abbreviation)&lt;&gt;'LC'
+      ) on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
       #joins#
       where s.id=#sample_id#
       group by t_sat.id, s.id, t_sat.id, case when p.id=t_sb.id then 0 else t_sat.parent_id end, sqi.sqi,
