@@ -267,11 +267,11 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
         'Season Autumn 92' => ['Autumn 92', '1992-09-01', '1992-11-30', 'P'],
         // Month only and season only years are always for the current year 
         // so will need updating with time.
-        'Month only March' => ['March', '2016-03-01', '2016-03-31', 'M'],
-        'Season only Winter' => ['Winter', '2015-12-01', '2016-02-29', 'S'],
-        'Season only Spring' => ['Spring', '2016-03-01', '2016-05-31', 'S'],
-        'Season only Summer' => ['Summer', '2016-06-01', '2016-08-31', 'S'],
-        'Season only Autumn' => ['Autumn', '2016-09-01', '2016-11-30', 'S'],
+        'Month only March' => ['March', '2017-03-01', '2017-03-31', 'M'],
+        'Season only Winter' => ['Winter', '2016-12-01', '2017-02-29', 'S'],
+        'Season only Spring' => ['Spring', '2017-03-01', '2017-05-31', 'S'],
+        'Season only Summer' => ['Summer', '2017-06-01', '2017-08-31', 'S'],
+        'Season only Autumn' => ['Autumn', '2017-09-01', '2017-11-30', 'S'],
         'Unknown' => ['Unknown', null, null, 'U'],
         'Unknown U' => ['U', null, null, 'U'],
     ];
