@@ -1,6 +1,6 @@
 <report
     title="Simple report for triggers against a taxon meaning"
-    description="Lists the most recent recordings of a taxon meaning."
+    description="Lists the most recent recordings of a taxon meaning or list of meanings."
 >
   <query>
   SELECT su.title, su.website_id, o.id as occurrence_id, s.date_start, s.date_end, s.date_type, lttl.taxon, 
@@ -32,7 +32,7 @@
   LEFT JOIN sample_attribute_values phone on phone.sample_id=s.id and phone.deleted=false and phone.sample_attribute_id=43
   LEFT JOIN users ur on ur.id=o.created_by_id and ur.id&lt;&gt;1
   LEFT JOIN people pr on pr.id=ur.person_id
-  WHERE lttl.taxon_meaning_id=#taxon_meaning_id#
+  WHERE lttl.taxon_meaning_id in (#taxon_meaning_id#)
   AND o.created_on &gt; '#date#'
   AND o.record_status NOT IN ('I','T')
   #order_by#
@@ -41,7 +41,8 @@
     <order_by>date_start DESC</order_by>
   </order_bys>
   <params>
-    <param name='taxon_meaning_id' display='Taxon Meaning ID' description='Select the taxon meaning to return data for' datatype='integer' />
+    <param name='taxon_meaning_id' display='Taxon Meaning IDs' datatype='integer[]'
+      description='Select the taxon meaning to return data for, or provide a comma separated list' />
     <param name='date' display='Date' description='Date &amp; time of last check' datatype='datetime' />
   </params>
   <columns>
