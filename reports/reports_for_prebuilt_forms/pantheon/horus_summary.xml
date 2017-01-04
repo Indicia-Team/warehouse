@@ -7,7 +7,7 @@
     from cache_occurrences o
     where o.sample_id=#sample_id#
     union
-    select 2, 'Number of species with Horus coding', count(distinct preferred_taxa_taxon_list_id)::varchar
+    select 2, 'Number of species with habitat scores', count(distinct preferred_taxa_taxon_list_id)::varchar
     from cache_occurrences o
     join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and ttlav.deleted=false
     join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttlav.deleted=false
