@@ -75,21 +75,13 @@ class Scratchpad_list_Model extends ORM {
           ' and entry_id not in (' . implode(',', $entries) . ')');
       }
       foreach ($entries as $entry_id) {
-        // insert any from the list that are not in the database.
-        $this->db->query(<<<SQL
-insert into scratchpad_list_entries (scratchpad_list_id, entry_id)
-select $this->id, $entry_id where not exists (
-  select true from scratchpad_list_entries where scratchpad_list_id=$this->id and entry_id=$entry_id
-)
-SQL
-        );
-        kohana::log('debug', <<<SQL
-insert into scratchpad_list_entries (scratchpad_list_id, entry_id)
-select $this->id, $entry_id where not exists (
-  select true from scratchpad_list_entries where scratchpad_list_id=$this->id and entry_id=$entry_id
-)
-SQL
-        );
+        if ($this->db->query(
+            "select 1 from scratchpad_list_entries where scratchpad_list_id=$this->id and entry_id=$entry_id"
+            )->count()===0) {
+          $this->db->query(
+            "insert into scratchpad_list_entries (scratchpad_list_id, entry_id) select $this->id, $entry_id"
+          );
+        }
       }
     }
     return true;
