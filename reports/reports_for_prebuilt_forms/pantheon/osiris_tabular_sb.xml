@@ -9,7 +9,7 @@
         t_bb.term as "bb_term",
         t_sb.term as "term",
         count(distinct o.preferred_taxa_taxon_list_id) as "speciescount",
-        count(distinct o.preferred_taxa_taxon_list_id) * 100 / (
+        count(distinct o.preferred_taxa_taxon_list_id)::float * 100 / (
           select count(distinct ttlsub.preferred_taxa_taxon_list_id)
           from cache_taxa_taxon_lists ttlsub
           join taxa_taxon_list_attribute_values avsub
