@@ -10,7 +10,8 @@ CREATE TABLE scratchpad_lists
   updated_by_id integer NOT NULL, -- Foreign key to the users table (updater).
   website_id integer NOT NULL, -- Foreign key to the websites table.
   expires_on timestamp without time zone, -- Sets a date and time after which the scratchpad list is expired and made available for garbage collection.
-  CONSTRAINT pk_scratchpad_listss PRIMARY KEY (id),
+  deleted boolean NOT NULL DEFAULT false, -- Has this record been deleted?
+  -- CONSTRAINT pk_scratchpad_listss PRIMARY KEY (id),
   CONSTRAINT fk_scratchpad_lists_creator FOREIGN KEY (created_by_id)
       REFERENCES users (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -37,7 +38,7 @@ COMMENT ON COLUMN scratchpad_lists.updated_on IS 'Date this record was updated.'
 COMMENT ON COLUMN scratchpad_lists.updated_by_id IS 'Foreign key to the users table (updater).';
 COMMENT ON COLUMN scratchpad_lists.website_id IS 'Foreign key to the websites table.';
 COMMENT ON COLUMN scratchpad_lists.expires_on IS 'Sets a date and time after which the scratchpad list is expired and made available for garbage collection.';
-
+COMMENT ON COLUMN scratchpad_lists.deleted IS 'Has this record been deleted?';
 
 -- Index: fki_scratchpad_lists_creator
 
