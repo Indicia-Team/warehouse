@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -14,25 +13,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Config
- * @author  Indicia Team
- * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link  http://code.google.com/p/indicia/
+ * @package	Taxon Designations
+ * @subpackage Plugins
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
  */
-
-defined('SYSPATH') or die('No direct script access.');
 
 /**
- * @var string The application files version number.
+ * Hook to ORM enable the relationship between taxon_meanings and associations
  */
-<<<<<<< HEAD
-$config['version'] = '1.21.0';
-$config['release_date']  = '2016-12-08';
-=======
-$config['version'] = '1.22.3';
-$config['release_date']  = '2017-01-02';
->>>>>>> develop
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+function taxon_associations_extend_orm() {
+  return array('taxon_meaning'=>array(
+    'has_and_belongs_to_many'=>array('taxon_associations')
+  ));
+}
+
+function taxon_associations_extend_data_services() {
+  echo 'extending data services';
+  return array(
+    'taxon_associations'=>array()
+  );
+}
 
 ?>

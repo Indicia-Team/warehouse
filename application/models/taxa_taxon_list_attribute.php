@@ -33,7 +33,7 @@ class Taxa_Taxon_List_Attribute_Model extends ATTR_ORM {
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'termlist');
 
   protected $has_many = array(
-    'taxa_taxon_list_attributes_values',
+    'taxa_taxon_list_attribute_values',
   );
 
   protected $has_and_belongs_to_many = array('websites');
@@ -51,7 +51,6 @@ class Taxa_Taxon_List_Attribute_Model extends ATTR_ORM {
   protected function postSubmit($isInsert) {
     $lists = ORM::factory('taxon_list')->find_all();
     foreach ($lists as $list) {
-      // First check for non survey specific checkbox
       $this->set_attribute_taxon_list_record($this->id, $list->id, isset($_POST['taxon_list_'.$list->id]));
     }
     return true;
@@ -80,13 +79,16 @@ class Taxa_Taxon_List_Attribute_Model extends ATTR_ORM {
         $attributes_taxon_list->save();
       }
     } else if ($checked == true) {
-           $save_array = array(
-                'id' => $attributes_taxon_list->object_name
-                ,'fields' => array('taxa_taxon_list_attribute_id' => array('value' => $attr_id)
-                          ,'taxon_list_id' => array('value' => $list_id)
-                          ,'deleted' => array('value' => 'f'))
-                ,'fkFields' => array()
-                ,'superModels' => array());
+       $save_array = array(
+         'id' => $attributes_taxon_list->object_name,
+         'fields' => array(
+           'taxa_taxon_list_attribute_id' => array('value' => $attr_id),
+           'taxon_list_id' => array('value' => $list_id),
+           'deleted' => array('value' => 'f')
+         ),
+         'fkFields' => array(),
+         'superModels' => array()
+       );
       $attributes_taxon_list->submission = $save_array;
       $attributes_taxon_list->submit();
     }

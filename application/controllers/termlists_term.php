@@ -135,6 +135,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
+    $this->loadAttributes($r, array('termlist_id'=>array($this->model->termlist_id)));
 
     // Add items to view
     $r = array_merge($r, array(
@@ -155,7 +156,13 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       if (array_key_exists('termlists_term:parent_id', $_POST)) {
         $r['termlists_term:parent_id']=$_POST['termlists_term:parent_id'];
       }
+    } else {
+      // after a validation failure, the list id is in the post data
+      $r['termlists_term:termlist_id'] = $_POST['termlists_term:termlist_id'];
     }
+    $this->loadAttributes($r,
+      array('termlist_id'=>array($r['termlists_term:termlist_id']))
+    );
     return $r;
   }
 
