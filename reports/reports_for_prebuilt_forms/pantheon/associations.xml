@@ -4,25 +4,37 @@
 >
   <query website_filter_field="o.website_id">
     select #columns#
-    from cache_occurrences_functional o
-    join taxon_associations ta on ta.from_taxon_meaning_id=o.taxon_meaning_id
+    from cache_taxa_taxon_lists cttl
+    join taxon_associations ta on ta.from_taxon_meaning_id=cttl.taxon_meaning_id
     join cache_taxa_taxon_lists cttlto on cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
-    and cttlto.taxon_list_id=#taxon_list_id#
-    and cttlto.preferred=true
+      and cttlto.taxon_list_id=#taxon_list_id#
+      and cttlto.preferred=true
     join taxa_taxon_lists ttl on ttl.id=cttlto.id and ttl.deleted=false
     left join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
     left join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
-    where o.sample_id=#sample_id#
+    #joins#
   </query>
   <order_bys>
     <order_by>cttlto.kingdom_taxon, count(distinct o.taxon_meaning_id) desc</order_by>
   </order_bys>
   <params>
-    <param name='sample_id' display='Sample' description='Sample id to retrieve data for.' datatype='integer'/>
+    <param name="sample_id" display="Sample ID"  datatype="integer" default="">
+      <join>
+        join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+        join cache_samples_functional s on s.website_id=o.website_id and s.survey_id=o.survey_id and s.id=o.sample_id
+        and s.id=#sample_id#
+      </join>
+    </param>
+    <param name="scratchpad_list_id" display="Scratchpad list" datatype="integer" default="">
+      <join>
+        join scratchpad_list_entries sle on sle.entry_id=cttl.preferred_taxa_taxon_list_id
+        join scratchpad_lists s on s.id=sli.scratchpad_list_id and s.deleted=false and s.scratchpad_list_id=#scratchpad_list_id#
+      </join>
+    </param>
     <param name='taxon_list_id' display='Taxon list' description='Main taxon list ID used.' datatype='integer'/>
   </params>
   <columns>
-    <column name="sample_id" sql="o.sample_id" visible="false"/>
+    <column name="sample_or_list_id" sql="s.id" visible="false"/>
     <column name="taxon_meaning_id" sql="cttlto.taxon_meaning_id" visible="false"/>
     <column name="kingdom_taxon" display="Kingdom" sql="cttlto.kingdom_taxon" distincton="true" />
     <column name="taxon" display="Associated taxon" sql="cttlto.taxon" distincton="true" />
