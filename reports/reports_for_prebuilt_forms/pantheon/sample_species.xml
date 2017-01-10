@@ -41,6 +41,10 @@
     ) on horusv.taxa_taxon_list_id=ttl.id and horusv.deleted=false
     left join taxa_taxon_list_attribute_values allv on allv.taxa_taxon_list_id=ttl.id and allv.deleted=false
       and allv.taxa_taxon_list_attribute_id in (#all_trait_attr_ids#)
+    left join taxon_associations ta on ta.from_taxon_meaning_id=cttl.taxon_meaning_id
+    left join cache_taxa_taxon_lists cttlto on cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
+      and cttlto.taxon_list_id=#taxon_list_id#
+      and cttlto.preferred=true
     #joins#
     where cttl.preferred=true
     and s.id=#sample_id#
@@ -91,6 +95,7 @@
            description="Taxon meaning ID of species" datatype="integer">
       <join>join taxon_associations ta on ta.from_taxon_meaning_id=cttl.taxon_meaning_id and ta.to_taxon_meaning_id=#associated_with#</join>
     </param>
+    <param name='taxon_list_id' display='Taxon list' description='Main taxon list ID used.' datatype='integer'/>
   </params>
   <columns>
     <column name="species" sql="cttl.preferred_taxon" display="Species" in_count="true" datatype="text" />
@@ -111,6 +116,8 @@
             sql="'[' || array_to_string(array_agg(distinct '[' || t_r.id || ',' || case when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then 0 else t_r.parent_id end || ',&quot;' || t_r.term || '&quot;]'), ',') || ']'" />
     <column name="isis_sat_code" sql="isissatcode.term" display="Specific assemblage type" datatype="text" />
     <column name="horus_indices" display="Published indices" aggregate="true" datatype="text"
-            sql="array_to_string(array_agg(distinct coalesce(horusa.caption || ': ' || coalesce(horust.term, horusv.int_value::varchar))), ', ')" />
+            sql="string_agg(distinct coalesce(horusa.caption || ': ' || coalesce(horust.term, horusv.int_value::varchar)), ', ')" />
+    <column name="associations" display="Associations" aggregate="true" datatype="text"
+            sql="string_agg(distinct cttlto.taxon, ', ')" />
   </columns>
 </report>
