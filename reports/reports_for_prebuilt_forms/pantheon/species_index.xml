@@ -77,7 +77,7 @@ where cttl.preferred=true
     <column name="species" sql="cttl.preferred_taxon" display="Species" in_count="true" datatype="text" />
     <column name="family" sql="cttl.family_taxon" display="Family" in_count="true" datatype="text" />
     <column name="order" sql="cttl.order_taxon" display="Order" in_count="true" datatype="text" />
-    <column name="rarity_score" sql="rscv.int_value" display="SQI" datatype="integer" />
+    <column name="rarity_score" sql="rscv.int_value" display="SQS" datatype="integer" />
     <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.code, td.abbreviation, td.id::varchar)), ';')"
             display="Conservation status" aggregate="true" datatype="text" />
     <column name="larval_guild" sql="string_agg(distinct lguildterm.term,';')" display="Larval feeding guild" aggregate="true"
