@@ -16,19 +16,52 @@
     union
     select 3, term, array_to_string(array_agg(count::varchar || ' ' || code), '; ')
     from (
-    select cat.term, td.code, count(distinct o.preferred_taxa_taxon_list_id)
-    from taxon_designations td
-    join taxa_taxon_designations ttd on ttd.taxon_designation_id=td.id and ttd.deleted=false
-    join taxa_taxon_lists ttl on ttl.taxon_id=ttd.taxon_id and ttl.deleted=false
-    join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
-    join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
-    join cache_termlists_terms cat on cat.id=td.category_id
-    where td.deleted=false
-    and ttl.taxon_list_id=#taxon_list_id#
-    and o.sample_id=#sample_id#
-    group by cat.term, td.code
+      select cat.term, td.code, count(distinct o.preferred_taxa_taxon_list_id)
+      from taxon_designations td
+      join taxa_taxon_designations ttd on ttd.taxon_designation_id=td.id and ttd.deleted=false
+      join taxa_taxon_lists ttl on ttl.taxon_id=ttd.taxon_id and ttl.deleted=false
+      join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
+      join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+      join cache_termlists_terms cat on cat.id=td.category_id
+      where td.deleted=false
+      and ttl.taxon_list_id=#taxon_list_id#
+      and o.sample_id=#sample_id#
+      group by cat.term, td.code
     ) as subtable
     group by term
+    union
+    select 4, '&lt;h3&gt;Scores&lt;/h3&gt;', '&lt;hr/&gt;'
+    union
+    select 5, ttla.caption as "caption",
+      case ttla.caption
+        -- should count only native species
+        when 'grazing marsh - species' then round(sum(ttlav.int_value)::numeric / count(distinct o.preferred_taxa_taxon_list_id), 2)::varchar
+        when 'ERS (S &amp; B)' then round(sum(case when ttlav.int_value &gt; 3 then 0 else ttlav.int_value end)::numeric*100 / count(case when ttlav.int_value &gt; 3 then null else 1 end))::varchar
+        when 'IEC (older version)' then sum(ttlav.int_value)::varchar
+        when 'IEC (revised)' then sum(ttlav.int_value)::varchar
+        when 'peat bog spiders' then count(distinct o.preferred_taxa_taxon_list_id)::varchar
+        else
+          /* Standard output, just a breakdown of counts of each score category */
+          (select string_agg(value, ', ') from (
+          select count(*)::varchar ||' ' || string_agg(distinct coalesce(sd.value, t.term, avsub.int_value::varchar, avsub.text_value), '|') as value
+          from taxa_taxon_list_attribute_values avsub
+          join cache_occurrences_functional osub on osub.preferred_taxa_taxon_list_id=avsub.taxa_taxon_list_id
+          join taxa_taxon_list_attributes asub on asub.id=avsub.taxa_taxon_list_attribute_id and asub.deleted=false
+          left join cache_termlists_terms t on t.id=avsub.int_value and t.termlist_id=asub.termlist_id
+          left join pantheon.score_details sd on sd.category=asub.caption and sd.key=coalesce(t.term, avsub.int_value::varchar, avsub.text_value)
+          where avsub.deleted=false
+          and osub.sample_id=#sample_id#
+          and avsub.taxa_taxon_list_attribute_id=ttla.id
+          group by avsub.int_value, avsub.text_value
+          ) as sub)
+      end as values
+    from taxa_taxon_list_attributes ttla
+    join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_attribute_id=ttla.id and ttlav.deleted=false
+    join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=ttlav.taxa_taxon_list_id
+    where ttla.description='Pantheon quality indices'
+    and o.sample_id=#sample_id#
+    and ttla.deleted=false
+    GROUP BY o.sample_id, ttla.id, ttla.caption
     order by sort
   </query>
   <params>
