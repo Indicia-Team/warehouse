@@ -1,5 +1,5 @@
 <report title="Osiris tabular resources" description="Tabular output for Osiris.">
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="cttl.website_id">
     select #columns#
     from (
       select t_r.id as "id",
@@ -74,7 +74,6 @@
           and s.scratchpad_list_id=#sample_id#
         </join>
       </joins>
-      <option></option>
     </param>
     <param name='bb_attr_id' display='Broad biotope attribute ID' datatype='integer'/>
     <param name='sb_attr_id' display='Specific biotope attribute ID' datatype='integer'/>

@@ -2,16 +2,17 @@
     title="Trait Overviews"
     description="A report which displays all the traits of a particular trait type or list of types associated with a sample."
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="cttl.website_id">
     select #columns#
     from (
-      select o.sample_id as "sample_id",
+      select #sample_id# as "sample_id",
+      '#sample_type#' as "sample_type",
       t.id as "trait_term_id",
       t.parent_id as "parent_term_id",
       t.term as "trait",
-      count(distinct o.preferred_taxa_taxon_list_id) as "count",
+      count(distinct cttl.preferred_taxa_taxon_list_id) as "count",
       ttlav.taxa_taxon_list_attribute_id as "trait_attr_id",
-      count(distinct o.preferred_taxa_taxon_list_id) * 100 / (
+      count(distinct cttl.preferred_taxa_taxon_list_id) * 100 / (
         select count(distinct ttlsub.preferred_taxa_taxon_list_id)
         from cache_taxa_taxon_lists ttlsub
         join taxa_taxon_list_attribute_values avsub
@@ -21,18 +22,33 @@
       ) as "rep"
       from taxa_taxon_list_attribute_values ttlav
       join cache_termlists_terms t on t.id=ttlav.int_value
-      join cache_occurrences o on o.preferred_taxa_taxon_list_id=ttlav.taxa_taxon_list_id
+      join cache_taxa_taxon_lists cttl  on cttl.preferred_taxa_taxon_list_id=ttlav.taxa_taxon_list_id
+      #joins#
       where ttlav.deleted=false
-      and o.sample_id=#sample_id#
       #filters#
-      group by o.sample_id, t.id, t.parent_id, t.term, ttlav.taxa_taxon_list_attribute_id
+      group by t.id, t.parent_id, t.term, ttlav.taxa_taxon_list_attribute_id
     ) as sub
   </query>
   <order_bys>
     <order_by>count desc</order_by>
   </order_bys>
   <params>
-    <param name='sample_id' display='Sample' description='Sample id to retrieve data for.' datatype='integer'/>
+    <param name="sample_id" display="Sample or scratchpad ID"  datatype="integer"/>
+    <param name="sample_type" display="Sample type" datatype="lookup" default="sample"
+           lookupValues="sample:Sample,scratchpad:Scratchpad list">
+      <joins>
+        <join operator="equal" value="sample">
+          join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+          join cache_samples_functional s on s.website_id=o.website_id and s.survey_id=o.survey_id and s.id=o.sample_id
+          and s.id=#sample_id#
+        </join>
+        <join operator="equal" value="scratchpad">
+          join scratchpad_list_entries sle on sle.entry_id=cttl.preferred_taxa_taxon_list_id
+          join scratchpad_lists s on s.id=sli.scratchpad_list_id and s.deleted=false
+          and s.scratchpad_list_id=#sample_id#
+        </join>
+      </joins>
+    </param>
     <param name='trait_attr_ids' display='Trait IDs' description='Comma separated list of traits to return' datatype='integer[]' default="">
       <where>ttlav.taxa_taxon_list_attribute_id in (#trait_attr_ids#)</where>
     </param>
@@ -45,6 +61,7 @@
   </params>
   <columns>
     <column name="sample_id" sql="sample_id" />
+    <column name="sample_type" sql="sample_type" />
     <column name="trait_term_id" sql="trait_term_id" />
     <column name="parent_term_id" sql="parent_term_id" />
     <column name="trait" sql="trait" />

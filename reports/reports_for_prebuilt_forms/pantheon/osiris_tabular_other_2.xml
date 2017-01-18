@@ -1,6 +1,6 @@
 <report title="Osiris tabular other - level 2"
         description="Tabular output for Osiris level 2 other classifications for a sample.">
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="cttl.website_id">
     select #columns#
     from (
       select t_l2.id as "id",
@@ -66,7 +66,6 @@
           and s.scratchpad_list_id=#sample_id#
         </join>
       </joins>
-      <option></option>
     </param>
     <param name="other_classification_attr_ids" display="Other attribute IDs" datatype="integer[]"/>
     <param name="conservation_group_id" display="Conservation group" datatype="integer" default="">

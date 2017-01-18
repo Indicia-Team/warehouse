@@ -2,7 +2,7 @@
     title="Full species index"
     description="A report which lists all Pantheon species along with trait data."
     >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="cttl.website_id">
 select #columns#
 from cache_taxa_taxon_lists cttl
 join taxa_taxon_lists ttl on ttl.id=cttl.preferred_taxa_taxon_list_id
