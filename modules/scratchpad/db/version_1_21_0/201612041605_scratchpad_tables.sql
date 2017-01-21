@@ -11,7 +11,7 @@ CREATE TABLE scratchpad_lists
   website_id integer NOT NULL, -- Foreign key to the websites table.
   expires_on timestamp without time zone, -- Sets a date and time after which the scratchpad list is expired and made available for garbage collection.
   deleted boolean NOT NULL DEFAULT false, -- Has this record been deleted?
-  -- CONSTRAINT pk_scratchpad_listss PRIMARY KEY (id),
+  CONSTRAINT pk_scratchpad_lists PRIMARY KEY (id),
   CONSTRAINT fk_scratchpad_lists_creator FOREIGN KEY (created_by_id)
       REFERENCES users (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
