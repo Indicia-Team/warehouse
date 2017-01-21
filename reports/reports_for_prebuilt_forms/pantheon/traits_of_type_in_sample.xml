@@ -44,7 +44,7 @@
         </join>
         <join operator="equal" value="scratchpad">
           join scratchpad_list_entries sle on sle.entry_id=cttl.preferred_taxa_taxon_list_id
-          join scratchpad_lists s on s.id=sli.scratchpad_list_id and s.deleted=false
+          join scratchpad_lists s on s.id=sle.scratchpad_list_id and s.deleted=false
           and s.scratchpad_list_id=#sample_id#
         </join>
       </joins>
