@@ -63,16 +63,12 @@ class Scratchpad_list_Model extends ORM {
   }
 
   public function postSubmit($isInsert) {
-    kohana::log('debug', 'Submission: ' . var_export($this->submission, true));
     if (array_key_exists('metaFields', $this->submission) &&
         array_key_exists('entries', $this->submission['metaFields'])) {
       $entries = explode(';', $this->submission['metaFields']['entries']['value']);
-      kohana::log('debug', var_export($entries, true));
       if (!$isInsert) {
         $this->db->query('delete from scratchpad_list_entries where scratchpad_list_id=' . $this->id .
             ' and entry_id not in (' . implode(',', $entries) . ')');
-        kohana::log('debug', 'delete from scratchpad_list_entries where scratchpad_list_id=' . $this->id .
-          ' and entry_id not in (' . implode(',', $entries) . ')');
       }
       foreach ($entries as $entry_id) {
         if ($this->db->query(
