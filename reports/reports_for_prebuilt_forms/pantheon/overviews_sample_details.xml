@@ -10,16 +10,19 @@
     LEFT JOIN cache_occurrences o on o.sample_id = s.id
     LEFT JOIN taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and ttlav.deleted=false
       and ttlav.taxa_taxon_list_attribute_id in (#all_trait_attr_ids#)
-  WHERE s.id = #sample_id#
+  WHERE s.id = #sample_id# and '#sample_type#' = 'sample'
   AND #website_filter#
   </query>
   <params>
     <param name='sample_id' display='Sample' description='Sample id to retrieve data for.' datatype='integer'/>
+    <param name="sample_type" display="Sample type" datatype="lookup" default="sample"
+           lookupValues="sample:Sample,scratchpad:Scratchpad list" />
     <param name='all_trait_attr_ids' display='Trait Attribute Ids' datatype='text'
            description='Comma separated list of the taxa taxon list attribute ids that hold species traits.' />
   </params>
   <columns>
     <column name='sample_id' sql='s.id' display='Sample ID' in_count='true'/>
+    <column name='sample_type' sql="'sample'" aggregate="true" />
     <column name='site_name' sql='coalesce(l.name,s.location_name)' display='Site Name' />
     <column name='date_of_survey' sql='s.date_start' display='Date of Survey' />
     <column name='surveyor' sql='s.recorder_names' display='Surveyor' />
