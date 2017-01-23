@@ -15,7 +15,7 @@
     #joins#
   </query>
   <order_bys>
-    <order_by>cttlto.kingdom_taxon, count(distinct o.taxon_meaning_id) desc</order_by>
+    <order_by>cttlto.kingdom_taxon, count(distinct cttl.taxon_meaning_id) desc</order_by>
   </order_bys>
   <params>
     <param name="sample_id" display="Sample or scratchpad ID"  datatype="integer"/>
@@ -25,12 +25,11 @@
         <join operator="equal" value="sample">
           join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
           join cache_samples_functional s on s.website_id=o.website_id and s.survey_id=o.survey_id and s.id=o.sample_id
-          and s.id=#sample_id#
+              and s.id=#sample_id#
         </join>
         <join operator="equal" value="scratchpad">
           join scratchpad_list_entries sle on sle.entry_id=cttl.preferred_taxa_taxon_list_id
-          join scratchpad_lists s on s.id=sle.scratchpad_list_id and s.deleted=false
-          and s.scratchpad_list_id=#sample_id#
+              and sle.scratchpad_list_id=#sample_id#
         </join>
       </joins>
     </param>
@@ -42,7 +41,7 @@
     <column name="taxon_meaning_id" sql="cttlto.taxon_meaning_id" visible="false"/>
     <column name="kingdom_taxon" display="Kingdom" sql="cttlto.kingdom_taxon" distincton="true" />
     <column name="taxon" display="Associated taxon" sql="cttlto.taxon" distincton="true" />
-    <column name="species_count" display="Species count" sql="count(distinct o.taxon_meaning_id)" aggregate="true" distincton="true" />
+    <column name="species_count" display="Species count" sql="count(distinct cttl.taxon_meaning_id)" aggregate="true" distincton="true" />
     <column name="cons" display="Conservation status" sql="string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code)" aggregate="true" />
   </columns>
 </report>

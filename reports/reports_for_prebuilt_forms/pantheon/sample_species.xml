@@ -68,12 +68,11 @@
         <join operator="equal" value="sample">
           join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
           join cache_samples_functional s on s.website_id=o.website_id and s.survey_id=o.survey_id and s.id=o.sample_id
-          and s.id=#sample_id#
+              and s.id=#sample_id#
         </join>
         <join operator="equal" value="scratchpad">
           join scratchpad_list_entries sle on sle.entry_id=cttl.preferred_taxa_taxon_list_id
-          join scratchpad_lists s on s.id=sle.scratchpad_list_id and s.deleted=false
-          and s.scratchpad_list_id=#sample_id#
+              and sle.scratchpad_list_id=#sample_id#
         </join>
       </joins>
     </param>
@@ -105,7 +104,7 @@
     </param>
     <param name="associated_with" display="Limit to species associated with" default=""
            description="Taxon meaning ID of species" datatype="integer">
-      <join>join taxon_associations ta on ta.from_taxon_meaning_id=cttl.taxon_meaning_id and ta.to_taxon_meaning_id=#associated_with#</join>
+      <join>join taxon_associations tafilt on tafilt.from_taxon_meaning_id=cttl.taxon_meaning_id and tafilt.to_taxon_meaning_id=#associated_with#</join>
     </param>
     <param name='taxon_list_id' display='Taxon list' description='Main taxon list ID used.' datatype='integer'/>
   </params>
