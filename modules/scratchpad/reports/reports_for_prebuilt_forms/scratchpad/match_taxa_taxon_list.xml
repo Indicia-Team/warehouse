@@ -17,10 +17,22 @@
     <param name="simplified_list" datatype="text[]" />
   </params>
   <columns>
-    <column name='id' display='Name' sql='cttl.preferred_taxa_taxon_list_id' datatype='integer' />
+    <column name='id' display='Name' sql='cttl.id' datatype='integer' />
     <column name='external_key' display='External key' sql="coalesce(cttl.external_key, '')" />
     <column name='taxon' display='Species' sql="cttl.taxon" />
     <column name='simplified' display='Simplified' sql="cttl.search_name" />
+    <column name="preferred" display="Preferred option" sql="cttl.preferred" />
+    <column name='unambiguous' display='Unambiguous name'
+            sql="  case cttl.language_iso when 'lat' then '&lt;em&gt;' || cttl.taxon || '&lt;/em&gt;' else cttl.taxon end ||
+  coalesce(' ' || cttl.authority, '') ||
+  case
+    when cttl.taxon=cttl.preferred_taxon then ''
+    else ' (' || case cttl.preferred_language_iso when 'lat' then '&lt;em&gt;' || cttl.preferred_taxon || '&lt;/em&gt;' else cttl.preferred_taxon end || ')' ||
+        coalesce(' ' || cttl.preferred_authority, '')
+  end ||
+  case
+    when coalesce(cttl.default_common_name, '') = cttl.taxon or coalesce(cttl.default_common_name, '') = cttl.preferred_taxon then ''
+    else ' [' || cttl.default_common_name || ']'
+  end" />
   </columns>
 </report>
-

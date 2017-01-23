@@ -26,5 +26,6 @@
     <column name="entity" display='Entity' datatype="text" sql="s.entity" />
     <column name="items" display="Items" datatype="integer" aggregate="true" sql="count(e.*)" />
     <column name="description" display='Description' datatype="text" sql="s.description" />
+    <column name="created_on" display='Created on' datatype="date" sql="s.created_on" />
   </columns>
 </report>
