@@ -11,6 +11,9 @@
       OR cttl.search_name IN (#simplified_list#)
     )
   </query>
+  <order_bys>
+    <order_by>cttl.preferred DESC</order_by>
+  </order_bys>
   <params>
     <param name="taxon_list_id" datatype="integer" />
     <param name="list" datatype="text[]" />
@@ -19,7 +22,7 @@
   <columns>
     <column name='id' display='Name' sql='cttl.id' datatype='integer' />
     <column name='external_key' display='External key' sql="coalesce(cttl.external_key, '')" />
-    <column name='taxon' display='Species' sql="cttl.taxon" />
+    <column name='name' display='Name' sql="cttl.taxon" />
     <column name='simplified' display='Simplified' sql="cttl.search_name" />
     <column name="preferred" display="Preferred option" sql="cttl.preferred" />
     <column name='unambiguous' display='Unambiguous name'
@@ -31,7 +34,7 @@
         coalesce(' ' || cttl.preferred_authority, '')
   end ||
   case
-    when coalesce(cttl.default_common_name, '') = cttl.taxon or coalesce(cttl.default_common_name, '') = cttl.preferred_taxon then ''
+    when cttl.default_common_name is null or coalesce(cttl.default_common_name, '') = cttl.taxon or coalesce(cttl.default_common_name, '') = cttl.preferred_taxon then ''
     else ' [' || cttl.default_common_name || ']'
   end" />
   </columns>
