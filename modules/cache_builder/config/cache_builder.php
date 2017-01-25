@@ -378,8 +378,8 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
 $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon_searchterms cts
     set taxa_taxon_list_id=cttl.id,
       taxon_list_id=cttl.taxon_list_id,
-      searchterm=regexp_replace(lower(
-          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+      searchterm=regexp_replace(regexp_replace(
+          lower( regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, '') ), 'ae', 'e', 'g'
         ), E'[^a-z0-9\\\\?\\\\+]', '', 'g'),                 
       original=cttl.taxon,
       taxon_group_id=cttl.taxon_group_id,
@@ -398,8 +398,8 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
       code_type_id=null,
       source_id=null,
       preferred=cttl.preferred,
-      searchterm_length=length(regexp_replace(lower(
-          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+      searchterm_length=length(regexp_replace(regexp_replace(
+          lower( regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, '') ), 'ae', 'e', 'g'
         ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       parent_id=cttl.parent_id,
       preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
