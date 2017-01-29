@@ -88,10 +88,10 @@
     <column name="sample_type" sql="'#sample_type#'" visible="false" />
     <column name="term_id" sql="term_id" visible="false" />
     <column name="parent_r_id" visible="false" sql="parent_r_id" />
-    <column name="bb_term" sql="bb_term" display="Broad biotope" />
-    <column name="sb_term" sql="sb_term" display="Specific biotope" />
-    <column name="term" display="Resource" sql="term" />
-    <column name="count" sql="speciescount" display="Count" />
+    <column name="bb_term" sql="bb_term" display="Broad biotope" datatype="text" />
+    <column name="sb_term" sql="sb_term" display="Specific biotope" datatype="text" />
+    <column name="term" display="Resource" sql="term" datatype="text" />
+    <column name="count" sql="speciescount" display="Count" datatype="integer" />
     <column name="rep" display="% representation" sql="case when sub.rep&lt;1 then '&lt;1' else round(sub.rep)::varchar end" />
     <column name="sqi" sql="sqi" display="SQI" datatype="float" />
     <column name="cons" display="Conservation status" sql="cons" />

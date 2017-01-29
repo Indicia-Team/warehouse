@@ -93,15 +93,15 @@
     <column name="sample_type" sql="'#sample_type#'" visible="false" />
     <column name="term_id" sql="term_id" visible="false" />
     <column name="parent_sat_id" visible="false" sql="parent_sat_id" />
-    <column name="bb_term" sql="bb_term" display="Broad biotope" />
-    <column name="sb_term" sql="sb_term" display="Specific biotope" />
-    <column name="term" sql="term" display="SAT" />
-    <column name="count" sql="speciescount" display="Count" />
+    <column name="bb_term" sql="bb_term" display="Broad biotope" datatype="text" />
+    <column name="sb_term" sql="sb_term" display="Specific biotope" datatype="text" />
+    <column name="term" sql="term" display="SAT" datatype="text" />
+    <column name="count" sql="speciescount" display="Count" datatype="integer" />
     <column name="rep" display="% representation" sql="case when sub.rep&lt;1 then '&lt;1' else round(sub.rep)::varchar end" />
-    <column name="sqi" sql="sqi" display="SQI" datatype="float" />
+    <column name="sqi" sql="sqi" display="SQI" datatype="float"/>
     <column name="cons" display="Conservation status" sql="cons" />
     <column name="threshold" sql="threshold" visible="false" />
-    <column name="code" sql="code" display="Code" />
-    <column name="condition" sql="condition" display="Reported condition" />
+    <column name="code" sql="code" display="Code" datatype="text" />
+    <column name="condition" sql="condition" display="Reported condition" datatype="text" />
   </columns>
 </report>

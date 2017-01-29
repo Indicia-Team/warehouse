@@ -73,8 +73,8 @@
     <column name="sample_id" sql="#sample_id#" visible="false" />
     <column name="sample_type" sql="'#sample_type#'" visible="false" />
     <column name="term_id" sql="term_id" visible="false" />
-    <column name="term" sql="term" display="Classification L1" />
-    <column name="count" sql="speciescount" display="Count" />
+    <column name="term" sql="term" display="Classification L1" datatype="text" />
+    <column name="count" sql="speciescount" display="Count" datatype="integer" />
     <column name="rep" display="% representation" sql="case when sub.rep&lt;1 then '&lt;1' else round(sub.rep)::varchar end" />
     <column name="sqi" sql="sqi" display="SQI" datatype="float" />
     <column name="cons" display="Conservation status" sql="cons" />
