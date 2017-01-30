@@ -10,8 +10,14 @@
       and cttlto.taxon_list_id=#taxon_list_id#
       and cttlto.preferred=true
     join taxa_taxon_lists ttl on ttl.id=cttlto.id and ttl.deleted=false
-    left join taxa_taxon_designations ttd on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
-    left join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
+    left join (taxa_taxon_designations ttd
+        join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
+        join cache_termlists_terms cat on cat.id=td.category_id and (
+             (cat.term='GB Red List' and coalesce(td.code, td.abbreviation) not in ('LC', 'NA'))
+          or (cat.term='GB Status' and coalesce(td.code, td.abbreviation) not in ('None', 'Not reviewed', 'Not native'))
+          or (cat.term not in ('GB Red List', 'GB Status'))
+        )
+      ) on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
     #joins#
   </query>
   <order_bys>
