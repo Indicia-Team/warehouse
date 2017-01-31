@@ -103,28 +103,38 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         $status = $_POST['record_substatus'] == 2 ? 'accepted as considered correct' : 'accepted as correct';
         $substatus = $_POST['record_substatus'];
       }
-      foreach ($data['content']['records'] as $record) {
-        if (($record['record_status']!=='V' || $record['record_substatus']!==$substatus) && (!empty($record['pass'])||$_POST['ignore']==='true')) {
-          $ids[$record['occurrence_id']] = $record['occurrence_id'];
-          $db->insert('occurrence_comments', array(
-              'occurrence_id'=>$record['occurrence_id'],
-              'comment'=>"This record is $status",
-              'created_by_id'=>$this->user_id,
-              'created_on'=>date('Y-m-d H:i:s'),
-              'updated_by_id'=>$this->user_id,
-              'updated_on'=>date('Y-m-d H:i:s'),
-              'record_status'=>'V',
-              'record_substatus' => $substatus
-          ));
+      if(!isset($data['content']))
+        throw new Exception('Missing content returned from requestReport.');
+      if(!isset($data['content']['records']))
+        throw new Exception('Missing content records returned from requestReport.');
+      if(!is_array($data['content']['records']))
+        throw new Exception('requestReport not returning an array for content records: '.gettype($data['content']['records']));
+      if(count($data['content']['records']) == 0) {
+        echo 0;
+      } else {
+        foreach ($data['content']['records'] as $record) {
+          if (($record['record_status']!=='V' || $record['record_substatus']!==$substatus) && (!empty($record['pass'])||$_POST['ignore']==='true')) {
+            $ids[$record['occurrence_id']] = $record['occurrence_id'];
+            $db->insert('occurrence_comments', array(
+                'occurrence_id'=>$record['occurrence_id'],
+                'comment'=>"This record is $status",
+                'created_by_id'=>$this->user_id,
+                'created_on'=>date('Y-m-d H:i:s'),
+                'updated_by_id'=>$this->user_id,
+                'updated_on'=>date('Y-m-d H:i:s'),
+                'record_status'=>'V',
+                'record_substatus' => $substatus
+            ));
+          }
         }
+        $db->from('occurrences')->set(array('record_status'=>'V', 'record_substatus'=>$substatus, 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
+            'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+        echo count($ids);
+        // since we bypass ORM here for performance, update the cache_occurrences_* tables.
+        $db->from('cache_occurrences_functional')->set(array('record_status'=>'V', 'record_substatus'=>$substatus,
+          'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+        $db->from('cache_occurrences_nonfunctional')->set(array('verifier'=>$verifier))->in('id', array_keys($ids))->update();
       }
-      $db->from('occurrences')->set(array('record_status'=>'V', 'record_substatus'=>$substatus, 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
-          'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
-      echo count($ids);
-      // since we bypass ORM here for performance, update the cache_occurrences_* tables.
-      $db->from('cache_occurrences_functional')->set(array('record_status'=>'V', 'record_substatus'=>$substatus,
-        'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
-      $db->from('cache_occurrences_nonfunctional')->set(array('verifier'=>$verifier))->in('id', array_keys($ids))->update();
     } catch (Exception $e) {
       error_logger::log_error('Exception during bulk verify', $e);
       $this->handle_error($e);
