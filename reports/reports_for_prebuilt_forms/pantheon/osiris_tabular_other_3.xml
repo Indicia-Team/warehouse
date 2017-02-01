@@ -18,6 +18,7 @@
             and avsub.int_value=t_l3.id
         ) as "rep",
         sqi.sqi,
+        nullif(count(distinct ttd.id), 0) as "cons_count",
         string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code) as "cons",
         av_l3.taxa_taxon_list_attribute_id as "trait_attr_id"
       from cache_termlists_terms t_l3
@@ -91,6 +92,7 @@
     <column name="count" sql="speciescount" display="Count" datatype="integer" />
     <column name="rep" display="% representation" sql="case when sub.rep&lt;1 then '&lt;1' else round(sub.rep)::varchar end" />
     <column name="sqi" sql="sqi" display="SQI" datatype="float" />
+    <column name="cons_count" display="Species with conservation status" sql="cons_count" datatype="integer" />
     <column name="cons" display="Conservation status" sql="cons" />
     <column name="trait_attr_id" display="Trait attribute ID" sql="trait_attr_id" visible="false" />
   </columns>
