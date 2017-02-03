@@ -17,7 +17,7 @@
             and avsub.int_value=t_sb.id
         ) as "rep",
         sqi.sqi,
-        nullif(count(distinct ttd.id), 0) as "cons_count",
+        nullif(count(distinct ttd.taxon_id), 0) as "cons_count",
         string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code) as "cons"
       from cache_termlists_terms t_bb
       join taxa_taxon_list_attribute_values av_bb on av_bb.int_value=t_bb.id

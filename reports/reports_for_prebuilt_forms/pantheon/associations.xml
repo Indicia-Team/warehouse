@@ -19,6 +19,7 @@
         )
       ) on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
     #joins#
+    where cttl.taxon_list_id=#taxon_list_id# and cttl.preferred=true
   </query>
   <order_bys>
     <order_by>cttlto.kingdom_taxon, count(distinct cttl.taxon_meaning_id) desc</order_by>
@@ -48,7 +49,7 @@
     <column name="kingdom_taxon" display="Kingdom" sql="cttlto.kingdom_taxon" distincton="true" />
     <column name="taxon" display="Associated taxon" sql="cttlto.taxon" distincton="true" />
     <column name="species_count" display="Species count" sql="count(distinct cttl.taxon_meaning_id)" aggregate="true" distincton="true" />
-    <column name="cons_count" display="Species with conservation status" sql="nullif(count(distinct ttd.id), 0)" aggregate="true" />
+    <column name="cons_count" display="Species with conservation status" sql="nullif(count(distinct ttd.taxon_id), 0)" aggregate="true" />
     <column name="cons" display="Conservation status" sql="string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code)" aggregate="true" />
   </columns>
 </report>
