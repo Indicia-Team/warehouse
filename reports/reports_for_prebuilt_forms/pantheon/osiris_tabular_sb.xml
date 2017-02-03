@@ -1,5 +1,5 @@
-<report title="Osiris tabular specific biotopes"
-        description="Tabular output for Osiris specific biotopes for a sample.">
+<report title="Osiris tabular habitats"
+        description="Tabular output for Osiris habitats for a sample.">
   <query website_filter_field="cttl.website_id">
     select #columns#
     from (
@@ -69,7 +69,7 @@
       </joins>
     </param>
     <param name="bb_attr_id" display="Broad biotope attribute ID" datatype="integer"/>
-    <param name="sb_attr_id" display="Specific biotope attribute ID" datatype="integer"/>
+    <param name="sb_attr_id" display="Habitat attribute ID" datatype="integer"/>
     <param name="conservation_group_id" display="Conservation group" datatype="integer" default="">
       <join>join pantheon.conservation_groups_termlist_terms cg on cg.termlist_term_id=t_sb.id</join>
     </param>
@@ -81,7 +81,7 @@
     <column name="sample_type" sql="'#sample_type#'" visible="false" />
     <column name="term_id" sql="term_id" visible="false" />
     <column name="bb_term" sql="bb_term" display="Broad biotope" datatype="text" />
-    <column name="term" sql="term" display="Specific biotope" datatype="text" />
+    <column name="term" sql="term" display="Habitat" datatype="text" />
     <column name="count" sql="speciescount" display="Count" datatype="integer" />
     <column name="rep" display="% representation" sql="case when sub.rep&lt;1 then '&lt;1' else round(sub.rep)::varchar end" />
     <column name="sqi" sql="sqi" display="SQI" datatype="float" />

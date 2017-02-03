@@ -96,7 +96,7 @@
       </joins>
     </param>
     <param name='bb_attr_id' display='Broad biotope attribute ID' datatype='integer'/>
-    <param name='sb_attr_id' display='Specific biotope attribute ID' datatype='integer'/>
+    <param name='sb_attr_id' display='Habitat attribute ID' datatype='integer'/>
     <param name='r_attr_id' display='Resource attribute ID' datatype='integer'/>
     <param name="conservation_group_id" display="Conservation group" datatype="integer" default="">
       <join>join pantheon.conservation_groups_termlist_terms cg on cg.termlist_term_id=t.id</join>

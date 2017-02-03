@@ -50,7 +50,7 @@ where cttl.preferred=true
   </order_bys>
   <params>
     <param name='bb_attr_id' display='Broad biotope attribute ID' datatype='integer'/>
-    <param name='sb_attr_id' display='Specific biotope attribute ID' datatype='integer'/>
+    <param name='sb_attr_id' display='Habitat attribute ID' datatype='integer'/>
     <param name='r_attr_id' display='Resource attribute ID' datatype='integer'/>
     <param name='sat_attr_id' display='SAT attribute ID' datatype='integer'/>
     <param name='adult_guild_attr_id' display='Adult guild attribute ID' datatype='integer'/>

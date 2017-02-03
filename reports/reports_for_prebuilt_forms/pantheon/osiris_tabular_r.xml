@@ -80,7 +80,7 @@
       </joins>
     </param>
     <param name='bb_attr_id' display='Broad biotope attribute ID' datatype='integer'/>
-    <param name='sb_attr_id' display='Specific biotope attribute ID' datatype='integer'/>
+    <param name='sb_attr_id' display='Habitat attribute ID' datatype='integer'/>
     <param name='r_attr_id' display='Resource attribute ID' datatype='integer'/>
     <param name="conservation_group_id" display="Conservation group" datatype="integer" default="">
       <join>join pantheon.conservation_groups_termlist_terms cg on cg.termlist_term_id=t_r.id</join>
@@ -94,7 +94,7 @@
     <column name="term_id" sql="term_id" visible="false" />
     <column name="parent_r_id" visible="false" sql="parent_r_id" />
     <column name="bb_term" sql="bb_term" display="Broad biotope" datatype="text" />
-    <column name="sb_term" sql="sb_term" display="Specific biotope" datatype="text" />
+    <column name="sb_term" sql="sb_term" display="Habitat" datatype="text" />
     <column name="term" display="Resource" sql="term" datatype="text" />
     <column name="count" sql="speciescount" display="Count" datatype="integer" />
     <column name="rep" display="% representation" sql="case when sub.rep&lt;1 then '&lt;1' else round(sub.rep)::varchar end" />

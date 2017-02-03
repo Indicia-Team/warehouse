@@ -36,7 +36,7 @@
       </joins>
     </param>
     <param name='bb_attr_id' display='Broad biotope attribute ID' datatype='integer'/>
-    <param name='sb_attr_id' display='Specific biotope attribute ID' datatype='integer'/>
+    <param name='sb_attr_id' display='Habitat attribute ID' datatype='integer'/>
     <param name='r_attr_id' display='Resource attribute ID' datatype='integer'/>
   </params>
   <columns>
@@ -44,8 +44,8 @@
     <column name="species" sql="cttl.taxon" display="Species" />
     <column name="kingdom" sql="cttl.kingdom_taxon" visible="false" />
     <column name="taxonomic" sql="cttl.order_taxon || '; ' || cttl.family_taxon" display="Taxonomic" />
-    <column name="broad_biotope" display="Broad habitat" sql="array_to_string(array_agg(distinct t_bb.term), '; ')" aggregate="true" />
-    <column name="specific_biotope" display="Specific biotope" sql="array_to_string(array_agg(distinct t_sb.term), '; ')" aggregate="true" />
+    <column name="broad_biotope" display="Broad biotope" sql="array_to_string(array_agg(distinct t_bb.term), '; ')" aggregate="true" />
+    <column name="specific_biotope" display="Habitat" sql="array_to_string(array_agg(distinct t_sb.term), '; ')" aggregate="true" />
     <column name="resource" display="Resource" sql="array_to_string(array_agg(distinct t_r.term), '; ')" aggregate="true" />
   </columns>
 </report>
