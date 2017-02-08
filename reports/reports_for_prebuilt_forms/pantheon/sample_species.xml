@@ -39,10 +39,6 @@
     ) on horusv.taxa_taxon_list_id=ttl.id and horusv.deleted=false
     left join taxa_taxon_list_attribute_values allv on allv.taxa_taxon_list_id=ttl.id and allv.deleted=false
       and allv.taxa_taxon_list_attribute_id in (#all_trait_attr_ids#)
-    left join taxon_associations ta on ta.from_taxon_meaning_id=cttl.taxon_meaning_id
-    left join cache_taxa_taxon_lists cttlto on cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
-      and cttlto.taxon_list_id=#taxon_list_id#
-      and cttlto.preferred=true
     #joins#
     where cttl.preferred=true
     #filters#
@@ -128,7 +124,13 @@
     <column name="isis_sat_code" sql="isissatcode.term" display="Specific assemblage type" datatype="text" />
     <column name="horus_indices" display="Published indices" aggregate="true" datatype="text"
             sql="string_agg(distinct coalesce(horusa.caption || ': ' || coalesce(horust.term, horusv.int_value::varchar)), ', ')" />
+    <column name="taxon_meaning_id" sql="cttl.taxon_meaning_id" visible="false" />
     <column name="associations" display="Associations" aggregate="true" datatype="text"
-            sql="string_agg(distinct cttlto.taxon, ', ')" />
+            sql="(select string_agg(distinct cttlto.taxon, ', ')
+            from taxon_associations ta
+    left join cache_taxa_taxon_lists cttlto on cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
+      and cttlto.taxon_list_id=#taxon_list_id#
+      and cttlto.preferred=true
+    where ta.from_taxon_meaning_id=cttl.taxon_meaning_id)" />
   </columns>
 </report>
