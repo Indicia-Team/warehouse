@@ -64,7 +64,7 @@
     <column name="trait_term_id" sql="trait_term_id" />
     <column name="parent_term_id" sql="parent_term_id" />
     <column name="trait" sql="trait" />
-    <column name="count" sql="count"  />
+    <column name="count" sql="No. of species"  />
     <column name="trait_attr_id" sql="trait_attr_id" />
     <column name="rep" display="% representation" sql="case when sub.rep&lt;1 then '&lt;1' else round(sub.rep)::varchar end" />
   </columns>

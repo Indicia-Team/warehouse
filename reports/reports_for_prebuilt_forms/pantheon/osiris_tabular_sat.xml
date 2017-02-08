@@ -101,7 +101,7 @@
     <column name="bb_term" sql="bb_term" display="Broad biotope" datatype="text" />
     <column name="sb_term" sql="sb_term" display="Habitat" datatype="text" />
     <column name="term" sql="term" display="SAT" datatype="text" />
-    <column name="count" sql="speciescount" display="Count" datatype="integer" />
+    <column name="count" sql="speciescount" display="No. of species" datatype="integer" />
     <column name="rep" display="% representation" sql="case when sub.rep&lt;1 then '&lt;1' else round(sub.rep)::varchar end" />
     <column name="sqi" sql="sqi" display="SQI" datatype="float"/>
     <column name="cons_count" display="Species with conservation status" sql="cons_count" datatype="integer" />

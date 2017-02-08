@@ -42,7 +42,7 @@
     <column name="stage" display="Stage" in_count="true" datatype="text"
             sql="case ttlav.taxa_taxon_list_attribute_id when #adult_attr_id# then 'adult' else 'larva' end" />
     <column name="guild" display="Guild" sql="tguild.term" in_count="true" datatype="text" />
-    <column name="count" display="Count" sql="count(distinct cttl.preferred_taxa_taxon_list_id)"
+    <column name="count" display="No. of species" sql="count(distinct cttl.preferred_taxa_taxon_list_id)"
             aggregate="true" datatype="integer" />
     <column name="ret" display="% return" aggregate="true" datatype="integer"
             sql="count(distinct cttl.preferred_taxa_taxon_list_id) * 100 / (
