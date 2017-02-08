@@ -87,7 +87,7 @@
     <param name="all_trait_attr_ids" display="All traits" default="0"  datatype="integer[]"
            description="List of IDs of all traits to consider as analysed"/>
     <param name="has_any_designation" display="Has any designation" default="" datatype="boolean">
-      <where>ttd.id is not null</where>
+      <join>join taxa_taxon_designations ttd2 on ttd2.taxon_id=ttl.taxon_id and ttd2.deleted=false</join>
     </param>
     <param name="duplicates" display="Only show duplicates?" default="" datatype="boolean">
       <where>cttl.preferred_taxa_taxon_list_id in (
