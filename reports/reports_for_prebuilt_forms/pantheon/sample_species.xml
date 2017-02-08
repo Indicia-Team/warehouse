@@ -119,10 +119,10 @@
             datatype="text" template="&lt;span&gt;{larval_guild}&lt;/span&gt;" />
     <column name="adult_guild" sql="string_agg(distinct aguildterm.term,';')" display="Adult feeding guild" aggregate="true"
             datatype="text" template="&lt;span&gt;{adult_guild}&lt;/span&gt;" />
-    <column name="broad_biotope" display="Broad biotope" sql="string_agg(distinct t_bb.term, '; ')"
-            aggregate="true" datatype="text" template="&lt;span&gt;{broad_biotope}&lt;/span&gt;" />
-    <column name="specific_biotope" display="Habitat" sql="string_agg(distinct t_sb.term, '; ')"
-            aggregate="true" datatype="text" template="&lt;span&gt;{specific_biotope}&lt;/span&gt;" />
+    <column name="broad_biotope" display="Broad biotope" aggregate="true" datatype="text"
+            sql="array_to_string(array_agg(distinct '&lt;span&gt;' || t_bb.term || '&lt;/span&gt;'), '; ')" />
+    <column name="specific_biotope" display="Habitat" aggregate="true" datatype="text"
+            sql="array_to_string(array_agg(distinct '&lt;span&gt;' || t_sb.term || '&lt;/span&gt;'), '; ')" />
     <column name="resource" display="Resources" aggregate="true" datatype="text"
             sql="'[' || array_to_string(array_agg(distinct '[' || t_r.id || ',' || case when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then 0 else t_r.parent_id end || ',&quot;' || t_r.term || '&quot;]'), ',') || ']'" />
     <column name="isis_sat_code" sql="isissatcode.term" display="Specific assemblage type" datatype="text" />
