@@ -1277,9 +1277,17 @@ class Data_Controller extends Data_Service_Base_Controller {
           case 'json':
             $s = json_decode($_POST['submission'], true);
         }
-        $response = $this->submit($s);
+        $submitInfo = $this->submit($s);
         // return a success message plus the id of the topmost record, e.g. the sample created, plus a summary structure of any other records created.
-        $response = array('success'=>'multiple records', 'outer_table'=>$s['id'], 'outer_id'=>$response['id'], 'struct'=>$response['struct']);
+        $response = array(
+          'success'=>'multiple records',
+          'outer_table'=>$s['id'],
+          'outer_id'=>$submitInfo['id'],
+          'struct'=>$submitInfo['struct']
+        );
+        if (!empty($submitInfo['external_key'])) {
+          $response['outer_external_key'] = $submitInfo['external_key'];
+        }
         // if the saved form contained a transaction Id, return it.
         if (isset($s['fields']['transaction_id']['value']))
           $response['transaction_id'] = $s['fields']['transaction_id']['value'];
@@ -1322,8 +1330,11 @@ class Data_Controller extends Data_Service_Base_Controller {
     $result = $model->submit();
     if (!$result) 
       throw new ValidationError('Validation error', 2003, $model->getAllErrors());
-    // return the outermost model's id
-    return array('id'=>$model->id, 'struct'=>$model->get_submitted_ids());
+    // return the outermost model's id and external_key if present
+    $r = array('id'=>$model->id, 'struct'=>$model->get_submitted_ids());
+    if (!empty($model->external_key))
+      $r['external_key'] = $model->external_key;
+    return $r;
   }
 
  /**

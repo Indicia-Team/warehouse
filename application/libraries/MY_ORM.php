@@ -182,6 +182,9 @@ class ORM extends ORM_Core {
       'model' => $this->object_name,
       'id' => $this->id,
     );
+    // Add the external key if present
+    if (!empty($this->external_key))
+      $r['external_key'] = $this->external_key;
     if (count($this->nestedChildModelIds))
       $r['children'] = $this->nestedChildModelIds;
     if (count($this->nestedParentModelIds))
