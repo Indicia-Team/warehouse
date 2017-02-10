@@ -252,7 +252,7 @@ class Import_Controller extends Service_Base_Controller {
       // Following helps for files from Macs
       ini_set('auto_detect_line_endings', 1);
       $model = ORM::Factory($_GET['model']);
-      $supportsImportGuid = in_array('import_guid', $model->as_array());
+      $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
       // create the file pointer, plus one for errors
       $handle = fopen($csvTempFile, "r");
       $this->checkIfUtf8($metadata, $handle);
