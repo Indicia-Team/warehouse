@@ -244,8 +244,8 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $output = '';
     foreach ($data as $cell)
     {
-      //Test if numeric
-      if (!is_numeric($cell))
+      // If not numeric and contains the delimiter, enclose the string
+      if (!is_numeric($cell) && strpos($cell, $delimiter) !== false)
       {
         //Escape the enclose
         $cell = str_replace($enclose,$enclose.$enclose,$cell);
