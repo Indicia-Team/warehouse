@@ -143,6 +143,7 @@ $config['modules'] = array
   MODPATH.'rest_api',              // RESTful web service interface
   MODPATH.'spatial_index_builder', // index of location occurrence overlaps
   MODPATH.'taxon_associations',    // data tables for associations between taxa
+  MODPATH.'scratchpad',            // scratchpad tables for keeping quick lists
 
   MODPATH.'phpUnit',               // Required for testing
 );
