@@ -14,9 +14,6 @@ class TaxonAssociations_ServicesTest extends Indicia_DatabaseTestCase {
   public function getDataSet()
   {
     $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
-    /* Create a filter for the test project defined in config/rest.php.travis.
-     * Create an occurrence comment for annotation testing.
-     */
     $ds2 = new Indicia_ArrayDataSet(
       array(
         'meanings' => array(
@@ -72,6 +69,7 @@ class TaxonAssociations_ServicesTest extends Indicia_DatabaseTestCase {
     $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
     // make the tokens re-usable
     $this->auth['write_tokens']['persist_auth']=true;
+    parent::setup();
   }
 
   function testPost() {

@@ -1,0 +1,31 @@
+<report title="Scratchpads list" description="A general purpose list of scratchpads.">
+  <query>
+    SELECT #columns#
+    FROM scratchpad_lists s
+    LEFT JOIN scratchpad_list_entries e on e.scratchpad_list_id=s.id
+    #joins#
+    WHERE (s.website_id in (#website_ids#) or s.website_id is null)
+    AND s.deleted=false
+  </query>
+  <order_bys>
+    <order_by>s.title ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="created_by_id" display="Creator's User ID" description="Warehouse user ID of the filter creator"
+           datatype="text" default="">
+      <where>s.created_by_id=#created_by_id#</where>
+    </param>
+    <param name="entity" display="Entity" description="Filter to lists for a given entity"
+           datatype="text" default="">
+      <where>s.entity='#entity#'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" visible="false" sql="s.id" />
+    <column name="title" display='Title' datatype="text" sql="s.title" />
+    <column name="entity" display='Entity' datatype="text" sql="s.entity" />
+    <column name="items" display="Items" datatype="integer" aggregate="true" sql="count(e.*)" />
+    <column name="description" display='Description' datatype="text" sql="s.description" />
+    <column name="created_on" display='Created on' datatype="date" sql="s.created_on" />
+  </columns>
+</report>

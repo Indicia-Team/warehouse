@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -14,20 +13,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Config
- * @author  Indicia Team
- * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link  http://code.google.com/p/indicia/
+ * @package	Taxon Designations
+ * @subpackage Plugins
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
  */
 
-defined('SYSPATH') or die('No direct script access.');
+// @todo Scheduled tasks hook to clean expired lists.
 
 /**
- * @var string The application files version number.
+ * Hook to ORM enable the relationship between taxon designations and taxa from the taxon end.
  */
-$config['version'] = '1.26.0';
-$config['release_date']  = '2017-02-13';
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+function scratchpad_extend_orm() {
+  return array(
+    'scratchpad_list'=>array('has_many'=>array('scratchpad_list_entries')),
+    'scratchpad_list_entry'=>array('belongs_to'=>array('scratchpad_list'))
+  );
+}
+
+function scratchpad_extend_data_services() {
+  return array(
+    'scratchpad_lists'=>array(),
+    'scratchpad_list_entries'=>array()
+  );
+}
 
 ?>
