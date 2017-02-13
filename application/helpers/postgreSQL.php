@@ -156,7 +156,7 @@ and n.id is null"
       $idlist=implode(',', $ids);
       // Seems much faster to break this into small queries than one big left join.
       $smpInfo = $db->query(
-      "SELECT DISTINCT s.id, st_astext(coalesce(s.geom, l.centroid_geom)) as geom, o.confidential,
+      "SELECT DISTINCT s.id, o.website_id, s.survey_id, st_astext(coalesce(s.geom, l.centroid_geom)) as geom, o.confidential,
           GREATEST(round(sqrt(st_area(st_transform(s.geom, sref_system_to_srid(entered_sref_system)))))::integer, o.sensitivity_precision, s.privacy_precision, $size) as size,
           coalesce(s.entered_sref_system, l.centroid_sref_system) as entered_sref_system,
           round(st_x(st_centroid(reduce_precision(
@@ -183,7 +183,8 @@ and n.id is null"
         else 
           $msqId=$existing[0]['id'];
         $db->query("UPDATE cache_occurrences_functional SET map_sq_{$km}km_id=$msqId " .
-          "WHERE sample_id={$s->id} AND (map_sq_{$km}km_id IS NULL OR map_sq_{$km}km_id<>$msqId)");
+          "WHERE website_id={$s->website_id} AND survey_id={$s->survey_id} AND sample_id={$s->id} " .
+          "AND (map_sq_{$km}km_id IS NULL OR map_sq_{$km}km_id<>$msqId)");
         $db->query("UPDATE cache_samples_functional SET map_sq_{$km}km_id=$msqId " .
           "WHERE id={$s->id} AND (map_sq_{$km}km_id IS NULL OR map_sq_{$km}km_id<>$msqId)");
       }

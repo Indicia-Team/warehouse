@@ -1251,7 +1251,8 @@ SET sample_id=o.sample_id,
   data_cleaner_result=case when o.last_verification_check_date is null then null else dc.id is null end,
   training=o.training,
   zero_abundance=o.zero_abundance,
-  licence_id=s.licence_id
+  licence_id=s.licence_id,
+  import_guid=o.import_guid
 FROM occurrences o
 #join_needs_update#
 left join cache_occurrences_functional co on co.id=o.id
@@ -1469,7 +1470,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_meaning_id, taxa_taxon_list_external_key, family_taxa_taxon_list_id,
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
-            training, zero_abundance, licence_id)
+            training, zero_abundance, licence_id, import_guid)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1491,7 +1492,7 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
     end,
     o.sensitivity_precision is not null, o.release_status, cttl.marine_flag,
     case when o.last_verification_check_date is null then null else dc.id is null end,
-    o.training, o.zero_abundance, s.licence_id
+    o.training, o.zero_abundance, s.licence_id, o.import_guid
 FROM occurrences o
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false

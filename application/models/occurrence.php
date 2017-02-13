@@ -123,7 +123,8 @@ class Occurrence_Model extends ORM
       'zero_abundance',
       'last_verification_check_date',
       'training',
-      'sensitivity_precision'
+      'sensitivity_precision',
+      'import_guid'
     );
     if(array_key_exists('id', $fieldlist)) {
       // existing data must not be set to download_flag=F (final download) otherwise it 
