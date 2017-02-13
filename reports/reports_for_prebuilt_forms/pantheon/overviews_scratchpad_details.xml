@@ -1,0 +1,38 @@
+<report
+    title="Overviews - sample details"
+    description="A report to display the sample information on various sample details pages."
+>
+<query website_filter_field="sl.website_id">
+  SELECT #columns#
+  FROM scratchpad_lists sl
+  JOIN scratchpad_list_entries sle on sle.scratchpad_list_id=sl.id
+  JOIN cache_taxa_taxon_lists cttl on cttl.id=sle.entry_id
+  LEFT JOIN taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and ttlav.deleted=false
+      and ttlav.taxa_taxon_list_attribute_id in (#all_trait_attr_ids#)
+  WHERE sl.id = #sample_id# and '#sample_type#' = 'scratchpad'
+  AND sl.deleted=false
+  AND #website_filter#
+  </query>
+  <params>
+    <param name='sample_id' display='Scratchpad sample ID' description='Scratchpad sample id to retrieve data for.' datatype='integer'/>
+    <param name="sample_type" display="Sample type" datatype="lookup" default="sample"
+           lookupValues="sample:Sample,scratchpad:Scratchpad list" />
+    <param name='all_trait_attr_ids' display='Trait Attribute Ids' datatype='text'
+           description='Comma separated list of the taxa taxon list attribute ids that hold species traits.' />
+  </params>
+  <columns>
+    <column name='sample_id' sql='sl.id' display='Scratchpad ID' in_count='true'/>
+    <column name='sample_type' sql="'scratchpad'" aggregate="true" />
+    <column name='sample_size' sql='count(distinct cttl.preferred_taxa_taxon_list_id)' display='Sample Size' aggregate='true'/>
+    <column name='duplicates' display='Duplicates' aggregate='true'
+            sql="case
+  when count(distinct sle.entry_id)=count(distinct cttl.preferred_taxa_taxon_list_id) then ''
+  else ' (' || (count(distinct sle.entry_id)-count(distinct cttl.preferred_taxa_taxon_list_id))::varchar || ' duplicates)'
+end" />
+    <column name='number_analysed' sql='count(distinct ttlav.taxa_taxon_list_id)' display='Number Analysed' aggregate='true'/>
+    <column name='number_not_analysed' display='Not analysed' aggregate='true'
+            sql='count(distinct cttl.preferred_taxa_taxon_list_id) - count(distinct ttlav.taxa_taxon_list_id)' />
+    <column name='percent_return' display='% Return' aggregate='true'
+            sql='round(count(distinct ttlav.taxa_taxon_list_id)::float*100/count(distinct cttl.preferred_taxa_taxon_list_id)::float)'/>
+  </columns>
+</report>

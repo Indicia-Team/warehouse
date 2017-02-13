@@ -1,0 +1,30 @@
+<report
+    title="Samples list"
+    description="List of samples for the home page."
+>
+  <query website_filter_field="o.website_id">
+    select #columns#
+    from samples s
+    left join cache_occurrences o on o.sample_id=s.id
+    left join (taxa_taxon_list_attribute_values ttlav
+    join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttlav.deleted=false
+    and ttla.caption='ecological division'
+    ) on ttlav.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and ttlav.deleted=false
+    left join cache_termlists_terms t on t.id=ttlav.int_value
+    where o.website_id in (#website_ids#)
+    #filters#
+  </query>
+  <order_bys>
+    <order_by>s.id desc</order_by>
+  </order_bys>
+  <columns>
+    <column name="sample_id" sql="s.id" display="ID" visible="false" in_count="true" />
+    <column name="site_name" sql="o.location_name" display="Site name" />
+    <column name='date_start' sql='s.date_start' visible='false' />
+    <column name='date_end' sql='s.date_end' visible='false' />
+    <column name='date_type' sql='s.date_type' visible='false' />
+    <column name='date' display='Date' />
+    <column name="species_count" sql="count(distinct o.preferred_taxa_taxon_list_id)" display="No. of species" aggregate="true" />
+    <column name="habitats" sql="array_to_string(array_agg(distinct t.term), '; ')" display="Main habitats" aggregate="true" />
+  </columns>
+</report>
