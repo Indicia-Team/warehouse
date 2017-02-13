@@ -14,20 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Config
- * @author  Indicia Team
- * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link  http://code.google.com/p/indicia/
+ * @package	Core
+ * @subpackage Data Cleaner
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
  */
 
 defined('SYSPATH') or die('No direct script access.');
 
-/**
- * @var string The application files version number.
- */
-$config['version'] = '1.25.0';
-$config['release_date']  = '2017-02-13';
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+$config['sample_group_smp_attr_id'] = 1;
+$config['plot_group_smp_attr_id'] = 2;
+$config['sample_group_perm_psn_attr_id'] = 3;
+$config['plot_group_perm_psn_attr_id'] = 4;
+$config['vice_county_attr_id'] = 5;
+$config['vice_counties_list'] = 'Shetland|60.38951N 1.21625W,Orkney|59.06504N';
+$config['country_attr_id'] = 6;
+$config['countries_list'] = 'England|52.62865N 1.46538W,Wales|52.35471N 3.86321W' ;
 
 ?>
