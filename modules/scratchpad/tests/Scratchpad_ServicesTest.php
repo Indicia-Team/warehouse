@@ -7,43 +7,6 @@ class Scratchpad_ServicesTest extends Indicia_DatabaseTestCase {
 
   private $auth;
 
-  public function getDataSet()
-  {
-    $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
-    // Add an example scratchpad list
-    $ds2 = new Indicia_ArrayDataSet(
-      array(
-        'scratchpad_lists' => array(
-          /*array(
-            'title' => 'Test scratchpad list',
-            'description' => 'Test scratchpad list description',
-            'entity' => 'taxa_taxon_list',
-            'created_on' => '2016-07-22:16:00:00',
-            'created_by_id' => 1,
-            'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1,
-            'website_id' => 1
-          )*/
-        ),
-        'scratchpad_list_entries' => array(
-          /*array(
-            'scratchpad_list_id' => 1,
-            'entry_id' => 1
-          ),
-          array(
-            'scratchpad_list_id' => 1,
-            'entry_id' => 2,
-          )*/
-        )
-      )
-    );
-
-    $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
-    $compositeDs->addDataSet($ds1);
-    $compositeDs->addDataSet($ds2);
-    return $compositeDs;
-  }
-
   public function setup() {
     $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
     // make the tokens re-usable
