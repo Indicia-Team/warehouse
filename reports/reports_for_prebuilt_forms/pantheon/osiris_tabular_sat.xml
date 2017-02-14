@@ -19,7 +19,7 @@
             and avsub.int_value=t_sat.id
         ) as "rep",
         sqi.sqi,
-        nullif(count(distinct ttd.taxon_id), 0) as "cons_count",
+        nullif(count(distinct case when ttd.taxon_id is null then null else ttl.taxon_meaning_id end), 0) as "cons_count",
         string_agg(coalesce(td.code, td.abbreviation), '|' order by td.code) as "cons",
         it.threshold as "threshold",
         tcode.term as "code",
