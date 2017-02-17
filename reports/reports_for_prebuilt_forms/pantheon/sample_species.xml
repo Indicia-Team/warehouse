@@ -8,6 +8,11 @@
     join taxa_taxon_lists ttl on ttl.id=cttl.id
     left join (taxa_taxon_designations ttd
       join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
+      join cache_termlists_terms cat on cat.id=td.category_id and (
+             (cat.term='GB Red List' and coalesce(td.code, td.abbreviation) not in ('LC', 'NA', 'pLC', 'pNA'))
+          or (cat.term='GB Status' and coalesce(td.code, td.abbreviation) not in ('None', 'Not reviewed', 'Not native'))
+          or (cat.term not in ('GB Red List', 'GB Status'))
+        )
     ) on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
     left join taxa_taxon_list_attribute_values av_bb on av_bb.taxa_taxon_list_id=ttl.id and av_bb.deleted=false
       and av_bb.taxa_taxon_list_attribute_id=#bb_attr_id#
@@ -87,7 +92,15 @@
     <param name="all_trait_attr_ids" display="All traits" default="0"  datatype="integer[]"
            description="List of IDs of all traits to consider as analysed"/>
     <param name="has_any_designation" display="Has any designation" default="" datatype="boolean">
-      <join>join taxa_taxon_designations ttd2 on ttd2.taxon_id=ttl.taxon_id and ttd2.deleted=false</join>
+      <join>
+        join taxa_taxon_designations ttd2 on ttd2.taxon_id=ttl.taxon_id and ttd2.deleted=false
+        join taxon_designations td2 on td2.id=ttd2.taxon_designation_id and td2.deleted=false
+        join cache_termlists_terms cat2 on cat2.id=td2.category_id and (
+          (cat2.term='GB Red List' and coalesce(td.code, td.abbreviation) not in ('LC', 'NA', 'pLC', 'pNA'))
+          or (cat2.term='GB Status' and coalesce(td.code, td.abbreviation) not in ('None', 'Not reviewed', 'Not native'))
+          or (cat2.term not in ('GB Red List', 'GB Status'))
+          )
+      </join>
     </param>
     <param name="duplicates" display="Only show duplicates?" default="" datatype="boolean">
       <where>cttl.preferred_taxa_taxon_list_id in (
