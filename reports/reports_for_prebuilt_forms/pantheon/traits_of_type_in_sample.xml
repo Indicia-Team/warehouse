@@ -38,9 +38,10 @@
            lookupValues="sample:Sample,scratchpad:Scratchpad list">
       <joins>
         <join operator="equal" value="sample">
-          join cache_occurrences_functional o on o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
-          join cache_samples_functional s on s.website_id=o.website_id and s.survey_id=o.survey_id and s.id=o.sample_id
-              and s.id=#sample_id#
+          join cache_occurrences_functional o on o.website_id in (#website_ids#)
+            and o.survey_id=(select survey_id from samples where id=#sample_id#)
+            and o.sample_id=#sample_id#
+            and o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
         </join>
         <join operator="equal" value="scratchpad">
           join scratchpad_list_entries sle on sle.entry_id=cttl.preferred_taxa_taxon_list_id
