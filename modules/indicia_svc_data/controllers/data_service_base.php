@@ -238,26 +238,23 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   * Return a line of CSV from an array. This is instead of PHP's fputcsv because that
   * function only writes straight to a file, whereas we need a string.
   */
-  function get_csv($data,$delimiter=',',$enclose='"')
+  function get_csv($data, $delimiter=',', $enclose='"')
   {
     $newline="\r\n";
     $output = '';
-    foreach ($data as $cell)
-    {
+    foreach ($data as $cell) {
       // If not numeric and contains the delimiter, enclose the string
-      if (!is_numeric($cell) && strpos($cell, $delimiter) !== false)
+      if (!is_numeric($cell) && (preg_match('/[' . $delimiter . '\r\n]/', $cell)))
       {
         //Escape the enclose
-        $cell = str_replace($enclose,$enclose.$enclose,$cell);
+        $cell = str_replace($enclose, $enclose.$enclose, $cell);
         //Not numeric enclose
         $cell = $enclose . $cell . $enclose;
       }
-      if ($output=='')
-      {
+      if ($output=='') {
         $output = $cell;
       }
-      else
-      {
+      else {
         $output.=  $delimiter . $cell;
       }
     }
