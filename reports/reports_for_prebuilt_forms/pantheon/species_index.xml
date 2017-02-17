@@ -94,6 +94,7 @@ where cttl.preferred=true
             datatype="text" aggregate="true" />
     <column name="horus_indices" display="Published indices" aggregate="true" datatype="text"
             sql="array_to_string(array_agg(distinct coalesce(horusa.caption || ': ' || coalesce(horust.term, horusv.int_value::varchar))), ', ')" />
+    <column name="taxon_meaning_id" sql="cttl.taxon_meaning_id" visible="false"/>
     <column name="associations" display="Associations" aggregate="true" datatype="text"
             sql="(select string_agg(distinct cttlto.taxon, ', ')
             from taxon_associations ta
