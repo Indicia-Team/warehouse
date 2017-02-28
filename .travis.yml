@@ -36,7 +36,10 @@ before_install:
   # Configure apache virtual hosts.
   - sudo cp -f .travis/travis-ci-apache /etc/apache2/sites-available/default
   - sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-available/default
-  - sudo service apache2 restart  
+  - sudo service apache2 restart 
+  # Install postgis as it doesn't seem to be there despite comment to the 
+  # contrary at https://docs.travis-ci.com/user/database-setup/#Using-PostGIS
+  - sudo apt-get install postgis
 
 install:
   # Grant execute on scripts
