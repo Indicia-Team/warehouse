@@ -68,7 +68,7 @@ abstract class ATTR_ORM extends Valid_ORM {
   public function get_submission_structure() {
     return array(
       'model'=>$this->object_name,
-      'metaFields' => array('disabled_input')
+      'metaFields' => array('disabled_input', 'quick_termlist_create', 'quick_termlist_terms')
     );
   }
 
@@ -85,6 +85,63 @@ abstract class ATTR_ORM extends Valid_ORM {
       return $this->id;
     } else {
       return parent::validateAndSubmit();
+    }
+  }
+
+  /**
+   * Uses the Post data to find all the websites that are going to be linked to
+   * an attribute being saved.
+   * @return array
+   */
+  private static function getWebsitesInPost() {
+    $matches = preg_grep('/^website_\d+/', array_keys($_POST));
+    $websiteIds = array();
+    foreach ($matches as $match) {
+      preg_match('/^website_(?P<id>\d+)/', $match, $parts);
+      $websiteIds[$parts['id']] = '';
+    }
+    return array_keys($websiteIds);
+  }
+
+  /**
+   * A new attribute submission can contain metaField information to declare a list
+   * of terms which will be inserted into a new termlist and linked to the
+   * attribute.
+   * @throws \exception
+   */
+  protected function preSubmit() {
+    $s = $this->submission;
+    if (isset($s['metaFields']) &&
+        isset($s['metaFields']['quick_termlist_create']) &&
+        $s['metaFields']['quick_termlist_create']['value'] === 't' &&
+        (empty($s['fields']['termlist_id']) || empty($s['fields']['termlist_id']['value']))) {
+      $terms = data_entry_helper::explode_lines($s['metaFields']['quick_termlist_terms']['value']);
+      $termlist = ORM::factory('termlist');
+      $websiteIds = $this->getWebsitesInPost();
+      $termlist->set_submission_data(array(
+        'title' => $s['fields']['caption']['value'],
+        'description' => 'Termlist created for attribute ' . $s['fields']['caption']['value'],
+        'website_id' => count($websiteIds) == 1 ? $websiteIds[0] : null
+      ));
+      if (!$termlist->submit()) {
+        throw new exception('Failed to create attribute termlist');
+      }
+      foreach ($terms as $idx => $term) {
+        if (!empty(trim($term))) {
+          $termlists_term = ORM::factory('termlists_term');
+          $termlists_term->set_submission_data(array(
+            'term:term' => $term,
+            'term:fk_language:iso' => kohana::config('indicia.default_lang'),
+            'sort_order' => $idx + 1,
+            'termlist_id' => $termlist->id,
+            'preferred' => 't'
+          ));
+          if (!$termlists_term->submit()) {
+            throw new exception('Failed to create attribute termlist term');
+          };
+        }
+      }
+      $this->submission['fields']['termlist_id'] = array('value' => $termlist->id);
     }
   }
 
