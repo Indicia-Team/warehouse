@@ -1,11 +1,17 @@
+# PostgreSQL 9.6 currently only runs on Trusty
+# Use sudo-enabled although slower as sudo-less, though quicker, is on beta.
+dist: trusty
+sudo: required
+
 language: php
 
 php:
-  - '5.4'
-  - '5.5'
-  - '5.6'
   - '7.0'
-#  - hhvm
+
+addons:
+  # This branch exists to test the warehouse on PostgreSQL 9.6
+  # https://docs.travis-ci.com/user/database-setup/#Using-a-different-PostgreSQL-Version
+  postgresql: "9.6"
 
 services:
   - postgresql
