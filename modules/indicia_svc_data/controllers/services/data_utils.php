@@ -122,8 +122,13 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
       echo count($ids);
       // since we bypass ORM here for performance, update the cache_occurrences_* tables.
-      $db->from('cache_occurrences_functional')->set(array('record_status'=>'V', 'record_substatus'=>$substatus,
-        'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+      $db->from('cache_occurrences_functional')->set(array(
+        'record_status' => 'V',
+        'record_substatus' => $substatus,
+        'verified_on' => date('Y-m-d H:i:s'),
+        'updated_on' => date('Y-m-d H:i:s'),
+        'query' => NULL
+      ))->in('id', array_keys($ids))->update();
       $db->from('cache_occurrences_nonfunctional')->set(array('verifier'=>$verifier))->in('id', array_keys($ids))->update();
     } catch (Exception $e) {
       error_logger::log_error('Exception during bulk verify', $e);
