@@ -144,6 +144,8 @@ $config['modules'] = array
   MODPATH.'spatial_index_builder', // index of location occurrence overlaps
   MODPATH.'taxon_associations',    // data tables for associations between taxa
   MODPATH.'scratchpad',            // scratchpad tables for keeping quick lists
+  MODPATH.'auto_verify',           // verification acceptance based on data cleaner rules
+  MODPATH.'milestones',            // milestone achievements against milestones
 
   MODPATH.'phpUnit',               // Required for testing
 );
