@@ -24,7 +24,7 @@
 /*
  * Tell the system that we need the occdelta table to find out which occurrences have been created/changed recently.
  */
-function auto_verify_metadata() {
+function milestones_metadata() {
   return array(
     'requires_occurrences_delta'=>TRUE
   );
