@@ -32,12 +32,12 @@
       join taxa_taxon_lists ttl on ttl.id=cttl.id
       left join (
         select av_l21.int_value as l2_id, round(avg(rscv.int_value)*100) as sqi
-        from cache_occurrences_functional o
-        join taxa_taxon_list_attribute_values av_l21 on av_l21.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and av_l21.deleted=false
+        from cache_taxa_taxon_lists cttl
+        join taxa_taxon_list_attribute_values av_l21 on av_l21.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and av_l21.deleted=false
           and av_l21.taxa_taxon_list_attribute_id in (#other_classification_attr_ids#)
-        join taxa_taxon_list_attribute_values rscv on rscv.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id and rscv.deleted=false
+        join taxa_taxon_list_attribute_values rscv on rscv.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and rscv.deleted=false
           and rscv.taxa_taxon_list_attribute_id=#rarity_score_attr_id#
-        where o.sample_id=#sample_id#
+        #joins#
         group by av_l21.int_value
       ) as sqi on sqi.l2_id=av_l2.int_value
       left join (taxa_taxon_designations ttd
