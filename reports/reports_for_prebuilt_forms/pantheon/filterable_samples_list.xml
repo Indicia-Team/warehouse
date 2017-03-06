@@ -28,7 +28,7 @@
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
   </params>
   <columns>
-    <column name='sample_id' display='ID' sql='s.id' datatype="integer"
+    <column name='sample_id' display='ID' sql='s.id' datatype="integer" in_count="true"
         template='&lt;div class="status-{record_status}"&gt;&lt;div class="record-id"&gt;{sample_id}&lt;/div&gt;&lt;/div&gt;'  />
     <column name='source' display='Source' datatype="text" 
         sql="w.title || ' | ' || case when substring(su.title from 1 for length(w.title)) = w.title then trim(substring(su.title from length(w.title)+1)) else su.title end" />
