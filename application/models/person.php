@@ -185,18 +185,13 @@ class Person_Model extends ORM {
       $this->db->in('users.person_id', array(null, $this->id));
       // note we concatenate the validation rules to check both global and website specific rules for requiredness. 
       $this->db->where("(person_attributes_websites.validation_rules like '%required%' or person_attributes.validation_rules like '%required%')");
+      $this->db->in('person_attributes_websites.deleted', array('f', null));
+      $this->db->in('users.deleted', array('f', null));
+      $this->db->where("(users_websites.site_role_id is not null or person_attributes.public='t')");
     } elseif ($required) {
       $this->db->like('person_attributes.validation_rules', '%required%');
     }
     $this->db->where('person_attributes.deleted', 'f');
-    $this->db->orwhere('person_attributes.public','t');
-    // deliberate repeat of this clause - it needs to be both sides of the orwhere
-    $this->db->where('person_attributes.deleted', 'f');
-    if ($required && $this->id!==0) {
-      $this->db->in('person_attributes_websites.deleted', array('f', null));
-      $this->db->in('users.deleted', array('f', null)); 
-      $this->db->where('users_websites.site_role_id is not null');
-    }
     return $this->db->get()->result_array(true);
   }
   
