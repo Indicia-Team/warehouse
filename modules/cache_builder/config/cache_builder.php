@@ -1164,16 +1164,17 @@ $config['occurrences']['get_changed_items_query'] = "
   select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
     from (
     -- don't pick up changes to occurrences at this point, as they are updated immediately
+    -- but do pick up edits of samples as this could be done in isolation to the occurrences
     select o.id, s.deleted 
     from occurrences o
     join samples s on s.id=o.sample_id
-    where s.updated_on>'#date#' 
+    where s.updated_on>'#date#' and s.created_on<s.updated_on
     union
     select o.id, sp.deleted 
     from occurrences o
     join samples s on s.id=o.sample_id
     join samples sp on sp.id=s.parent_id
-    where sp.updated_on>'#date#' 
+    where sp.updated_on>'#date#' and sp.created_on<sp.updated_on
     union
     select o.id, false
     from occurrences o
@@ -1194,7 +1195,7 @@ $config['occurrences']['get_changed_items_query'] = "
     union
     select om.occurrence_id, false
     from occurrence_media om
-    where om.updated_on>'#date#'
+    where om.updated_on>'#date#' and om.created_on<om.updated_on
     union
     select oc.occurrence_id, false
     from occurrence_comments oc
