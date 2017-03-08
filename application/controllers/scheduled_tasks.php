@@ -563,6 +563,8 @@ join samples s on s.id=o.sample_id and s.deleted=false
 left join samples sp on sp.id=s.parent_id and sp.deleted=false
 join websites w on w.id=o.website_id and w.deleted=false;
 
+create index ix_occdelta_taxa_taxon_list_id on occdelta(taxa_taxon_list_id);
+
 drop table occlist;";
         $this->db->query($query);
         $this->occdeltaStartTimestamp=$timestamp;
