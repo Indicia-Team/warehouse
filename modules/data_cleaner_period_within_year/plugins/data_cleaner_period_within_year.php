@@ -36,13 +36,12 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
       // Also note in these queries we use 2012 as the year for expanding dates that have just a month and day, as it is a leap
       // year so all dates are covered.
       // Also a warning - these queries are case-sensitive, but performance is miserable if they are made insensitive since this kills the use of indexes.
+      // The overall performance is also better with 6 simpler queries than one complex one.
+      // Query 1 - TVK linked rules, not stage filtered.
       array(
         'joins' => 
             "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
-            "join verification_rule_metadata vrm ".
-            "  on (vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk')".
-            "  or (vrm.value=cttl.preferred_taxon and vrm.key='Taxon') ".
-            "  or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') ".
+            "join verification_rule_metadata vrm on vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk' ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
             "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=4 ".
             "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' and length(vrmend.value)=4 ".
@@ -56,14 +55,47 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
             "and (vrmend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrmend.value as date)))))) ".
             "and (vrsurvey.id is null or vrsurvey.value=cast(co.survey_id as varchar))"
       ),
+      // Query 2 - Taxon name linked rules, not stage filtered.
       array(
-        // repeat the test, this time filtered by stage
+        'joins' =>
+          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
+          "join verification_rule_metadata vrm on vrm.value=cttl.preferred_taxon and vrm.key='Taxon' ".
+          "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
+          "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=4 ".
+          "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' and length(vrmend.value)=4 ".
+          "left join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' and vrsurvey.deleted=false ",
+        'where' =>
+          "vr.reverse_rule<>(((vrmstart is null or vrmend.value is null or vrmstart.value <= vrmend.value) ".
+          "and ((vrmstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrmstart.value as date))) ".
+          "or (vrmend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrmend.value as date))))) ".
+          "or ((vrmstart.value > vrmend.value) ".
+          "and ((vrmstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrmstart.value as date))) ".
+          "and (vrmend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrmend.value as date)))))) ".
+          "and (vrsurvey.id is null or vrsurvey.value=cast(co.survey_id as varchar))"
+      ),
+      // Query 3 - Taxon meaning linked rules, not stage filtered.
+      array(
+        'joins' =>
+          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
+          "join verification_rule_metadata vrm on vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId' ".
+          "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
+          "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=4 ".
+          "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' and length(vrmend.value)=4 ".
+          "left join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' and vrsurvey.deleted=false ",
+        'where' =>
+          "vr.reverse_rule<>(((vrmstart is null or vrmend.value is null or vrmstart.value <= vrmend.value) ".
+          "and ((vrmstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrmstart.value as date))) ".
+          "or (vrmend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrmend.value as date))))) ".
+          "or ((vrmstart.value > vrmend.value) ".
+          "and ((vrmstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrmstart.value as date))) ".
+          "and (vrmend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrmend.value as date)))))) ".
+          "and (vrsurvey.id is null or vrsurvey.value=cast(co.survey_id as varchar))"
+      ),
+      // Query 4 - TVK linked rules, stage filtered.
+      array(
         'joins' => 
             "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
-            "join verification_rule_metadata vrm ".
-            "  on (vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk')".
-            "  or (vrm.value=cttl.preferred_taxon and vrm.key='Taxon') ".
-            "  or (vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId') ".
+            "join verification_rule_metadata vrm on vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk' ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
             "join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key='Stage' ".
             "left join verification_rule_data vrdstart on vrdstart.verification_rule_id=vr.id and vrdstart.key='StartDate' and vrdstart.data_group=vrdstage.data_group ".
@@ -86,6 +118,64 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
             "and ((vrdstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrdstart.value as date))) ".
             "and (vrdend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrdend.value as date)))))) ".
             "and (vrsurvey.id is null or vrsurvey.value=cast(co.survey_id as varchar))",
+        'errorMsgSuffix' => " || ' This test was based on the record being ' || vrdstage.value || '.'"
+      ),
+      // Query 5 - Taxon name linked rules, stage filtered.
+      array(
+        'joins' =>
+          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
+          "join verification_rule_metadata vrm on vrm.value=cttl.preferred_taxon and vrm.key='Taxon' ".
+          "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
+          "join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key='Stage' ".
+          "left join verification_rule_data vrdstart on vrdstart.verification_rule_id=vr.id and vrdstart.key='StartDate' and vrdstart.data_group=vrdstage.data_group ".
+          "left join verification_rule_data vrdend on vrdend.verification_rule_id=vr.id and vrdend.key='EndDate' and vrdend.data_group=vrdstage.data_group ".
+          "left join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' and vrsurvey.deleted=false ".
+          "join occurrence_attribute_values oav on oav.occurrence_id=co.id and oav.deleted=false ".
+          "left join cache_termlists_terms ctt on ctt.id=oav.int_value and string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(ctt.term),'') ".
+          "join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oav.deleted=false ".
+          "  and lower(oa.system_function) in ('sex_stage', 'stage') ",
+        'where' =>
+        // This logic allows a text value, lookup value or caption of a checked boolean attribute to count as the stage to filter on.
+          "(string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(oav.text_value),'') ".
+          "   or ctt.id is not null ".
+          "   or (oa.data_type='B' and string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(oa.caption),'') ".
+          "      and oav.int_value=1)) ". // last 2 lines accept a checked boolean attribute with stage for the caption
+          "and (((vrdstart is null or vrdend.value is null or vrdstart.value <= vrdend.value) ".
+          "and ((vrdstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrdstart.value as date))) ".
+          "or (vrdend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrdend.value as date))))) ".
+          "or ((vrdstart.value > vrdend.value) ".
+          "and ((vrdstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrdstart.value as date))) ".
+          "and (vrdend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrdend.value as date)))))) ".
+          "and (vrsurvey.id is null or vrsurvey.value=cast(co.survey_id as varchar))",
+        'errorMsgSuffix' => " || ' This test was based on the record being ' || vrdstage.value || '.'"
+      ),
+      // Query 6 - Taxon meaning linked rules, stage filtered.
+      array(
+        'joins' =>
+          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
+          "join verification_rule_metadata vrm on vrm.value=cast(co.taxon_meaning_id as character varying) and vrm.key='TaxonMeaningId' ".
+          "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
+          "join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key='Stage' ".
+          "left join verification_rule_data vrdstart on vrdstart.verification_rule_id=vr.id and vrdstart.key='StartDate' and vrdstart.data_group=vrdstage.data_group ".
+          "left join verification_rule_data vrdend on vrdend.verification_rule_id=vr.id and vrdend.key='EndDate' and vrdend.data_group=vrdstage.data_group ".
+          "left join verification_rule_metadata vrsurvey on vrsurvey.verification_rule_id=vr.id and vrsurvey.key='SurveyId' and vrsurvey.deleted=false ".
+          "join occurrence_attribute_values oav on oav.occurrence_id=co.id and oav.deleted=false ".
+          "left join cache_termlists_terms ctt on ctt.id=oav.int_value and string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(ctt.term),'') ".
+          "join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oav.deleted=false ".
+          "  and lower(oa.system_function) in ('sex_stage', 'stage') ",
+        'where' =>
+        // This logic allows a text value, lookup value or caption of a checked boolean attribute to count as the stage to filter on.
+          "(string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(oav.text_value),'') ".
+          "   or ctt.id is not null ".
+          "   or (oa.data_type='B' and string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(oa.caption),'') ".
+          "      and oav.int_value=1)) ". // last 2 lines accept a checked boolean attribute with stage for the caption
+          "and (((vrdstart is null or vrdend.value is null or vrdstart.value <= vrdend.value) ".
+          "and ((vrdstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrdstart.value as date))) ".
+          "or (vrdend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrdend.value as date))))) ".
+          "or ((vrdstart.value > vrdend.value) ".
+          "and ((vrdstart.value is not null and extract(doy from co.date_start) < extract(doy from cast('2012' || vrdstart.value as date))) ".
+          "and (vrdend.value is not null and extract(doy from co.date_start) > extract(doy from cast('2012' || vrdend.value as date)))))) ".
+          "and (vrsurvey.id is null or vrsurvey.value=cast(co.survey_id as varchar))",
         'errorMsgSuffix' => " || ' This test was based on the record being ' || vrdstage.value || '.'"
       )
     )

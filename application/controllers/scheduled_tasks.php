@@ -563,12 +563,14 @@ join samples s on s.id=o.sample_id and s.deleted=false
 left join samples sp on sp.id=s.parent_id and sp.deleted=false
 join websites w on w.id=o.website_id and w.deleted=false;
 
+create index ix_occdelta_taxa_taxon_list_id on occdelta(taxa_taxon_list_id);
+
 drop table occlist;";
         $this->db->query($query);
         $this->occdeltaStartTimestamp=$timestamp;
         $this->occdeltaEndTimestamp=$currentTime;
-        // if processing more than 200 records at a time, things will slow down. So we'll cut off the delta at the second which 
-        // the 200th record fell on.
+        // if processing more than 500 records at a time, things will slow down. So we'll cut off the delta at the second which
+        // the 500th record fell on.
         $this->limitDeltaSize();
       }
     }
@@ -579,7 +581,7 @@ drop table occlist;";
    */
   private function limitDeltaSize() {
     $this->occdeltaCount=$this->db->count_records('occdelta');
-    $max = 200;
+    $max = 500;
     if ($this->occdeltaCount>$max) {
       $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max");
       foreach ($qry as $t) {
