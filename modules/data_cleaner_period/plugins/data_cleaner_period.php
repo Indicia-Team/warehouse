@@ -33,12 +33,11 @@ function data_cleaner_period_data_cleaner_rules() {
       // Slightly convoluted logic required in this test to get it to work with ranges in middle of year as well as ranges that span the end of the year.
       // Also note in these queries we use 2012 as the year for expanding dates that have just a month and day, as it is a leap
       // year so all dates are covered.
+      // Split into 3 on the way it joins taxa to the rule def as this is faster than 1 complex query.
       array(
         'joins' => 
             "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
-            "join verification_rule_metadata vrm on (vrm.key='Tvk' and vrm.value=co.taxa_taxon_list_external_key) ".
-            "or (vrm.key='Taxon' and vrm.value=cttl.preferred_taxon) ".
-            "or (vrm.key='TaxonMeaningId' and vrm.value=cast(co.taxon_meaning_id as character varying)) ".
+            "join verification_rule_metadata vrm on vrm.key='Tvk' and vrm.value=co.taxa_taxon_list_external_key ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='Period' ".
             "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=8 ".
             "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' and length(vrmend.value)=8 ",
@@ -46,6 +45,30 @@ function data_cleaner_period_data_cleaner_rules() {
             "vr.reverse_rule<>((vrmstart is null or vrmend.value is null or vrmstart.value <= vrmend.value) ".
             "and ((vrmstart.value is not null and co.date_start < cast(vrmstart.value as date)) ".
             "or (vrmend.value is not null and co.date_start > cast(vrmend.value as date))))"
+      ),
+      array(
+        'joins' =>
+          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
+          "join verification_rule_metadata vrm on vrm.key='Taxon' and vrm.value=cttl.preferred_taxon ".
+          "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='Period' ".
+          "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=8 ".
+          "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' and length(vrmend.value)=8 ",
+        'where' =>
+          "vr.reverse_rule<>((vrmstart is null or vrmend.value is null or vrmstart.value <= vrmend.value) ".
+          "and ((vrmstart.value is not null and co.date_start < cast(vrmstart.value as date)) ".
+          "or (vrmend.value is not null and co.date_start > cast(vrmend.value as date))))"
+      ),
+      array(
+        'joins' =>
+          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
+          "join verification_rule_metadata vrm on vrm.key='TaxonMeaningId' and vrm.value=cast(co.taxon_meaning_id as character varying) ".
+          "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='Period' ".
+          "left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key='StartDate' and length(vrmstart.value)=8 ".
+          "left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key='EndDate' and length(vrmend.value)=8 ",
+        'where' =>
+          "vr.reverse_rule<>((vrmstart is null or vrmend.value is null or vrmstart.value <= vrmend.value) ".
+          "and ((vrmstart.value is not null and co.date_start < cast(vrmstart.value as date)) ".
+          "or (vrmend.value is not null and co.date_start > cast(vrmend.value as date))))"
       )
     )
   );
