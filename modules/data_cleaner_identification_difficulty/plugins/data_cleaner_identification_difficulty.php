@@ -31,13 +31,22 @@ function data_cleaner_identification_difficulty_data_cleaner_rules() {
     'optional' => array('Data'=>array('*'), 'Taxa'=>array('*'), 'INI'=>array('*')),
     'errorMsgField' => 'vrdini.value',
     'queries' => array(
+      // test where the rule is keyed by TVK
       array(
         'joins' => 
-            "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
-            "join verification_rule_data vrd on ((vrd.header_name='Data' and vrd.key = co.taxa_taxon_list_external_key) ".
-            "or (vrd.header_name='Taxa' and vrd.key = cttl.preferred_taxon)) and vrd.deleted=false ".
-            "join verification_rules vr on vr.id=vrd.verification_rule_id and vr.test_type='IdentificationDifficulty' and vr.deleted=false ".
-            "join verification_rule_data vrdini on vrdini.verification_rule_id=vr.id and vrdini.header_name='INI' and vrdini.key=vrd.value and cast(vrdini.key as int)>1 and vrdini.deleted=false",
+          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
+          "join verification_rule_data vrd on vrd.header_name='Data' and vrd.key = co.taxa_taxon_list_external_key and vrd.deleted=false ".
+          "join verification_rules vr on vr.id=vrd.verification_rule_id and vr.test_type='IdentificationDifficulty' and vr.deleted=false ".
+          "join verification_rule_data vrdini on vrdini.verification_rule_id=vr.id and vrdini.header_name='INI' and vrdini.key=vrd.value and cast(vrdini.key as int)>1 and vrdini.deleted=false",
+        'subtypeField' => 'vrdini.key'
+      ),
+      // repeat test where the rule is keyed by species name
+      array(
+        'joins' =>
+          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
+          "join verification_rule_data vrd on vrd.header_name='Taxa' and vrd.key = cttl.preferred_taxon and vrd.deleted=false ".
+          "join verification_rules vr on vr.id=vrd.verification_rule_id and vr.test_type='IdentificationDifficulty' and vr.deleted=false ".
+          "join verification_rule_data vrdini on vrdini.verification_rule_id=vr.id and vrdini.header_name='INI' and vrdini.key=vrd.value and cast(vrdini.key as int)>1 and vrdini.deleted=false",
         'subtypeField' => 'vrdini.key'
       )
     )
