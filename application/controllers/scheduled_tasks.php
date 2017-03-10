@@ -569,8 +569,8 @@ drop table occlist;";
         $this->db->query($query);
         $this->occdeltaStartTimestamp=$timestamp;
         $this->occdeltaEndTimestamp=$currentTime;
-        // if processing more than 500 records at a time, things will slow down. So we'll cut off the delta at the second which
-        // the 500th record fell on.
+        // if processing more than a few thousand records at a time, things will slow down. So we'll cut off the delta at the second which
+        // the 5000th record fell on.
         $this->limitDeltaSize();
       }
     }
@@ -581,7 +581,7 @@ drop table occlist;";
    */
   private function limitDeltaSize() {
     $this->occdeltaCount=$this->db->count_records('occdelta');
-    $max = 500;
+    $max = 5000;
     if ($this->occdeltaCount>$max) {
       $qry = $this->db->query("select timestamp from occdelta order by timestamp asc limit 1 offset $max");
       foreach ($qry as $t) {
