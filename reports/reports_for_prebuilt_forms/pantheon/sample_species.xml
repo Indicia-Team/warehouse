@@ -6,6 +6,7 @@
     select #columns#
     from cache_taxa_taxon_lists cttl
     join taxa_taxon_lists ttl on ttl.id=cttl.id
+    #joins#
     left join (taxa_taxon_designations ttd
       join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
       join cache_termlists_terms cat on cat.id=td.category_id and (
@@ -44,7 +45,6 @@
     ) on horusv.taxa_taxon_list_id=ttl.id and horusv.deleted=false
     left join taxa_taxon_list_attribute_values allv on allv.taxa_taxon_list_id=ttl.id and allv.deleted=false
       and allv.taxa_taxon_list_attribute_id in (#all_trait_attr_ids#)
-    #joins#
     where cttl.preferred=true
     #filters#
   </query>
