@@ -105,13 +105,25 @@
       </join>
     </param>
     <param name="duplicates" display="Only show duplicates?" default="" datatype="boolean">
-      <where>cttl.preferred_taxa_taxon_list_id in (
-  select preferred_taxa_taxon_list_id
-  from cache_occurrences_functional
-  where sample_id=#sample_id#
-  group by preferred_taxa_taxon_list_id
-  having count(*)>1
-)</where>
+      <where>case '#sample_type#'
+  when 'scratchpad' then
+  cttl.preferred_taxa_taxon_list_id in (
+    select cttl.preferred_taxa_taxon_list_id
+    from cache_taxa_taxon_lists cttl
+    join scratchpad_list_entries sle on sle.entry_id=cttl.id
+    where sle.scratchpad_list_id=#sample_id#
+    group by preferred_taxa_taxon_list_id
+    having count(distinct sle.id)>1
+  )
+  else
+  cttl.preferred_taxa_taxon_list_id in (
+    select preferred_taxa_taxon_list_id
+    from cache_occurrences_functional
+    where sample_id=#sample_id#
+    group by preferred_taxa_taxon_list_id
+    having count(*)>1
+  )
+end</where>
     </param>
     <param name="associated_with" display="Limit to species associated with" default=""
            description="Taxon meaning ID of species" datatype="integer">
