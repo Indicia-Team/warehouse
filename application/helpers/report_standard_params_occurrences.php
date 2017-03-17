@@ -252,6 +252,15 @@ class report_standard_params_occurrences {
           array('value'=>'', 'operator'=>'', 'sql'=>"o.sensitive=false")
         )
       ),
+      'confidential'=>array('datatype'=>'boolean', 'display'=>'Confidential records',
+        'description'=>'Filtering based on confidential status of the record',
+        'lookup_values'=>'t:Confidential records only,f:Exclude confidential records,all:All records',
+        'wheres' => array(
+          array('value'=>'t', 'operator'=>'equal', 'sql'=>"o.confidential='t'"),
+          array('value'=>'f', 'operator'=>'equal', 'sql'=>"o.confidential='f'"),
+          // nothing to do for all case
+        )
+      ),
       'release_status' => array('datatype'=>'lookup', 'display'=>'Release status',
         'description'=>'Release status of the record',
         'lookup_values'=>'R:Released,RM:Released by other recorders plus my own unreleased records;U:Unreleased because part of a project that has not yet released the records,' .
@@ -477,6 +486,9 @@ class report_standard_params_occurrences {
           array('value'=>'', 'operator'=>'', 'sql'=>"prefcttl.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
         )
       ),
+      'confidential' => array(
+        'wheres' => array() // disables the confidential filter on legacy reports
+      )
     );
   }
 
@@ -501,7 +513,8 @@ class report_standard_params_occurrences {
       'location_list_op_context'=>'in',
       'indexed_location_list_op_context'=>'in',
       'identification_difficulty_op_context'=>'=',
-      'release_status'=>'R'
+      'release_status'=>'R',
+      'confidential'=>'f'
     );
   }
 }

@@ -282,6 +282,30 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertCount(0, $response, 'Report response be empty, location type filter failed');
   }
 
+  public function testReportLibraryOccurrencesConfidentialParameter() {
+    Kohana::log('debug',
+      "Running unit test, Controllers_Services_Report_Test::testReportLibraryOccurrencesConfidentialParameter");
+    $response = $this->getReportResponse(
+      'library/occurrences/filterable_explore_list.xml', array('smpattrs'=>'', 'occattrs'=>''));
+    // default - confidential excluded, so only one record
+    $this->assertFalse(isset($response['error']),
+      "testReportLibraryOccurrencesConfidentialParameter returned an error when accessing occurrences. See log for details");
+    $this->assertCount(1, $response, 'Default confidential filter returns incorrect record count');
+    $this->assertEquals(1, $response[0]['occurrence_id'], 'Default confidential filter returns incorrect record');
+    // other confidential filters
+    $response = $this->getReportResponse(
+      'library/occurrences/filterable_explore_list.xml', array('smpattrs'=>'', 'occattrs'=>'', 'confidential'=>'t'));
+    $this->assertFalse(isset($response['error']),
+      "testReportLibraryOccurrencesConfidentialParameter returned an error when accessing confidential occurrences. See log for details");
+    $this->assertCount(1, $response, 'Confidential=t filter returns incorrect record count');
+    $this->assertEquals(2, $response[0]['occurrence_id'], 'Confidential=t filter returns incorrect record');
+    $response = $this->getReportResponse(
+      'library/occurrences/filterable_explore_list.xml', array('smpattrs'=>'', 'occattrs'=>'', 'confidential'=>'all'));
+    $this->assertFalse(isset($response['error']),
+      "testReportLibraryOccurrencesConfidentialParameter returned an error when accessing all occurrences. See log for details");
+    $this->assertCount(2, $response, 'Confidential=all filter returns incorrect record count');
+  }
+
   private function getReportResponse($report, $params = []) {
     $requestParams = array(
       'report' => $report,
