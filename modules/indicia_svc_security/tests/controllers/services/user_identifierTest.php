@@ -79,7 +79,8 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
             'comment' => 'Occurrence for unit testing',
             'taxa_taxon_list_id' => 1,
             'record_status' => 'C',
-            'release_status' => "R",
+            'release_status' => 'R',
+            'confidential' => 'f'
           ),
         ),
         'sample_attribute_values' => array(
