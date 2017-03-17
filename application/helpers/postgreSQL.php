@@ -61,6 +61,7 @@ class postgreSQL {
   /** 
    * Runs a query to select the notification data to generate for verification and comment status updates since the 
    * last run date. This allows recorders to be notified of verification actions and/or comments on their records.
+   * Excludes confidential records but not sensitive records.
    */
   public static function selectVerificationAndCommentNotifications($last_run_date, $db=null) {
     if (!$db)
@@ -126,7 +127,8 @@ left join notifications n on n.linked_id=o.id
           and n.source_type=rn.source_type
           and n.source_detail=rn.source_detail
 join users u on u.id=coalesce(rn.occurrence_comment_created_by_id, o.verified_by_id)
-where n.id is null;
+where n.id is null
+and o.confidential=false;
 SQL
     )->result();
   }
