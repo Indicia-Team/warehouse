@@ -5,7 +5,7 @@ require_once 'client_helpers/data_entry_helper.php';
 class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
   protected $auth;
   protected $db;
-  
+
   public function getDataSet() {
     $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
 
@@ -105,10 +105,10 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
         ),
       )
     );
-    
+
     $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
     $compositeDs->addDataSet($ds1);
-    $compositeDs->addDataSet($ds2); 
+    $compositeDs->addDataSet($ds2);
     return $compositeDs;
   }
 
@@ -119,12 +119,12 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
     $this->db = new Database();
   }
-  
+
   /**
    * On login or hook_user after_update, send a get_user_id request to the warehouse to get the user's best fit ID.
    * Store in the profile. On the Warehouse, have a user merger tool which identifies possible overlapping user accounts
    */
-  
+
   /**
    * Test the basic functionality of the user_identifier/get_user_id service call.
    */
@@ -138,11 +138,11 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $output = json_decode($response['output']);
     // response should definitely include a user id
     $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: '.$response['output']);
-    
+
     $uid1 = $output->userId;
     // there should now be a user that matches the response
     $user = ORM::factory('user')->where(array('username'=>'?_autotest'))->find();
-    
+
     Kohana::log('debug', "New user " . print_r((new ArrayObject($user))->offsetGet("\0*\0object"), TRUE));
     $this->assertNotEquals(0, $user->id, 'A user record was not found in the database');
     $this->assertEquals($uid1, $user->id, 'The user record stored in the db had a different ID ('.$user->id.') to the returned id from the service call ('.$uid1.').');
@@ -151,7 +151,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $qry = $this->db->select('website_id')->from('users_websites')->where(array('user_id'=>$uid1))->get()->result_array(false);
     $this->assertEquals(1, count($qry), 'The created user must be joined to a single website.');
     $this->assertEquals(1 /* website_id */, $qry[0]['website_id'], 'The user must be joined to the demo website used in the service call.');
-    
+
     // request for the same twitter account should return the same user id even though email is different
     $response = $this->callGetUserIdService($this->auth, array(
       array('type' => 'email','identifier' => 'othertest@test.com'),
@@ -160,7 +160,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertEquals($uid1, $output->userId, 'A repeat request for same identifiers did not return the same user ID');
-    
+
     // clean up user identifiers, user websites, person and user records.
     $this->db->query('delete from user_identifiers where user_id='.$user->id);
     $this->db->query('delete from users_websites where user_id='.$user->id);
@@ -168,7 +168,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->db->query('delete from users where id='.$user->id);
     $this->db->query('delete from people where id='.$person_id);
   }
-  
+
   /**
    * Test the case where an identifier is submitted with an unknown type. The type should get automatically
    * stored in the termlist.
@@ -187,9 +187,9 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $uid1 = $output->userId;
     // check the term now exists
     $qry = $this->db->select('id, term_id')
-        ->from('list_termlists_terms')
-        ->where(array('term'=>$randomType, 'termlist_external_key'=>'indicia:user_identifier_types'))
-        ->get()->result_array(false);
+      ->from('list_termlists_terms')
+      ->where(array('term'=>$randomType, 'termlist_external_key'=>'indicia:user_identifier_types'))
+      ->get()->result_array(false);
     $this->assertEquals(1, count($qry), 'Submitting a random type term did not result in exactly one instance of that term in the termlist. '.$randomType);
     // clean up the person created
     $this->db->query('delete from user_identifiers where user_id='.$uid1);
@@ -202,7 +202,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->db->query('delete from termlists_terms where id='.$qry[0]['id']);
     $this->db->query('delete from terms where id='.$qry[0]['term_id']);
   }
-  
+
   function testFirstNameInsert() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testFirstNameInsert");
     $response = $this->callGetUserIdService($this->auth, array(
@@ -232,29 +232,29 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testFindingRecords");
     $auth1 = data_entry_helper::get_read_write_auth(1, 'password');
     $auth2 = data_entry_helper::get_read_write_auth(2, 'password');
-    
+
     // Call the service, simulating a user on the first website.
     $response = $this->callGetUserIdService($auth1, array(
-        array('type' => 'email','identifier' => 'tracking1@test.com'),
-        array('type' => 'twitter','identifier' => 'twittertracking1')
-      ), 9999, 'u1', 'autotest');
+      array('type' => 'email','identifier' => 'tracking1@test.com'),
+      array('type' => 'twitter','identifier' => 'twittertracking1')
+    ), 9999, 'u1', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     // response should definitely include a positive whole number for the user id
     $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: '.$response['output']);
     $uid1 = $output->userId;
-    // This user should "own" the record posted earlier, since it was posted with the same CMS User ID to the same website.
-    $this->assertEquals(1, $this->db->select('id')->from('occurrences')->where(array('created_by_id' => $uid1))
-        ->get()->count(), "Occurrence 1 not owned by user $uid1");
+    // This user should "own" the records posted in the core fixture, since the sample has the same CMS User ID and the same website.
+    $this->assertEquals(2, $this->db->select('id')->from('occurrences')->where(array('created_by_id' => $uid1))
+      ->get()->count(), "Occurrences not owned by user $uid1 after calling get user ID service");
     // Plus the user should be a member of website1.
     $this->assertEquals(1, $this->db->select('id')->from('users_websites')->where(array('website_id' => 1, 'user_id' => $uid1))
-        ->get()->count(), 'Created user has not been added to the website 1 members list.');
-        
+      ->get()->count(), 'Created user has not been added to the website 1 members list.');
+
     // Call the service, simulating a user on the second website.
     $response = $this->callGetUserIdService($auth2, array(
-        array('type' => 'email','identifier' => 'tracking2@test.com'),
-        array('type' => 'facebook','identifier' => 'fbtracking2')
-      ), 9998, 'u1', 'autotest');
+      array('type' => 'email','identifier' => 'tracking2@test.com'),
+      array('type' => 'facebook','identifier' => 'fbtracking2')
+    ), 9998, 'u1', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     // response should definitely include a user id
@@ -262,65 +262,65 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $uid2 = $output->userId;
     // This user should "own" the record posted earlier, since it was posted with the same CMS User ID to the same website.
     $this->assertEquals(1, $this->db->select('id')->from('occurrences')->where(array('created_by_id' => $uid2))
-        ->get()->count(), "Occurrence 2 not owned by user $uid2");
+      ->get()->count(), "Occurrence 2 not owned by user $uid2");
     // Plus the user should be a member of website2.
     $this->assertEquals(1, $this->db->select('id')->from('users_websites')->where(array('website_id'=>2, 'user_id'=>$uid2))
-        ->get()->count(), 'Created user has not been added to the website 2 members list.');
-        
+      ->get()->count(), 'Created user has not been added to the website 2 members list.');
+
     // Now the crux - we have 2 different users on 2 websites. What happens if they turn out to be the same person?
     // This request should return an array of the 2 possible users.
     $response = $this->callGetUserIdService($auth2, array(
-        array('type' => 'email','identifier' => 'tracking2@test.com'),
-        array('type' => 'facebook','identifier' => 'fbtracking2'),
-        array('type' => 'twitter','identifier' => 'twittertracking1')
-      ), 9998, 'u1', 'autotest');
+      array('type' => 'email','identifier' => 'tracking2@test.com'),
+      array('type' => 'facebook','identifier' => 'fbtracking2'),
+      array('type' => 'twitter','identifier' => 'twittertracking1')
+    ), 9998, 'u1', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertObjectHasAttribute('possibleMatches', $output, "Response should include the list of possible users.\n".$response['output']);
     $this->assertInternalType('array', $output->possibleMatches, "Response should include an array of possible users.\n".$response['output']);
     $this->assertCount(2, $output->possibleMatches, '2 possible users should have been found');
-    
+
     // Can we limit the searched list of users and only find one?
     $response = $this->callGetUserIdService($auth2, array(
-        array('type' => 'email','identifier' => 'tracking2@test.com'),
-        array('type' => 'facebook','identifier' => 'fbtracking2'),
-        array('type' => 'twitter','identifier' => 'twittertracking1')
-      ), 9998, 'u1', 'autotest', 'users_to_merge=['.$uid2.']');
+      array('type' => 'email','identifier' => 'tracking2@test.com'),
+      array('type' => 'facebook','identifier' => 'fbtracking2'),
+      array('type' => 'twitter','identifier' => 'twittertracking1')
+    ), 9998, 'u1', 'autotest', 'users_to_merge=['.$uid2.']');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertEquals($uid2, $output->userId, 'Failed to limit users to check using users_to_merge');
-    
+
     // Can we split the searched list of users and only find one?
     $response = $this->callGetUserIdService($auth2, array(
-        array('type' => 'email','identifier' => 'tracking2@test.com'),
-        array('type' => 'facebook','identifier' => 'fbtracking2'),
-        array('type' => 'twitter','identifier' => 'twittertracking1')
-      ), 9998, 'u1', 'autotest', 'force=split');
+      array('type' => 'email','identifier' => 'tracking2@test.com'),
+      array('type' => 'facebook','identifier' => 'fbtracking2'),
+      array('type' => 'twitter','identifier' => 'twittertracking1')
+    ), 9998, 'u1', 'autotest', 'force=split');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     $this->assertEquals($uid2, $output->userId, 'Failed to split users and retreive the correct user ID');
-    
+
     // Recall the service, this time forcing a merge of the 2 possible users.
     $response = $this->callGetUserIdService($auth2, array(
-        array('type' => 'email','identifier' => 'tracking2@test.com'),
-        array('type' => 'facebook','identifier' => 'fbtracking2'),
-        array('type' => 'twitter','identifier' => 'twittertracking1')
-      ), 9998, 'u1', 'autotest', 'force=merge');
+      array('type' => 'email','identifier' => 'tracking2@test.com'),
+      array('type' => 'facebook','identifier' => 'fbtracking2'),
+      array('type' => 'twitter','identifier' => 'twittertracking1')
+    ), 9998, 'u1', 'autotest', 'force=merge');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id merge service failed.');
     $output = json_decode($response['output']);
     $uid3 = $output->userId;
     $this->assertEquals($uid2, $uid3, 'Merge request did not return the correct user');
-    // This user should "own" both the records posted earlier
-    $this->assertEquals(2, $this->db->select('id')->from('occurrences')->where(array('created_by_id'=>$uid3))
-        ->get()->count(), 'Occurrence not owned by user');
-    
+    // This user should "own" the 2 records from the core fixture plus one from this test class' dataset posted earlier
+    $this->assertEquals(3, $this->db->select('id')->from('occurrences')->where(array('created_by_id'=>$uid3))
+      ->get()->count(), 'Occurrence not owned by user');
+
     // cleanup
     $this->db->query('delete from occurrences where website_id in (1, 2)');
     $this->db->query('delete from user_identifiers where user_id in ('.$uid1.', '.$uid2.')');
     $this->db->query('delete from users_websites where user_id in ('.$uid1.', '.$uid2.')');
     $this->db->query('delete from users where id in ('.$uid1.', '.$uid2.')');
   }
-  
+
   /**
    * Private helper function to call the get_user_id service.
    */
@@ -333,11 +333,9 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
       $params .= "&$extras";
     Kohana::log('debug', "Making request to $url");
     Kohana::log('debug', "with params " . print_r($params, TRUE));
-    $r = data_entry_helper::http_post($url, $params);  
+    $r = data_entry_helper::http_post($url, $params);
     Kohana::log('debug', "Received response " . print_r($r, TRUE));
-    return $r;  
+    return $r;
   }
-  
-}
 
-?>
+}
