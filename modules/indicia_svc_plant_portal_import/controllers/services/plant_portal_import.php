@@ -411,7 +411,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     $plotLocationType = (isset($_GET['plotLocationType']) ? $_GET['plotLocationType'] : false);
     $websiteId = (isset($_GET['websiteId']) ? $_GET['websiteId'] : false);
     $userId = (isset($_GET['userId']) ? $_GET['userId'] : false);
-    $locationAttributeIdThatHoldsPlotGroup = (isset($_GET['attributeIdToHoldSampleOrPlotGroup']) ? $_GET['attributeIdToHoldSampleOrPlotGroup'] : false);
+    $locationAttributeIdThatHoldsPlotGroup = (isset($_GET['attributeIdToHoldPlotGroup']) ? $_GET['attributeIdToHoldPlotGroup'] : false);
     //Date is in batches with several items sent together, these are comma separated so explode them to deal with them
     $explodedPlotNames = explode(',',$plotNames);
     $explodedPlotSrefs = explode(',',$plotSrefs);
@@ -484,20 +484,14 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     $groupNames = (isset($_GET['names']) ? $_GET['names'] : false);
     //Groups names set in batches, these are comma separated so explode them to deal with them
     $explodedGroupNames = explode(',',$groupNames);
-    $groupType = (isset($_GET['groupType']) ? $_GET['groupType'] : false);
     $userId = (isset($_GET['userId']) ? $_GET['userId'] : false);
-    $personattributeIdToHoldSampleOrPlotGroups = (isset($_GET['personAttributeId']) ? $_GET['personAttributeId'] : false);
-    if ($userId!==false && $personattributeIdToHoldSampleOrPlotGroups!==false) {
+    $personattributeIdToHoldPlotGroups = (isset($_GET['personAttributeId']) ? $_GET['personAttributeId'] : false);
+    if ($userId!==false && $personattributeIdToHoldPlotGroups!==false) {
       foreach ($explodedGroupNames as $groupName) {
         //Groups are terms, we have built in database function for adding those (and associated termlists_terms etc)
-        if ($groupType==='sample_group') {
-          $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_sample_groups');")->result();
-        }
-        if ($groupType==='plot_group') {
-          $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_plot_groups');")->result();
-        }
+        $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_plot_groups');")->result();
         //We must assign the group to a user once it is created
-        self::assign_user_to_new_group($db,$groupName,$userId,$personattributeIdToHoldSampleOrPlotGroups);
+        self::assign_user_to_new_group($db,$groupName,$userId,$personattributeIdToHoldPlotGroups);
       }
     }
   }
@@ -505,14 +499,14 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
   /*
    * After creating the groups, we actually need to assign the group to the user automatically (as they have just imported the group this makes sense to do)
    */
-  private function assign_user_to_new_group($db,$groupName,$userId,$personattributeIdToHoldSampleOrPlotGroups) {
+  private function assign_user_to_new_group($db,$groupName,$userId,$personattributeIdToHoldPlotGroups) {
     $personId=self::get_person_from_user_id($db,$userId);
     //To Do AVB - The NOT exists is needed at the moment, however in the future in should only be there as a precaution as
     //duplicate detection should be much earlier, possibly remove entirely if performance becomes an issue
     $db->query("
       insert into person_attribute_values (person_id,person_attribute_id,int_value, created_on, created_by_id, updated_on, updated_by_id)
       select ".$personId.", 
-      ".$personattributeIdToHoldSampleOrPlotGroups.",
+      ".$personattributeIdToHoldPlotGroups.",
       (select tt.id
       from termlists_terms tt
       join terms t on t.id = tt.term_id AND t.term = '".$groupName."' AND t.deleted=false
@@ -529,7 +523,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
           FROM person_attribute_values 
           WHERE 
           person_id = ".$personId." AND
-          person_attribute_id = ".$personattributeIdToHoldSampleOrPlotGroups." AND  
+          person_attribute_id = ".$personattributeIdToHoldPlotGroups." AND  
           int_value = (
             select tt.id
             from termlists_terms tt
@@ -553,7 +547,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     $plotPairsForPlotGroupAttachment = (isset($_GET['plotPairsForPlotGroupAttachment']) ? $_GET['plotPairsForPlotGroupAttachment'] : false);
     $explodedPlotPairsForPlotGroupAttachment = explode(',',$plotPairsForPlotGroupAttachment);
     if (!empty($explodedPlotPairsForPlotGroupAttachment))
-      $plotIdsToCreateAttachmentsFor=self::get_new_plot_attachments_plot_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$currentPersonId,$personAttributeIdThatHoldsPlotGroup);
+      $plotIdsToCreateAttachmentsFor=self::get_new_plot_attachments_plot_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$currentPersonId);
     if (!empty($explodedPlotPairsForPlotGroupAttachment))
       $groupIdsToCreateAttachmentsFor=self::get_new_plot_attachments_group_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$currentPersonId,$personAttributeIdThatHoldsPlotGroup);
 
@@ -569,7 +563,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     }
   }
   
-  private static function get_new_plot_attachments_plot_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$personId,$personAttributeIdThatHoldsPlotGroup) {
+  private static function get_new_plot_attachments_plot_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$personId) {
     $plotNamesForAttachmentSet = '(';
     foreach ($explodedPlotPairsForPlotGroupAttachment as $plotPairsForPlotGroupAttachment) {
       $explodedPlotNameGroupNamePair = explode('|',$plotPairsForPlotGroupAttachment);
