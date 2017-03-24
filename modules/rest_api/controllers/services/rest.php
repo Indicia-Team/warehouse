@@ -126,12 +126,13 @@ class Rest_Controller extends Controller {
    * @var string
    */
   private $client_user_id;
-  
+
   /**
-   * The client's website ID (should point to a record in the websites table).
-   * @var integer
+   * Set to true when using query parameters in the GET URL to authenticate over
+   * https.
+   * @var bool
    */
-  private $website_id;
+  private $usingQueryParamAuthorisation=false;
   
   /**
    * The latest API major version number. Unversioned calls will map to this.
@@ -195,14 +196,16 @@ HTML;
   private $http_methods = array(
     // @todo: move all the help texts into an i18n config file. Don't load them on normal service calls, just
     // on the help service call.
-    'projects' => array('get'=>array(
-      '' => array(
-        'params' => array()
-      ),
-      '{project ID}' => array(
-        'params' => array()
+    'projects' => array(
+        'get'=>array(
+        '' => array(
+          'params' => array()
+        ),
+        '{project ID}' => array(
+          'params' => array()
+        )
       )
-    )),
+    ),
     'taxon-observations' => array(
       'get'=>array(
         '' => array(
@@ -237,34 +240,59 @@ HTML;
       'post' => array(
       )
     ),
-    'annotations' => array('get' => array(
-      '' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text'
-          ),
-          'page' => array(
-            'datatype' => 'integer'
-          ),
-          'page_size' => array(
-            'datatype' => 'integer'
-          ),
-          'edited_date_from' => array(
-            'datatype' => 'date'
-          ),
-          'edited_date_to' => array(
-            'datatype' => 'date'
+    'annotations' => array(
+      'get' => array(
+        '' => array(
+          'params' => array(
+            'proj_id' => array(
+              'datatype' => 'text'
+            ),
+            'page' => array(
+              'datatype' => 'integer'
+            ),
+            'page_size' => array(
+              'datatype' => 'integer'
+            ),
+            'edited_date_from' => array(
+              'datatype' => 'date'
+            ),
+            'edited_date_to' => array(
+              'datatype' => 'date'
+            )
           )
-        )
-      ),
-      '{annotation ID}' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text'
+        ),
+        '{annotation ID}' => array(
+          'params' => array(
+            'proj_id' => array(
+              'datatype' => 'text'
+            )
           )
         )
       )
-    )),
+    ),
+    'reports' => array(
+      'options' => array(
+        'segments' => TRUE
+      ),
+      'get' => array(
+        '' => array(
+          'params' => array(
+            'limit' => array(
+              'datatype' => 'integer'
+            ),
+            'offset' => array(
+              'datatype' => 'integer'
+            ),
+            'sortby' => array(
+              'datatype' => 'text'
+            ),
+            'sortdir' => array(
+              'datatype' => 'text'
+            )
+          )
+        ),
+      )
+    )
   );
   
   /**
@@ -331,13 +359,17 @@ HTML;
       $resourceName = str_replace('_', '-', $name);
       $this->authenticate();
       if (array_key_exists($resourceName, $this->http_methods)) {
+        $resourceConfig = $this->http_methods[$resourceName];
+        // If segments allowed, the URL can be .../resource/x/y/z etc.
+        $allowSegments = isset($resourceConfig['options']) &&
+          !empty($resourceConfig['options']['segments']);
         $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource
-          header('allow: ' . strtoupper(implode(',', array_keys($this->http_methods[$resourceName]))));
+          header('allow: ' . strtoupper(implode(',', array_keys($resourceConfig))));
         }
         else {
-          if (!array_key_exists(strtolower($this->method), $this->http_methods[$resourceName])) {
+          if (!array_key_exists(strtolower($this->method), $resourceConfig)) {
             $this->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
           }
           if ($this->method === 'GET') {
@@ -351,11 +383,12 @@ HTML;
           $this->check_version($arguments);
 
           $requestForId = NULL;
-          if (count($arguments) > 1) {
+
+          if (!$allowSegments && count($arguments) > 1) {
             $this->fail('Bad request', 400, 'Incorrect number of arguments');
             // @todo: http response
           }
-          elseif (count($arguments) === 1) {
+          elseif (!$allowSegments && count($arguments) === 1) {
             // we only allow a single argument to request a single resource by ID
             if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
               $requestForId = $arguments[0];
@@ -462,7 +495,7 @@ HTML;
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
 
-    $report = $this->load_report('filterable_taxon_observations', $params);
+    $report = $this->load_report('rest_api/filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
@@ -492,7 +525,7 @@ HTML;
       $params['edited_date_to'] = $this->request['edited_date_to'];
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
-    $report = $this->load_report('filterable_taxon_observations', $params);
+    $report = $this->load_report('rest_api/filterable_taxon_observations', $params);
     $this->succeed($this->listResponseStructure($report['content']['records'], 'taxon-observations'));
   }
 
@@ -503,7 +536,7 @@ HTML;
    */
   private function annotations_get_id($id) {
     $params = array('id' => $id);
-    $report = $this->load_report('filterable_annotations', $params);
+    $report = $this->load_report('rest_api/filterable_annotations', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
@@ -542,7 +575,7 @@ HTML;
       $this->checkDate($this->request['edited_date_to'], 'edited_date_to');
       $params['comment_edited_date_to'] = $this->request['edited_date_to'];
     }
-    $report = $this->load_report('filterable_annotations', $params);
+    $report = $this->load_report('rest_api/filterable_annotations', $params);
     $records = $report['content']['records'];
     // for each record, restructure the taxon observations sub-object
     foreach ($records as &$record) {
@@ -553,6 +586,21 @@ HTML;
       unset($record['taxon_observation_id']);
     }
     $this->succeed($this->listResponseStructure($records, 'annotations'));
+  }
+
+  private function reports_get() {
+    $segments = $this->uri->segment_array();
+    var_export($segments);
+    array_shift($segments);
+    array_shift($segments);
+    array_shift($segments);
+    $reportFile = implode('/', $segments);
+    $report = $this->load_report($reportFile, $_GET);
+    if (empty($report['content']['records'])) {
+      $this->fail('No Content', 204);
+    } else {
+      $this->succeed($this->listResponseStructure($report['content']['records'], 'rows'));
+    }
   }
   
   /**
@@ -670,7 +718,7 @@ HTML;
     $params['system_user_id'] = $this->server_user_id;
     // the project defines how records are allowed to be shared with this client
     $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
-    $report = $this->reportEngine->requestReport("rest_api/$report.xml", 'local', 'xml', $params);
+    $report = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
     return $report;
   }
   
@@ -766,6 +814,7 @@ HTML;
     if ($config[$user]['shared_secret'] !== $_GET['shared_secret']) {
       $this->fail('Unauthorized', 401, 'Supplied shared secret incorrect.');
     }
+    $this->usingQueryParamAuthorisation = true;
     return $user;
   }
 
