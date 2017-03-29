@@ -150,7 +150,7 @@ end</where>
             sql="'[' || array_to_string(array_agg(distinct '[' || t_r.id || ',' || case when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then 0 else t_r.parent_id end || ',&quot;' || t_r.term || '&quot;]'), ',') || ']'" />
     <column name="isis_sat_code" sql="string_agg(distinct isissatcode.term, ', ')" display="Specific assemblage type"
             datatype="text" aggregate="true" />
-    <column name="horus_indices" display="Published indices" aggregate="true" datatype="text"
+    <column name="horus_indices" display="Habitat score" aggregate="true" datatype="text"
             sql="string_agg(distinct coalesce(horusa.caption || ': ' || coalesce(horust.term, horusv.int_value::varchar)), ', ')" />
     <column name="taxon_meaning_id" sql="cttl.taxon_meaning_id" visible="false" />
     <column name="associations" display="Associations" aggregate="true" datatype="text"
