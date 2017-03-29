@@ -36,6 +36,7 @@ function summary_builder_scheduled_task($last_run_date, $db) {
   $clear = isset($_GET['force_summary_clear']) && $_GET['force_summary_clear'] != '' ? $_GET['force_summary_clear'] : false;
   $missing_check = isset($_GET['force_summary_missing_check']) ? ($_GET['force_summary_missing_check'] != '' ? $_GET['force_summary_missing_check'] : true) : false;
   $location = isset($_GET['location_id']) && $_GET['location_id'] != '' ? $_GET['location_id'] : false;
+  $taxa_taxon_list_id = isset($_GET['taxa_taxon_list_id']) && $_GET['taxa_taxon_list_id'] != '' ? $_GET['taxa_taxon_list_id'] : false;
   $only = isset($_GET['only']) && $_GET['only'] != '' ? $_GET['only'] : false;
   
   if($verbose) {
@@ -46,6 +47,7 @@ function summary_builder_scheduled_task($last_run_date, $db) {
 	echo '<li><b>force_summary_rebuild</b> : '.($rebuild === false ? 'absent' : ($rebuild === true ? 'present (rebuilds all surveys)' : $rebuild.' (Survey ID)')).'</li>';
 	echo '<li><b>force_summary_clear</b> : '.($clear === false ? 'absent or survey not specified' : $clear.' (Survey ID)').'</li>';
 	if($clear !== false) echo '<li><b>location_id</b> : '.($location === false ? 'absent' : $location.' (Location ID)').'</li>';
+	if($clear !== false) echo '<li><b>taxa_taxon_list_id</b> : '.($taxa_taxon_list_id === false ? 'absent' : $taxa_taxon_list_id.' (Taxon ID)').'</li>';
 	echo '<li><b>force_summary_missing_check</b> : '.($missing_check === false ? 'absent (missing checks as defined in summary definition for individual survey)' : ($missing_check === true ? 'present (missing checks forced on all surveys)' : $missing_check.' (Survey ID, missing checks forced on this survey, for all other surveys missing checks as defined in summary definition)')).'</li>';
 	echo '<li><b>only</b> : '.($only === false ? 'absent' : $only).'</li></ul><br/>';
   }
@@ -56,9 +58,9 @@ function summary_builder_scheduled_task($last_run_date, $db) {
 	echo '<li><b>&amp;verbose</b> : if present, increases the amount of messages displayed, e.g. include metrics on number of records processed.</li>';
 	echo '<li><b>&amp;force_summary_truncate</b> : if present will truncate the summary entry table. This may have performance advantages over <b>force_summary_clear</b> when removing the entire data set. No other processing will take place on this invocation.</li>';
 	echo '<li><b>&amp;force_summary_rebuild[=&lt;n&gt;]</b> : if present will change the creation date of all the summary entries for either the specified survey ID &lt;n&gt; (if given), or all surveys (if no parameter value given), to the day before the creation date of the first sample on the survey. Using this to rebuild the data leaves the data present whilst the rebuild takes place. No other processing will take place on this invocation for the affected survey(s).</li>';
-	echo '<li><b>&amp;force_summary_clear=&lt;n&gt;[&amp;location_id=&lt;x&gt;]</b> : if present will remove all the summary entries for the specified survey ID &lt;n&gt;, optionally restricting the removal to the data for location &lt;x&gt;. No other processing will take place on this invocation for the affected survey.</li>';
+	echo '<li><b>&amp;force_summary_clear=&lt;n&gt;[&amp;location_id=&lt;x&gt;|&amp;taxa_taxon_list_id=&lt;y&gt;]]</b> : if present will remove all the summary entries for the specified survey ID &lt;n&gt;, optionally restricting the removal to the data for either a location &lt;x&gt; or a taxon &lt;y&gt. No other processing will take place on this invocation for the affected survey.</li>';
 	echo '<li><b>&amp;force_summary_missing_check[=&lt;n&gt;]</b> : Carries out extra checks to see if any data has been missed for either the specified survey ID &lt;n&gt; (if given), or all surveys (if no parameter value given). If this option is not provided, or a particular survey is not specified, then whether the missing checks are carried out is determined by the setting in the definition. Normally checks are restricted to those samples created/deleted or occurrences created/updated/deleted since the last run of this scheduled task. With this option, the checks are extended to include any deleted locations with data in the cache, and any samples created/deleted plus any occurrences created/updated/deleted after the relevant summary record was created. These checks have a greater performance hit than the normal checks.</li>';
-	echo '<li><b>&amp;only=[locations|samples|occurrences]</b> : There are 3 distinct stages to the checks carried out (both normal and missing): this parameter restricts the processing to one of the three stages. This may be especially useful in catch up (missing check) mode, where performance may be marginal.</li></ul>';
+	echo '<li><b>&amp;only=[locations|samples|occurrences|taxa]</b> : There are 4 distinct stages to the checks carried out (both normal and missing): this parameter restricts the processing to one of the four stages. This may be especially useful in catch up (missing check) mode, where performance may be marginal.</li></ul>';
 	echo 'The <b>force_summary_truncate</b>, <b>force_summary_rebuild</b> and <b>force_summary_clear</b> parameters all then allow the appropriate data to be rebuilt using the missing summary checks on subsequent calls to this task.';
 	return;
   }

@@ -9,6 +9,7 @@
     join cache_taxa_taxon_lists cttlto on cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
       and cttlto.taxon_list_id=#taxon_list_id#
       and cttlto.preferred=true
+      and cttlto.allow_data_entry=true
     join taxa_taxon_lists ttl on ttl.id=cttl.id and ttl.deleted=false
     left join (taxa_taxon_designations ttd
         join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false

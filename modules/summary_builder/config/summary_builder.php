@@ -41,6 +41,11 @@ $config['clear_survey_location'] = "
 	WHERE survey_id = #survey_id#
 		AND location_id = #location_id#";
 
+$config['clear_survey_taxon'] = "
+  DELETE FROM summary_occurrences
+	WHERE survey_id = #survey_id#
+		AND taxa_taxon_list_id = #taxa_taxon_list_id#";
+
 $config['first_sample_creation_date'] = "
   SELECT min(created_on)::date  - INTEGER '1' as first_date
 	FROM samples
@@ -198,6 +203,36 @@ $config['get_missed_deleted_occurrences_query'] = "
 		AND o.updated_on>so.summary_created_on
 	WHERE o.deleted = 't'
 	LIMIT #limit#";
+
+// Rebuild all the data on rotation: this will catch any oddities, like change of taxon
+// Order by picks up the oldest entries
+// would like to put a distinct on this, but there is a significant performance hit.
+
+$config['get_rebuild_occurrences_query'] = "
+  SELECT so.taxa_taxon_list_id, so.location_id, so.user_id, so.year
+  FROM summary_occurrences so
+  WHERE so.survey_id = #survey_id#
+    AND so.user_id IS NOT NULL
+    AND so.location_id IS NOT NULL
+  ORDER BY so.summary_created_on
+  LIMIT #limit#";
+
+// Pick up changes to the taxon list
+// Need to flag if there are any occurrences attached to deleted taxa.
+// If a taxa has been changed, then need to rebuild all the entries for that taxa - if preferred has changed, so will the meaning id.
+// But, these this are done en-masse, so there is a real possibility that the limit will be exceed on a single run.
+// So pick up if an taxa update date is after an summary occurrence entry -> user_id, location_id, taxon_id.
+// This method means no need for a separate missing check.
+// would like to do a distinct but there is a significant performance hit.
+$config['get_changed_taxa_query'] = "
+  SELECT so.taxa_taxon_list_id, so.year, so.user_id, so.location_id, so.summary_created_on, cttl.cache_updated_on
+  FROM summary_occurrences so
+  JOIN cache_taxa_taxon_lists cttl ON so.taxa_taxon_list_id = cttl.id
+    AND so.summary_created_on < cttl.cache_updated_on
+  WHERE so.survey_id = #survey_id#
+  LIMIT #limit#";
+
+
 
 $config['get_YearTaxonLocationUser_query'] = "
   SELECT 1 AS count, p.id AS sample_id, p.date_start, 't' as present
