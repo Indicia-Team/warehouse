@@ -122,7 +122,7 @@ class ReportEngine {
     $reports = $this->internal_report_list(Kohana::config('indicia.localReportDir'), '/');
     foreach (Kohana::config('config.modules') as $path) {
       if (is_dir("$path/reports"))
-        $reports = array_merge_recursive($reports, $this->internal_report_list("$path/reports", '/'));
+        $reports = array_replace_recursive($reports, $this->internal_report_list("$path/reports", '/'));
     }
     return $reports;
   }
