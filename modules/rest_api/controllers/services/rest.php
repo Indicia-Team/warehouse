@@ -119,13 +119,13 @@ class Rest_Controller extends Controller {
    * The server's user ID (i.e. this REST API)
    * @var string
    */
-  private $server_user_id;
+  private $serverUserId;
   
   /**
    * The client's user ID (i.e. the caller)
    * @var string
    */
-  private $client_user_id;
+  private $clientUserId;
 
   /**
    * Set to true when using query parameters in the GET URL to authenticate over
@@ -138,19 +138,19 @@ class Rest_Controller extends Controller {
    * The latest API major version number. Unversioned calls will map to this.
    * @var integer
    */
-  private $api_major_version=1;
+  private $apiMajorVersion=1;
   
   /**
    * The latest API minor version number. Unversioned calls will map to this.
    * @var integer
    */
-  private $api_minor_version=0;
+  private $apiMinorVersion=0;
   
   /**
    * List of API versions that this code base will support.
    * @var array
    */
-  private $supported_api_versions = array(
+  private $supportedApiVersions = array(
     '1.0'
   );
   
@@ -475,7 +475,7 @@ HTML;
     $this->succeed(array(
       'data' => array_values($this->projects),
       'paging' => array(
-        'self' => $this->generate_link(array('page'=>1))
+        'self' => $this->generateLink(array('page'=>1))
       )
     ));
   }
@@ -590,16 +590,27 @@ HTML;
 
   private function reports_get() {
     $segments = $this->uri->segment_array();
-    var_export($segments);
     array_shift($segments);
     array_shift($segments);
     array_shift($segments);
-    $reportFile = implode('/', $segments);
-    $report = $this->load_report($reportFile, $_GET);
-    if (empty($report['content']['records'])) {
-      $this->fail('No Content', 204);
+    if (count($segments) && preg_match('/\.xml$/', $segments[count($segments)-1])) {
+      // report file specified. Don't need the .xml suffix.
+      $fileName = array_pop($segments);
+      $fileName = substr($fileName, 0, strlen($fileName) - 4);
+      $segments[] = $fileName;
+      $reportFile = implode('/', $segments);
+      $report = $this->load_report($reportFile, $_GET);
+      if (empty($report['content']['records'])) {
+        $this->fail('No Content', 204);
+      }
+      else {
+        // @todo: implement pagination
+        $this->succeed(array('data' => $report['content']['records'], 'rows'));
+      }
     } else {
-      $this->succeed($this->listResponseStructure($report['content']['records'], 'rows'));
+      $this->loadReportEngine();
+      $reportHierarchy = $this->reportEngine->report_list();
+      $this->succeed(array('data' => $reportHierarchy, 'reports'));
     }
   }
   
@@ -668,13 +679,12 @@ HTML;
     // strip nulls and empty strings
     $item = array_filter($item, array($this, 'notempty'));
   }
-  
   /**
    * Converts an array list of items loaded from the database into the structure ready for returning
    * as the result from an API call. Adds pagination information as well as hrefs for contained objects.
    * 
-   * @param type $list Array of records from the database
-   * @param type $entity Resource name that is being accessed.
+   * @param array $list Array of records from the database
+   * @param string $entity Resource name that is being accessed.
    * @return array Restructured version of the input list, with pagination and hrefs added.
    */
   private function listResponseStructure($list, $entity) {
@@ -682,19 +692,26 @@ HTML;
       $this->addItemMetadata($item, $entity);
     }
     $pagination = array(
-      'self'=>$this->generate_link(array('page'=>$this->request['page'])),
+      'self'=>$this->generateLink(array('page'=>$this->request['page'])),
     );
     if ($this->request['page']>1)
-      $pagination['previous'] = $this->generate_link(array('page'=>$this->request['page']-1));
+      $pagination['previous'] = $this->generateLink(array('page'=>$this->request['page']-1));
     // list needs to grab 1 extra, then lop it off and set a flag to indicate another page required
     if (count($list)>$this->request['page_size']) {
       array_pop($list);
-      $pagination['next'] = $this->generate_link(array('page'=>$this->request['page']+1));
+      $pagination['next'] = $this->generateLink(array('page'=>$this->request['page']+1));
     }
     return array(
       'paging' => $pagination,
       'data' => $list
     );
+  }
+
+  private function loadReportEngine() {
+    // @todo: rather than use the report engine and its overheads, build the query required directly?
+    // Should also return an object to iterate rather than loading the full array
+    if (!isset($this->reportEngine))
+      $this->reportEngine = new ReportEngine(array($this->projects[$this->request['proj_id']]['website_id']));
   }
   
   /**
@@ -705,9 +722,7 @@ HTML;
    * @return array Report response structure
    */
   private function load_report($report, $params) {
-    // @todo: rather than use the report engine and its overheads, build the query required directly?
-    // Should also return an object to iterate rather than loading the full array
-    $this->reportEngine = new ReportEngine(array($this->projects[$this->request['proj_id']]['website_id']));
+    $this->loadReportEngine();
     // load the filter associated with the project ID
     $filter = $this->load_filter_for_project($this->request['proj_id']);
     // The project's filter acts as a context for the report, meaning it defines the limit of all the 
@@ -715,7 +730,7 @@ HTML;
     foreach ($filter as $key => $value) {
       $params["{$key}_context"] = $value;
     }
-    $params['system_user_id'] = $this->server_user_id;
+    $params['system_user_id'] = $this->serverUserId;
     // the project defines how records are allowed to be shared with this client
     $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
     $report = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
@@ -729,7 +744,7 @@ HTML;
    * @param array $replacements List of parameters and values to replace
    * @return string The reconstructed URL.
    */
-  private function generate_link($replacements=array()) {
+  private function generateLink($replacements=array()) {
     $params = array_merge($_GET, $replacements);
     return url::base() . 'index.php/services/rest/' . $this->resourceName . '?' . http_build_query($params);
   }
@@ -759,11 +774,11 @@ HTML;
     if (count($arguments) && preg_match('/^v(?P<major>\d+)\.(?P<minor>\d+)$/', $arguments[count($arguments)-1], $matches)) {
       array_pop($arguments);
       // Check not asking for an invalid version
-      if (!in_array($matches['major'] . '.' . $matches['minor'], $this->supported_api_versions)) {
+      if (!in_array($matches['major'] . '.' . $matches['minor'], $this->supportedApiVersions)) {
         $this->fail('Bad request', 400, 'Unsupported API version');
       }
-      $this->api_major_version = $matches['major'];
-      $this->api_minor_version = $matches['minor'];
+      $this->apiMajorVersion = $matches['major'];
+      $this->apiMinorVersion = $matches['minor'];
     }
   }
   
@@ -785,8 +800,8 @@ HTML;
    * Checks that the request's user_id and proj_id are valid.
    */
   private function authenticate() {
-    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
-        && !empty($_GET['user']) && !empty($_GET['shared_secret'])) {
+    if (/*isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
+        && */!empty($_GET['user']) && !empty($_GET['shared_secret'])) {
       // If running https, accept user and shared_secret in the URL, allowing API browsing
       // via a standard web browser.
       $user = $this->authenticateUsingQueryParams();
@@ -796,8 +811,8 @@ HTML;
     }
     Kohana::log('debug', "Rest_api module authenticated $user");
     $config = Kohana::config('rest.clients');
-    $this->client_user_id = $user;
-    $this->server_user_id = Kohana::config('rest.user_id');
+    $this->clientUserId = $user;
+    $this->serverUserId = Kohana::config('rest.user_id');
     $this->projects = $config[$user]['projects'];
   }
 
