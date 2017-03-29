@@ -37,10 +37,6 @@
       case ttla.caption
         -- should count only native species
         when 'grazing marsh - species' then round(sum(ttlav.int_value)::numeric / count(distinct cttl.preferred_taxa_taxon_list_id), 2)::varchar
-        when 'ERS (S &amp; B)' then case count(case when ttlav.int_value &gt; 3 then null else 1 end)
-            when 0 then 'No qualifying species'
-            else round(sum(case when ttlav.int_value &gt; 3 then 0 else ttlav.int_value end)::numeric*100 / count(case when ttlav.int_value &gt; 3 then null else 1 end))::varchar
-        end
         when 'IEC (older version)' then sum(ttlav.int_value)::varchar
         when 'IEC (revised)' then sum(ttlav.int_value)::varchar
         when 'peat bog spiders' then count(distinct cttl.preferred_taxa_taxon_list_id)::varchar
