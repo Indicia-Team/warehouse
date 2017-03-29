@@ -1,0 +1,35 @@
+<report
+    title="EBMS: Locations contained in a region."
+    description="Returns the list of locations that falls within a parent region."
+    >
+  <query website_filter_field="lw.website_id">
+  SELECT #columns#
+    FROM locations l
+    JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
+    LEFT JOIN locations region ON region.location_type_id = #region_type_id# AND
+    	st_intersects(region.boundary_geom, coalesce(l.boundary_geom, l.centroid_geom))
+  #joins#
+  WHERE l.deleted=false 
+    AND #website_filter#
+    AND l.location_type_id IN (#location_type_ids#)
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name='region_type_id' display='Region Location Type' description='location_type_id of regions.' datatype="integer" default='0' emptyvalue='0' />
+    <param name='location_type_ids' display='Site Location Types' description='location_type_ids of retrieved sites.' datatype="string" />
+    <param name='region_location_id' display="Region location ID" description="The ID of the parent location (region) to filter for" datatype="integer" default="" >
+      <where>region.id=#region_location_id# AND region.id IS NOT NULL</where>
+    </param>
+    <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' default=''/>
+  </params>
+  <columns>
+    <column name='location_id' display='ID' sql="l.id" datatype="integer" />
+    <column name='name' display='Name' sql="l.name" datatype="text" />
+    <column name='region' display='Region' sql="region.name" datatype="text" />
+    <column name='location_type_id' visible='false' sql="l.location_type_id" datatype="integer" />
+    <column name='centroid_sref' display='Centroid' sql="l.centroid_sref" datatype="text" />
+  </columns>
+</report>

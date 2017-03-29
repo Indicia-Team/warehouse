@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="UKBMS Year Index Plot report" description="UKBMS specific: Lists occurrences at a section level.">
+<report title="UKBMS Year Plot Index report" description="UKBMS specific, for use with the Year by Year plot form: gives year index values using ukbms_year_index_values data.">
   <query>
       SELECT #columns#
       FROM ukbms_year_index_values yiv
@@ -11,15 +11,15 @@
   <params>
     <param name='location_id' display='Location ID' description='Enter the ID of the location' datatype='int' />
     <param name='taxon_list_id' display='Taxon List ID' datatype='int' >
-	  <where>cttl.taxon_list_id = #taxon_list_id#</where>
-	</param>
+      <where>cttl.taxon_list_id = #taxon_list_id#</where>
+    </param>
   </params>
   <columns>
-        <column name="location_id" display="ID" sql="yiv.location_id" in_count="true" datatype="integer" />
-        <column name="taxon" display="Taxon" sql="coalesce(cttl.default_common_name, cttl.preferred_taxon, cttl.taxon)" datatype="text" />
-        <column name="preferred_taxon" display="Preferred Taxon" sql="cttl.taxon" datatype="text" />
-        <column name="taxon_meaning_id" display="Taxon Meaning ID" sql="cttl.taxon_meaning_id" datatype="integer" />
-        <column name="year" display="Year" sql="yiv.year" datatype="integer" />
-        <column name="index" display="Index" sql="yiv.index" datatype="integer" />
+    <column name="location_id" display="ID" sql="yiv.location_id" in_count="true" datatype="integer" />
+    <column name="taxon" display="Taxon" sql="coalesce(cttl.default_common_name, cttl.preferred_taxon, cttl.taxon)" datatype="text" />
+    <column name="preferred_taxon" display="Preferred Taxon" sql="cttl.taxon" datatype="text" />
+    <column name="taxon_meaning_id" display="Taxon Meaning ID" sql="cttl.taxon_meaning_id" datatype="integer" />
+    <column name="year" display="Year" sql="yiv.year" datatype="integer" />
+    <column name="index" display="Index" sql="yiv.index" datatype="integer" />
   </columns>
 </report>
