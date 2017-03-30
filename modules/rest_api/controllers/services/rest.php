@@ -588,30 +588,123 @@ HTML;
     $this->succeed($this->listResponseStructure($records, 'annotations'));
   }
 
+  /**
+   * Converts the segments in the URL to a full report path suitable for passing
+   * to the report engine.
+   * @param array $segments
+   * @return string
+   */
+  private function getReportFileNameFromSegments($segments) {
+    // report file specified. Don't need the .xml suffix.
+    $fileName = array_pop($segments);
+    $fileName = substr($fileName, 0, strlen($fileName) - 4);
+    $segments[] = $fileName;
+    return implode('/', $segments);
+  }
+
   private function reports_get() {
     $segments = $this->uri->segment_array();
     array_shift($segments);
     array_shift($segments);
     array_shift($segments);
     if (count($segments) && preg_match('/\.xml$/', $segments[count($segments)-1])) {
-      // report file specified. Don't need the .xml suffix.
-      $fileName = array_pop($segments);
-      $fileName = substr($fileName, 0, strlen($fileName) - 4);
-      $segments[] = $fileName;
-      $reportFile = implode('/', $segments);
-      $report = $this->load_report($reportFile, $_GET);
-      if (empty($report['content']['records'])) {
-        $this->fail('No Content', 204);
+      $this->getReportOutput($segments);
+    } elseif (count($segments)>1 && preg_match('/\.xml$/', $segments[count($segments)-2])) {
+      // Passing a sub-action to a report, e.g. /params
+      if ($segments[count($segments)-1] === 'params') {
+        $this->getReportParams($segments);
       }
-      else {
-        // @todo: implement pagination
-        $this->succeed(array('data' => $report['content']['records'], 'rows'));
+      if ($segments[count($segments)-1] === 'columns') {
+        $this->getReportColumns($segments);
       }
     } else {
-      $this->loadReportEngine();
-      $reportHierarchy = $this->reportEngine->report_list();
-      $this->succeed(array('data' => $reportHierarchy, 'reports'));
+      $this->getReportHierarchy($segments);
     }
+  }
+
+  /**
+   * Uses the segments in the URL to find a report file and run it, with the
+   * expectation of producing report data output.
+   * @param array $segments
+   */
+  private function getReportOutput($segments) {
+    $reportFile = $this->getReportFileNameFromSegments($segments);
+    $report = $this->load_report($reportFile, $_GET);
+    if (isset($report['content']['records'])) {
+      // @todo: implement pagination
+      $this->succeed(array('data' => $report['content']['records']));
+    } elseif (isset($report['content']['parameterRequest'])) {
+      // @todo: handle param requests
+      $this->fail('Bad request (parameters missing)', 400, "Missing parameters");
+    }
+  }
+
+  /**
+   * Uses the segments in the URL to find a report file and retrieve the parameters
+   * metadata for it.
+   * @param array $segments
+   */
+  private function getReportParams($segments) {
+    // the last segment is the /params action.
+    array_pop($segments);
+    $reportFile = $this->getReportFileNameFromSegments($segments);
+    $report = $this->load_report($reportFile, []);
+    if (isset($report['content']['parameterRequest'])) {
+      $this->succeed(array('data' => $report['content']['parameterRequest']));
+    } else {
+      // @todo implement appropriate response
+    }
+  }
+
+  /**
+   * Uses the segments in the URL to find a report file and retrieve the parameters
+   * metadata for it.
+   * @param array $segments
+   * @todo Not working unless all params are provided.
+   */
+  private function getReportColumns($segments) {
+    // the last segment is the /params action.
+    array_pop($segments);
+    $reportFile = $this->getReportFileNameFromSegments($segments);
+    $report = $this->load_report($reportFile, []);
+    var_export($report);
+    if (isset($report['content']['columns'])) {
+      $this->succeed(array('data' => $report['content']['columns']));
+    } else {
+      // @todo implement appropriate response
+    }
+  }
+
+  /**
+   * Retrieves a list of folders and report files at a single location in the report
+   * hierarchy.
+   * @param $segments
+   */
+  private function getReportHierarchy($segments) {
+    $this->loadReportEngine();
+    // @todo Cache this
+    $reportHierarchy = $this->reportEngine->report_list();
+    $response = array();
+    foreach ($segments as $segment) {
+      $reportHierarchy = $reportHierarchy[$segment]['content'];
+    }
+    array_unshift($segments, 'index.php/services/rest/reports');
+    $currentPath = url::base() . implode('/', $segments);
+    foreach ($reportHierarchy as $key => $metadata) {
+      unset($metadata['content']);
+      if ($metadata['type'] === 'report') {
+        $metadata['href'] = url::base() . "index.php/services/rest/reports/$metadata[path].xml";
+        $metadata['hrefParameters'] = "$metadata[href]/params";
+        $metadata['hrefParameters'] = $this->getUrlWithCurrentParams($metadata['hrefParameters']);
+        $metadata['hrefColumns'] = "$metadata[href]/columns";
+        $metadata['hrefColumns'] = $this->getUrlWithCurrentParams($metadata['hrefColumns']);
+      } else {
+        $metadata['href'] = $currentPath . '/' . $key;
+      }
+      $metadata['href'] = $this->getUrlWithCurrentParams($metadata['href']);
+      $response[$key] = $metadata;
+    }
+    $this->succeed(array('data' => $response));
   }
   
   /**
@@ -663,9 +756,19 @@ HTML;
    * @param string $entity The entity name used to access the resouce, e.g. taxon-observations
    */
   private function addItemMetadata(&$item, $entity) {
-    $params = $this->request;
     $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]";
+    $item['href'] = $this->getUrlWithCurrentParams($item['href']);
+    // strip nulls and empty strings
+    $item = array_filter($item, array($this, 'notempty'));
+  }
+
+  /**
+   * Takes a URL and adds the current metadata parameters from the request and
+   * adds them to the URL.
+   */
+  private function getUrlWithCurrentParams($url) {
     $query = array();
+    $params = $this->request;
     if (!empty($params['proj_id']))
       $query['proj_id'] = $params['proj_id'];
     if (!empty($params['format']))
@@ -675,10 +778,11 @@ HTML;
     if (!empty($params['shared_secret']))
       $query['shared_secret'] = $params['shared_secret'];
     if (!empty($query))
-      $item['href'] .= '?' . http_build_query($query);
-    // strip nulls and empty strings
-    $item = array_filter($item, array($this, 'notempty'));
+      return $url . '?' . http_build_query($query);
+    else
+      return $url;
   }
+
   /**
    * Converts an array list of items loaded from the database into the structure ready for returning
    * as the result from an API call. Adds pagination information as well as hrefs for contained objects.
@@ -708,10 +812,13 @@ HTML;
   }
 
   private function loadReportEngine() {
-    // @todo: rather than use the report engine and its overheads, build the query required directly?
     // Should also return an object to iterate rather than loading the full array
-    if (!isset($this->reportEngine))
+    if (!isset($this->reportEngine)) {
+      if (empty($this->request['proj_id']) || empty($this->projects[$this->request['proj_id']])) {
+        $this->fail('Unauthorized', 401, 'Project ID missing or invalid.');
+      }
       $this->reportEngine = new ReportEngine(array($this->projects[$this->request['proj_id']]['website_id']));
+    }
   }
   
   /**
@@ -887,7 +994,7 @@ HTML;
    * 
    * @param array $array Data to output
    */
-  private function output_array_as_html($array) {
+  private function outputArrayAsHtml($array) {
     if (count($array)) {
       echo '<table border="1">';
       $keys = array_keys($array);
@@ -896,12 +1003,24 @@ HTML;
       echo "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
       echo '<tbody>';
       foreach ($array as $key=>$value) {
-        echo "<tr><th scope=\"row\">$key</th><td>";
+        $class = !empty($value['type']) ? " class=\"type-$value[type]\"" : '';
+        echo "<tr><th scope=\"row\"$class>$key</th><td>";
         if (is_array($value))
-          $this->output_array_as_html($value);
+          $this->outputArrayAsHtml($value);
         else {
-          if ($key==='href' || $key==='self' || $key==='next' || $key==='previous')
-            $value = "<a href=\"$value\">$value</a>";
+          if (substr($key, 0, 4) === 'href' || $key === 'self' || $key === 'next' || $key === 'previous') {
+            $parts = explode('?', $value);
+            $displayUrl = $parts[0];
+            if (count($parts)>1) {
+              parse_str($parts[1], $params);
+              unset($params['user']);
+              unset($params['shared_secret']);
+              if (count($params)) {
+                $displayUrl .= '?' . http_build_query($params);
+              }
+            }
+            $value = "<a href=\"$value\">$displayUrl</a>";
+          }
           echo "<p>$value</p>";
         }
         echo '</td></tr>';  
@@ -934,7 +1053,7 @@ HTML;
     if (!empty($this->request['format']) && $this->request['format']==='html') {
       $css = url::base() . "modules/rest_api/media/css/rest_api.css";
       echo str_replace('{css}', $css, $this->html_header);
-      $this->output_array_as_html($data);
+      $this->outputArrayAsHtml($data);
       echo '</body></html>';
     } else {
       header('Content-Type: application/json');
