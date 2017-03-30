@@ -694,10 +694,12 @@ HTML;
       unset($metadata['content']);
       if ($metadata['type'] === 'report') {
         $metadata['href'] = url::base() . "index.php/services/rest/reports/$metadata[path].xml";
-        $metadata['hrefParameters'] = "$metadata[href]/params";
-        $metadata['hrefParameters'] = $this->getUrlWithCurrentParams($metadata['hrefParameters']);
-        $metadata['hrefColumns'] = "$metadata[href]/columns";
-        $metadata['hrefColumns'] = $this->getUrlWithCurrentParams($metadata['hrefColumns']);
+        $metadata['params'] = array(
+          'href' => $this->getUrlWithCurrentParams("$metadata[href]/params")
+        );
+        $metadata['columns'] = array(
+          'href' => $this->getUrlWithCurrentParams("$metadata[href]/columns")
+        );
       } else {
         $metadata['href'] = $currentPath . '/' . $key;
       }
