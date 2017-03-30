@@ -1,0 +1,61 @@
+/* CSS styles to support the REST API help page */
+
+$heading-colour: #0066AA;
+$heading-background-colour: #C1DAD7;
+$label-col-background-colour: #e6e6e6;
+$gap: 1em;
+
+body {
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+  padding: $gap;
+  * {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+h1, h2 {
+  color: $heading-colour;
+}
+
+h2, h3 {
+  margin-top: $gap;
+}
+
+table {
+  border-collapse: collapse;
+  margin-top: $gap;
+  min-width: 50%;
+
+  caption {
+    padding: 0 0 $gap/4 0;
+    font-style: italic;
+    text-align: left;
+  }
+
+  th {
+    &[scope=col] {
+      background-color: $heading-background-colour;
+    }
+    &[scope=row] {
+      background-color: $label-col-background-colour;
+      &.type-report {
+        background: $label-col-background-colour url(../../../../media/images/report_datatable.png) no-repeat 4px 2px;
+        background-size: 25px 25px;
+        padding-left: 32px;
+      }
+      &.type-folder {
+        background: $label-col-background-colour url(../../../../media/images/folder.gif) no-repeat 4px 2px;
+        background-size: 25px 25px;
+        padding-left: 32px;
+      }
+    }
+  }
+
+  td, th {
+    border: 1px solid silver;
+    padding: $gap/4 $gap/2;
+    text-align: left;
+    vertical-align: top;
+  }
+}
