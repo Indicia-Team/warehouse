@@ -137,9 +137,16 @@ class ReportEngine {
     while (false !== ($file = readdir($dir))) {
       // The following skips the tmp folder in the report root as this is used for provided reports.
       if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file") &&
-          ($file !== 'tmp' || $path!=='/'))
-        $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list($root, "$path$file/"));
-      elseif (substr($file, -4)=='.xml') {
+          ($file !== 'tmp' || $path!=='/')) {
+        $folderInfo = array(
+          'type' => 'folder',
+          'content' => $this->internal_report_list($root, "$path$file/")
+        );
+        if (file_exists("$fullPath$file/readme.txt")) {
+          $folderInfo['description'] = file_get_contents("$fullPath$file/readme.txt");
+        }
+        $files[$file] = $folderInfo;
+      } elseif (substr($file, -4)=='.xml') {
         $metadata = XMLReportReader::loadMetadata("$fullPath$file");
         $file = basename($file, '.xml');
         $reportPath = ltrim("$path$file", '/');
