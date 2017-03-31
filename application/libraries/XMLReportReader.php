@@ -93,6 +93,13 @@ class XMLReportReader_Core implements ReportReader
           $metadata['title'] = 'Untitled (' . basename($report) . ')';
         if (!$metadata['description'])
           $metadata['description'] = 'No description provided';
+      } elseif ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='query') {
+        if ($reader->getAttribute('standard_params')) {
+          $metadata['standard_params'] = $reader->getAttribute('standard_params');
+          if (!$metadata['standard_params'])
+            unset($metadata['standard_params']);
+        }
+        // No need to read further than the query element
         break;
       }
     }

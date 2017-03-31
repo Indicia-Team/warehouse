@@ -150,7 +150,16 @@ class ReportEngine {
         $metadata = XMLReportReader::loadMetadata("$fullPath$file");
         $file = basename($file, '.xml');
         $reportPath = ltrim("$path$file", '/');
-        $files[$file] = array('type'=>'report','title'=>$metadata['title'],'description'=>$metadata['description'], 'path'=>$reportPath);
+        $reportInfo = array(
+          'type'=>'report',
+          'title'=>$metadata['title'],
+          'description'=>$metadata['description'],
+          'path'=>$reportPath
+        );
+        if (!empty($metadata['standard_params'])) {
+          $reportInfo['standard_params'] = $metadata['standard_params'];
+        }
+        $files[$file] = $reportInfo;
       }
     }
     closedir($dir);
