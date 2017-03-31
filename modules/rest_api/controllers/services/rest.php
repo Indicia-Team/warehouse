@@ -667,7 +667,6 @@ HTML;
     array_pop($segments);
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $report = $this->load_report($reportFile, []);
-    var_export($report);
     if (isset($report['content']['columns'])) {
       $this->succeed(array('data' => $report['content']['columns']));
     } else {
@@ -697,6 +696,14 @@ HTML;
         $metadata['params'] = array(
           'href' => $this->getUrlWithCurrentParams("$metadata[href]/params")
         );
+        if (!empty($metadata['standard_params'])) {
+          // reformat the info that the report supports standard paramenters into REST structure
+          $metadata['params']['info'] =
+              'Supports the standard set of parameters for ' . $metadata['standard_params'];
+          $metadata['params']['helpLink'] = 'http://indicia-docs.readthedocs.io/en/latest/' .
+              'developing/reporting/report-file-format.html?highlight=quality#standard-report-parameters';
+          unset($metadata['standard_params']);
+        }
         $metadata['columns'] = array(
           'href' => $this->getUrlWithCurrentParams("$metadata[href]/columns")
         );
@@ -909,8 +916,8 @@ HTML;
    * Checks that the request's user_id and proj_id are valid.
    */
   private function authenticate() {
-    if (/*isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
-        && */!empty($_GET['user']) && !empty($_GET['shared_secret'])) {
+    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
+        && !empty($_GET['user']) && !empty($_GET['shared_secret'])) {
       // If running https, accept user and shared_secret in the URL, allowing API browsing
       // via a standard web browser.
       $user = $this->authenticateUsingQueryParams();
@@ -1010,7 +1017,7 @@ HTML;
         if (is_array($value))
           $this->outputArrayAsHtml($value);
         else {
-          if (substr($key, 0, 4) === 'href' || $key === 'self' || $key === 'next' || $key === 'previous') {
+          if (preg_match('/http(s)?:\/\//', $value)) {
             $parts = explode('?', $value);
             $displayUrl = $parts[0];
             if (count($parts)>1) {
