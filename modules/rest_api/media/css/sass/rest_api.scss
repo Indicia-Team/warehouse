@@ -15,7 +15,9 @@ body {
 }
 
 h1, h2 {
+  margin-top: $gap;
   color: $heading-colour;
+  font-size: 1.4em;
 }
 
 h2, h3 {
