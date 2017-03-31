@@ -1,0 +1,56 @@
+<report
+    title="Results overview - ecological output"
+    description="A report to display the ecological guild details on the Results Overview page."
+>
+  <query website_filter_field="cttl.website_id">
+    select #columns#
+    from cache_taxa_taxon_lists cttl
+    join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id and ttlav.deleted=false
+      and ttlav.taxa_taxon_list_attribute_id in (#adult_attr_id#, #larval_attr_id#)
+    join cache_termlists_terms tguild on tguild.id=ttlav.int_value
+    #joins#
+  </query>
+  <order_bys>
+    <order_by>stage, count(distinct cttl.preferred_taxa_taxon_list_id) desc</order_by>
+  </order_bys>
+  <params>
+    <param name="sample_id" display="Sample or scratchpad ID"  datatype="integer"/>
+    <param name="sample_type" display="Sample type" datatype="lookup" default="sample"
+           lookupValues="sample:Sample,scratchpad:Scratchpad list">
+      <joins>
+        <join operator="equal" value="sample">
+          join cache_occurrences_functional o on o.website_id in (#website_ids#)
+            and o.survey_id=(select survey_id from samples where id=#sample_id#)
+            and o.sample_id=#sample_id#
+            and o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+        </join>
+        <join operator="equal" value="scratchpad">
+          join scratchpad_list_entries sle on sle.entry_id=cttl.id
+              and sle.scratchpad_list_id=#sample_id#
+        </join>
+      </joins>
+    </param>
+    <param name='adult_attr_id' display='Adult Guild Occurrence Attribute Id' description='Occurrance attribute that holds adult guild.' datatype='integer'/>
+    <param name='larval_attr_id' display='Larval Guild Occurrence Attribute Id' description='Occurrance attribute that holds larval guild.' datatype='integer'/>
+    <param name="stage" display="Stage (adult or larva)" datatype="string" default="">
+      <where>case ttlav.taxa_taxon_list_attribute_id when #adult_attr_id# then 'adult' else 'larva' end = '#stage#'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="sample_id" sql="#sample_id#" visible="false" aggregate="true" />
+    <column name="sample_type" sql="'#sample_type#'" visible="false" aggregate="true" />
+    <column name="trait_term_id" sql="tguild.id" visible="false" />
+    <column name="stage" display="Stage" in_count="true" datatype="text"
+            sql="case ttlav.taxa_taxon_list_attribute_id when #adult_attr_id# then 'adult' else 'larva' end" />
+    <column name="guild" display="Guild" sql="tguild.term" in_count="true" datatype="text" />
+    <column name="count" display="No. of species" sql="count(distinct cttl.preferred_taxa_taxon_list_id)"
+            aggregate="true" datatype="integer" />
+    <column name="ret" display="% return" aggregate="true" datatype="integer"
+            sql="count(distinct cttl.preferred_taxa_taxon_list_id) * 100 / (
+      select count(distinct cttl.preferred_taxa_taxon_list_id)
+      from cache_taxa_taxon_lists cttl
+      #joins#
+    )" />
+    <column name="trait_attr_id" sql="ttlav.taxa_taxon_list_attribute_id" visible="false" />
+  </columns>
+</report>

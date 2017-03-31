@@ -63,11 +63,21 @@ class Users_website_Model extends ORM
         " and licence_id is null"
       );
       $this->db->query("update cache_occurrences_functional o" .
-        " set licence_id=l.id, licence_code=l.code" .
+        " set licence_id=l.id" .
         " from licences l" .
         " where o.website_id=$new[website_id]" .
         " and o.created_by_id=$new[user_id]" .
         " and o.licence_id is null" .
+        " and l.id=$new[licence_id]"
+      );
+      $this->db->query("update cache_occurrences_nonfunctional onf" .
+        " set licence_code=l.code" .
+        " from licences l, cache_occurrences_functional o " .
+        " where o.id=onf.id" .
+        " and o.website_id=$new[website_id]" .
+        " and o.created_by_id=$new[user_id]" .
+        " and coalesce(onf.licence_code, '')<>l.code" .
+        " and o.licence_id=l.id" .
         " and l.id=$new[licence_id]"
       );
     }

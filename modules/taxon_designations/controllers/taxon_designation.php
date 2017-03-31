@@ -219,8 +219,8 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
           $r = $this->db
             ->select('id')
             ->from('taxa_taxon_designations')
-            ->where(array('taxon_designation_id'=>$desId, 'taxon_id'=>$taxon['id']))
-            ->get()->result_array(false);;
+            ->where(array('taxon_designation_id'=>$desId, 'taxon_id'=>$taxon['id'], 'deleted'=>'f'))
+            ->get()->result_array(false);
           if (count($r)===0) {
             $this->db->insert('taxa_taxon_designations', array(
               'taxon_id'=>$taxon['id'],

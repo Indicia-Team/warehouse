@@ -126,6 +126,43 @@ function spatial_index_builder_get_type_filter() {
   return array($join, $where, $surveyRestriction);
 }
 
+/**
+ * Inserts missing index_locations_samples records for the identified list of either
+ * locations or samples that have been updated.
+ * @param $db
+ * @param $filter
+ * @param string $limit Sql to limit to the updated locations or samples
+ */
+function _spatial_index_builder_index_insert($db, $filter, $limit) {
+  list($join, $where, $surveyRestriction)=$filter;
+  // Now the actual population
+  $query = "insert into index_locations_samples (location_id, sample_id, contains, location_type_id)
+    select distinct 
+      l.id, s.id, coalesce(linked.id, 0) = l.id or st_contains(l.boundary_geom, s.geom), l.location_type_id
+    from locations l
+    $join
+    join samples s on s.deleted=false
+      and (st_intersects(l.boundary_geom, s.geom) and not st_touches(l.boundary_geom, s.geom))
+    $limit
+    left join index_locations_samples ils on ils.location_id=l.id and ils.sample_id=s.id
+    join cache_samples_nonfunctional snf on snf.id=s.id
+    left join locations linked on linked.id=snf.attr_linked_location_id and linked.deleted=false
+    where ils.id is null
+    and l.deleted=false
+    and (
+      -- if a linked_location_id specified, then limit the indexing to the linked location for this location type.
+      snf.attr_linked_location_id is null 
+      or linked.id = l.id 
+      or linked.location_type_id <> l.location_type_id 
+      )
+    $where
+    $surveyRestriction";
+  $message = $db->query($query)
+      ->count() . ' index_locations_samples entries created.';
+  echo "$message<br/>";
+  Kohana::log('debug', $message);
+}
+
 /** 
  * Performs the actual population of ths index.
  * @param object $db Database object
@@ -143,33 +180,8 @@ function spatial_index_builder_populate($db) {
   Kohana::log('debug', "Cleaned up index_locations_samples before populating new values.");
   // are we filtering by location type?
   $filter=spatial_index_builder_get_type_filter();
-  list($join, $where, $surveyRestriction)=$filter;
-  // Now the actual population
-  $query = "insert into index_locations_samples (location_id, sample_id, contains, location_type_id)
-    select distinct 
-      l.id, s.id, coalesce(linked.id, 0) = l.id or st_contains(l.boundary_geom, s.geom), l.location_type_id
-    from locations l
-    $join
-    join samples s on s.deleted=false
-      and (st_intersects(l.boundary_geom, s.geom) and not st_touches(l.boundary_geom, s.geom))
-    left join index_locations_samples ils on ils.location_id=l.id and ils.sample_id=s.id
-    join cache_samples_nonfunctional snf on snf.id=s.id
-    left join locations linked on linked.id=snf.attr_linked_location_id and linked.deleted=false
-    where ils.id is null
-    and l.deleted=false
-    and (
-      -- if a linked_location_id specified, then limit the indexing to the linked location for this location type.
-      snf.attr_linked_location_id is null 
-      or linked.id = l.id 
-      or linked.location_type_id <> l.location_type_id 
-      )
-    and (l.id in (select id from loclist)
-    or s.id in (select id from smplist))
-    $where
-    $surveyRestriction";
-  $message = $db->query($query)->count().' index_locations_samples entries created.';
-  echo "$message<br/>";
-  Kohana::log('debug', $message);
+  _spatial_index_builder_index_insert($db, $filter, 'join smplist list on list.id=s.id');
+  _spatial_index_builder_index_insert($db, $filter, 'join loclist list on list.id=l.id');
 }
 
 function spatial_index_builder_cleanup($db) {

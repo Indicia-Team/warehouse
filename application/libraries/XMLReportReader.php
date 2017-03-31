@@ -822,6 +822,12 @@ class XMLReportReader_Core implements ReportReader
         }
       }
       $this->defaultParamValues = array_merge($standardParamsHelper::getDefaultParameterValues(), $this->defaultParamValues);
+      // Any defaults can be skipped if a context parameter is provided to override the default
+      foreach (array_keys($this->defaultParamValues) as $param) {
+        if (isset($providedParams[$param.'_context'])) {
+          unset($this->defaultParamValues[$param]);
+        }
+      }
       $providedParams = array_merge($this->defaultParamValues, $providedParams);
       // load up the params for any which have a value provided
       foreach ($params as $param => $cfg) {
@@ -883,9 +889,12 @@ class XMLReportReader_Core implements ReportReader
       $providedParams[$to.'_context']=$quote . $providedParams[$from.'_context'] . $quote;
     if (!empty($providedParams['paramsFormExcludes'])) {
       $excludes=json_decode($providedParams['paramsFormExcludes'], true);
-      if (in_array($from, $excludes)) {
-        $excludes[]=$to;
-        $providedParams['paramsFormExcludes']=json_encode($excludes);
+      if (in_array($from, $excludes) || in_array("{$from}_context", $excludes)) {
+        if (in_array($from, $excludes))
+          $excludes[] = $to;
+        if (in_array("{$from}_context", $excludes))
+          $excludes[] = "{$to}_context";
+        $providedParams['paramsFormExcludes'] = json_encode($excludes);
       }
     }
   }

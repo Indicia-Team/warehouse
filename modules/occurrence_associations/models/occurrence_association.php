@@ -60,7 +60,7 @@ class Occurrence_association_Model extends ORM {
    */
   public function __set($key, $value)
   {
-    if (substr($key,-16) === 'to_occurrence_id' && preg_match('/^||.+||$/', $value))
+    if (substr($key,-16) === 'to_occurrence_id' && preg_match('/^\|\|.+\|\|$/', $value))
     {
       $this->to_occurrence_id_pointer = str_replace('||', '', $value);
       $value = null;

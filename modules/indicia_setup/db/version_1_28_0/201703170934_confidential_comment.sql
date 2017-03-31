@@ -1,0 +1,2 @@
+COMMENT ON COLUMN indicia.occurrences.confidential IS
+   'Flag set to true if this record is flagged confidential by the dataset administrator. The confidential flag relates to the need to control communications around a record rather then simply an indicator that a record is sensitive (which should be done via the sensitivity_precision field) so this flag prevents notifications about this record being sent to the recorder.';

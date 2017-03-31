@@ -174,14 +174,21 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Returns an array structure which describes this model and saved ID, plus the saved child models that were created
-   * during a submission operation.
+   * Returns an array structure which describes this model, identifier and timestamp fields, plus the saved child models
+   * that were created during a submission operation.
    */
-  public function get_submitted_ids() {
+  public function get_submission_response_metadata() {
     $r = array(
       'model' => $this->object_name,
       'id' => $this->id,
     );
+    // Add the external key and timestamps if present
+    if (!empty($this->external_key))
+      $r['external_key'] = $this->external_key;
+    if (!empty($this->created_on))
+      $r['created_on'] = $this->created_on;
+    if (!empty($this->updated_on))
+      $r['updated_on'] = $this->updated_on;
     if (count($this->nestedChildModelIds))
       $r['children'] = $this->nestedChildModelIds;
     if (count($this->nestedParentModelIds))
@@ -950,7 +957,7 @@ class ORM extends ORM_Core {
         // copy up the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
-        $this->nestedParentModelIds[] = $m->get_submitted_ids();
+        $this->nestedParentModelIds[] = $m->get_submission_response_metadata();
         // copy the submission back so we pick up updated foreign keys that have been looked up. E.g. if submitting a taxa taxon list, and the
         // taxon supermodel has an fk lookup, we need to keep it so that it gets copied into common names and synonyms
         $a['model'] = $m->submission;
@@ -999,7 +1006,7 @@ class ORM extends ORM_Core {
         // copy down the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
-        $this->nestedChildModelIds[] = $m->get_submitted_ids();
+        $this->nestedChildModelIds[] = $m->get_submission_response_metadata();
         if ($m->wantToUpdateMetadata && !$this->wantToUpdateMetadata && preg_match('/_(image|medium)$/', $m->object_name)) {
           // we didn't update the parent's metadata. But a child image has been changed, so we want to update the parent record metadata.
           // i.e. adding an image to a record causes the record to be edited and therefore to get its status reset.
@@ -1089,7 +1096,7 @@ class ORM extends ORM_Core {
       } else {
         // New way of submitting attributes embeds attr values direct in the main table submission values.
         foreach($this->submission['fields'] as $field => $content) {
-          // look for pattern smpAttr:(fk_)nn (or occAttr, taxAttr, locAttr, srvAttr or psnAttr)
+          // look for pattern smpAttr:(fk_)nn (or occAttr, taxAttr, trmAttr, locAttr, srvAttr or psnAttr)
           $isAttribute = preg_match('/^'.$this->attrs_field_prefix.'\:(fk_)?[0-9]+/', $field, $baseAttrName);
           if ($isAttribute) {
             // extract the nn, this is the attribute id
@@ -1639,7 +1646,7 @@ class ORM extends ORM_Core {
       $this->set_metadata();
       $this->validate(new Validation($this->as_array()), true);
     }
-    $this->nestedChildModelIds[] = $attrValueModel->get_submitted_ids();
+    $this->nestedChildModelIds[] = $attrValueModel->get_submission_response_metadata();
 
     return true;
   }

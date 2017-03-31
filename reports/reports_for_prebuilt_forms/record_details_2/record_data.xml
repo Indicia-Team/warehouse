@@ -69,5 +69,6 @@
     <column name="licence_code" sql="l.code" />
     <column name="licence_title" sql="l.title" />
     <column name="licence_url" sql="l.url_readable" />
+    <column name='confidential' sql='o.confidential' />
   </columns>
 </report>

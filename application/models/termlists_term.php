@@ -42,6 +42,11 @@ class Termlists_term_Model extends Base_Name_Model {
     'updated_by' => 'user'
   );
 
+  // Declare that this model has child attributes, and the name of the node in the submission which contains them
+  protected $has_attributes=true;
+  protected $attrs_submission_name='trmAttributes';
+  public $attrs_field_prefix='trmAttr';
+
   protected $ORM_Tree_children = 'termlists_terms';
 
   public function validate(Validation $array, $save = FALSE) {

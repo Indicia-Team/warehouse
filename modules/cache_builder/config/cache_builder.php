@@ -93,13 +93,13 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
       now(), now()
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id 
+    #join_needs_update#
     left join cache_termlists_terms ctlt on ctlt.id=tlt.id
     join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred='t' 
     join terms t on t.id=tlt.term_id and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false
     join terms tpref on tpref.id=tltpref.term_id 
     join languages lpref on lpref.id=tpref.language_id
-    #join_needs_update#
     where ctlt.id is null";
 
 $config['termlists_terms']['join_needs_update']='join needs_update_termlists_terms nu on nu.id=tlt.id and nu.deleted=false';
@@ -205,6 +205,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       now(), now(), ttl.allow_data_entry, t.marine_flag
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id and ttl.deleted=false
+    #join_needs_update#
     left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
     join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' and ttlpref.taxon_list_id=ttl.taxon_list_id and ttlpref.deleted=false
     join taxa t on t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
@@ -213,7 +214,6 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
     join taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
     join languages lpref on lpref.id=tpref.language_id and lpref.deleted=false
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id and tcommon.deleted=false
-    #join_needs_update#
     where cttl.id is null and tl.deleted=false";
 
 $config['taxa_taxon_lists']['join_needs_update']='join needs_update_taxa_taxon_lists nu on nu.id=ttl.id and nu.deleted=false';
@@ -378,8 +378,8 @@ $config['taxon_searchterms']['update']['abbreviations'] = "update cache_taxon_se
 $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon_searchterms cts
     set taxa_taxon_list_id=cttl.id,
       taxon_list_id=cttl.taxon_list_id,
-      searchterm=regexp_replace(lower(
-          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+      searchterm=regexp_replace(regexp_replace(
+          lower( regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, '') ), 'ae', 'e', 'g'
         ), E'[^a-z0-9\\\\?\\\\+]', '', 'g'),                 
       original=cttl.taxon,
       taxon_group_id=cttl.taxon_group_id,
@@ -398,8 +398,8 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
       code_type_id=null,
       source_id=null,
       preferred=cttl.preferred,
-      searchterm_length=length(regexp_replace(lower(
-          regexp_replace(regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, ''), 'ae', 'e', 'g')
+      searchterm_length=length(regexp_replace(regexp_replace(
+          lower( regexp_replace(cttl.taxon, E'\\\\(.+\\\\)', '', 'g') || coalesce(cttl.authority, '') ), 'ae', 'e', 'g'
         ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       parent_id=cttl.parent_id,
       preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
@@ -465,8 +465,8 @@ $config['taxon_searchterms']['insert']['standard terms']="insert into cache_taxo
       end, false, null, cttl.preferred, length(cttl.taxon), cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.external_key, cttl.authority
     from cache_taxa_taxon_lists cttl
-    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified='f'
     #join_needs_update#
+    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified='f'
     where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=true";
 
 $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon_searchterms (
@@ -480,13 +480,13 @@ $config['taxon_searchterms']['insert']['abbreviations']="insert into cache_taxon
       'A', null, null, cttl.preferred, length(taxon_abbreviation(cttl.taxon)), cttl.parent_id, cttl.preferred_taxa_taxon_list_id,
       cttl.marine_flag, cttl.external_key, cttl.authority
     from cache_taxa_taxon_lists cttl
+    #join_needs_update#
     join taxa_taxon_lists ttlpref 
       on ttlpref.taxon_meaning_id=cttl.taxon_meaning_id 
       and ttlpref.preferred=true and 
       ttlpref.taxon_list_id=cttl.taxon_list_id
       and ttlpref.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='A'
-    #join_needs_update#
     where cts.taxa_taxon_list_id is null and cttl.language_iso='lat' and cttl.allow_data_entry=true";
 
 $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_taxon_searchterms (
@@ -511,8 +511,8 @@ $config['taxon_searchterms']['insert']['simplified terms']="insert into cache_ta
         ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       cttl.parent_id, cttl.preferred_taxa_taxon_list_id, cttl.marine_flag, cttl.external_key, cttl.authority
     from cache_taxa_taxon_lists cttl
-    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
     #join_needs_update#
+    left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type in ('L','S','V') and cts.simplified=true
     where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=true";
 
 $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searchterms (
@@ -525,12 +525,12 @@ $config['taxon_searchterms']['insert']['codes']="insert into cache_taxon_searcht
       cttl.default_common_name, cttl.authority, null, 'C', null, tc.code_type_id, tc.id, cttl.preferred, length(tc.code), 
       cttl.parent_id, cttl.preferred_taxa_taxon_list_id, cttl.marine_flag, cttl.external_key, cttl.authority
     from cache_taxa_taxon_lists cttl
+    #join_needs_update#
     join taxon_codes tc on tc.taxon_meaning_id=cttl.taxon_meaning_id and tc.deleted=false
     left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=cttl.id and cts.name_type='C' and cts.source_id=tc.id
     join termlists_terms tlttype on tlttype.id=tc.code_type_id and tlttype.deleted=false
     join termlists_terms tltcategory on tltcategory.id=tlttype.parent_id and tltcategory.deleted=false
     join terms tcategory on tcategory.id=tltcategory.term_id and tcategory.term='searchable' and tcategory.deleted=false
-    #join_needs_update#
     where cts.taxa_taxon_list_id is null and cttl.allow_data_entry=false";
 
 $config['taxon_searchterms']['insert']['id_diff'] = "update cache_taxon_searchterms cts
@@ -820,6 +820,7 @@ SELECT distinct on (s.id) s.id, su.website_id, s.survey_id, COALESCE(sp.input_fo
     else 'A'
   end
 FROM samples s
+#join_needs_update#
 LEFT JOIN cache_samples_functional cs on cs.id=s.id
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
 LEFT JOIN locations l ON l.id=s.location_id AND l.deleted=false
@@ -829,7 +830,6 @@ LEFT JOIN sample_comments sc1 ON sc1.sample_id=s.id AND sc1.deleted=false
     AND sc1.query=true AND (s.verified_on IS NULL OR sc1.created_on>s.verified_on)
 LEFT JOIN sample_comments sc2 ON sc2.sample_id=s.id AND sc2.deleted=false
     AND sc2.query=false AND (s.verified_on IS NULL OR sc2.created_on>s.verified_on) AND sc2.id>sc1.id
-#join_needs_update#
 WHERE s.deleted=false
 AND cs.id IS NULL
 ";
@@ -878,13 +878,13 @@ SELECT distinct on (s.id) s.id, w.title, su.title, g.title,
   case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
   s.recorder_names, s.comment, s.privacy_precision, li.code
 FROM samples s
+#join_needs_update#
 LEFT JOIN cache_samples_nonfunctional cs on cs.id=s.id
 JOIN surveys su on su.id=s.survey_id and su.deleted=false
 JOIN websites w on w.id=su.website_id and w.deleted=false
 LEFT JOIN groups g on g.id=s.group_id and g.deleted=false
 LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
 LEFT JOIN licences li on li.id=s.licence_id and li.deleted=false
-#join_needs_update#
 WHERE s.deleted=false
 AND cs.id IS NULL";
 
@@ -1164,16 +1164,17 @@ $config['occurrences']['get_changed_items_query'] = "
   select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted 
     from (
     -- don't pick up changes to occurrences at this point, as they are updated immediately
+    -- but do pick up edits of samples as this could be done in isolation to the occurrences
     select o.id, s.deleted 
     from occurrences o
     join samples s on s.id=o.sample_id
-    where s.updated_on>'#date#' 
+    where s.updated_on>'#date#' and s.created_on<s.updated_on
     union
     select o.id, sp.deleted 
     from occurrences o
     join samples s on s.id=o.sample_id
     join samples sp on sp.id=s.parent_id
-    where sp.updated_on>'#date#' 
+    where sp.updated_on>'#date#' and sp.created_on<sp.updated_on
     union
     select o.id, false
     from occurrences o
@@ -1194,7 +1195,7 @@ $config['occurrences']['get_changed_items_query'] = "
     union
     select om.occurrence_id, false
     from occurrence_media om
-    where om.updated_on>'#date#'
+    where om.updated_on>'#date#' and om.created_on<om.updated_on
     union
     select oc.occurrence_id, false
     from occurrence_comments oc
@@ -1251,7 +1252,9 @@ SET sample_id=o.sample_id,
   data_cleaner_result=case when o.last_verification_check_date is null then null else dc.id is null end,
   training=o.training,
   zero_abundance=o.zero_abundance,
-  licence_id=s.licence_id
+  licence_id=s.licence_id,
+  import_guid=o.import_guid,
+  confidential=o.confidential
 FROM occurrences o
 #join_needs_update#
 left join cache_occurrences_functional co on co.id=o.id
@@ -1469,7 +1472,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_meaning_id, taxa_taxon_list_external_key, family_taxa_taxon_list_id,
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
-            training, zero_abundance, licence_id)
+            training, zero_abundance, licence_id, import_guid, confidential)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1491,8 +1494,9 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
     end,
     o.sensitivity_precision is not null, o.release_status, cttl.marine_flag,
     case when o.last_verification_check_date is null then null else dc.id is null end,
-    o.training, o.zero_abundance, s.licence_id
+    o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential
 FROM occurrences o
+#join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -1511,7 +1515,6 @@ LEFT JOIN occurrence_comments dc
     ON dc.occurrence_id=o.id
     AND dc.implies_manual_check_required=true
     AND dc.deleted=false
-#join_needs_update#
 WHERE o.deleted=false
 AND co.id IS NULL
 ";
@@ -1578,6 +1581,7 @@ SELECT o.id,
   ),
   li.code
 FROM occurrences o
+#join_needs_update#
 LEFT JOIN cache_occurrences_nonfunctional co ON co.id=o.id
 JOIN samples s ON s.id=o.sample_id AND s.deleted=false
 LEFT JOIN samples sp ON sp.id=s.parent_id AND  sp.deleted=false
@@ -1588,7 +1592,6 @@ LEFT JOIN (sample_attribute_values spv
   JOIN sample_attributes spa on spa.id=spv.sample_attribute_id and spa.deleted=false
       and spa.system_function='sref_precision'
 ) on spv.sample_id=s.id and spv.deleted=false
-#join_needs_update#
 WHERE o.deleted=false
 AND co.id IS NULL
 ";

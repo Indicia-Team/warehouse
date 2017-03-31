@@ -1,0 +1,41 @@
+<report
+    title="Scratchpad species match"
+    description="Matches species and taxa to values entered into a scratchpad."
+>
+  <query website_filter_field="cttl.website_id">
+    SELECT #columns#
+    FROM cache_taxa_taxon_lists cttl
+    WHERE cttl.taxon_list_id=#taxon_list_id#
+    AND (
+      (LOWER(cttl.external_key) IN (#list#) and preferred=true)
+      OR cttl.search_name IN (#simplified_list#)
+    )
+  </query>
+  <order_bys>
+    <order_by>cttl.preferred DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="taxon_list_id" datatype="integer" />
+    <param name="list" datatype="text[]" />
+    <param name="simplified_list" datatype="text[]" />
+  </params>
+  <columns>
+    <column name='id' display='Name' sql='cttl.id' datatype='integer' />
+    <column name='external_key' display='External key' sql="coalesce(cttl.external_key, '')" />
+    <column name='name' display='Name' sql="cttl.taxon" />
+    <column name='simplified' display='Simplified' sql="cttl.search_name" />
+    <column name="preferred" display="Preferred option" sql="cttl.preferred" />
+    <column name='unambiguous' display='Unambiguous name'
+            sql="  case cttl.language_iso when 'lat' then '&lt;em&gt;' || cttl.taxon || '&lt;/em&gt;' else cttl.taxon end ||
+  coalesce(' ' || cttl.authority, '') ||
+  case
+    when cttl.taxon=cttl.preferred_taxon then ''
+    else ' [' || case cttl.language_iso when 'lat' then 'syn. of ' else '' end || case cttl.preferred_language_iso when 'lat' then '&lt;em&gt;' || cttl.preferred_taxon || '&lt;/em&gt;' else cttl.preferred_taxon end ||
+        coalesce(' ' || cttl.preferred_authority, '') || ']'
+  end ||
+  case
+    when cttl.default_common_name is null or coalesce(cttl.default_common_name, '') = cttl.taxon or coalesce(cttl.default_common_name, '') = cttl.preferred_taxon then ''
+    else ' [' || cttl.default_common_name || ']'
+  end" />
+  </columns>
+</report>

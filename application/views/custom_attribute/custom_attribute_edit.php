@@ -81,6 +81,17 @@ This page allows you to specify a new or edit an existing custom attribute for <
   <?php endif; ?>
   <li><label for="data_type">Data Type</label> <script
     type="text/javascript">
+$(document).ready(function() {
+  $('#quick_termlist_create').change(function (e) {
+    if ($(e.currentTarget).attr('checked')) {
+      $('#quick_termlist_terms-cntr').show();
+      $('#termlist-picker').hide();
+    } else {
+      $('#quick_termlist_terms-cntr').hide();
+      $('#termlist-picker').show();
+    }
+  });
+});
 function showHideTermlistLink() {
   $("#termlist-link").attr('href', '<?php echo url::site().'termlist/edit/'; ?>'+$('#termlist_id').val());
   if ($('#termlist_id').val()!=='' && $('#data_type').val()==='L') {
@@ -96,6 +107,7 @@ function toggleOptions(data_type)
   var disable_list = [];
   $('select#termlist_id').attr('disabled', 'disabled');
   $("#termlist-link").hide();
+  $('#quick-termlist').hide();
   switch(data_type) {
     case "T": // text
       enable_list = ['valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_time'];
@@ -104,7 +116,10 @@ function toggleOptions(data_type)
     case "L": // Lookup List
       $('select#termlist_id').removeAttr('disabled');
       enable_list = ['valid_required'];
-      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_digit','valid_integer','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_time'];      
+      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_digit','valid_integer','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_time'];
+<?php if (!html::initial_value($values, $model->object_name.':id')): ?>
+      $('#quick-termlist').show();
+<?php endif; ?>
       break;
     case "I": // Integer
         enable_list = ['valid_required','valid_digit','valid_integer','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value'];
@@ -170,8 +185,22 @@ $(document).ready(function() {
     ?>
   </select> <?php echo html::error_message($model->getError($model->object_name.':data_type')); ?>
   </li>
+  <li id="quick-termlist" style="display: none;">
+    <div>
+      <label for="quick_termlist_create">Create a new termlist:</label>
+      <input type="checkbox" id="quick_termlist_create" name="metaFields:quick_termlist_create" value="t" />
+      <p class="helpText">Tick this box to create a new termlist with the same name as this
+      attribute and populate it with a provided list of terms.</p>
+    </div>
+    <div id="quick_termlist_terms-cntr" style="display: none;">
+      <label for="quick_termlist_terms">Terms:</label>
+      <textarea id="quick_termlist_terms" name="metaFields:quick_termlist_terms" rows="10"></textarea>
+      <p class="helpText">Enter terms into this box, one per line. A termlist with the same name as the attribute
+      will be created and populated with this list of terms in the order provided.</p>
+    </div>
+  </li>
 
-  <li><label for="termlist_id">Termlist</label> <select id="termlist_id"
+  <li id="termlist-picker"><label for="termlist_id">Termlist</label> <select id="termlist_id"
     name="<?php echo $model->object_name; ?>:termlist_id" <?php echo $enabled; ?>>
     <option value=''>&lt;Please Select&gt;</option>
     <?php

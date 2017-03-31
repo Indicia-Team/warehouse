@@ -252,7 +252,7 @@ class Import_Controller extends Service_Base_Controller {
       // Following helps for files from Macs
       ini_set('auto_detect_line_endings', 1);
       $model = ORM::Factory($_GET['model']);
-      $supportsImportGuid = in_array('import_guid', $model->as_array());
+      $supportsImportGuid = in_array('import_guid', array_keys($model->as_array()));
       // create the file pointer, plus one for errors
       $handle = fopen($csvTempFile, "r");
       $this->checkIfUtf8($metadata, $handle);
@@ -260,7 +260,7 @@ class Import_Controller extends Service_Base_Controller {
       $existingErrorRowNoColIdx = FALSE;
       $existingImportGuidColIdx = FALSE;
       $errorHandle = $this->getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid,
-          $existingProblemColIdx, $existingErrorRowNoColIdx, $existingImportGuidColIdx);
+        $existingProblemColIdx, $existingErrorRowNoColIdx, $existingImportGuidColIdx);
       $count = 0;
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : FALSE);
       $filepos = (isset($_GET['filepos']) ? $_GET['filepos'] : 0);
@@ -366,11 +366,10 @@ class Import_Controller extends Service_Base_Controller {
           $associatedAttributePrefix = $originalAttributePrefix . $associatedSuffix;
           $associatedMediaPrefix = $originalMediaPrefix . $associatedSuffix;
           $associationRecordPrefix = $originalRecordPrefix . '_association';
-          // find out if association or associated records exist
+          // find out if association or associated records exist - do this if a species lookup value is filled in.
           foreach ($saveArray as $assocField => $assocValue) {
-            $associationExists = $associationExists ||
-              substr($assocField, 0, strlen($associationRecordPrefix)) == $associationRecordPrefix ||
-              substr($assocField, 0, strlen($associatedRecordPrefix)) == $associatedRecordPrefix;
+            $associationExists = $associationExists || (!empty($assocValue) &&
+                preg_match("/^$associatedRecordPrefix:fk_taxa_taxon_list/", $assocField));
           }
         }
 
@@ -651,7 +650,7 @@ class Import_Controller extends Service_Base_Controller {
    * @return resource The error file's handle.
    */
   private function getErrorFileHandle($csvTempFile, $handle, $supportsImportGuid,
-       &$existingProblemColIdx, &$existingProblemRowNoColIdx, &$existingImportGuidColIdx) {
+                                      &$existingProblemColIdx, &$existingProblemRowNoColIdx, &$existingImportGuidColIdx) {
     // move the file to the beginning, so we can load the first row of headers.
     fseek($handle, 0);
     $errorFile = str_replace('.csv', '-errors.csv', $csvTempFile);

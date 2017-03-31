@@ -9,8 +9,10 @@
     JOIN (
     SELECT l.id, count(distinct o.taxon_meaning_id) as count
     FROM locations l
-    JOIN (index_locations_samples ils 
-      JOIN cache_occurrences_functional o ON o.sample_id=ils.sample_id
+    JOIN (index_locations_samples ils
+      JOIN samples s on s.id=ils.sample_id
+      JOIN surveys su on su.id=s.survey_id
+      JOIN cache_occurrences_functional o ON o.website_id=su.website_id AND o.survey_id=su.id AND o.sample_id=ils.sample_id
       AND o.record_status&lt;&gt;'R'
       #filters#
     ) ON ils.location_id=l.id

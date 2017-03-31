@@ -414,7 +414,7 @@ HTML;
     if (!array_key_exists($id, $this->projects)) {
       $this->fail('No Content', 204);
     }
-    $this->add_item_metadata($this->projects[$id], 'projects');
+    $this->addItemMetadata($this->projects[$id], 'projects');
     // remove fields from the project that are for internal use only
     unset($this->projects[$id]['filter_id']);
     unset($this->projects[$id]['website_id']);
@@ -432,7 +432,7 @@ HTML;
     // Add metadata such as href to each project
     foreach ($this->projects as $id => &$project) {
       // Add metadata such as href to each project
-      $this->add_item_metadata($project, 'projects');
+      $this->addItemMetadata($project, 'projects');
       // remove fields from the project that are for internal use only
       unset($project['filter_id']);
       unset($project['website_id']);
@@ -469,7 +469,7 @@ HTML;
       kohana::log('error', 'Internal error. Request for single record returned multiple');
       $this->fail('Internal Server Error', 500);
     } else {
-      $this->add_item_metadata($report['content']['records'][0], 'taxon-observations');
+      $this->addItemMetadata($report['content']['records'][0], 'taxon-observations');
       $this->succeed($report['content']['records'][0]);
     }
   }
@@ -493,7 +493,7 @@ HTML;
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
     $report = $this->load_report('filterable_taxon_observations', $params);
-    $this->succeed($this->list_response_structure($report['content']['records'], 'taxon-observations'));
+    $this->succeed($this->listResponseStructure($report['content']['records'], 'taxon-observations'));
   }
 
   /**
@@ -515,8 +515,8 @@ HTML;
         'id' => $record['taxon_observation_id'],
         // @todo href
       );
-      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
-      $this->add_item_metadata($record, 'annotations');
+      $this->addItemMetadata($record['taxonObservation'], 'taxon-observations');
+      $this->addItemMetadata($record, 'annotations');
       $this->succeed($record);
     }
   }
@@ -549,10 +549,10 @@ HTML;
       $record['taxonObservation'] = array(
         'id' => $record['taxon_observation_id'],
       );
-      $this->add_item_metadata($record['taxonObservation'], 'taxon-observations');
+      $this->addItemMetadata($record['taxonObservation'], 'taxon-observations');
       unset($record['taxon_observation_id']);
     }
-    $this->succeed($this->list_response_structure($records, 'annotations'));
+    $this->succeed($this->listResponseStructure($records, 'annotations'));
   }
   
   /**
@@ -603,7 +603,7 @@ HTML;
    * @param array $item The resource object as an array which will be updated with the metadata
    * @param string $entity The entity name used to access the resouce, e.g. taxon-observations
    */
-  private function add_item_metadata(&$item, $entity) {
+  private function addItemMetadata(&$item, $entity) {
     $params = $this->request;
     $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]";
     $query = array();
@@ -611,6 +611,10 @@ HTML;
       $query['proj_id'] = $params['proj_id'];
     if (!empty($params['format']))
       $query['format'] = $params['format'];
+    if (!empty($params['user']))
+      $query['user'] = $params['user'];
+    if (!empty($params['shared_secret']))
+      $query['shared_secret'] = $params['shared_secret'];
     if (!empty($query))
       $item['href'] .= '?' . http_build_query($query);
     // strip nulls and empty strings
@@ -625,9 +629,9 @@ HTML;
    * @param type $entity Resource name that is being accessed.
    * @return array Restructured version of the input list, with pagination and hrefs added.
    */
-  private function list_response_structure($list, $entity) {
+  private function listResponseStructure($list, $entity) {
     foreach ($list as &$item) {
-      $this->add_item_metadata($item, $entity);
+      $this->addItemMetadata($item, $entity);
     }
     $pagination = array(
       'self'=>$this->generate_link(array('page'=>$this->request['page'])),
@@ -731,9 +735,45 @@ HTML;
   
   /**
    * Checks that the request's user_id and proj_id are valid.
-   * @todo Implement hash based authentication
    */
   private function authenticate() {
+    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
+        && !empty($_GET['user']) && !empty($_GET['shared_secret'])) {
+      // If running https, accept user and shared_secret in the URL, allowing API browsing
+      // via a standard web browser.
+      $user = $this->authenticateUsingQueryParams();
+    } else {
+      // Otherwise authenticate using the request authorisation header
+      $user = $this->authenticateUsingAuthHeader();
+    }
+    Kohana::log('debug', "Rest_api module authenticated $user");
+    $config = Kohana::config('rest.clients');
+    $this->client_user_id = $user;
+    $this->server_user_id = Kohana::config('rest.user_id');
+    $this->projects = $config[$user]['projects'];
+  }
+
+  /**
+   * When running https, user and shared secret can be passed in the URL query parameters.
+   * @return mixed
+   */
+  private function authenticateUsingQueryParams() {
+    $config = Kohana::config('rest.clients');
+    $user = $_GET['user'];
+    if (!array_key_exists($user, $config)) {
+      $this->fail('Unauthorized', 401, 'User ID not in projects configuration.');
+    }
+    if ($config[$user]['shared_secret'] !== $_GET['shared_secret']) {
+      $this->fail('Unauthorized', 401, 'Supplied shared secret incorrect.');
+    }
+    return $user;
+  }
+
+  /**
+   * Authenticate a user and hash provided in the header (safe over http).
+   * @return mixed
+   */
+  private function authenticateUsingAuthHeader() {
     $headers = apache_request_headers();
     if (!isset($headers['Authorization'])) {
       Kohana::log('debug', 'Headers received: ' . print_r($headers, TRUE));
@@ -742,17 +782,14 @@ HTML;
     list($u, $user, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
     $config = Kohana::config('rest.clients');
     if (!array_key_exists($user, $config)) {
-      $this->fail('Unauthorized', 401, 'User ID not in projects configuration');
+      $this->fail('Unauthorized', 401, 'User ID not in projects configuration.');
     }
     $request_url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
     $correct_hmac = hash_hmac("sha1", $request_url, $config[$user]['shared_secret'], $raw_output = FALSE);
     if ($supplied_hmac !== $correct_hmac) {
       $this->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
     }
-    Kohana::log('debug', "Rest_api module authenticated $user");
-    $this->client_user_id = $user;
-    $this->server_user_id = Kohana::config('rest.user_id');
-    $this->projects = $config[$user]['projects'];
+    return $user;
   }
   
   /**

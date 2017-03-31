@@ -1,0 +1,106 @@
+<report title="Osiris tabular" description="Tabular output for Osiris.">
+  <query website_filter_field="cttl.website_id">
+    select '1.bb' as category,
+      t.term as broad_biotope, t.id as bb_id,
+      null::varchar as specific_biotope, null::integer as sb_id,
+      null::varchar as resource, null::integer as r_id,
+      null::integer as parent_r_id,
+      count(distinct cttl.preferred_taxa_taxon_list_id) as count,
+      count(distinct cttl.preferred_taxa_taxon_list_id) * 100 / (
+        select count(distinct ttlsub.preferred_taxa_taxon_list_id)
+        from cache_taxa_taxon_lists ttlsub
+        join taxa_taxon_list_attribute_values avsub
+        on avsub.taxa_taxon_list_id=ttlsub.id
+        and avsub.taxa_taxon_list_attribute_id=#bb_attr_id#
+        and avsub.int_value=t.id
+      ) as return
+    from cache_taxa_taxon_lists cttl
+    join taxa_taxon_list_attribute_values av_bb on av_bb.taxa_taxon_list_id=cttl.id and av_bb.deleted=false
+      and av_bb.taxa_taxon_list_attribute_id=#bb_attr_id#
+    join cache_termlists_terms t on t.id=av_bb.int_value
+    #joins#
+    group by t.term, t.id
+    union
+    select '2.sb' as category,
+      t_bb.term as broad_biotope, t_bb.id as bb_id,
+      t.term as specific_biotope, t.id as sb_id,
+      null::varchar as resource, null::integer as r_id,
+      null::integer as parent_r_id,
+      count(distinct cttl.preferred_taxa_taxon_list_id) as count,
+        count(distinct cttl.preferred_taxa_taxon_list_id) * 100 / (
+        select count(distinct ttlsub.preferred_taxa_taxon_list_id)
+        from cache_taxa_taxon_lists ttlsub
+        join taxa_taxon_list_attribute_values avsub
+        on avsub.taxa_taxon_list_id=ttlsub.id
+        and avsub.taxa_taxon_list_attribute_id=#sb_attr_id#
+        and avsub.int_value=t.id
+      ) as return
+    from cache_taxa_taxon_lists cttl
+    join taxa_taxon_list_attribute_values av_bb on av_bb.taxa_taxon_list_id=cttl.id and av_bb.deleted=false
+      and av_bb.taxa_taxon_list_attribute_id=#bb_attr_id#
+    join cache_termlists_terms t_bb on t_bb.id=av_bb.int_value
+    join taxa_taxon_list_attribute_values av_sb on av_sb.taxa_taxon_list_id=cttl.id and av_sb.deleted=false
+      and av_sb.taxa_taxon_list_attribute_id=#sb_attr_id#
+    join cache_termlists_terms t on t.id=av_sb.int_value and t.parent_id=t_bb.id
+    join cache_termlists_terms p on p.id=t.parent_id
+    #joins#
+    group by t_bb.term, t_bb.id, t.term, t.id
+    union
+    select '3.r' as category,
+      t_bb.term as broad_biotope, t_bb.id as bb_id,
+      t_sb.term as specific_biotope, t_sb.id as sb_id,
+      t.term as resource, t.id as r_id,
+      case when gp.id is not null and gp.parent_id is null then 0 else t.parent_id end as parent_r_id,
+      count(distinct cttl.preferred_taxa_taxon_list_id) as count,
+        count(distinct cttl.preferred_taxa_taxon_list_id) * 100 / (
+        select count(distinct ttlsub.preferred_taxa_taxon_list_id)
+        from cache_taxa_taxon_lists ttlsub
+        join taxa_taxon_list_attribute_values avsub
+        on avsub.taxa_taxon_list_id=ttlsub.id
+        and avsub.taxa_taxon_list_attribute_id=#r_attr_id#
+        and avsub.int_value=t.id
+      ) as return
+    from cache_taxa_taxon_lists cttl on cttl.id=o.preferred_taxa_taxon_list_id
+    join taxa_taxon_list_attribute_values av_bb on av_bb.taxa_taxon_list_id=cttl.id and av_bb.deleted=false
+      and av_bb.taxa_taxon_list_attribute_id=#bb_attr_id#
+    join cache_termlists_terms t_bb on t_bb.id=av_bb.int_value
+    join taxa_taxon_list_attribute_values av_sb on av_sb.taxa_taxon_list_id=cttl.id and av_sb.deleted=false
+      and av_sb.taxa_taxon_list_attribute_id=#sb_attr_id#
+    join cache_termlists_terms t_sb on t_sb.id=av_sb.int_value and t_sb.parent_id=t_bb.id
+    join taxa_taxon_list_attribute_values av_r on av_r.taxa_taxon_list_id=cttl.id and av_r.deleted=false
+      and av_r.taxa_taxon_list_attribute_id=#r_attr_id#
+    join cache_termlists_terms t on t.id=av_r.int_value
+    join cache_termlists_terms p on p.id=t.parent_id and (p.parent_id=t_sb.id or t.parent_id=t_sb.id)
+    join cache_termlists_terms gp on gp.id=p.parent_id
+    and (p.id=t_sb.id or gp.id=t_sb.id)
+    #joins#
+    group by t_bb.term, t_bb.id, t_sb.term, t_sb.id, t.term, t.id, t.parent_id, gp.id, p.id
+  </query>
+  <order_bys>
+    <order_by>category, broad_biotope, specific_biotope, parent_r_id, count desc</order_by>
+  </order_bys>
+  <params>
+    <param name="sample_id" display="Sample or scratchpad ID"  datatype="integer"/>
+    <param name="sample_type" display="Sample type" datatype="lookup" default="sample"
+           lookupValues="sample:Sample,scratchpad:Scratchpad list">
+      <joins>
+        <join operator="equal" value="sample">
+          join cache_occurrences_functional o on o.website_id in (#website_ids#)
+            and o.survey_id=(select survey_id from samples where id=#sample_id#)
+            and o.sample_id=#sample_id#
+            and o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+        </join>
+        <join operator="equal" value="scratchpad">
+          join scratchpad_list_entries sle on sle.entry_id=cttl.id
+              and sle.scratchpad_list_id=#sample_id#
+        </join>
+      </joins>
+    </param>
+    <param name='bb_attr_id' display='Broad biotope attribute ID' datatype='integer'/>
+    <param name='sb_attr_id' display='Habitat attribute ID' datatype='integer'/>
+    <param name='r_attr_id' display='Resource attribute ID' datatype='integer'/>
+    <param name="conservation_group_id" display="Conservation group" datatype="integer" default="">
+      <join>join pantheon.conservation_groups_termlist_terms cg on cg.termlist_term_id=t.id</join>
+    </param>
+  </params>
+</report>

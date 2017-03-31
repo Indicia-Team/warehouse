@@ -1,0 +1,106 @@
+<report
+    title="Full species index"
+    description="A report which lists all Pantheon species along with trait data."
+    >
+  <query website_filter_field="cttl.website_id">
+select #columns#
+from cache_taxa_taxon_lists cttl
+join taxa_taxon_lists ttl on ttl.id=cttl.preferred_taxa_taxon_list_id
+left join (taxa_taxon_designations ttd
+  join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
+) on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
+left join taxa_taxon_list_attribute_values av_bb on av_bb.taxa_taxon_list_id=ttl.id and av_bb.deleted=false
+and av_bb.taxa_taxon_list_attribute_id=#bb_attr_id#
+left join cache_termlists_terms t_bb on t_bb.id=av_bb.int_value
+left join taxa_taxon_list_attribute_values av_sb on av_sb.taxa_taxon_list_id=ttl.id and av_sb.deleted=false
+and av_sb.taxa_taxon_list_attribute_id=#sb_attr_id#
+left join cache_termlists_terms t_sb on t_sb.id=av_sb.int_value
+left join taxa_taxon_list_attribute_values av_sat on av_sat.taxa_taxon_list_id=ttl.id and av_sat.deleted=false
+    and av_sat.taxa_taxon_list_attribute_id=#sat_attr_id#
+left join cache_termlists_terms t_sat on t_sat.id=av_sat.int_value
+left join cache_termlists_terms isissatcode on isissatcode.meaning_id=t_sat.meaning_id and isissatcode.preferred=false
+left join taxa_taxon_list_attribute_values av_r on av_r.taxa_taxon_list_id=ttl.id and av_r.deleted=false
+and av_r.taxa_taxon_list_attribute_id=#r_attr_id#
+left join cache_termlists_terms t_r on t_r.id=av_r.int_value
+left join cache_termlists_terms t_r_parent on t_r_parent.id=t_r.parent_id
+left join cache_termlists_terms t_r_grandparent on t_r_grandparent.id=t_r_parent.parent_id
+left join taxa_taxon_list_attribute_values lguildv on lguildv.taxa_taxon_list_id=ttl.id and lguildv.deleted=false
+  and lguildv.taxa_taxon_list_attribute_id=#larval_guild_attr_id#
+left join cache_termlists_terms lguildterm on lguildterm.id=lguildv.int_value  
+left join taxa_taxon_list_attribute_values aguildv on aguildv.taxa_taxon_list_id=ttl.id and aguildv.deleted=false
+  and aguildv.taxa_taxon_list_attribute_id=#adult_guild_attr_id#
+left join cache_termlists_terms aguildterm on aguildterm.id=aguildv.int_value
+left join taxa_taxon_list_attribute_values rscv on rscv.taxa_taxon_list_id=ttl.id and rscv.deleted=false
+  and rscv.taxa_taxon_list_attribute_id=#rarity_score_attr_id#
+left join (taxa_taxon_list_attribute_values horusv
+    join taxa_taxon_list_attributes horusa on horusa.id=horusv.taxa_taxon_list_attribute_id and horusa.deleted=false
+      and horusa.description = 'Pantheon quality indices'
+    left join cache_termlists_terms horust on horust.id=horusv.int_value and horusa.data_type='L'
+) on horusv.taxa_taxon_list_id=ttl.id and horusv.deleted=false
+left join taxon_associations ta on ta.from_taxon_meaning_id=cttl.taxon_meaning_id
+left join cache_taxa_taxon_lists cttlto on cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
+  and cttlto.taxon_list_id=#taxon_list_id#
+  and cttlto.preferred=true
+#joins#
+where cttl.preferred=true
+#filters#
+  </query>
+  <order_bys>
+    <order_by>cttl.order_taxon</order_by>
+  </order_bys>
+  <params>
+    <param name='bb_attr_id' display='Broad biotope attribute ID' datatype='integer'/>
+    <param name='sb_attr_id' display='Habitat attribute ID' datatype='integer'/>
+    <param name='r_attr_id' display='Resource attribute ID' datatype='integer'/>
+    <param name='sat_attr_id' display='SAT attribute ID' datatype='integer'/>
+    <param name='adult_guild_attr_id' display='Adult guild attribute ID' datatype='integer'/>
+    <param name='larval_guild_attr_id' display='Larval guild attribute ID' datatype='integer'/>
+    <param name='rarity_score_attr_id' display='Rarity score attribute ID' datatype='integer'/>
+    <param name='taxon_group_id' display='Taxon group' description='ID of taxon group to filter to' datatype='integer' default=''>
+      <where>cttl.taxon_group_id=#taxon_group_id#</where>
+    </param>
+    <param name="pantheon_linked_only" datatype="boolean" default="1">
+      <where>(av_bb.id is not null or av_sb.id is not null or av_r.id is not null or av_sat.id is not null
+        or lguildv.id is not null or aguildv.id is not null or horusv.id is not null or rscv.id is not null)</where>
+    </param>
+    <param name="trait_attr_id" display="Trait attribute Id" default=""
+           description="Trait attribute id to filter to species having this trait." datatype="integer">
+      <join>join taxa_taxon_list_attribute_values filtv on filtv.taxa_taxon_list_id=ttl.id and filtv.deleted=false
+        and aguildv.taxa_taxon_list_attribute_id=#trait_attr_id#</join>
+    </param>
+    <param name="trait_term_id" display="Parent trait term ID" datatype="integer" default="">
+      <where>filtv.int_value=#trait_term_id#</where>
+    </param>
+    <param name='taxon_list_id' display='Taxon list' description='Main taxon list ID used.' datatype='integer'/>
+  </params>
+  <columns>
+    <column name="species" sql="cttl.preferred_taxon" display="Species" in_count="true" datatype="text" />
+    <column name="family" sql="cttl.family_taxon" display="Family" in_count="true" datatype="text" />
+    <column name="order" sql="cttl.order_taxon" display="Order" in_count="true" datatype="text" />
+    <column name="rarity_score" sql="rscv.int_value" display="SQS" datatype="integer" />
+    <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.code, td.abbreviation, td.id::varchar)), ';')"
+            display="Conservation status" aggregate="true" datatype="text" />
+    <column name="larval_guild" sql="string_agg(distinct lguildterm.term,';')" display="Larval feeding guild" aggregate="true"
+            datatype="text" template="&lt;span&gt;{larval_guild}&lt;/span&gt;" />
+    <column name="adult_guild" sql="string_agg(distinct aguildterm.term,';')" display="Adult feeding guild" aggregate="true"
+            datatype="text" template="&lt;span&gt;{adult_guild}&lt;/span&gt;" />
+    <column name="broad_biotope" display="Broad biotope" aggregate="true" datatype="text"
+            sql="array_to_string(array_agg(distinct '&lt;span&gt;' || t_bb.term || '&lt;/span&gt;'), '; ')" />
+    <column name="specific_biotope" display="Habitat" aggregate="true" datatype="text"
+            sql="array_to_string(array_agg(distinct '&lt;span&gt;' || t_sb.term || '&lt;/span&gt;'), '; ')" />
+    <column name="resource" display="Resources" aggregate="true" datatype="text"
+            sql="'[' || array_to_string(array_agg(distinct '[' || t_r.id || ',' || case when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then 0 else t_r.parent_id end || ',&quot;' || t_r.term || '&quot;]'), ',') || ']'" />
+    <column name="isis_sat_code" sql="string_agg(distinct isissatcode.term, ', ')" display="Specific assemblage type"
+            datatype="text" aggregate="true" />
+    <column name="horus_indices" display="Habitat score" aggregate="true" datatype="text"
+            sql="array_to_string(array_agg(distinct coalesce(horusa.caption || ': ' || coalesce(horust.term, horusv.int_value::varchar))), ', ')" />
+    <column name="taxon_meaning_id" sql="cttl.taxon_meaning_id" visible="false"/>
+    <column name="associations" display="Associations" aggregate="true" datatype="text"
+            sql="(select string_agg(distinct cttlto.taxon, ', ')
+            from taxon_associations ta
+    left join cache_taxa_taxon_lists cttlto on cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
+      and cttlto.taxon_list_id=#taxon_list_id#
+      and cttlto.preferred=true
+    where ta.from_taxon_meaning_id=cttl.taxon_meaning_id)" />
+  </columns>
+</report>

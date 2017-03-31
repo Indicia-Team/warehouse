@@ -1,0 +1,50 @@
+<report
+    title="Results overview - taxonomic output"
+    description="A report to display the taxon group details on the Results Overview page."
+>
+  <query website_filter_field="cttl.website_id">
+    SELECT #columns#
+    FROM cache_taxa_taxon_lists cttl
+    JOIN taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+        and ttlav.taxa_taxon_list_attribute_id in (#all_trait_attr_ids#)
+        and ttlav.deleted=false
+    #joins#
+  </query>
+  <order_bys>
+    <order_by>count(distinct cttl.preferred_taxa_taxon_list_id) desc</order_by>
+  </order_bys>
+  <params>
+    <param name="sample_id" display="Sample or scratchpad ID"  datatype="integer"/>
+    <param name="sample_type" display="Sample type" datatype="lookup" default="sample"
+           lookupValues="sample:Sample,scratchpad:Scratchpad list">
+      <joins>
+        <join operator="equal" value="sample">
+          join cache_occurrences_functional o on o.website_id in (#website_ids#)
+            and o.survey_id=(select survey_id from samples where id=#sample_id#)
+            and o.sample_id=#sample_id#
+            and o.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+        </join>
+        <join operator="equal" value="scratchpad">
+          join cache_taxa_taxon_lists cttl2 on cttl2.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+          join scratchpad_list_entries sle on sle.entry_id=cttl2.id
+              and sle.scratchpad_list_id=#sample_id#
+        </join>
+      </joins>
+    </param>
+    <param name='all_trait_attr_ids' display='Trait Attribute Ids' datatype='text'
+           description='Comma separated list of the taxa taxon list attribute ids that hold species traits.' />
+  </params>
+  <columns>
+    <column name="sample_id" sql="#sample_id#" visible="false" aggregate="true" />
+    <column name="sample_type" sql="'#sample_type#'" visible="false" aggregate="true" />
+    <column name='taxon_group_id' sql='cttl.taxon_group_id' display='Taxon group ID' in_count='true' visible='false'/>
+    <column name='taxon_group_title' sql='cttl.taxon_group' display='Group'/>
+    <column name='count' sql='count(distinct cttl.preferred_taxa_taxon_list_id)' display='No. of species' aggregate='true'/>
+    <column name="ret" display="% return" aggregate="true"
+            sql="count(distinct cttl.preferred_taxa_taxon_list_id) * 100 / (
+      select count(distinct cttl.preferred_taxa_taxon_list_id)
+      from cache_taxa_taxon_lists cttl
+      #joins#
+    )" />
+  </columns>
+</report>

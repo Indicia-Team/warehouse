@@ -54,14 +54,14 @@ class Occurrence_Model extends ORM
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
     'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
     // allow details of 4 images to be uploaded in CSV files
-    'occurrence_media:path:1'=>'Media Path 1',
-    'occurrence_media:caption:1'=>'Media Caption 1',
-    'occurrence_media:path:2'=>'Media Path 2',
-    'occurrence_media:caption:2'=>'Media Caption 2',
-    'occurrence_media:path:3'=>'Media Path 3',
-    'occurrence_media:caption:3'=>'Media Caption 3',
-    'occurrence_media:path:4'=>'Media Path 4',
-    'occurrence_media:caption:4'=>'Media Caption 4'    
+    'occurrence_medium:path:1'=>'Media Path 1',
+    'occurrence_medium:caption:1'=>'Media Caption 1',
+    'occurrence_medium:path:2'=>'Media Path 2',
+    'occurrence_medium:caption:2'=>'Media Caption 2',
+    'occurrence_medium:path:3'=>'Media Path 3',
+    'occurrence_medium:caption:3'=>'Media Caption 3',
+    'occurrence_medium:path:4'=>'Media Path 4',
+    'occurrence_medium:caption:4'=>'Media Caption 4'
   );
   
   /**
@@ -123,7 +123,8 @@ class Occurrence_Model extends ORM
       'zero_abundance',
       'last_verification_check_date',
       'training',
-      'sensitivity_precision'
+      'sensitivity_precision',
+      'import_guid'
     );
     if(array_key_exists('id', $fieldlist)) {
       // existing data must not be set to download_flag=F (final download) otherwise it 

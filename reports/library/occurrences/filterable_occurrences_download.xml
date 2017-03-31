@@ -1,5 +1,5 @@
 <report
-    title="Occurrences Download using standard filters"
+    title="Occurrences Download (standard filters)"
     description="Report suitable for downloading data, compatible with the standard report filter parameters."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
@@ -21,11 +21,14 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
-    <param name='uploadFolder' display='Image upload folder' description='Image upload folder on the warehouse including the trailing slash' datatype='string' default='' />
-    <param name='warehouse_id' display='Warehouse unique ID' default='iBRC' 
-        description='Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key'/>
+    <param name="smpattrs" display="Sample attribute list" datatype="smpattrs" default=""
+           description="Comma separated list of sample attribute IDs to include" />
+    <param name="occattrs" display="Occurrence attribute list" datatype="occattrs" default=""
+           description="Comma separated list of occurrence attribute IDs to include" />
+    <param name="uploadFolder" display="Image upload folder" datatype="string" default=""
+           description="Image upload folder on the warehouse including the trailing slash" />
+    <param name="warehouse_id" display="Warehouse unique ID" default="iBRC"
+           description="Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key"/>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
@@ -77,7 +80,17 @@
     <column name='sample_comment' display='Sample comment' sql="snf.comment" datatype="text" />
     <column name='zeroabundance' display='Zero abundance' sql='upper(cast (o.zero_abundance as character))' datatype="text" />
     <column name='record_status' display='State' 
-        sql="CASE o.record_status WHEN 'V' THEN 'Verified' WHEN 'D' THEN 'Queried' WHEN 'R' THEN 'Rejected' WHEN 'I' THEN 'Input still in progress' WHEN 'C' THEN 'Record Submitted' WHEN 'S' THEN 'Awaiting check' ELSE o.record_status END" />
+        sql="CASE o.record_status
+        WHEN 'V' THEN
+          CASE o.record_substatus WHEN 1 THEN 'Accepted as correct' WHEN 2 THEN 'Accepted as considered correct' ELSE 'Accepted' END
+        WHEN 'C' THEN
+          CASE o.record_substatus WHEN 3 THEN 'Plausible' ELSE 'Record Submitted' END
+        WHEN 'D' THEN 'Queried'
+        WHEN 'R' THEN
+          CASE o.record_substatus WHEN 4 THEN 'Rejected as considered incorrect' WHEN 5 THEN 'Rejected as incorrect' ELSE 'Rejected' END
+        WHEN 'I' THEN 'Input still in progress'
+        WHEN 'S' THEN 'Awaiting check'
+        ELSE o.record_status END" />
     <column name='belongs_to_user' display='Belongs to user' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
     <column name='certainty' display="Recorder certainty" sql="CASE o.certainty WHEN 'C' THEN 'Certain' WHEN 'L' THEN 'Likely' WHEN 'U' THEN 'Uncertain' END" />
     <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->

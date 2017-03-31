@@ -557,7 +557,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
   
   /**
-  * Provides the /service/data/occurrence_attribute service.
+  * Provides the /service/data/taxa_taxon_list_attribute service.
   * Retrieves details of taxa on taxon list attributes.
   */
   public function taxa_taxon_list_attribute()
@@ -572,6 +572,24 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function taxa_taxon_list_attribute_value()
   {
   $this->handle_call('taxa_taxon_list_attribute_value');
+  }
+
+  /**
+   * Provides the /service/data/termlists_term_attribute service.
+   * Retrieves details of taxa on taxon list attributes.
+   */
+  public function termlists_term_attribute()
+  {
+    $this->handle_call('termlists_term_attribute');
+  }
+
+  /**
+   * Provides the /service/data/termlists_term_attribute_value service.
+   * Retrieves details of taxa on taxon list attribute values.
+   */
+  public function termlists_term_attribute_value()
+  {
+    $this->handle_call('termlists_term_attribute_value');
   }
 
   /**
@@ -1305,7 +1323,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (!$result) 
       throw new ValidationError('Validation error', 2003, $model->getAllErrors());
     // return the outermost model's id
-    return array('id'=>$model->id, 'struct'=>$model->get_submitted_ids());
+    return array('id'=>$model->id, 'struct'=>$model->get_submission_response_metadata());
   }
 
  /**
