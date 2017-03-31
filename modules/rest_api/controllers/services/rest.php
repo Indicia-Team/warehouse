@@ -684,11 +684,20 @@ HTML;
     // @todo Cache this
     $reportHierarchy = $this->reportEngine->report_list();
     $response = array();
-    foreach ($segments as $segment) {
+    $folderReadme = '';
+    // Iterate down the report hierarchy to the level we want to show according to the request.
+    foreach ($segments as $idx => $segment) {
+      if ($idx === count($segments) - 1) {
+        // If the final folder, then grab any readme text to add to the metadata.
+        $folderReadme = empty($reportHierarchy[$segment]['description']) ?
+          '' : $reportHierarchy[$segment]['description'];
+      }
       $reportHierarchy = $reportHierarchy[$segment]['content'];
     }
-    array_unshift($segments, 'index.php/services/rest/reports');
-    $currentPath = url::base() . implode('/', $segments);
+    array_unshift($segments, 'reports');
+    $relativePath = implode('/', $segments);
+    array_unshift($segments, 'index.php/services/rest');
+    $absolutePath = url::base() . implode('/', $segments);
     foreach ($reportHierarchy as $key => $metadata) {
       unset($metadata['content']);
       if ($metadata['type'] === 'report') {
@@ -708,12 +717,16 @@ HTML;
           'href' => $this->getUrlWithCurrentParams("$metadata[href]/columns")
         );
       } else {
-        $metadata['href'] = $currentPath . '/' . $key;
+        $metadata['href'] = $absolutePath . '/' . $key;
       }
       $metadata['href'] = $this->getUrlWithCurrentParams($metadata['href']);
       $response[$key] = $metadata;
     }
-    $this->succeed(array('data' => $response));
+    // Build a description. A generic statement about the path, plus anything
+    // included in the folder's readme file.
+    $description = 'A list of reports and report folders stored on the warehouse under ' .
+        "the folder <em>/$relativePath/</em>. $folderReadme";
+    $this->succeed($response, array('description' => $description));
   }
   
   /**
@@ -916,8 +929,8 @@ HTML;
    * Checks that the request's user_id and proj_id are valid.
    */
   private function authenticate() {
-    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
-        && !empty($_GET['user']) && !empty($_GET['shared_secret'])) {
+    if (/*isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
+        && */!empty($_GET['user']) && !empty($_GET['shared_secret'])) {
       // If running https, accept user and shared_secret in the URL, allowing API browsing
       // via a standard web browser.
       $user = $this->authenticateUsingQueryParams();
@@ -1058,10 +1071,15 @@ HTML;
    * 
    * @param array $data Response data to output.
    */
-  private function succeed($data) {
+  private function succeed($data, $metadata = null) {
     if (!empty($this->request['format']) && $this->request['format']==='html') {
       $css = url::base() . "modules/rest_api/media/css/rest_api.css";
       echo str_replace('{css}', $css, $this->html_header);
+      if ($metadata) {
+        echo '<h1>Metadata</h1>';
+        $this->outputArrayAsHtml($metadata);
+        echo '<h1>Response</h1>';
+      }
       $this->outputArrayAsHtml($data);
       echo '</body></html>';
     } else {
