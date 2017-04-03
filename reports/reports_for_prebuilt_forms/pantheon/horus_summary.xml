@@ -36,10 +36,10 @@
     select 6, ttla.caption,
       case ttla.caption
         -- should count only native species
-        when 'grazing marsh - species' then round(sum(ttlav.int_value)::numeric / count(distinct cttl.preferred_taxa_taxon_list_id), 2)::varchar
-        when 'IEC (older version)' then sum(ttlav.int_value)::varchar
-        when 'IEC (revised)' then sum(ttlav.int_value)::varchar
-        when 'peat bog spiders' then count(distinct cttl.preferred_taxa_taxon_list_id)::varchar
+        when 'grazing marsh - status' then round(sum(ttlav.int_value)::numeric / count(distinct cttl.preferred_taxa_taxon_list_id), 2)::varchar
+        when 'IEC (Original)' then sum(ttlav.int_value)::varchar
+        when 'IEC (Revised)' then sum(ttlav.int_value)::varchar
+        when 'peat bog spiders' then count(distinct cttl.preferred_taxa_taxon_list_id)::varchar || ' indicator species'
         else
           /* Standard output, just a breakdown of counts of each score category */
           (select string_agg(value, ', ') from (
