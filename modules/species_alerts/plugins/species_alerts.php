@@ -67,6 +67,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
           sa.deleted='f'
       JOIN users u ON 
         u.id=sa.user_id AND u.deleted='f'
+     where od.training='f'
      GROUP BY od.id,
       cttl.taxon,
       od.record_status,
