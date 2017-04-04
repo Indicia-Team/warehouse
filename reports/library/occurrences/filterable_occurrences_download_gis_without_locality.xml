@@ -1,7 +1,8 @@
 <report
-    title="Occurrences Download (standard filters, GIS support)"
+    title="Occurrences Download (standard filters, GIS support, no locality)"
     description="Report suitable for downloading data, compatible with the standard report filter parameters with
-    additional columns for export to KML/GPX files and GIS."
+    additional columns for export to KML/GPX files and GIS. Does not include a locality column such as a vice county so
+    suitable for datasets without indexed location layers."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*">
@@ -10,7 +11,6 @@
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-  LEFT JOIN locations vc on vc.id=o.location_id_vice_county and vc.deleted=false
   JOIN websites w on w.id=o.website_id
   JOIN users u ON u.id=o.created_by_id
   JOIN people p ON p.id=u.person_id
@@ -60,7 +60,6 @@
   end" 
         datatype="text" />
     <column name='output_sref' display='Output grid ref' sql="onf.output_sref" datatype='text' />
-    <column name="vicecounty" display="Vice county" sql="vc.name" datatype="text" />
     <column name='date_start' sql='o.date_start' visible='false' />
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
