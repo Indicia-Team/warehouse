@@ -23,10 +23,12 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
-    <param name='warehouse_id' display='Warehouse unique ID' default='iBRC' 
-        description='Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key'/>
+    <param name="smpattrs" display="Sample attribute list" datatype="smpattrs" default=""
+           description="Comma separated list of sample attribute IDs to include" />
+    <param name="occattrs" display="Occurrence attribute list" datatype="occattrs" default=""
+           description="Comma separated list of occurrence attribute IDs to include"/>
+    <param name="warehouse_id" display="Warehouse unique ID" default="iBRC"
+           description="Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key"/>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />

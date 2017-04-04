@@ -304,6 +304,8 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       "testReportLibraryOccurrencesFilterableOccurrencesDownloadGisWithoutLocality returned an error. See log for details");
     // In following test, the confidential record in the fixture is skipped.
     $this->assertCount(1, $response, 'Report response should include 1 record');
+    $this->assertArrayHasKey('geom', $response[0]);
+    $this->assertArrayHasKey('point_geom', $response[0]);
   }
 
   public function testReportLibraryOccurrencesConfidentialParameter() {
