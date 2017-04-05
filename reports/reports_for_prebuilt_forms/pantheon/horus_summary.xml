@@ -29,6 +29,7 @@
       #joins#
       where td.deleted=false
       and ttl.taxon_list_id=#taxon_list_id#
+      and coalesce(td.code, td.abbreviation) &lt;&gt; 'None'
       group by cat.term, td.code, td.abbreviation
     ) as subtable
     group by term
