@@ -16,7 +16,9 @@
     union
     select 3, '&lt;h3&gt;Conservation statuses&lt;/h3&gt;', '&lt;hr/&gt;'
     union
-    select 4, term, array_to_string(array_agg(count::varchar || ' ' || code), '; ')
+    select 4,
+      case term when 'GB Status' then 'GB Conservation Status (old &amp; new)' else term end,
+      array_to_string(array_agg(count::varchar || ' ' || code), '; ')
     from (
       select cat.term, coalesce(td.code, td.abbreviation) as code, count(distinct cttl.preferred_taxa_taxon_list_id)
       from taxon_designations td
@@ -27,6 +29,7 @@
       #joins#
       where td.deleted=false
       and ttl.taxon_list_id=#taxon_list_id#
+      and coalesce(td.code, td.abbreviation) &lt;&gt; 'None'
       group by cat.term, td.code, td.abbreviation
     ) as subtable
     group by term

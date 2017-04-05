@@ -14,7 +14,7 @@
     left join (taxa_taxon_designations ttd
         join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
         join cache_termlists_terms cat on cat.id=td.category_id and (
-             (cat.term='GB Red List' and coalesce(td.code, td.abbreviation) not in ('LC', 'NA', 'pLC', 'pNA'))
+             (cat.term='GB Red List' and coalesce(td.code, td.abbreviation) not in ('LC', 'NA', 'pLC', 'pNA', 'NE'))
           or (cat.term='GB Status' and coalesce(td.code, td.abbreviation) not in ('None', 'Not reviewed', 'Not native'))
           or (cat.term not in ('GB Red List', 'GB Status'))
         )
