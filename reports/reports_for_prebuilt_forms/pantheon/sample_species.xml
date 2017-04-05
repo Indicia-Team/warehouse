@@ -10,7 +10,7 @@
     left join (taxa_taxon_designations ttd
       join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false
       join cache_termlists_terms cat on cat.id=td.category_id and (
-             (cat.term='GB Red List' and coalesce(td.code, td.abbreviation) not in ('LC', 'NA', 'pLC', 'pNA'))
+             (cat.term='GB Red List' and coalesce(td.code, td.abbreviation) not in ('LC', 'NA', 'pLC', 'pNA', 'NE'))
           or (cat.term='GB Status' and coalesce(td.code, td.abbreviation) not in ('None', 'Not reviewed', 'Not native'))
           or (cat.term not in ('GB Red List', 'GB Status'))
         )
@@ -98,7 +98,7 @@
         join taxa_taxon_designations ttd2 on ttd2.taxon_id=ttl.taxon_id and ttd2.deleted=false
         join taxon_designations td2 on td2.id=ttd2.taxon_designation_id and td2.deleted=false
         join cache_termlists_terms cat2 on cat2.id=td2.category_id and (
-          (cat2.term='GB Red List' and coalesce(td2.code, td2.abbreviation) not in ('LC', 'NA', 'pLC', 'pNA'))
+          (cat2.term='GB Red List' and coalesce(td2.code, td2.abbreviation) not in ('LC', 'NA', 'pLC', 'pNA', 'NE'))
           or (cat2.term='GB Status' and coalesce(td2.code, td2.abbreviation) not in ('None', 'Not reviewed', 'Not native'))
           or (cat2.term not in ('GB Red List', 'GB Status'))
           )
