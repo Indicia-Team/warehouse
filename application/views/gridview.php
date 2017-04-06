@@ -31,15 +31,20 @@
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 $colDefs = array();
-foreach ($columns as $fieldname => $title) {
-  if (!isset($orderby)) $orderby=$fieldname;
-  $def = array(
-    'fieldname' => $fieldname,
-    'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title
-  );
-  if ($fieldname == 'path') 
-    $def['img'] = true;
-  $colDefs[] = $def;
+if (isset($columns)) {
+  foreach ($columns as $fieldname => $title) {
+    if (!isset($orderby)) {
+      $orderby = $fieldname;
+    }
+    $def = array(
+      'fieldname' => $fieldname,
+      'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title
+    );
+    if ($fieldname == 'path') {
+      $def['img'] = TRUE;
+    }
+    $colDefs[] = $def;
+  }
 }
 $actions = $this->get_action_columns();
 foreach ($actions as &$action) {
@@ -52,18 +57,27 @@ if (count($actions)>0)
     'display' => 'Actions',
     'actions' => $actions
   );
-echo data_entry_helper::report_grid(array(
+$options = array(
   'id' => $id,
-  'mode'=>'direct',
-  'dataSource' => $source,
-  'view' => 'gv',
   'readAuth' => $readAuth,
-  'includeAllColumns' => false,
-  'columns' => $colDefs,
-  'extraParams' => array('orderby'=>$orderby),
-  'filters' => $filter,
+  'extraParams' => array(),
   'itemsPerPage' => kohana::config('pagination.default.items_per_page')
-));
+);
+if (isset($orderby))
+  $options['orderby'] = $orderby;
+if ($gridReport) {
+  $options['dataSource'] = $gridReport;
+  $options['extraParams'] += $filter;
+  $options['columns'] = $colDefs;
+} else {
+  $options['mode'] = 'direct';
+  $options['dataSource'] = $source;
+  $options['view'] = 'gv';
+  $options['filters'] = $filter;
+  $options['includeAllColumns'] = false;
+  $options['columns'] = $colDefs;
+}
+echo data_entry_helper::report_grid($options);
 data_entry_helper::link_default_stylesheet();
 // No need to re-link to jQuery
 data_entry_helper::$dumped_resources[] = 'jquery';

@@ -282,6 +282,32 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertCount(0, $response, 'Report response be empty, location type filter failed');
   }
 
+  public function testReportLibraryOccurrencesFilterableOccurrencesDownloadWithoutLocality() {
+    Kohana::log('debug',
+      "Running unit test, Controllers_Services_Report_Test::testReportLibraryOccurrencesFilterableOccurrencesDownloadWithoutLocality");
+    $response = $this->getReportResponse(
+      'library/occurrences/filterable_occurrences_download_without_locality.xml', array());
+    // Simply testing that the report parses and the SQL runs
+    $this->assertFalse(isset($response['error']),
+      "testReportLibraryOccurrencesFilterableOccurrencesDownloadWithoutLocality returned an error. See log for details");
+    // In following test, the confidential record in the fixture is skipped.
+    $this->assertCount(1, $response, 'Report response should include 1 record');
+  }
+
+  public function testReportLibraryOccurrencesFilterableOccurrencesDownloadGisWithoutLocality() {
+    Kohana::log('debug',
+      "Running unit test, Controllers_Services_Report_Test::testReportLibraryOccurrencesFilterableOccurrencesDownloadGisWithoutLocality");
+    $response = $this->getReportResponse(
+      'library/occurrences/filterable_occurrences_download_gis_without_locality.xml', array());
+    // Simply testing that the report parses and the SQL runs
+    $this->assertFalse(isset($response['error']),
+      "testReportLibraryOccurrencesFilterableOccurrencesDownloadGisWithoutLocality returned an error. See log for details");
+    // In following test, the confidential record in the fixture is skipped.
+    $this->assertCount(1, $response, 'Report response should include 1 record');
+    $this->assertArrayHasKey('geom', $response[0]);
+    $this->assertArrayHasKey('point_geom', $response[0]);
+  }
+
   public function testReportLibraryOccurrencesConfidentialParameter() {
     Kohana::log('debug',
       "Running unit test, Controllers_Services_Report_Test::testReportLibraryOccurrencesConfidentialParameter");

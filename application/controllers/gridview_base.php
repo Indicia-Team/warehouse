@@ -34,6 +34,8 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
 
   private $gridId = null;
 
+  protected $gridReport = false;
+
   /* Constructor. $modelname = name of the model for the grid.
    * $viewname = name of the view which contains the grid. Defaults to the model name + /index.
    * $controllerpath = path the controller from the controllers folder
@@ -61,11 +63,13 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $grid = new View('gridview');
     $grid->source = $this->modelname;
     $grid->id = $this->modelname;
-    $grid->columns = $this->columns;
+    if (isset($this->columns))
+      $grid->columns = $this->columns;
     $filter = $this->base_filter;
     if (isset($this->auth_filter['field']))
       $filter[$this->auth_filter['field']] = $this->auth_filter['values'];
     $grid->filter = $filter;
+    $grid->gridReport = $this->gridReport;
     // Add grid to view
     $this->view->grid = $grid->render();
 

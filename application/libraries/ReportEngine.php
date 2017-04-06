@@ -1316,7 +1316,7 @@ class ReportEngine {
           if ($attr->multi_value==='t')
             $filter = "exists(select mv$alias.$col
   from {$entity}_attribute_values mv$alias
-  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id and mv$alias.$col=#filtervalue#)";
+  where mv$alias.{$entity}_id=$joinToField and mv$alias.{$entity}_attribute_id=$id and mv$alias.$col=#filtervalue# AND mv$alias.deleted = FALSE )";
           else
             $filter = "$field=#filtervalue#";
           // store the filter for later

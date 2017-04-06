@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Users list" description="A basic list of user accounts.">
+  <query website_filter_field="uw.website_id">
+    SELECT #columns#
+    FROM users u
+    JOIN people p on u.person_id=p.id
+    LEFT JOIN users_websites uw on u.id=uw.user_id
+    LEFT JOIN websites w on w.id=uw.website_id and w.deleted=false
+    LEFT JOIN core_roles cr ON cr.id=u.core_role_id AND cr.deleted=false
+    #joins#
+    WHERE u.deleted = false
+    AND #website_filter#
+  </query>
+  <orderbys>
+    <orderby>fullname_order</orderby>
+  </orderbys>
+  <params>
+    <param name='admin_user_id' display='Administrator User ID' datatype='integer' default=''
+           description="Set this if the report is for a warehouse user with admin rights over only certain websites.
+            Limits the report output to the users that are members of those websites, or users created by the user
+            accessing the report unless that user is promoted to core admin." >
+      <join>LEFT JOIN users_websites uwp on uwp.website_id=uw.website_id
+        and uwp.user_id=#admin_user_id#
+        and coalesce(uwp.site_role_id, 4) &lt; 3 -- site editor or admin
+      </join>
+      <where>(uwp.id IS NOT NULL or (u.created_by_id=#admin_user_id# and u.core_role_id IS NULL))</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" display="User ID" sql="u.id" datatype="integer" in_count="true"/>
+    <column name="person_id" sql="p.id" datatype="integer" visible="false"/>
+    <column name="first_name" display="First name" sql="p.first_name" datatype="text"/>
+    <column name="surname" display="Surname" sql="p.surname" datatype="text"/>
+    <column name="username" display="Username" sql="u.username" datatype="text"/>
+    <column name="core_role" display="Warehouse role" sql="cr.title" datatype="text" />
+    <column name="websites" display="websites" sql="string_agg(distinct w.title, '; ')" datatype="text" aggregate="true" />
+    <column name="fullname_order" visible="false" datatype="text"
+            sql="lower(p.surname || ', ' || p.first_name)" />
+    </columns>
+</report>

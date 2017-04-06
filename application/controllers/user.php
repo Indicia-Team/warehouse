@@ -29,50 +29,18 @@
  */
 class User_Controller extends Gridview_Base_Controller {
 
+  private $allowedPersonIds;
+
   public function __construct() {
+    $this->auth_filter = array('admin_user_id' => 4);
   	parent::__construct('user');
-    $this->columns = array(
-      'name'=>'',
-      'username'=>'',
-      'core_role'=>''
-    );
     $this->pagetitle = "Users";
     $this->model = new User_Model();
-    $websites = $this->get_allowed_website_id_list('admin');
-    if(!is_null($websites)) {
-      // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
-      // you created the user
-      $people_id_values = array();
-      $list = $this->db
-          ->select('people.id')
-          ->from('people')
-          ->join('users', 'users.person_id', 'people.id')
-          ->join('users_websites','users_websites.user_id','users.id')
-          ->where('users_websites.site_role_id IS NOT ', null)
-          ->where('users.core_role_id IS ', null)
-          ->where('people.deleted', 'false')
-          ->in('users_websites.website_id', $websites)
-          ->get();
-      foreach ($list as $item) {
-        $people_id_values[] = $item->id;
-      }
-      // Also let you edit users that you created
-      $list = $this->db
-          ->select('people.id')
-          ->from('people')
-          ->join('users', 'users.person_id', 'people.id', 'LEFT')
-          ->where('people.created_by_id', $_SESSION['auth_user']->id)
-          ->where('users.core_role_id IS ', null)
-          ->where('people.deleted', 'false')
-          ->get();
-      foreach ($list as $item) {
-        $people_id_values[] = $item->id;
-      }
-      // Remove duplicates
-      $people_id_values = array_unique($people_id_values, SORT_NUMERIC);
-      $this->auth_filter = array('field' => 'person_id', 'values' => $people_id_values);
-    }
-
+    // use a report to load the users list so the parameters can be more complex
+    $this->gridReport = 'library/users/users_list';
+    // apply permissions for the users you can administer
+    if (!$this->auth->logged_in('CoreAdmin'))
+      $this->auth_filter = array('field' => 'admin_user_id', 'values' => $_SESSION['auth_user']->id);
   }
 
   /**
@@ -120,7 +88,8 @@ class User_Controller extends Gridview_Base_Controller {
    * driven by ther person id.
    */
   public function edit_from_person($id) {
-    if (!is_null($id) && !is_null($this->auth_filter) && !in_array($id, $this->auth_filter['values'])) {
+    $allowedPersonIds = $this->getAllowedPersonIds();
+    if (!is_null($id) && $allowedPersonIds!==true && !in_array($id, $allowedPersonIds)) {
       $this->access_denied();
       return;
     }
@@ -221,9 +190,9 @@ class User_Controller extends Gridview_Base_Controller {
     if ($this->auth->logged_in('CoreAdmin'))
       return true;
     elseif (!is_null($id) AND !is_null($this->auth_filter)) {
-      // auth filter here is a list of people ids
       $u = ORM::factory('user', $id);
-      return (in_array($u->person_id, $this->auth_filter['values']));
+      $allowedPersonIds = $this->getAllowedPersonIds();
+      return $allowedPersonIds!==true && !in_array($u->person_id, $allowedPersonIds);
     }
     return true;
   }
@@ -249,6 +218,54 @@ class User_Controller extends Gridview_Base_Controller {
       'title' => 'Identifiers',
       'actions'=>array('edit_from_person')
     ));
+  }
+
+  /**
+   * Retrieves a list of person_ids that the user is allowed to edit (i.e. the ones
+   * which belong to websites they administer). Returns true if core admin.
+   * return Bool|array
+   */
+  private function getAllowedPersonIds() {
+    // cache this list in a property.
+    if (!isset($this->allowedPersonIds)) {
+      $websites = $this->get_allowed_website_id_list('admin');
+      if (!is_null($websites)) {
+        // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
+        // you created the user
+        $this->allowedPersonIds = array();
+        $list = $this->db
+          ->select('people.id')
+          ->from('people')
+          ->join('users', 'users.person_id', 'people.id')
+          ->join('users_websites', 'users_websites.user_id', 'users.id')
+          ->where('users_websites.site_role_id IS NOT ', NULL)
+          ->where('users.core_role_id IS ', NULL)
+          ->where('people.deleted', 'false')
+          ->in('users_websites.website_id', $websites)
+          ->get();
+        foreach ($list as $item) {
+          $this->allowedPersonIds[] = $item->id;
+        }
+        // Also let you edit users that you created
+        $list = $this->db
+          ->select('people.id')
+          ->from('people')
+          ->join('users', 'users.person_id', 'people.id', 'LEFT')
+          ->where('people.created_by_id', $_SESSION['auth_user']->id)
+          ->where('users.core_role_id IS ', NULL)
+          ->where('people.deleted', 'false')
+          ->get();
+        foreach ($list as $item) {
+          $this->allowedPersonIds[] = $item->id;
+        }
+        // Remove duplicates
+        $this->allowedPersonIds = array_unique($this->allowedPersonIds, SORT_NUMERIC);
+      } else {
+        // core admin so allow all
+        return $this->allowedPersonIds = true;
+      }
+    }
+    return $this->allowedPersonIds;
   }
   
 }
