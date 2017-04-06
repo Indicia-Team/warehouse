@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Get people details for website or user" description="List users' details such as names for a given website or user id.">
+  <query website_filter_field="uw.website_id">
+    SELECT #columns#
+    FROM users u
+    JOIN people p on u.person_id=p.id
+    LEFT JOIN users_websites uw on u.id=uw.user_id
+    LEFT JOIN websites w on w.id=uw.website_id and w.deleted=false
+    LEFT JOIN core_roles cr ON cr.id=u.core_role_id AND cr.deleted=false
+    #joins#
+    WHERE u.deleted = false
+    AND #website_filter#
+  </query>
+  <orderbys>
+    <orderby>fullname_order</orderby>
+  </orderbys>
+  <params>
+    <param name='admin_user_id' display='Administrator User ID' datatype='integer' default=''
+           description="Set this if the report is for a warehouse user with admin rights over only certain websites" >
+      <join>JOIN users_websites uwp on uwp.website_id=uw.website_id
+        and uwp.user_id=#admin_user_id#
+        and coalesce(uwp.site_role_id, 4) &lt; 3 -- site editor or admin
+      </join>
+    </param>
+  </params>
+  <columns>
+    <column name="id" display="User ID" sql="u.id" datatype="integer" in_count="true"/>
+    <column name="person_id" sql="p.id" datatype="integer" visible="false"/>
+    <column name="firstname" display="First name" sql="p.first_name" datatype="text"/>
+    <column name="surname" display="Surname" sql="p.surname" datatype="text"/>
+    <column name="username" display="Username" sql="u.username" datatype="text"/>
+    <column name="core_role" display="Warehouse role" sql="cr.title" datatype="text" />
+    <column name="websites" display="websites" sql="string_agg(distinct w.title, '; ')" datatype="text" aggregate="true" />
+    <column name="fullname_order" visible="false" datatype="text"
+            sql="lower(p.surname || ', ' || p.first_name)" />
+    </columns>
+</report>
