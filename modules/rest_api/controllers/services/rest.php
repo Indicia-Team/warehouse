@@ -685,48 +685,76 @@ HTML;
     $reportHierarchy = $this->reportEngine->report_list();
     $response = array();
     $folderReadme = '';
-    // Iterate down the report hierarchy to the level we want to show according to the request.
-    foreach ($segments as $idx => $segment) {
-      if ($idx === count($segments) - 1) {
-        // If the final folder, then grab any readme text to add to the metadata.
-        $folderReadme = empty($reportHierarchy[$segment]['description']) ?
-          '' : $reportHierarchy[$segment]['description'];
+    $featuredFolder = (count($segments) === 1 && $segments[0] === 'featured');
+    if (!$featuredFolder) {
+      // Iterate down the report hierarchy to the level we want to show according to the request.
+      foreach ($segments as $idx => $segment) {
+        if ($idx === count($segments) - 1) {
+          // If the final folder, then grab any readme text to add to the metadata.
+          $folderReadme = empty($reportHierarchy[$segment]['description']) ?
+            '' : $reportHierarchy[$segment]['description'];
+        }
+        $reportHierarchy = $reportHierarchy[$segment]['content'];
       }
-      $reportHierarchy = $reportHierarchy[$segment]['content'];
     }
     array_unshift($segments, 'reports');
     $relativePath = implode('/', $segments);
     array_unshift($segments, 'index.php/services/rest');
     $absolutePath = url::base() . implode('/', $segments);
-    foreach ($reportHierarchy as $key => $metadata) {
-      unset($metadata['content']);
-      if ($metadata['type'] === 'report') {
-        $metadata['href'] = url::base() . "index.php/services/rest/reports/$metadata[path].xml";
-        $metadata['params'] = array(
-          'href' => $this->getUrlWithCurrentParams("$metadata[href]/params")
-        );
-        if (!empty($metadata['standard_params'])) {
-          // reformat the info that the report supports standard paramenters into REST structure
-          $metadata['params']['info'] =
+    if ($relativePath === 'reports') {
+      // top level, so splice in a virtual folder for all featured reports.
+      $reportHierarchy = array(
+        'featured' => array(
+          'type' => 'folder',
+          'description' => 'A virtual folder containing a list of maintained, recommended reports.'
+        )
+      ) + $reportHierarchy;
+    }
+    if ($featuredFolder) {
+      $response = array();
+      $this->getFeaturedReports($reportHierarchy, $response);
+    } else {
+      foreach ($reportHierarchy as $key => $metadata) {
+        unset($metadata['content']);
+        if ($metadata['type'] === 'report') {
+          $metadata['href'] = url::base() . "index.php/services/rest/reports/$metadata[path].xml";
+          $metadata['params'] = array(
+            'href' => $this->getUrlWithCurrentParams("$metadata[href]/params")
+          );
+          if (!empty($metadata['standard_params'])) {
+            // reformat the info that the report supports standard paramenters into REST structure
+            $metadata['params']['info'] =
               'Supports the standard set of parameters for ' . $metadata['standard_params'];
-          $metadata['params']['helpLink'] = 'http://indicia-docs.readthedocs.io/en/latest/' .
+            $metadata['params']['helpLink'] = 'http://indicia-docs.readthedocs.io/en/latest/' .
               'developing/reporting/report-file-format.html?highlight=quality#standard-report-parameters';
-          unset($metadata['standard_params']);
+            unset($metadata['standard_params']);
+          }
+          $metadata['columns'] = array(
+            'href' => $this->getUrlWithCurrentParams("$metadata[href]/columns")
+          );
         }
-        $metadata['columns'] = array(
-          'href' => $this->getUrlWithCurrentParams("$metadata[href]/columns")
-        );
-      } else {
-        $metadata['href'] = $absolutePath . '/' . $key;
+        else {
+          $metadata['href'] = $absolutePath . '/' . $key;
+        }
+        $metadata['href'] = $this->getUrlWithCurrentParams($metadata['href']);
+        $response[$key] = $metadata;
       }
-      $metadata['href'] = $this->getUrlWithCurrentParams($metadata['href']);
-      $response[$key] = $metadata;
     }
     // Build a description. A generic statement about the path, plus anything
     // included in the folder's readme file.
     $description = 'A list of reports and report folders stored on the warehouse under ' .
         "the folder <em>/$relativePath/</em>. $folderReadme";
     $this->succeed($response, array('description' => $description));
+  }
+
+  private function getFeaturedReports($reportHierarchy, &$reports) {
+    foreach ($reportHierarchy as $key => $metadata) {
+      if ($metadata['type'] === 'report' && !empty($metadata['featured'])) {
+        $reports[$metadata['path']] = $metadata;
+      } elseif ($metadata['type'] === 'folder') {
+        $this->getFeaturedReports($metadata['content'], $reports);
+      }
+    }
   }
   
   /**

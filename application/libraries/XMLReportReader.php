@@ -89,6 +89,9 @@ class XMLReportReader_Core implements ReportReader
       if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='report') {
         $metadata['title'] = $reader->getAttribute('title');
         $metadata['description'] = $reader->getAttribute('description');
+        $metadata['featured'] = $reader->getAttribute('featured');
+        if (!$metadata['featured'])
+          unset($metadata['featured']);
         if (!$metadata['title'])
           $metadata['title'] = 'Untitled (' . basename($report) . ')';
         if (!$metadata['description'])

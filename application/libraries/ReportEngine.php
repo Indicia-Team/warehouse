@@ -159,6 +159,9 @@ class ReportEngine {
         if (!empty($metadata['standard_params'])) {
           $reportInfo['standard_params'] = $metadata['standard_params'];
         }
+        if (!empty($metadata['featured'])) {
+          $reportInfo['featured'] = $metadata['featured'];
+        }
         $files[$file] = $reportInfo;
       }
     }
