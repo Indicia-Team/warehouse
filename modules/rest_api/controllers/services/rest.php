@@ -20,7 +20,7 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link    http://code.google.com/p/indicia/
  */
- 
+
  if (!function_exists('http_response_code')) {
   function http_response_code($code = NULL) {
     if ($code !== NULL) {
@@ -104,23 +104,23 @@ class RestApiAbort extends Exception {}
 /**
  * Controller class for the RESTful API. Implements handlers for the variuos resource
  * URIs.
- * 
+ *
  * Visit index.php/services/rest for a help page.
  */
 class Rest_Controller extends Controller {
-  
+
   /**
    * The request method (GET, POST etc).
    * @var string
    */
   private $method;
-  
+
   /**
    * The server's user ID (i.e. this REST API)
    * @var string
    */
   private $serverUserId;
-  
+
   /**
    * The client's user ID (i.e. the caller)
    * @var string
@@ -133,19 +133,19 @@ class Rest_Controller extends Controller {
    * @var bool
    */
   private $usingQueryParamAuthorisation=false;
-  
+
   /**
    * The latest API major version number. Unversioned calls will map to this.
    * @var integer
    */
   private $apiMajorVersion=1;
-  
+
   /**
    * The latest API minor version number. Unversioned calls will map to this.
    * @var integer
    */
   private $apiMinorVersion=0;
-  
+
   /**
    * List of API versions that this code base will support.
    * @var array
@@ -153,19 +153,19 @@ class Rest_Controller extends Controller {
   private $supportedApiVersions = array(
     '1.0'
   );
-  
+
   /**
    * Holds the request parameters (e.g. from GET or POST data).
    * @var array
    */
   private $request;
-  
-  /** 
+
+  /**
    * List of project definitions that are available to the authorised client.
    * @var array
    */
   private $projects;
-  
+
   /**
    * The name of the resource being accessed.
    * @var string
@@ -191,7 +191,7 @@ class Rest_Controller extends Controller {
    * @var string
    */
   private $responseTitle = '';
-  
+
   /**
    * A template to define the header of any HTML pages output. Replace {css} with the
    * path to the CSS file to load.
@@ -208,8 +208,8 @@ class Rest_Controller extends Controller {
 </head>
 <body>
 HTML;
-  
-  /** 
+
+  /**
    * Define the list of HTTP methods that will be supported by each resource endpoint.
    * @var type array
    */
@@ -217,104 +217,117 @@ HTML;
     // @todo: move all the help texts into an i18n config file. Don't load them on normal service calls, just
     // on the help service call.
     'projects' => array(
-        'get'=>array(
-        '' => array(
-          'params' => array()
-        ),
-        '{project ID}' => array(
-          'params' => array()
+      'get'=>array(
+        'subresources' => array(
+          '' => array(
+            'params' => array()
+          ),
+          '{project ID}' => array(
+            'params' => array()
+          )
         )
       )
     ),
     'taxon-observations' => array(
       'get'=>array(
-        '' => array(
-          'params' => array(
-            'proj_id' => array(
-              'datatype' => 'text',
-              'required' => TRUE
-            ),
-            'page' => array(
-              'datatype' => 'integer'
-            ),
-            'page_size' => array(
-              'datatype' => 'integer'
-            ),
-            'edited_date_from' => array(
-              'datatype' => 'date',
-              'required' => TRUE
-            ),
-            'edited_date_to' => array(
-              'datatype' => 'date'
+        'subresources' => array(
+          '' => array(
+            'params' => array(
+              'proj_id' => array(
+                'datatype' => 'text',
+                'required' => TRUE
+              ),
+              'page' => array(
+                'datatype' => 'integer'
+              ),
+              'page_size' => array(
+                'datatype' => 'integer'
+              ),
+              'edited_date_from' => array(
+                'datatype' => 'date',
+                'required' => TRUE
+              ),
+              'edited_date_to' => array(
+                'datatype' => 'date'
+              )
             )
-          )
-        ),
-        '{taxon-observation ID}' => array(
-          'params' => array(
-            'proj_id' => array(
-              'datatype' => 'text'
+          ),
+          '{taxon-observation ID}' => array(
+            'params' => array(
+              'proj_id' => array(
+                'datatype' => 'text'
+              )
             )
           )
         )
       ),
       'post' => array(
+        'subresources' => array(
+          '' => array(
+            'params' => array()
+          )
+        )
       )
     ),
     'annotations' => array(
       'get' => array(
-        '' => array(
-          'params' => array(
-            'proj_id' => array(
-              'datatype' => 'text'
-            ),
-            'page' => array(
-              'datatype' => 'integer'
-            ),
-            'page_size' => array(
-              'datatype' => 'integer'
-            ),
-            'edited_date_from' => array(
-              'datatype' => 'date'
-            ),
-            'edited_date_to' => array(
-              'datatype' => 'date'
+        'subresources' => array(
+          '' => array(
+            'params' => array(
+              'proj_id' => array(
+                'datatype' => 'text'
+              ),
+              'page' => array(
+                'datatype' => 'integer'
+              ),
+              'page_size' => array(
+                'datatype' => 'integer'
+              ),
+              'edited_date_from' => array(
+                'datatype' => 'date'
+              ),
+              'edited_date_to' => array(
+                'datatype' => 'date'
+              )
             )
-          )
-        ),
-        '{annotation ID}' => array(
-          'params' => array(
-            'proj_id' => array(
-              'datatype' => 'text'
+          ),
+          '{annotation ID}' => array(
+            'params' => array(
+              'proj_id' => array(
+                'datatype' => 'text'
+              )
             )
           )
         )
       )
     ),
     'reports' => array(
-      'options' => array(
-        'segments' => TRUE
-      ),
       'get' => array(
-        '' => array(
-          'params' => array(
-            'limit' => array(
-              'datatype' => 'integer'
-            ),
-            'offset' => array(
-              'datatype' => 'integer'
-            ),
-            'sortby' => array(
-              'datatype' => 'text'
-            ),
-            'sortdir' => array(
-              'datatype' => 'text'
+        'options' => array(
+          'segments' => TRUE
+        ),
+        'subresources' => array(
+          '' => array(
+            'params' => array(
+              'limit' => array(
+                'datatype' => 'integer'
+              ),
+              'offset' => array(
+                'datatype' => 'integer'
+              ),
+              'sortby' => array(
+                'datatype' => 'text'
+              ),
+              'sortdir' => array(
+                'datatype' => 'text'
+              )
             )
           )
-        ),
+        )
       )
     )
   );
-  
+
   /**
    * Controller for the default page for the /rest path. Outputs help text to describe
    * the available API resources.
@@ -330,8 +343,8 @@ HTML;
     // Loop the resource names and output each of the available methods.
     foreach($this->http_methods as $resource => $methods) {
       echo "<h2>$resource</h2>";
-      foreach ($methods as $method => $listOrID) {
-        foreach ($listOrID as $urlSuffix => $resourceDef) {
+      foreach ($methods as $method => $methodConfig) {
+        foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
           echo '<h3>' . strtoupper($method) . ' ' . url::base() . "index.php/services/rest/$resource";
           if ($urlSuffix)
             echo "/$urlSuffix";
@@ -363,12 +376,12 @@ HTML;
     }
     echo '</body></html>';
   }
-  
+
   /**
    * Magic method to handle calls to the various resource end-points. Maps the call
    * to a method name defined by the resource and the request method.
-   * 
-   * @param string $name Resource name as defined by the segment of the URI called. 
+   *
+   * @param string $name Resource name as defined by the segment of the URI called.
    * Note that this resource name has already passed through the router and had hyphens
    * converted to underscores.
    * @param array $arguments Additional arguments, for example the ID of a resource being requested.
@@ -380,9 +393,6 @@ HTML;
       $this->authenticate();
       if (array_key_exists($resourceName, $this->http_methods)) {
         $resourceConfig = $this->http_methods[$resourceName];
-        // If segments allowed, the URL can be .../resource/x/y/z etc.
-        $allowSegments = isset($resourceConfig['options']) &&
-          !empty($resourceConfig['options']['segments']);
         $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource
@@ -392,6 +402,10 @@ HTML;
           if (!array_key_exists(strtolower($this->method), $resourceConfig)) {
             $this->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
           }
+          $methodConfig = $resourceConfig[strtolower($this->method)];
+          // If segments allowed, the URL can be .../resource/x/y/z etc.
+          $allowSegments = isset($methodConfig['options']) &&
+              !empty($methodConfig['options']['segments']);
           if ($this->method === 'GET') {
             $this->request = $_GET;
           }
@@ -457,10 +471,10 @@ HTML;
       }
     }
   }
-  
+
   /**
    * GET handler for the  projects/n resource. Outputs a single project's details.
-   * 
+   *
    * @param type $id Unique ID for the project to output
    */
   private function projects_get_id($id) {
@@ -475,7 +489,7 @@ HTML;
     unset($this->projects[$id]['resources']);
     $this->succeed($this->projects[$id]);
   }
-     
+
   /**
    * GET handler for the projects resource. Outputs a list of project details.
    * @todo Projects are currently hard coded in the config file, so pagination etc
@@ -499,10 +513,10 @@ HTML;
       )
     ));
   }
-  
+
   /**
    * GET handler for the taxon-observations/n resource. Outputs a single taxon observations's details.
-   * 
+   *
    * @param type $id Unique ID for the taxon-observations to output
    */
   private function taxon_observations_get_id($id) {
@@ -526,7 +540,7 @@ HTML;
       $this->succeed($report['content']['records'][0]);
     }
   }
-  
+
   /**
    * GET handler for the taxon-observations resource. Outputs a list of taxon observation details.
    * @todo Ensure delete information is output.
@@ -551,7 +565,7 @@ HTML;
 
   /**
    * GET handler for the annotations/n resource. Outputs a single annotations's details.
-   * 
+   *
    * @param type $id Unique ID for the annotations to output
    */
   private function annotations_get_id($id) {
@@ -573,7 +587,7 @@ HTML;
       $this->succeed($record);
     }
   }
-  
+
   /**
    * GET handler for the annotations resource. Outputs a list of annotation details.
    */
@@ -707,7 +721,9 @@ HTML;
     $response = array();
     $folderReadme = '';
     $featuredFolder = (count($segments) === 1 && $segments[0] === 'featured');
-    if (!$featuredFolder) {
+    if ($featuredFolder) {
+      $folderReadme = kohana::lang("rest_api.reports.featured_folder_description");
+    } else {
       // Iterate down the report hierarchy to the level we want to show according to the request.
       foreach ($segments as $idx => $segment) {
         if ($idx === count($segments) - 1) {
@@ -724,7 +740,7 @@ HTML;
       $reportHierarchy = array(
         'featured' => array(
           'type' => 'folder',
-          'description' => 'A virtual folder containing a list of maintained, recommended reports.'
+          'description' => kohana::lang("rest_api.reports.featured_folder_description")
         )
       ) + $reportHierarchy;
     }
@@ -780,14 +796,14 @@ HTML;
       }
     }
   }
-  
+
   /**
    * Validates that the request parameters provided fullful the requirements of the method being called.
    * @param string $resourceName
-   * @param string $method Method name, e.g. GET or POST. 
+   * @param string $method Method name, e.g. GET or POST.
    */
   private function validateParameters($resourceName, $method, $requestForId) {
-    $info = $this->http_methods[$resourceName][$method];
+    $info = $this->http_methods[$resourceName][$method]['subresources'];
     // if requesting a list, then use the entry keyed '', else use the named entry
     if ($requestForId) {
       foreach ($info as $key => $method) {
@@ -823,7 +839,7 @@ HTML;
   private function notEmpty($value) {
     return !empty($value);
   }
-  
+
   /**
    * Adds metadata such as an href back to the resource to any resource object.
    * @param array $item The resource object as an array which will be updated with the metadata
@@ -861,7 +877,7 @@ HTML;
   /**
    * Converts an array list of items loaded from the database into the structure ready for returning
    * as the result from an API call. Adds pagination information as well as hrefs for contained objects.
-   * 
+   *
    * @param array $list Array of records from the database
    * @param string $entity Resource name that is being accessed.
    * @return array Restructured version of the input list, with pagination and hrefs added.
@@ -895,10 +911,10 @@ HTML;
       $this->reportEngine = new ReportEngine(array($this->projects[$this->request['proj_id']]['website_id']));
     }
   }
-  
+
   /**
    * Method to load the output of a report being used to construct an API call GET response.
-   * 
+   *
    * @param string $report Report name (excluding .xml extension)
    * @param array $params Report parameters in an associative array
    * @return array Report response structure
@@ -907,7 +923,7 @@ HTML;
     $this->loadReportEngine();
     // load the filter associated with the project ID
     $filter = $this->load_filter_for_project($this->request['proj_id']);
-    // The project's filter acts as a context for the report, meaning it defines the limit of all the 
+    // The project's filter acts as a context for the report, meaning it defines the limit of all the
     // records that are available for this project.
     foreach ($filter as $key => $value) {
       $params["{$key}_context"] = $value;
@@ -918,11 +934,11 @@ HTML;
     $report = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
     return $report;
   }
-  
+
   /**
    * Regenerates the current GET URI link, but replacing one or more paraneters with a new value,
    * e.g. a new page ID.
-   * 
+   *
    * @param array $replacements List of parameters and values to replace
    * @return string The reconstructed URL.
    */
@@ -930,7 +946,7 @@ HTML;
     $params = array_merge($_GET, $replacements);
     return url::base() . 'index.php/services/rest/' . $this->resourceName . '?' . http_build_query($params);
   }
-  
+
   private function load_filter_for_project($id) {
     if (!isset($this->projects[$id]))
       $this->fail('Bad request', 400, 'Invalid project requested');
@@ -946,12 +962,12 @@ HTML;
       return array();
     }
   }
-  
+
   /**
    * Checks the API version provided in the URI (if any) to ensure that the version is supported.
    * Returns a 400 Bad request if not supported.
    * @param array $arguments Additional URI segments
-   */  
+   */
   private function check_version(&$arguments) {
     if (count($arguments) && preg_match('/^v(?P<major>\d+)\.(?P<minor>\d+)$/', $arguments[count($arguments)-1], $matches)) {
       array_pop($arguments);
@@ -963,10 +979,10 @@ HTML;
       $this->apiMinorVersion = $matches['minor'];
     }
   }
-  
-  /** 
-   * Ensures that the request contains a page size and page, defaulting the values if 
-   * necessary. 
+
+  /**
+   * Ensures that the request contains a page size and page, defaulting the values if
+   * necessary.
    * Will return an HTTP error response if either parameter is not an integer.
    */
   private function checkPaginationParams() {
@@ -977,7 +993,7 @@ HTML;
     $this->checkInteger($this->request['page'], 'page');
     $this->checkInteger($this->request['page_size'], 'page_size');
   }
-  
+
   /**
    * Checks that the request's user_id and proj_id are valid.
    */
@@ -1037,7 +1053,7 @@ HTML;
     }
     return $user;
   }
-  
+
   /**
    * Checks a parameter passed to a request is a valid integer.
    * Returns an HTTP error response if not valid.
@@ -1049,7 +1065,7 @@ HTML;
       $this->fail('Bad request', 400, "Parameter $param is not an integer");
     }
   }
-  
+
   /**
    * Checks a parameter passed to a request is a valid date.
    * Returns an HTTP error response if not valid.
@@ -1061,12 +1077,12 @@ HTML;
       $this->fail('Bad request', 400, "Parameter $param is not an valid date");
     }
   }
-  
-    
+
+
   /**
-   * Dumps out a nested array as a nested HTML table. Used to output response data when the 
+   * Dumps out a nested array as a nested HTML table. Used to output response data when the
    * format type requested is HTML.
-   * 
+   *
    * @param array $array Data to output
    * @param string $label Label to be used when linking to this array in the index.
    */
@@ -1123,10 +1139,10 @@ ROW;
     }
     return $r;
   }
-  
-  /** 
+
+  /**
    * Returns an HTML error response code, logs a message and aborts the script.
-   * 
+   *
    * @param string $msg HTTP error message
    * @param integer $code HTTP error code
    * @param string $info Message to log
@@ -1141,7 +1157,7 @@ ROW;
 
   /**
    * Outputs a data object as JSON (or chosen alternative format), in the case of successful operation.
-   * 
+   *
    * @param array $data Response data to output.
    */
   private function succeed($data, $metadata = null) {

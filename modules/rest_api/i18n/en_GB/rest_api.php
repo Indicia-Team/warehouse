@@ -14,6 +14,9 @@
       'annotations' => 'Retrieve a list of annotations available to this client ID.',
       'annotations/{annotation ID}' => 'Retrieve the details of a single annotation where ' .
           '{annotation ID} is replaced by the observation ID.',
+      'reports' => 'Retrieves the contents of the top level of the reports directory on ' .
+          'the warehouse. Can retrieve the output for a subfolder in the directory or ' .
+          'a specific report by appending the path to the resource URL.'
     ),
     'projects' => array(
     ),
@@ -36,6 +39,14 @@
           'Format yyyy-mm-dd.',
       'edited_date_to' => 'Restricts the annotations to those created or edited on or before the date provided. ' .
           'Format yyyy-mm-dd.'
+    ),
+    'reports' => array(
+      'featured_folder_description' => 'Provides a list of well maintained reports which are ' .
+          'recommended as a starting point when exploring the library of reports.',
+      'limit' => 'Limit the number of records in the response.',
+      'offset' => 'Offset from the start of the dataset that the response will start.',
+      'sortby' => 'The field to sort by. Must be compatible with the SQL generated for the report.',
+      'sortdir' => 'Direction of sort, ASC or DESC'
     )
   );
 
