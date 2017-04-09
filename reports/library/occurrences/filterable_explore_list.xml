@@ -1,6 +1,6 @@
 <report
-    title="Explore records using standard filters"
-    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+    title="Explore occurrences (standard filters)"
+    description="A list of occurrences designed for tabular output."
     featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
@@ -24,7 +24,8 @@
            datatype='smpattrs' default=""/>
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include'
            datatype='occattrs' default=""/>
-    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name='default_input_form' display='Default input form' default=''
+           description='Input form path to use when no other available. Can be used to generate the path in report_grid action links.' />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype="integer"

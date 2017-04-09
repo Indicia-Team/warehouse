@@ -1,6 +1,8 @@
 <report
     title="Occurrences Download (standard filters)"
-    description="Report suitable for downloading data, compatible with the standard report filter parameters."
+    description="Report designed for downloaded occurrence records as rows in a spreadsheet. Assumes that there is a
+        location layer of vice counties indexed against the records which will be included in the output."
+    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*">
