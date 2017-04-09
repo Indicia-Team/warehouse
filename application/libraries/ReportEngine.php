@@ -118,16 +118,16 @@ class ReportEngine {
   /**
    * Retrieve all available reports, as a nested associative array.
    */
-  public function report_list() {
-    $reports = $this->internal_report_list(Kohana::config('indicia.localReportDir'), '/');
+  public function reportList() {
+    $reports = $this->internalReportList(Kohana::config('indicia.localReportDir'), '/');
     foreach (Kohana::config('config.modules') as $path) {
       if (is_dir("$path/reports"))
-        $reports = array_replace_recursive($reports, $this->internal_report_list("$path/reports", '/'));
+        $reports = array_replace_recursive($reports, $this->internalReportList("$path/reports", '/'));
     }
     return $reports;
   }
 
-  private function internal_report_list($root, $path) {
+  private function internalReportList($root, $path) {
     $files = array();
     $fullPath = "$root$path";
     if (!is_dir($fullPath))
@@ -140,7 +140,7 @@ class ReportEngine {
           ($file !== 'tmp' || $path!=='/')) {
         $folderInfo = array(
           'type' => 'folder',
-          'content' => $this->internal_report_list($root, "$path$file/")
+          'content' => $this->internalReportList($root, "$path$file/")
         );
         if (file_exists("$fullPath$file/readme.txt")) {
           $folderInfo['description'] = file_get_contents("$fullPath$file/readme.txt");
@@ -278,17 +278,28 @@ class ReportEngine {
     );
   }
 
-  public function requestMetadata($report) {
+  /**
+   * Requests the report's metadata including column and parameter information.
+   * @param $report
+   * @param bool $includeUnusedParameters Set to true to force all parameters to be
+   * included, not just those that are in use for the current report call.
+   * @return array
+   */
+  public function requestMetadata($report, $includeUnusedParameters = false) {
     $this->fetchLocalReport($report);
     $this->reportReader = new XMLReportReader($this->report, $this->websiteIds);
     $this->providedParams = array();
-    $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
+    if ($includeUnusedParameters) {
+      $params = $this->reportReader->getAllParams();
+    } else {
+      $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
+      $params = $this->reportReader->getParams();
+    }
     $this->prepareColumns();
     $r = array(
-      'columns'=>$this->columns,
-      'parameters'=>$this->reportReader->getParams()
+      'columns' => $this->columns,
+      'parameters' => $params
     );
-
     return $r;
   }
 
