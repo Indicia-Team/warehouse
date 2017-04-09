@@ -171,6 +171,8 @@ class Rest_Controller extends Controller {
    * @var string
    */
   private $resourceName;
+
+  private $includeEmptyValues = true;
   
   /**
    * A template to define the header of any HTML pages output. Replace {css} with the
@@ -640,38 +642,34 @@ HTML;
   }
 
   /**
-   * Uses the segments in the URL to find a report file and retrieve the parameters
-   * metadata for it.
-   * @param array $segments
+   *
    */
-  private function getReportParams($segments) {
+  private function getReportMetadataItem($segments, $item) {
+    $this->includeEmptyValues = false;
     // the last segment is the /params action.
     array_pop($segments);
     $reportFile = $this->getReportFileNameFromSegments($segments);
-    $report = $this->load_report($reportFile, []);
-    if (isset($report['content']['parameterRequest'])) {
-      $this->succeed(array('data' => $report['content']['parameterRequest']));
-    } else {
-      // @todo implement appropriate response
-    }
+    $this->loadReportEngine();
+    $metadata = $this->reportEngine->requestMetadata("$reportFile.xml", true);
+    $this->succeed(array('data' => $metadata[$item]));
   }
 
   /**
    * Uses the segments in the URL to find a report file and retrieve the parameters
    * metadata for it.
    * @param array $segments
-   * @todo Not working unless all params are provided.
+   */
+  private function getReportParams($segments) {
+    return $this->getReportMetadataItem($segments, 'parameters');
+  }
+
+  /**
+   * Uses the segments in the URL to find a report file and retrieve the parameters
+   * metadata for it.
+   * @param array $segments
    */
   private function getReportColumns($segments) {
-    // the last segment is the /params action.
-    array_pop($segments);
-    $reportFile = $this->getReportFileNameFromSegments($segments);
-    $report = $this->load_report($reportFile, []);
-    if (isset($report['content']['columns'])) {
-      $this->succeed(array('data' => $report['content']['columns']));
-    } else {
-      // @todo implement appropriate response
-    }
+    return $this->getReportMetadataItem($segments, 'columns');
   }
 
   /**
@@ -682,7 +680,7 @@ HTML;
   private function getReportHierarchy($segments) {
     $this->loadReportEngine();
     // @todo Cache this
-    $reportHierarchy = $this->reportEngine->report_list();
+    $reportHierarchy = $this->reportEngine->reportList();
     $response = array();
     $folderReadme = '';
     $featuredFolder = (count($segments) === 1 && $segments[0] === 'featured');
@@ -697,11 +695,8 @@ HTML;
         $reportHierarchy = $reportHierarchy[$segment]['content'];
       }
     }
-    array_unshift($segments, 'reports');
     $relativePath = implode('/', $segments);
-    array_unshift($segments, 'index.php/services/rest');
-    $absolutePath = url::base() . implode('/', $segments);
-    if ($relativePath === 'reports') {
+    if (empty($segments)) {
       // top level, so splice in a virtual folder for all featured reports.
       $reportHierarchy = array(
         'featured' => array(
@@ -717,39 +712,45 @@ HTML;
       foreach ($reportHierarchy as $key => $metadata) {
         unset($metadata['content']);
         if ($metadata['type'] === 'report') {
-          $metadata['href'] = url::base() . "index.php/services/rest/reports/$metadata[path].xml";
-          $metadata['params'] = array(
-            'href' => $this->getUrlWithCurrentParams("$metadata[href]/params")
-          );
-          if (!empty($metadata['standard_params'])) {
-            // reformat the info that the report supports standard paramenters into REST structure
-            $metadata['params']['info'] =
-              'Supports the standard set of parameters for ' . $metadata['standard_params'];
-            $metadata['params']['helpLink'] = 'http://indicia-docs.readthedocs.io/en/latest/' .
-              'developing/reporting/report-file-format.html?highlight=quality#standard-report-parameters';
-            unset($metadata['standard_params']);
-          }
-          $metadata['columns'] = array(
-            'href' => $this->getUrlWithCurrentParams("$metadata[href]/columns")
-          );
+          $this->addReportLinks($metadata);
         }
         else {
-          $metadata['href'] = $absolutePath . '/' . $key;
+          $path = empty($relativePath) ? $key : "$relativePath/$key";
+          $metadata['href'] = $this->getUrlWithCurrentParams($path);
         }
-        $metadata['href'] = $this->getUrlWithCurrentParams($metadata['href']);
         $response[$key] = $metadata;
       }
     }
     // Build a description. A generic statement about the path, plus anything
     // included in the folder's readme file.
+    $relativePath = '/reports/' . ($relativePath ? "$relativePath/" : '');
     $description = 'A list of reports and report folders stored on the warehouse under ' .
-        "the folder <em>/$relativePath/</em>. $folderReadme";
+        "the folder <em>$relativePath</em>. $folderReadme";
     $this->succeed($response, array('description' => $description));
+  }
+
+  private function addReportLinks(&$metadata) {
+    $metadata['href'] = $this->getUrlWithCurrentParams("$metadata[path].xml");
+    $metadata['params'] = array(
+      'href' => $this->getUrlWithCurrentParams("$metadata[path].xml/params")
+    );
+    if (!empty($metadata['standard_params'])) {
+      // reformat the info that the report supports standard paramenters into REST structure
+      $metadata['params']['info'] =
+        'Supports the standard set of parameters for ' . $metadata['standard_params'];
+      $metadata['params']['helpLink'] = 'http://indicia-docs.readthedocs.io/en/latest/' .
+        'developing/reporting/report-file-format.html?highlight=quality#standard-report-parameters';
+      unset($metadata['standard_params']);
+    }
+    $metadata['columns'] = array(
+      'href' => $this->getUrlWithCurrentParams("$metadata[path].xml/columns")
+    );
   }
 
   private function getFeaturedReports($reportHierarchy, &$reports) {
     foreach ($reportHierarchy as $key => $metadata) {
       if ($metadata['type'] === 'report' && !empty($metadata['featured'])) {
+        $this->addReportLinks($metadata);
         $reports[$metadata['path']] = $metadata;
       } elseif ($metadata['type'] === 'folder') {
         $this->getFeaturedReports($metadata['content'], $reports);
@@ -796,7 +797,7 @@ HTML;
     }
   }
 
-  private function notempty($value) {
+  private function notEmpty($value) {
     return !empty($value);
   }
   
@@ -806,10 +807,10 @@ HTML;
    * @param string $entity The entity name used to access the resouce, e.g. taxon-observations
    */
   private function addItemMetadata(&$item, $entity) {
-    $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]";
+    $item['href'] = "$entity/$item[id]";
     $item['href'] = $this->getUrlWithCurrentParams($item['href']);
     // strip nulls and empty strings
-    $item = array_filter($item, array($this, 'notempty'));
+    $item = array_filter($item, array($this, 'notEmpty'));
   }
 
   /**
@@ -817,6 +818,7 @@ HTML;
    * adds them to the URL.
    */
   private function getUrlWithCurrentParams($url) {
+    $url = url::base() . "index.php/services/rest/reports/$url";
     $query = array();
     $params = $this->request;
     if (!empty($params['proj_id']))
@@ -1047,12 +1049,18 @@ HTML;
   private function outputArrayAsHtml($array) {
     if (count($array)) {
       echo '<table border="1">';
+      $legendValues = array_intersect_key($array, array('title' => '', 'display' => ''));
+      if (count($legendValues)>0 && !is_array($array[array_keys($legendValues)[0]])) {
+        echo '<caption>' . array_keys($legendValues)[0] . ': ' . $array[array_keys($legendValues)[0]] . '</caption>';
+      }
       $keys = array_keys($array);
       $col1 = is_integer($keys[0]) ? 'Row' : 'Field';
       $col2 = is_integer($keys[0]) ? 'Record' : 'Value';
       echo "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
       echo '<tbody>';
       foreach ($array as $key=>$value) {
+        if (empty($value) && !$this->includeEmptyValues)
+          continue;
         $class = !empty($value['type']) ? " class=\"type-$value[type]\"" : '';
         echo "<tr><th scope=\"row\"$class>$key</th><td>";
         if (is_array($value))
