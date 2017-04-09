@@ -30,9 +30,11 @@ table {
   min-width: 50%;
 
   caption {
-    padding: 0 0 $gap/4 0;
-    font-style: italic;
-    text-align: left;
+    padding: $gap/4;
+    background-color: $heading-background-colour;
+    border: solid silver 1px;
+    border-bottom: none;
+    font-weight: bold;
   }
 
   th {

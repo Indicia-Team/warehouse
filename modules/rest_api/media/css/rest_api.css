@@ -30,31 +30,33 @@ table {
 }
 /* line 32, sass/rest_api.scss */
 table caption {
-  padding: 0 0 0.25em 0;
-  font-style: italic;
-  text-align: left;
+  padding: 0.25em;
+  background-color: #C1DAD7;
+  border: solid silver 1px;
+  border-bottom: none;
+  font-weight: bold;
 }
-/* line 39, sass/rest_api.scss */
+/* line 41, sass/rest_api.scss */
 table th[scope=col] {
   background-color: #C1DAD7;
 }
-/* line 42, sass/rest_api.scss */
+/* line 44, sass/rest_api.scss */
 table th[scope=row] {
   background-color: #e6e6e6;
 }
-/* line 44, sass/rest_api.scss */
+/* line 46, sass/rest_api.scss */
 table th[scope=row].type-report {
   background: #e6e6e6 url(../../../../media/images/report_datatable.png) no-repeat 4px 2px;
   background-size: 25px 25px;
   padding-left: 32px;
 }
-/* line 49, sass/rest_api.scss */
+/* line 51, sass/rest_api.scss */
 table th[scope=row].type-folder {
   background: #e6e6e6 url(../../../../media/images/folder.gif) no-repeat 4px 2px;
   background-size: 25px 25px;
   padding-left: 32px;
 }
-/* line 57, sass/rest_api.scss */
+/* line 59, sass/rest_api.scss */
 table td, table th {
   border: 1px solid silver;
   padding: 0.25em 0.5em;
