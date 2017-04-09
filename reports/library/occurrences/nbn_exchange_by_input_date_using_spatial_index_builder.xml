@@ -33,8 +33,10 @@ and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
     </param>
     <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
     <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
     <param name="ownData" display="My data only?" datatype="checkbox" />
     <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"

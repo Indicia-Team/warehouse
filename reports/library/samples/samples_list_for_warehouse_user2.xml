@@ -31,7 +31,8 @@
       <where>('#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
     <param name='user_id' display='Warehouse User ID' description='Enter the ID of the warehouse user' datatype='int' />
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
     <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
             population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:sample_methods,termlist_id=' >
       <join>JOIN termlists_terms ttl1 ON ttl1.id=s.sample_method_id
