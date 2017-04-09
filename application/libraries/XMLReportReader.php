@@ -749,9 +749,7 @@ class XMLReportReader_Core implements ReportReader
       if ($population_call != '') $this->params[$name]['population_call'] = $population_call;
       if ($linked_to != '') $this->params[$name]['linked_to'] = $linked_to;
       if ($linked_filter_field != '') $this->params[$name]['linked_filter_field'] = $linked_filter_field;
-    }
-    else
-    {
+    } else {
       $this->params[$name] = array(
         'datatype'=>$type,
         'allow_buffer'=>$allow_buffer,
@@ -879,6 +877,20 @@ class XMLReportReader_Core implements ReportReader
         }
       }
     }
+  }
+
+  /**
+   * Returns the metadata for all possible parameters for this report, including the standard
+   * parameters.
+   * @return array
+   */
+  public function getAllParams() {
+    $params = array_merge($this->params);
+    if ($this->loadStandardParamsSet) {
+      $standardParamsHelper = "report_standard_params_{$this->loadStandardParamsSet}";
+      $params = array_merge($params, $standardParamsHelper::getParameters());
+    }
+    return $params;
   }
   
   /**
