@@ -173,6 +173,24 @@ class Rest_Controller extends Controller {
   private $resourceName;
 
   private $includeEmptyValues = true;
+
+  /*
+   * HTML built dynamically for the page output index.
+   * @var string
+   */
+  private $index = '';
+
+  /**
+   * Is an index table required for this response when output as HTML?
+   * @var bool
+   */
+  private $wantIndex = false;
+
+  /**
+   * When outputting HTML this contains the title for the page.
+   * @var string
+   */
+  private $responseTitle = '';
   
   /**
    * A template to define the header of any HTML pages output. Replace {css} with the
@@ -644,14 +662,17 @@ HTML;
   /**
    *
    */
-  private function getReportMetadataItem($segments, $item) {
+  private function getReportMetadataItem($segments, $item, $description) {
     $this->includeEmptyValues = false;
     // the last segment is the /params action.
     array_pop($segments);
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $this->loadReportEngine();
     $metadata = $this->reportEngine->requestMetadata("$reportFile.xml", true);
-    $this->succeed(array('data' => $metadata[$item]));
+    $this->responseTitle = ucfirst("$item for $reportFile");
+    $this->wantIndex = true;
+    $this->succeed(array('data' => $metadata[$item]),
+      array('description' => $description));
   }
 
   /**
@@ -660,7 +681,8 @@ HTML;
    * @param array $segments
    */
   private function getReportParams($segments) {
-    return $this->getReportMetadataItem($segments, 'parameters');
+    return $this->getReportMetadataItem($segments, 'parameters',
+      'A list of parameters available for filtering this report.');
   }
 
   /**
@@ -669,7 +691,8 @@ HTML;
    * @param array $segments
    */
   private function getReportColumns($segments) {
-    return $this->getReportMetadataItem($segments, 'columns');
+    return $this->getReportMetadataItem($segments, 'columns',
+      'A list of columns provided in the output of this report.');
   }
 
   /**
@@ -1045,26 +1068,39 @@ HTML;
    * format type requested is HTML.
    * 
    * @param array $array Data to output
+   * @param string $label Label to be used when linking to this array in the index.
    */
-  private function outputArrayAsHtml($array) {
+  private function getArrayAsHtml($array, $label) {
+    $r = '';
     if (count($array)) {
-      echo '<table border="1">';
+      $r .= '<table border="1">';
       $legendValues = array_intersect_key($array, array('title' => '', 'display' => ''));
       if (count($legendValues)>0 && !is_array($array[array_keys($legendValues)[0]])) {
-        echo '<caption>' . array_keys($legendValues)[0] . ': ' . $array[array_keys($legendValues)[0]] . '</caption>';
+        $legendFieldName = array_keys($legendValues)[0];
+        $legendFieldValue = $array[array_keys($legendValues)[0]];
+        $legendFieldDescription = empty($array['description']) ? '' : $array['description'];
+        $id = preg_replace('/[^a-z0-9]/', '-', strtolower("$legendFieldName-$legendFieldValue"));
+        $r .= "<caption id=\"$id\">$legendFieldName: $legendFieldValue</caption>";
+        $this->index .= <<<ROW
+<tr>
+  <th scope="row"><a href="#$id">$label</a></th>
+  <td>$legendFieldValue</td>
+  <td>$legendFieldDescription</td>
+</tr>
+ROW;
       }
       $keys = array_keys($array);
       $col1 = is_integer($keys[0]) ? 'Row' : 'Field';
       $col2 = is_integer($keys[0]) ? 'Record' : 'Value';
-      echo "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
-      echo '<tbody>';
+      $r .= "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
+      $r .= '<tbody>';
       foreach ($array as $key=>$value) {
         if (empty($value) && !$this->includeEmptyValues)
           continue;
         $class = !empty($value['type']) ? " class=\"type-$value[type]\"" : '';
-        echo "<tr><th scope=\"row\"$class>$key</th><td>";
+        $r .= "<tr><th scope=\"row\"$class>$key</th><td>";
         if (is_array($value))
-          $this->outputArrayAsHtml($value);
+          $r .= $this->getArrayAsHtml($value, $key);
         else {
           if (preg_match('/http(s)?:\/\//', $value)) {
             $parts = explode('?', $value);
@@ -1079,12 +1115,13 @@ HTML;
             }
             $value = "<a href=\"$value\">$displayUrl</a>";
           }
-          echo "<p>$value</p>";
+          $r .= "<p>$value</p>";
         }
-        echo '</td></tr>';  
+        $r .= '</td></tr>';
       }
-      echo '</tbody></table>';
+      $r .= '</tbody></table>';
     }
+    return $r;
   }
   
   /** 
@@ -1111,12 +1148,21 @@ HTML;
     if (!empty($this->request['format']) && $this->request['format']==='html') {
       $css = url::base() . "modules/rest_api/media/css/rest_api.css";
       echo str_replace('{css}', $css, $this->html_header);
+      if (!empty($this->responseTitle))
+        echo '<h1>' . $this->responseTitle . '</h1>';
       if ($metadata) {
-        echo '<h1>Metadata</h1>';
-        $this->outputArrayAsHtml($metadata);
-        echo '<h1>Response</h1>';
+        echo '<h2>Metadata</h2>';
+        echo $this->getArrayAsHtml($metadata, 'metadata');
       }
-      $this->outputArrayAsHtml($data);
+      // build the output HTML and the page index
+      $output = $this->getArrayAsHtml($data, 'data');
+      // output an index table if present for this output
+      if ($this->wantIndex && !empty($this->index))
+        echo '<table><caption>Index</caption>' . $this->index . '</table>';
+      // output the main response body
+      if ($metadata || !empty($this->responseTitle))
+        echo '<h2>Response</h2>';
+      echo $output;
       echo '</body></html>';
     } else {
       header('Content-Type: application/json');
