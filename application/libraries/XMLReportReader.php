@@ -882,7 +882,7 @@ class XMLReportReader_Core implements ReportReader
   /**
    * Returns the metadata for all possible parameters for this report, including the standard
    * parameters.
-   * @return array
+   * @return array List of parameter configurations. 
    */
   public function getAllParams() {
     $params = array_merge($this->params);
