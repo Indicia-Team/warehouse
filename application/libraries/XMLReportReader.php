@@ -879,6 +879,10 @@ class XMLReportReader_Core implements ReportReader
     }
   }
 
+  private function array_insert($array, $values, $offset) {
+    return array_slice($array, 0, $offset, true) + $values + array_slice($array, $offset, NULL, true);
+  }
+
   /**
    * Returns the metadata for all possible parameters for this report, including the standard
    * parameters.
@@ -889,6 +893,11 @@ class XMLReportReader_Core implements ReportReader
     if ($this->loadStandardParamsSet) {
       $standardParamsHelper = "report_standard_params_{$this->loadStandardParamsSet}";
       $params = array_merge($params, $standardParamsHelper::getParameters());
+      $opParams = $standardParamsHelper::getOperationParameters();
+      foreach ($opParams as $param => $cfg) {
+        $params = $this->array_insert($params, array("{$param}_op" => $cfg),
+            array_search($param, array_keys($params)) + 1);
+      }
     }
     return $params;
   }
