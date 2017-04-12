@@ -467,6 +467,7 @@ HTML;
   private function checkAllowedResource($proj_id, $resourceName) {
     if (isset($this->projects[$proj_id]['resources'])) {
       if (!in_array($resourceName, $this->projects[$proj_id]['resources'])) {
+        kohana::log('debug', "Disallowed resource $resourceName for $proj_id");
         $this->fail('No Content', 204);
       }
     }
@@ -755,7 +756,7 @@ HTML;
         }
         else {
           $path = empty($relativePath) ? $key : "$relativePath/$key";
-          $metadata['href'] = $this->getUrlWithCurrentParams($path);
+          $metadata['href'] = $this->getUrlWithCurrentParams("reports/$path");
         }
         $response[$key] = $metadata;
       }
@@ -769,9 +770,9 @@ HTML;
   }
 
   private function addReportLinks(&$metadata) {
-    $metadata['href'] = $this->getUrlWithCurrentParams("$metadata[path].xml");
+    $metadata['href'] = $this->getUrlWithCurrentParams("reports/$metadata[path].xml");
     $metadata['params'] = array(
-      'href' => $this->getUrlWithCurrentParams("$metadata[path].xml/params")
+      'href' => $this->getUrlWithCurrentParams("reports/$metadata[path].xml/params")
     );
     if (!empty($metadata['standard_params'])) {
       // reformat the info that the report supports standard paramenters into REST structure
@@ -782,7 +783,7 @@ HTML;
       unset($metadata['standard_params']);
     }
     $metadata['columns'] = array(
-      'href' => $this->getUrlWithCurrentParams("$metadata[path].xml/columns")
+      'href' => $this->getUrlWithCurrentParams("reports/$metadata[path].xml/columns")
     );
   }
 
@@ -857,7 +858,7 @@ HTML;
    * adds them to the URL.
    */
   private function getUrlWithCurrentParams($url) {
-    $url = url::base() . "index.php/services/rest/reports/$url";
+    $url = url::base() . "index.php/services/rest/$url";
     $query = array();
     $params = $this->request;
     if (!empty($params['proj_id']))
