@@ -226,6 +226,122 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
   }
 
   /**
+   * Test for accessing the reports hierarchy.
+   */
+  public function testReportsHierarchy_get() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportsHierarchy_get");
+
+    $projDef = self::$config['projects']['BRC1'];
+    $response = $this->callService("reports",
+      self::$userId,
+      self::$config['shared_secret'],
+      array('proj_id' => $projDef['id'])
+    );
+    $this->assertResponseOk($response, '/reports');
+    $response = json_decode($response['response'], true);
+    // Check some folders and reports that should definitely exist.
+    $this->checkReportFolderInReponse($response, 'featured');
+    $this->checkReportFolderInReponse($response, 'library');
+    $this->checkReportInReponse($response, 'demo');
+    $response = $this->callService("reports/featured",
+      self::$userId,
+      self::$config['shared_secret'],
+      array('proj_id' => $projDef['id'])
+    );
+    $this->assertResponseOk($response, '/reports/featured');
+    $response = json_decode($response['response'], true);
+    $this->checkReportInReponse($response, 'library/occurrences/filterable_explore_list');
+    $response = $this->callService("reports/library",
+      self::$userId,
+      self::$config['shared_secret'],
+      array('proj_id' => $projDef['id'])
+    );
+    $this->assertResponseOk($response, '/reports/library');
+    $response = json_decode($response['response'], true);
+    $this->checkReportFolderInReponse($response, 'occurrences');
+    $response = $this->callService("reports/library/occurrences",
+      self::$userId,
+      self::$config['shared_secret'],
+      array('proj_id' => $projDef['id'])
+    );
+    $this->assertResponseOk($response, '/reports/library/occurrences');
+    $response = json_decode($response['response'], true);
+    $this->checkReportInReponse($response, 'filterable_explore_list');
+  }
+
+  public function testReportParams_get() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportParams_get");
+
+    // First grab a list of reports so we can use the links to get the correct params URL
+    $projDef = self::$config['projects']['BRC1'];
+    $response = $this->callService("reports/library/occurrences",
+      self::$userId,
+      self::$config['shared_secret'],
+      array('proj_id' => $projDef['id'])
+    );
+    $this->assertResponseOk($response, '/reports/library/occurrences');
+    $response = json_decode($response['response'], true);
+    $reportDef = $response['filterable_explore_list'];
+    $this->assertArrayHasKey('params', $reportDef, 'Report response does not define parameters');
+    $this->assertArrayHasKey('href', $reportDef['params'], 'Report parameters missing href');
+    // Now grab the params URL output and check it
+    $response = $this->callUrl($reportDef['params']['href'], self::$userId, self::$config['shared_secret']);
+    $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/params');
+    $response = json_decode($response['response'], true);
+    $this->assertArrayHasKey('data', $response);
+    $this->assertArrayHasKey('smpattrs', $response['data']);
+    $this->assertArrayHasKey('occurrence_id', $response['data']);
+  }
+
+  public function testReportColumns_get() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportColumns_get");
+
+    // First grab a list of reports so we can use the links to get the correct columns URL
+    $projDef = self::$config['projects']['BRC1'];
+    $response = $this->callService("reports/library/occurrences",
+      self::$userId,
+      self::$config['shared_secret'],
+      array('proj_id' => $projDef['id'])
+    );
+    $this->assertResponseOk($response, '/reports/library/occurrences');
+    $response = json_decode($response['response'], true);
+    $reportDef = $response['filterable_explore_list'];
+    $this->assertArrayHasKey('columns', $reportDef, 'Report response does not define columns');
+    $this->assertArrayHasKey('href', $reportDef['columns'], 'Report columns missing href');
+    // Now grab the columns URL output and check it
+    $response = $this->callUrl($reportDef['columns']['href'], self::$userId, self::$config['shared_secret']);
+    $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/columns');
+    $response = json_decode($response['response'], true);
+    $this->assertArrayHasKey('data', $response);
+    $this->assertArrayHasKey('occurrence_id', $response['data']);
+    $this->assertArrayHasKey('taxon', $response['data']);
+  }
+
+  public function testReportOutput_get() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportOutput_get");
+
+    // First grab a list of reports so we can use the links to get the correct columns URL
+    $projDef = self::$config['projects']['BRC1'];
+    $response = $this->callService("reports/library/occurrences",
+      self::$userId,
+      self::$config['shared_secret'],
+      array('proj_id' => $projDef['id'])
+    );
+    $this->assertResponseOk($response, '/reports/library/occurrences');
+    $response = json_decode($response['response'], TRUE);
+    $reportDef = $response['filterable_explore_list'];
+    $this->assertArrayHasKey('href', $reportDef, 'Report response missing href');
+    // Now grab the columns URL output and check it
+    $response = $this->callUrl($reportDef['href'], self::$userId, self::$config['shared_secret']);
+    $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml');
+    $response = json_decode($response['response'], TRUE);
+    $this->assertArrayHasKey('data', $response);
+    $this->assertCount(1, $response['data'], 'Report call returns incorrect record count');
+    $this->assertEquals(1, $response['data'][0]['occurrence_id'], 'Report call returns incorrect record');
+  }
+
+
+  /**
    * An assertion that the response object returned by a call to getCurlResponse
    * indicates a successful request.
    * @param array $response Response data returned by getCurlReponse().
@@ -283,6 +399,28 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->checkValidTaxonObservation($apiResponse);
   }
 
+  /**
+   * Assert that a folder exists in the response from a call to /reports.
+   * @param array $response
+   * @param string $folder
+   */
+  private function checkReportFolderInReponse($response, $folder) {
+    $this->assertArrayHasKey($folder, $response);
+    $this->assertArrayHasKey('type', $response[$folder]);
+    $this->assertEquals('folder', $response[$folder]['type']);
+  }
+
+  /**
+   * Assert that a folder exists in the response from a call to /reports.
+   * @param array $response
+   * @param string $folder
+   */
+  private function checkReportInReponse($response, $reportFile) {
+    $this->assertArrayHasKey($reportFile, $response);
+    $this->assertArrayHasKey('type', $response[$reportFile]);
+    $this->assertEquals('report', $response[$reportFile]['type']);
+  }
+
   private function initCurl($url, $userId, $sharedSecret) {
     $session = curl_init();
     // Set the POST options.
@@ -308,6 +446,14 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     );
   }
 
+  private function callUrl($url, $userId, $sharedSecret) {
+    $session = $this->initCurl($url, $userId, $sharedSecret);
+    Kohana::log('debug', "Making request to $url");
+    $response = $this->getCurlResponse($session);
+    Kohana::log('debug', "Received response " . print_r($response, TRUE));
+    return $response;
+  }
+
   /**
    * A generic method to call the REST Api's web services.
    * @param $method
@@ -320,10 +466,6 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $url = url::base(true) . "/services/rest/$method";
     if ($query)
       $url .= '?' . http_build_query($query);
-    Kohana::log('debug', "Making request to $url");
-    $session = $this->initCurl($url, $userId, $sharedSecret);
-    $response = $this->getCurlResponse($session);
-    Kohana::log('debug', "Received response " . print_r($response, TRUE));
-    return $response;
+    return $this->callUrl($url, $userId, $sharedSecret);
   }
 }
