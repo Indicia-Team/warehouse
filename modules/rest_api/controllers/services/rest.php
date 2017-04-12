@@ -999,8 +999,8 @@ HTML;
    * Checks that the request's user_id and proj_id are valid.
    */
   private function authenticate() {
-    if (/*isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
-        && */!empty($_GET['user']) && !empty($_GET['shared_secret'])) {
+    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
+        && !empty($_GET['user']) && !empty($_GET['shared_secret'])) {
       // If running https, accept user and shared_secret in the URL, allowing API browsing
       // via a standard web browser.
       $user = $this->authenticateUsingQueryParams();
