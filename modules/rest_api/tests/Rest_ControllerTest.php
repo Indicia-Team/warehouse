@@ -450,7 +450,6 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $session = $this->initCurl($url, $userId, $sharedSecret);
     Kohana::log('debug', "Making request to $url");
     $response = $this->getCurlResponse($session);
-    Kohana::log('debug', "Received response " . print_r($response, TRUE));
     return $response;
   }
 
