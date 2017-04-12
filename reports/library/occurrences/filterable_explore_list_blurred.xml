@@ -19,8 +19,10 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
     <param name="blur" display="Blur to" default="10" datatype="lookup"
            description="Grid square size to blur to. Note that the 2km option is included for compatibility with the mapping version of the report and will output 10km grid references unless already in DINTY format."

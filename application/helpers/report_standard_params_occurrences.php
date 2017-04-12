@@ -54,13 +54,15 @@ class report_standard_params_occurrences {
   public static function getOperationParameters() {
     return array(
       'occurrence_id' => array('datatype'=>'lookup', 'display'=>'ID operation',
-        'description'=>'Record ID lookup operation', 'lookup_values'=>'=:is,>=:is at least,<=:is at most'
+        'description'=>'Operator to use in conjunction with a value provided in the occurrence_id parameter.',
+        'lookup_values'=>'=:is,>=:is at least,<=:is at most'
       ),
       'website_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Website IDs mode',
-        'description'=>'Include or exclude the list of websites', 'lookup_values'=>'in:Include,not in:Exclude'
+        'description'=>'Include or exclude the list of websites provided in the website_list parameter',
+        'lookup_values'=>'in:Include,not in:Exclude'
       ),
       'survey_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Survey IDs mode',
-        'description'=>'Include or exclude the list of surveys', 'lookup_values'=>'in:Include,not in:Exclude'
+        'description'=>'Include or exclude the list of surveys provided in the survey_list parameter', 'lookup_values'=>'in:Include,not in:Exclude'
       ),
       'input_form_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Input forms mode',
         'description'=>'Include or exclude the list of input forms', 'lookup_values'=>'in:Include,not in:Exclude'
@@ -88,16 +90,16 @@ class report_standard_params_occurrences {
   public static function getParameters() {
     return array(
       'idlist' => array('datatype'=>'idlist', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'o.id', 'alias'=>'occurrence_id',
-        'description'=>'Comma separated list of occurrence IDs to filter to'
+        'description'=>'Comma separated list of occurrence IDs to filter to.'
       ),
       'searchArea' => array('datatype'=>'geometry', 'display'=>'Boundary',
-        'description'=>'Boundary to search within',
+        'description'=>'Boundary to search within, in Well Known Text format using Web Mercator projection.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_makevalid(st_geomfromtext('#searchArea#',900913)))")
         )
       ),
       'occurrence_id' => array('datatype'=>'integer', 'display'=>'ID',
-        'description'=>'Record ID',
+        'description'=>'Limit to a single record matching this occurrence ID.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.id #occurrence_id_op# #occurrence_id#")
         )
@@ -318,13 +320,14 @@ class report_standard_params_occurrences {
         )
       ),
       'website_list' => array('datatype'=>'integer[]', 'display'=>"Website IDs",
-        'description'=>'Comma separated list of IDs',
+        'description'=>'Comma separated list of IDs of websites to limit to within the set of ' .
+          'websites you have permission to access records for.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.website_id #website_list_op# (#website_list#)")
         )
       ),
       'survey_list' => array('datatype'=>'integer[]', 'display'=>"Survey IDs",
-        'description'=>'Comma separated list of IDs',
+        'description'=>'Comma separated list of IDs of survey datasets to limit to.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.survey_id #survey_list_op# (#survey_list#)")
         )
@@ -336,7 +339,7 @@ class report_standard_params_occurrences {
         )
       ),
       'taxon_group_list' => array('datatype'=>'integer[]', 'display'=>"Taxon Group IDs",
-        'description'=>'Comma separated list of IDs',
+        'description'=>'Comma separated list of IDs of taxon groups to limit to.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_group_id in (#taxon_group_list#)")
         )

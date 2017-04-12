@@ -25,8 +25,10 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
     <param name='uploadFolder' display='Image upload folder' description='Image upload folder on the warehouse including the trailing slash' datatype='string' default='' />
     <param name='warehouse_id' display='Warehouse unique ID' default='iBRC' 
         description='Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key'/>

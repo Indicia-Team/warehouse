@@ -20,7 +20,7 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link    http://code.google.com/p/indicia/
  */
- 
+
  if (!function_exists('http_response_code')) {
   function http_response_code($code = NULL) {
     if ($code !== NULL) {
@@ -104,73 +104,94 @@ class RestApiAbort extends Exception {}
 /**
  * Controller class for the RESTful API. Implements handlers for the variuos resource
  * URIs.
- * 
+ *
  * Visit index.php/services/rest for a help page.
  */
 class Rest_Controller extends Controller {
-  
+
   /**
    * The request method (GET, POST etc).
    * @var string
    */
   private $method;
-  
+
   /**
    * The server's user ID (i.e. this REST API)
    * @var string
    */
-  private $server_user_id;
-  
+  private $serverUserId;
+
   /**
    * The client's user ID (i.e. the caller)
    * @var string
    */
-  private $client_user_id;
-  
+  private $clientUserId;
+
   /**
-   * The client's website ID (should point to a record in the websites table).
-   * @var integer
+   * Set to true when using query parameters in the GET URL to authenticate over
+   * https.
+   * @var bool
    */
-  private $website_id;
-  
+  private $usingQueryParamAuthorisation=false;
+
   /**
    * The latest API major version number. Unversioned calls will map to this.
    * @var integer
    */
-  private $api_major_version=1;
-  
+  private $apiMajorVersion=1;
+
   /**
    * The latest API minor version number. Unversioned calls will map to this.
    * @var integer
    */
-  private $api_minor_version=0;
-  
+  private $apiMinorVersion=0;
+
   /**
    * List of API versions that this code base will support.
    * @var array
    */
-  private $supported_api_versions = array(
+  private $supportedApiVersions = array(
     '1.0'
   );
-  
+
   /**
    * Holds the request parameters (e.g. from GET or POST data).
    * @var array
    */
   private $request;
-  
-  /** 
+
+  /**
    * List of project definitions that are available to the authorised client.
    * @var array
    */
   private $projects;
-  
+
   /**
    * The name of the resource being accessed.
    * @var string
    */
   private $resourceName;
-  
+
+  private $includeEmptyValues = true;
+
+  /*
+   * HTML built dynamically for the page output index.
+   * @var string
+   */
+  private $index = '';
+
+  /**
+   * Is an index table required for this response when output as HTML?
+   * @var bool
+   */
+  private $wantIndex = false;
+
+  /**
+   * When outputting HTML this contains the title for the page.
+   * @var string
+   */
+  private $responseTitle = '';
+
   /**
    * A template to define the header of any HTML pages output. Replace {css} with the
    * path to the CSS file to load.
@@ -187,86 +208,126 @@ class Rest_Controller extends Controller {
 </head>
 <body>
 HTML;
-  
-  /** 
+
+  /**
    * Define the list of HTTP methods that will be supported by each resource endpoint.
    * @var type array
    */
   private $http_methods = array(
     // @todo: move all the help texts into an i18n config file. Don't load them on normal service calls, just
     // on the help service call.
-    'projects' => array('get'=>array(
-      '' => array(
-        'params' => array()
-      ),
-      '{project ID}' => array(
-        'params' => array()
+    'projects' => array(
+      'get'=>array(
+        'subresources' => array(
+          '' => array(
+            'params' => array()
+          ),
+          '{project ID}' => array(
+            'params' => array()
+          )
+        )
       )
-    )),
+    ),
     'taxon-observations' => array(
       'get'=>array(
-        '' => array(
-          'params' => array(
-            'proj_id' => array(
-              'datatype' => 'text',
-              'required' => TRUE
-            ),
-            'page' => array(
-              'datatype' => 'integer'
-            ),
-            'page_size' => array(
-              'datatype' => 'integer'
-            ),
-            'edited_date_from' => array(
-              'datatype' => 'date',
-              'required' => TRUE
-            ),
-            'edited_date_to' => array(
-              'datatype' => 'date'
+        'subresources' => array(
+          '' => array(
+            'params' => array(
+              'proj_id' => array(
+                'datatype' => 'text',
+                'required' => TRUE
+              ),
+              'page' => array(
+                'datatype' => 'integer'
+              ),
+              'page_size' => array(
+                'datatype' => 'integer'
+              ),
+              'edited_date_from' => array(
+                'datatype' => 'date',
+                'required' => TRUE
+              ),
+              'edited_date_to' => array(
+                'datatype' => 'date'
+              )
             )
-          )
-        ),
-        '{taxon-observation ID}' => array(
-          'params' => array(
-            'proj_id' => array(
-              'datatype' => 'text'
+          ),
+          '{taxon-observation ID}' => array(
+            'params' => array(
+              'proj_id' => array(
+                'datatype' => 'text'
+              )
             )
           )
         )
       ),
       'post' => array(
+        'subresources' => array(
+          '' => array(
+            'params' => array()
+          )
+        )
       )
     ),
-    'annotations' => array('get' => array(
-      '' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text'
+    'annotations' => array(
+      'get' => array(
+        'subresources' => array(
+          '' => array(
+            'params' => array(
+              'proj_id' => array(
+                'datatype' => 'text'
+              ),
+              'page' => array(
+                'datatype' => 'integer'
+              ),
+              'page_size' => array(
+                'datatype' => 'integer'
+              ),
+              'edited_date_from' => array(
+                'datatype' => 'date'
+              ),
+              'edited_date_to' => array(
+                'datatype' => 'date'
+              )
+            )
           ),
-          'page' => array(
-            'datatype' => 'integer'
-          ),
-          'page_size' => array(
-            'datatype' => 'integer'
-          ),
-          'edited_date_from' => array(
-            'datatype' => 'date'
-          ),
-          'edited_date_to' => array(
-            'datatype' => 'date'
-          )
-        )
-      ),
-      '{annotation ID}' => array(
-        'params' => array(
-          'proj_id' => array(
-            'datatype' => 'text'
+          '{annotation ID}' => array(
+            'params' => array(
+              'proj_id' => array(
+                'datatype' => 'text'
+              )
+            )
           )
         )
       )
-    )),
+    ),
+    'reports' => array(
+      'get' => array(
+        'options' => array(
+          'segments' => TRUE
+        ),
+        'subresources' => array(
+          '' => array(
+            'params' => array(
+              'limit' => array(
+                'datatype' => 'integer'
+              ),
+              'offset' => array(
+                'datatype' => 'integer'
+              ),
+              'sortby' => array(
+                'datatype' => 'text'
+              ),
+              'sortdir' => array(
+                'datatype' => 'text'
+              )
+            )
+          )
+        )
+      )
+    )
   );
-  
+
   /**
    * Controller for the default page for the /rest path. Outputs help text to describe
    * the available API resources.
@@ -282,8 +343,8 @@ HTML;
     // Loop the resource names and output each of the available methods.
     foreach($this->http_methods as $resource => $methods) {
       echo "<h2>$resource</h2>";
-      foreach ($methods as $method => $listOrID) {
-        foreach ($listOrID as $urlSuffix => $resourceDef) {
+      foreach ($methods as $method => $methodConfig) {
+        foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
           echo '<h3>' . strtoupper($method) . ' ' . url::base() . "index.php/services/rest/$resource";
           if ($urlSuffix)
             echo "/$urlSuffix";
@@ -315,12 +376,12 @@ HTML;
     }
     echo '</body></html>';
   }
-  
+
   /**
    * Magic method to handle calls to the various resource end-points. Maps the call
    * to a method name defined by the resource and the request method.
-   * 
-   * @param string $name Resource name as defined by the segment of the URI called. 
+   *
+   * @param string $name Resource name as defined by the segment of the URI called.
    * Note that this resource name has already passed through the router and had hyphens
    * converted to underscores.
    * @param array $arguments Additional arguments, for example the ID of a resource being requested.
@@ -331,15 +392,20 @@ HTML;
       $resourceName = str_replace('_', '-', $name);
       $this->authenticate();
       if (array_key_exists($resourceName, $this->http_methods)) {
+        $resourceConfig = $this->http_methods[$resourceName];
         $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource
-          header('allow: ' . strtoupper(implode(',', array_keys($this->http_methods[$resourceName]))));
+          header('allow: ' . strtoupper(implode(',', array_keys($resourceConfig))));
         }
         else {
-          if (!array_key_exists(strtolower($this->method), $this->http_methods[$resourceName])) {
+          if (!array_key_exists(strtolower($this->method), $resourceConfig)) {
             $this->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
           }
+          $methodConfig = $resourceConfig[strtolower($this->method)];
+          // If segments allowed, the URL can be .../resource/x/y/z etc.
+          $allowSegments = isset($methodConfig['options']) &&
+              !empty($methodConfig['options']['segments']);
           if ($this->method === 'GET') {
             $this->request = $_GET;
           }
@@ -351,11 +417,12 @@ HTML;
           $this->check_version($arguments);
 
           $requestForId = NULL;
-          if (count($arguments) > 1) {
+
+          if (!$allowSegments && count($arguments) > 1) {
             $this->fail('Bad request', 400, 'Incorrect number of arguments');
             // @todo: http response
           }
-          elseif (count($arguments) === 1) {
+          elseif (!$allowSegments && count($arguments) === 1) {
             // we only allow a single argument to request a single resource by ID
             if (preg_match('/^[A-Z]{3}\d+$/', $arguments[0])) {
               $requestForId = $arguments[0];
@@ -400,14 +467,15 @@ HTML;
   private function checkAllowedResource($proj_id, $resourceName) {
     if (isset($this->projects[$proj_id]['resources'])) {
       if (!in_array($resourceName, $this->projects[$proj_id]['resources'])) {
+        kohana::log('debug', "Disallowed resource $resourceName for $proj_id");
         $this->fail('No Content', 204);
       }
     }
   }
-  
+
   /**
    * GET handler for the  projects/n resource. Outputs a single project's details.
-   * 
+   *
    * @param type $id Unique ID for the project to output
    */
   private function projects_get_id($id) {
@@ -422,7 +490,7 @@ HTML;
     unset($this->projects[$id]['resources']);
     $this->succeed($this->projects[$id]);
   }
-     
+
   /**
    * GET handler for the projects resource. Outputs a list of project details.
    * @todo Projects are currently hard coded in the config file, so pagination etc
@@ -442,14 +510,14 @@ HTML;
     $this->succeed(array(
       'data' => array_values($this->projects),
       'paging' => array(
-        'self' => $this->generate_link(array('page'=>1))
+        'self' => $this->generateLink(array('page'=>1))
       )
     ));
   }
-  
+
   /**
    * GET handler for the taxon-observations/n resource. Outputs a single taxon observations's details.
-   * 
+   *
    * @param type $id Unique ID for the taxon-observations to output
    */
   private function taxon_observations_get_id($id) {
@@ -462,7 +530,7 @@ HTML;
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
 
-    $report = $this->load_report('filterable_taxon_observations', $params);
+    $report = $this->load_report('rest_api/filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
@@ -473,7 +541,7 @@ HTML;
       $this->succeed($report['content']['records'][0]);
     }
   }
-  
+
   /**
    * GET handler for the taxon-observations resource. Outputs a list of taxon observation details.
    * @todo Ensure delete information is output.
@@ -492,18 +560,18 @@ HTML;
       $params['edited_date_to'] = $this->request['edited_date_to'];
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
-    $report = $this->load_report('filterable_taxon_observations', $params);
+    $report = $this->load_report('rest_api/filterable_taxon_observations', $params);
     $this->succeed($this->listResponseStructure($report['content']['records'], 'taxon-observations'));
   }
 
   /**
    * GET handler for the annotations/n resource. Outputs a single annotations's details.
-   * 
+   *
    * @param type $id Unique ID for the annotations to output
    */
   private function annotations_get_id($id) {
     $params = array('id' => $id);
-    $report = $this->load_report('filterable_annotations', $params);
+    $report = $this->load_report('rest_api/filterable_annotations', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
@@ -520,7 +588,7 @@ HTML;
       $this->succeed($record);
     }
   }
-  
+
   /**
    * GET handler for the annotations resource. Outputs a list of annotation details.
    */
@@ -542,7 +610,7 @@ HTML;
       $this->checkDate($this->request['edited_date_to'], 'edited_date_to');
       $params['comment_edited_date_to'] = $this->request['edited_date_to'];
     }
-    $report = $this->load_report('filterable_annotations', $params);
+    $report = $this->load_report('rest_api/filterable_annotations', $params);
     $records = $report['content']['records'];
     // for each record, restructure the taxon observations sub-object
     foreach ($records as &$record) {
@@ -554,14 +622,189 @@ HTML;
     }
     $this->succeed($this->listResponseStructure($records, 'annotations'));
   }
-  
+
+  /**
+   * Converts the segments in the URL to a full report path suitable for passing
+   * to the report engine.
+   * @param array $segments
+   * @return string
+   */
+  private function getReportFileNameFromSegments($segments) {
+    // report file specified. Don't need the .xml suffix.
+    $fileName = array_pop($segments);
+    $fileName = substr($fileName, 0, strlen($fileName) - 4);
+    $segments[] = $fileName;
+    return implode('/', $segments);
+  }
+
+  private function reports_get() {
+    $segments = $this->uri->segment_array();
+    array_shift($segments);
+    array_shift($segments);
+    array_shift($segments);
+    if (count($segments) && preg_match('/\.xml$/', $segments[count($segments)-1])) {
+      $this->getReportOutput($segments);
+    } elseif (count($segments)>1 && preg_match('/\.xml$/', $segments[count($segments)-2])) {
+      // Passing a sub-action to a report, e.g. /params
+      if ($segments[count($segments)-1] === 'params') {
+        $this->getReportParams($segments);
+      }
+      if ($segments[count($segments)-1] === 'columns') {
+        $this->getReportColumns($segments);
+      }
+    } else {
+      $this->getReportHierarchy($segments);
+    }
+  }
+
+  /**
+   * Uses the segments in the URL to find a report file and run it, with the
+   * expectation of producing report data output.
+   * @param array $segments
+   */
+  private function getReportOutput($segments) {
+    $reportFile = $this->getReportFileNameFromSegments($segments);
+    $report = $this->load_report($reportFile, $_GET);
+    if (isset($report['content']['records'])) {
+      // @todo: implement pagination
+      $this->succeed(array('data' => $report['content']['records']));
+    } elseif (isset($report['content']['parameterRequest'])) {
+      // @todo: handle param requests
+      $this->fail('Bad request (parameters missing)', 400, "Missing parameters");
+    }
+  }
+
+  /**
+   *
+   */
+  private function getReportMetadataItem($segments, $item, $description) {
+    $this->includeEmptyValues = false;
+    // the last segment is the /params action.
+    array_pop($segments);
+    $reportFile = $this->getReportFileNameFromSegments($segments);
+    $this->loadReportEngine();
+    $metadata = $this->reportEngine->requestMetadata("$reportFile.xml", true);
+    $this->responseTitle = ucfirst("$item for $reportFile");
+    $this->wantIndex = true;
+    $this->succeed(array('data' => $metadata[$item]),
+      array('description' => $description));
+  }
+
+  /**
+   * Uses the segments in the URL to find a report file and retrieve the parameters
+   * metadata for it.
+   * @param array $segments
+   */
+  private function getReportParams($segments) {
+    return $this->getReportMetadataItem($segments, 'parameters',
+      'A list of parameters available for filtering this report.');
+  }
+
+  /**
+   * Uses the segments in the URL to find a report file and retrieve the parameters
+   * metadata for it.
+   * @param array $segments
+   */
+  private function getReportColumns($segments) {
+    return $this->getReportMetadataItem($segments, 'columns',
+      'A list of columns provided in the output of this report.');
+  }
+
+  /**
+   * Retrieves a list of folders and report files at a single location in the report
+   * hierarchy.
+   * @param $segments
+   */
+  private function getReportHierarchy($segments) {
+    $this->loadReportEngine();
+    // @todo Cache this
+    $reportHierarchy = $this->reportEngine->reportList();
+    $response = array();
+    $folderReadme = '';
+    $featuredFolder = (count($segments) === 1 && $segments[0] === 'featured');
+    if ($featuredFolder) {
+      $folderReadme = kohana::lang("rest_api.reports.featured_folder_description");
+    } else {
+      // Iterate down the report hierarchy to the level we want to show according to the request.
+      foreach ($segments as $idx => $segment) {
+        if ($idx === count($segments) - 1) {
+          // If the final folder, then grab any readme text to add to the metadata.
+          $folderReadme = empty($reportHierarchy[$segment]['description']) ?
+            '' : $reportHierarchy[$segment]['description'];
+        }
+        $reportHierarchy = $reportHierarchy[$segment]['content'];
+      }
+    }
+    $relativePath = implode('/', $segments);
+    if (empty($segments)) {
+      // top level, so splice in a virtual folder for all featured reports.
+      $reportHierarchy = array(
+        'featured' => array(
+          'type' => 'folder',
+          'description' => kohana::lang("rest_api.reports.featured_folder_description")
+        )
+      ) + $reportHierarchy;
+    }
+    if ($featuredFolder) {
+      $response = array();
+      $this->getFeaturedReports($reportHierarchy, $response);
+    } else {
+      foreach ($reportHierarchy as $key => $metadata) {
+        unset($metadata['content']);
+        if ($metadata['type'] === 'report') {
+          $this->addReportLinks($metadata);
+        }
+        else {
+          $path = empty($relativePath) ? $key : "$relativePath/$key";
+          $metadata['href'] = $this->getUrlWithCurrentParams("reports/$path");
+        }
+        $response[$key] = $metadata;
+      }
+    }
+    // Build a description. A generic statement about the path, plus anything
+    // included in the folder's readme file.
+    $relativePath = '/reports/' . ($relativePath ? "$relativePath/" : '');
+    $description = 'A list of reports and report folders stored on the warehouse under ' .
+        "the folder <em>$relativePath</em>. $folderReadme";
+    $this->succeed($response, array('description' => $description));
+  }
+
+  private function addReportLinks(&$metadata) {
+    $metadata['href'] = $this->getUrlWithCurrentParams("reports/$metadata[path].xml");
+    $metadata['params'] = array(
+      'href' => $this->getUrlWithCurrentParams("reports/$metadata[path].xml/params")
+    );
+    if (!empty($metadata['standard_params'])) {
+      // reformat the info that the report supports standard paramenters into REST structure
+      $metadata['params']['info'] =
+        'Supports the standard set of parameters for ' . $metadata['standard_params'];
+      $metadata['params']['helpLink'] = 'http://indicia-docs.readthedocs.io/en/latest/' .
+        'developing/reporting/report-file-format.html?highlight=quality#standard-report-parameters';
+      unset($metadata['standard_params']);
+    }
+    $metadata['columns'] = array(
+      'href' => $this->getUrlWithCurrentParams("reports/$metadata[path].xml/columns")
+    );
+  }
+
+  private function getFeaturedReports($reportHierarchy, &$reports) {
+    foreach ($reportHierarchy as $key => $metadata) {
+      if ($metadata['type'] === 'report' && !empty($metadata['featured'])) {
+        $this->addReportLinks($metadata);
+        $reports[$metadata['path']] = $metadata;
+      } elseif ($metadata['type'] === 'folder') {
+        $this->getFeaturedReports($metadata['content'], $reports);
+      }
+    }
+  }
+
   /**
    * Validates that the request parameters provided fullful the requirements of the method being called.
    * @param string $resourceName
-   * @param string $method Method name, e.g. GET or POST. 
+   * @param string $method Method name, e.g. GET or POST.
    */
   private function validateParameters($resourceName, $method, $requestForId) {
-    $info = $this->http_methods[$resourceName][$method];
+    $info = $this->http_methods[$resourceName][$method]['subresources'];
     // if requesting a list, then use the entry keyed '', else use the named entry
     if ($requestForId) {
       foreach ($info as $key => $method) {
@@ -594,19 +837,30 @@ HTML;
     }
   }
 
-  private function notempty($value) {
+  private function notEmpty($value) {
     return !empty($value);
   }
-  
+
   /**
    * Adds metadata such as an href back to the resource to any resource object.
    * @param array $item The resource object as an array which will be updated with the metadata
    * @param string $entity The entity name used to access the resouce, e.g. taxon-observations
    */
   private function addItemMetadata(&$item, $entity) {
-    $params = $this->request;
-    $item['href'] = url::base() . "index.php/services/rest/$entity/$item[id]";
+    $item['href'] = "$entity/$item[id]";
+    $item['href'] = $this->getUrlWithCurrentParams($item['href']);
+    // strip nulls and empty strings
+    $item = array_filter($item, array($this, 'notEmpty'));
+  }
+
+  /**
+   * Takes a URL and adds the current metadata parameters from the request and
+   * adds them to the URL.
+   */
+  private function getUrlWithCurrentParams($url) {
+    $url = url::base() . "index.php/services/rest/$url";
     $query = array();
+    $params = $this->request;
     if (!empty($params['proj_id']))
       $query['proj_id'] = $params['proj_id'];
     if (!empty($params['format']))
@@ -616,17 +870,17 @@ HTML;
     if (!empty($params['shared_secret']))
       $query['shared_secret'] = $params['shared_secret'];
     if (!empty($query))
-      $item['href'] .= '?' . http_build_query($query);
-    // strip nulls and empty strings
-    $item = array_filter($item, array($this, 'notempty'));
+      return $url . '?' . http_build_query($query);
+    else
+      return $url;
   }
-  
+
   /**
    * Converts an array list of items loaded from the database into the structure ready for returning
    * as the result from an API call. Adds pagination information as well as hrefs for contained objects.
-   * 
-   * @param type $list Array of records from the database
-   * @param type $entity Resource name that is being accessed.
+   *
+   * @param array $list Array of records from the database
+   * @param string $entity Resource name that is being accessed.
    * @return array Restructured version of the input list, with pagination and hrefs added.
    */
   private function listResponseStructure($list, $entity) {
@@ -634,58 +888,66 @@ HTML;
       $this->addItemMetadata($item, $entity);
     }
     $pagination = array(
-      'self'=>$this->generate_link(array('page'=>$this->request['page'])),
+      'self'=>$this->generateLink(array('page'=>$this->request['page'])),
     );
     if ($this->request['page']>1)
-      $pagination['previous'] = $this->generate_link(array('page'=>$this->request['page']-1));
+      $pagination['previous'] = $this->generateLink(array('page'=>$this->request['page']-1));
     // list needs to grab 1 extra, then lop it off and set a flag to indicate another page required
     if (count($list)>$this->request['page_size']) {
       array_pop($list);
-      $pagination['next'] = $this->generate_link(array('page'=>$this->request['page']+1));
+      $pagination['next'] = $this->generateLink(array('page'=>$this->request['page']+1));
     }
     return array(
       'paging' => $pagination,
       'data' => $list
     );
   }
-  
+
+  private function loadReportEngine() {
+    // Should also return an object to iterate rather than loading the full array
+    if (!isset($this->reportEngine)) {
+      if (empty($this->request['proj_id']) || empty($this->projects[$this->request['proj_id']])) {
+        $this->fail('Unauthorized', 401, 'Project ID missing or invalid.');
+      }
+      $this->reportEngine = new ReportEngine(array($this->projects[$this->request['proj_id']]['website_id']));
+    }
+  }
+
   /**
    * Method to load the output of a report being used to construct an API call GET response.
-   * 
+   *
    * @param string $report Report name (excluding .xml extension)
    * @param array $params Report parameters in an associative array
    * @return array Report response structure
    */
   private function load_report($report, $params) {
-    // @todo: rather than use the report engine and its overheads, build the query required directly?
-    // Should also return an object to iterate rather than loading the full array
-    $this->reportEngine = new ReportEngine(array($this->projects[$this->request['proj_id']]['website_id']));
+    $this->loadReportEngine();
     // load the filter associated with the project ID
     $filter = $this->load_filter_for_project($this->request['proj_id']);
-    // The project's filter acts as a context for the report, meaning it defines the limit of all the 
+    // The project's filter acts as a context for the report, meaning it defines the limit of all the
     // records that are available for this project.
     foreach ($filter as $key => $value) {
       $params["{$key}_context"] = $value;
     }
-    $params['system_user_id'] = $this->server_user_id;
+    $params['system_user_id'] = $this->serverUserId;
     // the project defines how records are allowed to be shared with this client
     $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
-    $report = $this->reportEngine->requestReport("rest_api/$report.xml", 'local', 'xml', $params);
+    $report = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
     return $report;
   }
-  
+
   /**
    * Regenerates the current GET URI link, but replacing one or more paraneters with a new value,
    * e.g. a new page ID.
-   * 
+   *
    * @param array $replacements List of parameters and values to replace
    * @return string The reconstructed URL.
    */
-  private function generate_link($replacements=array()) {
+  private function generateLink($replacements=array()) {
     $params = array_merge($_GET, $replacements);
     return url::base() . 'index.php/services/rest/' . $this->resourceName . '?' . http_build_query($params);
   }
-  
+
   private function load_filter_for_project($id) {
     if (!isset($this->projects[$id]))
       $this->fail('Bad request', 400, 'Invalid project requested');
@@ -701,27 +963,27 @@ HTML;
       return array();
     }
   }
-  
+
   /**
    * Checks the API version provided in the URI (if any) to ensure that the version is supported.
    * Returns a 400 Bad request if not supported.
    * @param array $arguments Additional URI segments
-   */  
+   */
   private function check_version(&$arguments) {
     if (count($arguments) && preg_match('/^v(?P<major>\d+)\.(?P<minor>\d+)$/', $arguments[count($arguments)-1], $matches)) {
       array_pop($arguments);
       // Check not asking for an invalid version
-      if (!in_array($matches['major'] . '.' . $matches['minor'], $this->supported_api_versions)) {
+      if (!in_array($matches['major'] . '.' . $matches['minor'], $this->supportedApiVersions)) {
         $this->fail('Bad request', 400, 'Unsupported API version');
       }
-      $this->api_major_version = $matches['major'];
-      $this->api_minor_version = $matches['minor'];
+      $this->apiMajorVersion = $matches['major'];
+      $this->apiMinorVersion = $matches['minor'];
     }
   }
-  
-  /** 
-   * Ensures that the request contains a page size and page, defaulting the values if 
-   * necessary. 
+
+  /**
+   * Ensures that the request contains a page size and page, defaulting the values if
+   * necessary.
    * Will return an HTTP error response if either parameter is not an integer.
    */
   private function checkPaginationParams() {
@@ -732,7 +994,7 @@ HTML;
     $this->checkInteger($this->request['page'], 'page');
     $this->checkInteger($this->request['page_size'], 'page_size');
   }
-  
+
   /**
    * Checks that the request's user_id and proj_id are valid.
    */
@@ -748,8 +1010,8 @@ HTML;
     }
     Kohana::log('debug', "Rest_api module authenticated $user");
     $config = Kohana::config('rest.clients');
-    $this->client_user_id = $user;
-    $this->server_user_id = Kohana::config('rest.user_id');
+    $this->clientUserId = $user;
+    $this->serverUserId = Kohana::config('rest.user_id');
     $this->projects = $config[$user]['projects'];
   }
 
@@ -766,6 +1028,7 @@ HTML;
     if ($config[$user]['shared_secret'] !== $_GET['shared_secret']) {
       $this->fail('Unauthorized', 401, 'Supplied shared secret incorrect.');
     }
+    $this->usingQueryParamAuthorisation = true;
     return $user;
   }
 
@@ -791,7 +1054,7 @@ HTML;
     }
     return $user;
   }
-  
+
   /**
    * Checks a parameter passed to a request is a valid integer.
    * Returns an HTTP error response if not valid.
@@ -803,7 +1066,7 @@ HTML;
       $this->fail('Bad request', 400, "Parameter $param is not an integer");
     }
   }
-  
+
   /**
    * Checks a parameter passed to a request is a valid date.
    * Returns an HTTP error response if not valid.
@@ -815,40 +1078,72 @@ HTML;
       $this->fail('Bad request', 400, "Parameter $param is not an valid date");
     }
   }
-  
-    
+
+
   /**
-   * Dumps out a nested array as a nested HTML table. Used to output response data when the 
+   * Dumps out a nested array as a nested HTML table. Used to output response data when the
    * format type requested is HTML.
-   * 
+   *
    * @param array $array Data to output
+   * @param string $label Label to be used when linking to this array in the index.
    */
-  private function output_array_as_html($array) {
+  private function getArrayAsHtml($array, $label) {
+    $r = '';
     if (count($array)) {
-      echo '<table border="1">';
+      $r .= '<table border="1">';
+      $legendValues = array_intersect_key($array, array('title' => '', 'display' => ''));
+      if (count($legendValues)>0 && !is_array($array[array_keys($legendValues)[0]])) {
+        $legendFieldName = array_keys($legendValues)[0];
+        $legendFieldValue = $array[array_keys($legendValues)[0]];
+        $legendFieldDescription = empty($array['description']) ? '' : $array['description'];
+        $id = preg_replace('/[^a-z0-9]/', '-', strtolower("$legendFieldName-$legendFieldValue"));
+        $r .= "<caption id=\"$id\">$legendFieldName: $legendFieldValue</caption>";
+        $this->index .= <<<ROW
+<tr>
+  <th scope="row"><a href="#$id">$label</a></th>
+  <td>$legendFieldValue</td>
+  <td>$legendFieldDescription</td>
+</tr>
+ROW;
+      }
       $keys = array_keys($array);
       $col1 = is_integer($keys[0]) ? 'Row' : 'Field';
       $col2 = is_integer($keys[0]) ? 'Record' : 'Value';
-      echo "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
-      echo '<tbody>';
+      $r .= "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
+      $r .= '<tbody>';
       foreach ($array as $key=>$value) {
-        echo "<tr><th scope=\"row\">$key</th><td>";
+        if (empty($value) && !$this->includeEmptyValues)
+          continue;
+        $class = !empty($value['type']) ? " class=\"type-$value[type]\"" : '';
+        $r .= "<tr><th scope=\"row\"$class>$key</th><td>";
         if (is_array($value))
-          $this->output_array_as_html($value);
+          $r .= $this->getArrayAsHtml($value, $key);
         else {
-          if ($key==='href' || $key==='self' || $key==='next' || $key==='previous')
-            $value = "<a href=\"$value\">$value</a>";
-          echo "<p>$value</p>";
+          if (preg_match('/http(s)?:\/\//', $value)) {
+            $parts = explode('?', $value);
+            $displayUrl = $parts[0];
+            if (count($parts)>1) {
+              parse_str($parts[1], $params);
+              unset($params['user']);
+              unset($params['shared_secret']);
+              if (count($params)) {
+                $displayUrl .= '?' . http_build_query($params);
+              }
+            }
+            $value = "<a href=\"$value\">$displayUrl</a>";
+          }
+          $r .= "<p>$value</p>";
         }
-        echo '</td></tr>';  
+        $r .= '</td></tr>';
       }
-      echo '</tbody></table>';
+      $r .= '</tbody></table>';
     }
+    return $r;
   }
-  
-  /** 
+
+  /**
    * Returns an HTML error response code, logs a message and aborts the script.
-   * 
+   *
    * @param string $msg HTTP error message
    * @param integer $code HTTP error code
    * @param string $info Message to log
@@ -863,14 +1158,28 @@ HTML;
 
   /**
    * Outputs a data object as JSON (or chosen alternative format), in the case of successful operation.
-   * 
+   *
    * @param array $data Response data to output.
    */
-  private function succeed($data) {
+  private function succeed($data, $metadata = null) {
     if (!empty($this->request['format']) && $this->request['format']==='html') {
       $css = url::base() . "modules/rest_api/media/css/rest_api.css";
       echo str_replace('{css}', $css, $this->html_header);
-      $this->output_array_as_html($data);
+      if (!empty($this->responseTitle))
+        echo '<h1>' . $this->responseTitle . '</h1>';
+      if ($metadata) {
+        echo '<h2>Metadata</h2>';
+        echo $this->getArrayAsHtml($metadata, 'metadata');
+      }
+      // build the output HTML and the page index
+      $output = $this->getArrayAsHtml($data, 'data');
+      // output an index table if present for this output
+      if ($this->wantIndex && !empty($this->index))
+        echo '<table><caption>Index</caption>' . $this->index . '</table>';
+      // output the main response body
+      if ($metadata || !empty($this->responseTitle))
+        echo '<h2>Response</h2>';
+      echo $output;
       echo '</body></html>';
     } else {
       header('Content-Type: application/json');

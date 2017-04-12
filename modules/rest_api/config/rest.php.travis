@@ -49,7 +49,7 @@ $config['clients']=array(
         'filter_id' => 1,
         'sharing' => 'verification',
         // optional, which resources are available? Default is all.
-        'resources' => array('taxon-observations', 'annotations')
+        'resources' => array('taxon-observations', 'annotations', 'reports')
       )
     )
   )

@@ -32,8 +32,10 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs'
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs'
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
     <param name='warehouse_id' display='Warehouse unique ID' default='iBRC' 
         description='Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key'/>
     <param name='user_id_list' display='User Id List' description='List of User IDs assigned to selected Hubs' default='' emptyvalue=''>
