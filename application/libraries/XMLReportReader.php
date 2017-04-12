@@ -89,10 +89,20 @@ class XMLReportReader_Core implements ReportReader
       if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='report') {
         $metadata['title'] = $reader->getAttribute('title');
         $metadata['description'] = $reader->getAttribute('description');
+        $metadata['featured'] = $reader->getAttribute('featured');
+        if (!$metadata['featured'])
+          unset($metadata['featured']);
         if (!$metadata['title'])
           $metadata['title'] = 'Untitled (' . basename($report) . ')';
         if (!$metadata['description'])
           $metadata['description'] = 'No description provided';
+      } elseif ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='query') {
+        if ($reader->getAttribute('standard_params')) {
+          $metadata['standard_params'] = $reader->getAttribute('standard_params');
+          if (!$metadata['standard_params'])
+            unset($metadata['standard_params']);
+        }
+        // No need to read further than the query element
         break;
       }
     }
@@ -739,9 +749,7 @@ class XMLReportReader_Core implements ReportReader
       if ($population_call != '') $this->params[$name]['population_call'] = $population_call;
       if ($linked_to != '') $this->params[$name]['linked_to'] = $linked_to;
       if ($linked_filter_field != '') $this->params[$name]['linked_filter_field'] = $linked_filter_field;
-    }
-    else
-    {
+    } else {
       $this->params[$name] = array(
         'datatype'=>$type,
         'allow_buffer'=>$allow_buffer,
@@ -869,6 +877,29 @@ class XMLReportReader_Core implements ReportReader
         }
       }
     }
+  }
+
+  private function array_insert($array, $values, $offset) {
+    return array_slice($array, 0, $offset, true) + $values + array_slice($array, $offset, NULL, true);
+  }
+
+  /**
+   * Returns the metadata for all possible parameters for this report, including the standard
+   * parameters.
+   * @return array List of parameter configurations. 
+   */
+  public function getAllParams() {
+    $params = array_merge($this->params);
+    if ($this->loadStandardParamsSet) {
+      $standardParamsHelper = "report_standard_params_{$this->loadStandardParamsSet}";
+      $params = array_merge($params, $standardParamsHelper::getParameters());
+      $opParams = $standardParamsHelper::getOperationParameters();
+      foreach ($opParams as $param => $cfg) {
+        $params = $this->array_insert($params, array("{$param}_op" => $cfg),
+            array_search($param, array_keys($params)) + 1);
+      }
+    }
+    return $params;
   }
   
   /**

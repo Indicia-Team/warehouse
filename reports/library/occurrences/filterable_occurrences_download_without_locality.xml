@@ -1,8 +1,9 @@
 <report
     title="Occurrences Download (standard filters, no locality)"
-    description="Report suitable for downloading data, compatible with the standard report filter parameters. Does not
-    include the indexed location column output so works OK for datasets which do not have a layer of indexed locations
-    linked to the records."
+    description="Report designed for downloaded occurrence records as rows in a spreadsheet. Does not
+      include the indexed location column output so works OK for datasets which do not have a layer of indexed locations
+      linked to the records."
+    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*">

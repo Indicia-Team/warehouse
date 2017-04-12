@@ -20,7 +20,8 @@
   #idlist#
   </query>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
   </params>
   <columns>

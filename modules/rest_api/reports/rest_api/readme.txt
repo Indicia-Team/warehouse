@@ -1,0 +1,1 @@
+Report files to support GET requests to the REST api. See /index.php/services/rest.

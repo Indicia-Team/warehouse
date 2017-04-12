@@ -1,6 +1,7 @@
 <report
-    title="Explore records using standard filters - mapping"
-    description="Report designed for mapping the explore records facility in iRecord, with standardised filtering parameters."
+    title="Explore occurrences map (standard filters)"
+    description="A list of occurrences including geometry information designed for mapping output."
+    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
   SELECT #columns#
@@ -14,8 +15,10 @@
   #idlist#
   </query>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
     <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
       <where>st_intersects(o.public_geom, st_geomfromtext('#bounds#', 900913))</where>

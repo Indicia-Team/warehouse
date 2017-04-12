@@ -22,8 +22,9 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include as columns in the report' datatype='occattrs' />
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
     <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
     <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
