@@ -112,9 +112,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertEquals(count($viaConfig), count($viaApi->data), 'Incorrect number of projects returned from /projects.');
     foreach ($viaApi->data as $projDef) {
       $this->assertArrayHasKey($projDef->id, $viaConfig, "Unexpected project $projDef->id returned by /projects.");
-      $this->assertEquals($projDef->title, $viaConfig[$projDef->id]['title'],
-          "Unexpected title $projDef->title returned for project $projDef->id by /projects.");
-      $this->assertEquals($projDef->description, $viaConfig[$projDef->id]['description'],
+      $this->assertEquals($viaConfig[$projDef->id]['title'], $projDef->title,
+        "Unexpected title $projDef->title returned for project $projDef->id by /projects.");
+      $this->assertEquals($viaConfig[$projDef->id]['description'], $projDef->description,
         "Unexpected description $projDef->description returned for project $projDef->id by /projects.");
     }
   }
@@ -126,11 +126,11 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
       $response = $this->callService("projects/$projDef[id]");
       $this->assertResponseOk($response, "/projects/$projDef[id]");
       $fromApi = json_decode($response['response']);
-      $this->assertEquals($fromApi->title, $projDef['title'],
+      $this->assertEquals($projDef['title'], $fromApi->title,
           "Unexpected title $fromApi->title returned for project $projDef[id] by /projects/$projDef[id].");
-      $this->assertEquals($fromApi->title, $projDef['title'],
+      $this->assertEquals($projDef['title'], $fromApi->title,
           "Unexpected title $fromApi->title returned for project $projDef[id] by /projects/$projDef[id].");
-      $this->assertEquals($fromApi->description, $projDef['description'],
+      $this->assertEquals($projDef['description'], $fromApi->description,
           "Unexpected description $fromApi->description returned for project $projDef[id] by /projects/$projDef[id].");
     }
   }
@@ -141,20 +141,16 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $queryWithProj = array('proj_id' => $proj_id, 'edited_date_from' => '2015-01-01');
     $query = array('edited_date_from' => '2015-01-01');
 
-    /*
     $this->authMethod = 'hmacClient';
     $this->checkResourceAuthentication('taxon-observations', $queryWithProj);
     $this->authMethod = 'directClient';
     $this->checkResourceAuthentication('taxon-observations', $queryWithProj);
-    */
     $this->authMethod = 'directUser';
     $this->checkResourceAuthentication('taxon-observations', $query);
-    /*
-     * $this->authMethod = 'hmacWebsite';
+    $this->authMethod = 'hmacWebsite';
     $this->checkResourceAuthentication('taxon-observations', $query);
     $this->authMethod = 'directWebsite';
     $this->checkResourceAuthentication('taxon-observations', $query);
-    */
 
     $this->authMethod = 'hmacClient';
   }
@@ -162,14 +158,14 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
   public function testTaxon_observations_get_incorrect_params() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxon_observations_get_incorrect_params");
     $response = $this->callService("taxon-observations");
-    $this->assertEquals($response['httpCode'], 400,
+    $this->assertEquals(400, $response['httpCode'],
         'Requesting taxon observations without params should be a bad request');
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("taxon-observations", array('proj_id' => $projDef['id']));
-      $this->assertEquals($response['httpCode'], 400,
+      $this->assertEquals(400, $response['httpCode'],
           'Requesting taxon observations without edited_date_from should be a bad request');
       $response = $this->callService("taxon-observations", array('edited_date_from' => '2015-01-01'));
-      $this->assertEquals($response['httpCode'], 400,
+      $this->assertEquals(400, $response['httpCode'],
         'Requesting taxon observations without proj_id should be a bad request');
       // only test a single project
       break;
@@ -342,9 +338,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     self::$userPassword = '---';
 
     $response = $this->callService($resource, $query);
-    $this->assertEquals($response['httpCode'], 401, "Incorrect shared secret passed to /$resource but request authorised. " .
+    $this->assertEquals(401, $response['httpCode'], "Incorrect secret or password passed to /$resource but request authorised. " .
       "Http response $response[httpCode].");
-    $this->assertEquals($response['response'], 'Unauthorized', "Incorrect shared secret passed to /$resource but data still returned. ".
+    $this->assertEquals($response['response'], 'Unauthorized', "Incorrect secret or password passed to /$resource but data still returned. ".
       var_export($response, true));
     self::$config['shared_secret'] = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
@@ -358,9 +354,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
     $response = $this->callService($resource, $query);
-    $this->assertTrue($response['httpCode']===401, "Incorrect userId passed to /$resource but request authorised. " .
+    $this->assertEquals(401, $response['httpCode'], "Incorrect userId passed to /$resource but request authorised. " .
       "Http response $response[httpCode].");
-    $this->assertTrue($response['response']==='Unauthorized', "Incorrect userId passed to /$resource but data still returned. " .
+    $this->assertEquals('Unauthorized', $response['response'], "Incorrect userId passed to /$resource but data still returned. " .
       var_export($response, true));
 
     // now test with everything correct
@@ -381,10 +377,10 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
    * @param string $apiCall Name of the API method being called, e.g. /projects
    */
   private function assertResponseOk($response, $apiCall) {
-    $this->assertEquals($response['httpCode'], 200,
+    $this->assertEquals(200, $response['httpCode'],
       "Invalid response from call to $apiCall. HTTP Response $response[httpCode]. Curl error " .
       "$response[curlErrno] ($response[errorMessage]).");
-    $this->assertEquals($response['curlErrno'], 0,
+    $this->assertEquals(0, $response['curlErrno'],
       "Invalid response from call to $apiCall. HTTP Response $response[httpCode]. Curl error " .
       "$response[curlErrno] ($response[errorMessage]).");
     $decoded = json_decode($response['response']);

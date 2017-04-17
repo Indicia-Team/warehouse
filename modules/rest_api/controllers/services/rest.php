@@ -1128,9 +1128,9 @@ HTML;
         if (count($websites) === 1) {
           $protocol = $this->isHttps ? 'https' : 'http';
           $request_url = "$protocol://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-          $correct_hmac = hash_hmac("sha1", $request_url, $websites[0]['password'], $raw_output = FALSE);
+          $correct_hmac = hash_hmac("sha1", $request_url, $websites[0]->password, $raw_output = FALSE);
           if ($supplied_hmac === $correct_hmac) {
-            $this->websiteId = $websiteId;
+            $this->clientWebsiteId = $websiteId;
             $this->authenticated = TRUE;
           }
           else {
@@ -1249,7 +1249,8 @@ HTML;
       $this->fail('Unauthorized', 401, 'Unrecognised website ID or password.');
     }
     $this->clientWebsiteId = $websiteId;
-    // @todo Apply website ID limit to data, limit to filterable reports
+    $this->authenticated = true;
+    // @todo Apply website ID limit to data
   }
 
   /**
