@@ -7,8 +7,14 @@
  */
 class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
-  private static $userId;
+  private static $clientUserId;
   private static $config;
+  private static $websiteId=1;
+  private static $websitePassword='password';
+  private static $userId=1;
+  private static $userPassword='password';
+
+  private $authMethod = 'hmacClient';
 
   public function getDataSet()
   {
@@ -51,11 +57,11 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
   public static function setUpBeforeClass() {
     // grab the clients registered on this system
-    $userIds = array_keys(Kohana::config('rest.clients'));
+    $clientUserIds = array_keys(Kohana::config('rest.clients'));
     $clientConfigs = array_values(Kohana::config('rest.clients'));
 
     // just test the first client
-    self::$userId = $userIds[0];
+    self::$clientUserId = $clientUserIds[0];
     self::$config = $clientConfigs[0];
   }
 
@@ -68,26 +74,38 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
   }
 
-  public function testProjects_getUnauthorised() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_getUnauthorised");
-    
-    // deliberately incorrect shared secret
-    $response = $this->callService('projects', self::$userId, '---');
-    $this->assertTrue($response['httpCode']===401, 'Incorrect shared secret passed to /projects but request authorised. ' .
+  public function testProjects_authentication() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_clientAuthentication");
+
+    $this->authMethod = 'hmacClient';
+    $this->checkResourceAuthentication('projects');
+    $this->authMethod = 'directClient';
+    $this->checkResourceAuthentication('projects');
+    // user and website authentications don't allow access to projects
+    $this->authMethod = 'hmacUser';
+    $response = $this->callService('projects');
+    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method hmacUser for projects but response still OK. ' .
       "Http response $response[httpCode].");
-    $this->assertTrue($response['response']==='Unauthorized', 'Incorrect shared secret passed to /projects but data still returned. '.
-      var_export($response, true));
-    $response = $this->callService('projects', '---', self::$config['shared_secret']);
-    $this->assertTrue($response['httpCode']===401, 'Incorrect userId passed to /projects but request authorised. ' .
+    $this->authMethod = 'directUser';
+    $response = $this->callService('projects');
+    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method directUser for projects but response still OK. ' .
       "Http response $response[httpCode].");
-    $this->assertTrue($response['response']==='Unauthorized', 'Incorrect userId passed to /projects but data still returned. '.
-      var_export($response, true));
+    $this->authMethod = 'hmacWebsite';
+    $response = $this->callService('projects');
+    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method hmacWebsite for projects but response still OK. ' .
+      "Http response $response[httpCode].");
+    $this->authMethod = 'directWebsite';
+    $response = $this->callService('projects');
+    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method directWebsite for projects but response still OK. ' .
+      "Http response $response[httpCode].");
+
+    $this->authMethod = 'hmacClient';
   }
 
   public function testProjects_get() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_get");
     
-    $response = $this->callService('projects', self::$userId, self::$config['shared_secret']);
+    $response = $this->callService('projects');
     $this->assertResponseOk($response, '/projects');
     $viaApi = json_decode($response['response']);
     $viaConfig = self::$config['projects'];
@@ -105,7 +123,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_get_id");
 
     foreach (self::$config['projects'] as $projDef) {
-      $response = $this->callService("projects/$projDef[id]", self::$userId, self::$config['shared_secret']);
+      $response = $this->callService("projects/$projDef[id]");
       $this->assertResponseOk($response, "/projects/$projDef[id]");
       $fromApi = json_decode($response['response']);
       $this->assertEquals($fromApi->title, $projDef['title'],
@@ -117,33 +135,40 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     }
   }
 
+  public function testTaxon_observations_authentication() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_clientAuthentication");
+    $proj_id = self::$config['projects'][array_keys(self::$config['projects'])[0]]['id'];
+    $queryWithProj = array('proj_id' => $proj_id, 'edited_date_from' => '2015-01-01');
+    $query = array('edited_date_from' => '2015-01-01');
+
+    /*
+    $this->authMethod = 'hmacClient';
+    $this->checkResourceAuthentication('taxon-observations', $queryWithProj);
+    $this->authMethod = 'directClient';
+    $this->checkResourceAuthentication('taxon-observations', $queryWithProj);
+    */
+    $this->authMethod = 'directUser';
+    $this->checkResourceAuthentication('taxon-observations', $query);
+    /*
+     * $this->authMethod = 'hmacWebsite';
+    $this->checkResourceAuthentication('taxon-observations', $query);
+    $this->authMethod = 'directWebsite';
+    $this->checkResourceAuthentication('taxon-observations', $query);
+    */
+
+    $this->authMethod = 'hmacClient';
+  }
+
   public function testTaxon_observations_get_incorrect_params() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxon_observations_get_incorrect_params");
-
-    $response = $this->callService('taxon-observations', self::$userId, '---');
-    $this->assertTrue($response['httpCode']===401,
-      'Incorrect shared secret passed to /taxon-observations but request authorised. ' .
-      "Http response $response[httpCode].");
-    $this->assertTrue($response['response']==='Unauthorized',
-      'Incorrect shared secret passed to /taxon-observations but data still returned. '.
-      var_export($response, true));
-    $response = $this->callService('taxon-observations', '---', self::$config['shared_secret']);
-    $this->assertTrue($response['httpCode']===401,
-      'Incorrect userId passed to /taxon-observations but request authorised. ' .
-      "Http response $response[httpCode].");
-    $this->assertTrue($response['response']==='Unauthorized',
-      'Incorrect userId passed to /taxon-observations but data still returned. '.
-      var_export($response, true));
-    $response = $this->callService("taxon-observations", self::$userId, self::$config['shared_secret']);
+    $response = $this->callService("taxon-observations");
     $this->assertEquals($response['httpCode'], 400,
         'Requesting taxon observations without params should be a bad request');
     foreach (self::$config['projects'] as $projDef) {
-      $response = $this->callService("taxon-observations", self::$userId, self::$config['shared_secret'],
-          array('proj_id' => $projDef['id']));
+      $response = $this->callService("taxon-observations", array('proj_id' => $projDef['id']));
       $this->assertEquals($response['httpCode'], 400,
           'Requesting taxon observations without edited_date_from should be a bad request');
-      $response = $this->callService("taxon-observations", self::$userId, self::$config['shared_secret'],
-        array('edited_date_from' => '2015-01-01'));
+      $response = $this->callService("taxon-observations", array('edited_date_from' => '2015-01-01'));
       $this->assertEquals($response['httpCode'], 400,
         'Requesting taxon observations without proj_id should be a bad request');
       // only test a single project
@@ -160,8 +185,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxon_observations_get");
 
     foreach (self::$config['projects'] as $projDef) {
-      $response = $this->callService("taxon-observations", self::$userId, self::$config['shared_secret'],
-        array(
+      $response = $this->callService("taxon-observations", array(
           'proj_id' => $projDef['id'],
           'edited_date_from' => '2015-01-01',
           'edited_date_to' => date("Y-m-d\TH:i:s")
@@ -181,25 +205,6 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     }
   }
 
-  public function testAnnotations_get_incorrect_params() {
-    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAnnotations_get_incorrect_params");
-
-    $response = $this->callService('annotations', self::$userId, '---');
-    $this->assertTrue($response['httpCode'] === 401,
-      'Incorrect shared secret passed to /annotations but request authorised. ' .
-      "Http response $response[httpCode].");
-    $this->assertTrue($response['response'] === 'Unauthorized',
-      'Incorrect shared secret passed to /annotations but data still returned. ' .
-      var_export($response, TRUE));
-    $response = $this->callService('annotations', '---', self::$config['shared_secret']);
-    $this->assertTrue($response['httpCode'] === 401,
-      'Incorrect userId passed to /annotations but request authorised. ' .
-      "Http response $response[httpCode].");
-    $this->assertTrue($response['response'] === 'Unauthorized',
-      'Incorrect userId passed to /annotations but data still returned. ' .
-      var_export($response, TRUE));
-  }
-
   /**
    * Test the /annotations endpoint in valid use.
    * @todo Test the pagination responses
@@ -209,8 +214,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAnnotations_get");
 
     foreach (self::$config['projects'] as $projDef) {
-      $response = $this->callService("annotations", self::$userId, self::$config['shared_secret'],
-        array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'));
+      $response = $this->callService("annotations", array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'));
       $this->assertResponseOk($response, '/annotations');
       $apiResponse = json_decode($response['response'], true);
       $this->assertArrayHasKey('paging', $apiResponse, 'Paging missing from response to call to annotations');
@@ -232,10 +236,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportsHierarchy_get");
 
     $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports",
-      self::$userId,
-      self::$config['shared_secret'],
-      array('proj_id' => $projDef['id'])
+    $response = $this->callService("reports", array('proj_id' => $projDef['id'])
     );
     $this->assertResponseOk($response, '/reports');
     $response = json_decode($response['response'], true);
@@ -243,27 +244,15 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->checkReportFolderInReponse($response, 'featured');
     $this->checkReportFolderInReponse($response, 'library');
     $this->checkReportInReponse($response, 'demo');
-    $response = $this->callService("reports/featured",
-      self::$userId,
-      self::$config['shared_secret'],
-      array('proj_id' => $projDef['id'])
-    );
+    $response = $this->callService("reports/featured", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/featured');
     $response = json_decode($response['response'], true);
     $this->checkReportInReponse($response, 'library/occurrences/filterable_explore_list');
-    $response = $this->callService("reports/library",
-      self::$userId,
-      self::$config['shared_secret'],
-      array('proj_id' => $projDef['id'])
-    );
+    $response = $this->callService("reports/library", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library');
     $response = json_decode($response['response'], true);
     $this->checkReportFolderInReponse($response, 'occurrences');
-    $response = $this->callService("reports/library/occurrences",
-      self::$userId,
-      self::$config['shared_secret'],
-      array('proj_id' => $projDef['id'])
-    );
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $response = json_decode($response['response'], true);
     $this->checkReportInReponse($response, 'filterable_explore_list');
@@ -274,18 +263,14 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
     // First grab a list of reports so we can use the links to get the correct params URL
     $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports/library/occurrences",
-      self::$userId,
-      self::$config['shared_secret'],
-      array('proj_id' => $projDef['id'])
-    );
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $response = json_decode($response['response'], true);
     $reportDef = $response['filterable_explore_list'];
     $this->assertArrayHasKey('params', $reportDef, 'Report response does not define parameters');
     $this->assertArrayHasKey('href', $reportDef['params'], 'Report parameters missing href');
     // Now grab the params URL output and check it
-    $response = $this->callUrl($reportDef['params']['href'], self::$userId, self::$config['shared_secret']);
+    $response = $this->callUrl($reportDef['params']['href'], self::$clientUserId, self::$config['shared_secret']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/params');
     $response = json_decode($response['response'], true);
     $this->assertArrayHasKey('data', $response);
@@ -298,18 +283,14 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
     // First grab a list of reports so we can use the links to get the correct columns URL
     $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports/library/occurrences",
-      self::$userId,
-      self::$config['shared_secret'],
-      array('proj_id' => $projDef['id'])
-    );
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $response = json_decode($response['response'], true);
     $reportDef = $response['filterable_explore_list'];
     $this->assertArrayHasKey('columns', $reportDef, 'Report response does not define columns');
     $this->assertArrayHasKey('href', $reportDef['columns'], 'Report columns missing href');
     // Now grab the columns URL output and check it
-    $response = $this->callUrl($reportDef['columns']['href'], self::$userId, self::$config['shared_secret']);
+    $response = $this->callUrl($reportDef['columns']['href'], self::$clientUserId, self::$config['shared_secret']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/columns');
     $response = json_decode($response['response'], true);
     $this->assertArrayHasKey('data', $response);
@@ -322,17 +303,13 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
     // First grab a list of reports so we can use the links to get the correct columns URL
     $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports/library/occurrences",
-      self::$userId,
-      self::$config['shared_secret'],
-      array('proj_id' => $projDef['id'])
-    );
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library/occurrences');
     $response = json_decode($response['response'], TRUE);
     $reportDef = $response['filterable_explore_list'];
     $this->assertArrayHasKey('href', $reportDef, 'Report response missing href');
     // Now grab the columns URL output and check it
-    $response = $this->callUrl($reportDef['href'], self::$userId, self::$config['shared_secret']);
+    $response = $this->callUrl($reportDef['href'], self::$clientUserId, self::$config['shared_secret']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml');
     $response = json_decode($response['response'], TRUE);
     $this->assertArrayHasKey('data', $response);
@@ -340,6 +317,62 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['data'][0]['occurrence_id'], 'Report call returns incorrect record');
   }
 
+  /**
+   * Tests authentication against a resource, by passing incorrect user or secret, then
+   * finally passing the correct details to check a valid response returns.
+   * @param $resource
+   * @param string $user User identifier, either client system ID, user ID or website ID.
+   * @param string $secret Secret or password to go with the $user.
+   * @param array $query Query parameters to pass in the URL
+   */
+  private function checkResourceAuthentication($resource, $query = array()) {
+    $correctClientUserId = self::$clientUserId;
+    $correctWebsiteId = self::$websiteId;
+    $correctUserId = self::$userId;
+    $correctClientSecret = self::$config['shared_secret'];
+    $correctWebsitePassword = self::$websitePassword;
+    $correctUserPassword = self::$userPassword;
+
+    // break the secrets/passwords
+    self::$clientUserId = $correctClientUserId;
+    self::$websiteId = $correctWebsiteId;
+    self::$userId = $correctUserId;
+    self::$config['shared_secret'] = '---';
+    self::$websitePassword = '---';
+    self::$userPassword = '---';
+
+    $response = $this->callService($resource, $query);
+    $this->assertEquals($response['httpCode'], 401, "Incorrect shared secret passed to /$resource but request authorised. " .
+      "Http response $response[httpCode].");
+    $this->assertEquals($response['response'], 'Unauthorized', "Incorrect shared secret passed to /$resource but data still returned. ".
+      var_export($response, true));
+    self::$config['shared_secret'] = $correctClientSecret;
+    self::$websitePassword = $correctWebsitePassword;
+    self::$userPassword = $correctUserPassword;
+
+    // break the user IDs
+    self::$clientUserId = '---';
+    self::$websiteId = '---';
+    self::$userId = '---';
+    self::$config['shared_secret'] = $correctClientSecret;
+    self::$websitePassword = $correctWebsitePassword;
+    self::$userPassword = $correctUserPassword;
+    $response = $this->callService($resource, $query);
+    $this->assertTrue($response['httpCode']===401, "Incorrect userId passed to /$resource but request authorised. " .
+      "Http response $response[httpCode].");
+    $this->assertTrue($response['response']==='Unauthorized', "Incorrect userId passed to /$resource but data still returned. " .
+      var_export($response, true));
+
+    // now test with everything correct
+    self::$clientUserId = $correctClientUserId;
+    self::$websiteId = $correctWebsiteId;
+    self::$userId = $correctUserId;
+    self::$config['shared_secret'] = $correctClientSecret;
+    self::$websitePassword = $correctWebsitePassword;
+    self::$userPassword = $correctUserPassword;
+    $response = $this->callService($resource, $query);
+    $this->assertResponseOk($response, "/$resource");
+  }
 
   /**
    * An assertion that the response object returned by a call to getCurlResponse
@@ -354,6 +387,8 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertEquals($response['curlErrno'], 0,
       "Invalid response from call to $apiCall. HTTP Response $response[httpCode]. Curl error " .
       "$response[curlErrno] ($response[errorMessage]).");
+    $decoded = json_decode($response['response']);
+    $this->assertNotNull($decoded, 'JSON response could not be decoded');
   }
 
   /**
@@ -392,7 +427,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     if (!empty($data['statusCode2']))
       $this->assertRegExp('/[1-6]/', $data['statusCode2'], 'Invalid statusCode2 value for annotation');
     // We should be able to request the taxon observation associated with the occurrence
-    $session = $this->initCurl($data['taxonObservation']['href'], self::$userId, self::$config['shared_secret']);
+    $session = $this->initCurl($data['taxonObservation']['href'], self::$clientUserId, self::$config['shared_secret']);
     $response = $this->getCurlResponse($session);
     $this->assertResponseOk($response, '/taxon-observations/id');
     $apiResponse = json_decode($response['response'], true);
@@ -421,14 +456,56 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertEquals('report', $response[$reportFile]['type']);
   }
 
-  private function initCurl($url, $userId, $sharedSecret) {
+  private function setAuthHeader($session, $url) {
+    switch ($this->authMethod) {
+      case 'hmacUser':
+        $user = self::$userId;
+        $website = self::$websiteId;
+        $hmac = hash_hmac("sha1", $url, self::$userPassword, $raw_output = FALSE);
+        $authString = "USER_ID:$user:WEBSITE_ID:$website:HMAC:$hmac";
+        break;
+      case 'hmacClient':
+        $user = self::$clientUserId;
+        $hmac = hash_hmac("sha1", $url, self::$config['shared_secret'], $raw_output = FALSE);
+        $authString = "USER:$user:HMAC:$hmac";
+        break;
+      case 'hmacWebsite':
+        $user = self::$websiteId;
+        $hmac = hash_hmac("sha1", $url, self::$websitePassword, $raw_output = FALSE);
+        $authString = "WEBSITE_ID:$user:HMAC:$hmac";
+        break;
+      case 'directUser':
+        $user = self::$userId;
+        $website = self::$websiteId;
+        $password = self::$userPassword;
+        $authString = "USER_ID:$user:WEBSITE_ID:$website:SECRET:$password";
+        break;
+      case 'directClient':
+        $user = self::$clientUserId;
+        $password = self::$websitePassword;
+        $authString = "USER:$user:SECRET:$password";
+        break;
+      case 'directWebsite':
+        $user = self::$websiteId;
+        $password = self::$websitePassword;
+        $authString = "WEBSITE_ID:$user:SECRET:$password";
+        break;
+      default:
+        $this->fail("$this->authMethod test not implemented");
+        break;
+    }
+
+    curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: $authString"));
+  }
+
+  private function initCurl($url) {
     $session = curl_init();
     // Set the POST options.
     curl_setopt ($session, CURLOPT_URL, $url);
     curl_setopt($session, CURLOPT_HEADER, false);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $hmac = hash_hmac("sha1", $url, $sharedSecret, $raw_output=FALSE);
-    curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
+
+    $this->setAuthHeader($session, $url);
     return $session;
   }
 
@@ -446,8 +523,8 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     );
   }
 
-  private function callUrl($url, $userId, $sharedSecret) {
-    $session = $this->initCurl($url, $userId, $sharedSecret);
+  private function callUrl($url) {
+    $session = $this->initCurl($url);
     Kohana::log('debug', "Making request to $url");
     $response = $this->getCurlResponse($session);
     return $response;
@@ -456,15 +533,15 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
   /**
    * A generic method to call the REST Api's web services.
    * @param $method
-   * @param $userId
+   * @param $user
    * @param $sharedSecret
    * @param mixed|FALSE $query
    * @return array
    */
-  private function callService($method, $userId, $sharedSecret, $query=false) {
-    $url = url::base(true) . "/services/rest/$method";
+  private function callService($method, $query=false) {
+    $url = url::base(true) . "services/rest/$method";
     if ($query)
       $url .= '?' . http_build_query($query);
-    return $this->callUrl($url, $userId, $sharedSecret);
+    return $this->callUrl($url);
   }
 }

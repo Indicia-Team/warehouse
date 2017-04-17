@@ -25,6 +25,30 @@
  */
 $config['user_id'] = 'BRC';
 
+$config['authentication_methods'] = array(
+  'hmacUser',
+  'hmacClient',
+  'hmacWebsite',
+  'directUser',
+  'directClient',
+  'directWebsite',
+  'oauth2User'
+);
+
+// no need for https here
+$config['http_authentication_methods'] = array(
+  'hmacUser',
+  'hmacClient',
+  'hmacWebsite',
+  'directUser',
+  'directClient',
+  'directWebsite',
+  'oauth2User'
+);
+
+$config['allow_auth_tokens_in_url'] = FALSE;
+
+
 /**
  * Which sample attribute will we use to store the dataset name for records which came from
  * remote systems?

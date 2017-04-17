@@ -21,7 +21,7 @@
  * @link    http://code.google.com/p/indicia/
  */
 
- if (!function_exists('http_response_code')) {
+if (!function_exists('http_response_code')) {
   function http_response_code($code = NULL) {
     if ($code !== NULL) {
       switch ($code) {
@@ -64,7 +64,7 @@
         case 505: $text = 'HTTP Version not supported'; break;
         default:
           exit('Unknown http status code "' . htmlentities($code) . '"');
-        break;
+          break;
       }
       $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
       header($protocol . ' ' . $code . ' ' . $text);
@@ -116,23 +116,48 @@ class Rest_Controller extends Controller {
   private $method;
 
   /**
+   * Set to true for https.
+   * @var bool
+   */
+  private $isHttps;
+
+  /**
+   * Has the request been authenticated?
+   * @var bool
+   */
+  private $authenticated = FALSE;
+
+  /**
+   * If the called resource only supports certain types of authentication, then
+   * an array of the methods is set here allowing other methods to be blocked;
+   * @var bool|array
+   */
+  private $restrictToAuthenticationMethods = FALSE;
+
+  /**
    * The server's user ID (i.e. this REST API)
    * @var string
    */
   private $serverUserId;
 
   /**
-   * The client's user ID (i.e. the caller)
+   * The client's system ID (i.e. the caller) if authenticated against the list of
+   * configured clients.
+   * @var string
+   */
+  private $clientSystemId;
+
+  /**
+   * The client's website ID (i.e. the caller) if authenticated against the websites table
+   * @var string
+   */
+  private $clientWebsiteId;
+
+  /**
+   * The client's user ID (i.e. the caller) if authenticated against the websites table
    * @var string
    */
   private $clientUserId;
-
-  /**
-   * Set to true when using query parameters in the GET URL to authenticate over
-   * https.
-   * @var bool
-   */
-  private $usingQueryParamAuthorisation=false;
 
   /**
    * The latest API major version number. Unversioned calls will map to this.
@@ -234,8 +259,7 @@ HTML;
           '' => array(
             'params' => array(
               'proj_id' => array(
-                'datatype' => 'text',
-                'required' => TRUE
+                'datatype' => 'text'
               ),
               'page' => array(
                 'datatype' => 'integer'
@@ -388,11 +412,21 @@ HTML;
    * @throws exception
    */
   public function __call($name, $arguments) {
+    kohana::log('debug', 'GET: ' . var_export($_GET, true));
     try {
-      $resourceName = str_replace('_', '-', $name);
+      // undo router's conversion of hyphens and underscores
+      $this->resourceName = str_replace('_', '-', $name);
+      // Projects are a concept of client system based authentication, not websites or users.
+      if ($this->resourceName === 'projects') {
+        $this->restrictToAuthenticationMethods = array(
+          'hmacClient',
+          'directClient'
+        );
+        kohana::log('debug', 'limit to ' . var_export($this->restrictToAuthenticationMethods, true));
+      }
       $this->authenticate();
-      if (array_key_exists($resourceName, $this->http_methods)) {
-        $resourceConfig = $this->http_methods[$resourceName];
+      if (array_key_exists($this->resourceName, $this->http_methods)) {
+        $resourceConfig = $this->http_methods[$this->resourceName];
         $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource
@@ -405,7 +439,7 @@ HTML;
           $methodConfig = $resourceConfig[strtolower($this->method)];
           // If segments allowed, the URL can be .../resource/x/y/z etc.
           $allowSegments = isset($methodConfig['options']) &&
-              !empty($methodConfig['options']['segments']);
+            !empty($methodConfig['options']['segments']);
           if ($this->method === 'GET') {
             $this->request = $_GET;
           }
@@ -432,17 +466,17 @@ HTML;
             }
           }
           // apart from requests for a project, we always want a project ID
-          if ($name !== 'projects') {
+          if (isset($this->clientSystemId) && $name !== 'projects') {
             if (empty($this->request['proj_id']))
+              // Should not have got this far - just in case
               $this->fail('Bad Request', 400, 'Missing proj_id parameter');
             else
-              $this->checkAllowedResource($this->request['proj_id'], $resourceName);
+              $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
           }
           if ($requestForId) {
             $methodName .= '_id';
           }
-          $this->resourceName = $name;
-          $this->validateParameters($resourceName, strtolower($this->method), $requestForId);
+          $this->validateParameters($this->resourceName, strtolower($this->method), $requestForId);
           call_user_func(array($this, $methodName), $requestForId);
         }
       }
@@ -530,7 +564,7 @@ HTML;
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
 
-    $report = $this->load_report('rest_api/filterable_taxon_observations', $params);
+    $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
@@ -560,7 +594,7 @@ HTML;
       $params['edited_date_to'] = $this->request['edited_date_to'];
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
-    $report = $this->load_report('rest_api/filterable_taxon_observations', $params);
+    $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
     $this->succeed($this->listResponseStructure($report['content']['records'], 'taxon-observations'));
   }
 
@@ -571,7 +605,7 @@ HTML;
    */
   private function annotations_get_id($id) {
     $params = array('id' => $id);
-    $report = $this->load_report('rest_api/filterable_annotations', $params);
+    $report = $this->loadReport('rest_api/filterable_annotations', $params);
     if (empty($report['content']['records'])) {
       $this->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
@@ -610,7 +644,7 @@ HTML;
       $this->checkDate($this->request['edited_date_to'], 'edited_date_to');
       $params['comment_edited_date_to'] = $this->request['edited_date_to'];
     }
-    $report = $this->load_report('rest_api/filterable_annotations', $params);
+    $report = $this->loadReport('rest_api/filterable_annotations', $params);
     $records = $report['content']['records'];
     // for each record, restructure the taxon observations sub-object
     foreach ($records as &$record) {
@@ -664,7 +698,7 @@ HTML;
    */
   private function getReportOutput($segments) {
     $reportFile = $this->getReportFileNameFromSegments($segments);
-    $report = $this->load_report($reportFile, $_GET);
+    $report = $this->loadReport($reportFile, $_GET);
     if (isset($report['content']['records'])) {
       // @todo: implement pagination
       $this->succeed(array('data' => $report['content']['records']));
@@ -739,11 +773,11 @@ HTML;
     if (empty($segments)) {
       // top level, so splice in a virtual folder for all featured reports.
       $reportHierarchy = array(
-        'featured' => array(
-          'type' => 'folder',
-          'description' => kohana::lang("rest_api.reports.featured_folder_description")
-        )
-      ) + $reportHierarchy;
+          'featured' => array(
+            'type' => 'folder',
+            'description' => kohana::lang("rest_api.reports.featured_folder_description")
+          )
+        ) + $reportHierarchy;
     }
     if ($featuredFolder) {
       $response = array();
@@ -765,7 +799,7 @@ HTML;
     // included in the folder's readme file.
     $relativePath = '/reports/' . ($relativePath ? "$relativePath/" : '');
     $description = 'A list of reports and report folders stored on the warehouse under ' .
-        "the folder <em>$relativePath</em>. $folderReadme";
+      "the folder <em>$relativePath</em>. $folderReadme";
     $this->succeed($response, array('description' => $description));
   }
 
@@ -906,10 +940,7 @@ HTML;
   private function loadReportEngine() {
     // Should also return an object to iterate rather than loading the full array
     if (!isset($this->reportEngine)) {
-      if (empty($this->request['proj_id']) || empty($this->projects[$this->request['proj_id']])) {
-        $this->fail('Unauthorized', 401, 'Project ID missing or invalid.');
-      }
-      $this->reportEngine = new ReportEngine(array($this->projects[$this->request['proj_id']]['website_id']));
+      $this->reportEngine = new ReportEngine(array($this->clientWebsiteId));
     }
   }
 
@@ -920,18 +951,36 @@ HTML;
    * @param array $params Report parameters in an associative array
    * @return array Report response structure
    */
-  private function load_report($report, $params) {
+  private function loadReport($report, $params) {
     $this->loadReportEngine();
+    // @todo Apply permissions for user or website & write tests
     // load the filter associated with the project ID
-    $filter = $this->load_filter_for_project($this->request['proj_id']);
+    if (isset($this->clientSystemId)) {
+      $filter = $this->loadFilterForProject($this->request['proj_id']);
+    } elseif (isset($this->clientUserId)) {
+      $filter = array(
+        'website_list' => $this->clientWebsiteId,
+        // @todo Document created_by_id parameter
+        'created_by_id' => $this->clientUserId
+      );
+    } else {
+      if (!isset($this->clientWebsiteId)) {
+        $this->fail('Internal server error', 500, 'Minimal filter on website ID not provided.');
+      }
+      $filter = array(
+        'website_list' => $this->clientWebsiteId
+      );
+    }
     // The project's filter acts as a context for the report, meaning it defines the limit of all the
     // records that are available for this project.
     foreach ($filter as $key => $value) {
       $params["{$key}_context"] = $value;
     }
     $params['system_user_id'] = $this->serverUserId;
-    // the project defines how records are allowed to be shared with this client
-    $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
+    if (isset($this->clientSystemId)) {
+      // For client systems, the project defines how records are allowed to be shared with this client
+      $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
+    }
     $report = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
     return $report;
   }
@@ -948,13 +997,15 @@ HTML;
     return url::base() . 'index.php/services/rest/' . $this->resourceName . '?' . http_build_query($params);
   }
 
-  private function load_filter_for_project($id) {
+  private function loadFilterForProject($id) {
+    kohana::log('debug', "Project ID $id");
+    kohana::log('debug', "Projects: " . var_export($this->projects, true));
     if (!isset($this->projects[$id]))
       $this->fail('Bad request', 400, 'Invalid project requested');
     if (isset($this->projects[$id]['filter_id'])) {
       $filterId = $this->projects[$id]['filter_id'];
-      $db = new Database();
-      $filters = $db->select('definition')->from('filters')->where(array('id'=>$filterId, 'deleted'=>'f'))->get()->result_array();
+      $filters = $this->db->select('definition')->from('filters')->where(array('id'=>$filterId, 'deleted'=>'f'))
+        ->get()->result_array();
       if (count($filters)!==1)
         $this->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
       return json_decode($filters[0]->definition, true);
@@ -996,63 +1047,209 @@ HTML;
   }
 
   /**
-   * Checks that the request's user_id and proj_id are valid.
+   * Checks that the request is authentic.
    */
   private function authenticate() {
-    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'
-        && !empty($_GET['user']) && !empty($_GET['shared_secret'])) {
-      // If running https, accept user and shared_secret in the URL, allowing API browsing
-      // via a standard web browser.
-      $user = $this->authenticateUsingQueryParams();
-    } else {
-      // Otherwise authenticate using the request authorisation header
-      $user = $this->authenticateUsingAuthHeader();
-    }
-    Kohana::log('debug', "Rest_api module authenticated $user");
-    $config = Kohana::config('rest.clients');
-    $this->clientUserId = $user;
+    $this->db = new Database();
+    $this->isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
     $this->serverUserId = Kohana::config('rest.user_id');
-    $this->projects = $config[$user]['projects'];
+    $methods = Kohana::config('rest.authentication_methods');
+    $httpMethods = Kohana::config('rest.http_authentication_methods');
+    if (!$methods) {
+      $methods = array('hmacClient', 'hmacWebsite', 'oauth2User');
+    }
+    if ($this->restrictToAuthenticationMethods !== FALSE) {
+      $methods = array_intersect($methods, $this->restrictToAuthenticationMethods);
+    }
+    kohana::log('debug', 'Methods: ' . var_export($methods, true));
+    $this->authenticated = FALSE;
+    foreach ($methods as $method) {
+      // Skip methods if http and method requires https
+      if ($this->isHttps || in_array($method, $httpMethods)) {
+        $method = ucfirst($method);
+        // try this authentication method
+        kohana::log('debug', "trying $method");
+        call_user_func(array($this, "authenticateUsing$method"));
+        if ($this->authenticated) {
+          kohana::log('debug', "authenticated via $method");
+          break;
+        }
+      }
+    }
+    if (!$this->authenticated) {
+      $this->fail('Unauthorized', 401, 'Unable to authorise');
+    }
   }
 
-  /**
-   * When running https, user and shared secret can be passed in the URL query parameters.
-   * @return mixed
-   */
-  private function authenticateUsingQueryParams() {
-    $config = Kohana::config('rest.clients');
-    $user = $_GET['user'];
-    if (!array_key_exists($user, $config)) {
-      $this->fail('Unauthorized', 401, 'User ID not in projects configuration.');
-    }
-    if ($config[$user]['shared_secret'] !== $_GET['shared_secret']) {
-      $this->fail('Unauthorized', 401, 'Supplied shared secret incorrect.');
-    }
-    $this->usingQueryParamAuthorisation = true;
-    return $user;
+  private function authenticateUsingOauth2User() {
+    // @todo Implement this method
   }
 
-  /**
-   * Authenticate a user and hash provided in the header (safe over http).
-   * @return mixed
-   */
-  private function authenticateUsingAuthHeader() {
+  private function authenticateUsingHmacClient() {
     $headers = apache_request_headers();
-    if (!isset($headers['Authorization'])) {
-      Kohana::log('debug', 'Headers received: ' . print_r($headers, TRUE));
-      $this->fail('Unauthorized', 401, 'Authorization header not provided');
+    if (isset($headers['Authorization'])) {
+      list($u, $clientSystemId, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
+      $config = Kohana::config('rest.clients');
+      // @todo Should this be CLIENT not USER?
+      if ($u === 'USER' && $h === 'HMAC' && array_key_exists($clientSystemId, $config)) {
+        $protocol = $this->isHttps ? 'https' : 'http';
+        $request_url = "$protocol://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+        $correct_hmac = hash_hmac("sha1", $request_url, $config[$clientSystemId]['shared_secret'], $raw_output = FALSE);
+        if ($supplied_hmac === $correct_hmac) {
+          $this->clientSystemId = $clientSystemId;
+          $this->projects = $config[$clientSystemId]['projects'];
+          if (!empty($_REQUEST['proj_id']))
+            $this->clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
+          // Apart from the projects resource, other end-points will need a proj_id
+          // if using client system based authorisation.
+          if ($this->resourceName !== 'projects' &&
+              (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
+            $this->fail('Bad request', 400, 'Project ID missing or invalid.');
+          }
+          $this->authenticated = TRUE;
+        }
+      }
     }
-    list($u, $user, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
+  }
+
+  private function authenticateUsingHmacWebsite() {
+    $headers = apache_request_headers();
+    if (isset($headers['Authorization'])) {
+      list($u, $websiteId, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
+      if ($u === 'WEBSITE_ID' && $h === 'HMAC') {
+        // input validation
+        if (!preg_match('/^\d+$/', $websiteId)) {
+          $this->fail('Unauthorized', 401, 'Website ID incorrect format.');
+        }
+        $websites = $this->db->select('password')
+          ->from('websites')
+          ->where(array('id' => $websiteId))
+          ->get()->result_array();
+        if (count($websites) === 1) {
+          $protocol = $this->isHttps ? 'https' : 'http';
+          $request_url = "$protocol://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+          $correct_hmac = hash_hmac("sha1", $request_url, $websites[0]['password'], $raw_output = FALSE);
+          if ($supplied_hmac === $correct_hmac) {
+            $this->websiteId = $websiteId;
+            $this->authenticated = TRUE;
+          }
+          else {
+            $this->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
+          }
+        }
+        else {
+          $this->fail('Unauthorized', 401, 'Unrecognised website ID.');
+        }
+      }
+    }
+  }
+
+  private function authenticateUsingDirectUser() {
+    $headers = apache_request_headers();
+    kohana::log('debug', $headers['Authorization']);
+    if (isset($headers['Authorization']) &&
+        substr_count($headers['Authorization'], ':') === 5) {
+      // 6 parts to authorisation required for user ID, website ID and password pairs
+      list($u, $userId, $w, $websiteId, $h, $password) = explode(':', $headers['Authorization']);
+      if ($u !== 'USER_ID' || $w !== 'WEBSITE_ID' || $h !== 'SECRET') {
+        return;
+      }
+    } elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
+          !empty($_GET['user_id']) && !empty($_GET['secret'])) {
+      $userId = $_GET['user_id'];
+      $websiteId = $_GET['website_id'];
+      $password = $_GET['secret'];
+    } else {
+      return;
+    }
+    // input validation
+    if (!preg_match('/^\d+$/', $userId) || !preg_match('/^\d+$/', $websiteId)) {
+      $this->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
+    }
+    $users = $this->db->select('password')
+      ->from('users')
+      ->where(array('id' => $userId))
+      ->get()->result_array(false);
+    if (count($users) !== 1) {
+      $this->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+    }
+    $auth = new Auth;
+    if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
+      $this->clientUserId = $userId;
+      $this->clientWebsiteId = $websiteId;
+      // @todo Is this user a member of the website?
+      $this->authenticated = TRUE;
+    } else {
+      $this->fail('Unauthorized', 401, 'Incorrect password for user.');
+    }
+    // @todo Apply user ID limit to data, limit to filterable reports
+  }
+
+  private function authenticateUsingDirectClient() {
+    $headers = apache_request_headers();
+    kohana::log('debug', var_export($headers, true));
     $config = Kohana::config('rest.clients');
-    if (!array_key_exists($user, $config)) {
-      $this->fail('Unauthorized', 401, 'User ID not in projects configuration.');
+    if (isset($headers['Authorization'])) {
+      list($u, $clientSystemId, $h, $secret) = explode(':', $headers['Authorization']);
+      kohana::log('debug', 'authorisation: ' . $headers['Authorization']);
+      if ($u !== 'USER' || $h !== 'SECRET') {
+        return;
+      }
+    } elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
+          !empty($_GET['user']) && !empty($_GET['secret'])) {
+      $clientSystemId = $_GET['user'];
+      $secret = $_GET['secret'];
+    } else {
+      return;
     }
-    $request_url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-    $correct_hmac = hash_hmac("sha1", $request_url, $config[$user]['shared_secret'], $raw_output = FALSE);
-    if ($supplied_hmac !== $correct_hmac) {
-      $this->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
+    if (!array_key_exists($clientSystemId, $config)) {
+      $this->fail('Unauthorized', 401, 'Invalid client system ID');
     }
-    return $user;
+    if ($secret !== $config[$clientSystemId]['shared_secret']) {
+      $this->fail('Unauthorized', 401, 'Incorrect secret');
+    }
+    $this->clientSystemId = $clientSystemId;
+    $this->projects = $config[$clientSystemId]['projects'];
+    // Apart from the projects resource, other end-points will need a proj_id
+    // if using client system based authorisation.
+    if ($this->resourceName !== 'projects' &&
+        (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
+      $this->fail('Bad request', 400, 'Project ID missing or invalid.');
+    }
+    if (!empty($_REQUEST['proj_id'])) {
+      $this->clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
+    }
+    $this->authenticated = TRUE;
+  }
+
+  private function authenticateUsingDirectWebsite() {
+    $headers = apache_request_headers();
+    if (isset($headers['Authorization'])) {
+      list($u, $websiteId, $h, $password) = explode(':', $headers['Authorization']);
+      if ($u !== 'WEBSITE_ID' || $h !== 'SECRET') {
+        return;
+      }
+    } elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
+        !empty($_GET['website_id']) && !empty($_GET['secret'])) {
+      $websiteId = $_GET['website_id'];
+      $password = $_GET['secret'];
+    } else {
+      return;
+    }
+    // input validation
+    if (!preg_match('/^\d+$/', $websiteId)) {
+      $this->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
+    }
+    $password = pg_escape_string($password);
+    $websites = $this->db->select('id')
+      ->from('websites')
+      ->where(array('id' => $websiteId, 'password' => $password))
+      ->get()->result_array();
+    if (count($websites) !== 1) {
+      $this->fail('Unauthorized', 401, 'Unrecognised website ID or password.');
+    }
+    $this->clientWebsiteId = $websiteId;
+    // @todo Apply website ID limit to data, limit to filterable reports
   }
 
   /**
@@ -1151,8 +1348,10 @@ ROW;
   private function fail($msg, $code, $info=NULL) {
     http_response_code($code);
     echo $msg;
-    if ($info)
+    if ($info) {
       kohana::log('debug', "HTTP code: $code. $info");
+      kohana::log_save();
+    }
     throw new RestApiAbort($msg);
   }
 
@@ -1163,6 +1362,7 @@ ROW;
    */
   private function succeed($data, $metadata = null) {
     if (!empty($this->request['format']) && $this->request['format']==='html') {
+      header('Content-Type: text/html');
       $css = url::base() . "modules/rest_api/media/css/rest_api.css";
       echo str_replace('{css}', $css, $this->html_header);
       if (!empty($this->responseTitle))

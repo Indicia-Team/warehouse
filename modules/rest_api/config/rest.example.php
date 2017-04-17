@@ -31,6 +31,33 @@ $config['user_id'] = 'BRC';
  */
 $config['dataset_name_attr_id'] = 99;
 
+/**
+ * Authentication methods allowed. Default options exclude direct passing of id
+ * and password which should be enabled on development servers only.
+ * * oauth2User - for authenticating warehouse user accounts to access their own records
+ *   via oauth, or with a filter_id to define a wider set of records.
+ * * hmacClient - authorise a client in the list below using HMAC in the http header
+ * * hmacWebsite
+ * * directUser - allow the user ID and password to be passed directly.
+ * * directClient - allow the client system ID and shared secret to be passed directly.
+ * * directWebsite - allow the website ID and password to be passed directly.
+ * Note that hmacUser is not supported as the password is hashed on the server so a
+ * hmac cannot be generated.
+ */
+$config['authentication_methods'] = array('hmacClient', 'hmacWebsite', 'directClient', 'oauth2User');
+
+/**
+ * Which methods is https required for? By default we allow hmac over http since it is
+ * designed to cope with sniffing.
+ */
+$config['http_authentication_methods'] = array('hmacClient', 'hmacWebsite');
+
+/**
+ * Should authorisation tokens be allowed in the query parameters rather than the
+ * authorisation header? Recommended for development servers only.
+ */
+$config['allow_auth_tokens_in_url'] = FALSE;
+
 // The following configuration is a temporary definition of the projects available for 
 // each website.
 // @todo Move this configuration into a database table.
