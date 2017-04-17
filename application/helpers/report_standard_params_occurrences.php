@@ -304,6 +304,11 @@ class report_standard_params_occurrences {
           array('value'=>'1', 'operator'=>'equal', 'sql'=>"o.created_by_id=#user_id#")
         )
       ),
+      'created_by_id' => array('datatype' => 'integer', 'display'=>'Limit to records created by this user ID',
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.created_by_id=#created_by_id#")
+        )
+      ),
       'group_id' => array('datatype'=>'integer', 'display'=>"ID of a group to filter to the members of",
         'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
         'joins' => array(
