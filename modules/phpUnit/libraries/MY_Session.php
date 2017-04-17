@@ -1,4 +1,4 @@
- <?php defined('SYSPATH') OR die('No direct access allowed.');
+<?php defined('SYSPATH') OR die('No direct access allowed.');
 
 /**
  * An alternative to the core session handler for use in unit testing.
@@ -7,7 +7,7 @@
  * Since there is no browser during unit testing there is no support for 
  * cookies. This class could overcome that.
  */
- class Session extends Session_Core {
+class Session extends Session_Core {
 
 	/**
 	 * Create a new session.
@@ -125,7 +125,4 @@
 		// Set the new data
 		Session::set($vars);
 	}
-
- }
- 
- 
+}
