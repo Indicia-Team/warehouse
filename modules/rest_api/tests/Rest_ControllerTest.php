@@ -51,7 +51,17 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     
     $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
     $compositeDs->addDataSet($ds1);
-    $compositeDs->addDataSet($ds2); 
+    $compositeDs->addDataSet($ds2);
+
+    // Dependencies prevent us adding a user with known password, so we'll update the
+    // existing one with the hash for 'password'.
+    $db = new Database();
+    $db->update(
+      'users',
+      array('password' => '18d025c6c8809e34371e2ec7d84215bd3eb6031dcd804006f4'),
+      array('id' => 1)
+    );
+
     return $compositeDs;
   }
 
@@ -340,7 +350,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $response = $this->callService($resource, $query);
     $this->assertEquals(401, $response['httpCode'], "Incorrect secret or password passed to /$resource but request authorised. " .
       "Http response $response[httpCode].");
-    $this->assertEquals($response['response'], 'Unauthorized', "Incorrect secret or password passed to /$resource but data still returned. ".
+    $this->assertEquals('Unauthorized', $response['response'], "Incorrect secret or password passed to /$resource but data still returned. ".
       var_export($response, true));
     self::$config['shared_secret'] = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
