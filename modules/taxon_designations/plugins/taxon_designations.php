@@ -58,5 +58,3 @@ function taxon_designations_extend_data_services() {
     'taxa_taxon_designations'=>array()
   );
 }
-
-?>

@@ -33,6 +33,4 @@ function occurrence_associations_extend_data_services() {
   return array(
     'occurrence_associations'=>array()
   );
-}
-
-?>
+}>

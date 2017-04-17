@@ -348,4 +348,3 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
   }
 
 }
-?>

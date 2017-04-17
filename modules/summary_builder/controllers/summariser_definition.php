@@ -172,4 +172,3 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
  * This is triggered by changes to occurrence records, not by a report.
  * How this is output is determined by the front end.
  */
-?>

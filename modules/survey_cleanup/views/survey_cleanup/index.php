@@ -66,5 +66,3 @@ if (!($this->auth->logged_in('CoreAdmin') || $this->auth->has_website_access('ad
   });\n";
   echo data_entry_helper::dump_javascript();
 }
-
-?>

@@ -49,5 +49,3 @@
       'sortdir' => 'Direction of sort, ASC or DESC'
     )
   );
-
-?>

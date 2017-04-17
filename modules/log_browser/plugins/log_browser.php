@@ -28,5 +28,3 @@ function log_browser_alter_menu($menu, $auth) {
     $menu['Admin']['Browse server logs']='browse_server_logs';
   return $menu;
 }
-
-?>

@@ -38,4 +38,3 @@ class guernsey extends island_grid{
 
 
 }
-?>

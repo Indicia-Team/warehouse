@@ -59,6 +59,3 @@ class Model_Upgrade_Test extends PHPUnit_Framework_TestCase {
   
   
 }
-
-
-?>

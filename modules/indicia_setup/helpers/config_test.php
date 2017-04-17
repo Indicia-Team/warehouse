@@ -34,8 +34,8 @@ class config_test {
    * @param boolean $problems_only If true then only reports on problems, not successful checks. Defaults to false.
    * @param boolean $force If true then forces a check even if the system configuration has been completed.
    */
-  public static function check_config($problems_only=false, $force=false) {    
-    $result = array();    
+  public static function check_config($problems_only=false, $force=false) {
+    $result = array();
     // If the Indicia config is present, then everything has passed, so we can skip the tests unless it is being forced.
     if ($force || kohana::config_load('indicia', false)==null) {
       self::check_php_version($result, $problems_only);
@@ -221,8 +221,8 @@ class config_test {
       ));
     }
   }
-  
-/**
+
+  /**
    * Ensure that the gd2 graphics library is installed.
    *
    * @param array $messages List of messages that any information should be appended to.
@@ -247,7 +247,7 @@ class config_test {
     }
   }
 
-/**
+  /**
    * Ensure that the dBase library is installed.
    *
    * @param array $messages List of messages that any information should be appended to.
@@ -275,7 +275,7 @@ class config_test {
     }
   }
 
-/**
+  /**
    * Ensure that the zip library is installed.
    *
    * @param array $messages List of messages that any information should be appended to.
@@ -405,6 +405,4 @@ class config_test {
       array_push($good_dirs, "The $folder_name directory is $access_str to allow $pass.");
   }
 
- }
-
- ?>
+}

@@ -38,5 +38,3 @@ function scratchpad_extend_data_services() {
     'scratchpad_list_entries'=>array()
   );
 }
-
-?>

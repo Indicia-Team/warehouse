@@ -15,4 +15,3 @@
   $config['password'] = 'password';
   $config['survey_id'] = 1;
   $config['feature_type'] = '';
-?>

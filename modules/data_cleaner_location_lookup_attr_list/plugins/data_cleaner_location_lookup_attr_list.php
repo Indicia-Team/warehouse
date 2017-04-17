@@ -61,5 +61,3 @@ function data_cleaner_location_lookup_attr_list_data_cleaner_rules() {
     )
   );
 }
-
-?>

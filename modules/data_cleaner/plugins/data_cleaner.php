@@ -158,5 +158,3 @@ WHERE co.id=o.id";
     $db->query($query);
   }
 }
-
-?>

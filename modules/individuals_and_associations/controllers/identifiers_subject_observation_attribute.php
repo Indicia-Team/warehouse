@@ -43,4 +43,3 @@ class Identifiers_subject_observation_attribute_Controller extends Attr_Gridview
     return 'custom_attribute/custom_attribute_edit';
   }
 }
-?>

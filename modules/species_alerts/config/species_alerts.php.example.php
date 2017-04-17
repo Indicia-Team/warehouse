@@ -22,4 +22,3 @@
 $config['register_for_notification_emails_source_types']=array('T','C','V','A','S','VT','M');
 // Name to appear in the "From" field for the notifications
 $config['from']='system';
-?>

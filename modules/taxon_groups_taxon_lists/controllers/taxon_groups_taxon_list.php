@@ -90,5 +90,3 @@ class Taxon_groups_taxon_list_Controller extends Gridview_Base_Controller {
   }
 
 }
-
-?>

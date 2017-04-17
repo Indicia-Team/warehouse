@@ -70,5 +70,3 @@ function data_cleaner_identification_difficulty_data_cleaner_postprocess($id, $d
       "where cttl.id=cts.preferred_taxa_taxon_list_id ".
       "and vr.id=$id");
 }
-
-?>

@@ -144,4 +144,3 @@ class island_grid {
   }
 
 }
-?>

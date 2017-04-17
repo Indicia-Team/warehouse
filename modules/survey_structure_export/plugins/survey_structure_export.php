@@ -15,5 +15,3 @@ function survey_structure_export_extend_ui() {
     'allowForNew' => false
   ));
 }
-
-?>

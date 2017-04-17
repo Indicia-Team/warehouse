@@ -123,7 +123,4 @@ class Known_subject_attributes_website_Model extends Valid_ORM
       return parent::__get($column);
   }
 
-
 }
-
-?>

@@ -91,4 +91,3 @@ function summary_builder_extend_data_services() {
 			'summary_occurrences'=>array()
 	);
 }
-?>
