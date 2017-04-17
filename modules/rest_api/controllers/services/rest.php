@@ -901,8 +901,8 @@ HTML;
       $query['format'] = $params['format'];
     if (!empty($params['user']))
       $query['user'] = $params['user'];
-    if (!empty($params['shared_secret']))
-      $query['shared_secret'] = $params['shared_secret'];
+    if (!empty($params['secret']))
+      $query['secret'] = $params['secret'];
     if (!empty($query))
       return $url . '?' . http_build_query($query);
     else
@@ -1187,7 +1187,6 @@ HTML;
 
   private function authenticateUsingDirectClient() {
     $headers = apache_request_headers();
-    kohana::log('debug', var_export($headers, true));
     $config = Kohana::config('rest.clients');
     if (isset($headers['Authorization'])) {
       list($u, $clientSystemId, $h, $secret) = explode(':', $headers['Authorization']);
@@ -1323,7 +1322,7 @@ ROW;
             if (count($parts)>1) {
               parse_str($parts[1], $params);
               unset($params['user']);
-              unset($params['shared_secret']);
+              unset($params['secret']);
               if (count($params)) {
                 $displayUrl .= '?' . http_build_query($params);
               }
