@@ -26,7 +26,6 @@
 $config['user_id'] = 'BRC';
 
 $config['authentication_methods'] = array(
-  'hmacUser',
   'hmacClient',
   'hmacWebsite',
   'directUser',
@@ -37,7 +36,6 @@ $config['authentication_methods'] = array(
 
 // no need for https here
 $config['http_authentication_methods'] = array(
-  'hmacUser',
   'hmacClient',
   'hmacWebsite',
   'directUser',
