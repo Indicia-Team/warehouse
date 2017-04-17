@@ -132,5 +132,3 @@ class Licences_website_Controller extends Gridview_Base_Controller
   }
 
 }
-
-?>

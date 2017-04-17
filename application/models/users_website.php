@@ -83,5 +83,3 @@ class Users_website_Model extends ORM
     }
   }
 }
-
-?>

@@ -129,5 +129,3 @@ class Image extends Image_Core {
   }
 
 }
-
-?>

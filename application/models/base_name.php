@@ -74,5 +74,3 @@ class Base_Name_Model extends ORM_Tree {
   }
 
 }
-
-?>

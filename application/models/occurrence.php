@@ -588,4 +588,3 @@ class Occurrence_Model extends ORM
   }
   
 }
-?>

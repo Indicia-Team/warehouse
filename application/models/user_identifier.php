@@ -49,5 +49,3 @@ class User_Identifier_Model extends ORM {
   }
   
 }
-
-?>

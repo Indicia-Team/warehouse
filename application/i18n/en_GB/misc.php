@@ -22,5 +22,3 @@ $lang = array
   'model_import' => '%s import',
   'recheck_verification'=>"This record's verification status needs to be rechecked as it has been edited."
 );
-
-?>

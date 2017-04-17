@@ -87,5 +87,3 @@ class variable {
     $cache->delete("variable-$name");  
   }
 }
-
-?>

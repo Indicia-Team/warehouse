@@ -64,5 +64,3 @@ class Licences_Website_Model extends ORM
   }
 
 }
-
-?>

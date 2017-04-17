@@ -29,23 +29,23 @@
  */
 class Sample_attribute_Controller extends Attr_Gridview_Base_Controller {
 
-  public function __construct()
-  {
+  public function __construct() {
     $this->prefix = 'sample';
     parent::__construct();
   }
 
-  /** 
-   * Override save to store the applies_to_location field. 
+  /**
+   * Override save to store the applies_to_location field.
    */
   public function save() {
     if ($_POST['metaFields:disabled_input'] == 'NO') {
       // Make sure checkboxes have a value.
       // @todo: If we use Indicia client helper controls for the attribute edit page, this becomes unnecessary
-      if (!array_key_exists($this->model->object_name.':applies_to_location', $_POST)) $_POST[$this->model->object_name.':applies_to_location'] = '0';
+      if (!array_key_exists($this->model->object_name . ':applies_to_location', $_POST)) {
+        $_POST[$this->model->object_name . ':applies_to_location'] = '0';
+      }
     }
     parent::save();
   }
 
 }
-?>
