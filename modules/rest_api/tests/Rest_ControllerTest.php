@@ -13,6 +13,8 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
   private static $websitePassword='password';
   private static $userId=1;
   private static $userPassword='password';
+  // In the fixture, the 2nd filter is the one we linked to a user.
+  private static $userFilterId=2;
 
   private $authMethod = 'hmacClient';
 
@@ -30,11 +32,30 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
             'title' => 'Test filter',
             'description' => 'Filter for unit testing',
             'definition' => '{"quality":"!R"}',
+            'defines_permissions' => 'f',
+            'created_on' => '2016-07-22:16:00:00',
+            'created_by_id' => 1,
+            'updated_on' => '2016-07-22:16:00:00',
+            'updated_by_id' => 1
+          ),
+          array(
+            'title' => 'Test user permission filter',
+            'description' => 'Filter for unit testing',
+            'definition' => '{"quality":"!R","occurrence_id":2}',
+            'defines_permissions' => 't',
             'created_on' => '2016-07-22:16:00:00',
             'created_by_id' => 1,
             'updated_on' => '2016-07-22:16:00:00',
             'updated_by_id' => 1,
           ),
+        ),
+        'filters_users' => array(
+          array(
+            'filter_id' => 2,
+            'user_id' => 1,
+            'created_on' => '2016-07-22:16:00:00',
+            'created_by_id' => 1
+          )
         ),
         'occurrence_comments' => array(
           array(
@@ -156,6 +177,8 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->authMethod = 'directClient';
     $this->checkResourceAuthentication('taxon-observations', $queryWithProj);
     $this->authMethod = 'directUser';
+    $this->checkResourceAuthentication('taxon-observations', $query);
+    $this->authMethod = 'directUserWithFilter';
     $this->checkResourceAuthentication('taxon-observations', $query);
     $this->authMethod = 'hmacWebsite';
     $this->checkResourceAuthentication('taxon-observations', $query);
@@ -485,6 +508,13 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         $website = self::$websiteId;
         $password = self::$userPassword;
         $authString = "USER_ID:$user:WEBSITE_ID:$website:SECRET:$password";
+        break;
+      case 'directUserWithFilter':
+        $user = self::$userId;
+        $website = self::$websiteId;
+        $password = self::$userPassword;
+        $filterId = self::$userFilterId;
+        $authString = "USER_ID:$user:WEBSITE_ID:$website:FILTER_ID:$filterId:SECRET:$password";
         break;
       case 'directClient':
         $user = self::$clientUserId;

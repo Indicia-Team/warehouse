@@ -154,10 +154,19 @@ class Rest_Controller extends Controller {
   private $clientWebsiteId;
 
   /**
-   * The client's user ID (i.e. the caller) if authenticated against the websites table
+   * The client's user ID (i.e. the caller) if authenticated against the users table
    * @var string
    */
   private $clientUserId;
+
+  /**
+   * The client's filter ID (i.e. the records available to the called) if
+   * authenticated against the users table and a permissions filter provided
+   * in the auth data.
+   * @var string
+   * @todo Implement usage of this
+   */
+  private $clientFilterId;
 
   /**
    * The latest API major version number. Unversioned calls will map to this.
@@ -958,11 +967,16 @@ HTML;
     if (isset($this->clientSystemId)) {
       $filter = $this->loadFilterForProject($this->request['proj_id']);
     } elseif (isset($this->clientUserId)) {
-      $filter = array(
-        'website_list' => $this->clientWebsiteId,
-        // @todo Document created_by_id parameter
-        'created_by_id' => $this->clientUserId
-      );
+      if (isset($this->clientFilterId)) {
+        $filter = $this->getPermissionsFilterDefinition();
+      } else {
+        // default filter - the user's records for this website only
+        $filter = array(
+          'website_list' => $this->clientWebsiteId,
+          // @todo Document created_by_id parameter
+          'created_by_id' => $this->clientUserId
+        );
+      }
     } else {
       if (!isset($this->clientWebsiteId)) {
         $this->fail('Internal server error', 500, 'Minimal filter on website ID not provided.');
@@ -998,8 +1012,6 @@ HTML;
   }
 
   private function loadFilterForProject($id) {
-    kohana::log('debug', "Project ID $id");
-    kohana::log('debug', "Projects: " . var_export($this->projects, true));
     if (!isset($this->projects[$id]))
       $this->fail('Bad request', 400, 'Invalid project requested');
     if (isset($this->projects[$id]['filter_id'])) {
@@ -1013,6 +1025,25 @@ HTML;
     else {
       return array();
     }
+  }
+
+  private function getPermissionsFilterDefinition() {
+    $filters = $this->db->select('definition')
+      ->from('filters')
+      ->join('filters_users', array(
+        'filters_users.filter_id' => 'filters.id'
+      ))
+      ->where(array(
+        'filters.id'=>$this->clientFilterId,
+        'filters.deleted'=>'f',
+        'filters.defines_permissions' => 't',
+        'filters_users.user_id' => $this->clientUserId,
+        'filters_users.deleted' => 'f'
+      ))
+      ->get()->result_array();
+    if (count($filters)!==1)
+      $this->fail('Bad request', 400, 'Filter ID missing or not a permissions filter for the user');
+    return json_decode($filters[0]->definition, true);
   }
 
   /**
@@ -1154,6 +1185,13 @@ HTML;
       if ($u !== 'USER_ID' || $w !== 'WEBSITE_ID' || $h !== 'SECRET') {
         return;
       }
+    } elseif (isset($headers['Authorization']) &&
+      substr_count($headers['Authorization'], ':') === 7) {
+      // 8 parts to authorisation required for user ID, website ID, filter ID and password pairs
+      list($u, $userId, $w, $websiteId, $f, $filterId, $h, $password) = explode(':', $headers['Authorization']);
+      if ($u !== 'USER_ID' || $w !== 'WEBSITE_ID' || $f !== 'FILTER_ID' || $h !== 'SECRET') {
+        return;
+      }
     } elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
           !empty($_GET['user_id']) && !empty($_GET['secret'])) {
       $userId = $_GET['user_id'];
@@ -1177,6 +1215,9 @@ HTML;
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
       $this->clientUserId = $userId;
       $this->clientWebsiteId = $websiteId;
+      if (isset($filterId)) {
+        $this->clientFilterId = $filterId;
+      }
       // @todo Is this user a member of the website?
       $this->authenticated = TRUE;
     } else {
