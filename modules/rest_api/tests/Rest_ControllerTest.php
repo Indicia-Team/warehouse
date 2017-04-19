@@ -129,9 +129,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     curl_setopt($session, CURLOPT_POST, 1);
     $post = 'grant_type=password&username=admin&password=password&client_id=website_id:1';
     curl_setopt($session, CURLOPT_POSTFIELDS, $post);
-    $r = $this->getCurlResponse($session, true);
+    $r = $this->getCurlResponse($session);
     $this->assertEquals(200, $r['httpCode'], 'Valid request to /token failed.');
-    self::$oAuthAccessToken = $r['response']->access_token;
+    self::$oAuthAccessToken = $r['response']['access_token'];
     $this->assertNotEmpty(self::$oAuthAccessToken, 'No oAuth access token returned');
 
     // Check oAuth2 doesn't allow access to incorrect resources
@@ -183,15 +183,14 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     
     $response = $this->callService('projects');
     $this->assertResponseOk($response, '/projects');
-    $viaApi = json_decode($response['response']);
     $viaConfig = self::$config['projects'];
-    $this->assertEquals(count($viaConfig), count($viaApi->data), 'Incorrect number of projects returned from /projects.');
-    foreach ($viaApi->data as $projDef) {
-      $this->assertArrayHasKey($projDef->id, $viaConfig, "Unexpected project $projDef->id returned by /projects.");
-      $this->assertEquals($viaConfig[$projDef->id]['title'], $projDef->title,
-        "Unexpected title $projDef->title returned for project $projDef->id by /projects.");
-      $this->assertEquals($viaConfig[$projDef->id]['description'], $projDef->description,
-        "Unexpected description $projDef->description returned for project $projDef->id by /projects.");
+    $this->assertEquals(count($viaConfig), count($response['response']['data']), 'Incorrect number of projects returned from /projects.');
+    foreach ($response['response']['data'] as $projDef) {
+      $this->assertArrayHasKey($projDef['id'], $viaConfig, "Unexpected project $projDef[id]returned by /projects.");
+      $this->assertEquals($viaConfig[$projDef['id']]['title'], $projDef['title'],
+        "Unexpected title $projDef[title] returned for project $projDef[id] by /projects.");
+      $this->assertEquals($viaConfig[$projDef['id']]['description'], $projDef['description'],
+        "Unexpected description $projDef[description] returned for project $projDef[id] by /projects.");
     }
   }
 
@@ -201,13 +200,12 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     foreach (self::$config['projects'] as $projDef) {
       $response = $this->callService("projects/$projDef[id]");
       $this->assertResponseOk($response, "/projects/$projDef[id]");
-      $fromApi = json_decode($response['response']);
-      $this->assertEquals($projDef['title'], $fromApi->title,
-          "Unexpected title $fromApi->title returned for project $projDef[id] by /projects/$projDef[id].");
-      $this->assertEquals($projDef['title'], $fromApi->title,
-          "Unexpected title $fromApi->title returned for project $projDef[id] by /projects/$projDef[id].");
-      $this->assertEquals($projDef['description'], $fromApi->description,
-          "Unexpected description $fromApi->description returned for project $projDef[id] by /projects/$projDef[id].");
+      $this->assertEquals($projDef['title'], $response['response']['title'],
+          "Unexpected title " . $response['response']['title'] .
+          " returned for project $projDef[id] by /projects/$projDef[id].");
+      $this->assertEquals($projDef['description'], $response['response']['description'],
+          "Unexpected description " . $response['response']['description'] .
+          " returned for project $projDef[id] by /projects/$projDef[id].");
     }
   }
 
@@ -266,10 +264,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         )
       );
       $this->assertResponseOk($response, '/taxon-observations');
-      $apiResponse = json_decode($response['response'], true);
-      $this->assertArrayHasKey('paging', $apiResponse, 'Paging missing from response to call to taxon-observations');
-      $this->assertArrayHasKey('data', $apiResponse, 'Data missing from response to call to taxon-observations');
-      $data = $apiResponse['data'];
+      $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxon-observations');
+      $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxon-observations');
+      $data = $response['response']['data'];
       $this->assertInternalType('array', $data, 'Taxon-observations data invalid. ' . var_export($data, true));
       $this->assertNotCount(0, $data, 'Taxon-observations data absent. ' . var_export($data, true));
       foreach ($data as $occurrence)
@@ -288,12 +285,11 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAnnotations_get");
 
     foreach (self::$config['projects'] as $projDef) {
-      $response = $this->callService("annotations", array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'));
+      $response = $this->callService("annotations", array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'), TRUE);
       $this->assertResponseOk($response, '/annotations');
-      $apiResponse = json_decode($response['response'], true);
-      $this->assertArrayHasKey('paging', $apiResponse, 'Paging missing from response to call to annotations');
-      $this->assertArrayHasKey('data', $apiResponse, 'Data missing from response to call to annotations');
-      $data = $apiResponse['data'];
+      $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to annotations');
+      $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to annotations');
+      $data = $response['response']['data'];
       $this->assertInternalType('array', $data, 'Annotations data invalid. ' . var_export($data, true));
       $this->assertNotCount(0, $data, 'Annotations data absent. ' . var_export($data, true));
       foreach ($data as $annotation)
@@ -313,23 +309,19 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $response = $this->callService("reports", array('proj_id' => $projDef['id'])
     );
     $this->assertResponseOk($response, '/reports');
-    $response = json_decode($response['response'], true);
     // Check some folders and reports that should definitely exist.
-    $this->checkReportFolderInReponse($response, 'featured');
-    $this->checkReportFolderInReponse($response, 'library');
-    $this->checkReportInReponse($response, 'demo');
+    $this->checkReportFolderInReponse($response['response'], 'featured');
+    $this->checkReportFolderInReponse($response['response'], 'library');
+    $this->checkReportInReponse($response['response'], 'demo');
     $response = $this->callService("reports/featured", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/featured');
-    $response = json_decode($response['response'], true);
-    $this->checkReportInReponse($response, 'library/occurrences/filterable_explore_list');
+    $this->checkReportInReponse($response['response'], 'library/occurrences/filterable_explore_list');
     $response = $this->callService("reports/library", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library');
-    $response = json_decode($response['response'], true);
-    $this->checkReportFolderInReponse($response, 'occurrences');
+    $this->checkReportFolderInReponse($response['response'], 'occurrences');
     $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library/occurrences');
-    $response = json_decode($response['response'], true);
-    $this->checkReportInReponse($response, 'filterable_explore_list');
+    $this->checkReportInReponse($response['response'], 'filterable_explore_list');
   }
 
   public function testReportParams_get() {
@@ -339,17 +331,15 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $projDef = self::$config['projects']['BRC1'];
     $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library/occurrences');
-    $response = json_decode($response['response'], true);
-    $reportDef = $response['filterable_explore_list'];
+    $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('params', $reportDef, 'Report response does not define parameters');
     $this->assertArrayHasKey('href', $reportDef['params'], 'Report parameters missing href');
     // Now grab the params URL output and check it
     $response = $this->callUrl($reportDef['params']['href'], self::$clientUserId, self::$config['shared_secret']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/params');
-    $response = json_decode($response['response'], true);
-    $this->assertArrayHasKey('data', $response);
-    $this->assertArrayHasKey('smpattrs', $response['data']);
-    $this->assertArrayHasKey('occurrence_id', $response['data']);
+    $this->assertArrayHasKey('data', $response['response']);
+    $this->assertArrayHasKey('smpattrs', $response['response']['data']);
+    $this->assertArrayHasKey('occurrence_id', $response['response']['data']);
   }
 
   public function testReportColumns_get() {
@@ -359,17 +349,15 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $projDef = self::$config['projects']['BRC1'];
     $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library/occurrences');
-    $response = json_decode($response['response'], true);
-    $reportDef = $response['filterable_explore_list'];
+    $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('columns', $reportDef, 'Report response does not define columns');
     $this->assertArrayHasKey('href', $reportDef['columns'], 'Report columns missing href');
     // Now grab the columns URL output and check it
     $response = $this->callUrl($reportDef['columns']['href'], self::$clientUserId, self::$config['shared_secret']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml/columns');
-    $response = json_decode($response['response'], true);
-    $this->assertArrayHasKey('data', $response);
-    $this->assertArrayHasKey('occurrence_id', $response['data']);
-    $this->assertArrayHasKey('taxon', $response['data']);
+    $this->assertArrayHasKey('data', $response['response']);
+    $this->assertArrayHasKey('occurrence_id', $response['response']['data']);
+    $this->assertArrayHasKey('taxon', $response['response']['data']);
   }
 
   public function testReportOutput_get() {
@@ -379,16 +367,14 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $projDef = self::$config['projects']['BRC1'];
     $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/library/occurrences');
-    $response = json_decode($response['response'], TRUE);
-    $reportDef = $response['filterable_explore_list'];
+    $reportDef = $response['response']['filterable_explore_list'];
     $this->assertArrayHasKey('href', $reportDef, 'Report response missing href');
     // Now grab the columns URL output and check it
     $response = $this->callUrl($reportDef['href'], self::$clientUserId, self::$config['shared_secret']);
     $this->assertResponseOk($response, '/reports/library/occurrences/filterable_explore_list.xml');
-    $response = json_decode($response['response'], TRUE);
-    $this->assertArrayHasKey('data', $response);
-    $this->assertCount(1, $response['data'], 'Report call returns incorrect record count');
-    $this->assertEquals(1, $response['data'][0]['occurrence_id'], 'Report call returns incorrect record');
+    $this->assertArrayHasKey('data', $response['response']);
+    $this->assertCount(1, $response['response']['data'], 'Report call returns incorrect record count');
+    $this->assertEquals(1, $response['response']['data'][0]['occurrence_id'], 'Report call returns incorrect record');
   }
 
   /**
@@ -415,10 +401,10 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     self::$websitePassword = '---';
     self::$userPassword = '---';
 
-    $response = $this->callService($resource, $query);
+    $response = $this->callService($resource, $query, TRUE);
     $this->assertEquals(401, $response['httpCode'], "Incorrect secret or password passed to /$resource but request authorised. " .
       "Http response $response[httpCode].");
-    $this->assertEquals('Unauthorized', $response['response'], "Incorrect secret or password passed to /$resource but data still returned. ".
+    $this->assertEquals('Unauthorized', $response['response']['status'], "Incorrect secret or password passed to /$resource but data still returned. ".
       var_export($response, true));
     self::$config['shared_secret'] = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
@@ -431,10 +417,10 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     self::$config['shared_secret'] = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
-    $response = $this->callService($resource, $query);
+    $response = $this->callService($resource, $query, TRUE);
     $this->assertEquals(401, $response['httpCode'], "Incorrect userId passed to /$resource but request authorised. " .
       "Http response $response[httpCode].");
-    $this->assertEquals('Unauthorized', $response['response'], "Incorrect userId passed to /$resource but data still returned. " .
+    $this->assertEquals('Unauthorized', $response['response']['status'], "Incorrect userId passed to /$resource but data still returned. " .
       var_export($response, true));
 
     // now test with everything correct
@@ -461,8 +447,6 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertEquals(0, $response['curlErrno'],
       "Invalid response from call to $apiCall. HTTP Response $response[httpCode]. Curl error " .
       "$response[curlErrno] ($response[errorMessage]).");
-    $decoded = json_decode($response['response']);
-    $this->assertNotNull($decoded, 'JSON response could not be decoded');
   }
 
   /**
@@ -504,8 +488,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $session = $this->initCurl($data['taxonObservation']['href'], self::$clientUserId, self::$config['shared_secret']);
     $response = $this->getCurlResponse($session);
     $this->assertResponseOk($response, '/taxon-observations/id');
-    $apiResponse = json_decode($response['response'], true);
-    $this->checkValidTaxonObservation($apiResponse);
+    $this->checkValidTaxonObservation($response['response']);
   }
 
   /**
@@ -593,14 +576,13 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     return $session;
   }
 
-  private function getCurlResponse($session, $json = FALSE) {
-    // Do the POST and then close the session
+  private function getCurlResponse($session) {
+    // Do the POST
     $response = curl_exec($session);
-    if ($json) {
-      $decoded = json_decode($response);
-      $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response);
-      $response = $decoded;
-    }
+    $decoded = json_decode($response, TRUE);
+    $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response);
+    $response = $decoded;
+
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
     $message = curl_error($session);
