@@ -421,7 +421,8 @@ HTML;
 
   /**
    * Implement the oAuth2 token endpoint for password grant flow.
-   * // @todo What about authenticating against the website ID as well?
+   * @todo Also implement the client_credentials grant type for website level access
+   *       and client system level access.
    */
   public function token() {
     try {
@@ -443,7 +444,6 @@ HTML;
         $this->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
       }
       $auth = new Auth;
-      kohana::log('debug', $_POST['password'] . ' :: ' .$users[0]['password']);
       if (!$auth->checkPasswordAgainstHash($_POST['password'], $users[0]['password'])) {
         $this->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
       }
@@ -451,7 +451,6 @@ HTML;
         $this->fail('Unauthorized', 401, 'Invalid client_id format. ' . var_export($_POST, true));
       }
       $websiteId = preg_replace('/^website_id:/', '', $_POST['client_id']);
-      kohana::log('debug', "Website ID $websiteId from $_POST[client_id]");
       // @todo Is the user a member of this website?
       $accessToken = $this->getToken();
       $cache = new Cache();
@@ -480,20 +479,15 @@ HTML;
    * @throws exception
    */
   public function __call($name, $arguments) {
-    kohana::log('debug', 'In ___call method for ' . $name);
-    kohana::log('debug', "$name - GET: " . var_export($_GET, true));
-    kohana::log_save();
     try {
       // undo router's conversion of hyphens and underscores
       $this->resourceName = str_replace('_', '-', $name);
-      kohana::log('debug', 'Resource: ' . $this->resourceName);
       // Projects are a concept of client system based authentication, not websites or users.
       if ($this->resourceName === 'projects') {
         $this->restrictToAuthenticationMethods = array(
           'hmacClient',
           'directClient'
         );
-        kohana::log('debug', 'limit to ' . var_export($this->restrictToAuthenticationMethods, true));
       }
       $this->authenticate();
       if (array_key_exists($this->resourceName, $this->http_methods)) {
@@ -525,7 +519,6 @@ HTML;
 
           if (!$allowSegments && count($arguments) > 1) {
             $this->fail('Bad request', 400, 'Incorrect number of arguments');
-            // @todo: http response
           }
           elseif (!$allowSegments && count($arguments) === 1) {
             // we only allow a single argument to request a single resource by ID
@@ -1509,7 +1502,7 @@ ROW;
   }
 
   /**
-   * Generates a unique token
+   * Generates a unique token, e.g. for oAuth2
    * @return string
    */
   private function getToken() {
