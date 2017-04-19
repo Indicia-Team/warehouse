@@ -84,7 +84,6 @@ if( !function_exists('apache_request_headers') ) {
     foreach($_SERVER as $key => $val) {
       if( preg_match($rx_http, $key) ) {
         $arh_key = preg_replace($rx_http, '', $key);
-        $rx_matches = array();
         // do some nasty string manipulations to restore the original letter case
         // this should work in most cases
         $rx_matches = explode('_', $arh_key);
@@ -108,6 +107,8 @@ class RestApiAbort extends Exception {}
  * Visit index.php/services/rest for a help page.
  */
 class Rest_Controller extends Controller {
+
+  private $apiResponse;
 
   /**
    * The request method (GET, POST etc).
@@ -205,43 +206,6 @@ class Rest_Controller extends Controller {
    * @var string
    */
   private $resourceName;
-
-  private $includeEmptyValues = true;
-
-  /*
-   * HTML built dynamically for the page output index.
-   * @var string
-   */
-  private $index = '';
-
-  /**
-   * Is an index table required for this response when output as HTML?
-   * @var bool
-   */
-  private $wantIndex = false;
-
-  /**
-   * When outputting HTML this contains the title for the page.
-   * @var string
-   */
-  private $responseTitle = '';
-
-  /**
-   * A template to define the header of any HTML pages output. Replace {css} with the
-   * path to the CSS file to load.
-   * @var string
-   */
-  private $html_header = <<<'HTML'
-<!DOCTYPE HTML>
-<html>
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Indicia RESTful API</title>
-  <link href="{css}" rel="stylesheet" type="text/css" />
-</head>
-<body>
-HTML;
 
   /**
    * Define the list of HTTP methods that will be supported by each resource endpoint.
@@ -367,6 +331,7 @@ HTML;
   public function __construct() {
     // Ensure we have a db instance ready.
     $this->db = new Database();
+    $this->apiResponse = new RestApiResponse();
     parent::__construct();
   }
 
@@ -429,10 +394,10 @@ HTML;
       if (empty($_POST['grant_type']) || empty($_POST['username']) ||
         empty($_POST['password']) || empty($_POST['client_id'])
       ) {
-        $this->fail('Bad request', 400, 'Missing required parameters');
+        $this->apiResponse->fail('Bad request', 400, 'Missing required parameters');
       }
       if ($_POST['grant_type'] !== 'password') {
-        $this->fail('Not implemented', 501, 'Grant type not implemented: ' . $_POST['grant_type']);
+        $this->apiResponse->fail('Not implemented', 501, 'Grant type not implemented: ' . $_POST['grant_type']);
       }
       $matchField = strpos($_POST['username'], '@') === false ? 'u.username' : 'email_address';
       $users = $this->db->select('u.id, u.password')
@@ -441,14 +406,14 @@ HTML;
         ->where(array($matchField => $_POST['username']))
         ->get()->result_array(false);
       if (count($users) !== 1) {
-        $this->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+        $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
       }
       $auth = new Auth;
       if (!$auth->checkPasswordAgainstHash($_POST['password'], $users[0]['password'])) {
-        $this->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+        $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
       }
       if (substr($_POST['client_id'], 0, 11) !== 'website_id:') {
-        $this->fail('Unauthorized', 401, 'Invalid client_id format. ' . var_export($_POST, true));
+        $this->apiResponse->fail('Unauthorized', 401, 'Invalid client_id format. ' . var_export($_POST, true));
       }
       $websiteId = preg_replace('/^website_id:/', '', $_POST['client_id']);
       // @todo Is the user a member of this website?
@@ -457,7 +422,7 @@ HTML;
       $uid = $users[0]['id'];
       $data = "USER_ID:$uid:WEBSITE_ID:$websiteId";
       $cache->set($accessToken, $data, 'oAuthUserAccessToken', Kohana::config('indicia.nonce_life'));
-      $this->succeed(array(
+      $this->apiResponse->succeed(array(
         'access_token' => $accessToken,
         'token_type' => 'bearer',
         'expires_in' => Kohana::config('indicia.nonce_life')
@@ -499,7 +464,7 @@ HTML;
         }
         else {
           if (!array_key_exists(strtolower($this->method), $resourceConfig)) {
-            $this->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
+            $this->apiResponse->fail('Method Not Allowed', 405, $this->method . " not allowed for $name");
           }
           $methodConfig = $resourceConfig[strtolower($this->method)];
           // If segments allowed, the URL can be .../resource/x/y/z etc.
@@ -518,7 +483,7 @@ HTML;
           $requestForId = NULL;
 
           if (!$allowSegments && count($arguments) > 1) {
-            $this->fail('Bad request', 400, 'Incorrect number of arguments');
+            $this->apiResponse->fail('Bad request', 400, 'Incorrect number of arguments');
           }
           elseif (!$allowSegments && count($arguments) === 1) {
             // we only allow a single argument to request a single resource by ID
@@ -526,14 +491,14 @@ HTML;
               $requestForId = $arguments[0];
             }
             else {
-              $this->fail('Bad request', 400, 'Invalid ID requested '.$arguments[0]);
+              $this->apiResponse->fail('Bad request', 400, 'Invalid ID requested '.$arguments[0]);
             }
           }
           // apart from requests for a project, we always want a project ID
           if (isset($this->clientSystemId) && $name !== 'projects') {
             if (empty($this->request['proj_id']))
               // Should not have got this far - just in case
-              $this->fail('Bad Request', 400, 'Missing proj_id parameter');
+              $this->apiResponse->fail('Bad Request', 400, 'Missing proj_id parameter');
             else
               $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
           }
@@ -545,7 +510,7 @@ HTML;
         }
       }
       else {
-        $this->fail('Not Found', 404, "Resource $name not known");
+        $this->apiResponse->fail('Not Found', 404, "Resource $name not known");
       }
     }
     catch (RestApiAbort $e) {
@@ -566,7 +531,7 @@ HTML;
     if (isset($this->projects[$proj_id]['resources'])) {
       if (!in_array($resourceName, $this->projects[$proj_id]['resources'])) {
         kohana::log('debug', "Disallowed resource $resourceName for $proj_id");
-        $this->fail('No Content', 204);
+        $this->apiResponse->fail('No Content', 204);
       }
     }
   }
@@ -578,7 +543,7 @@ HTML;
    */
   private function projects_get_id($id) {
     if (!array_key_exists($id, $this->projects)) {
-      $this->fail('No Content', 204);
+      $this->apiResponse->fail('No Content', 204);
     }
     $this->addItemMetadata($this->projects[$id], 'projects');
     // remove fields from the project that are for internal use only
@@ -586,7 +551,7 @@ HTML;
     unset($this->projects[$id]['website_id']);
     unset($this->projects[$id]['sharing']);
     unset($this->projects[$id]['resources']);
-    $this->succeed($this->projects[$id]);
+    $this->apiResponse->succeed($this->projects[$id]);
   }
 
   /**
@@ -605,7 +570,7 @@ HTML;
       unset($project['sharing']);
       unset($project['resources']);
     }
-    $this->succeed(array(
+    $this->apiResponse->succeed(array(
       'data' => array_values($this->projects),
       'paging' => array(
         'self' => $this->generateLink(array('page'=>1))
@@ -630,13 +595,13 @@ HTML;
 
     $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
-      $this->fail('No Content', 204);
+      $this->apiResponse->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
       kohana::log('error', 'Internal error. Request for single record returned multiple');
-      $this->fail('Internal Server Error', 500);
+      $this->apiResponse->fail('Internal Server Error', 500);
     } else {
       $this->addItemMetadata($report['content']['records'][0], 'taxon-observations');
-      $this->succeed($report['content']['records'][0]);
+      $this->apiResponse->succeed($report['content']['records'][0]);
     }
   }
 
@@ -659,7 +624,7 @@ HTML;
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
     $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
-    $this->succeed($this->listResponseStructure($report['content']['records'], 'taxon-observations'));
+    $this->apiResponse->succeed($this->listResponseStructure($report['content']['records'], 'taxon-observations'));
   }
 
   /**
@@ -671,10 +636,10 @@ HTML;
     $params = array('id' => $id);
     $report = $this->loadReport('rest_api/filterable_annotations', $params);
     if (empty($report['content']['records'])) {
-      $this->fail('No Content', 204);
+      $this->apiResponse->fail('No Content', 204);
     } elseif (count($report['content']['records'])>1) {
       kohana::log('error', 'Internal error. Request for single annotation returned multiple');
-      $this->fail('Internal Server Error', 500);
+      $this->apiResponse->fail('Internal Server Error', 500);
     } else {
       $record = $report['content']['records'][0];
       $record['taxonObservation'] = array(
@@ -683,7 +648,7 @@ HTML;
       );
       $this->addItemMetadata($record['taxonObservation'], 'taxon-observations');
       $this->addItemMetadata($record, 'annotations');
-      $this->succeed($record);
+      $this->apiResponse->succeed($record);
     }
   }
 
@@ -718,7 +683,7 @@ HTML;
       $this->addItemMetadata($record['taxonObservation'], 'taxon-observations');
       unset($record['taxon_observation_id']);
     }
-    $this->succeed($this->listResponseStructure($records, 'annotations'));
+    $this->apiResponse->succeed($this->listResponseStructure($records, 'annotations'));
   }
 
   /**
@@ -765,10 +730,10 @@ HTML;
     $report = $this->loadReport($reportFile, $_GET);
     if (isset($report['content']['records'])) {
       // @todo: implement pagination
-      $this->succeed(array('data' => $report['content']['records']));
+      $this->apiResponse->succeed(array('data' => $report['content']['records']));
     } elseif (isset($report['content']['parameterRequest'])) {
       // @todo: handle param requests
-      $this->fail('Bad request (parameters missing)', 400, "Missing parameters");
+      $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
     }
   }
 
@@ -776,15 +741,15 @@ HTML;
    *
    */
   private function getReportMetadataItem($segments, $item, $description) {
-    $this->includeEmptyValues = false;
+    $this->apiResponse->includeEmptyValues = false;
     // the last segment is the /params action.
     array_pop($segments);
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $this->loadReportEngine();
     $metadata = $this->reportEngine->requestMetadata("$reportFile.xml", true);
-    $this->responseTitle = ucfirst("$item for $reportFile");
-    $this->wantIndex = true;
-    $this->succeed(array('data' => $metadata[$item]),
+    $this->apiResponse->responseTitle = ucfirst("$item for $reportFile");
+    $this->apiResponse->wantIndex = true;
+    $this->apiResponse->succeed(array('data' => $metadata[$item]),
       array('description' => $description));
   }
 
@@ -864,7 +829,7 @@ HTML;
     $relativePath = '/reports/' . ($relativePath ? "$relativePath/" : '');
     $description = 'A list of reports and report folders stored on the warehouse under ' .
       "the folder <em>$relativePath</em>. $folderReadme";
-    $this->succeed($response, array('description' => $description));
+    $this->apiResponse->succeed($response, array('description' => $description));
   }
 
   private function addReportLinks(&$metadata) {
@@ -917,11 +882,11 @@ HTML;
     // Check through the known list of parameters to ensure data formats are correct and required parameters are provided.
     foreach ($thisMethod['params'] as $paramName => $paramDef) {
       if (!empty($paramDef['required']) && empty($this->request[$paramName])) {
-        $this->fail('Bad request', 400, "Missing $paramName parameter");
+        $this->apiResponse->fail('Bad request', 400, "Missing $paramName parameter");
       }
       if (!empty($this->request[$paramName])) {
         if ($paramDef['datatype']==='integer' && !preg_match('/^\d+$/', trim($this->request[$paramName]))) {
-          $this->fail('Bad request', 400, "Invalid format for $paramName parameter");
+          $this->apiResponse->fail('Bad request', 400, "Invalid format for $paramName parameter");
         }
         if ($paramDef['datatype']==='date') {
           if (strpos($this->request[$paramName], 'T')===false)
@@ -929,7 +894,7 @@ HTML;
           else
             $dt = DateTime::createFromFormat("Y-m-d\TH:i:s", trim($this->request[$paramName]));
           if ($dt === false || array_sum($dt->getLastErrors()))
-            $this->fail('Bad request', 400, "Invalid date for $paramName parameter");
+            $this->apiResponse->fail('Bad request', 400, "Invalid date for $paramName parameter");
         }
       }
     }
@@ -1034,7 +999,7 @@ HTML;
       }
     } else {
       if (!isset($this->clientWebsiteId)) {
-        $this->fail('Internal server error', 500, 'Minimal filter on website ID not provided.');
+        $this->apiResponse->fail('Internal server error', 500, 'Minimal filter on website ID not provided.');
       }
       $filter = array(
         'website_list' => $this->clientWebsiteId
@@ -1068,13 +1033,13 @@ HTML;
 
   private function loadFilterForProject($id) {
     if (!isset($this->projects[$id]))
-      $this->fail('Bad request', 400, 'Invalid project requested');
+      $this->apiResponse->fail('Bad request', 400, 'Invalid project requested');
     if (isset($this->projects[$id]['filter_id'])) {
       $filterId = $this->projects[$id]['filter_id'];
       $filters = $this->db->select('definition')->from('filters')->where(array('id'=>$filterId, 'deleted'=>'f'))
         ->get()->result_array();
       if (count($filters)!==1)
-        $this->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
+        $this->apiResponse->fail('Internal Server Error', 500, 'Failed to find unique project filter record');
       return json_decode($filters[0]->definition, true);
     }
     else {
@@ -1097,7 +1062,7 @@ HTML;
       ))
       ->get()->result_array();
     if (count($filters)!==1)
-      $this->fail('Bad request', 400, 'Filter ID missing or not a permissions filter for the user');
+      $this->apiResponse->fail('Bad request', 400, 'Filter ID missing or not a permissions filter for the user');
     return json_decode($filters[0]->definition, true);
   }
 
@@ -1111,7 +1076,7 @@ HTML;
       array_pop($arguments);
       // Check not asking for an invalid version
       if (!in_array($matches['major'] . '.' . $matches['minor'], $this->supportedApiVersions)) {
-        $this->fail('Bad request', 400, 'Unsupported API version');
+        $this->apiResponse->fail('Bad request', 400, 'Unsupported API version');
       }
       $this->apiMajorVersion = $matches['major'];
       $this->apiMinorVersion = $matches['minor'];
@@ -1162,7 +1127,7 @@ HTML;
       }
     }
     if (!$this->authenticated) {
-      $this->fail('Unauthorized', 401, 'Unable to authorise');
+      $this->apiResponse->fail('Unauthorized', 401, 'Unable to authorise');
     }
   }
 
@@ -1208,7 +1173,7 @@ HTML;
           // if using client system based authorisation.
           if ($this->resourceName !== 'projects' &&
               (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
-            $this->fail('Bad request', 400, 'Project ID missing or invalid.');
+            $this->apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
           }
           $this->authenticated = TRUE;
         }
@@ -1223,7 +1188,7 @@ HTML;
       if ($u === 'WEBSITE_ID' && $h === 'HMAC') {
         // input validation
         if (!preg_match('/^\d+$/', $websiteId)) {
-          $this->fail('Unauthorized', 401, 'Website ID incorrect format.');
+          $this->apiResponse->fail('Unauthorized', 401, 'Website ID incorrect format.');
         }
         $websites = $this->db->select('password')
           ->from('websites')
@@ -1238,11 +1203,11 @@ HTML;
             $this->authenticated = TRUE;
           }
           else {
-            $this->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
+            $this->apiResponse->fail('Unauthorized', 401, 'Supplied HMAC authorization incorrect.');
           }
         }
         else {
-          $this->fail('Unauthorized', 401, 'Unrecognised website ID.');
+          $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised website ID.');
         }
       }
     }
@@ -1275,14 +1240,14 @@ HTML;
     }
     // input validation
     if (!preg_match('/^\d+$/', $userId) || !preg_match('/^\d+$/', $websiteId)) {
-      $this->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
+      $this->apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
     $users = $this->db->select('password')
       ->from('users')
       ->where(array('id' => $userId))
       ->get()->result_array(false);
     if (count($users) !== 1) {
-      $this->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+      $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
     }
     $auth = new Auth;
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
@@ -1294,7 +1259,7 @@ HTML;
       // @todo Is this user a member of the website?
       $this->authenticated = TRUE;
     } else {
-      $this->fail('Unauthorized', 401, 'Incorrect password for user.');
+      $this->apiResponse->fail('Unauthorized', 401, 'Incorrect password for user.');
     }
     // @todo Apply user ID limit to data, limit to filterable reports
   }
@@ -1316,10 +1281,10 @@ HTML;
       return;
     }
     if (!array_key_exists($clientSystemId, $config)) {
-      $this->fail('Unauthorized', 401, 'Invalid client system ID');
+      $this->apiResponse->fail('Unauthorized', 401, 'Invalid client system ID');
     }
     if ($secret !== $config[$clientSystemId]['shared_secret']) {
-      $this->fail('Unauthorized', 401, 'Incorrect secret');
+      $this->apiResponse->fail('Unauthorized', 401, 'Incorrect secret');
     }
     $this->clientSystemId = $clientSystemId;
     $this->projects = $config[$clientSystemId]['projects'];
@@ -1327,7 +1292,7 @@ HTML;
     // if using client system based authorisation.
     if ($this->resourceName !== 'projects' &&
         (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
-      $this->fail('Bad request', 400, 'Project ID missing or invalid.');
+      $this->apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
     }
     if (!empty($_REQUEST['proj_id'])) {
       $this->clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
@@ -1351,7 +1316,7 @@ HTML;
     }
     // input validation
     if (!preg_match('/^\d+$/', $websiteId)) {
-      $this->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
+      $this->apiResponse->fail('Unauthorized', 401, 'User ID or website ID incorrect format.');
     }
     $password = pg_escape_string($password);
     $websites = $this->db->select('id')
@@ -1359,7 +1324,7 @@ HTML;
       ->where(array('id' => $websiteId, 'password' => $password))
       ->get()->result_array();
     if (count($websites) !== 1) {
-      $this->fail('Unauthorized', 401, 'Unrecognised website ID or password.');
+      $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised website ID or password.');
     }
     $this->clientWebsiteId = $websiteId;
     $this->authenticated = true;
@@ -1374,7 +1339,7 @@ HTML;
    */
   private function checkInteger($value, $param) {
     if (!preg_match('/^\d+$/', $value)) {
-      $this->fail('Bad request', 400, "Parameter $param is not an integer");
+      $this->apiResponse->fail('Bad request', 400, "Parameter $param is not an integer");
     }
   }
 
@@ -1386,118 +1351,7 @@ HTML;
    */
   private function checkDate($value, $param) {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
-      $this->fail('Bad request', 400, "Parameter $param is not an valid date");
-    }
-  }
-
-
-  /**
-   * Dumps out a nested array as a nested HTML table. Used to output response data when the
-   * format type requested is HTML.
-   *
-   * @param array $array Data to output
-   * @param string $label Label to be used when linking to this array in the index.
-   */
-  private function getArrayAsHtml($array, $label) {
-    $r = '';
-    if (count($array)) {
-      $r .= '<table border="1">';
-      $legendValues = array_intersect_key($array, array('title' => '', 'display' => ''));
-      if (count($legendValues)>0 && !is_array($array[array_keys($legendValues)[0]])) {
-        $legendFieldName = array_keys($legendValues)[0];
-        $legendFieldValue = $array[array_keys($legendValues)[0]];
-        $legendFieldDescription = empty($array['description']) ? '' : $array['description'];
-        $id = preg_replace('/[^a-z0-9]/', '-', strtolower("$legendFieldName-$legendFieldValue"));
-        $r .= "<caption id=\"$id\">$legendFieldName: $legendFieldValue</caption>";
-        $this->index .= <<<ROW
-<tr>
-  <th scope="row"><a href="#$id">$label</a></th>
-  <td>$legendFieldValue</td>
-  <td>$legendFieldDescription</td>
-</tr>
-ROW;
-      }
-      $keys = array_keys($array);
-      $col1 = is_integer($keys[0]) ? 'Row' : 'Field';
-      $col2 = is_integer($keys[0]) ? 'Record' : 'Value';
-      $r .= "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
-      $r .= '<tbody>';
-      foreach ($array as $key=>$value) {
-        if (empty($value) && !$this->includeEmptyValues)
-          continue;
-        $class = !empty($value['type']) ? " class=\"type-$value[type]\"" : '';
-        $r .= "<tr><th scope=\"row\"$class>$key</th><td>";
-        if (is_array($value))
-          $r .= $this->getArrayAsHtml($value, $key);
-        else {
-          if (preg_match('/http(s)?:\/\//', $value)) {
-            $parts = explode('?', $value);
-            $displayUrl = $parts[0];
-            if (count($parts)>1) {
-              parse_str($parts[1], $params);
-              unset($params['user']);
-              unset($params['secret']);
-              if (count($params)) {
-                $displayUrl .= '?' . http_build_query($params);
-              }
-            }
-            $value = "<a href=\"$value\">$displayUrl</a>";
-          }
-          $r .= "<p>$value</p>";
-        }
-        $r .= '</td></tr>';
-      }
-      $r .= '</tbody></table>';
-    }
-    return $r;
-  }
-
-  /**
-   * Returns an HTML error response code, logs a message and aborts the script.
-   *
-   * @param string $msg HTTP error message
-   * @param integer $code HTTP error code
-   * @param string $info Message to log
-   */
-  private function fail($msg, $code, $info=NULL) {
-    http_response_code($code);
-    echo $msg;
-    if ($info) {
-      kohana::log('debug', "HTTP code: $code. $info");
-      kohana::log_save();
-    }
-    throw new RestApiAbort($msg);
-  }
-
-  /**
-   * Outputs a data object as JSON (or chosen alternative format), in the case of successful operation.
-   *
-   * @param array $data Response data to output.
-   */
-  private function succeed($data, $metadata = null) {
-    if (!empty($this->request['format']) && $this->request['format']==='html') {
-      header('Content-Type: text/html');
-      $css = url::base() . "modules/rest_api/media/css/rest_api.css";
-      echo str_replace('{css}', $css, $this->html_header);
-      if (!empty($this->responseTitle))
-        echo '<h1>' . $this->responseTitle . '</h1>';
-      if ($metadata) {
-        echo '<h2>Metadata</h2>';
-        echo $this->getArrayAsHtml($metadata, 'metadata');
-      }
-      // build the output HTML and the page index
-      $output = $this->getArrayAsHtml($data, 'data');
-      // output an index table if present for this output
-      if ($this->wantIndex && !empty($this->index))
-        echo '<table><caption>Index</caption>' . $this->index . '</table>';
-      // output the main response body
-      if ($metadata || !empty($this->responseTitle))
-        echo '<h2>Response</h2>';
-      echo $output;
-      echo '</body></html>';
-    } else {
-      header('Content-Type: application/json');
-      echo json_encode($data);
+      $this->apiResponse->fail('Bad request', 400, "Parameter $param is not an valid date");
     }
   }
 

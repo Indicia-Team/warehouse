@@ -142,7 +142,6 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
     // Now try a valid request with the access token
     $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
-    var_export($response);
     $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to taxon-observations failed.');
 
       // Now try a bad access token
@@ -597,8 +596,11 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
   private function getCurlResponse($session, $json = FALSE) {
     // Do the POST and then close the session
     $response = curl_exec($session);
-    if ($json)
-      $response = json_decode($response);
+    if ($json) {
+      $decoded = json_decode($response);
+      $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response);
+      $response = $decoded;
+    }
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
     $message = curl_error($session);
