@@ -362,6 +362,15 @@ HTML;
   );
 
   /**
+   * Rest_Controller constructor.
+   */
+  public function __construct() {
+    // Ensure we have a db instance ready.
+    $this->db = new Database();
+    parent::__construct();
+  }
+
+  /**
    * Controller for the default page for the /rest path. Outputs help text to describe
    * the available API resources.
    */
@@ -411,6 +420,56 @@ HTML;
   }
 
   /**
+   * Implement the oAuth2 token endpoint for password grant flow.
+   * // @todo What about authenticating against the website ID as well?
+   */
+  public function token() {
+    try {
+      if (empty($_POST['grant_type']) || empty($_POST['username']) ||
+        empty($_POST['password']) || empty($_POST['client_id'])
+      ) {
+        $this->fail('Bad request', 400, 'Missing required parameters');
+      }
+      if ($_POST['grant_type'] !== 'password') {
+        $this->fail('Not implemented', 501, 'Grant type not implemented: ' . $_POST['grant_type']);
+      }
+      $matchField = strpos($_POST['username'], '@') === false ? 'u.username' : 'email_address';
+      $users = $this->db->select('u.id, u.password')
+        ->from('users as u')
+        ->join('people as p', 'p.id', 'u.person_id')
+        ->where(array($matchField => $_POST['username']))
+        ->get()->result_array(false);
+      if (count($users) !== 1) {
+        $this->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+      }
+      $auth = new Auth;
+      kohana::log('debug', $_POST['password'] . ' :: ' .$users[0]['password']);
+      if (!$auth->checkPasswordAgainstHash($_POST['password'], $users[0]['password'])) {
+        $this->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+      }
+      if (substr($_POST['client_id'], 0, 11) !== 'website_id:') {
+        $this->fail('Unauthorized', 401, 'Invalid client_id format. ' . var_export($_POST, true));
+      }
+      $websiteId = preg_replace('/^website_id:/', '', $_POST['client_id']);
+      kohana::log('debug', "Website ID $websiteId from $_POST[client_id]");
+      // @todo Is the user a member of this website?
+      $accessToken = $this->getToken();
+      $cache = new Cache();
+      $uid = $users[0]['id'];
+      $data = "USER_ID:$uid:WEBSITE_ID:$websiteId";
+      $cache->set($accessToken, $data, 'oAuthUserAccessToken', Kohana::config('indicia.nonce_life'));
+      $this->succeed(array(
+        'access_token' => $accessToken,
+        'token_type' => 'bearer',
+        'expires_in' => Kohana::config('indicia.nonce_life')
+      ));
+    }
+    catch (RestApiAbort $e) {
+      // no action if a proper abort
+    }
+  }
+
+  /**
    * Magic method to handle calls to the various resource end-points. Maps the call
    * to a method name defined by the resource and the request method.
    *
@@ -421,10 +480,13 @@ HTML;
    * @throws exception
    */
   public function __call($name, $arguments) {
-    kohana::log('debug', 'GET: ' . var_export($_GET, true));
+    kohana::log('debug', 'In ___call method for ' . $name);
+    kohana::log('debug', "$name - GET: " . var_export($_GET, true));
+    kohana::log_save();
     try {
       // undo router's conversion of hyphens and underscores
       $this->resourceName = str_replace('_', '-', $name);
+      kohana::log('debug', 'Resource: ' . $this->resourceName);
       // Projects are a concept of client system based authentication, not websites or users.
       if ($this->resourceName === 'projects') {
         $this->restrictToAuthenticationMethods = array(
@@ -1081,7 +1143,6 @@ HTML;
    * Checks that the request is authentic.
    */
   private function authenticate() {
-    $this->db = new Database();
     $this->isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
     $this->serverUserId = Kohana::config('rest.user_id');
     $methods = Kohana::config('rest.authentication_methods');
@@ -1113,12 +1174,31 @@ HTML;
   }
 
   private function authenticateUsingOauth2User() {
-    // @todo Implement this method
+    $headers = apache_request_headers();
+    if (isset($headers['Authorization']) && strpos($headers['Authorization'], 'Bearer ') === 0) {
+      $suppliedToken = str_replace('Bearer ', '', $headers['Authorization']);
+      $this->cache = new Cache;
+      // get all cache entries that match this nonce
+      $paths = $this->cache->exists($suppliedToken);
+      foreach($paths as $path) {
+        // Find the parts of each file name, which is the cache entry ID, then the mode.
+        $tokens = explode('~', basename($path));
+        if ($tokens[1] === 'oAuthUserAccessToken') {
+          $data = $this->cache->get($tokens[0]);
+          kohana::log('debug', 'Data: ' . var_export($data, true));
+          if (preg_match('/^USER_ID:(?P<user_id>\d+):WEBSITE_ID:(?P<website_id>\d+)$/', $data, $matches)) {
+            $this->clientWebsiteId = $matches['website_id'];
+            $this->clientUserId = $matches['user_id'];
+            $this->authenticated = TRUE;
+          }
+        }
+      }
+    }
   }
 
   private function authenticateUsingHmacClient() {
     $headers = apache_request_headers();
-    if (isset($headers['Authorization'])) {
+    if (isset($headers['Authorization']) &&  substr_count($headers['Authorization'], ':') === 3) {
       list($u, $clientSystemId, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
       $config = Kohana::config('rest.clients');
       // @todo Should this be CLIENT not USER?
@@ -1145,7 +1225,7 @@ HTML;
 
   private function authenticateUsingHmacWebsite() {
     $headers = apache_request_headers();
-    if (isset($headers['Authorization'])) {
+    if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
       list($u, $websiteId, $h, $supplied_hmac) = explode(':', $headers['Authorization']);
       if ($u === 'WEBSITE_ID' && $h === 'HMAC') {
         // input validation
@@ -1186,7 +1266,7 @@ HTML;
         return;
       }
     } elseif (isset($headers['Authorization']) &&
-      substr_count($headers['Authorization'], ':') === 7) {
+        substr_count($headers['Authorization'], ':') === 7) {
       // 8 parts to authorisation required for user ID, website ID, filter ID and password pairs
       list($u, $userId, $w, $websiteId, $f, $filterId, $h, $password) = explode(':', $headers['Authorization']);
       if ($u !== 'USER_ID' || $w !== 'WEBSITE_ID' || $f !== 'FILTER_ID' || $h !== 'SECRET') {
@@ -1229,7 +1309,7 @@ HTML;
   private function authenticateUsingDirectClient() {
     $headers = apache_request_headers();
     $config = Kohana::config('rest.clients');
-    if (isset($headers['Authorization'])) {
+    if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
       list($u, $clientSystemId, $h, $secret) = explode(':', $headers['Authorization']);
       kohana::log('debug', 'authorisation: ' . $headers['Authorization']);
       if ($u !== 'USER' || $h !== 'SECRET') {
@@ -1264,7 +1344,7 @@ HTML;
 
   private function authenticateUsingDirectWebsite() {
     $headers = apache_request_headers();
-    if (isset($headers['Authorization'])) {
+    if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
       list($u, $websiteId, $h, $password) = explode(':', $headers['Authorization']);
       if ($u !== 'WEBSITE_ID' || $h !== 'SECRET') {
         return;
@@ -1428,4 +1508,11 @@ ROW;
     }
   }
 
+  /**
+   * Generates a unique token
+   * @return string
+   */
+  private function getToken() {
+    return sha1(time() . ':' . rand() . $_SERVER['REMOTE_ADDR'] . ':' . kohana::config('indicia.private_key'));
+  }
 }

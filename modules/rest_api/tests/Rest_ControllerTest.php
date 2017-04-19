@@ -15,6 +15,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
   private static $userPassword='password';
   // In the fixture, the 2nd filter is the one we linked to a user.
   private static $userFilterId=2;
+  private static $oAuthAccessToken;
 
   private $authMethod = 'hmacClient';
 
@@ -103,6 +104,51 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
   protected function tearDown() {
 
+  }
+
+  public function testoAuth2() {
+    $url = url::base(true) . "services/rest/token";
+    $session = curl_init();
+    // Set the cUrl options.
+    curl_setopt ($session, CURLOPT_URL, $url);
+    curl_setopt($session, CURLOPT_HEADER, false);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+
+    // try a request with no post data
+    $r = $this->getCurlResponse($session);
+    $this->assertEquals(400, $r['httpCode'], 'Token request without parameters should be a bad request');
+
+    // Now try some post data, but use an invalid password
+    curl_setopt($session, CURLOPT_POST, 1);
+    $post = 'grant_type=password&username=admin&password=sunnyday&client_id=website_id:1';
+    curl_setopt($session, CURLOPT_POSTFIELDS, $post);
+    $r = $this->getCurlResponse($session);
+    $this->assertEquals(401, $r['httpCode'], 'Incorrect password in token request should result in Unauthorised');
+
+    // Try again with the correct password
+    curl_setopt($session, CURLOPT_POST, 1);
+    $post = 'grant_type=password&username=admin&password=password&client_id=website_id:1';
+    curl_setopt($session, CURLOPT_POSTFIELDS, $post);
+    $r = $this->getCurlResponse($session, true);
+    $this->assertEquals(200, $r['httpCode'], 'Valid request to /token failed.');
+    self::$oAuthAccessToken = $r['response']->access_token;
+    $this->assertNotEmpty(self::$oAuthAccessToken, 'No oAuth access token returned');
+
+    // Check oAuth2 doesn't allow access to incorrect resources
+    $this->authMethod = 'oAuth2User';
+    $response = $this->callService('projects');
+    $this->assertEquals(401, $response['httpCode'], 'Invalid authentication method oAuth2 for projects but response still OK. ' .
+      "Http response $response[httpCode].");
+
+    // Now try a valid request with the access token
+    $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
+    var_export($response);
+    $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to taxon-observations failed.');
+
+      // Now try a bad access token
+    self::$oAuthAccessToken = '---';
+    $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
+    $this->assertEquals(401, $response['httpCode'], 'Invalid token oAuth2 request to taxon-observations should fail.');
   }
 
   public function testProjects_authentication() {
@@ -526,6 +572,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         $password = self::$websitePassword;
         $authString = "WEBSITE_ID:$user:SECRET:$password";
         break;
+      case 'oAuth2User':
+        $authString = "Bearer " . self::$oAuthAccessToken;
+        break;
       default:
         $this->fail("$this->authMethod test not implemented");
         break;
@@ -545,9 +594,11 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     return $session;
   }
 
-  private function getCurlResponse($session) {
+  private function getCurlResponse($session, $json = FALSE) {
     // Do the POST and then close the session
     $response = curl_exec($session);
+    if ($json)
+      $response = json_decode($response);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
     $message = curl_error($session);
