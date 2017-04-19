@@ -43,6 +43,57 @@ HTML;
    */
   public $includeEmptyValues = true;
 
+  public function index($http_methods) {
+    // Output an HTML page header
+    $css = url::base() . "modules/rest_api/media/css/rest_api.css";
+    echo str_replace('{css}', $css, $this->html_header);
+    echo '<h1>RESTful API</h1>';
+    echo '<p>' . kohana::lang("rest_api.introduction") . '</p>';
+    // Loop the resource names and output each of the available methods.
+    foreach($http_methods as $resource => $methods) {
+      echo "<h2>$resource</h2>";
+      foreach ($methods as $method => $methodConfig) {
+        foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
+          echo '<h3>' . strtoupper($method) . ' ' . url::base() . "index.php/services/rest/$resource";
+          if ($urlSuffix)
+            echo "/$urlSuffix";
+          echo '</h3>';
+          // Note we can't have full stops in a lang key
+          $extra = $urlSuffix ? str_replace('.', '-', "/$urlSuffix") : '';
+          $help = kohana::lang("rest_api.resources.$resource$extra");
+          echo "<p>$help</p>";
+          // splice in the format parameter which is always accepted.
+          $resourceDef['params'] = array_merge(
+            $resourceDef['params'],
+            array('format' => array(
+              'datatype' => 'text'
+            ))
+          );
+          // output the documentation for parameters.
+          echo '<table><caption>Parameters</caption>';
+          echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
+          echo '<tbody>';
+          foreach ($resourceDef['params'] as $name => $paramDef) {
+            echo "<tr><th scope=\"row\">$name</th>";
+            echo "<td>$paramDef[datatype]</td>";
+            if ($name === 'format') {
+              $help = kohana::lang('rest_api.format_param_help');
+            } else {
+              $help = kohana::lang("rest_api.$resource.$name");
+            }
+            if (!empty($paramDef['required'])) {
+              $help .= ' <strong>' . kohana::lang('Required.') . '</strong>';
+            }
+            echo "<td>$help</td>";
+            echo "</tr>";
+          }
+          echo '</tbody></table>';
+        }
+      }
+    }
+    echo '</body></html>';
+  }
+
   /**
    * Outputs a data object as JSON (or chosen alternative format), in the case of successful operation.
    *
@@ -97,7 +148,7 @@ HTML;
       header('Content-Type: text/html');
       $css = url::base() . "modules/rest_api/media/css/rest_api.css";
       echo str_replace('{css}', $css, $this->html_header);
-      echo $this->getArrayAsHtml($response);
+      echo $this->getArrayAsHtml($response, 'Error');
       echo '</body></html>';
     } else {
       header('Content-Type: application/json');

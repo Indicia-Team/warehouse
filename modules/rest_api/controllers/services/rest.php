@@ -223,6 +223,9 @@ class Rest_Controller extends Controller {
               'proj_id' => array(
                 'datatype' => 'text'
               ),
+              'filter_id' => array(
+                'datatype' => 'integer'
+              ),
               'page' => array(
                 'datatype' => 'integer'
               ),
@@ -242,6 +245,9 @@ class Rest_Controller extends Controller {
             'params' => array(
               'proj_id' => array(
                 'datatype' => 'text'
+              ),
+              'filter_id' => array(
+                'datatype' => 'integer'
               )
             )
           )
@@ -263,6 +269,9 @@ class Rest_Controller extends Controller {
               'proj_id' => array(
                 'datatype' => 'text'
               ),
+              'filter_id' => array(
+                'datatype' => 'integer'
+              ),
               'page' => array(
                 'datatype' => 'integer'
               ),
@@ -281,6 +290,9 @@ class Rest_Controller extends Controller {
             'params' => array(
               'proj_id' => array(
                 'datatype' => 'text'
+              ),
+              'filter_id' => array(
+                'datatype' => 'integer'
               )
             )
           )
@@ -294,7 +306,13 @@ class Rest_Controller extends Controller {
         ),
         'subresources' => array(
           '' => array(
+            'params' => array()
+          ),
+          '{report_path}.xml' => array(
             'params' => array(
+              'filter_id' => array(
+                'datatype' => 'integer'
+              ),
               'limit' => array(
                 'datatype' => 'integer'
               ),
@@ -308,7 +326,15 @@ class Rest_Controller extends Controller {
                 'datatype' => 'text'
               )
             )
-          )
+          ),
+          '{report_path}.xml/params' => array(
+            'params' => array(
+            )
+          ),
+          '{report_path}.xml/columns' => array(
+            'params' => array(
+            )
+          ),
         )
       )
     )
@@ -332,45 +358,7 @@ class Rest_Controller extends Controller {
     // A temporary array to simulate the arguments, which we can use to check for versioning.
     $arguments = array($this->uri->last_segment());
     $this->check_version($arguments);
-    // Output an HTML page header
-    $css = url::base() . "modules/rest_api/media/css/rest_api.css";
-    echo str_replace('{css}', $css, $this->html_header);
-    echo '<h1>RESTful API</h1>';
-    // Loop the resource names and output each of the available methods.
-    foreach($this->http_methods as $resource => $methods) {
-      echo "<h2>$resource</h2>";
-      foreach ($methods as $method => $methodConfig) {
-        foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
-          echo '<h3>' . strtoupper($method) . ' ' . url::base() . "index.php/services/rest/$resource";
-          if ($urlSuffix)
-            echo "/$urlSuffix";
-          echo '</h3>';
-          $extra = $urlSuffix ? "/$urlSuffix" : '';
-          $help = kohana::lang("rest_api.resources.$resource$extra");
-          echo "<p>$help</p>";
-          if (count($resourceDef['params'])) {
-            // output the documentation for parameters.
-            echo '<table><caption>Parameters</caption>';
-            echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
-            echo '<tbody>';
-            foreach ($resourceDef['params'] as $name => $paramDef) {
-              echo "<tr><th scope=\"row\">$name</th>";
-              echo "<td>$paramDef[datatype]</td>";
-              $help = kohana::lang("rest_api.$resource.$name");
-              if (!empty($paramDef['required'])) {
-                $help .= ' <strong>' . kohana::lang('Required.') . '</strong>';
-              }
-              echo "<td>$help</td>";
-              echo "</tr>";
-            }
-            echo '</tbody></table>';
-          } else {
-            echo '<p><em>There are no parameters for this endpoint.</em></p>';
-          }
-        }
-      }
-    }
-    echo '</body></html>';
+    $this->apiResponse->index($this->http_methods);
   }
 
   /**
