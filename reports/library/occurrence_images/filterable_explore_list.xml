@@ -1,6 +1,7 @@
 <report
-    title="Explore record images using standard filters"
-    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+    title="Explore occurrence images (standard filters)"
+    description="A list of images associated with occurrences."
+    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
   SELECT #columns#
