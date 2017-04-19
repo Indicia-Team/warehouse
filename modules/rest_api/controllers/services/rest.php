@@ -732,9 +732,25 @@ class Rest_Controller extends Controller {
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $this->loadReportEngine();
     $metadata = $this->reportEngine->requestMetadata("$reportFile.xml", true);
+    $list = $metadata[$item];
+    if ($item === 'parameters') {
+      // Columns with a datatype can also be used as a parameter
+      foreach ($metadata['columns'] as $name => $columnDef) {
+        if (!empty($columnDef['datatype']) && !isset($list[$name])) {
+          $def = array(
+            'description' => 'Column available for use as a parameter'
+          );
+          if (!empty($columnDef['display']))
+            $def['display'] = $columnDef['display'];
+          if (!empty($columnDef['datatype']))
+            $def['datatype'] = $columnDef['datatype'];
+          $list[$name] = $def;
+        }
+      }
+    }
     $this->apiResponse->responseTitle = ucfirst("$item for $reportFile");
     $this->apiResponse->wantIndex = true;
-    $this->apiResponse->succeed(array('data' => $metadata[$item]),
+    $this->apiResponse->succeed(array('data' => $list),
       array('description' => $description));
   }
 

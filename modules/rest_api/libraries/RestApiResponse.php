@@ -175,10 +175,10 @@ HTML;
       $legendValues = array_intersect_key($array, array('title' => '', 'display' => ''));
       if (count($legendValues)>0 && !is_array($array[array_keys($legendValues)[0]])) {
         $legendFieldName = array_keys($legendValues)[0];
-        $legendFieldValue = $array[array_keys($legendValues)[0]];
+        $legendFieldValue = $array[$legendFieldName];
         $legendFieldDescription = empty($array['description']) ? '' : $array['description'];
         $id = preg_replace('/[^a-z0-9]/', '-', strtolower("$legendFieldName-$legendFieldValue"));
-        $r .= "<caption id=\"$id\">$legendFieldName: $legendFieldValue</caption>";
+        $r .= "<caption id=\"$id\">$legendFieldValue</caption>";
         $this->index .= <<<ROW
 <tr>
   <th scope="row"><a href="#$id">$label</a></th>
