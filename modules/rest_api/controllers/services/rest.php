@@ -165,7 +165,6 @@ class Rest_Controller extends Controller {
    * authenticated against the users table and a permissions filter provided
    * in the auth data.
    * @var string
-   * @todo Implement usage of this
    */
   private $clientFilterId;
 
@@ -212,8 +211,6 @@ class Rest_Controller extends Controller {
    * @var type array
    */
   private $http_methods = array(
-    // @todo: move all the help texts into an i18n config file. Don't load them on normal service calls, just
-    // on the help service call.
     'projects' => array(
       'get'=>array(
         'subresources' => array(
@@ -400,13 +397,25 @@ class Rest_Controller extends Controller {
         $this->apiResponse->fail('Not implemented', 501, 'Grant type not implemented: ' . $_POST['grant_type']);
       }
       $matchField = strpos($_POST['username'], '@') === false ? 'u.username' : 'email_address';
-      $users = $this->db->select('u.id, u.password')
+      $websiteId = preg_replace('/^website_id:/', '', $_POST['client_id']);
+      // @todo Test for is the user a member of this website?
+      $users = $this->db->select('u.id, u.password, u.core_role_id, uw.site_role_id')
         ->from('users as u')
         ->join('people as p', 'p.id', 'u.person_id')
-        ->where(array($matchField => $_POST['username']))
+        ->join('users_websites as uw', 'uw.user_id', 'u.id', 'LEFT')
+        ->where(array(
+          $matchField => $_POST['username'],
+          'u.deleted' => 'f',
+          'p.deleted' => 'f'
+        ))
         ->get()->result_array(false);
+      kohana::log('debug', $this->db->last_query());
       if (count($users) !== 1) {
         $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
+      }
+      kohana::log('debug', var_export($users[0], true));
+      if ($users[0]['site_role_id'] === NULL && $users[0]['core_role_id'] === NULL) {
+        $this->apiResponse->fail('Unauthorized', 401, 'User does not have access to website.');
       }
       $auth = new Auth;
       if (!$auth->checkPasswordAgainstHash($_POST['password'], $users[0]['password'])) {
@@ -415,8 +424,6 @@ class Rest_Controller extends Controller {
       if (substr($_POST['client_id'], 0, 11) !== 'website_id:') {
         $this->apiResponse->fail('Unauthorized', 401, 'Invalid client_id format. ' . var_export($_POST, true));
       }
-      $websiteId = preg_replace('/^website_id:/', '', $_POST['client_id']);
-      // @todo Is the user a member of this website?
       $accessToken = $this->getToken();
       $cache = new Cache();
       $uid = $users[0]['id'];

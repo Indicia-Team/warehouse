@@ -80,18 +80,34 @@ HTML;
   /**
    * Returns an HTML error response code, logs a message and aborts the script.
    *
-   * @param string $msg HTTP error message
+   * @param string $status HTTP error status message
    * @param integer $code HTTP error code
-   * @param string $info Message to log
+   * @param string $msg Detailed message to log
    */
-  public function fail($msg, $code, $info=NULL) {
+  public function fail($status, $code, $msg=NULL) {
     http_response_code($code);
-    echo $msg;
-    if ($info) {
-      kohana::log('debug', "HTTP code: $code. $info");
+    $response = array(
+      'code' => $code,
+      'status' => $status
+    );
+    if ($msg)
+      $response['message'] = $msg;
+    $format = $this->getResponseFormat();
+    if ($format === 'html') {
+      header('Content-Type: text/html');
+      $css = url::base() . "modules/rest_api/media/css/rest_api.css";
+      echo str_replace('{css}', $css, $this->html_header);
+      echo $this->getArrayAsHtml($response);
+      echo '</body></html>';
+    } else {
+      header('Content-Type: application/json');
+      echo json_encode($response);
+    }
+    if ($msg) {
+      kohana::log('debug', "HTTP code: $code. $msg");
       kohana::log_save();
     }
-    throw new RestApiAbort($msg);
+    throw new RestApiAbort($status);
   }
 
   /**
