@@ -144,6 +144,13 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
     $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to taxon-observations failed.');
 
+    // Now try a valid request with the access token for the reports endpoint
+    $response = $this->callService('reports', array());
+    $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to reports failed.');
+
+    $response = $this->callService('reports/library/occurrences/filterable_explore_list.xml', array());
+    $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to the filterable_explore_list report failed.');
+
       // Now try a bad access token
     self::$oAuthAccessToken = '---';
     $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
@@ -221,8 +228,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->checkResourceAuthentication('taxon-observations', $queryWithProj);
     $this->authMethod = 'directUser';
     $this->checkResourceAuthentication('taxon-observations', $query);
-    $this->authMethod = 'directUserWithFilter';
-    $this->checkResourceAuthentication('taxon-observations', $query);
+    // @todo The following test needs to check filtered response rather than authentication
+    $this->authMethod = 'directUser';
+    $this->checkResourceAuthentication('taxon-observations', $query + array('filter_id' => self::$userFilterId));
     $this->authMethod = 'hmacWebsite';
     $this->checkResourceAuthentication('taxon-observations', $query);
     $this->authMethod = 'directWebsite';
@@ -536,13 +544,6 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         $website = self::$websiteId;
         $password = self::$userPassword;
         $authString = "USER_ID:$user:WEBSITE_ID:$website:SECRET:$password";
-        break;
-      case 'directUserWithFilter':
-        $user = self::$userId;
-        $website = self::$websiteId;
-        $password = self::$userPassword;
-        $filterId = self::$userFilterId;
-        $authString = "USER_ID:$user:WEBSITE_ID:$website:FILTER_ID:$filterId:SECRET:$password";
         break;
       case 'directClient':
         $user = self::$clientUserId;

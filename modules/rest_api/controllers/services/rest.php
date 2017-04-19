@@ -161,14 +161,6 @@ class Rest_Controller extends Controller {
   private $clientUserId;
 
   /**
-   * The client's filter ID (i.e. the records available to the called) if
-   * authenticated against the users table and a permissions filter provided
-   * in the auth data.
-   * @var string
-   */
-  private $clientFilterId;
-
-  /**
    * The latest API major version number. Unversioned calls will map to this.
    * @var integer
    */
@@ -409,11 +401,9 @@ class Rest_Controller extends Controller {
           'p.deleted' => 'f'
         ))
         ->get()->result_array(false);
-      kohana::log('debug', $this->db->last_query());
       if (count($users) !== 1) {
         $this->apiResponse->fail('Unauthorized', 401, 'Unrecognised user ID or password.');
       }
-      kohana::log('debug', var_export($users[0], true));
       if ($users[0]['site_role_id'] === NULL && $users[0]['core_role_id'] === NULL) {
         $this->apiResponse->fail('Unauthorized', 401, 'User does not have access to website.');
       }
@@ -994,7 +984,10 @@ class Rest_Controller extends Controller {
     if (isset($this->clientSystemId)) {
       $filter = $this->loadFilterForProject($this->request['proj_id']);
     } elseif (isset($this->clientUserId)) {
-      if (isset($this->clientFilterId)) {
+      // When authenticating a user, you can use one of the permissions filters for the
+      // user to gain access to a wider pool of records, e.g. for a verifier to access
+      // all records they have rights to.
+      if (!empty($_GET['filter_id'])) {
         $filter = $this->getPermissionsFilterDefinition();
       } else {
         // default filter - the user's records for this website only
@@ -1061,7 +1054,7 @@ class Rest_Controller extends Controller {
         'filters_users.filter_id' => 'filters.id'
       ))
       ->where(array(
-        'filters.id'=>$this->clientFilterId,
+        'filters.id'=>$_GET['filter_id'],
         'filters.deleted'=>'f',
         'filters.defines_permissions' => 't',
         'filters_users.user_id' => $this->clientUserId,
@@ -1230,13 +1223,6 @@ class Rest_Controller extends Controller {
       if ($u !== 'USER_ID' || $w !== 'WEBSITE_ID' || $h !== 'SECRET') {
         return;
       }
-    } elseif (isset($headers['Authorization']) &&
-        substr_count($headers['Authorization'], ':') === 7) {
-      // 8 parts to authorisation required for user ID, website ID, filter ID and password pairs
-      list($u, $userId, $w, $websiteId, $f, $filterId, $h, $password) = explode(':', $headers['Authorization']);
-      if ($u !== 'USER_ID' || $w !== 'WEBSITE_ID' || $f !== 'FILTER_ID' || $h !== 'SECRET') {
-        return;
-      }
     } elseif (kohana::config('rest.allow_auth_tokens_in_url') === TRUE &&
           !empty($_GET['user_id']) && !empty($_GET['secret'])) {
       $userId = $_GET['user_id'];
@@ -1260,9 +1246,6 @@ class Rest_Controller extends Controller {
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
       $this->clientUserId = $userId;
       $this->clientWebsiteId = $websiteId;
-      if (isset($filterId)) {
-        $this->clientFilterId = $filterId;
-      }
       // @todo Is this user a member of the website?
       $this->authenticated = TRUE;
     } else {
