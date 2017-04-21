@@ -435,8 +435,8 @@ class Rest_Controller extends Controller {
       // Projects are a concept of client system based authentication, not websites or users.
       if ($this->resourceName === 'projects') {
         $this->restrictToAuthenticationMethods = array(
-          'hmacClient',
-          'directClient'
+          'hmacClient' => '',
+          'directClient' => ''
         );
       }
       $this->authenticate();
@@ -1108,18 +1108,22 @@ class Rest_Controller extends Controller {
     $this->isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
     $this->serverUserId = Kohana::config('rest.user_id');
     $methods = Kohana::config('rest.authentication_methods');
-    $httpMethods = Kohana::config('rest.http_authentication_methods');
+    // Provide a default if not configured
     if (!$methods) {
-      $methods = array('hmacClient', 'hmacWebsite', 'oauth2User');
+      $methods = array(
+        'hmacClient' => array('allow_http'),
+        'hmacWebsite' => array('allow_http', 'allow_all_report_access'),
+        'directClient' => array(),
+        'oauth2User' => array()
+      );
     }
     if ($this->restrictToAuthenticationMethods !== FALSE) {
-      $methods = array_intersect($methods, $this->restrictToAuthenticationMethods);
+      $methods = array_intersect_key($methods, $this->restrictToAuthenticationMethods);
     }
-    kohana::log('debug', 'Methods: ' . var_export($methods, true));
     $this->authenticated = FALSE;
-    foreach ($methods as $method) {
+    foreach ($methods as $method => $cfg) {
       // Skip methods if http and method requires https
-      if ($this->isHttps || in_array($method, $httpMethods)) {
+      if ($this->isHttps || in_array('allow_http', $cfg)) {
         $method = ucfirst($method);
         // try this authentication method
         kohana::log('debug', "trying $method");

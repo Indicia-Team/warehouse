@@ -44,13 +44,12 @@ $config['dataset_name_attr_id'] = 99;
  * Note that hmacUser is not supported as the password is hashed on the server so a
  * hmac cannot be generated.
  */
-$config['authentication_methods'] = array('hmacClient', 'hmacWebsite', 'directClient', 'oauth2User');
-
-/**
- * Which methods is https required for? By default we allow hmac over http since it is
- * designed to cope with sniffing.
- */
-$config['http_authentication_methods'] = array('hmacClient', 'hmacWebsite');
+$config['authentication_methods'] = array(
+  'hmacClient' => array('allow_http'),
+  'hmacWebsite' => array('allow_http', 'allow_all_report_access'),
+  'directClient' => array(),
+  'oauth2User' => array()
+);
 
 /**
  * Should authorisation tokens be allowed in the query parameters rather than the

@@ -26,22 +26,12 @@
 $config['user_id'] = 'BRC';
 
 $config['authentication_methods'] = array(
-  'hmacClient',
-  'hmacWebsite',
-  'directUser',
-  'directClient',
-  'directWebsite',
-  'oauth2User'
-);
-
-// no need for https here
-$config['http_authentication_methods'] = array(
-  'hmacClient',
-  'hmacWebsite',
-  'directUser',
-  'directClient',
-  'directWebsite',
-  'oauth2User'
+  'hmacClient'  => array('allow_http'),
+  'hmacWebsite' => array('allow_http', 'allow_all_report_access'),
+  'directUser' => array('allow_http'),
+  'directClient' => array('allow_http'),
+  'directWebsite' => array('allow_http'),
+  'oauth2User' => array('allow_http')
 );
 
 $config['allow_auth_tokens_in_url'] = FALSE;
