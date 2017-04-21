@@ -807,7 +807,7 @@ class Rest_Controller extends Controller {
     }
     $this->applyReportRestrictions($reportHierarchy);
     $relativePath = implode('/', $segments);
-    if (empty($segments)) {
+    if (empty($segments) && in_array('allow_all_report_access', $this->authConfig)) {
       // top level, so splice in a virtual folder for all featured reports.
       $reportHierarchy = array(
           'featured' => array(
