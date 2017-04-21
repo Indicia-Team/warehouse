@@ -11,6 +11,7 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter#
+  AND cts.simplified=true
   </query>
   <order_bys>
     <order_by>cts.original</order_by>

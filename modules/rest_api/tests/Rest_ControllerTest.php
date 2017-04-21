@@ -316,15 +316,17 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $projDef = self::$config['projects']['BRC1'];
     $response = $this->callService("reports", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports');
-    // Check some folders that should definitely exist.
-    $this->checkReportFolderInReponse($response['response'], 'featured');
+    // Check a folder that should definitely exist.
     $this->checkReportFolderInReponse($response['response'], 'library');
     // The demo report is not featured, so should not exist
     $this->assertFalse(in_array('deno', $response['response']));
 
-    // repeat with an authMethod that allows access to non-featured reports
+    // Repeat with an authMethod that allows access to non-featured reports. There
+    // should be an additional featured folder at the top level with shortcuts
+    // to favourite reports.
     $this->authMethod = 'hmacWebsite';
     $response = $this->callService("reports", array('proj_id' => $projDef['id']));
+    $this->checkReportFolderInReponse($response['response'], 'featured');
     $this->checkReportInReponse($response['response'], 'demo');
 
     // now check some folder contents
