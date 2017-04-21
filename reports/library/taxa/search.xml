@@ -7,7 +7,7 @@
   SELECT #columns#
   FROM cache_taxon_searchterms cts
   JOIN taxon_lists tl on tl.id=cts.taxon_list_id and tl.deleted=false
-    AND tl.website_id IS NULL or tl.website_id IN (#website_ids#)
+    AND (tl.website_id IS NULL or tl.website_id IN (#website_ids#))
   #agreements_join#
   #joins#
   WHERE #sharing_filter#
