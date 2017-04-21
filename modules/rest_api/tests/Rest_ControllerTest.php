@@ -314,13 +314,21 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testReportsHierarchy_get");
 
     $projDef = self::$config['projects']['BRC1'];
-    $response = $this->callService("reports", array('proj_id' => $projDef['id'])
-    );
+    $response = $this->callService("reports", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports');
-    // Check some folders and reports that should definitely exist.
+    // Check some folders that should definitely exist.
     $this->checkReportFolderInReponse($response['response'], 'featured');
     $this->checkReportFolderInReponse($response['response'], 'library');
+    // The demo report is not featured, so should not exist
+    $this->assertFalse(in_array('deno', $response['response']));
+
+    // repeat with an authMethod that allows access to non-featured reports
+    $this->authMethod = 'hmacWebsite';
+    $response = $this->callService("reports", array('proj_id' => $projDef['id']));
     $this->checkReportInReponse($response['response'], 'demo');
+
+    // now check some folder contents
+    $this->authMethod = 'hmacClient';
     $response = $this->callService("reports/featured", array('proj_id' => $projDef['id']));
     $this->assertResponseOk($response, '/reports/featured');
     $this->checkReportInReponse($response['response'], 'library/occurrences/filterable_explore_list');

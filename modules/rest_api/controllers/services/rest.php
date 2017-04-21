@@ -129,6 +129,12 @@ class Rest_Controller extends Controller {
   private $authenticated = FALSE;
 
   /**
+   * Config settings relating to the selected auth method.
+   * @var array
+   */
+  private $authConfig;
+
+  /**
    * If the called resource only supports certain types of authentication, then
    * an array of the methods is set here allowing other methods to be blocked;
    * @var bool|array
@@ -799,6 +805,7 @@ class Rest_Controller extends Controller {
         $reportHierarchy = $reportHierarchy[$segment]['content'];
       }
     }
+    $this->applyReportRestrictions($reportHierarchy);
     $relativePath = implode('/', $segments);
     if (empty($segments)) {
       // top level, so splice in a virtual folder for all featured reports.
@@ -831,6 +838,29 @@ class Rest_Controller extends Controller {
     $description = 'A list of reports and report folders stored on the warehouse under ' .
       "the folder <em>$relativePath</em>. $folderReadme";
     $this->apiResponse->succeed($response, array('description' => $description));
+  }
+
+  /**
+   * Applies limitations to the available reports depending on the configuration.
+   * For example, it may be appropriate to limit user based authentication methods
+   * to featured reports only, to be sure they don't access a report which does not
+   * apply the user filter.
+   * @param $reportHierarchy
+   */
+  private function applyReportRestrictions(&$reportHierarchy) {
+    if (!in_array('allow_all_report_access', $this->authConfig)) {
+      foreach ($reportHierarchy as $item => &$cfg) {
+        if ($cfg['type'] === 'report' && (!isset($cfg['featured']) || $cfg['featured'] !== 'true')) {
+          unset($reportHierarchy[$item]);
+        } elseif ($cfg['type'] === 'folder') {
+          // recurse into folders
+          $this->applyReportRestrictions($cfg['content']);
+          // folders may be left empty if no featured reports in them
+          if (empty($cfg['content']))
+            unset($reportHierarchy[$item]);
+        }
+      }
+    }
   }
 
   private function addReportLinks(&$metadata) {
@@ -1126,10 +1156,10 @@ class Rest_Controller extends Controller {
       if ($this->isHttps || in_array('allow_http', $cfg)) {
         $method = ucfirst($method);
         // try this authentication method
-        kohana::log('debug', "trying $method");
         call_user_func(array($this, "authenticateUsing$method"));
         if ($this->authenticated) {
           kohana::log('debug', "authenticated via $method");
+          $this->authConfig = $cfg;
           break;
         }
       }
