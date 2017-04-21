@@ -332,6 +332,20 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertCount(2, $response, 'Confidential=all filter returns incorrect record count');
   }
 
+  public function testAllReports() {
+    $reportHierarchy = $this->reportEngine->reportList();
+    $this->testReportsInFolder($reportHierarchy);
+  }
+
+  private function testReportsInFolder($reportHierarchy) {
+    foreach ($reportHierarchy as $report => $cfg) {
+      if ($cfg['type'] === 'report') {
+        $response = $this->getReportResponse("$cfg[path].xml", array());
+        $this->assertFalse(isset($response['error']), "$cfg[path] returned an error: $response[error]");
+      }
+    }
+  }
+
   private function getReportResponse($report, $params = []) {
     $requestParams = array(
       'report' => $report,
