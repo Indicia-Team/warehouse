@@ -222,13 +222,31 @@ ROW;
     return $r;
   }
 
-
+  /**
+   * Method to determine the required format for the response, either json or html.
+   * The format can be specified in a format query parameter in the URL, or in the accept header of the request.
+   * @return string Format, either json or html
+   */
   private function getResponseFormat() {
+    $headers = apache_request_headers();
+    // accept header is preferred RESTful approach
+    if (!empty($headers['Accept'])) {
+      $acceptParts = explode(';', $headers['Accept']);
+      $acceptMimeTypes = explode(',', $acceptParts[0]);
+      foreach ($acceptMimeTypes as $mimeType) {
+        if (trim($mimeType) === 'application/json') {
+          return 'json';
+        } elseif (trim($mimeType) === 'text/html') {
+          return 'html';
+        }
+      }
+    }
+    // Allow a format query string parameter to do the same thing.
     if (isset($_REQUEST['format']) && preg_match('/(json|html)/', $_REQUEST['format'])) {
       return $_REQUEST['format'];
-    } else {
-      return 'json';
     }
+    // fall back on default
+    return 'json';
   }
 
 }

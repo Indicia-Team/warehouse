@@ -1260,7 +1260,6 @@ class Rest_Controller extends Controller {
 
   private function authenticateUsingDirectUser() {
     $headers = apache_request_headers();
-    kohana::log('debug', $headers['Authorization']);
     if (isset($headers['Authorization']) &&
         substr_count($headers['Authorization'], ':') === 5) {
       // 6 parts to authorisation required for user ID, website ID and password pairs

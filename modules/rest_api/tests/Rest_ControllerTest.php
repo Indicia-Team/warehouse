@@ -19,6 +19,8 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
   private $authMethod = 'hmacClient';
 
+  private $additionalRequestHeader = array();
+
   public function getDataSet()
   {
     $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
@@ -402,6 +404,32 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['response']['data'][0]['occurrence_id'], 'Report call returns incorrect record');
   }
 
+  public function testAcceptHeader() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAcceptHeader");
+    $projDef = self::$config['projects']['BRC1'];
+    $this->additionalRequestHeader = array('Accept: application/json');
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $decoded = json_decode($response['response'], TRUE);
+    $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response['response']);
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals(0, $response['curlErrno']);
+    $this->additionalRequestHeader = array('Accept: text/html');
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $this->assertRegexp('/^<!DOCTYPE HTML>/', $response['response']);
+    $this->assertRegexp('/<html>/', $response['response']);
+    $this->assertRegexp('/<\/html>$/', $response['response']);
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals(0, $response['curlErrno']);
+    // try requesting an invalid content type as first preference - response should select the second.
+    $this->additionalRequestHeader = array('Accept: image/png, application/json');
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $response = $this->callService("reports/library/occurrences", array('proj_id' => $projDef['id']));
+    $decoded = json_decode($response['response'], TRUE);
+    $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response['response']);
+    $this->assertEquals(200, $response['httpCode']);
+    $this->assertEquals(0, $response['curlErrno']);
+  }
+
   /**
    * Tests authentication against a resource, by passing incorrect user or secret, then
    * finally passing the correct details to check a valid response returns.
@@ -539,7 +567,13 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertEquals('report', $response[$reportFile]['type']);
   }
 
-  private function setAuthHeader($session, $url) {
+  /**
+   * Sets the http header before a request. This includes the Authorization string and can also include additional
+   * header data when required.
+   * @param $session
+   * @param $url
+   */
+  private function setRequestHeader($session, $url) {
     switch ($this->authMethod) {
       case 'hmacUser':
         $user = self::$userId;
@@ -581,7 +615,10 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         break;
     }
 
-    curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: $authString"));
+    curl_setopt($session, CURLOPT_HTTPHEADER, array_merge(
+      $this->additionalRequestHeader,
+      array("Authorization: $authString")
+    ));
   }
 
   private function initCurl($url) {
@@ -591,16 +628,21 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     curl_setopt($session, CURLOPT_HEADER, false);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 
-    $this->setAuthHeader($session, $url);
+    $this->setRequestHeader($session, $url);
     return $session;
   }
 
   private function getCurlResponse($session) {
     // Do the POST
     $response = curl_exec($session);
-    $decoded = json_decode($response, TRUE);
-    $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response);
-    $response = $decoded;
+    // Auto decode the JSON, unless the test is checking the Accept request header in which case format could be
+    // something else.
+    if (empty($this->additionalRequestHeader)
+        || strpos(implode(',', $this->additionalRequestHeader), 'Accept:') === FALSE) {
+      $decoded = json_decode($response, TRUE);
+      $this->assertNotEquals(NULL, $decoded, 'JSON response could not be decoded: ' . $response);
+      $response = $decoded;
+    }
 
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
