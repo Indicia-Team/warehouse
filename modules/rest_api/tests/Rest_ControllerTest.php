@@ -137,8 +137,8 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     // Check oAuth2 doesn't allow access to incorrect resources
     $this->authMethod = 'oAuth2User';
     $response = $this->callService('projects');
-    $this->assertEquals(401, $response['httpCode'], 'Invalid authentication method oAuth2 for projects but response still OK. ' .
-      "Http response $response[httpCode].");
+    $this->assertEquals(401, $response['httpCode'], 'Invalid authentication method oAuth2 for projects  ' .
+        "but response still OK. Http response $response[httpCode].");
 
     // Now try a valid request with the access token
     $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
@@ -167,20 +167,20 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     // user and website authentications don't allow access to projects
     $this->authMethod = 'hmacUser';
     $response = $this->callService('projects');
-    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method hmacUser for projects but response still OK. ' .
-      "Http response $response[httpCode].");
+    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method hmacUser for projects ' .
+        "but response still OK. Http response $response[httpCode].");
     $this->authMethod = 'directUser';
     $response = $this->callService('projects');
-    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method directUser for projects but response still OK. ' .
-      "Http response $response[httpCode].");
+    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method directUser for projects ' .
+        "but response still OK. Http response $response[httpCode].");
     $this->authMethod = 'hmacWebsite';
     $response = $this->callService('projects');
-    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method hmacWebsite for projects but response still OK. ' .
-      "Http response $response[httpCode].");
+    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method hmacWebsite for projects ' .
+        "but response still OK. Http response $response[httpCode].");
     $this->authMethod = 'directWebsite';
     $response = $this->callService('projects');
-    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method directWebsite for projects but response still OK. ' .
-      "Http response $response[httpCode].");
+    $this->assertTrue($response['httpCode']===401, 'Invalid authentication method directWebsite for projects ' .
+        "but response still OK. Http response $response[httpCode].");
 
     $this->authMethod = 'hmacClient';
   }
@@ -191,7 +191,8 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $response = $this->callService('projects');
     $this->assertResponseOk($response, '/projects');
     $viaConfig = self::$config['projects'];
-    $this->assertEquals(count($viaConfig), count($response['response']['data']), 'Incorrect number of projects returned from /projects.');
+    $this->assertEquals(count($viaConfig), count($response['response']['data']),
+        'Incorrect number of projects returned from /projects.');
     foreach ($response['response']['data'] as $projDef) {
       $this->assertArrayHasKey($projDef['id'], $viaConfig, "Unexpected project $projDef[id]returned by /projects.");
       $this->assertEquals($viaConfig[$projDef['id']]['title'], $projDef['title'],
@@ -272,8 +273,10 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         )
       );
       $this->assertResponseOk($response, '/taxon-observations');
-      $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxon-observations');
-      $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxon-observations');
+      $this->assertArrayHasKey('paging', $response['response'],
+          'Paging missing from response to call to taxon-observations');
+      $this->assertArrayHasKey('data', $response['response'],
+          'Data missing from response to call to taxon-observations');
       $data = $response['response']['data'];
       $this->assertInternalType('array', $data, 'Taxon-observations data invalid. ' . var_export($data, true));
       $this->assertNotCount(0, $data, 'Taxon-observations data absent. ' . var_export($data, true));
@@ -293,7 +296,11 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testAnnotations_get");
 
     foreach (self::$config['projects'] as $projDef) {
-      $response = $this->callService("annotations", array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'), TRUE);
+      $response = $this->callService(
+        "annotations",
+        array('proj_id' => $projDef['id'], 'edited_date_from' => '2015-01-01'),
+        TRUE
+      );
       $this->assertResponseOk($response, '/annotations');
       $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to annotations');
       $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to annotations');
@@ -420,9 +427,10 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     self::$userPassword = '---';
 
     $response = $this->callService($resource, $query, TRUE);
-    $this->assertEquals(401, $response['httpCode'], "Incorrect secret or password passed to /$resource but request authorised. " .
-      "Http response $response[httpCode].");
-    $this->assertEquals('Unauthorized', $response['response']['status'], "Incorrect secret or password passed to /$resource but data still returned. ".
+    $this->assertEquals(401, $response['httpCode'],
+      "Incorrect secret or password passed to /$resource but request authorised. Http response $response[httpCode].");
+    $this->assertEquals('Unauthorized', $response['response']['status'],
+        "Incorrect secret or password passed to /$resource but data still returned. ".
       var_export($response, true));
     self::$config['shared_secret'] = $correctClientSecret;
     self::$websitePassword = $correctWebsitePassword;
@@ -436,10 +444,10 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     self::$websitePassword = $correctWebsitePassword;
     self::$userPassword = $correctUserPassword;
     $response = $this->callService($resource, $query, TRUE);
-    $this->assertEquals(401, $response['httpCode'], "Incorrect userId passed to /$resource but request authorised. " .
-      "Http response $response[httpCode].");
-    $this->assertEquals('Unauthorized', $response['response']['status'], "Incorrect userId passed to /$resource but data still returned. " .
-      var_export($response, true));
+    $this->assertEquals(401, $response['httpCode'],
+        "Incorrect userId passed to /$resource but request authorised. Http response $response[httpCode].");
+    $this->assertEquals('Unauthorized', $response['response']['status'],
+        "Incorrect userId passed to /$resource but data still returned. " . var_export($response, true));
 
     // now test with everything correct
     self::$clientUserId = $correctClientUserId;

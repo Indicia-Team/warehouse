@@ -343,8 +343,10 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertFalse(isset($response['error']), "testAdvancedReport returned error. See log for details");
     $this->assertCount(1, $response, 'Advanced report response should only include 1 record');
     $this->assertTrue(isset($response[0]['name']), 'Advanced report did not return a name column');
-    $this->assertEquals('Test location', $response[0]['name'], 'Advanced report should return location called \'Test location\'');
-    $this->assertTrue(array_key_exists('attr_location_test_text', $response[0]), 'Advanced report should return column for test_text');
+    $this->assertEquals('Test location', $response[0]['name'],
+        'Advanced report should return location called \'Test location\'');
+    $this->assertTrue(array_key_exists('attr_location_test_text', $response[0]),
+        'Advanced report should return column for test_text');
   }
   
   /**
@@ -365,7 +367,8 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     // valid json response will decode
     $response = json_decode($response, true);
     $this->assertFalse(isset($response['error']), "testAdvancedReportByAttrId returned error. See log for details");
-    $this->assertTrue(array_key_exists('attr_location_1', $response[0]), 'Advanced report should return column for test_text by ID');
+    $this->assertTrue(array_key_exists('attr_location_1', $response[0]),
+        'Advanced report should return column for test_text by ID');
   }
 
   public function testReportRequestsParams() {
@@ -407,9 +410,12 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'library/locations/locations_list.xml', array('locattrs' => 'Test lookup', 'location_type_id' => 2));
     $this->assertFalse(isset($response['error']), "testLookupCustomAttrs returned error. See log for details");
     $this->assertCount(1, $response, 'Report response should only include 1 record');    
-    $this->assertTrue(array_key_exists('attr_location_test_lookup', $response[0]), 'Locations report should return column for test_lookup');
-    $this->assertTrue(array_key_exists('attr_location_term_test_lookup', $response[0]), 'Locations report should return column for test_lookup term');   
-    $this->assertEquals('Test term', $response[0]['attr_location_term_test_lookup'], 'Locations report did not return correct attribute value');
+    $this->assertTrue(array_key_exists('attr_location_test_lookup', $response[0]),
+        'Locations report should return column for test_lookup');
+    $this->assertTrue(array_key_exists('attr_location_term_test_lookup', $response[0]),
+        'Locations report should return column for test_lookup term');
+    $this->assertEquals('Test term', $response[0]['attr_location_term_test_lookup'],
+        'Locations report did not return correct attribute value');
   }
 
   public function testReportLibraryLocationsFilterableRecordCountsLeague() {
@@ -423,8 +429,8 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
   }
 
   public function testReportLibraryLocationsFilterableRecordCountsLeagueLinked() {
-    Kohana::log('debug',
-      "Running unit test, Controllers_Services_Report_Test::testReportLibraryLocationsFilterableRecordCountsLeagueLinked");
+    Kohana::log('debug', 'Running unit test, ' .
+        'Controllers_Services_Report_Test::testReportLibraryLocationsFilterableRecordCountsLeagueLinked');
     $response = $this->getReportResponse(
       'library/locations/filterable_record_counts_league_linked.xml', array('location_type_id' => 2));
     // Simply testing that the report parses and the SQL runs
@@ -443,8 +449,8 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
   }
 
   public function testReportLibraryLocationsFilterableSpeciesCountsLeagueLinked() {
-    Kohana::log('debug',
-      "Running unit test, Controllers_Services_Report_Test::testReportLibraryLocationsFilterableSpeciesCountsLeagueLinked");
+    Kohana::log('debug', 'Running unit test, ' .
+        'Controllers_Services_Report_Test::testReportLibraryLocationsFilterableSpeciesCountsLeagueLinked');
     $response = $this->getReportResponse(
       'library/locations/filterable_species_counts_league_linked.xml', array('location_type_id' => 2));
     // Simply testing that the report parses and the SQL runs
@@ -458,17 +464,19 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $response = $this->getReportResponse(
       'library/locations/locations_list.xml', array('location_type_id' => 2, 'locattrs' => ''));
     // Simply testing that the report parses and the SQL runs
-    $this->assertFalse(isset($response['error']),
-      "testReportLibraryLocationsLocationsList returned error when passed integer location type id. See log for details");
+    $this->assertFalse(isset($response['error']), 'testReportLibraryLocationsLocationsList returned error ' .
+        'when passed integer location type id. See log for details');
     $this->assertCount(1, $response, 'Report response should only include 1 record');
-    $this->assertEquals($response[0]['name'], 'Test location', 'Locations list report returned incorrect location name.');
+    $this->assertEquals($response[0]['name'], 'Test location',
+        'Locations list report returned incorrect location name.');
     $response = $this->getReportResponse(
       'library/locations/locations_list.xml', array('location_type_id' => 'Test location type', 'locattrs' => ''));
     // Simply testing that the report parses and the SQL runs
-    $this->assertFalse(isset($response['error']),
-      "testReportLibraryLocationsLocationsList returned error when passed a string location type id. See log for details");
+    $this->assertFalse(isset($response['error']), 'testReportLibraryLocationsLocationsList returned error ' .
+        'when passed a string location type id. See log for details');
     $this->assertCount(1, $response, 'Report response should only include 1 record');
-    $this->assertEquals($response[0]['name'], 'Test location', 'Locations list report returned incorrect location name.');
+    $this->assertEquals($response[0]['name'], 'Test location',
+        'Locations list report returned incorrect location name.');
   }
 
   public function testReportLibraryLocationsLocationsList2() {
@@ -480,35 +488,36 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertFalse(isset($response['error']),
       "testReportLibraryLocationsLocationsList2 returned an error. See log for details");
     $this->assertCount(1, $response, 'Report response should only include 1 record');
-    $this->assertEquals($response[0]['name'], 'Test location', 'Locations list report returned incorrect location name.');
+    $this->assertEquals($response[0]['name'], 'Test location',
+        'Locations list report returned incorrect location name.');
     $response = $this->getReportResponse(
       'library/locations/locations_list_2.xml', array('location_type_id' => 99999, 'locattrs' => ''));
     // Simply testing that the report parses and the SQL runs
-    $this->assertFalse(isset($response['error']),
-      "testReportLibraryLocationsLocationsList2 returned an error when filtering for a missing location type ID. See log for details");
+    $this->assertFalse(isset($response['error']), 'testReportLibraryLocationsLocationsList2 returned an error '.
+        'when filtering for a missing location type ID. See log for details');
     $this->assertCount(0, $response, 'Report response be empty, location type filter failed');
   }
 
   public function testReportLibraryOccurrencesFilterableOccurrencesDownloadWithoutLocality() {
-    Kohana::log('debug',
-      "Running unit test, Controllers_Services_Report_Test::testReportLibraryOccurrencesFilterableOccurrencesDownloadWithoutLocality");
+    Kohana::log('debug', 'Running unit test, ' .
+        'Controllers_Services_Report_Test::testReportLibraryOccurrencesFilterableOccurrencesDownloadWithoutLocality');
     $response = $this->getReportResponse(
       'library/occurrences/filterable_occurrences_download_without_locality.xml', array());
     // Simply testing that the report parses and the SQL runs
-    $this->assertFalse(isset($response['error']),
-      "testReportLibraryOccurrencesFilterableOccurrencesDownloadWithoutLocality returned an error. See log for details");
+    $this->assertFalse(isset($response['error']), 'Error returned when calling ' .
+        'library/occurrences/filterable_occurrences_download_without_locality.xml');
     // In following test, the confidential record in the fixture is skipped.
     $this->assertCount(1, $response, 'Report response should include 1 record');
   }
 
   public function testReportLibraryOccurrencesFilterableOccurrencesDownloadGisWithoutLocality() {
-    Kohana::log('debug',
-      "Running unit test, Controllers_Services_Report_Test::testReportLibraryOccurrencesFilterableOccurrencesDownloadGisWithoutLocality");
+    Kohana::log('debug', 'Running unit test, ' .
+        'Controllers_Services_Report_Test::testReportLibraryOccurrencesFilterableOccurrencesDownloadGisWithoutLocality');
     $response = $this->getReportResponse(
       'library/occurrences/filterable_occurrences_download_gis_without_locality.xml', array());
     // Simply testing that the report parses and the SQL runs
-    $this->assertFalse(isset($response['error']),
-      "testReportLibraryOccurrencesFilterableOccurrencesDownloadGisWithoutLocality returned an error. See log for details");
+    $this->assertFalse(isset($response['error']), 'Error returned when calling ' .
+      'library/occurrences/filterable_occurrences_download_gis_without_locality.xml');
     // In following test, the confidential record in the fixture is skipped.
     $this->assertCount(1, $response, 'Report response should include 1 record');
     $this->assertArrayHasKey('geom', $response[0]);

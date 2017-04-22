@@ -910,7 +910,8 @@ class Rest_Controller extends Controller {
     } else {
       $thisMethod = $info[''];
     }
-    // Check through the known list of parameters to ensure data formats are correct and required parameters are provided.
+    // Check through the known list of parameters to ensure data formats are correct and required parameters are
+    // provided.
     foreach ($thisMethod['params'] as $paramName => $paramDef) {
       if (!empty($paramDef['required']) && empty($this->request[$paramName])) {
         $this->apiResponse->fail('Bad request', 400, "Missing $paramName parameter");
@@ -1106,7 +1107,8 @@ class Rest_Controller extends Controller {
    * @param array $arguments Additional URI segments
    */
   private function check_version(&$arguments) {
-    if (count($arguments) && preg_match('/^v(?P<major>\d+)\.(?P<minor>\d+)$/', $arguments[count($arguments)-1], $matches)) {
+    if (count($arguments)
+        && preg_match('/^v(?P<major>\d+)\.(?P<minor>\d+)$/', $arguments[count($arguments)-1], $matches)) {
       array_pop($arguments);
       // Check not asking for an invalid version
       if (!in_array($matches['major'] . '.' . $matches['minor'], $this->supportedApiVersions)) {
