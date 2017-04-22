@@ -21,6 +21,8 @@
  * @link    http://code.google.com/p/indicia/
  */
 
+DEFINE("REST_API_DEFAULT_PAGE_SIZE", 100);
+
 if (!function_exists('http_response_code')) {
   function http_response_code($code = NULL) {
     if ($code !== NULL) {
@@ -723,8 +725,33 @@ class Rest_Controller extends Controller {
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $report = $this->loadReport($reportFile, $_GET);
     if (isset($report['content']['records'])) {
-      // @todo: implement pagination
-      $this->apiResponse->succeed(array('data' => $report['content']['records']));
+      $urlPrefix = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
+      $parts = explode('?', $_SERVER['REQUEST_URI']);
+      $url = $parts[0];
+      if (count($parts)>1) {
+        parse_str($parts[1], $params);
+      } else {
+        $params = array();
+      }
+      $params['known_count'] = $report['count'];
+      $pagination = array(
+        'self' => "$urlPrefix$url?" . http_build_query($params)
+      );
+      $limit = empty($params['limit']) ? REST_API_DEFAULT_PAGE_SIZE : $params['limit'];
+      $offset = empty($params['offset']) ? 0 : $params['offset'];
+      if ($offset > 0) {
+        $params['offset'] = max($offset - $limit, 0);
+        $pagination['previous'] = "$urlPrefix$url?" . http_build_query($params);
+      }
+      if ($offset + $limit < $report['count']) {
+        $params['offset'] = $offset + $limit;
+        $pagination['next'] = "$urlPrefix$url?" . http_build_query($params);
+      }
+      $this->apiResponse->succeed(array(
+        'count' => $report['count'],
+        'paging' => $pagination,
+        'data' => $report['content']['records']
+      ));
     } elseif (isset($report['content']['parameterRequest'])) {
       // @todo: handle param requests
       $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
@@ -1058,7 +1085,14 @@ class Rest_Controller extends Controller {
       // For client systems, the project defines how records are allowed to be shared with this client
       $params['sharing'] = $this->projects[$this->request['proj_id']]['sharing'];
     }
+    $params = array_merge(
+      array('limit' => REST_API_DEFAULT_PAGE_SIZE),
+      $params
+    );
+    // Include count query results if not already known from a previous request
+    // @todo Don't run report query if count or limit are zero.
     $report = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+    $report['count'] =  empty($_GET['known_count']) ? $this->reportEngine->record_count() : $_GET['known_count'];;
     return $report;
   }
 
@@ -1135,7 +1169,7 @@ class Rest_Controller extends Controller {
   private function checkPaginationParams() {
     $this->request = array_merge(array(
       'page' => 1,
-      'page_size' => 100
+      'page_size' => REST_API_DEFAULT_PAGE_SIZE
     ), $this->request);
     $this->checkInteger($this->request['page'], 'page');
     $this->checkInteger($this->request['page_size'], 'page_size');
