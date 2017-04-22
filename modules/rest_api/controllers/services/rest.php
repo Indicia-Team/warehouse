@@ -932,6 +932,11 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * Utility method for filtering empty values from an array.
+   * @param $value
+   * @return bool
+   */
   private function notEmpty($value) {
     return !empty($value);
   }
