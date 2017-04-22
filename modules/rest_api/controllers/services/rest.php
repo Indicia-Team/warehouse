@@ -330,6 +330,9 @@ class Rest_Controller extends Controller {
               ),
               'sortdir' => array(
                 'datatype' => 'text'
+              ),
+              'columns' => array(
+                'datatype' => 'text'
               )
             )
           ),

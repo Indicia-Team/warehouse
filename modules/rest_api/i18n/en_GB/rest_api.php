@@ -24,7 +24,8 @@
           'the warehouse. Can retrieve the output for a subfolder in the directory or ' .
           'a specific report by appending the path to the resource URL.',
       'reports/{report_path}-xml' => 'Access the output for a report specified by the supplied path.',
-      'reports/{report_path}-xml/params' => 'Get metadata about the list of parameters available for this report.',
+      'reports/{report_path}-xml/params' => 'Get metadata about the list of parameters available to filter this ' .
+            'report by.',
       'reports/{report_path}-xml/columns' => 'Get metadata about the list of columns available for this report.'
     ),
     'projects' => array(
@@ -70,6 +71,8 @@
       'offset' => 'Offset from the start of the dataset that the response will start.',
       'sortby' => 'The field to sort by. Must be compatible with the SQL generated for the report.',
       'sortdir' => 'Direction of sort, ASC or DESC',
+      'columns' => 'Comma separated list of column fieldnames to include in the report output. Default is all ' .
+          'available in the report.',
       '{report parameter}' => 'Supply report parameter values for filtering as defined by the report /params resource.'
     ),
     'reports/{report_path}.xml/params' => array(),
