@@ -86,15 +86,46 @@ HTML;
     // Output an HTML page header
     $css = url::base() . "modules/rest_api/media/css/rest_api.css";
     echo str_replace('{css}', $css, $this->html_header);
-    echo '<h1>RESTful API</h1>';
-    echo '<p>' . kohana::lang("rest_api.introduction") . '</p>';
+    $lang = array(
+      'title' => kohana::lang("rest_api.title"),
+      'intro' => kohana::lang("rest_api.introduction"),
+      'authentication' => kohana::lang("rest_api.authenticationTitle"),
+      'authIntro' => kohana::lang("rest_api.authIntroduction"),
+      'authMethods' => kohana::lang("rest_api.authMethods"),
+      'resources' => kohana::lang("rest_api.resourcesTitle"),
+    );
+    $authRows = '';
+    $extraInfo = Kohana::config('rest.allow_auth_tokens_in_url')
+        ? kohana::lang("rest_api.allowAuthTokensInUrl") : kohana::lang("rest_api.dontAllowAuthTokensInUrl");
+    foreach (Kohana::config('rest.authentication_methods') as $method => $cfg) {
+      $methodNotes = [];
+      if (!in_array('allow_http', $cfg))
+        $methodNotes[] = kohana::lang("rest_api.onlyAllowHttps") .
+            ' (' . str_replace('http:', 'https:', url::base()) . 'index.php/services/rest).';
+      if (!in_array('allow_all_report_access', $cfg))
+        $methodNotes[] = kohana::lang("rest_api.onlyAllowFeaturedReports");
+      $authRows .= '<tr><th scope="row">' . kohana::lang("rest_api.$method") . '</th>';
+      $authRows .= '<td>' . kohana::lang("rest_api.{$method}Help") . ' ' . implode(' ', $methodNotes) . '</td></tr>';
+    }
+    echo <<<HTML
+<h1>$lang[title]</h1>
+<p>$lang[intro]</p>
+<h2>$lang[authentication]</h2>
+<p>$lang[authIntro]</p>
+<table><caption>$lang[authMethods]</caption>
+<tbody>$authRows</tbody>
+<tfoot><tr><td colspan="2">* $extraInfo</td></tr></tfoot>
+</table>
+<h2>$lang[resources]</h2>
+HTML;
+
     // Loop the resource names and output each of the available methods.
     foreach($resourceConfig as $resource => $methods) {
-      echo "<h2>$resource</h2>";
+      echo "<h3>$resource</h3>";
       foreach ($methods as $method => $methodConfig) {
         foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
-          echo '<h3>' . strtoupper($method) . ' ' . url::base() . "index.php/services/rest/$resource" .
-              ($urlSuffix ? "/$urlSuffix" : '') . '</h3>';
+          echo '<h4>' . strtoupper($method) . ' ' . url::base() . "index.php/services/rest/$resource" .
+              ($urlSuffix ? "/$urlSuffix" : '') . '</h4>';
           // Note we can't have full stops in a lang key
           $extra = $urlSuffix ? str_replace('.', '-', "/$urlSuffix") : '';
           $help = kohana::lang("rest_api.resources.$resource$extra");
@@ -136,7 +167,19 @@ HTML;
    * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
    */
   private function indexJson($http_methods) {
-    $r = array();
+    $r = array('authorisation' => [], 'resources' => []);
+    foreach (Kohana::config('rest.authentication_methods') as $method => $cfg) {
+      $methodNotes = [];
+      if (!in_array('allow_http', $cfg))
+        $methodNotes[] = kohana::lang("rest_api.onlyAllowHttps") .
+          ' (' . str_replace('http:', 'https:', url::base()) . 'index.php/services/rest).';
+      if (!in_array('allow_all_report_access', $cfg))
+        $methodNotes[] = kohana::lang("rest_api.onlyAllowFeaturedReports");
+      $r['authorisation'][$method] = array(
+        'name' => kohana::lang("rest_api.$method"),
+        'help' => kohana::lang("rest_api.{$method}Help") . ' ' . implode(' ', $methodNotes)
+      );
+    }
     // Loop the resource names and output each of the available methods.
     foreach($http_methods as $resource => $methods) {
       $resourceInfo = [];
@@ -170,7 +213,7 @@ HTML;
           );
         }
       }
-      $r[$resource] = $resourceInfo;
+      $r['resources'][$resource] = $resourceInfo;
     }
     echo json_encode($r);
   }

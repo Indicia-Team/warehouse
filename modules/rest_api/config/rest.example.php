@@ -37,7 +37,7 @@ $config['dataset_name_attr_id'] = 99;
  * * oauth2User - for authenticating warehouse user accounts to access their own records
  *   via oauth, or with a filter_id to define a wider set of records.
  * * hmacClient - authorise a client in the list below using HMAC in the http header
- * * hmacWebsite
+ * * hmacWebsite - authorise as a website registered on the warehouse using HMAC in the http header
  * * directUser - allow the user ID and password to be passed directly.
  * * directClient - allow the client system ID and shared secret to be passed directly.
  * * directWebsite - allow the website ID and password to be passed directly.

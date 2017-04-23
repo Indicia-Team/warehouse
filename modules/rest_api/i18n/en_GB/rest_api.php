@@ -2,10 +2,32 @@
 
   $lang = array
   (
-    'introduction' => 'Provides the following list of RESTful resources. For information on ' .
-        'authentication, see the ' .
+    'title' => 'Indicia RESTful API',
+    'introduction' => 'Provides RESTful access to data in the Indicia warehouse database.',
+    'authenticationTitle' => 'Authentication',
+    'authIntroduction' => 'For information on authentication, see the ' .
         '<a href="http://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/authentiction.html">' .
-        'authentication documentation</a>.',
+        'authentication documentation.</a> The available authentication options are described in the table below.',
+    'resourcesTitle' => 'Resources',
+    'authMethods' => 'Allowed authentication methods',
+    'oauth2User' => 'oAuth2 as warehouse user',
+    'oauth2UserHelp' => 'Use oAuth2 password flow to authenticate as a warehouse user',
+    'hmacClient' => 'HMAC as client system',
+    'hmacClientHelp' => 'Use HMAC to authenticate as a configured client system.',
+    'hmacWebsite' => 'HMAC as website',
+    'hmacWebsiteHelp' => 'Use HMAC to authenticate as a website registered on the warehouse.',
+    'directUser' => 'Direct authentication as warehouse user',
+    'directUserHelp' => 'Directly pass the username and password of a warehouse user account.',
+    'directClient' => 'Direct authentication as client system',
+    'directClientHelp' => 'Directly pass the ID and secret of a configured client system.',
+    'directWebsite' => 'Direct authentication as website',
+    'directWebsiteHelp' => 'Directly pass the ID and password of a website registered on the warehouse.',
+    'allowAuthTokensInUrl' => 'Tokens required for authorisation can be passed in the URL as query parameters or in ' .
+        'the Authorization header of the request.',
+    'dontAllowAuthTokensInUrl' => 'Tokens required for authorisation must be passed in the Authorization header of ' .
+        'the request.',
+    'onlyAllowHttps' => 'This authentication method requires you to access the web service via https',
+    'onlyAllowFeaturedReports' => 'Only allows access to reports that have been vetted and flagged as featured.',
     'format_param_help' => 'Request a response in this format, either html or json (default).',
     'resources' => array(
       'projects' => 'Retrieve a list of projects available to this client system ID. Only available ' .
