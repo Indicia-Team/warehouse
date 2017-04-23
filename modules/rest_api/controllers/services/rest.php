@@ -210,7 +210,7 @@ class Rest_Controller extends Controller {
    * Define the list of HTTP methods that will be supported by each resource endpoint.
    * @var type array
    */
-  private $http_methods = array(
+  private $resourceConfig = array(
     'projects' => array(
       'get'=>array(
         'subresources' => array(
@@ -369,7 +369,7 @@ class Rest_Controller extends Controller {
     // A temporary array to simulate the arguments, which we can use to check for versioning.
     $arguments = array($this->uri->last_segment());
     $this->check_version($arguments);
-    $this->apiResponse->index($this->http_methods);
+    $this->apiResponse->index($this->resourceConfig);
   }
 
   /**
@@ -451,8 +451,8 @@ class Rest_Controller extends Controller {
         );
       }
       $this->authenticate();
-      if (array_key_exists($this->resourceName, $this->http_methods)) {
-        $resourceConfig = $this->http_methods[$this->resourceName];
+      if (array_key_exists($this->resourceName, $this->resourceConfig)) {
+        $resourceConfig = $this->resourceConfig[$this->resourceName];
         $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->method === 'OPTIONS') {
           // A request for the methods allowed for this resource
@@ -928,7 +928,7 @@ class Rest_Controller extends Controller {
    * @param string $method Method name, e.g. GET or POST.
    */
   private function validateParameters($resourceName, $method, $requestForId) {
-    $info = $this->http_methods[$resourceName][$method]['subresources'];
+    $info = $this->resourceConfig[$resourceName][$method]['subresources'];
     // if requesting a list, then use the entry keyed '', else use the named entry
     if ($requestForId) {
       foreach ($info as $key => $method) {

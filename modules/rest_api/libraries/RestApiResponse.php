@@ -1,5 +1,26 @@
 <?php
 
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package Services
+ * @subpackage REST API
+ * @author  Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link    http://code.google.com/p/indicia/
+ */
+
 class RestApiResponse {
 
   /**
@@ -43,21 +64,37 @@ HTML;
    */
   public $includeEmptyValues = true;
 
-  public function index($http_methods) {
+  /**
+   * Index method, which provides top level help for the API resource endpoints.
+   * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
+   */
+  public function index($resourceConfig) {
+    switch ($this->getResponseFormat()) {
+      case 'html':
+        $this->indexHtml($resourceConfig);
+        break;
+      default:
+        $this->indexJson($resourceConfig);
+    }
+  }
+
+  /**
+   * Index method in HTML format, which provides top level help for the API resource endpoints.
+   * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
+   */
+  private function indexHtml($resourceConfig) {
     // Output an HTML page header
     $css = url::base() . "modules/rest_api/media/css/rest_api.css";
     echo str_replace('{css}', $css, $this->html_header);
     echo '<h1>RESTful API</h1>';
     echo '<p>' . kohana::lang("rest_api.introduction") . '</p>';
     // Loop the resource names and output each of the available methods.
-    foreach($http_methods as $resource => $methods) {
+    foreach($resourceConfig as $resource => $methods) {
       echo "<h2>$resource</h2>";
       foreach ($methods as $method => $methodConfig) {
         foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
-          echo '<h3>' . strtoupper($method) . ' ' . url::base() . "index.php/services/rest/$resource";
-          if ($urlSuffix)
-            echo "/$urlSuffix";
-          echo '</h3>';
+          echo '<h3>' . strtoupper($method) . ' ' . url::base() . "index.php/services/rest/$resource" .
+              ($urlSuffix ? "/$urlSuffix" : '') . '</h3>';
           // Note we can't have full stops in a lang key
           $extra = $urlSuffix ? str_replace('.', '-', "/$urlSuffix") : '';
           $help = kohana::lang("rest_api.resources.$resource$extra");
@@ -92,6 +129,50 @@ HTML;
       }
     }
     echo '</body></html>';
+  }
+
+  /**
+   * Index method in JSON format, which provides top level help for the API resource endpoints.
+   * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
+   */
+  private function indexJson($http_methods) {
+    $r = array();
+    // Loop the resource names and output each of the available methods.
+    foreach($http_methods as $resource => $methods) {
+      $resourceInfo = [];
+      foreach ($methods as $method => $methodConfig) {
+        foreach ($methodConfig['subresources'] as $urlSuffix => $resourceDef) {
+          // Note we can't have full stops in a lang key
+          $extra = $urlSuffix ? str_replace('.', '-', "/$urlSuffix") : '';
+          $help = kohana::lang("rest_api.resources.$resource$extra");
+          $resourceDef['params'] = array_merge(
+            $resourceDef['params'],
+            array('format' => array(
+              'datatype' => 'text'
+            ))
+          );
+          foreach ($resourceDef['params'] as $name => &$paramDef) {
+            if ($name === 'format') {
+              $help = kohana::lang('rest_api.format_param_help');
+            } else {
+              $help = kohana::lang("rest_api.$resource.$name");
+            }
+            if (!empty($paramDef['required'])) {
+              $help .= ' ' . kohana::lang('Required.');
+            }
+            $paramDef['help'] = $help;
+          }
+          $resourceInfo[] = array(
+            'resource' => url::base() . "index.php/services/rest/$resource" . ($urlSuffix ? "/$urlSuffix" : ''),
+            'method' => strtoupper($method),
+            'help' => $help,
+            'params' => $resourceDef['params']
+          );
+        }
+      }
+      $r[$resource] = $resourceInfo;
+    }
+    echo json_encode($r);
   }
 
   /**
@@ -228,6 +309,10 @@ ROW;
    * @return string Format, either json or html
    */
   private function getResponseFormat() {
+    // Allow a format query string parameter to override the Accept header.
+    if (isset($_REQUEST['format']) && preg_match('/(json|html)/', $_REQUEST['format'])) {
+      return $_REQUEST['format'];
+    }
     $headers = apache_request_headers();
     // accept header is preferred RESTful approach
     if (!empty($headers['Accept'])) {
@@ -240,10 +325,6 @@ ROW;
           return 'html';
         }
       }
-    }
-    // Allow a format query string parameter to do the same thing.
-    if (isset($_REQUEST['format']) && preg_match('/(json|html)/', $_REQUEST['format'])) {
-      return $_REQUEST['format'];
     }
     // fall back on default
     return 'json';
