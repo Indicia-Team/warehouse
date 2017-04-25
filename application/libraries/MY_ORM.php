@@ -606,8 +606,11 @@ class ORM extends ORM_Core {
       $res = null;
     }
     if ($res) {
-      Kohana::log('debug', 'Committing transaction.');
-      $this->db->query('COMMIT;');
+      $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : true);
+      if (!empty($allowCommitToDB)&&$allowCommitToDB==true) {
+        Kohana::log('debug', 'Committing transaction.');
+        $this->db->query('COMMIT;');
+      }
     } else {
       Kohana::log('debug', 'Rolling back transaction.');
       kohana::log('debug', var_export($this->getAllErrors(), true));
@@ -815,7 +818,12 @@ class ORM extends ORM_Core {
     if ($v) {
       // Record has successfully validated so return the id.
       Kohana::log("debug", "Record ".$this->id." has validated successfully");
-      $return = $this->id;
+      $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : true);
+      if (!empty($allowCommitToDB)&&$allowCommitToDB==true) {
+        $return = $this->id;
+      } else {
+        return 1;
+      }
     } else {
       // Errors.
       Kohana::log("debug", "Record did not validate");

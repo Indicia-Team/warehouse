@@ -677,7 +677,13 @@ class ORM_Core {
       if ($save === TRUE OR is_string($save))
       {
         // Save this object
-        $this->save();
+        $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : true);
+        //Only commit the save if option is set (we might be requesting validation/error checking only)
+        if (!empty($allowCommitToDB)&&$allowCommitToDB==true) {
+          $this->save();
+        } else {
+          return true;
+        }
 
         if (is_string($save))
         {
