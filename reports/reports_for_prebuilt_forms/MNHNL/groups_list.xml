@@ -72,7 +72,7 @@
     <param name="search_text" display="Search for" default="">
       <where>(g.title ilike '%#search_text#%' or g.description ilike '%#search_text#%')</where>
     </param>
-    <param name="lang" display="2 character language code" default="en">
+    <param name="lang" display="2 character language code" default="en"/>
   </params>
   <columns>
     <column name="id" visible="false" sql="g.id" datatype="integer" in_count="true" />
