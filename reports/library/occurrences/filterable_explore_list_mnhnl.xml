@@ -27,7 +27,7 @@
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
     <column name='taxon' display='Species' datatype="species" sql="o.preferred_taxon" template='&lt;span class="zero-{zero_abundance}"&gt;{taxon}&lt;/span&gt;' />
     <column name='common' display='Common Name' datatype="text" sql="o.default_common_name" template='&lt;span class="zero-{zero_abundance}"&gt;{common}&lt;/span&gt;' />
-    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype="text" />
+    <column name='taxon_group' display='Organism Group' sql='o.taxon_group' datatype="text" />
     <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' visible='false' datatype="integer" />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype="integer" />   
     <column name='location_name' display='Site name' sql='o.location_name' datatype="text" />
