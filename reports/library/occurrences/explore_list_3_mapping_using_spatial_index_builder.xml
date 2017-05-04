@@ -80,7 +80,7 @@
     <column name="date_start" sql="o.date_start" on_demand="true"/>
     <column name="date_end" sql="o.date_end" on_demand="true"/>
     <column name="date_type" sql="o.date_type" on_demand="true"/>
-    <column name="recorder" sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" 
+    <column name="recorder" sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN (TRIM(o.recorders) !~ ' ' AND LENGTH(o.recorders)>30) THEN 'Recorder' ELSE o.recorders END" 
         on_demand="true" datatype="text" />
     <column name="zero_abundance" sql="o.zero_abundance" on_demand="true" datatype="integer"/>
     <column name="record_status" sql="o.record_status" on_demand="true" in_count="true" datatype="text"/>
