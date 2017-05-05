@@ -13,6 +13,10 @@
     LEFT JOIN mnhnl.translations trans_title on trans_title.text_en=g.title
     LEFT JOIN mnhnl.translations trans_desc on trans_desc.text_en=g.description
     LEFT JOIN mnhnl.translations trans_page on trans_page.text_en=gp.caption
+    LEFT JOIN mnhnl.translations trans_admin on trans_admin.text_en='Administrator'
+    LEFT JOIN mnhnl.translations trans_member on trans_member.text_en='Member'
+    LEFT JOIN mnhnl.translations trans_nonmember on trans_nonmember.text_en='Non-member'
+    LEFT JOIN mnhnl.translations trans_waiting on trans_waiting.text_en='Awaiting approval'
     #joins#
     WHERE g.deleted = false
     AND #website_filter#
@@ -90,7 +94,13 @@
     <column name="canrequestorjoin" display="Can request membership or join" datatype="boolean" visible="false"
             sql="gu.id is null and g.joining_method in ('R','P') and (g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval)" />
     <column name="private_records" display="Records released" sql="not g.private_records" datatype="boolean" />
-    <column name="role" display="My role" sql="case when gu.administrator=true then 'Administrator' when gu.id is not null and gu.pending=false then 'Member' when gu.id is not null and gu.pending=true then 'Awaiting approval' else 'Non-member' end" datatype="text" />
+    <column name="role" display="My role" datatype="text"
+            sql="case
+              when gu.administrator=true then coalesce(trans_admin.text_#lang#, 'Administrator')
+              when gu.id is not null and gu.pending=false then coalesce(trans_member.text_#lang#, 'Member')
+              when gu.id is not null and gu.pending=true then coalesce(trans_waiting.text_#lang#, 'Awaiting approval')
+              else coalesce(trans_nonmember.text_#lang#, 'Non-member')
+            end" />
     <column name="joining_method" display="Can anyone join?" sql="case g.joining_method when 'P' then 'Yes' when 'R' then 'By request only' when 'I' then 'By invite only' end" datatype="text" />
     <column name="members" display="Members" datatype="text" aggregate="true"
             sql="case when gu.administrator=true and '#pending_path#'&lt;&gt;'' then '&lt;a href=&quot;#pending_path#' || g.id || '&quot;&gt;' else '' end
