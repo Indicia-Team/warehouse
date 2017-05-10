@@ -25,6 +25,9 @@ echo $grid;
 ?>
 <form action="<?php echo url::site().'location/create'; ?>" method="post">
 <input type="submit" value="New location" class="ui-corner-all ui-state-default button" />
+<?php if (isset($parent_id)) : ?>
+  <input name="parent_id" type="hidden" value="<?php echo $parent_id; ?>" />
+<?php endif; ?>
 </form>
 <br />
 <?php echo $upload_csv_form; ?> 
