@@ -128,6 +128,13 @@ This page allows you to specify the details of a location.
     'standardControls' => ($disabled_input==='YES') ? array('layerSwitcher','panZoomBar'): array('layerSwitcher','panZoomBar','drawPolygon','drawLine','modifyFeature'),
     'allowPolygonRecording' => true
   ));
+
+  if ($parent_id != null) : ?>
+    <h2>Child of: <a href="<?php echo url::site() ?>location/edit/<?php echo $parent_id ?>" >
+        <?php echo ORM::factory("location",$parent_id)->name ?></a>
+    </h2>
+  <?php endif;
+
   echo data_entry_helper::autocomplete(array(
     'label' => 'Parent location',
     'fieldname' => 'location:parent_id',
