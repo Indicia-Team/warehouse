@@ -1382,8 +1382,7 @@ class Data_Controller extends Data_Service_Base_Controller {
               'iwwa.from_website_id'=>'record.website_id',
               'iwwa.receive_for_'.$sharing."='t'"=>''
           ), NULL, 'LEFT');
-          $this->db->where('record.website_id IS NULL');
-          $this->db->orwhere('iwwa.to_website_id', $this->website_id);
+          $this->db->where("(record.website_id IS NULL OR iwwa.to_website_id=$this->website_id)");
         } else {
           $this->db->in('record.website_id', array(null, $this->website_id));
         }
