@@ -206,6 +206,7 @@ function spatial_index_builder_add_to_cache($db) {
     return;
   $s_sets = array();
   $o_sets = array();
+  $overlapping_fix_queries = array();
   $joins = array();
   foreach ($types as $type) {
     // We can only do this type of indexing for boundary types that occur only once per sample
@@ -261,6 +262,54 @@ WHERE u.sample_id=ils$type[id].sample_id
 AND (l.code IS NULL OR l.code NOT LIKE '%+%');
 QRY
     );
+    // The following stuff fixes any squares that lie on boundaries
+    $overlapping_fix_queries[] = <<<QRY
+DROP TABLE IF EXISTS overlapping_boundaries;
+    
+SELECT s.website_id, s.survey_id, s.id AS sample_id, ils.location_id, 0::float AS area
+INTO TEMPORARY overlapping_boundaries
+FROM cache_samples_functional s
+JOIN index_locations_samples ils ON ils.sample_id=s.id AND ils.location_type_id=$type[id] AND ils.contains=false
+JOIN locations l ON l.id=ils.location_id and l.deleted=false AND COALESCE(l.code, '') NOT LIKE '%+%'
+JOIN smplist slist ON slist.id=ils.sample_id;
+
+INSERT INTO overlapping_boundaries
+SELECT s.website_id, s.survey_id, s.id AS sample_id, ils.location_id, 0::float AS area
+FROM cache_samples_functional s
+JOIN index_locations_samples ils ON ils.sample_id=s.id AND ils.location_type_id=$type[id] AND ils.contains=false
+JOIN locations l ON l.id=ils.location_id and l.deleted=false AND COALESCE(l.code, '') NOT LIKE '%+%'
+JOIN loclist llist ON llist.id=ils.location_id
+LEFT JOIN overlapping_boundaries ob ON ob.location_id=ils.location_id AND ob.sample_id=s.id
+WHERE ob.sample_id IS NULL;
+
+UPDATE overlapping_boundaries ob
+SET area=st_area(st_intersection(s.geom, l.boundary_geom))
+FROM samples s, locations l
+WHERE s.id=ob.sample_id AND l.id=ob.location_id
+AND s.deleted=false
+AND l.deleted=false;
+
+DELETE FROM overlapping_boundaries WHERE area=0;
+
+DELETE from overlapping_boundaries ob1
+USING overlapping_boundaries ob2 
+WHERE ob2.sample_id=ob1.sample_id
+AND (ob2.area>ob1.area OR (ob2.area=ob1.area AND ob2.location_id<ob1.location_id));
+
+UPDATE cache_occurrences_functional o
+SET $column = ob.location_id
+FROM overlapping_boundaries ob 
+WHERE o.website_id=ob.website_id AND o.survey_id=ob.survey_id AND o.sample_id=ob.sample_id
+AND COALESCE(o.$column, 0)<>ob.location_id;
+
+UPDATE cache_samples_functional s
+SET $column = ob.location_id
+FROM overlapping_boundaries ob 
+WHERE s.website_id=ob.website_id AND s.survey_id=ob.survey_id AND s.id=ob.sample_id
+AND COALESCE(s.$column, 0)<>ob.location_id;
+
+DROP TABLE overlapping_boundaries;
+QRY;
   }
   if (count($s_sets)) {
     $s_sets = implode(",\n", $s_sets);
@@ -283,5 +332,8 @@ JOIN smplist list on list.id=s.id
 WHERE s.id=u.sample_id;
 QRY
     );
+  }
+  foreach ($overlapping_fix_queries as $qry) {
+    $db->query($qry);
   }
 }
