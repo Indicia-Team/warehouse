@@ -148,5 +148,3 @@ jQuery(document).ready(function() {
   }
 
 }
-
-?>

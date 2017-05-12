@@ -1,6 +1,7 @@
 <report
-    title="Explore distinct species using standard filters"
-    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+    title="Explore recorded taxa (standard filters)"
+    description="A list of distinct taxa, with counts and other metadata, pulled from a list of occurrence records identified by the filter."
+    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
   SELECT #columns#

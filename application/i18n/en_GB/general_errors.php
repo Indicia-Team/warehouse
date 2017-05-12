@@ -8,5 +8,3 @@ $lang = array
       'using the browser\'s Back button and resubmitting a form twice or because the form is not configured correctly.'
 
 );
-
-?>

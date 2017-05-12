@@ -288,5 +288,3 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
   }
 
 }
-
-?>

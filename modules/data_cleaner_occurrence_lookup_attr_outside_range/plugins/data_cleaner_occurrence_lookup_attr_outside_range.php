@@ -58,5 +58,3 @@ function data_cleaner_occurrence_lookup_attr_outside_range_data_cleaner_rules() 
     )
   );
 }
-
-?>

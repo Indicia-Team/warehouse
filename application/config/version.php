@@ -30,4 +30,3 @@ $config['version'] = '1.31.2';
 $config['release_date']  = '2017-05-11';
 $config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
 
-?>

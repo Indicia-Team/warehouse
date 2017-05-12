@@ -140,5 +140,3 @@ $config['upload_file_type'] = array(
  * 0.8.x or earlier is required.
  */
 $config['http_status_responses'] = true;
-
-?>

@@ -64,5 +64,3 @@
     'format_m_y'  => 'm/Y',
     'format_js'   => 'dd/mm/yy',
   );
-
-?>

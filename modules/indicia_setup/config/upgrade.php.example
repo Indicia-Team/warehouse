@@ -28,5 +28,3 @@ defined('SYSPATH') or die('No direct script access.');
  * for developers only. 
  */
 $config['continuous_upgrade'] = true;
-
-?>

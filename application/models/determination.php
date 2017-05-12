@@ -67,4 +67,3 @@ class Determination_Model extends ORM
   }
 
 }
-?>

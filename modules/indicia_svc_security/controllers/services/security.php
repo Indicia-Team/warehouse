@@ -54,9 +54,5 @@ class Security_Controller extends Service_Base_Controller {
     $readNonce = security::create_nonce('read', $_POST['website_id']);
     echo '{"read":"'.$readNonce.'","write":"'.$writeNonce.'"}';
   }
- 
-
 
 }
-
-?>

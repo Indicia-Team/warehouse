@@ -132,4 +132,3 @@ class html extends html_Core {
    }
 
 }
-?>

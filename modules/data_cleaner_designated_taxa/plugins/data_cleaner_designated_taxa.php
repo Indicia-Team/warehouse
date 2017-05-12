@@ -39,5 +39,3 @@ function data_cleaner_designated_taxa_data_cleaner_rules() {
     )
   );
 }
-
-?>

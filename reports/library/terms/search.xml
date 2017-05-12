@@ -1,0 +1,31 @@
+<report
+    title="Search terms"
+    description="A searchable list of terms used for populating lookup attributes."
+    featured="true"
+>
+  <query website_filter_field="" training_filter_field="">
+    select #columns#
+    from cache_termlists_terms t
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter# 
+    AND (t.website_id IS NULL or t.website_id IN (#website_ids#))
+  </query>
+  <params>
+    <param name="termlist_external_key" display="Termlist External Key" default=""
+           description="Limit the search to terms in the termlist with this external_key.">
+      <join>JOIN termlists tl ON tl.id=t.termlist_id AND tl.deleted=false</join>
+      <where>tl.external_key='#termlist_external_key#'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" display="ID" sql="t.id" datatype="integer" visible="false"/>
+    <column name="meaning_id" display="Meaning ID" sql="t.meaning_id" datatype="integer" visible="false"/>
+    <column name="termlist_id" display="Termlist ID" sql="t.termlist_id" datatype="integer" visible="false"/>
+    <column name="parent_id" display="Parent ID" sql="t.parent_id" datatype="integer" visible="false"/>
+    <column name="term" sql="t.term" datatype="text" />
+    <column name="termlist" sql="t.termlist_title" datatype="text" />
+    <column name="preferred_term" sql="t.preferred_term" datatype="text" />
+    <column name="language_iso" display="Language code" sql="t.language_iso" datatype="text" />
+  </columns>
+</report>

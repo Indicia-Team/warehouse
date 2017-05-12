@@ -213,5 +213,3 @@ abstract class ATTR_ORM extends Valid_ORM {
   }
 
 }
-
-?>

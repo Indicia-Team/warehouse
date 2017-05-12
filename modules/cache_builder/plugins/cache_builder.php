@@ -50,5 +50,3 @@ function cache_builder_scheduled_task($last_run_date, $db) {
     echo $e->getMessage();
   }
 }
-
-?>

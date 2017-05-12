@@ -48,5 +48,3 @@ class Locations_website_Model extends ORM
   }
 
 }
-
-?>

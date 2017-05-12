@@ -161,5 +161,3 @@ class Identifiers_subject_observation_Controller extends Gridview_Base_Controlle
   }
   
 }
-
-?>

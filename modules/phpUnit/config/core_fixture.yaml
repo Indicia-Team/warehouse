@@ -140,6 +140,79 @@ cache_taxa_taxon_lists:
     cache_created_on: 2016-07-22:16:00:00
     cache_updated_on: 2016-07-22:16:00:00
 
+cache_taxon_searchterms:
+  -
+    id: 1
+    taxa_taxon_list_id: 1
+    taxon_list_id: 1
+    searchterm: "testtaxon"
+    original: "Test taxon"
+    taxon_group: "Test taxon group"
+    taxon_meaning_id: 10000
+    preferred_taxon: "Test taxon"
+    default_common_name: "Test taxon"
+    language_iso: "lat"
+    name_type: "L"
+    simplified: "t"
+    taxon_group_id: 1
+    preferred: "t"
+    searchterm_length: 9
+    preferred_taxa_taxon_list_id: 1
+    external_key: "TESTKEY"
+  -
+    id: 2
+    taxa_taxon_list_id: 1
+    taxon_list_id: 1
+    searchterm: "Test taxon"
+    original: "Test taxon"
+    taxon_group: "Test taxon group"
+    taxon_meaning_id: 10000
+    preferred_taxon: "Test taxon"
+    default_common_name: "Test taxon"
+    language_iso: "lat"
+    name_type: "L"
+    simplified: "f"
+    taxon_group_id: 1
+    preferred: "t"
+    searchterm_length: 10
+    preferred_taxa_taxon_list_id: 1
+    external_key: "TESTKEY"
+  -
+    id: 3
+    taxa_taxon_list_id: 2
+    taxon_list_id: 1
+    searchterm: "testtaxon2"
+    original: "Test taxon 2"
+    taxon_group: "Test taxon group"
+    taxon_meaning_id: 10001
+    preferred_taxon: "Test taxon 2"
+    default_common_name: "Test taxon 2"
+    language_iso: "lat"
+    name_type: "L"
+    simplified: "t"
+    taxon_group_id: 1
+    preferred: "t"
+    searchterm_length: 10
+    preferred_taxa_taxon_list_id: 1
+    external_key: "TESTKEY2"
+  -
+    id: 4
+    taxa_taxon_list_id: 2
+    taxon_list_id: 1
+    searchterm: "Test taxon 2"
+    original: "Test taxon 2"
+    taxon_group: "Test taxon group"
+    taxon_meaning_id: 10001
+    preferred_taxon: "Test taxon 2"
+    default_common_name: "Test taxon 2"
+    language_iso: "lat"
+    name_type: "L"
+    simplified: "f"
+    taxon_group_id: 1
+    preferred: "t"
+    searchterm_length: 12
+    preferred_taxa_taxon_list_id: 1
+    external_key: "TESTKEY2"
   
 meanings:
   # No support for INSERT INTO table DEFAULT VALUES.
@@ -388,6 +461,13 @@ samples:
     recorder_names: "PHPUnit"
     record_status: "C"
 
+map_squares:
+  -
+    geom: "010300002031BF0D0001000000050000004E9C282E3C320BC18FC3A8120A2F59412CCEAACFA94309C1E75E7B57062F5941A7DE4D3BB84209C11FD1A351893E5941BBB729FE3E320BC1D8E4B8118D3E59414E9C282E3C320BC18FC3A8120A2F5941"
+    x: -214871
+    y: 6609705
+    size: 10000
+
 occurrences:
   -
     sample_id: 1
@@ -427,12 +507,17 @@ cache_occurrences_functional:
     updated_on: 2016-07-22:16:00:00
     created_by_id: 1
     taxa_taxon_list_id: 1
+    preferred_taxa_taxon_list_id: 1
     taxon_meaning_id: 10000
     taxa_taxon_list_external_key: "TESTKEY"
     taxon_group_id: 1
     record_status: "C"
     release_status: "R"
+    zero_abundance: "f"
     confidential: "f"
+    map_sq_1km_id: 1
+    map_sq_2km_id: 1
+    map_sq_10km_id: 1
   -
     id: 2
     sample_id: 1
@@ -445,12 +530,17 @@ cache_occurrences_functional:
     updated_on: 2016-07-22:16:00:00
     created_by_id: 1
     taxa_taxon_list_id: 1
+    preferred_taxa_taxon_list_id: 1
     taxon_meaning_id: 10000
     taxa_taxon_list_external_key: "TESTKEY"
     taxon_group_id: 1
     record_status: "C"
     release_status: "R"
+    zero_abundance: "f"
     confidential: "t"
+    map_sq_1km_id: 1
+    map_sq_2km_id: 1
+    map_sq_10km_id: 1
 
 cache_occurrences_nonfunctional:
   -
@@ -470,6 +560,9 @@ cache_samples_functional:
     updated_on: 2016-07-22:16:00:00
     created_by_id: 1
     record_status: "C"
+    map_sq_1km_id: 1
+    map_sq_2km_id: 1
+    map_sq_10km_id: 1
 
 cache_samples_nonfunctional:
   -

@@ -29,16 +29,16 @@ class Security extends security_Core {
    * (when the caller type is an Indicia user.
    */
   public static function create_nonce($type, $website_id) {
-    $nonce = sha1(time().':'.rand().$_SERVER['REMOTE_ADDR'].':'.kohana::config('indicia.private_key'));
+    $nonce = sha1(time() . ':' . rand() . $_SERVER['REMOTE_ADDR'] . ':' . kohana::config('indicia.private_key'));
     $cache = new Cache();
     $cache->set($nonce, $website_id, $type, Kohana::config('indicia.nonce_life'));
     return $nonce;
   }
-  
+
   /**
-   * Takes a value and ensures it is matches an expected pattern. Used to 
+   * Takes a value and ensures it is matches an expected pattern. Used to
    * check parameters passed to web services to inhibit SQL injection.
-   * 
+   *
    * @param mixed $value The value to check.
    * @param string $type The type of parameter, [int|str], for integer or
    * string.
@@ -68,4 +68,3 @@ class Security extends security_Core {
   }
 
 }
- ?>

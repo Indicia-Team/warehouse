@@ -308,4 +308,3 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
   }
 
 }
-?>

@@ -1403,5 +1403,3 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
   
 }
-
-?>

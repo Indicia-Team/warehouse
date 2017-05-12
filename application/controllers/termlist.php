@@ -152,4 +152,3 @@ class Termlist_Controller extends Gridview_Base_Controller {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
 }
-?>

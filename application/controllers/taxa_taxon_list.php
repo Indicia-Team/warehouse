@@ -406,4 +406,3 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   }
 
 }
-?>

@@ -1,0 +1,47 @@
+<report
+    title="Search taxa"
+    description="A searchable list of taxa."
+    featured="true"
+>
+  <query website_filter_field="" training_filter_field="">
+  SELECT #columns#
+  FROM cache_taxon_searchterms cts
+  JOIN taxon_lists tl on tl.id=cts.taxon_list_id and tl.deleted=false
+    AND (tl.website_id IS NULL or tl.website_id IN (#website_ids#))
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  AND cts.simplified=true
+  </query>
+  <order_bys>
+    <order_by>cts.original</order_by>
+  </order_bys>
+  <params>
+    <param name="searchterm" display="Search term" default=""
+           description="Term to search for. Defaults to starts with, use % as a wildcard." datatype="text">
+      <where>cts.searchterm like regexp_replace(
+        regexp_replace(
+          lower(regexp_replace('#searchterm#', E'\\(.+\\)', '', 'g')), 'ae', 'e', 'g'
+        ), E'[^%a-z0-9\\?\\+]', '', 'g'
+      ) || '%'</where>
+    </param>
+  </params>
+  <columns>
+    <column name="id" display="ID"
+            sql="cts.id" visible="false" in_count="true" datatype="integer" />
+    <column name="taxon_meaning_id" display="Taxon meaning ID"
+            sql="cts.taxon_meaning_id" visible="false" datatype="integer" />
+    <column name="taxa_taxon_list_id" display="Taxa taxon list ID"
+            sql="cts.taxa_taxon_list_id" visible="false" datatype="integer" />
+    <column name="taxon_list_id" display="Taxon list ID"
+            sql="cts.taxon_list_id" visible="false" datatype="integer" />
+    <column name="taxon_group_id" display="Taxon group ID"
+            sql="cts.taxon_group_id" visible="false" datatype="integer" />
+    <column name="taxon" display="Taxon" sql="cts.original" datatype="text" />
+    <column name="authority" display="Authority" sql="cts.authority" datatype="text" />
+    <column name="preferred_taxon" display="Preferred taxon" sql="cts.preferred_taxon" datatype="text" />
+    <column name="preferred_authority" display="Preferred authority" sql="cts.preferred_authority" datatype="text" />
+    <column name="language_iso" display="Language code" sql="cts.language_iso" datatype="text" />
+    <column name="taxon_group" display="Taxon group" sql="cts.taxon_group" datatype="text" />
+  </columns>
+</report>

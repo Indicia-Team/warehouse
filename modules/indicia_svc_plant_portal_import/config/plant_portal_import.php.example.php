@@ -31,5 +31,3 @@ $config['vice_county_attr_id'] = 5;
 $config['vice_counties_list'] = 'Shetland|60.38951N 1.21625W,Orkney|59.06504N';
 $config['country_attr_id'] = 6;
 $config['countries_list'] = 'England|52.62865N 1.46538W,Wales|52.35471N 3.86321W' ;
-
-?>

@@ -372,4 +372,3 @@ class Sample_Model extends ORM_Tree
   }
   
 }
-?>

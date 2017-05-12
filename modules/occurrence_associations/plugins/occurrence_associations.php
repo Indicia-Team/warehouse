@@ -34,5 +34,3 @@ function occurrence_associations_extend_data_services() {
     'occurrence_associations'=>array()
   );
 }
-
-?>

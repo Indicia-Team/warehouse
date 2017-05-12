@@ -50,5 +50,3 @@ function data_cleaner_species_location_data_cleaner_rules() {
     )
   );
 }
-
-?>

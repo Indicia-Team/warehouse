@@ -37,5 +37,3 @@ function audit_extend_data_services() {
 			'logged_actions'=>array()
 	);
 }
-
-?>
