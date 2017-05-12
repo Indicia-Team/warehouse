@@ -10,8 +10,9 @@
         AND o.created_by_id=#user_id# AND o.created_by_id&lt;&gt;1
         AND ST_INTERSECTS(o.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
         AND NOT ST_TOUCHES(o.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
-      LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
-      LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#
+      LEFT JOIN (person_attribute_values pav
+          JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#
+        ) ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
       #joins#
       #agreements_join#
       WHERE (o.id is null or (#sharing_filter#))
@@ -30,8 +31,9 @@
         AND o.created_by_id=#user_id# AND o.created_by_id&lt;&gt;1
         AND ST_INTERSECTS(o.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
         AND NOT ST_TOUCHES(o.public_geom, COALESCE(l.boundary_geom, l.centroid_geom))
-      LEFT JOIN person_attribute_values pav ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
-      LEFT JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#
+      LEFT JOIN (person_attribute_values pav
+          JOIN users u ON u.person_id=pav.person_id AND u.id=#user_id#
+        ) ON pav.person_attribute_id=#person_site_attr_id# AND pav.int_value=l.id AND pav.deleted=false
       #joins#
       #agreements_join#
       WHERE (o.id is null or (#sharing_filter#))
