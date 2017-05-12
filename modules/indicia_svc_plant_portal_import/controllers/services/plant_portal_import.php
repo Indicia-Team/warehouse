@@ -233,7 +233,6 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
    */
   public function upload() {
-    $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : true);
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     $metadata = $this->_get_metadata($_GET['uploaded_csv']);
     if (!empty($metadata['user_id'])) {
@@ -396,8 +395,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       
       // An AJAX upload request will just receive the number of records uploaded and progress
       $this->auto_render=false;      
-      if (!empty($allowCommitToDB)&&$allowCommitToDB==true)
-        $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);  
+      $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);  
     }
   }
   
@@ -486,11 +484,18 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
     $groupNames = (isset($_GET['names']) ? $_GET['names'] : false);
     //Groups names set in batches, these are comma separated so explode them to deal with them
     $explodedGroupNames = explode(',',$groupNames);
+    $groupType = (isset($_GET['groupType']) ? $_GET['groupType'] : false);
     $userId = (isset($_GET['userId']) ? $_GET['userId'] : false);
     $personattributeIdToHoldSampleOrPlotGroups = (isset($_GET['personAttributeId']) ? $_GET['personAttributeId'] : false);
     if ($userId!==false && $personattributeIdToHoldSampleOrPlotGroups!==false) {
       foreach ($explodedGroupNames as $groupName) {
+        //Groups are terms, we have built in database function for adding those (and associated termlists_terms etc)
+        if ($groupType==='sample_group') {
+          $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_sample_groups');")->result();
+        }
+        if ($groupType==='plot_group') {
           $db->query("select insert_term('".$groupName."','eng',null,'indicia:plant_portal_plot_groups');")->result();
+        }
         //We must assign the group to a user once it is created
         self::assign_user_to_new_group($db,$groupName,$userId,$personattributeIdToHoldSampleOrPlotGroups);
       }
