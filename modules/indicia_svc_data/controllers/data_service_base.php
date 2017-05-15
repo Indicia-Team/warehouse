@@ -873,5 +873,3 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   	return $data;
   }
 }
-
-?>

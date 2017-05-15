@@ -46,5 +46,3 @@ class setup_check {
 }
 
 new setup_check;
-
- ?>

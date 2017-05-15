@@ -625,5 +625,3 @@ class Nbn_species_dict_sync_Controller extends Controller {
   }
 
 }
-
-?>

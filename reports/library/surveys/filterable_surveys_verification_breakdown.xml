@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<report title="Surveys verification breakdown" description="Verification breakdown by survey with standard filters.">
+<report title="Surveys verification breakdown (standard params)"
+        description="Verification breakdown by survey with standard filters."
+        featured="true"
+>
   <query website_filter_field="o.website_id" standard_params="occurrences">
     select #columns#
     from cache_occurrences_functional o

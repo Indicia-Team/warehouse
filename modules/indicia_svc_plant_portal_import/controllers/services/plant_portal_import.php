@@ -395,7 +395,7 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       
       // An AJAX upload request will just receive the number of records uploaded and progress
       $this->auto_render=false;      
-      $cache->set(basename($csvTempFile).'previousSupermodel', $this->previousCsvSupermodel);      
+      $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);  
     }
   }
   
@@ -556,8 +556,6 @@ class Plant_Portal_Import_Controller extends Service_Base_Controller {
       $plotIdsToCreateAttachmentsFor=self::get_new_plot_attachments_plot_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$currentPersonId,$personAttributeIdThatHoldsPlotGroup);
     if (!empty($explodedPlotPairsForPlotGroupAttachment))
       $groupIdsToCreateAttachmentsFor=self::get_new_plot_attachments_group_ids_to_create($db,$explodedPlotPairsForPlotGroupAttachment,$currentPersonId,$personAttributeIdThatHoldsPlotGroup);
-
-
     if (!empty($explodedPlotPairsForPlotGroupAttachment)&&!empty($plotIdsToCreateAttachmentsFor)&&!empty($groupIdsToCreateAttachmentsFor))
       $explodedPlotPairsForPlotGroupAttachmentAsIds=self::get_new_plot_attachments_to_create($explodedPlotPairsForPlotGroupAttachment,$plotIdsToCreateAttachmentsFor,$groupIdsToCreateAttachmentsFor);
     $databaseInsertionString='';

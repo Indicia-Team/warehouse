@@ -293,5 +293,3 @@ class Service_Base_Controller extends Controller {
   }
 
 }
-
-?>

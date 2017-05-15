@@ -46,5 +46,3 @@ class Browse_server_logs_Controller extends Indicia_Controller {
   }
 
 }
-
-?>

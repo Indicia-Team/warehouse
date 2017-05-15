@@ -673,12 +673,11 @@ class ORM_Core {
           $this->$key = $value;
         }
       }
-
+      
       if ($save === TRUE OR is_string($save))
       {
         // Save this object
         $this->save();
-
         if (is_string($save))
         {
           // Redirect to the saved page

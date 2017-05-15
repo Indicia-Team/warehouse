@@ -127,5 +127,3 @@ class Location_Attributes_Website_Model extends Valid_ORM
 
 
 }
-
-?>

@@ -48,5 +48,3 @@ class Taxon_rank_Model extends ORM {
     return parent::validate($array, $save);
   }
 }
-
-?>

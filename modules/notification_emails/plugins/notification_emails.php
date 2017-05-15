@@ -377,4 +377,3 @@ function send_out_user_email($db, $emailContent, $userId, $notificationIds, $ema
     throw $e;
   }
 }
-?>

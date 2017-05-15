@@ -30,93 +30,89 @@
  */
 class System_Model extends ORM
 {
-    protected $table_names_plural = FALSE;
-    
-    /**
-     * @var array $system_data
-     */
-    private $system_data;
+  /**
+   * @var array $system_data
+   */
+  private $system_data;
 
-    /**
-     * get indicia version
-     * @param string $name Name of the module or application to check the version for
-     * @return string
-     */
-    public function getVersion($name='Indicia')
-    {
-      $this->getSystemData($name);
-      if (isset($this->system_data[$name]))
-        $data = $this->system_data[$name];
-      return isset($data) ? $data->version : '0.0.0';
-    }
-    
-    /**
-     * get indicia version
-     *
-     * @return string
-     */
-    public function getLastScheduledTaskCheck($name='Indicia')
-    {
-      $this->getSystemData($name);
-      if (isset($this->system_data[$name]))
-        $data = $this->system_data[$name];
-      return isset($data) ? $data->last_scheduled_task_check : 0;
-    }
-    
-    /**
-     * get indicia version
-     * @param string $name Name of the script that was run last in the update process
-     * @return string
-     */
-    public function getLastRunScript($name='Indicia')
-    {
-      $this->getSystemData($name);
-      if (isset($this->system_data[$name]))
-        $data = $this->system_data[$name];
-      // note last_run_script only exists after v0.8.
-      return isset($data) && isset($data->last_run_script) ? $data->last_run_script : '';
-    }
-    
-    /**
-     * Function which ensures that the system table entry exists for an application or module.
-     * @param type $name 
-     */
-    public function forceSystemEntry($name) {
-      $this->getSystemData($name);
-      if (!isset($this->system_data[$name])) {
-        $data=array(
-            'version'=>'',
-            'name'=>$name,
-            'repository'=>'Not specified',
-            'release_date'=>'now()'
-        );
-        if ($name==='Indicia')
-          // We don't want to create notifications for the entire database when the notifications
-          // system is enabled via upgrade - just new records.
-          $data['last_scheduled_task_check']=now();
-        $this->db->insert('system', $data);
-      }
-    }
+  /**
+   * get indicia version
+   * @param string $name Name of the module or application to check the version for
+   * @return string
+   */
+  public function getVersion($name='Indicia')
+  {
+    $this->getSystemData($name);
+    if (isset($this->system_data[$name]))
+      $data = $this->system_data[$name];
+    return isset($data) ? $data->version : '0.0.0';
+  }
 
-    /**
-     * Load on demand for records from the system table.
-     * @param <type> $name
-     */
-    private function getSystemData($name) {
-      if (!isset($system_data[$name])) {
-        // The following ensures that a blank name in the system table is treated as the system row for the indicia warehouse.
-        // Having a blank name should not really occur, but it does seem to in some update sequences. This won't matter after
-        // v0.6.
-        $this->db->update('system', array('name' => 'Indicia'), array('name' => ''));
-        $result = $this->db->select('*')
-            ->from('system')
-            ->where(array('name'=>"$name"))
-            ->limit(1)
-            ->get();
-        if (count($result)>0)
-          $this->system_data[$name] = $result[0];
-      }
+  /**
+   * get indicia version
+   *
+   * @return string
+   */
+  public function getLastScheduledTaskCheck($name='Indicia')
+  {
+    $this->getSystemData($name);
+    if (isset($this->system_data[$name]))
+      $data = $this->system_data[$name];
+    return isset($data) ? $data->last_scheduled_task_check : 0;
+  }
+
+  /**
+   * get indicia version
+   * @param string $name Name of the script that was run last in the update process
+   * @return string
+   */
+  public function getLastRunScript($name='Indicia')
+  {
+    $this->getSystemData($name);
+    if (isset($this->system_data[$name]))
+      $data = $this->system_data[$name];
+    // note last_run_script only exists after v0.8.
+    return isset($data) && isset($data->last_run_script) ? $data->last_run_script : '';
+  }
+
+  /**
+   * Function which ensures that the system table entry exists for an application or module.
+   * @param type $name
+   */
+  public function forceSystemEntry($name) {
+    $this->getSystemData($name);
+    if (!isset($this->system_data[$name])) {
+      $data=array(
+          'version'=>'',
+          'name'=>$name,
+          'repository'=>'Not specified',
+          'release_date'=>'now()'
+      );
+      if ($name==='Indicia')
+        // We don't want to create notifications for the entire database when the notifications
+        // system is enabled via upgrade - just new records.
+        $data['last_scheduled_task_check']=now();
+      $this->db->insert('system', $data);
     }
+  }
+
+  /**
+   * Load on demand for records from the system table.
+   * @param <type> $name
+   */
+  private function getSystemData($name) {
+    if (!isset($system_data[$name])) {
+      // The following ensures that a blank name in the system table is treated as the system row for the indicia warehouse.
+      // Having a blank name should not really occur, but it does seem to in some update sequences. This won't matter after
+      // v0.6.
+      $this->db->update('system', array('name' => 'Indicia'), array('name' => ''));
+      $result = $this->db->select('*')
+          ->from('system')
+          ->where(array('name'=>"$name"))
+          ->limit(1)
+          ->get();
+      if (count($result)>0)
+        $this->system_data[$name] = $result[0];
+    }
+  }
 }
-
-?>

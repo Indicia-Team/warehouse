@@ -51,5 +51,3 @@ class Trigger_Model extends ORM {
     return parent::validate($array, $save);
   }
 }
-
-?>

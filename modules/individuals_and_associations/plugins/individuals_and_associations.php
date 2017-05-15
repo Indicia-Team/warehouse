@@ -94,5 +94,3 @@ function individuals_and_associations_extend_data_services() {
     'occurrences_subject_observations'=>array(),
   );
 }
-
-?>

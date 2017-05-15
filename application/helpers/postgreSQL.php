@@ -83,7 +83,7 @@ join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and o
   and (coalesce(oc.generated_by, '')<>'data_cleaner_identification_difficulty' or coalesce(oc.generated_by_subtype, '') not in ('1','2'))
   and oc.record_status is null -- exclude auto-generated verifications
 where co.created_by_id<>1
--- verifications (automated or human)
+-- verifications (human only, no longer notify on automated verification)
 union 
 select distinct 'V', co.id, co.created_by_id as notify_user_id, cttl.taxon, co.date_start, co.date_end, co.date_type, snf.public_entered_sref,
         co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.record_substatus, co.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
@@ -92,7 +92,8 @@ from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
 left join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date' 
-  and oc.record_status is not null
+  and oc.record_status is not null -- verifications
+  and oc.auto_generated = false -- but exclude auto-generated verifications
 where co.created_by_id<>1 and co.verified_on>'$last_run_date'
 -- a comment on your record
 union 

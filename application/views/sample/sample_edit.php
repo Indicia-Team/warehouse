@@ -37,6 +37,11 @@ if (isset($_POST))
 <label for='survey'>Survey:</label>
 <input readonly="readonly" class="ui-state-disabled" id="survey" value="<?php echo $model->survey->title; ?>" /><br/>
 <?php
+$parent_id = html::initial_value($values, 'sample:parent_id');
+if ($parent_id != null) : ?>
+  <h2>Child of: <a href="<?php echo url::site() ?>sample/edit/<?php echo $parent_id ?>" >Sample ID <?php echo $parent_id ?></a></h2>
+<?php endif;
+
 echo data_entry_helper::date_picker(array(
   'label' => 'Date',
   'fieldname' => 'sample:date',
@@ -77,6 +82,24 @@ echo data_entry_helper::text_input(array(
   'fieldname' => 'sample:location_name',
   'default' => html::initial_value($values, 'sample:location_name')
 ));
+$location_id = html::initial_value($values, 'sample:location_id');
+if ($location_id != null) : ?>
+  <h2>Associated with location record: <a href="<?php echo url::site() ?>location/edit/<?php echo $location_id ?>" >
+        <?php echo ORM::factory("location",$location_id)->name ?></a>
+    </h2>
+<?php endif;
+echo data_entry_helper::autocomplete(array(
+    'label' => 'Location',
+    'fieldname' => 'sample:location_id',
+    'table' => 'location',
+    'captionField' => 'name',
+    'valueField' => 'id',
+    'extraParams' => $readAuth,
+    'default' => $location_id,
+    'defaultCaption' => ($location_id != null ? html::specialchars($model->location->name) : null)
+//    'disabled' => $disabled,
+  ));
+
 echo data_entry_helper::textarea(array(
   'label' => 'Recorder Names',
   'helpText' => 'Enter the names of the recorders, one per line',

@@ -402,5 +402,3 @@ class spatial_ref {
     }
   }
 }
-
-?>

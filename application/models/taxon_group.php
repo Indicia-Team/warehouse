@@ -46,5 +46,3 @@ class Taxon_Group_Model extends ORM {
     return parent::validate($array, $save);
   }
 }
-
-?>

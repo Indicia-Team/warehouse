@@ -60,4 +60,3 @@ $config['lat_long_systems'] = array
   '4326' => array('default_output' => 'D', 'indicator' => 'Postfix_NSEW'),
   '4277' => array('default_output' => 'D', 'indicator' => 'Postfix_NSEW')
 );
-?>

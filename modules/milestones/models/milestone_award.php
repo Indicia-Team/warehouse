@@ -47,4 +47,3 @@ class Milestone_Award_Model extends ORM {
     return parent::validate($array, $save);
   }
 }
-?>

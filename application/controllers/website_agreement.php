@@ -70,5 +70,3 @@ class Website_agreement_Controller extends Gridview_Base_Controller
   }
 
 }
-
-?>

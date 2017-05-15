@@ -262,4 +262,3 @@ class Logged_action_Controller extends Indicia_Controller {
   }
   
 }
-?>

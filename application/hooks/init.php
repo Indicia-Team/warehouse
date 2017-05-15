@@ -87,5 +87,3 @@ class Indicia
 
 Event::add('system.ready',   array('Indicia', 'init'));
 Event::add('system.routing', array('Indicia', 'prepare_connection'));
-
-?>

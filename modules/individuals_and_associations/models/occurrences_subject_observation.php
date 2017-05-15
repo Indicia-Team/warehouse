@@ -55,5 +55,3 @@ class Occurrences_subject_observation_Model extends ORM
   }
 
 }
-
-?>

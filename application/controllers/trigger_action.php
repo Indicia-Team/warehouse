@@ -77,4 +77,3 @@ class Trigger_Action_Controller extends Gridview_Base_Controller {
     parent::edit($ta[0]->id);
   }
 }
-?>

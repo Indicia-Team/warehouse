@@ -43,4 +43,3 @@ class Subject_observation_attribute_Controller extends Attr_Gridview_Base_Contro
     return 'custom_attribute/custom_attribute_edit';
   }
 }
-?>

@@ -47,4 +47,3 @@ class Taxon_rank_Controller extends Gridview_Base_Controller {
     return $this->auth->logged_in('CoreAdmin');
   }
 }
-?>

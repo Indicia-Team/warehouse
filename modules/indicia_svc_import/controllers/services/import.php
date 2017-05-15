@@ -30,7 +30,6 @@ defined('SYSPATH') or die('No direct script access.');
  * @subpackage Data
  */
 class Import_Controller extends Service_Base_Controller {
-
   private $submissionStruct;
 
   /**
@@ -78,7 +77,7 @@ class Import_Controller extends Service_Base_Controller {
         break;
     }
     $model = ORM::factory($model);
-    $website_id = empty($_GET['website_id']) ? NULL : $_GET['website_id'];
+    $website_id = empty($_GET['website_id']) ? NULL : $_GET['website_id'];  
     $survey_id = empty($_GET['survey_id']) ? NULL : $_GET['survey_id'];
     $use_associations = (empty($_GET['use_associations']) ? FALSE : ($_GET['use_associations'] == "true" ? TRUE : FALSE));
     echo json_encode($model->getSubmittableFields(TRUE, $website_id, $survey_id, $attrTypeFilter, $use_associations));
@@ -372,7 +371,7 @@ class Import_Controller extends Service_Base_Controller {
                 preg_match("/^$associatedRecordPrefix:fk_taxa_taxon_list/", $assocField));
           }
         }
-
+        
         // If posting a supermodel, are the details of the supermodel the same as for the previous CSV row? If so, we can link to that
         // record rather than create a new supermodel record.
         $updatedPreviousCsvSupermodelDetails = $this->checkForSameSupermodel($saveArray, $model, $associationExists);
@@ -380,7 +379,6 @@ class Import_Controller extends Service_Base_Controller {
         $model->clear();
         // Save the record
         $model->set_submission_data($saveArray, TRUE);
-
         /* At this point, if model has associations (i.e. a module is active called <modelSingular>_associations)
            we flip the submission so the model becomes the subModel. This way we can bolt any second associated
            record in, into the submodel array. */

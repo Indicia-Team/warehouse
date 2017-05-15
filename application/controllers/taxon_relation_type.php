@@ -48,4 +48,3 @@ class Taxon_Relation_Type_Controller extends Gridview_Base_Controller {
     return $this->auth->logged_in('CoreAdmin');
   }
 }
-?>

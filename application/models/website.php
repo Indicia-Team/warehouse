@@ -113,5 +113,3 @@ class Website_Model extends ORM
   }
 
 }
-
-?>

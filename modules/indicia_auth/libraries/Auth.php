@@ -498,4 +498,16 @@ class Auth_Core {
     return $salt;
   }
 
+  /**
+   * Confirms that a provided password hashes to match the one in the database.
+   * @param $password Password provided by the user login.
+   * @param $hash Hash value stored in the database.
+   * @return bool True if OK
+   */
+  public function checkPasswordAgainstHash($password, $hash) {
+    $salt = $this->find_salt($hash);
+    $hashed_password = $this->hash_password($password, $salt);
+    return $hash === $hashed_password;
+  }
+
 } // End Auth
