@@ -31,6 +31,12 @@
 class System_Model extends ORM
 {
   /**
+   * Disables pluralisation of this model to get the table name.
+   * @var bool
+   */
+  protected $table_names_plural = FALSE;
+  
+  /**
    * @var array $system_data
    */
   private $system_data;
