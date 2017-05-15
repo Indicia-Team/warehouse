@@ -30,8 +30,6 @@
  */
 class System_Model extends ORM
 {
-  protected $table_names_plural = FALSE;
-
   /**
    * @var array $system_data
    */
