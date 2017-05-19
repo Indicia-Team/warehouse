@@ -42,13 +42,38 @@ $config['dataset_name_attr_id'] = 99;
  * * directClient - allow the client system ID and shared secret to be passed directly.
  * * directWebsite - allow the website ID and password to be passed directly.
  * Note that hmacUser is not supported as the password is hashed on the server so a
- * hmac cannot be generated.
+ * hmac cannot be generated. Each key points to an array of options:
+ * * allow_http - this must be set if access over http (rather than https) is going to be enabled. Use with caution in
+ *   production environments.
+ * * resource_options - pass the name of a resource (e.g. reports) and an array of flags to pass to the resource. Flags
+ *   depend on the resource.
  */
 $config['authentication_methods'] = array(
-  'hmacClient' => array('allow_http'),
-  'hmacWebsite' => array('allow_http', 'allow_all_report_access'),
-  'directClient' => array(),
-  'oauth2User' => array()
+  'hmacClient' => array(
+    // HMAC is a bit safer over https as the authentication secrets are never shared. There are still implications for
+    // the data itself though.
+    'allow_http',
+    'resource_options' => array(
+      // grants full access to all reports. Client configs can override this.
+      'reports' => array()
+    )
+  ),
+  'hmacWebsite' => array('allow_http', 'resource_options' => array(
+    'resource_options' => array(
+      // featured reports with cached summary data only - highly restricted
+      'reports' => array('featured' => true, 'summary' => true, 'cached' => true)
+    )
+  )),
+  'directClient' => array(
+    'resource_options' => array(
+      // grants full access to all reports. Client configs can override this.
+      'reports' => array()
+    )
+  ),
+  'oauth2User' => array('resource_options' => array(
+    // grants full access to all reports. Client configs can override this.
+    'reports' => array('featured' => true, 'limit_to_own_data' => true)
+  ))
 );
 
 /**
@@ -75,7 +100,10 @@ $config['clients']=array(
         'filter_id' => 53,
         'sharing' => 'verification',
         // optional, which resources are available? Default is all.
-        'resources' => array('taxon-observations', 'annotations')
+        'resources' => array('taxon-observations', 'annotations', 'reports'),
+        'resource_options' => array(
+          'reports' => array('raw_data', 'featured')
+        )
       )
     )
   )

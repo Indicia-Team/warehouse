@@ -110,6 +110,37 @@ class RestApiAbort extends Exception {}
  */
 class Rest_Controller extends Controller {
 
+  // Set sensible defaults for the authentication methods available.
+  private $defaultAuthenticationMethods = array(
+    'hmacClient' => array(
+      // HMAC is a bit safer over https as the authentication secrets are never shared. There are still implications for
+      // the data itself though.
+      'allow_http',
+      'resource_options' => array(
+        // grants full access to all reports. Client configs can override this.
+        'reports' => array()
+      )
+    ),
+    'hmacWebsite' => array('allow_http', 'resource_options' => array(
+      'resource_options' => array(
+        // featured reports with cached summary data only - highly restricted
+        'reports' => array('featured' => true, 'summary' => true, 'cached' => true)
+      )
+    )),
+    'directClient' => array(
+      'resource_options' => array(
+        // grants full access to all reports. Client configs can override this.
+        'reports' => array()
+      )
+    ),
+    'oauth2User' => array(
+      'resource_options' => array(
+        // grants full access to all reports. Client configs can override this.
+        'reports' => array('featured' => true, 'limit_to_own_data' => true)
+      )
+    )
+  );
+
   private $apiResponse;
 
   /**
@@ -1184,12 +1215,7 @@ class Rest_Controller extends Controller {
     $methods = Kohana::config('rest.authentication_methods');
     // Provide a default if not configured
     if (!$methods) {
-      $methods = array(
-        'hmacClient' => array('allow_http'),
-        'hmacWebsite' => array('allow_http', 'allow_all_report_access'),
-        'directClient' => array(),
-        'oauth2User' => array()
-      );
+      $methods = $this->defaultAuthenticationMethods;
     }
     if ($this->restrictToAuthenticationMethods !== FALSE) {
       $methods = array_intersect_key($methods, $this->restrictToAuthenticationMethods);
@@ -1340,7 +1366,6 @@ class Rest_Controller extends Controller {
     $config = Kohana::config('rest.clients');
     if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
       list($u, $clientSystemId, $h, $secret) = explode(':', $headers['Authorization']);
-      kohana::log('debug', 'authorisation: ' . $headers['Authorization']);
       if ($u !== 'USER' || $h !== 'SECRET') {
         return;
       }
