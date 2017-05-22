@@ -501,7 +501,7 @@ class Rest_Controller extends Controller {
       if (!isset($this->resourceOptions))
         $this->resourceOptions = array();
       // caching can be enabled via a query string parameter if not already forced by the authorisation config
-      if (!empty($_GET['caches']) && $_GET['caches'] === 'true') {
+      if (!empty($_GET['cached']) && $_GET['cached'] === 'true') {
         $this->resourceOptions['cached'] = true;
       }
       if (array_key_exists($this->resourceName, $this->resourceConfig)) {
