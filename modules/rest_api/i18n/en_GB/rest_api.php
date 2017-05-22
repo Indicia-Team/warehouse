@@ -100,6 +100,8 @@
       'sortdir' => 'Direction of sort, ASC or DESC',
       'columns' => 'Comma separated list of column fieldnames to include in the report output. Default is all ' .
           'available in the report.',
+      'cached' => 'Set to true to enable server side caching of the report output. Repeated requests with for the ' .
+          'same report and parameters will be fast but data will not be fully up to date.',
       '{report parameter}' => 'Supply report parameter values for filtering as defined by the report /params resource.'
     ),
     'reports/{report_path}.xml/params' => array(),
