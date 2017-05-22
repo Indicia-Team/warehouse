@@ -32,7 +32,8 @@
     'resourceOptionInfo-summary' => 'is limited to reports which show summary data',
     'resourceOptionInfo-cached' => 'shows cached data which may be slightly out of date',
     'resourceOptionInfo-limit_to_own_data' => 'is limited to data entered by you',
-    'format_param_help' => 'Request a response in this format, either html or json (default).',
+    'format_param_help' => 'Request a response in this format, either html or json (default). You can also set the ' .
+        'response format using the Accept http header, setting it to text/html or application/json as required.',
     'resources' => array(
       'projects' => 'Retrieve a list of projects available to this client system ID. Only available ' .
           'when authenticating as a client system defined in the REST API\'s configuration file.',
