@@ -6,7 +6,7 @@
     'introduction' => 'Provides RESTful access to data in the Indicia warehouse database.',
     'authenticationTitle' => 'Authentication',
     'authIntroduction' => 'For information on authentication, see the ' .
-        '<a href="http://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/authentiction.html">' .
+        '<a href="http://indicia-docs.readthedocs.io/en/latest/developing/rest-web-services/authentication.html">' .
         'authentication documentation.</a> The available authentication options are described in the table below.',
     'resourcesTitle' => 'Resources',
     'authMethods' => 'Allowed authentication methods',
