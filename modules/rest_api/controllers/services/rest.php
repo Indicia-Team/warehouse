@@ -1133,8 +1133,10 @@ class Rest_Controller extends Controller {
       $keys = array_merge($params);
       unset($keys['format']);
       unset($keys['secret']);
+      unset($keys['proj_id']);
+      unset($keys['cached']);
       ksort($keys);
-      $reportGuid = $report . ':' . http_build_query($params);
+      $reportGuid = $report . ':' . http_build_query($keys);
       $cacheId = md5($reportGuid);
       if ($cached = $cache->get($cacheId)) {
         // The first element of the cache data is the report plus parameters - check it is the same (in case the md5
