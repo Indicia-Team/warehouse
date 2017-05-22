@@ -26,12 +26,12 @@
 $config['user_id'] = 'BRC';
 
 $config['authentication_methods'] = array(
-  'hmacClient'  => array('allow_http'),
-  'hmacWebsite' => array('allow_http', 'allow_all_report_access'),
-  'directUser' => array('allow_http'),
-  'directClient' => array('allow_http'),
-  'directWebsite' => array('allow_http'),
-  'oauth2User' => array('allow_http')
+  'hmacClient'  => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
+  'hmacWebsite' => array('allow_http', 'resource_options' => array('reports' => array())),
+  'directUser' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
+  'directClient' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
+  'directWebsite' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
+  'oauth2User' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true)))
 );
 
 $config['allow_auth_tokens_in_url'] = FALSE;
