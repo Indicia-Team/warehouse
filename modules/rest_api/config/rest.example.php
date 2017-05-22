@@ -82,11 +82,12 @@ $config['authentication_methods'] = array(
  */
 $config['allow_auth_tokens_in_url'] = FALSE;
 
-// The following configuration is a temporary definition of the projects available for 
-// each website.
+// The following configuration defines a list of clients for the REST API (other than the intrinsic website
+// registrations and warehouse user clients). Each client has access to a number of projects which provide filtered
+// access to the records of a given website registration.
 // @todo Move this configuration into a database table.
 $config['clients']=array(
-  // keyed by client system ID
+  // keyed by client ID
   'BTO' => array(
     'shared_secret' => 'password',
     'projects' => array(
