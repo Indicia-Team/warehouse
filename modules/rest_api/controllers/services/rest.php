@@ -501,7 +501,7 @@ class Rest_Controller extends Controller {
       if (!isset($this->resourceOptions))
         $this->resourceOptions = array();
       // caching can be enabled via a query string parameter if not already forced by the authorisation config
-      if (!empty($_GET['caches']) && $_GET['caches'] === 'true') {
+      if (!empty($_GET['cached']) && $_GET['cached'] === 'true') {
         $this->resourceOptions['cached'] = true;
       }
       if (array_key_exists($this->resourceName, $this->resourceConfig)) {
@@ -1133,8 +1133,10 @@ class Rest_Controller extends Controller {
       $keys = array_merge($params);
       unset($keys['format']);
       unset($keys['secret']);
+      unset($keys['proj_id']);
+      unset($keys['cached']);
       ksort($keys);
-      $reportGuid = $report . ':' . http_build_query($params);
+      $reportGuid = $report . ':' . http_build_query($keys);
       $cacheId = md5($reportGuid);
       if ($cached = $cache->get($cacheId)) {
         // The first element of the cache data is the report plus parameters - check it is the same (in case the md5
