@@ -102,8 +102,18 @@ HTML;
       if (!in_array('allow_http', $cfg))
         $methodNotes[] = kohana::lang("rest_api.onlyAllowHttps") .
             ' (' . str_replace('http:', 'https:', url::base()) . 'index.php/services/rest).';
-      if (!in_array('allow_all_report_access', $cfg))
-        $methodNotes[] = kohana::lang("rest_api.onlyAllowFeaturedReports");
+      if (isset($cfg['resource_options'])) {
+        foreach ($cfg['resource_options'] as $resource => $options) {
+          if (!empty($options)) {
+            $note = kohana::lang('rest_api.resourceOptionInfo', '<em>' . $resource . '</em>') . ':';
+            $optionTexts = array();
+            foreach ($options as $option => $value) {
+              $optionTexts[] = '<li>' . kohana::lang("rest_api.resourceOptionInfo-$option") . '</li>';
+          }
+            $methodNotes[] = "<p>$note</p><ul>" . implode('', $optionTexts) . '</ul>';
+          }
+        }
+      }
       $authRows .= '<tr><th scope="row">' . kohana::lang("rest_api.$method") . '</th>';
       $authRows .= '<td>' . kohana::lang("rest_api.{$method}Help") . ' ' . implode(' ', $methodNotes) . '</td></tr>';
     }
@@ -173,8 +183,18 @@ HTML;
       if (!in_array('allow_http', $cfg))
         $methodNotes[] = kohana::lang("rest_api.onlyAllowHttps") .
           ' (' . str_replace('http:', 'https:', url::base()) . 'index.php/services/rest).';
-      if (!in_array('allow_all_report_access', $cfg))
-        $methodNotes[] = kohana::lang("rest_api.onlyAllowFeaturedReports");
+      if (isset($cfg['resource_options'])) {
+        foreach ($cfg['resource_options'] as $resource => $options) {
+          if (!empty($options)) {
+            $note = kohana::lang('rest_api.resourceOptionInfo', $resource);
+            $optionTexts = array();
+            foreach ($options as $option => $value) {
+              $optionTexts[] = kohana::lang("rest_api.resourceOptionInfo-$option");
+            }
+            $methodNotes[] = "$note: " . implode('; ', $optionTexts) . '. ';
+          }
+        }
+      }
       $r['authorisation'][$method] = array(
         'name' => kohana::lang("rest_api.$method"),
         'help' => kohana::lang("rest_api.{$method}Help") . ' ' . implode(' ', $methodNotes)

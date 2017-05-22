@@ -162,6 +162,9 @@ class ReportEngine {
         if (!empty($metadata['featured'])) {
           $reportInfo['featured'] = $metadata['featured'];
         }
+        if (!empty($metadata['summary'])) {
+          $reportInfo['summary'] = $metadata['summary'];
+        }
         $files[$file] = $reportInfo;
       }
     }

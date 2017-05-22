@@ -37,12 +37,17 @@ h4 {
 }
 
 /* line 36, sass/rest_api.scss */
+li {
+  margin-left: 2em;
+}
+
+/* line 40, sass/rest_api.scss */
 table {
   border-collapse: collapse;
   margin-top: 1em;
   min-width: 50%;
 }
-/* line 41, sass/rest_api.scss */
+/* line 45, sass/rest_api.scss */
 table caption {
   padding: 0.25em;
   background-color: #C1DAD7;
@@ -50,27 +55,27 @@ table caption {
   border-bottom: none;
   font-weight: bold;
 }
-/* line 50, sass/rest_api.scss */
+/* line 54, sass/rest_api.scss */
 table th[scope=col] {
   background-color: #C1DAD7;
 }
-/* line 53, sass/rest_api.scss */
+/* line 57, sass/rest_api.scss */
 table th[scope=row] {
   background-color: #e6e6e6;
 }
-/* line 55, sass/rest_api.scss */
+/* line 59, sass/rest_api.scss */
 table th[scope=row].type-report {
   background: #e6e6e6 url(../../../../media/images/report_datatable.png) no-repeat 4px 2px;
   background-size: 25px 25px;
   padding-left: 32px;
 }
-/* line 60, sass/rest_api.scss */
+/* line 64, sass/rest_api.scss */
 table th[scope=row].type-folder {
   background: #e6e6e6 url(../../../../media/images/folder.gif) no-repeat 4px 2px;
   background-size: 25px 25px;
   padding-left: 32px;
 }
-/* line 68, sass/rest_api.scss */
+/* line 72, sass/rest_api.scss */
 table td, table th {
   border: 1px solid silver;
   padding: 0.25em 0.5em;
