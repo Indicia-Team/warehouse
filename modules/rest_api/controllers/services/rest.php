@@ -121,12 +121,13 @@ class Rest_Controller extends Controller {
         'reports' => array()
       )
     ),
-    'hmacWebsite' => array('allow_http', 'resource_options' => array(
+    'hmacWebsite' => array(
+      'allow_http',
       'resource_options' => array(
         // featured reports with cached summary data only - highly restricted
         'reports' => array('featured' => true, 'summary' => true, 'cached' => true)
       )
-    )),
+    ),
     'directClient' => array(
       'resource_options' => array(
         // grants full access to all reports. Client configs can override this.
@@ -373,6 +374,9 @@ class Rest_Controller extends Controller {
               ),
               'columns' => array(
                 'datatype' => 'text'
+              ),
+              'cached' => array(
+                'datatype' => 'boolean'
               )
             )
           ),
@@ -496,6 +500,10 @@ class Rest_Controller extends Controller {
       }
       if (!isset($this->resourceOptions))
         $this->resourceOptions = array();
+      // caching can be enabled via a query string parameter if not already forced by the authorisation config
+      if (!empty($_GET['caches']) && $_GET['caches'] === 'true') {
+        $this->resourceOptions['cached'] = true;
+      }
       if (array_key_exists($this->resourceName, $this->resourceConfig)) {
         $resourceConfig = $this->resourceConfig[$this->resourceName];
         $this->method = $_SERVER['REQUEST_METHOD'];
