@@ -328,7 +328,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     // Check a folder that should definitely exist.
     $this->checkReportFolderInReponse($response['response'], 'library');
     // The demo report is not featured, so should not exist
-    $this->assertFalse(in_array('deno', $response['response']));
+    $this->assertFalse(array_key_exists('demo', $response['response']));
 
     // Repeat with an authMethod that allows access to non-featured reports. There
     // should be an additional featured folder at the top level with shortcuts
