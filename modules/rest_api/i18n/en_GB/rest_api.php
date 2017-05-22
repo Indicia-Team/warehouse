@@ -27,8 +27,13 @@
     'dontAllowAuthTokensInUrl' => 'Tokens required for authorisation must be passed in the Authorization header of ' .
         'the request.',
     'onlyAllowHttps' => 'This authentication method requires you to access the web service via https',
-    'onlyAllowFeaturedReports' => 'Only allows access to reports that have been vetted and flagged as featured.',
-    'format_param_help' => 'Request a response in this format, either html or json (default).',
+    'resourceOptionInfo' => 'The %s resource',
+    'resourceOptionInfo-featured' => 'is limited to reports which have been vetted and flagged as featured',
+    'resourceOptionInfo-summary' => 'is limited to reports which show summary data',
+    'resourceOptionInfo-cached' => 'shows cached data which may be slightly out of date',
+    'resourceOptionInfo-limit_to_own_data' => 'is limited to data entered by you',
+    'format_param_help' => 'Request a response in this format, either html or json (default). You can also set the ' .
+        'response format using the Accept http header, setting it to text/html or application/json as required.',
     'resources' => array(
       'projects' => 'Retrieve a list of projects available to this client system ID. Only available ' .
           'when authenticating as a client system defined in the REST API\'s configuration file.',

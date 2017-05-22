@@ -2,6 +2,7 @@
 <report title="Records by month (standard filters)"
         description="Counts records by month."
         featured="true"
+        summary="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     select #columns#

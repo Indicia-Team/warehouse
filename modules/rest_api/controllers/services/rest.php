@@ -110,6 +110,37 @@ class RestApiAbort extends Exception {}
  */
 class Rest_Controller extends Controller {
 
+  // Set sensible defaults for the authentication methods available.
+  private $defaultAuthenticationMethods = array(
+    'hmacClient' => array(
+      // HMAC is a bit safer over https as the authentication secrets are never shared. There are still implications for
+      // the data itself though.
+      'allow_http',
+      'resource_options' => array(
+        // grants full access to all reports. Client configs can override this.
+        'reports' => array()
+      )
+    ),
+    'hmacWebsite' => array('allow_http', 'resource_options' => array(
+      'resource_options' => array(
+        // featured reports with cached summary data only - highly restricted
+        'reports' => array('featured' => true, 'summary' => true, 'cached' => true)
+      )
+    )),
+    'directClient' => array(
+      'resource_options' => array(
+        // grants full access to all reports. Client configs can override this.
+        'reports' => array()
+      )
+    ),
+    'oauth2User' => array(
+      'resource_options' => array(
+        // grants full access to all reports. Client configs can override this.
+        'reports' => array('featured' => true, 'limit_to_own_data' => true)
+      )
+    )
+  );
+
   private $apiResponse;
 
   /**
@@ -135,6 +166,13 @@ class Rest_Controller extends Controller {
    * @var array
    */
   private $authConfig;
+
+  /**
+   * Flags and options passed to the resource which can be set by the chosen authorisation method or project config., for
+   * example flags to control access to featured vs all reports in the library.
+   * @var array
+   */
+  private $resourceOptions;
 
   /**
    * If the called resource only supports certain types of authentication, then
@@ -451,6 +489,13 @@ class Rest_Controller extends Controller {
         );
       }
       $this->authenticate();
+      if (!isset($this->resourceOptions)
+          && isset($this->authConfig['resource_options'])
+          && isset($this->authConfig['resource_options'][$this->resourceName])) {
+        $this->resourceOptions = $this->authConfig['resource_options'][$this->resourceName];
+      }
+      if (!isset($this->resourceOptions))
+        $this->resourceOptions = array();
       if (array_key_exists($this->resourceName, $this->resourceConfig)) {
         $resourceConfig = $this->resourceConfig[$this->resourceName];
         $this->method = $_SERVER['REQUEST_METHOD'];
@@ -683,24 +728,34 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Converts the segments in the URL to a full report path suitable for passing
-   * to the report engine.
-   * @param array $segments
-   * @return string
+   * Handler for GET requests to the reports resource. Can return one of the following:
+   * * A level of the report hierarchy (defined by the folder path in the segments after /reports/ in the url, e.g.
+   *   /reports/library/occurrences.
+   * * The output of a report defined by the file path in the segments after /reports/ in the url, e.g.
+   *   /reports/library/occurrences/filterable_explore_list.xml
+   * * A list of parameters for a report, if /params is added to the end of the file path in the URL segments, e.g.
+   *   /reports/library/occurrences/filterable_explore_list.xml/params.
+   * * A list of columns for a report, if /params is added to the end of the file path in the URL segments, e.g.
+   *   /reports/library/occurrences/filterable_explore_list.xml/columns.
+   *
+   * The reports GET request supports the following resource_options defined in the API's configuration file, either
+   * set for each authentication method, or each client project:
+   * * featured - set to true if only reports with the featured attribute set to true should be allowed. This restricts
+   *   API usage to reports which have been vetted and are known to be "well-behaved".
+   * * summary - set to true if only reports with the summary attribute set to true should be allowed. This restricts
+   *   API usage to reports which show summary data only.
+   * * cached - set to true if report output should be cached for performance at the cost of the data being slightly
+   *   out of date.
+   * * limit_to_own_data - set to true to ensure that only a users own records are included in report output. Applies
+   *   when authenticating as a warehouse user only.
    */
-  private function getReportFileNameFromSegments($segments) {
-    // report file specified. Don't need the .xml suffix.
-    $fileName = array_pop($segments);
-    $fileName = substr($fileName, 0, strlen($fileName) - 4);
-    $segments[] = $fileName;
-    return implode('/', $segments);
-  }
-
   private function reports_get() {
     $segments = $this->uri->segment_array();
+    // remove services/rest/reports from the URL segments.
     array_shift($segments);
     array_shift($segments);
     array_shift($segments);
+
     if (count($segments) && preg_match('/\.xml$/', $segments[count($segments)-1])) {
       $this->getReportOutput($segments);
     } elseif (count($segments)>1 && preg_match('/\.xml$/', $segments[count($segments)-2])) {
@@ -714,6 +769,20 @@ class Rest_Controller extends Controller {
     } else {
       $this->getReportHierarchy($segments);
     }
+  }
+
+  /**
+   * Converts the segments in the URL to a full report path suitable for passing
+   * to the report engine.
+   * @param array $segments
+   * @return string
+   */
+  private function getReportFileNameFromSegments($segments) {
+    // report file specified. Don't need the .xml suffix.
+    $fileName = array_pop($segments);
+    $fileName = substr($fileName, 0, strlen($fileName) - 4);
+    $segments[] = $fileName;
+    return implode('/', $segments);
   }
 
   /**
@@ -837,8 +906,8 @@ class Rest_Controller extends Controller {
     }
     $this->applyReportRestrictions($reportHierarchy);
     $relativePath = implode('/', $segments);
-    if (empty($segments) && in_array('allow_all_report_access', $this->authConfig)) {
-      // top level, so splice in a virtual folder for all featured reports.
+    // If at the top level of the hierarchy, add a virtual featured folder unless we are only showing featured reports
+    if (empty($segments) && empty($this->resourceOptions['featured'])) {
       $reportHierarchy = array(
           'featured' => array(
             'type' => 'folder',
@@ -871,16 +940,18 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Applies limitations to the available reports depending on the configuration.
-   * For example, it may be appropriate to limit user based authentication methods
-   * to featured reports only, to be sure they don't access a report which does not
-   * apply the user filter.
+   * Applies limitations to the available reports depending on the configuration. For example, it may be appropriate to
+   * limit user based authentication methods to featured reports only to be sure they don't access a report which does
+   * not apply the user filter, or summary reports which don't include raw data.
    * @param $reportHierarchy
    */
   private function applyReportRestrictions(&$reportHierarchy) {
-    if (!in_array('allow_all_report_access', $this->authConfig)) {
+    if (in_array('featured', $this->resourceOptions) || in_array('summary', $this->resourceOptions)) {
       foreach ($reportHierarchy as $item => &$cfg) {
-        if ($cfg['type'] === 'report' && (!isset($cfg['featured']) || $cfg['featured'] !== 'true')) {
+        if ($cfg['type'] === 'report' && (
+          (!empty($this->resourceOptions['featured']) && (!isset($cfg['featured']) || $cfg['featured'] !== 'true')) ||
+          (!empty($this->resourceOptions['summary']) && (!isset($cfg['summary']) || $cfg['summary'] !== 'true'))
+          )) {
           unset($reportHierarchy[$item]);
         } elseif ($cfg['type'] === 'folder') {
           // recurse into folders
@@ -1041,13 +1112,48 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Method to load the output of a report being used to construct an API call GET response.
+   * Method to load the output of a report being used to construct an API call GET response. This method uses the cache
+   * where relevant and calls loadReportFromDb only when a database hit is required.
    *
    * @param string $report Report name (excluding .xml extension)
    * @param array $params Report parameters in an associative array
    * @return array Report response structure
    */
   private function loadReport($report, $params) {
+    if (!empty($this->resourceOptions['cached'])) {
+      $cache = new Cache();
+      $keys = array_merge($params);
+      unset($keys['format']);
+      unset($keys['secret']);
+      ksort($keys);
+      $reportGuid = $report . ':' . http_build_query($params);
+      $cacheId = md5($reportGuid);
+      if ($cached = $cache->get($cacheId)) {
+        // The first element of the cache data is the report plus parameters - check it is the same (in case the md5
+        // filename clashed).
+        if ($cached[0] === $reportGuid) {
+          array_shift($cached);
+          return $cached;
+        }
+      }
+    }
+    $output = $this->loadReportFromDb($report, $params);
+    if (!empty($this->resourceOptions['cached'])) {
+      // Temporarily store the identifier for our request in the output, cache it, then remove the identifier.
+      array_unshift($output, $reportGuid);
+      $cache->set($cacheId, $output, 'reportOutput', Kohana::config('indicia.nonce_life'));
+      array_shift($output);
+    }
+    return $output;
+  }
+
+  /**
+   * Loads the data for a report from the database, without using caching.
+   * @param $report
+   * @param $params
+   * @return mixed
+   */
+  private function loadReportFromDb($report, $params) {
     $this->loadReportEngine();
     // @todo Apply permissions for user or website & write tests
     // load the filter associated with the project ID
@@ -1063,7 +1169,6 @@ class Rest_Controller extends Controller {
         // default filter - the user's records for this website only
         $filter = array(
           'website_list' => $this->clientWebsiteId,
-          // @todo Document created_by_id parameter
           'created_by_id' => $this->clientUserId
         );
       }
@@ -1091,9 +1196,9 @@ class Rest_Controller extends Controller {
     );
     // Include count query results if not already known from a previous request
     // @todo Don't run report query if count or limit are zero.
-    $report = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
-    $report['count'] =  empty($_GET['known_count']) ? $this->reportEngine->record_count() : $_GET['known_count'];;
-    return $report;
+    $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+    $output['count'] =  empty($_GET['known_count']) ? $this->reportEngine->record_count() : $_GET['known_count'];
+    return $output;
   }
 
   /**
@@ -1184,12 +1289,7 @@ class Rest_Controller extends Controller {
     $methods = Kohana::config('rest.authentication_methods');
     // Provide a default if not configured
     if (!$methods) {
-      $methods = array(
-        'hmacClient' => array('allow_http'),
-        'hmacWebsite' => array('allow_http', 'allow_all_report_access'),
-        'directClient' => array(),
-        'oauth2User' => array()
-      );
+      $methods = $this->defaultAuthenticationMethods;
     }
     if ($this->restrictToAuthenticationMethods !== FALSE) {
       $methods = array_intersect_key($methods, $this->restrictToAuthenticationMethods);
@@ -1225,10 +1325,11 @@ class Rest_Controller extends Controller {
         $tokens = explode('~', basename($path));
         if ($tokens[1] === 'oAuthUserAccessToken') {
           $data = $this->cache->get($tokens[0]);
-          kohana::log('debug', 'Data: ' . var_export($data, true));
           if (preg_match('/^USER_ID:(?P<user_id>\d+):WEBSITE_ID:(?P<website_id>\d+)$/', $data, $matches)) {
             $this->clientWebsiteId = $matches['website_id'];
-            $this->clientUserId = $matches['user_id'];
+            // If option limit_to_own_data set, then only allow access to own records.
+            if (!empty($this->resourceOptions['limit_to_own_data']))
+              $this->clientUserId = $matches['user_id'];
             $this->authenticated = TRUE;
           }
         }
@@ -1325,7 +1426,9 @@ class Rest_Controller extends Controller {
     }
     $auth = new Auth;
     if ($auth->checkPasswordAgainstHash($password, $users[0]['password'])) {
-      $this->clientUserId = $userId;
+      // If option limit_to_own_data set, then only allow access to own records.
+      if (!empty($this->resourceOptions['limit_to_own_data']))
+        $this->clientUserId = $userId;
       $this->clientWebsiteId = $websiteId;
       // @todo Is this user a member of the website?
       $this->authenticated = TRUE;
@@ -1340,7 +1443,6 @@ class Rest_Controller extends Controller {
     $config = Kohana::config('rest.clients');
     if (isset($headers['Authorization']) && substr_count($headers['Authorization'], ':') === 3) {
       list($u, $clientSystemId, $h, $secret) = explode(':', $headers['Authorization']);
-      kohana::log('debug', 'authorisation: ' . $headers['Authorization']);
       if ($u !== 'USER' || $h !== 'SECRET') {
         return;
       }
@@ -1366,7 +1468,13 @@ class Rest_Controller extends Controller {
       $this->apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
     }
     if (!empty($_REQUEST['proj_id'])) {
-      $this->clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
+      $projectConfig = $this->projects[$_REQUEST['proj_id']];
+      $this->clientWebsiteId = $projectConfig['website_id'];
+      // The client project config can override the resource options, e.g. access to summary or featured reports.
+      if (isset($projectConfig['resource_options']) &&
+          isset($projectConfig['resource_options'][$this->resourceName])) {
+        $this->resourceOptions = $projectConfig['resource_options'][$this->resourceName];
+      }
     }
     $this->authenticated = TRUE;
   }
