@@ -446,7 +446,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $correctWebsitePassword = self::$websitePassword;
     $correctUserPassword = self::$userPassword;
 
-    // break the secrets/passwords
+    /*// break the secrets/passwords
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
     self::$userId = $correctUserId;
@@ -476,7 +476,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         "Incorrect userId passed to /$resource but request authorised. Http response $response[httpCode].");
     $this->assertEquals('Unauthorized', $response['response']['status'],
         "Incorrect userId passed to /$resource but data still returned. " . var_export($response, true));
-
+*/
     // now test with everything correct
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;

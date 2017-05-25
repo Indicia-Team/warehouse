@@ -594,13 +594,12 @@ class Rest_Controller extends Controller {
     if (!array_key_exists($id, $this->projects)) {
       $this->apiResponse->fail('No Content', 204);
     }
-    $this->addItemMetadata($this->projects[$id], 'projects');
     // remove fields from the project that are for internal use only
     unset($this->projects[$id]['filter_id']);
     unset($this->projects[$id]['website_id']);
     unset($this->projects[$id]['sharing']);
     unset($this->projects[$id]['resources']);
-    $this->apiResponse->succeed($this->projects[$id]);
+    $this->apiResponse->succeed($this->projects[$id], array('attachHref'=>array('projects', 'id')));
   }
 
   /**
@@ -673,7 +672,10 @@ class Rest_Controller extends Controller {
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
     $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
-    $this->apiResponse->succeed($this->listResponseStructure($report['content']['records'], 'taxon-observations'));
+    $this->apiResponse->succeed(
+        $this->listResponseStructure($report['content']['records']),
+        array('attachHref' => array('taxon-observations', 'id'))
+    );
   }
 
   /**
@@ -724,15 +726,10 @@ class Rest_Controller extends Controller {
     }
     $report = $this->loadReport('rest_api/filterable_annotations', $params);
     $records = $report['content']['records'];
-    // for each record, restructure the taxon observations sub-object
-    foreach ($records as &$record) {
-      $record['taxonObservation'] = array(
-        'id' => $record['taxon_observation_id'],
-      );
-      $this->addItemMetadata($record['taxonObservation'], 'taxon-observations');
-      unset($record['taxon_observation_id']);
-    }
-    $this->apiResponse->succeed($this->listResponseStructure($records, 'annotations'));
+    $this->apiResponse->succeed(
+        $this->listResponseStructure($records),
+        array('attachHref' => array('annotations', 'taxon_observation_id'))
+    );
   }
 
   /**
@@ -938,7 +935,7 @@ class Rest_Controller extends Controller {
         }
         else {
           $path = empty($relativePath) ? $key : "$relativePath/$key";
-          $metadata['href'] = $this->getUrlWithCurrentParams("reports/$path");
+          $metadata['href'] = $this->apiResponse->getUrlWithCurrentParams("reports/$path");
         }
         $response[$key] = $metadata;
       }
@@ -977,9 +974,9 @@ class Rest_Controller extends Controller {
   }
 
   private function addReportLinks(&$metadata) {
-    $metadata['href'] = $this->getUrlWithCurrentParams("reports/$metadata[path].xml");
+    $metadata['href'] = $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml");
     $metadata['params'] = array(
-      'href' => $this->getUrlWithCurrentParams("reports/$metadata[path].xml/params")
+      'href' => $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/params")
     );
     if (!empty($metadata['standard_params'])) {
       // reformat the info that the report supports standard paramenters into REST structure
@@ -990,7 +987,7 @@ class Rest_Controller extends Controller {
       unset($metadata['standard_params']);
     }
     $metadata['columns'] = array(
-      'href' => $this->getUrlWithCurrentParams("reports/$metadata[path].xml/columns")
+      'href' => $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/columns")
     );
   }
 
@@ -1046,46 +1043,25 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Utility method for filtering empty values from an array.
-   * @param $value
-   * @return bool
-   */
-  private function notEmpty($value) {
-    return !empty($value);
-  }
-
-  /**
    * Adds metadata such as an href back to the resource to any resource object.
    * @param array $item The resource object as an array which will be updated with the metadata
    * @param string $entity The entity name used to access the resouce, e.g. taxon-observations
    */
   private function addItemMetadata(&$item, $entity) {
     $item['href'] = "$entity/$item[id]";
-    $item['href'] = $this->getUrlWithCurrentParams($item['href']);
+    $item['href'] = $this->apiResponse->getUrlWithCurrentParams($item['href']);
     // strip nulls and empty strings
     $item = array_filter($item, array($this, 'notEmpty'));
   }
 
+
   /**
-   * Takes a URL and adds the current metadata parameters from the request and
-   * adds them to the URL.
+   * Utility method for filtering empty values from an array.
+   * @param $value
+   * @return bool
    */
-  private function getUrlWithCurrentParams($url) {
-    $url = url::base() . "index.php/services/rest/$url";
-    $query = array();
-    $params = $this->request;
-    if (!empty($params['proj_id']))
-      $query['proj_id'] = $params['proj_id'];
-    if (!empty($params['format']))
-      $query['format'] = $params['format'];
-    if (!empty($params['user']))
-      $query['user'] = $params['user'];
-    if (!empty($params['secret']))
-      $query['secret'] = $params['secret'];
-    if (!empty($query))
-      return $url . '?' . http_build_query($query);
-    else
-      return $url;
+  function notEmpty($value) {
+    return !empty($value);
   }
 
   /**
@@ -1093,13 +1069,9 @@ class Rest_Controller extends Controller {
    * as the result from an API call. Adds pagination information as well as hrefs for contained objects.
    *
    * @param array $list Array of records from the database
-   * @param string $entity Resource name that is being accessed.
    * @return array Restructured version of the input list, with pagination and hrefs added.
    */
-  private function listResponseStructure($list, $entity) {
-    foreach ($list as &$item) {
-      $this->addItemMetadata($item, $entity);
-    }
+  private function listResponseStructure($list) {
     $pagination = array(
       'self'=>$this->generateLink(array('page'=>$this->request['page'])),
     );

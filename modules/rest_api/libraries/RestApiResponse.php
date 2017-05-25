@@ -315,6 +315,28 @@ HTML;
   }
 
   /**
+   * Takes a URL and adds the current metadata parameters from the request and
+   * adds them to the URL.
+   * @todo Move into a helper class?
+   */
+  public function getUrlWithCurrentParams($url) {
+    $url = url::base() . "index.php/services/rest/$url";
+    $query = array();
+    if (!empty($_REQUEST['proj_id']))
+      $query['proj_id'] = $_REQUEST['proj_id'];
+    if (!empty($params['format']))
+      $query['format'] = $_REQUEST['format'];
+    if (!empty($params['user']))
+      $query['user'] = $_REQUEST['user'];
+    if (!empty($params['secret']))
+      $query['secret'] = $_REQUEST['secret'];
+    if (!empty($query))
+      return $url . '?' . http_build_query($query);
+    else
+      return $url;
+  }
+
+  /**
    * Echos a successful response in HTML format.
    * @param array $data
    * @param array $metadata
@@ -545,6 +567,7 @@ ROW;
    * Echos a successful response in JSON format.
    * @param array $data
    * @param array $additional
+   * @todo Document $additional['attachHref']
    */
   private function succeedJson($data, $additional) {
     // If data returned from db in a pg object, need to iterate it and output 1 row at a time to avoid loading into
@@ -558,6 +581,19 @@ ROW;
       echo $parts[0];
       // output 1 row at a time instead of json encoding the lot or imploding as it could be big.
       foreach ($dbObject as $idx=>$row) {
+        if (isset($additional['attachHref'])) {
+          $attachResource = $additional['attachHref'][0];
+          $attachId = $additional['attachHref'][1];
+          if ($attachId <> 'id') {
+            $row->id = $row->$attachId;
+            unset($row->$attachId);
+          }
+          // @todo Fill in resource name correctly
+          $row->href = "$attachResource/$row->id";
+          $row->href = $this->getUrlWithCurrentParams($row->href);
+        }
+        // strip nulls and empty strings
+        $row = array_filter((array)$row, array($this, 'notEmpty'));
         echo json_encode($row);
         if ($idx < $dbObject->count()-1)
           echo ',';
@@ -597,4 +633,13 @@ ROW;
     return 'json';
   }
 
+  /**
+   * Utility method for filtering empty values from an array.
+   * @param $value
+   * @return bool
+   * @todo Code should be shared with controller.
+   */
+  function notEmpty($value) {
+    return !empty($value);
+  }
 }
