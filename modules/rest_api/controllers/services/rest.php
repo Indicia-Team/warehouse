@@ -824,11 +824,16 @@ class Rest_Controller extends Controller {
         $params['offset'] = $offset + $limit;
         $pagination['next'] = "$urlPrefix$url?" . http_build_query($params);
       }
-      $this->apiResponse->succeed(array(
-        'count' => $report['count'],
-        'paging' => $pagination,
-        'data' => $report['content']['records']
-      ));
+      $this->apiResponse->succeed(
+        array(
+          'count' => $report['count'],
+          'paging' => $pagination,
+          'data' => $report['content']['records']
+        ),
+        array(
+          'columns' => $report['content']['columns']
+        )
+      );
     } elseif (isset($report['content']['parameterRequest'])) {
       // @todo: handle param requests
       $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
@@ -863,8 +868,7 @@ class Rest_Controller extends Controller {
     }
     $this->apiResponse->responseTitle = ucfirst("$item for $reportFile");
     $this->apiResponse->wantIndex = true;
-    $this->apiResponse->succeed(array('data' => $list),
-      array('description' => $description));
+    $this->apiResponse->succeed(array('data' => $list), array('metadata' => array('description' => $description)));
   }
 
   /**
@@ -944,7 +948,7 @@ class Rest_Controller extends Controller {
     $relativePath = '/reports/' . ($relativePath ? "$relativePath/" : '');
     $description = 'A list of reports and report folders stored on the warehouse under ' .
       "the folder <em>$relativePath</em>. $folderReadme";
-    $this->apiResponse->succeed($response, array('description' => $description));
+    $this->apiResponse->succeed($response, array('metadata' => array('description' => $description)));
   }
 
   /**
@@ -1204,9 +1208,9 @@ class Rest_Controller extends Controller {
       array('limit' => REST_API_DEFAULT_PAGE_SIZE),
       $params
     );
+    // Get the output, setting the option to load a pg result object rather than populated array.
+    $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params, FALSE);
     // Include count query results if not already known from a previous request
-    // @todo Don't run report query if count or limit are zero.
-    $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
     $output['count'] =  empty($_GET['known_count']) ? $this->reportEngine->record_count() : $_GET['known_count'];
     return $output;
   }
