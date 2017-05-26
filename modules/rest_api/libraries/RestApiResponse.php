@@ -472,8 +472,12 @@ ROW;
     echo '<table>';
     if (isset($options['columns'])) {
       // Ensure href column title is added if we are including it
-      if (!empty($options['preprocess']) && !empty($options['attachHref']) && !in_array('href', $options['columns']))
-        $options['columns']['href'] = array();
+      if (!empty($options['preprocess'])) {
+        if (!empty($options['attachHref']) && !in_array('href', $options['columns']))
+          $options['columns']['href'] = array();
+        if (!empty($options['attachFkLink']) && !in_array($options['attachFkLink'][0], $options['columns'])) {
+          $options['columns'][$options['attachFkLink'][0]] = array();
+      }
       echo '<thead><tr>';
       foreach ($options['columns'] as $fieldname => $column) {
         $caption = isset($column['caption']) ? $column['caption'] : $fieldname;
@@ -515,9 +519,10 @@ ROW;
         unset($options['columnsToUnset']);
       }
       $count = count($data['data']);
-
       if (!empty($options['attachHref']) && !in_array('href', $columns))
         $columns[] = 'href';
+      if (!empty($options['attachFkLink']) && !in_array($options['attachFkLink'][0], $columns))
+        $columns[] = $options['attachFkLink'][0];
       echo $this->getCsvRow(array_combine($columns, $columns), $columns, $options) . "\r\n";
       $options['preprocess'] = true;
       foreach ($data['data'] as $idx => $row) {
