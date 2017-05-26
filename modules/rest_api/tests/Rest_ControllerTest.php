@@ -452,7 +452,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $correctWebsitePassword = self::$websitePassword;
     $correctUserPassword = self::$userPassword;
 
-    /*// break the secrets/passwords
+    // break the secrets/passwords
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
     self::$userId = $correctUserId;
@@ -482,7 +482,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         "Incorrect userId passed to /$resource but request authorised. Http response $response[httpCode].");
     $this->assertEquals('Unauthorized', $response['response']['status'],
         "Incorrect userId passed to /$resource but data still returned. " . var_export($response, true));
-*/
+
     // now test with everything correct
     self::$clientUserId = $correctClientUserId;
     self::$websiteId = $correctWebsiteId;
@@ -547,7 +547,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     // We should be able to request the taxon observation associated with the occurrence
     $session = $this->initCurl($data['taxonObservation']['href'], self::$clientUserId, self::$config['shared_secret']);
     $response = $this->getCurlResponse($session);
-    $this->assertResponseOk($response, '/taxon-observations/id');
+    $this->assertResponseOk($response, $data['taxonObservation']['href']);
     $this->checkValidTaxonObservation($response['response']);
   }
 

@@ -671,6 +671,14 @@ ROW;
       if (!in_array('href', $columns))
         $columns[] = 'href';
     }
+    // 'attachFkLink' => array('taxonObservation', 'taxon_observation_id', 'taxon-observation'),
+    if (isset($options['attachFkLink'])) {
+      $row[$options['attachFkLink'][0]] = array(
+        'id' => $row[$options['attachFkLink'][1]],
+        'href' => $this->getUrlWithCurrentParams($options['attachFkLink'][1] . '/' . $row[$options['attachFkLink'][1]])
+      );
+      unset($row[$options['attachFkLink'][1]]);
+    }
     if (isset($options['notEmpty'])) {
       $row = array_filter((array)$row, array($this, 'notEmpty'));
     }
