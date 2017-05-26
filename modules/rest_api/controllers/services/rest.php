@@ -697,7 +697,7 @@ class Rest_Controller extends Controller {
       );
       $this->apiResponse->succeed($record, array(
         'attachHref' => array('annotations', 'id'),
-        'attachFkLink' => array('taxonObservation', 'taxon_observation_id', 'taxon-observation'),
+        'attachFkLink' => array('taxonObservation', 'taxon_observation_id', 'taxon-observations'),
         'columns' => $report['content']['columns']
       ));
     }
@@ -730,7 +730,7 @@ class Rest_Controller extends Controller {
         $this->listResponseStructure($records),
         array(
           'attachHref' => array('annotations', 'id'),
-          'attachFkLink' => array('taxonObservation', 'taxon_observation_id', 'taxon-observation'),
+          'attachFkLink' => array('taxonObservation', 'taxon_observation_id', 'taxon-observations'),
           'columns' => $report['content']['columns']
         )
     );
