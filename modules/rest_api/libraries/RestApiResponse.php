@@ -321,7 +321,6 @@ HTML;
   /**
    * Takes a URL and adds the current metadata parameters from the request and
    * adds them to the URL.
-   * @todo Move into a helper class?
    */
   public function getUrlWithCurrentParams($url) {
     $url = url::base() . "index.php/services/rest/$url";
@@ -673,6 +672,17 @@ ROW;
     return 'json';
   }
 
+  /**
+   * Applies any preprocessing to the row of data about to be output. Includes:
+   * * Application of vague date processing
+   * * Removal of empty values
+   * * Attaching hrefs to data to point back to self
+   * * Attaching links to data to point to objects identified by foreign keys.
+   * * Removing unwanted columns.
+   * @param $row
+   * @param $options
+   * @param array $columns
+   */
   private function preProcessRow(&$row, &$options, &$columns = array()) {
     // For simplicity, convert pg result row objects to arrays so we can treat all the same.
     $row = (array)$row;
@@ -715,7 +725,6 @@ ROW;
    * Utility method for filtering empty values from an array.
    * @param $value
    * @return bool
-   * @todo Code should be shared with controller.
    */
   function notEmpty($value) {
     return !empty($value);

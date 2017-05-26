@@ -397,7 +397,7 @@ class Rest_Controller extends Controller {
    * Rest_Controller constructor.
    */
   public function __construct() {
-    // Ensure we have a db instance ready.
+    // Ensure we have a db instance and response object ready.
     $this->db = new Database();
     $this->apiResponse = new RestApiResponse();
     parent::__construct();
@@ -416,8 +416,7 @@ class Rest_Controller extends Controller {
 
   /**
    * Implement the oAuth2 token endpoint for password grant flow.
-   * @todo Also implement the client_credentials grant type for website level access
-   *       and client system level access.
+   * @todo Also implement the client_credentials grant type for website level access and client system level access.
    */
   public function token() {
     try {
@@ -842,11 +841,14 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   *
+   * Output either the columns list or params list for a report.
+   * @param array $segments URL segmens allowing the report path to be built.
+   * @param string $item Type of metadata - either parameters or columns
+   * @param string $description Description to include in the response metadata (for HTML only)
    */
   private function getReportMetadataItem($segments, $item, $description) {
     $this->apiResponse->includeEmptyValues = false;
-    // the last segment is the /params action.
+    // the last segment is the /params or /columns action.
     array_pop($segments);
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $this->loadReportEngine();
@@ -977,6 +979,11 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * Adds additional links to the metadata for a report - including to the report itself, plus to the columns and
+   * params subresources and a help link if standard params are supported.
+   * @param array $metadata Report metadata about to be output.
+   */
   private function addReportLinks(&$metadata) {
     $metadata['href'] = $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml");
     $metadata['params'] = array(
@@ -995,6 +1002,11 @@ class Rest_Controller extends Controller {
     );
   }
 
+  /**
+   * Finds all featured reports in the hierarchy.
+   * @param array $reportHierarchy
+   * @param array $reports Array which will be populated with a list of the reports.
+   */
   private function getFeaturedReports($reportHierarchy, &$reports) {
     foreach ($reportHierarchy as $key => $metadata) {
       if ($metadata['type'] === 'report' && !empty($metadata['featured'])) {
@@ -1069,6 +1081,9 @@ class Rest_Controller extends Controller {
     );
   }
 
+  /**
+   * Loads a single instance of the report engine.
+   */
   private function loadReportEngine() {
     // Should also return an object to iterate rather than loading the full array
     if (!isset($this->reportEngine)) {
@@ -1180,6 +1195,11 @@ class Rest_Controller extends Controller {
     return url::base() . 'index.php/services/rest/' . $this->resourceName . '?' . http_build_query($params);
   }
 
+  /**
+   * Returns the filter definition for a filter associated with a given project ID.
+   * @param string $id Project ID.
+   * @return array Filter definition.
+   */
   private function loadFilterForProject($id) {
     if (!isset($this->projects[$id]))
       $this->apiResponse->fail('Bad request', 400, 'Invalid project requested');
@@ -1196,6 +1216,12 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * If a filter ID is being passed in the URL to override the default limitation when authenticating as a user of only
+   * being able to see your own records, checks that the ID in the query params points to a filter belonging to the user
+   * which grants them additional permissions and if so, returns the definition of the filter.
+   * @return array Filter definition or empty array.
+   */
   private function getPermissionsFilterDefinition() {
     $filters = $this->db->select('definition')
       ->from('filters')
