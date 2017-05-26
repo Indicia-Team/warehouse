@@ -438,12 +438,14 @@ ROW;
         $class = is_array($value) && !empty($value['type']) ? " class=\"type-$value[type]\"" : '';
         echo "<tr><th scope=\"row\"$class>$key</th><td>";
         $options['tableId'] = $key;
-        if (is_array($value))
-          // recurse into plain array data
-          $this->outputArrayAsHtml($value, $options);
-        elseif (is_object($value))
+        // Object data here means a pg result object. Or, if it is an non-associative array so a simple list, then
+        // output as a table rather than a nested structure.
+        if (is_object($value) || (is_array($value) && count($value) > 0 && is_int(array_keys($value)[0])))
           // recurse into pg result data
           $this->outputResultAsHtml($value, $options);
+        elseif (is_array($value))
+          // recurse into plain array data
+          $this->outputArrayAsHtml($value, $options);
         else {
           // a simple value to output. If it contains an internal link then process it to hide user/secret data.
           if (preg_match('/http(s)?:\/\//', $value)) {

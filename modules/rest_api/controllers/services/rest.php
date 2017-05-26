@@ -1176,8 +1176,10 @@ class Rest_Controller extends Controller {
       array('limit' => REST_API_DEFAULT_PAGE_SIZE),
       $params
     );
-    // Get the output, setting the option to load a pg result object rather than populated array.
-    $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params, FALSE);
+    // Get the output, setting the option to load a pg result object rather than populated array unless we are going to
+    // cache the result in which case we need it all.
+    $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml',
+      $params, !empty($this->resourceOptions['cached']));
     // Include count query results if not already known from a previous request
     $output['count'] =  empty($_GET['known_count']) ? $this->reportEngine->record_count() : $_GET['known_count'];
     return $output;
