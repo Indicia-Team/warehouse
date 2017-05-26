@@ -258,22 +258,26 @@ HTML;
    * Outputs a data object as JSON (or chosen alternative format), in the case of successful operation.
    *
    * @param array $data Response data to output.
-   * @param array $additional Extra information, e.g. metadata for top of HTML output or array of columns.
+   * @param array $options Additional options for the output. Content can include:
+   * * metadata - information to display at top of HTML output
+   * * columns - list of column definitions for tabular output
+   * * attachHref
+   * * columnsToUnset - an array of columns to remove from tabular output
    */
-  public function succeed($data, $additional = array()) {
+  public function succeed($data, $options = array()) {
     $format = $this->getResponseFormat();
     switch ($format) {
       case 'html':
         header('Content-Type: text/html');
-        $this->succeedHtml($data, $additional);
+        $this->succeedHtml($data, $options);
         break;
       case 'csv':
         header('Content-Type: text/csv');
-        $this->succeedCsv($data, $additional);
+        $this->succeedCsv($data, $options);
         break;
       case 'json':
         header('Content-Type: application/json');
-        $this->succeedJson($data, $additional);
+        $this->succeedJson($data, $options);
         break;
       default:
         throw new RestApiAbort("Invalid format $format", 400);
@@ -301,7 +305,7 @@ HTML;
       header('Content-Type: text/html');
       $css = url::base() . "modules/rest_api/media/css/rest_api.css";
       echo str_replace('{css}', $css, $this->html_header);
-      $this->outputArrayAsHtml($response, 'Error');
+      $this->outputArrayAsHtml($response);
       echo '</body></html>';
     } else {
       header('Content-Type: application/json');
@@ -341,14 +345,14 @@ HTML;
    * @param array $data
    * @param array $metadata
    */
-  private function succeedHtml($data, $additional) {
+  private function succeedHtml($data, $options) {
     $css = url::base() . "modules/rest_api/media/css/rest_api.css";
     echo str_replace('{css}', $css, $this->html_header);
     if (!empty($this->responseTitle))
       echo '<h1>' . $this->responseTitle . '</h1>';
-    if (isset($additional['metadata'])) {
+    if (isset($options['metadata'])) {
       echo '<h2>Metadata</h2>';
-      $this->outputArrayAsHtml($additional['metadata']);
+      $this->outputArrayAsHtml($options['metadata']);
     }
 
     // output an index table if present for this output
@@ -356,9 +360,9 @@ HTML;
       echo $this->getIndexAsHtml($data['data']);
     }
     // output the main response body
-    if (isset($additional['metadata']) || !empty($this->responseTitle))
+    if (isset($options['metadata']) || !empty($this->responseTitle))
       echo '<h2>Response</h2>';
-    $this->outputArrayAsHtml($data, $additional);
+    $this->outputArrayAsHtml($data, $options);
     echo '</body></html>';
   }
 
@@ -401,11 +405,11 @@ ROW;
    * format type requested is HTML.
    *
    * @param array $array Data to output
-   * @param string $label Label to be used when linking to this array in the index.
+   * @param array $options
    */
-  private function outputArrayAsHtml($array, $additional = array()) {
+  private function outputArrayAsHtml($array, $options = array()) {
     if (count($array)) {
-      $id = isset($additional['tableId']) ? " id=\"$additional[tableId]\"" : '';
+      $id = isset($options['tableId']) ? " id=\"$options[tableId]\"" : '';
       echo "<table$id>";
       // If the data has a suitable field to generate a table caption then do so.
       $labelValues = array_intersect_key($array, array('title' => '', 'display' => '', 'caption' => ''));
@@ -417,20 +421,24 @@ ROW;
       $keys = array_keys($array);
       $col1 = is_integer($keys[0]) ? 'Row' : 'Field';
       $col2 = is_integer($keys[0]) ? 'Record' : 'Value';
+      $this->preProcessRow($array, $options);
       echo "<thead><th scope=\"col\">$col1</th><th scope=\"col\">$col2</th></thead>";
       echo '<tbody>';
       foreach ($array as $key=>$value) {
         if (empty($value) && !$this->includeEmptyValues)
           continue;
+        // If in a simple list of data or pg output, start preprocessing rows. Other structural output elements are not
+        // preprocessed.
+        $options['preprocess'] = is_int($key) || is_object($value);
         $class = is_array($value) && !empty($value['type']) ? " class=\"type-$value[type]\"" : '';
         echo "<tr><th scope=\"row\"$class>$key</th><td>";
-        $additional['tableId'] = $key;
+        $options['tableId'] = $key;
         if (is_array($value))
           // recurse into plain array data
-          echo $this->outputArrayAsHtml($value, $additional);
+          echo $this->outputArrayAsHtml($value, $options);
         elseif (is_object($value))
           // recurse into pg result data
-          echo $this->outputResultAsHtml($value, $additional);
+          echo $this->outputResultAsHtml($value, $options);
         else {
           // a simple value to output. If it contains an internal link then process it to hide user/secret data.
           if (preg_match('/http(s)?:\/\//', $value)) {
@@ -457,32 +465,31 @@ ROW;
   /**
    * Dumps out an HTML table containing results from a PostgreSQL query.
    * @param array $data PG result data to iterate through.
-   * @param array $additional If this has a columns element, it is used to generate a header row and control the output.
+   * @param array $options Options array. If this has a columns element, it is used to generate a header row and control
+   * the output.
    */
-  private function outputResultAsHtml($data, $additional) {
+  private function outputResultAsHtml($data, $options) {
     echo '<table>';
-    if (isset($additional['columns'])) {
+    if (isset($options['columns'])) {
+      // Ensure href column title is added if we are including it
+      if (!empty($options['preprocess']) && !empty($options['attachHref']) && !in_array('href', $options['columns']))
+        $options['columns']['href'] = array();
       echo '<thead><tr>';
-      foreach ($additional['columns'] as $fieldname => $column) {
+      foreach ($options['columns'] as $fieldname => $column) {
         $caption = isset($column['caption']) ? $column['caption'] : $fieldname;
         echo "<th>$caption</th>";
       }
       echo '</tr></thead>';
-      $columns = array_keys($additional['columns']);
+      $columns = array_keys($options['columns']);
     } elseif (count($data) > 0) {
       $columns = array_keys((array)$data[0]);
     }
     echo '<tbody>';
     foreach ($data as $row) {
+      $this->preProcessRow($row, $options, $columns);
       echo '<tr>';
       foreach ($columns as $column) {
-        if (!isset($row->$column) && $column === 'date'
-            && isset($row->date_start) && isset($row->date_end) && isset($row->date_type)) {
-          // Got a vague date value to fill in.
-          $value = vague_date::vague_date_to_string(array($row->date_start, $row->date_end, $row->date_type));
-        } else {
-          $value = isset($row->$column) ? $row->$column : 'not available';
-        }
+        $value = isset($row[$column]) ? $row[$column] : 'not available';
         echo "<td>$value</td>";
       }
       echo '</tr>';
@@ -493,19 +500,28 @@ ROW;
   /**
    * Echos a successful response in CSV format.
    * @param array $data
-   * @param array $additional
+   * @param array $options
    */
-  private function succeedCsv($data, $additional) {
+  private function succeedCsv($data, $options) {
     if (isset($data['data'])) {
-      if (isset($additional['columns']))
-        $columns = array_keys($additional['columns']);
+      if (isset($options['columns']))
+        $columns = array_keys($options['columns']);
       else
         // If we don't have columns metadata, we have to calculate the complete list of columns so we can line things up
         $columns = $this->findCsvColumns($data['data']);
+      // Remove columns that we aren't supposed to output
+      if (isset($options['columnsToUnset'])) {
+        $columns = array_diff($columns, $options['columnsToUnset']);
+        unset($options['columnsToUnset']);
+      }
       $count = count($data['data']);
-      echo $this->getCsvRow(array_combine($columns, $columns), $columns) . "\r\n";;
+
+      if (!empty($options['attachHref']) && !in_array('href', $columns))
+        $columns[] = 'href';
+      echo $this->getCsvRow(array_combine($columns, $columns), $columns, $options) . "\r\n";
+      $options['preprocess'] = true;
       foreach ($data['data'] as $idx => $row) {
-        echo $this->getCsvRow($row, $columns);
+        echo $this->getCsvRow($row, $columns, $options);
         if ($idx < $count - 1)
           echo "\r\n";
       }
@@ -532,11 +548,12 @@ ROW;
    * @param mixed $data Either an array or pg result object row.
    * @param array $columns List of columns to output
    */
-  private function getCsvRow($data, $columns)
+  private function getCsvRow($data, $columns, $options)
   {
     $output = '';
     $delimiter=',';
     $enclose='"';
+    $this->preProcessRow($data, $options, $columns);
     foreach ($columns as $column) {
       // data can be either an array or pg result object row
       if (is_array($data))
@@ -566,10 +583,13 @@ ROW;
   /**
    * Echos a successful response in JSON format.
    * @param array $data
-   * @param array $additional
-   * @todo Document $additional['attachHref']
+   * @param array $options
    */
-  private function succeedJson($data, $additional) {
+  private function succeedJson($data, $options) {
+    // We strip empty stuff from JSON responses
+    $options['notEmpty'] = true;
+    // Force preprocessing for the rows we iterate through
+    $options['preprocess'] = true;
     // If data returned from db in a pg object, need to iterate it and output 1 row at a time to avoid loading into
     // memory. So we create a JSON string for the rest of the output using a stub for the data, then split it at the
     // stub. We can then output everything up to the stub, followed by the data one row at a time, followed by the
@@ -581,25 +601,18 @@ ROW;
       echo $parts[0];
       // output 1 row at a time instead of json encoding the lot or imploding as it could be big.
       foreach ($dbObject as $idx=>$row) {
-        if (isset($additional['attachHref'])) {
-          $attachResource = $additional['attachHref'][0];
-          $attachId = $additional['attachHref'][1];
-          if ($attachId <> 'id') {
-            $row->id = $row->$attachId;
-            unset($row->$attachId);
-          }
-          // @todo Fill in resource name correctly
-          $row->href = "$attachResource/$row->id";
-          $row->href = $this->getUrlWithCurrentParams($row->href);
-        }
-        // strip nulls and empty strings
-        $row = array_filter((array)$row, array($this, 'notEmpty'));
+        $this->preProcessRow($row, $options);
         echo json_encode($row);
         if ($idx < $dbObject->count()-1)
           echo ',';
       }
       echo $parts[1];
     } else {
+      // Preprocess any row data
+      if (isset($data['data'])) {
+        foreach ($data['data'] as &$row)
+          $this->preProcessRow($row, $options);
+      }
       echo json_encode($data);
     }
   }
@@ -631,6 +644,36 @@ ROW;
     }
     // fall back on default
     return 'json';
+  }
+
+  private function preProcessRow(&$row, &$options, &$columns = array()) {
+    // For simplicity, convert pg result row objects to arrays so we can treat all the same.
+    $row = (array)$row;
+    // Skip row preprocessing if not actually on a data row.
+    if (empty($options['preprocess']))
+      return;
+    // Unset any columns we need to skip
+    if (isset($options['columnsToUnset'])) {
+      foreach ($options['columnsToUnset'] as $column) {
+        unset($row[$column]);
+      }
+    }
+    // Apply vague date processing where relevant
+    if (isset($row['date_start']) && isset($row['date_end']) && isset($row['date_type'])) {
+      $row['date'] = vague_date::vague_date_to_string(array($row['date_start'], $row['date_end'], $row['date_type']));
+    }
+    // Attach an href field to the resource row pointing back to itself.
+    if (isset($options['attachHref'])) {
+      $attachResource = $options['attachHref'][0];
+      $attachId = $options['attachHref'][1];
+      $row['href'] = "$attachResource/$row[$attachId]";
+      $row['href'] = $this->getUrlWithCurrentParams($row['href']);
+      if (!in_array('href', $columns))
+        $columns[] = 'href';
+    }
+    if (isset($options['notEmpty'])) {
+      $row = array_filter((array)$row, array($this, 'notEmpty'));
+    }
   }
 
   /**

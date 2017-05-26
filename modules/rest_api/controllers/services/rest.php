@@ -594,35 +594,25 @@ class Rest_Controller extends Controller {
     if (!array_key_exists($id, $this->projects)) {
       $this->apiResponse->fail('No Content', 204);
     }
-    // remove fields from the project that are for internal use only
-    unset($this->projects[$id]['filter_id']);
-    unset($this->projects[$id]['website_id']);
-    unset($this->projects[$id]['sharing']);
-    unset($this->projects[$id]['resources']);
-    $this->apiResponse->succeed($this->projects[$id], array('attachHref'=>array('projects', 'id')));
+    $this->apiResponse->succeed($this->projects[$id], array(
+      'columnsToUnset' => array('filter_id', 'website_id', 'sharing', 'resources'),
+      'attachHref' => array('projects', 'id')
+    ));
   }
 
   /**
    * GET handler for the projects resource. Outputs a list of project details.
-   * @todo Projects are currently hard coded in the config file, so pagination etc
-   * is just stub code.
+   * @todo Projects are currently hard coded in the config file, so pagination etc is just stub code.
    */
   private function projects_get() {
-    // Add metadata such as href to each project
-    foreach ($this->projects as $id => &$project) {
-      // Add metadata such as href to each project
-      $this->addItemMetadata($project, 'projects');
-      // remove fields from the project that are for internal use only
-      unset($project['filter_id']);
-      unset($project['website_id']);
-      unset($project['sharing']);
-      unset($project['resources']);
-    }
     $this->apiResponse->succeed(array(
       'data' => array_values($this->projects),
       'paging' => array(
         'self' => $this->generateLink(array('page'=>1))
       )
+    ), array(
+      'columnsToUnset' => array('filter_id', 'website_id', 'sharing', 'resources'),
+      'attachHref' => array('projects', 'id')
     ));
   }
 
@@ -648,8 +638,13 @@ class Rest_Controller extends Controller {
       kohana::log('error', 'Internal error. Request for single record returned multiple');
       $this->apiResponse->fail('Internal Server Error', 500);
     } else {
-      $this->addItemMetadata($report['content']['records'][0], 'taxon-observations');
-      $this->apiResponse->succeed($report['content']['records'][0]);
+      $this->apiResponse->succeed(
+        $report['content']['records'][0],
+        array(
+          'attachHref' => array('taxon-observations', 'id'),
+          'columns' => $report['content']['columns']
+        )
+      );
     }
   }
 
@@ -674,7 +669,10 @@ class Rest_Controller extends Controller {
     $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
     $this->apiResponse->succeed(
         $this->listResponseStructure($report['content']['records']),
-        array('attachHref' => array('taxon-observations', 'id'))
+        array(
+          'attachHref' => array('taxon-observations', 'id'),
+          'columns' => $report['content']['columns']
+        )
     );
   }
 
@@ -697,9 +695,11 @@ class Rest_Controller extends Controller {
         'id' => $record['taxon_observation_id'],
         // @todo href
       );
-      $this->addItemMetadata($record['taxonObservation'], 'taxon-observations');
-      $this->addItemMetadata($record, 'annotations');
-      $this->apiResponse->succeed($record);
+      $this->apiResponse->succeed($record, array(
+        'attachHref' => array('annotations', 'id'),
+        'attachRecordLink' => array('taxon-observation'),
+        'columns' => $report['content']['columns']
+      ));
     }
   }
 
@@ -728,7 +728,11 @@ class Rest_Controller extends Controller {
     $records = $report['content']['records'];
     $this->apiResponse->succeed(
         $this->listResponseStructure($records),
-        array('attachHref' => array('annotations', 'taxon_observation_id'))
+        array(
+          'attachHref' => array('annotations', 'id'),
+          'attachRecordLink' => array('taxon-observation'),
+          'columns' => $report['content']['columns']
+        )
     );
   }
 
@@ -1043,28 +1047,6 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   * Adds metadata such as an href back to the resource to any resource object.
-   * @param array $item The resource object as an array which will be updated with the metadata
-   * @param string $entity The entity name used to access the resouce, e.g. taxon-observations
-   */
-  private function addItemMetadata(&$item, $entity) {
-    $item['href'] = "$entity/$item[id]";
-    $item['href'] = $this->apiResponse->getUrlWithCurrentParams($item['href']);
-    // strip nulls and empty strings
-    $item = array_filter($item, array($this, 'notEmpty'));
-  }
-
-
-  /**
-   * Utility method for filtering empty values from an array.
-   * @param $value
-   * @return bool
-   */
-  function notEmpty($value) {
-    return !empty($value);
-  }
-
-  /**
    * Converts an array list of items loaded from the database into the structure ready for returning
    * as the result from an API call. Adds pagination information as well as hrefs for contained objects.
    *
@@ -1077,9 +1059,8 @@ class Rest_Controller extends Controller {
     );
     if ($this->request['page']>1)
       $pagination['previous'] = $this->generateLink(array('page'=>$this->request['page']-1));
-    // list needs to grab 1 extra, then lop it off and set a flag to indicate another page required
-    if (count($list)>$this->request['page_size']) {
-      array_pop($list);
+    // set a flag to indicate another page required
+    if (count($list) > $this->request['page_size']) {
       $pagination['next'] = $this->generateLink(array('page'=>$this->request['page']+1));
     }
     return array(
