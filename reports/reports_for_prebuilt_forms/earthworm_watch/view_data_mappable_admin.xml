@@ -6,7 +6,7 @@
   SELECT #columns#
   FROM surveys su
   JOIN samples s on s.survey_id = su.id AND s.deleted=false
-  JOIN cache_occurrences_functional cof on cof.sample_id=s.id
+  JOIN cache_occurrences_functional cof on cof.website_id=su.website_id and cof.survey_id=su.id and cof.sample_id=s.id
   WHERE 
   #website_filter#
   AND su.id=#survey_id# AND su.deleted=false

@@ -11,7 +11,7 @@
       
   LEFT JOIN sample_attribute_values pitNumAttr ON pitNumAttr.sample_id=s.id AND pitNumAttr.sample_attribute_id=#s1AttrID# AND pitNumAttr.deleted=false  
     
-  JOIN cache_occurrences_functional cof on cof.sample_id=s.id
+  JOIN cache_occurrences_functional cof on cof.website_id=su.website_id and cof.survey_id=su.id and cof.sample_id=s.id
   JOIN occurrence_attribute_values gridIdAttr ON gridIdAttr.occurrence_id=cof.id AND gridIdAttr.occurrence_attribute_id=#grid_id_attr_id# AND gridIdAttr.deleted=false
     
   LEFT JOIN occurrence_attribute_values countPaleAdultSoilAttr ON countPaleAdultSoilAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_top_soil_grid_name#' AND countPaleAdultSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleAdultSoilAttr.deleted=false
@@ -71,8 +71,8 @@
   LEFT JOIN sample_attribute_values distanceDoesNotKnowAttr ON distanceDoesNotKnowAttr.sample_id=s.id AND distanceDoesNotKnowAttr.sample_attribute_id=#distance_dont_know_attr_id# AND distanceDoesNotKnowAttr.deleted=false
 
   WHERE
-    #website_filter#
-    AND su.id = #survey_id#
+    su.id = #survey_id#
+    AND #website_filter#
     AND su.deleted=false
     AND ((cof.training=false AND #training_records#!=1) or (cof.training=true AND #training_records#=1))
   </query>
