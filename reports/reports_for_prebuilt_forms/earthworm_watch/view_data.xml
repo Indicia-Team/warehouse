@@ -10,7 +10,7 @@ and isn't exposing the user's name when it shouldn't"
   JOIN cache_samples_nonfunctional csn on csn.id=csf.id
   LEFT JOIN sample_attribute_values pitNumAttr ON pitNumAttr.sample_id=csf.id AND pitNumAttr.sample_attribute_id=#s1AttrID# AND pitNumAttr.deleted=false
   
-  JOIN cache_occurrences_functional cof on cof.sample_id=csf.id
+  JOIN cache_occurrences_functional cof on cof.website_id=csf.website_id and cof.survey_id=csf.survey_id and cof.sample_id=csf.id
   JOIN occurrence_attribute_values gridIdAttr ON gridIdAttr.occurrence_id=cof.id AND gridIdAttr.occurrence_attribute_id=#grid_id_attr_id# AND gridIdAttr.deleted=false
     
   LEFT JOIN occurrence_attribute_values countPaleAttr ON countPaleAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND countPaleAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleAttr.deleted=false
