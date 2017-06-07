@@ -70,11 +70,10 @@ function spatial_index_builder_scheduled_task($last_run_date, $db) {
  * @return integer Count of locations found
  */
 function spatial_index_builder_get_location_list($last_run_date, $db) {
-  $filter=spatial_index_builder_get_type_filter();
-  list($join, $where, $surveyRestriction)=$filter;
+  $filter=spatial_index_builder_get_type_filter($db);
+  list($where, $surveyRestriction)=$filter;
   $query = "select l.id, now() as timepoint into temporary loclist 
 from locations l
-$join
 where l.deleted=false 
 and l.updated_on>'$last_run_date'
 $where";
@@ -107,23 +106,30 @@ and s.updated_on>'$last_run_date'
  * to the indexing query to respect the location type filter in the config file.
  * @return array Array containing the join SQL in the first entry and where SQL in the second.
  */
-function spatial_index_builder_get_type_filter() {
+function spatial_index_builder_get_type_filter($db) {
   $config=kohana::config_load('spatial_index_builder', false);
   $surveyRestriction = '';
   if (array_key_exists('location_types', $config)) {
-    $join='join cache_termlists_terms t on t.id=l.location_type_id';
-    $where="and t.preferred_term in ('".implode("','", $config['location_types'])."')";
+    $idQuery = $db->query("select id, term from cache_termlists_terms where preferred_term in ('" .
+        implode("','", $config['location_types']) . "')")
+        ->result();
+    $idsByTerm = array();
+    foreach ($idQuery as $row)
+      $idsByTerm[$row->term] = $row->id;
+    $where = 'and l.location_type_id in ('.implode(',', $idsByTerm).')';
     if (array_key_exists('survey_restrictions', $config)) {
       foreach ($config['survey_restrictions'] as $type => $surveyIds) {
         $surveys = implode(', ', $surveyIds);
-        $surveyRestriction .= "and (t.preferred_term<>'$type' or s.survey_id in ($surveys))\n";
+        if (!isset($idsByTerm[$type]))
+          throw new exception('Configured survey restriction incorrect in spatial index builder');
+        $id = $idsByTerm[$type];
+        $surveyRestriction .= "and (l.location_type_id<>$id or s.survey_id in ($surveys))\n";
       }
     }
   } else {
-    $join='';
     $where='';
   }
-  return array($join, $where, $surveyRestriction);
+  return array($where, $surveyRestriction);
 }
 
 /**
@@ -134,13 +140,12 @@ function spatial_index_builder_get_type_filter() {
  * @param string $limit Sql to limit to the updated locations or samples
  */
 function _spatial_index_builder_index_insert($db, $filter, $limit) {
-  list($join, $where, $surveyRestriction)=$filter;
+  list($where, $surveyRestriction)=$filter;
   // Now the actual population
   $query = "insert into index_locations_samples (location_id, sample_id, contains, location_type_id)
     select distinct 
       l.id, s.id, coalesce(linked.id, 0) = l.id or st_contains(l.boundary_geom, s.geom), l.location_type_id
     from locations l
-    $join
     join samples s on s.deleted=false
       and (st_intersects(l.boundary_geom, s.geom) and not st_touches(l.boundary_geom, s.geom))
     $limit
@@ -179,7 +184,7 @@ function spatial_index_builder_populate($db) {
   $db->query($query);
   Kohana::log('debug', "Cleaned up index_locations_samples before populating new values.");
   // are we filtering by location type?
-  $filter=spatial_index_builder_get_type_filter();
+  $filter=spatial_index_builder_get_type_filter($db);
   _spatial_index_builder_index_insert($db, $filter, 'join smplist list on list.id=s.id');
   _spatial_index_builder_index_insert($db, $filter, 'join loclist list on list.id=l.id');
 }
