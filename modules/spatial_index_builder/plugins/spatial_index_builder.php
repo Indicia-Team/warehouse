@@ -83,8 +83,9 @@ $where";
 }
 
 /**
- * Build a temporary table with the list of new and changed samples we will process, so that we have
- * consistency if changes are happening concurrently.
+ * Build a temporary table with the list of new and changed samples we will process, so that we have consistency if
+ * changes are happening concurrently. A change is also triggered on samples that have new occurrences to ensure the
+ * occurrences are properly indexed.
  * @param $last_run_date Timestamp when this was last run, used to get DB changed records
  * @param object $db Database object
  * @return integer Count of samples found
@@ -94,6 +95,11 @@ function spatial_index_builder_get_sample_list($last_run_date, $db) {
 from samples s
 where s.deleted=false 
 and s.updated_on>'$last_run_date'
+union
+select distinct o.sample_id, now()
+from occurrences o
+where o.deleted=false
+and o.created_on>'$last_run_date'
 ";
   $db->query($query);
   $r = $db->query('select count(*) as count from smplist')->result_array(false);
