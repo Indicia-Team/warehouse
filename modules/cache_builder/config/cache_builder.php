@@ -105,6 +105,8 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
 $config['termlists_terms']['join_needs_update']='join needs_update_termlists_terms nu on nu.id=tlt.id and nu.deleted=false';
 $config['termlists_terms']['key_field']='tlt.id';
 
+//--------------------------------------------------------------------------------------------------------------------------
+
 $config['taxa_taxon_lists']['get_missing_items_query']="
     select distinct on (ttl.id) ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
         or l.deleted or tpref.deleted or tg.deleted or lpref.deleted as deleted
@@ -116,7 +118,7 @@ $config['taxa_taxon_lists']['get_missing_items_query']="
       join taxa tpref on tpref.id=ttlpref.taxon_id 
       join taxon_groups tg on tg.id=tpref.taxon_group_id
       join languages lpref on lpref.id=tpref.language_id
-      left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id 
+      left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id and cttl.cache_updated_on > ttl.updated_on and cttl.cache_updated_on > ttlpref.updated_on
       left join needs_update_taxa_taxon_lists nu on nu.id=ttl.id 
       where cttl.id is null and nu.id is null 
       and (tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
@@ -260,9 +262,12 @@ where ru.id=cttl.id;
 
 drop table rankupdate;");
 
+//--------------------------------------------------------------------------------------------------------------------------
+
+// no cache_updated_on in cache_taxon_searchterms
 $config['taxon_searchterms']['get_missing_items_query']="
-    select distinct on (ttl.id) ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
-        or l.deleted or tpref.deleted or tg.deleted or lpref.deleted as deleted
+    select distinct on (ttl.id) ttl.id, ttl.allow_data_entry, 
+		tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted or l.deleted or tpref.deleted or tg.deleted or lpref.deleted as deleted
       from taxon_lists tl
       join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id 
@@ -273,7 +278,7 @@ $config['taxon_searchterms']['get_missing_items_query']="
       join taxa tpref on tpref.id=ttlpref.taxon_id 
       join taxon_groups tg on tg.id=tpref.taxon_group_id
       join languages lpref on lpref.id=tpref.language_id
-      left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=ttl.id 
+      left join cache_taxon_searchterms cts on cts.taxa_taxon_list_id=ttl.id
       left join needs_update_taxon_searchterms nu on nu.id=ttl.id 
       where cts.id is null and nu.id is null 
       and ttl.allow_data_entry=true
@@ -583,6 +588,9 @@ select count(distinct(ttl.id)) as count
       (tl.deleted or ttl.deleted or t.deleted or l.deleted ) = false
 ) as countlist
 ';
+
+//--------------------------------------------------------------------------------------------------------------------------
+
 $config['samples']['get_missing_items_query'] = "
   select distinct s.id, s.deleted or su.deleted as deleted
     from samples s
@@ -1146,6 +1154,8 @@ $config['samples']['extra_single_record_updates']=array(
     where cs.recorders is null and cs.id in (#ids#)
     and cs.id=csf.id and u.id<>1;'
 );
+
+//--------------------------------------------------------------------------------------------------------------------------
 
 $config['occurrences']['get_missing_items_query'] = "
   select distinct o.id, o.deleted or s.deleted or su.deleted or (cttl.id is null) as deleted
