@@ -5,11 +5,9 @@
   <query website_filter_field="csf.website_id">
   SELECT #columns#
   FROM cache_samples_functional csf
-  JOIN cache_occurrences_functional cof on cof.website_id=csf.website_id and cof.survey_id=csf.survey_id and cof.sample_id=csf.id
   WHERE 
   csf.survey_id = #survey_id#
   AND #website_filter#
-  AND ((cof.training=false AND #training_records#!=1) or (cof.training=true AND #training_records#=1))
   </query>
   <params>
     <param name='survey_id' display='Survey ID' description='ID of the survey to show data for.' datatype='int'/>
@@ -17,6 +15,6 @@
   </params>
   <columns>
     <column name='sample_id' display='Sample ID' sql='csf.id' datatype="integer"/>
-    <column name="geom" visible="false" mappable="true" sql="st_astext(csf.public_geom)" in_count="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(csf.public_geom)"/>
   </columns>
 </report>
