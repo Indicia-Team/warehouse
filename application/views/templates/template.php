@@ -164,7 +164,7 @@ echo html::stylesheet(
     <div id="footer">
     <?php
     echo Kohana::lang('misc.indicia_version').' '; 
-    echo kohana::config('version.version'); 
+    echo 'feature-plant-portal-importer-may-build'; 
     if (kohana::config('upgrade.continuous_upgrade')) echo " (dev)"; ?>
     </div>
     <!-- END: footer -->
