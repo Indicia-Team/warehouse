@@ -30,6 +30,8 @@ defined('SYSPATH') or die('No direct script access.');
  * @subpackage Data
  */
 class Import_Controller extends Service_Base_Controller {
+  private $ImportRowFailureDetected=false;
+  
   private $submissionStruct;
 
   /**
@@ -234,6 +236,7 @@ class Import_Controller extends Service_Base_Controller {
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
    */
   public function upload() {
+    $allowCommitToDB = (isset($_GET['allow_commit_to_db']) ? $_GET['allow_commit_to_db'] : true);
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     $metadata = $this->getMetadata($_GET['uploaded_csv']);
     if (!empty($metadata['user_id'])) {
@@ -448,6 +451,10 @@ class Import_Controller extends Service_Base_Controller {
           $associationExists = FALSE;
           $modelToSubmit = $model;
         }
+        //Only store errors in file if we are actually committing to the database.
+        //If commint is off we might just be running an error detection pre-run and don't want
+        //errors stored in the file. If we don't do this when the commit is run after the pre-run we end up with each error
+        //stored twice in the file
         if (($id = $modelToSubmit->submit()) == NULL) {
           // Record has errors - now embedded in model, so dump them into the error file
           $errors = array();
@@ -494,7 +501,8 @@ class Import_Controller extends Service_Base_Controller {
 
       // An AJAX upload request will just receive the number of records uploaded and progress
       $this->auto_render = FALSE;
-      $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
+      if (!empty($allowCommitToDB)&&$allowCommitToDB==true)
+        $cache->set(basename($csvTempFile) . 'previousSupermodel', $this->previousCsvSupermodel);
     }
   }
 
