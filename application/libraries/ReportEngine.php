@@ -187,8 +187,10 @@ class ReportEngine {
   * @param string $reportSource Source of the report, either local or remote.
   * @param string $reportFormat Format of the report file. Currently only xml report file formats are supported.
   * @param array $params Associative array of report parameters.
+  * @param boolean $resultAsArray Set to FALSE to return the result as a pg result object rather than an array.
   */
-  public function requestReport($report = null, $reportSource = 'local', $reportFormat = null,  $params = array())
+  public function requestReport($report = null, $reportSource = 'local', $reportFormat = null,
+                                $params = array(), $resultAsArray = TRUE)
   {
     $this->reportFormat = $reportFormat;
     $this->providedParams = array_merge(
@@ -277,7 +279,7 @@ class ReportEngine {
     
     return array(
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
-      'content' => $this->compileReport()
+      'content' => $this->compileReport($resultAsArray)
     );
   }
 
@@ -307,11 +309,12 @@ class ReportEngine {
   }
 
   /**
-  * Checks parameters and returns request if they're not all there, else compiles the report.
-  *
-  * @return array Array containing columns and data.
-  */
-  private function compileReport()
+   * Checks parameters and returns request if they're not all there, else compiles the report.
+   * @param boolean $resultAsArray TRUE to return the result as an array, FALSE to return a pg result object which
+   * needs to be iterated (better for large results set since it doesn't load all data into memory).
+   * @return array Array containing columns and data.
+   */
+  private function compileReport($resultAsArray)
   {
     // Do we need any more parameters?
     $unpopulatedParams = array_diff_key($this->expectedParams, $this->providedParams);
@@ -341,10 +344,16 @@ class ReportEngine {
       }
       else {
         $this->executeQuery();
-        $data = $this->response->result_array(FALSE);
+        $data = $this->response;
+        if ($resultAsArray)
+          $data = $data->result_array(FALSE);
+        else
+          $data = $data->result();
       }
       $this->prepareColumns();
-      $this->post_process($data);
+      // If not loading the full array, client will have to process vague dates etc themselves.
+      if ($resultAsArray)
+        $this->post_process($data);
       $r = array(
         'columns'=>$this->columns,
         'records'=>$data

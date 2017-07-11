@@ -201,6 +201,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         "Unexpected title $projDef[title] returned for project $projDef[id] by /projects.");
       $this->assertEquals($viaConfig[$projDef['id']]['description'], $projDef['description'],
         "Unexpected description $projDef[description] returned for project $projDef[id] by /projects.");
+      // Some project keys are supposed to be removed
+      $this->assertNotContains('filter_id', $projDef, 'Project definition should not contain filter_id');
+      $this->assertNotContains('sharing', $projDef, 'Project definition should not contain sharing');
     }
   }
 
@@ -216,6 +219,9 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
       $this->assertEquals($projDef['description'], $response['response']['description'],
           "Unexpected description " . $response['response']['description'] .
           " returned for project $projDef[id] by /projects/$projDef[id].");
+      // Some project keys are supposed to be removed
+      $this->assertNotContains('filter_id', $projDef, 'Project definition should not contain filter_id');
+      $this->assertNotContains('sharing', $projDef, 'Project definition should not contain sharing');
     }
   }
 
@@ -541,7 +547,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     // We should be able to request the taxon observation associated with the occurrence
     $session = $this->initCurl($data['taxonObservation']['href'], self::$clientUserId, self::$config['shared_secret']);
     $response = $this->getCurlResponse($session);
-    $this->assertResponseOk($response, '/taxon-observations/id');
+    $this->assertResponseOk($response, $data['taxonObservation']['href']);
     $this->checkValidTaxonObservation($response['response']);
   }
 

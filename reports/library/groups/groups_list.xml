@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<report title="Groups list" description="Lists groups.">
+<report title="Groups list" description="Main report to provide a list of groups appropriate for the given user.">
   <query website_filter_field="g.website_id">
     SELECT #columns#
     FROM groups g
@@ -18,18 +18,19 @@
     <order_by>g.title</order_by>
   </order_bys>
   <params>
-    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" emptyvalue="0"/>
+    <param name="currentUser" display="Current User ID" description="Current user's warehouse ID." datatype="text" emptyvalue="0" />
+    <param name="CMSAdminPerm" display="CMS Administrator Permission" description="Set to 1 if user has Administrator permissions, as determined by the CMS." datatype="integer" emptyvalue="0" default="0" />
     <param name="userFilterMode" display="userFilterMode" description="Include which groups for the user?"
            datatype="lookup" default="member"
            lookup_values='all:All groups,joinable:Groups they can join or request,allvisible:Groups they can join or request or are already a member of,pending:Groups they are pending approval to join,member:Groups they are a member of,admin:Groups they administer,create:Groups they created,create_admin:Groups they created or administer'>
       <wheres>
         <where value="joinable" operator="equal">g.joining_method not in ('A','I')</where>
-        <where value="allvisible" operator="equal">(g.joining_method not in ('A','I') OR gu.id IS NOT NULL)</where>
+        <where value="allvisible" operator="equal">(g.joining_method not in ('A','I') OR gu.id IS NOT NULL OR '#CMSAdminPerm#' = '1')</where>
         <where value="pending" operator="equal">gu.id is not null AND gu.pending=true</where>
         <where value="member" operator="equal">gu.id is not null AND gu.pending=false</where>
-        <where value="admin" operator="equal">gu.id is not null AND gu.pending=false AND gu.administrator=true</where>
+        <where value="admin" operator="equal">('#CMSAdminPerm#' = '1' OR (gu.id is not null AND gu.pending=false AND gu.administrator=true))</where>
         <where value="create" operator="equal">gu.id is not null AND gu.created_by_id=#currentUser#</where>
-        <where value="create_admin" operator="equal">gu.id is not null AND (gu.created_by_id=#currentUser# OR gu.administrator=true)</where>
+        <where value="create_admin" operator="equal">('#CMSAdminPerm#' = '1' OR (gu.id is not null AND (gu.created_by_id=#currentUser# OR gu.administrator=true)))</where>
       </wheres>
     </param>
     <param name="dateHandling" description="How should group date limits be handled?"
@@ -37,7 +38,7 @@
            lookup_values="all:No date filter,adminOrCurrent:user is group admin or group is currently active,current:Group is current,expired:Group has expired,upcoming:Group is not yet active">
       <wheres>
         <where value="adminOrCurrent" operator="equal">( -- user is admin, or group within defined date range
-          (gu.id is not null AND gu.pending=false AND gu.administrator=true) or
+          ('#CMSAdminPerm#' = '1' OR (gu.id is not null AND gu.pending=false AND gu.administrator=true)) or
           ((g.from_date is null or g.from_date&lt;=now()) and (g.to_date is null or g.to_date&gt;now()-'1 day'::interval))
           )</where>
         <where value="current" operator="equal"> -- group within defined date range
@@ -77,7 +78,7 @@
     <column name="joining_method_raw" visible="false" sql="g.joining_method" datatype="text" />
     <column name="title" display="Name" sql="g.title" datatype="text" />
     <column name="description" display="Description" sql="g.description" datatype="text" />
-    <column name="administrator" display="Admin" sql="gu.id is not null AND gu.pending=false AND gu.administrator=true" datatype="boolean" visible="false" />
+    <column name="administrator" display="Admin" sql="('#CMSAdminPerm#' = '1' OR (gu.id is not null AND gu.pending=false AND gu.administrator=true))" datatype="boolean" visible="false" />
     <!-- following is required to meet group by requirements -->
     <column name="administrator_raw" display="Admin" sql="gu.administrator" datatype="boolean" visible="false" />
     <column name="pending" display="Pending" sql="gu.id is not null AND gu.pending=true" datatype="boolean" visible="false" />
@@ -89,10 +90,10 @@
     <column name="role" display="My role" sql="case when gu.administrator=true then 'Administrator' when gu.id is not null and gu.pending=false then 'Member' when gu.id is not null and gu.pending=true then 'Awaiting approval' else 'Non-member' end" datatype="text" />
     <column name="joining_method" display="Can anyone join?" sql="case g.joining_method when 'P' then 'Yes' when 'R' then 'By request only' when 'I' then 'By invite only' end" datatype="text" />
     <column name="members" display="Members" datatype="text" aggregate="true"
-            sql="case when gu.administrator=true and '#pending_path#'&lt;&gt;'' then '&lt;a href=&quot;#pending_path#' || g.id || '&quot;&gt;' else '' end
+            sql="case when ('#CMSAdminPerm#' = '1' OR gu.administrator=true) and '#pending_path#'&lt;&gt;'' then '&lt;a href=&quot;#pending_path#' || g.id || '&quot;&gt;' else '' end
 || count(DISTINCT guc.user_id)::varchar 
-|| case when count(DISTINCT gucp.user_id)&gt;0 and gu.administrator=true then ' (' || count(DISTINCT gucp.user_id)::varchar || ' pending)' else '' end
-|| case when gu.administrator=true and '#pending_path#'&lt;&gt;'' then '&lt;/a&gt;' else '' end" />
+|| case when count(DISTINCT gucp.user_id)&gt;0 and ('#CMSAdminPerm#' = '1' OR gu.administrator=true) then ' (' || count(DISTINCT gucp.user_id)::varchar || ' pending)' else '' end
+|| case when ('#CMSAdminPerm#' = '1' OR gu.administrator=true) and '#pending_path#'&lt;&gt;'' then '&lt;/a&gt;' else '' end" />
     <column name="pages" display="Links" sql="array_to_string(array_agg(distinct '&lt;a class=&quot;button ' || lower(regexp_replace(gp.path, '[^a-zA-Z0-9]', '-')) || '&quot; href=&quot;{rootFolder}' || gp.path || '{sep}group_id=' || g.id || '&amp;implicit=' || coalesce(g.implicit_record_inclusion::char, '') || '&quot;&gt;' || gp.caption || '&lt;/a&gt;'), ' ')"
             aggregate="true" template="{pages}"/>
     <column name="page_classes" visible="false" sql="array_to_string(array_agg(distinct lower(regexp_replace(gpall.path, '[^a-zA-Z0-9]', '-'))), ' ')"

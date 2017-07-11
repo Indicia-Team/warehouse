@@ -49,7 +49,7 @@
     <column name='date' on_demand="true" datatype="date" />
     <column name='cache_created_on' sql='o.created_on' on_demand="true" datatype="date" />
     <column name='cache_updated_on' sql='o.updated_on' on_demand="true" />
-    <column name='recorder' on_demand="true" sql="CASE WHEN LENGTH(snf.recorders)>30 THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name='recorder' on_demand="true" sql="CASE WHEN (TRIM(snf.recorders) !~ ' ' AND LENGTH(snf.recorders)>30) THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
     <column name='associated_with' on_demand="true" datatype="text" sql="(select string_agg(case when cttlassoc.default_common_name is null then '&lt;em&gt;' || cttlassoc.preferred_taxon || '&lt;/em&gt;' else cttlassoc.default_common_name || ' (&lt;em&gt;' || cttlassoc.preferred_taxon || '&lt;/em&gt;)' end, ', ')
   from occurrence_associations oa 
   join cache_occurrences_functional oassoc on oassoc.id=oa.to_occurrence_id 
