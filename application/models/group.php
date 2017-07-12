@@ -103,27 +103,36 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
         if (!empty($filter['location_list'])) {
           $rows = $this->db->query('select l.id from locations l ' .
             'join locations search on ' .
-            '  (st_intersects(coalesce(search.boundary_geom, search.centroid_geom), coalesce(l.boundary_geom, l.centroid_geom)) ' .
-            '  and not st_touches(coalesce(search.boundary_geom, search.centroid_geom), coalesce(l.boundary_geom, l.centroid_geom)))' .
+            '  st_intersects(st_buffer(coalesce(search.boundary_geom, search.centroid_geom), 0), st_buffer(coalesce(l.boundary_geom, l.centroid_geom), 0)) ' .
+            '  and not st_touches(st_buffer(coalesce(search.boundary_geom, search.centroid_geom), 0), st_buffer(coalesce(l.boundary_geom, l.centroid_geom), 0)) ' .
             'join cache_termlists_terms t on t.id=l.location_type_id ' .
             "where search.id in ($filter[location_list]) and t.preferred_term in ($types)")->result();
         } else {
           $srid = kohana::config('sref_notations.internal_srid');
           $rows = $this->db->query('select l.id from locations l ' .
-            'join cache_termlists_terms t on t.id=l.location_type_id ' .
-            "where (st_intersects(st_geomfromtext('$filter[searchArea]', $srid), coalesce(l.boundary_geom, l.centroid_geom)) " .
-            "  and not st_touches(st_geomfromtext('$filter[searchArea]', $srid), coalesce(l.boundary_geom, l.centroid_geom)))" .
-            "and t.preferred_term in ($types)")->result();
+            "join cache_termlists_terms t on t.id=l.location_type_id and t.preferred_term in ($types) " .
+            "where st_intersects(st_buffer(st_geomfromtext('$filter[searchArea]', $srid), 0), st_buffer(coalesce(l.boundary_geom, l.centroid_geom), 0)) " .
+            "and not st_touches(st_buffer(st_geomfromtext('$filter[searchArea]', $srid), 0), st_buffer(coalesce(l.boundary_geom, l.centroid_geom), 0)) "
+            )->result();
         }
         foreach ($rows as $row)
           $location_ids[] = $row->id;
       }
     }
+    $foundExistingLocationIds = array();
     // go through the existing index entries for this group. Remove any that are not needed now.
     foreach($exist as $record) {
       if (in_array($record->location_id, $location_ids)) {
         // Got a correct one already. Remove the location ID from the list we want to add later
-        unset($location_ids[$record->location_id]);
+        $key = array_search($record->location_id, $location_ids);
+        if ($key !== false)
+          unset($location_ids[$key]);
+        if (in_array($record->location_id, $foundExistingLocationIds)) {
+          // this one must exist twice in the index so clean it up.
+          $this->db->delete('index_groups_locations', array('id'=>$record->id));
+        } else {
+          $foundExistingLocationIds[] = $record->location_id;
+        }
       } else {
         // Got one we didn't actually want.
         $this->db->delete('index_groups_locations', array('id'=>$record->id));
