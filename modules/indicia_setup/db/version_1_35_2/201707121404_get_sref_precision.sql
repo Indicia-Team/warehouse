@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION get_sref_precision(
     sref character varying,
     sref_system character varying,
     attr_sref_precision float)
-  RETURNS integer AS
+  RETURNS float AS
 $BODY$
 BEGIN
 
