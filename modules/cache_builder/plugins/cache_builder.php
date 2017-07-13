@@ -47,6 +47,8 @@ function cache_builder_scheduled_task($last_run_date, $db) {
       }
     }
   } catch (Exception $e) {
-    echo $e->getMessage();
+    echo "<br/>" . $e->getMessage();
+    error_logger::log_error('Building cache', $e);
+    throw $e;
   }
 }
