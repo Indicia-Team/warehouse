@@ -1,3 +1,5 @@
+DROP VIEW list_termlists_term_attribute_values;
+
 CREATE OR REPLACE VIEW list_termlists_term_attribute_values AS
  SELECT av.id, tlt.id AS termlists_term_id, a.id AS termlists_term_attribute_id,
         CASE a.data_type
