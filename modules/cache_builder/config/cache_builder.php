@@ -596,10 +596,9 @@ $config['samples']['get_missing_items_query'] = "
 ";
 $config['samples']['get_changed_items_query'] = "
   select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted
-    from (select s.id, s.deleted
-    from samples s
-    where s.updated_on>'#date#'
-    union
+    from (
+    -- don't pick up changes to samples at this point, as they are updated immediately
+    -- but do pick up edits of other tables that can affect the sample cache
     select s.id, sp.deleted
     from samples s
     join samples sp on sp.id=s.parent_id
@@ -622,6 +621,12 @@ $config['samples']['get_changed_items_query'] = "
     ) as sub
     group by id
 ";
+
+$config['samples']['delete_query']=array("
+delete from cache_samples_functional where id in (select id from needs_update_samples where deleted=true);
+delete from cache_samples_nonfunctional where id in (select id from needs_update_samples where deleted=true);
+");
+
 $config['samples']['update']['functional'] = "
 UPDATE cache_samples_functional s_update
 SET website_id=su.website_id,
