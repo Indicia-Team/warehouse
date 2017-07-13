@@ -621,6 +621,12 @@ $config['samples']['get_changed_items_query'] = "
     ) as sub
     group by id
 ";
+
+$config['samples']['delete_query']=array("
+delete from cache_samples_functional where id in (select id from needs_update_samples where deleted=true);
+delete from cache_samples_nonfunctional where id in (select id from needs_update_samples where deleted=true);
+");
+
 $config['samples']['update']['functional'] = "
 UPDATE cache_samples_functional s_update
 SET website_id=su.website_id,
