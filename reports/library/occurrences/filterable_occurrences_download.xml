@@ -60,6 +60,7 @@
             sql="get_sref_precision(snf.public_entered_sref, snf.entered_sref_system, snf.attr_sref_precision)" />
     <column name='output_sref' display='Output grid ref' sql="onf.output_sref" datatype='text' />
     <column name="vicecounty" display="Vice county" sql="vc.name" datatype="text" />
+    <column name="vicecounty_code" display="VC code" sql="vc.code" datatype="text" />
     <column name='date_start' sql='o.date_start' visible='false' />
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
