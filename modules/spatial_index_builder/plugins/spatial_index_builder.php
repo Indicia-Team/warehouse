@@ -255,9 +255,9 @@ QRY
 UPDATE cache_samples_functional u
 SET $column = ils$type[id].location_id
 FROM locations l
-LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
-    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 JOIN loclist list on list.id=l.id
+JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
+    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 WHERE u.id=ils$type[id].sample_id
 AND (l.code IS NULL OR l.code NOT LIKE '%+%');
 QRY
@@ -266,9 +266,9 @@ QRY
 UPDATE cache_occurrences_functional u
 SET $column = ils$type[id].location_id
 FROM locations l
-LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
-    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 JOIN loclist list on list.id=l.id
+JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
+    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 WHERE u.sample_id=ils$type[id].sample_id
 AND (l.code IS NULL OR l.code NOT LIKE '%+%');
 QRY
@@ -340,7 +340,7 @@ UPDATE cache_occurrences_functional u
 SET $o_sets
 FROM cache_samples_functional s
 JOIN smplist list on list.id=s.id
-WHERE s.id=u.sample_id;
+WHERE s.website_id=u.website_id AND s.survey_id=u.survey_id AND s.id=u.sample_id;
 QRY
     );
   }
