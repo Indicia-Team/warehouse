@@ -30,8 +30,6 @@
  * @param object $db Database object.
  */
 function cache_builder_scheduled_task($last_run_date, $db) {
-  // list of tables that update on the fly so no need to redo work on scheduled tasks
-  $immediatelyUpdatedTables = array('samples');
   if (isset($_GET['force_cache_rebuild']))
     $last_run_date=date('Y-m-d', time()-60*60*24*365*200);
   elseif ($last_run_date===null)
@@ -39,12 +37,10 @@ function cache_builder_scheduled_task($last_run_date, $db) {
     $last_run_date=date('Y-m-d', time()-60*60*24);
   try {
     foreach (kohana::config('cache_builder') as $table=>$queries) {
-      if (!in_array($table, $immediatelyUpdatedTables) || !variable::get("populated-$table")) {
-        cache_builder::populate_cache_table($db, $table, $last_run_date);
-        if (!variable::get("populated-$table", false, false))
-          // Table population incomplete. Don't bother populating the next table, as there can be dependencies.
-          break;
-      }
+      cache_builder::populate_cache_table($db, $table, $last_run_date);
+      if (!variable::get("populated-$table", false, false))
+        // Table population incomplete. Don't bother populating the next table, as there can be dependencies.
+        break;
     }
   } catch (Exception $e) {
     echo "<br/>" . $e->getMessage();
