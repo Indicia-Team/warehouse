@@ -453,7 +453,7 @@ samples:
     date_type: "D"
     entered_sref: "SU01"
     entered_sref_system: "OSGB"
-    comment: "Sample for unit testing with \" double quotes\", and a comma to throw it out"
+    comment: "Sample for unit testing with a \" double quote"
     created_on: 2016-07-22:16:00:00
     created_by_id: 1
     updated_on: 2016-07-22:16:00:00
