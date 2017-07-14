@@ -453,7 +453,22 @@ samples:
     date_type: "D"
     entered_sref: "SU01"
     entered_sref_system: "OSGB"
-    comment: "Sample for unit testing"
+    comment: "Sample for unit testing with \" double quotes\", and a comma to throw it out"
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+    recorder_names: "PHPUnit"
+    record_status: "C"
+
+  -
+    survey_id: 1
+    date_start: "2016-07-22"
+    date_end: "2016-07-22"
+    date_type: "D"
+    entered_sref: "SU01"
+    entered_sref_system: "OSGB"
+    comment: "Sample for unit testing with a \nline break"
     created_on: 2016-07-22:16:00:00
     created_by_id: 1
     updated_on: 2016-07-22:16:00:00

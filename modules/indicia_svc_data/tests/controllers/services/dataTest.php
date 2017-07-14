@@ -22,15 +22,16 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->auth['write_tokens']['persist_auth']=true;
   }
   
-  private function getResponse($url) {
+  private function getResponse($url, $decodeJson = true) {
     Kohana::log('debug', "Making request to $url");
     $session = curl_init();
     curl_setopt ($session, CURLOPT_URL, $url);
     curl_setopt($session, CURLOPT_HEADER, false);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    // valid json response will decode    
     $response = curl_exec($session);
-    $response = json_decode($response, true);
+    // valid json response will decode
+    if ($decodeJson)
+      $response = json_decode($response, true);
     Kohana::log('debug', "Received response " . print_r($response, TRUE));
     return $response;
   }
@@ -300,5 +301,40 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals($filter->sharing, $filterData['filter:sharing']);
     $this->assertEquals($filter->defines_permissions, 't');
     $this->assertEquals($filter->website_id, $filterData['filter:website_id']);
+  }
+
+  private function getSampleAsCsv($id) {
+    $params = array(
+      'mode' => 'csv',
+      'view' => 'detail',
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce']
+    );
+    $url = data_entry_helper::$base_url.'index.php/services/data/sample/1?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url, false);
+    $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByDirectId returned error. See log for details");
+    $response = data_entry_helper::explode_lines($response);
+    // test 1 header + 1 content row
+    $this->assertCount(2, $response, 'Data services get CSV for direct ID did not return 1 record.');
+  }
+
+  public function testRequestDataCsvResponseDoubleQuote() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataCsvResponseDoubleQuote");
+    $response = $this->getSampleAsCsv(1);
+    $header = str_getcsv($response[0]);
+    $row = str_getcsv($response[1]);
+    $commentIdx = array_search('comment', $header);
+    $this->assertEquals('Sample for unit testing with " double quotes", and a comma to throw it out', ($row[$commentIdx]),
+      'Data services CSV format response not encoded correctly for quotes.');
+  }
+
+  public function testRequestDataCsvResponseLineFeed() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataCsvResponseLineFeed");
+    $response = $this->getSampleAsCsv(1);
+    $header = str_getcsv($response[0]);
+    $row = str_getcsv($response[1]);
+    $commentIdx = array_search('comment', $header);
+    $this->assertEquals("Sample for unit testing with a \nline break", ($row[$commentIdx]),
+      'Data services CSV format response not encoded correctly for new lines.');
   }
 }
