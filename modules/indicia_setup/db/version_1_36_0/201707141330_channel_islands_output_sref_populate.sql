@@ -3,8 +3,8 @@
 -- rough cut of data to grab stuff which might be best output as channel islands grid
 select id into temporary tofix
 from cache_occurrences_functional
-where st_x(st_centroid(public_geom)) BETWEEN -257600 AND -210500)
-AND (st_y(st_centroid(public_geom)) BETWEEN 6271000 AND 6415000;
+where st_x(st_centroid(public_geom)) between -257600 and -210500
+and st_y(st_centroid(public_geom)) between 6271000 and 6415000;
 
 -- recalculate the output_sref for these data
 update cache_occurrences_nonfunctional onf
