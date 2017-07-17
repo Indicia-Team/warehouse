@@ -419,6 +419,8 @@ class XMLReportReader_Core implements ReportReader
             $countSql[] = $def['internal_sql'];
           }
         }
+      } elseif ($col === 'date' && $def['datatype'] === 'date' && $this->vagueDateProcessing) {
+        $sql[] = 'null as date';
       }
     }
     if (count($distinctSql)>0) {
