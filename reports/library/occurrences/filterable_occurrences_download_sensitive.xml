@@ -63,10 +63,10 @@
     <column name='output_sref' display='Output grid ref' sql="o.output_sref" datatype='text' />
     <column name="vicecounty" display="Vice county" sql="vc.name" datatype="text" />
     <column name="vicecounty_code" display="VC code" sql="vc.code" datatype="text" />
-    <column name='date_start' sql='o.date_start' visible='false' />
-    <column name='date_end' sql='o.date_end' visible='false' />
-    <column name='date_type' sql='o.date_type' visible='false' />
-    <column name='date' display='Date' datatype='date' />
+    <column name="date_start" display="Date from" sql="o.date_start" visible="true" />
+    <column name="date_end" display="Date to" sql="o.date_end" visible="true" />
+    <column name="date_type" sql="o.date_type" visible="false" />
+    <column name="date" display="Interpreted date" datatype="date" />
     <column name='input_date' sql='occ.created_on' display='Input on date' datatype='date' />
     <column name='last_edit_date' sql='occ.updated_on' display='Last edited on date' datatype='date' />
     <column name='recorder' display='Recorder' sql="rtrim(o.recorders, ', ')" datatype="text" />
