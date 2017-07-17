@@ -23,6 +23,11 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+// during setup, the indicia config file does not exist
+$indicia = kohana::config_load('indicia', false);
+$theme = $indicia ? $indicia['theme'] : 'default';
+$siteTitle = html::specialchars($warehouseTitle);
+
 ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -32,11 +37,8 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <meta id="baseURI" name="baseURI" content="<?php echo url::site() ?>" />
 <meta id="routedURI" name="routedURI" content="<?php echo url::site().router::$routed_uri; ?>" />
-
+<title><?php echo $siteTitle; ?> | <?php echo $title ?></title>
 <?php
-// during setup, the indicia config file does not exist
-$indicia = kohana::config_load('indicia', false);
-$theme=$indicia ? $indicia['theme'] : 'default';
 echo html::stylesheet(
   array(
     'media/css/site',
@@ -46,24 +48,20 @@ echo html::stylesheet(
     'media/themes/'.$theme.'/jquery-ui.custom'
   ),
   array('screen')
-); ?>
-
-<!-- BEGIN: jquery/superfish init -->
-<?php
-    echo html::script(array(
-      'media/js/json2.js',
-      'media/js/jquery.js',
-      'media/js/jquery.url.js',
-      'media/js/fancybox/source/jquery.fancybox.pack.js',
-      'media/js/hasharray.js',
-      'media/js/superfish.js',
-      'media/js/jquery-ui.custom.min.js'
-    ), FALSE);
+);
+echo html::script(
+  array(
+    'media/js/json2.js',
+    'media/js/jquery.js',
+    'media/js/jquery.url.js',
+    'media/js/fancybox/source/jquery.fancybox.pack.js',
+    'media/js/hasharray.js',
+    'media/js/superfish.js',
+    'media/js/jquery-ui.custom.min.js'
+  ), FALSE
+);
+echo html::stylesheet(array('media/css/menus',),array('screen',));
 ?>
-
-
-<?php echo html::stylesheet(array('media/css/menus',),array('screen',)); ?>
-
 <script type="text/javascript">
 /*<![CDATA[*/
   jQuery(document).ready(function() {
@@ -87,10 +85,6 @@ echo html::stylesheet(
   });
 /*]]>*/
 </script>
-<!-- END: jquery/superfish init -->
-
-<title><?php echo html::specialchars((isset($warehouseTitle) ? ($warehouseTitle . ' | ') : '') . $title); ?></title>
-
 </head>
 <body>
 
@@ -163,8 +157,7 @@ echo html::stylesheet(
     <!-- BEGIN: footer -->
     <div id="footer">
     <?php
-    echo Kohana::lang('misc.indicia_version').' '; 
-    echo 'feature-plant-portal-importer-may-build'; 
+    echo $siteTitle . ' | ' . Kohana::lang('misc.indicia_version') . ' ' . kohana::config('version.version');
     if (kohana::config('upgrade.continuous_upgrade')) echo " (dev)"; ?>
     </div>
     <!-- END: footer -->
