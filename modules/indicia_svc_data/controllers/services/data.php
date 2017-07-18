@@ -1176,7 +1176,20 @@ class Data_Controller extends Data_Service_Base_Controller {
       {
         // When using qfield and q parameters, it is from an AJAX call for an autocomplete, so append a wildcard and
         // also switch any service wildcards (*) for sql wildcards (%).
-        $like[$qfield]=str_replace('*', '%', $q).'%';
+        $searchTerm = str_replace('*', '%', $q) . '%';
+        // special case for taxon searchterm. If the searchterm might be for an abbreviation, we need to use the
+        // unsimplified version to search to avoid problems with simplification of ae -> a breaking the abbreviation.
+        if ($this->entity === 'cache_taxon_searchterm' && $qfield === 'searchterm'
+            // only bother for 5 char searches that might be abbreviations
+            && !empty($_GET['unsimplified']) && strlen($_GET['unsimplified']) === 5
+            // and only bother if searches against abbreviations (which don't use the simplified flag) are allowed.
+            && (empty($_GET['query']) || strpos(strtolower($_GET['query']), 'simplified') === FALSE
+              || strpos(strtolower($_GET['query']), 'simplified is null') !== false)
+        ) {
+          $this->db->where("($qfield like '$searchTerm' or ($qfield='$_GET[unsimplified]' AND name_type='A'))");
+        } else {
+          $like[$qfield] = $searchTerm;
+        }
       }
     }
     if (count($orderby)) {

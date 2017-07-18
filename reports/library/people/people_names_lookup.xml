@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Broad list of people for lookup"
+        description="A list of people known to a website including both registered users and people only stored in a
+        custom attribute.">
+  <query website_filter_field="uw.website_id">
+    SELECT #columns#
+    FROM users u
+    JOIN users_websites uw ON u.id = uw.user_id AND uw.site_role_id IS NOT NULL
+    JOIN people p ON p.id = u.person_id AND p.deleted = false
+    WHERE u.deleted = false
+    AND #website_filter#
+    AND lower(p.surname || ', ' || p.first_name) like lower(replace('#q#', '*', '%') || '%')
+    UNION
+    SELECT DISTINCT null::integer as id, v.text_value as person_name, null::text as email_address
+    FROM sample_attribute_values v
+    JOIN sample_attributes a on a.id=v.sample_attribute_id and a.deleted=false and a.system_function='full_name'
+    JOIN cache_samples_functional s on s.id=v.sample_id
+    WHERE v.deleted=false
+    AND s.website_id in (#website_ids#)
+    AND lower(v.text_value) like lower(replace('#q#', '*', '%') || '%')
+    AND NOT EXISTS (
+      SELECT NULL
+      FROM users u
+      JOIN users_websites uw ON u.id = uw.user_id AND uw.site_role_id IS NOT NULL
+      JOIN people p ON p.id = u.person_id AND p.deleted = false
+      WHERE u.deleted = false
+      AND #website_filter#
+      AND lower(p.surname || ', ' || p.first_name) = lower(v.text_value)
+    )
+  </query>
+  <orderbys>
+    <orderby>person_name</orderby>
+  </orderbys>
+  <params>
+    <param name="q" display="Search for" datatype="text"/>
+  </params>
+  <columns>
+    <column name="id" sql="p.id" datatype="integer" visible="false"/>
+    <column name="person_name" visible="false" datatype="text"
+            sql="p.surname || ', ' || p.first_name" />
+    <column name="email_address" display="Email" sql="p.email_address" datatype="text"/>
+  </columns>
+</report>

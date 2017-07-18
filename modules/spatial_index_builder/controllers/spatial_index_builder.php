@@ -69,8 +69,13 @@ class Spatial_index_builder_Controller extends Controller {
         $sets = '';
         foreach($adding as $locTypeId => $column) {
           $sets[] = "$column = ils$locTypeId.location_id";
-          $joins[] = "LEFT JOIN index_locations_samples ils$locTypeId on ils$locTypeId.sample_id=s.id " .
-              "and ils$locTypeId.location_type_id=$locTypeId and ils$locTypeId.contains = true";
+          $joins[] = <<<JOIN
+LEFT JOIN (index_locations_samples ils$locTypeId
+  JOIN locations l$locTypeId 
+      ON l$locTypeId.id=ils$locTypeId.location_id AND l$locTypeId.deleted=false AND 
+      (l$locTypeId.code IS NULL OR l$locTypeId.code NOT LIKE '%+%')
+) ON ils$locTypeId.sample_id=s.id AND ils$locTypeId].location_type_id=$locTypeId AND ils$locTypeId.contains=true
+JOIN;
         }
         $joins = implode("\n", $joins);
         $sets = implode(",\n", $sets);
