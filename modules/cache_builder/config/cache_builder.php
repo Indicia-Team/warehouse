@@ -1342,6 +1342,12 @@ SET comment=o.comment,
     ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
     case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
   ),
+  output_sref_system=get_output_system(
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
+      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
+    '4326'
+  ),
   verifier=pv.surname || ', ' || pv.first_name,
   licence_code=li.code,
   attr_sex_stage=CASE a_sex_stage.data_type
@@ -1545,7 +1551,7 @@ AND o.sensitivity_precision IS NOT NULL
 
 $config['occurrences']['insert']['nonfunctional'] = "
 INSERT INTO cache_occurrences_nonfunctional(
-            id, comment, sensitivity_precision, privacy_precision, output_sref, licence_code)
+            id, comment, sensitivity_precision, privacy_precision, output_sref, output_sref_system, licence_code)
 SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
@@ -1583,6 +1589,12 @@ SELECT o.id,
       10 -- default minimum square size
     ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
     case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
+  ),
+  get_output_system(
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
+      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
+    '4326'
   ),
   li.code
 FROM occurrences o
