@@ -59,6 +59,7 @@
             sql="get_sref_precision(snf.public_entered_sref, snf.entered_sref_system, snf.attr_sref_precision)" />
     <column name='output_sref' display='Output map ref' sql="onf.output_sref" datatype='text' />
     <column name='output_sref_system' display='Output map ref system' sql="onf.output_sref_system" datatype='text' />
+    <column name='attr_biotope' display='Biotope' sql="snf.attr_biotope" datatype='text' />
     <column name="vicecounty_number" display="VC number" sql="vc.code" datatype="text" />
     <column name="vicecounty" display="Vice county" sql="vc.name" datatype="text" />
     <column name="date" display="Date interpreted" datatype="date" />
@@ -91,7 +92,7 @@
         ELSE o.record_status
         END" />
     <column name="record_substatus" display="Verification status 2"
-        sql="CASE o.record_substatus
+        sql="CASE o.record_status
         WHEN 'V' THEN
           CASE o.record_substatus WHEN 1 THEN 'correct' WHEN 2 THEN 'Considered correct' ELSE NULL END
         WHEN 'C' THEN
