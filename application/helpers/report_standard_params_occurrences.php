@@ -214,13 +214,14 @@ class report_standard_params_occurrences {
       'quality' => array('datatype'=>'lookup', 'display'=>'Quality',
         'description'=>'Minimum quality of records to include',
         'lookup_values'=>'V1:Accepted as correct records only,V:Accepted records only,-3:Reviewer agreed at least plausible,' .
-          'C:Recorder was certain,L:Recorder thought the record was at least likely,' .
+          'C3:Plausible records only,C:Recorder was certain,L:Recorder thought the record was at least likely,' .
           'P:Not reviewed,T:Not reviewed but trusted recorder,!D:Exclude queried or not accepted records,!R:Exclude not accepted records,D:Queried records only,'.
           'A:Answered records,R:Not accepted records only,R4:Not accepted because unable to verify records only,DR:Queried or not accepted records,all:All records',
         'wheres' => array(
           array('value'=>'V1', 'operator'=>'equal', 'sql'=>"o.record_status='V' and o.record_substatus=1"),
           array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
           array('value'=>'-3', 'operator'=>'equal', 'sql'=>"(o.record_status='V' or o.record_substatus<=3)"),
+          array('value'=>'C3', 'operator'=>'equal', 'sql'=>"(o.record_status='C' and o.record_substatus=3)"),
           array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
           array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
           array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status='C' and o.record_substatus is null and (o.query<>'Q' or o.query is null)"),
