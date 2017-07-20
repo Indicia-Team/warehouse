@@ -20,10 +20,10 @@
   <columns>
     <column name="sample_id" sql="s.id" display="ID" visible="false" in_count="true" />
     <column name="site_name" sql="o.location_name" display="Site name" />
-    <column name='date_start' sql='s.date_start' visible='false' />
-    <column name='date_end' sql='s.date_end' visible='false' />
-    <column name='date_type' sql='s.date_type' visible='false' />
-    <column name='date' display='Date' />
+    <column name="date_start" sql="s.date_start" visible="false" />
+    <column name="date_end" sql="s.date_end" visible="false" />
+    <column name="date_type" sql="s.date_type" visible="false" />
+    <column name="date" display="Date" />
     <column name="species_count" sql="count(distinct o.preferred_taxa_taxon_list_id)" display="No. of species" aggregate="true" />
     <column name="habitats" sql="array_to_string(array_agg(distinct t.term), '; ')" display="Main habitats" aggregate="true" />
   </columns>
