@@ -473,7 +473,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'library/locations/locations_list.xml', array('location_type_id' => 'Test location type', 'locattrs' => ''));
     // Simply testing that the report parses and the SQL runs
     $this->assertFalse(isset($response['error']), 'testReportLibraryLocationsLocationsList returned error ' .
-        "when passed a string location type id. $response[error]");
+        'when passed a string location type id. ' . var_export($response, true));
     $this->assertCount(1, $response, 'Report response should only include 1 record');
     $this->assertEquals($response[0]['name'], 'Test location',
         'Locations list report returned incorrect location name.');
@@ -494,7 +494,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
       'library/locations/locations_list_2.xml', array('location_type_id' => 99999, 'locattrs' => ''));
     // Simply testing that the report parses and the SQL runs
     $this->assertFalse(isset($response['error']), 'testReportLibraryLocationsLocationsList2 returned an error '.
-        "when filtering for a missing location type ID. $response[error]");
+        'when filtering for a missing location type ID. ' . var_export($response, true));
     $this->assertCount(0, $response, 'Report response be empty, location type filter failed');
   }
 
@@ -504,7 +504,6 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $response = $this->getReportResponse(
       'library/occurrences/filterable_occurrences_download_without_locality.xml', array());
     // Simply testing that the report parses and the SQL runs
-    var_export($response);
     $this->assertFalse(isset($response['error']), 'Error returned when calling ' .
         'library/occurrences/filterable_occurrences_download_without_locality.xml');
     // In following test, the confidential record in the fixture is skipped.
