@@ -36,6 +36,7 @@
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' distincton="true" template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='recordkey' display='RecordKey' sql="'#warehouse_id#' || o.id" datatype="text" />
+    <column name='external_key' display='External Key' sql="o.external_key" datatype="text" />
     <column name='source' display='Source' sql="snf.website_title || ' | ' || snf.survey_title || coalesce(' | ' || snf.group_title, '')" datatype="text" />
     <column name='sample_id' sql='o.sample_id' datatype='integer' />
     <column name='taxon' display='Species' 
