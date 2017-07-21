@@ -1,0 +1,2 @@
+ALTER TABLE cache_occurrences_functional
+ADD external_key CHARACTER VARYING;

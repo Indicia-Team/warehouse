@@ -145,7 +145,22 @@ class Location_Model extends ORM_Tree {
     // Empty boundary geom is allowed but must be null
     if (isset($this->submission['fields']['boundary_geom']['value']) && empty($this->submission['fields']['boundary_geom']['value']))
       $this->submission['fields']['boundary_geom']['value'] = null;
+    $this->preSubmitTidySref();
     return parent::presubmit();
+  }
+  
+  /**
+   * Gives sref modules the chance to tidy the format of input values, e.g. OSGB grid refs are capitalised and spaces
+   * stripped.
+   */
+  private function preSubmitTidySref() {
+    if (array_key_exists('centroid_sref', $this->submission['fields']) &&
+        array_key_exists('centroid_sref_system', $this->submission['fields'])) {
+      $this->submission['fields']['centroid_sref']['value'] = spatial_ref::sref_format_tidy(
+          $this->submission['fields']['centroid_sref']['value'],
+          $this->submission['fields']['centroid_sref_system']['value']
+      );
+    }
   }
 
   /*
