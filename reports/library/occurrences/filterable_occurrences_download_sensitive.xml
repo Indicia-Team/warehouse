@@ -69,7 +69,7 @@
     <column name="date" display="Date interpreted" datatype="date" />
     <column name="date_start" display="Date from" sql="o.date_start" visible="true" />
     <column name="date_end" display="Date to" sql="o.date_end" visible="true" />
-    <column name="date_type" sql="o.date_type" visible="false" />
+    <column name="date_type" display="Date type" sql="o.date_type" visible="true" />
     <column name='attr_sample_method' display='Sample method' sql="snf.attr_sample_method" datatype='text' />
     <column name='recorder' display='Recorder' sql="rtrim(snf.recorders, ', ')" datatype="text" />
     <column name='determiner' display='Determiner' datatype="text"
