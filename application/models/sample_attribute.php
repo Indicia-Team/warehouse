@@ -93,7 +93,11 @@ class Sample_Attribute_Model extends ATTR_ORM {
           'selection of a single location boundary when a sample\'s grid square overlaps 2 different boundaries in ' .
           'the locations being spatially indexed. For example, if a record overlaps 2 vice counties this allows the ' .
           'recorder to identify which applies to the record.'
-      )
+      ),
+      'sample_method' => array(
+        'title' => 'Sample method',
+        'description' => 'Method of sampling used, e.g. field observation, methodology name or trap type.'
+      ),
     );
   }
 

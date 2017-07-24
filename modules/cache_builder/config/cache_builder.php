@@ -743,6 +743,11 @@ SET website_title=w.title,
       WHEN 'F'::bpchar THEN v_sref_precision.float_value
       ELSE NULL::double precision
   END,
+  attr_sample_method=COALESCE(t_sample_method_id.term, CASE a_sample_method.data_type
+      WHEN 'T'::bpchar THEN v_sample_method.text_value
+      WHEN 'L'::bpchar THEN t_sample_method.term
+      ELSE NULL::text
+  END),
   attr_linked_location_id=v_linked_location_id.int_value
 FROM samples s
 #join_needs_update#
@@ -783,6 +788,11 @@ LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
 ) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+LEFT JOIN (sample_attribute_values v_sample_method
+  JOIN sample_attributes a_sample_method on a_sample_method.id=v_sample_method.sample_attribute_id and a_sample_method.deleted=false and a_sample_method.system_function='sample_method'
+  LEFT JOIN cache_termlists_terms t_sample_method on a_sample_method.data_type='L' and t_sample_method.id=v_sample_method.int_value
+) on v_sample_method.sample_id=s.id and v_sample_method.deleted=false
+LEFT JOIN cache_termlists_terms t_sample_method_id ON t_sample_method_id.id=s.sample_method_id
 LEFT JOIN (sample_attribute_values v_linked_location_id
   JOIN sample_attributes a_linked_location_id on a_linked_location_id.id=v_linked_location_id.sample_attribute_id 
     and a_linked_location_id.deleted=false and a_linked_location_id.system_function='linked_location_id'
@@ -931,6 +941,11 @@ SET
       WHEN 'F'::bpchar THEN v_sref_precision.float_value
       ELSE NULL::double precision
   END,
+  attr_sample_method=COALESCE(t_sample_method_id.term, CASE a_sample_method.data_type
+      WHEN 'T'::bpchar THEN v_sample_method.text_value
+      WHEN 'L'::bpchar THEN t_sample_method.term
+      ELSE NULL::text
+  END),
   attr_linked_location_id=v_linked_location_id.int_value
 FROM samples s
 #join_needs_update#
@@ -966,6 +981,11 @@ LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
 ) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+LEFT JOIN (sample_attribute_values v_sample_method
+  JOIN sample_attributes a_sample_method on a_sample_method.id=v_sample_method.sample_attribute_id and a_sample_method.deleted=false and a_sample_method.system_function='sample_method'
+  LEFT JOIN cache_termlists_terms t_sample_method on a_sample_method.data_type='L' and t_sample_method.id=v_sample_method.int_value
+) on v_sample_method.sample_id=s.id and v_sample_method.deleted=false
+LEFT JOIN cache_termlists_terms t_sample_method_id ON t_sample_method_id.id=s.sample_method_id
 LEFT JOIN (sample_attribute_values v_linked_location_id
   JOIN sample_attributes a_linked_location_id on a_linked_location_id.id=v_linked_location_id.sample_attribute_id 
     and a_linked_location_id.deleted=false and a_linked_location_id.system_function='linked_location_id'
