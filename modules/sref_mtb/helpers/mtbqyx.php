@@ -26,21 +26,21 @@
  * @subpackage MTBQQQ Grid References
  * @author  Indicia Team
  */
-class mtbqqq extends mtb {
+class mtbqyx extends mtb {
 
   /**
-   * Returns true if the spatial reference is a recognised German MTBQQQ Grid square.
+   * Returns true if the spatial reference is a recognised German MTBQYX Grid square.
    *
    * @param $sref string Spatial reference to validate
    */
   public static function is_valid($sref)
   {
     $sref = self::clean($sref);
-    return preg_match('/^\d\d\d\d(\/[1-4][1-4]?[1-4]?)?$/', $sref)<>0;
+    return preg_match('/^\d\d\d\d(\/[1-4]([1-3][1-5])?)?$/', $sref)<>0;
   }
 
   /**
-   * Converts a spatial reference in MTBQQQ notation into the WKT text for the polygon, in
+   * Converts a spatial reference in MTBQYX notation into the WKT text for the polygon, in
    * OSGB easting northings.
    */
   public static function sref_to_wkt($sref)
@@ -58,23 +58,34 @@ class mtbqqq extends mtb {
     $northEdge = ORIGIN_Y - $gridYTop * SIXMINUTES;
     // Each cell is 10 minutes wide, = 1/6 degrees. Left of grid is 5.833 = 35/6
     $westEdge = ORIGIN_X + $gridXLeft * TENMINUTES;
-    // we now have the top left of the outer grid square. We need to work out the quadrants.
-    // Loop through the quadrant digits.
-    for ($i=5; $i<strlen($sref); $i++) {
-      $q = substr($sref, $i, 1);
+    // we now have the top left of the outer grid square. We need to work out the quadrant and xy component.
+    // default square size compared to a full mtb square
+    $xSize = TENMINUTES;
+    $ySize = SIXMINUTES;
+    // Quadrant first.
+    if (strlen($sref) >= 6) {
+      $q = substr($sref, 5, 1);
+      // change square size to a quadrant
+      $xSize = TENMINUTES / 2;
+      $ySize = SIXMINUTES / 2;
+      // shift edges into correct quadrant
       if ($q > 2) 
-        $northEdge = $northEdge - (SIXMINUTES / pow(2, $i-4)); // divide by 2, 4 or 8
+        $northEdge -= $ySize; 
       if ($q == 2 || $q == 4) 
-        $westEdge = $westEdge + (TENMINUTES / pow(2, $i-4)); // divide by 2, 4 or 8
+        $westEdge += $xSize;
     }
-    // we now have the top left of a grid square. Need to know all the edges. Work out the amount we must
-    // divide a full size grid square edge by to find the quadrant size.
-    $sizing=1;
-    if (strlen($sref)>=6) {
-      $sizing = pow(2, strlen($sref)-5); // 2, 4 or 8
+    if (strlen($sref) >= 8) {
+      // Now the xy component, each quadrant is a 5x3 grid
+      $xSize = TENMINUTES / (2 * 5);
+      $ySize = SIXMINUTES / (2 * 3);
+      $y = substr($sref, 6, 1);
+      $x = substr($sref, 7, 1);
+      $northEdge = $northEdge - ($y - 1) * $ySize;
+      $westEdge = $westEdge + ($x - 1) * $xSize;
     }
-    $southEdge = $northEdge - SIXMINUTES / $sizing;
-    $eastEdge = $westEdge + TENMINUTES / $sizing;
+    // calculate the other edges
+    $southEdge = $northEdge - $ySize;
+    $eastEdge = $westEdge + $xSize;
     return "POLYGON(($westEdge $southEdge,$westEdge $northEdge,".
         "$eastEdge $northEdge,$eastEdge $southEdge,$westEdge $southEdge))";
   }
@@ -101,36 +112,26 @@ class mtbqqq extends mtb {
     $northing = $point[1];
     /*if ($easting < 0 || $easting > 700000 || $northing < 0 || $northing > 1300000)
       throw new Exception('wkt_to_sref translation is outside range of grid.');*/
-    $y    = ((ORIGIN_Y - $northing) / SIXMINUTES) + GRIDORIGIN_Y;
-    $gridYTop   = Floor($y);
-    $x    = (($easting - ORIGIN_X) * 6) + GRIDORIGIN_X;
-    $gridXLeft   = Floor($x);
-    $y8th = Floor(($y - $gridYTop) * 8) + 1;
-    $x8th = Floor(($x - $gridXLeft) * 8) + 1;
-    // Start on 111
-    $q1 = 1;
-    $q2 = 1;
-    $q3 = 1;
-    // Work out each shift according to y8th
-    if (in_array($y8th, array(5, 6, 7, 8)))
-      $q1 = 3;
-    if (in_array($y8th, array(3, 4, 7, 8)))
-      $q2 = 3;
-    if (in_array($y8th, array(2, 4, 6, 8))) 
-      $q3 = 3;
-    // Work out each additional shift according to x8th
-    if (in_array($x8th, array(5, 6, 7, 8)))
-      $q1++;
-    if (in_array($x8th, array(3, 4, 7, 8)))
-      $q2++;
-    if (in_array($x8th, array(2, 4, 6, 8)))
-      $q3++;
+    $gridX    = (($easting - ORIGIN_X) * 6) + GRIDORIGIN_X;
+    $gridXLeft   = Floor($gridX);
+    $gridY    = ((ORIGIN_Y - $northing) / SIXMINUTES) + GRIDORIGIN_Y;
+    $gridYTop   = Floor($gridY);
+    // Each quadrant is 5*3, so total 10*6.
+    $x10th = Floor(($gridX - $gridXLeft) * 10) + 1;
+    $y6th = Floor(($gridY - $gridYTop) * 6) + 1;
+    // Find the quadrant
+    $q = $x10th > 5 ? 2 : 1;
+    $q += $y6th > 3 ? 2 : 0;
+    // Find the xy coordinate within the quadrant.
+    $x = ($x10th - 1) % 5 + 1; 
+    $y = ($y6th - 1) % 3 + 1;
+
     if ($gridYTop < 1 || $gridXLeft < 1 || $gridYTop > 99 || $gridXLeft > 99)
       throw new Exception('Outside bounds for MTB squares.');
     else {
-      $StrY = Substr('00'.$gridYTop, -2);
-      $StrX = Substr('00'.$gridXLeft, -2);
-      $ref = sprintf('%s%s/%d%d%d', $StrY, $StrX, $q1, $q2, $q3);
+      $StrY = Substr('00' . $gridYTop, -2);
+      $StrX = Substr('00' . $gridXLeft, -2);
+      $ref = "$StrY$StrX/$q$y$x";
       // assume full accuracy
       $len = 8;
       if ($metresAccuracy) {
@@ -138,8 +139,6 @@ class mtbqqq extends mtb {
           $len=4; // e.g. 6402
         } elseif ($metresAccuracy>8000) {
           $len=6; // e.g. 6402/1
-        } elseif ($metresAccuracy>4000) {
-          $len=7; // e.g. 6402/11
         }
       }
       return substr($ref, 0, $len);
