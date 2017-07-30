@@ -12,6 +12,7 @@ CREATE VIEW lookup_taxa_taxon_lists AS
     search_code
    FROM cache_taxon_searchterms
   WHERE name_type IN ('L', 'S', 'V')
+  AND simplified = false
   ORDER BY preferred DESC;
 
 /***********************************************************************
