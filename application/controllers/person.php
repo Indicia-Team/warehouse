@@ -127,9 +127,9 @@ class Person_Controller extends Gridview_Base_Controller {
 
   protected function record_authorised ($id)
   {
-    if (!is_null($id) AND !is_null($this->auth_filter))
+    if (!is_null($id) AND !is_null($this->auth_filter) && $this->auth_filter['field'] === 'admin_user_id')
     {
-      return (in_array($id, $this->auth_filter['values']));
+      return $id == $this->auth_filter['values'];
     }
     return true;
   }

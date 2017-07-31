@@ -64,7 +64,7 @@ class Survey_Controller extends Gridview_Base_Controller {
     elseif (!empty($values['survey:website_id']))
       // can't change website for existing survey
       $websites = $websites->where('id', $values['survey:website_id']);
-    elseif (!$this->auth->logged_in('CoreAdmin'))
+    elseif (!$this->auth->logged_in('CoreAdmin') && $this->auth_filter['field'] === 'website_id')
       $websites = $websites->in('id',$this->auth_filter['values']);
     $arr = array();
     foreach ($websites->where('deleted','false')->orderby('title','asc')->find_all() as $website)

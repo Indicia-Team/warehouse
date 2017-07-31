@@ -49,7 +49,7 @@
 <label for='website_id' class='wide' >Default Website to attach any new locations to</label>
 <select id='website_id' name='website_id' >
 <?php
-  if (!is_null($this->auth_filter))
+  if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
     $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
   else {
     $websites = ORM::factory('website')->orderby('title','asc')->find_all();        

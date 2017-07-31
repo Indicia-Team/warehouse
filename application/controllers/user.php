@@ -32,8 +32,7 @@ class User_Controller extends Gridview_Base_Controller {
   private $allowedPersonIds;
 
   public function __construct() {
-    $this->auth_filter = array('admin_user_id' => 4);
-  	parent::__construct('user');
+    parent::__construct('user');
     $this->pagetitle = "Users";
     $this->model = new User_Model();
     // use a report to load the users list so the parameters can be more complex
