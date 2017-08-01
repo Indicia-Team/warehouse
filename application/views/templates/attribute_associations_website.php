@@ -2,7 +2,7 @@
 Website Allocation</legend>
 <p>Please tick the boxes for the websites that this attribute is available for.</li>
 <?php
-if (!is_null($this->auth_filter)) {
+if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
   $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
   // output a hidden input to list the websites we are allowed update against
   echo '<input type="hidden" name="restricted-to-websites" value="'.implode(',', $this->auth_filter['values']).'"/>';

@@ -139,10 +139,10 @@ $(document).ready(function() {
     name="<?php echo $model->object_name; ?>:termlist_id" <?php echo $enabled; ?>>
     <option value=''>&lt;Please Select&gt;</option>
     <?php
-    if (!is_null($this->auth_filter))
-    $termlists = ORM::factory('termlist')->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
+    if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
+      $termlists = ORM::factory('termlist')->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
     else
-    $termlists = ORM::factory('termlist')->where('deleted','f')->orderby('title','asc')->find_all();
+      $termlists = ORM::factory('termlist')->where('deleted','f')->orderby('title','asc')->find_all();
     foreach ($termlists as $termlist) {
       echo '  <option value="'.$termlist->id.'" ';
       if ($termlist->id==html::initial_value($values, $model->object_name.':termlist_id'))
@@ -225,7 +225,7 @@ species list allocation</legend>
 <?php
 // TODO this query must filter out the taxon_lists_taxa_taxon_list_attributes.deleted flag (in (false or null))
 
-if (is_null($this->auth_filter))
+if (is_null($this->auth_filter) || $this->auth_filter['field'] !== 'website_id')
   $lists = ORM::factory('termlist')->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
 else
   $lists = ORM::factory('termlist')->where(array('deleted'=>'f'))->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
