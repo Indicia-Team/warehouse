@@ -37,6 +37,7 @@ class User_Controller extends Gridview_Base_Controller {
     $this->model = new User_Model();
     // use a report to load the users list so the parameters can be more complex
     $this->gridReport = 'library/users/users_list';
+    $this->base_filter = array('include_unlinked_people' => '1');
     // apply permissions for the users you can administer
     if (!$this->auth->logged_in('CoreAdmin'))
       $this->auth_filter = array('field' => 'admin_user_id', 'values' => $_SESSION['auth_user']->id);
