@@ -69,7 +69,7 @@ if ($parent_id != null && array_key_exists('parent_website_id', $values) && $val
   $website_id = html::initial_value($values, 'termlist:website_id');
 }
 $options = array();
-if (!is_null($this->auth_filter))
+if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
   $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
 else
   $websites = ORM::factory('website')->orderby('title','asc')->find_all();

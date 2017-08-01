@@ -284,7 +284,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
    * @return boolean True if access granted.
    */
   protected function page_authorised() {
-    if (isset($this->auth_filter) && $this->auth_filter['field']=='website_id') {
+    if (isset($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
       if (!$this->_website_id) {
         $survey = $this->getSurvey();
         $this->_website_id = $survey->website_id;

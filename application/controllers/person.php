@@ -127,11 +127,12 @@ class Person_Controller extends Gridview_Base_Controller {
 
   protected function record_authorised ($id)
   {
-    if (!is_null($id) AND !is_null($this->auth_filter))
-    {
-      return (in_array($id, $this->auth_filter['values']));
+    if ($this->auth->logged_in('CoreAdmin'))
+      return true;
+    elseif (!is_null($id)) {
+      $allowedPersonIds = $this->getAllowedPersonIds();
+      return $allowedPersonIds === true || in_array($id, $allowedPersonIds);
     }
-    return true;
   }
   
   /**
