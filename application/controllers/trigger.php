@@ -133,4 +133,3 @@ class Trigger_Controller extends Gridview_Base_Controller {
   }
   
 }
-?>

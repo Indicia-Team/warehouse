@@ -75,7 +75,7 @@ class Licences_website_Controller extends Gridview_Base_Controller
     if ($this->auth->logged_in('CoreAdmin'))
       return true;
     else {
-      if (!is_null($this->auth_filter))
+      if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
       {
         $lw = new Licences_Website_Model($id);
         return (in_array($lw->website_id, $this->auth_filter['values']));
@@ -132,5 +132,3 @@ class Licences_website_Controller extends Gridview_Base_Controller
   }
 
 }
-
-?>

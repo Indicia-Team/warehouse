@@ -204,7 +204,7 @@ $(document).ready(function() {
     name="<?php echo $model->object_name; ?>:termlist_id" <?php echo $enabled; ?>>
     <option value=''>&lt;Please Select&gt;</option>
     <?php
-    if (!is_null($this->auth_filter))
+    if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
     $termlists = ORM::factory('termlist')->where('deleted','f')->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
     else
     $termlists = ORM::factory('termlist')->where('deleted','f')->orderby('title','asc')->find_all();

@@ -44,5 +44,3 @@ class Taxon_Group_Controller extends Gridview_Base_Controller {
   }
 
 }
-
-?>

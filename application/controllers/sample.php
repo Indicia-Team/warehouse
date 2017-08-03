@@ -53,6 +53,10 @@ class Sample_Controller extends Gridview_Base_Controller
         'restrict_to_survey_id'=>array(null, $r['sample:survey_id']),
         'restrict_to_sample_method_id'=>array(null, $r['sample:sample_method_id'])
     ));
+    if ($this->model->location_id) {
+      $location = ORM::factory('location', $this->model->location_id);
+      $r['location:name'] = $location->name;
+    }
     return $r;      
   }
   
@@ -95,6 +99,10 @@ class Sample_Controller extends Gridview_Base_Controller
         'title' => 'Occurrences',
         'actions'=>array('edit')
       ), array(
+        'controller' => 'sample/children',
+        'title' => 'Child Samples',
+        'actions'=>array('edit')
+      ), array(
         'controller' => 'sample_comment',
         'title' => 'Comments',
         'actions'=>array('edit')
@@ -113,11 +121,28 @@ class Sample_Controller extends Gridview_Base_Controller
    */
   protected function record_authorised ($id)
   {
-    if (!is_null($id) AND !is_null($this->auth_filter))
+    if (!is_null($id) AND !is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
     {
       $sample = ORM::factory('sample', $id);
       return (in_array($sample->survey->website_id, $this->auth_filter['values']));
     }
     return true;
   }
+
+  public function index_from_location($id) {
+    $this->base_filter['location_id'] = $id;
+    parent::index();
+    $this->view->location_id=$id;
+  }
+
+  public function children($id) {
+    $parentLocation = ORM::factory('sample', $id);
+    $this->base_filter['parent_id'] = $id;
+    parent::index();
+    // pass the parent id into the view, so the create list button can use it to autoset
+    // the parent of the new list.
+    $this->view->parent_id=$id;
+    $this->view->upload_csv_form ="";
+  }
+
 }

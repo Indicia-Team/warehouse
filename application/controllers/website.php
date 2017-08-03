@@ -64,7 +64,7 @@ class Website_Controller extends Gridview_Base_Controller
     if (is_null($id))
       // creating a new website registration so must be core admin.
       return $this->auth->logged_in('CoreAdmin');
-    elseif (!is_null($id) AND !is_null($this->auth_filter))
+    elseif (!is_null($id) AND !is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
       // editing a website registration - so must have rights to it.
       return (in_array($id, $this->auth_filter['values']));
     return true;
@@ -96,5 +96,3 @@ class Website_Controller extends Gridview_Base_Controller
   }
 
 }
-
-?>

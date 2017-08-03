@@ -42,7 +42,4 @@ class Dev
 $upgradeConfig = kohana::config_load('upgrade', false);
 if ($upgradeConfig && $upgradeConfig['continuous_upgrade']) {
   Event::add('system.pre_controller', array('Dev', '__upgrade'));
-  
 }
-
-?>

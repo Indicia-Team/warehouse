@@ -21,10 +21,10 @@
     <order_by>oc.id desc</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list'
-           description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list'
-           description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs'
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
     <param name='default_input_form' display='Default input form'
            description='Input form path to use when no other available' default='' />
     <param name="data_cleaner_filter" display="Data cleaner comments" datatype="boolean" default=""
@@ -68,7 +68,7 @@
     <column name='date' display='Date' datatype="date" />
     <column name='cache_created_on' sql="to_char(o.created_on,'DD/MM/YYYY')" display='Submitted date' datatype="date" visible="false" />
     <column name='cache_updated_on' sql="to_char(o.updated_on,'DD/MM/YYYY HH24:MI')" display='Last updated' visible="false" />
-    <column name='recorder' display='Recorder' sql="CASE WHEN LENGTH(snf.recorders)>30 THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name='recorder' display='Recorder' sql="CASE WHEN (TRIM(snf.recorders) !~ ' ' AND LENGTH(snf.recorders)>30) THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
     <column name='zero_abundance' display='Zero abundance' sql='o.zero_abundance' visible="false" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
     <column name='release_status' display='State' sql='o.release_status' visible="false" />

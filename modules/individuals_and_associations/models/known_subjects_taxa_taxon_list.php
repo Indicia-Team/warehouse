@@ -55,5 +55,3 @@ class Known_subjects_taxa_taxon_list_Model extends ORM
   }
 
 }
-
-?>

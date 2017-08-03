@@ -122,7 +122,4 @@ class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM
       return parent::__get($column);
   }
 
-
 }
-
-?>

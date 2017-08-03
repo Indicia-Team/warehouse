@@ -32,4 +32,3 @@ $config['moderation_urls'] = array(
   array('website_id' => 23, 'title' => 'iRecord', 'url' => 'http://www.brc.ac.uk/irecord/moderation', 
       'linkText'=>'Click here to view mentoring records needing your help.')
 );
-?>

@@ -160,5 +160,3 @@ class User_identifier_Controller extends Gridview_Base_Controller
   }
 
 }
-
-?>

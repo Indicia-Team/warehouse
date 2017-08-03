@@ -101,7 +101,7 @@ class Termlist_Controller extends Gridview_Base_Controller {
     } else {
       $idToCheck=$id;
     }    
-    if (!is_null($idToCheck) AND !is_null($this->auth_filter))
+    if (!is_null($idToCheck) AND !is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
     {
       $termlist = new Termlist_Model($idToCheck);
       return (in_array($termlist->website_id, $this->auth_filter['values']));
@@ -152,4 +152,3 @@ class Termlist_Controller extends Gridview_Base_Controller {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
 }
-?>

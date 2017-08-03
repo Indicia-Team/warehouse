@@ -123,7 +123,4 @@ class Survey_Attributes_Website_Model extends Valid_ORM
       return parent::__get($column);
   }
 
-
 }
-
-?>

@@ -31,7 +31,7 @@
         template='&lt;span class="status-icon status-{record_status} release-{release_status} substatus-{record_substatus} query-{query} certainty-{certainty}" title="{status_hint}"&gt;&lt;/span&gt;&lt;span class="record-id"&gt;{occurrence_id}&lt;/span&gt;'  />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype="integer" />
     <column name='taxon' display='Species' datatype="species" sql="o.preferred_taxon" template='&lt;span class="zero-{zero_abundance}"&gt;{taxon}&lt;/span&gt;' />
-    <column name='common' display='Common name' datatype="text" sql="o.default_common_name" template='&lt;span class="zero-{zero_abundance}"&gt;{common}&lt;/span&gt;' />
+    <column name='common' display='Common name' datatype="text" sql="upper(substring(o.default_common_name from 1 for 1)) || substring(o.default_common_name from 2 for length(o.default_common_name))" template='&lt;span class="zero-{zero_abundance}"&gt;{common}&lt;/span&gt;' />
     <column name='taxon_group' display='Taxon group' sql='o.taxon_group' datatype="text" visible="false"  />
     <column name='taxon_group_id' display='Taxon group ID' sql='o.taxon_group_id' visible='false' datatype="integer" />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype="integer" />   
@@ -43,7 +43,7 @@
     <column name='date' display='Date' datatype="date" />
     <column name='cache_created_on' sql="to_char(o.cache_created_on,'DD/MM/YYYY')" display='Submitted date' datatype="date" visible="false" />
     <column name='cache_updated_on' sql="to_char(o.cache_updated_on,'DD/MM/YYYY HH24:MI')" display='Last updated' visible="false" />
-    <column name='recorder' display='Recorder' sql="CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" datatype="text" />
+    <column name='recorder' display='Recorder' sql="CASE WHEN (TRIM(o.recorders) !~ ' ' AND LENGTH(o.recorders)>30) THEN 'Recorder' ELSE o.recorders END" datatype="text" />
     <column name='zero_abundance' display='Zero abundance' sql='o.zero_abundance' visible="false" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />

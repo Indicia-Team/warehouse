@@ -53,5 +53,3 @@ class User_Trust_Model extends ORM {
     return parent::validate($array, $save);
   } 
 }
-
-?>

@@ -31,50 +31,15 @@ class Person_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
     parent::__construct('person');
-    $this->columns = array(
-      'first_name'=>''
-      ,'surname'=>''
-      ,'initials'=>''
-      ,'email_address'=>''
-    );
     $this->pagetitle = "People";
     $this->model = new Person_Model();
-
     $this->flag_warning = null;
-    $websites = $this->get_allowed_website_id_list('editor');
-    if(!is_null($websites)) {
-      // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
-      // you created the user
-      $list = $this->db
-          ->select('people.id')
-          ->from('people')
-          ->join('users', 'users.person_id', 'people.id')
-          ->join('users_websites','users_websites.user_id','users.id')
-          ->where('users_websites.site_role_id IS NOT ', null) 
-          ->where('users.core_role_id IS ', null)
-          ->where('people.deleted', 'false')
-          ->in('users_websites.website_id', $websites)
-          ->get();
-      foreach ($list as $person) {
-        $person_id_values[] = $person->id;
-      }
-      // Also let you edit people that you created unless they have been promoted to core admin
-      $list = $this->db
-          ->select('people.id')
-          ->from('people')
-          ->join('users', 'users.person_id', 'people.id', 'LEFT')
-          ->where('people.created_by_id', $_SESSION['auth_user']->id)
-          ->where('users.core_role_id IS ', null)          
-          ->where('people.deleted', 'false')
-          ->get();
-      foreach ($list as $person) {
-        $person_id_values[] = $person->id;
-      }
-      // Remove duplicates
-      $person_id_values = array_unique($person_id_values, SORT_NUMERIC);
-      $this->auth_filter = array('field' => 'id', 'values' => $person_id_values);
-    }
 
+    // use a report to load the users list so the parameters can be more complex
+    $this->gridReport = 'library/people/people_list';
+    // apply permissions for the users you can administer
+    if (!$this->auth->logged_in('CoreAdmin'))
+      $this->auth_filter = array('field' => 'admin_user_id', 'values' => $_SESSION['auth_user']->id);
   }
   
   protected function getModelValues() {
@@ -162,11 +127,12 @@ class Person_Controller extends Gridview_Base_Controller {
 
   protected function record_authorised ($id)
   {
-    if (!is_null($id) AND !is_null($this->auth_filter))
-    {
-      return (in_array($id, $this->auth_filter['values']));
+    if ($this->auth->logged_in('CoreAdmin'))
+      return true;
+    elseif (!is_null($id)) {
+      $allowedPersonIds = $this->getAllowedPersonIds();
+      return $allowedPersonIds === true || in_array($id, $allowedPersonIds);
     }
-    return true;
   }
   
   /**
@@ -195,5 +161,3 @@ class Person_Controller extends Gridview_Base_Controller {
     }
   }
 }
-
-?>

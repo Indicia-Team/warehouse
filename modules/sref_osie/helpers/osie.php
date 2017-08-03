@@ -153,6 +153,16 @@ class osie {
     $n = floor(($northing - (100000 * $hundredKmN)) / $accuracy);
     return $firstLetter.str_pad($e, $precision/2, '0', STR_PAD_LEFT).str_pad($n, $precision/2, '0', STR_PAD_LEFT);
   }
+  
+  /**
+   * Tidying function for input grid refs.
+   * Forces uppercase with no spaces for consistency.
+   * @param type $sref
+   * @return type
+   */
+  public static function sref_format_tidy($sref) {
+    return str_replace(' ', '', strtoupper($sref));
+  }
 
   /** Retrieve the easting and northing of the sw corner of a
    * 100km square, indicated by the first character of the grid ref.
@@ -174,4 +184,3 @@ class osie {
   }
 
 }
-?>

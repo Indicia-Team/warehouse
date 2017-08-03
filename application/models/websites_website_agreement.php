@@ -84,5 +84,3 @@ class Websites_Website_Agreement_Model extends ORM
   }
 
 }
-
-?>

@@ -50,5 +50,3 @@ function nbn_species_dict_sync_extend_ui() {
     )
   );
 }
-
-?>

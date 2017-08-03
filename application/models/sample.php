@@ -161,6 +161,7 @@ class Sample_Model extends ORM_Tree
     $this->preSubmitFillInVagueDate();
     $this->preSubmitFillInGeom();
     $this->preSubmitFillInLicence();
+    $this->preSubmitTidySref();
     return parent::presubmit();
   }
 
@@ -223,6 +224,20 @@ class Sample_Model extends ORM_Tree
           $this->submission['fields']['licence_id']['value'] = $row->licence_id;
         }
       }
+    }
+  }
+  
+  /**
+   * Gives sref modules the chance to tidy the format of input values, e.g. OSGB grid refs are capitalised and spaces
+   * stripped.
+   */
+  private function preSubmitTidySref() {
+    if (array_key_exists('entered_sref', $this->submission['fields']) &&
+        array_key_exists('entered_sref_system', $this->submission['fields'])) {
+      $this->submission['fields']['entered_sref']['value'] = spatial_ref::sref_format_tidy(
+          $this->submission['fields']['entered_sref']['value'],
+          $this->submission['fields']['entered_sref_system']['value']
+      );
     }
   }
 
@@ -372,4 +387,3 @@ class Sample_Model extends ORM_Tree
   }
   
 }
-?>

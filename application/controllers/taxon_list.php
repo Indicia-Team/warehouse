@@ -74,8 +74,8 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   protected function prepareOtherViewData($values)
   { 
     $websites = ORM::factory('website');
-    if (!$this->auth->logged_in('CoreAdmin'))
-      $websites = $websites->in('id',$this->auth_filter['values']);
+    if (!$this->auth->logged_in('CoreAdmin') && $this->auth_filter['field'] === 'website_id')
+      $websites = $websites->in('id', $this->auth_filter['values']);
     return array(
       'websites' => $websites->where('deleted','false')->orderby('title','asc')->find_all()
     );
@@ -146,4 +146,3 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     ));
   }
 }
-?>

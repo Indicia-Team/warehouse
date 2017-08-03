@@ -51,5 +51,3 @@ function data_cleaner_ancillary_species_data_cleaner_rules() {
     )
   );
 }
-
-?>

@@ -135,7 +135,7 @@ class Report_Controller extends Data_Service_Base_Controller {
   public function report_list() {
     try {
       $this->setup();
-      echo json_encode($this->reportEngine->report_list());
+      echo json_encode($this->reportEngine->reportList());
     }
     catch (Exception $e) {
       $this->handle_error($e);

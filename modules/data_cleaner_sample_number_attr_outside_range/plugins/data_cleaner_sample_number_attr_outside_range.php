@@ -54,5 +54,3 @@ function data_cleaner_sample_number_attr_outside_range_data_cleaner_rules() {
     )
   );
 }
-
-?>

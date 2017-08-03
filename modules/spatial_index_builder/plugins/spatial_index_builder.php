@@ -70,11 +70,10 @@ function spatial_index_builder_scheduled_task($last_run_date, $db) {
  * @return integer Count of locations found
  */
 function spatial_index_builder_get_location_list($last_run_date, $db) {
-  $filter=spatial_index_builder_get_type_filter();
-  list($join, $where, $surveyRestriction)=$filter;
+  $filter=spatial_index_builder_get_type_filter($db);
+  list($where, $surveyRestriction)=$filter;
   $query = "select l.id, now() as timepoint into temporary loclist 
 from locations l
-$join
 where l.deleted=false 
 and l.updated_on>'$last_run_date'
 $where";
@@ -84,8 +83,9 @@ $where";
 }
 
 /**
- * Build a temporary table with the list of new and changed samples we will process, so that we have
- * consistency if changes are happening concurrently.
+ * Build a temporary table with the list of new and changed samples we will process, so that we have consistency if
+ * changes are happening concurrently. A change is also triggered on samples that have new occurrences to ensure the
+ * occurrences are properly indexed.
  * @param $last_run_date Timestamp when this was last run, used to get DB changed records
  * @param object $db Database object
  * @return integer Count of samples found
@@ -95,6 +95,11 @@ function spatial_index_builder_get_sample_list($last_run_date, $db) {
 from samples s
 where s.deleted=false 
 and s.updated_on>'$last_run_date'
+union
+select distinct o.sample_id, now()
+from occurrences o
+where o.deleted=false
+and o.created_on>'$last_run_date'
 ";
   $db->query($query);
   $r = $db->query('select count(*) as count from smplist')->result_array(false);
@@ -107,23 +112,30 @@ and s.updated_on>'$last_run_date'
  * to the indexing query to respect the location type filter in the config file.
  * @return array Array containing the join SQL in the first entry and where SQL in the second.
  */
-function spatial_index_builder_get_type_filter() {
+function spatial_index_builder_get_type_filter($db) {
   $config=kohana::config_load('spatial_index_builder', false);
   $surveyRestriction = '';
   if (array_key_exists('location_types', $config)) {
-    $join='join cache_termlists_terms t on t.id=l.location_type_id';
-    $where="and t.preferred_term in ('".implode("','", $config['location_types'])."')";
+    $idQuery = $db->query("select id, term from cache_termlists_terms where preferred_term in ('" .
+        implode("','", $config['location_types']) . "')")
+        ->result();
+    $idsByTerm = array();
+    foreach ($idQuery as $row)
+      $idsByTerm[$row->term] = $row->id;
+    $where = 'and l.location_type_id in ('.implode(',', $idsByTerm).')';
     if (array_key_exists('survey_restrictions', $config)) {
       foreach ($config['survey_restrictions'] as $type => $surveyIds) {
         $surveys = implode(', ', $surveyIds);
-        $surveyRestriction .= "and (t.preferred_term<>'$type' or s.survey_id in ($surveys))\n";
+        if (!isset($idsByTerm[$type]))
+          throw new exception('Configured survey restriction incorrect in spatial index builder');
+        $id = $idsByTerm[$type];
+        $surveyRestriction .= "and (l.location_type_id<>$id or s.survey_id in ($surveys))\n";
       }
     }
   } else {
-    $join='';
     $where='';
   }
-  return array($join, $where, $surveyRestriction);
+  return array($where, $surveyRestriction);
 }
 
 /**
@@ -134,13 +146,12 @@ function spatial_index_builder_get_type_filter() {
  * @param string $limit Sql to limit to the updated locations or samples
  */
 function _spatial_index_builder_index_insert($db, $filter, $limit) {
-  list($join, $where, $surveyRestriction)=$filter;
+  list($where, $surveyRestriction)=$filter;
   // Now the actual population
   $query = "insert into index_locations_samples (location_id, sample_id, contains, location_type_id)
     select distinct 
       l.id, s.id, coalesce(linked.id, 0) = l.id or st_contains(l.boundary_geom, s.geom), l.location_type_id
     from locations l
-    $join
     join samples s on s.deleted=false
       and (st_intersects(l.boundary_geom, s.geom) and not st_touches(l.boundary_geom, s.geom))
     $limit
@@ -179,7 +190,7 @@ function spatial_index_builder_populate($db) {
   $db->query($query);
   Kohana::log('debug', "Cleaned up index_locations_samples before populating new values.");
   // are we filtering by location type?
-  $filter=spatial_index_builder_get_type_filter();
+  $filter=spatial_index_builder_get_type_filter($db);
   _spatial_index_builder_index_insert($db, $filter, 'join smplist list on list.id=s.id');
   _spatial_index_builder_index_insert($db, $filter, 'join loclist list on list.id=l.id');
 }
@@ -206,6 +217,7 @@ function spatial_index_builder_add_to_cache($db) {
     return;
   $s_sets = array();
   $o_sets = array();
+  $overlapping_fix_queries = array();
   $joins = array();
   foreach ($types as $type) {
     // We can only do this type of indexing for boundary types that occur only once per sample
@@ -243,9 +255,9 @@ QRY
 UPDATE cache_samples_functional u
 SET $column = ils$type[id].location_id
 FROM locations l
-LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
-    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 JOIN loclist list on list.id=l.id
+JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
+    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 WHERE u.id=ils$type[id].sample_id
 AND (l.code IS NULL OR l.code NOT LIKE '%+%');
 QRY
@@ -254,13 +266,61 @@ QRY
 UPDATE cache_occurrences_functional u
 SET $column = ils$type[id].location_id
 FROM locations l
-LEFT JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
-    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 JOIN loclist list on list.id=l.id
+JOIN index_locations_samples ils$type[id] on ils$type[id].location_id=l.id
+    and ils$type[id].location_type_id=$type[id] and ils$type[id].contains=true
 WHERE u.sample_id=ils$type[id].sample_id
 AND (l.code IS NULL OR l.code NOT LIKE '%+%');
 QRY
     );
+    // The following stuff fixes any squares that lie on boundaries
+    $overlapping_fix_queries[] = <<<QRY
+DROP TABLE IF EXISTS overlapping_boundaries;
+    
+SELECT s.website_id, s.survey_id, s.id AS sample_id, ils.location_id, 0::float AS area
+INTO TEMPORARY overlapping_boundaries
+FROM cache_samples_functional s
+JOIN index_locations_samples ils ON ils.sample_id=s.id AND ils.location_type_id=$type[id] AND ils.contains=false
+JOIN locations l ON l.id=ils.location_id and l.deleted=false AND COALESCE(l.code, '') NOT LIKE '%+%'
+JOIN smplist slist ON slist.id=ils.sample_id;
+
+INSERT INTO overlapping_boundaries
+SELECT s.website_id, s.survey_id, s.id AS sample_id, ils.location_id, 0::float AS area
+FROM cache_samples_functional s
+JOIN index_locations_samples ils ON ils.sample_id=s.id AND ils.location_type_id=$type[id] AND ils.contains=false
+JOIN locations l ON l.id=ils.location_id and l.deleted=false AND COALESCE(l.code, '') NOT LIKE '%+%'
+JOIN loclist llist ON llist.id=ils.location_id
+LEFT JOIN overlapping_boundaries ob ON ob.location_id=ils.location_id AND ob.sample_id=s.id
+WHERE ob.sample_id IS NULL;
+
+UPDATE overlapping_boundaries ob
+SET area=st_area(st_intersection(s.geom, l.boundary_geom))
+FROM samples s, locations l
+WHERE s.id=ob.sample_id AND l.id=ob.location_id
+AND s.deleted=false
+AND l.deleted=false;
+
+DELETE FROM overlapping_boundaries WHERE area=0;
+
+DELETE from overlapping_boundaries ob1
+USING overlapping_boundaries ob2 
+WHERE ob2.sample_id=ob1.sample_id
+AND (ob2.area>ob1.area OR (ob2.area=ob1.area AND ob2.location_id<ob1.location_id));
+
+UPDATE cache_occurrences_functional o
+SET $column = ob.location_id
+FROM overlapping_boundaries ob 
+WHERE o.website_id=ob.website_id AND o.survey_id=ob.survey_id AND o.sample_id=ob.sample_id
+AND COALESCE(o.$column, 0)<>ob.location_id;
+
+UPDATE cache_samples_functional s
+SET $column = ob.location_id
+FROM overlapping_boundaries ob 
+WHERE s.website_id=ob.website_id AND s.survey_id=ob.survey_id AND s.id=ob.sample_id
+AND COALESCE(s.$column, 0)<>ob.location_id;
+
+DROP TABLE overlapping_boundaries;
+QRY;
   }
   if (count($s_sets)) {
     $s_sets = implode(",\n", $s_sets);
@@ -280,8 +340,11 @@ UPDATE cache_occurrences_functional u
 SET $o_sets
 FROM cache_samples_functional s
 JOIN smplist list on list.id=s.id
-WHERE s.id=u.sample_id;
+WHERE s.website_id=u.website_id AND s.survey_id=u.survey_id AND s.id=u.sample_id;
 QRY
     );
+  }
+  foreach ($overlapping_fix_queries as $qry) {
+    $db->query($qry);
   }
 }

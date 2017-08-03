@@ -1,6 +1,8 @@
 <report
-    title="Explore records using standard filters - lores mapping"
-    description="Report designed for mapping on the explore records facility in iRecord, with standardised filtering parameters. Aggregated to grid squares."
+    title="Explore occurrences map (standard filters, low resolution)"
+    description="A list of occurrences including geometry information designed for mapping output. Output is aggregated
+    to grid squares suitable for lower resolution output when zoomed out."
+    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
   SELECT #columns#
@@ -17,9 +19,9 @@
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
     <param name="sq_size" display="Grid square size" description="Specify either 1000, 2000 or 10000 for the grid square resolution as 1km, 2km or 10km grid" datatype="integer">
       <joins>
-        <join value="1000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_1km_id and msq.size=1000</join>
-        <join value="2000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_2km_id and msq.size=2000</join>
-        <join value="10000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_10km_id and msq.size=10000</join>
+        <join value="1000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_1km_id and (msq.size=1000 or o.sensitive=true)</join>
+        <join value="2000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_2km_id and (msq.size=2000 or o.sensitive=true)</join>
+        <join value="10000" operator="equal">JOIN map_squares msq on msq.id=o.map_sq_10km_id and (msq.size=10000 or o.sensitive=true)</join>
       </joins>
     </param>
     <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
@@ -45,11 +47,11 @@
     <column name='date' on_demand="true" datatype="date" />
     <column name='cache_created_on' sql='o.created_on' on_demand="true" datatype="date" />
     <column name='cache_updated_on' sql='o.updated_on' on_demand="true" />
-    <column name='recorder' on_demand="true" sql="CASE WHEN LENGTH(snf.recorders)>30 THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name='recorder' on_demand="true" sql="CASE WHEN (TRIM(snf.recorders) !~ ' ' AND LENGTH(snf.recorders)>30) THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
     <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" on_demand="true" datatype="text" />
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
     <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
-    <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" in_count="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(case when msq.size > #sq_size# then #sample_geom_field# else msq.geom end)" in_count="true" />
   </columns>
 </report>

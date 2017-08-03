@@ -323,4 +323,3 @@ $config['get_YearTaxon_query'] = "
 		AND location_id IS NOT NULL 
   GROUP BY date_start
   ";
-?>

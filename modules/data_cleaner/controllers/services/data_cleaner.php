@@ -154,5 +154,3 @@ class Data_cleaner_Controller extends Service_Base_Controller {
   }
   
 }
-
-?>

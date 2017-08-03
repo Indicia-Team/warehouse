@@ -29,4 +29,3 @@
 class jersey extends island_grid{
 
 }
-?>

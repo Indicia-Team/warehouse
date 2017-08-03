@@ -54,13 +54,15 @@ class report_standard_params_occurrences {
   public static function getOperationParameters() {
     return array(
       'occurrence_id' => array('datatype'=>'lookup', 'display'=>'ID operation',
-        'description'=>'Record ID lookup operation', 'lookup_values'=>'=:is,>=:is at least,<=:is at most'
+        'description'=>'Operator to use in conjunction with a value provided in the occurrence_id parameter.',
+        'lookup_values'=>'=:is,>=:is at least,<=:is at most'
       ),
       'website_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Website IDs mode',
-        'description'=>'Include or exclude the list of websites', 'lookup_values'=>'in:Include,not in:Exclude'
+        'description'=>'Include or exclude the list of websites provided in the website_list parameter',
+        'lookup_values'=>'in:Include,not in:Exclude'
       ),
       'survey_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Survey IDs mode',
-        'description'=>'Include or exclude the list of surveys', 'lookup_values'=>'in:Include,not in:Exclude'
+        'description'=>'Include or exclude the list of surveys provided in the survey_list parameter', 'lookup_values'=>'in:Include,not in:Exclude'
       ),
       'input_form_list' => array('datatype'=>'lookup', 'default'=>'in', 'display'=>'Input forms mode',
         'description'=>'Include or exclude the list of input forms', 'lookup_values'=>'in:Include,not in:Exclude'
@@ -88,16 +90,16 @@ class report_standard_params_occurrences {
   public static function getParameters() {
     return array(
       'idlist' => array('datatype'=>'idlist', 'display'=>'List of IDs', 'emptyvalue'=>'', 'fieldname'=>'o.id', 'alias'=>'occurrence_id',
-        'description'=>'Comma separated list of occurrence IDs to filter to'
+        'description'=>'Comma separated list of occurrence IDs to filter to.'
       ),
       'searchArea' => array('datatype'=>'geometry', 'display'=>'Boundary',
-        'description'=>'Boundary to search within',
+        'description'=>'Boundary to search within, in Well Known Text format using Web Mercator projection.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"st_intersects(o.public_geom, st_makevalid(st_geomfromtext('#searchArea#',900913)))")
         )
       ),
       'occurrence_id' => array('datatype'=>'integer', 'display'=>'ID',
-        'description'=>'Record ID',
+        'description'=>'Limit to a single record matching this occurrence ID.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.id #occurrence_id_op# #occurrence_id#")
         )
@@ -212,13 +214,14 @@ class report_standard_params_occurrences {
       'quality' => array('datatype'=>'lookup', 'display'=>'Quality',
         'description'=>'Minimum quality of records to include',
         'lookup_values'=>'V1:Accepted as correct records only,V:Accepted records only,-3:Reviewer agreed at least plausible,' .
-          'C:Recorder was certain,L:Recorder thought the record was at least likely,' .
+          'C3:Plausible records only,C:Recorder was certain,L:Recorder thought the record was at least likely,' .
           'P:Not reviewed,T:Not reviewed but trusted recorder,!D:Exclude queried or not accepted records,!R:Exclude not accepted records,D:Queried records only,'.
           'A:Answered records,R:Not accepted records only,R4:Not accepted because unable to verify records only,DR:Queried or not accepted records,all:All records',
         'wheres' => array(
           array('value'=>'V1', 'operator'=>'equal', 'sql'=>"o.record_status='V' and o.record_substatus=1"),
           array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
           array('value'=>'-3', 'operator'=>'equal', 'sql'=>"(o.record_status='V' or o.record_substatus<=3)"),
+          array('value'=>'C3', 'operator'=>'equal', 'sql'=>"(o.record_status='C' and o.record_substatus=3)"),
           array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
           array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
           array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status='C' and o.record_substatus is null and (o.query<>'Q' or o.query is null)"),
@@ -302,11 +305,13 @@ class report_standard_params_occurrences {
           array('value'=>'1', 'operator'=>'equal', 'sql'=>"o.created_by_id=#user_id#")
         )
       ),
-      'group_id' => array('datatype'=>'integer', 'display'=>"ID of a group to filter to the members of",
-        'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#group_id# and #alias:gu#.deleted=false")
-        ),
+      'created_by_id' => array('datatype' => 'integer', 'display'=>'Limit to records created by this user ID',
+        'wheres' => array(
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.created_by_id=#created_by_id#")
+        )
+      ),
+      'group_id' => array('datatype'=>'integer', 'display'=>"ID of a group to filter to records in",
+        'description'=>'Specify the ID of a recording group. This filters the report to the records added to this group.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.group_id=#group_id#")
         )
@@ -318,13 +323,14 @@ class report_standard_params_occurrences {
         )
       ),
       'website_list' => array('datatype'=>'integer[]', 'display'=>"Website IDs",
-        'description'=>'Comma separated list of IDs',
+        'description'=>'Comma separated list of IDs of websites to limit to within the set of ' .
+          'websites you have permission to access records for.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.website_id #website_list_op# (#website_list#)")
         )
       ),
       'survey_list' => array('datatype'=>'integer[]', 'display'=>"Survey IDs",
-        'description'=>'Comma separated list of IDs',
+        'description'=>'Comma separated list of IDs of survey datasets to limit to.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.survey_id #survey_list_op# (#survey_list#)")
         )
@@ -336,7 +342,7 @@ class report_standard_params_occurrences {
         )
       ),
       'taxon_group_list' => array('datatype'=>'integer[]', 'display'=>"Taxon Group IDs",
-        'description'=>'Comma separated list of IDs',
+        'description'=>'Comma separated list of IDs of taxon groups to limit to.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_group_id in (#taxon_group_list#)")
         )

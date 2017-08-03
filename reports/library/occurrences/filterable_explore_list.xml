@@ -1,6 +1,7 @@
 <report
-    title="Explore records using standard filters"
-    description="Report designed for the explore records facility in iRecord, with standardised filtering parameters."
+    title="Explore occurrences (standard filters)"
+    description="A list of occurrences designed for tabular output."
+    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
          standard_params="occurrences" count_field="o.*">
@@ -19,9 +20,12 @@
     <order_by>o.id DESC</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
-    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
+    <param name='default_input_form' display='Default input form' default=''
+           description='Input form path to use when no other available. Can be used to generate the path in report_grid action links.' />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' datatype="integer"
@@ -47,7 +51,7 @@
     <column name='cache_created_on_raw' sql="o.created_on" display='Submitted date unformatted' visible="false" />
     <column name='cache_updated_on' sql="to_char(o.updated_on,'DD/MM/YYYY HH24:MI')" display='Last updated' visible="false" orderby="cache_updated_on_raw" />
     <column name='cache_updated_on_raw' sql="o.updated_on" display='Last updated unformatted' visible="false" />
-    <column name='recorder' display='Recorder' sql="CASE WHEN LENGTH(snf.recorders)>30 THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name='recorder' display='Recorder' sql="CASE WHEN (TRIM(snf.recorders) !~ ' ' AND LENGTH(snf.recorders)>30) THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
     <column name='zero_abundance' display='Zero abundance' sql='o.zero_abundance' visible="false" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />

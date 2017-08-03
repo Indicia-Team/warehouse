@@ -242,4 +242,3 @@ class Site_User_Controller extends Service_Base_Controller {
   }
   
 }
-?>

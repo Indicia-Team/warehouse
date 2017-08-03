@@ -109,4 +109,3 @@ class Survey_cleanup_Controller extends Indicia_Controller {
   }
   
 }
-?>

@@ -111,4 +111,3 @@ class data_cleaner {
   }
   
 }
-?>

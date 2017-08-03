@@ -48,5 +48,3 @@ class Filters_user_Model extends ORM
   }
 
 }
-
-?>

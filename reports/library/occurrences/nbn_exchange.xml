@@ -32,8 +32,10 @@ and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
     </param>
     <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
     <param name="currentUser" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
     <param name="ownData" display="My data only?" datatype="checkbox" />
     <param name='location_id' display='Location' description='Provide the location to display records for' datatype='lookup' emptyvalue="0"
@@ -69,13 +71,8 @@ and st_y(st_transform(st_centroid(o.public_geom), 4326)) between 48 and 62
     <column name='projection' display='Projection' 
         sql="case upper(snf.entered_sref_system) when '4326' then 'WGS84' when '27700' then 'OSGB36' when 'OSIE' then 'OSI' else upper(snf.entered_sref_system) end" 
         datatype="text" />
-    <column name='precision' display='Precision' 
-        sql="case snf.entered_sref_system
-    when '4326' then 50 
-    when '27700' then 1
-    else case length(replace(snf.public_entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(snf.public_entered_sref, ' ', '')))/2) end
-  end" 
-        datatype="text" />
+    <column name="precision" display="Precision" datatype="float"
+            sql="get_sref_precision(snf.public_entered_sref, snf.entered_sref_system, snf.attr_sref_precision)" />
     <column name="vicecounty" display="ViceCounty" sql="vc.name" datatype="text" />
     <column name='recorder' display='Recorder' sql='snf.recorders' datatype="text" />
     <column name='verifier' display='Verifier' sql='onf.verifier' datatype="text" />

@@ -124,7 +124,4 @@ class Identifiers_subject_observation_attributes_website_Model extends Valid_ORM
       return parent::__get($column);
   }
 
-
 }
-
-?>

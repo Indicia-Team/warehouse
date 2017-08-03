@@ -62,7 +62,7 @@ class Location_Controller extends Gridview_Base_Controller {
    */
   protected function record_authorised ($id)
   {
-    if (!is_null($id) AND !is_null($this->auth_filter))
+    if (!is_null($id) AND !is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
     {
       $l = ORM::factory('locations_website')->where(array('location_id'=>$id))->in('website_id', $this->auth_filter['values'])->find();
       if ($l->loaded) return true;
@@ -121,6 +121,15 @@ class Location_Controller extends Gridview_Base_Controller {
     // We do when editing after a validation failure though.
     if ($this->model->id!==0) 
       $this->loadLocationAttributes($r);
+    else // not an existing record: check if the parent_id has been posted to us., by a "create child"
+    {
+      if(!isset($r['location:parent_id']) && isset($_POST['parent_id'])) {
+        $r['location:parent_id'] = $_POST['parent_id'];
+        $parent = ORM::factory('location', $r['location:parent_id']);
+        $r['parent:name'] = $parent->name;
+      }
+    }
+    	
     return $r;
   }
 
@@ -543,12 +552,32 @@ class Location_Controller extends Gridview_Base_Controller {
     // record's length is read and used to find the next record, this does not matter.
   }
 
+
+  public function children($id) {
+    $parentLocation = ORM::factory('location', $id);
+    $this->base_filter['parent_id'] = $id;
+    parent::index();
+    // pass the parent id into the view, so the create button can use it to autoset
+    // the parent of the new list.
+    $this->view->parent_id=$id;
+    $this->view->upload_csv_form ="";
+    $this->view->upload_shp_form ="";
+  }
+
     /**
    * Return a list of the tabs to display for this controller's actions.
    */
   protected function getTabs($name) {
     return array(
       array(
+        'controller' => 'location/children',
+        'title' => 'Child Locations',
+        'actions'=>array('edit')
+      ), array(
+        'controller' => 'sample/index_from_location',
+        'title' => 'Samples',
+        'actions'=>array('edit')
+      ), array(
         'controller' => 'location_medium',
         'title' => 'Media Files',
         'actions'=>array('edit')
@@ -556,5 +585,3 @@ class Location_Controller extends Gridview_Base_Controller {
     );
   }
 }
-
-?>

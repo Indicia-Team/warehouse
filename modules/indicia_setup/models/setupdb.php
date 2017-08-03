@@ -310,5 +310,3 @@ class Setupdb_Model extends Model
     }
 
 }
-
-?>

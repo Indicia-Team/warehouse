@@ -379,5 +379,3 @@ class Upgrade_Model extends Model
   }
 
 }
-
-?>

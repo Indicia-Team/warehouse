@@ -46,7 +46,7 @@
     <column name='cache_created_on_raw' sql="o.created_on" display='Submitted date unformatted' visible="false" />
     <column name='cache_updated_on' sql="to_char(o.updated_on,'DD/MM/YYYY HH24:MI')" display='Last updated' visible="false" orderby="cache_updated_on_raw" />
     <column name='cache_updated_on_raw' sql="o.updated_on" display='Last updated unformatted' visible="false" />
-    <column name='recorder' display='Recorder' sql="CASE WHEN LENGTH(snf.recorders)>30 THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name='recorder' display='Recorder' sql="CASE WHEN (TRIM(snf.recorders) !~ ' ' AND LENGTH(snf.recorders)>30) THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
     <column name='associated_with' display='Associated with' datatype="text" sql="(select string_agg(case when cttlassoc.default_common_name is null then '&lt;em&gt;' || cttlassoc.preferred_taxon || '&lt;/em&gt;' else cttlassoc.default_common_name || ' (&lt;em&gt;' || cttlassoc.preferred_taxon || '&lt;/em&gt;)' end, ', ') 
   from occurrence_associations oa 
   join cache_occurrences_functional oassoc on oassoc.id=oa.to_occurrence_id 
@@ -56,7 +56,7 @@
     <column name='association_detail' display='Association detail' datatype="text" visible="false"
             sql="(select string_agg(
   case when oa.from_occurrence_id=o.id then 
-    case when cttl.default_common_name is null then 'c' || cttl.preferred_taxon || '&lt;/em&gt;' else cttl.default_common_name || ' (&lt;em&gt;' || cttl.preferred_taxon || '&lt;/em&gt;)' end
+    case when cttl.default_common_name is null then '&lt;em&gt;' || cttl.preferred_taxon || '&lt;/em&gt;' else cttl.default_common_name || ' (&lt;em&gt;' || cttl.preferred_taxon || '&lt;/em&gt;)' end
   else 
     case when cttlassoc.default_common_name is null then '&lt;em&gt;' || cttlassoc.preferred_taxon || '&lt;/em&gt;' else cttlassoc.default_common_name || ' (&lt;em&gt;' || cttlassoc.preferred_taxon || '&lt;/em&gt;)' end 
   end || ' ' || assoctype.term || ' ' || 

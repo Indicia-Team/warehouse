@@ -25,6 +25,18 @@
  */
 $config['user_id'] = 'BRC';
 
+$config['authentication_methods'] = array(
+  'hmacClient'  => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
+  'hmacWebsite' => array('allow_http', 'resource_options' => array('reports' => array())),
+  'directUser' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
+  'directClient' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
+  'directWebsite' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true))),
+  'oauth2User' => array('allow_http', 'resource_options' => array('reports' => array('featured' => true)))
+);
+
+$config['allow_auth_tokens_in_url'] = FALSE;
+
+
 /**
  * Which sample attribute will we use to store the dataset name for records which came from
  * remote systems?
@@ -49,7 +61,7 @@ $config['clients']=array(
         'filter_id' => 1,
         'sharing' => 'verification',
         // optional, which resources are available? Default is all.
-        'resources' => array('taxon-observations', 'annotations')
+        'resources' => array('taxon-observations', 'annotations', 'reports')
       )
     )
   )

@@ -193,6 +193,4 @@ class Spatial_Controller extends Service_Base_Controller {
     echo $r;
   }
 
-
 }
-?>

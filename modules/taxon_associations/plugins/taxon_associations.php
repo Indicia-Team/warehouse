@@ -34,5 +34,3 @@ function taxon_associations_extend_data_services() {
     'taxon_associations'=>array()
   );
 }
-
-?>

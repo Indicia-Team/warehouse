@@ -1,6 +1,7 @@
 <report
     title="Surveys list"
     description="A general purpose list of surveys."
+    featured="true"
 >
   <query>
   SELECT #columns#

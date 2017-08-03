@@ -596,10 +596,9 @@ $config['samples']['get_missing_items_query'] = "
 ";
 $config['samples']['get_changed_items_query'] = "
   select sub.id, cast(max(cast(deleted as int)) as boolean) as deleted
-    from (select s.id, s.deleted
-    from samples s
-    where s.updated_on>'#date#'
-    union
+    from (
+    -- don't pick up changes to samples at this point, as they are updated immediately
+    -- but do pick up edits of other tables that can affect the sample cache
     select s.id, sp.deleted
     from samples s
     join samples sp on sp.id=s.parent_id
@@ -622,6 +621,12 @@ $config['samples']['get_changed_items_query'] = "
     ) as sub
     group by id
 ";
+
+$config['samples']['delete_query']=array("
+delete from cache_samples_functional where id in (select id from needs_update_samples where deleted=true);
+delete from cache_samples_nonfunctional where id in (select id from needs_update_samples where deleted=true);
+");
+
 $config['samples']['update']['functional'] = "
 UPDATE cache_samples_functional s_update
 SET website_id=su.website_id,
@@ -738,6 +743,11 @@ SET website_title=w.title,
       WHEN 'F'::bpchar THEN v_sref_precision.float_value
       ELSE NULL::double precision
   END,
+  attr_sample_method=COALESCE(t_sample_method_id.term, CASE a_sample_method.data_type
+      WHEN 'T'::bpchar THEN v_sample_method.text_value
+      WHEN 'L'::bpchar THEN t_sample_method.term
+      ELSE NULL::text
+  END),
   attr_linked_location_id=v_linked_location_id.int_value
 FROM samples s
 #join_needs_update#
@@ -778,6 +788,11 @@ LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
 ) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+LEFT JOIN (sample_attribute_values v_sample_method
+  JOIN sample_attributes a_sample_method on a_sample_method.id=v_sample_method.sample_attribute_id and a_sample_method.deleted=false and a_sample_method.system_function='sample_method'
+  LEFT JOIN cache_termlists_terms t_sample_method on a_sample_method.data_type='L' and t_sample_method.id=v_sample_method.int_value
+) on v_sample_method.sample_id=s.id and v_sample_method.deleted=false
+LEFT JOIN cache_termlists_terms t_sample_method_id ON t_sample_method_id.id=s.sample_method_id
 LEFT JOIN (sample_attribute_values v_linked_location_id
   JOIN sample_attributes a_linked_location_id on a_linked_location_id.id=v_linked_location_id.sample_attribute_id 
     and a_linked_location_id.deleted=false and a_linked_location_id.system_function='linked_location_id'
@@ -926,6 +941,11 @@ SET
       WHEN 'F'::bpchar THEN v_sref_precision.float_value
       ELSE NULL::double precision
   END,
+  attr_sample_method=COALESCE(t_sample_method_id.term, CASE a_sample_method.data_type
+      WHEN 'T'::bpchar THEN v_sample_method.text_value
+      WHEN 'L'::bpchar THEN t_sample_method.term
+      ELSE NULL::text
+  END),
   attr_linked_location_id=v_linked_location_id.int_value
 FROM samples s
 #join_needs_update#
@@ -961,6 +981,11 @@ LEFT JOIN (sample_attribute_values v_sref_precision
   JOIN sample_attributes a_sref_precision on a_sref_precision.id=v_sref_precision.sample_attribute_id and a_sref_precision.deleted=false and a_sref_precision.system_function='sref_precision'
   LEFT JOIN cache_termlists_terms t_sref_precision on a_sref_precision.data_type='L' and t_sref_precision.id=v_sref_precision.int_value
 ) on v_sref_precision.sample_id=s.id and v_sref_precision.deleted=false
+LEFT JOIN (sample_attribute_values v_sample_method
+  JOIN sample_attributes a_sample_method on a_sample_method.id=v_sample_method.sample_attribute_id and a_sample_method.deleted=false and a_sample_method.system_function='sample_method'
+  LEFT JOIN cache_termlists_terms t_sample_method on a_sample_method.data_type='L' and t_sample_method.id=v_sample_method.int_value
+) on v_sample_method.sample_id=s.id and v_sample_method.deleted=false
+LEFT JOIN cache_termlists_terms t_sample_method_id ON t_sample_method_id.id=s.sample_method_id
 LEFT JOIN (sample_attribute_values v_linked_location_id
   JOIN sample_attributes a_linked_location_id on a_linked_location_id.id=v_linked_location_id.sample_attribute_id 
     and a_linked_location_id.deleted=false and a_linked_location_id.system_function='linked_location_id'
@@ -1254,7 +1279,8 @@ SET sample_id=o.sample_id,
   zero_abundance=o.zero_abundance,
   licence_id=s.licence_id,
   import_guid=o.import_guid,
-  confidential=o.confidential
+  confidential=o.confidential,
+  external_key=o.external_key
 FROM occurrences o
 #join_needs_update#
 left join cache_occurrences_functional co on co.id=o.id
@@ -1336,6 +1362,12 @@ SET comment=o.comment,
       10 -- default minimum square size
     ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
     case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
+  ),
+  output_sref_system=get_output_system(
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
+      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
+    '4326'
   ),
   verifier=pv.surname || ', ' || pv.first_name,
   licence_code=li.code,
@@ -1472,7 +1504,7 @@ $config['occurrences']['insert']['functional'] = "INSERT INTO cache_occurrences_
             taxon_meaning_id, taxa_taxon_list_external_key, family_taxa_taxon_list_id,
             taxon_group_id, taxon_rank_sort_order, record_status, record_substatus,
             certainty, query, sensitive, release_status, marine_flag, data_cleaner_result,
-            training, zero_abundance, licence_id, import_guid, confidential)
+            training, zero_abundance, licence_id, import_guid, confidential, external_key)
 SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE(sp.input_form, s.input_form), s.location_id,
     case when o.confidential=true or o.sensitivity_precision is not null or s.privacy_precision is not null
         then null else coalesce(l.name, s.location_name, lp.name, sp.location_name) end,
@@ -1494,7 +1526,7 @@ SELECT distinct on (o.id) o.id, o.sample_id, o.website_id, s.survey_id, COALESCE
     end,
     o.sensitivity_precision is not null, o.release_status, cttl.marine_flag,
     case when o.last_verification_check_date is null then null else dc.id is null end,
-    o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential
+    o.training, o.zero_abundance, s.licence_id, o.import_guid, o.confidential, o.external_key
 FROM occurrences o
 #join_needs_update#
 LEFT JOIN cache_occurrences_functional co on co.id=o.id
@@ -1540,7 +1572,7 @@ AND o.sensitivity_precision IS NOT NULL
 
 $config['occurrences']['insert']['nonfunctional'] = "
 INSERT INTO cache_occurrences_nonfunctional(
-            id, comment, sensitivity_precision, privacy_precision, output_sref, licence_code)
+            id, comment, sensitivity_precision, privacy_precision, output_sref, output_sref_system, licence_code)
 SELECT o.id,
   o.comment, o.sensitivity_precision,
   s.privacy_precision,
@@ -1578,6 +1610,12 @@ SELECT o.id,
       10 -- default minimum square size
     ), reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
     case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end)
+  ),
+  get_output_system(
+    reduce_precision(coalesce(s.geom, l.centroid_geom), o.confidential, greatest(o.sensitivity_precision, s.privacy_precision),
+      case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end),
+    case when s.entered_sref_system is null then l.centroid_sref_system else s.entered_sref_system end,
+    '4326'
   ),
   li.code
 FROM occurrences o

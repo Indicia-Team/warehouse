@@ -50,5 +50,3 @@ function data_cleaner_sample_attribute_changes_for_site_data_cleaner_rules() {
     )
   );
 }
-
-?>

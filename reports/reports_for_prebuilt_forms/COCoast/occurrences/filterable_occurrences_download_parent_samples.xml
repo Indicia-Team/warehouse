@@ -50,13 +50,8 @@
     <column name='projection' display='Location Method' 
         sql="case snf.entered_sref_system when '4326' then 'Coordinates' when 'OSGB' then 'Grid Ref' else upper(s.entered_sref_system) end" 
         datatype="text" />
-    <column name='precision' display='Precision' 
-        sql="case snf.entered_sref_system
-    when '4326' then 50 
-    when '27700' then 1
-    else case length(replace(s.entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(s.entered_sref, ' ', '')))/2) end
-  end"
-        datatype="text" />
+    <column name="precision" display="Precision" datatype="float"
+            sql="get_sref_precision(snf.public_entered_sref, snf.entered_sref_system, snf.attr_sref_precision)" />
     <column name='date_start' sql='o.date_start' visible='false' />
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />

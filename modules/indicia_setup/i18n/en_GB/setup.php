@@ -67,5 +67,3 @@ $lang = array
     'skip_email_config' => 'Skip Email Configuration',
     'ack_perm_problems' => 'Acknowledge Permissions Problems'
 );
-
-?>

@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<report title="Filterable records by year" description="Counts records by year with standard params support.">
+<report title="Record counts by year (standard filters)"
+        description="Counts records by year with standard filter parameters support."
+        featured="true"
+        summary="true"
+>
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     select #columns#
     from generate_series(#from_year#, date_part('year', now())::integer) as years(no)
@@ -18,7 +22,7 @@
     <param name="from_year" datatype="integer" default="2010" />
   </params>
   <columns>
-    <column name="year" display="Year" sql="years.no" />
+    <column name="year" display="Year" sql="years.no" in_count="true" />
     <column name="count" display="Records" sql="count(distinct o.id)" aggregate="true" />
   </columns>
 </report>

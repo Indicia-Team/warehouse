@@ -76,5 +76,3 @@ class Home_Controller extends Indicia_Controller {
   }
 
 }
-
-?>

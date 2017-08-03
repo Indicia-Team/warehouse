@@ -48,4 +48,3 @@ class Species_Alert_Model extends ORM {
     return parent::validate($array, $save);
   }
 }
-?>

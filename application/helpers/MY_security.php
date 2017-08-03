@@ -29,7 +29,7 @@ class Security extends security_Core {
    * (when the caller type is an Indicia user.
    */
   public static function create_nonce($type, $website_id) {
-    $nonce = sha1(time().':'.rand().$_SERVER['REMOTE_ADDR'].':'.kohana::config('indicia.private_key'));
+    $nonce = sha1(time() . ':' . rand() . $_SERVER['REMOTE_ADDR'] . ':' . kohana::config('indicia.private_key'));
     $cache = new Cache();
     $cache->set($nonce, $website_id, $type, Kohana::config('indicia.nonce_life'));
     return $nonce;
@@ -68,4 +68,3 @@ class Security extends security_Core {
   }
 
 }
- ?>

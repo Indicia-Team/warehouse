@@ -1,0 +1,1 @@
+ALTER TABLE cache_occurrences_nonfunctional ADD COLUMN output_sref_system character varying;

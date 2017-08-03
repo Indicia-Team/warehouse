@@ -4,31 +4,31 @@
 >
   <query website_filter_field="su.website_id">
   SELECT #columns#
-  FROM samples s
-    
+  FROM surveys su
+  JOIN samples s on s.survey_id=su.id and s.deleted=false    
   JOIN users uCreator on uCreator.id=s.created_by_id AND uCreator.deleted=false
   JOIN people pCreator on pCreator.id=uCreator.person_id AND pCreator.deleted=false
       
   LEFT JOIN sample_attribute_values pitNumAttr ON pitNumAttr.sample_id=s.id AND pitNumAttr.sample_attribute_id=#s1AttrID# AND pitNumAttr.deleted=false  
     
-  JOIN cache_occurrences co on co.sample_id=s.id and co.survey_id=s.survey_id and co.website_id in (#website_ids#)
-  JOIN occurrence_attribute_values gridIdAttr ON gridIdAttr.occurrence_id=co.id AND gridIdAttr.occurrence_attribute_id=#grid_id_attr_id# AND gridIdAttr.deleted=false
+  JOIN cache_occurrences_functional cof on cof.website_id=su.website_id and cof.survey_id=su.id and cof.sample_id=s.id
+  JOIN occurrence_attribute_values gridIdAttr ON gridIdAttr.occurrence_id=cof.id AND gridIdAttr.occurrence_attribute_id=#grid_id_attr_id# AND gridIdAttr.deleted=false
     
-  LEFT JOIN occurrence_attribute_values countPaleAdultSoilAttr ON countPaleAdultSoilAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_top_soil_grid_name#' AND countPaleAdultSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleAdultSoilAttr.deleted=false
-  LEFT JOIN occurrence_attribute_values countShortAdultSoilAttr ON countShortAdultSoilAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_top_soil_grid_name#' AND countShortAdultSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortAdultSoilAttr.deleted=false
-  LEFT JOIN occurrence_attribute_values countLongAdultSoilAttr ON countLongAdultSoilAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_top_soil_grid_name#' AND countLongAdultSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongAdultSoilAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countPaleAdultSoilAttr ON countPaleAdultSoilAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_top_soil_grid_name#' AND countPaleAdultSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleAdultSoilAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countShortAdultSoilAttr ON countShortAdultSoilAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_top_soil_grid_name#' AND countShortAdultSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortAdultSoilAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countLongAdultSoilAttr ON countLongAdultSoilAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_top_soil_grid_name#' AND countLongAdultSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongAdultSoilAttr.deleted=false
 
-  LEFT JOIN occurrence_attribute_values countPaleImmSoilAttr ON countPaleImmSoilAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_top_soil_grid_name#' AND countPaleImmSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleImmSoilAttr.deleted=false
-  LEFT JOIN occurrence_attribute_values countShortImmSoilAttr ON countShortImmSoilAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_top_soil_grid_name#' AND countShortImmSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortImmSoilAttr.deleted=false
-  LEFT JOIN occurrence_attribute_values countLongImmSoilAttr ON countLongImmSoilAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_top_soil_grid_name#' AND countLongImmSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongImmSoilAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countPaleImmSoilAttr ON countPaleImmSoilAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_top_soil_grid_name#' AND countPaleImmSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleImmSoilAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countShortImmSoilAttr ON countShortImmSoilAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_top_soil_grid_name#' AND countShortImmSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortImmSoilAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countLongImmSoilAttr ON countLongImmSoilAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_top_soil_grid_name#' AND countLongImmSoilAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongImmSoilAttr.deleted=false
 
-  LEFT JOIN occurrence_attribute_values countPaleAdultMustAttr ON countPaleAdultMustAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_mustard_grid_name#' AND countPaleAdultMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleAdultMustAttr.deleted=false
-  LEFT JOIN occurrence_attribute_values countShortAdultMustAttr ON countShortAdultMustAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_mustard_grid_name#' AND countShortAdultMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortAdultMustAttr.deleted=false
-  LEFT JOIN occurrence_attribute_values countLongAdultMustAttr ON countLongAdultMustAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_mustard_grid_name#' AND countLongAdultMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongAdultMustAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countPaleAdultMustAttr ON countPaleAdultMustAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_mustard_grid_name#' AND countPaleAdultMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleAdultMustAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countShortAdultMustAttr ON countShortAdultMustAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_mustard_grid_name#' AND countShortAdultMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortAdultMustAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countLongAdultMustAttr ON countLongAdultMustAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND gridIdAttr.text_value='#adult_mustard_grid_name#' AND countLongAdultMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongAdultMustAttr.deleted=false
 
-  LEFT JOIN occurrence_attribute_values countPaleImmMustAttr ON countPaleImmMustAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_mustard_grid_name#' AND countPaleImmMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleImmMustAttr.deleted=false
-  LEFT JOIN occurrence_attribute_values countShortImmMustAttr ON countShortImmMustAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_mustard_grid_name#' AND countShortImmMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortImmMustAttr.deleted=false
-  LEFT JOIN occurrence_attribute_values countLongImmMustAttr ON countLongImmMustAttr.occurrence_id=co.id AND co.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_mustard_grid_name#' AND countLongImmMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongImmMustAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countPaleImmMustAttr ON countPaleImmMustAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#pale_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_mustard_grid_name#' AND countPaleImmMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countPaleImmMustAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countShortImmMustAttr ON countShortImmMustAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#short_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_mustard_grid_name#' AND countShortImmMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countShortImmMustAttr.deleted=false
+  LEFT JOIN occurrence_attribute_values countLongImmMustAttr ON countLongImmMustAttr.occurrence_id=cof.id AND cof.taxa_taxon_list_id=#long_taxa_taxon_list_id# AND gridIdAttr.text_value='#immature_mustard_grid_name#' AND countLongImmMustAttr.occurrence_attribute_id=#occ_count_attr_id# AND countLongImmMustAttr.deleted=false
  
   JOIN sample_attribute_values whoWithAttr ON whoWithAttr.sample_id=s.id AND whoWithAttr.sample_attribute_id=#who_with_attr_id# AND whoWithAttr.deleted=false
   JOIN termlists_terms ttWhoWith on ttWhoWith.id = whoWithAttr.int_value AND ttWhoWith.deleted=false
@@ -54,6 +54,10 @@
   JOIN sample_attribute_values siteTypeAttr ON siteTypeAttr.sample_id=s.id AND siteTypeAttr.sample_attribute_id=#site_type_attr_id# AND siteTypeAttr.deleted=false
   JOIN termlists_terms ttSiteType on ttSiteType.id = siteTypeAttr.int_value AND ttSiteType.deleted=false
   JOIN terms tSiteType on tSiteType.id = ttSiteType.term_id AND tSiteType.deleted=false   
+  --Only non mandatory multi-choice so needs left join
+  LEFT JOIN sample_attribute_values fertiliserAttr ON fertiliserAttr.sample_id=s.id AND fertiliserAttr.sample_attribute_id=#fertiliser_attr_id# AND fertiliserAttr.deleted=false
+  LEFT JOIN termlists_terms ttFertiliser on ttFertiliser.id = fertiliserAttr.int_value AND ttFertiliser.deleted=false
+  LEFT JOIN terms tFertiliser on tFertiliser.id = ttFertiliser.term_id AND tFertiliser.deleted=false   
   
   LEFT JOIN sample_attribute_values whoWithOtherAttr ON whoWithOtherAttr.sample_id=s.id AND whoWithOtherAttr.sample_attribute_id=#who_with_other_attr_id# AND whoWithOtherAttr.deleted=false
   --I think we need left join here even though field is mandatory, as field was late addition so there might still be data without it
@@ -64,13 +68,13 @@
   --I think we need left join here even though field is mandatory, as field was late addition so there might still be data without it
   LEFT JOIN sample_attribute_values distanceAttr ON distanceAttr.sample_id=s.id AND distanceAttr.sample_attribute_id=#distance_attr_id# AND distanceAttr.deleted=false
   LEFT JOIN sample_attribute_values otherInfoAttr ON otherInfoAttr.sample_id=s.id AND otherInfoAttr.sample_attribute_id=#other_info_attr_id# AND otherInfoAttr.deleted=false
+  LEFT JOIN sample_attribute_values distanceDoesNotKnowAttr ON distanceDoesNotKnowAttr.sample_id=s.id AND distanceDoesNotKnowAttr.sample_attribute_id=#distance_dont_know_attr_id# AND distanceDoesNotKnowAttr.deleted=false
 
-  JOIN surveys su on su.id=s.survey_id and su.id = #survey_id# and su.deleted=false
-  JOIN websites w on w.id=su.website_id and w.deleted=false
   WHERE
-    #website_filter#
-    AND s.deleted=false
-    AND ((co.training=false AND #training_records#!=1) or (co.training=true AND #training_records#=1))
+    su.id = #survey_id#
+    AND #website_filter#
+    AND su.deleted=false
+    AND ((cof.training=false AND #training_records#!=1) or (cof.training=true AND #training_records#=1))
   </query>
   <order_bys>
     <order_by>s.id DESC</order_by>
@@ -91,8 +95,10 @@ who the user is with if "other" is selected.' datatype='int' />
     <param name='further_site_info_attr_id' display='Further site info attribute ID' description='The ID of the attribute that holds the further site information.' datatype='int' />
     <param name='team_attr_id' display='Survey team size attribute ID' description='The ID of the attribute that holds the survey term size.' datatype='int' />
     <param name='distance_attr_id' display='Pit distance attribute ID' description='The ID of the attribute that holds the pit distance.' datatype='int' />
+    <param name='distance_dont_know_attr_id' display='Do not know checkbox attribute ID' description='Do not know checkbox attribute ID for pit distance question.' datatype='int' />
     <param name='cover_type_other_attr_id' display='Other cover type details attribute ID' description='The ID of the attribute that holds the cover type other details.' datatype='int' />
     <param name='other_info_attr_id' display='Other information attribute ID' description='The ID of the attribute that holds the other information.' datatype='int' />
+    <param name='fertiliser_attr_id' display='Fertiliser attribute ID' description='The ID of the attribute that holds the answer to the fertiliser question.' datatype='int' />
     <param name='occ_count_attr_id' display='Earthworm Count attribute ID' description='The ID of the attribute that holds the Earthworm count.' datatype='int' />
     <param name='grid_id_attr_id' display='Earthworm Grid attribute ID' description='The ID of the attribute that holds the id of the grid. 
 There are 4 grids for the different life stages and before/after mustard water added.' datatype='int' />
@@ -108,6 +114,9 @@ There are 4 grids for the different life stages and before/after mustard water a
   </params>
   <columns>
     <column name='sample_id' display='ID' sql='s.id' datatype="integer" visible='false' in_count="true"/>
+    <!--If the pit 1 attribute holder is null or 0 we know we are dealing with pit 1, so we just display the current sample ID
+    otherwise for pit two we get the ID for pit 1-->
+    <column name='pit_1_id' display='Pit Pair ID' sql="case when pitNumAttr.int_value is not null AND pitNumAttr.int_value !=0 then pitNumAttr.int_value else s.id End" datatype="text"/>
     <column name='email_address' display='Email' sql='pCreator.email_address' datatype="text"/>
     <column name='who_are_you_with' display='Who are you with?' sql='tWhoWith.term' datatype="text"/>
     <column name='who_are_you_with_other' display='Who are you with? (other)' sql='whoWithOtherAttr.text_value' datatype="text"/>
@@ -122,7 +131,12 @@ There are 4 grids for the different life stages and before/after mustard water a
     <column name='site_type_other' display='Type of site (other)' sql='siteTypeOtherAttr.text_value' datatype="text"/> 
     <column name='further_site_info' display='Further site information' sql='furtherSiteInfoAttr.text_value' datatype="text"/> 
     <column name='team_size' display='Survey team size' sql='teamAttr.int_value' datatype="integer"/> 
-    <column name='pit_distance' display='Distance between pits (m)' sql='distanceAttr.float_value' datatype="integer"/> 
+    <column name='pit_distance' display='Distance between pits (m)' sql='case when distanceDoesNotKnowAttr.int_value=1 then null else distanceAttr.float_value end' datatype="integer"/> 
+    <column name='distance_dont_know' display='Does not know pit distance?' sql="
+        case 
+        when distanceDoesNotKnowAttr.int_value=1 and distanceAttr.float_value is null then 'Does not know' 
+        when distanceDoesNotKnowAttr.int_value=1 and distanceAttr.float_value is not null then 'Does not know but the following distance was also entered (' || distanceAttr.float_value || ')'
+        else '' end" datatype="text"/> 
     <column name='cover_type' display='What covers most of square?' sql='tCoverType.term' datatype="text"/>
     <column name='cover_type_other' display='What covers most of square? (other)' sql='coverTypeOtherAttr.text_value' datatype="text"/>
     <column name='other_info' display='Other information' sql='otherInfoAttr.text_value' datatype="text"/>
@@ -130,6 +144,7 @@ There are 4 grids for the different life stages and before/after mustard water a
     <column name='moisture' display='Soil moisture' sql='tMoist.term' datatype="text"/>
     <column name='colour' display='Soil colour' sql="tColour.term" datatype="text"/>
     <column name='texture' display='Soil texture' sql="tTexture.term" datatype="text"/>
+    <column name='fertiliser' display='Fertiliser' sql="tFertiliser.term" datatype="text"/>
     <column name='fizz' display='Soil fizz' sql="tFizz.term" datatype="text"/>
     <column name='pale_adults_top_soil' display='Pale adults in top soil' sql="to_char(sum(countPaleAdultSoilAttr.int_value),'999')" datatype="text" aggregate="true"/>
     <column name='short_red_adults_top_soil' display='Short Red adults in top soil' sql="to_char(sum(countShortAdultSoilAttr.int_value),'999')" datatype="text" aggregate="true"/>

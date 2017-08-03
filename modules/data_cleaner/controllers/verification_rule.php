@@ -614,5 +614,3 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
   }
   
 }
-
-?>

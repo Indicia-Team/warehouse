@@ -103,5 +103,3 @@ function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
     throw $e;
   }
 }
-
-?>

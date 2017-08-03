@@ -36,8 +36,10 @@
         <where value="!R" operator="equal">o.record_status NOT IN ('R')</where>
       </modifiers>
     </param>
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
-    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
+           description='Comma separated list of sample attribute IDs to include as columns in the report' />
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
     <param name="searchArea" display="Report Search Area" datatype="geometry" allow_buffer="true">
       <where>st_intersects(o.public_geom, ST_MakeValid(st_geomfromtext('#searchArea#',900913)))</where>
     </param>
@@ -80,13 +82,8 @@
     <column name='projection' display='Projection' 
         sql="case s.entered_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(s.entered_sref_system) end" 
         datatype="text" />
-    <column name='precision' display='Precision' 
-        sql="case s.entered_sref_system
-    when '4326' then 50 
-    when '27700' then 1
-    else case length(replace(s.entered_sref, ' ', '')) when 5 then 2000 else pow(10, (12-length(replace(s.entered_sref, ' ', '')))/2) end
-  end" 
-        datatype="text" />
+    <column name="precision" display="Precision" datatype="float"
+            sql="get_sref_precision(s.entered_sref, s.entered_sref_system, null)" />
     <column name='date_start' sql='o.date_start' visible='false' />
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />

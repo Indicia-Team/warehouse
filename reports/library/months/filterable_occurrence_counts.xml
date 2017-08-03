@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<report title="Filterable records by month" description="Counts records by month with standard params support.">
+<report title="Records by month (standard filters)"
+        description="Counts records by month."
+        featured="true"
+        summary="true"
+>
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     select #columns#
     from generate_series(1,12) as months(no)

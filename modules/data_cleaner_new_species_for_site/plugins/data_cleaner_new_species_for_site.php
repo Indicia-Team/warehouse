@@ -58,5 +58,3 @@ function data_cleaner_new_species_for_site_data_cleaner_rules() {
     )
   );
 }
-
-?>

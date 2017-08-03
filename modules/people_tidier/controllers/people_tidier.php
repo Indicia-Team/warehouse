@@ -161,5 +161,3 @@ class People_tidier_Controller extends Indicia_Controller {
   }
 
 }
-
-?>

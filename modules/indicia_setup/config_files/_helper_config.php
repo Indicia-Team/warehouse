@@ -36,5 +36,3 @@ class helper_config {
   static $bing_api_key='';
   static $maxUploadSize='4MB'; // max image upload size. Should match setting on the Warehouse config/indicia.php file.
 }
-
-?>

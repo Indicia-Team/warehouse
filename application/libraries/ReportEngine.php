@@ -118,16 +118,16 @@ class ReportEngine {
   /**
    * Retrieve all available reports, as a nested associative array.
    */
-  public function report_list() {
-    $reports = $this->internal_report_list(Kohana::config('indicia.localReportDir'), '/');
+  public function reportList() {
+    $reports = $this->internalReportList(Kohana::config('indicia.localReportDir'), '/');
     foreach (Kohana::config('config.modules') as $path) {
       if (is_dir("$path/reports"))
-        $reports = array_merge_recursive($reports, $this->internal_report_list("$path/reports", '/'));
+        $reports = array_replace_recursive($reports, $this->internalReportList("$path/reports", '/'));
     }
     return $reports;
   }
 
-  private function internal_report_list($root, $path) {
+  private function internalReportList($root, $path) {
     $files = array();
     $fullPath = "$root$path";
     if (!is_dir($fullPath))
@@ -137,13 +137,35 @@ class ReportEngine {
     while (false !== ($file = readdir($dir))) {
       // The following skips the tmp folder in the report root as this is used for provided reports.
       if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file") &&
-          ($file !== 'tmp' || $path!=='/'))
-        $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list($root, "$path$file/"));
-      elseif (substr($file, -4)=='.xml') {
+          ($file !== 'tmp' || $path!=='/')) {
+        $folderInfo = array(
+          'type' => 'folder',
+          'content' => $this->internalReportList($root, "$path$file/")
+        );
+        if (file_exists("$fullPath$file/readme.txt")) {
+          $folderInfo['description'] = file_get_contents("$fullPath$file/readme.txt");
+        }
+        $files[$file] = $folderInfo;
+      } elseif (substr($file, -4)=='.xml') {
         $metadata = XMLReportReader::loadMetadata("$fullPath$file");
         $file = basename($file, '.xml');
         $reportPath = ltrim("$path$file", '/');
-        $files[$file] = array('type'=>'report','title'=>$metadata['title'],'description'=>$metadata['description'], 'path'=>$reportPath);
+        $reportInfo = array(
+          'type'=>'report',
+          'title'=>$metadata['title'],
+          'description'=>$metadata['description'],
+          'path'=>$reportPath
+        );
+        if (!empty($metadata['standard_params'])) {
+          $reportInfo['standard_params'] = $metadata['standard_params'];
+        }
+        if (!empty($metadata['featured'])) {
+          $reportInfo['featured'] = $metadata['featured'];
+        }
+        if (!empty($metadata['summary'])) {
+          $reportInfo['summary'] = $metadata['summary'];
+        }
+        $files[$file] = $reportInfo;
       }
     }
     closedir($dir);
@@ -165,8 +187,10 @@ class ReportEngine {
   * @param string $reportSource Source of the report, either local or remote.
   * @param string $reportFormat Format of the report file. Currently only xml report file formats are supported.
   * @param array $params Associative array of report parameters.
+  * @param boolean $resultAsArray Set to FALSE to return the result as a pg result object rather than an array.
   */
-  public function requestReport($report = null, $reportSource = 'local', $reportFormat = null,  $params = array())
+  public function requestReport($report = null, $reportSource = 'local', $reportFormat = null,
+                                $params = array(), $resultAsArray = TRUE)
   {
     $this->reportFormat = $reportFormat;
     $this->providedParams = array_merge(
@@ -255,30 +279,42 @@ class ReportEngine {
     
     return array(
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
-      'content' => $this->compileReport()
+      'content' => $this->compileReport($resultAsArray)
     );
   }
 
-  public function requestMetadata($report) {
+  /**
+   * Requests the report's metadata including column and parameter information.
+   * @param $report
+   * @param bool $includeUnusedParameters Set to true to force all parameters to be
+   * included, not just those that are in use for the current report call.
+   * @return array
+   */
+  public function requestMetadata($report, $includeUnusedParameters = false) {
     $this->fetchLocalReport($report);
     $this->reportReader = new XMLReportReader($this->report, $this->websiteIds);
     $this->providedParams = array();
-    $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
+    if ($includeUnusedParameters) {
+      $params = $this->reportReader->getAllParams();
+    } else {
+      $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
+      $params = $this->reportReader->getParams();
+    }
     $this->prepareColumns();
     $r = array(
-      'columns'=>$this->columns,
-      'parameters'=>$this->reportReader->getParams()
+      'columns' => $this->columns,
+      'parameters' => $params
     );
-
     return $r;
   }
 
   /**
-  * Checks parameters and returns request if they're not all there, else compiles the report.
-  *
-  * @return array Array containing columns and data.
-  */
-  private function compileReport()
+   * Checks parameters and returns request if they're not all there, else compiles the report.
+   * @param boolean $resultAsArray TRUE to return the result as an array, FALSE to return a pg result object which
+   * needs to be iterated (better for large results set since it doesn't load all data into memory).
+   * @return array Array containing columns and data.
+   */
+  private function compileReport($resultAsArray)
   {
     // Do we need any more parameters?
     $unpopulatedParams = array_diff_key($this->expectedParams, $this->providedParams);
@@ -308,10 +344,16 @@ class ReportEngine {
       }
       else {
         $this->executeQuery();
-        $data = $this->response->result_array(FALSE);
+        $data = $this->response;
+        if ($resultAsArray)
+          $data = $data->result_array(FALSE);
+        else
+          $data = $data->result();
       }
       $this->prepareColumns();
-      $this->post_process($data);
+      // If not loading the full array, client will have to process vague dates etc themselves.
+      if ($resultAsArray)
+        $this->post_process($data);
       $r = array(
         'columns'=>$this->columns,
         'records'=>$data

@@ -57,4 +57,3 @@ class Known_subject_attribute_Controller extends Attr_Gridview_Base_Controller {
   }
 
 }
-?>
