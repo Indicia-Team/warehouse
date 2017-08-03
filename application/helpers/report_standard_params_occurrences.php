@@ -485,11 +485,8 @@ class report_standard_params_occurrences {
         )
       ),
       'taxon_rank_sort_order' => array(
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
-        ),
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"prefcttl.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
         )
       ),
       'confidential' => array(
