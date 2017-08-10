@@ -383,6 +383,12 @@ and n.id is null"
     
   }
   
+  /**
+   * Converts the input text into a parameter that can be passed into PostgreSQL's full text search.
+   * @param string $search
+   * @param array $options
+   * @return string
+   */
   private static function taxonSearchGetFullTextSearchTerm($search, $options) {
     $booleanTokens = array('&', '|');
     $searchWithBooleanLogic = trim(str_replace(array(' and ', ' or ', '*'), array(' & ', ' | ', ' '), $search));
@@ -400,6 +406,11 @@ and n.id is null"
     return implode(' ', $tokens);
   }
   
+  /**
+   * Prepares the part of the taxon search query SQL which limits the results to the context, e.g. the 
+   * @param array $options
+   * @return string
+   */
   private static function taxonSearchGetQueryContextFilter($options) {
     $filters = [];
     $params = ['taxon_list_id', 'taxon_group_id', 'family_taxa_taxon_list_id', 'taxon_meaning_id', 'external_key', 'taxa_taxon_list_id'];
@@ -439,12 +450,8 @@ and n.id is null"
    * @return string SQL to run
    * @throws exception If parameters are of incorrect format.
    */
-  public static function taxonSearchQuery($searchVal, $db=null, $options = []) {
+  public static function taxonSearchQuery($searchVal, $options = []) {
     self::taxonSearchCheckOptions($options);
-    if (!$db) {
-      $db = new Database();
-    }
-    
     // cleanup
 	  $search = trim(preg_replace('/\s+/', ' ', str_replace('-', '', $searchVal)));
     $fullTextSearchTerm = self::taxonSearchGetFullTextSearchTerm($search, $options);
