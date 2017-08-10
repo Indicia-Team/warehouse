@@ -342,13 +342,14 @@ HTML;
   /**
    * Echos a successful response in HTML format.
    * @param array $data
-   * @param array $metadata
+   * @param array $options
    */
   private function succeedHtml($data, $options) {
     $css = url::base() . "modules/rest_api/media/css/rest_api.css";
     echo str_replace('{css}', $css, $this->html_header);
-    if (!empty($this->responseTitle))
+    if (!empty($this->responseTitle)) {
       echo '<h1>' . $this->responseTitle . '</h1>';
+    }
     if (isset($options['metadata'])) {
       echo '<h2>Metadata</h2>';
       $this->outputArrayAsHtml($options['metadata']);
@@ -359,10 +360,12 @@ HTML;
       echo $this->getIndexAsHtml($data['data']);
     }
     // output the main response body
-    if (isset($options['metadata']) || !empty($this->responseTitle))
+    if (isset($options['metadata']) || !empty($this->responseTitle)) {
       echo '<h2>Response</h2>';
-    if (is_array($data))
+    }
+    if (is_array($data)) {
       $this->outputArrayAsHtml($data, $options);
+    }
     elseif (is_object($data)) {
       $options['preprocess'] = true;
       // We are returning a single row from the database.
@@ -481,10 +484,12 @@ ROW;
       // Ensure href and foriegn key column titles are added if we are including either of them. That's because these
       // are dynamically added to the data for each row as we go.
       if (!empty($options['preprocess'])) {
-        if (!empty($options['attachHref']) && !in_array('href', $options['columns']))
+        if (!empty($options['attachHref']) && !in_array('href', $options['columns'])) {
           $options['columns']['href'] = array();
-        if (!empty($options['attachFkLink']) && !in_array($options['attachFkLink'][0], $options['columns']))
+        }
+        if (!empty($options['attachFkLink']) && !in_array($options['attachFkLink'][0], $options['columns'])) {
           $options['columns'][$options['attachFkLink'][0]] = array();
+        }
       }
       echo '<thead><tr>';
       foreach ($options['columns'] as $fieldname => $column) {
@@ -503,11 +508,12 @@ ROW;
       foreach ($columns as $column) {
         echo '<td>';
         $value = isset($row[$column]) ? $row[$column] : 'not available';
-        if (is_array($value))
+        if (is_array($value)) {
           // Might have nested data to output, e.g. for a foreign key.
           $this->outputArrayAsHtml($value, array());
-        else
+        } else {
           echo $value;
+        }
         echo '</td>';
       }
       echo '</tr>';
@@ -528,27 +534,31 @@ ROW;
       $rows = array($data);
     }
     if (isset($rows)) {
-      if (isset($options['columns']))
+      if (isset($options['columns'])) {
         $columns = array_keys($options['columns']);
-      else
+      } else {
         // If we don't have columns metadata, we have to calculate the complete list of columns so we can line things up
         $columns = $this->findCsvColumns($rows);
+      }
       // Remove columns that we aren't supposed to output
       if (isset($options['columnsToUnset'])) {
         $columns = array_diff($columns, $options['columnsToUnset']);
         unset($options['columnsToUnset']);
       }
       $count = count($rows);
-      if (!empty($options['attachHref']) && !in_array('href', $columns))
+      if (!empty($options['attachHref']) && !in_array('href', $columns)) {
         $columns[] = 'href';
-      if (!empty($options['attachFkLink']) && !in_array($options['attachFkLink'][0], $columns))
+      }
+      if (!empty($options['attachFkLink']) && !in_array($options['attachFkLink'][0], $columns)) {
         $columns[] = $options['attachFkLink'][0];
+      }
       echo $this->getCsvRow(array_combine($columns, $columns), $columns, $options) . "\r\n";
       $options['preprocess'] = true;
       foreach ($rows as $idx => $row) {
         echo $this->getCsvRow($row, $columns, $options);
-        if ($idx < $count - 1)
+        if ($idx < $count - 1) {
           echo "\r\n";
+        }
       }
     }
   }
@@ -581,12 +591,14 @@ ROW;
     $this->preProcessRow($data, $options, $columns);
     foreach ($columns as $column) {
       // data can be either an array or pg result object row
-      if (is_array($data))
+      if (is_array($data)) {
         $cell = isset($data[$column]) ? $data[$column] : '';
-      elseif (is_object($data))
+      } elseif (is_object($data)) {
         $cell = isset($data->$column) ? $data->$column : '';
-      if (is_array($cell))
+      }
+      if (is_array($cell)) {
         $cell = json_encode($cell);
+      }
       // If not numeric and contains the delimiter, enclose the string
       if (!is_numeric($cell) && (preg_match('/[' . $delimiter . '\r\n]/', $cell)))
       {
@@ -628,15 +640,17 @@ ROW;
       foreach ($dbObject as $idx=>$row) {
         $this->preProcessRow($row, $options);
         echo json_encode($row);
-        if ($idx < $dbObject->count()-1)
+        if ($idx < $dbObject->count()-1) {
           echo ',';
+        }
       }
       echo $parts[1];
     } else {
       // Preprocess any row data
       if (is_array($data) && isset($data['data'])) {
-        foreach ($data['data'] as &$row)
+        foreach ($data['data'] as &$row) {
           $this->preProcessRow($row, $options);
+        }
       } elseif (is_object($data)) {
         // A single row from a db result object is being returned
         $this->preProcessRow($data, $options);
@@ -707,8 +721,9 @@ ROW;
       $attachId = $options['attachHref'][1];
       $row['href'] = "$attachResource/$row[$attachId]";
       $row['href'] = $this->getUrlWithCurrentParams($row['href']);
-      if (!in_array('href', $columns))
+      if (!in_array('href', $columns)) {
         $columns[] = 'href';
+      }
     }
     // 'attachFkLink' => array('taxonObservation', 'taxon_observation_id', 'taxon-observation'),
     if (isset($options['attachFkLink'])) {
