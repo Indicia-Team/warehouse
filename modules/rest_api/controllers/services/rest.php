@@ -346,6 +346,18 @@ class Rest_Controller extends Controller {
         )
       )
     ),
+    'taxa' => array(
+      'get' => array(
+        'subresources' => array(
+          '' => array(
+            'params' => array()
+          ),
+          'search' => array(
+            'params' => array()
+          ),
+        )
+      )
+    ),
     'reports' => array(
       'get' => array(
         'options' => array(
@@ -733,6 +745,11 @@ class Rest_Controller extends Controller {
           'columns' => $report['content']['columns']
         )
     );
+  }
+  
+  private function taxa_get() {
+    kohana::log('debug', 'in taxa_get');
+    $this->apiResponse->succeed(array("msg"=>"OK"));
   }
 
   /**
