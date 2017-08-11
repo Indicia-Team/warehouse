@@ -268,8 +268,7 @@ class Rest_Controller extends Controller {
           '' => array(
             'params' => array(
               'proj_id' => array(
-                'datatype' => 'text',
-                'required' => TRUE
+                'datatype' => 'text'
               ),
               'filter_id' => array(
                 'datatype' => 'integer'
@@ -316,8 +315,7 @@ class Rest_Controller extends Controller {
           '' => array(
             'params' => array(
               'proj_id' => array(
-                'datatype' => 'text',
-                'required' => TRUE
+                'datatype' => 'text'
               ),
               'filter_id' => array(
                 'datatype' => 'integer'
@@ -606,6 +604,15 @@ class Rest_Controller extends Controller {
             }
             else {
               $this->apiResponse->fail('Bad request', 400, 'Invalid ID requested '.$arguments[0]);
+            }
+          }
+          // When using a client system ID, we also want a project ID if accessing taxon observations or annotations
+          if (isset($this->clientSystemId) && ($name === 'taxon_observations' || $name === 'annotations')) {
+            if (empty($this->request['proj_id'])) {
+              // Should not have got this far - just in case
+              $this->apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
+            } else {
+              $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
             }
           }
           if ($requestForId) {
@@ -1195,9 +1202,9 @@ class Rest_Controller extends Controller {
     } else {
       if (!empty($this->resourceConfig[$resourceName][$method]['options']['segments'])) {
         $segments = $this->uri->segment_array();
-        if (count($segments) === 4) {
+        if (count($segments) === 4 && isset($info[$segments[4]])) {
           // path indicates a subresource
-          $thisMethod = $info[$segments[4]];;
+          $thisMethod = $info[$segments[4]];
         }
       }
       if (!isset($thisMethod)) {
@@ -1519,7 +1526,7 @@ class Rest_Controller extends Controller {
             $this->clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
           // Apart from the projects resource, other end-points will need a proj_id
           // if using client system based authorisation.
-          if ($this->resourceName !== 'projects' &&
+          if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
               (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
             $this->apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
           }
