@@ -806,10 +806,8 @@ class Rest_Controller extends Controller {
   
   /**
    * GET handler for the taxa/search resource. Returns search results on taxon names.
-   * @todo Tests
    * @todo Reports can control output elements in same way
-   * @todo method documentation
-   * @todo limit columns in results
+   * @todo option to limit columns in results
    * @todo caching option
    */
   private function taxa_get() {
