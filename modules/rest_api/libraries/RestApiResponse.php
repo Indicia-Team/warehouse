@@ -150,11 +150,16 @@ HTML;
           echo '<tbody>';
           foreach ($resourceDef['params'] as $name => $paramDef) {
             echo "<tr><th scope=\"row\">$name</th>";
-            echo "<td>$paramDef[datatype]</td>";
+            $datatype = preg_match('/\[\]$/', $paramDef['datatype']) ? 
+                'Single or JSON array of ' . substr($paramDef['datatype'], 0, -2) : $paramDef['datatype'];
+            echo "<td>$datatype</td>";
             if ($name === 'format') {
               $help = kohana::lang('rest_api.format_param_help');
             } else {
               $help = kohana::lang("rest_api.$resource.$name");
+            }
+            if (!empty($paramDef['options'])) {
+              $help .= ' Options available are ' . json_encode($paramDef['options']) . '.';
             }
             if (!empty($paramDef['required'])) {
               $help .= ' <strong>' . kohana::lang('Required.') . '</strong>';
@@ -443,13 +448,13 @@ ROW;
         $options['tableId'] = $key;
         // Object data here means a pg result object. Or, if it is an non-associative array so a simple list, then
         // output as a table rather than a nested structure.
-        if (is_object($value) || (is_array($value) && count($value) > 0 && is_int(array_keys($value)[0])))
+        if (is_object($value) || (is_array($value) && count($value) > 0 && is_int(array_keys($value)[0]))) {
           // recurse into pg result data
           $this->outputResultAsHtml($value, $options);
-        elseif (is_array($value))
+        } elseif (is_array($value)) {
           // recurse into plain array data
           $this->outputArrayAsHtml($value, $options);
-        else {
+        } else {
           // a simple value to output. If it contains an internal link then process it to hide user/secret data.
           if (preg_match('/http(s)?:\/\//', $value)) {
             $parts = explode('?', $value);
@@ -502,6 +507,7 @@ ROW;
       $columns = array_keys((array)$data[0]);
     }
     echo '<tbody>';
+    
     foreach ($data as $row) {
       $this->preProcessRow($row, $options, $columns);
       echo '<tr>';
@@ -572,7 +578,7 @@ ROW;
   private function findCsvColumns($data) {
     $r = array();
     foreach ($data as $row) {
-      $r = array_merge($r, $row);
+      $r = array_merge($r, (array)$row);
     }
     return array_keys($r);
   }
@@ -666,7 +672,7 @@ ROW;
    */
   private function getResponseFormat() {
     // Allow a format query string parameter to override the Accept header.
-    if (isset($_REQUEST['format']) && preg_match('/(json|html)/', $_REQUEST['format'])) {
+    if (isset($_REQUEST['format']) && preg_match('/(json|html|csv)/', $_REQUEST['format'])) {
       return $_REQUEST['format'];
     }
     $headers = apache_request_headers();
