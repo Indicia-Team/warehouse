@@ -514,12 +514,12 @@ and n.id is null"
       $cols = <<<SQL
   cts.searchterm,
 	$headline,
-	cts.original,
+	cts.original as taxon,
   cts.authority,
   cts.language_iso,
-  cts.preferred,
-  cts.preferred_authority,
-  cts.default_common_name,
+  cts.preferred_taxon as preferred_name,
+  cts.preferred_authority as preferred_name_authority,
+  cts.default_common_name as common_name,
   cts.taxon_group
 SQL;
       $orderBy = <<<SQL

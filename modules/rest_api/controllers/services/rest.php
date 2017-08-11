@@ -853,9 +853,9 @@ class Rest_Controller extends Controller {
       'taxon' => array('caption' => 'Taxon'),
       'authority' => array('caption' => 'Authority'),
       'language_iso' => array('caption' => 'Language'),
-      'preferred' => array('caption' => 'Preferred name'),
-      'preferred_authority' => array('caption' => 'Preferred name authority'),
-      'default_common_name' => array('caption' => 'Common name'),
+      'preferred_name' => array('caption' => 'Preferred name'),
+      'preferred_name_authority' => array('caption' => 'Preferred name authority'),
+      'common_name' => array('caption' => 'Common name'),
       'taxon_group' => array('caption' => 'Taxon group')
     );
     if (in_array('columns', $params['include'])) {

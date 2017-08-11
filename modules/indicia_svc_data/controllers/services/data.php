@@ -530,12 +530,24 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
   
   /**
-  * Provides the /services/data/taxon_list service.
+  * Provides the /services/data/taxon_rank service.
   * Provides access to taxon_lists.
   */
   public function taxon_rank()
   {
     $this->handle_call('taxon_rank');
+  }
+  
+  /**
+  * Provides the /services/data/taxa_search service.
+  * Provides access to taxon_lists.
+  */
+  public function taxa_search()
+  {
+    if (array_key_exists('submission', $_POST)) {
+      throw new exception('Cannot post to the taxa_search URL.');
+    }
+    $this->handle_call('taxa_search');
   }
 
   /**
@@ -851,6 +863,15 @@ class Data_Controller extends Data_Service_Base_Controller {
       Throw new Exception('Unknown error on submission of the model');
 
   }
+  
+  protected function getDataTaxaSearch() {
+    $params = $_REQUEST;
+    unset($params['auth_token']);
+    unset($params['nonce']);
+    $query = postgreSQL::taxonSearchQuery($params['q'], $params);
+    $response = $this->db->query($query)->result_array(FALSE);
+    return $response;
+  }
 
   /**
    * Retrieve the records for a read request. Also sets the list of columns into $this->columns.
@@ -858,13 +879,20 @@ class Data_Controller extends Data_Service_Base_Controller {
    * @return Array Query results array.
    */
   protected function read_data() {
-    // Store the entity in class member, so less recursion overhead when building XML
-    $this->viewname = $this->get_view_name();
-    if (!$this->db)
+    if (!$this->db) {
       $this->db = new Database();
-    $this->view_columns=postgreSQL::list_fields($this->viewname, $this->db);
-    $result=$this->build_query_results();
-    kohana::log('debug', 'Query ran for service call: '.$this->db->last_query());
+    }
+    if ($this->entity === 'taxa_search') {
+      // special case for taxa_search end-point as it uses a custom query.
+      $result = $this->getDataTaxaSearch();
+      kohana::log('debug', 'Query ran for service call: '.$this->db->last_query());
+    } else {
+      // Store the entity in class member, so less recursion overhead when building XML
+      $this->viewname = $this->get_view_name();
+      $this->view_columns=postgreSQL::list_fields($this->viewname, $this->db);
+      $result=$this->build_query_results();
+      kohana::log('debug', 'Query ran for service call: '.$this->db->last_query());
+    }
     return array('records'=>$result);
   }
 
