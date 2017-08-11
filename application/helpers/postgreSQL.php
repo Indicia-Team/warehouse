@@ -357,7 +357,8 @@ and n.id is null"
         'wholeWords' => false,
         'nameTypes' => array('preferredNames', 'synonyms', 'commonNames'),
         'abbreviations' => true,
-        'searchAuthors' => false
+        'searchAuthors' => false,
+        'count' => false
     ), $options);
     // taxon_list_id option required.
     self::assert(!empty($options['taxon_list_id']), 'taxonSearchQuery requires a taxon_list_id option.');
@@ -379,7 +380,7 @@ and n.id is null"
     self::assert(is_bool($options['searchAuthors']),
         'taxonSearchQuery wholeWords option must be a boolean.');
     self::assert(is_array($options['nameTypes']),
-        'taxonSearchQuery nameTypes option must be a boolean.');
+        'taxonSearchQuery nameTypes option must be an array.');
     
   }
   
@@ -443,9 +444,10 @@ and n.id is null"
    *   * family_taxa_taxon_list_id - ID or array of IDs of families to limit the search to.
    *   * taxon_meaning_id - ID or array of IDs of taxon meanings to limit the search to.
    *   * external_key - External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
-   *   * taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to
-   * 
-   *   @todo columns
+   *   * taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to.
+   *   * count - set to true to return a results count query
+   *   * limit - set to limit number of records returned
+   *   * offset - set to offset the query results from the start of the dataset for paging
    * 
    * @return string SQL to run
    * @throws exception If parameters are of incorrect format.
@@ -490,11 +492,11 @@ and n.id is null"
         '.+',
         '$1( )?( \(.+\) )?'
       ), $searchTerm) . ')';
-      $headline = "regexp_replace(original,  '$highlightRegex', E'<b>\\\\1</b>', 'i')";
+      $headline = "regexp_replace(original,  '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
     } else {
       // no wildcard in a word, so we can use full text search - this must match one of the indexes created
       $searchFilters[] = "(cts.simplified=false and to_tsvector('simple', quote_literal(quote_literal($searchField))) @@ to_tsquery('simple', '$fullTextSearchTerm'))";
-      $headline = "ts_headline('simple', quote_literal(quote_literal($searchField)), to_tsquery('simple', '$fullTextSearchTerm'))";
+      $headline = "ts_headline('simple', quote_literal(quote_literal($searchField)), to_tsquery('simple', '$fullTextSearchTerm')) as highlighted";
     }
     if ($options['abbreviations'] && preg_match('/^[a-z0-9]{5}$/', strtolower($searchTerm))) {
       // abbreviations allowed and 5 characters input, so also include search for them.
@@ -504,24 +506,23 @@ and n.id is null"
     $searchFilter = '(' . implode(' or ', $searchFilters) . ')';
     $contextFilter = self::taxonSearchGetQueryContextFilter($options);
     $nameTypesList = implode(', ', $nameTypes);
-    // Performing SQL query
-    $query = <<<SQL
-select cts.searchterm,
+    $limitOffset = [];
+    if ($options['count']) {
+      $cols = 'count(*)';
+      $orderBy = '';
+    } else {
+      $cols = <<<SQL
+  cts.searchterm,
 	$headline,
 	cts.original,
-	cts.taxon_group,
-	cts.preferred
-from cache_taxon_searchterms cts
-where 
-/* Apply filters according to options */
-name_type in ($nameTypesList)
-/* end options filters */
-/* filter for the input search term */
-and $searchFilter
-/* end search term */
-/* Context filter */
-and $contextFilter
-/* End context filter */
+  cts.authority,
+  cts.language_iso,
+  cts.preferred,
+  cts.preferred_authority,
+  cts.default_common_name,
+  cts.taxon_group
+SQL;
+      $orderBy = <<<SQL
 order by 
 -- abbreviation hits come first if enabled
 cts.name_type='A' DESC,
@@ -538,7 +539,32 @@ case
   else 9999 end,
 cts.preferred desc, 
 -- finally alpha sort
-searchterm;
+searchterm
+SQL;
+      if (isset($options['limit']) && preg_match('/^\d+$/', $options['limit'])) {
+        $limitOffset[] = "limit $options[limit]";
+      }
+      if (isset($options['offset']) && preg_match('/^\d+$/', $options['offset'])) {
+        $limitOffset[] = "offset $options[offset]";
+      }
+    }
+    $limitOffsetSql = implode(' ', $limitOffset);
+    // Build SQL query
+    $query = <<<SQL
+select $cols
+from cache_taxon_searchterms cts
+where 
+/* Apply filters according to options */
+name_type in ($nameTypesList)
+/* end options filters */
+/* filter for the input search term */
+and $searchFilter
+/* end search term */
+/* Context filter */
+and $contextFilter
+/* End context filter */
+$orderBy
+$limitOffsetSql;
 SQL;
     return $query;
   }
