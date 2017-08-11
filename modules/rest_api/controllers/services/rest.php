@@ -373,11 +373,11 @@ class Rest_Controller extends Controller {
                 'datatype' => 'boolean'
               ),
               'nameTypes' => array(
-                'datatype' => 'string[]',
+                'datatype' => 'text[]',
                 'options' => ['preferredNames', 'synonyms', 'commonNames']
               ),
               'include' => array(
-                'datatype' => 'string[]',
+                'datatype' => 'text[]',
                 'options' => ['data', 'count', 'paging', 'columns']
               ),
               'abbreviations' => array(
@@ -396,7 +396,7 @@ class Rest_Controller extends Controller {
                 'datatype' => 'integer[]'
               ),
               'external_key'=> array(
-                'datatype' => 'string[]'
+                'datatype' => 'text[]'
               ),
               'taxa_taxon_list_id' => array(
                 'datatype' => 'integer[]'
@@ -804,6 +804,7 @@ class Rest_Controller extends Controller {
    * @todo method documentation
    * @todo limit columns in results
    * @todo caching option
+   * @todo validation of options in array parameters
    */
   private function taxa_get() {
     $segments = $this->uri->segment_array();
@@ -1156,19 +1157,24 @@ class Rest_Controller extends Controller {
     }
   }
   
-  private function checkParamDatatype($paramName, $value, $datatype) {
-    if ($datatype === 'integer' && !preg_match('/^\d+$/', trim($value))) {
+  private function checkParamDatatype($paramName, $value, $paramDef) {
+    $datatype = preg_replace('/\[\]$/', '', $paramDef['datatype']);
+    $trimmed = trim($value);
+    if ($datatype === 'integer' && !preg_match('/^\d+$/', $trimmed)) {
       $this->apiResponse->fail('Bad request', 400, "Invalid format for $paramName parameter");
-    }
-    if ($datatype === 'date') {
+    } elseif ($datatype === 'date') {
       if (strpos($value, 'T')===false) {
-        $dt = DateTime::createFromFormat("Y-m-d", trim($value));
+        $dt = DateTime::createFromFormat("Y-m-d", $trimmed);
       } else {
-        $dt = DateTime::createFromFormat("Y-m-d\TH:i:s", trim($value));
+        $dt = DateTime::createFromFormat("Y-m-d\TH:i:s", $trimmed);
       }
       if ($dt === false || array_sum($dt->getLastErrors())) {
         $this->apiResponse->fail('Bad request', 400, "Invalid date for $paramName parameter");
       }
+    }
+    // If a limited options set available then check the value is in the list.
+    if (!empty($paramDef['options']) && !in_array($trimmed, $paramDef['options'])) {
+      $this->apiResponse->fail('Bad request', 400, "Invalid value for $paramName parameter");
     }
   }
 
@@ -1178,7 +1184,6 @@ class Rest_Controller extends Controller {
    * @param string $method Method name, e.g. GET or POST.
    */
   private function validateParameters($resourceName, $method, $requestForId) {
-    
     $info = $this->resourceConfig[$resourceName][$method]['subresources'];
     // if requesting a list, then use the entry keyed '', else use the named entry
     if ($requestForId) {
@@ -1215,10 +1220,10 @@ class Rest_Controller extends Controller {
           $decoded = json_decode($this->request[$paramName]);
           $this->request[$paramName] = $decoded && is_array($decoded) ? $decoded : [$this->request[$paramName]];
           foreach ($this->request[$paramName] as $value) {
-            $this->checkParamDatatype($paramName, $value, substr($paramDef['datatype'], 0, -2));
+            $this->checkParamDatatype($paramName, $value, $paramDef);
           }
         } else {
-          $this->checkParamDatatype($paramName, $this->request[$paramName], $paramDef['datatype']);
+          $this->checkParamDatatype($paramName, $this->request[$paramName], $paramDef);
         }
       }
     }
