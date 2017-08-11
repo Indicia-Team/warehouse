@@ -512,6 +512,10 @@ and n.id is null"
       $orderBy = '';
     } else {
       $cols = <<<SQL
+  cts.taxa_taxon_list_id,
+  cts.taxon_group_id,
+  cts.taxon_meaning_id,
+  cts.external_key,
   cts.searchterm,
 	$headline,
 	cts.original as taxon,

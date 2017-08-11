@@ -848,6 +848,10 @@ class Rest_Controller extends Controller {
       }
     }
     $columns = array(
+      'taxa_taxon_list_id' => array('caption' => 'Taxa taxon list ID'),
+      'taxon_group_id' => array('caption' => 'Taxon group ID'),
+      'taxon_meaning_id' => array('caption' => 'Taxon meaning ID'),
+      'external_key' => array('caption' => 'External Key'),
       'searchterm' => array('caption' => 'Search term'),
       'highlighted' => array('caption' => 'Highlighted'),
       'taxon' => array('caption' => 'Taxon'),
