@@ -804,7 +804,6 @@ class Rest_Controller extends Controller {
    * @todo method documentation
    * @todo limit columns in results
    * @todo caching option
-   * @todo validation of options in array parameters
    */
   private function taxa_get() {
     $segments = $this->uri->segment_array();
