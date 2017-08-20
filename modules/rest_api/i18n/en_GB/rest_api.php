@@ -92,17 +92,22 @@
     ),
     'taxa' => array(
       'searchterm' => 'Search text which will be used to look up species and taxon names.',
+      'include' => 'Defines which parts of the response structure to include. If the count and paging data are not ' .
+          'required then exclude them for better performance.',
       'taxon_list_id' => 'ID or list o IDs of taxon list to search against.',
       'wholeWords' => 'Set to true to only search whole words in the full text index, otherwise searches the start ' .
           'of words.',
-      'nameTypes' => 'Array of name types to include in search results.',
-      'include' => 'Defines which parts of the response structure to include. If the count and paging data are not ' .
-          'required then exclude them for better performance.',
+      'language' => 'Languages of names to include in search results. Pass a 3 character iso code for the ' .
+          'language, e.g. "lat" for Latin names or "eng" for English names. Alternatively set this to "common" to ' .
+          'filter for all common names (i.e. non-Latin names).',
+      'preferred' => 'Set to true to limit to preferred names, false to limit to non-preferred names. E.g. filter ' .
+          'nameTypes=lat&preferred=false to find all synonyms.',
       'abbreviations' => 'Set to false to disable searching 2+3 character species name abbreviations.',
       'searchAuthors' => 'Set to true to include author strings in the searched text.',
       'taxon_group_id' => 'ID or array of IDs of taxon groups to limit the search to.',
-      'family_taxa_taxon_list_id' => 'ID or array of IDs of families to limit the search to.',
       'taxon_meaning_id' => 'ID or array of IDs of taxon meanings to limit the search to.',
+      'parent_id' => 'ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching ' .
+          'the subspecies. May be set to null to force top level species only.',
       'external_key' => 'External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).',
       'taxa_taxon_list_id' => 'ID or array of IDs of taxa taxon list records to limit the search to',
       'limit' => 'Limit the number of records in the response.',

@@ -363,6 +363,10 @@ class Rest_Controller extends Controller {
                 'datatype' => 'text',
                 'required' => TRUE
               ),
+              'include' => array(
+                'datatype' => 'text[]',
+                'options' => ['data', 'count', 'paging', 'columns']
+              ),
               'taxon_list_id' => array(
                 'datatype' => 'integer[]',
                 'required' => TRUE
@@ -370,13 +374,11 @@ class Rest_Controller extends Controller {
               'wholeWords' => array(
                 'datatype' => 'boolean'
               ),
-              'nameTypes' => array(
-                'datatype' => 'text[]',
-                'options' => ['preferredNames', 'synonyms', 'commonNames']
+              'language' => array(
+                'datatype' => 'text[]'
               ),
-              'include' => array(
-                'datatype' => 'text[]',
-                'options' => ['data', 'count', 'paging', 'columns']
+              'preferred' => array(
+                'datatype' => 'boolean'
               ),
               'abbreviations' => array(
                 'datatype' => 'boolean'
@@ -387,10 +389,10 @@ class Rest_Controller extends Controller {
               'taxon_group_id' => array(
                 'datatype' => 'integer[]'
               ),
-              'family_taxa_taxon_list_id' => array(
+              'taxon_meaning_id' => array(
                 'datatype' => 'integer[]'
               ),
-              'taxon_meaning_id' => array(
+              'parent_id' => array(
                 'datatype' => 'integer[]'
               ),
               'external_key'=> array(
@@ -852,14 +854,15 @@ class Rest_Controller extends Controller {
       'taxon_group_id' => array('caption' => 'Taxon group ID'),
       'taxon_meaning_id' => array('caption' => 'Taxon meaning ID'),
       'external_key' => array('caption' => 'External Key'),
+      'parent_id' => array('caption' => 'Parent taxa taxon list ID'),
       'searchterm' => array('caption' => 'Search term'),
       'highlighted' => array('caption' => 'Highlighted'),
       'taxon' => array('caption' => 'Taxon'),
       'authority' => array('caption' => 'Authority'),
       'language_iso' => array('caption' => 'Language'),
-      'preferred_name' => array('caption' => 'Preferred name'),
-      'preferred_name_authority' => array('caption' => 'Preferred name authority'),
-      'common_name' => array('caption' => 'Common name'),
+      'preferred_taxon' => array('caption' => 'Preferred name'),
+      'preferred_authority' => array('caption' => 'Preferred name authority'),
+      'default_common_name' => array('caption' => 'Common name'),
       'taxon_group' => array('caption' => 'Taxon group')
     );
     if (in_array('columns', $params['include'])) {
@@ -1165,11 +1168,19 @@ class Rest_Controller extends Controller {
     }
   }
   
-  private function checkParamDatatype($paramName, $value, $paramDef) {
+  /**
+   * Examines the value of a parameter in the request and check's its datatype against the parameter config. Also checks
+   * any paremeter values are within the list of options defined for controlled list parameters. Boolean parameter
+   * values are converted from strings into bool datatypes.
+   * @param string $paramName
+   * @param string $value
+   * @param array $paramDef
+   */
+  private function checkParamDatatype($paramName, &$value, $paramDef) {
     $datatype = preg_replace('/\[\]$/', '', $paramDef['datatype']);
     $trimmed = trim($value);
     if ($datatype === 'integer' && !preg_match('/^\d+$/', $trimmed)) {
-      $this->apiResponse->fail('Bad request', 400, "Invalid format for $paramName parameter");
+      $this->apiResponse->fail('Bad request', 400, "Invalid integer format for $paramName parameter");
     } elseif ($datatype === 'date') {
       if (strpos($value, 'T')===false) {
         $dt = DateTime::createFromFormat("Y-m-d", $trimmed);
@@ -1179,6 +1190,13 @@ class Rest_Controller extends Controller {
       if ($dt === false || array_sum($dt->getLastErrors())) {
         $this->apiResponse->fail('Bad request', 400, "Invalid date for $paramName parameter");
       }
+    } elseif ($datatype === 'boolean') {
+      if (!preg_match('/^(true|false)$/', $trimmed)) {
+        $this->apiResponse->fail('Bad request', 400, 
+            "Invalid boolean for $paramName parameter, value should be true or false");
+      }
+      // Set the value to a real bool.
+      $value = $trimmed === 'true';
     }
     // If a limited options set available then check the value is in the list.
     if (!empty($paramDef['options']) && !in_array($trimmed, $paramDef['options'])) {
@@ -1227,7 +1245,7 @@ class Rest_Controller extends Controller {
         if (preg_match('/\[\]$/', $paramDef['datatype'])) {
           $decoded = json_decode($this->request[$paramName]);
           $this->request[$paramName] = $decoded && is_array($decoded) ? $decoded : [$this->request[$paramName]];
-          foreach ($this->request[$paramName] as $value) {
+          foreach ($this->request[$paramName] as &$value) {
             $this->checkParamDatatype($paramName, $value, $paramDef);
           }
         } else {
