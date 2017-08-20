@@ -383,6 +383,19 @@ and n.id is null"
     }
   }
   
+  /** 
+   * Checks that all provided boolean options are actually boolean.
+   * @param array $options
+   * @param array $keysToCheck List of keys in the options array which should be booleans.
+   */
+  private static function checkBooleanOptions($options, $keysToCheck) {
+    foreach ($keysToCheck as $key) {
+      if (isset($options[$key])) {
+        self::assert(is_bool($options[$key]),
+            "taxonSearchQuery $key option must be a boolean.");
+      }
+    }
+  }
   /**
    * Performs sanity checking on the options passed to the taxon search query.
    * @param array $options
@@ -402,19 +415,12 @@ and n.id is null"
     self::integerListOption($options, 'taxon_group_id');
     self::integerListOption($options, 'taxon_meaning_id');
     self::integerListOption($options, 'taxa_taxon_list_id');
+    self::integerListOption($options, 'preferred_taxa_taxon_list_id');
     self::integerListOption($options, 'parent_id');
     self::stringListOption($options, 'language');
     self::stringListOption($options, 'external_key');
-    if (isset($options['preferred'])) {
-      self::assert(is_bool($options['preferred']),
-          'taxonSearchQuery preferred option must be a boolean.');
-    }
-    self::assert(is_bool($options['wholeWords']),
-        'taxonSearchQuery wholeWords option must be a boolean.');
-    self::assert(is_bool($options['abbreviations']),
-        'taxonSearchQuery wholeWords option must be a boolean.');
-    self::assert(is_bool($options['searchAuthors']),
-        'taxonSearchQuery wholeWords option must be a boolean.');
+    self::checkBooleanOptions($options, 
+        ['preferred', 'commonNames', 'synonyms', 'wholeWords', 'abbreviations', 'searchAuthors']);
   }
   
   /**
@@ -448,7 +454,7 @@ and n.id is null"
   private static function taxonSearchGetQueryContextFilter($options) {
     $filters = [];
     $params = ['taxon_list_id', 'taxon_group_id', 'taxon_meaning_id', 'external_key', 
-        'taxa_taxon_list_id', 'parent_id'];
+        'taxa_taxon_list_id', 'preferred_taxa_taxon_list_id', 'parent_id'];
     foreach ($params as $param) {
       if (!empty($options[$param])) {
         if ($options[$param] === 'null') {
@@ -463,8 +469,8 @@ and n.id is null"
   }
   
   /**
-   * Prepares the part of the taxon name search query which deals with the type of taxon name (language, abbreviation
-   * and preferred status).
+   * Prepares the part of the taxon name search query which deals with the type of taxon name (language, abbreviation,
+   * preferred, commonNames and synonyms parameters).
    * @param array $options
    * @return string
    */
@@ -487,6 +493,16 @@ and n.id is null"
     }
     if (isset($options['preferred'])) {
       $filters[] = 'cts.preferred=' . ($options['preferred'] ? 'true' : 'false');
+    }
+    if (isset($options['commonNames'])) {
+      $filters[] = $options['commonNames'] 
+          ? "(cts.language_iso<>'lat')" 
+          : "(cts.language_iso='lat')";
+    }
+    if (isset($options['synonyms'])) {
+      $filters[] = $options['synonyms'] 
+          ? "(cts.language_iso='lat' and preferred=false)" 
+          : "(cts.language_iso<>'lat' or preferred=true)";
     }
     // Disable 3+2 abbreviations if search val is not 5 characters, or abbreviations explicitly disabled.
     if (!preg_match('/^[a-z0-9]{5}$/', strtolower($searchTerm)) || 
@@ -564,6 +580,7 @@ and n.id is null"
     } else {
       return <<<SQL
   cts.taxa_taxon_list_id,
+  cts.preferred_taxa_taxon_list_id,
   cts.taxon_group_id,
   cts.taxon_meaning_id,
   cts.external_key,
@@ -646,10 +663,12 @@ SQL;
    *   * wholeWords - boolean, default false. Set to true to only search whole words in the full text index, otherwise
    *     searches the start of words.
    *   * language - array of name languages to include in search results. Pass a 3 character iso code for the language,
-   *     e.g. "lat" for Latin names or "eng" for English names. Alternatively set this to "common" to filter for all 
-   *     common names (i.e. non-Latin names).
+   *     e.g. "lat" for Latin names or "eng" for English names.
    *   * preferred - set to true to limit to preferred names, false to limit to non-preferred names. E.g. filter
-   *     nameTypes=lat&preferred=false to find all synonyms.
+   *     language=lat&preferred=false to find all synonyms.
+   *   * commonNames - set to true to limit to common names (non-latin names) or false to exclude non-latin names.
+   *   * synonyms - set to true to limit to synonyms (latin names which are not the preferred name) or false to exclude
+   *     synonyms.
    *   * abbreviations - boolean, default true. Set to false to disable searching 2+3 character species name 
    *     abbreviations.
    *   * searchAuthors - boolean, default false. Set to true to include author strings in the searched text.
@@ -657,12 +676,17 @@ SQL;
    *   * taxon_meaning_id - ID or array of IDs of taxon meanings to limit the search to.
    *   * external_key - External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
    *   * taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to.
+   *   * preferred_taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to, using
+         the preferred name's ID to filter against, therefore including synonyms and common names in the search.
    *   * parent_id - ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching the
    *     subspecies. May be set to null to force top level only.
    *   * count - set to true to return a results count query
    *   * limit - set to limit number of records returned
    *   * offset - set to offset the query results from the start of the dataset for paging
    * 
+   * @todo Implement marine_flag filter.
+   * @todo Implement search_code search?
+   * @todo Implement excludeSynonms option
    * @return string SQL to run
    * @throws exception If parameters are of incorrect format.
    */
@@ -692,6 +716,7 @@ and $contextFilter
 $orderBy
 $limitOffsetSql;
 SQL;
+    echo "<br/><pre>" . htmlspecialchars($query) . "</pre><br/>";
     return $query;
   }
 }

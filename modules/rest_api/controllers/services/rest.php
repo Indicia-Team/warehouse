@@ -380,6 +380,12 @@ class Rest_Controller extends Controller {
               'preferred' => array(
                 'datatype' => 'boolean'
               ),
+              'commonNames' => array(
+                'datatype' => 'boolean'
+              ),
+              'synonyms' => array(
+                'datatype' => 'boolean'
+              ),
               'abbreviations' => array(
                 'datatype' => 'boolean'
               ),
@@ -399,6 +405,9 @@ class Rest_Controller extends Controller {
                 'datatype' => 'text[]'
               ),
               'taxa_taxon_list_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'preferred_taxa_taxon_list_id' => array(
                 'datatype' => 'integer[]'
               ),
               'limit' => array(
@@ -851,6 +860,7 @@ class Rest_Controller extends Controller {
     }
     $columns = array(
       'taxa_taxon_list_id' => array('caption' => 'Taxa taxon list ID'),
+      'preferred_taxa_taxon_list_id' => array('caption' => 'Preferred taxa taxon list ID'),
       'taxon_group_id' => array('caption' => 'Taxon group ID'),
       'taxon_meaning_id' => array('caption' => 'Taxon meaning ID'),
       'external_key' => array('caption' => 'External Key'),
