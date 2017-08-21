@@ -884,16 +884,33 @@ class Data_Controller extends Data_Service_Base_Controller {
    */
   protected function getDataTaxaSearch() {
     $params = $_REQUEST;
+    // Accept q as search param, as this is used by autocompletes by default.
+    if (!empty($params['q'])) {
+      $params['searchQuery'] = $params['q'];
+      unset($params['q']);
+    }
     unset($params['auth_token']);
     unset($params['nonce']);
     $possibleArrays = ['taxon_list_id', 'language', 'taxon_group_id', 'family_taxa_taxon_list_id', 'taxon_meaning_id',
-        'external_key', 'taxa_taxon_list_id'];
+        'preferred_taxon', 'external_key', 'taxa_taxon_list_id'];
     foreach ($possibleArrays as $possibleArrayParam) {
       if (isset($params[$possibleArrayParam])) {
-        $params[$possibleArrayParam] = decodeArrayParameter($params[$possibleArrayParam], in_array($possibleArrayParam));
+        $params[$possibleArrayParam] = $this->decodeArrayParameter($params[$possibleArrayParam]);
       }
     }
-    $query = postgreSQL::taxonSearchQuery($params['q'], $params);
+    // Convert bool strings to true booleans
+    $possibleBools = ['preferred', 'commonNames', 'synonyms', 'abbreviations', 'marine_flag', 'searchAuthors',
+        'wholeWords'];
+    foreach ($possibleBools as $possibleBoolParam) {
+      if (isset($params[$possibleBoolParam])) {
+        if ($params[$possibleBoolParam] === 'true') {
+          $params[$possibleBoolParam] = true;
+        } elseif ($params[$possibleBoolParam] === 'false') {
+          $params[$possibleBoolParam] = false;
+        }
+      }
+    }
+    $query = postgreSQL::taxonSearchQuery($params);
     $response = $this->db->query($query)->result_array(FALSE);
     return $response;
   }

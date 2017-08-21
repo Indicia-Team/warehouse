@@ -403,24 +403,26 @@ and n.id is null"
   private static function taxonSearchCheckOptions(&$options) {
     // Apply default options
     $options = array_merge(array(
-        'wholeWords' => false,
         'language' => array(),
         'abbreviations' => true,
         'searchAuthors' => false,
+        'wholeWords' => false,
         'count' => false
     ), $options);
     // taxon_list_id option required.
     self::assert(!empty($options['taxon_list_id']), 'taxonSearchQuery requires a taxon_list_id option.');
     self::integerListOption($options, 'taxon_list_id');
     self::integerListOption($options, 'taxon_group_id');
+    self::stringListOption($options, 'taxon_group');
     self::integerListOption($options, 'taxon_meaning_id');
     self::integerListOption($options, 'taxa_taxon_list_id');
     self::integerListOption($options, 'preferred_taxa_taxon_list_id');
+    self::stringListOption($options, 'preferred_taxon');
+    self::stringListOption($options, 'external_key');
     self::integerListOption($options, 'parent_id');
     self::stringListOption($options, 'language');
-    self::stringListOption($options, 'external_key');
     self::checkBooleanOptions($options, 
-        ['preferred', 'commonNames', 'synonyms', 'wholeWords', 'abbreviations', 'searchAuthors']);
+        ['preferred', 'commonNames', 'synonyms', 'abbreviations', 'marine_flag', 'searchAuthors', 'wholeWords']);
   }
   
   /**
@@ -453,8 +455,8 @@ and n.id is null"
    */
   private static function taxonSearchGetQueryContextFilter($options) {
     $filters = [];
-    $params = ['taxon_list_id', 'taxon_group_id', 'taxon_meaning_id', 'external_key', 
-        'taxa_taxon_list_id', 'preferred_taxa_taxon_list_id', 'parent_id'];
+    $params = ['taxon_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id', 'taxa_taxon_list_id',
+        'preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'parent_id'];
     foreach ($params as $param) {
       if (!empty($options[$param])) {
         if ($options[$param] === 'null') {
@@ -474,7 +476,7 @@ and n.id is null"
    * @param array $options
    * @return string
    */
-  private static function taxonSearchGetQueryNameTypesFilter($searchTerm, $options) {
+  private static function taxonSearchGetQueryNameTypesFilter($options) {
     $filters = [];
     if (isset($options['language'])) {
       // handle special case common language
@@ -504,8 +506,11 @@ and n.id is null"
           ? "(cts.language_iso='lat' and preferred=false)" 
           : "(cts.language_iso<>'lat' or preferred=true)";
     }
+    if (isset($options['marine_flag'])) {
+      $filters[] = 'cts.marine_flag=' . ($options['marine_flag'] ? 'true' : 'false');
+    }
     // Disable 3+2 abbreviations if search val is not 5 characters, or abbreviations explicitly disabled.
-    if (!preg_match('/^[a-z0-9]{5}$/', strtolower($searchTerm)) || 
+    if (!empty($options['searchQuery']) && !preg_match('/^[a-z0-9]{5}$/', strtolower($options['searchQuery'])) || 
         (isset($options['abbreviations']) && $options['abbreviations'] === false)) {
       $filters[] = "cts.name_type<>'A'";
     }
@@ -514,58 +519,66 @@ and n.id is null"
   
   /**
    * Returns a construct containing several bits of information required to build the taxon search SQL.
-   * @param string $searchVal Value being searched for
-   * @param type $options
+   * @param array $options
    * @return array Contains the following information:
    *   * searchFilter - the SQL required to perform a searchf or the provided search value.
    *   * searchTermNoWildcards - the search term modified to exclude wildcards
    *   * headlineColumnSql - the SQL requird to generated the highlighted output version of the found term (which
    *     emboldens parts of the searched text which caused the hit to occur).
    */
-  private static function taxonSearchGetQuerySearchFilterData($searchVal, $options) {
-    // cleanup
-	  $search = trim(preg_replace('/\s+/', ' ', str_replace('-', '', $searchVal)));
-    $fullTextSearchTerm = self::taxonSearchGetFullTextSearchTerm($search, $options);
-    $searchTerm = str_replace(array(' and ', ' or ', ' & ', ' | '), '', $search);
-    $searchTermNoWildcards = str_replace('*', ' ', $searchTerm);
-    $searchField = 'original';
-    if ($options['searchAuthors']) {
-      $searchField .= " || ' ' || coalesce(authority, '')";
-    }
-    $searchFilters = array();
-    if (preg_match('/\*[^\s]/', strtolower($searchTerm))) {
-      // Search term contains a wildcard not at the end of a word, so enable a basic text search which supports this.
-      // Use term simplification to reduce misses due to punctuation, spacing, capitalisation etc.
-      $likesearchterm = preg_replace('[^a-zA-Z0-9%\+\?*]', '', str_replace(array('*', ' '), '%', str_replace('ae', 'e', preg_replace('/\(.+\)/', '', strtolower($searchTerm))))) . '%';
-      $searchFilters[] = "(cts.simplified=true and searchterm like '$likesearchterm')";
-      $highlightRegex =  '(' . preg_replace(array(
-        // wildcard * at the beginning is removed so leading characters not highlighted
-        '/^\*/',
-        // any other * or space will be replaced by a regex wildcard to match anything
-        '/[\*\s]/',    
-        // all other characters (i.e. not a regex wildcard) will be altered to allow optional space afterwards so the search can 
-        // go across word boundaries, including skipping of subgenera in brackets.
-        '/([^(\.\+)])/'
-      ), array(
-        '',
-        '.+',
-        '$1( )?( \(.+\) )?'
-      ), $searchTerm) . ')';
-      $headlineColumnSql = "regexp_replace(original,  '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
+  private static function taxonSearchGetQuerySearchFilterData($options) {
+    if (!empty($options['searchQuery'])) {
+      $searchFilters = array();
+      // cleanup
+      $search = trim(preg_replace('/\s+/', ' ', str_replace('-', '', $options['searchQuery'])));
+      $fullTextSearchTerm = self::taxonSearchGetFullTextSearchTerm($search, $options);
+      $searchTerm = str_replace(array(' and ', ' or ', ' & ', ' | '), '', $search);
+      $searchTermNoWildcards = str_replace('*', ' ', $searchTerm);
+      $searchField = 'original';
+      if ($options['searchAuthors']) {
+        $searchField .= " || ' ' || coalesce(authority, '')";
+      }
+      if (preg_match('/\*[^\s]/', strtolower($searchTerm))) {
+        // Search term contains a wildcard not at the end of a word, so enable a basic text search which supports this.
+        // Use term simplification to reduce misses due to punctuation, spacing, capitalisation etc.
+        $likesearchterm = preg_replace('[^a-zA-Z0-9%\+\?*]', '', str_replace(array('*', ' '), '%', str_replace('ae', 'e', preg_replace('/\(.+\)/', '', strtolower($searchTerm))))) . '%';
+        $searchFilters[] = "(cts.simplified=true and searchterm like '$likesearchterm')";
+        $highlightRegex =  '(' . preg_replace(array(
+          // wildcard * at the beginning is removed so leading characters not highlighted
+          '/^\*/',
+          // any other * or space will be replaced by a regex wildcard to match anything
+          '/[\*\s]/',    
+          // all other characters (i.e. not a regex wildcard) will be altered to allow optional space afterwards so the search can 
+          // go across word boundaries, including skipping of subgenera in brackets.
+          '/([^(\.\+)])/'
+        ), array(
+          '',
+          '.+',
+          '$1( )?( \(.+\) )?'
+        ), $searchTerm) . ')';
+        $headlineColumnSql = "regexp_replace(original,  '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
+      } else {
+        // no wildcard in a word, so we can use full text search - this must match one of the indexes created
+        $searchFilters[] = "(cts.simplified=false and to_tsvector('simple', quote_literal(quote_literal($searchField))) @@ to_tsquery('simple', '$fullTextSearchTerm'))";
+        $headlineColumnSql = "ts_headline('simple', quote_literal(quote_literal($searchField)), to_tsquery('simple', '$fullTextSearchTerm')) as highlighted";
+      }
+      if ($options['abbreviations'] && preg_match('/^[a-z0-9]{5}$/', strtolower($searchTerm))) {
+        // abbreviations allowed and 5 characters input, so also include search for them.	
+        $searchFilters[] = "(cts.name_type='A' and cts.searchterm = '$searchTerm')";
+      }
+      return array(
+        'searchFilter' => '(' . implode(' or ', $searchFilters) . ')',
+        'searchTermNoWildcards' => $searchTermNoWildcards,
+        'headlineColumnSql' => $headlineColumnSql
+      );
     } else {
-      // no wildcard in a word, so we can use full text search - this must match one of the indexes created
-      $searchFilters[] = "(cts.simplified=false and to_tsvector('simple', quote_literal(quote_literal($searchField))) @@ to_tsquery('simple', '$fullTextSearchTerm'))";
-      $headlineColumnSql = "ts_headline('simple', quote_literal(quote_literal($searchField)), to_tsquery('simple', '$fullTextSearchTerm')) as highlighted";
+      // Listing species names, rather than searching. Only want unsimplified names.
+      return array(
+        'searchFilter' => 'simplified=false',
+        'searchTermNoWildcards' => '',
+        'headlineColumnSql' => 'original'
+      );
     }
-    if ($options['abbreviations'] && preg_match('/^[a-z0-9]{5}$/', strtolower($searchTerm))) {
-      // abbreviations allowed and 5 characters input, so also include search for them.	
-      $searchFilters[] = "(cts.name_type='A' and cts.searchterm = '$searchTerm')";
-    }
-    return array(
-      'searchFilter' => '(' . implode(' or ', $searchFilters) . ')',
-      'searchTermNoWildcards' => $searchTermNoWildcards,
-      'headlineColumnSql' => $headlineColumnSql
-    );
   }
   
   /**
@@ -580,11 +593,6 @@ and n.id is null"
     } else {
       return <<<SQL
   cts.taxa_taxon_list_id,
-  cts.preferred_taxa_taxon_list_id,
-  cts.taxon_group_id,
-  cts.taxon_meaning_id,
-  cts.external_key,
-  cts.parent_id,
   cts.searchterm,
   $searchFilterData[headlineColumnSql],
   cts.original as taxon,
@@ -593,7 +601,14 @@ and n.id is null"
   cts.preferred_taxon,
   cts.preferred_authority,
   cts.default_common_name,
-  cts.taxon_group
+  cts.taxon_group,
+  cts.preferred_taxa_taxon_list_id,
+  cts.taxon_meaning_id,
+  cts.external_key,
+  cts.taxon_group_id,
+  cts.parent_id,
+  cts.identification_difficulty,
+  cts.id_diff_verification_rule_id 
 
 SQL;
     }
@@ -608,6 +623,10 @@ SQL;
   private static function taxonSearchGetOrderBySql($isCount, $searchFilterData) {
     if ($isCount) {
       return '';
+    } elseif (empty($searchFilterData['searchTermNoWildcards'])) {
+      return <<<SQL
+order by taxonomic_sort_order, original  
+SQL;
     } else {
       return <<<SQL
 order by 
@@ -655,13 +674,24 @@ SQL;
   /**
    * Prepares a query for searching taxon names.
    * 
-   * Optimised to use full text search where possible. 
-   * @param string $searchVal Text to search for.
+   * Optimised to use full text search where possible.
    * @param Database $db Database object if already available.
    * @param array $options Options to control the search, including:
    *   * taxon_list_id - required. ID of the taxon list or an array of list IDs to search.
-   *   * wholeWords - boolean, default false. Set to true to only search whole words in the full text index, otherwise
-   *     searches the start of words.
+   *   * searchQuery - text to search for.
+   * 
+   *   * taxon_group_id - ID or array of IDs of taxon groups to limit the search to.
+   *   * taxon_group - Taxon group name or array of taxon group names to limit the search to, an alternative to using
+   *     taxon_group_id.
+   *   * taxon_meaning_id - ID or array of IDs of taxon meanings to limit the search to.
+   *   * taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to.
+   *   * preferred_taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to, using
+         the preferred name's ID to filter against, therefore including synonyms and common names in the search.
+   *   * preferred_taxon - preferred taxon name or array of preferred names to limit the search to (e.g. limit to a list 
+   *     of species names). Exact matches required.
+   *   * external_key - External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
+   *   * parent_id - ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching the
+   *     subspecies. May be set to null to force top level only.
    *   * language - array of name languages to include in search results. Pass a 3 character iso code for the language,
    *     e.g. "lat" for Latin names or "eng" for English names.
    *   * preferred - set to true to limit to preferred names, false to limit to non-preferred names. E.g. filter
@@ -671,29 +701,21 @@ SQL;
    *     synonyms.
    *   * abbreviations - boolean, default true. Set to false to disable searching 2+3 character species name 
    *     abbreviations.
+   *   * marine_flag - set to true for only marine associated species, false to exclude marine-associated species.
    *   * searchAuthors - boolean, default false. Set to true to include author strings in the searched text.
-   *   * taxon_group_id - ID or array of IDs of taxon groups to limit the search to.
-   *   * taxon_meaning_id - ID or array of IDs of taxon meanings to limit the search to.
-   *   * external_key - External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
-   *   * taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to.
-   *   * preferred_taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to, using
-         the preferred name's ID to filter against, therefore including synonyms and common names in the search.
-   *   * parent_id - ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching the
-   *     subspecies. May be set to null to force top level only.
+   *   * wholeWords - boolean, default false. Set to true to only search whole words in the full text index, otherwise
+   *     searches the start of words.
    *   * count - set to true to return a results count query
    *   * limit - set to limit number of records returned
    *   * offset - set to offset the query results from the start of the dataset for paging
    * 
-   * @todo Implement marine_flag filter.
-   * @todo Implement search_code search?
-   * @todo Implement excludeSynonms option
    * @return string SQL to run
    * @throws exception If parameters are of incorrect format.
    */
-  public static function taxonSearchQuery($searchVal, $options = []) {
+  public static function taxonSearchQuery($options = []) {
     self::taxonSearchCheckOptions($options);
-    $searchFilterData = self::taxonSearchGetQuerySearchFilterData($searchVal, $options);
-    $nameTypesFilter = self::taxonSearchGetQueryNameTypesFilter($searchVal, $options);
+    $searchFilterData = self::taxonSearchGetQuerySearchFilterData($options);
+    $nameTypesFilter = self::taxonSearchGetQueryNameTypesFilter($options);
     // Name types filter can be empty. If not we need an extra AND
     if (!empty($nameTypesFilter)) {
       $searchFilterData['searchFilter'] = 'AND ' . $searchFilterData['searchFilter'];
@@ -716,7 +738,6 @@ and $contextFilter
 $orderBy
 $limitOffsetSql;
 SQL;
-    echo "<br/><pre>" . htmlspecialchars($query) . "</pre><br/>";
     return $query;
   }
 }

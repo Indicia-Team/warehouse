@@ -359,20 +359,36 @@ class Rest_Controller extends Controller {
           ),
           'search' => array(
             'params' => array(
-              'searchterm' => array(
-                'datatype' => 'text',
-                'required' => TRUE
-              ),
-              'include' => array(
-                'datatype' => 'text[]',
-                'options' => ['data', 'count', 'paging', 'columns']
-              ),
               'taxon_list_id' => array(
                 'datatype' => 'integer[]',
                 'required' => TRUE
               ),
-              'wholeWords' => array(
-                'datatype' => 'boolean'
+              'searchQuery' => array(
+                'datatype' => 'text'
+              ),
+              'taxon_group_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'taxon_group' => array(
+                'datatype' => 'text[]'
+              ),
+              'taxon_meaning_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'taxa_taxon_list_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'preferred_taxa_taxon_list_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'preferred_taxon'=> array(
+                'datatype' => 'text[]'
+              ),
+              'external_key'=> array(
+                'datatype' => 'text[]'
+              ),
+              'parent_id' => array(
+                'datatype' => 'integer[]'
               ),
               'language' => array(
                 'datatype' => 'text[]'
@@ -389,32 +405,24 @@ class Rest_Controller extends Controller {
               'abbreviations' => array(
                 'datatype' => 'boolean'
               ),
+              'marine_flag' => array(
+                'datatype' => 'boolean'
+              ),
               'searchAuthors' => array(
                 'datatype' => 'boolean'
               ),
-              'taxon_group_id' => array(
-                'datatype' => 'integer[]'
-              ),
-              'taxon_meaning_id' => array(
-                'datatype' => 'integer[]'
-              ),
-              'parent_id' => array(
-                'datatype' => 'integer[]'
-              ),
-              'external_key'=> array(
-                'datatype' => 'text[]'
-              ),
-              'taxa_taxon_list_id' => array(
-                'datatype' => 'integer[]'
-              ),
-              'preferred_taxa_taxon_list_id' => array(
-                'datatype' => 'integer[]'
+              'wholeWords' => array(
+                'datatype' => 'boolean'
               ),
               'limit' => array(
                 'datatype' => 'integer'
               ),
               'offset' => array(
                 'datatype' => 'integer'
+              ),
+              'include' => array(
+                'datatype' => 'text[]',
+                'options' => ['data', 'count', 'paging', 'columns']
               )
             )
           ),
@@ -832,7 +840,7 @@ class Rest_Controller extends Controller {
     ), $this->request);
     try {
       $params['count'] = false;
-      $query = postgreSQL::taxonSearchQuery($_GET['searchterm'], $params);
+      $query = postgreSQL::taxonSearchQuery($params);
     } catch (Exception $e) {
       $this->apiResponse->fail('Bad request', 400, $e->getMessage());
       error_logger::log_error('REST Api exception during build of taxon search query', $e);
@@ -847,7 +855,7 @@ class Rest_Controller extends Controller {
         $count = $params['known_count'];
       } else {
         $params['count'] = true;
-        $countQuery = postgreSQL::taxonSearchQuery($_GET['searchterm'], $params);
+        $countQuery = postgreSQL::taxonSearchQuery($params);
         $countData = $db->query($countQuery)->current();
         $count = $countData->count; 
       }
@@ -860,11 +868,6 @@ class Rest_Controller extends Controller {
     }
     $columns = array(
       'taxa_taxon_list_id' => array('caption' => 'Taxa taxon list ID'),
-      'preferred_taxa_taxon_list_id' => array('caption' => 'Preferred taxa taxon list ID'),
-      'taxon_group_id' => array('caption' => 'Taxon group ID'),
-      'taxon_meaning_id' => array('caption' => 'Taxon meaning ID'),
-      'external_key' => array('caption' => 'External Key'),
-      'parent_id' => array('caption' => 'Parent taxa taxon list ID'),
       'searchterm' => array('caption' => 'Search term'),
       'highlighted' => array('caption' => 'Highlighted'),
       'taxon' => array('caption' => 'Taxon'),
@@ -873,7 +876,14 @@ class Rest_Controller extends Controller {
       'preferred_taxon' => array('caption' => 'Preferred name'),
       'preferred_authority' => array('caption' => 'Preferred name authority'),
       'default_common_name' => array('caption' => 'Common name'),
-      'taxon_group' => array('caption' => 'Taxon group')
+      'taxon_group' => array('caption' => 'Taxon group'),
+      'preferred_taxa_taxon_list_id' => array('caption' => 'Preferred taxa taxon list ID'),
+      'taxon_meaning_id' => array('caption' => 'Taxon meaning ID'),
+      'external_key' => array('caption' => 'External Key'),
+      'taxon_group_id' => array('caption' => 'Taxon group ID'),  
+      'parent_id' => array('caption' => 'Parent taxa taxon list ID'),
+      'identification_difficulty' => array('caption' => 'Ident. difficulty'),
+      'id_diff_verification_rule_id' => array('caption' => 'Ident. difficulty verification rule ID')
     );
     if (in_array('columns', $params['include'])) {
       $result['columns'] = $columns;
