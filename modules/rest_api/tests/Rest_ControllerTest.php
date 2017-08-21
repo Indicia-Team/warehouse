@@ -329,12 +329,12 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertEquals(400, $response['httpCode'],
           'Requesting taxa/search without search_term should be a bad request');
     $response = $this->callService('taxa/search', array(
-      'searchterm' => 'test'
+      'searchQuery' => 'test'
     ));
     $this->assertEquals(400, $response['httpCode'],
           'Requesting taxa/search without taxon_list_id should be a bad request');
     $response = $this->callService('taxa/search', array(
-      'searchterm' => 'test',
+      'searchQuery' => 'test',
       'taxon_list_id' => 1
     ));
     $this->assertResponseOk($response, '/taxa/search');
@@ -344,7 +344,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertInternalType('array', $data, 'taxa/search data invalid.');
     $this->assertCount(2, $data, 'Taxa/search data wrong count returned.' );
     $response = $this->callService('taxa/search', array(
-      'searchterm' => 'test taxon 2',
+      'searchQuery' => 'test taxon 2',
       'taxon_list_id' => 1
     ));
     $this->assertResponseOk($response, '/taxa/search');
