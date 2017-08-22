@@ -26,8 +26,6 @@
     </param>
   </params>
   <columns>
-    <column name="occurrence_id" sql="o.id" datatype="integer"/>
-    <column name="sample_id" sql="o.sample_id" datatype="integer"/>
     <column name="location_id" sql="coalesce(o.location_id::text, st_astext(st_centroid(o.public_geom)))" datatype="text"/>
     <column name="taxon" sql="coalesce(cttl.default_common_name, cttl.taxon)" datatype="text"/>
     <column name="species_id" sql="o.preferred_taxa_taxon_list_id" datatype="integer"/>   
