@@ -1,0 +1,36 @@
+<report
+    title="Time lapse data"
+    description="Report to populate the time-lapse map."
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="occurrences">
+    SELECT #columns#
+    FROM cache_occurrences_functional o
+    JOIN cache_taxa_taxon_lists cttl on cttl.id=o.preferred_taxa_taxon_list_id
+    JOIN samples smp on smp.id=o.sample_id and smp.deleted=false
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter# 
+    #idlist#
+  </query>
+  <order_bys>
+    <order_by>coalesce(o.date_start, o.date_end)</order_by>
+  </order_bys>
+  <params>
+    <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
+           description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
+    <param name="sample_method" display="Sample Method" description="Select the sample method." default="" >
+      <join>JOIN cache_termlists_terms t on t.id=smp.sample_method_id and t.term = '#sample_method#'</join>
+    </param>
+    <param name="grid_size" display="Grid size" datatype="integer" default="100"
+           description="Snaps spatial refs to a grid of this size, resulting in less data to load" />
+  </params>
+  <columns>
+    <column name="geom" visible="false" mappable="true" sql="st_astext(st_snaptogrid(st_centroid(o.public_geom), #grid_size#))" />
+    <column name="taxon" sql="coalesce(cttl.default_common_name, cttl.taxon)" datatype="text"/>
+    <column name="species_id" sql="o.preferred_taxa_taxon_list_id" datatype="integer"/>   
+    <column name="date" sql="coalesce(o.date_start, o.date_end)"/>
+    <column name="recordDayIndex" sql="floor(extract(epoch from coalesce(o.date_start, o.date_end))/(24*3600))"/>
+    <column name="created_by_id" sql="o.created_by_id" />
+  </columns>
+</report>
