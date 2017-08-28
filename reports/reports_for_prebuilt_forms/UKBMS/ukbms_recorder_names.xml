@@ -10,6 +10,7 @@
   AND sav.sample_attribute_id = #attr_id#
   AND (CAST(s.survey_id AS character varying)='#survey_id#')
   AND (CAST(sav.created_by_id AS character varying)='#user_id#')
+  AND sav.text_value IS NOT NULL AND sav.text_value != ''
   ORDER BY name
   </query>
   <params>
