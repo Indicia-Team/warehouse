@@ -37,7 +37,11 @@ BEGIN
       -- Temporary sequences are dropped automatically at end of session
       -- Have to leave it existing after function end in order for the LASTVAL call in ORM to work
       -- Possibly have multiple e.g. attributes created and audited in same session.
-      CREATE TEMPORARY SEQUENCE IF NOT EXISTS audit_dummy_sequence;
+      BEGIN
+        CREATE TEMPORARY SEQUENCE audit_dummy_sequence;
+      EXCEPTION WHEN duplicate_table THEN
+        -- do nothing
+      END;
       -- Set value so can be used for NEXTVAL()
       -- Dont set in sequence CREATE statement : this sets it even if sequence already exists
       -- FALSE means next NEXTVAL call will return lastsequenceval
@@ -95,7 +99,3 @@ END;
 $body$
 LANGUAGE plpgsql
 SECURITY DEFINER;
-
- 
- 
- 
