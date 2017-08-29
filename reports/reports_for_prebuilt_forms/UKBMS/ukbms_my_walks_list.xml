@@ -1,25 +1,23 @@
 <report
-    title="UKBMS Walks: Top level samples list for a CMS user"
+    title="UKBMS Walks: Top level samples list for an Indicia user"
     description="A list of top level samples for use in the UKBMS My Walks report calendar grid. Filtered according to the Indicia ID of the user, and optional location ID. Top level means that the parent_id field of the samples is null."
 >
 <query website_filter_field="su.website_id">
   SELECT #field_sql#
   FROM samples s
-  JOIN surveys su on su.id=s.survey_id and su.deleted=false
-  LEFT JOIN (termlists_terms ttl1
-    INNER JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
-    INNER JOIN terms t ON t.id=ttl2.term_id
-  ) ON ttl1.id=s.sample_method_id
-  LEFT JOIN locations l ON l.id=s.location_id
+    JOIN surveys su on su.id=s.survey_id and su.deleted=false
+    LEFT JOIN cache_termlists_terms ctt on ctt.id=s.sample_method_id
+    LEFT JOIN locations l ON l.id=s.location_id
   #joins#
   WHERE s.deleted = FALSE
   AND s.parent_id IS NULL
   AND #website_filter#
   AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
-  AND (CAST(ttl2.id AS character varying)='#sample_method_id#' OR '#sample_method_id#'='' OR t.term='#sample_method_id#')
+  AND (CAST(s.sample_method_id AS character varying)='#sample_method_id#' OR '#sample_method_id#'='' OR ctt.term='#sample_method_id#')
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
   AND (CAST(l.id AS character varying)='#location_id#' OR '#location_id#' = '')
+  #filters#
   #order_by#
   </query>
   <field_sql>
@@ -46,7 +44,6 @@
       <where>s.created_by_id=#user_id#</where>
     </param>
     <param name='location_id' display='Location ID' description='Enter the Location ID.' datatype='int' />
-    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='sample_method_id' display='Sample Method' description='Select the sample method, or leave blank to not filter by sample method.' datatype='lookup'
             population_call='report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:sample_methods,termlist_id=' />
   </params>
