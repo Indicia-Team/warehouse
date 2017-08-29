@@ -26,7 +26,7 @@ defined('SYSPATH') or die('No direct script access.');
 /**
  * @var string The application files version number.
  */
-$config['version'] = '1.39.6';
-$config['release_date']  = '2017-08-03';
+$config['version'] = '1.39.7';
+$config['release_date']  = '2017-08-28';
 $config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
 
