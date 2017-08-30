@@ -30,6 +30,11 @@
       <where>st_intersects(l.boundary_geom, st_geomfromtext('#intersects#', 900913))
         and not st_touches(l.boundary_geom, st_geomfromtext('#intersects#', 900913))</where>
     </param>
+    <param name="exclude_composites" display="Exclude composite locations" datatype="boolean" default="0"
+           description="Ignore composition locations (which have a + in their code field), e.g. combined vice counties
+                        such as Sussex">
+      <where>(l.code is null or l.code not like '%+%')</where>
+    </param>
   </params>
   <columns>
     <column name="location_id" display="ID" sql="l.id" />
