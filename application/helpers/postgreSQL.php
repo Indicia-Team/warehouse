@@ -602,6 +602,7 @@ and n.id is null"
   cts.preferred_authority,
   cts.default_common_name,
   cts.taxon_group,
+  cts.preferred,
   cts.preferred_taxa_taxon_list_id,
   cts.taxon_meaning_id,
   cts.external_key,
