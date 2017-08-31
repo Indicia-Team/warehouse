@@ -877,6 +877,7 @@ class Rest_Controller extends Controller {
       'preferred_authority' => array('caption' => 'Preferred name authority'),
       'default_common_name' => array('caption' => 'Common name'),
       'taxon_group' => array('caption' => 'Taxon group'),
+      'preferred' => array('caption' => 'Preferred'),
       'preferred_taxa_taxon_list_id' => array('caption' => 'Preferred taxa taxon list ID'),
       'taxon_meaning_id' => array('caption' => 'Taxon meaning ID'),
       'external_key' => array('caption' => 'External Key'),
