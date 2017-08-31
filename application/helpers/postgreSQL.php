@@ -410,7 +410,8 @@ and n.id is null"
         'count' => false
     ), $options);
     // taxon_list_id option required.
-    self::assert(!empty($options['taxon_list_id']), 'taxonSearchQuery requires a taxon_list_id option.');
+    self::assert(!empty($options['taxon_list_id']) || !empty($options['taxa_taxon_list_id']), 
+        'taxonSearchQuery requires a taxon_list_id or taxa_taxa_list_id option.');
     self::integerListOption($options, 'taxon_list_id');
     self::integerListOption($options, 'taxon_group_id');
     self::stringListOption($options, 'taxon_group');
@@ -678,9 +679,9 @@ SQL;
    * Optimised to use full text search where possible.
    * @param Database $db Database object if already available.
    * @param array $options Options to control the search, including:
-   *   * taxon_list_id - required. ID of the taxon list or an array of list IDs to search.
+   *   * taxon_list_id - required unless filtering by a specific list of taxa_Taxon_lists_ids. ID of the taxon list or 
+   *     an array of list IDs to search.
    *   * searchQuery - text to search for.
-   * 
    *   * taxon_group_id - ID or array of IDs of taxon groups to limit the search to.
    *   * taxon_group - Taxon group name or array of taxon group names to limit the search to, an alternative to using
    *     taxon_group_id.
