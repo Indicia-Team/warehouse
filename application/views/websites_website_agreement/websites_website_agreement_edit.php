@@ -47,24 +47,26 @@ data_entry_helper::$javascript .= "
       data: {}, 
       success: function(data) {
         $.each(data[0], function(field, value) {
+          $('#div-'+field+' .helpText .locked-info').remove();
           if (field.substr(0, 7)==='provide' || field.substr(0,7)==='receive') {
             switch (value) {
               case 'D':
-                $('#div-'+field+' input').attr('checked','');
-                $('#div-'+field).attr('enabled',false);
-                $('#div-'+field).css('opacity',0.3);
+                $('#div-'+field+' input').removeAttr('checked');
+                $('#div-'+field).hide();
                 break;
               case 'O':
-                $('#div-'+field).attr('enabled',true);
-                $('#div-'+field).css('opacity',1);
+                $('#div-'+field+' input').removeAttr('disabled');
+                $('#div-'+field).show();
                 break;
               case 'A':
                 $adminCase  
                 break;
               case 'R':
-                $('#div-'+field+' input').attr('checked','checked');
-                $('#div-'+field).attr('enabled',false);
-                $('#div-'+field).css('opacity',0.3);
+                $('#div-'+field+' input').attr('checked', 'checked');
+                $('#div-'+field+' input').attr('disabled', 'disabled');
+                $('#div-'+field).show();
+                $('#div-'+field+' .helpText').append(
+                  '<span class=\"locked-info\"><br/>NOTE, by participating in this agreement the website must accept this option.</span>');
                 break;
             }
           }
@@ -87,8 +89,9 @@ data_entry_helper::$javascript .= "
 /** 
  * @todo: filter the select box to public agreements, or those created by the current user, unless core admin.
  */
-if ($this->uri->method(false)=='edit')
+if ($this->uri->method(false) === 'edit') {
   echo '<div style="display: none">';
+}
 echo data_entry_helper::select(array(
   'id'=>'agreement-select',
   'label' => 'Agreement to participate in',
@@ -104,9 +107,12 @@ echo data_entry_helper::select(array(
   'class' => 'required',
   'caching' => false
 ));
-if ($this->uri->method(false)=='edit')
+if ($this->uri->method(false)=='edit') {
   echo '</div>';
-?> <div id="div-provide_for_reporting"><?php
+}
+?>
+<p>This sharing agreement has the following options:</p>
+<div id="div-provide_for_reporting"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Provides data for reporting',
   'helpText' => 'Check this box if the website provides its data to other agreement participants for reporting.',
