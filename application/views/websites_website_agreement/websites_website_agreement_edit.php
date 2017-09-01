@@ -114,7 +114,8 @@ echo data_entry_helper::checkbox(array(
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_reporting'),
   'labelClass' => 'control-width-4'
 ));
-?> </div><div id="div-receive_for_reporting"><?php
+?> </div>
+<div id="div-receive_for_reporting"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Receives data for reporting',
   'helpText' => 'Check this box if the website receives data from other agreement participants for reporting.',
@@ -122,7 +123,8 @@ echo data_entry_helper::checkbox(array(
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_reporting'),
   'labelClass' => 'control-width-4'
 ));
-?> </div><div id="div-provide_for_peer_review"><?php
+?> </div>
+<div id="div-provide_for_peer_review"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Provides data for peer review',
   'helpText' => 'Check this box if the website provides its data to other agreement participants for peer review, e.g. browsing and commenting on records.',
@@ -130,7 +132,8 @@ echo data_entry_helper::checkbox(array(
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_peer_review'),
   'labelClass' => 'control-width-4'
 ));
-?> </div><div id="div-receive_for_peer_review"><?php
+?> </div>
+<div id="div-receive_for_peer_review"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Receives data for peer review',
   'helpText' => 'Check this box if the website receives data from other agreement participants for reporting, e.g. browsing and commenting on records.',
@@ -138,7 +141,8 @@ echo data_entry_helper::checkbox(array(
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_peer_review'),
   'labelClass' => 'control-width-4'
 ));
-?> </div><div id="div-provide_for_verification"><?php
+?> </div>
+<div id="div-provide_for_verification"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Provides data for verification',
   'helpText' => 'Check this box if the website provides its data to other agreement participants for verification.',
@@ -146,7 +150,8 @@ echo data_entry_helper::checkbox(array(
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_verification'),
   'labelClass' => 'control-width-4'
 ));
-?> </div><div id="div-receive_for_verification"><?php
+?> </div>
+<div id="div-receive_for_verification"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Receives data for verification',
   'helpText' => 'Check this box if the website receives data from other agreement participants for verification.',
@@ -154,7 +159,8 @@ echo data_entry_helper::checkbox(array(
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_verification'),
   'labelClass' => 'control-width-4'
 ));
-?> </div><div id="div-provide_for_data_flow"><?php
+?> </div>
+<div id="div-provide_for_data_flow"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Provides data for data flow',
   'helpText' => 'Check this box if the website provides its data to other agreement participants for data flow, e.g. for passing data onto national information portals.',
@@ -162,7 +168,8 @@ echo data_entry_helper::checkbox(array(
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_data_flow'),
   'labelClass' => 'control-width-4'
 ));
-?> </div><div id="div-receive_for_data_flow"><?php
+?> </div>
+<div id="div-receive_for_data_flow"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Receives data for data flow',
   'helpText' => 'Check this box if the website receives data from other agreement participants for data flow, e.g. for passing data onto national information portals.',
@@ -170,7 +177,8 @@ echo data_entry_helper::checkbox(array(
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_data_flow'),
   'labelClass' => 'control-width-4'
 ));
-?> </div><div id="div-provide_for_moderation"><?php
+?> </div>
+<div id="div-provide_for_moderation"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Provides data for moderation',
   'helpText' => 'Check this box if the website provides its data to other agreement participants for moderation, e.g. to check images before publishing.',
@@ -178,12 +186,31 @@ echo data_entry_helper::checkbox(array(
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_moderation'),
   'labelClass' => 'control-width-4'
 ));
-?> </div><div id="div-receive_for_moderation"><?php
+?> </div>
+<div id="div-receive_for_moderation"><?php
 echo data_entry_helper::checkbox(array(
   'label' => 'Receives data for moderation',
   'helpText' => 'Check this box if the website receives data from other agreement participants for moderation, e.g. to check images before publishing.',
   'fieldname' => 'websites_website_agreement:receive_for_moderation',
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_moderation'),
+  'labelClass' => 'control-width-4'
+));
+?>
+</div>
+<div id="div-provide_for_editing"><?php
+echo data_entry_helper::checkbox(array(
+  'label' => 'Provides data for editing',
+  'helpText' => 'Check this box if the website provides its data to other agreement participants for editing.',
+  'fieldname' => 'websites_website_agreement:provide_for_editing',
+  'default' => html::initial_value($values, 'websites_website_agreement:provide_for_editing'),
+  'labelClass' => 'control-width-4'
+));
+?> </div><div id="div-receive_for_editing"><?php
+echo data_entry_helper::checkbox(array(
+  'label' => 'Receives data for editing',
+  'helpText' => 'Check this box if the website receives data from other agreement participants for editing.',
+  'fieldname' => 'websites_website_agreement:receive_for_editing',
+  'default' => html::initial_value($values, 'websites_website_agreement:receive_for_editing'),
   'labelClass' => 'control-width-4'
 ));
 ?>

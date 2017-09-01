@@ -64,7 +64,8 @@ class User_Model extends ORM {
       'allow_share_for_peer_review',
       'allow_share_for_verification',
       'allow_share_for_data_flow',
-      'allow_share_for_moderation');
+      'allow_share_for_moderation',
+      'allow_share_for_editing');
     if (!array_key_exists('core_role_id', $array->as_array())) {
     	// if core role id is blank, make sure it is nulled out.
       $array['core_role_id'] = null;
@@ -87,6 +88,7 @@ class User_Model extends ORM {
     $this->submission['fields']['allow_share_for_verification'] = array('value' => (isset($this->submission['fields']['allow_share_for_verification']) ? 't' : 'f'));
     $this->submission['fields']['allow_share_for_data_flow'] = array('value' => (isset($this->submission['fields']['allow_share_for_data_flow']) ? 't' : 'f'));
     $this->submission['fields']['allow_share_for_moderation'] = array('value' => (isset($this->submission['fields']['allow_share_for_moderation']) ? 't' : 'f'));
+    $this->submission['fields']['allow_share_for_editing'] = array('value' => (isset($this->submission['fields']['allow_share_for_editing']) ? 't' : 'f'));
     // Ensure that the website fields remain available (as they are not proper model columns so get
     // stripped from the model).
     $this->droppedFields = array_diff_key($this->submission['fields'],
