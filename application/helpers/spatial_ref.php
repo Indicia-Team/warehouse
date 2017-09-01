@@ -155,7 +155,7 @@ class spatial_ref {
    */
   public static function sref_format_tidy($sref, $sref_system) {
     $system = strtolower($sref_system);
-    if (method_exists($system, 'sref_format_tidy'))
+    if (!is_numeric($system) && method_exists($system, 'sref_format_tidy'))
       return call_user_func("$system::sref_format_tidy", $sref);
     else
       return $sref;
