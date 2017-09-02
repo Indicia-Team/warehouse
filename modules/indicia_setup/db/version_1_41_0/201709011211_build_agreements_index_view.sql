@@ -1,7 +1,8 @@
 CREATE OR REPLACE VIEW build_index_websites_website_agreements AS 
- SELECT wwafrom.website_id AS from_website_id,
+ SELECT 
+    wwafrom.website_id AS from_website_id,
     wwato.website_id AS to_website_id,
-        CASE
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.provide_for_reporting
@@ -14,8 +15,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.receive_for_reporting
             END
-        END AS provide_for_reporting,
-        CASE
+        END) AS provide_for_reporting,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.receive_for_reporting
@@ -28,8 +29,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.provide_for_reporting
             END
-        END AS receive_for_reporting,
-        CASE
+        END) AS receive_for_reporting,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.provide_for_peer_review
@@ -42,8 +43,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.receive_for_peer_review
             END
-        END AS provide_for_peer_review,
-        CASE
+        END) AS provide_for_peer_review,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.receive_for_peer_review
@@ -56,8 +57,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.provide_for_peer_review
             END
-        END AS receive_for_peer_review,
-        CASE
+        END) AS receive_for_peer_review,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.provide_for_verification
@@ -70,8 +71,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.receive_for_verification
             END
-        END AS provide_for_verification,
-        CASE
+        END) AS provide_for_verification,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.receive_for_verification
@@ -84,8 +85,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.provide_for_verification
             END
-        END AS receive_for_verification,
-        CASE
+        END) AS receive_for_verification,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.provide_for_data_flow
@@ -98,8 +99,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.receive_for_data_flow
             END
-        END AS provide_for_data_flow,
-        CASE
+        END) AS provide_for_data_flow,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.receive_for_data_flow
@@ -112,8 +113,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.provide_for_data_flow
             END
-        END AS receive_for_data_flow,
-        CASE
+        END) AS receive_for_data_flow,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.provide_for_moderation
@@ -126,8 +127,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.receive_for_moderation
             END
-        END AS provide_for_moderation,
-        CASE
+        END) AS provide_for_moderation,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.receive_for_moderation
@@ -140,8 +141,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.provide_for_moderation
             END
-        END AS receive_for_moderation,
-        CASE
+        END) AS receive_for_moderation,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.provide_for_editing
@@ -154,8 +155,8 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.receive_for_editing
             END
-        END AS provide_for_editing,
-        CASE
+        END) AS provide_for_editing,
+        BOOL_OR(CASE
             WHEN wwafrom.website_id = wwato.website_id THEN true
             ELSE
             CASE wa.receive_for_editing
@@ -168,11 +169,12 @@ CREATE OR REPLACE VIEW build_index_websites_website_agreements AS
                 WHEN 'R'::bpchar THEN true
                 ELSE wwato.provide_for_editing
             END
-        END AS receive_for_editing
+        END) AS receive_for_editing
    FROM websites_website_agreements wwafrom
      JOIN website_agreements wa ON wa.id = wwafrom.website_agreement_id AND wa.deleted = false
      JOIN websites_website_agreements wwato ON wwato.website_agreement_id = wa.id AND wwato.deleted = false AND wwato.website_id <> wwafrom.website_id
   WHERE wwafrom.deleted = false
+  GROUP BY wwafrom.website_id, wwato.website_id
 UNION
  SELECT websites.id AS from_website_id,
     websites.id AS to_website_id,
@@ -190,10 +192,3 @@ UNION
     true AS receive_for_editing
    FROM websites
   WHERE websites.deleted = false;
-
-ALTER TABLE build_index_websites_website_agreements
-  OWNER TO indicia_user;
-GRANT ALL ON TABLE build_index_websites_website_agreements TO indicia_user;
-GRANT SELECT ON TABLE build_index_websites_website_agreements TO indicia_report_user;
-COMMENT ON VIEW build_index_websites_website_agreements
-  IS 'A view which lists every website in the from_website_id, plus every website they have an agreement with in the to_website_id, plus flags indicating what type of data they must share according to the agreement.';
