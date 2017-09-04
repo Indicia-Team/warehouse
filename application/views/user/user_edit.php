@@ -54,24 +54,28 @@
 <?php echo form::checkbox('view_common_names', TRUE, isset($model->view_common_names) AND ($model->view_common_names == 't') ) ?>
 </li>
 <li>
-<label class="wide" for="view_common_names">This user allows records to be shared for reporting</label>
+<label class="wide" for="allow_share_for_reporting">This user allows records to be shared for reporting</label>
 <?php echo form::checkbox('allow_share_for_reporting', TRUE, isset($model->allow_share_for_reporting) AND ($model->allow_share_for_reporting == 't') ) ?>
 </li>
 <li>
-<label class="wide" for="view_common_names">This user allows records to be shared for peer review</label>
+<label class="wide" for="allow_share_for_peer_review">This user allows records to be shared for peer review</label>
 <?php echo form::checkbox('allow_share_for_peer_review', TRUE, isset($model->allow_share_for_peer_review) AND ($model->allow_share_for_peer_review == 't') ) ?>
 </li>
 <li>
-<label class="wide" for="view_common_names">This user allows records to be shared for verification</label>
+<label class="wide" for="allow_share_for_verification">This user allows records to be shared for verification</label>
 <?php echo form::checkbox('allow_share_for_verification', TRUE, isset($model->allow_share_for_verification) AND ($model->allow_share_for_verification == 't') ) ?>
 </li>
 <li>
-<label class="wide" for="view_common_names">This user allows records to be shared for data flow</label>
+<label class="wide" for="allow_share_for_data_flow">This user allows records to be shared for data flow</label>
 <?php echo form::checkbox('allow_share_for_data_flow', TRUE, isset($model->allow_share_for_data_flow) AND ($model->allow_share_for_data_flow == 't') ) ?>
 </li>
 <li>
-<label class="wide" for="view_common_names">This user allows records to be shared for moderation</label>
+<label class="wide" for="allow_share_for_moderation">This user allows records to be shared for moderation</label>
 <?php echo form::checkbox('allow_share_for_moderation', TRUE, isset($model->allow_share_for_moderation) AND ($model->allow_share_for_moderation == 't') ) ?>
+</li>
+<li>
+<label class="wide" for="allow_share_for_editing">This user allows records to be shared for editing</label>
+<?php echo form::checkbox('allow_share_for_editing', TRUE, isset($model->allow_share_for_editing) AND ($model->allow_share_for_editing == 't') ) ?>
 </li>
 <?php if ($this->auth->logged_in('CoreAdmin')): ?>
 <li>
@@ -82,8 +86,9 @@
   $core_roles = ORM::factory('core_role')->orderby('title','asc')->find_all();
   foreach ($core_roles as $core_role) {
     echo '	<option value="'.$core_role->id.'" ';
-    if ($core_role->id==$model->core_role_id)
+    if ($core_role->id==$model->core_role_id) {
       echo 'selected="selected" ';
+    }
     echo '>'.$core_role->title.'</option>';
   }
 ?>
@@ -109,8 +114,9 @@ if (isset($password_field) and $password_field != '') {
     $site_roles = ORM::factory('site_role')->orderby('title','asc')->find_all();
     foreach ($site_roles as $site_role) {
       echo '	<option value="'.$site_role->id.'" ';
-      if ($site_role->id==$website['value'])
+      if ($site_role->id==$website['value']) {
         echo 'selected="selected" ';
+      }
       echo '>'.$site_role->title.'</option>';
     }
     echo '</select></li>';

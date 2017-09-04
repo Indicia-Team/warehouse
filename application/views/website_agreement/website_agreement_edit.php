@@ -134,6 +134,24 @@ echo data_entry_helper::select(array(
   'default' => html::initial_value($values, 'website_agreement:receive_for_moderation'),
   'lookupValues' => array('D' => 'Not allowed','O' => 'Optional','A' => 'Optional, but must be setup by an administrator','R' => 'Required')
 ));
+echo data_entry_helper::select(array(
+  'label' => 'Providing data for editing',
+  'helpText' => 'Select the requirements of participants with respect to providing data for editing. When data is provided '.
+      'by a website, other websites participating in the same agreement will be able to edit this data, e.g. to check '.
+      'images before publication, if they select to receive data for editing.',
+  'fieldname' => 'website_agreement:provide_for_editing',
+  'default' => html::initial_value($values, 'website_agreement:provide_for_editing'),
+  'lookupValues' => array('D' => 'Not allowed','O' => 'Optional','A' => 'Optional, but must be setup by an administrator','R' => 'Required')
+));
+echo data_entry_helper::select(array(
+  'label' => 'Receive data for editing',
+  'helpText' => 'Select the requirements of participants with respect to receiving data for editing. When a website selects '.
+      'to receive data for modeartion, they can perform editing tasks such as checking images before publication '.
+      'from other websites participating in the same agreement if they elect to provide data for editing.',
+  'fieldname' => 'website_agreement:receive_for_editing',
+  'default' => html::initial_value($values, 'website_agreement:receive_for_editing'),
+  'lookupValues' => array('D' => 'Not allowed','O' => 'Optional','A' => 'Optional, but must be setup by an administrator','R' => 'Required')
+));
 
 ?>
 </fieldset>
