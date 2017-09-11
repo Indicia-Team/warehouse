@@ -1040,6 +1040,15 @@ class Data_Controller extends Data_Service_Base_Controller {
             $usedFields[] = $this->viewname.'.'.$field;
         }
       }
+      if (!empty($_REQUEST['attrs'])) {
+        $attrTables = array('survey', 'sample', 'occurrence', 'people', 'taxa_taxon_list');
+        if (in_array($this->entity, $attrTables)) {
+          $attrs = explode(',', $_REQUEST['attrs']);
+          foreach ($attrs as $attr) {
+            $usedFields[] = "val_{$this->entity}_$attr.value as attr_{$this->entity}_$attr";
+          }
+        }
+      }
       $select = implode(', ', $usedFields);
       $this->db->select($select);
     }
@@ -1186,22 +1195,9 @@ class Data_Controller extends Data_Service_Base_Controller {
         case 'attrs':
           // Check that we're dealing with 'occurrence', 'location' or 'sample' here
           // TODO check this works - looks like it does nothing...
-          switch($this->entity)
-          {
-            case 'sample':
-              Kohana::log('debug', "Fetching attributes $value for sample");
-              $attrs = explode(',', $value);
-              break;
-            case 'occurrence':
-              Kohana::log('debug', "Fetching attributes $value for occurrence");
-              $attrs = explode(',', $value);
-              break;
-            case 'location':
-              Kohana::log('debug', "Fetching attributes $value for location");
-              $attrs = explode(',', $value);
-              break;
-            default:
-              Kohana::log('alert', 'Trying to fetch attributes for non sample/occurrence/location table. Ignoring.');
+          $attrTables = array('survey', 'sample', 'occurrence', 'people', 'taxa_taxon_list');
+          if (in_array($this->entity, $attrTables)) {
+            $attrs = explode(',', $value);
           }
           break;
         case 'query':
@@ -1275,6 +1271,18 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     if (count($where))
       $this->db->where($where);
+    if (isset($attrs)) {
+      $attrValTable = "list_{$this->entity}_attribute_values";
+      foreach ($attrs as $attr) {
+        if (!preg_match('/^\d+$/', $attr)) {
+          throw new exception("Request for invalid attribute ID $attr");
+        }
+        $this->db->join("$attrValTable as val_{$this->entity}_$attr", array(
+            "val_{$this->entity}_$attr.{$this->entity}_id" => "$this->viewname.id",
+            "val_{$this->entity}_$attr.{$this->entity}_attribute_id=$attr" => ''
+        ), NULL, 'LEFT');
+      }
+    }
   }
 
   /**
