@@ -679,6 +679,8 @@ class ORM extends ORM_Core {
               ->where('id', $associationId)
               ->update();
       }
+      // reset important if doing an import with multiple submissions.
+      Occurrence_association_Model::$to_occurrence_id_pointers = array();
     }
   }
 

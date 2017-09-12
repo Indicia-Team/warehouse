@@ -16,5 +16,10 @@ on the input forms in edit mode."
   </params>
   <columns>
     <column name='id' display='Square ID' sql="square.id" datatype='integer' visible="false"/>
+    --This report used to return the square ID only, hence the square ID is referred to as simply "id".
+    --Plot_id was introduced later, so left "id" referring to square ID, so other code didn't need changing .
+    <column name='plot_id' display='Plot ID' sql="plot.id" datatype='integer' visible="false"/>
+    <column name='square_name' display='Square name' sql="square.name" datatype='integer' visible="false"/>
+    <column name='plot_name' display='Plot name' sql="plot.name" datatype='integer' visible="false"/>
   </columns>
 </report>

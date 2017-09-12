@@ -117,8 +117,8 @@ class XMLReportReader_Core implements ReportReader
   * Constructs a reader for the specified report.
   * @param string $report Report file path
   * @param array $websiteIds List of websites to include data for
-  * @param string $sharing Set to reporting, verification, moderation, peer_review, data_flow or me (=user's data)
-  * depending on the type of data from other websites to include in this report.
+  * @param string $sharing Set to reporting, verification, moderation, peer_review, data_flow, editing or me
+  * (=user's data) depending on the type of data from other websites to include in this report.
   * @param array $colsToInclude Optional list of column names to include in the report output.
   */
   public function __construct($report, $websiteIds, $sharing='reporting', $colsToInclude = array())
