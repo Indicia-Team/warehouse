@@ -1,6 +1,4 @@
-psql -U postgres <<EOF
-
-\connect indicia;
+psql -U postgres -d indicia <<EOF
 
 -- Create indicia_user and allocate permissions.
 CREATE USER indicia_user WITH PASSWORD 'indicia_user_pass';

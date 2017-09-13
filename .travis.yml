@@ -40,7 +40,7 @@ install:
   - chmod +x .travis/postgres_setup.sh
 
 before_script:
-  - psql -c 'create database indicia;' -U postgres
+  - psql -c 'create database indicia;' -U postgres -d postgres
   # Add extension for PostGIS
   - psql -U postgres -d indicia -c "create extension postgis"
   - psql -U postgres -d indicia -c "create extension postgis_topology"
