@@ -11,13 +11,17 @@ services:
 
 before_install:
   - php -r "echo phpinfo();"
-  
+
   # From https://docs.travis-ci.com/user/languages/php
-  # Currently Travis CI does not support mod_php for apache, but you can 
+  # Currently Travis CI does not support mod_php for apache, but you can
   # configure php-fpm for your integration tests.
-  
+
   # Update the package list.
   - sudo apt-get update
+  # Reinstall PostgreSQL - see https://github.com/travis-ci/travis-ci/issues/7048#issuecomment-267731971
+  - sudo apt-get autoremove postgis*
+  - sudo apt-get autoremove postgresql*
+  - sudo apt-get install postgresql-9.3-postgis-2.1
   # Install Apache.
   - sudo apt-get install apache2 libapache2-mod-fastcgi
   # Enable php-fpm.
@@ -29,7 +33,7 @@ before_install:
   # Configure apache virtual hosts.
   - sudo cp -f .travis/travis-ci-apache /etc/apache2/sites-available/default
   - sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-available/default
-  - sudo service apache2 restart  
+  - sudo service apache2 restart
 
 install:
   # Grant execute on scripts
