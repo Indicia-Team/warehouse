@@ -51,3 +51,5 @@ left join (sample_attribute_values spv
 ) on spv.sample_id=s.id and spv.deleted=false
 left join locations l on l.id=s.location_id
 where onf.id=tofix.id and o.id=tofix.id;
+
+drop table tofix;

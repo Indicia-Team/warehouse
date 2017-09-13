@@ -67,10 +67,8 @@ class Setup_Check_Controller extends Template_Controller {
   public function save_helper_config() {
     $source = dirname(dirname(__file__)) . '/config_files/_helper_config.php';
     $dest = dirname(dirname(dirname(dirname(__file__)))) . "/client_helpers/helper_config.php";
-    try {
+    if (file_exists($dest)) {
       unlink($dest);
-    } catch (Exception $e) {
-      // file doesn't exist?'
     }
     try {
       $_source_content = file_get_contents($source);
@@ -556,5 +554,5 @@ class Setup_Check_Controller extends Template_Controller {
     // Fetch the output and close the buffer
     return ob_get_clean();
   }
-  
+
 }
