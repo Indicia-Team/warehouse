@@ -1,0 +1,5 @@
+<phpunit>
+  <php>
+    <const name="inPhpUnit" value="true"/>
+  </php>
+</phpunit>

@@ -26,7 +26,7 @@ class setup_check {
   public function __construct()
   {
     // Hook into routing, but not if running unit tests
-    if (!class_exists('PHPUnit_Util_Filter')) {
+    if (!defined('inPhpUnit')) {
       Event::add('system.routing', array($this, 'setup_check'));
     }
   }
