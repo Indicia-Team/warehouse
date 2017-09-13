@@ -50,10 +50,15 @@ before_script:
   - cp application/config/config.php.travis application/config/config.php
   # Provide a config file for the rest_api module
   - cp modules/rest_api/config/rest.php.travis  modules/rest_api/config/rest.php
+  # Downgrade to PHPUnit 5.7
+  - wget https://phar.phpunit.de/phpunit-5.7.phar
+  - chmod +x phpunit-5.7.phar
+  - sudo mv phpunit-5.7.phar /usr/local/bin/phpunit
+  - phpunit --verson
 
 script:
-  - phpunit --configuration phpunit-setup.xml
-  - phpunit --configuration phpunit-tests.xml
+  - /usr/local/bin/phpunit --configuration phpunit-setup.xml
+  - /usr/local/bin/phpunit --configuration phpunit-tests.xml
 
 after_script:
   - cat application/logs/*
