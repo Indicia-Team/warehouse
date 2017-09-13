@@ -59,6 +59,8 @@ script:
   - /usr/local/bin/phpunit --configuration phpunit-config-test.xml
   - /usr/local/bin/phpunit --configuration phpunit-setup-check-test.xml
   - /usr/local/bin/phpunit --configuration phpunit-home-test.xml
+  # Repeat to upgrade modules
+  - /usr/local/bin/phpunit --configuration phpunit-home-test.xml
   - /usr/local/bin/phpunit --configuration phpunit-tests.xml
 
 after_script:
