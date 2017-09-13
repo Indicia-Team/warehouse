@@ -54,7 +54,6 @@ before_script:
   - wget https://phar.phpunit.de/phpunit-5.7.phar
   - chmod +x phpunit-5.7.phar
   - sudo mv phpunit-5.7.phar /usr/local/bin/phpunit
-  - /usr/local/bin/phpunit --verson
 
 script:
   - /usr/local/bin/phpunit --configuration phpunit-setup.xml
