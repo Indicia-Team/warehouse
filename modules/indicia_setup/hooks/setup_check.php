@@ -27,7 +27,7 @@ class setup_check {
   {
     // Hook into routing, but not if running unit tests
     if (!class_exists('PHPUnit_Util_Filter')) {
-      Event::add('system.routing', array($this, 'setup_check'));      
+      Event::add('system.routing', array($this, 'setup_check'));
     }
   }
 
@@ -36,9 +36,13 @@ class setup_check {
    */
   public static function setup_check() {
     $uri = URI::instance();
-    $isOk = $uri->segment(1) == 'setup' || $uri->segment(1) == 'setup_check' || 
+    $isOk = $uri->segment(1) == 'setup' || $uri->segment(1) == 'setup_check' ||
         kohana::config('indicia.private_key', false, false) !== null;
     if (!$isOk) {
+      // Dump information for Travis
+      echo '$uri->segment(1) = ' . $uri->segment(1) . "\n";
+      echo "kohana::config('indicia.private_key', false, false) = " .
+        var_dump(kohana::config('indicia.private_key', false, false), true) . "\n";
       url::redirect('setup_check');
     }
   }
