@@ -4,15 +4,6 @@
     <const name="inPhpUnit" value="true"/>
   </php>
   <testsuites>
-    <testsuite name="Config test test">
-      <directory>./modules/indicia_setup/tests/helpers/config_test_test.php</directory>
-    </testsuite>
-    <testsuite name="Setup check controller test">
-      <directory>./modules/indicia_setup/tests/controllers/setup_check_test.php</directory>
-    </testsuite>
-    <testsuite name="Home controller test">
-      <directory>./application/tests/controllers/homeTest.php</directory>
-    </testsuite>
     <testsuite name="Application tests">
       <directory>./application/tests/helpers</directory>
     </testsuite>

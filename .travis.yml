@@ -52,7 +52,8 @@ before_script:
   - cp modules/rest_api/config/rest.php.travis  modules/rest_api/config/rest.php
 
 script:
-  - phpunit --configuration phpunit.xml
+  - phpunit --configuration setup-phpunit.xml
+  - phpunit --configuration tests-phpunit.xml
 
 after_script:
   - cat application/logs/*
