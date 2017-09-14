@@ -1,0 +1,11 @@
+<phpunit
+    bootstrap="index.php">
+  <php>
+    <const name="inPhpUnit" value="true"/>
+  </php>
+  <testsuites>
+    <testsuite name="Home test including upgrade">
+      <directory>./application/tests/controllers/homeTest.php</directory>
+    </testsuite>
+  </testsuites>
+</phpunit>

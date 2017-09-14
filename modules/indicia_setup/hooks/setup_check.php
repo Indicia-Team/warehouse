@@ -14,30 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
+ * @package Modules
  * @subpackage setup_check
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
-
 class setup_check {
 
-  public function __construct()
-  {
-    // Hook into routing, but not if running unit tests
-    if (!class_exists('PHPUnit_Util_Filter')) {
-      Event::add('system.routing', array($this, 'setup_check'));      
+  public function __construct() {
+    // Hook into routing, but not if running unit tests.
+    if (!defined('inPhpUnit')) {
+      Event::add('system.routing', array($this, 'setupCheck'));
     }
   }
 
   /**
    * If not in the setup pages, but the indicia config file is missing, go to system setup.
    */
-  public static function setup_check() {
+  public static function setupCheck() {
     $uri = URI::instance();
-    $isOk = $uri->segment(1) == 'setup' || $uri->segment(1) == 'setup_check' || 
-        kohana::config('indicia.private_key', false, false) !== null;
+    $isOk = $uri->segment(1) == 'setup' || $uri->segment(1) == 'setup_check' ||
+        kohana::config('indicia.private_key', FALSE, FALSE) !== NULL;
     if (!$isOk) {
       url::redirect('setup_check');
     }
@@ -45,4 +43,4 @@ class setup_check {
 
 }
 
-new setup_check;
+new setup_check();

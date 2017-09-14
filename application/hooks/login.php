@@ -5,8 +5,8 @@ class login {
   public function __construct()
   {
     // Hook into routing, but not if running unit tests
-    if (!class_exists('PHPUnit_Util_Filter')) {
-      Event::add('system.routing', array($this, 'check'));      
+    if (!defined('inPhpUnit')) {
+      Event::add('system.routing', array($this, 'check'));
     }
   }
 
@@ -64,7 +64,7 @@ class login {
       url::redirect('new_password');
     }
   }
-  
+
 }
 
 new login;
