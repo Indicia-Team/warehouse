@@ -48,3 +48,9 @@ function cache_builder_scheduled_task($last_run_date, $db) {
     throw $e;
   }
 }
+
+function cache_builder_alter_menu($menu, $auth) {
+	if ($auth->logged_in('CoreAdmin'))
+		$menu['Admin']['Cache Builder']='cache_builder_status';
+	return $menu;
+}
