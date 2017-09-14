@@ -19,13 +19,6 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link  http://code.google.com/p/indicia/
  */
- 
-define("GRIDORIGIN_X",1);
-define("GRIDORIGIN_Y",9);
-define("SIXMINUTES",1/10);
-define("TENMINUTES",1/6);
-define("ORIGIN_X", 35/6);
-define("ORIGIN_Y", 55.1);
 
 /** 
  * Conversion class for MTBQQQ (German grid system) grid references.
@@ -33,7 +26,7 @@ define("ORIGIN_Y", 55.1);
  * @subpackage MTBQQQ Grid References
  * @author  Indicia Team
  */
-class mtbqqq {
+class mtbqqq extends mtb {
 
   /**
    * Returns true if the spatial reference is a recognised German MTBQQQ Grid square.
@@ -56,15 +49,15 @@ class mtbqqq {
     if (!self::is_valid($sref))
       throw new InvalidArgumentException('Spatial reference is not a recognisable grid square.', 4001);
     // Split the input string main square part into x & y.
-    $yy = substr($sref, 0, 2);
-    $xx = substr($sref, 2, 2);
+    $gridYTop = substr($sref, 0, 2);
+    $gridXLeft = substr($sref, 2, 2);
     // Top left cell of grid system is 0901 (yy=09, xx=01)
-    $yy -= GRIDORIGIN_Y;
-    $xx -= GRIDORIGIN_X;
+    $gridYTop -= GRIDORIGIN_Y;
+    $gridXLeft -= GRIDORIGIN_X;
     // Each cell is 6 minutes high, = 0.1 degree. Top of grid is 55.1
-    $northEdge = ORIGIN_Y - $yy * SIXMINUTES;
+    $northEdge = ORIGIN_Y - $gridYTop * SIXMINUTES;
     // Each cell is 10 minutes wide, = 1/6 degrees. Left of grid is 5.833 = 35/6
-    $westEdge = ORIGIN_X + $xx * TENMINUTES;
+    $westEdge = ORIGIN_X + $gridXLeft * TENMINUTES;
     // we now have the top left of the outer grid square. We need to work out the quadrants.
     // Loop through the quadrant digits.
     for ($i=5; $i<strlen($sref); $i++) {
@@ -109,11 +102,11 @@ class mtbqqq {
     /*if ($easting < 0 || $easting > 700000 || $northing < 0 || $northing > 1300000)
       throw new Exception('wkt_to_sref translation is outside range of grid.');*/
     $y    = ((ORIGIN_Y - $northing) / SIXMINUTES) + GRIDORIGIN_Y;
-    $yy   = Floor($y);
+    $gridYTop   = Floor($y);
     $x    = (($easting - ORIGIN_X) * 6) + GRIDORIGIN_X;
-    $xx   = Floor($x);
-    $y8th = Floor(($y - $yy) * 8) + 1;
-    $x8th = Floor(($x - $xx) * 8) + 1;
+    $gridXLeft   = Floor($x);
+    $y8th = Floor(($y - $gridYTop) * 8) + 1;
+    $x8th = Floor(($x - $gridXLeft) * 8) + 1;
     // Start on 111
     $q1 = 1;
     $q2 = 1;
@@ -132,11 +125,11 @@ class mtbqqq {
       $q2++;
     if (in_array($x8th, array(2, 4, 6, 8)))
       $q3++;
-    if ($yy < 1 || $xx < 1 || $yy > 99 || $xx > 99)
+    if ($gridYTop < 1 || $gridXLeft < 1 || $gridYTop > 99 || $gridXLeft > 99)
       throw new Exception('Outside bounds for MTB squares.');
     else {
-      $StrY = Substr('00'.$yy, -2);
-      $StrX = Substr('00'.$xx, -2);
+      $StrY = Substr('00'.$gridYTop, -2);
+      $StrX = Substr('00'.$gridXLeft, -2);
       $ref = sprintf('%s%s/%d%d%d', $StrY, $StrX, $q1, $q2, $q3);
       // assume full accuracy
       $len = 8;
@@ -152,17 +145,6 @@ class mtbqqq {
       return substr($ref, 0, $len);
       
     }
-  }
-  
-  /**
-   * Ensures that the format of an input sref is consistent.
-   */
-  private static function clean($sref) {
-    // remove whitespace
-    $sref = preg_replace('/\s/', '', $sref);
-    // ensure slash correct way round
-    $sref = str_replace('\\', '/', $sref);
-    return $sref;
   }
 
 }

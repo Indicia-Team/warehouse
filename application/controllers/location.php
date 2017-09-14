@@ -62,7 +62,7 @@ class Location_Controller extends Gridview_Base_Controller {
    */
   protected function record_authorised ($id)
   {
-    if (!is_null($id) AND !is_null($this->auth_filter))
+    if (!is_null($id) AND !is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
     {
       $l = ORM::factory('locations_website')->where(array('location_id'=>$id))->in('website_id', $this->auth_filter['values'])->find();
       if ($l->loaded) return true;

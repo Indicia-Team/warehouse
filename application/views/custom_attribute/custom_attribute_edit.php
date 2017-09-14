@@ -204,7 +204,7 @@ $(document).ready(function() {
     name="<?php echo $model->object_name; ?>:termlist_id" <?php echo $enabled; ?>>
     <option value=''>&lt;Please Select&gt;</option>
     <?php
-    if (!is_null($this->auth_filter))
+    if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
     $termlists = ORM::factory('termlist')->where('deleted','f')->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
     else
     $termlists = ORM::factory('termlist')->where('deleted','f')->orderby('title','asc')->find_all();
@@ -243,7 +243,12 @@ $(document).ready(function() {
 <?php if ($disabled_input=='YES') echo ' class="ui-state-disabled"'; ?>>
 <legend>Validation Rules</legend>
 <ol>
-  <li id="li_valid_required"><label class="narrow" for="valid_required">Required</label><?php echo form::checkbox('valid_required', TRUE, isset($model->valid_required) AND ($model->valid_required == 't'), 'class="vnarrow" '.$enabled ) ?></li>
+  <li id="li_valid_required">
+    <label class="narrow" for="valid_required">Required</label>
+    <?php echo form::checkbox('valid_required', TRUE, isset($model->valid_required) AND ($model->valid_required == 't'), 'class="vnarrow" '.$enabled ) ?>
+    <p class="helpText">Note, checking this option will make the attribute GLOBALLY required for all surveys which use it.
+      Consider making it required on a survey dataset basis instead.</p>
+  </li>
   <li id="li_valid_length"><label class="narrow" for="valid_length">Length</label><?php echo form::checkbox('valid_length', TRUE, isset($model->valid_length) AND ($model->valid_length == 't'), 'class="vnarrow" '.$enabled ) ?>
     Between <input class="narrow" id="valid_length_min" name="valid_length_min"
     value="<?php echo html::specialchars($model->valid_length_min); ?>"

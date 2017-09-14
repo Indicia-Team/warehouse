@@ -111,7 +111,7 @@
       sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />  
     <column name='adults' display='No. of adults' sql='oavadults.int_value' datatype='integer' />
     <column name='calves' display='No. of calves' sql='oavcalves.int_value' datatype='integer' />
-    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN LENGTH(o.recorders)>30 THEN 'Recorder' ELSE o.recorders END" 
+    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN (TRIM(o.recorders) !~ ' ' AND LENGTH(o.recorders)>30) THEN 'Recorder' ELSE o.recorders END" 
         datatype="text" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />

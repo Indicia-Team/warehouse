@@ -291,7 +291,8 @@ class Rest_Controller extends Controller {
           '{taxon-observation ID}' => array(
             'params' => array(
               'proj_id' => array(
-                'datatype' => 'text'
+                'datatype' => 'text',
+                'required' => TRUE
               ),
               'filter_id' => array(
                 'datatype' => 'integer'
@@ -336,13 +337,95 @@ class Rest_Controller extends Controller {
           '{annotation ID}' => array(
             'params' => array(
               'proj_id' => array(
-                'datatype' => 'text'
+                'datatype' => 'text',
+                'required' => TRUE
               ),
               'filter_id' => array(
                 'datatype' => 'integer'
               )
             )
           )
+        )
+      )
+    ),
+    'taxa' => array(
+      'get' => array(
+        'options' => array(
+          'segments' => TRUE
+        ),
+        'subresources' => array(
+          '' => array(
+            'params' => array()
+          ),
+          'search' => array(
+            'params' => array(
+              'taxon_list_id' => array(
+                'datatype' => 'integer[]',
+                'required' => TRUE
+              ),
+              'searchQuery' => array(
+                'datatype' => 'text'
+              ),
+              'taxon_group_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'taxon_group' => array(
+                'datatype' => 'text[]'
+              ),
+              'taxon_meaning_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'taxa_taxon_list_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'preferred_taxa_taxon_list_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'preferred_taxon'=> array(
+                'datatype' => 'text[]'
+              ),
+              'external_key'=> array(
+                'datatype' => 'text[]'
+              ),
+              'parent_id' => array(
+                'datatype' => 'integer[]'
+              ),
+              'language' => array(
+                'datatype' => 'text[]'
+              ),
+              'preferred' => array(
+                'datatype' => 'boolean'
+              ),
+              'commonNames' => array(
+                'datatype' => 'boolean'
+              ),
+              'synonyms' => array(
+                'datatype' => 'boolean'
+              ),
+              'abbreviations' => array(
+                'datatype' => 'boolean'
+              ),
+              'marine_flag' => array(
+                'datatype' => 'boolean'
+              ),
+              'searchAuthors' => array(
+                'datatype' => 'boolean'
+              ),
+              'wholeWords' => array(
+                'datatype' => 'boolean'
+              ),
+              'limit' => array(
+                'datatype' => 'integer'
+              ),
+              'offset' => array(
+                'datatype' => 'integer'
+              ),
+              'include' => array(
+                'datatype' => 'text[]',
+                'options' => ['data', 'count', 'paging', 'columns']
+              )
+            )
+          ),
         )
       )
     ),
@@ -397,7 +480,7 @@ class Rest_Controller extends Controller {
    * Rest_Controller constructor.
    */
   public function __construct() {
-    // Ensure we have a db instance ready.
+    // Ensure we have a db instance and response object ready.
     $this->db = new Database();
     $this->apiResponse = new RestApiResponse();
     parent::__construct();
@@ -416,8 +499,7 @@ class Rest_Controller extends Controller {
 
   /**
    * Implement the oAuth2 token endpoint for password grant flow.
-   * @todo Also implement the client_credentials grant type for website level access
-   *       and client system level access.
+   * @todo Also implement the client_credentials grant type for website level access and client system level access.
    */
   public function token() {
     try {
@@ -543,18 +625,23 @@ class Rest_Controller extends Controller {
               $this->apiResponse->fail('Bad request', 400, 'Invalid ID requested '.$arguments[0]);
             }
           }
-          // apart from requests for a project, we always want a project ID
-          if (isset($this->clientSystemId) && $name !== 'projects') {
-            if (empty($this->request['proj_id']))
+          // When using a client system ID, we also want a project ID if accessing taxon observations or annotations
+          if (isset($this->clientSystemId) && ($name === 'taxon_observations' || $name === 'annotations')) {
+            if (empty($this->request['proj_id'])) {
               // Should not have got this far - just in case
-              $this->apiResponse->fail('Bad Request', 400, 'Missing proj_id parameter');
-            else
+              $this->apiResponse->fail('Bad request', 400, 'Missing proj_id parameter');
+            } else {
               $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
+            }
           }
           if ($requestForId) {
             $methodName .= '_id';
           }
           $this->validateParameters($this->resourceName, strtolower($this->method), $requestForId);
+          if (isset($this->clientSystemId) && 
+              ($name === 'taxon_observations' || $name === 'annotations')) {
+            $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
+          }
           call_user_func(array($this, $methodName), $requestForId);
         }
       }
@@ -594,36 +681,25 @@ class Rest_Controller extends Controller {
     if (!array_key_exists($id, $this->projects)) {
       $this->apiResponse->fail('No Content', 204);
     }
-    $this->addItemMetadata($this->projects[$id], 'projects');
-    // remove fields from the project that are for internal use only
-    unset($this->projects[$id]['filter_id']);
-    unset($this->projects[$id]['website_id']);
-    unset($this->projects[$id]['sharing']);
-    unset($this->projects[$id]['resources']);
-    $this->apiResponse->succeed($this->projects[$id]);
+    $this->apiResponse->succeed($this->projects[$id], array(
+      'columnsToUnset' => array('filter_id', 'website_id', 'sharing', 'resources'),
+      'attachHref' => array('projects', 'id')
+    ));
   }
 
   /**
    * GET handler for the projects resource. Outputs a list of project details.
-   * @todo Projects are currently hard coded in the config file, so pagination etc
-   * is just stub code.
+   * @todo Projects are currently hard coded in the config file, so pagination etc is just stub code.
    */
   private function projects_get() {
-    // Add metadata such as href to each project
-    foreach ($this->projects as $id => &$project) {
-      // Add metadata such as href to each project
-      $this->addItemMetadata($project, 'projects');
-      // remove fields from the project that are for internal use only
-      unset($project['filter_id']);
-      unset($project['website_id']);
-      unset($project['sharing']);
-      unset($project['resources']);
-    }
     $this->apiResponse->succeed(array(
       'data' => array_values($this->projects),
       'paging' => array(
         'self' => $this->generateLink(array('page'=>1))
       )
+    ), array(
+      'columnsToUnset' => array('filter_id', 'website_id', 'sharing', 'resources'),
+      'attachHref' => array('projects', 'id')
     ));
   }
 
@@ -649,8 +725,13 @@ class Rest_Controller extends Controller {
       kohana::log('error', 'Internal error. Request for single record returned multiple');
       $this->apiResponse->fail('Internal Server Error', 500);
     } else {
-      $this->addItemMetadata($report['content']['records'][0], 'taxon-observations');
-      $this->apiResponse->succeed($report['content']['records'][0]);
+      $this->apiResponse->succeed(
+        $report['content']['records'][0],
+        array(
+          'attachHref' => array('taxon-observations', 'id'),
+          'columns' => $report['content']['columns']
+        )
+      );
     }
   }
 
@@ -673,7 +754,13 @@ class Rest_Controller extends Controller {
     }
     $params['dataset_name_attr_id'] = kohana::config('rest.dataset_name_attr_id');
     $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
-    $this->apiResponse->succeed($this->listResponseStructure($report['content']['records'], 'taxon-observations'));
+    $this->apiResponse->succeed(
+        $this->listResponseStructure($report['content']['records']),
+        array(
+          'attachHref' => array('taxon-observations', 'id'),
+          'columns' => $report['content']['columns']
+        )
+    );
   }
 
   /**
@@ -695,9 +782,11 @@ class Rest_Controller extends Controller {
         'id' => $record['taxon_observation_id'],
         // @todo href
       );
-      $this->addItemMetadata($record['taxonObservation'], 'taxon-observations');
-      $this->addItemMetadata($record, 'annotations');
-      $this->apiResponse->succeed($record);
+      $this->apiResponse->succeed($record, array(
+        'attachHref' => array('annotations', 'id'),
+        'attachFkLink' => array('taxonObservation', 'taxon_observation_id', 'taxon-observations'),
+        'columns' => $report['content']['columns']
+      ));
     }
   }
 
@@ -724,15 +813,87 @@ class Rest_Controller extends Controller {
     }
     $report = $this->loadReport('rest_api/filterable_annotations', $params);
     $records = $report['content']['records'];
-    // for each record, restructure the taxon observations sub-object
-    foreach ($records as &$record) {
-      $record['taxonObservation'] = array(
-        'id' => $record['taxon_observation_id'],
-      );
-      $this->addItemMetadata($record['taxonObservation'], 'taxon-observations');
-      unset($record['taxon_observation_id']);
+    $this->apiResponse->succeed(
+        $this->listResponseStructure($records),
+        array(
+          'attachHref' => array('annotations', 'id'),
+          'attachFkLink' => array('taxonObservation', 'taxon_observation_id', 'taxon-observations'),
+          'columns' => $report['content']['columns']
+        )
+    );
+  }
+  
+  /**
+   * GET handler for the taxa/search resource. Returns search results on taxon names.
+   * @todo Reports can control output elements in same way
+   * @todo option to limit columns in results
+   * @todo caching option
+   */
+  private function taxa_get() {
+    $segments = $this->uri->segment_array();
+    if (count($segments) !== 4 || $segments[4] !== 'search') {
+      $this->apiResponse->fail('Bad request', 404, "Resource taxa not known, try taxa/search");
     }
-    $this->apiResponse->succeed($this->listResponseStructure($records, 'annotations'));
+    $params = array_merge(array(
+      'limit' => REST_API_DEFAULT_PAGE_SIZE,
+      'include' => ['data', 'count', 'paging', 'columns']
+    ), $this->request);
+    try {
+      $params['count'] = false;
+      $query = postgreSQL::taxonSearchQuery($params);
+    } catch (Exception $e) {
+      $this->apiResponse->fail('Bad request', 400, $e->getMessage());
+      error_logger::log_error('REST Api exception during build of taxon search query', $e);
+    }
+    $db = new Database();
+    $result = [];
+    if (in_array('data', $params['include'])) {
+      $result['data'] = $db->query($query);
+    }
+    if (in_array('count', $params['include']) || in_array('paging', $params['include'])) {
+      if (isset($params['known_count'])) {
+        $count = $params['known_count'];
+      } else {
+        $params['count'] = true;
+        $countQuery = postgreSQL::taxonSearchQuery($params);
+        $countData = $db->query($countQuery)->current();
+        $count = $countData->count; 
+      }
+      if (in_array('count', $params['include'])) {
+        $result['count'] = $count;
+      }
+      if (in_array('paging', $params['include'])) {
+        $result['paging'] = $this->getPagination($count);
+      }
+    }
+    $columns = array(
+      'taxa_taxon_list_id' => array('caption' => 'Taxa taxon list ID'),
+      'searchterm' => array('caption' => 'Search term'),
+      'highlighted' => array('caption' => 'Highlighted'),
+      'taxon' => array('caption' => 'Taxon'),
+      'authority' => array('caption' => 'Authority'),
+      'language_iso' => array('caption' => 'Language'),
+      'preferred_taxon' => array('caption' => 'Preferred name'),
+      'preferred_authority' => array('caption' => 'Preferred name authority'),
+      'default_common_name' => array('caption' => 'Common name'),
+      'taxon_group' => array('caption' => 'Taxon group'),
+      'preferred' => array('caption' => 'Preferred'),
+      'preferred_taxa_taxon_list_id' => array('caption' => 'Preferred taxa taxon list ID'),
+      'taxon_meaning_id' => array('caption' => 'Taxon meaning ID'),
+      'external_key' => array('caption' => 'External Key'),
+      'taxon_group_id' => array('caption' => 'Taxon group ID'),  
+      'parent_id' => array('caption' => 'Parent taxa taxon list ID'),
+      'identification_difficulty' => array('caption' => 'Ident. difficulty'),
+      'id_diff_verification_rule_id' => array('caption' => 'Ident. difficulty verification rule ID')
+    );
+    if (in_array('columns', $params['include'])) {
+      $result['columns'] = $columns;
+    }
+    $resultOptions = array('columns' => $columns);
+    $this->apiResponse->succeed(
+      $result,
+      $resultOptions
+    );
   }
 
   /**
@@ -792,6 +953,37 @@ class Rest_Controller extends Controller {
     $segments[] = $fileName;
     return implode('/', $segments);
   }
+  
+  /**
+   * Returns a pagination structure for inclusion in the response.
+   * @param integer $count Known count of query results
+   * @return array
+   */
+  private function getPagination($count) {
+    $urlPrefix = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
+    $parts = explode('?', $_SERVER['REQUEST_URI']);
+    $url = $parts[0];
+    if (count($parts)>1) {
+      parse_str($parts[1], $params);
+    } else {
+      $params = array();
+    }
+    $params['known_count'] = $count;
+    $pagination = array(
+      'self' => "$urlPrefix$url?" . http_build_query($params)
+    );
+    $limit = empty($params['limit']) ? REST_API_DEFAULT_PAGE_SIZE : $params['limit'];
+    $offset = empty($params['offset']) ? 0 : $params['offset'];
+    if ($offset > 0) {
+      $params['offset'] = max($offset - $limit, 0);
+      $pagination['previous'] = "$urlPrefix$url?" . http_build_query($params);
+    }
+    if ($offset + $limit < $count) {
+      $params['offset'] = $offset + $limit;
+      $pagination['next'] = "$urlPrefix$url?" . http_build_query($params);
+    }
+    return $pagination;
+  }
 
   /**
    * Uses the segments in the URL to find a report file and run it, with the
@@ -802,33 +994,17 @@ class Rest_Controller extends Controller {
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $report = $this->loadReport($reportFile, $_GET);
     if (isset($report['content']['records'])) {
-      $urlPrefix = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
-      $parts = explode('?', $_SERVER['REQUEST_URI']);
-      $url = $parts[0];
-      if (count($parts)>1) {
-        parse_str($parts[1], $params);
-      } else {
-        $params = array();
-      }
-      $params['known_count'] = $report['count'];
-      $pagination = array(
-        'self' => "$urlPrefix$url?" . http_build_query($params)
+      $pagination = $this->getPagination($report['count']);
+      $this->apiResponse->succeed(
+        array(
+          'count' => $report['count'],
+          'paging' => $pagination,
+          'data' => $report['content']['records']
+        ),
+        array(
+          'columns' => $report['content']['columns']
+        )
       );
-      $limit = empty($params['limit']) ? REST_API_DEFAULT_PAGE_SIZE : $params['limit'];
-      $offset = empty($params['offset']) ? 0 : $params['offset'];
-      if ($offset > 0) {
-        $params['offset'] = max($offset - $limit, 0);
-        $pagination['previous'] = "$urlPrefix$url?" . http_build_query($params);
-      }
-      if ($offset + $limit < $report['count']) {
-        $params['offset'] = $offset + $limit;
-        $pagination['next'] = "$urlPrefix$url?" . http_build_query($params);
-      }
-      $this->apiResponse->succeed(array(
-        'count' => $report['count'],
-        'paging' => $pagination,
-        'data' => $report['content']['records']
-      ));
     } elseif (isset($report['content']['parameterRequest'])) {
       // @todo: handle param requests
       $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
@@ -836,11 +1012,14 @@ class Rest_Controller extends Controller {
   }
 
   /**
-   *
+   * Output either the columns list or params list for a report.
+   * @param array $segments URL segmens allowing the report path to be built.
+   * @param string $item Type of metadata - either parameters or columns
+   * @param string $description Description to include in the response metadata (for HTML only)
    */
   private function getReportMetadataItem($segments, $item, $description) {
     $this->apiResponse->includeEmptyValues = false;
-    // the last segment is the /params action.
+    // the last segment is the /params or /columns action.
     array_pop($segments);
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $this->loadReportEngine();
@@ -863,8 +1042,7 @@ class Rest_Controller extends Controller {
     }
     $this->apiResponse->responseTitle = ucfirst("$item for $reportFile");
     $this->apiResponse->wantIndex = true;
-    $this->apiResponse->succeed(array('data' => $list),
-      array('description' => $description));
+    $this->apiResponse->succeed(array('data' => $list), array('metadata' => array('description' => $description)));
   }
 
   /**
@@ -934,7 +1112,7 @@ class Rest_Controller extends Controller {
         }
         else {
           $path = empty($relativePath) ? $key : "$relativePath/$key";
-          $metadata['href'] = $this->getUrlWithCurrentParams("reports/$path");
+          $metadata['href'] = $this->apiResponse->getUrlWithCurrentParams("reports/$path");
         }
         $response[$key] = $metadata;
       }
@@ -944,7 +1122,7 @@ class Rest_Controller extends Controller {
     $relativePath = '/reports/' . ($relativePath ? "$relativePath/" : '');
     $description = 'A list of reports and report folders stored on the warehouse under ' .
       "the folder <em>$relativePath</em>. $folderReadme";
-    $this->apiResponse->succeed($response, array('description' => $description));
+    $this->apiResponse->succeed($response, array('metadata' => array('description' => $description)));
   }
 
   /**
@@ -972,10 +1150,15 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * Adds additional links to the metadata for a report - including to the report itself, plus to the columns and
+   * params subresources and a help link if standard params are supported.
+   * @param array $metadata Report metadata about to be output.
+   */
   private function addReportLinks(&$metadata) {
-    $metadata['href'] = $this->getUrlWithCurrentParams("reports/$metadata[path].xml");
+    $metadata['href'] = $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml");
     $metadata['params'] = array(
-      'href' => $this->getUrlWithCurrentParams("reports/$metadata[path].xml/params")
+      'href' => $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/params")
     );
     if (!empty($metadata['standard_params'])) {
       // reformat the info that the report supports standard paramenters into REST structure
@@ -986,10 +1169,15 @@ class Rest_Controller extends Controller {
       unset($metadata['standard_params']);
     }
     $metadata['columns'] = array(
-      'href' => $this->getUrlWithCurrentParams("reports/$metadata[path].xml/columns")
+      'href' => $this->apiResponse->getUrlWithCurrentParams("reports/$metadata[path].xml/columns")
     );
   }
 
+  /**
+   * Finds all featured reports in the hierarchy.
+   * @param array $reportHierarchy
+   * @param array $reports Array which will be populated with a list of the reports.
+   */
   private function getFeaturedReports($reportHierarchy, &$reports) {
     foreach ($reportHierarchy as $key => $metadata) {
       if ($metadata['type'] === 'report' && !empty($metadata['featured'])) {
@@ -998,6 +1186,42 @@ class Rest_Controller extends Controller {
       } elseif ($metadata['type'] === 'folder') {
         $this->getFeaturedReports($metadata['content'], $reports);
       }
+    }
+  }
+  
+  /**
+   * Examines the value of a parameter in the request and check's its datatype against the parameter config. Also checks
+   * any paremeter values are within the list of options defined for controlled list parameters. Boolean parameter
+   * values are converted from strings into bool datatypes.
+   * @param string $paramName
+   * @param string $value
+   * @param array $paramDef
+   */
+  private function checkParamDatatype($paramName, &$value, $paramDef) {
+    $datatype = preg_replace('/\[\]$/', '', $paramDef['datatype']);
+    $trimmed = trim($value);
+    if ($datatype === 'integer' && !preg_match('/^\d+$/', $trimmed)) {
+      $this->apiResponse->fail('Bad request', 400, "Invalid integer format for $paramName parameter");
+    } elseif ($datatype === 'date') {
+      if (strpos($value, 'T')===false) {
+        $dt = DateTime::createFromFormat("Y-m-d", $trimmed);
+      } else {
+        $dt = DateTime::createFromFormat("Y-m-d\TH:i:s", $trimmed);
+      }
+      if ($dt === false || array_sum($dt->getLastErrors())) {
+        $this->apiResponse->fail('Bad request', 400, "Invalid date for $paramName parameter");
+      }
+    } elseif ($datatype === 'boolean') {
+      if (!preg_match('/^(true|false)$/', $trimmed)) {
+        $this->apiResponse->fail('Bad request', 400, 
+            "Invalid boolean for $paramName parameter, value should be true or false");
+      }
+      // Set the value to a real bool.
+      $value = $trimmed === 'true';
+    }
+    // If a limited options set available then check the value is in the list.
+    if (!empty($paramDef['options']) && !in_array($trimmed, $paramDef['options'])) {
+      $this->apiResponse->fail('Bad request', 400, "Invalid value for $paramName parameter");
     }
   }
 
@@ -1017,7 +1241,17 @@ class Rest_Controller extends Controller {
         }
       }
     } else {
-      $thisMethod = $info[''];
+      if (!empty($this->resourceConfig[$resourceName][$method]['options']['segments'])) {
+        $segments = $this->uri->segment_array();
+        if (count($segments) === 4 && isset($info[$segments[4]])) {
+          // path indicates a subresource
+          $thisMethod = $info[$segments[4]];
+        }
+      }
+      if (!isset($thisMethod)) {
+        // use the default subresource
+        $thisMethod = $info[''];
+      }
     }
     // Check through the known list of parameters to ensure data formats are correct and required parameters are
     // provided.
@@ -1026,62 +1260,20 @@ class Rest_Controller extends Controller {
         $this->apiResponse->fail('Bad request', 400, "Missing $paramName parameter");
       }
       if (!empty($this->request[$paramName])) {
-        if ($paramDef['datatype']==='integer' && !preg_match('/^\d+$/', trim($this->request[$paramName]))) {
-          $this->apiResponse->fail('Bad request', 400, "Invalid format for $paramName parameter");
-        }
-        if ($paramDef['datatype']==='date') {
-          if (strpos($this->request[$paramName], 'T')===false)
-            $dt = DateTime::createFromFormat("Y-m-d", trim($this->request[$paramName]));
-          else
-            $dt = DateTime::createFromFormat("Y-m-d\TH:i:s", trim($this->request[$paramName]));
-          if ($dt === false || array_sum($dt->getLastErrors()))
-            $this->apiResponse->fail('Bad request', 400, "Invalid date for $paramName parameter");
+        $datatype = $paramDef['datatype'];
+        // If an array datatype, attempt to decode the JSON array parameter. If not JSON, convert parameter value to the
+        // only element in an array.
+        if (preg_match('/\[\]$/', $paramDef['datatype'])) {
+          $decoded = json_decode($this->request[$paramName]);
+          $this->request[$paramName] = $decoded && is_array($decoded) ? $decoded : [$this->request[$paramName]];
+          foreach ($this->request[$paramName] as &$value) {
+            $this->checkParamDatatype($paramName, $value, $paramDef);
+          }
+        } else {
+          $this->checkParamDatatype($paramName, $this->request[$paramName], $paramDef);
         }
       }
     }
-  }
-
-  /**
-   * Utility method for filtering empty values from an array.
-   * @param $value
-   * @return bool
-   */
-  private function notEmpty($value) {
-    return !empty($value);
-  }
-
-  /**
-   * Adds metadata such as an href back to the resource to any resource object.
-   * @param array $item The resource object as an array which will be updated with the metadata
-   * @param string $entity The entity name used to access the resouce, e.g. taxon-observations
-   */
-  private function addItemMetadata(&$item, $entity) {
-    $item['href'] = "$entity/$item[id]";
-    $item['href'] = $this->getUrlWithCurrentParams($item['href']);
-    // strip nulls and empty strings
-    $item = array_filter($item, array($this, 'notEmpty'));
-  }
-
-  /**
-   * Takes a URL and adds the current metadata parameters from the request and
-   * adds them to the URL.
-   */
-  private function getUrlWithCurrentParams($url) {
-    $url = url::base() . "index.php/services/rest/$url";
-    $query = array();
-    $params = $this->request;
-    if (!empty($params['proj_id']))
-      $query['proj_id'] = $params['proj_id'];
-    if (!empty($params['format']))
-      $query['format'] = $params['format'];
-    if (!empty($params['user']))
-      $query['user'] = $params['user'];
-    if (!empty($params['secret']))
-      $query['secret'] = $params['secret'];
-    if (!empty($query))
-      return $url . '?' . http_build_query($query);
-    else
-      return $url;
   }
 
   /**
@@ -1089,21 +1281,16 @@ class Rest_Controller extends Controller {
    * as the result from an API call. Adds pagination information as well as hrefs for contained objects.
    *
    * @param array $list Array of records from the database
-   * @param string $entity Resource name that is being accessed.
    * @return array Restructured version of the input list, with pagination and hrefs added.
    */
-  private function listResponseStructure($list, $entity) {
-    foreach ($list as &$item) {
-      $this->addItemMetadata($item, $entity);
-    }
+  private function listResponseStructure($list) {
     $pagination = array(
       'self'=>$this->generateLink(array('page'=>$this->request['page'])),
     );
     if ($this->request['page']>1)
       $pagination['previous'] = $this->generateLink(array('page'=>$this->request['page']-1));
-    // list needs to grab 1 extra, then lop it off and set a flag to indicate another page required
-    if (count($list)>$this->request['page_size']) {
-      array_pop($list);
+    // set a flag to indicate another page required
+    if (count($list) > $this->request['page_size']) {
       $pagination['next'] = $this->generateLink(array('page'=>$this->request['page']+1));
     }
     return array(
@@ -1112,6 +1299,9 @@ class Rest_Controller extends Controller {
     );
   }
 
+  /**
+   * Loads a single instance of the report engine.
+   */
   private function loadReportEngine() {
     // Should also return an object to iterate rather than loading the full array
     if (!isset($this->reportEngine)) {
@@ -1204,9 +1394,11 @@ class Rest_Controller extends Controller {
       array('limit' => REST_API_DEFAULT_PAGE_SIZE),
       $params
     );
+    // Get the output, setting the option to load a pg result object rather than populated array unless we are going to
+    // cache the result in which case we need it all.
+    $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml',
+      $params, !empty($this->resourceOptions['cached']));
     // Include count query results if not already known from a previous request
-    // @todo Don't run report query if count or limit are zero.
-    $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
     $output['count'] =  empty($_GET['known_count']) ? $this->reportEngine->record_count() : $_GET['known_count'];
     return $output;
   }
@@ -1223,6 +1415,11 @@ class Rest_Controller extends Controller {
     return url::base() . 'index.php/services/rest/' . $this->resourceName . '?' . http_build_query($params);
   }
 
+  /**
+   * Returns the filter definition for a filter associated with a given project ID.
+   * @param string $id Project ID.
+   * @return array Filter definition.
+   */
   private function loadFilterForProject($id) {
     if (!isset($this->projects[$id]))
       $this->apiResponse->fail('Bad request', 400, 'Invalid project requested');
@@ -1239,6 +1436,12 @@ class Rest_Controller extends Controller {
     }
   }
 
+  /**
+   * If a filter ID is being passed in the URL to override the default limitation when authenticating as a user of only
+   * being able to see your own records, checks that the ID in the query params points to a filter belonging to the user
+   * which grants them additional permissions and if so, returns the definition of the filter.
+   * @return array Filter definition or empty array.
+   */
   private function getPermissionsFilterDefinition() {
     $filters = $this->db->select('definition')
       ->from('filters')
@@ -1364,7 +1567,7 @@ class Rest_Controller extends Controller {
             $this->clientWebsiteId = $this->projects[$_REQUEST['proj_id']]['website_id'];
           // Apart from the projects resource, other end-points will need a proj_id
           // if using client system based authorisation.
-          if ($this->resourceName !== 'projects' &&
+          if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
               (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
             $this->apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
           }
@@ -1471,9 +1674,9 @@ class Rest_Controller extends Controller {
     }
     $this->clientSystemId = $clientSystemId;
     $this->projects = $config[$clientSystemId]['projects'];
-    // Apart from the projects resource, other end-points will need a proj_id
-    // if using client system based authorisation.
-    if ($this->resourceName !== 'projects' &&
+    // Taxon observations and annotations resource end-points will need a proj_id if using client system based 
+    // authorisation.
+    if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
         (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {
       $this->apiResponse->fail('Bad request', 400, 'Project ID missing or invalid.');
     }

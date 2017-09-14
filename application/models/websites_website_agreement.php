@@ -56,6 +56,8 @@ class Websites_Website_Agreement_Model extends ORM
     $array->add_rules('receive_for_data_flow', 'required');
     $array->add_rules('provide_for_moderation', 'required');
     $array->add_rules('receive_for_moderation', 'required');
+    $array->add_rules('provide_for_editing', 'required');
+    $array->add_rules('receive_for_editing', 'required');
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
       'deleted'

@@ -9,9 +9,11 @@
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  LEFT JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
+    and canEdit.to_website_id in (#website_ids#) and canEdit.provide_for_editing=true
   #agreements_join#
   #joins#
-  WHERE #sharing_filter# 
+  WHERE #sharing_filter#
   #idlist#
   </query>
   <params>
@@ -19,7 +21,10 @@
            description='Comma separated list of sample attribute IDs to include as columns in the report' />
     <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
            description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
-    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name='default_input_form' display='Default input form' default=''
+           description='Input form path to use when no other available. Can be used to generate the path in report_grid action links.' />
+    <param name="force_default_input_form" display="Force default input form" default="0"
+           description="Force the defaault input form to be used instead of the one specified by the record" />
     <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
       <where>st_intersects(o.public_geom, st_geomfromtext('#bounds#', 900913))</where>
     </param>
@@ -35,7 +40,7 @@
   </params>
   <columns>
     <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
-    <column name='source' on_demand="true" datatype="text" 
+    <column name='source' on_demand="true" datatype="text"
         sql="snf.website_title || ' | ' || case when substring(o.survey_title from 1 for length(snf.website_title)) = snf.website_title then trim(substring(o.survey_title from length(snf.website_title)+1)) else o.survey_title end" />
     <column name='source_id' on_demand="true" datatype="text" sql="o.website_id::varchar || '.' || o.survey_id::varchar" />
     <column name='sample_id' sql='o.sample_id' on_demand="true" datatype="integer" />
@@ -43,7 +48,7 @@
     <column name='common' sql="cttl.default_common_name" on_demand="true" datatype="text" />
     <column name='taxon_group' sql='cttl.taxon_group' on_demand="true" datatype="text" />
     <column name='taxon_group_id' sql='cttl.taxon_group_id' on_demand="true" datatype="integer" />
-    <column name='taxa_taxon_list_id' sql='o.taxa_taxon_list_id' on_demand="true" datatype="integer" />    
+    <column name='taxa_taxon_list_id' sql='o.taxa_taxon_list_id' on_demand="true" datatype="integer" />
     <column name='location_name' sql='o.location_name' on_demand="true" datatype="text" />
     <column name='entered_sref' sql="coalesce(snf.public_entered_sref, regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g'), onf.output_sref)" on_demand="true" datatype="text" />
     <column name='date_start' sql='o.date_start' on_demand="true" visible='false' />
@@ -52,9 +57,13 @@
     <column name='date' on_demand="true" datatype="date" />
     <column name='cache_created_on' sql='o.created_on' on_demand="true" datatype="date" />
     <column name='cache_updated_on' sql='o.updated_on' on_demand="true" />
-    <column name='recorder' on_demand="true" sql="CASE WHEN LENGTH(snf.recorders)>30 THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name='recorder' on_demand="true" sql="CASE WHEN (TRIM(snf.recorders) !~ ' ' AND LENGTH(snf.recorders)>30) THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
-    <column name='input_form' visible="false" sql="case when o.input_form is null then '#default_input_form#' else o.input_form end" on_demand="true" datatype="text" />
+    <column name='input_form' visible="false" on_demand="true" sql="case
+    when canEdit.id is null then null
+    when o.input_form is null or o.website_id not in (#website_ids#) or #force_default_input_form#=1 then '#default_input_form#'
+    else o.input_form
+end" datatype="text" />
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
     <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
     <column name="geom" visible="false" mappable="true" sql="st_astext(#sample_geom_field#)" in_count="true" />

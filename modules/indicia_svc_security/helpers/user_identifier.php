@@ -67,7 +67,7 @@ class user_identifier {
    * If the user has opted out of allowing their records to be shared with other 
    * websites, the sharing tasks which they have opted out of should be passed 
    * as a comma separated list here. Valid sharing tasks are: reporting, 
-   * peer_review, verification, data_flow, moderation. They will then be stored 
+   * peer_review, verification, data_flow, moderation, editing. They will then be stored 
    * against the user account. </li>
    * </ul>
    * @return JSON JSON object containing the following properties:
@@ -472,7 +472,7 @@ QRY
       // want to share their records with other sites for
       $preventShares = explode(',', $_REQUEST['shares_to_prevent']);
       // build an array of values to post to the db
-      $tasks = array('reporting', 'peer_review', 'verification', 'data_flow', 'moderation');
+      $tasks = array('reporting', 'peer_review', 'verification', 'data_flow', 'moderation', 'editing');
       $values=array();
       foreach ($tasks as $task) {
         $values["allow_share_for_$task"]=(in_array($task, $preventShares) ? 'f' : 't');

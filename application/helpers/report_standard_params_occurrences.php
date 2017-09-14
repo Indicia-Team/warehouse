@@ -214,13 +214,14 @@ class report_standard_params_occurrences {
       'quality' => array('datatype'=>'lookup', 'display'=>'Quality',
         'description'=>'Minimum quality of records to include',
         'lookup_values'=>'V1:Accepted as correct records only,V:Accepted records only,-3:Reviewer agreed at least plausible,' .
-          'C:Recorder was certain,L:Recorder thought the record was at least likely,' .
+          'C3:Plausible records only,C:Recorder was certain,L:Recorder thought the record was at least likely,' .
           'P:Not reviewed,T:Not reviewed but trusted recorder,!D:Exclude queried or not accepted records,!R:Exclude not accepted records,D:Queried records only,'.
           'A:Answered records,R:Not accepted records only,R4:Not accepted because unable to verify records only,DR:Queried or not accepted records,all:All records',
         'wheres' => array(
           array('value'=>'V1', 'operator'=>'equal', 'sql'=>"o.record_status='V' and o.record_substatus=1"),
           array('value'=>'V', 'operator'=>'equal', 'sql'=>"o.record_status='V'"),
           array('value'=>'-3', 'operator'=>'equal', 'sql'=>"(o.record_status='V' or o.record_substatus<=3)"),
+          array('value'=>'C3', 'operator'=>'equal', 'sql'=>"(o.record_status='C' and o.record_substatus=3)"),
           array('value'=>'C', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty='C'"),
           array('value'=>'L', 'operator'=>'equal', 'sql'=>"o.record_status<>'R' and o.certainty in ('C','L')"),
           array('value'=>'P', 'operator'=>'equal', 'sql'=>"o.record_status='C' and o.record_substatus is null and (o.query<>'Q' or o.query is null)"),
@@ -309,11 +310,8 @@ class report_standard_params_occurrences {
           array('value'=>'', 'operator'=>'', 'sql'=>"o.created_by_id=#created_by_id#")
         )
       ),
-      'group_id' => array('datatype'=>'integer', 'display'=>"ID of a group to filter to the members of",
-        'description'=>'Specify the ID of a recording group. This filters the report to the members of the group.',
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"join groups_users #alias:gu# on #alias:gu#.user_id=o.created_by_id and #alias:gu#.group_id=#group_id# and #alias:gu#.deleted=false")
-        ),
+      'group_id' => array('datatype'=>'integer', 'display'=>"ID of a group to filter to records in",
+        'description'=>'Specify the ID of a recording group. This filters the report to the records added to this group.',
         'wheres' => array(
           array('value'=>'', 'operator'=>'', 'sql'=>"o.group_id=#group_id#")
         )
@@ -487,11 +485,8 @@ class report_standard_params_occurrences {
         )
       ),
       'taxon_rank_sort_order' => array(
-        'joins' => array(
-          array('value'=>'', 'operator'=>'', 'standard_join'=>'prefcttl')
-        ),
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 'sql'=>"prefcttl.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
+          array('value'=>'', 'operator'=>'', 'sql'=>"o.taxon_rank_sort_order #taxon_rank_sort_order_op# #taxon_rank_sort_order#")
         )
       ),
       'confidential' => array(

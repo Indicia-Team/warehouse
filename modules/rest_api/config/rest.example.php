@@ -58,12 +58,12 @@ $config['authentication_methods'] = array(
       'reports' => array()
     )
   ),
-  'hmacWebsite' => array('allow_http', 'resource_options' => array(
+  'hmacWebsite' => array('allow_http',
     'resource_options' => array(
       // featured reports with cached summary data only - highly restricted
       'reports' => array('featured' => true, 'summary' => true, 'cached' => true)
     )
-  )),
+  ),
   'directClient' => array(
     'resource_options' => array(
       // grants full access to all reports. Client configs can override this.

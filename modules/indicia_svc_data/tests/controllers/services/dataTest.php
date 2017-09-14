@@ -22,15 +22,16 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->auth['write_tokens']['persist_auth']=true;
   }
   
-  private function getResponse($url) {
+  private function getResponse($url, $decodeJson = true) {
     Kohana::log('debug', "Making request to $url");
     $session = curl_init();
     curl_setopt ($session, CURLOPT_URL, $url);
     curl_setopt($session, CURLOPT_HEADER, false);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    // valid json response will decode    
     $response = curl_exec($session);
-    $response = json_decode($response, true);
+    // valid json response will decode
+    if ($decodeJson)
+      $response = json_decode($response, true);
     Kohana::log('debug', "Received response " . print_r($response, TRUE));
     return $response;
   }
@@ -116,6 +117,56 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     for ($i=0; $i<50; $i++) {
       self::testRequestDataGetRecordByIndirectId();
     }
+  }
+  
+  public function testRequestDataTaxaSearch() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearch");
+    $params = array(
+      'mode' => 'json',
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce'],
+      'q'=>'test',
+      'taxon_list_id'=>1
+    );
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearch returned error. See log for details");
+    $this->assertCount(2, $response, 'Data services get JSON for taxa_search did not return correct record count.');
+    $this->assertEquals('Test taxon', ($response[0]['taxon']), 'Data services get JSON for taxa_search did not return correct record.');
+  }
+  
+  public function testRequestDataTaxaSearchTaxonGroup() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearchTaxonGroup");
+    $params = array(
+      'mode' => 'json',
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce'],
+      'q'=>'test',
+      'taxon_list_id'=>1,
+      'taxon_group'=>json_encode(['Test taxon group'])
+    );
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
+    $this->assertCount(2, $response, 'Data services get JSON for taxa_search did not return correct record count.');
+    // test filtering against an incorrect group
+    $params['taxon_group'] = 'Wrong group';
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
+    $this->assertCount(0, $response, 'Data services get JSON for taxa_search with unknown group did not return zero record count.');
+    // test filtering against an incorrect group, as above but using JSON array
+    $params['taxon_group'] = json_encode(['Wrong group']);
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
+    $this->assertCount(0, $response, 'Data services get JSON for taxa_search with unknown group did not return zero record count.');
+    // test filtering against an incorrect group, as above but using JSON array to pass a bad group and a good group
+    $params['taxon_group'] = json_encode(['Wrong group', 'Test taxon group']);
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
+    $this->assertCount(2, $response, 'Data services get JSON for taxa_search with group did not return correct record count.');
   }
 
   public function testSave() {
@@ -300,5 +351,46 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals($filter->sharing, $filterData['filter:sharing']);
     $this->assertEquals($filter->defines_permissions, 't');
     $this->assertEquals($filter->website_id, $filterData['filter:website_id']);
+  }
+
+  private function getSampleAsCsv($id, $regexExpected) {
+    $params = array(
+      'mode' => 'csv',
+      'view' => 'detail',
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce']
+    );
+    $url = data_entry_helper::$base_url . "index.php/services/data/sample/$id?" .   http_build_query($params, '', '&');
+    $response = self::getResponse($url, false);
+    $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByDirectId returned error. See log for details");
+    // spoof the CSV data as a file, so we can use fgetcsv which understands line breaks in content
+    $fp = fopen("php://temp", 'r+');
+    // Fire regexpressions at the raw CSV data so we can check for things like missing escaping which
+    // should really be present by fgetcsv might tolerate
+    foreach ($regexExpected as $regex)
+      $this->assertRegExp($regex, $response);
+    fputs($fp, $response);
+    rewind($fp);
+    $data = [];
+    while ( ($row = fgetcsv($fp) ) !== FALSE ) {
+      $data[] = $row;
+    }
+    $this->assertCount(2, $data, 'Data services get CSV for direct ID did not return 1 record.');
+    // combine headers and data into an assoc array response
+    return array_combine($data[0], $data[1]);
+  }
+
+  public function testRequestDataCsvResponseDoubleQuote() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataCsvResponseDoubleQuote");
+    $sample = $this->getSampleAsCsv(1, array('/"Sample for unit testing/'));
+    $this->assertEquals('Sample for unit testing with a " double quote', $sample['comment'],
+      'Data services CSV format response not encoded correctly for quotes.');
+  }
+
+  public function testRequestDataCsvResponseLineFeed() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataCsvResponseLineFeed");
+    $sample = $this->getSampleAsCsv(2, array('/"Sample for unit testing/'));
+    $this->assertEquals("Sample for unit testing with a \nline break", $sample['comment'],
+      'Data services CSV format response not encoded correctly for new lines.');
   }
 }

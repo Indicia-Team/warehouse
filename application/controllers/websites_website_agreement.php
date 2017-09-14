@@ -85,7 +85,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
     if ($this->auth->logged_in('CoreAdmin'))
       return true;
     else {
-      if (!is_null($this->auth_filter))
+      if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
       {
         $wwa = new Websites_Website_Agreement_Model($id);
         return (in_array($wwa->website_id, $this->auth_filter['values']));
