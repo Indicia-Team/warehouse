@@ -9,7 +9,7 @@
   SELECT #columns#
   FROM cache_occurrences o
   JOIN websites w on w.id=o.website_id
-  JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
+  LEFT JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
     and canEdit.to_website_id in (#website_ids#) and canEdit.provide_for_editing=true
   #agreements_join#
   #joins#
@@ -86,7 +86,7 @@
     <column name='belongs_to_user' display='Belongs to User' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#currentUser#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
     <column name='images' display='Images' sql='o.images' img='true' />
     <column name='input_form' visible="false" sql="case
-    when canEdit is null then null
+    when canEdit.id is null then null
     when o.input_form is null or o.website_id not in (#website_ids#) or #force_default_input_form#=1 then '#default_input_form#'
     else o.input_form
 end" datatype="text" />

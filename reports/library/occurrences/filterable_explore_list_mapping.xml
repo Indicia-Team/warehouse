@@ -9,7 +9,7 @@
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-  JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
+  LEFT JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
     and canEdit.to_website_id in (#website_ids#) and canEdit.provide_for_editing=true
   #agreements_join#
   #joins#
@@ -60,7 +60,7 @@
     <column name='recorder' on_demand="true" sql="CASE WHEN (TRIM(snf.recorders) !~ ' ' AND LENGTH(snf.recorders)>30) THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' on_demand="true" datatype="integer" />
     <column name='input_form' visible="false" on_demand="true" sql="case
-    when canEdit is null then null
+    when canEdit.id is null then null
     when o.input_form is null or o.website_id not in (#website_ids#) or #force_default_input_form#=1 then '#default_input_form#'
     else o.input_form
 end" datatype="text" />
