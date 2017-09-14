@@ -1,0 +1,84 @@
+<report
+    title="Occurrence metadata (standard filters)"
+    description="Some metadata about each occurrence."
+    featured="true"
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="occurrences" count_field="o.*">
+  SELECT #columns#
+  FROM cache_occurrences_functional o
+  JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+  JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  JOIN samples s on s.id=snf.id and s.deleted=false
+  LEFT JOIN samples sp on sp.id=s.parent_id
+  LEFT JOIN cache_termlists_terms sm on sm.id=s.sample_method_id
+  LEFT JOIN cache_termlists_terms smp on smp.id=sp.sample_method_id
+  LEFT JOIN locations l on l.id=o.location_id AND l.deleted=false
+  LEFT JOIN locations lp on lp.id=l.parent_id AND lp.deleted=false
+  LEFT JOIN cache_termlists_terms lt on lt.id=l.location_type_id
+  LEFT JOIN cache_termlists_terms ltp on ltp.id=lp.location_type_id
+  JOIN users uc on uc.id=o.created_by_id
+  JOIN people pc on pc.id=uc.person_id
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter#
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="smpattrs" display="Sample attribute list" datatype="smpattrs" default=""
+           description="Comma separated list of sample attribute IDs to include as columns in the report" />
+    <param name="occattrs" display="Occurrence attribute list" datatype="occattrs" default=""
+           description="Comma separated list of occurrence attribute IDs to include as columns in the report" />
+  </params>
+  <columns>
+    <column name="occurrence_id" display="ID" sql="o.id" datatype="integer"
+        template="&lt;span class='status-icon status-{record_status} release-{release_status} substatus-{record_substatus} query-{query} certainty-{certainty}' title='{status_hint}'&gt;&lt;/span&gt;&lt;span class='record-id'&gt;{occurrence_id}&lt;/span&gt;" />
+    <column name="source" display="Source" datatype="text"
+        sql="snf.website_title
+        || ' | ' || case when substring(snf.survey_title from 1 for length(snf.website_title)) = w.title then trim(substring(snf.survey_title from length(snf.website_title)+1)) else snf.survey_title end
+        || coalesce(' | ' || snf.group_title, '')" />
+    <column name="website_title" display="Website" datatype="text" sql="snf.website_title" />
+    <column name="survey_title" display="Survey dataset" datatype="text" sql="snf.survey_title" />
+    <column name="group_title" display="Group" datatype="text" sql="snf.group_title" />
+    <column name="source_id" display="Source ID" datatype="text"
+            sql="o.website_id::varchar || '|' || o.survey_id::varchar"
+            template="&lt;span title=&quot;{source}&quot;&gt;{source_id}&lt;/span&gt;" />
+    <column name="sample_id"  sql="o.sample_id" datatype="integer" />
+    <column name="location_name" display="Site name" sql="o.location_name" datatype="text" />
+    <column name="created_on" sql="to_char(o.created_on,'DD/MM/YYYY')" display="Submitted date" datatype="date" orderby="cache_created_on_raw" />
+    <column name="updated_on" sql="to_char(o.updated_on,'DD/MM/YYYY HH24:MI')" display="Last updated" orderby="cache_updated_on_raw" />
+    <column name="created_by_id"  sql="o.created_by_id" datatype="integer" />
+    <column name="created_by"  sql="pc.surname || coalesce(', ' || pc.first_name, '')" datatype="integer" />
+    <column name="recorder" display="Recorder" sql="CASE WHEN (TRIM(snf.recorders) !~ ' ' AND LENGTH(snf.recorders)>30) THEN 'Recorder' ELSE snf.recorders END" datatype="text" />
+    <column name="zero_abundance" display="Zero abundance" sql="o.zero_abundance" />
+    <column name="record_status" display="State" sql="o.record_status" />
+    <column name="record_substatus" display="State" sql="o.record_substatus" />
+    <column name="release_status" display="State" sql="o.release_status" />
+    <column name="pass"  sql="CASE WHEN o.data_cleaner_result='t' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
+    <column name="fails" display="Auto check" template="{pass}{fails}"
+        sql="case when o.data_cleaner_result='f' then
+            replace(replace(replace(replace(onf.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;')
+        end"
+    />
+    <column name="query"  sql="o.query" />
+    <column name="status_hint"
+            sql="case o.record_status when 'V' then 'Accepted' when 'R' then 'Not accepted' when 'T' then 'Test'
+              when 'C' then case when record_substatus=3 then 'Plausible' when o.certainty='C' then 'Recorder considered this certain' when o.certainty='L' then 'Recorder considered this likely' when o.certainty='U' then 'Recorder considered this uncertain' else 'Not reviewed' end
+            end ||
+            case o.record_substatus when 1 then ' as correct' when 2 then ' as considered correct' when 4 then ' as unable to verify' when 5 then ' as incorrect' else '' end ||
+            case o.query when 'A' then ', query raised and answered' when 'Q' then ', query raised' else '' end" />
+    <column name="sample_method" display="Sample method" datatype="text" sql="sm.term" />
+    <column name="sample_method_parent" display="Parent sample method" datatype="text" sql="smp.term" />
+    <column name="sample_method_formatted" display="Formatted sample method" datatype="text"
+        sql="coalesce(smp.term || '&gt; ') || sm.term" />
+    <column name="location_type" display="Location type" datatype="text" sql="lt.term" />
+    <column name="location_type_parent" display="Parent location type" datatype="text" sql="ltp.term" />
+    <column name="location_formatted" display="Formatted location" datatype="text"
+        sql="coalesce(lp.name || coalesce(' | ' || lp.code, '') || coalesce(' (' || ltp.term || ')', '') || '&gt; ', '') ||
+        coalesce(l.name || coalesce(' | ' || l.code, '') || coalesce(' (' || lt.term || ')', ''), '')" />
+  </columns>
+</report>
