@@ -28,7 +28,7 @@ defined('SYSPATH') or die('No direct script access.');
  * then a full URL will be used, eg: http://localhost/kohana/. If it only includes
  * the path, and a site_protocol is specified, the domain will be auto-detected.
  */
-$config['site_domain'] = 'localhost/';
+$config['site_domain'] = '127.0.0.1/';
 
 /**
  * Force a default protocol to be used by the site. If no site_protocol is
@@ -130,11 +130,11 @@ $config['modules'] = array
   MODPATH.'indicia_setup',         // Setup procedures
 
   MODPATH.'sref_osgb',             // OSGB grid notation
-  MODPATH.'sref_osie',             // Irish grid notation (TM75)   
+  MODPATH.'sref_osie',             // Irish grid notation (TM75)
   MODPATH.'sref_channel_islands',  // Jersey and Guernsey grid notations
   MODPATH.'sref_utm',              // UTM grid notation
   MODPATH.'sref_mtb',              // German grid notation (MTBQQQ)
-    
+
   MODPATH.'data_cleaner',          // automatic record checks
 	MODPATH.'data_cleaner_period_within_year',
 

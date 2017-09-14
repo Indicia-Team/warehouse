@@ -41,6 +41,12 @@ class Indicia_Controller extends Template_Controller {
    * @var array $page_breadcrumbs
    */
   protected $page_breadcrumbs = array();
+  
+  /**
+   * List of person IDs the user has edit rights to.
+   * @var array
+   */
+  private $allowedPersonIds;
 
   public function __construct()
   {
@@ -616,6 +622,54 @@ class Indicia_Controller extends Template_Controller {
       }
       return $ids;
     }
+  }
+  
+  /**
+   * Retrieves a list of person_ids that the user is allowed to edit (i.e. the ones
+   * which belong to websites they administer). Returns true if core admin.
+   * return Bool|array
+   */
+  protected function getAllowedPersonIds() {
+    // cache this list in a property.
+    if (!isset($this->allowedPersonIds)) {
+      $websites = $this->get_allowed_website_id_list('admin');
+      if (!is_null($websites)) {
+        // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
+        // you created the user
+        $this->allowedPersonIds = array();
+        $list = $this->db
+          ->select('people.id')
+          ->from('people')
+          ->join('users', 'users.person_id', 'people.id')
+          ->join('users_websites', 'users_websites.user_id', 'users.id')
+          ->where('users_websites.site_role_id IS NOT ', NULL)
+          ->where('users.core_role_id IS ', NULL)
+          ->where('people.deleted', 'false')
+          ->in('users_websites.website_id', $websites)
+          ->get();
+        foreach ($list as $item) {
+          $this->allowedPersonIds[] = $item->id;
+        }
+        // Also let you edit users that you created
+        $list = $this->db
+          ->select('people.id')
+          ->from('people')
+          ->join('users', 'users.person_id', 'people.id', 'LEFT')
+          ->where('people.created_by_id', $_SESSION['auth_user']->id)
+          ->where('users.core_role_id IS ', NULL)
+          ->where('people.deleted', 'false')
+          ->get();
+        foreach ($list as $item) {
+          $this->allowedPersonIds[] = $item->id;
+        }
+        // Remove duplicates
+        $this->allowedPersonIds = array_unique($this->allowedPersonIds, SORT_NUMERIC);
+      } else {
+        // core admin so allow all
+        return $this->allowedPersonIds = true;
+      }
+    }
+    return $this->allowedPersonIds;
   }
   
   /**

@@ -47,6 +47,9 @@
       'annotations' => 'Retrieve a list of annotations available to this client ID.',
       'annotations/{annotation ID}' => 'Retrieve the details of a single annotation where ' .
           '{annotation ID} is replaced by the observation ID.',
+      'taxa' => 'Base resource for taxon interactions. Not currently implemented.',
+      'taxa/search' => 'Search resource for taxa. Perform full text searches against the taxonomy information held ' .
+          'in the warehouse.',
       'reports' => 'Retrieves the contents of the top level of the reports directory on ' .
           'the warehouse. Can retrieve the output for a subfolder in the directory or ' .
           'a specific report by appending the path to the resource URL.',
@@ -86,6 +89,37 @@
         'Format yyyy-mm-dd.',
       'edited_date_to' => 'Restricts the annotations to those created or edited on or before the date provided. ' .
         'Format yyyy-mm-dd.'
+    ),
+    'taxa' => array(
+      'taxon_list_id' => 'ID or list o IDs of taxon list to search against.',
+      'searchQuery' => 'Search text which will be used to look up species and taxon names.',
+      'taxon_group_id' => 'ID or array of IDs of taxon groups to limit the search to.',
+      'taxon_group' => 'Taxon group name or array of taxon group names to limit the search to, an alternative to ' .
+          'using taxon_group_id.',
+      'taxon_meaning_id' => 'ID or array of IDs of taxon meanings to limit the search to.',
+      'taxa_taxon_list_id' => 'ID or array of IDs of taxa taxon list records to limit the search to',
+      'preferred_taxa_taxon_list_id' => 'ID or array of IDs of taxa taxon list records to limit the search to, using ' .
+          'the preferred name\'s ID to filter against, therefore including synonyms and common names in the search.',
+      'preferred_taxon' => 'Preferred taxon name or array of preferred names to limit the search to (e.g. limit to a ' .
+          'list of species names). Exact matches required.',
+      'external_key' => 'External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).',
+      'parent_id' => 'ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching ' .
+          'the subspecies. May be set to null to force top level species only.',
+      'language' => 'Languages of names to include in search results. Pass a 3 character iso code for the ' .
+          'language, e.g. "lat" for Latin names or "eng" for English names. Alternatively set this to "common" to ' .
+          'filter for all common names (i.e. non-Latin names).',
+      'preferred' => 'Set to true to limit to preferred names, false to limit to non-preferred names.',
+      'commonNames' => 'Set to true to limit to common names, false to exclude common names.',
+      'synonyms' => 'Set to true to limit to syonyms, false to exclude synonyms.',
+      'abbreviations' => 'Set to false to disable searching 2+3 character species name abbreviations.',
+      'marine_flag' => 'Set to true for only marine associated species, false to exclude marine-associated species.',
+      'searchAuthors' => 'Set to true to include author strings in the searched text.',  
+      'wholeWords' => 'Set to true to only search whole words in the full text index, otherwise searches the start ' .
+          'of words.',
+      'limit' => 'Limit the number of records in the response.',
+      'offset' => 'Offset from the start of the dataset that the response will start.',
+      'include' => 'Defines which parts of the response structure to include. If the count and paging data are not ' .
+          'required then exclude them for better performance.',
     ),
     'reports' => array(
       'featured_folder_description' => 'Provides a list of well maintained reports which are ' .

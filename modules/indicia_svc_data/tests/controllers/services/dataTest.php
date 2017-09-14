@@ -118,6 +118,56 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       self::testRequestDataGetRecordByIndirectId();
     }
   }
+  
+  public function testRequestDataTaxaSearch() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearch");
+    $params = array(
+      'mode' => 'json',
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce'],
+      'q'=>'test',
+      'taxon_list_id'=>1
+    );
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearch returned error. See log for details");
+    $this->assertCount(2, $response, 'Data services get JSON for taxa_search did not return correct record count.');
+    $this->assertEquals('Test taxon', ($response[0]['taxon']), 'Data services get JSON for taxa_search did not return correct record.');
+  }
+  
+  public function testRequestDataTaxaSearchTaxonGroup() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearchTaxonGroup");
+    $params = array(
+      'mode' => 'json',
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce'],
+      'q'=>'test',
+      'taxon_list_id'=>1,
+      'taxon_group'=>json_encode(['Test taxon group'])
+    );
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
+    $this->assertCount(2, $response, 'Data services get JSON for taxa_search did not return correct record count.');
+    // test filtering against an incorrect group
+    $params['taxon_group'] = 'Wrong group';
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
+    $this->assertCount(0, $response, 'Data services get JSON for taxa_search with unknown group did not return zero record count.');
+    // test filtering against an incorrect group, as above but using JSON array
+    $params['taxon_group'] = json_encode(['Wrong group']);
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
+    $this->assertCount(0, $response, 'Data services get JSON for taxa_search with unknown group did not return zero record count.');
+    // test filtering against an incorrect group, as above but using JSON array to pass a bad group and a good group
+    $params['taxon_group'] = json_encode(['Wrong group', 'Test taxon group']);
+    $url = data_entry_helper::$base_url.'index.php/services/data/taxa_search?'.http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
+    $this->assertCount(2, $response, 'Data services get JSON for taxa_search with group did not return correct record count.');
+  }
 
   public function testSave() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testSave");

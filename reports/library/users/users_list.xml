@@ -2,13 +2,13 @@
 <report title="Users list" description="A basic list of user accounts.">
   <query website_filter_field="uw.website_id">
     SELECT #columns#
-    FROM users u
-    JOIN people p on u.person_id=p.id
+    FROM people p
+    LEFT JOIN users u ON u.person_id=p.id AND u.deleted=false
     LEFT JOIN users_websites uw on u.id=uw.user_id
     LEFT JOIN websites w on w.id=uw.website_id and w.deleted=false
     LEFT JOIN core_roles cr ON cr.id=u.core_role_id AND cr.deleted=false
     #joins#
-    WHERE u.deleted = false
+    WHERE p.deleted = false
     AND #website_filter#
   </query>
   <orderbys>
@@ -23,7 +23,10 @@
         and uwp.user_id=#admin_user_id#
         and coalesce(uwp.site_role_id, 4) &lt; 3 -- site editor or admin
       </join>
-      <where>(uwp.id IS NOT NULL or (u.created_by_id=#admin_user_id# and u.core_role_id IS NULL))</where>
+      <where>((p.created_by_id=#admin_user_id# AND u.id IS NULL) OR uwp.id IS NOT NULL or (u.created_by_id=#admin_user_id# and u.core_role_id IS NULL))</where>
+    </param>
+    <param name="include_unlinked_people" display="Include unlinked people" datatype="boolean" default="0" >
+      <where value="0" operator="equal">u.id IS NOT NULL</where>
     </param>
   </params>
   <columns>

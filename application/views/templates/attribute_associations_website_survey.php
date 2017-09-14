@@ -1,7 +1,7 @@
 <fieldset><legend><?php echo $other_data['name']; ?> Attribute
 Website/Survey Allocation</legend>
 <?php
-if (!is_null($this->auth_filter)) {
+if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
   $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
   echo '<input type="hidden" name="restricted-to-websites" value="'.implode(',', $this->auth_filter['values']).'"/>';
 } else

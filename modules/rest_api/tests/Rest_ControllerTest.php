@@ -143,7 +143,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         "but response still OK. Http response $response[httpCode].");
 
     // Now try a valid request with the access token
-    $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
+    $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01', 'proj_id' => 'BRC1'));
     $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to taxon-observations failed.');
 
     // Now try a valid request with the access token for the reports endpoint
@@ -320,6 +320,39 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
       // only test a single project
       break;
     }
+  }
+  
+  public function testTaxaSearch_get() {
+    Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxaSearch_get");
+    
+    $response = $this->callService('taxa/search');
+    $this->assertEquals(400, $response['httpCode'],
+          'Requesting taxa/search without search_term should be a bad request');
+    $response = $this->callService('taxa/search', array(
+      'searchQuery' => 'test'
+    ));
+    $this->assertEquals(400, $response['httpCode'],
+          'Requesting taxa/search without taxon_list_id should be a bad request');
+    $response = $this->callService('taxa/search', array(
+      'searchQuery' => 'test',
+      'taxon_list_id' => 1
+    ));
+    $this->assertResponseOk($response, '/taxa/search');
+    $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
+    $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
+    $data = $response['response']['data'];
+    $this->assertInternalType('array', $data, 'taxa/search data invalid.');
+    $this->assertCount(2, $data, 'Taxa/search data wrong count returned.' );
+    $response = $this->callService('taxa/search', array(
+      'searchQuery' => 'test taxon 2',
+      'taxon_list_id' => 1
+    ));
+    $this->assertResponseOk($response, '/taxa/search');
+    $this->assertArrayHasKey('paging', $response['response'], 'Paging missing from response to call to taxa/search');
+    $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
+    $data = $response['response']['data'];
+    $this->assertInternalType('array', $data, 'taxa/search data invalid.');
+    $this->assertCount(1, $data, 'Taxa/search data wrong count returned.' );
   }
 
   /**

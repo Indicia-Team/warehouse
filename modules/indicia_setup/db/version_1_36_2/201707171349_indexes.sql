@@ -6,11 +6,6 @@ CREATE INDEX ix_occurrence_comments_created_on
   USING btree
   (created_on);
 
-CREATE INDEX ix_cache_occurrences_functional_verified_on
-  ON cache_occurrences_functional
-  USING btree
-  (verified_on);
-
 -- Indexes to improve queries in verifier_notifications module
 CREATE INDEX ix_notifications_user_id_partial_vt
   ON notifications

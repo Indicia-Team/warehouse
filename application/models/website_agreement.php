@@ -58,6 +58,8 @@ class Website_Agreement_Model extends ORM
     $array->add_rules('receive_for_data_flow', 'required', 'regex[/^[DOAR]$/]');
     $array->add_rules('provide_for_moderation', 'required', 'regex[/^[DOAR]$/]');
     $array->add_rules('receive_for_moderation', 'required', 'regex[/^[DOAR]$/]');
+    $array->add_rules('provide_for_editing', 'required', 'regex[/^[DOAR]$/]');
+    $array->add_rules('receive_for_editing', 'required', 'regex[/^[DOAR]$/]');
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
       'description',

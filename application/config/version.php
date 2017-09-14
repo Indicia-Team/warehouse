@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Warehouse version configuration.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,17 +19,28 @@
  *
  * @package Core
  * @subpackage Config
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link  http://code.google.com/p/indicia/
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * @var string The application files version number.
+ * The application files' version number.
+ *
+ * @var string
  */
-$config['version'] = '1.39.0';
-$config['release_date']  = '2017-07-24';
+$config['version'] = '1.42.0';
+/**
+ * Version release date.
+ *
+ * @var string
+ */
+$config['release_date'] = '2017-09-11';
+/**
+ * Link to the code repository downloads page.
+ *
+ * @var string
+ */
 $config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
-

@@ -1,6 +1,6 @@
 <?php defined('SYSPATH') OR die('No direct access allowed.');
 
-if (class_exists('PHPUnit_Util_Filter'))
+if (defined('inPhpUnit'))
 {
 	// Hand control of errors and exceptions to PHPUnit
 	if (defined('Kohana::VERSION'))
