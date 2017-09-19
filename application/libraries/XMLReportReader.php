@@ -47,35 +47,35 @@ class XMLReportReader_Core implements ReportReader
   private $trainingFilterField = 'o.training';
   private $createdByField;
   private $colsToInclude = array();
-  
+
   /**
    * @var boolean Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
    * sql for the columns list.
    */
   private $hasColumnsSql = false;
-  
+
   /**
    * @var array List of column definitions that have data type and sql defined so therefore allow filtering.
    */
   public $filterableColumns = array();
 
-  /** 
+  /**
    * @var boolean Track if this report supports the standard set of parameters. If so, names the entity.
    */
   public $loadStandardParamsSet = false;
-  
-  /** 
+
+  /**
    * @var boolean True if loading the legacy set of standard parameters for reporting occurrences against the
    * old cache structure via the cache_occurrences view which simulates the structure for backwards compatibility.
    */
   public $loadLegacyStandardParamsSet = false;
-  
+
   /**
    * @var boolean Identify if we have got SQL defined for aggregated fields. If so we need to implement a group by for
    * the other fields.
    */
   private $hasAggregates = false;
-  
+
   /**
    * Returns a simple array containing the title and description of a report. Static so you don't have to load the full report object to get this
    * information.
@@ -300,7 +300,7 @@ class XMLReportReader_Core implements ReportReader
       throw new Exception("Report: $report\n".$e->getMessage());
     }
   }
-  
+
   /**
    * Apply the website and sharing related filters to the query.
    */
@@ -324,7 +324,7 @@ class XMLReportReader_Core implements ReportReader
       $query = str_replace('#sharing_filter#', "{$this->trainingFilterField}=$boolStr AND #sharing_filter#", $query);
     }
     // an alternative way to inform a query about training mode....
-    $query = str_replace('#training#', $training, $query); 
+    $query = str_replace('#training#', $training, $query);
     // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
     if ($sharing==='me' && empty($userId))
       // revert to website type sharing if we have no known user Id.
@@ -338,7 +338,7 @@ class XMLReportReader_Core implements ReportReader
       $sharing = 'reporting';
     }
     if (isset($idList)) {
-      if ($sharing==='website') 
+      if ($sharing==='website')
         $sharingFilters[] = "{$this->websiteFilterField} in ($idList)";
       elseif (!empty($this->websiteFilterField)) {
         // implement the appropriate sharing agreement across websites
@@ -346,7 +346,7 @@ class XMLReportReader_Core implements ReportReader
         // add a join to users so we can check their privacy preferences. This does not apply if record input
         // on this website, or for the admin user account.
         $agreementsJoins[] = "JOIN users privacyusers ON privacyusers.id=".$this->createdByField;
-        $sharingFilters[] = "({$this->websiteFilterField} in ($idList) OR privacyusers.id=1 OR " . 
+        $sharingFilters[] = "({$this->websiteFilterField} in ($idList) OR privacyusers.id=1 OR " .
             "privacyusers.allow_share_for_$sharing=true OR privacyusers.allow_share_for_$sharing IS NULL)";
         $sharingFilters[] = "{$this->websiteFilterField} in ($sharedWebsiteIdList)";
         $query = str_replace('#sharing_website_ids#', $sharedWebsiteIdList, $query);
@@ -356,40 +356,41 @@ class XMLReportReader_Core implements ReportReader
     if (empty($sharingFilters))
       $sharingFilters[] = '1=1';
     $query = str_replace(
-      array('#agreements_join#', '#sharing_filter#', '#sharing#'), 
-      array(implode("\n", $agreementsJoins), implode("\n AND ", $sharingFilters), $sharing), 
+      array('#agreements_join#', '#sharing_filter#', '#sharing#'),
+      array(implode("\n", $agreementsJoins), implode("\n AND ", $sharingFilters), $sharing),
       $query
     );
   }
-  
+
   /**
-  * A cached lookup of the websites that are available for a certain sharing mode.
-  *
-  * Only bother to cache the lookup if there is only 1 website (i.e. we are running a 
-  * report from a client website or the warehouse user can only see 1 website). Otherwise
-  * there are too many possibilities to be worth it. This is mainly to speed up client
-  * website reporting anyway.
-  */ 
+   * A cached lookup of the websites that are available for a certain sharing mode.
+   *
+   * Only bother to cache the lookup if there is only 1 website (i.e. we are running a
+   * report from a client website or the warehouse user can only see 1 website). Otherwise
+   * there are too many possibilities to be worth it. This is mainly to speed up client
+   * website reporting anyway.
+   */
   private function getSharedWebsiteList($websiteIds, $sharing) {
-    if (count($websiteIds) ===1) {
-      $tag = 'website-shares-'.implode('', $websiteIds);
+    if (count($websiteIds) === 1) {
+      $tag = 'website-shares-' . implode('', $websiteIds);
       $cacheId = "$tag-$sharing";
       $cache = Cache::instance();
-      if ($cached = $cache->get($cacheId))
+      if ($cached = $cache->get($cacheId)) {
         return $cached;
+      }
     }
     $db = new Database();
     $qry = $db->select('to_website_id')
-        ->from('index_websites_website_agreements')
-        ->where("receive_for_$sharing", 't')
-        ->in('from_website_id', $websiteIds)
-        ->get()->result();
+      ->from('index_websites_website_agreements')
+      ->where("receive_for_$sharing", 't')
+      ->in('from_website_id', $websiteIds)
+      ->get()->result();
     $ids = array();
-    foreach($qry as $row) {
+    foreach ($qry as $row) {
       $ids[] = $row->to_website_id;
     }
     $r = implode(',', $ids);
-    // tag all cache entries for this website so they can be cleared together when changes are saved.
+    // Tag all cache entries for this website so they can be cleared together when changes are saved.
     $cache->set($cacheId, $r, $tag);
     return $r;
   }
@@ -430,7 +431,7 @@ class XMLReportReader_Core implements ReportReader
     }
     if (count($countSql)>1) {
       $this->countQuery = str_replace('#columns#', ' count(distinct coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')) ", $this->query);
-    } 
+    }
     elseif (count($countSql)===1) {
       $this->countQuery = str_replace('#columns#', ' count(distinct ' . $countSql[0] . ') ', $this->query);
     }
@@ -451,7 +452,7 @@ class XMLReportReader_Core implements ReportReader
   private function buildGroupBy() {
     $sql = array();
     foreach ($this->columns as $col=>$def) {
-      if (isset($def['internal_sql']) 
+      if (isset($def['internal_sql'])
           && (!isset($def['aggregate']) || $def['aggregate']!='true')
           && (!isset($def['on_demand']) || $def['on_demand']!='true')) {
         $sql[] = $def['internal_sql'];
@@ -693,7 +694,7 @@ class XMLReportReader_Core implements ReportReader
       } else {
           $from = " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i.
                   " ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'].
-                  ($this->tables[$i]['where'] != null ? 
+                  ($this->tables[$i]['where'] != null ?
                       " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']) :
                       "").") ".$from;
           $i = $this->tables[$i]['parent']; // next process the parent for this table, until we've scanned upto zero.
@@ -724,7 +725,7 @@ class XMLReportReader_Core implements ReportReader
    */
   private function mergeParam($name, $reader=null) {
     // Some parts of the code assume the survey will be identified by a parameter called survey or survey_id.
-    if ($name==='survey_id' || $name==='survey')      
+    if ($name==='survey_id' || $name==='survey')
       $this->surveyParam = $name;
     $display = ($reader===null) ? '' : $reader->getAttribute('display');
     $type = ($reader===null) ? '' : $reader->getAttribute('datatype');
@@ -806,7 +807,7 @@ class XMLReportReader_Core implements ReportReader
 
     }
   }
-  
+
   /**
    * If a report declares that it uses the standard set of parameters, then load them.
    */
@@ -876,7 +877,7 @@ class XMLReportReader_Core implements ReportReader
             }
           }
           // and any references in the preprocessing query point to the context version of the param value
-          if (isset($cfg['preprocess'])) 
+          if (isset($cfg['preprocess']))
             $cfg['preprocess'] = str_replace("#$param#", "#{$param}_context#", $cfg['preprocess']);
           $this->params[$param.'_context'] = $cfg;
         }
@@ -891,7 +892,7 @@ class XMLReportReader_Core implements ReportReader
   /**
    * Returns the metadata for all possible parameters for this report, including the standard
    * parameters.
-   * @return array List of parameter configurations. 
+   * @return array List of parameter configurations.
    */
   public function getAllParams() {
     $params = array_merge($this->params);
@@ -906,9 +907,10 @@ class XMLReportReader_Core implements ReportReader
     }
     return $params;
   }
-  
+
   /**
    * To retain backwards compatibility with previous versions of standard params, we convert some param names.
+   *
    * @param array $providedParams The array of provided parameters which will be modified.
    * @param string $from The deprecated parameter name which will be swapped from.
    * @param string $from The new parameter name which will be use instead.
@@ -919,8 +921,10 @@ class XMLReportReader_Core implements ReportReader
       $param[] = false; // default to not handle as string
     list($from, $to, $string) = $param;
     $quote = $string ? "'" : '';
-    if (isset($providedParams[$from]) && !isset($providedParams[$to]))
+    if (isset($providedParams[$from]) && !isset($providedParams[$to])) {
       $providedParams[$to]=$quote . $providedParams[$from] . $quote;
+      unset($providedParams[$from]);
+    }
     if (isset($providedParams[$from.'_context']) && !isset($providedParams[$to.'_context']))
       $providedParams[$to.'_context']=$quote . $providedParams[$from.'_context'] . $quote;
     if (!empty($providedParams['paramsFormExcludes'])) {
@@ -967,8 +971,8 @@ class XMLReportReader_Core implements ReportReader
     if (isset($this->columns[$name]['datatype']) && isset($this->columns[$name]['sql']))
       $this->filterableColumns[$name] = $this->columns[$name];
     // internal sql is used in group by and count queries. If not set, just use the SQL
-    if (!empty($this->columns[$name]['sql'])) 
-      $this->columns[$name]['internal_sql'] = empty($this->columns[$name]['internal_sql']) ? 
+    if (!empty($this->columns[$name]['sql']))
+      $this->columns[$name]['internal_sql'] = empty($this->columns[$name]['internal_sql']) ?
           $this->columns[$name]['sql'] : $this->columns[$name]['internal_sql'];
   }
 
