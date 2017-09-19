@@ -20,7 +20,7 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link 	http://code.google.com/p/indicia/
  */
- 
+
 /**
  * Class providing miscellaneous data utility web services.
  */
@@ -34,6 +34,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    */
   public function __call($name, $arguments) {
     try {
+      $this->authenticate('write');
       $actions = kohana::config("data_utils.actions");
       if (empty($actions[$name])) {
         throw new Exception('Unrecognised action');
@@ -49,7 +50,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
               if (!preg_match('/^\d+$/', $arguments[$matches['index']-1]))
                 throw new exception("Invalid argument at position $matches[index]");
               $param = $arguments[$matches['index']-1];
-            } 
+            }
             else
               throw new Exception('Required arguments not provided');
           }
@@ -57,7 +58,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           elseif (preg_match('/^{(?P<index>\d+)}$/', $param, $matches)) {
             if (isset($arguments[$matches['index']-1])) {
               $param =  "'" . pg_escape_string($arguments[$matches['index']-1]) . "'";
-            } 
+            }
             else
               throw new Exception('Required arguments not provided');
           }
@@ -68,17 +69,18 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         }
         // numeric parameters don't need processing or sanitising
       }
-      $params = implode(', ', $action['parameters']);      
-      print_r($db->query("select $action[stored_procedure]($params);")->result_array(true));
-    } catch (Exception $e) {
-      error_logger::log_error('Exception during single verify', $e);
+      $params = implode(', ', $action['parameters']);
+      echo json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
+    }
+    catch (Exception $e) {
+      error_logger::log_error("Exception during custom data_utils action $name", $e);
       $this->handle_error($e);
     }
   }
-  
+
   /**
    * Provides the services/data_utils/bulk_verify service. This takes a report plus params (json object) in the $_POST
-   * data and verifies all the records returned by the report according to the filter. Pass ignore=true to allow this to 
+   * data and verifies all the records returned by the report according to the filter. Pass ignore=true to allow this to
    * ignore any verification check rule failures (use with care!).
    */
   public function bulk_verify() {
@@ -135,7 +137,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       $this->handle_error($e);
     }
   }
-  
+
   /**
    * Provides the services/data_utils/single_verify service. This takes an occurrence:id, occurrence:record_status, user_id (the verifier)
    * and optional occurrence_comment:comment in the $_POST data and updates the record. This is provided as a more optimised
@@ -285,7 +287,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       error_logger::log_error('Exception during bulk verify of samples', $e);
     }
   }
-  
+
   /**
    * Retrieves the current user's name (the verifier name) for bulk verify operations.
    */
