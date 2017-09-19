@@ -249,7 +249,7 @@ class ReportEngine {
     // some have defaults in the report XML file
     $this->providedParams = array_merge($this->reportReader->defaultParamValues, $this->providedParams);
 
-    // Special case params for limit, offset, ordeby and sortdir must be 
+    // Special case params for limit, offset, ordeby and sortdir must be
     // checked to prevent SQL injection.
     // Limit and Offset must be integers.
     // Sortdir must be ASC|DESC.
@@ -276,7 +276,7 @@ class ReportEngine {
       // Potential for DoS if limit is null and results are massive.
       $this->$param = NULL;
     }
-    
+
     return array(
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
       'content' => $this->compileReport($resultAsArray)
@@ -310,12 +310,15 @@ class ReportEngine {
 
   /**
    * Checks parameters and returns request if they're not all there, else compiles the report.
-   * @param boolean $resultAsArray TRUE to return the result as an array, FALSE to return a pg result object which
-   * needs to be iterated (better for large results set since it doesn't load all data into memory).
-   * @return array Array containing columns and data.
+   *
+   * @param boolean $resultAsArray
+   *   TRUE to return the result as an array, FALSE to return a pg result object which
+   *   needs to be iterated (better for large results set since it doesn't load all data into memory).
+   *
+   * @return array
+   *   Array containing columns and data.
    */
-  private function compileReport($resultAsArray)
-  {
+  private function compileReport($resultAsArray) {
     // Do we need any more parameters?
     $unpopulatedParams = array_diff_key($this->expectedParams, $this->providedParams);
     if (isset($this->providedParams['paramsFormExcludes'])) {
@@ -324,50 +327,52 @@ class ReportEngine {
           // never ask for params with defaults in the params form.
           $this->reportReader->defaultParamValues);
     }
-    if (!empty($unpopulatedParams))
-    {
+    if (!empty($unpopulatedParams)) {
       // Send a request for further parameters back to the client. If the request specified the list of parameters to drop
       // in the paramsFormExcludes parameter, then the list of parameters is always the ones that are not excluded. Else
       // the list of parameters is the list of unpopulated parameters.
       $res = array('parameterRequest' => isset($includedParams) ? $includedParams : $unpopulatedParams);
       return $res;
-
     }
-    else
-    {
+    else {
       // Okay, all the parameters have been provided.
       $this->mergeCountQuery();
       $this->mergeQuery();
-      if ($this->limit===0 || $this->limit==='0' || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords']===0)) {
-        // optimisation for zero limited queries
-        $data=array();
+      if ($this->limit === 0 || $this->limit === '0' || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords']===0)) {
+        // Optimisation for zero limited queries.
+        $data = array();
       }
       else {
         $this->executeQuery();
         $data = $this->response;
-        if ($resultAsArray)
+        if ($resultAsArray) {
           $data = $data->result_array(FALSE);
-        else
+        }
+        else {
           $data = $data->result();
+        }
       }
       $this->prepareColumns();
       // If not loading the full array, client will have to process vague dates etc themselves.
-      if ($resultAsArray)
+      if ($resultAsArray) {
         $this->post_process($data);
+      }
       $r = array(
-        'columns'=>$this->columns,
-        'records'=>$data
+        'columns' => $this->columns,
+        'records' => $data
       );
-      if (isset($includedParams) && count($includedParams)>0)
+      if (isset($includedParams) && count($includedParams) > 0) {
         $r['parameterRequest'] = $includedParams;
+      }
       return $r;
     }
   }
 
   public function record_count() {
-    if (isset($this->countQuery) && $this->countQuery!==null) {
-      if (isset($this->recordCountResult))
+    if (isset($this->countQuery) && $this->countQuery !== NULL) {
+      if (isset($this->recordCountResult)) {
         return $this->recordCountResult;
+      }
       // If there is a HAVING clause in the query, then we cannot count aggregate queries in the normal way which is to
       // strip the group by and count the appropriate fields. We have to run the full grouped query with the HAVING
       // clause included, then use a subquery to count the rows.
@@ -874,10 +879,12 @@ class ReportEngine {
         $field = $this->reportReader->filterableColumns[$name]['sql'];
         $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
         if (isset($this->reportReader->columns[$name]['aggregate'])
-            && $this->reportReader->columns[$name]['aggregate']==='true')
+            && $this->reportReader->columns[$name]['aggregate'] === 'true') {
           $this->having[] = $filterClause;
-        else
+        }
+        else {
           $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
+        }
       }
       elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches)
           && array_key_exists($matches['prefix'].'date_start', $this->reportReader->columns)
