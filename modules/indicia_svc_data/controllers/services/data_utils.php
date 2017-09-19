@@ -37,7 +37,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    * @param array $arguments
    *   List of arguments from URL.
    */
-  public function __call($name, array $arguments) {
+  public function __call($name, $arguments) {
     try {
       $this->authenticate('write');
       $actions = kohana::config("data_utils.actions");
