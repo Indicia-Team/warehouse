@@ -116,11 +116,11 @@ class ReportEngine {
    * @param array $websiteIds
    *   List of websites you are loading the report for. Normally a single, but can be a list
    *   when logged in on the warehouse.
-   * @param int $userId
+   * @param integer $userId
    *   ID of the user loading the report.
-   * @param object $db
-   *   Database object to run the report. Default NULL, which will create a new connection using the report
-   *   user configuration.
+   * @param $db object
+   *   Database object to run the report. Default null, which will create a new connection using the report
+   *   user configuration
    */
   public function __construct(array $websiteIds = NULL, $userId = NULL, $db = NULL) {
     $this->websiteIds = $websiteIds;
@@ -393,8 +393,9 @@ class ReportEngine {
 
   public function record_count() {
     if (isset($this->countQuery) && $this->countQuery !== NULL) {
-      if (isset($this->recordCountResult))
+      if (isset($this->recordCountResult)) {
         return $this->recordCountResult;
+      }
       // If there is a HAVING clause in the query, then we cannot count aggregate queries in the normal way which is to
       // strip the group by and count the appropriate fields. We have to run the full grouped query with the HAVING
       // clause included, then use a subquery to count the rows.
@@ -1127,6 +1128,12 @@ SQL;
    * Retrieve the filter required by a column filter row search.
    */
   private function getFilterClause($field, $datatype, &$operator, &$value) {
+    // Ensure filter clause reflects any current parameter values.
+    $replacements = array();
+    foreach ($this->providedParams as $paramName => $paramVal) {
+      $replacements["/#$paramName#/"] = $paramVal;
+    }
+    $field = preg_replace(array_keys($replacements), array_values($replacements), $field);
     if ($datatype === 'text' || $datatype === 'species') {
       if ($datatype === 'species') {
         // Skip subgenera from species searches.
@@ -1150,13 +1157,15 @@ SQL;
       // Note: Don't use this for text filter as spacing might be important for the search.
       // For dates, spacing will be handled by the vague date engine.
       $value = str_replace(" ", "", $value);
-      //apart from text and date values we handle the case where the user enters a range e.g. 1-3
+      // Apart from text and date values we handle the case where the user enters a range e.g. 1-3.
       // @todo: is there an i18n consideration here with the .?
-      if (preg_match('/(?P<from>\d+(\.\d+)?)(-|to)(?<to>\d+(\.\d+)?)/', $value, $matches))
+      if (preg_match('/(?P<from>\d+(\.\d+)?)(-|to)(?<to>\d+(\.\d+)?)/', $value, $matches)) {
         return "$field BETWEEN " . $matches['from'] . " AND " . $matches['to'];
+      }
       // support <, <=, >, >= operators
-      if (preg_match('/(?P<op>(>|<|>=|<=))(?P<val>\d+(\.\d+)?)/', $value, $matches))
+      if (preg_match('/(?P<op>(>|<|>=|<=))(?P<val>\d+(\.\d+)?)/', $value, $matches)) {
         return "$field " . $matches['op'] . " " . $matches['val'];
+      }
     }
     if ($datatype === 'text' || $datatype === 'species') {
       // Ensure value is escaped for apostrophes.
