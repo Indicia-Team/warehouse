@@ -1004,6 +1004,12 @@ class ReportEngine {
    * Retrieve the filter required by a column filter row search.
    */
   private function getFilterClause($field, $datatype, &$operator, &$value) {
+    // Ensure filter clause reflects any current parameter values.
+    $replacements = array();
+    foreach ($this->providedParams as $paramName => $paramVal) {
+      $replacements["/#$paramName#/"] = $paramVal;
+    }
+    $field = preg_replace(array_keys($replacements), array_values($replacements), $field);
     if ($datatype === 'text' || $datatype === 'species') {
       if ($datatype === 'species') {
         // Skip subgenera from species searches.
