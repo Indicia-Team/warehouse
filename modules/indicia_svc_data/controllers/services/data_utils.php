@@ -39,6 +39,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    */
   public function __call($name, array $arguments) {
     try {
+      $this->authenticate('write');
       $actions = kohana::config("data_utils.actions");
       if (empty($actions[$name])) {
         throw new Exception('Unrecognised action');
@@ -76,10 +77,10 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         // Numeric parameters don't need processing or sanitising.
       }
       $params = implode(', ', $action['parameters']);
-      print_r($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
+      echo json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
     }
     catch (Exception $e) {
-      error_logger::log_error('Exception during single verify', $e);
+      error_logger::log_error("Exception during custom data_utils action $name", $e);
       $this->handle_error($e);
     }
   }
