@@ -100,12 +100,16 @@ class ReportEngine {
   private $recordCountResult;
 
   /**
-   * Constructor
-   * @param array $websiteIds List of websites you are loading the report for. Normally a single, but can be a list
-   * when logged in on the warehouse.
-   * @param integer $userId ID of the user loading the report
-   * @param $db object Database object to run the report. Default null, which will create a new connection using the report
-   * user configuration
+   * Constructor.
+   *
+   * @param array $websiteIds
+   *   List of websites you are loading the report for. Normally a single, but can be a list
+   *   when logged in on the warehouse.
+   * @param integer $userId
+   *   ID of the user loading the report.
+   * @param $db object
+   *   Database object to run the report. Default null, which will create a new connection using the report
+   *   user configuration
    */
   public function __construct($websiteIds = null, $userId = null, $db = null)
   {
@@ -410,6 +414,7 @@ class ReportEngine {
       );
     }
   }
+
   /**
    * Takes the data and columns lists, and carries out any post query processing.
    * This includes vague date processing, and any other defined by the
@@ -521,131 +526,132 @@ class ReportEngine {
     $attributeDefns = $this->reportReader->getAttributeDefns();
     /* Attribute definitions included the query to run, and the field names to compare between each data array for matching */
     $vagueDateProcessing = $this->getVagueDateProcessing();
-    foreach($attributeDefns as $attributeDefn){
-        // Build an index of the report data indexed on the attribute: nb that the attribute data has been sorted in main_id order.
-        $index = array();
-        for ($r=0; $r<$dataCount; $r++) {
-          if(!isset($index[$data[$r][$attributeDefn->parentKey]])){
-            $index[$data[$r][$attributeDefn->parentKey]] = array($r);
-          } else
-            $index[$data[$r][$attributeDefn->parentKey]][] = $r;
+    foreach ($attributeDefns as $attributeDefn) {
+      // Build an index of the report data indexed on the attribute: nb that the attribute data has been sorted in main_id order.
+      $index = array();
+      for ($r = 0; $r < $dataCount; $r++) {
+        if (!isset($index[$data[$r][$attributeDefn->parentKey]])) {
+          $index[$data[$r][$attributeDefn->parentKey]] = array($r);
         }
+        else {
+          $index[$data[$r][$attributeDefn->parentKey]][] = $r;
+        }
+      }
     	$subquery = $attributeDefn->query;
-        foreach ($providedParams as $name => $value)
-        {
-          $subquery = preg_replace("/#$name#/", $value, $subquery);
-        }
-        $response = $this->reportDb->query($subquery);
-        $attrData = $response->result_array(FALSE);
-        $newColumns = array();
-        // This makes some assumptions about the way the attribute data is stored within the DB tables.
-        // Note that $attributeDefn->id is actually text, which means that the order of data in $row is actually the order in which the
-        // attributes are encountered in the data set.
-        // we assume that the attributes are ordered in blocks of each attribute ID, in the order that we wish them to appear in the report.
-        foreach ($attrData as $row){
-          // If this attribute row has not been encountered so far, make a new column for it, initialise to blank.
-          if(!array_key_exists($row[$attributeDefn->id], $newColumns)){  // id is the column holding the attribute id.
-            $newColName=$attributeDefn->columnPrefix.$row[$attributeDefn->id];
-            $multiValue = ($row['multi_value'] == 't') && ($row["data_type"] != 'D') && ($row["data_type"] != 'V');
-            $newColumns[$row[$attributeDefn->id]] = array(
-                  'caption' => $row[$attributeDefn->caption],
-                  'column' => $newColName,
-                  'multi_value' => $multiValue);
-            switch ($row["data_type"]) {
-              case 'D':
-              case 'V':
-                $this->columns[$newColName."_date_start"] = array('display'=>$row[$attributeDefn->caption]." Start", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-                $this->columns[$newColName."_date_end"] = array('display'=>$row[$attributeDefn->caption]." End", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-                $this->columns[$newColName."_date_type"] = array('display'=>$row[$attributeDefn->caption]." Type", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-                if($vagueDateProcessing){  // if vague date processing enable for the report, add the extra column.
-                  $this->columns[$newColName."_date"] = array('display'=>$row[$attributeDefn->caption]." Date", 'class'=>'', 'style'=>'');
-                }
-                for ($r=0; $r<$dataCount; $r++) {
-                  $data[$r][$newColName.'_date_start'] = '';
-                  $data[$r][$newColName.'_date_end'] = '';
-                  $data[$r][$newColName.'_date_type'] = '';
-                  $data[$r][$newColName.'_date'] = '';
-                }
-                break;
-              case 'L':
-                // Lookup
-                if(isset($attributeDefn->meaningIdLanguage))
-                  $termResponse = $this->reportDb->query("select tt.meaning_id as id, t.term from terms t, termlists_terms tt, languages l".
-                  										 " where tt.termlist_id =".$row["termlist_id"].
-                  										 " and tt.term_id = t.id ".
-                  										 " and t.language_id = l.id ".
-                  										 " and t.deleted=FALSE ".
-                  										 " and tt.deleted = FALSE ".
-                  										 " and l.deleted=FALSE ".
-                  										 ($attributeDefn->meaningIdLanguage== "preferred" ?
-                  											" and tt.preferred = true " :
-                  											" and l.iso = '".$attributeDefn->meaningIdLanguage."'").
-                  										 "ORDER by tt.meaning_id;");
-                else
-                  $termResponse = $this->reportDb->query("select tt.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by tt.id;");
-                $newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
-                // allow follow through so Lookup follows normal format of a singular field.
-              default:
-                $this->columns[$newColName] = array('display'=>$row[$attributeDefn->caption], 'class'=>'', 'style'=>'');
-                for ($r=0; $r<$dataCount; $r++) {
-                  $data[$r][$newColName] = $multiValue ? array() : '';
-                }
-                break;
-            }
-          }
-          $column = $newColumns[$row[$attributeDefn->id]]['column'];
+      foreach ($providedParams as $name => $value) {
+        $subquery = preg_replace("/#$name#/", $value, $subquery);
+      }
+      $response = $this->reportDb->query($subquery);
+      $attrData = $response->result_array(FALSE);
+      $newColumns = array();
+      // This makes some assumptions about the way the attribute data is stored within the DB tables.
+      // Note that $attributeDefn->id is actually text, which means that the order of data in $row is actually the order in which the
+      // attributes are encountered in the data set.
+      // we assume that the attributes are ordered in blocks of each attribute ID, in the order that we wish them to appear in the report.
+      foreach ($attrData as $row){
+        // If this attribute row has not been encountered so far, make a new column for it, initialise to blank.
+        if(!array_key_exists($row[$attributeDefn->id], $newColumns)){  // id is the column holding the attribute id.
+          $newColName=$attributeDefn->columnPrefix.$row[$attributeDefn->id];
+          $multiValue = ($row['multi_value'] == 't') && ($row["data_type"] != 'D') && ($row["data_type"] != 'V');
+          $newColumns[$row[$attributeDefn->id]] = array(
+                'caption' => $row[$attributeDefn->caption],
+                'column' => $newColName,
+                'multi_value' => $multiValue);
           switch ($row["data_type"]) {
-            case 'L':
-              $value = $row['int_value']; // default value is int value
-              foreach($newColumns[$row[$attributeDefn->id]]['lookup'] as $lookup){
-                if($value == $lookup["id"]){
-                  $value = $lookup['term'];
-                  break;
-                }
-              }
-              if(isset($index[$row[$attributeDefn->main_id]]))
-                foreach($index[$row[$attributeDefn->main_id]] as $r)
-                  $this->mergeColumnData($data[$r][$column], $value);
-              break;
-            case 'I':
-              if(isset($index[$row[$attributeDefn->main_id]]))
-                foreach($index[$row[$attributeDefn->main_id]] as $r)
-                  $this->mergeColumnData($data[$r][$column], $row['int_value']);
-              break;
-            case 'B':
-              if(isset($index[$row[$attributeDefn->main_id]]))
-                foreach($index[$row[$attributeDefn->main_id]] as $r)
-                  $this->mergeColumnData($data[$r][$column], $row['int_value'] ? 'Yes' : 'No');
-              break;
-            case 'F':
-              if(isset($index[$row[$attributeDefn->main_id]]))
-                foreach($index[$row[$attributeDefn->main_id]] as $r)
-                  $this->mergeColumnData($data[$r][$column], $row['float_value']);
-              break;
-            case 'T':
-              if(isset($index[$row[$attributeDefn->main_id]]))
-                foreach($index[$row[$attributeDefn->main_id]] as $r)
-                  $this->mergeColumnData($data[$r][$column], $row['text_value']);
-              break;
             case 'D':
-            case 'V': // assume no multi values: would be far too complex to deal with...
-              if(isset($index[$row[$attributeDefn->main_id]]))
-                foreach($index[$row[$attributeDefn->main_id]] as $r){
-                  $data[$r][$column."_date_start"] = $row['date_start_value'];
-                  $data[$r][$column."_date_end"] = $row['date_end_value'];
-                  $data[$r][$column."_date_type"] = $row['date_type_value'];
-                }
+            case 'V':
+              $this->columns[$newColName."_date_start"] = array('display'=>$row[$attributeDefn->caption]." Start", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+              $this->columns[$newColName."_date_end"] = array('display'=>$row[$attributeDefn->caption]." End", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+              $this->columns[$newColName."_date_type"] = array('display'=>$row[$attributeDefn->caption]." Type", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+              if($vagueDateProcessing){  // if vague date processing enable for the report, add the extra column.
+                $this->columns[$newColName."_date"] = array('display'=>$row[$attributeDefn->caption]." Date", 'class'=>'', 'style'=>'');
+              }
+              for ($r=0; $r<$dataCount; $r++) {
+                $data[$r][$newColName.'_date_start'] = '';
+                $data[$r][$newColName.'_date_end'] = '';
+                $data[$r][$newColName.'_date_type'] = '';
+                $data[$r][$newColName.'_date'] = '';
+              }
+              break;
+            case 'L':
+              // Lookup
+              if(isset($attributeDefn->meaningIdLanguage))
+                $termResponse = $this->reportDb->query("select tt.meaning_id as id, t.term from terms t, termlists_terms tt, languages l".
+                                      " where tt.termlist_id =".$row["termlist_id"].
+                                      " and tt.term_id = t.id ".
+                                      " and t.language_id = l.id ".
+                                      " and t.deleted=FALSE ".
+                                      " and tt.deleted = FALSE ".
+                                      " and l.deleted=FALSE ".
+                                      ($attributeDefn->meaningIdLanguage== "preferred" ?
+                                      " and tt.preferred = true " :
+                                      " and l.iso = '".$attributeDefn->meaningIdLanguage."'").
+                                      "ORDER by tt.meaning_id;");
+              else
+                $termResponse = $this->reportDb->query("select tt.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by tt.id;");
+              $newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
+              // allow follow through so Lookup follows normal format of a singular field.
+            default:
+              $this->columns[$newColName] = array('display'=>$row[$attributeDefn->caption], 'class'=>'', 'style'=>'');
+              for ($r=0; $r<$dataCount; $r++) {
+                $data[$r][$newColName] = $multiValue ? array() : '';
+              }
               break;
           }
         }
-        for ($r=0; $r<$dataCount; $r++) {
-          foreach($newColumns as $newCol){
-            $column = $newCol['column'];
-            if($newCol['multi_value'] == true && is_array($data[$r][$column])){
-              $data[$r][$column] = implode($attributeDefn->separator, $data[$r][$column]);
+        $column = $newColumns[$row[$attributeDefn->id]]['column'];
+        switch ($row["data_type"]) {
+          case 'L':
+            $value = $row['int_value']; // default value is int value
+            foreach($newColumns[$row[$attributeDefn->id]]['lookup'] as $lookup){
+              if($value == $lookup["id"]){
+                $value = $lookup['term'];
+                break;
+              }
             }
+            if(isset($index[$row[$attributeDefn->main_id]]))
+              foreach($index[$row[$attributeDefn->main_id]] as $r)
+                $this->mergeColumnData($data[$r][$column], $value);
+            break;
+          case 'I':
+            if(isset($index[$row[$attributeDefn->main_id]]))
+              foreach($index[$row[$attributeDefn->main_id]] as $r)
+                $this->mergeColumnData($data[$r][$column], $row['int_value']);
+            break;
+          case 'B':
+            if(isset($index[$row[$attributeDefn->main_id]]))
+              foreach($index[$row[$attributeDefn->main_id]] as $r)
+                $this->mergeColumnData($data[$r][$column], $row['int_value'] ? 'Yes' : 'No');
+            break;
+          case 'F':
+            if(isset($index[$row[$attributeDefn->main_id]]))
+              foreach($index[$row[$attributeDefn->main_id]] as $r)
+                $this->mergeColumnData($data[$r][$column], $row['float_value']);
+            break;
+          case 'T':
+            if(isset($index[$row[$attributeDefn->main_id]]))
+              foreach($index[$row[$attributeDefn->main_id]] as $r)
+                $this->mergeColumnData($data[$r][$column], $row['text_value']);
+            break;
+          case 'D':
+          case 'V': // assume no multi values: would be far too complex to deal with...
+            if(isset($index[$row[$attributeDefn->main_id]]))
+              foreach($index[$row[$attributeDefn->main_id]] as $r){
+                $data[$r][$column."_date_start"] = $row['date_start_value'];
+                $data[$r][$column."_date_end"] = $row['date_end_value'];
+                $data[$r][$column."_date_type"] = $row['date_type_value'];
+              }
+            break;
+        }
+      }
+      for ($r=0; $r<$dataCount; $r++) {
+        foreach($newColumns as $newCol){
+          $column = $newCol['column'];
+          if($newCol['multi_value'] == true && is_array($data[$r][$column])){
+            $data[$r][$column] = implode($attributeDefn->separator, $data[$r][$column]);
           }
         }
+      }
     }
   }
 
@@ -995,48 +1001,54 @@ class ReportEngine {
   }
 
   /**
-   * Retrieve the filter required by a column filter row search
+   * Retrieve the filter required by a column filter row search.
    */
   private function getFilterClause($field, $datatype, &$operator, &$value) {
-    if ($datatype=='text' || $datatype==='species') {
-      if ($datatype==='species') {
-        // skip subgenera from species searches
+    if ($datatype === 'text' || $datatype === 'species') {
+      if ($datatype === 'species') {
+        // Skip subgenera from species searches.
         $value = preg_replace('/\(.*?\) /', '', $value);
         $field = "regexp_replace($field, '(\(.*\)|\s)', '', 'g')";
       }
-      // quote text values and replace * wildcards with SQL friendly ones.
-      $value=str_replace('*','%',$value);
-      //by default add a wildcard to the end
-      if (substr($value, -1)!=='%')
+      // Quote text values and replace * wildcards with SQL friendly ones.
+      $value = str_replace('*', '%', $value);
+      // By default add a wildcard to the end
+      if (substr($value, -1) !== '%') {
         $value .= '%';
-      $operator='ILIKE';
-    } else
-      $operator = '=';
-
-    if ($datatype!=='text' && $datatype!=='date') {
-      //strip spaces so the user can be more flexible about spaces they enter
-      //Note: Don't use this for text filter as spacing might be important for the search.
-      //For dates, spacing will be handled by the vague date engine
-      $value = str_replace(" ","",$value);
-      //apart from text and date values we handle the case where the user enters a range e.g. 1-3
-      // @todo: is there an i18n consideration here with the .?
-      if (preg_match('/(?P<from>\d+(\.\d+)?)(-|to)(?<to>\d+(\.\d+)?)/', $value, $matches))
-        return "$field BETWEEN ".$matches['from']." AND ".$matches['to'];
-      // support <, <=, >, >= operators
-      if (preg_match('/(?P<op>(>|<|>=|<=))(?P<val>\d+(\.\d+)?)/', $value, $matches))
-        return "$field ".$matches['op']." ".$matches['val'];
+      }
+      $operator = 'ILIKE';
     }
-    if ($datatype==='text' || $datatype==='species') {
-      // ensure value is escaped for apostrophes
+    else {
+      $operator = '=';
+    }
+
+    if ($datatype !== 'text' && $datatype !== 'date') {
+      // Strip spaces so the user can be more flexible about spaces they enter.
+      // Note: Don't use this for text filter as spacing might be important for the search.
+      // For dates, spacing will be handled by the vague date engine.
+      $value = str_replace(" ", "", $value);
+      // Apart from text and date values we handle the case where the user enters a range e.g. 1-3.
+      // @todo: is there an i18n consideration here with the .?
+      if (preg_match('/(?P<from>\d+(\.\d+)?)(-|to)(?<to>\d+(\.\d+)?)/', $value, $matches)) {
+        return "$field BETWEEN " . $matches['from'] . " AND " . $matches['to'];
+      }
+      // support <, <=, >, >= operators
+      if (preg_match('/(?P<op>(>|<|>=|<=))(?P<val>\d+(\.\d+)?)/', $value, $matches)) {
+        return "$field " . $matches['op'] . " " . $matches['val'];
+      }
+    }
+    if ($datatype === 'text' || $datatype === 'species') {
+      // Ensure value is escaped for apostrophes.
       $value = pg_escape_string($value);
-      // quote text and date values
-      $value="'".$value."'";
+      // Quote text and date values.
+      $value = "'" . $value . "'";
     }
     if ($datatype != 'date') {
-      return "$field $operator $value";}
+      return "$field $operator $value";
+    }
     else {
       $vaguedate = vague_date::string_to_vague_date($value);
-      return "($field >= '".$vaguedate[0]."' AND $field <= '".$vaguedate[1]."')";
+      return "($field >= '" . $vaguedate[0] . "' AND $field <= '" . $vaguedate[1] . "')";
     }
   }
 
