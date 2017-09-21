@@ -27,7 +27,7 @@
  * kept in one place.
  */
 class postgreSQL {
-  
+
   public static function transformWkt($wkt, $fromSrid, $toSrid, $db=null) {
     if ($fromSrid!=$toSrid) {
       if (!$db)
@@ -37,8 +37,8 @@ class postgreSQL {
     } else
       return $wkt;
   }
-  
-  
+
+
   public static function setOccurrenceCreatorByCmsUser($websiteId, $userId, $cmsUserId, $db=null) {
     if (!$db)
       $db = new Database();
@@ -57,9 +57,9 @@ class postgreSQL {
       "and o.created_by_id<>$userId ".
       "and o.created_by_id=1");
   }
-  
-  /** 
-   * Runs a query to select the notification data to generate for verification and comment status updates since the 
+
+  /**
+   * Runs a query to select the notification data to generate for verification and comment status updates since the
    * last run date. This allows recorders to be notified of verification actions and/or comments on their records.
    * Excludes confidential records but not sensitive records.
    */
@@ -78,39 +78,39 @@ into temporary records_to_notify
 from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date' 
+join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date'
   and oc.auto_generated=true
   and (coalesce(oc.generated_by, '')<>'data_cleaner_identification_difficulty' or coalesce(oc.generated_by_subtype, '') not in ('1','2'))
   and oc.record_status is null -- exclude auto-generated verifications
 where co.created_by_id<>1
 -- verifications (human only, no longer notify on automated verification)
-union 
+union
 select distinct 'V', co.id, co.created_by_id as notify_user_id, cttl.taxon, co.date_start, co.date_end, co.date_type, snf.public_entered_sref,
         co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.record_substatus, co.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
         'oc_id:' || oc.id::varchar as source_detail, 't' as record_owner
 from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-left join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date' 
+left join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date'
   and oc.record_status is not null -- verifications
   and oc.auto_generated = false -- but exclude auto-generated verifications
 where co.created_by_id<>1 and co.verified_on>'$last_run_date'
 -- a comment on your record
-union 
+union
 select distinct 'C', co.id, co.created_by_id as notify_user_id, cttl.taxon, co.date_start, co.date_end, co.date_type, snf.public_entered_sref,
         co.verified_on, oc.comment, false as auto_generated, oc.generated_by, co.record_status, co.record_substatus, co.updated_on, oc.created_by_id as occurrence_comment_created_by_id,
         'oc_id:' || oc.id::varchar as source_detail, 't' as record_owner
 from cache_occurrences_functional co
 join cache_samples_nonfunctional snf on snf.id=co.sample_id
 join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date' 
+join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date'
   and oc.record_status is null and oc.auto_generated=false
-left join occurrence_comments oc2 on oc2.occurrence_id=co.id and oc2.deleted=false and oc2.created_on>'$last_run_date' 
+left join occurrence_comments oc2 on oc2.occurrence_id=co.id and oc2.deleted=false and oc2.created_on>'$last_run_date'
   and oc2.record_status is not null and oc2.auto_generated=false
 where co.created_by_id<>1 and co.created_by_id<>oc.created_by_id
 and oc2.id is null -- ignore comment if accompanied by a verification from same person
 -- a record you commented on then verified or a comment on a record you've previously commented on
-union 
+union
 select distinct 'C' as source_type, co.id, ocprev.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref,
         co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.record_substatus, co.cache_updated_on as updated_on, oc.created_by_id as occurrence_comment_created_by_id,
         'oc_id:' || oc.id::varchar as source_detail, 'f' as record_owner
@@ -124,7 +124,7 @@ and ocprev.created_by_id<>oc.created_by_id and ocprev.created_by_id<>co.created_
 select rn.*, u.username
 from records_to_notify rn
 join occurrences o on o.id=rn.id
-left join notifications n on n.linked_id=o.id 
+left join notifications n on n.linked_id=o.id
           and n.source_type=rn.source_type
           and n.source_detail=rn.source_detail
 join users u on u.id=coalesce(rn.occurrence_comment_created_by_id, o.verified_by_id)
@@ -145,7 +145,7 @@ SQL
     // note this query excludes user 1 from the notifications (admin user) as they are records which don't
     // have a warehouse user ID.
     return $db->query(
-"select gu.id as groups_user_id, g.id as group_id, 
+"select gu.id as groups_user_id, g.id as group_id,
   p.surname, p.first_name, g.title as group_title, a.user_id as notify_user_id
 from groups_users gu
 join users u on u.id=gu.user_id and u.deleted=false
@@ -158,25 +158,25 @@ and gu.pending=true
 and n.id is null"
     )->result();
   }
-  
-  /** 
+
+  /**
    * Function to be called on postSubmit of a sample, to make sure that any changed occurrences are linked to their map square entries properly.
    */
   public static function insertMapSquaresForSamples($ids, $size, $db=null) {
     self::insertMapSquares($ids, 's', $size, $db);
   }
-  
-  /** 
-   * Function to be called on postSubmit of an occurrence or occurrences if submitted directly (i.e. not as part of a sample), 
+
+  /**
+   * Function to be called on postSubmit of an occurrence or occurrences if submitted directly (i.e. not as part of a sample),
    * to make sure that any changed occurrences are linked to their map square entries properly.
    */
   public static function insertMapSquaresForOccurrences($ids, $size, $db=null) {
     self::insertMapSquares($ids, 'o', $size, $db);
   }
-  
-  /** 
+
+  /**
    * Code for the insertMapSquaresFor... methods, which takes the table alias as a parameter in order to be generic.
-   */ 
+   */
   private static function insertMapSquares($ids, $alias, $size, $db=null) {
     if (count($ids)>0) {
       static $srid;
@@ -212,7 +212,7 @@ and n.id is null"
             VALUES (reduce_precision(st_geomfromtext('{$s->geom}', $srid), '{$s->confidential}', {$s->size}, '{$s->entered_sref_system}'), {$s->x}, {$s->y}, {$s->size})");
           $msqId=$qry->insert_id();
         }
-        else 
+        else
           $msqId=$existing[0]['id'];
         $db->query("UPDATE cache_occurrences_functional SET map_sq_{$km}km_id=$msqId " .
           "WHERE website_id={$s->website_id} AND survey_id={$s->survey_id} AND sample_id={$s->id} " .
@@ -222,13 +222,13 @@ and n.id is null"
       }
     }
   }
-  
+
   /**
    * A clone of the list_fields methods provided by the Kohana database object, but with caching as it
    * involves a database hit but is called quite frequently.
    * @param string $entity Table or view name
    * @param Database $db Database object if available
-   * @return array Array of field definitions for the object. 
+   * @return array Array of field definitions for the object.
    */
   public static function list_fields($entity, $db=null) {
     $key="list_fields$entity";
@@ -265,12 +265,12 @@ and n.id is null"
       }
       if (!isset($result))
         throw new Kohana_Database_Exception('database.table_not_found', $entity);
-      else 
+      else
         $cache->set($key, $result);
     }
     return $result;
   }
-  
+
   /**
    * A clone of the sql_type method in the PG driver, copied here to support our version of list_fields.
    * Converts a Kohana data type name to the SQL equivalent.
@@ -331,7 +331,7 @@ and n.id is null"
 
     return $field;
   }
-  
+
   /**
    * Simple utility method to throw an exception on failure of a condition.
    * @param bool $condition
@@ -343,7 +343,7 @@ and n.id is null"
       throw new exception($error);
     }
   }
-  
+
   /**
    * Checks the format of a parameter of type integer[] and converts it to a comma separated list ready for insertion
    * into the taxon search query.
@@ -358,11 +358,11 @@ and n.id is null"
       } else {
         $options[$name] = (string)$options[$name];
       }
-      self::assert(preg_match('/^\d+(,\d+)*/', $options[$name]), 
+      self::assert(preg_match('/^\d+(,\d+)*/', $options[$name]),
           "taxonSearchQuery $name option with must be a list ID or an array of list IDs.");
     }
   }
-  
+
   /**
    * Checks the format of a parameter of type string[] and converts it to a comma separated list ready for insertion
    * into the taxon search query.
@@ -382,8 +382,8 @@ and n.id is null"
       $options[$name] = '';
     }
   }
-  
-  /** 
+
+  /**
    * Checks that all provided boolean options are actually boolean.
    * @param array $options
    * @param array $keysToCheck List of keys in the options array which should be booleans.
@@ -410,7 +410,7 @@ and n.id is null"
         'count' => false
     ), $options);
     // taxon_list_id option required.
-    self::assert(!empty($options['taxon_list_id']) || !empty($options['taxa_taxon_list_id']), 
+    self::assert(!empty($options['taxon_list_id']) || !empty($options['taxa_taxon_list_id']),
         'taxonSearchQuery requires a taxon_list_id or taxa_taxa_list_id option.');
     self::integerListOption($options, 'taxon_list_id');
     self::integerListOption($options, 'taxon_group_id');
@@ -422,10 +422,10 @@ and n.id is null"
     self::stringListOption($options, 'external_key');
     self::integerListOption($options, 'parent_id');
     self::stringListOption($options, 'language');
-    self::checkBooleanOptions($options, 
+    self::checkBooleanOptions($options,
         ['preferred', 'commonNames', 'synonyms', 'abbreviations', 'marine_flag', 'searchAuthors', 'wholeWords']);
   }
-  
+
   /**
    * Converts the input text into a parameter that can be passed into PostgreSQL's full text search.
    * @param string $search
@@ -439,8 +439,8 @@ and n.id is null"
     foreach ($tokens as $idx => &$token) {
       if (!$options['wholeWords'] && !in_array($token, $booleanTokens)) {
         $addBracket = preg_match('/\)$/', $token);
-        $token = preg_replace('/\)$/', '', $token);					
-        $token .= ':*' . ($addBracket ? ')' : '');				
+        $token = preg_replace('/\)$/', '', $token);
+        $token .= ':*' . ($addBracket ? ')' : '');
       }
       if ($idx < count($tokens)-1 &&  !in_array($tokens[$idx], $booleanTokens) && !in_array($tokens[$idx+1], $booleanTokens)) {
         $token .= ' &';
@@ -448,48 +448,67 @@ and n.id is null"
     }
     return implode(' ', $tokens);
   }
-  
+
   /**
-   * Prepares the part of the taxon search query SQL which limits the results to the context, e.g. the 
+   * Prepares the part of the taxon search query SQL which limits the results to the context, e.g. the taxon group.
+   *
    * @param array $options
+   *   Options array passed to taxon search.
+   *
    * @return string
+   *   SQL clause to include in query WHERE.
    */
-  private static function taxonSearchGetQueryContextFilter($options) {
+  private static function taxonSearchGetQueryContextFilter(array $options) {
     $filters = [];
-    $params = ['taxon_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id', 'taxa_taxon_list_id',
-        'preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'parent_id'];
+    $params = [
+      'taxon_list_id', 'taxon_group_id', 'taxon_group', 'taxon_meaning_id', 'taxa_taxon_list_id',
+      'preferred_taxa_taxon_list_id', 'preferred_taxon', 'external_key', 'parent_id'
+    ];
     foreach ($params as $param) {
       if (!empty($options[$param])) {
         if ($options[$param] === 'null') {
           $filters[] = "cts.$param is null";
-        } else {
+        }
+        else {
           $list = $options[$param];
           $filters[] = "cts.$param in ($list)";
         }
       }
     }
-    return implode ("\nAND ", $filters);
+    if (!empty($options['min_taxon_rank_sort_order'])) {
+      $filters[] = "cts.taxon_rank_sort_order >= $options[min_taxon_rank_sort_order]";
+    }
+    if (!empty($options['max_taxon_rank_sort_order'])) {
+      $filters[] = "cts.taxon_rank_sort_order <= $options[max_taxon_rank_sort_order]";
+    }
+    return implode("\nAND ", $filters);
   }
-  
+
   /**
+   * Prepares name types filter for taxon search query.
+   *
    * Prepares the part of the taxon name search query which deals with the type of taxon name (language, abbreviation,
    * preferred, commonNames and synonyms parameters).
+   *
    * @param array $options
+   *   Options array passed to taxon search.
+   *
    * @return string
+   *   SQL clause to include in query WHERE.
    */
-  private static function taxonSearchGetQueryNameTypesFilter($options) {
+  private static function taxonSearchGetQueryNameTypesFilter(array $options) {
     $filters = [];
     if (isset($options['language'])) {
-      // handle special case common language
-      if (strpos($options['language'], "'common'")!==false) {
-        // common means not lat
+      // Handle special case common language.
+      if (strpos($options['language'], "'common'") !== FALSE) {
+        // Common means not lat.
         $filters[] = "cts.language_iso<>'lat'";
-        // clean up the fake 'common' language
+        // Clean up the fake 'common' language.
         $array = explode(',', $options['language']);
         unset($array['common']);
         $options['language'] = implode(',', $array);
       }
-      // if any real language the filter for them as well
+      // If any real language the filter for them as well.
       if (strlen($options['language'])) {
         $filters[] = "cts.language_iso in ($options[language])";
       }
@@ -498,30 +517,33 @@ and n.id is null"
       $filters[] = 'cts.preferred=' . ($options['preferred'] ? 'true' : 'false');
     }
     if (isset($options['commonNames'])) {
-      $filters[] = $options['commonNames'] 
-          ? "(cts.language_iso<>'lat')" 
+      $filters[] = $options['commonNames']
+          ? "(cts.language_iso<>'lat')"
           : "(cts.language_iso='lat')";
     }
     if (isset($options['synonyms'])) {
-      $filters[] = $options['synonyms'] 
-          ? "(cts.language_iso='lat' and preferred=false)" 
+      $filters[] = $options['synonyms']
+          ? "(cts.language_iso='lat' and preferred=false)"
           : "(cts.language_iso<>'lat' or preferred=true)";
     }
     if (isset($options['marine_flag'])) {
       $filters[] = 'cts.marine_flag=' . ($options['marine_flag'] ? 'true' : 'false');
     }
     // Disable 3+2 abbreviations if search val is not 5 characters, or abbreviations explicitly disabled.
-    if (!empty($options['searchQuery']) && !preg_match('/^[a-z0-9]{5}$/', strtolower($options['searchQuery'])) || 
-        (isset($options['abbreviations']) && $options['abbreviations'] === false)) {
+    if (!empty($options['searchQuery']) && !preg_match('/^[a-z0-9]{5}$/', strtolower($options['searchQuery'])) ||
+        (isset($options['abbreviations']) && $options['abbreviations'] === FALSE)) {
       $filters[] = "cts.name_type<>'A'";
     }
-    return implode ("\nAND ", $filters);
+    return implode("\nAND ", $filters);
   }
-  
+
   /**
    * Returns a construct containing several bits of information required to build the taxon search SQL.
+   *
    * @param array $options
-   * @return array Contains the following information:
+   *
+   * @return array
+   *   Contains the following information:
    *   * searchFilter - the SQL required to perform a searchf or the provided search value.
    *   * searchTermNoWildcards - the search term modified to exclude wildcards
    *   * headlineColumnSql - the SQL requird to generated the highlighted output version of the found term (which
@@ -548,8 +570,8 @@ and n.id is null"
           // wildcard * at the beginning is removed so leading characters not highlighted
           '/^\*/',
           // any other * or space will be replaced by a regex wildcard to match anything
-          '/[\*\s]/',    
-          // all other characters (i.e. not a regex wildcard) will be altered to allow optional space afterwards so the search can 
+          '/[\*\s]/',
+          // all other characters (i.e. not a regex wildcard) will be altered to allow optional space afterwards so the search can
           // go across word boundaries, including skipping of subgenera in brackets.
           '/([^(\.\+)])/'
         ), array(
@@ -564,7 +586,7 @@ and n.id is null"
         $headlineColumnSql = "ts_headline('simple', quote_literal(quote_literal($searchField)), to_tsquery('simple', '$fullTextSearchTerm')) as highlighted";
       }
       if ($options['abbreviations'] && preg_match('/^[a-z0-9]{5}$/', strtolower($searchTerm))) {
-        // abbreviations allowed and 5 characters input, so also include search for them.	
+        // abbreviations allowed and 5 characters input, so also include search for them.
         $searchFilters[] = "(cts.name_type='A' and cts.searchterm = '$searchTerm')";
       }
       return array(
@@ -581,7 +603,7 @@ and n.id is null"
       );
     }
   }
-  
+
   /**
    * Returns the SQL for the columns list for the taxon search query.
    * @param bool $isCount Set to true for a count query.
@@ -610,12 +632,13 @@ and n.id is null"
   cts.taxon_group_id,
   cts.parent_id,
   cts.identification_difficulty,
-  cts.id_diff_verification_rule_id 
+  cts.id_diff_verification_rule_id,
+  cts.taxon_rank_sort_order
 
 SQL;
     }
   }
-  
+
   /**
    * Returns the SQL for the order by section of the taxon search query.
    * @param bool $isCount Set to true for a count query. Order by is not required for count queries.
@@ -627,11 +650,11 @@ SQL;
       return '';
     } elseif (empty($searchFilterData['searchTermNoWildcards'])) {
       return <<<SQL
-order by taxonomic_sort_order, original  
+order by taxonomic_sort_order, original
 SQL;
     } else {
       return <<<SQL
-order by 
+order by
 -- abbreviation hits come first if enabled
 cts.name_type='A' DESC,
 -- species also come above other levels
@@ -639,19 +662,19 @@ coalesce(cts.taxon_rank_sort_order, 0) = 300 DESC,
 -- prefer matches in correct epithet order
 searchterm ilike '%' || replace('$searchFilterData[searchTermNoWildcards]', ' ', '%') || '%' DESC,
 -- prefer matches with searched phrase near start of term, by discarding the characters from the search term onwards and counting the rest
-length(regexp_replace(searchterm, replace('$searchFilterData[searchTermNoWildcards]', ' ', '.*') || '.*', '','i')),    
+length(regexp_replace(searchterm, replace('$searchFilterData[searchTermNoWildcards]', ' ', '.*') || '.*', '','i')),
 -- prefer matches where the full search term is close together, by counting the characters in the area covered by the search term
-case 
+case
   when searchterm ilike '%' || replace('$searchFilterData[searchTermNoWildcards]', ' ', '%') || '%'
     then length((regexp_matches(searchterm, replace('$searchFilterData[searchTermNoWildcards]', ' ', '.*'), 'i'))[1])
   else 9999 end,
-cts.preferred desc, 
+cts.preferred desc,
 -- finally alpha sort
 searchterm
 SQL;
     }
   }
-  
+
   /**
    * Returns the limit and offset parts of the taxon search query. Count queries do not set the limit or offset.
    * @param array $options
@@ -670,16 +693,16 @@ SQL;
       }
       return implode(' ', $limitOffset);
     }
-    
+
   }
-  
+
   /**
    * Prepares a query for searching taxon names.
-   * 
+   *
    * Optimised to use full text search where possible.
    * @param Database $db Database object if already available.
    * @param array $options Options to control the search, including:
-   *   * taxon_list_id - required unless filtering by a specific list of taxa_Taxon_lists_ids. ID of the taxon list or 
+   *   * taxon_list_id - required unless filtering by a specific list of taxa_Taxon_lists_ids. ID of the taxon list or
    *     an array of list IDs to search.
    *   * searchQuery - text to search for.
    *   * taxon_group_id - ID or array of IDs of taxon groups to limit the search to.
@@ -689,7 +712,7 @@ SQL;
    *   * taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to.
    *   * preferred_taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to, using
          the preferred name's ID to filter against, therefore including synonyms and common names in the search.
-   *   * preferred_taxon - preferred taxon name or array of preferred names to limit the search to (e.g. limit to a list 
+   *   * preferred_taxon - preferred taxon name or array of preferred names to limit the search to (e.g. limit to a list
    *     of species names). Exact matches required.
    *   * external_key - External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
    *   * parent_id - ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching the
@@ -701,16 +724,18 @@ SQL;
    *   * commonNames - set to true to limit to common names (non-latin names) or false to exclude non-latin names.
    *   * synonyms - set to true to limit to synonyms (latin names which are not the preferred name) or false to exclude
    *     synonyms.
-   *   * abbreviations - boolean, default true. Set to false to disable searching 2+3 character species name 
+   *   * abbreviations - boolean, default true. Set to false to disable searching 2+3 character species name
    *     abbreviations.
    *   * marine_flag - set to true for only marine associated species, false to exclude marine-associated species.
    *   * searchAuthors - boolean, default false. Set to true to include author strings in the searched text.
    *   * wholeWords - boolean, default false. Set to true to only search whole words in the full text index, otherwise
    *     searches the start of words.
+   *   * min_taxon_rank_sort_order - integer. Minimum taxon rank to include in results.
+   *   * max_taxon_rank_sort_order - integer. Maximum taxon rank to include in results.
    *   * count - set to true to return a results count query
    *   * limit - set to limit number of records returned
    *   * offset - set to offset the query results from the start of the dataset for paging
-   * 
+   *
    * @return string SQL to run
    * @throws exception If parameters are of incorrect format.
    */

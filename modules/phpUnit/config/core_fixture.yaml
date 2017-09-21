@@ -1,4 +1,4 @@
-# The core fixture sets up the Indicia database with a consistent set of 
+# The core fixture sets up the Indicia database with a consistent set of
 # test data in the core tables.
 # Id values in tables having sequences are never supplied so that, if a test
 # adds a record to a table, the sequence will supply it the next valid id.
@@ -13,7 +13,7 @@ websites:
     url: "http://www.indicia.org.uk"
     password: "password"
 
-  
+
 surveys:
   -
     title: "Test survey"
@@ -25,7 +25,7 @@ surveys:
     updated_by_id: 1
 
 
-taxon_meanings: 
+taxon_meanings:
   # No support for INSERT INTO table DEFAULT VALUES.
   # Use high id values to avoid conflict with any values created by sequence
   # during testing
@@ -42,7 +42,26 @@ taxon_groups:
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
 
-  
+taxon_ranks:
+  -
+    rank: "Genus"
+    short_name: "Genus"
+    italicise_taxon: "false"
+    sort_order: 290
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+  -
+    rank: "Species"
+    short_name: "Species"
+    italicise_taxon: "true"
+    sort_order: 300
+    created_on: 2016-07-22:16:00:00
+    created_by_id: 1
+    updated_on: 2016-07-22:16:00:00
+    updated_by_id: 1
+
 taxon_lists:
   -
     title: "Test taxon list"
@@ -53,13 +72,14 @@ taxon_lists:
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
 
-  
+
 taxa:
   -
     taxon: "Test taxon"
     taxon_group_id: 1
     language_id: 2
     external_key: "TESTKEY"
+    taxon_rank_id: 1
     created_on: 2016-07-22:16:00:00
     created_by_id: 1
     updated_on: 2016-07-22:16:00:00
@@ -69,12 +89,13 @@ taxa:
     taxon_group_id: 1
     language_id: 2
     external_key: "TESTKEY2"
+    taxon_rank_id: 2
     created_on: 2016-07-22:16:00:00
     created_by_id: 1
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
 
-  
+
 taxa_taxon_lists:
   -
     taxon_list_id: 1
@@ -97,7 +118,7 @@ taxa_taxon_lists:
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
 
- 
+
 cache_taxa_taxon_lists:
   -
     id: 1
@@ -114,6 +135,8 @@ cache_taxa_taxon_lists:
     preferred_language_iso: "lat"
     preferred_language: "Latin"
     external_key: "TESTKEY"
+    taxon_rank: "Genus"
+    taxon_rank_sort_order: "290"
     taxon_meaning_id: 10000
     taxon_group_id: 1
     taxon_group: "Test taxon group"
@@ -134,6 +157,8 @@ cache_taxa_taxon_lists:
     preferred_language_iso: "lat"
     preferred_language: "Latin"
     external_key: "TESTKEY2"
+    taxon_rank: "Species"
+    taxon_rank_sort_order: "300"
     taxon_meaning_id: 10001
     taxon_group_id: 1
     taxon_group: "Test taxon group"
@@ -159,6 +184,7 @@ cache_taxon_searchterms:
     searchterm_length: 9
     preferred_taxa_taxon_list_id: 1
     external_key: "TESTKEY"
+    taxon_rank_sort_order: "290"
   -
     id: 2
     taxa_taxon_list_id: 1
@@ -177,6 +203,7 @@ cache_taxon_searchterms:
     searchterm_length: 10
     preferred_taxa_taxon_list_id: 1
     external_key: "TESTKEY"
+    taxon_rank_sort_order: "290"
   -
     id: 3
     taxa_taxon_list_id: 2
@@ -195,6 +222,7 @@ cache_taxon_searchterms:
     searchterm_length: 10
     preferred_taxa_taxon_list_id: 1
     external_key: "TESTKEY2"
+    taxon_rank_sort_order: "300"
   -
     id: 4
     taxa_taxon_list_id: 2
@@ -213,7 +241,8 @@ cache_taxon_searchterms:
     searchterm_length: 12
     preferred_taxa_taxon_list_id: 1
     external_key: "TESTKEY2"
-  
+    taxon_rank_sort_order: "300"
+
 meanings:
   # No support for INSERT INTO table DEFAULT VALUES.
   # Use high id values to avoid conflict with any values created by sequence
@@ -264,8 +293,8 @@ termlists:
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
     external_key: "indicia:user_identifier_types"
-    
-  
+
+
 terms:
   -
     term: "Test term"
@@ -302,8 +331,8 @@ terms:
     created_by_id: 1
     updated_on: 2016-07-22:16:00:00
     updated_by_id: 1
-  
-  
+
+
 termlists_terms:
   -
     termlist_id: 1                          #Test term list
@@ -397,7 +426,7 @@ cache_termlists_terms:
     preferred: "true"
     termlist_id: 3
     termlist_title: "Sample methods"
-    website_id: 
+    website_id:
     preferred_termlists_term_id: 3
     sort_order: 1
     term: "Test sample method"
@@ -414,7 +443,7 @@ cache_termlists_terms:
     preferred: "true"
     termlist_id: 4
     termlist_title: "User identifier types"
-    website_id: 
+    website_id:
     preferred_termlists_term_id: 4
     sort_order: 1
     term: "email"
@@ -431,7 +460,7 @@ cache_termlists_terms:
     preferred: "true"
     termlist_id: 4
     termlist_title: "User identifier types"
-    website_id: 
+    website_id:
     preferred_termlists_term_id: 5
     sort_order: 2
     term: "twitter"
@@ -508,7 +537,7 @@ occurrences:
     record_status: "C"
     release_status: "R"
     confidential: "t"
-    
+
 cache_occurrences_functional:
   -
     id: 1
@@ -629,7 +658,7 @@ location_attributes:
     updated_on: "2016-07-22:16:00:00"
     updated_by_id: 1,
 
-        
+
 location_attributes_websites:
   -
     website_id: 1                           #Test website
