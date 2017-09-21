@@ -84,14 +84,14 @@ class Data_Controller extends Data_Service_Base_Controller {
       'survey',
       'survey_attribute',
       'survey_attribute_value',
-      'sample_comment',      
+      'sample_comment',
       'survey_medium',
       'taxa_taxon_list',
       'taxon_rank',
       'taxon_relation',
       'taxon_group',
       'termlists_term',
-      'user',      
+      'user',
       'user_trust',
       'users_website'
   );
@@ -114,7 +114,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'cache_taxa_taxon_list',
       'verification_rule_datum'
   );
-  
+
   // List of tables that do not use views to expose their data.
   protected $tables_without_views = array(
     'cache_taxon_searchterms',
@@ -123,7 +123,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'verification_rule_data',
     'users_websites'
   );
-  
+
   /**
   * Provides the /services/data/cache_taxa_taxon_list service.
   * Retrieves details of a single taxon searchterm.
@@ -132,8 +132,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('cache_taxa_taxon_list');
   }
-  
-  
+
+
   /**
   * Provides the /services/data/cache_taxon_searchterm service.
   * Retrieves details of a single taxon searchterm.
@@ -142,7 +142,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('cache_taxon_searchterm');
   }
-  
+
   /**
   * Provides the /services/data/filter service.
   * Retrieves details of a single filter.
@@ -151,7 +151,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('filter');
   }
-  
+
   /**
   * Provides the /services/data/filters_user service.
   * Retrieves details of a single filters_user join record.
@@ -160,7 +160,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('filters_user');
   }
-  
+
   /**
   * Provides the /services/data/group service.
   * Retrieves details of a single group.
@@ -169,7 +169,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('group');
   }
-  
+
   /**
   * Provides the /services/data/group_page service.
   * Retrieves details of a single group.
@@ -178,7 +178,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('group_page');
   }
-  
+
   /**
   * Provides the /services/data/group_invitation service.
   * Retrieves details of a single group_invitation.
@@ -187,7 +187,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('group_invitation');
   }
-  
+
   /**
   * Provides the /services/data/group_relation service.
   * Retrieves details of a single group_relation.
@@ -196,7 +196,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('group_relation');
   }
-  
+
   /**
   * Provides the /services/data/groups_location service.
   * Retrieves details of a single groups_location.
@@ -205,7 +205,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('groups_location');
   }
-  
+
   /**
   * Provides the /services/data/groups_user service.
   * Retrieves details of a single groups_user.
@@ -214,7 +214,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('groups_user');
   }
-  
+
   /**
   * Provides the /services/data/index_websites_website_agreements service.
   * Retrieves details of a single index_websites_website_agreements record.
@@ -278,11 +278,11 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('location_attribute_value');
   }
-  
+
   /**
   * Provides the /service/data/location_image service.
   * Retrieves details of location media.
-  * @deprecated 
+  * @deprecated
   */
   public function location_image()
   {
@@ -301,13 +301,13 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
   * Provides the /service/data/sample_image service.
   * Retrieves details of sample media.
-  * @deprecated 
+  * @deprecated
   */
   public function sample_image()
   {
     $this->handle_call('sample_medium');
   }
-  
+
   /**
   * Provides the /service/data/sample_medium service.
   * Retrieves details of sample media.
@@ -316,7 +316,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('sample_medium');
   }
-  
+
   /**
   * Provides the /services/data/occurrence service.
   * Retrieves details of notifications.
@@ -352,7 +352,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
   $this->handle_call('occurrence_attribute_value');
   }
-  
+
  /**
   * Provides the /service/data/occurrence_images service.
   * Retrieves details of occurrence media. This is an alias for occurrence_medium,
@@ -389,8 +389,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('person');
   }
-  
-  
+
+
   /**
   * Provides the /service/data/person_attribute service.
   * Retrieves details of person attributes.
@@ -399,8 +399,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
   $this->handle_call('person_attribute');
   }
-  
-  
+
+
   /**
   * Provides the /service/data/person_attribute_value service.
   * Retrieves details of person attribute values.
@@ -446,7 +446,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('survey');
   }
-  
+
   /**
   * Provides the /service/data/survey_attribute service.
   * Retrieves details of location attributes.
@@ -464,7 +464,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('survey_attribute_value');
   }
-  
+
   /**
   * Provides the /services/data/survey_comment service.
   */
@@ -472,7 +472,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('survey_comment');
   }
-  
+
   /**
   * Provides the /service/data/survey_medium service.
   * Retrieves details of sample media.
@@ -499,11 +499,11 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('taxon_group');
   }
-  
+
   /**
   * Provides the /service/data/taxon_image service.
   * Retrieves details of taxon media.
-  * @deprecated 
+  * @deprecated
   */
   public function taxon_image()
   {
@@ -528,7 +528,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('taxon_list');
   }
-  
+
   /**
   * Provides the /services/data/taxon_rank service.
   * Provides access to taxon_lists.
@@ -537,7 +537,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('taxon_rank');
   }
-  
+
   /**
   * Provides the /services/data/taxa_search service.
   * Provides access to taxon_lists.
@@ -567,7 +567,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('taxa_taxon_list');
   }
-  
+
   /**
   * Provides the /service/data/taxa_taxon_list_attribute service.
   * Retrieves details of taxa on taxon list attributes.
@@ -657,7 +657,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('user');
   }
-  
+
   /**
   * Provides the /services/data/user service.
   * Retrieves details of a single user identifier.
@@ -674,12 +674,12 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('users_website');
   }
-  
+
   public function user_trust()
   {
     $this->handle_call('user_trust');
   }
-  
+
   /**
   * Provides the /services/data/verification_rule_data service.
   * Retrieves details of a single taxon searchterm.
@@ -697,7 +697,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('website');
   }
-  
+
   /**
   * Provides the /services/data/website_agreement service.
   * Retrieves details of a single website.
@@ -706,7 +706,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('website_agreement');
   }
-  
+
   /**
   * Provides the /services/data/websites_website_agreement service.
   * Retrieves details of a single website.
@@ -760,7 +760,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       echo "Unrecognised entity $name";
     }
   }
-  
+
   /**
    * Load any warehouse modules which extend the data services entity list.
    * @return Array list of extension definitions.
@@ -863,8 +863,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       Throw new Exception('Unknown error on submission of the model');
 
   }
-  
-  /** 
+
+  /**
    * Checks that a parameter for the taxon search contains a single parameter value or a valid JSON array.
    * @param string $value
    * @return mixed
@@ -877,10 +877,12 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     return $decoded === null ? $value : $decoded;
   }
-  
+
   /**
    * Fetches the results of a taxon search query (taxa_search endpoint).
+   *
    * @return array
+   *   Search results.
    */
   protected function getDataTaxaSearch() {
     $params = $_REQUEST;
@@ -898,14 +900,14 @@ class Data_Controller extends Data_Service_Base_Controller {
         $params[$possibleArrayParam] = $this->decodeArrayParameter($params[$possibleArrayParam]);
       }
     }
-    // Convert bool strings to true booleans
+    // Convert bool strings to true booleans.
     $possibleBools = ['preferred', 'commonNames', 'synonyms', 'abbreviations', 'marine_flag', 'searchAuthors',
         'wholeWords'];
     foreach ($possibleBools as $possibleBoolParam) {
       if (isset($params[$possibleBoolParam])) {
-        if ($params[$possibleBoolParam] === 'true') {
+        if (in_array($params[$possibleBoolParam], array('true', 't', '1'))) {
           $params[$possibleBoolParam] = true;
-        } elseif ($params[$possibleBoolParam] === 'false') {
+        } elseif (in_array($params[$possibleBoolParam], array('false', 'f', '0'))) {
           $params[$possibleBoolParam] = false;
         }
       }
@@ -1053,7 +1055,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->db->select($select);
     }
     // If not in the warehouse, then the entity must explicitly allow full access, or contain a website ID to filter on.
-    if (!$this->in_warehouse && !array_key_exists ('website_id', $this->view_columns) && 
+    if (!$this->in_warehouse && !array_key_exists ('website_id', $this->view_columns) &&
         !array_key_exists ('from_website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
       // If access is from remote website, then either table allows full access or exposes a website ID to filter on.
       Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
@@ -1069,7 +1071,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       if ($this->website_id) {
         // check if a request for shared data is being made. Also check this is valid to prevent injection.
         if (isset($_REQUEST['sharing']) && preg_match('/[reporting|peer_review|verification|data_flow|moderation|editing]/', $_REQUEST['sharing'])) {
-          // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So 
+          // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So
           // we can use this to work out access to other website data.
           $this->db->join('index_websites_website_agreements as iwwa', array(
               'iwwa.from_website_id'=>$this->viewname.'.'.$websiteFilterField,
@@ -1202,12 +1204,12 @@ class Data_Controller extends Data_Service_Base_Controller {
           break;
         case 'query':
           // A fix for a bug in data_entry_helper where the query passed in the getAttributes method is double urlencoded.
-          if (substr($value, 0, 3)==='%7B') 
+          if (substr($value, 0, 3)==='%7B')
             $value = urldecode($value);
           $this->apply_query_def_to_db($value);
           break;
         case 'mode':
-        case 'view': 
+        case 'view':
         case 'nonce':
         case 'auth_token':
         case 'callback':
@@ -1259,7 +1261,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       }
     }
     if (count($orderby)) {
-      // Build a multi-field order array according to Kohana db builder spec. 
+      // Build a multi-field order array according to Kohana db builder spec.
       // Default missing sort directions to ASC.
       $order=array_combine($orderby, array_pad($sortdir, count($orderby), 'ASC'));
       $this->db->orderby($order);
@@ -1411,7 +1413,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     $model->submission = $item;
     ORM::$authorisedWebsiteId=$this->website_id;
     $result = $model->submit();
-    if (!$result) 
+    if (!$result)
       throw new ValidationError('Validation error', 2003, $model->getAllErrors());
     // return the outermost model's id
     return array('id'=>$model->id, 'struct'=>$model->get_submission_response_metadata());
@@ -1467,7 +1469,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       if (array_key_exists('website_id', $fields)) {
         // check if a request for shared data is being made. Also check this is valid to prevent injection.
         if ($sharing && preg_match('/[reporting|peer_review|verification|data_flow|moderation|editing]/', $sharing)) {
-          // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So 
+          // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So
           // we can use this to work out access to other website data.
           $this->db->join('index_websites_website_agreements as iwwa', array(
               'iwwa.from_website_id'=>'record.website_id',
@@ -1485,12 +1487,12 @@ class Data_Controller extends Data_Service_Base_Controller {
     $number_rec = $this->db->count_records();
     return ($number_rec > 0 ? true : false);
   }
-  
+
   /**
    * Get the record count of the full grid result.
    */
   protected function record_count() {
     return $this->build_query_results(true);
   }
-  
+
 }
