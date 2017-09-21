@@ -151,7 +151,6 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'taxon_list_id' => 1,
     );
     $response = $this->checkTaxonSearchCount($params, 2);
-    $this->assertEquals('Test taxon', ($response[0]['taxon']), 'Data services get JSON for taxa_search did not return correct record.');
     // Test filtering against preferred names.
     $params['preferred'] = 't';
     $this->checkTaxonSearchCount($params, 2);
@@ -202,13 +201,13 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $params['min_taxon_rank_sort_order'] = 300;
     $response = $this->checkTaxonSearchCount($params, 1);
     $params['min_taxon_rank_sort_order'] = 310;
-    $response = $this->checkTaxonSearchCount($params, 1);
+    $response = $this->checkTaxonSearchCount($params, 0);
     unset($params['min_taxon_rank_sort_order']);
     $params['max_taxon_rank_sort_order'] = 280;
     $response = $this->checkTaxonSearchCount($params, 0);
-    $params['min_taxon_rank_sort_order'] = 290;
+    $params['max_taxon_rank_sort_order'] = 290;
     $response = $this->checkTaxonSearchCount($params, 1);
-    $params['min_taxon_rank_sort_order'] = 300;
+    $params['max_taxon_rank_sort_order'] = 300;
     $response = $this->checkTaxonSearchCount($params, 2);
   }
 
