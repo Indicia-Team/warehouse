@@ -26,6 +26,7 @@
 // during setup, the indicia config file does not exist
 $indicia = kohana::config_load('indicia', false);
 $theme = $indicia ? $indicia['theme'] : 'default';
+$warehouseTitle = isset($warehouseTitle) ? $warehouseTitle : 'Indicia warehouse';
 $siteTitle = html::specialchars($warehouseTitle);
 
 ?>
@@ -67,17 +68,17 @@ echo html::stylesheet(array('media/css/menus',),array('screen',));
   jQuery(document).ready(function() {
     jQuery('ul.sf-menu').superfish();
     // Implement hover over highlighting on buttons, even for AJAX loaded content by using live events
-    $('.ui-state-default').live('mouseover', function() { 
-      $(this).addClass('ui-state-hover'); 
+    $('.ui-state-default').live('mouseover', function() {
+      $(this).addClass('ui-state-hover');
     });
-    $('.ui-state-default').live('mouseout', function() { 
-      $(this).removeClass('ui-state-hover'); 
+    $('.ui-state-default').live('mouseout', function() {
+      $(this).removeClass('ui-state-hover');
     });
     // Hack to get fancybox working as a jQuery live, because some of our images load from AJAX calls,
     // e.g. on the species checklist taxa tab. So we temporarily create a dummy link to our image and click it.
     $('a.fancybox').live('click', function() {
       jQuery("body").after('<a id="link_fancybox" style="display: hidden;" href="'+jQuery(this).attr('href')+'"></a>');
-      jQuery('#link_fancybox').fancybox(); 
+      jQuery('#link_fancybox').fancybox();
       jQuery('#link_fancybox').click();
       jQuery('#link_fancybox').remove();
       return false;
