@@ -110,15 +110,37 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
   }
 
   /**
-   * Rapidly repeat some calls
-  */
+   * Rapidly repeat some calls.
+   */
   public function testRepeat50() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRepeat50");
-    for ($i=0; $i<50; $i++) {
+    for ($i = 0; $i < 50; $i++) {
       self::testRequestDataGetRecordByIndirectId();
     }
   }
 
+  /**
+   * Utility function for simplifying a call to the taxa_search data services end-point in test cases.
+   *
+   * @param array $params
+   *   Parameters to pass to the service.
+   * @param int $count
+   *   Expected record count.
+   *
+   * @return array
+   *   Web service response;
+   */
+  private function checkTaxonSearchCount(array $params, $count) {
+    $url = data_entry_helper::$base_url . 'index.php/services/data/taxa_search?' . http_build_query($params, '', '&');
+    $response = self::getResponse($url);
+    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
+    $this->assertCount($count, $response, 'Data services get JSON for taxa_search did not return correct record count.');
+    return $response;
+  }
+
+  /**
+   * Tests requests to the taxa_search data services endpoint.
+   */
   public function testRequestDataTaxaSearch() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearch");
     $params = array(
@@ -126,22 +148,24 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'auth_token' => $this->auth['read']['auth_token'],
       'nonce' => $this->auth['read']['nonce'],
       'q' => 'test',
-      'taxon_list_id' => 1
+      'taxon_list_id' => 1,
     );
-    $url = data_entry_helper::$base_url . 'index.php/services/data/taxa_search?' . http_build_query($params, '', '&');
-    $response = self::getResponse($url);
-    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearch returned error. See log for details");
-    $this->assertCount(2, $response, 'Data services get JSON for taxa_search did not return correct record count.');
+    $response = $this->checkTaxonSearchCount($params, 2);
     $this->assertEquals('Test taxon', ($response[0]['taxon']), 'Data services get JSON for taxa_search did not return correct record.');
+    // Test filtering against preferred names.
+    $params['preferred'] = 't';
+    $this->checkTaxonSearchCount($params, 2);
+    $params['preferred'] = 'true';
+    $this->checkTaxonSearchCount($params, 2);
+    $params['preferred'] = 'f';
+    $this->checkTaxonSearchCount($params, 0);
+    $params['preferred'] = 'false';
+    $this->checkTaxonSearchCount($params, 0);
   }
 
-  private function checkTaxonSearchCount($params, $count) {
-    $url = data_entry_helper::$base_url . 'index.php/services/data/taxa_search?' . http_build_query($params, '', '&');
-    $response = self::getResponse($url);
-    $this->assertFalse(isset($response['error']), "testRequestDataTaxaSearchTaxonGroup returned error. See log for details");
-    $this->assertCount($count, $response, 'Data services get JSON for taxa_search did not return correct record count.');
-  }
-
+  /**
+   * Tests requests to the taxa_search data services endpoint which filter by taxon group.
+   */
   public function testRequestDataTaxaSearchTaxonGroup() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearchTaxonGroup");
     $params = array(
@@ -153,16 +177,6 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'taxon_group' => json_encode(['Test taxon group'])
     );
     $this->checkTaxonSearchCount($params, 2);
-    // Test filtering against preferred names
-    $params['preferred'] = 't';
-    $this->checkTaxonSearchCount($params, 2);
-    $params['preferred'] = 'true';
-    $this->checkTaxonSearchCount($params, 2);
-    $params['preferred'] = 'f';
-    $this->checkTaxonSearchCount($params, 0);
-    $params['preferred'] = 'false';
-    $this->checkTaxonSearchCount($params, 0);
-    unset($params['preferred']);
     // Test filtering against an incorrect group.
     $params['taxon_group'] = 'Wrong group';
     $this->checkTaxonSearchCount($params, 0);
@@ -176,7 +190,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
   public function testSave() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testSave");
-    // post a location with an attribute value.
+    // Post a location with an attribute value.
     $array = array(
       'location:name' => 'UnitTest2',
       'location:centroid_sref' => 'SU0101',
@@ -198,13 +212,13 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Saved location attribute " . print_r((new ArrayObject($locAttr))->offsetGet("\0*\0object"), TRUE));
     $this->assertEquals('saveTestAttr', $locAttr->text_value, 'Saved attribute value is not as expected');
 
-    // repost the same location, with a new name and attribute value
+    // Re-post the same location, with a new name and attribute value.
     $array = array(
       'location:id' => $locId,
       'location:name' => 'UnitTest2-update',
       'location:centroid_sref' => 'SU0101',
       'location:centroid_sref_system' => 'osgb',
-      'locAttr:1:'.$locAttr->id=>'saveTestAttr-update'
+      'locAttr:1:' . $locAttr->id => 'saveTestAttr-update'
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
     $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
@@ -220,13 +234,13 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Updated location attribute " . print_r((new ArrayObject($locAttr))->offsetGet("\0*\0object"), TRUE));
     $this->assertEquals('saveTestAttr-update', $locAttr->text_value, 'Saved attribute value is not as expected');
 
-    // repost the same location, with a deleted attribute value
+    // Reepost the same location, with a deleted attribute value.
     $array = array(
       'location:id' => $locId,
       'location:name' => 'UnitTest2',
       'location:centroid_sref' => 'SU0101',
       'location:centroid_sref_system' => 'osgb',
-      'locAttr:1:'.$locAttr->id => ''
+      'locAttr:1:' . $locAttr->id => ''
     );
     $s = submission_builder::build_submission($array, array('model' => 'location'));
     $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
