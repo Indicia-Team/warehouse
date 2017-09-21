@@ -3,6 +3,9 @@
 <?php
 
 /**
+ * @file
+ * Main html template.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,16 +19,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
-// during setup, the indicia config file does not exist
-$indicia = kohana::config_load('indicia', false);
+// During setup, the indicia config file does not exist.
+$indicia = kohana::config_load('indicia', FALSE);
 $theme = $indicia ? $indicia['theme'] : 'default';
+$warehouseTitle = isset($warehouseTitle) ? $warehouseTitle : 'Indicia warehouse';
 $siteTitle = html::specialchars($warehouseTitle);
 
 ?>
@@ -36,7 +40,7 @@ $siteTitle = html::specialchars($warehouseTitle);
 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <meta id="baseURI" name="baseURI" content="<?php echo url::site() ?>" />
-<meta id="routedURI" name="routedURI" content="<?php echo url::site().router::$routed_uri; ?>" />
+<meta id="routedURI" name="routedURI" content="<?php echo url::site() . router::$routed_uri; ?>" />
 <title><?php echo $siteTitle; ?> | <?php echo $title ?></title>
 <?php
 echo html::stylesheet(
@@ -45,7 +49,7 @@ echo html::stylesheet(
     'media/css/forms',
     'media/js/fancybox/source/jquery.fancybox.css',
     'media/css/jquery.autocomplete',
-    'media/themes/'.$theme.'/jquery-ui.custom'
+    'media/themes/' . $theme . '/jquery-ui.custom'
   ),
   array('screen')
 );
@@ -60,24 +64,24 @@ echo html::script(
     'media/js/jquery-ui.custom.min.js'
   ), FALSE
 );
-echo html::stylesheet(array('media/css/menus',),array('screen',));
+echo html::stylesheet(array('media/css/menus'), array('screen'));
 ?>
 <script type="text/javascript">
 /*<![CDATA[*/
   jQuery(document).ready(function() {
     jQuery('ul.sf-menu').superfish();
     // Implement hover over highlighting on buttons, even for AJAX loaded content by using live events
-    $('.ui-state-default').live('mouseover', function() { 
-      $(this).addClass('ui-state-hover'); 
+    $('.ui-state-default').live('mouseover', function() {
+      $(this).addClass('ui-state-hover');
     });
-    $('.ui-state-default').live('mouseout', function() { 
-      $(this).removeClass('ui-state-hover'); 
+    $('.ui-state-default').live('mouseout', function() {
+      $(this).removeClass('ui-state-hover');
     });
     // Hack to get fancybox working as a jQuery live, because some of our images load from AJAX calls,
     // e.g. on the species checklist taxa tab. So we temporarily create a dummy link to our image and click it.
     $('a.fancybox').live('click', function() {
       jQuery("body").after('<a id="link_fancybox" style="display: hidden;" href="'+jQuery(this).attr('href')+'"></a>');
-      jQuery('#link_fancybox').fancybox(); 
+      jQuery('#link_fancybox').fancybox();
       jQuery('#link_fancybox').click();
       jQuery('#link_fancybox').remove();
       return false;
@@ -99,21 +103,23 @@ echo html::stylesheet(array('media/css/menus',),array('screen',));
     <div id="menu">
     <ul class="sf-menu ui-helper-reset ui-helper-clearfix ui-widget-header">
 
-    <?php foreach ($menu as $toplevel => $submenu): ?>
+    <?php foreach ($menu as $toplevel => $submenu) : ?>
 
         <!-- BEGIN: print the top level menu items -->
         <li class="ui-state-default">
-        <?php if(count($submenu)==0) {
-            // No submenu, so treat as link to the home page
+        <?php
+        if (count($submenu) == 0) {
+          // No submenu, so treat as link to the home page.
           echo html::anchor('home', $toplevel);
-        } else {
-            echo '<a href="#">'.$toplevel.'</a>';
+        }
+        else {
+          echo '<a href="#">' . $toplevel . '</a>';
         } ?>
 
             <!-- BEGIN: print the sub menu items -->
-            <?php if (count($submenu)>0): ?>
+            <?php if (count($submenu) > 0) : ?>
                 <ul>
-                <?php foreach ($submenu as $menuitem => $url): ?>
+                <?php foreach ($submenu as $menuitem => $url) : ?>
                     <li class="ui-state-default"><?php echo html::anchor($url, $menuitem); ?></li>
                 <?php endforeach; ?>
                 </ul>
@@ -137,14 +143,16 @@ echo html::stylesheet(array('media/css/menus',),array('screen',));
 </div>
         <h1><?php echo $title; ?></h1>
 <?php
-  $info = $this->session->get('flash_info', null);
-  if ($info) : ?>
+$info = $this->session->get('flash_info', NULL);
+if ($info) : ?>
         <div class="ui-widget-content ui-corner-all ui-state-highlight page-notice" >
         <?php echo $info; ?>
         </div>
-<?php endif;
-  $error = $this->session->get('flash_error', null);
-  if ($error) : ?>
+<?php
+endif;
+$error = $this->session->get('flash_error', NULL);
+if ($error) :
+?>
         <div class="ui-widget-content ui-corner-all ui-state-error page-notice">
         <?php echo $error; ?>
         </div>
@@ -158,7 +166,9 @@ echo html::stylesheet(array('media/css/menus',),array('screen',));
     <div id="footer">
     <?php
     echo $siteTitle . ' | ' . Kohana::lang('misc.indicia_version') . ' ' . kohana::config('version.version');
-    if (kohana::config('upgrade.continuous_upgrade')) echo " (dev)"; ?>
+    if (kohana::config('upgrade.continuous_upgrade')) {
+      echo " (dev)";
+    } ?>
     </div>
     <!-- END: footer -->
 
