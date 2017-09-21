@@ -188,6 +188,30 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->checkTaxonSearchCount($params, 2);
   }
 
+  public function testRequestDataTaxaSearchRank() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testRequestDataTaxaSearch");
+    $params = array(
+      'mode' => 'json',
+      'auth_token' => $this->auth['read']['auth_token'],
+      'nonce' => $this->auth['read']['nonce'],
+      'q' => 'test',
+      'taxon_list_id' => 1
+    );
+    $params['min_taxon_rank_sort_order'] = 290;
+    $response = $this->checkTaxonSearchCount($params, 2);
+    $params['min_taxon_rank_sort_order'] = 300;
+    $response = $this->checkTaxonSearchCount($params, 1);
+    $params['min_taxon_rank_sort_order'] = 310;
+    $response = $this->checkTaxonSearchCount($params, 1);
+    unset($params['min_taxon_rank_sort_order']);
+    $params['max_taxon_rank_sort_order'] = 280;
+    $response = $this->checkTaxonSearchCount($params, 0);
+    $params['min_taxon_rank_sort_order'] = 290;
+    $response = $this->checkTaxonSearchCount($params, 1);
+    $params['min_taxon_rank_sort_order'] = 300;
+    $response = $this->checkTaxonSearchCount($params, 2);
+  }
+
   public function testSave() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testSave");
     // Post a location with an attribute value.

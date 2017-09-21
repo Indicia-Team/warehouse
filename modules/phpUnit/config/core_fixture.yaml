@@ -184,7 +184,6 @@ cache_taxon_searchterms:
     searchterm_length: 9
     preferred_taxa_taxon_list_id: 1
     external_key: "TESTKEY"
-    taxon_rank: "Genus"
     taxon_rank_sort_order: "290"
   -
     id: 2
@@ -204,7 +203,6 @@ cache_taxon_searchterms:
     searchterm_length: 10
     preferred_taxa_taxon_list_id: 1
     external_key: "TESTKEY"
-    taxon_rank: "Genus"
     taxon_rank_sort_order: "290"
   -
     id: 3
@@ -224,7 +222,6 @@ cache_taxon_searchterms:
     searchterm_length: 10
     preferred_taxa_taxon_list_id: 1
     external_key: "TESTKEY2"
-    taxon_rank: "Species"
     taxon_rank_sort_order: "300"
   -
     id: 4
@@ -244,7 +241,6 @@ cache_taxon_searchterms:
     searchterm_length: 12
     preferred_taxa_taxon_list_id: 1
     external_key: "TESTKEY2"
-    taxon_rank: "Species"
     taxon_rank_sort_order: "300"
 
 meanings:
