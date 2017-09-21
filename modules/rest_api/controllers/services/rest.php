@@ -24,6 +24,7 @@
 DEFINE("REST_API_DEFAULT_PAGE_SIZE", 100);
 
 if (!function_exists('http_response_code')) {
+
   function http_response_code($code = NULL) {
     if ($code !== NULL) {
       switch ($code) {
@@ -66,38 +67,43 @@ if (!function_exists('http_response_code')) {
         case 505: $text = 'HTTP Version not supported'; break;
         default:
           exit('Unknown http status code "' . htmlentities($code) . '"');
-          break;
       }
       $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
       header($protocol . ' ' . $code . ' ' . $text);
       $GLOBALS['http_response_code'] = $code;
-    } else {
+    }
+    else {
       $code = (isset($GLOBALS['http_response_code']) ? $GLOBALS['http_response_code'] : 200);
     }
     return $code;
   }
+
 }
 
-if( !function_exists('apache_request_headers') ) {
+if (!function_exists('apache_request_headers')) {
   Kohana::log('debug', 'PHP apache_request_headers() function does not exist. Replacement function used.');
+
   function apache_request_headers() {
     $arh = array();
     $rx_http = '/\AHTTP_/';
-    foreach($_SERVER as $key => $val) {
-      if( preg_match($rx_http, $key) ) {
+    foreach ($_SERVER as $key => $val) {
+      if (preg_match($rx_http, $key)) {
         $arh_key = preg_replace($rx_http, '', $key);
-        // do some nasty string manipulations to restore the original letter case
-        // this should work in most cases
+        // Do some nasty string manipulations to restore the original letter case.
+        // This should work in most cases.
         $rx_matches = explode('_', $arh_key);
-        if( count($rx_matches) > 0 and strlen($arh_key) > 2 ) {
-          foreach($rx_matches as $ak_key => $ak_val) $rx_matches[$ak_key] = ucfirst(strtolower($ak_val));
+        if (count($rx_matches) > 0 and strlen($arh_key) > 2) {
+          foreach ($rx_matches as $ak_key => $ak_val) {
+            $rx_matches[$ak_key] = ucfirst(strtolower($ak_val));
+          }
           $arh_key = implode('-', $rx_matches);
         }
         $arh[$arh_key] = $val;
       }
     }
-    return( $arh );
+    return ($arh);
   }
+
 }
 
 class RestApiAbort extends Exception {}
@@ -117,27 +123,27 @@ class Rest_Controller extends Controller {
       // the data itself though.
       'allow_http',
       'resource_options' => array(
-        // grants full access to all reports. Client configs can override this.
+        // Grants full access to all reports. Client configs can override this.
         'reports' => array()
       )
     ),
     'hmacWebsite' => array(
       'allow_http',
       'resource_options' => array(
-        // featured reports with cached summary data only - highly restricted
-        'reports' => array('featured' => true, 'summary' => true, 'cached' => true)
+        // Featured reports with cached summary data only - highly restricted.
+        'reports' => array('featured' => TRUE, 'summary' => TRUE, 'cached' => TRUE)
       )
     ),
     'directClient' => array(
       'resource_options' => array(
-        // grants full access to all reports. Client configs can override this.
+        // Grants full access to all reports. Client configs can override this.
         'reports' => array()
       )
     ),
     'oauth2User' => array(
       'resource_options' => array(
-        // grants full access to all reports. Client configs can override this.
-        'reports' => array('featured' => true, 'limit_to_own_data' => true)
+        // Grants full access to all reports. Client configs can override this.
+        'reports' => array('featured' => TRUE, 'limit_to_own_data' => TRUE)
       )
     )
   );
@@ -146,24 +152,28 @@ class Rest_Controller extends Controller {
 
   /**
    * The request method (GET, POST etc).
+   *
    * @var string
    */
   private $method;
 
   /**
    * Set to true for https.
+   *
    * @var bool
    */
   private $isHttps;
 
   /**
    * Has the request been authenticated?
+   *
    * @var bool
    */
   private $authenticated = FALSE;
 
   /**
    * Config settings relating to the selected auth method.
+   *
    * @var array
    */
   private $authConfig;
@@ -171,6 +181,7 @@ class Rest_Controller extends Controller {
   /**
    * Flags and options passed to the resource which can be set by the chosen authorisation method or project config., for
    * example flags to control access to featured vs all reports in the library.
+   *
    * @var array
    */
   private $resourceOptions;
@@ -178,6 +189,7 @@ class Rest_Controller extends Controller {
   /**
    * If the called resource only supports certain types of authentication, then
    * an array of the methods is set here allowing other methods to be blocked;
+   *
    * @var bool|array
    */
   private $restrictToAuthenticationMethods = FALSE;
@@ -191,12 +203,14 @@ class Rest_Controller extends Controller {
   /**
    * The client's system ID (i.e. the caller) if authenticated against the list of
    * configured clients.
+   *
    * @var string
    */
   private $clientSystemId;
 
   /**
    * The client's website ID (i.e. the caller) if authenticated against the websites table
+   *
    * @var string
    */
   private $clientWebsiteId;
@@ -209,18 +223,21 @@ class Rest_Controller extends Controller {
 
   /**
    * The latest API major version number. Unversioned calls will map to this.
+   *
    * @var integer
    */
-  private $apiMajorVersion=1;
+  private $apiMajorVersion = 1;
 
   /**
    * The latest API minor version number. Unversioned calls will map to this.
+   *
    * @var integer
    */
-  private $apiMinorVersion=0;
+  private $apiMinorVersion = 0;
 
   /**
    * List of API versions that this code base will support.
+   *
    * @var array
    */
   private $supportedApiVersions = array(
@@ -229,24 +246,28 @@ class Rest_Controller extends Controller {
 
   /**
    * Holds the request parameters (e.g. from GET or POST data).
+   *
    * @var array
    */
   private $request;
 
   /**
    * List of project definitions that are available to the authorised client.
+   *
    * @var array
    */
   private $projects;
 
   /**
    * The name of the resource being accessed.
+   *
    * @var string
    */
   private $resourceName;
 
   /**
    * Define the list of HTTP methods that will be supported by each resource endpoint.
+   *
    * @var type array
    */
   private $resourceConfig = array(
@@ -381,10 +402,10 @@ class Rest_Controller extends Controller {
               'preferred_taxa_taxon_list_id' => array(
                 'datatype' => 'integer[]'
               ),
-              'preferred_taxon'=> array(
+              'preferred_taxon' => array(
                 'datatype' => 'text[]'
               ),
-              'external_key'=> array(
+              'external_key' => array(
                 'datatype' => 'text[]'
               ),
               'parent_id' => array(
@@ -413,6 +434,12 @@ class Rest_Controller extends Controller {
               ),
               'wholeWords' => array(
                 'datatype' => 'boolean'
+              ),
+              'min_taxon_rank_sort_order' => array(
+                'datatype' => 'integer'
+              ),
+              'max_taxon_rank_sort_order' => array(
+                'datatype' => 'integer'
               ),
               'limit' => array(
                 'datatype' => 'integer'
@@ -638,7 +665,7 @@ class Rest_Controller extends Controller {
             $methodName .= '_id';
           }
           $this->validateParameters($this->resourceName, strtolower($this->method), $requestForId);
-          if (isset($this->clientSystemId) && 
+          if (isset($this->clientSystemId) &&
               ($name === 'taxon_observations' || $name === 'annotations')) {
             $this->checkAllowedResource($this->request['proj_id'], $this->resourceName);
           }
@@ -822,7 +849,7 @@ class Rest_Controller extends Controller {
         )
     );
   }
-  
+
   /**
    * GET handler for the taxa/search resource. Returns search results on taxon names.
    * @todo Reports can control output elements in same way
@@ -857,7 +884,7 @@ class Rest_Controller extends Controller {
         $params['count'] = true;
         $countQuery = postgreSQL::taxonSearchQuery($params);
         $countData = $db->query($countQuery)->current();
-        $count = $countData->count; 
+        $count = $countData->count;
       }
       if (in_array('count', $params['include'])) {
         $result['count'] = $count;
@@ -881,7 +908,7 @@ class Rest_Controller extends Controller {
       'preferred_taxa_taxon_list_id' => array('caption' => 'Preferred taxa taxon list ID'),
       'taxon_meaning_id' => array('caption' => 'Taxon meaning ID'),
       'external_key' => array('caption' => 'External Key'),
-      'taxon_group_id' => array('caption' => 'Taxon group ID'),  
+      'taxon_group_id' => array('caption' => 'Taxon group ID'),
       'parent_id' => array('caption' => 'Parent taxa taxon list ID'),
       'identification_difficulty' => array('caption' => 'Ident. difficulty'),
       'id_diff_verification_rule_id' => array('caption' => 'Ident. difficulty verification rule ID')
@@ -953,7 +980,7 @@ class Rest_Controller extends Controller {
     $segments[] = $fileName;
     return implode('/', $segments);
   }
-  
+
   /**
    * Returns a pagination structure for inclusion in the response.
    * @param integer $count Known count of query results
@@ -1188,7 +1215,7 @@ class Rest_Controller extends Controller {
       }
     }
   }
-  
+
   /**
    * Examines the value of a parameter in the request and check's its datatype against the parameter config. Also checks
    * any paremeter values are within the list of options defined for controlled list parameters. Boolean parameter
@@ -1213,7 +1240,7 @@ class Rest_Controller extends Controller {
       }
     } elseif ($datatype === 'boolean') {
       if (!preg_match('/^(true|false)$/', $trimmed)) {
-        $this->apiResponse->fail('Bad request', 400, 
+        $this->apiResponse->fail('Bad request', 400,
             "Invalid boolean for $paramName parameter, value should be true or false");
       }
       // Set the value to a real bool.
@@ -1674,7 +1701,7 @@ class Rest_Controller extends Controller {
     }
     $this->clientSystemId = $clientSystemId;
     $this->projects = $config[$clientSystemId]['projects'];
-    // Taxon observations and annotations resource end-points will need a proj_id if using client system based 
+    // Taxon observations and annotations resource end-points will need a proj_id if using client system based
     // authorisation.
     if (($this->resourceName === 'taxon-observations' || $this->resourceName === 'annotations') &&
         (empty($_REQUEST['proj_id']) || empty($this->projects[$_REQUEST['proj_id']]))) {

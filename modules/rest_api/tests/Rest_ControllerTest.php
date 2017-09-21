@@ -9,22 +9,21 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
   private static $clientUserId;
   private static $config;
-  private static $websiteId=1;
-  private static $websitePassword='password';
-  private static $userId=1;
-  private static $userPassword='password';
+  private static $websiteId = 1;
+  private static $websitePassword = 'password';
+  private static $userId = 1;
+  private static $userPassword = 'password';
   // In the fixture, the 2nd filter is the one we linked to a user.
-  private static $userFilterId=2;
+  private static $userFilterId = 2;
   private static $oAuthAccessToken;
 
   private $authMethod = 'hmacClient';
 
   private $additionalRequestHeader = array();
 
-  public function getDataSet()
-  {
-    $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
-  
+  public function getDataSet() {
+    $ds1 = new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
+
     /* Create a filter for the test project defined in config/rest.php.travis.
      * Create an occurrence comment for annotation testing.
      */
@@ -39,7 +38,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
             'created_on' => '2016-07-22:16:00:00',
             'created_by_id' => 1,
             'updated_on' => '2016-07-22:16:00:00',
-            'updated_by_id' => 1
+            'updated_by_id' => 1,
           ),
           array(
             'title' => 'Test user permission filter',
@@ -72,7 +71,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
         ),
       )
     );
-    
+
     $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
     $compositeDs->addDataSet($ds1);
     $compositeDs->addDataSet($ds2);
@@ -189,7 +188,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
 
   public function testProjects_get() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testProjects_get");
-    
+
     $response = $this->callService('projects');
     $this->assertResponseOk($response, '/projects');
     $viaConfig = self::$config['projects'];
@@ -321,10 +320,10 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
       break;
     }
   }
-  
+
   public function testTaxaSearch_get() {
     Kohana::log('debug', "Running unit test, Rest_ControllerTest::testTaxaSearch_get");
-    
+
     $response = $this->callService('taxa/search');
     $this->assertEquals(400, $response['httpCode'],
           'Requesting taxa/search without search_term should be a bad request');
@@ -342,7 +341,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
     $data = $response['response']['data'];
     $this->assertInternalType('array', $data, 'taxa/search data invalid.');
-    $this->assertCount(2, $data, 'Taxa/search data wrong count returned.' );
+    $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
     $response = $this->callService('taxa/search', array(
       'searchQuery' => 'test taxon 2',
       'taxon_list_id' => 1
@@ -352,7 +351,18 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $this->assertArrayHasKey('data', $response['response'], 'Data missing from response to call to taxa/search');
     $data = $response['response']['data'];
     $this->assertInternalType('array', $data, 'taxa/search data invalid.');
-    $this->assertCount(1, $data, 'Taxa/search data wrong count returned.' );
+    $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
+    $response = $this->callService('taxa/search', array(
+      'taxon_list_id' => 1
+    ));
+    $this->assertResponseOk($response, '/taxa/search');
+    $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
+    $response = $this->callService('taxa/search', array(
+      'taxon_list_id' => 1,
+      'min_taxon_rank_sort_order' => 300
+    ));
+    $this->assertResponseOk($response, '/taxa/search');
+    $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
   }
 
   /**
