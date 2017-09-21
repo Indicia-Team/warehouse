@@ -356,12 +356,14 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
       'taxon_list_id' => 1
     ));
     $this->assertResponseOk($response, '/taxa/search');
+    $data = $response['response']['data'];
     $this->assertCount(2, $data, 'Taxa/search data wrong count returned.');
     $response = $this->callService('taxa/search', array(
       'taxon_list_id' => 1,
       'min_taxon_rank_sort_order' => 300
     ));
     $this->assertResponseOk($response, '/taxa/search');
+    $data = $response['response']['data'];
     $this->assertCount(1, $data, 'Taxa/search data wrong count returned.');
   }
 
