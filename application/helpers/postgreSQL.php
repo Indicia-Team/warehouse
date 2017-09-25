@@ -345,46 +345,58 @@ and n.id is null"
   }
 
   /**
+   * Checks a taxon search integer[] parameter format.
+   *
    * Checks the format of a parameter of type integer[] and converts it to a comma separated list ready for insertion
    * into the taxon search query.
+   *
    * @param array $options
    * @param string $name
    */
   private static function integerListOption(&$options, $name) {
     if (!empty($options[$name])) {
-      // If an array, implode into a list ready for the query
+      // If an array, implode into a list ready for the query.
       if (is_array($options[$name])) {
-        $options[$name] = implode(',', $options[$name]);
-      } else {
-        $options[$name] = (string)$options[$name];
+        // Stripping " from value helps tolerate JSON encoded strings containing numbers.
+        $options[$name] = str_replace('"', '', implode(',', $options[$name]));
       }
-      self::assert(preg_match('/^\d+(,\d+)*/', $options[$name]),
-          "taxonSearchQuery $name option with must be a list ID or an array of list IDs.");
+      else {
+        $options[$name] = (string) $options[$name];
+      }
+      self::assert(preg_match('/^(\d+(,\d+)*|null)$/', $options[$name]),
+          "taxonSearchQuery $name option with must be a list ID or an array of list IDs. " . var_export($options[$name], true));
     }
   }
 
   /**
+   * Checks a taxon search string[] parameter format.
+   *
    * Checks the format of a parameter of type string[] and converts it to a comma separated list ready for insertion
    * into the taxon search query.
+   *
    * @param array $options
-   * @param string $name Name of the option to check
+   *   Options passed to taxon search.
+   * @param string $name
+   *   Name of the option to check.
    */
-  private static function stringListOption(&$options, $name) {
+  private static function stringListOption(array &$options, $name) {
     if (!empty($options[$name])) {
       // Convert single values to arrays so can treat everything the same.
       $optionValue = is_array($options[$name]) ? $options[$name] : [$options[$name]];
-      // Escape quotes in the strings and wrap in single quotes ready for SQL in clause
-      $func = function($value) {
-        return pg_escape_literal($value);
+      // Escape quotes in the strings and wrap in single quotes ready for SQL in clause.
+      $func = function ($value) {
+        return $value === 'null' ? 'null' : pg_escape_literal($value);
       };
       $options[$name] = implode(',', array_map($func, $optionValue));
-    } else {
+    }
+    else {
       $options[$name] = '';
     }
   }
 
   /**
    * Checks that all provided boolean options are actually boolean.
+   *
    * @param array $options
    * @param array $keysToCheck List of keys in the options array which should be booleans.
    */
@@ -398,16 +410,17 @@ and n.id is null"
   }
   /**
    * Performs sanity checking on the options passed to the taxon search query.
+   *
    * @param array $options
    */
   private static function taxonSearchCheckOptions(&$options) {
     // Apply default options
     $options = array_merge(array(
         'language' => array(),
-        'abbreviations' => true,
-        'searchAuthors' => false,
-        'wholeWords' => false,
-        'count' => false
+        'abbreviations' => TRUE,
+        'searchAuthors' => FALSE,
+        'wholeWords' => FALSE,
+        'count' => FALSE
     ), $options);
     // taxon_list_id option required.
     self::assert(!empty($options['taxon_list_id']) || !empty($options['taxa_taxon_list_id']),
@@ -428,21 +441,28 @@ and n.id is null"
 
   /**
    * Converts the input text into a parameter that can be passed into PostgreSQL's full text search.
+   *
    * @param string $search
    * @param array $options
+   *
    * @return string
    */
   private static function taxonSearchGetFullTextSearchTerm($search, $options) {
     $booleanTokens = array('&', '|');
-    $searchWithBooleanLogic = trim(str_replace(array(' and ', ' or ', '*'), array(' & ', ' | ', ' '), $search));
-	  $tokens = explode(' ', $searchWithBooleanLogic);
+    $searchWithBooleanLogic = trim(str_replace(
+      array(' and ', ' or ', '*'),
+      array(' & ', ' | ', ' '),
+      $search
+    ));
+    $tokens = explode(' ', $searchWithBooleanLogic);
     foreach ($tokens as $idx => &$token) {
       if (!$options['wholeWords'] && !in_array($token, $booleanTokens)) {
         $addBracket = preg_match('/\)$/', $token);
         $token = preg_replace('/\)$/', '', $token);
         $token .= ':*' . ($addBracket ? ')' : '');
       }
-      if ($idx < count($tokens)-1 &&  !in_array($tokens[$idx], $booleanTokens) && !in_array($tokens[$idx+1], $booleanTokens)) {
+      if ($idx < count($tokens) - 1 &&
+        !in_array($tokens[$idx], $booleanTokens) && !in_array($tokens[$idx + 1], $booleanTokens)) {
         $token .= ' &';
       }
     }
@@ -716,7 +736,7 @@ SQL;
    *     of species names). Exact matches required.
    *   * external_key - External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
    *   * parent_id - ID of a taxa_taxon_list record limit the search to children of, e.g. a species when searching the
-   *     subspecies. May be set to null to force top level only.
+   *     subspecies. May be set to null to force top level only. Pass null to search top level taxa only.
    *   * language - array of name languages to include in search results. Pass a 3 character iso code for the language,
    *     e.g. "lat" for Latin names or "eng" for English names.
    *   * preferred - set to true to limit to preferred names, false to limit to non-preferred names. E.g. filter
