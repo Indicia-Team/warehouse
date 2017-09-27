@@ -176,7 +176,7 @@ class vague_date {
    */
   public static function vague_date_to_string(array $date) {
     $start = empty($date[0]) ? NULL : $date[0];
-    $end = empty($date[0]) ? NULL : $date[1];
+    $end = empty($date[1]) ? NULL : $date[1];
     $type = $date[2];
     if (is_string($start)) {
       $start = DateTime::createFromFormat(Kohana::lang('dates.format'), $date[0]);

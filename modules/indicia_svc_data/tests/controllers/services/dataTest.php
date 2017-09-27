@@ -433,7 +433,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $smpId = $r['success'];
     $smp = ORM::Factory('sample', $smpId);
     // Ensure date format correct way round.
-    $this->assertEquals('2017-09-03', $smp->date_start, 'Saved sample is not as expected');
+    $this->assertEquals('2017-09-03', $smp->date_start, 'Saved sample 2 is not as expected');
 
     // Save another sample, setting a broken vague date.
     $array = array(
@@ -447,8 +447,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $s = submission_builder::build_submission($array, array('model' => 'sample'));
     $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
 
-    Kohana::log('debug', "Submission response to sample 2 save " . print_r($r, TRUE));
-    $this->assertFalse(isset($r['success']), 'Submitting a sample wth bad vague date did not fail');
+    Kohana::log('debug', "Submission response to sample 3 save " . print_r($r, TRUE));
+    $this->assertTrue(isset($r['error']), 'Submitting a sample wth bad vague date did not fail');
   }
 
   private function getSampleAsCsv($id, $regexExpected) {
