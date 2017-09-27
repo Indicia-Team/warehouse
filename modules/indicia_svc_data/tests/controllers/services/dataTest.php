@@ -395,6 +395,62 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals($filter->website_id, $filterData['filter:website_id']);
   }
 
+  public function testCreateSample() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateSample");
+    // Post a location with an attribute value.
+    $array = array(
+      'sample:survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017'
+    );
+    $s = submission_builder::build_submission($array, array('model' => 'sample'));
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+
+    Kohana::log('debug', "Submission response to sample 1 save " . print_r($r, TRUE));
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+
+    $smpId = $r['success'];
+    $smp = ORM::Factory('sample', $smpId);
+    // Ensure date format correct way round.
+    $this->assertEquals('2017-09-02', $smp->date_start, 'Saved sample 1 is not as expected');
+
+    // Save another sample, setting the date via the vague date constituent parts.
+    $array = array(
+      'sample:survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date_start' => '03/09/2017',
+      'sample:date_end' => '03/09/2017',
+      'sample:date_type' => 'D'
+    );
+    $s = submission_builder::build_submission($array, array('model' => 'sample'));
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+
+    Kohana::log('debug', "Submission response to sample 2 save " . print_r($r, TRUE));
+    $this->assertTrue(isset($r['success']), 'Submitting a sample 2 did not return success response');
+
+    $smpId = $r['success'];
+    $smp = ORM::Factory('sample', $smpId);
+    // Ensure date format correct way round.
+    $this->assertEquals('2017-09-03', $smp->date_start, 'Saved sample 2 is not as expected');
+
+    // Save another sample, setting a broken vague date.
+    $array = array(
+      'sample:survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date_start' => '03/09/2016',
+      'sample:date_end' => '02/09/2017',
+      'sample:date_type' => 'Y'
+    );
+    $s = submission_builder::build_submission($array, array('model' => 'sample'));
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+
+    Kohana::log('debug', "Submission response to sample 3 save " . print_r($r, TRUE));
+    $this->assertTrue(isset($r['error']), 'Submitting a sample wth bad vague date did not fail');
+  }
+
   private function getSampleAsCsv($id, $regexExpected) {
     $params = array(
       'mode' => 'csv',
