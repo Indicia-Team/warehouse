@@ -399,6 +399,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateSample");
     // Post a location with an attribute value.
     $array = array(
+      'sample:survey_id' => 1,
       'sample:entered_sref' => 'SU1234',
       'sample:entered_sref_system' => 'osgb',
       'sample:date' => '02/09/2017'
