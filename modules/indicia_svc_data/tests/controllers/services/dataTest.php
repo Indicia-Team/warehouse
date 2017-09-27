@@ -395,6 +395,25 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals($filter->website_id, $filterData['filter:website_id']);
   }
 
+  public function testCreateSample() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateSample");
+    // Post a location with an attribute value.
+    $array = array(
+      'sample:entered_sref' => 'SU1234',
+      'sample:centroid_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017'
+    );
+    $s = submission_builder::build_submission($array, array('model' => 'sample'));
+    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+
+    Kohana::log('debug', "Submission response to sample save " . print_r($r, TRUE));
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+
+    $smpId = $r['success'];
+    $smp = ORM::Factory('sample', $smpId);
+    $this->assertEquals('UnitTest2', $smp->date_start, 'Saved sample is not as expected');
+  }
+
   private function getSampleAsCsv($id, $regexExpected) {
     $params = array(
       'mode' => 'csv',
