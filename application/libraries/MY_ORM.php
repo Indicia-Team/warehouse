@@ -592,7 +592,7 @@ class ORM extends ORM_Core {
    * Wraps the process of submission in a transaction.
    * @return integer If successful, returns the id of the created/found record. If not, returns null - errors are embedded in the model.
    */
-  public function submit() { 
+  public function submit() {
     Kohana::log('debug', 'Commencing new transaction.');
     $this->db->query('BEGIN;');
     try {
@@ -615,7 +615,7 @@ class ORM extends ORM_Core {
     }
     return $res;
   }
-  
+
   /**
    * Run preprocessing required before submission.
    */
@@ -889,7 +889,7 @@ class ORM extends ORM_Core {
     	else
 	    	$filterValue = $fkArr['fkSearchFilterValue'];
     } else $filterValue = '';
-    
+
     if (ORM::$cacheFkLookups) {
       $keyArr=array('lookup', $fkArr['fkTable'], $fkArr['fkSearchField'], $fkArr['fkSearchValue']);
       // cache must be unique per filtered value (e.g. when lookup up a taxa in a taxon list).
@@ -1329,7 +1329,7 @@ class ORM extends ORM_Core {
     		$fields = array_merge($fields,$newFields);
     		$fields = array_merge($fields, ORM::factory($sub['model'].'_association')->getRequiredFields($fk, $website_id, $survey_id, false));
     	}
-    	 
+
       foreach ($sub['superModels'] as $super=>$content) {
         $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $website_id, $survey_id, false));
       }
@@ -1600,10 +1600,12 @@ class ORM extends ORM_Core {
       // Use a string compare to get a proper test but with type tolerance.
       // A wkt geometry gets translated to a proper geom so this will look different - just check it is not empty.
       // A float may loose precision or trailing 0 - just check for small percentage difference
-      if ( strcmp($attrValueModel->$vf, $value)===0 ||
-          ($dataType === 'G' && !empty($attrValueModel->$vf)) ) {
+      if (strcmp($attrValueModel->$vf, $value)===0 ||
+          ($dataType === 'G' && !empty($attrValueModel->$vf) ||
+          ($dataType === 'F' && $attrValueModel->$vf === (float) $value))) {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId.");
-      } else {
+      }
+      else {
         if ( $dataType === 'F' && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
           kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
         } else {
@@ -1754,7 +1756,7 @@ class ORM extends ORM_Core {
   	if($this->object_name != $submission['id'])
     	$submissionModel = ORM::Factory($submission['id'], -1);
     else $submissionModel = $this;
-    
+
   	foreach ($submission['fields'] as $field=>$value) {
       if (substr($field, 0, 3)=='fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
@@ -1816,7 +1818,7 @@ class ORM extends ORM_Core {
         		$submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
         	}
         }
-        
+
       }
     }
     return $submission;
