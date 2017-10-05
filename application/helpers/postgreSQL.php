@@ -677,8 +677,6 @@ SQL;
 order by
 -- abbreviation hits come first if enabled
 cts.name_type='A' DESC,
--- species also come above other levels
-coalesce(cts.taxon_rank_sort_order, 0) = 300 DESC,
 -- prefer matches in correct epithet order
 searchterm ilike '%' || replace('$searchFilterData[searchTermNoWildcards]', ' ', '%') || '%' DESC,
 -- prefer matches with searched phrase near start of term, by discarding the characters from the search term onwards and counting the rest
@@ -690,7 +688,8 @@ case
   else 9999 end,
 cts.preferred desc,
 -- finally alpha sort
-searchterm
+taxon,
+authority
 SQL;
     }
   }
