@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,69 +14,83 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
+ * @package Modules
  * @subpackage Summary_builder
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 /**
- * Helper class for custom_cache_tables functionality
- *
- * @package	Modules
- * @subpackage Custom_cache_tables
+ * Helper class for custom_cache_tables functionality.
  */
 class custom_cache_tables {
 
-  public static function populate_tables($db, $last_run_date) {
-    $lastDoneInfo = (array)variable::get('custom_cache_tables', array(), false);
+  /**
+   * Trigger the rebuild of all due custom cache tables.
+   *
+   * @param obj $db
+   *   Database object.
+   */
+  public static function populateTables($db) {
+    $lastDoneInfo = (array) variable::get('custom_cache_tables', array(), FALSE);
     foreach (glob(MODPATH . "custom_cache_tables/definitions/*.php") as $filename) {
       require_once $filename;
       $defname = preg_replace('/\.php$/', '', basename($filename));
-      if (!function_exists("get_{$defname}_query") || !function_exists("get_{$defname}_metadata") ) {
+      if (!function_exists("get_{$defname}_query") || !function_exists("get_{$defname}_metadata")) {
         kohana::log('error', "Skipping incomplete custom_cache_tables definition $filename");
-        continue; // foreach
+        // Next foreach iteration.
+        continue;
       }
       $metadata = call_user_func("get_{$defname}_metadata");
       if (empty($metadata['frequency'])) {
         kohana::log('error', "Definition $filename omits metadata frequency for custom_cache_tables");
-        continue; // foreach
+        // Next foreach iteration.
+        continue;
       }
       if (empty($lastDoneInfo[$defname]) || strtotime($lastDoneInfo[$defname]) < strtotime("-$metadata[frequency]")) {
-        // for a new cache table, use now as the starting point to trigger population
-        if (empty($lastDoneInfo[$defname]))
+        // For a new cache table, use now as the starting point to trigger population.
+        if (empty($lastDoneInfo[$defname])) {
           $lastDoneInfo[$defname] = date(DATE_ISO8601);
+        }
         // Even if we are due an update, we might not have to do anything if there is a detect_changes_query
-        // which returns nothing
+        // which returns nothing.
         if (!empty($metadata['detect_changes_query'])) {
           $check = $db->query(str_replace('#date#', date('Y-m-d H:i:s', strtotime($lastDoneInfo[$defname])),
               $metadata['detect_changes_query']))->current();
           if (!$check->count) {
             kohana::log('debug', "Skipping $defname as no changes available to process");
-            // reset the time to the next check
-            $lastDoneInfo[$defname]=date(DATE_ISO8601);
-            continue; // foreach
+            // Reset the time to the next check.
+            $lastDoneInfo[$defname] = date(DATE_ISO8601);
+            // Next foreach iteration.
+            continue;
           }
         }
-        // if the table already exists, delete it
-        if (!empty($lastDoneInfo[$defname]))
+        // If the table already exists, delete it.
+        if (!empty($lastDoneInfo[$defname])) {
           $db->query("DROP TABLE custom_cache_tables.$defname");
+        }
         echo "building cache table $defname<br/>";
-        self::build_table($db, $defname);
-        $lastDoneInfo[$defname]=date(DATE_ISO8601);
+        self::buildTable($db, $defname);
+        $lastDoneInfo[$defname] = date(DATE_ISO8601);
       }
     }
     variable::set('custom_cache_tables', $lastDoneInfo);
   }
 
-  private static function build_table($db, $defname) {
+  /**
+   * Runs the query required to build a single table.
+   *
+   * @param obj $db
+   *   Database object.
+   * @param string $defname
+   *   Custom cache table definition name.
+   */
+  private static function buildTable($db, $defname) {
     if (function_exists("get_{$defname}_query")) {
       $qry = call_user_func("get_{$defname}_query");
       $db->query($qry);
     }
   }
-
-
 
 }
