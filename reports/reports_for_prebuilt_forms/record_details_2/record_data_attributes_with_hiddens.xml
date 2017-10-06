@@ -65,7 +65,7 @@
         CASE a.data_type
             WHEN 'T'::bpchar THEN av.text_value
             WHEN 'L'::bpchar THEN lookup.term::text
-            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'I'::bpchar THEN coalesce(l.name, av.int_value::character varying::text)
             WHEN 'B'::bpchar THEN av.int_value::character varying::text
             WHEN 'F'::bpchar THEN av.float_value::character varying::text
             WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
@@ -90,6 +90,7 @@
   left join form_structure_blocks fsb1 on fsb1.id=saw.form_structure_block_id
   left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id
   left join cache_termlists_terms lookup on a.data_type='L' and lookup.id=av.int_value
+  left join locations l on a.system_function='linked_location_id' and l.id=av.int_value and l.deleted=false
   where o.id=#occurrence_id#
   and o.deleted=false
   and lower(coalesce(#testagainst#,'')) #operator# (#attrs#)
@@ -110,7 +111,7 @@
         CASE a.data_type
             WHEN 'T'::bpchar THEN av.text_value
             WHEN 'L'::bpchar THEN lookup.term::text
-            WHEN 'I'::bpchar THEN av.int_value::character varying::text
+            WHEN 'I'::bpchar THEN coalesce(l.name, av.int_value::character varying::text)
             WHEN 'B'::bpchar THEN av.int_value::character varying::text
             WHEN 'F'::bpchar THEN av.float_value::character varying::text
             WHEN 'D'::bpchar THEN av.date_start_value::character varying::text
@@ -134,6 +135,7 @@
   left join sample_attributes_websites saw on saw.sample_attribute_id=a.id and saw.deleted=false
   left join form_structure_blocks fsb1 on fsb1.id=saw.form_structure_block_id
   left join form_structure_blocks fsb2 on fsb2.id=fsb1.parent_id
+  left join locations l on a.system_function='linked_location_id' and l.id=av.int_value and l.deleted=false
   where o.id=#occurrence_id#
   and o.deleted=false
   and (a.system_function&lt;&gt;'cms_user_id' or a.system_function is null)
