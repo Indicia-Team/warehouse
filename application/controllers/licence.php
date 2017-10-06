@@ -14,31 +14,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the licences list.
  *
- * @package	Core
+ * @package Core
  * @subpackage Controllers
  */
 class Licence_Controller extends Gridview_Base_Controller {
+
   public function __construct() {
     parent::__construct('licence');
     $this->columns = array(
-      'title'=>'',
-      'code'=>'',
-      'version'=>''
+      'title' => '',
+      'code' => '',
+      'version' => ''
     );
     $this->pagetitle = "Licences";
     $this->session = Session::instance();
   }
-  
+
   /**
    * You can only access the list of licences if at least an editor of one website.
    */
@@ -47,6 +48,8 @@ class Licence_Controller extends Gridview_Base_Controller {
   }
 
   /**
+   * Returns model values ready to load onto a form.
+   *
    * Returns an array of all values from this model and its super models ready to be
    * loaded into a form. For this controller, we need to also need to flash a warning
    * about editing existing licence records.
