@@ -1577,6 +1577,8 @@ class ReportEngine {
           ->join('cache_termlists_terms as t', array('t.id' => 'l.location_type_id'))
           ->in('l.id', $id)
           ->get()->result_array();
+        // There must be a single location type and it must be one of the uniquely indexed ones to enable
+        // this type of filtering.
         if (count($r) === 1 && $r[0]->unique_indexed === 't') {
           return $r[0]->term;
         }
