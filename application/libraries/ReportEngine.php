@@ -1554,27 +1554,31 @@ class ReportEngine {
   }
 
   /**
+   * Identifies if a single uniquely indexed location type can be used for this location list filter.
+   *
    * When filtering against a location type that is indexed by the spatial index builder, if the
    * location type has a unique index there will be a location_id_* column pointing to the id
    * in cache_occurrences_functional. This switches from the standard join method to a direct
    * filter on this field as its much faster.
    *
-   * @param $id
+   * @param int|string $id
+   *   Location ID or comma separated list of IDs.
    *
-   * @return NULL
+   * @return string|null
+   *   The name of the single uniquely indexed location type relevant to the location list. Otherwise NULL.
    */
   private function locationIdUniquelyIndexedType($id) {
-    if (preg_match('/^\d+$/', $id)) {
+    if (preg_match('/^\d+(,\d+)*$/', preg_replace('/\s+/', '', $id))) {
       $config = kohana::config_load('spatial_index_builder', FALSE);
-      if (array_key_exists('unique', $config)) {
-        $r = $this->reportDb->select('cache_termlists_terms.term')
+      if (array_key_exists('unique', $config) && !empty($config['unique'])) {
+        $uniqueTerms = "'" . implode("', '", $config['unique']) . "'";
+        $r = $this->reportDb->select(array('DISTINCT t.term', "t.term IN ($uniqueTerms) as unique_indexed"))
           ->from('locations l')
-          ->join('cache_termlists_terms', array('cache_termlists_terms.id' => 'l.location_type_id'))
-          ->where('l.id', $id)
-          ->in('cache_termlists_terms.term', $config['unique'])
-          ->get();
-        if ($r->count() > 0) {
-          return $r->current()->term;
+          ->join('cache_termlists_terms as t', array('t.id' => 'l.location_type_id'))
+          ->in('l.id', $id)
+          ->get()->result_array();
+        if (count($r) === 1 && $r[0]->unique_indexed === 't') {
+          return $r[0]->term;
         }
       }
     }
