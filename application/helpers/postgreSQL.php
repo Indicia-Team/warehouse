@@ -730,7 +730,7 @@ SQL;
    *   * taxon_meaning_id - ID or array of IDs of taxon meanings to limit the search to.
    *   * taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to.
    *   * preferred_taxa_taxon_list_id - ID or array of IDs of taxa taxon list records to limit the search to, using
-         the preferred name's ID to filter against, therefore including synonyms and common names in the search.
+   *     the preferred name's ID to filter against, therefore including synonyms and common names in the search.
    *   * preferred_taxon - preferred taxon name or array of preferred names to limit the search to (e.g. limit to a list
    *     of species names). Exact matches required.
    *   * external_key - External key or array of external keys to limit the search to (e.g. limit to a list of TVKs).
@@ -749,11 +749,13 @@ SQL;
    *   * searchAuthors - boolean, default false. Set to true to include author strings in the searched text.
    *   * wholeWords - boolean, default false. Set to true to only search whole words in the full text index, otherwise
    *     searches the start of words.
-   *   * min_taxon_rank_sort_order - integer. Minimum taxon rank to include in results.
-   *   * max_taxon_rank_sort_order - integer. Maximum taxon rank to include in results.
-   *   * count - set to true to return a results count query
-   *   * limit - set to limit number of records returned
-   *   * offset - set to offset the query results from the start of the dataset for paging
+   *   * min_taxon_rank_sort_order - integer. Minimum taxon rank to include in results. Can be used to exclude higher
+   *     taxa from the search results (e.g. you might only want to records of genera or higher).
+   *   * max_taxon_rank_sort_order - integer. Maximum taxon rank to include in results. Can be used to exclude lower
+   *     taxa from the search results (e.g. you might want to exclude sub-species from the search results).
+   *   * count - set to true to return a results count query.
+   *   * limit - set to limit number of records returned.
+   *   * offset - set to offset the query results from the start of the dataset for paging.
    *
    * @return string SQL to run
    * @throws exception If parameters are of incorrect format.
