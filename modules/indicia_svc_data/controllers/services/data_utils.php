@@ -16,9 +16,9 @@
  *
  * @package Services
  * @subpackage Data
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
+ * @link  http://code.google.com/p/indicia/
  */
 
 /**
@@ -27,10 +27,15 @@
 class Data_utils_Controller extends Data_Service_Base_Controller {
 
   /**
-   * Magic method to allow URLs to be mapped to custom actions defined in configuration and
-   * implemented in stored procedures.
-   * @param string $name Method name
-   * @param array $arguments List of arguments
+   * Handled configurable data actions.
+   *
+   * Magic method to allow URLs to be mapped to custom actions defined in configuration and implemented in
+   * database functions. Response from the function is output (and therefore returned from the service call).
+   *
+   * @param string $name
+   *   Method name.
+   * @param array $arguments
+   *   List of arguments from URL.
    */
   public function __call($name, $arguments) {
     try {
@@ -41,33 +46,35 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       }
       $action = $actions[$name];
       $db = new Database();
-      // build the stored procedure params
+      // Build the stored procedure params.
       foreach ($action['parameters'] as &$param) {
         if (is_string($param)) {
-          // integer parameters load from URL if config defined like [1]
+          // Integer parameters load from URL if config defined like [1].
           if (preg_match('/^\[(?P<index>\d+)\]$/', $param, $matches)) {
-            if (isset($arguments[$matches['index']-1])) {
-              if (!preg_match('/^\d+$/', $arguments[$matches['index']-1]))
+            if (isset($arguments[$matches['index'] - 1])) {
+              if (!preg_match('/^\d+$/', $arguments[$matches['index'] - 1])) {
                 throw new exception("Invalid argument at position $matches[index]");
-              $param = $arguments[$matches['index']-1];
+              }
+              $param = $arguments[$matches['index'] - 1];
             }
-            else
+            else {
               throw new Exception('Required arguments not provided');
+            }
           }
-          // string parameters load from URL if config defined like {1}
+          // String parameters load from URL if config defined like {1}.
           elseif (preg_match('/^{(?P<index>\d+)}$/', $param, $matches)) {
-            if (isset($arguments[$matches['index']-1])) {
-              $param =  "'" . pg_escape_string($arguments[$matches['index']-1]) . "'";
+            if (isset($arguments[$matches['index'] - 1])) {
+              $param = "'" . pg_escape_string($arguments[$matches['index'] - 1]) . "'";
             }
             else
               throw new Exception('Required arguments not provided');
           }
           else {
-            // fixed string defined in config
-            $param =  "'" . pg_escape_string($param) . "'";
+            // Fixed string defined in config.
+            $param = "'" . pg_escape_string($param) . "'";
           }
         }
-        // numeric parameters don't need processing or sanitising
+        // Numeric parameters don't need processing or sanitising.
       }
       $params = implode(', ', $action['parameters']);
       echo json_encode($db->query("select $action[stored_procedure]($params);")->result_array(TRUE));
@@ -79,6 +86,8 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   }
 
   /**
+   * Bulk verification service end-point.
+   *
    * Provides the services/data_utils/bulk_verify service. This takes a report plus params (json object) in the $_POST
    * data and verifies all the records returned by the report according to the filter. Pass ignore=true to allow this to
    * ignore any verification check rule failures (use with care!).
@@ -87,43 +96,51 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     $db = new Database();
     $this->authenticate('write');
     $report = $_POST['report'];
-    $params = json_decode($_POST['params'], true);
+    $params = json_decode($_POST['params'], TRUE);
     $params['sharing'] = 'verification';
-    $websites = $this->website_id ? array($this->website_id) : null;
+    $websites = $this->website_id ? array($this->website_id) : NULL;
     $reportEngine = new ReportEngine($websites, $this->user_id);
     $verifier = $this->getVerifierName($db);
     try {
-      // Load the report used for the verification grid with the same params
-      $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
-      // now get a list of all the occurrence ids
+      // Load the report used for the verification grid with the same params.
+      $data = $reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+      // Now get a list of all the occurrence ids.
       $ids = array();
-      // get some status related stuff ready
+      // Get some status related stuff ready.
       if (empty($_POST['record_substatus'])) {
         $status = 'accepted';
         $substatus = NULL;
-      } else {
+      }
+      else {
         $status = $_POST['record_substatus'] == 2 ? 'accepted as considered correct' : 'accepted as correct';
         $substatus = $_POST['record_substatus'];
       }
       foreach ($data['content']['records'] as $record) {
-        if (($record['record_status']!=='V' || $record['record_substatus']!==$substatus) && (!empty($record['pass'])||$_POST['ignore']==='true')) {
+        if (($record['record_status'] !== 'V' || $record['record_substatus'] !== $substatus) &&
+          (!empty($record['pass'])||$_POST['ignore'] === 'true')) {
           $ids[$record['occurrence_id']] = $record['occurrence_id'];
           $db->insert('occurrence_comments', array(
-              'occurrence_id'=>$record['occurrence_id'],
-              'comment'=>"This record is $status",
-              'created_by_id'=>$this->user_id,
-              'created_on'=>date('Y-m-d H:i:s'),
-              'updated_by_id'=>$this->user_id,
-              'updated_on'=>date('Y-m-d H:i:s'),
-              'record_status'=>'V',
+              'occurrence_id' => $record['occurrence_id'],
+              'comment' => "This record is $status",
+              'created_by_id' => $this->user_id,
+              'created_on' => date('Y-m-d H:i:s'),
+              'updated_by_id' => $this->user_id,
+              'updated_on' => date('Y-m-d H:i:s'),
+              'record_status' => 'V',
               'record_substatus' => $substatus
           ));
         }
       }
-      $db->from('occurrences')->set(array('record_status'=>'V', 'record_substatus'=>$substatus, 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
-          'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s')))->in('id', array_keys($ids))->update();
+      $db->from('occurrences')->set(array(
+        'record_status' => 'V',
+        'record_substatus' => $substatus,
+        'verified_by_id' => $this->user_id,
+        'verified_on' => date('Y-m-d H:i:s'),
+        'updated_by_id' => $this->user_id,
+        'updated_on' => date('Y-m-d H:i:s')
+      ))->in('id', array_keys($ids))->update();
       echo count($ids);
-      // since we bypass ORM here for performance, update the cache_occurrences_* tables.
+      // Since we bypass ORM here for performance, update the cache_occurrences_* tables.
       $db->from('cache_occurrences_functional')->set(array(
         'record_status' => 'V',
         'record_substatus' => $substatus,
@@ -131,14 +148,18 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         'updated_on' => date('Y-m-d H:i:s'),
         'query' => NULL
       ))->in('id', array_keys($ids))->update();
-      $db->from('cache_occurrences_nonfunctional')->set(array('verifier'=>$verifier))->in('id', array_keys($ids))->update();
-    } catch (Exception $e) {
+      $db->from('cache_occurrences_nonfunctional')
+        ->set(array('verifier' => $verifier))->in('id', array_keys($ids))->update();
+    }
+    catch (Exception $e) {
       error_logger::log_error('Exception during bulk verify', $e);
       $this->handle_error($e);
     }
   }
 
   /**
+   * Single record verification service end-point.
+   *
    * Provides the services/data_utils/single_verify service. This takes an occurrence:id, occurrence:record_status, user_id (the verifier)
    * and optional occurrence_comment:comment in the $_POST data and updates the record. This is provided as a more optimised
    * alternative to using the normal data services calls. If occurrence:taxa_taxon_list_id is supplied then a redetermination will

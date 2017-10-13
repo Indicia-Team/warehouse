@@ -15,6 +15,7 @@
   #agreements_join#
   #joins#
   where o.id=#occurrence_id#
+  and #sharing_filter#
   </query>
   <params>
     <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />

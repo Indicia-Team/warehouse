@@ -16,8 +16,8 @@
  *
  * @package Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @link https://github.com/Indicia-Team/warehouse
  * @license http://www.gnu.org/licenses/gpl.html GPL
  */
 
@@ -30,19 +30,19 @@
 class Language_Controller extends Gridview_Base_Controller {
 
   /**
-   * Constructor
+   * Constructor.
    */
-  public function __construct()
-  {
+  public function __construct() {
     parent::__construct('language');
     $this->columns = array(
-      'iso'=>'',
-      'language'=>'');
+      'iso' => '',
+      'language' => ''
+    );
     $this->pagetitle = "Languages";
   }
 
-  public function page_authorised()
-  {
+  public function page_authorised() {
     return $this->auth->logged_in('CoreAdmin');
   }
+
 }

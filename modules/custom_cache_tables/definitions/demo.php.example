@@ -1,0 +1,14 @@
+<?php
+
+function get_demo_metadata() {
+  return array(
+    'frequency' => '',
+    'detect_changes_query' => ''
+  );
+}
+
+function get_demo_query() {
+  return <<<'QRY'
+
+QRY;
+}
