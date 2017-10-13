@@ -65,7 +65,7 @@ function notification_emails_extend_data_services() {
 function notification_emails_scheduled_task($last_run_date, $db) {
   // We need to first determine which jobs to run, for instance, if it is less than a week since the last weekly job
   // was run, then the weekly job doesn't need running yet.
-  $frequenciesToRun = get_frequencies_to_run_now($db);
+  $frequenciesToRun = notification_emails::getFrequenciesToRunNow($db);
   // Don't do anything if there are no jobs to run.
   if (!empty($frequenciesToRun[0])) {
     runEmailNotificationJobs($db, $frequenciesToRun);
@@ -73,35 +73,6 @@ function notification_emails_scheduled_task($last_run_date, $db) {
   else {
     echo 'There are no email notification jobs to run at the moment.<br/>';
   }
-}
-
-/**
- * Retrieve the frequencies we are going to run this time round (e.g. hourly, or daily etc).
- *
- * Collect the notification frequency jobs that needs to be run now. For instance if it is less than a week
- * since the weekly notification frequency job was last run, then we don't need to run it now. As soon as
- * we detect that it has been longer than a week then we know that is one of the jobs we need to run now.
- *
- * @param object $db
- *   Database connection object.
- *
- * @return array
- *   List of frequencies we need to process.
- */
-function get_frequencies_to_run_now($db) {
-  $frequenciesToRun = $db->query("
-    SELECT notification_frequency
-    FROM user_email_notification_frequency_last_runs
-    WHERE
-    (notification_frequency='IH' AND now()>=(last_run_date + interval '1 hour'))
-    OR
-    (notification_frequency='D' AND now()>=(last_run_date + interval '1 day'))
-    OR
-    (notification_frequency='W' AND now()>=(last_run_date + interval '1 week'))
-    OR
-    last_run_date IS NULL
-  ")->result_array(FALSE);
-  return $frequenciesToRun;
 }
 
 /**
@@ -162,29 +133,8 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
     $notificationIds = array();
     $emailContent = start_building_new_email($notificationsToSendEmailsFor[0]);
     $currentType = '';
-    $sourceTypes = array(
-      'S' => 'Species alerts',
-      'C' => 'Comments on your records',
-      'V' => 'Verification of your records',
-      'A' => 'Record Cleaner results for your records',
-      'VT' => 'Incoming records for you to verify',
-      'M' => 'Milestones and achievements you\'ve attained',
-      'PT' => 'Incoming pending records for you to check',
-      'GU' => 'Pending users in groups you administer'
-    );
-    $recordStatus = array(
-      'T' => 'Test',
-      'I' => 'Data entry in progress',
-      'V' => 'Accepted',
-      'V1' => 'Accepted as correct',
-      'V2' => 'Accepted as considered correct',
-      'C' => 'Awaiting review',
-      'C3' => 'Plausible',
-      'D' => 'Queried',
-      'R' => 'Not accepted',
-      'R4' => 'Not accepted as unable to verify',
-      'R5' => 'Not accepted as incorrect'
-    );
+    $sourceTypes = notification_emails::getNotificationTypes();
+    $recordStatuses = notification_emails::getRecordStatuses();
     $dataFieldsToOutput = array(
       'username' => 'From',
       'occurrence_id' => 'Record ID',
@@ -216,7 +166,10 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
             $emailContent .= "</tbody>\n</table>\n";
           }
           $currentType = $notificationToSendEmailsFor['source_type'];
-          $emailContent .= '<h2>' . $sourceTypes[$currentType] . '</h2>';
+          $emailContent .= '<h2>' . $sourceTypes[$currentType]['title'] . '</h2>';
+          if (!empty($sourceTypes[$currentType]['description'])) {
+            $emailContent .= '<p>' . $sourceTypes[$currentType]['description'] . '</p>';
+          }
           $emailContent .= "<table>\n<thead><tr>";
           foreach ($dataFieldsToOutput as $field => $caption) {
             if (isset($record[$field])) {
@@ -232,7 +185,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
               $record[$field] = $systemName;
             }
             elseif ($field === 'record_status') {
-              $record[$field] = $recordStatus[$record['record_status'] . (empty($record['record_substatus']) ?
+              $record[$field] = $recordStatuses[$record['record_status'] . (empty($record['record_substatus']) ?
                   '' : $record['record_substatus'])];
             }
             elseif ($field === 'occurrence_id') {
