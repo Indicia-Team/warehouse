@@ -13,7 +13,7 @@
   left join locations l on l.id=s.location_id and l.deleted=false
   left join (index_locations_samples ils
     join locations locality on locality.id=ils.location_id and locality.location_type_id=#locality_type_id#
-  ) on ils.sample_id=s.id 
+  ) on ils.sample_id=s.id
   left join (users u
     join people p on p.id=u.person_id and p.deleted=false
   ) on u.id=o.created_by_id and u.id&lt;&gt;1 and u.deleted=false
@@ -29,6 +29,7 @@
     <column name='taxon' display='Key facts:Species' sql='cttl.taxon' />
     <column name='record_status' display="Key facts:Record status" sql='o.record_status' />
     <column name='record_substatus' sql='o.record_substatus' />
+    <column name='query' sql='o.query' />
     <column name='recorder' display='Key facts:Recorder' sql='snf.recorders' />
     <column name='entered_sref' display='Key facts:Map ref.' sql='coalesce(s.entered_sref, l.centroid_sref)' />
     <column name="output_sref" display="Key facts:Output map ref." sql="onf.output_sref" />
