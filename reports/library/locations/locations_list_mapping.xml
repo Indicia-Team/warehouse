@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="List of locations for mapping" 
+<report title="List of locations for mapping"
         description="Basic list of locations designed for mapping.">
   <query website_filter_field="lw.website_id">
     SELECT #columns#
@@ -28,6 +28,11 @@
           <join>join locations lp on lp.deleted=false and lp.id=#parent_boundary_id#</join>
           <where>st_intersects(lp.boundary_geom, l.boundary_geom)</where>
       </param>
+      <param name="exclude_composites" display="Exclude composite locations" datatype="boolean" default="0"
+             description="Ignore composition locations (which have a + in their code field), e.g. combined vice counties
+             such as Sussex">
+        <where>(l.code is null or l.code not like '%+%')</where>
+      </param>
   </params>
   <columns>
         <column name="id" visible="false" sql="l.id" datatype="integer" />
@@ -40,4 +45,4 @@
         <column name="fo" visible="false" feature_style="fillOpacity" sql="0.15" />
         <column name="sc" visible="false" feature_style="strokeColor" sql="'#ff0000'" />
   </columns>
-</report>  
+</report>
