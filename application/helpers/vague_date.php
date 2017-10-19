@@ -36,7 +36,7 @@ class vague_date {
     return Array(
       array(
           // date to date or date - date
-          'regex' => '/(?P<sep> to | - )/i', 
+          'regex' => '/(?P<sep> to | - )/i',
           'start' => -1,
           'end' => 1
       ),
@@ -165,45 +165,82 @@ class vague_date {
 
 
   /**
-   * Convert a vague date in the form of array(start, end, type) to a string
+   * Convert a vague date in the form of array(start, end, type) to a string.
    *
-   * @param array $date Vague date in the form array(start_date, end_date, date_type), where
-   * start_date and end_date are DateTime objects or strings.
-   * @return string Vague date expressed as a string.
+   * @param array $date
+   *   Vague date in the form array(start_date, end_date, date_type), where start_date and end_date are DateTime
+   *   objects or strings.
+   *
+   * @return string
+   *   Vague date expressed as a string.
    */
-  public static function vague_date_to_string(array $date)
-  {
-    $start=NULL;
-    $end=NULL;
-    if ($date[0]!=NULL)
-      $start = $date[0];
-    if ($date[1]!=NULL)
-      $end = $date[1];
+  public static function vague_date_to_string(array $date) {
+    $start = empty($date[0]) ? NULL : $date[0];
+    $end = empty($date[1]) ? NULL : $date[1];
     $type = $date[2];
     if (is_string($start)) {
-      $start=new DateTime($start);
+      $start = DateTime::createFromFormat(Kohana::lang('dates.format'), $date[0]);
+      if (!$start) {
+        // If not in warehouse default date format, allow PHP standard processing.
+        $start = new DateTime($date[0]);
+      }
     }
     if (is_string($end)) {
-      $end=new DateTime($end);
+      $end = DateTime::createFromFormat(Kohana::lang('dates.format'), $date[1]);
+      if (!$end) {
+        // If not in warehouse default date format, allow PHP standard processing.
+        $end = new DateTime($date[1]);
+      }
     }
     self::validate($start, $end, $type);
     switch ($type) {
-    case 'D': 	return self::vague_date_to_day($start, $end);
-    case 'DD':  return self::vague_date_to_days($start, $end);
-    case 'O':   return self::vague_date_to_month_in_year($start, $end);
-    case 'OO':	return self::vague_date_to_months_in_year($start, $end);
-    case 'P': 	return self::vague_date_to_season_in_year($start, $end);
-    case 'Y':	return self::vague_date_to_year($start, $end);
-    case 'YY':	return self::vague_date_to_years($start, $end);
-    case 'Y-':	return self::vague_date_to_year_from($start, $end);
-    case '-Y':	return self::vague_date_to_year_to($start, $end);
-    case 'M':	return self::vague_date_to_month($start, $end);
-    case 'S':	return self::vague_date_to_season($start, $end);
-    case 'U':	return self::vague_date_to_unknown($start, $end);
-    case 'C':	return self::vague_date_to_century($start, $end);
-    case 'CC':	return self::vague_date_to_centuries($start, $end);
-    case 'C-':	return self::vague_date_to_century_from($start, $end);
-    case '-C':	return self::vague_date_to_century_to($start, $end);
+      case 'D':
+        return self::vague_date_to_day($start, $end);
+
+      case 'DD':
+        return self::vague_date_to_days($start, $end);
+
+      case 'O':
+        return self::vague_date_to_month_in_year($start, $end);
+
+      case 'OO':
+        return self::vague_date_to_months_in_year($start, $end);
+
+      case 'P':
+        return self::vague_date_to_season_in_year($start, $end);
+
+      case 'Y':
+        return self::vague_date_to_year($start, $end);
+
+      case 'YY':
+        return self::vague_date_to_years($start, $end);
+
+      case 'Y-':
+        return self::vague_date_to_year_from($start, $end);
+
+      case '-Y':
+        return self::vague_date_to_year_to($start, $end);
+
+      case 'M':
+        return self::vague_date_to_month($start, $end);
+
+      case 'S':
+        return self::vague_date_to_season($start, $end);
+
+      case 'U':
+        return self::vague_date_to_unknown($start, $end);
+
+      case 'C':
+        return self::vague_date_to_century($start, $end);
+
+      case 'CC':
+        return self::vague_date_to_centuries($start, $end);
+
+      case 'C-':
+        return self::vague_date_to_century_from($start, $end);
+
+      case '-C':
+        return self::vague_date_to_century_to($start, $end);
     }
     throw new exception("Invalid date type $type");
   }

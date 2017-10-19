@@ -1,0 +1,11 @@
+<phpunit
+    bootstrap="index.php">
+  <php>
+    <const name="inPhpUnit" value="true"/>
+  </php>
+  <testsuites>
+    <testsuite name="Setup test check config">
+      <directory>./modules/indicia_setup/tests/helpers/config_test_test.php</directory>
+    </testsuite>
+  </testsuites>
+</phpunit>

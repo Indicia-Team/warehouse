@@ -4,7 +4,7 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
   /*****************************
    *  Vague date to string tests
    *****************************
-   * 
+   *
    * The following vague date types exist
    * D  Date
    * DD Date range
@@ -23,81 +23,80 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
    * C- Open ended century range
    * -C Up to century
    **/
-    
+
   /**
-   * 
-   * Each element of the returned array is a test. 
+   *
+   * Each element of the returned array is a test.
    * The index of each element is the test name.
    * Each element is itself an array consisting of, in order,
    *  - the start_date of the vague date to convert
    *  - the end_date of the vague date to convert
    *  - the date_type of the vague date to convert
-   *  - the expected date string 
-   * 
+   *  - the expected date string.
    */
    public function provideVagueDateToString() {
     return [
-        'Date 2001-06-15' => ['2001-06-15', '2001-06-15', 'D', '15/06/2001'],
-        'Date 2004-02-29' => ['2004-02-29', '2004-02-29', 'D', '29/02/2004'],
-        'Date 1970-01-01' => ['1970-01-01', '1970-01-01', 'D', '01/01/1970'],
-        'Date 1900-12-31' => ['1900-12-31', '1900-12-31', 'D', '31/12/1900'],
-        'Date 1800-01-01' => ['1800-01-01', '1800-01-01', 'D', '01/01/1800'],
-        'Date range 2001-03-28 to 2001-03-29' => ['2001-03-28', '2001-03-29', 'DD', '28/03/2001 to 29/03/2001'],
-        'Month 2001-03' => ['2001-03-01', '2001-03-31', 'O', '03/2001'],
-        'Month 2004-02' => ['2004-02-01', '2004-02-29', 'O', '02/2004'],
-        'Month 1900-01' => ['1900-01-01', '1900-01-31', 'O', '01/1900'],
-        'Month 1800-01' => ['1800-01-01', '1800-01-31', 'O', '01/1800'],
-        'Month range 2001-03 to 2001-07' => ['2001-03-01', '2001-07-31', 'OO', '03/2001 to 07/2001'],
-        'Season Winter 2010' => ['2009-12-01', '2010-02-28', 'P', 'Winter 2010'],
-        'Season Spring 2010' => ['2010-03-01', '2010-05-31', 'P', 'Spring 2010'],
-        'Season Summer 2010' => ['2010-06-01', '2010-08-31', 'P', 'Summer 2010'],
-        'Season Autumn 2010' => ['2010-09-01', '2010-11-30', 'P','Autumn 2010'],
-        'Year 2001' => ['2001-01-01', '2001-12-31', 'Y', '2001'],
-        'Year 1970' => ['1970-01-01', '1970-12-31', 'Y', '1970'],
-        'Year 1900' => ['1900-01-01', '1900-12-31', 'Y', '1900'],
-        'Year 1800' => ['1800-01-01', '1800-12-31', 'Y', '1800'],
-        'Year range 2001 to 2005' => ['2001-01-01', '2005-12-31', 'YY','2001 to 2005'],
-        'Open ended year range From 2001' => ['2001-01-01', '', 'Y-', 'From 2001'],
-        'Open ended year range From 1970' => ['1970-01-01', '', 'Y-', 'From 1970'],
-        'Open ended year range From 1900' => ['1900-01-01', '', 'Y-', 'From 1900'],
-        'Open ended year range From 1800' => ['1800-01-01', '', 'Y-', 'From 1800'],
-        'Open start year range To 2001' => ['', '2001-12-31', '-Y', 'To 2001'],
-        'Open start year range To 1970' => ['', '1970-12-31', '-Y', 'To 1970'],
-        'Open start year range To 1900' => ['', '1900-12-31', '-Y', 'To 1900'],
-        'Open start year range To 1800' => ['', '1800-12-31', '-Y', 'To 1800'],
-        'Month only March' => ['2001-03-01', '2001-03-31', 'M', 'March'],
-        'Season only Winter' => ['2009-12-01', '2010-02-28', 'S', 'Winter'],
-        'Season only Spring' => ['2010-03-01', '2010-05-31', 'S', 'Spring'],
-        'Season only Summer' => ['2010-06-01', '2010-08-31', 'S', 'Summer'],
-        'Season only Autumn' => ['2010-09-01', '2010-11-30', 'S', 'Autumn'],
-        'Unknown' => ['', '', 'U', 'Unknown'],
+      'Date 2001-06-15' => ['2001-06-15', '2001-06-15', 'D', '15/06/2001'],
+      'Date 2004-02-29' => ['2004-02-29', '2004-02-29', 'D', '29/02/2004'],
+      'Date 1970-01-01' => ['1970-01-01', '1970-01-01', 'D', '01/01/1970'],
+      'Date 1900-12-31' => ['1900-12-31', '1900-12-31', 'D', '31/12/1900'],
+      'Date 1800-01-01' => ['1800-01-01', '1800-01-01', 'D', '01/01/1800'],
+      'Date range 2001-03-28 to 2001-03-29' => ['2001-03-28', '2001-03-29', 'DD', '28/03/2001 to 29/03/2001'],
+      'Month 2001-03' => ['2001-03-01', '2001-03-31', 'O', '03/2001'],
+      'Month 2004-02' => ['2004-02-01', '2004-02-29', 'O', '02/2004'],
+      'Month 1900-01' => ['1900-01-01', '1900-01-31', 'O', '01/1900'],
+      'Month 1800-01' => ['1800-01-01', '1800-01-31', 'O', '01/1800'],
+      'Month range 2001-03 to 2001-07' => ['2001-03-01', '2001-07-31', 'OO', '03/2001 to 07/2001'],
+      'Season Winter 2010' => ['2009-12-01', '2010-02-28', 'P', 'Winter 2010'],
+      'Season Spring 2010' => ['2010-03-01', '2010-05-31', 'P', 'Spring 2010'],
+      'Season Summer 2010' => ['2010-06-01', '2010-08-31', 'P', 'Summer 2010'],
+      'Season Autumn 2010' => ['2010-09-01', '2010-11-30', 'P','Autumn 2010'],
+      'Year 2001' => ['2001-01-01', '2001-12-31', 'Y', '2001'],
+      'Year 1970' => ['1970-01-01', '1970-12-31', 'Y', '1970'],
+      'Year 1900' => ['1900-01-01', '1900-12-31', 'Y', '1900'],
+      'Year 1800' => ['1800-01-01', '1800-12-31', 'Y', '1800'],
+      'Year range 2001 to 2005' => ['2001-01-01', '2005-12-31', 'YY','2001 to 2005'],
+      'Open ended year range From 2001' => ['2001-01-01', '', 'Y-', 'From 2001'],
+      'Open ended year range From 1970' => ['1970-01-01', '', 'Y-', 'From 1970'],
+      'Open ended year range From 1900' => ['1900-01-01', '', 'Y-', 'From 1900'],
+      'Open ended year range From 1800' => ['1800-01-01', '', 'Y-', 'From 1800'],
+      'Open start year range To 2001' => ['', '2001-12-31', '-Y', 'To 2001'],
+      'Open start year range To 1970' => ['', '1970-12-31', '-Y', 'To 1970'],
+      'Open start year range To 1900' => ['', '1900-12-31', '-Y', 'To 1900'],
+      'Open start year range To 1800' => ['', '1800-12-31', '-Y', 'To 1800'],
+      'Month only March' => ['2001-03-01', '2001-03-31', 'M', 'March'],
+      'Season only Winter' => ['2009-12-01', '2010-02-28', 'S', 'Winter'],
+      'Season only Spring' => ['2010-03-01', '2010-05-31', 'S', 'Spring'],
+      'Season only Summer' => ['2010-06-01', '2010-08-31', 'S', 'Summer'],
+      'Season only Autumn' => ['2010-09-01', '2010-11-30', 'S', 'Autumn'],
+      'Unknown' => ['', '', 'U', 'Unknown'],
     ];
   }
-   
- /**
+
+  /**
    * @dataProvider provideVagueDateToString
    */
   public function testVagueDateToString($from, $to, $type, $expected) {
-    $fromDate = $from ? new DateTime($from) : null;
-    $toDate = $to ? new DateTime($to) : null;
+    $fromDate = $from ? new DateTime($from) : NULL;
+    $toDate = $to ? new DateTime($to) : NULL;
     $vd = array($fromDate, $toDate, $type);
     $s = vague_date::vague_date_to_string($vd);
-    $this->assertEquals($expected, $s, 'Failed converting vague date (dates) to '.$expected);
-    // test using strings rather than date objects
+    $this->assertEquals($expected, $s, 'Failed converting vague date (dates) to ' . $expected);
+    // Test using strings rather than date objects.
     $fromStr = $from ? $from : '';
     $toStr = $to ? $to : '';
     $vd = array($fromStr, $toStr, $type);
     $s = vague_date::vague_date_to_string($vd);
-    $this->assertEquals($expected, $s, 'Failed converting vague date (strings) to '.$expected);    
+    $this->assertEquals($expected, $s, 'Failed converting vague date (strings) to ' . $expected);
   }
-  
- 
+
+
   /*****************************
    *  String to vague date tests
    *****************************
-   * 
+   *
    * The following date formats are valid
-   * 
+   *
    * 1997-08-02               '%Y-%m-%d'
    * 02/08/1997               '%d/%m/%Y'
    * 02/08/97                 '%d/%m/%y'
@@ -111,51 +110,51 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
    * Mon  2 August 97        '%a %e %B %y'
    * Monday  2 Aug 97         '%A %e %b %y'
    * Mon  2 Aug 97            '%a %e %b %y'
-   * Monday  2 August        '%A %e %B' 
-   * Mon  2 August           '%a %e %B' 
-   * Monday  2 Aug            '%A %e %b' 
-   * Mon  2 Aug               '%a %e %b' 
+   * Monday  2 August        '%A %e %B'
+   * Mon  2 August           '%a %e %B'
+   * Monday  2 Aug            '%A %e %b'
+   * Mon  2 Aug               '%a %e %b'
    *  2 August 1997          '%e %B %Y'
-   *  2 Aug 1997              '%e %b %Y' 
+   *  2 Aug 1997              '%e %b %Y'
    *  2 August 97            '%e %B %y'
    *  2 Aug 97                '%e %b %y'
    * 08/02/97                 '%m/%d/%y'
    *
    * The following month formats are valid
-   * 
+   *
    * 1998-06    '%Y-%m'
    * 06/1998    '%m/%Y'
    * 06/98      '%m/%y'
-   * June 1998  '%B %Y' 
+   * June 1998  '%B %Y'
    * Jun 1998   '%b %Y'
    * June 98    '%B %y'
-   * Jun 98     '%b %y' 
-   * 
+   * Jun 98     '%b %y'
+   *
    * The following year formats are valid
-   * 
+   *
    * 1998       '%Y'
    * 98         '%y'
-   * 
+   *
    * The following season formats are valid
-   * 
+   *
    * Autumn 2008  '%K %Y'
    * Autumn 08    '%K %y'
    *
    * The following month only formats are valid
-   * 
-   * October    '%B' 
+   *
+   * October    '%B'
    * Oct        '%b'
-   * 
+   *
    * The following season only formats are valid
-   * 
+   *
    * Autumn     '%K'
-   * 
-   * 
+   *
+   *
    * The following century formats are valid
    * 18c        '%C'
-   * 
+   *
    * The following date range strings are valid
-   * 
+   *
    * date to date
    * date - date
    * date-date
@@ -174,15 +173,15 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
    **/
 
   /**
-   * 
-   * Each element of the returned array is a test. 
+   *
+   * Each element of the returned array is a test.
    * The index of each element is the test name.
    * Each element is itself an array consisting of, in order,
    *  - the date string to convert
    *  - the expected start_date of the vague date representation
    *  - the expected end_date of the vague date representation
    *  - the expected date_type of the vague date representation
-   * 
+   *
    */
   public function provideStringToVagueDate() {
     return [
@@ -233,11 +232,11 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
         'Month Oct 92' => ['Oct 92', '1992-10-01', '1992-10-31', 'O'],
         'Month Oct 02' => ['Oct 02', '2002-10-01', '2002-10-31', 'O'],
         'Month Oct 12' => ['Oct 12', '2012-10-01', '2012-10-31', 'O'],
-        'Month range 1998-06 - 1998-08' => ['1998-06 - 1998-08', '1998-06-01', '1998-08-31', 'OO'],        
-        'Month range 06/1998 - 08/1998' => ['06/1998 - 08/1998', '1998-06-01', '1998-08-31', 'OO'],        
-        'Month range 06/1998 to 08/1998' => ['06/1998 to 08/1998', '1998-06-01', '1998-08-31', 'OO'],        
-        'Month range 06/1998-08/1998' => ['06/1998-08/1998', '1998-06-01', '1998-08-31', 'OO'],        
-        'Month range 06.1998-08.1998' => ['06/1998 to 08/1998', '1998-06-01', '1998-08-31', 'OO'],        
+        'Month range 1998-06 - 1998-08' => ['1998-06 - 1998-08', '1998-06-01', '1998-08-31', 'OO'],
+        'Month range 06/1998 - 08/1998' => ['06/1998 - 08/1998', '1998-06-01', '1998-08-31', 'OO'],
+        'Month range 06/1998 to 08/1998' => ['06/1998 to 08/1998', '1998-06-01', '1998-08-31', 'OO'],
+        'Month range 06/1998-08/1998' => ['06/1998-08/1998', '1998-06-01', '1998-08-31', 'OO'],
+        'Month range 06.1998-08.1998' => ['06/1998 to 08/1998', '1998-06-01', '1998-08-31', 'OO'],
         'Year 2001' => ['2001', '2001-01-01', '2001-12-31', 'Y'],
         'Year 1964' => ['1964', '1964-01-01', '1964-12-31', 'Y'],
         'Year 1900' => ['1900', '1900-01-01', '1900-12-31', 'Y'],
@@ -265,7 +264,7 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
         'Season Autumn 12' => ['Autumn 12', '2012-09-01', '2012-11-30', 'P'],
         'Season Autumn 02' => ['Autumn 02', '2002-09-01', '2002-11-30', 'P'],
         'Season Autumn 92' => ['Autumn 92', '1992-09-01', '1992-11-30', 'P'],
-        // Month only and season only years are always for the current year 
+        // Month only and season only years are always for the current year
         // so will need updating with time.
         'Month only March' => ['March', '2017-03-01', '2017-03-31', 'M'],
         // The date of the end of winter also needs altering to account for
@@ -278,7 +277,7 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
         'Unknown U' => ['U', null, null, 'U'],
     ];
    }
- 
+
  /**
    * @dataProvider provideStringToVagueDate
    */
@@ -298,7 +297,7 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
         'Date 06/1992-1996' => ['06/1992-1996'],
     ];
   }
-  
+
  /**
    * @dataProvider provideBadStringToVagueDate
    */

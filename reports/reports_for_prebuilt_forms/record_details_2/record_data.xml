@@ -7,6 +7,7 @@
   from cache_occurrences_functional o
   join cache_occurrences_nonfunctional onf on onf.id=o.id
   join cache_samples_nonfunctional snf on snf.id=o.sample_id
+  join samples s on s.id=o.sample_id and s.deleted=false
   join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   join users u on u.id=o.created_by_id
   join people p on p.id=u.person_id
@@ -14,12 +15,23 @@
   #agreements_join#
   #joins#
   where o.id=#occurrence_id#
+  and #sharing_filter#
   </query>
   <params>
     <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
     <param name="geom_precision" display="Geometry precision" description="in km, 1, 2 or 10" default="" datatype="integer">
       <join operator="notequal" value="">join map_squares msq on msq.id = o.map_sq_#geom_precision#km_id</join>
       <join operator="equal" value="">join map_squares msq on msq.id = o.map_sq_1km_id</join>
+    </param>
+    <param name="allow_confidential" datatype="boolean" default="0"
+           description="Allow viewing of confidential records">
+      <where value="0" operator="equal">o.confidential=false</where>
+    </param>
+    <param name="allow_sensitive_full_precision" datatype="boolean" default="0"
+           description="Allow viewing of sensitive records at full precision" />
+    <param name="allow_unreleased" datatype="boolean" default="0"
+           description="Allow viewing of unreleased records">
+      <where value="0" operator="equal">o.release_status='R'</where>
     </param>
   </params>
   <columns>
@@ -33,7 +45,7 @@
     <column name='taxonomy' sql="COALESCE(cttl.kingdom_taxon, '-') || ' :: ' || COALESCE(cttl.order_taxon, '-') || ' :: ' || COALESCE(cttl.family_taxon, '-')" />
     <column name='survey_title' sql='snf.survey_title' />
     <column name='recorder' sql='snf.recorders' />
-    <column name='inputter' sql="case p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end 
+    <column name='inputter' sql="case p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end
         when snf.recorders then null
         else p.surname || case when p.first_name is null or p.first_name='' then '' else ', ' || p.first_name end end" />
     <column name='record_status' visible="false" sql="
@@ -56,11 +68,15 @@
     <column name='date_end' sql='o.date_end' visible='false' />
     <column name='date_type' sql='o.date_type' visible='false' />
     <column name='date' display='Date' datatype="date" />
-    <column name='entered_sref' sql='snf.public_entered_sref' />
+    <column name='entered_sref' sql="case #allow_sensitive_full_precision# when '1' then s.entered_sref else snf.public_entered_sref end" />
     <column name='occurrence_comment' sql='onf.comment' />
     <column name='location_name' sql="o.location_name" />
-    <column name='sample_comment' sql='case o.sensitive when false then snf.comment else null end' />
-    <column name='geom' sql="case '#geom_precision#' when '' then st_astext(o.public_geom) else st_astext(msq.geom) end" />
+    <column name='sample_comment' sql="case when o.sensitive=false or #allow_sensitive_full_precision#='1' then snf.comment else null end" />
+    <column name='geom' sql="case
+      when #allow_sensitive_full_precision#='1' then st_astext(s.geom)
+      when '#geom_precision#'='' then st_astext(o.public_geom)
+      else st_astext(msq.geom)
+    end" />
     <column name="lat" sql="st_y(st_transform(st_centroid(public_geom), 4326))" />
     <column name="long" sql="st_x(st_transform(st_centroid(public_geom), 4326))" />
     <column name='sensitivity_precision' sql="onf.sensitivity_precision" />
@@ -74,5 +90,6 @@
     <column name="licence_title" sql="l.title" />
     <column name="licence_url" sql="l.url_readable" />
     <column name='confidential' sql='o.confidential' />
+    <column name='release_status' sql='o.release_status' />
   </columns>
 </report>

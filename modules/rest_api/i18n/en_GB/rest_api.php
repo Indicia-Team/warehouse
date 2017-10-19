@@ -113,9 +113,11 @@
       'synonyms' => 'Set to true to limit to syonyms, false to exclude synonyms.',
       'abbreviations' => 'Set to false to disable searching 2+3 character species name abbreviations.',
       'marine_flag' => 'Set to true for only marine associated species, false to exclude marine-associated species.',
-      'searchAuthors' => 'Set to true to include author strings in the searched text.',  
+      'searchAuthors' => 'Set to true to include author strings in the searched text.',
       'wholeWords' => 'Set to true to only search whole words in the full text index, otherwise searches the start ' .
           'of words.',
+      'min_taxon_rank_sort_order' => 'Set to the minumum sort order of the taxon ranks to include in the results.',
+      'max_taxon_rank_sort_order' => 'Set to the maximum sort order of the taxon ranks to include in the results.',
       'limit' => 'Limit the number of records in the response.',
       'offset' => 'Offset from the start of the dataset that the response will start.',
       'include' => 'Defines which parts of the response structure to include. If the count and paging data are not ' .

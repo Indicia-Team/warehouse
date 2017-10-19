@@ -81,8 +81,8 @@ class Sample_Model extends ORM_Tree
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
 
-    if ($this->id && preg_match('/[RDV]/', $this->record_status) && 
-        (empty($this->submission['fields']['record_status']) || $this->submission['fields']['record_status']['value']==='C') && 
+    if ($this->id && preg_match('/[RDV]/', $this->record_status) &&
+        (empty($this->submission['fields']['record_status']) || $this->submission['fields']['record_status']['value']==='C') &&
         $this->wantToUpdateMetadata) {
       // If we update a processed occurrence but don't set the verification state, revert it to completed/awaiting verification.
       $array->verified_by_id=null;
@@ -151,13 +151,14 @@ class Sample_Model extends ORM_Tree
   }
 
   /**
-  * Before submission:
-  * * map vague date strings to their underlying database fields.
-  * * fill in the geom field using the supplied spatial reference, if not already filled in
-  * * fill in the licence for the sample, if user has one, and not already filled in
-  */
-  protected function preSubmit()
-  {
+   * Pre submission tasks.
+   *
+   * Before submission:
+   * * map vague date strings to their underlying database fields.
+   * * fill in the geom field using the supplied spatial reference, if not already filled in
+   * * fill in the licence for the sample, if user has one, and not already filled in.
+   */
+  protected function preSubmit() {
     $this->preSubmitFillInVagueDate();
     $this->preSubmitFillInGeom();
     $this->preSubmitFillInLicence();
@@ -166,16 +167,30 @@ class Sample_Model extends ORM_Tree
   }
 
   /**
-   * If a date is supplied in a submission as a string, fill in the underlying database
-   * vague date fields.
+   * Populate and check vague date related fields.
+   *
+   * If a date is supplied in a submission as a string, fill in the underlying database vague date fields. If the date
+   * is supplied in date_start, date_end and date_type format then throw an exception if the format is wrong.
    */
   private function preSubmitFillInVagueDate() {
     if (array_key_exists('date', $this->submission['fields'])) {
-      $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
-      $this->submission['fields']['date_start']['value'] = $vague_date[0];
-      $this->submission['fields']['date_end']['value'] = $vague_date[1];
-      $this->submission['fields']['date_type']['value'] = $vague_date[2];
+      $dateString = $this->submission['fields']['date']['value'];
     }
+    elseif (array_key_exists('date_type', $this->submission['fields'])) {
+      // Force an exception if a bad date structure provided.
+      $dateString = vague_date::vague_date_to_string(array(
+        $this->submission['fields']['date_start']['value'],
+        $this->submission['fields']['date_end']['value'],
+        $this->submission['fields']['date_type']['value'],
+      ));
+    }
+    if (isset($dateString)) {
+      $vagueDate = vague_date::string_to_vague_date($dateString);
+      $this->submission['fields']['date_start']['value'] = $vagueDate[0];
+      $this->submission['fields']['date_end']['value'] = $vagueDate[1];
+      $this->submission['fields']['date_type']['value'] = $vagueDate[2];
+    }
+
   }
 
   /**
@@ -226,7 +241,7 @@ class Sample_Model extends ORM_Tree
       }
     }
   }
-  
+
   /**
    * Gives sref modules the chance to tidy the format of input values, e.g. OSGB grid refs are capitalised and spaces
    * stripped.
@@ -286,11 +301,11 @@ class Sample_Model extends ORM_Tree
   public function fixed_values_form($options=array()) {
     $srefs = array();
     $systems = spatial_ref::system_list();
-    foreach ($systems as $code=>$title) 
+    foreach ($systems as $code=>$title)
     	$srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
     				":".
     				str_replace(array(',',':'), array('&#44', '&#56'), $title);
-    
+
     $sample_methods = array(":Defined in file");
     $parent_sample_methods = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
@@ -301,45 +316,45 @@ class Sample_Model extends ORM_Tree
     	$sample_methods[] = $sample_method;
     	$parent_sample_methods[] = $sample_method;
     }
-    
+
     $location_types = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term)
     	$location_types[] = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
     						":".
     						str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
-    
+
     $retval = array(
-      'website_id' => array( 
-        'display'=>'Website', 
-        'description'=>'Select the website to import records into.', 
+      'website_id' => array(
+        'display'=>'Website',
+        'description'=>'Select the website to import records into.',
         'datatype'=>'lookup',
-        'population_call'=>'direct:website:id:title' 
+        'population_call'=>'direct:website:id:title'
       ),
       'survey_id' => array(
-        'display'=>'Survey', 
-        'description'=>'Select the survey to import records into.', 
+        'display'=>'Survey',
+        'description'=>'Select the survey to import records into.',
         'datatype'=>'lookup',
         'population_call'=>'direct:survey:id:title',
         'linked_to'=>'website_id',
         'linked_filter_field'=>'website_id'
       ),
       'sample:entered_sref_system' => array(
-        'display'=>'Spatial Ref. System', 
+        'display'=>'Spatial Ref. System',
         'description'=>'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
-            'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.', 
+            'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.',
         'datatype'=>'lookup',
         'lookup_values'=>implode(',', $srefs)
       ),
       'sample:sample_method_id' => array(
-        'display'=>'Sample Method', 
+        'display'=>'Sample Method',
         'description'=>'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a '.
-            'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.', 
+            'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
         'datatype'=>'lookup',
         'lookup_values'=>implode(',', $sample_methods)
       ),
       'fkFilter:location:location_type_id' => array(
-        'display'=>'Location Type', 
+        'display'=>'Location Type',
         'description'=>'If this import file includes samples which reference locations records, you can restrict the type of locations looked '.
       		'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype'=>'lookup',
@@ -354,10 +369,10 @@ class Sample_Model extends ORM_Tree
     			'datatype'=>'lookup',
     			'lookup_values'=>implode(',', $parent_sample_methods)
     	);
-    	 
+
     return $retval;
   }
-  
+
   /**
    * Post submit, use the sample's group.private_records to set the occurrence release status.
    * Also, if this was a verified sample but it has been modified, add a comment to explain
@@ -368,7 +383,7 @@ class Sample_Model extends ORM_Tree
       $group = $this->db->select('id')->from('groups')
           ->where(array('id' => $this->group_id, 'private_records'=>'t', 'deleted'=>'f'))->get()->result_array();
       if (count($group)) {
-        // This sample is associated with a group that does not release its records. So ensure the release_status flag 
+        // This sample is associated with a group that does not release its records. So ensure the release_status flag
         // is set.
         $this->db->update('occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
         $this->db->update('cache_occurrences_functional', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
@@ -385,5 +400,5 @@ class Sample_Model extends ORM_Tree
     }
     return true;
   }
-  
+
 }
