@@ -645,7 +645,7 @@ and tt.deleted = FALSE
 ORDER by tt.id;
 SQL;
                 $termResponse = $this->reportDb->query(
-                  ""
+                  $sql
                 );
               }
               $newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
