@@ -344,11 +344,8 @@ class ORM extends ORM_Core {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
           require_once("$path/plugins/$plugin.php");
-          if (function_exists($plugin.'_alter_submission')) {
-            $alteredColumns = call_user_func($plugin.'_alter_submission', $array);
-            foreach($alteredColumns as $column => $value) { // $array is an object
-              $array[$column] = $value;
-            }
+          if (function_exists($plugin.'_orm_pre_save_processing')) {
+              $state[$plugin] = call_user_function($plugin.'_orm_pre_save_processing', $array);
           }
         }
       }
@@ -356,6 +353,15 @@ class ORM extends ORM_Core {
 
     try {
       if (parent::validate($array, $save)) {
+          if($save) {
+              foreach (Kohana::config('config.modules') as $path) {
+                  $plugin = basename($path);
+                      if (function_exists($plugin.'_orm_post_save_processing')) {
+                          call_user_function($plugin.'_orm_post_save_processing', $array, $state[$plugin]);
+                      }
+              }
+          }
+        
         return TRUE;
       }
       else {

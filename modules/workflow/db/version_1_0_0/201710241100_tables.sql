@@ -15,7 +15,7 @@ CREATE SEQUENCE workflow_metadata_id_seq
     CACHE 1;
 
 
-
+// TODO unique constraint on entity, event_type, key, key_value
 CREATE TABLE workflow_events
 (
   id                      integer           NOT NULL DEFAULT nextval('workflow_events_id_seq'::regclass),
