@@ -337,6 +337,23 @@ class ORM extends ORM_Core {
         $this->__set($a, $array[$a]);
       }
     }
+
+    // Now look for any modules which alter the submission
+    if($save) {
+      foreach (Kohana::config('config.modules') as $path) {
+        $plugin = basename($path);
+        if (file_exists("$path/plugins/$plugin.php")) {
+          require_once("$path/plugins/$plugin.php");
+          if (function_exists($plugin.'_alter_submission')) {
+            $alteredColumns = call_user_func($plugin.'_alter_submission', $array);
+            foreach($alteredColumns as $column => $value) { // $array is an object
+              $array[$column] = $value;
+            }
+          }
+        }
+      }
+    }
+
     try {
       if (parent::validate($array, $save)) {
         return TRUE;
