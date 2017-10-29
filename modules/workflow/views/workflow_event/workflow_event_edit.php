@@ -67,6 +67,11 @@ echo data_entry_helper::text_input(array(
     'default'=>html::initial_value($values, 'workflow_event:key_value'),
     'validation' => array('required')
 ));
+echo data_entry_helper::checkbox(array(
+    'label' => 'Mimic Rewind first',
+    'fieldname' => 'workflow_event:mimic_rewind_first',
+    'default' => html::initial_value($values, 'workflow_event:mimic_rewind_first')
+));
 echo data_entry_helper::jsonwidget(array(
     'fieldname'=>'workflow_event:values',
     'schema' => '{
@@ -77,7 +82,6 @@ echo data_entry_helper::jsonwidget(array(
 }',
     'default' => html::initial_value($values, 'workflow_event:values')
 ));
-
 
 echo $metadata;
 echo html::form_buttons(html::initial_value($values, 'workflow_event:id')!=null, false, false);
@@ -91,17 +95,18 @@ jQuery(document).ready(function($) {
 <?php
 echo json_encode($other_data['entities']);
 ?>,
-          previous_value = $("#workflow_event\\:event_type").val()
+          previous_value = $("#workflow_event\\:event_type").val(),
+          entityKeys = Object.keys(entities)
           ;
       // First build event types list for select.
       if(previous_value === null || previous_value==="")
         previous_value = $("#old_workflow_event_event_type").val();
       $("#workflow_event\\:event_type option").remove();
-      for(var i = 0; i< entities.length; i++) {
-        if(entities[i].id == $("#workflow_event\\:entity").val()) {
-          for(var j = 0; j< entities[i].event_types.length; j++) {
-            $("#workflow_event\\:event_type").append('<option value="'+entities[i].event_types[j].code+
-                '">'+entities[i].event_types[j].title+'</option>');
+      for(var i = 0; i< entityKeys.length; i++) {
+        if(entityKeys[i] == $("#workflow_event\\:entity").val()) {
+          for(var j = 0; j< entities[entityKeys[i]].event_types.length; j++) {
+            $("#workflow_event\\:event_type").append('<option value="'+entities[entityKeys[i]].event_types[j].code+
+                '">'+entities[entityKeys[i]].event_types[j].title+'</option>');
           }
         }
       }
@@ -111,11 +116,11 @@ echo json_encode($other_data['entities']);
       if(previous_value === null || previous_value==="")
         previous_value = $("#old_workflow_event_key").val();
       $("#workflow_event\\:key option").remove();
-      for(var i = 0; i< entities.length; i++) {
-        if(entities[i].id == $("#workflow_event\\:entity").val()) {
-          for(var j = 0; j< entities[i].keys.length; j++) {
-            $("#workflow_event\\:key").append('<option value="'+entities[i].keys[j].title+
-                '">'+entities[i].keys[j].title+'</option>');
+      for(var i = 0; i< entityKeys.length; i++) {
+        if(entityKeys[i] === $("#workflow_event\\:entity").val()) {
+          for(var j = 0; j< entities[entityKeys[i]].keys.length; j++) {
+            $("#workflow_event\\:key").append('<option value="'+entities[entityKeys[i]].keys[j].db_store_value+
+                '">'+entities[entityKeys[i]].keys[j].title+'</option>');
           }
         }
       }

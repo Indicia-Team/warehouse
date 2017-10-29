@@ -38,7 +38,7 @@ class Workflow_event_Model extends ORM {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim'); 
     $array->add_rules('entity', 'required');
-    $array->add_rules('event_type', 'required', 'chars[C,U,V,R]');
+    $array->add_rules('event_type', 'required', 'chars[U,S,V,R]');
     $array->add_rules('key', 'required');
     $array->add_rules('key_value', 'required');
     $array->add_rules('values', 'required');

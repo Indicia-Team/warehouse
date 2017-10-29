@@ -48,8 +48,8 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
       $config = kohana::config('workflow');
       $entitySelectItems = array();
       
-      foreach($config['entities'] as $entity){
-          $entitySelectItems[$entity['id']] = $entity['title'];
+      foreach($config['entities'] as $entity => $entityDef){
+          $entitySelectItems[$entity] = $entityDef['title'];
       }
       return array(
           'entities' => $config['entities'],

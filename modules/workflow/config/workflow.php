@@ -25,24 +25,23 @@
 // a situation where a full rebuild of the cache is required.
 
 $config['entities'] =
-  array(
-    array('id'=>'occurrence',
-          'title'=>'Occurrence',
+  array('occurrence'=>
+    array('title'=>'Occurrence',
           'event_types'=> array(
-              array('code'=>'C',
-                    'title'=>'Create'),
-              array('code'=>'U',
-                  'title'=>'Update'),
-              array('code'=>'V',
-                  'title'=>'Verification'),
-              array('code'=>'R',
-                  'title'=>'Rejection')
+              array('code'=>'U', 'title'=>'Unset'),
+              array('code'=>'S', 'title'=>'Set'),
+              array('code'=>'V', 'title'=>'Verification'),
+              array('code'=>'R', 'title'=>'Rejection')
               ),
           'keys'=> array(
-              array('table'=>'cctl',
-                  'column'=>'taxa_taxon_list_external_key',
-                  'title'=>'Taxon External Key')
-              )
+              array('title'=>'Taxon External Key',
+                    'db_store_value'=>'taxa_taxon_list_external_key',
+                    'column'=>'external_key',
+                    'table'=>'cache_taxa_taxon_lists')),
+          'extraData'=> array(
+              array('table'=>'cache_taxa_taxon_lists',
+                    'originating_table_column'=>'taxa_taxon_list_id',
+                    'target_table_column'=>'id'))
     )
   );
 

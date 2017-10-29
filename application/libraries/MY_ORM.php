@@ -318,6 +318,22 @@ class ORM extends ORM_Core {
     // set the default created/updated information
     if ($this->wantToUpdateMetadata)
       $this->set_metadata();
+    
+      // Now look for any modules which alter the submission
+      if($save) {
+          foreach (Kohana::config('config.modules') as $path) {
+              $plugin = basename($path);
+              if (file_exists("$path/plugins/$plugin.php")) {
+                  require_once("$path/plugins/$plugin.php");
+                  if (function_exists($plugin.'_orm_pre_save_processing')) {
+                      $state[$plugin] = call_user_func_array($plugin.'_orm_pre_save_processing', array($this->db, $this->object_name, &$array));
+                  }
+              }
+          }
+      }
+      kohana::log('info', 'Post Workflow '.print_r($array,true));
+      
+      
     $modelFields=$array->as_array();
     $fields_to_copy=$this->unvalidatedFields;
     // the created_by_id and updated_by_id fields can be specified by web service calls if the
@@ -338,26 +354,14 @@ class ORM extends ORM_Core {
       }
     }
 
-    // Now look for any modules which alter the submission
-    if($save) {
-      foreach (Kohana::config('config.modules') as $path) {
-        $plugin = basename($path);
-        if (file_exists("$path/plugins/$plugin.php")) {
-          require_once("$path/plugins/$plugin.php");
-          if (function_exists($plugin.'_orm_pre_save_processing')) {
-              $state[$plugin] = call_user_function($plugin.'_orm_pre_save_processing', $array);
-          }
-        }
-      }
-    }
-
+    
     try {
       if (parent::validate($array, $save)) {
           if($save) {
               foreach (Kohana::config('config.modules') as $path) {
                   $plugin = basename($path);
                       if (function_exists($plugin.'_orm_post_save_processing')) {
-                          call_user_function($plugin.'_orm_post_save_processing', $array, $state[$plugin]);
+                          call_user_func($plugin.'_orm_post_save_processing', $this->db, $this->object_name, $array, $state[$plugin]);
                       }
               }
           }

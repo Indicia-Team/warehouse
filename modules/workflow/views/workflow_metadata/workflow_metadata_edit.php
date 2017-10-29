@@ -83,7 +83,6 @@ echo data_entry_helper::checkbox(array(
 echo $metadata;
 echo html::form_buttons(html::initial_value($values, 'workflow_metadata:id')!=null, false, false);
 
-
 ?>
 <script type="text/javascript">
 jQuery(document).ready(function($) {
@@ -93,17 +92,18 @@ jQuery(document).ready(function($) {
 <?php
 echo json_encode($other_data['entities']);
 ?>,
-          previous_value = $("#workflow_metadata\\:key").val()
+          previous_value = $("#workflow_metadata\\:key").val(),
+          entityKeys = Object.keys(entities)
           ;
       // Build keys list for select.
       if(previous_value === null || previous_value==="")
         previous_value = $("#old_workflow_metadata_key").val();
       $("#workflow_metadata\\:key option").remove();
-      for(var i = 0; i< entities.length; i++) {
-        if(entities[i].id == $("#workflow_metadata\\:entity").val()) {
-          for(var j = 0; j< entities[i].keys.length; j++) {
-            $("#workflow_metadata\\:key").append('<option value="'+entities[i].keys[j].title+
-                '">'+entities[i].keys[j].title+'</option>');
+      for(var i = 0; i< entityKeys.length; i++) {
+        if(entityKeys[i] === $("#workflow_metadata\\:entity").val()) {
+          for(var j = 0; j< entities[entityKeys[i]].keys.length; j++) {
+            $("#workflow_metadata\\:key").append('<option value="'+entities[entityKeys[i]].keys[j].title+
+                '">'+entities[entityKeys[i]].keys[j].title+'</option>');
           }
         }
       }

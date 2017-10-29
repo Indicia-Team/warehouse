@@ -41,7 +41,7 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
   protected function get_action_columns() {
     return array(
         array('caption'=>'Edit',
-              'url'=>'workflow_metadata/edit/{id}'));
+              'url'=>'workflow_event/edit/{id}'));
   }
 
   protected function prepareOtherViewData($values)
@@ -49,8 +49,8 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
       $config = kohana::config('workflow');
       $entitySelectItems = array();
       
-      foreach($config['entities'] as $entity){
-          $entitySelectItems[$entity['id']] = $entity['title'];
+      foreach($config['entities'] as $entity => $entityDef){
+          $entitySelectItems[$entity] = $entityDef['title'];
       }
       return array(
           'entities' => $config['entities'],

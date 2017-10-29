@@ -63,6 +63,7 @@ $config['uncountable'] = array
   'water',
   'weather',
   'work',
+  'workflow_undo',
   'workflow_metadata',
 );
 
