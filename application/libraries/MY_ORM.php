@@ -359,7 +359,7 @@ class ORM extends ORM_Core {
           foreach (Kohana::config('config.modules') as $path) {
             $plugin = basename($path);
             if (function_exists($plugin.'_orm_post_save_processing')) {
-              call_user_func($plugin.'_orm_post_save_processing', $this->db, $this->object_name, $array, $state[$plugin]);
+              call_user_func($plugin.'_orm_post_save_processing', $this->db, $this->object_name, $array, $state[$plugin], $this->object[$this->primary_key]);
             }
           }
         }

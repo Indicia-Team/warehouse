@@ -109,13 +109,15 @@ function workflow_orm_pre_save_processing($db, $entity, &$record) {
                   $columnDeltaList[$unsetColumn] = $unsetValue;
               }
             }
-            $undoRecords = ORM::factory('workflow_undo')
-                ->where(array('entity' => $entity, 'entity_id' => $record['id'], 'active'=>'t'))
-                ->orderby('id','DESC')->find_all();
-            foreach($undoRecords as $undoRecord) {
-              $unsetColumns = json_decode($undoRecord->original_values);
-              foreach($unsetColumns as $unsetColumn => $unsetValue) {
-                $columnDeltaList[$unsetColumn] = $unsetValue;
+            if(isset($record['id'])) {
+              $undoRecords = ORM::factory('workflow_undo')
+                  ->where(array('entity' => $entity, 'entity_id' => $record['id'], 'active'=>'t'))
+                  ->orderby('id','DESC')->find_all();
+              foreach($undoRecords as $undoRecord) {
+                $unsetColumns = json_decode($undoRecord->original_values);
+                foreach($unsetColumns as $unsetColumn => $unsetValue) {
+                  $columnDeltaList[$unsetColumn] = $unsetValue;
+                }
               }
             }
           }
@@ -178,7 +180,7 @@ function workflow_getData($db, $config, $entity, $record)
   return $retVal;
 }
 
-function workflow_orm_post_save_processing($db, $entity, $record, $state) {
+function workflow_orm_post_save_processing($db, $entity, $record, $state, $id) {
   $combinations = $db->select('distinct key, key_value')
       ->from('workflow_events')
       ->where('entity', $entity)
@@ -205,7 +207,7 @@ function workflow_orm_post_save_processing($db, $entity, $record, $state) {
       continue;
     foreach($state[$combination->key.':'.$combination->key_value] as $undoDetails) {
       $db->insert('workflow_undo', array('entity' => $entity,
-                                         'entity_id' => $record['id'],
+                                         'entity_id' => $id,
                                          'event_type' => $undoDetails['event_type']['code'],
                                          'created_on' => date("Ymd H:i:s"),
                                          'created_by_id' => $userId,
