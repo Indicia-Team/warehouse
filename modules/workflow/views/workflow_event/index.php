@@ -25,11 +25,11 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'workflow_event/create'; ?>" method="post">
-<input type="submit" value="New Workflow event" class="ui-corner-all ui-state-default button" />
+  <input type="submit" value="New Workflow event" class="ui-corner-all ui-state-default button" />
 </form>
 <?php
 $systemTableEntries = $this->db->select('*')->from('system')->where('name','workflow')->get()->as_array(true);
 foreach($systemTableEntries as $systemTableEntry) {
-	echo 'Workflow module version : '.$systemTableEntry->version.'<span style="display:none;">ID '.$systemTableEntry->id.", last script : ".$systemTableEntry->last_run_script."</span><br>";
+  echo 'Workflow module version : '.$systemTableEntry->version.'<span style="display:none;">ID '.$systemTableEntry->id.", last script : ".$systemTableEntry->last_run_script."</span><br>";
 }
 ?>

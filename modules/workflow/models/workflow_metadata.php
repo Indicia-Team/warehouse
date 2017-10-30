@@ -22,11 +22,7 @@
  */
 
 /**
- * Model class for the Users table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * Model class for the workflow_metadata table.
  */
 class Workflow_metadata_Model extends ORM {
   public $search_field='id';
@@ -43,11 +39,9 @@ class Workflow_metadata_Model extends ORM {
     $array->add_rules('verification_delay_hours', 'required');
 
     // Explicitly add those fields for which we don't do validation
-    $this->unvalidatedFields = array(
-        'deleted',
-        'verifier_notifications_immediate',
-        'log_all_communications'
-    );
+    $this->unvalidatedFields = array('deleted',
+                                     'verifier_notifications_immediate',
+                                     'log_all_communications');
     
     return parent::validate($array, $save);
   }

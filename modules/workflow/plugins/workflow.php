@@ -20,22 +20,8 @@
  * @link       https://github.com/Indicia-Team/
  */
 
-// DONE test against sample (i.e. non event)
-// DONE test against non-triggering occurrence, no events defined
-// TODO find the cttl data for occurrences -> expanded record, and expanded oldRecord
-// TODO test against non-triggering occurrence, events defined
-// TODO Test setting - no data
-// TODO Test setting - data
-// TODO Test unsetting
-// TODO Test validating
-// TODO Test Rejecting
-// TODO test mimic rewind
-
 // TODO add tab to occurrences to display workflow_undo data
 // TODO Build in ability to handle default?
-// TODO get confirmation: are these events triggered on change of status, or are they triggered each time the record is saved, with possibly no change in event status - e.g. a verified occurrence is saved, but still as the same verified taxon.
-// TODO get confirmation what happens to the fields if they are set in the submission from the user - are they overriden by the event?
-
 
 /**
  * Implements the alter_menu hook.
@@ -62,17 +48,9 @@ function workflow_alter_menu($menu, $auth) {
  *   List of database entities exposed by this plugin with configuration.
  */
 function workflow_extend_data_services() {
-  return array(
-      'workflow_events'=>array(),
-      'workflow_metadata'=>array()
-  );
+  return array('workflow_events'=>array(),
+               'workflow_metadata'=>array());
 }
-
-function workflow_alter_submission() {
-    return array(
-    );
-}
-
 
 /*
  * 2 hooks: one that fires before the record is created/updated, and one after.
@@ -88,41 +66,29 @@ function workflow_orm_pre_save_processing($db, $entity, &$record) {
   $state = array();
   if(!isset($config['entities'][$entity]))
     return $state;
-    
+
   $recordSet = workflow_getData($db, $config, $entity, $record);
 
   $combinations = $db->
-        select('distinct key, key_value')
-        ->from('workflow_events')
-        ->where('entity', $entity)
-        ->where('deleted', 'f')
-        ->get()->as_array();
+    select('distinct key, key_value')
+      ->from('workflow_events')
+      ->where('entity', $entity)
+      ->where('deleted', 'f')
+      ->get()->as_array();
   foreach($combinations as $combination) {
     $state[$combination->key.':'.$combination->key_value] = array(); // holds a list of undo records to create
     if(!isset($record['id']))
       continue;
-    $unsetEvents = $db->
-        select('*')
-        ->from('workflow_events')
-        ->where('entity', $entity)
-        ->where('key', $combination->key)
-        ->where('key_value', $combination->key_value)
-        ->where('event_type', 'U')
-        ->where('deleted', 'f')
-        ->get()->as_array();
-    foreach($unsetEvents as $unsetEvent) {
-      if(workflow_isThisRecord($db, $config, $entity, 'U', $recordSet, $unsetEvent)) {
-        kohana::log('info', 'Workflow triggered Unset event '.$entity.' Key '.' Value ');
-        workflow_rewindRecord($db, $entity, $record);
-      }
+    if(workflow_isThisRecord($db, $config, $entity, 'U', $recordSet,  (object) array("key"=>$combination->key, "key_value"=>$combination->key_value))) {
+      kohana::log('info', 'Workflow triggered Unset event '.$entity.' Key '.($combination->key).' Value '.($combination->key_value));
+      workflow_rewindRecord($db, $entity, $record);
     }
   }
 
   foreach($combinations as $combination) {
     foreach($config['entities'][$entity]['event_types'] as $event_type) { // - occurrence order is 'Set', 'Validated', 'Rejected'
-      if($event_type['code'] === 'U') continue;
       $events = $db->
-          select('*')
+        select('*')
           ->from('workflow_events')
           ->where('entity', $entity)
           ->where('key', $combination->key)
@@ -130,7 +96,7 @@ function workflow_orm_pre_save_processing($db, $entity, &$record) {
           ->where('event_type', $event_type['code'])
           ->where('deleted', 'f')
           ->get()->as_array();
-        // This should be unique, so at max 1 record.
+      // This should be unique, so at max 1 record.
       foreach($events as $event) {
         // $record currently holds the changes to be made from the user, overlaid by any other events, with undo data in $state
         if(workflow_isThisRecord($db, $config, $entity, $event_type['code'], $recordSet, $event)) {
@@ -140,16 +106,14 @@ function workflow_orm_pre_save_processing($db, $entity, &$record) {
           if($event->mimic_rewind_first) {
             for($i = count($state[$combination->key.':'.$combination->key_value])-1; $i >= 0; $i--) {
               foreach($state[$combination->key.':'.$combination->key_value][$i]['old_data'] as $unsetColumn => $unsetValue) {
-                $columnDeltaList[$unsetColumn] = $unsetValue;
+                  $columnDeltaList[$unsetColumn] = $unsetValue;
               }
             }
             $undoRecords = ORM::factory('workflow_undo')
-                ->where(array('entity' => $entity,
-                    'entity_id' => $record['id'],
-                    'active'=>'t'))
+                ->where(array('entity' => $entity, 'entity_id' => $record['id'], 'active'=>'t'))
                 ->orderby('id','DESC')->find_all();
             foreach($undoRecords as $undoRecord) {
-              $unsetColumns = json_decode($undoRecord['values']);
+              $unsetColumns = json_decode($undoRecord->original_values);
               foreach($unsetColumns as $unsetColumn => $unsetValue) {
                 $columnDeltaList[$unsetColumn] = $unsetValue;
               }
@@ -163,7 +127,7 @@ function workflow_orm_pre_save_processing($db, $entity, &$record) {
             if(isset($record[$deltaColumn])) {
               $undo_value = $record[$deltaColumn];
             } else if(isset($record['id'])) {
-              $undo_value = $old_record[$deltaColumn];
+              $undo_value = $recordSet['previous'][$entity][$deltaColumn];
             } else if(isset($config[$entity]['defaults'][$deltaColumn])) {
               $undo_value = $config[$entity]['defaults'][$deltaColumn];
             } else {
@@ -172,11 +136,10 @@ function workflow_orm_pre_save_processing($db, $entity, &$record) {
             if($deltaValue !== $undo_value) {
               $newUndoRecord[$deltaColumn] = $undo_value;
               $record[$deltaColumn] = $deltaValue;
-              //               $record->__set($deltaColumn, $deltaValue);
             }
           }
           $state[$combination->key.':'.$combination->key_value][] =
-              array('event_type'=>$event_type, 'old_data'=>$newUndoRecord);
+            array('event_type'=>$event_type, 'old_data'=>$newUndoRecord);
         }
       }
     }
@@ -186,7 +149,7 @@ function workflow_orm_pre_save_processing($db, $entity, &$record) {
 
 function workflow_getData($db, $config, $entity, $record)
 {
-  $retVal = array('record'=>array($entity=>get_object_vars($record)), 'previous'=>array($entity=>false));
+  $retVal = array('record'=>array($entity=>($record->as_array())), 'previous'=>array($entity=>false));
   if(isset($record['id'])) {
     $old = $db->select('*')
       ->from(inflector::plural($entity))
@@ -196,18 +159,17 @@ function workflow_getData($db, $config, $entity, $record)
     if(count($old)===1)
       $retVal['previous'][$entity] = get_object_vars($old[0]);
   }
-// TODO REmove  $retVal['previous'][$entity] = get_object_vars(ORM::factory($entity, $record['id']));
   if(isset($config['entities'][$entity]) && isset($config['entities'][$entity]['extraData'])) {
     foreach($config['entities'][$entity]['extraData'] as $tableDefn) {
       $new = $db->select('*')
-                ->from($tableDefn['table'])
-                ->where($tableDefn['target_table_column'], $record[$tableDefn['originating_table_column']]) // TODO fall back to old
-                ->get()->as_array();
+          ->from($tableDefn['table'])
+          ->where($tableDefn['target_table_column'], $record[$tableDefn['originating_table_column']]) // ?TODO fall back to old
+          ->get()->as_array();
       $retVal['record'][$tableDefn['table']] = (count($new)===1 ? get_object_vars($new[0]) : false);
       if($retVal['previous'][$entity]) {
         $old = $db->select('*')
             ->from($tableDefn['table'])
-            ->where($tableDefn['target_table_column'], $retVal['previous'][$entity][$tableDefn['originating_table_column']]) // TODO fall back to old
+            ->where($tableDefn['target_table_column'], $retVal['previous'][$entity][$tableDefn['originating_table_column']]) // ?TODO fall back to old
             ->get()->as_array();
         $retVal['previous'][$tableDefn['table']] = (count($old)===1 ? get_object_vars($old[0]) : false);
       } else $retVal['previous'][$tableDefn['table']] = false;
@@ -217,41 +179,37 @@ function workflow_getData($db, $config, $entity, $record)
 }
 
 function workflow_orm_post_save_processing($db, $entity, $record, $state) {
-  $combinations = $db->
-        select('distinct key, key_value')
-        ->from('workflow_events')
-        ->where('entity', $entity)
-        ->where('deleted', 'f')
-        ->get()->as_array();
+  $combinations = $db->select('distinct key, key_value')
+      ->from('workflow_events')
+      ->where('entity', $entity)
+      ->where('deleted', 'f')
+      ->get()->as_array();
+
   // At this point we determine the id of the logged in user,
   // and use this in preference to the default id if possible.
   if (isset($_SESSION['auth_user']))
-      $userId = $_SESSION['auth_user']->id;
+    $userId = $_SESSION['auth_user']->id;
   else {
-      global $remoteUserId;
-      if (isset($remoteUserId))
-          $userId = $remoteUserId;
-      else {
-          // Don't force overwrite of user IDs that already exist in the record, since
-          // we are just using a default.
-          $force=false;
-          $defaultUserId = Kohana::config('indicia.defaultPersonId');
-          $userId = ($defaultUserId ? $defaultUserId : 1);
-      }
+    global $remoteUserId;
+    if (isset($remoteUserId))
+      $userId = $remoteUserId;
+    else {
+      $defaultUserId = Kohana::config('indicia.defaultPersonId');
+      $userId = ($defaultUserId ? $defaultUserId : 1);
+    }
   }
-      
+
   foreach($combinations as $combination) {
     if(!isset($state[$combination->key.':'.$combination->key_value]) ||
         count($state[$combination->key.':'.$combination->key_value]) === 0)
       continue;
     foreach($state[$combination->key.':'.$combination->key_value] as $undoDetails) {
-      $db->insert('workflow_undo', array(
-          'entity' => $entity,
-          'entity_id' => $record['id'],
-          'event_type' => $undoDetails['event_type']['code'],
-          'created_on' => date("Ymd H:i:s"),
-          'created_by_id' => $userId,
-          'original_values' => json_encode($undoDetails['old_data'])));
+      $db->insert('workflow_undo', array('entity' => $entity,
+                                         'entity_id' => $record['id'],
+                                         'event_type' => $undoDetails['event_type']['code'],
+                                         'created_on' => date("Ymd H:i:s"),
+                                         'created_by_id' => $userId,
+                                         'original_values' => json_encode($undoDetails['old_data'])));
     }
   }
   return true;
@@ -260,10 +218,8 @@ function workflow_orm_post_save_processing($db, $entity, $record, $state) {
 function workflow_rewindRecord($db, $entity, &$record)
 {
   $undoRecords = ORM::factory('workflow_undo')
-    ->where(array('entity' => $entity,
-        'entity_id' => $record['id'],
-        'active'=>'t'))
-    ->orderby('id','DESC')->find_all();
+      ->where(array('entity' => $entity, 'entity_id' => $record['id'], 'active'=>'t'))
+      ->orderby('id','DESC')->find_all();
   foreach($undoRecords as $undoRecord) {
     $unsetColumns = json_decode($undoRecord->original_values);
     foreach($unsetColumns as $unsetColumn => $unsetValue) {
@@ -275,57 +231,53 @@ function workflow_rewindRecord($db, $entity, &$record)
 
 function workflow_isThisRecord($db, $config, $entity, $event_type, $recordSet, $event)
 {
-    $keyDefn = null;
-    for($i=0; $i<count($config['entities'][$entity]['keys']); $i++) {
-        if($config['entities'][$entity]['keys'][$i]['db_store_value'] === $event->key)
-            $keyDefn = $config['entities'][$entity]['keys'][$i];
-    }
-    if($keyDefn === null) {
-        kohana::log('error', 'KeyDefn not found');
-        return false;
-    }
-    // Set and Unset events are not entity specific.
-    // Currently all events are triggered on transition
-    switch($event_type) {
-        case 'U': // Unset
-            if($recordSet['previous'][$keyDefn['table']] !== false &&
-                $recordSet['previous'][$keyDefn['table']][$keyDefn['column']] === $event->key_value &&
-                $recordSet['record'][$keyDefn['table']][$keyDefn['column']] !== $event->key_value) {
-              kohana::log('info', 'UNSET MATCH');
-              return true;
-            }
-            break;
-        case 'S': // Set
-            if(($recordSet['previous'][$keyDefn['table']] === false ||
-                  $recordSet['previous'][$keyDefn['table']][$keyDefn['column']] !== $event->key_value) &&
-                $recordSet['record'][$keyDefn['table']][$keyDefn['column']] === $event->key_value) {
-                    kohana::log('info', 'SET MATCH');
-                    return true;
-                }
-            break;
-        case 'V': // Validated, occurrence specific
-            if($entity==='occurrence') {
-                if($recordSet['record'][$keyDefn['table']][$keyDefn['column']] === $event->key_value &&
-                    isset($recordSet['record'][$keyDefn['table']]['record_status']) &&
-                    $recordSet['record'][$entity]['record_status'] === 'V' &&
-                    (!isset($recordSet['previous'][$entity]) ||
-                        $recordSet['previous'][$entity]['record_status'] !== 'V' ||
-                        $recordSet['previous'][$keyDefn['table']][$keyDefn['column']] !== $event->key_value))
-                  return true;
-            }
-            break;
-        case 'R': // Rejected, occurrence specific
-            if($entity==='occurrence') {
-                if($recordSet['record'][$keyDefn['table']][$keyDefn['column']] === $event->key_value &&
-                    isset($recordSet['record'][$keyDefn['table']]['record_status']) &&
-                    $recordSet['record'][$entity]['record_status'] === 'R' &&
-                    (!isset($recordSet['previous'][$entity]) ||
-                        $recordSet['previous'][$entity]['record_status'] !== 'R' ||
-                        $recordSet['previous'][$keyDefn['table']][$keyDefn['column']] !== $event->key_value))
-                    return true;
-            }
-            break;
-    }
+  $keyDefn = null;
+  for($i=0; $i<count($config['entities'][$entity]['keys']); $i++) {
+    if($config['entities'][$entity]['keys'][$i]['db_store_value'] === $event->key)
+      $keyDefn = $config['entities'][$entity]['keys'][$i];
+  }
+  if($keyDefn === null) {
+    kohana::log('error', 'KeyDefn not found');
+    return false;
+  }
+  // Set and Unset events are not entity specific.
+  // Currently all events are triggered on transition
+  switch($event_type) {
+    case 'U': // Unset
+      if($recordSet['previous'][$keyDefn['table']] !== false &&
+          $recordSet['previous'][$keyDefn['table']][$keyDefn['column']] === $event->key_value &&
+          $recordSet['record'][$keyDefn['table']][$keyDefn['column']] !== $event->key_value)
+        return true;
+      break;
+    case 'S': // Set
+      if(($recordSet['previous'][$keyDefn['table']] === false ||
+          $recordSet['previous'][$keyDefn['table']][$keyDefn['column']] !== $event->key_value) &&
+          $recordSet['record'][$keyDefn['table']][$keyDefn['column']] === $event->key_value)
+        return true;
+      break;
+    case 'V': // Validated, occurrence specific
+      if($entity==='occurrence') {
+        if($recordSet['record'][$keyDefn['table']][$keyDefn['column']] === $event->key_value &&
+            isset($recordSet['record'][$entity]['record_status']) &&
+            $recordSet['record'][$entity]['record_status'] === 'V' &&
+            ($recordSet['previous'][$entity]===false ||
+              $recordSet['previous'][$entity]['record_status'] !== 'V' ||
+              $recordSet['previous'][$keyDefn['table']][$keyDefn['column']] !== $event->key_value))
+          return true;
+      }
+      break;
+    case 'R': // Rejected, occurrence specific
+      if($entity==='occurrence') {
+        if($recordSet['record'][$keyDefn['table']][$keyDefn['column']] === $event->key_value &&
+            isset($recordSet['record'][$entity]['record_status']) &&
+            $recordSet['record'][$entity]['record_status'] === 'R' &&
+            ($recordSet['previous'][$entity]===false ||
+              $recordSet['previous'][$entity]['record_status'] !== 'R' ||
+              $recordSet['previous'][$keyDefn['table']][$keyDefn['column']] !== $event->key_value))
+          return true;
+      }
+      break;
+  }
   return false;
 }
 

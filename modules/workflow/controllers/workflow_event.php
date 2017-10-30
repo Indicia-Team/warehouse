@@ -28,41 +28,37 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
     parent::__construct('workflow_event');
-    $this->columns = array(
-      'id'  => 'ID',
-      'entity'  => 'Entity',
-      'event_type' => 'Type',
-      'key' => 'Key',
-      'key_value' => 'Key value'
-    );
-    $this->pagetitle = "Workflow module event definition";
+    $this->columns = array('id'=>'ID',
+                           'entity'=>'Entity',
+                           'event_type'=>'Type',
+                           'key'=>'Key',
+                           'key_value'=>'Key value');
+    $this->pagetitle = 'Workflow module event definition';
   }
-  
+
   protected function get_action_columns() {
     return array(
-        array('caption'=>'Edit',
-              'url'=>'workflow_event/edit/{id}'));
+      array('caption'=>'Edit',
+            'url'=>'workflow_event/edit/{id}'));
   }
 
   protected function prepareOtherViewData($values)
   {
-      $config = kohana::config('workflow');
-      $entitySelectItems = array();
-      
-      foreach($config['entities'] as $entity => $entityDef){
-          $entitySelectItems[$entity] = $entityDef['title'];
-      }
-      return array(
-          'entities' => $config['entities'],
-          'entitySelectItems' => $entitySelectItems
-      );
+    $config = kohana::config('workflow');
+    $entitySelectItems = array();
+
+    foreach($config['entities'] as $entity => $entityDef){
+      $entitySelectItems[$entity] = $entityDef['title'];
+    }
+    return array('entities' => $config['entities'],
+                 'entitySelectItems' => $entitySelectItems);
   }
-  
+
   /**
    * You can only access the list of workflow events if CoreAdmin.
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin');
   }
-  
+
 }

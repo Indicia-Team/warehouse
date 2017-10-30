@@ -31,8 +31,8 @@ if (isset($_POST))
 data_entry_helper::link_default_stylesheet();
 data_entry_helper::enable_validation('entry-form');
 echo data_entry_helper::hidden_text(array(
-  'fieldname'=>'workflow_event:id',
-  'default'=>html::initial_value($values, 'workflow_event:id')
+    'fieldname'=>'workflow_event:id',
+    'default'=>html::initial_value($values, 'workflow_event:id')
 ));
 echo data_entry_helper::select(array(
     'label'=>'Entity',
@@ -75,10 +75,10 @@ echo data_entry_helper::checkbox(array(
 echo data_entry_helper::jsonwidget(array(
     'fieldname'=>'workflow_event:values',
     'schema' => '{
-            "type":"map",
-            "title":"Columns to set",
-            "subtype":"str",
-            "desc":"List of columns and the values they are to be set to, when event is triggered.",
+  "type":"map",
+  "title":"Columns to set",
+  "subtype":"str",
+  "desc":"List of columns and the values they are to be set to, when event is triggered.",
 }',
     'default' => html::initial_value($values, 'workflow_event:values')
 ));
@@ -89,15 +89,13 @@ echo html::form_buttons(html::initial_value($values, 'workflow_event:id')!=null,
 ?>
 <script type="text/javascript">
 jQuery(document).ready(function($) {
-
     $("#workflow_event\\:entity").change(function() {
       var entities = 
 <?php
 echo json_encode($other_data['entities']);
 ?>,
           previous_value = $("#workflow_event\\:event_type").val(),
-          entityKeys = Object.keys(entities)
-          ;
+          entityKeys = Object.keys(entities);
       // First build event types list for select.
       if(previous_value === null || previous_value==="")
         previous_value = $("#old_workflow_event_event_type").val();
@@ -127,7 +125,6 @@ echo json_encode($other_data['entities']);
       $("#workflow_event\\:key").val(previous_value);
     });
     $("#workflow_event\\:entity").change();
-
 });
 
 </script>

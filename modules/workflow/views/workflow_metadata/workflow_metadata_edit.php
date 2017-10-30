@@ -31,8 +31,8 @@ if (isset($_POST))
 data_entry_helper::link_default_stylesheet();
 data_entry_helper::enable_validation('entry-form');
 echo data_entry_helper::hidden_text(array(
-  'fieldname'=>'workflow_metadata:id',
-  'default'=>html::initial_value($values, 'workflow_metadata:id')
+    'fieldname'=>'workflow_metadata:id',
+    'default'=>html::initial_value($values, 'workflow_metadata:id')
 ));
 echo data_entry_helper::select(array(
     'label'=>'Entity',
@@ -79,22 +79,19 @@ echo data_entry_helper::checkbox(array(
     'default' => $default // default true
 ));
 
-
 echo $metadata;
 echo html::form_buttons(html::initial_value($values, 'workflow_metadata:id')!=null, false, false);
 
 ?>
 <script type="text/javascript">
 jQuery(document).ready(function($) {
-
     $("#workflow_metadata\\:entity").change(function() {
       var entities = 
 <?php
 echo json_encode($other_data['entities']);
 ?>,
           previous_value = $("#workflow_metadata\\:key").val(),
-          entityKeys = Object.keys(entities)
-          ;
+          entityKeys = Object.keys(entities);
       // Build keys list for select.
       if(previous_value === null || previous_value==="")
         previous_value = $("#old_workflow_metadata_key").val();
@@ -110,7 +107,6 @@ echo json_encode($other_data['entities']);
       $("#workflow_metadata\\:key").val(previous_value);
     });
     $("#workflow_metadata\\:entity").change();
-
 });
 
 </script>

@@ -49,13 +49,14 @@ WITH (
 
 CREATE UNIQUE INDEX ix_unique_workflow_event ON workflow_events (entity, event_type, key, key_value);
 
-COMMENT ON TABLE workflow_events IS 'Definition of events that trigger an action by the Workflow module';
-COMMENT ON COLUMN workflow_events.id IS 'Unique identifier for each workflow event';
+COMMENT ON TABLE workflow_events IS 'Definition of events that trigger an action by the Workflow module.';
+COMMENT ON COLUMN workflow_events.id IS 'Unique identifier for each workflow event.';
 COMMENT ON COLUMN workflow_events.entity IS 'The database entity/table against which the event is registered.';
-COMMENT ON COLUMN workflow_events.event_type IS 'Event type; C = record creation, U = record update, V = Verification, R = Rejection';
-COMMENT ON COLUMN workflow_events.key IS 'The column in the entity which is used to identify which records trigger this event';
-COMMENT ON COLUMN workflow_events.key_value IS 'The value in the key column which causes this event to trigger';
-COMMENT ON COLUMN workflow_events.values IS 'JSON encoded array of column/valiue pairs to be set when this event is triggered.';
+COMMENT ON COLUMN workflow_events.event_type IS 'Event type; potentially varies depending on entity.';
+COMMENT ON COLUMN workflow_events.key IS 'The column in the entity which is used to identify which records trigger this event.';
+COMMENT ON COLUMN workflow_events.key_value IS 'The value in the key column which causes this event to trigger.';
+COMMENT ON COLUMN workflow_events.mimic_rewind_first IS 'Should the undo values be actioned (rewound) before the values are set.';
+COMMENT ON COLUMN workflow_events.values IS 'JSON encoded array of column/value pairs to be set when this event is triggered.';
 COMMENT ON COLUMN workflow_events.deleted IS 'Has this record been deleted?';
 COMMENT ON COLUMN workflow_events.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN workflow_events.created_by_id IS 'Foreign key to the users table (creator).';
@@ -81,7 +82,11 @@ WITH (
 );
 COMMENT ON TABLE workflow_undo IS 'Definition of events that trigger an action by the Workflow module';
 COMMENT ON COLUMN workflow_undo.id IS 'Unique identifier for each workflow event';
---- TODO CREATE OTHER COLUMN COMMENTS
+COMMENT ON COLUMN workflow_undo.entity IS 'The database entity/table against which the event occurred.';
+COMMENT ON COLUMN workflow_undo.entity_id IS 'The id of the entity (e.g. occurrence id).';
+COMMENT ON COLUMN workflow_undo.event_type IS 'Event type; potentially varies depending on entity.';
+COMMENT ON COLUMN workflow_undo.original_values IS 'JSON encoded array of column/value pairs of columns before the workflow module overrode them.';
+COMMENT ON COLUMN workflow_undo.active IS 'Is this record active? i.e. determines whether the original values have been reistated, in which case it is not active.';
 COMMENT ON COLUMN workflow_undo.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN workflow_undo.created_by_id IS 'Foreign key to the users table (creator).';
 
@@ -114,7 +119,9 @@ COMMENT ON COLUMN workflow_metadata.id IS 'Unique identifier for each workflow e
 COMMENT ON COLUMN workflow_metadata.entity IS 'The database entity/table against which the event is registered.';
 COMMENT ON COLUMN workflow_metadata.key IS 'The column in the entity which is used to identify which records trigger this event';
 COMMENT ON COLUMN workflow_metadata.key_value IS 'The value in the key column which causes this event to trigger';
---- TODO CREATE OTHER COLUMN COMMENTS
+COMMENT ON COLUMN workflow_metadata.verification_delay_hours IS '';
+COMMENT ON COLUMN workflow_metadata.verifier_notifications_immediate IS '';
+COMMENT ON COLUMN workflow_metadata.log_all_communications IS '';
 COMMENT ON COLUMN workflow_metadata.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN workflow_metadata.created_by_id IS 'Foreign key to the users table (creator).';
 COMMENT ON COLUMN workflow_metadata.updated_on IS 'Date this record was last updated.';
@@ -123,7 +130,6 @@ COMMENT ON COLUMN workflow_metadata.deleted IS 'Has this record been deleted?';
 
 
 -- Views
---- TODO CREATE COLUMN COMMENTS FOR VIEWS
 CREATE VIEW gv_workflow_events AS
  SELECT we.id, we.entity, we.event_type, we.key, we.key_value
    FROM workflow_events we

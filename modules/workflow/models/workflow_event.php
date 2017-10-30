@@ -22,11 +22,7 @@
  */
 
 /**
- * Model class for the Users table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * Model class for the workflow_event table.
  */
 class Workflow_event_Model extends ORM {
   public $search_field='id';
@@ -38,16 +34,14 @@ class Workflow_event_Model extends ORM {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim'); 
     $array->add_rules('entity', 'required');
-    $array->add_rules('event_type', 'required', 'chars[U,S,V,R]');
+    $array->add_rules('event_type', 'required');
     $array->add_rules('key', 'required');
     $array->add_rules('key_value', 'required');
     $array->add_rules('values', 'required');
-    
+
     // Explicitly add those fields for which we don't do validation
-    $this->unvalidatedFields = array(
-            'deleted'
-    );
-    
+    $this->unvalidatedFields = array('deleted');
+
     return parent::validate($array, $save);
   }
 

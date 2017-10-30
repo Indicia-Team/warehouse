@@ -20,15 +20,10 @@
  * @link       https://github.com/Indicia-Team/
  */
 
-// following assumes that any update to locations/samples/occurrences leads to a change in the updated_on fields
-// this is not necessarily the case for direct DB access. Direct DB access may lead to
-// a situation where a full rebuild of the cache is required.
-
 $config['entities'] =
   array('occurrence'=>
     array('title'=>'Occurrence',
           'event_types'=> array(
-              array('code'=>'U', 'title'=>'Unset'),
               array('code'=>'S', 'title'=>'Set'),
               array('code'=>'V', 'title'=>'Verification'),
               array('code'=>'R', 'title'=>'Rejection')
