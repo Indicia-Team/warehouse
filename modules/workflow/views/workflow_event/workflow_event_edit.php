@@ -74,12 +74,7 @@ echo data_entry_helper::checkbox(array(
 ));
 echo data_entry_helper::jsonwidget(array(
     'fieldname'=>'workflow_event:values',
-    'schema' => '{
-  "type":"map",
-  "title":"Columns to set",
-  "subtype":"str",
-  "desc":"List of columns and the values they are to be set to, when event is triggered.",
-}',
+    'schema' => $other_data['jsonSchema'],
     'default' => html::initial_value($values, 'workflow_event:values')
 ));
 

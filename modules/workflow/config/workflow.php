@@ -36,7 +36,8 @@ $config['entities'] =
           'extraData'=> array(
               array('table'=>'cache_taxa_taxon_lists',
                     'originating_table_column'=>'taxa_taxon_list_id',
-                    'target_table_column'=>'id'))
+                    'target_table_column'=>'id')),
+          'setableColumns'=> array('confidential', 'sensitivity_precision', 'release_status')
     )
   );
 

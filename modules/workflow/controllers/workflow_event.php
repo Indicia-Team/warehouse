@@ -46,12 +46,18 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
   {
     $config = kohana::config('workflow');
     $entitySelectItems = array();
+    $jsonMapping = array();
 
     foreach($config['entities'] as $entity => $entityDef){
       $entitySelectItems[$entity] = $entityDef['title'];
+      foreach($entityDef['setableColumns'] as $column)
+          $jsonMapping[] = '"'.$column.'": {"type":"str","desc":"'.$entity.' '.$column.'"}';
     }
     return array('entities' => $config['entities'],
-                 'entitySelectItems' => $entitySelectItems);
+                 'entitySelectItems' => $entitySelectItems,
+                 'jsonSchema' => '{"type":"map", "title":"Columns to set", "mapping": {'.implode(',', $jsonMapping).
+                                 '},"desc":"List of columns and the values they are to be set to, when event is triggered."}'
+    );
   }
 
   /**
