@@ -103,7 +103,7 @@ function workflow_orm_pre_save_processing($db, $entity, &$record) {
           kohana::log('info', 'Workflow triggered event '.$event_type['title'].': Key '.$combination->key.', Value '.$combination->key_value);
           $columnDeltaList = array();
           $newUndoRecord= array();
-          if($event->mimic_rewind_first) {
+          if($event->mimic_rewind_first === 't') {
             for($i = count($state[$combination->key.':'.$combination->key_value])-1; $i >= 0; $i--) {
               foreach($state[$combination->key.':'.$combination->key_value][$i]['old_data'] as $unsetColumn => $unsetValue) {
                   $columnDeltaList[$unsetColumn] = $unsetValue;
