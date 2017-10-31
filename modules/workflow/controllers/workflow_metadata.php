@@ -60,4 +60,17 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
     return $this->auth->logged_in('CoreAdmin');
   }
 
+  protected function show_submit_fail()
+  {
+      $all_errors=$this->model->getAllErrors();
+      if (count($all_errors)!=0) {
+          $this->session->set_flash('flash_error', implode('<br/>',$all_errors));
+      } else {
+          $this->session->set_flash('flash_error', 'The record could not be saved.');
+      }
+      $values = $this->getDefaults();
+      $values = array_merge($values, $_POST);
+      $this->showEditPage($values);
+  }
+  
 }
