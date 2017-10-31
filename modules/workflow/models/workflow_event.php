@@ -40,7 +40,8 @@ class Workflow_event_Model extends ORM {
     $array->add_rules('values', 'required');
 
     // Explicitly add those fields for which we don't do validation
-    $this->unvalidatedFields = array('deleted');
+    $this->unvalidatedFields = array('deleted',
+                                     'mimic_rewind_first');
 
     return parent::validate($array, $save);
   }
