@@ -32,7 +32,7 @@ CREATE TABLE workflow_events
   key                     character varying NOT NULL,
   key_value               character varying NOT NULL,
   mimic_rewind_first      boolean           DEFAULT false NOT NULL,
-  values                  json              NOT NULL,
+  values                  character varying NOT NULL,
   created_on              timestamp without time zone NOT NULL,
   created_by_id           integer           NOT NULL,
   updated_on              timestamp without time zone NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE workflow_undo (
   entity                  character varying NOT NULL,
   entity_id               integer, --- actual FK depends on entity
   event_type              character(1)      NOT NULL,
-  original_values         json,
+  original_values         character varying,
   active                  boolean           DEFAULT true NOT NULL,
   created_on              timestamp without time zone NOT NULL,
   created_by_id           integer           NOT NULL,
