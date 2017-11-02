@@ -52,5 +52,10 @@ $config['entities'] = array(
       'sensitivity_precision',
       'release_status',
     ),
+    'defaults' => array(
+      'confidential' => 'f',
+      'sensitivity_precision' => NULL,
+      'release_status' => 'R',
+    ),
   ),
 );
