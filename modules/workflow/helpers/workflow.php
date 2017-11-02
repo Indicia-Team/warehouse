@@ -75,33 +75,63 @@ class workflow {
       }
     }
     if ($entity === 'occurrence'
-        && $oldRecord->record_status !== $newRecord->record_status
-        && ($oldRecord->record_status === 'V' || $oldRecord->record_status === 'R')) {
-      $eventTypes[] = $oldRecord->record_status;
+        && $oldRecord->record_status !== $newRecord->record_status) {
+      // Remove previuos verification and rejection workflow changes as the record status is changing.
+      $eventTypes[] = 'V';
+      $eventTypes[] = 'R';
     }
     if (count($eventTypes) > 0) {
       // Must rewind as the field value which triggered a rule has been changed.
-      $undoRecords = $db
-        ->select('DISTINCT workflow_undo.id, workflow_undo.original_values')
-        ->from('workflow_undo')
-        ->where(array(
-          'workflow_undo.entity_id' => $oldRecord->id,
-          'workflow_undo.entity' => $entity,
-          'workflow_undo.active' => 't',
-        ))
-        ->in('event_type', $eventTypes)
-        ->orderby('workflow_undo.id', 'DESC')
-        ->get();
-      foreach ($undoRecords as $undoRecord) {
-        kohana::log('debug', "Applying rewind to $entity.$oldRecord->id for undo $undoRecord->id");
-        $unsetColumns = json_decode($undoRecord->original_values);
-        foreach ($unsetColumns as $unsetColumn => $unsetValue) {
-          $newRecord->$unsetColumn = $unsetValue;
-        }
-        // As this is a hard rewind, disable the undo data.
-        $db->update('workflow_undo', array('active' => 'f'), array('id' => $undoRecord->id));
+      $fieldRewinds = self::getRewindChangesForRecords($db, $entity, [$oldRecord->id], $eventTypes);
+      kohana::log('debug', 'Rewinds: ' . var_export($fieldRewinds, true));
+      foreach ($fieldRewinds["$entity.$oldRecord->id"] as $field => $value) {
+        $newRecord->$field = $value;
       }
+      kohana::log('debug', var_export($newRecord->as_array(), true));
     }
+  }
+
+  /**
+   * Retrieves the record changes required when rewinding a set of event types against a set of records.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $entity
+   *   Name of the database entity being saved, e.g. occurrence.
+   * @param array $entityIdList
+   *   List of primary keys for records in the table identied by entity.
+   * @param array $eventTypes
+   *   List of event types to rewind ('S', 'V', 'R').
+   *
+   * @return array
+   *   Associatie array keyed by entity.entity_id, containing an array of the fields with undo values to apply.
+   */
+  public static function getRewindChangesForRecords($db, $entity, array $entityIdList, array $eventTypes) {
+    $r = [];
+    $undoRecords = $db
+      ->select('DISTINCT workflow_undo.id, workflow_undo.entity_id, workflow_undo.original_values')
+      ->from('workflow_undo')
+      ->where(array(
+        'workflow_undo.entity' => $entity,
+        'workflow_undo.active' => 't',
+      ))
+      ->in('event_type', $eventTypes)
+      ->in('entity_id', $entityIdList)
+      ->orderby('workflow_undo.id', 'DESC')
+      ->get();
+    foreach ($undoRecords as $undoRecord) {
+      kohana::log('debug', "Applying rewind to $entity.$undoRecord->entity_id for undo $undoRecord->id");
+      $unsetColumns = json_decode($undoRecord->original_values, TRUE);
+      if (!isset($r["$entity.$undoRecord->entity_id"])) {
+        $r["$entity.$undoRecord->entity_id"] = $unsetColumns;
+      }
+      else {
+        $r["$entity.$undoRecord->entity_id"] = array_merge($r["$entity.$undoRecord->entity_id"], $unsetColumns);
+      }
+      // As this is a hard rewind, disable the undo data.
+      $db->update('workflow_undo', array('active' => 'f'), array('id' => $undoRecord->id));
+    }
+    return $r;
   }
 
   /**
