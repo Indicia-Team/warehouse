@@ -83,11 +83,11 @@ class workflow {
     if (count($eventTypes) > 0) {
       // Must rewind as the field value which triggered a rule has been changed.
       $fieldRewinds = self::getRewindChangesForRecords($db, $entity, [$oldRecord->id], $eventTypes);
-      kohana::log('debug', 'Rewinds: ' . var_export($fieldRewinds, true));
-      foreach ($fieldRewinds["$entity.$oldRecord->id"] as $field => $value) {
-        $newRecord->$field = $value;
+      if (isset($fieldRewinds["$entity.$oldRecord->id"])) {
+        foreach ($fieldRewinds["$entity.$oldRecord->id"] as $field => $value) {
+          $newRecord->$field = $value;
+        }
       }
-      kohana::log('debug', var_export($newRecord->as_array(), true));
     }
   }
 
