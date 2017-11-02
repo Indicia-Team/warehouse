@@ -70,120 +70,32 @@ function workflow_extend_data_services() {
  *   Database connection.
  * @param string $entity
  *   Name of the database entity being saved, e.g. occurrence.
- * @param array|object $record
- *   Save data.
+ * @param object $oldRecord
+ *   Original record values in ORM object.
+ * @param object $newRecord
+ *   Values being saved, which may be updated by the workflow event rules.
  *
  * @return array
  *   State data to pass to the post save processing hook.
  */
-function workflow_orm_pre_save_processing($db, $entity, &$record) {
-  // Check if it no longer matches first.
-  // $record holds an array of the new values being set. This may be a subset.
+function workflow_orm_pre_save_processing($db, $entity, $oldRecord, &$newRecord) {
   $config = kohana::config('workflow');
   $state = array();
+  // Abort if no workflow configuration for this entity.
   if (!isset($config['entities'][$entity])) {
     return $state;
   }
-
-  $recordSet = workflow::getData($db, $config, $entity, $record);
-
-  $combinations = $db
-    ->select('distinct key, key_value')
-    ->from('workflow_events')
-    ->where('entity', $entity)
-    ->where('deleted', 'f')
-    ->get()->as_array();
-  foreach ($combinations as $combination) {
-    // Hold a list of undo records to create.
-    $state[$combination->key . ':' . $combination->key_value] = array();
-    if (!isset($record['id'])) {
-      continue;
-    }
-    if (workflow::isThisRecord($db, $config, $entity, 'U', $recordSet, (object) array(
-      "key" => $combination->key,
-      "key_value" => $combination->key_value,
-    ))) {
-      kohana::log('info', 'Workflow triggered Unset event ' . $entity .
-        ' Key ' . ($combination->key) . ' Value ' . ($combination->key_value));
-      workflow::rewindRecord($db, $entity, $record);
-    }
-  }
-
-  foreach ($combinations as $combination) {
-    // Occurrence order is 'Set', 'Validated', 'Rejected'.
-    foreach ($config['entities'][$entity]['event_types'] as $event_type) {
-      $events = $db
-        ->select('*')
-        ->from('workflow_events')
-        ->where('entity', $entity)
-        ->where('key', $combination->key)
-        ->where('key_value', $combination->key_value)
-        ->where('event_type', $event_type['code'])
-        ->where('deleted', 'f')
-        ->get()->as_array();
-      // This should be unique, so at max 1 record.
-      foreach ($events as $event) {
-        // $record currently holds the changes to be made from the user, overlaid by any other events, with undo data in $state
-        if (workflow::isThisRecord($db, $config, $entity, $event_type['code'], $recordSet, $event)) {
-          kohana::log('info', 'Workflow triggered event ' . $event_type['title'] .
-            ': Key ' . $combination->key . ', Value ' . $combination->key_value);
-          $columnDeltaList = array();
-          $newUndoRecord = array();
-          if ($event->mimic_rewind_first === 't') {
-            for ($i = count($state[$combination->key . ':' . $combination->key_value]) - 1; $i >= 0; $i--) {
-              foreach ($state[$combination->key . ':' . $combination->key_value][$i]['old_data'] as $unsetColumn => $unsetValue) {
-                $columnDeltaList[$unsetColumn] = $unsetValue;
-              }
-            }
-            if (isset($record['id'])) {
-              $undoRecords = ORM::factory('workflow_undo')
-                ->where(array(
-                  'entity' => $entity,
-                  'entity_id' => $record['id'],
-                  'active' => 't',
-                ))
-                ->orderby('id', 'DESC')->find_all();
-              foreach ($undoRecords as $undoRecord) {
-                $unsetColumns = json_decode($undoRecord->original_values);
-                foreach ($unsetColumns as $unsetColumn => $unsetValue) {
-                  $columnDeltaList[$unsetColumn] = $unsetValue;
-                }
-              }
-            }
-          }
-          $setColumns = json_decode($event->values);
-          foreach ($setColumns as $setColumn => $setValue) {
-            $columnDeltaList[$setColumn] = $setValue;
-          }
-          foreach ($columnDeltaList as $deltaColumn => $deltaValue) {
-            if (isset($record[$deltaColumn])) {
-              $undo_value = $record[$deltaColumn];
-            }
-            elseif (isset($record['id'])) {
-              $undo_value = $recordSet['previous'][$entity][$deltaColumn];
-            }
-            elseif (isset($config[$entity]['defaults'][$deltaColumn])) {
-              $undo_value = $config[$entity]['defaults'][$deltaColumn];
-            }
-            else {
-              $undo_value = NULL;
-            }
-            if ($deltaValue !== $undo_value) {
-              $newUndoRecord[$deltaColumn] = $undo_value;
-              $record[$deltaColumn] = $deltaValue;
-            }
-          }
-          $state[$combination->key . ':' . $combination->key_value][] =
-            array('event_type' => $event_type, 'old_data' => $newUndoRecord);
-        }
-      }
-    }
-  }
+  // Rewind the record if previous workflow rule changes no longer apply (e.g. after redetermination).
+  workflow::applyRewindsIfRequired($db, $config['entities'][$entity], $entity, $oldRecord, $newRecord);
+  // Apply any changes in the workflow_events table relevant to the record.
+  $state = workflow::applyEvents($db, $config['entities'][$entity], $entity, $oldRecord, $newRecord);
   return $state;
 }
 
 /**
  * Post record save processing hook.
+ *
+ * Records any undo data for the workflow operations applied to the record.
  *
  * @param object $db
  *   Database connection.
@@ -200,12 +112,9 @@ function workflow_orm_pre_save_processing($db, $entity, &$record) {
  *   Returns TRUE to imply success.
  */
 function workflow_orm_post_save_processing($db, $entity, $record, array $state, $id) {
-  $combinations = $db->select('distinct key, key_value')
-    ->from('workflow_events')
-    ->where('entity', $entity)
-    ->where('deleted', 'f')
-    ->get()->as_array();
-
+  if (empty($state)) {
+    return TRUE;
+  }
   // At this point we determine the id of the logged in user,
   // and use this in preference to the default id if possible.
   if (isset($_SESSION['auth_user'])) {
@@ -221,22 +130,16 @@ function workflow_orm_post_save_processing($db, $entity, $record, array $state, 
       $userId = ($defaultUserId ? $defaultUserId : 1);
     }
   }
-
-  foreach ($combinations as $combination) {
-    if (!isset($state[$combination->key . ':' . $combination->key_value]) ||
-        count($state[$combination->key . ':' . $combination->key_value]) === 0) {
-      continue;
-    }
-    foreach ($state[$combination->key . ':' . $combination->key_value] as $undoDetails) {
-      $db->insert('workflow_undo', array(
-        'entity' => $entity,
-        'entity_id' => $id,
-        'event_type' => $undoDetails['event_type']['code'],
-        'created_on' => date("Ymd H:i:s"),
-        'created_by_id' => $userId,
-        'original_values' => json_encode($undoDetails['old_data'])
-      ));
-    }
+  // Insert any state undo records.
+  foreach ($state as $undoDetails) {
+    $db->insert('workflow_undo', array(
+      'entity' => $entity,
+      'entity_id' => $id,
+      'event_type' => $undoDetails['event_type'],
+      'created_on' => date("Ymd H:i:s"),
+      'created_by_id' => $userId,
+      'original_values' => json_encode($undoDetails['old_data'])
+    ));
   }
   return TRUE;
 }
