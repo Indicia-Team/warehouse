@@ -306,67 +306,75 @@ class ORM extends ORM_Core {
   }
 
   /**
+   * ORM validate method.
+   *
    * Override the ORM validate method to store the validation errors in an array, making
    * them accessible to the views.
    *
-   * @param Validation $array Validation array object.
-   * @param boolean $save Optional. True if this call also saves the data, false to just validate. Default is false.
-   * @return boolean Returns TRUE on success or FALSE on fail.
-   * @throws Exception Rethrows any exceptions occurring on validate.
+   * @param Validation $array
+   *   Validation array object.
+   * @param bool $save
+   *   Optional. True if this call also saves the data, false to just validate. Default is false.
+   *
+   * @return bool
+   *   Returns TRUE on success or FALSE on fail.
+   *
+   * @throws Exception
+   *   Rethrows any exceptions occurring on validate.
    */
   public function validate(Validation $array, $save = FALSE) {
-    // set the default created/updated information
+    // Set the default created/updated information.
     if ($this->wantToUpdateMetadata)
       $this->set_metadata();
-
-    // Now look for any modules which alter the submission
-    if($save) {
+    // Now look for any modules which alter the submission.
+    if ($save) {
       foreach (Kohana::config('config.modules') as $path) {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
-          require_once("$path/plugins/$plugin.php");
-          if (function_exists($plugin.'_orm_pre_save_processing')) {
-            $state[$plugin] = call_user_func_array($plugin.'_orm_pre_save_processing', array($this->db, $this->object_name, &$array));
+          require_once "$path/plugins/$plugin.php";
+          if (function_exists($plugin . '_orm_pre_save_processing')) {
+            $state[$plugin] = call_user_func_array(
+              $plugin . '_orm_pre_save_processing',
+              array($this->db, $this->object_name, $this, &$array));
           }
         }
       }
     }
 
-    $modelFields=$array->as_array();
-    $fields_to_copy=$this->unvalidatedFields;
-    // the created_by_id and updated_by_id fields can be specified by web service calls if the
+    $modelFields = $array->as_array();
+    $fields_to_copy = $this->unvalidatedFields;
+    // The created_by_id and updated_by_id fields can be specified by web service calls if the
     // caller knows which Indicia user is making the post.
-    if (!empty($modelFields['created_by_id']))
+    if (!empty($modelFields['created_by_id'])) {
       $fields_to_copy[] = 'created_by_id';
-    if (!empty($modelFields['updated_by_id']))
+    }
+    if (!empty($modelFields['updated_by_id'])) {
       $fields_to_copy[] = 'updated_by_id';
-    foreach ($fields_to_copy as $a)
-    {
+    }
+    foreach ($fields_to_copy as $a) {
       if (array_key_exists($a, $modelFields)) {
         // When a field allows nulls, convert empty values to null. Otherwise we end up trying to store '' in non-string
         // fields such as dates.
-        if ($array[$a]==='' && isset($this->table_columns[$a]['null']) && $this->table_columns[$a]['null']==1) {
-          $array[$a]=null;
+        if ($array[$a] === '' && isset($this->table_columns[$a]['null']) && $this->table_columns[$a]['null']==1) {
+          $array[$a] = NULL;
         }
         $this->__set($a, $array[$a]);
       }
     }
-
-    
     try {
       if (parent::validate($array, $save)) {
-        if($save) {
+        if ($save) {
           foreach (Kohana::config('config.modules') as $path) {
             $plugin = basename($path);
-            if (function_exists($plugin.'_orm_post_save_processing')) {
-              call_user_func($plugin.'_orm_post_save_processing', $this->db, $this->object_name, $array, $state[$plugin], $this->object[$this->primary_key]);
+            if (function_exists($plugin . '_orm_post_save_processing')) {
+              call_user_func($plugin . '_orm_post_save_processing', $this->db, $this->object_name, $array, $state[$plugin], $this->object[$this->primary_key]);
             }
           }
         }
         return TRUE;
       }
       else {
-        // put the trimmed and processed data back into the model
+        // Put the trimmed and processed data back into the model.
         $arr = $array->as_array();
         if (array_key_exists('created_on', $this->table_columns)) {
           $arr['created_on'] = $this->created_on;
@@ -378,26 +386,33 @@ class ORM extends ORM_Core {
         $this->errors = $array->errors('form_error_messages');
         return FALSE;
       }
-    } catch (Exception $e) {
-      kohana::log('error', 'Error: '.$e->getMessage());
-      if (strpos($e->getMessage(), '_unique')!==false) {
-        // duplicate key violation
+    }
+    catch (Exception $e) {
+      kohana::log('error', 'Error: ' . $e->getMessage());
+      if (strpos($e->getMessage(), '_unique') !== FALSE) {
+        // Duplicate key violation.
         $this->errors = array('general' => 'You cannot add the record as it would create a duplicate.');
-        $this->uniqueKeyViolation=true;
+        $this->uniqueKeyViolation = TRUE;
         return FALSE;
-      } else
+      }
+      else {
         throw ($e);
+      }
     }
   }
 
   /**
    * For a model that is about to be saved, sets the metadata created and
    * updated field values.
-   * @param object $obj The object which will have metadata set on it. Defaults to this model.
+   *
+   * @param object $obj
+   *   The object which will have metadata set on it. Defaults to this model.
    */
-  public function set_metadata($obj=null) {
-    if ($obj==null) $obj=$this;
-    $force=true;
+  public function set_metadata($obj = NULL) {
+    if ($obj == NULL) {
+      $obj = $this;
+    }
+    $force = TRUE;
     // At this point we determine the id of the logged in user,
     // and use this in preference to the default id if possible.
     if (isset($_SESSION['auth_user']))
@@ -409,37 +424,44 @@ class ORM extends ORM_Core {
       else {
         // Don't force overwrite of user IDs that already exist in the record, since
         // we are just using a default.
-        $force=false;
+        $force = FALSE;
         $defaultUserId = Kohana::config('indicia.defaultPersonId');
         $userId = ($defaultUserId ? $defaultUserId : 1);
       }
     }
-    // Set up the created and updated metadata for the record
+    // Set up the created and updated metadata for the record.
     if (!$obj->id && array_key_exists('created_on', $obj->table_columns)) {
       $obj->created_on = date("Ymd H:i:s");
-      if ($force or !$obj->created_by_id) $obj->created_by_id = $userId;
+      if ($force or !$obj->created_by_id) {
+        $obj->created_by_id = $userId;
+      }
     }
     // TODO: Check if updated metadata present in this entity,
     // and also use correct user.
     if (array_key_exists('updated_on', $obj->table_columns)) {
       $obj->updated_on = date("Ymd H:i:s");
       if ($force or !$obj->updated_by_id) {
-        if ($obj->id)
+        if ($obj->id) {
           $obj->updated_by_id = $userId;
-        else
-          // creating a new record, so it must be the same updator as creator.
+        }
+        else {
+          // Creating a new record, so it must be the same updator as creator.
           $obj->updated_by_id = $obj->created_by_id;
+        }
       }
     }
   }
 
   /**
    * Do a default search for an item using the search_field setup for this model.
-   * @param $search_text Text to look up
-   * @return ORM The ORM object filtered to look up the text
+   *
+   * @param string $search_text
+   *   Text to look up.
+   *
+   * @return ORM
+   *   The ORM object filtered to look up the text.
    */
-  public function lookup($search_text)
-  {
+  public function lookup($search_text) {
     return $this->where($this->search_field, $search_text)->find();
   }
 
@@ -447,8 +469,7 @@ class ORM extends ORM_Core {
    * Return a displayable caption for the item, defined as the content of the field with the
    * same name as search_field.
    */
-  public function caption()
-  {
+  public function caption() {
     if ($this->id) {
       return $this->__get($this->search_field);
     } else {
