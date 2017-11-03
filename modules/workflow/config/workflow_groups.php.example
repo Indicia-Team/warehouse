@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warehouse version configuration.
+ * Configuration for the workflow module.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -17,32 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Config
+ * @package Modules
+ * @subpackage Workflow
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/Indicia-Team/warehouse
+ * @link https://github.com/Indicia-Team/
  */
 
-defined('SYSPATH') or die('No direct script access.');
-
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '1.48.0';
-
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2017-11-03';
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+ /**
+  * List of workflow groups, each with a code and a list of website IDs that collaborate with this group.
+  */
+$config['groups'] = array(
+  'NNSIP' => array(2, 3, 4)
+);

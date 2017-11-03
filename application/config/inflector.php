@@ -30,6 +30,7 @@ $config['uncountable'] = array
   'art',
   'baggage',
   'dances',
+  'data',
   'equipment',
   'fish',
   'fuel',
@@ -42,6 +43,7 @@ $config['uncountable'] = array
   'information',
   'knowledge',
   'luggage',
+  'metadata',
   'money',
   'music',
   'news',
@@ -61,6 +63,8 @@ $config['uncountable'] = array
   'water',
   'weather',
   'work',
+  'workflow_undo',
+  'workflow_metadata',
 );
 
 $config['irregular'] = array

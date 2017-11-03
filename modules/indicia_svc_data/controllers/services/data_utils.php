@@ -93,6 +93,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    * ignore any verification check rule failures (use with care!).
    */
   public function bulk_verify() {
+    // @todo Integrate this method with workflow.
     $db = new Database();
     $this->authenticate('write');
     $report = $_POST['report'];
@@ -166,57 +167,81 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    * get triggered.
    */
   public function single_verify() {
-    if (empty($_POST['occurrence:id']) || !preg_match('/^\d+$/', $_POST['occurrence:id']))
+    if (empty($_POST['occurrence:id']) || !preg_match('/^\d+$/', $_POST['occurrence:id'])) {
       echo 'occurrence:id not supplied or invalid';
-    elseif (empty($_POST['occurrence:record_status']) || !preg_match('/^[VRCD]$/', $_POST['occurrence:record_status']))
+    }
+    elseif (empty($_POST['occurrence:record_status']) || !preg_match('/^[VRCD]$/', $_POST['occurrence:record_status'])) {
       echo 'occurrence:record_status not supplied or invalid';
-    elseif (!empty($_POST['occurrence:record_substatus']) && !preg_match('/^[1-5]$/', $_POST['occurrence:record_substatus']))
+    }
+    elseif (!empty($_POST['occurrence:record_substatus']) && !preg_match('/^[1-5]$/', $_POST['occurrence:record_substatus'])) {
       echo 'occurrence:record_substatus invalid';
-    elseif (!empty($_POST['occurrence:record_decision_source']) && !preg_match('/^[HM]$/', $_POST['occurrence:record_decision_source']))
+    }
+    elseif (!empty($_POST['occurrence:record_decision_source']) && !preg_match('/^[HM]$/', $_POST['occurrence:record_decision_source'])) {
       echo 'occurrence:record_decision_source invalid';
-    else try {
-      $db = new Database();
-      $this->authenticate('write');
-      $verifier = $this->getVerifierName($db);
-      $updates = array('record_status'=>$_POST['occurrence:record_status'], 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
-        'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s'),
-        'record_substatus' => empty($_POST['occurrence:record_substatus']) ? null : $_POST['occurrence:record_substatus'],
-        'record_decision_source' => empty($_POST['occurrence:record_decision_source']) ? 'H' : $_POST['occurrence:record_decision_source']);
-      $db->from('occurrences')
-          ->set($updates)
+    }
+    else {
+      try {
+        $db = new Database();
+        $this->authenticate('write');
+        $verifier = $this->getVerifierName($db);
+        // Field updates for the occurrences table.
+        $occUpdates = array(
+          'record_status' => $_POST['occurrence:record_status'],
+          'verified_by_id' => $this->user_id,
+          'verified_on' => date('Y-m-d H:i:s'),
+          'updated_by_id' => $this->user_id,
+          'updated_on' => date('Y-m-d H:i:s'),
+          'record_substatus' => empty($_POST['occurrence:record_substatus'])
+            ? NULL : $_POST['occurrence:record_substatus'],
+          'record_decision_source' => empty($_POST['occurrence:record_decision_source'])
+            ? 'H' : $_POST['occurrence:record_decision_source'],
+        );
+        // Field updates for the cache_occurrences_functional table.
+        $cofUpdates = array(
+          'record_status' => $_POST['occurrence:record_status'],
+          'verified_on' => date('Y-m-d H:i:s'),
+          'updated_on' => date('Y-m-d H:i:s'),
+          'record_substatus' => empty($_POST['occurrence:record_substatus'])
+            ? NULL : $_POST['occurrence:record_substatus'],
+          'query' => NULL
+        );
+        // Field updates for the cache_occurrences_nonfunctional table.
+        $confUpdates = array('verifier' => $verifier);
+        // Give the workflow module a chance to rewind or update the values.
+        $this->applyWorkflowToOccurrenceUpdates($db, $_POST['occurrence:id'], $occUpdates, $cofUpdates, $confUpdates);
+        $db->from('occurrences')
+          ->set($occUpdates)
           ->where('id', $_POST['occurrence:id'])
           ->update();
-      // since we bypass ORM here for performance, update the cache_occurrences_* tables.
-      $updates = array('record_status'=>$_POST['occurrence:record_status'],
-        'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s'),
-        'record_substatus' => empty($_POST['occurrence:record_substatus']) ? null : $_POST['occurrence:record_substatus'],
-        'query' => NULL);
-      $db->from('cache_occurrences_functional')
-          ->set($updates)
+        // Since we bypass ORM here for performance, update the cache_occurrences_* tables.
+        $db->from('cache_occurrences_functional')
+          ->set($cofUpdates)
           ->where('id', $_POST['occurrence:id'])
           ->update();
-      $updates = array('verifier'=>$verifier);
-      $db->from('cache_occurrences_nonfunctional')
-          ->set($updates)
+        $db->from('cache_occurrences_nonfunctional')
+          ->set($confUpdates)
           ->where('id', $_POST['occurrence:id'])
           ->update();
 
-      if (!empty($_POST['occurrence_comment:comment'])) {
-        $db->insert('occurrence_comments', array(
-              'occurrence_id'=>$_POST['occurrence:id'],
-              'comment'=>$_POST['occurrence_comment:comment'],
-              'created_by_id'=>$this->user_id,
-              'created_on'=>date('Y-m-d H:i:s'),
-              'updated_by_id'=>$this->user_id,
-              'updated_on'=>date('Y-m-d H:i:s'),
-              'record_status'=>$_POST['occurrence:record_status'],
-              'record_substatus' => empty($_POST['occurrence:record_substatus']) ? null : $_POST['occurrence:record_substatus']
-          ));
+        if (!empty($_POST['occurrence_comment:comment'])) {
+          $db->insert('occurrence_comments', array(
+            'occurrence_id' => $_POST['occurrence:id'],
+            'comment' => $_POST['occurrence_comment:comment'],
+            'created_by_id' => $this->user_id,
+            'created_on' => date('Y-m-d H:i:s'),
+            'updated_by_id' => $this->user_id,
+            'updated_on' => date('Y-m-d H:i:s'),
+            'record_status' => $_POST['occurrence:record_status'],
+            'record_substatus' => empty($_POST['occurrence:record_substatus'])
+              ? NULL : $_POST['occurrence:record_substatus']
+            ));
+        }
+        echo 'OK';
       }
-      echo 'OK';
-    } catch (Exception $e) {
-      echo $e->getMessage();
-      error_logger::log_error('Exception during single record verify', $e);
+      catch (Exception $e) {
+        echo $e->getMessage();
+        error_logger::log_error('Exception during single record verify', $e);
+      }
     }
   }
 
@@ -226,43 +251,58 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    * alternative to using the normal data services calls.
    */
   public function single_verify_sample() {
-    if (empty($_POST['sample:id']) || !preg_match('/^\d+$/', $_POST['sample:id']))
+    if (empty($_POST['sample:id']) || !preg_match('/^\d+$/', $_POST['sample:id'])) {
       echo 'sample:id not supplied or invalid';
-    elseif (empty($_POST['sample:record_status']) || !preg_match('/^[VRCD]$/', $_POST['sample:record_status']))
+    }
+    elseif (empty($_POST['sample:record_status']) || !preg_match('/^[VRCD]$/', $_POST['sample:record_status'])) {
       echo 'sample:record_status not supplied or invalid';
-    elseif (!empty($_POST['sample:record_substatus']) && !preg_match('/^[1-5]$/', $_POST['sample:record_substatus']))
+    }
+    elseif (!empty($_POST['sample:record_substatus']) && !preg_match('/^[1-5]$/', $_POST['sample:record_substatus'])) {
       echo 'sample:record_substatus invalid';
-    else try {
-      $db = new Database();
-      $this->authenticate('write');
-      $updates = array('record_status'=>$_POST['sample:record_status'], 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
-        'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s'));
-      $db->from('samples')
-        ->set($updates)
-        ->where('id', $_POST['sample:id'])
-        ->update();
-      // since we bypass ORM here for performance, update the cache_samples_* table.
-      $updates = array('record_status'=>$_POST['sample:record_status'], 'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s'));
-      $db->from('cache_samples_functional')
-        ->set($updates)
-        ->where('id', $_POST['sample:id'])
-        ->update();
+    }
+    else {
+      try {
+        $db = new Database();
+        $this->authenticate('write');
+        $updates = array(
+          'record_status' => $_POST['sample:record_status'],
+          'verified_by_id' => $this->user_id,
+          'verified_on' => date('Y-m-d H:i:s'),
+          'updated_by_id' => $this->user_id,
+          'updated_on' => date('Y-m-d H:i:s'),
+        );
+        $db->from('samples')
+          ->set($updates)
+          ->where('id', $_POST['sample:id'])
+          ->update();
+        // Since we bypass ORM here for performance, update the cache_samples_* table.
+        $updates = array(
+          'record_status' => $_POST['sample:record_status'],
+          'verified_on' => date('Y-m-d H:i:s'),
+          'updated_on' => date('Y-m-d H:i:s'),
+        );
+        $db->from('cache_samples_functional')
+          ->set($updates)
+          ->where('id', $_POST['sample:id'])
+          ->update();
 
-      if (!empty($_POST['sample_comment:comment'])) {
-        $db->insert('sample_comments', array(
-          'sample_id'=>$_POST['sample:id'],
-          'comment'=>$_POST['sample_comment:comment'],
-          'created_by_id'=>$this->user_id,
-          'created_on'=>date('Y-m-d H:i:s'),
-          'updated_by_id'=>$this->user_id,
-          'updated_on'=>date('Y-m-d H:i:s'),
-          'record_status'=>$_POST['sample:record_status']
-        ));
+        if (!empty($_POST['sample_comment:comment'])) {
+          $db->insert('sample_comments', array(
+            'sample_id' => $_POST['sample:id'],
+            'comment' => $_POST['sample_comment:comment'],
+            'created_by_id' => $this->user_id,
+            'created_on' => date('Y-m-d H:i:s'),
+            'updated_by_id' => $this->user_id,
+            'updated_on' => date('Y-m-d H:i:s'),
+            'record_status' => $_POST['sample:record_status']
+          ));
+        }
+        echo 'OK';
       }
-      echo 'OK';
-    } catch (Exception $e) {
-      echo $e->getMessage();
-      error_logger::log_error('Exception during single sample verify', $e);
+      catch (Exception $e) {
+        echo $e->getMessage();
+        error_logger::log_error('Exception during single sample verify', $e);
+      }
     }
   }
 
@@ -274,36 +314,46 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     $db = new Database();
     $this->authenticate('write');
     $report = $_POST['report'];
-    $params = json_decode($_POST['params'], true);
+    $params = json_decode($_POST['params'], TRUE);
     $params['sharing'] = 'verification';
-    $websites = $this->website_id ? array($this->website_id) : null;
+    $websites = $this->website_id ? array($this->website_id) : NULL;
     $reportEngine = new ReportEngine($websites, $this->user_id);
     try {
-      // Load the report used for the verification grid with the same params
-      $data=$reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
-      // now get a list of all the occurrence ids
+      // Load the report used for the verification grid with the same params.
+      $data = $reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
+      // Now get a list of all the occurrence ids.
       $ids = array();
       foreach ($data['content']['records'] as $record) {
-        if ($record['record_status']!=='V') {
+        if ($record['record_status'] !== 'V') {
           $ids[$record['sample_id']] = $record['sample_id'];
           $db->insert('sample_comments', array(
-            'sample_id'=>$record['sample_id'],
-            'comment'=>"This sample is accepted",
-            'created_by_id'=>$this->user_id,
-            'created_on'=>date('Y-m-d H:i:s'),
-            'updated_by_id'=>$this->user_id,
-            'updated_on'=>date('Y-m-d H:i:s'),
-            'record_status'=>'V'
+            'sample_id' => $record['sample_id'],
+            'comment' => "This sample is accepted",
+            'created_by_id' => $this->user_id,
+            'created_on' => date('Y-m-d H:i:s'),
+            'updated_by_id' => $this->user_id,
+            'updated_on' => date('Y-m-d H:i:s'),
+            'record_status' => 'V'
           ));
         }
       }
-      $updates = array('record_status'=>'V', 'verified_by_id'=>$this->user_id, 'verified_on'=>date('Y-m-d H:i:s'),
-          'updated_by_id'=>$this->user_id, 'updated_on'=>date('Y-m-d H:i:s'));
+      $updates = array(
+        'record_status' => 'V',
+        'verified_by_id' => $this->user_id,
+        'verified_on' => date('Y-m-d H:i:s'),
+        'updated_by_id' => $this->user_id,
+        'updated_on' => date('Y-m-d H:i:s'),
+      );
       $db->from('samples')->set($updates)->in('id', array_keys($ids))->update();
-      $updates = array('record_status'=>'V', 'verified_on'=>date('Y-m-d H:i:s'), 'updated_on'=>date('Y-m-d H:i:s'));
+      $updates = array(
+        'record_status' => 'V',
+        'verified_on' => date('Y-m-d H:i:s'),
+        'updated_on' => date('Y-m-d H:i:s'),
+      );
       $db->from('cache_samples_functional')->set($updates)->in('id', array_keys($ids))->update();
       echo count($ids);
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       echo $e->getMessage();
       error_logger::log_error('Exception during bulk verify of samples', $e);
     }
@@ -311,14 +361,116 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
 
   /**
    * Retrieves the current user's name (the verifier name) for bulk verify operations.
+   *
+   * @param object $db
+   *   Database connection.
    */
   private function getVerifierName($db) {
     $qryVerifiers = $db->select(array("p.surname", "p.first_name"))
-        ->from('users as u')
-        ->join('people as p', 'p.id', 'u.person_id')
-        ->where('u.id', $this->user_id)
-        ->get()->result_array(false);
+      ->from('users as u')
+      ->join('people as p', 'p.id', 'u.person_id')
+      ->where('u.id', $this->user_id)
+      ->get()->result_array(FALSE);
     return $qryVerifiers[0]['surname'] . ', ' . $qryVerifiers[0]['first_name'];
+  }
+
+  /**
+   * Applies workflow changes to updates that are about to be applied to occurrence data.
+   *
+   * This gives the workflow module (if installed) the chance to alter the saved values on verification events.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param int $id
+   *   Occurrence ID.
+   * @param array $occUpdates
+   *   List of fields and values which are about to be applied to a record in the occurrences table.
+   * @param array $cofUpdates
+   *   List of fields and values which are about to be applied to a record in the
+   *   cache_occurrences_functional table.
+   * @param array $confUpdates
+   *   List of fields and values which are about to be applied to a record in the
+   *   cache_occurrences_nonfunctional table.
+   */
+  private function applyWorkflowToOccurrenceUpdates($db, $id, array &$occUpdates, array &$cofUpdates, array &$confUpdates) {
+    if (in_array(MODPATH . 'workflow', Kohana::config('config.modules'))) {
+      if (!empty($occUpdates['record_status'])) {
+        // As we are verifying or rejecting, we need to rewind any opposing rejections or verifications.
+        $rewinds = workflow::getRewindChangesForRecords($db, 'occurrence', [$id], ['V', 'R']);
+        if (isset($rewinds["occurrence.$id"])) {
+          $thisRewind = $rewinds["occurrence.$id"];
+          $this->applyValuesToOccurrenceTableValues($thisRewind, $occUpdates, $cofUpdates, $confUpdates);
+        }
+      }
+      // Fetch any new events to apply when this record is verified.
+      $workflowEvents = workflow::getEventsForRecords(
+        $db,
+        $this->website_id,
+        'occurrence',
+        [$id],
+        [$_POST['occurrence:record_status']]
+      );
+      if (isset($workflowEvents["occurrence.$id"])) {
+        $theseEvents = $workflowEvents["occurrence.$id"];
+        $state = [];
+        foreach ($theseEvents as $thisEvent) {
+          $oldRecord = ORM::factory('occurrence', $id);
+          $oldRecordVals = $oldRecord->as_array();
+          $newRecordVals = array_merge($oldRecordVals, $occUpdates);
+          $valuesToApply = workflow::processEvent(
+            $thisEvent,
+            'occurrence',
+            $oldRecordVals,
+            $newRecordVals,
+            $state
+          );
+          $this->applyValuesToOccurrenceTableValues($valuesToApply, $occUpdates, $cofUpdates, $confUpdates);
+        }
+        $userId = security::getUserId();
+        // Save these events in workflow_undo.
+        foreach ($state as $undoDetails) {
+          $db->insert('workflow_undo', array(
+            'entity' => 'occurrence',
+            'entity_id' => $id,
+            'event_type' => $undoDetails['event_type'],
+            'created_on' => date("Ymd H:i:s"),
+            'created_by_id' => $userId,
+            'original_values' => json_encode($undoDetails['old_data'])
+          ));
+        }
+      }
+    }
+  }
+
+  /**
+   * Applies a set of field value changes to the arrays used to update occurrences and related cache tables.
+   *
+   * @param array $values
+   *   Values that are to be applied to the occurrences table as a result of workflow.
+   * @param array $occUpdates
+   *   The pre-existing set of field changes that were going to be applied to the occurrences table.
+   * @param array $cofUpdates
+   *   The pre-existing set of field changes that were going to be applied to the cache_occurrences_functional table.
+   * @param array $confUpdates
+   *   The pre-existing set of field changes that were going to be applied to the cache_occurrences_nonfunctional table.
+   */
+  private function applyValuesToOccurrenceTableValues(
+      array $values,
+      array &$occUpdates,
+      array &$cofUpdates,
+      array &$confUpdates
+      ) {
+    $occUpdates = array_merge($values, $occUpdates);
+    if (isset($values['confidential'])) {
+      $cofUpdates['confidential'] = $values['confidential'];
+    }
+    if (isset($values['sensitivity_precision'])) {
+      $cofUpdates['sensitive'] = empty($values['sensitivity_precision']) ? 'f' : 't';
+      $confUpdates['sensitivity_precision'] = $values['sensitivity_precision'];
+    }
+    if (isset($values['release_status'])) {
+      $cofUpdates['release_status'] = $values['release_status'];
+    }
   }
 
 }
