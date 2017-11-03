@@ -27,6 +27,7 @@ CREATE SEQUENCE workflow_metadata_id_seq
 CREATE TABLE workflow_events
 (
   id                      integer           NOT NULL DEFAULT nextval('workflow_events_id_seq'::regclass),
+  group_code              character varying NOT NULL,
   entity                  character varying NOT NULL,
   event_type              character(1)      NOT NULL, --- not constrained due to possible future expansion
   key                     character varying NOT NULL,
@@ -51,6 +52,7 @@ CREATE UNIQUE INDEX ix_unique_workflow_event ON workflow_events (entity, event_t
 
 COMMENT ON TABLE workflow_events IS 'Definition of events that trigger an action by the Workflow module.';
 COMMENT ON COLUMN workflow_events.id IS 'Unique identifier for each workflow event.';
+COMMENT ON COLUMN workflow_events.group_code IS 'Code identifying the group of websites which this event applies to.';
 COMMENT ON COLUMN workflow_events.entity IS 'The database entity/table against which the event is registered.';
 COMMENT ON COLUMN workflow_events.event_type IS 'Event type; potentially varies depending on entity.';
 COMMENT ON COLUMN workflow_events.key IS 'The column in the entity which is used to identify which records trigger this event.';
@@ -131,7 +133,7 @@ COMMENT ON COLUMN workflow_metadata.deleted IS 'Has this record been deleted?';
 
 -- Views
 CREATE VIEW gv_workflow_events AS
- SELECT we.id, we.entity, we.event_type, we.key, we.key_value, we.values
+ SELECT we.id, we.entity, we.event_type, we.key, we.key_value, we.values, we.group_code
    FROM workflow_events we
   WHERE we.deleted = false;
 

@@ -335,7 +335,14 @@ class ORM extends ORM_Core {
           if (function_exists($plugin . '_orm_pre_save_processing')) {
             $state[$plugin] = call_user_func_array(
               $plugin . '_orm_pre_save_processing',
-              array($this->db, $this->object_name, $this, &$array));
+              array(
+                $this->db,
+                empty($this->identifiers['website_id']) ? NULL : $this->identifiers['website_id'],
+                $this->object_name,
+                $this,
+                &$array
+              )
+            );
           }
         }
       }
@@ -621,15 +628,15 @@ class ORM extends ORM_Core {
   protected function populateIdentifiers() {
     if (array_key_exists('website_id', $this->submission['fields'])) {
       if (is_array($this->submission['fields']['website_id']))
-        $this->identifiers['website_id']=$this->submission['fields']['website_id']['value'];
+        $this->identifiers['website_id'] = $this->submission['fields']['website_id']['value'];
       else
-        $this->identifiers['website_id']=$this->submission['fields']['website_id'];
+        $this->identifiers['website_id'] = $this->submission['fields']['website_id'];
     }
     if (array_key_exists('survey_id', $this->submission['fields'])) {
       if (is_array($this->submission['fields']['survey_id']))
-        $this->identifiers['survey_id']=$this->submission['fields']['survey_id']['value'];
+        $this->identifiers['survey_id'] = $this->submission['fields']['survey_id']['value'];
       else
-        $this->identifiers['survey_id']=$this->submission['fields']['survey_id'];
+        $this->identifiers['survey_id'] = $this->submission['fields']['survey_id'];
     }
   }
 

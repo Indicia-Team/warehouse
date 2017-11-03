@@ -67,6 +67,8 @@ function workflow_extend_data_services() {
  *
  * @param object $db
  *   Database connection.
+ * @param int $websiteId
+ *   ID of the website the update is associated with.
  * @param string $entity
  *   Name of the database entity being saved, e.g. occurrence.
  * @param object $oldRecord
@@ -77,7 +79,7 @@ function workflow_extend_data_services() {
  * @return array
  *   State data to pass to the post save processing hook.
  */
-function workflow_orm_pre_save_processing($db, $entity, $oldRecord, &$newRecord) {
+function workflow_orm_pre_save_processing($db, $websiteId, $entity, $oldRecord, &$newRecord) {
   $config = kohana::config('workflow');
   $state = array();
   // Abort if no workflow configuration for this entity.
@@ -87,7 +89,7 @@ function workflow_orm_pre_save_processing($db, $entity, $oldRecord, &$newRecord)
   // Rewind the record if previous workflow rule changes no longer apply (e.g. after redetermination).
   workflow::applyRewindsIfRequired($db, $config['entities'][$entity], $entity, $oldRecord, $newRecord);
   // Apply any changes in the workflow_events table relevant to the record.
-  $state = workflow::applyEvents($db, $config['entities'][$entity], $entity, $oldRecord, $newRecord);
+  $state = workflow::applyWorkflow($db, $websiteId, $config['entities'][$entity], $entity, $oldRecord, $newRecord);
   return $state;
 }
 

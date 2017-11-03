@@ -31,51 +31,58 @@ if (isset($_POST))
 data_entry_helper::link_default_stylesheet();
 data_entry_helper::enable_validation('entry-form');
 echo data_entry_helper::hidden_text(array(
-    'fieldname'=>'workflow_event:id',
-    'default'=>html::initial_value($values, 'workflow_event:id')
+  'fieldname' => 'workflow_event:id',
+  'default' => html::initial_value($values, 'workflow_event:id')
 ));
 echo data_entry_helper::select(array(
-    'label'=>'Entity',
-    'fieldname'=>'workflow_event:entity',
-    'lookupValues' => $other_data['entitySelectItems'],
-    'default'=>html::initial_value($values, 'workflow_event:entity'),
-    'validation' => array('required')
+  'label' => 'Workflow group',
+  'fieldname' => 'workflow_event:group_code',
+  'lookupValues' => $other_data['groupSelectItems'],
+  'default' => html::initial_value($values, 'workflow_event:group_code'),
+  'validation' => array('required')
+));
+echo data_entry_helper::select(array(
+  'label' => 'Entity',
+  'fieldname' => 'workflow_event:entity',
+  'lookupValues' => $other_data['entitySelectItems'],
+  'default' => html::initial_value($values, 'workflow_event:entity'),
+  'validation' => array('required')
 ));
 echo data_entry_helper::hidden_text(array(
-    'fieldname'=>'old_workflow_event_event_type',
-    'default'=>html::initial_value($values, 'workflow_event:event_type')
+  'fieldname' => 'old_workflow_event_event_type',
+  'default' => html::initial_value($values, 'workflow_event:event_type')
 ));
 echo data_entry_helper::select(array(
-    'label'=>'Event Type',
-    'fieldname'=>'workflow_event:event_type',
-    'lookupValues' => array(),
-    'validation' => array('required')
+  'label' => 'Event Type',
+  'fieldname' => 'workflow_event:event_type',
+  'lookupValues' => array(),
+  'validation' => array('required')
 ));
 echo data_entry_helper::hidden_text(array(
-    'fieldname'=>'old_workflow_event_key',
-    'default'=>html::initial_value($values, 'workflow_event:key')
+  'fieldname' => 'old_workflow_event_key',
+  'default' => html::initial_value($values, 'workflow_event:key')
 ));
 echo data_entry_helper::select(array(
-    'label'=>'Key',
-    'fieldname'=>'workflow_event:key',
-    'lookupValues' => array(),
-    'validation' => array('required')
+  'label'=>'Key',
+  'fieldname'=>'workflow_event:key',
+  'lookupValues' => array(),
+  'validation' => array('required')
 ));
 echo data_entry_helper::text_input(array(
-    'label'=>'Key Value',
-    'fieldname'=>'workflow_event:key_value',
-    'default'=>html::initial_value($values, 'workflow_event:key_value'),
-    'validation' => array('required')
+  'label' => 'Key Value',
+  'fieldname' => 'workflow_event:key_value',
+  'default' => html::initial_value($values, 'workflow_event:key_value'),
+  'validation' => array('required')
 ));
 echo data_entry_helper::checkbox(array(
-    'label' => 'Mimic Rewind first',
-    'fieldname' => 'workflow_event:mimic_rewind_first',
-    'default' => html::initial_value($values, 'workflow_event:mimic_rewind_first')
+  'label' => 'Mimic Rewind first',
+  'fieldname' => 'workflow_event:mimic_rewind_first',
+  'default' => html::initial_value($values, 'workflow_event:mimic_rewind_first')
 ));
 echo data_entry_helper::jsonwidget(array(
-    'fieldname'=>'workflow_event:values',
-    'schema' => $other_data['jsonSchema'],
-    'default' => html::initial_value($values, 'workflow_event:values')
+  'fieldname'=>'workflow_event:values',
+  'schema' => $other_data['jsonSchema'],
+  'default' => html::initial_value($values, 'workflow_event:values')
 ));
 
 echo $metadata;
@@ -85,7 +92,7 @@ echo html::form_buttons(html::initial_value($values, 'workflow_event:id')!=null,
 <script type="text/javascript">
 jQuery(document).ready(function($) {
     $("#workflow_event\\:entity").change(function() {
-      var entities = 
+      var entities =
 <?php
 echo json_encode($other_data['entities']);
 ?>,

@@ -403,7 +403,13 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         }
       }
       // Fetch any new events to apply when this record is verified.
-      $workflowEvents = workflow::getEventsForRecords($db, 'occurrence', [$id], [$_POST['occurrence:record_status']]);
+      $workflowEvents = workflow::getEventsForRecords(
+        $db,
+        $this->website_id,
+        'occurrence',
+        [$id],
+        [$_POST['occurrence:record_status']]
+      );
       if (isset($workflowEvents["occurrence.$id"])) {
         $theseEvents = $workflowEvents["occurrence.$id"];
         $state = [];

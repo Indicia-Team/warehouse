@@ -1,4 +1,6 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -14,11 +16,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Modules
+ * @package Modules
  * @subpackage Workflow
- * @author     Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link       https://github.com/Indicia-Team/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/
  */
 
 /**
@@ -27,21 +29,27 @@
 class Workflow_event_Model extends ORM {
   public $search_field='id';
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user');
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user'
+  );
   protected $has_and_belongs_to_many = array();
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
-    $array->pre_filter('trim'); 
+    $array->pre_filter('trim');
     $array->add_rules('entity', 'required');
+    $array->add_rules('grouo_code', 'required');
     $array->add_rules('event_type', 'required');
     $array->add_rules('key', 'required');
     $array->add_rules('key_value', 'required');
     $array->add_rules('values', 'required');
 
-    // Explicitly add those fields for which we don't do validation
-    $this->unvalidatedFields = array('deleted',
-                                     'mimic_rewind_first');
+    // Explicitly add those fields for which we don't do validation.
+    $this->unvalidatedFields = array(
+      'deleted',
+      'mimic_rewind_first',
+    );
 
     return parent::validate($array, $save);
   }

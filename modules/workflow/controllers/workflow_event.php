@@ -30,6 +30,7 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
     parent::__construct('workflow_event');
     $this->columns = array(
       'id' => 'ID',
+      'group_code' => 'Workflow group',
       'entity' => 'Entity',
       'event_type' => 'Type',
       'key' => 'Key',
@@ -52,15 +53,20 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
     $config = kohana::config('workflow');
     $entitySelectItems = array();
     $jsonMapping = array();
+    $entities = $config['entities'];
 
-    foreach ($config['entities'] as $entity => $entityDef) {
+    foreach ($entities as $entity => $entityDef) {
       $entitySelectItems[$entity] = $entityDef['title'];
       foreach ($entityDef['setableColumns'] as $column) {
         $jsonMapping[] = '"' . $column . '": {"type":"str","desc":"' . $entity . ' ' . $column . '"}';
       }
     }
+    // Load workflow groups from configuration file.
+    $config = kohana::config('workflow_groups');
+    $groups = array_keys($config['groups']);
     return array(
-      'entities' => $config['entities'],
+      'entities' => $entities,
+      'groupSelectItems' => array_combine($groups, $groups),
       'entitySelectItems' => $entitySelectItems,
       'jsonSchema' => '{"type":"map", "title":"Columns to set", "mapping": {' . implode(',', $jsonMapping) .
         '},"desc":"List of columns and the values they are to be set to, when event is triggered."}'

@@ -139,6 +139,8 @@ class workflow {
    *
    * @param object $db
    *   Database connection.
+   *  @param int $websiteId
+   *   ID of the website the update is associated with.
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
    * @param array $entityIdList
@@ -150,10 +152,16 @@ class workflow {
    *   List of records with events attached (keyed by entity.id), with each entry containing an array of the events
    *   associated with that record.
    */
-  public static function getEventsForRecords($db, $entity, array $entityIdList, array $eventTypes) {
+  public static function getEventsForRecords($db, $websiteId, $entity, array $entityIdList, array $eventTypes) {
     $r = [];
     $config = kohana::config('workflow');
     if (!isset($config['entities'][$entity])) {
+      // Entity not configured for workflow.
+      return $r;
+    }
+    $groupCodes = self::getGroupCodesForThisWebsite($websiteId);
+    if (empty($groupCodes)) {
+      // Operation's website does not belong to a workflow group.
       return $r;
     }
     $config = $config['entities'][$entity];
@@ -167,6 +175,7 @@ class workflow {
           'workflow_events.deleted' => 'f',
           'key' => $keyDef['db_store_value'],
         ))
+        ->in('group_code', $groupCodes)
         ->in('workflow_events.event_type', $eventTypes);
       if ($keyDef['table'] === $entity) {
         $column = $keyDef['column'];
@@ -204,6 +213,8 @@ class workflow {
    *
    * @param object $db
    *   Database connection.
+   * @param int $websiteId
+   *   ID of the website the update is associated with.
    * @param array $config
    *   Workflow module configuration for the entity.
    * @param string $entity
@@ -213,10 +224,15 @@ class workflow {
    * @param object $newRecord
    *   ORM Validation object containing the new record details.
    */
-  public static function applyEvents($db, array $config, $entity, $oldRecord, &$newRecord) {
+  public static function applyWorkflow($db, $websiteId, array $config, $entity, $oldRecord, &$newRecord) {
     $state = [];
+    $groupCodes = self::getGroupCodesForThisWebsite($websiteId);
+    if (empty($groupCodes)) {
+      // Operation's website does not belong to a workflow group so abort.
+      return $state;
+    }
     foreach ($config['keys'] as $keyDef) {
-      $qry = self::buildEventQueryForKey($db, $config, $entity, $oldRecord, $newRecord, $keyDef);
+      $qry = self::buildEventQueryForKey($db, $groupCodes, $config, $entity, $oldRecord, $newRecord, $keyDef);
       self::applyEventsQueryToRecord($qry, $config, $entity, $oldRecord, $newRecord, $state);
     }
     return $state;
@@ -230,6 +246,8 @@ class workflow {
    *
    * @param object $db
    *   Database connection.
+   * @param array $groupCodes
+   *   List of workflow groups to get events for.
    * @param array $config
    *   Workflow module configuration for the entity.
    * @param string $entity
@@ -244,7 +262,7 @@ class workflow {
    * @return object
    *   Query object.
    */
-  private static function buildEventQueryForKey($db, array $config, $entity, $oldRecord, $newRecord, array $keyDef) {
+  private static function buildEventQueryForKey($db, $groupCodes, array $config, $entity, $oldRecord, $newRecord, array $keyDef) {
     $eventTypes = [];
     $qry = $db
       ->select('workflow_events.event_type, workflow_events.mimic_rewind_first, workflow_events.values')
@@ -252,7 +270,8 @@ class workflow {
       ->where(array(
         'workflow_events.deleted' => 'f',
         'key' => $keyDef['db_store_value'],
-      ));
+      ))
+      ->in('group_code', $groupCodes);
     if ($keyDef['table'] === $entity) {
       $column = $keyDef['column'];
       $qry->where('workflow_events.key_value', $newRecord->$column);
@@ -296,6 +315,24 @@ class workflow {
       $qry->in('workflow_events.event_type', $eventTypes);
     }
     return $qry;
+  }
+
+  /**
+   * Finds configured groups which the current operation's website uses the workflow for.
+   *
+   * @param int $websiteId
+   *
+   * @return array
+   */
+  private static function getGroupCodesForThisWebsite($websiteId) {
+    $config = kohana::config('workflow_groups');
+    $r = [];
+    foreach ($config['groups'] as $group => $websiteIds) {
+      if (in_array($websiteId, $websiteIds)) {
+        $r[] = $group;
+      }
+    }
+    return $r;
   }
 
   /**
