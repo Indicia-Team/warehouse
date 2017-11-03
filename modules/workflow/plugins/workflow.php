@@ -25,7 +25,6 @@
  */
 
 // @todo add tab to occurrences to display workflow_undo data
-// @todo Build in ability to handle default?
 
 /**
  * Implements the alter_menu hook.
@@ -117,19 +116,7 @@ function workflow_orm_post_save_processing($db, $entity, $record, array $state, 
   }
   // At this point we determine the id of the logged in user,
   // and use this in preference to the default id if possible.
-  if (isset($_SESSION['auth_user'])) {
-    $userId = $_SESSION['auth_user']->id;
-  }
-  else {
-    global $remoteUserId;
-    if (isset($remoteUserId)) {
-      $userId = $remoteUserId;
-    }
-    else {
-      $defaultUserId = Kohana::config('indicia.defaultPersonId');
-      $userId = ($defaultUserId ? $defaultUserId : 1);
-    }
-  }
+  $userId = security::getUserId();
   // Insert any state undo records.
   foreach ($state as $undoDetails) {
     $db->insert('workflow_undo', array(

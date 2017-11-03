@@ -135,6 +135,71 @@ class workflow {
   }
 
   /**
+   * Retrieves workflow events applicable to a particular list of records for a given set of event types.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param string $entity
+   *   Name of the database entity being saved, e.g. occurrence.
+   * @param array $entityIdList
+   *   List of IDs for records in the entity table.
+   * @param array $eventTypes
+   *   List of event types to include in the results.
+   *
+   * @return array
+   *   List of records with events attached (keyed by entity.id), with each entry containing an array of the events
+   *   associated with that record.
+   */
+  public static function getEventsForRecords($db, $entity, array $entityIdList, array $eventTypes) {
+    $r = [];
+    $config = kohana::config('workflow');
+    if (!isset($config['entities'][$entity])) {
+      return $r;
+    }
+    $config = $config['entities'][$entity];
+    $table = inflector::plural($entity);
+    foreach ($config['keys'] as $keyDef) {
+      $qry = $db
+        ->select('workflow_events.key_value, workflow_events.event_type, workflow_events.mimic_rewind_first, ' .
+          "workflow_events.values, $table.id as {$entity}_id")
+        ->from('workflow_events')
+        ->where(array(
+          'workflow_events.deleted' => 'f',
+          'key' => $keyDef['db_store_value'],
+        ))
+        ->in('workflow_events.event_type', $eventTypes);
+      if ($keyDef['table'] === $entity) {
+        $column = $keyDef['column'];
+        $qry->join($table, "$table.$column", 'workflow_events.key_value');
+      }
+      else {
+        $qry->join($keyDef['table'], "$keyDef[table].$keyDef[column]", 'workflow_events.key_value');
+        // Cross reference to the extraData for the same table to find the field name which matches $newRecord->column.
+        foreach ($config['extraData'] as $extraDataDef) {
+          if ($extraDataDef['table'] === $keyDef['table']) {
+            $qry->join(
+              $table,
+              "$table.$extraDataDef[originating_table_column]",
+              "$extraDataDef[table].$extraDataDef[target_table_column]"
+            );
+          }
+        }
+      }
+      $qry->in("$table.id", $entityIdList);
+      $events = $qry->get();
+      kohana::log('debug', 'getEventsForRecords query: ' . $db->last_query());
+      foreach ($events as $event) {
+        $idField = "{$entity}_id";
+        if (!isset($r["$entity.{$event->$idField}"])) {
+          $r["$entity.{$event->$idField}"] = [];
+        }
+        $r["$entity.{$event->$idField}"][] = $event;
+      }
+    }
+    return $r;
+  }
+
+  /**
    * Applies workflow event record value changes applicable to this record.
    *
    * @param object $db
@@ -255,37 +320,70 @@ class workflow {
   private static function applyEventsQueryToRecord($qry, array $config, $entity, $oldRecord, &$newRecord, array &$state) {
     $events = $qry->get();
     foreach ($events as $event) {
-      $columnDeltaList = array();
       $newUndoRecord = array();
       kohana::log('debug', 'Processing event: ' . var_export($event, true));
-      if ($event->mimic_rewind_first === 't' && !empty($oldRecord->id)) {
-        self::mimicRewind($entity, $oldRecord->id, $columnDeltaList, $state);
+      $valuesToApply = self::processEvent(
+        $event,
+        $entity,
+        $oldRecord->as_array(),
+        $newRecord->as_array(),
+        $state
+      );
+      foreach ($valuesToApply as $column => $value) {
+        $newRecord->$column = $value;
       }
-      $setColumns = json_decode($event->values);
-      foreach ($setColumns as $setColumn => $setValue) {
-        $columnDeltaList[$setColumn] = $setValue;
-      }
-      foreach ($columnDeltaList as $deltaColumn => $deltaValue) {
-        if (isset($newRecord->$deltaColumn)) {
-          kohana::log('debug', "New record has " . $newRecord->$deltaColumn);
-          $undo_value = $newRecord->$deltaColumn;
-        }
-        elseif (!empty($oldRecord->id)) {
-          $undo_value = $oldRecord->$deltaColumn;
-        }
-        elseif (isset($config['defaults'][$deltaColumn])) {
-          $undo_value = $config['defaults'][$deltaColumn];
-        }
-        else {
-          $undo_value = NULL;
-        }
-        if ($deltaValue !== $undo_value) {
-          $newUndoRecord[$deltaColumn] = $undo_value;
-          $newRecord->$deltaColumn = $deltaValue;
-        }
-      }
-      $state[] = array('event_type' => $event->event_type, 'old_data' => $newUndoRecord);
     }
+  }
+
+  /**
+   * Processes a single workflow event.
+   *
+   * Retrieves a list of the values that need to be applied to a database record given an event. The values may include
+   * the results of a mimiced rewind as well as the value changes required for the event.
+   *
+   * @param object $event
+   *   Event object loaded from the database query.
+   * @param string $entity
+   *   Name of the database entity being saved, e.g. occurrence.
+   * @param array $oldValues
+   *   Array of the record values before the save operation.
+   * @param array $newValues
+   *   Array of the record values that were submitted to be saved, causing the event to fire.
+   * @param array $state
+   *   Array of undo state data which will be updated by this method to allow any proposed changes to be undone.
+   *
+   * @return array
+   *   Associative array of the database fields and values which need to be applied.
+   */
+  public static function processEvent($event, $entity, array $oldValues, array $newValues, &$state) {
+    $columnDeltaList = [];
+    $valuesToApply = [];
+    $setColumns = json_decode($event->values, TRUE);
+    kohana::log('debug', var_export($event, TRUE));
+    if ($event->mimic_rewind_first === 't' && !empty($oldValues['id'])) {
+      self::mimicRewind($entity, $oldValues['id'], $columnDeltaList, $state);
+    }
+    $columnDeltaList = array_merge($columnDeltaList, $setColumns);
+    foreach ($columnDeltaList as $deltaColumn => $deltaValue) {
+      if (isset($newValues[$deltaColumn])) {
+        $undo_value = $newValues[$deltaColumn];
+      }
+      elseif (!empty($oldValues['id'])) {
+        $undo_value = isset($oldValues[$deltaColumn]) ? $oldValues[$deltaColumn] : NULL;
+      }
+      elseif (isset($config['defaults'][$deltaColumn])) {
+        $undo_value = $config['defaults'][$deltaColumn];
+      }
+      else {
+        $undo_value = NULL;
+      }
+      if ($deltaValue !== $undo_value) {
+        $newUndoRecord[$deltaColumn] = $undo_value;
+        $valuesToApply[$deltaColumn] = $deltaValue;
+      }
+    }
+    $state[] = array('event_type' => $event->event_type, 'old_data' => $newUndoRecord);
+    return $valuesToApply;
   }
 
   /**
