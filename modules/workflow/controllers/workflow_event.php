@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Modules
+ * @package Modules
  * @subpackage Workflow
- * @author     Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link       https://github.com/Indicia-Team/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/
  */
 
 /**
@@ -28,35 +28,41 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
     parent::__construct('workflow_event');
-    $this->columns = array('id'=>'ID',
-                           'entity'=>'Entity',
-                           'event_type'=>'Type',
-                           'key'=>'Key',
-                           'key_value'=>'Key value');
+    $this->columns = array(
+      'id' => 'ID',
+      'entity' => 'Entity',
+      'event_type' => 'Type',
+      'key' => 'Key',
+      'key_value' => 'Key value'
+    );
     $this->pagetitle = 'Workflow module event definition';
   }
 
   protected function get_action_columns() {
     return array(
-      array('caption'=>'Edit',
-            'url'=>'workflow_event/edit/{id}'));
+      array(
+        'caption' => 'Edit',
+        'url' => 'workflow_event/edit/{id}'
+      )
+    );
   }
 
-  protected function prepareOtherViewData($values)
-  {
+  protected function prepareOtherViewData($values) {
     $config = kohana::config('workflow');
     $entitySelectItems = array();
     $jsonMapping = array();
 
-    foreach($config['entities'] as $entity => $entityDef){
+    foreach ($config['entities'] as $entity => $entityDef) {
       $entitySelectItems[$entity] = $entityDef['title'];
-      foreach($entityDef['setableColumns'] as $column)
-          $jsonMapping[] = '"'.$column.'": {"type":"str","desc":"'.$entity.' '.$column.'"}';
+      foreach ($entityDef['setableColumns'] as $column) {
+        $jsonMapping[] = '"' . $column . '": {"type":"str","desc":"' . $entity . ' ' . $column . '"}';
+      }
     }
-    return array('entities' => $config['entities'],
-                 'entitySelectItems' => $entitySelectItems,
-                 'jsonSchema' => '{"type":"map", "title":"Columns to set", "mapping": {'.implode(',', $jsonMapping).
-                                 '},"desc":"List of columns and the values they are to be set to, when event is triggered."}'
+    return array(
+      'entities' => $config['entities'],
+      'entitySelectItems' => $entitySelectItems,
+      'jsonSchema' => '{"type":"map", "title":"Columns to set", "mapping": {' . implode(',', $jsonMapping) .
+        '},"desc":"List of columns and the values they are to be set to, when event is triggered."}'
     );
   }
 
@@ -67,18 +73,17 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
     return $this->auth->logged_in('CoreAdmin');
   }
 
-  
-  protected function show_submit_fail()
-  {
-      $all_errors=$this->model->getAllErrors();
-      if (count($all_errors)!=0) {
-          $this->session->set_flash('flash_error', implode('<br/>',$all_errors));
-      } else {
-          $this->session->set_flash('flash_error', 'The record could not be saved.');
-      }
-      $values = $this->getDefaults();
-      $values = array_merge($values, $_POST);
-      $this->showEditPage($values);
+  protected function show_submit_fail() {
+    $allErrors = $this->model->getAllErrors();
+    if (count($allErrors) !== 0) {
+      $this->session->set_flash('flash_error', implode('<br/>', $allErrors));
+    }
+    else {
+      $this->session->set_flash('flash_error', 'The record could not be saved.');
+    }
+    $values = $this->getDefaults();
+    $values = array_merge($values, $_POST);
+    $this->showEditPage($values);
   }
-  
+
 }
