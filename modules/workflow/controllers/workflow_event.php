@@ -33,7 +33,8 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
       'entity' => 'Entity',
       'event_type' => 'Type',
       'key' => 'Key',
-      'key_value' => 'Key value'
+      'key_value' => 'Key value',
+      'values' => 'Changed values'
     );
     $this->pagetitle = 'Workflow module event definition';
   }

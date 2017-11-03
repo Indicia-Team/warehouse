@@ -38,7 +38,7 @@ CREATE TABLE workflow_events
   updated_on              timestamp without time zone NOT NULL,
   updated_by_id           integer           NOT NULL,
   deleted                 boolean           DEFAULT false NOT NULL,
-  
+
   CONSTRAINT pk_workflow_events PRIMARY KEY (id),
   CONSTRAINT fk_workflow_events_creator FOREIGN KEY (created_by_id) REFERENCES users(id),
   CONSTRAINT fk_workflow_events_updater FOREIGN KEY (updated_by_id) REFERENCES users(id)
@@ -105,7 +105,7 @@ CREATE TABLE workflow_metadata
   updated_on                       timestamp without time zone NOT NULL,
   updated_by_id                    integer           NOT NULL,
   deleted                          boolean           DEFAULT false NOT NULL,
-  
+
   CONSTRAINT pk_workflow_metadata PRIMARY KEY (id),
   CONSTRAINT fk_workflow_metadata_creator FOREIGN KEY (created_by_id) REFERENCES users(id),
   CONSTRAINT fk_workflow_metadata_updater FOREIGN KEY (updated_by_id) REFERENCES users(id)
@@ -131,7 +131,7 @@ COMMENT ON COLUMN workflow_metadata.deleted IS 'Has this record been deleted?';
 
 -- Views
 CREATE VIEW gv_workflow_events AS
- SELECT we.id, we.entity, we.event_type, we.key, we.key_value
+ SELECT we.id, we.entity, we.event_type, we.key, we.key_value, we.values
    FROM workflow_events we
   WHERE we.deleted = false;
 
