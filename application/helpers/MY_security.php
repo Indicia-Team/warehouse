@@ -25,6 +25,8 @@ defined('SYSPATH') or die('No direct script access.');
 class Security extends security_Core {
 
   /**
+   * Create an authorisation nonce.
+   *
    * Method to create a nonce, either from a service call (when the caller type is a website) or from the Warehouse
    * (when the caller type is an Indicia user.
    */
@@ -65,6 +67,29 @@ class Security extends security_Core {
         }
     }
     return FALSE;
+  }
+
+  /**
+   * Returns the ID to use for the current logged in user.
+   *
+   * @return integer
+   */
+  public static function getUserId() {
+    // @todo Refactor getUserId method into a helper somewhere.
+    if (isset($_SESSION['auth_user'])) {
+      $userId = $_SESSION['auth_user']->id;
+    }
+    else {
+      global $remoteUserId;
+      if (isset($remoteUserId)) {
+        $userId = $remoteUserId;
+      }
+      else {
+        $defaultUserId = Kohana::config('indicia.defaultPersonId');
+        $userId = ($defaultUserId ? $defaultUserId : 1);
+      }
+    }
+    return $userId;
   }
 
 }
