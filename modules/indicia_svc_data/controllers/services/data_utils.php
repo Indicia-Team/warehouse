@@ -101,7 +101,6 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     $params['sharing'] = 'verification';
     $websites = $this->website_id ? array($this->website_id) : NULL;
     $reportEngine = new ReportEngine($websites, $this->user_id);
-    $verifier = $this->getVerifierName($db);
     try {
       // Load the report used for the verification grid with the same params.
       $data = $reportEngine->requestReport("$report.xml", 'local', 'xml', $params);
@@ -132,25 +131,11 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
           ));
         }
       }
-      $db->from('occurrences')->set(array(
-        'record_status' => 'V',
-        'record_substatus' => $substatus,
-        'verified_by_id' => $this->user_id,
-        'verified_on' => date('Y-m-d H:i:s'),
-        'updated_by_id' => $this->user_id,
-        'updated_on' => date('Y-m-d H:i:s')
-      ))->in('id', array_keys($ids))->update();
+      // Field updates for the occurrences table and related cache tables.
+      $updates = $this->getOccurrenceTableVerificationUpdateValues($db, 'V', $substatus, 'H');
       echo count($ids);
-      // Since we bypass ORM here for performance, update the cache_occurrences_* tables.
-      $db->from('cache_occurrences_functional')->set(array(
-        'record_status' => 'V',
-        'record_substatus' => $substatus,
-        'verified_on' => date('Y-m-d H:i:s'),
-        'updated_on' => date('Y-m-d H:i:s'),
-        'query' => NULL
-      ))->in('id', array_keys($ids))->update();
-      $db->from('cache_occurrences_nonfunctional')
-        ->set(array('verifier' => $verifier))->in('id', array_keys($ids))->update();
+      // Check for any workflow updates. Any workflow records will need an individual update.
+      $this->applyWorkflowToOccurrenceUpdates($db, array_keys($ids), $updates);
     }
     catch (Exception $e) {
       error_logger::log_error('Exception during bulk verify', $e);
@@ -184,45 +169,15 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         $db = new Database();
         $this->authenticate('write');
         $verifier = $this->getVerifierName($db);
-        // Field updates for the occurrences table.
-        $occUpdates = array(
-          'record_status' => $_POST['occurrence:record_status'],
-          'verified_by_id' => $this->user_id,
-          'verified_on' => date('Y-m-d H:i:s'),
-          'updated_by_id' => $this->user_id,
-          'updated_on' => date('Y-m-d H:i:s'),
-          'record_substatus' => empty($_POST['occurrence:record_substatus'])
-            ? NULL : $_POST['occurrence:record_substatus'],
-          'record_decision_source' => empty($_POST['occurrence:record_decision_source'])
-            ? 'H' : $_POST['occurrence:record_decision_source'],
+        // Field updates for the occurrences table and related cache tables.
+        $updates = $this->getOccurrenceTableVerificationUpdateValues(
+          $db,
+          $_POST['occurrence:record_status'],
+          empty($_POST['occurrence:record_substatus']) ? NULL : $_POST['occurrence:record_substatus'],
+          empty($_POST['occurrence:record_decision_source']) ? 'H' : $_POST['occurrence:record_decision_source']
         );
-        // Field updates for the cache_occurrences_functional table.
-        $cofUpdates = array(
-          'record_status' => $_POST['occurrence:record_status'],
-          'verified_on' => date('Y-m-d H:i:s'),
-          'updated_on' => date('Y-m-d H:i:s'),
-          'record_substatus' => empty($_POST['occurrence:record_substatus'])
-            ? NULL : $_POST['occurrence:record_substatus'],
-          'query' => NULL
-        );
-        // Field updates for the cache_occurrences_nonfunctional table.
-        $confUpdates = array('verifier' => $verifier);
-        // Give the workflow module a chance to rewind or update the values.
-        $this->applyWorkflowToOccurrenceUpdates($db, $_POST['occurrence:id'], $occUpdates, $cofUpdates, $confUpdates);
-        $db->from('occurrences')
-          ->set($occUpdates)
-          ->where('id', $_POST['occurrence:id'])
-          ->update();
-        // Since we bypass ORM here for performance, update the cache_occurrences_* tables.
-        $db->from('cache_occurrences_functional')
-          ->set($cofUpdates)
-          ->where('id', $_POST['occurrence:id'])
-          ->update();
-        $db->from('cache_occurrences_nonfunctional')
-          ->set($confUpdates)
-          ->where('id', $_POST['occurrence:id'])
-          ->update();
-
+        // Give the workflow module a chance to rewind or update the values before updating.
+        $this->applyWorkflowToOccurrenceUpdates($db, [$_POST['occurrence:id']], $updates);
         if (!empty($_POST['occurrence_comment:comment'])) {
           $db->insert('occurrence_comments', array(
             'occurrence_id' => $_POST['occurrence:id'],
@@ -243,6 +198,32 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
         error_logger::log_error('Exception during single record verify', $e);
       }
     }
+  }
+
+  private function getOccurrenceTableVerificationUpdateValues($db, $status, $substatus, $decisionSource) {
+    $r = [];
+    $verifier = $this->getVerifierName($db);
+    // Field updates for the occurrences table.
+    $r['occurrences'] = array(
+      'record_status' => $status,
+      'verified_by_id' => $this->user_id,
+      'verified_on' => date('Y-m-d H:i:s'),
+      'updated_by_id' => $this->user_id,
+      'updated_on' => date('Y-m-d H:i:s'),
+      'record_substatus' => $substatus,
+      'record_decision_source' => $decisionSource,
+    );
+    // Field updates for the cache_occurrences_functional table.
+    $r['cache_occurrences_functional'] = array(
+      'record_status' => $status,
+      'verified_on' => date('Y-m-d H:i:s'),
+      'updated_on' => date('Y-m-d H:i:s'),
+      'record_substatus' => $substatus,
+      'query' => NULL
+    );
+    // Field updates for the cache_occurrences_nonfunctional table.
+    $r['cache_occurrences_nonfunctional'] = array('verifier' => $verifier);
+    return $r;
   }
 
   /**
@@ -381,65 +362,103 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    *
    * @param object $db
    *   Database connection.
-   * @param int $id
-   *   Occurrence ID.
-   * @param array $occUpdates
-   *   List of fields and values which are about to be applied to a record in the occurrences table.
-   * @param array $cofUpdates
-   *   List of fields and values which are about to be applied to a record in the
-   *   cache_occurrences_functional table.
-   * @param array $confUpdates
-   *   List of fields and values which are about to be applied to a record in the
-   *   cache_occurrences_nonfunctional table.
+   * @param array $idList
+   *   Array of occurrence IDs about to be updated.
+   * @param array $updates
+   *   List of fields and values which are about to be applied to records in the occurrences table and
+   *   related cache tables. Keyed by table name, each entry contains an associative array of field/value pairs.
    */
-  private function applyWorkflowToOccurrenceUpdates($db, $id, array &$occUpdates, array &$cofUpdates, array &$confUpdates) {
-    if (in_array(MODPATH . 'workflow', Kohana::config('config.modules'))) {
-      if (!empty($occUpdates['record_status'])) {
-        // As we are verifying or rejecting, we need to rewind any opposing rejections or verifications.
-        $rewinds = workflow::getRewindChangesForRecords($db, 'occurrence', [$id], ['V', 'R']);
-        if (isset($rewinds["occurrence.$id"])) {
-          $thisRewind = $rewinds["occurrence.$id"];
-          $this->applyValuesToOccurrenceTableValues($thisRewind, $occUpdates, $cofUpdates, $confUpdates);
-        }
-      }
+  private function applyWorkflowToOccurrenceUpdates($db, array $idList, array $updates) {
+    $rewinds = [];
+    $workflowEvents = [];
+    if (in_array(MODPATH . 'workflow', Kohana::config('config.modules'))
+        && !empty($updates['occurrences']['record_status'])) {
+      // As we are verifying or rejecting, we need to rewind any opposing rejections or verifications.
+      $rewinds = workflow::getRewindChangesForRecords($db, 'occurrence', $idList, ['V', 'R']);
       // Fetch any new events to apply when this record is verified.
       $workflowEvents = workflow::getEventsForRecords(
         $db,
         $this->website_id,
         'occurrence',
-        [$id],
-        [$_POST['occurrence:record_status']]
+        $idList,
+        [$updates['occurrences']['record_status']]
       );
-      if (isset($workflowEvents["occurrence.$id"])) {
-        $theseEvents = $workflowEvents["occurrence.$id"];
-        $state = [];
-        foreach ($theseEvents as $thisEvent) {
-          $oldRecord = ORM::factory('occurrence', $id);
-          $oldRecordVals = $oldRecord->as_array();
-          $newRecordVals = array_merge($oldRecordVals, $occUpdates);
-          $valuesToApply = workflow::processEvent(
-            $thisEvent,
-            'occurrence',
-            $oldRecordVals,
-            $newRecordVals,
-            $state
-          );
-          $this->applyValuesToOccurrenceTableValues($valuesToApply, $occUpdates, $cofUpdates, $confUpdates);
-        }
-        $userId = security::getUserId();
-        // Save these events in workflow_undo.
-        foreach ($state as $undoDetails) {
-          $db->insert('workflow_undo', array(
-            'entity' => 'occurrence',
-            'entity_id' => $id,
-            'event_type' => $undoDetails['event_type'],
-            'created_on' => date("Ymd H:i:s"),
-            'created_by_id' => $userId,
-            'original_values' => json_encode($undoDetails['old_data'])
-          ));
+      foreach ($idList as $id) {
+        // If there is either a rewind operation, or a workflow event to apply, need to process this record individually.
+        if (isset($rewinds["occurrence.$id"]) || isset($workflowEvents["occurrence.$id"])) {
+          // Grab a copy of the update array
+          $thisUpdates = $updates;
+          if (isset($rewinds["occurrence.$id"])) {
+            $thisRewind = $rewinds["occurrence.$id"];
+            $this->applyValuesToOccurrenceTableValues($thisRewind, $thisUpdates);
+          }
+          if (isset($workflowEvents["occurrence.$id"])) {
+            $theseEvents = $workflowEvents["occurrence.$id"];
+            $state = [];
+            foreach ($theseEvents as $thisEvent) {
+              $oldRecord = ORM::factory('occurrence', $id);
+              $oldRecordVals = $oldRecord->as_array();
+              $newRecordVals = array_merge($oldRecordVals, $thisUpdates['occurrences']);
+              $valuesToApply = workflow::processEvent(
+                $thisEvent,
+                'occurrence',
+                $oldRecordVals,
+                $newRecordVals,
+                $state
+              );
+              $this->applyValuesToOccurrenceTableValues($valuesToApply, $thisUpdates);
+            }
+            // Apply the update to the occurrence and cache tables.
+            $this->applyUpdatesToOccurrences($db, [$id], $thisUpdates);
+            // Save these events in workflow_undo.
+            $userId = security::getUserId();
+            foreach ($state as $undoDetails) {
+              $db->insert('workflow_undo', array(
+                'entity' => 'occurrence',
+                'entity_id' => $id,
+                'event_type' => $undoDetails['event_type'],
+                'created_on' => date("Ymd H:i:s"),
+                'created_by_id' => $userId,
+                'original_values' => json_encode($undoDetails['old_data'])
+              ));
+            }
+          }
+          // This record is done, so exclude from the bulk operation.
+          unset($idList['$id']);
         }
       }
     }
+    // Bulk update any remaining records.
+    $this->applyUpdatesToOccurrences($db, $idList, $updates);
+  }
+
+  /**
+   * Takes a set of updates for occurrence data and applies them to a list of occurrences.
+   *
+   * Updates the occurrences table and related cache tables.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param array $idList
+   *   Array of occurrence IDs about to be updated.
+   * @param array $updates
+   *   List of fields and values which are about to be applied to records in the occurrences table and
+   *   related cache tables. Keyed by table name, each entry contains an associative array of field/value pairs.
+   */
+  private function applyUpdatesToOccurrences($db, $idList, $updates) {
+    $db->from('occurrences')
+      ->set($updates['occurrences'])
+      ->in('id', $idList)
+      ->update();
+    // Since we bypass ORM here for performance, update the cache_occurrences_* tables.
+    $db->from('cache_occurrences_functional')
+      ->set($updates['cache_occurrences_functional'])
+      ->in('id', $idList)
+      ->update();
+    $db->from('cache_occurrences_nonfunctional')
+      ->set($updates['cache_occurrences_nonfunctional'])
+      ->in('id', $idList)
+      ->update();
   }
 
   /**
@@ -447,29 +466,21 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    *
    * @param array $values
    *   Values that are to be applied to the occurrences table as a result of workflow.
-   * @param array $occUpdates
-   *   The pre-existing set of field changes that were going to be applied to the occurrences table.
-   * @param array $cofUpdates
-   *   The pre-existing set of field changes that were going to be applied to the cache_occurrences_functional table.
-   * @param array $confUpdates
-   *   The pre-existing set of field changes that were going to be applied to the cache_occurrences_nonfunctional table.
+   * @param array $updates
+   *   List of fields and values which are about to be applied to records in the occurrences table and
+   *   related cache tables. Keyed by table name, each entry contains an associative array of field/value pairs.
    */
-  private function applyValuesToOccurrenceTableValues(
-      array $values,
-      array &$occUpdates,
-      array &$cofUpdates,
-      array &$confUpdates
-      ) {
-    $occUpdates = array_merge($values, $occUpdates);
+  private function applyValuesToOccurrencesTableValues(array $values, array &$updates) {
+    $updates['occurrences'] = array_merge($values, $updates['occurrences']);
     if (isset($values['confidential'])) {
-      $cofUpdates['confidential'] = $values['confidential'];
+      $updates['cache_occurrences_functional']['confidential'] = $values['confidential'];
     }
     if (isset($values['sensitivity_precision'])) {
-      $cofUpdates['sensitive'] = empty($values['sensitivity_precision']) ? 'f' : 't';
-      $confUpdates['sensitivity_precision'] = $values['sensitivity_precision'];
+      $updates['cache_occurrences_functional']['sensitive'] = empty($values['sensitivity_precision']) ? 'f' : 't';
+      $updates['cache_occurrences_nonfunctional']['sensitivity_precision'] = $values['sensitivity_precision'];
     }
     if (isset($values['release_status'])) {
-      $cofUpdates['release_status'] = $values['release_status'];
+      $updates['cache_occurrences_functional']['release_status'] = $values['release_status'];
     }
   }
 

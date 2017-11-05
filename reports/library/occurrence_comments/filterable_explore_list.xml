@@ -21,7 +21,7 @@
     <order_by>oc.id desc</order_by>
   </order_bys>
   <params>
-    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs'
+    <param name='smpattrs' display='Sample attribute list' datatype='smpattrs' default=''
            description='Comma separated list of sample attribute IDs to include as columns in the report' />
     <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
            description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
@@ -31,6 +31,15 @@
            description="Limit to data cleaner comments (t) or other (f) comments">
       <where value="t" operator="equal">oc.generated_by like 'data_cleaner_%'</where>
       <where value="f" operator="equal">(oc.generated_by not like 'data_cleaner_%' or oc.generated_by is null)</where>
+    </param>
+    <param name="created_by_filter" display="My or Others comments" datatype="text" default=""
+           description="Optional: Limit to my (mine) or other's (others) comments">
+      <where value="mine" operator="equal">CAST(oc.created_by_id AS character varying) = '#user_id#'</where>
+      <where value="others" operator="equal">CAST(oc.created_by_id AS character varying) != '#user_id#'</where>
+    </param>
+    <param name="verification_only_filter" display="Verification only comments" datatype="boolean" default=""
+           description="Optional: Limit to only verification related comments (t)">
+      <where value="t" operator="equal">(oc.query = TRUE OR oc.record_status IS NOT NULL)</where>
     </param>
   </params>
   <columns>

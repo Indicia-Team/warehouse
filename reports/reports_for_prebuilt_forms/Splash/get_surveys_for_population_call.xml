@@ -9,7 +9,7 @@ adjusting for live."
   FROM surveys s
   WHERE 
     s.deleted=false
-  AND s.title in ('2015 Wildflower Survey','2015 Indicator Survey','2015 Inventory Survey')
+  AND s.id in (87,154,155)
   GROUP BY s.id
   </query>
   <columns> 
