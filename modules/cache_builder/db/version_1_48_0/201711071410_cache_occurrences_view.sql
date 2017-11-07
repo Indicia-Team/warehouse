@@ -1,7 +1,3 @@
--- #slow script#
-DROP TABLE cache_occurrences;
-
--- Create a view to ease the migration path to the new cache occurrences structure.
 CREATE OR REPLACE VIEW cache_occurrences AS
 SELECT o.id,
   o.record_status,

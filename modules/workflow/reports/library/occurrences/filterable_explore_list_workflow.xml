@@ -31,8 +31,9 @@
     <param name="force_default_input_form" display="Force default input form" default="0"
            description="Force the default input form to be used instead of the one specified by the record" />
     <param name="workflow_group_code" display="Workflow group code" default=""
-           description="Code for the Workflow group to show associated records for.">
-      <join>join workflow_metadata wm on wm.key='taxa_taxon_list_external_key' and wm.key_value = o.taxa_taxon_list_external_key</join>
+           description="Code for the Workflow group to show associated records for."
+           preprocess="select '''' || string_agg(key_value, ''', ''') || '''' from workflow_metadata where key='taxa_taxon_list_external_key' and entity='occurrence'">
+      <where>o.taxa_taxon_list_external_key in (#workflow_group_code#)</where>
     </param>
   </params>
   <columns>
