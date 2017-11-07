@@ -21,7 +21,7 @@
     </param>
   </params>
   <columns>
-    <column name="id" visible="false" sql="s.id" />
+    <column name="id" visible="false" sql="s.id" in_count="true" />
     <column name="title" display='Title' datatype="text" sql="s.title" />
     <column name="entity" display='Entity' datatype="text" sql="s.entity" />
     <column name="items" display="Items" datatype="integer" aggregate="true" sql="count(e.*)" />
