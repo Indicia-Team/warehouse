@@ -26,10 +26,10 @@
       join taxa_taxon_list_attribute_values av_l1 on av_l1.int_value=t_l1.id
         and av_l1.taxa_taxon_list_attribute_id in (#other_classification_attr_ids#) and av_l1.deleted=false
       join cache_taxa_taxon_lists cttl
-        on cttl.id=av_l1.taxa_taxon_list_id
-        and cttl.id=av_l2.taxa_taxon_list_id
+        on cttl.preferred_taxa_taxon_list_id=av_l1.taxa_taxon_list_id
+        and cttl.preferred_taxa_taxon_list_id=av_l2.taxa_taxon_list_id
       #joins#
-      join taxa_taxon_lists ttl on ttl.id=cttl.id
+      join taxa_taxon_lists ttl on ttl.id=cttl.preferred_taxa_taxon_list_id
       left join (
         select av_l21.int_value as l2_id, round(avg(rscv.int_value)*100) as sqi
         from cache_taxa_taxon_lists cttl
