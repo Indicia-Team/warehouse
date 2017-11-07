@@ -9,8 +9,8 @@
   JOIN surveys su on su.id=s.survey_id and su.deleted=false
   JOIN websites w on w.id=su.website_id and w.deleted=false
   LEFT JOIN (sample_attribute_values savrecorder
-  LEFT JOIN sample_attributes sarecorder on sarecorder.id=savrecorder.sample_attribute_id and sarecorder.deleted=false
-      and sarecorder.system_function='full_name'
+      JOIN sample_attributes sarecorder on sarecorder.id=savrecorder.sample_attribute_id and sarecorder.deleted=false
+           and sarecorder.system_function='full_name'
   ) on savrecorder.sample_id=s.id and savrecorder.deleted=false
   LEFT JOIN locations l on l.id=s.location_id and l.deleted=false
   #agreements_join#
