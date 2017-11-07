@@ -34,7 +34,7 @@
     </param>
     <param name="workflow_group_code" display="Workflow group code" default=""
            description="Code for the Workflow group to show associated records for.">
-      <join>join workflow_metadata wm on wm.key='taxa_taxon_list_external_key' and wm.key_value = cttl.external_key</join>
+      <join>join workflow_metadata wm on wm.key='taxa_taxon_list_external_key' and wm.key_value = o.taxa_taxon_list_external_key</join>
     </param>
   </params>
   <columns>
