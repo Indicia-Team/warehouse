@@ -86,7 +86,7 @@ echo html::form_buttons(html::initial_value($values, 'workflow_metadata:id')!=nu
 <script type="text/javascript">
 jQuery(document).ready(function($) {
     $("#workflow_metadata\\:entity").change(function() {
-      var entities = 
+      var entities =
 <?php
 echo json_encode($other_data['entities']);
 ?>,
@@ -99,8 +99,8 @@ echo json_encode($other_data['entities']);
       for(var i = 0; i< entityKeys.length; i++) {
         if(entityKeys[i] === $("#workflow_metadata\\:entity").val()) {
           for(var j = 0; j< entities[entityKeys[i]].keys.length; j++) {
-            $("#workflow_metadata\\:key").append('<option value="'+entities[entityKeys[i]].keys[j].title+
-                '">'+entities[entityKeys[i]].keys[j].title+'</option>');
+            $("#workflow_metadata\\:key").append('<option value="' + entities[entityKeys[i]].keys[j].db_store_value +
+                '">' + entities[entityKeys[i]].keys[j].title + '</option>');
           }
         }
       }
