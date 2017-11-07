@@ -943,7 +943,7 @@ SQL;
               }
             }
             elseif (($paramDefs[$name]['datatype'] === 'integer' || $paramDefs[$name]['datatype'] === 'float') && !is_numeric($value)) {
-              throw new exception('Invalid numeric parameter value');
+              throw new exception("Invalid numeric parameter value $value for $name");
             }
             elseif (($paramDefs[$name]['datatype'] === 'integer[]' || $paramDefs[$name]['datatype'] === 'float[]')) {
               // Array check on numeric parameter values.

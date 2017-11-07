@@ -49,6 +49,7 @@
       ) on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
       group by t_sb.id, t_sb.id, t_bb.term, t_sb.term, sqi.sqi
     ) as sub
+    where 1=1
   </query>
   <order_bys>
     <order_by>count desc</order_by>

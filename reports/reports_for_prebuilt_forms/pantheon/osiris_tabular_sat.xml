@@ -65,6 +65,7 @@
         t_bb.term, t_sb.term, case when p.id=t_sb.id then '' else p.term || ' &gt;&gt; ' end || t_sat.term,
         it.threshold, tcode.term
     ) as sub
+    where 1=1
   </query>
   <order_bys>
     <order_by>count desc</order_by>

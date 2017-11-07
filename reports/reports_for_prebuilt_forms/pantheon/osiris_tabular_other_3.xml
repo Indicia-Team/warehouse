@@ -55,6 +55,7 @@
       where t_l1.parent_id is null
       group by t_l3.id, t_l3.id, t_l1.term, t_l2.term, t_l3.term, sqi.sqi, av_l3.taxa_taxon_list_attribute_id
     ) as sub
+    where 1=1
   </query>
   <order_bys>
     <order_by>count desc</order_by>

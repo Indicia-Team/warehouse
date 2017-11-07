@@ -59,6 +59,7 @@
       group by t_r.id, t_r.id, case when p.id=t_sb.id then 0 else t_r.parent_id end, t_bb.term, t_sb.term, sqi.sqi,
         case when p.id=t_sb.id then '' else '&lt;span&gt;' || p.term || '&lt;/span&gt; &gt;&gt; ' end || '&lt;span&gt;' || t_r.term || '&lt;/span&gt;'
     ) as sub
+    where 1=1
   </query>
   <order_bys>
     <order_by>count desc</order_by>
