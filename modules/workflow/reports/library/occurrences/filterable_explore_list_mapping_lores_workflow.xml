@@ -9,6 +9,7 @@
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
   JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
+  JOIN samples s on s.id=o.sample_id and s.deleted=false
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   LEFT JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
     and canEdit.to_website_id in (#website_ids#) and canEdit.provide_for_editing=true
@@ -68,7 +69,7 @@
 end" datatype="text" />
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
     <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
-    <column name="geom" visible="false" mappable="true" sql="st_astext(case when msq.size > #sq_size# then #sample_geom_field# else msq.geom end)" in_count="true" />
+    <column name="geom" visible="false" mappable="true" sql="st_astext(case when msq.size > #sq_size# then s.geom else msq.geom end)" in_count="true" />
     <column name="sensitivity_precision" on_demand="true" display="Sensitivity blur (m)" visible="true" sql="onf.sensitivity_precision" />
     <column name="confidential" on_demand="true" display="Confidential" visible="true"
       sql="case o.confidential when 't' then '&amp;#x2714;' else '&amp;#x2718;' end" />
