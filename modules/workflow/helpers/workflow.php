@@ -58,7 +58,7 @@ class workflow {
       // If the key is in the main entity, we can directly compare the old and new keys.
       if ($keyDef['table'] === $entity) {
         $keyCol = $keyDef['column'];
-        $keyChanged = (string) $oldRecord->$column !== $newRecord->column;
+        $keyChanged = (string) $oldRecord->$column !== (string) $newRecord->column;
       }
       else {
         // Find the definintion of the extra data table that contains the column we need to look for changes in. We can
@@ -66,7 +66,7 @@ class workflow {
         foreach ($config['extraData'] as $extraDataDef) {
           if ($extraDataDef['table'] === $keyDef['table']) {
             $column = $extraDataDef['originating_table_column'];
-            $keyChanged = (string) $oldRecord->$column !== $newRecord->$column;
+            $keyChanged = (string) $oldRecord->$column !== (string) $newRecord->$column;
           }
         }
       }
@@ -276,7 +276,7 @@ class workflow {
       $column = $keyDef['column'];
       $qry->where('workflow_events.key_value', $newRecord->$column);
       // It's a set event if the key is changing in the main entity table.
-      if ($newRecord->$column !== (string) $oldRecord->$column) {
+      if ((string) $newRecord->$column !== (string) $oldRecord->$column) {
         $eventTypes[] = 'S';
       }
     }
@@ -292,7 +292,7 @@ class workflow {
           );
           // It's a set event if the foreign key in the main data table which points to the extraData record holding
           // the key is changing.
-          if ($newRecord->$originatingColumn !== (string) $oldRecord->$originatingColumn) {
+          if ((string) $newRecord->$originatingColumn !== (string) $oldRecord->$originatingColumn) {
             $eventTypes[] = 'S';
           }
         }
