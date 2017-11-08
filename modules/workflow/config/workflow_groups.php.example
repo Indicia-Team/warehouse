@@ -27,6 +27,11 @@
  /**
   * List of workflow groups, each with a code and a list of website IDs that collaborate with this group.
   */
-$config['groups'] = array(
-  'NNSIP' => array(2, 3, 4)
-);
+$config['groups'] = [
+  'NNSIP' => [
+    // This is the ID of the website that administers this group of workflow rules.
+    "owner_website_id" => 2,
+    // These are the IDs of websites which the workflow rules will be applied to.
+    "member_website_ids" => [2, 3, 4],
+  ]
+];

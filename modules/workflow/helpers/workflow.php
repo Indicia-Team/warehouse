@@ -327,8 +327,8 @@ class workflow {
   private static function getGroupCodesForThisWebsite($websiteId) {
     $config = kohana::config('workflow_groups');
     $r = [];
-    foreach ($config['groups'] as $group => $websiteIds) {
-      if (in_array($websiteId, $websiteIds)) {
+    foreach ($config['groups'] as $group => $groupDef) {
+      if (in_array($websiteId, $groupDef['member_website_ids'])) {
         $r[] = $group;
       }
     }
@@ -421,6 +421,30 @@ class workflow {
     }
     $state[] = array('event_type' => $event->event_type, 'old_data' => $newUndoRecord);
     return $valuesToApply;
+  }
+
+  /**
+   * Returns true if the current user is allowed to view the workflow configuration pages.
+   *
+   * @param object $auth
+   *   Kohana authorisation object.
+   *
+   * @return bool
+   *   True or False.
+   */
+  public static function allowWorkflowConfigAccess($auth) {
+    $workflowAvailable = $auth->logged_in('CoreAdmin');
+    if (!$workflowAvailable) {
+      $config = kohana::config('workflow_groups');
+      $r = [];
+      foreach ($config['groups'] as $group => $groupDef) {
+        $workflowAvailable = $auth->has_website_access('admin', $groupDef['owner_website_id']);
+        if ($workflowAvailable) {
+          break;
+        }
+      }
+    }
+    return $workflowAvailable;
   }
 
   /**

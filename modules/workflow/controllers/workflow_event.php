@@ -49,6 +49,15 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
     );
   }
 
+  /**
+   * Prepares any additional data required by the edit view.
+   *
+   * @param array $values
+   *   Data values to show on the edit form.
+   *
+   * @return array
+   *   Associative array of any additional data to expose to the edit view.
+   */
   protected function prepareOtherViewData($values) {
     $config = kohana::config('workflow');
     $entitySelectItems = array();
@@ -63,10 +72,15 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
     }
     // Load workflow groups from configuration file.
     $config = kohana::config('workflow_groups');
-    $groups = array_keys($config['groups']);
+    $groups = [];
+    foreach ($config['groups'] as $group => $groupDef) {
+      if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_website_access('admin', $groupDef['owner_website_id'])) {
+        $groups[] = $group;
+      }
+    }
     return array(
       'entities' => $entities,
-      'groupSelectItems' => array_combine($groups, $groups),
+      'groupSelectItems' => $groups,
       'entitySelectItems' => $entitySelectItems,
       'jsonSchema' => '{"type":"map", "title":"Columns to set", "mapping": {' . implode(',', $jsonMapping) .
         '},"desc":"List of columns and the values they are to be set to, when event is triggered."}'
@@ -74,10 +88,16 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * You can only access the list of workflow events if CoreAdmin.
+   * Apply page access permissions.
+   *
+   * You can only access the list of workflow metadata if CoreAdmin or SiteAdmin for a website that owns one of the
+   * workflow groups.
+   *
+   * @return bool
+   *   True if acecss granted.
    */
   protected function page_authorised() {
-    return $this->auth->logged_in('CoreAdmin');
+    return workflow::allowWorkflowConfigAccess($this->auth);
   }
 
   protected function show_submit_fail() {

@@ -35,7 +35,8 @@
  *   List of menu items exposed by this plugin.
  */
 function workflow_alter_menu($menu, $auth) {
-  if ($auth->logged_in('CoreAdmin')) {
+  $workflowAvailable = workflow::allowWorkflowConfigAccess($auth);
+  if ($workflowAvailable) {
     $menu['Admin']['Workflow Events'] = 'workflow_event';
     $menu['Admin']['Workflow Metadata'] = 'workflow_metadata';
   }

@@ -60,10 +60,16 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * You can only access the list of workflow metadata if CoreAdmin.
+   * Apply page access permissions.
+   *
+   * You can only access the list of workflow metadata if CoreAdmin or SiteAdmin for a website that owns one of the
+   * workflow groups.
+   *
+   * @return bool
+   *   True if acecss granted.
    */
   protected function page_authorised() {
-    return $this->auth->logged_in('CoreAdmin');
+    return workflow::allowWorkflowConfigAccess($this->auth);
   }
 
   protected function show_submit_fail() {
