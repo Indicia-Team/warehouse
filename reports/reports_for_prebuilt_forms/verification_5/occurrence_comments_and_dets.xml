@@ -24,7 +24,7 @@
         null::character as record_status,
         null::smallint as record_substatus,
         false as query,
-        p.surname || coalesce(', ' || p.first_name, '') as person_name
+        coalesce(d.person_name, p.surname || coalesce(', ' || p.first_name, '')) as person_name
       from determinations d
       join users u on u.id=d.created_by_id and u.deleted=false
       join people p on p.id=u.person_id and p.deleted=false
