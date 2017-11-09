@@ -60,7 +60,7 @@
       end as values
     from taxa_taxon_list_attributes ttla
     join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_attribute_id=ttla.id and ttlav.deleted=false
-    join cache_taxa_taxon_lists cttl on cttl.preferred_taxa_taxon_list_id=ttlav.taxa_taxon_list_id and cttl.preferred=true
+    join cache_taxa_taxon_lists cttl on cttl.id=ttlav.taxa_taxon_list_id and cttl.preferred=true
     #joins#
     where ttla.description='Pantheon quality indices'
     and ttla.deleted=false
