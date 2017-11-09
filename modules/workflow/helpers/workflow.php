@@ -360,6 +360,7 @@ class workflow {
       $newUndoRecord = array();
       kohana::log('debug', 'Processing event: ' . var_export($event, true));
       $valuesToApply = self::processEvent(
+        $config,
         $event,
         $entity,
         $oldRecord->as_array(),
@@ -378,6 +379,8 @@ class workflow {
    * Retrieves a list of the values that need to be applied to a database record given an event. The values may include
    * the results of a mimiced rewind as well as the value changes required for the event.
    *
+   * @param array $config
+   *   Workflow module configuration for the entity.
    * @param object $event
    *   Event object loaded from the database query.
    * @param string $entity
@@ -392,7 +395,7 @@ class workflow {
    * @return array
    *   Associative array of the database fields and values which need to be applied.
    */
-  public static function processEvent($event, $entity, array $oldValues, array $newValues, &$state) {
+  public static function processEvent(array $config, $event, $entity, array $oldValues, array $newValues, &$state) {
     $columnDeltaList = [];
     $valuesToApply = [];
     $setColumns = json_decode($event->values, TRUE);
@@ -408,12 +411,13 @@ class workflow {
       elseif (!empty($oldValues['id'])) {
         $undo_value = isset($oldValues[$deltaColumn]) ? $oldValues[$deltaColumn] : NULL;
       }
-      elseif (isset($config['defaults'][$deltaColumn])) {
-        $undo_value = $config['defaults'][$deltaColumn];
-      }
       else {
         $undo_value = NULL;
       }
+      if ($undo_value === NULL && isset($config['defaults'][$deltaColumn])) {
+        $undo_value = $config['defaults'][$deltaColumn];
+      }
+
       if ($deltaValue !== $undo_value) {
         $newUndoRecord[$deltaColumn] = $undo_value;
         $valuesToApply[$deltaColumn] = $deltaValue;
