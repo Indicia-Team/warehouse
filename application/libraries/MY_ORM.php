@@ -835,7 +835,18 @@ class ORM extends ORM_Core {
       if (!empty($thisValues['website_id']) && !empty($vArray['website_id']))
         unset($vArray['website_id']);
       // If there are no changed fields between the current and new record, skip the metadata update.
-      $exactMatches = array_intersect_assoc($thisValues, $vArray);
+      // We have the problem that array objects appear as strings in $thisValues "{x,y}" but as PHP arrays in $vArray
+      // The function array_intersect_assoc can't handle this
+      // The easiest thing here is pretend the current value of any array column doesn't match.
+      // These array columns are used so rarely that this less optimised solution is not important
+      $exactMatches = array();
+      foreach ($thisValues as $column => $value) {
+        if (isset($vArray[$column]) &&
+            !is_array($vArray[$column]) &&
+            (string) $vArray[$column] = (string) $value) {
+          $exactMatches[] = $value;
+        }
+      }
       // Allow for different ways of submitting bool. Don't want to trigger metadata updates if submitting 'on' instead of true
       // for example.
       foreach ($vArray as $key=>$value) {
