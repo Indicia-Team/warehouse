@@ -2,7 +2,7 @@
     title="Verification Template List (Report Grid)"
     description="A list of verification templates appropriate for use in the report_grid prebuilt form."
 >
-  <query count_field="vt.id">
+  <query count_field="vt.id" website_filter_field="">
   SELECT #field_sql#
     FROM list_verification_templates vt
     #joins#
@@ -19,6 +19,7 @@
     <order_by>vt.id</order_by>
   </order_bys>
   <params>
+    <param name='website_id' display='Website ID' description='Select the website to return data for' datatype='integer' />
   </params>
   <columns>
     <column name='id' display='ID' />
