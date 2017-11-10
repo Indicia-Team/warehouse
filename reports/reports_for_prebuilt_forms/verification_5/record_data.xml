@@ -1,0 +1,67 @@
+<report
+    title="Record data for verification"
+    description="Report used to retrieve details of a record excluding custom attributes for the verification 3 prebuilt form."
+>
+  <query website_filter_field="o.website_id">
+  select #columns#
+  from cache_occurrences_functional o
+  join cache_occurrences_nonfunctional onf on onf.id=o.id
+  join cache_samples_nonfunctional snf on snf.id=o.sample_id
+  join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  join samples s on s.id=o.sample_id and s.deleted=false
+  left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
+  left join locations l on l.id=s.location_id and l.deleted=false
+  left join (index_locations_samples ils
+    join locations locality on locality.id=ils.location_id and locality.location_type_id=#locality_type_id#
+  ) on ils.sample_id=s.id
+  left join (users u
+    join people p on p.id=u.person_id and p.deleted=false
+  ) on u.id=o.created_by_id and u.id&lt;&gt;1 and u.deleted=false
+  #agreements_join#
+  #joins#
+  where o.id=#occurrence_id#
+  </query>
+  <params>
+    <param name='occurrence_id' display='Occurrence ID' description='ID of the occurrence to load' datatype='text' />
+    <param name='locality_type_id' display='Locality Type ID' description='ID of the location type used for verification localities' datatype='text' emptyvalue="0"/>
+  </params>
+  <columns>
+    <column name='taxon' display='Key facts:Species' sql='cttl.taxon' />
+    <column name='record_status' display="Key facts:Record status" sql='o.record_status' />
+    <column name='record_substatus' sql='o.record_substatus' />
+    <column name='sensitive' sql='o.sensitive' />
+    <column name='confidential' sql='o.confidential' />
+    <column name='release_status' sql='o.release_status' />
+    <column name='query' sql='o.query' />
+    <column name='recorder' display='Key facts:Recorder' sql='snf.recorders' />
+    <column name='entered_sref' display='Key facts:Map ref.' sql='coalesce(s.entered_sref, l.centroid_sref)' />
+    <column name="output_sref" display="Key facts:Output map ref." sql="onf.output_sref" />
+    <column name='location_name' display='Key facts:Site Name'
+            sql="case when o.location_name=s.location_name then o.location_name else o.location_name || COALESCE(' - ' || s.location_name, '') end" />
+    <column name="localities" display="Key facts:Locality" sql="array_to_string(array_agg(locality.name), '|')" aggregate="true" />
+    <column name='date' display='Key facts:Date' sql='s.date_start' />
+    <column name='occurrence_id' display='Record:ID' sql='o.id' />
+    <column name='email' visible='false' sql='p.email_address' />
+    <column name='verifier' display='Record:Verified by' sql='onf.verifier' />
+    <column name='preferred_taxon' display='Record:Preferred species name' sql='CASE cttl.preferred_taxon WHEN cttl.taxon THEN null ELSE cttl.preferred_taxon END' />
+    <column name='occurrence_comment' display='Record:Comment' sql='onf.comment' />
+    <column name='created_on' display='Record:Submitted on' sql='o.created_on' />
+    <column name='updated_on' display='Record:Last updated on' sql='o.updated_on' />
+    <column name='sample_id' display='Record:Sample ID' visible="false" sql='s.id' />
+    <column name='sample_comment' display='Record:Sample comment' sql='s.comment' />
+    <column name='survey_title' display='Record:Survey' sql='snf.survey_title' />
+    <column name='taxon_external_key' visible="false" sql='cttl.external_key' />
+    <column name='taxon_meaning_id' visible="false" sql='cttl.taxon_meaning_id' />
+    <column name='taxon_list_id' visible="false" sql='cttl.taxon_list_id' />
+    <column name='zero_abundance' visible="false" sql='o.zero_abundance' />
+    <column name='wkt' visible="false" sql='st_astext(coalesce(s.geom, l.centroid_geom))' />
+    <!--The following output columns are hidden but required by the system-->
+    <column name="created_by_id" sql="o.created_by_id" visible="false" />
+    <column name="input_by_first_name" sql="p.first_name" visible="false" />
+    <column name="input_by_surname" sql="p.surname" visible="false" />
+    <column name="survey_id" sql="o.survey_id" visible="false" />
+    <column name="taxon_group" sql="cttl.taxon_group" visible="false" />
+    <column name="taxon_group_id" sql="cttl.taxon_group_id" visible="false" />
+    <column name="locality_ids" sql="array_to_string(array_agg(locality.id), '|')" aggregate="true" visible="false" />
+  </columns>
+</report>
