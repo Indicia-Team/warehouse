@@ -85,13 +85,11 @@ class Verification_template_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * Parese a single dimension postgres array represented as a string into a PHP array.
+   * Parse a single dimension postgres array represented as a string into a PHP array.
    *
    * @param string $s Postgres array represented as a string.
    * @return array Array.
    */
-  
-  // This is single dimensional
   function array_parse($s, $start = 0, &$end = null)
   {
     if (empty($s) || $s[0] != '{') return array();
