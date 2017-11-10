@@ -1,0 +1,115 @@
+<?php
+
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package    Modules
+ * @subpackage Verification_templates
+ * @author     Indicia Team
+ * @license    http://www.gnu.org/licenses/gpl.html GPL
+ * @link       https://github.com/Indicia-Team/
+ */
+
+/**
+ * Controller providing CRUD access to the surveys list.
+ */
+class Verification_template_Controller extends Gridview_Base_Controller {
+
+  public function __construct() {
+    parent::__construct('verification_template');
+    $this->columns = array('id' => 'ID');
+    $this->pagetitle = 'Verification_templates definition';
+  }
+
+  protected function get_action_columns() {
+    return array(
+        array(
+          'caption' => 'Edit',
+          'url'=>'verification_template/edit/{id}',
+        )
+      );
+  }
+
+  protected function page_authorised() {
+    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
+  }
+
+  public function record_authorised($id) {
+    if ($this->auth->logged_in('CoreAdmin')) {
+      return TRUE;
+    } else {
+      if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
+        $vt = new Verification_template_Model($id);
+        return (in_array($vt->website_id, $this->auth_filter['values']));
+      }
+    }
+    // Should not get here as auth_filter populated if not core admin.
+    return FALSE;
+  }
+  
+  protected function prepareOtherViewData($values)
+  {
+    $websites = ORM::factory('website');
+    if (!$this->auth->logged_in('CoreAdmin') && $this->auth_filter['field'] === 'website_id') {
+      $websites = $websites->in('id', $this->auth_filter['values']);
+    }
+    $arr = array();
+    foreach ($websites->where('deleted','false')->orderby('title','asc')->find_all() as $website)  {
+      $arr[$website->id] = $website->title;
+    }
+    // convert the 2 arrays for the keys from the postgres format string to a value that can be used on the for
+    $keys = html::initial_value($values, 'verification_template:restrict_to_external_keys');
+    $fkeys = html::initial_value($values, 'verification_template:restrict_to_family_external_keys');
+    return array(
+        'websites' => $arr,
+        'restrict_to_external_keys_list' => implode("\n",self::array_parse($keys)),
+        'restrict_to_family_external_keys_list' => implode("\n",self::array_parse($fkeys))
+      );
+  }
+
+  // This is single dimensional
+  function array_parse($s, $start = 0, &$end = null)
+  {
+    if (empty($s) || $s[0] != '{') return array();
+    $return = array();
+    $string = false;
+    $quote='';
+    $s = str_replace('&quot;','"',$s);
+    $len = strlen($s);
+    $v = '';
+    for ($i = $start + 1; $i < $len; $i++) {
+      $ch = $s[$i];
+      if (!$string && $ch == '}') {
+        if ($v !== '' || !empty($return)) {
+          $return[] = $v;
+        }
+        $end = $i;
+        break;
+      } elseif (!$string && $ch == ',') {
+        $return[] = $v;
+        $v = '';
+      } elseif (!$string && ($ch == '"' || $ch == "'")) {
+        $string = true;
+        $quote = $ch;
+      } elseif ($string && $ch == $quote && $s[$i - 1] == "\\") {
+        $v = substr($v, 0, -1) . $ch;
+      } elseif ($string && $ch == $quote && $s[$i - 1] != "\\") {
+        $string = false;
+      } else {
+        $v .= $ch;
+      }
+    }
+    return $return;
+  }
+}
