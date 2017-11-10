@@ -470,7 +470,7 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
    *   List of fields and values which are about to be applied to records in the occurrences table and
    *   related cache tables. Keyed by table name, each entry contains an associative array of field/value pairs.
    */
-  private function applyValuesToOccurrencesTableValues(array $values, array &$updates) {
+  private function applyValuesToOccurrenceTableValues(array $values, array &$updates) {
     $updates['occurrences'] = array_merge($values, $updates['occurrences']);
     if (isset($values['confidential'])) {
       $updates['cache_occurrences_functional']['confidential'] = $values['confidential'];
