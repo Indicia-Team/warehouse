@@ -32,19 +32,18 @@ class Verification_template_Controller extends Gridview_Base_Controller {
     $this->pagetitle = 'Verification_templates definition';
   }
 
-  protected function get_action_columns() {
-    return array(
-        array(
-          'caption' => 'Edit',
-          'url'=>'verification_template/edit/{id}',
-        )
-      );
-  }
-
+  /**
+   * Prevent users accessing Verification_templates if they are not core admin or an editor on a website.
+   * @return boolean True if access granted.
+   */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
 
+  /**
+   * Verification_templates only editable by core admin or editor of the website associated with the template.
+   * @return boolean True if access granted.
+   */
   public function record_authorised($id) {
     if ($this->auth->logged_in('CoreAdmin')) {
       return TRUE;
@@ -58,6 +57,13 @@ class Verification_template_Controller extends Gridview_Base_Controller {
     return FALSE;
   }
   
+  /**
+   * Additional information for the edit view.
+   * This converts the array fields into values suitable for a textarea
+   * 
+   * @param array $values Existing data values for the view.
+   * @return array Array of additional data items required.
+   */
   protected function prepareOtherViewData($values)
   {
     $websites = ORM::factory('website');
@@ -78,6 +84,13 @@ class Verification_template_Controller extends Gridview_Base_Controller {
       );
   }
 
+  /**
+   * Parese a single dimension postgres array represented as a string into a PHP array.
+   *
+   * @param string $s Postgres array represented as a string.
+   * @return array Array.
+   */
+  
   // This is single dimensional
   function array_parse($s, $start = 0, &$end = null)
   {

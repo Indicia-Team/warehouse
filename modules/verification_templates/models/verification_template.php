@@ -48,7 +48,7 @@ class Verification_template_Model extends ORM {
   }
   
   /**
-   * Handle the where the 2 external key lists are handed in as a textarea, joined by "\n\r"
+   * Handle the situation where the 2 external key lists are handed in as a textarea, joined by "\n\r"
    */
   protected function preSubmit()
   {
