@@ -1,0 +1,29 @@
+<report
+    title="Verification Template List (Report Grid)"
+    description="A list of verification templates appropriate for use in the report_grid prebuilt form."
+>
+  <query count_field="vt.id">
+  SELECT #field_sql#
+    FROM list_verification_templates vt
+    #joins#
+  WHERE vt.website_id = #website_id#
+  #order_by#
+  </query>
+  <field_sql>
+    vt.id as id,
+    vt.restrict_to_website_id,
+    vt.restrict_to_external_keys,
+    vt.restrict_to_family_external_keys
+  </field_sql>
+  <order_bys>
+    <order_by>vt.id</order_by>
+  </order_bys>
+  <params>
+  </params>
+  <columns>
+    <column name='id' display='ID' />
+    <column name='restrict_to_website_id' display='Restrict to Website' />
+    <column name='restrict_to_external_keys' display='External Keys' />
+    <column name='restrict_to_family_external_keys' display='Family Keys' />
+  </columns>
+</report>
