@@ -65,19 +65,19 @@ class Occurrence_Model extends ORM {
 
   /**
    * Should a determination be logged if this is a changed record?
-   * @var boolean
+   *
+   * @var bool
    */
-  protected $logDetermination=false;
+  protected $logDetermination = FALSE;
 
   /**
    * Returns a caption to identify this model instance.
    */
-  public function caption()
-  {
-    return 'Record of '.$this->taxa_taxon_list->taxon->taxon;
+  public function caption() {
+    return 'Record of ' . $this->taxa_taxon_list->taxon->taxon;
   }
 
-  public function validate(Validation $array, $save = false) {
+  public function validate(Validation $array, $save = FALSE) {
     if ($save) {
       $this->logDeterminations($array);
       $fields = $this->submission['fields'];
@@ -90,7 +90,8 @@ class Occurrence_Model extends ORM {
         (!empty($fields['record_substatus']) && $fields['record_status']['value'] == 4);
       $releasing = !empty($fields['release_status']);
       if ($this->id && $isChecked && !$settingNewRecordStatus && !$releasing && $this->wantToUpdateMetadata) {
-        // If we update a processed occurrence but don't set the verification or release state, revert it to completed/awaiting verification.
+        // If we update a processed occurrence but don't set the verification or release state, revert it to
+        // completed/awaiting verification.
         $array->verified_by_id = NULL;
         $array->verified_on = NULL;
         $array->record_status = 'C';
@@ -102,10 +103,10 @@ class Occurrence_Model extends ORM {
     $array->add_rules('sample_id', 'required');
     $array->add_rules('website_id', 'required');
     $fieldlist = $array->as_array();
-    if(!array_key_exists('all_info_in_determinations', $fieldlist) || $fieldlist['all_info_in_determinations'] == 'N') {
+    if (!array_key_exists('all_info_in_determinations', $fieldlist) || $fieldlist['all_info_in_determinations'] == 'N') {
       $array->add_rules('taxa_taxon_list_id', 'required');
     }
-    // Explicitly add those fields for which we don't do validation
+    // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = array(
       'comment',
       'determiner_id',
@@ -125,29 +126,29 @@ class Occurrence_Model extends ORM {
       'sensitivity_precision',
       'import_guid'
     );
-    if(array_key_exists('id', $fieldlist)) {
-      // existing data must not be set to download_flag=F (final download) otherwise it
-      // is read only
+    if (array_key_exists('id', $fieldlist)) {
+      // Existing data must not be set to download_flag=F (final download) otherwise it
+      // is read only.
       $array->add_rules('downloaded_flag', 'chars[N,I]');
     }
     return parent::validate($array, $save);
   }
 
   private function logDeterminations(Validation $array) {
-
-    //Only log a determination for the occurrence if the species is changed.
-    //Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
-    //and the config setting must be enabled.
-    if (kohana::config('indicia.auto_log_determinations')===true && !empty($this->taxa_taxon_list_id) &&
-      !empty($this->submission['fields']['taxa_taxon_list_id']['value']) && $this->all_info_in_determinations!=='Y' &&
+    // Only log a determination for the occurrence if the species is changed.
+    // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
+    // and the config setting must be enabled.
+    if (kohana::config('indicia.auto_log_determinations') === TRUE && !empty($this->taxa_taxon_list_id) &&
+      !empty($this->submission['fields']['taxa_taxon_list_id']['value']) && $this->all_info_in_determinations !== 'Y' &&
       $this->taxa_taxon_list_id != $this->submission['fields']['taxa_taxon_list_id']['value']) {
-      $this->logDetermination = true;
+      $this->logDetermination = TRUE;
       $currentUserId = $this->get_current_user_id();
-      //We log the old taxon
-      $rowToAdd['taxa_taxon_list_id']=$this->taxa_taxon_list_id;
+      // We log the old taxon.
+      $rowToAdd['taxa_taxon_list_id'] = $this->taxa_taxon_list_id;
       $rowToAdd['determination_type'] = 'B';
       $rowToAdd['occurrence_id'] = $this->id;
-      //Last change to the occurrence is really the create metadata for this determination, since we are copying it out of the existing occurrence record.
+      // Last change to the occurrence is really the create metadata for this determination, since we are copying it
+      // out of the existing occurrence record.
       $rowToAdd['created_by_id'] = $this->updated_by_id;
       $rowToAdd['updated_by_id'] = $this->updated_by_id;
       $rowToAdd['created_on'] = $this->updated_on;
@@ -295,14 +296,14 @@ class Occurrence_Model extends ORM {
       // determiner name type system function, then we just take the first one we come accross.
       // In practice there will probably be only one.
       foreach ($occurrenceAttributesWithDetFuncs as $occurrenceAttrRow) {
-        if ($occurrenceAttrRow->system_function==='det_full_name' && empty($determinerFullNameAttributeId)) {
+        if ($occurrenceAttrRow->system_function === 'det_full_name' && empty($determinerFullNameAttributeId)) {
           $determinerFullNameAttributeId = $occurrenceAttrRow->id;
         }
-        if ($occurrenceAttrRow->system_function==='det_last_name' && empty($determinerLastNameAttributeId)) {
+        if ($occurrenceAttrRow->system_function === 'det_last_name' && empty($determinerLastNameAttributeId)) {
           $determinerLastNameAttributeId = $occurrenceAttrRow->id;
         }
 
-        if ($occurrenceAttrRow->system_function==='det_first_name' && empty($determinerFirstNameAttributeId)) {
+        if ($occurrenceAttrRow->system_function === 'det_first_name' && empty($determinerFirstNameAttributeId)) {
           $determinerFirstNameAttributeId = $occurrenceAttrRow->id;
         }
       }
@@ -369,34 +370,31 @@ class Occurrence_Model extends ORM {
     $updatedByPersonId = $this->db
       ->select('person_id')
       ->from('users')
-      ->where(array('id'=>$userId))
+      ->where(array('id' => $userId))
       ->get()->as_array();
     $determinerNameArray = $this->db
-      ->select('first_name','surname')
+      ->select('first_name', 'surname')
       ->from('people')
-      ->where(array('id'=>$updatedByPersonId[0]->person_id))
+      ->where(array('id' => $updatedByPersonId[0]->person_id))
       ->get()->as_array();
     return $determinerNameArray[0];
   }
 
   // Override preSubmit to add in the verifier (verified_by_id) and verification date (verified_on) if the
   // occurrence is being set to status=V(erified) or R(ejected).
-  protected function preSubmit()
-  {
-    //If determination logging is on and the occurrence species has changed ($logDetermination is true), we can
-    //set the determiner_id on the occurrence to the current user providing easy login is on ($currentUserId!==1).
+  protected function preSubmit() {
+    // If determination logging is on and the occurrence species has changed ($logDetermination is true), we can
+    // set the determiner_id on the occurrence to the current user providing easy login is on ($currentUserId!==1).
     if ($this->logDetermination) {
       $currentUserId = $this->get_current_user_id();
-      if ($currentUserId!==1)
-        $this->submission['fields']['determiner_id']['value']=$currentUserId;
+      if ($currentUserId !==1 )
+        $this->submission['fields']['determiner_id']['value'] = $currentUserId;
     }
-    if (array_key_exists('record_status', $this->submission['fields']))
-    {
+    if (array_key_exists('record_status', $this->submission['fields'])) {
       $rs = $this->submission['fields']['record_status']['value'];
       // If we are making it verified in the submitted data, but we don't already have a verifier in
-      // the database
-      if (($rs == 'V' || $rs == 'R') && !$this->verified_by_id)
-      {
+      // the database.
+      if (($rs == 'V' || $rs == 'R') && !$this->verified_by_id) {
         $defaultUserId = Kohana::config('indicia.defaultPersonId');
         // Set the verifier to the logged in user, or the default user ID from config if not logged
         // into Warehouse, if it is not in the submission
@@ -405,10 +403,11 @@ class Occurrence_Model extends ORM {
         // and store the date of the verification event if not specified.
         if (!array_key_exists('verified_on', $this->submission['fields']))
           $this->submission['fields']['verified_on']['value'] = date("Ymd H:i:s");
-      } elseif ($rs=='C' || $rs=='I') {
-        // Completed or in progress data not verified
-        $this->submission['fields']['verified_by_id']['value']='';
-        $this->submission['fields']['verified_on']['value']='';
+      }
+      elseif ($rs === 'C' || $rs === 'I') {
+        // Completed or in progress data not verified.
+        $this->submission['fields']['verified_by_id']['value'] = '';
+        $this->submission['fields']['verified_on']['value'] = '';
       }
     }
     parent::preSubmit();
@@ -420,8 +419,8 @@ class Occurrence_Model extends ORM {
   public function postSubmit($isInsert) {
     if ($this->requeuedForVerification && !$isInsert) {
       $data = array(
-        'occurrence_id'=>$this->id,
-        'comment'=>kohana::lang('misc.recheck_verification'),
+        'occurrence_id' => $this->id,
+        'comment' => kohana::lang('misc.recheck_verification'),
         'auto_generated' => 't'
       );
       $comment = ORM::factory('occurrence_comment');
