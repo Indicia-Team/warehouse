@@ -19,7 +19,7 @@
       union
       select
         'determination' as type,
-        d.updated_on,
+        d.created_on,
         'Record was determined as ' || ttl.preferred_taxon as comment,
         null::character as record_status,
         null::smallint as record_substatus,
@@ -36,7 +36,7 @@
       select distinct
         'current name' as type,
         o.updated_on,
-        'Record last edited as ' || ttl.preferred_taxon as comment,
+        'Record was determined as ' || ttl.preferred_taxon as comment,
         null::character as record_status,
         null::smallint as record_substatus,
         false as query,

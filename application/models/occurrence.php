@@ -134,6 +134,29 @@ class Occurrence_Model extends ORM {
     return parent::validate($array, $save);
   }
 
+  private function getWhenRecordLastDetermined() {
+    if (empty($this->id)) {
+      // Use now as default for new records - should not really happen.
+      return date("Ymd H:i:s");
+    }
+    else {
+      $rows = $this->db
+        ->select('max(updated_on) as last_update')
+        ->from('determinations')
+        ->where(array(
+          'occurrence_id' => $this->id,
+          'deleted' => 'f',
+        ))->get()->result_array();
+      kohana::log('debug', 'Query: ' . $this->db->last_query());
+    }
+    if (count($rows) > 0 && !empty($rows[0]->last_update)) {
+      return $rows[0]->last_update;
+    }
+    else {
+      return $this->created_on;
+    }
+  }
+
   private function logDeterminations(Validation $array) {
     // Only log a determination for the occurrence if the species is changed.
     // Also the all_info_in_determinations flag must be off to avoid clashing with other functionality
@@ -151,8 +174,8 @@ class Occurrence_Model extends ORM {
       // out of the existing occurrence record.
       $rowToAdd['created_by_id'] = $this->updated_by_id;
       $rowToAdd['updated_by_id'] = $this->updated_by_id;
-      $rowToAdd['created_on'] = $this->updated_on;
-      $rowToAdd['updated_on'] = $this->updated_on;
+      $rowToAdd['created_on'] = $this->getWhenRecordLastDetermined();
+      $rowToAdd['updated_on'] = date("Ymd H:i:s");
       $rowToAdd['person_name'] = $this->get_person_name_and_update_determiner($this->as_array(), $this->updated_by_id);
 
       $insert = $this->db
@@ -424,7 +447,7 @@ class Occurrence_Model extends ORM {
         'auto_generated' => 't'
       );
       $comment = ORM::factory('occurrence_comment');
-      $comment->validate(new Validation($data), true);
+      $comment->validate(new Validation($data), TRUE);
     }
     return true;
   }
