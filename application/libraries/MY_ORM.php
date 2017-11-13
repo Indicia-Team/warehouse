@@ -791,7 +791,7 @@ class ORM extends ORM_Core {
       foreach ($thisValues as $column => $value) {
         if (isset($vArray[$column]) &&
             !is_array($vArray[$column]) &&
-            (string) $vArray[$column] = (string) $value) {
+            (string) $vArray[$column] === (string) $value) {
           $exactMatches[] = $value;
         }
       }
