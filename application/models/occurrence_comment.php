@@ -30,9 +30,9 @@
  */
 class Occurrence_comment_model extends ORM {
   public $search_field = 'comment';
-  
+
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'occurrence');
-  
+
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
@@ -49,20 +49,22 @@ class Occurrence_comment_model extends ORM {
       'query',
       'record_status',
       'record_substatus',
-      'external_key'
+      'external_key',
+      'correspondance_data',
+      'reference'
     );
     return parent::validate($array, $save);
 
   }
-  
+
   /**
    * Returns an abbreviated version of the comment to act as a caption
    */
   public function caption()
   {
-    if (strlen($this->comment)>30) 
+    if (strlen($this->comment)>30)
       return substr($this->comment, 0, 30).'...';
-    else 
+    else
       return $this->comment;
   }
 
@@ -79,7 +81,7 @@ class Occurrence_comment_model extends ORM {
     // answers don't need to be instant, just queries
     return true;
   }
-  
-  
+
+
 
 }
