@@ -42,7 +42,7 @@ class notification_emails {
       'C' => 'Comments on your records',
       'V' => 'Verification of your records',
       'A' => 'Record Cleaner results for your records',
-      'VT' => 'Incoming records for you to verify',
+      'VT' => 'Records for you to verify',
       'M' => 'Milestones and achievements you\'ve attained',
       'PT' => 'Incoming pending records for you to check',
       'GU' => 'Pending users in groups you administer',

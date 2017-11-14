@@ -50,7 +50,7 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
   $params = array(
     'notificationSourceType' => 'VT',
     'notificationSource' => 'verifier_notifications',
-    'notificationComment' => 'You have records to verify.',
+    'notificationComment' => 'You have new or updated records to verify.',
     'sharingFilter' => 'V',
     'sharingFilterFullName' => 'verification',
     'noNotificationsCreatedMessage' => 'No new verification notifications have been created.',
@@ -122,9 +122,11 @@ function get_filters_without_existing_notification($db, $params) {
  * Cycle each filter and check if there if there is a notification that needs creating
  */
 function loop_through_workflows_and_filters_and_create_notifications($db, $filters, $params, $runOverdueCheckInstead) {
+  $forceHighPriorityEmail=false;
   //If workflow module is enabled then we also check for overdue veirifcations
   if ($runOverdueCheckInstead===true) {  
     $recordReport = 'library/occurrences/overdue_occurrence_count';
+    $forceHighPriorityEmail=true;
   } else {
     $recordReport = 'library/occdelta/filterable_occdelta_count';
   }
@@ -156,7 +158,7 @@ function loop_through_workflows_and_filters_and_create_notifications($db, $filte
       //If applicable records are returned then create notification
       if (!empty($reportOutput) && $reportOutput['content']['records'][0]['count'] > 0) {
         //Save the new notification
-        save_notification($filter['user_id'],$params);
+        save_notification($filter['user_id'],$params,$forceHighPriorityEmail);
         $notificationCounter++;
         $alreadyCreatedNotifications[]=$filter['user_id'];
       }
@@ -174,7 +176,7 @@ function loop_through_workflows_and_filters_and_create_notifications($db, $filte
     echo $notificationCounter.' '.$params['multipleNotificationsCreatedMessage'].'</br>';
 }
 
-function save_notification($userId,$params) {
+function save_notification($userId,$params,$forceHighPriorityEmail) {
   //Save the new notification
   $notificationObj = ORM::factory('notification');
   //For overdue notifications the source field is different even though they both use VT type
@@ -188,6 +190,8 @@ function save_notification($userId,$params) {
     array('username'=>$params['title'],
           'comment'=>"<a href=\"$params[url]\">$params[notificationComment]</a>",
           'auto_generated'=>'t'));
+  if ($forceHighPriorityEmail===true)
+    $notificationObj->escalate_email_priority=2;
   $notificationObj->save();
 }
 

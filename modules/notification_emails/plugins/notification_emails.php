@@ -97,60 +97,49 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
   } catch (Exception $ex) {
     $useWorkflowModule=false;
   }
+  //Get all the notifications that need sending.
+  //These are either ones where a user has a notification setting that matches the notification and frequency run we are about to do,
+  //Or alternatively if it a high priority species (e.g. red alert invasive) defined by verifier_notifications_immediate=true
+  //then makes sure the notification is sent as part of the immediate/hourly batch no matter what the
+  //frequency is for on the verifier's notification setting for that source type
+  $notificationsToSendEmailsForSql = "
+    set search_path TO indicia, public;
+    SELECT distinct n.id, n.user_id, n.source_type, n.source, n.data, n.escalate_email_priority, u.username,
+          coalesce(p.first_name, u.username) as name_to_use, o.website_id
+        FROM notifications n
+          JOIN users u ON u.id = n.user_id AND u.deleted=false
+          JOIN people p ON p.id = u.person_id AND p.deleted=false
+
+          LEFT JOIN occurrences o on o.id=n.linked_id
+          LEFT JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id and ttl.deleted=false
+          LEFT JOIN taxa t on t.id = ttl.taxon_id and t.deleted=false
+  
+          --This part just deals with the normal situation where we include a notification email if the user has a setting that matches the current run or has its escalate_email_priority set (so we always send immediately)
+          LEFT JOIN user_email_notification_settings unf ON (unf.notification_source_type=n.source_type or escalate_email_priority IS NOT NULL) AND unf.user_id = n.user_id AND unf.notification_frequency in (".$frequencyToRunString.") AND unf.deleted='f'
+          LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency";
   if ($useWorkflowModule===true) {
-    //Get all the notifications that need sending.
-    //These are either ones where a user has a notification setting that matches the notification and frequency run we are about to do,
-    //Or alternatively if it a high priority species (e.g. red alert invasive) defined by verifier_notifications_immediate=true
-    //then makes sure the notification is sent as part of the immediate/hourly batch no matter what the
-    //frequency is for on the verifier's notification setting for that source type
-    $notificationsToSendEmailsFor = $db->query("
-      set search_path TO indicia, public;
-      SELECT distinct n.id, n.user_id, n.source_type, n.source, n.data, u.username,
-            coalesce(p.first_name, u.username) as name_to_use, o.website_id
-          FROM notifications n
-            JOIN users u ON u.id = n.user_id AND u.deleted=false
-            JOIN people p ON p.id = u.person_id AND p.deleted=false
-
-            LEFT JOIN occurrences o on o.id=n.linked_id
-            LEFT JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id and ttl.deleted=false
-            LEFT JOIN taxa t on t.id = ttl.taxon_id and t.deleted=false
-
-            --This part just deals with the normal situation where we include a notification email if the user has a setting that matches the current run 
-            LEFT JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND unf.notification_frequency in (".$frequencyToRunString.") AND unf.deleted='f'
-            LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency 
-
+    $notificationsToSendEmailsForSql .="
             -- If there is a species that needs sending immediately, make sure the task is a verification task and the user has a notification setting (although we don't care what the frequency is of the setting) and then
             -- if the current run is immediate/hourly then include the notification in the run
             LEFT JOIN workflow_metadata wm on 'IH' in (".$frequencyToRunString.") AND lower(wm.entity)='occurrence' AND lower(wm.key)='taxa_taxon_list_external_key' AND (wm.key_value=t.external_key AND t.external_key IS NOT NULL) AND wm.verifier_notifications_immediate=true AND wm.deleted=false
             LEFT JOIN user_email_notification_settings unfMetaDataLinked ON unfMetaDataLinked.notification_source_type=n.source_type AND n.source_type = 'VT' AND unfMetaDataLinked.user_id = n.user_id AND unfMetaDataLinked.deleted='f'
-            LEFT JOIN user_email_notification_frequency_last_runs unflrMetaDataLinked ON unflrMetaDataLinked.notification_frequency='IH' 
-
-          WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f'
+            LEFT JOIN user_email_notification_frequency_last_runs unflrMetaDataLinked ON unflrMetaDataLinked.notification_frequency='IH'"; 
+  }
+  $notificationsToSendEmailsForSql .= "   
+        WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f'
           --Send a notification if the user has a notification setting and notification that matches the current run
           --and the notification hasn't already been set (or nothing has ever been sent)
-          AND ((unf.id IS NOT NULL AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL OR unflr.id IS NULL)) 
+          AND ((unf.id IS NOT NULL AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL OR unflr.id IS NULL))";
+  if ($useWorkflowModule===true) {    
+    $notificationsToSendEmailsForSql .= "
           -- Do same for high priority species verification tasks to be automatically included in the immediate hourly run
-              OR  (wm.id IS NOT NULL AND unfMetaDataLinked.id IS NOT NULL AND (n.id>unflrMetaDataLinked.last_max_notification_id OR unflrMetaDataLinked.last_max_notification_id IS NULL or unflrMetaDataLinked.id IS NULL)))
-          ORDER BY n.user_id, u.username, n.source_type, n.id
-
-    ")->result_array(FALSE);
-  } else {
-    //Same as above but if the workflow module isn't available we don't have the workflow metadata table and therefore don't have to worry about high priority species. Just send the notification emails
-    //based on user_email_notification_settings
-    $notificationsToSendEmailsFor = $db->query("
-      SELECT distinct n.id, n.user_id, n.source_type, n.source, n.data, u.username,
-        coalesce(p.first_name, u.username) as name_to_use, o.website_id
-      FROM notifications n
-        JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND unf.notification_frequency in (".$frequencyToRunString.") AND unf.deleted='f'
-        JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL)
-        JOIN users u ON u.id = n.user_id AND u.deleted=false
-        JOIN people p ON p.id = u.person_id AND p.deleted=false
-        LEFT JOIN occurrences o on o.id=n.linked_id
-      WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f'
-      ORDER BY n.user_id, u.username, n.source_type, n.id
-    ")->result_array(FALSE);
+          OR  (wm.id IS NOT NULL AND unfMetaDataLinked.id IS NOT NULL AND (n.id>unflrMetaDataLinked.last_max_notification_id OR unflrMetaDataLinked.last_max_notification_id IS NULL or unflrMetaDataLinked.id IS NULL))";
   }
-
+  $notificationsToSendEmailsForSql .= "         
+        )
+        ORDER BY n.user_id, u.username, n.source_type, n.id
+  ";
+  $notificationsToSendEmailsFor = $db->query($notificationsToSendEmailsForSql)->result_array(FALSE);
   if (empty($notificationsToSendEmailsFor)) {
     echo 'There are no email notifications to send at the moment.<br/>';
   }
@@ -187,7 +176,10 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
       'comment' => 'Message',
       'record_status' => 'Record status'
     );
+    $emailHighPriority=false;
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
+      if ($notificationToSendEmailsFor['escalate_email_priority']==2)
+        $emailHighPriority=true;
       // This user is not the first user but we have detected that it is not the same user we added a notification to
       // the email for last time, this means we need to send out the previous user's email and start building a
       // new email.
@@ -195,7 +187,8 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
         if ($currentType !== '') {
           $emailContent .= "</tbody>\n</table>\n";
         }
-        send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl);
+        send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl, $emailHighPriority);
+        $emailHighPriority=false;
         // Used to mark the notifications in an email if an email send is successful, once email send attempt has been
         // made we can reset the list ready for the next email.
         $notificationIds = array();
@@ -254,7 +247,8 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
       $emailContent .= "</tbody></table>\n";
     }
     //if we have run out of notifications to send we will have finished going around the loop, so we just need to send out the last email whatever happens
-    send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl);
+    send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl,$emailHighPriority);
+    $emailHighPriority=false;
     $emailSentCounter++;
     // Save the maximum notification id against the jobs we are going to run now, so we know that we have done the
     // notifications up to that id and next time the jobs are run they only need to work with notifications later
@@ -388,8 +382,8 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
 /*
  * Actually send the email to the user.
  */
-function send_out_user_email($db, $emailContent, $userId, $notificationIds, $email_config, $subscriptionSettingsPageUrl) {
-  $emailContent .= '<a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
+function send_out_user_email($db, $emailContent, $userId, $notificationIds, $email_config, $subscriptionSettingsPageUrl, $highPriority) {
+  $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
     url::base() . '">Click here to update your subscription settings.</a><br/><br/>';
   $cc = NULL;
   $swift = email::connect();
@@ -439,6 +433,8 @@ function send_out_user_email($db, $emailContent, $userId, $notificationIds, $ema
     }
     $message = new Swift_Message($emailSubject, $emailContent,
                                  'text/html');
+    if ($highPriority=true)
+      $message->setPriority(2);
     $recipients = new Swift_RecipientList();
     $recipients->addTo($userResults[0]->email_address);
     // Send the email.
