@@ -115,7 +115,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
           LEFT JOIN taxa t on t.id = ttl.taxon_id and t.deleted=false
   
           --This part just deals with the normal situation where we include a notification email if the user has a setting that matches the current run or has its escalate_email_priority set (so we always send immediately)
-          LEFT JOIN user_email_notification_settings unf ON (unf.notification_source_type=n.source_type or escalate_email_priority IS NOT NULL) AND unf.user_id = n.user_id AND unf.notification_frequency in (".$frequencyToRunString.") AND unf.deleted='f'
+          LEFT JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND (unf.notification_frequency in (".$frequencyToRunString.") OR escalate_email_priority IS NOT NULL) AND unf.deleted='f'
           LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency";
   if ($useWorkflowModule===true) {
     $notificationsToSendEmailsForSql .="
