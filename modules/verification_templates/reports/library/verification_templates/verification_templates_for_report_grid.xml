@@ -1,20 +1,14 @@
 <report
-    title="Verification Template List (Report Grid)"
-    description="A list of verification templates appropriate for use in the report_grid prebuilt form."
+    title="Verification Template List (Form)"
+    description="A list of verification templates appropriate for use in the prebuilt form."
 >
   <query count_field="vt.id" website_filter_field="">
-  SELECT #field_sql#
+  SELECT #columns#
     FROM list_verification_templates vt
     #joins#
   WHERE vt.website_id = #website_id#
   #order_by#
   </query>
-  <field_sql>
-    vt.id as id,
-    vt.restrict_to_website_id,
-    vt.restrict_to_external_keys,
-    vt.restrict_to_family_external_keys
-  </field_sql>
   <order_bys>
     <order_by>vt.id</order_by>
   </order_bys>
@@ -22,9 +16,9 @@
     <param name='website_id' display='Website ID' description='Select the website to return data for' datatype='integer' />
   </params>
   <columns>
-    <column name='id' display='ID' />
-    <column name='restrict_to_website_id' display='Restrict to Website' />
-    <column name='restrict_to_external_keys' display='External Keys' />
-    <column name='restrict_to_family_external_keys' display='Family Keys' />
+    <column name='id' display='ID' sql='vt.id' />
+    <column name='title' display='Title' sql='vt.title' />
+    <column name='template_statuses' visible='false' sql='vt.template_statuses' />
+    <column name='restrict_to_website_id' display='Restrict to Website' sql="(case vt.restrict_to_website_id when true then 'Yes' else 'No' end)::text" />
   </columns>
 </report>
