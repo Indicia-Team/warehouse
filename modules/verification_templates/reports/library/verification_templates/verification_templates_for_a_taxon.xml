@@ -1,0 +1,53 @@
+<report
+    title="Verification Template list"
+    description="A list of verification templates appropriate for a taxon, defined by its taxon_meaning_id."
+>
+  <query website_filter_field="o.website_id" count_field="id">
+  SELECT #field_sql#
+  FROM (SELECT vt.id as id,
+      vt.title as title,
+      vt.template as template,
+      vt.template_statuses,
+      cttl.taxon_meaning_id as taxon_meaning_id
+    FROM verification_templates vt
+    LEFT JOIN cache_taxa_taxon_lists cttl ON 1=1
+    LEFT JOIN cache_taxa_taxon_lists family_cttl
+      ON family_cttl.id = cttl.family_taxa_taxon_list_id
+    #joins#
+    WHERE (vt.deleted = 'f') AND
+      (vt.restrict_to_website_id = 'f' OR '#website_id#' = CAST(vt.website_id AS character varying))
+      AND (((array_length(vt.restrict_to_external_keys, 1)=0 OR vt.restrict_to_external_keys IS NULL)
+              AND (array_length(vt.restrict_to_family_external_keys, 1)=0 OR vt.restrict_to_family_external_keys IS NULL))
+        OR (array_length(vt.restrict_to_external_keys, 1)>0
+              AND cttl.external_key = ANY(vt.restrict_to_external_keys)
+              AND cttl.id IS NOT NULL)
+        OR (array_length(vt.restrict_to_family_external_keys, 1)>0
+              AND family_cttl.external_key = ANY(vt.restrict_to_family_external_keys)
+              AND family_cttl.id IS NOT NULL))
+    GROUP BY cttl.taxon_meaning_id, vt.template_statuses, vt.id, vt.title, vt.template) as list
+    WHERE 1=1
+  #order_by#
+  </query>
+  <field_sql>
+    id, 
+    title, 
+    template
+  </field_sql>
+  <order_bys>
+    <order_by>id</order_by>
+  </order_bys>
+  <params>
+    <param name='website_id' display='Website ID' description='Select the website to return data for' datatype='integer' />
+    <param name='taxon_meaning_id' display='Taxon Meaning ID' description='Meaning ID of the taxon to fetch templates for' datatype='integer' default='' >
+        <where>list.taxon_meaning_id = #taxon_meaning_id#</where>
+    </param>
+    <param name='template_status' display='Template Status' description='Template Status' datatype='text'  default='' >
+        <where>list.template_statuses @> ARRAY['#template_status#'::varchar]</where>
+    </param>
+  </params>
+  <columns>
+    <column name='id' display='ID' aggregate="true" />
+    <column name='title' display='Title' aggregate="true" />
+    <column name='template' display='Template' aggregate="true" />
+  </columns>
+</report>
