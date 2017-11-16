@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Home page template.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 ?>
@@ -31,27 +34,34 @@ $(document).ready(function(){
   });
 });
 </script>
-<h2>Welcome to the Indicia Warehouse!</h2>
-<?php if ($db_version<$app_version) : ?>
+<?php if ($db_version < $app_version) : ?>
 <div class="ui-state-error ui-corner-all page-notice"><p>Your database needs to be upgraded as the application version is <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.
 <a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a></p></div>
-<?php 
+<?php
 endif;
-$problems = config_test::check_config(true, true);
-if (count($problems)>0) : ?>
+if (count($gettingStartedTips)) {
+  echo '<h2>Getting started</h2>';
+  foreach ($gettingStartedTips as $tip) {
+    echo '<div class="page-notice ui-widget-content ui-corner-all"><h3>' . $tip['title'] . '</h3>' .
+        '<div>' . $tip['description'] . '</div></div>';
+  }
+}
+if (count($configProblems) > 0) : ?>
+<h2>Configuration</h2>
 <div class="ui-state-error ui-corner-all page-notice">
-<p>There are configuration issues on this server.
-<span id="issues_toggle" class="ui-state-default ui-corner-all button" style="margin-left: 1em;">Show/Hide Details</span>
-</p>
+<p>There are configuration issues on this server.</p>
+<button id="issues_toggle" type="button" style="margin-left: 1em;">Show/Hide warnings</button>
 <div id='issues'>
 <?php
-foreach($problems as $problem) { 
-  echo '<div class="page-notice ui-widget-content ui-corner-all"><div>'.$problem['title'].'</div><div>'.$problem['description'].'</div></div>';
+foreach ($configProblems as $problem) {
+   echo '<div class="page-notice ui-widget-content ui-corner-all"><h3>' . $problem['title'] . '</h3>' .
+     '<div>' . $problem['description'].'</div></div>';
 }
 ?>
 </div>
 </div>
 <?php endif; ?>
+<h2>Welcome to the Indicia Warehouse!</h2>
 <p>Indicia is a toolkit that simplifies the construction of new websites which allow data entry, mapping and reporting
 of wildlife records. Indicia is an Open Source project managed by the <a href="http://www.brc.ac.uk/">Biological
 Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for Ecology & Hydrology<a/>.</p>
@@ -60,10 +70,10 @@ Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for E
   <li><a href="https://github.com/Indicia-Team">Indicia on GitHub<a/></li>
 </ul>
 
-<?php 
-if (count($notifications)!==0) {
+<?php
+if (count($notifications) !== 0) {
   /**
-   * @todo. This code should use notifications loaded from report grid, with new capability to 
+   * @todo. This code should use notifications loaded from report grid, with new capability to
    * decode the json into grid columns.
    */
   $html = '';
@@ -89,8 +99,8 @@ if (count($notifications)!==0) {
   if (!empty($html)) : ?>
     <div class="notifications ui-widget-content ui-corner-all">
     <div class="ui-widget-header ui-corner-all">Here are your new notifications:</div>
-<?php 
+<?php
     echo $html.'</div>';
-  endif; 
+  endif;
 }
 ?>

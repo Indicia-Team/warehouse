@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core.Controllers
+ * @package Core.Controllers
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -31,27 +31,33 @@
  */
 class Home_Controller extends Indicia_Controller {
 
-  public function index()
-  {
+  public function index() {
     $view = new View('home');
-    $this->template->title='Indicia';
+    $this->template->title = 'Indicia';
     $system = new System_Model;
-    $view->db_version=$system->getVersion();
-    $view->app_version=kohana::config('version.version');
+    $view->db_version = $system->getVersion();
+    $view->app_version = kohana::config('version.version');
     // only get notifications if the database is up to date for v0.4. Otherwise you can't get to the upgrade page!
     // checking a table exists, we need a schema prefix on the table name to work.
     $dbConfig = kohana::config('database.default');
-    $prefix = (isset($dbConfig['schema']) && !empty($dbConfig['schema'])) ? $dbConfig['schema'].'.' : '';
-    if ($this->db->table_exists($prefix.'notifications')) {
+    $prefix = (isset($dbConfig['schema']) && !empty($dbConfig['schema'])) ? $dbConfig['schema'] . '.' : '';
+    if ($this->db->table_exists($prefix . 'notifications')) {
       $view->notifications = $this->db
-          ->select('source, source_type, data')
-          ->from('notifications')
-          ->where(array('user_id'=>$_SESSION['auth_user']->id, 'acknowledged'=>'f'))
-          ->get()->as_array();
-    } else {
+        ->select('source, source_type, data')
+        ->from('notifications')
+        ->where(array(
+          'user_id' => $_SESSION['auth_user']->id,
+          'acknowledged' => 'f'
+          ))
+        ->get()->as_array();
+    }
+    else {
       $view->notifications = array();
     }
-    $this->template->content=$view;
+    $this->set_website_access('admin');
+    $view->configProblems = config_test::check_config(TRUE, TRUE);
+    $view->gettingStartedTips = gettingStarted::getTips($this->db, $this->auth_filter);
+    $this->template->content = $view;
   }
 
   /**
