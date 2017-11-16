@@ -28,7 +28,11 @@ class Verification_template_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
     parent::__construct('verification_template');
-    $this->columns = array('id' => 'ID');
+    $this->columns = array(
+        'id' => 'ID',
+        'title' => 'Title',
+        'template_statuses' => 'Statuses',
+    );
     $this->pagetitle = 'Verification_templates definition';
   }
 
@@ -74,13 +78,13 @@ class Verification_template_Controller extends Gridview_Base_Controller {
     foreach ($websites->where('deleted','false')->orderby('title','asc')->find_all() as $website)  {
       $arr[$website->id] = $website->title;
     }
-    // convert the 2 arrays for the keys from the postgres format string to a value that can be used on the for
-    $keys = html::initial_value($values, 'verification_template:restrict_to_external_keys');
-    $fkeys = html::initial_value($values, 'verification_template:restrict_to_family_external_keys');
+    // Convert the status into an array.
+    // convert the 2 arrays for the keys from the postgres format string to a value that can be used on the form
     return array(
         'websites' => $arr,
-        'restrict_to_external_keys_list' => implode("\n",self::array_parse($keys)),
-        'restrict_to_family_external_keys_list' => implode("\n",self::array_parse($fkeys))
+        'restrict_to_external_keys_list' => implode("\n", self::array_parse(html::initial_value($values, 'verification_template:restrict_to_external_keys'))),
+        'restrict_to_family_external_keys_list' => implode("\n", self::array_parse(html::initial_value($values, 'verification_template:restrict_to_family_external_keys'))),
+        'template_statuses' => self::array_parse(html::initial_value($values, 'verification_template:template_statuses'))
       );
   }
 
