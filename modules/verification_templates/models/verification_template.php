@@ -36,6 +36,8 @@ class Verification_template_Model extends ORM {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('website_id', 'required');
+    $array->add_rules('title', 'required');
+    $array->add_rules('template_statuses', 'required');
     $array->add_rules('template', 'required');
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
@@ -71,6 +73,9 @@ class Verification_template_Model extends ORM {
     } elseif (isset($this->submission['fields']['restrict_to_family_external_keys_list'])) {
       $this->submission['fields']['restrict_to_family_external_keys'] = array('value' => null);
     }
+
+    // although the template_statuses field is also an array, it is input differently, using a set of checkboxes
+    // so there is no equivalent code.
 
     return parent::presubmit();
   }

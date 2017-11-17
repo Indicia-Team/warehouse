@@ -42,26 +42,55 @@ echo data_entry_helper::select(array(
     'helpText' => 'The verification template must belong to a website',
     'validation' => array('required'),
 ));
+echo data_entry_helper::text_input(array(
+    'label' => 'Title',
+    'fieldname' => 'verification_template:title',
+    'default' => html::initial_value($values, 'verification_template:title'),
+    'validation' => array('required'),
+    'class' => 'wide',
+));
+echo '<fieldset><legend>Template Types</legend>';
+echo data_entry_helper::checkbox_group(array(
+    'label' => 'Template Type',
+    'fieldname' => 'verification_template:template_statuses[]',
+    'default' => $other_data['template_statuses'],
+    'lookupValues' => array(
+        'V' => 'Accepted (V)', 'V1' => 'Accepted as correct (V1)', 'V2' => 'Accepted as considered correct (V2)',
+        'C3' => 'Plausible (C3)',
+        'R' => 'Not accepted (R)', 'R4' => 'Not accepted as unable to verify (R4)', 'R5' => 'Not accepted as incorrect (R5)'),
+    'helpText' => 'Choose which verification status changes this template will available for.',
+    'validation' => array('required'),
+));
+// Not sortable
+echo '</fieldset>';
 echo data_entry_helper::checkbox(array(
     'label' => 'Restrict to creating website',
     'fieldname' => 'verification_template:restrict_to_website_id',
     'default' => html::initial_value($values, 'verification_template:restrict_to_website_id'),
+    'helpText' => 'Select this option if you want this template to only apply to records from the website above.',
 ));
+echo '</fieldset>';
 echo data_entry_helper::textarea(array(
     'label' => 'Restrict to specified external keys',
     'fieldname' => 'verification_template:restrict_to_external_keys_list',
     'default' => $other_data['restrict_to_external_keys_list'],
+    'rows' => 2,
+    'helpText' => 'Each key should be placed on its own separate line.',
 ));
 echo data_entry_helper::textarea(array(
     'label' => 'Restrict to specified family external keys',
     'fieldname' => 'verification_template:restrict_to_family_external_keys_list',
     'default' => $other_data['restrict_to_family_external_keys_list'],
+    'rows' => 2,
+    'helpText' => 'Each key should be placed on its own separate line.',
 ));
 echo data_entry_helper::textarea(array(
     'label' => 'Template',
     'fieldname' => 'verification_template:template',
     'default' => html::initial_value($values, 'verification_template:template'),
     'validation' => array('required'),
+    'rows' => 8,
+    'helpText' => lang::get('Substitutions may be added using the format &quot;{{ &lt;string&gt; }}&quot;, where &lt;string&gt; can be one of the following: &quotaction&quot (represents this verification event, e.g. accepted), &quotdate&quot, &quotentered sref&quot, &quotspecies&quot, &quotcommon name&quot, &quotpreferred name&quot, or &quotlocation name&quot'),
 ));
 
 echo $metadata;
