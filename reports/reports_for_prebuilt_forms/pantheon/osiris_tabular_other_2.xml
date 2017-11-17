@@ -48,7 +48,7 @@
           or (cat.term not in ('GB Red List', 'GB Status'))
         )
       ) on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
-      where t_l1.parent_id is null
+      where (t_l1.parent_id is null or (av_l1.taxa_taxon_list_attribute_id=#resource_attr_id# and t_l1.term='dung &amp; carrion'))
       group by t_l2.id, t_l2.id, t_l1.term, t_l2.term, sqi.sqi, av_l2.taxa_taxon_list_attribute_id
     ) as sub
     where 1=1
@@ -74,6 +74,7 @@
       </joins>
     </param>
     <param name="other_classification_attr_ids" display="Other attribute IDs" datatype="integer[]"/>
+    <param name="resource_attr_id" display="Resource attribute ID" datatype="integer"/>
     <param name="conservation_group_id" display="Conservation group" datatype="integer" default="">
       <join>join pantheon.conservation_groups_termlist_terms cg on cg.termlist_term_id=t_l2.id</join>
     </param>
