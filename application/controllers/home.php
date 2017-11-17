@@ -33,7 +33,7 @@ class Home_Controller extends Indicia_Controller {
 
   public function index() {
     $view = new View('home');
-    $this->template->title = 'Indicia';
+    $this->template->title = 'Welcome to the Indicia Warehouse!';
     $system = new System_Model;
     $view->db_version = $system->getVersion();
     $view->app_version = kohana::config('version.version');

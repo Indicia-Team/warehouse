@@ -42,17 +42,26 @@ $siteTitle = html::specialchars($warehouseTitle);
 <meta id="baseURI" name="baseURI" content="<?php echo url::site() ?>" />
 <meta id="routedURI" name="routedURI" content="<?php echo url::site() . router::$routed_uri; ?>" />
 <title><?php echo $siteTitle; ?> | <?php echo $title ?></title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+  crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+  integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+  crossorigin="anonymous">
 <?php
 echo html::stylesheet(
   array(
-    'media/css/site',
-    'media/css/forms',
+    'media/css/warehouse',
+    //'media/css/forms',
     'media/js/fancybox/source/jquery.fancybox.css',
     'media/css/jquery.autocomplete',
     'media/themes/' . $theme . '/jquery-ui.custom'
   ),
   array('screen')
 );
+echo html::stylesheet(array('media/css/menus'), array('screen'));
+?>
+<?php
 echo html::script(
   array(
     'media/js/json2.js',
@@ -60,16 +69,18 @@ echo html::script(
     'media/js/jquery.url.js',
     'media/js/fancybox/source/jquery.fancybox.pack.js',
     'media/js/hasharray.js',
-    'media/js/superfish.js',
     'media/js/jquery-ui.custom.min.js'
   ), FALSE
 );
-echo html::stylesheet(array('media/css/menus'), array('screen'));
 ?>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+      integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+      crossorigin="anonymous"></script>
+<!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+<script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
 <script type="text/javascript">
 /*<![CDATA[*/
   jQuery(document).ready(function() {
-    jQuery('ul.sf-menu').superfish();
     // Implement hover over highlighting on buttons, even for AJAX loaded content by using live events
     $('.ui-state-default').live('mouseover', function() {
       $(this).addClass('ui-state-hover');
@@ -91,88 +102,61 @@ echo html::stylesheet(array('media/css/menus'), array('screen'));
 </script>
 </head>
 <body>
-
-<div id="wrapper" class="ui-widget">
-
-    <!-- BEGIN: banner -->
-    <div id="banner"><img id="logo" src="<?php echo url::base();?>media/images/indicia_logo.png" width="248" height="100" alt="Indicia"/></div>
-    <!-- END: banner -->
-
-    <!-- BEGIN: main menu (jquery/superfish) -->
+  <div id="banner"><img id="logo" src="<?php echo url::base();?>media/images/indicia_logo.png" width="248" height="100" alt="Indicia"/></div>
     <?php if (isset($menu)) : ?>
-    <div id="menu">
-    <ul class="sf-menu ui-helper-reset ui-helper-clearfix ui-widget-header">
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <ul class="nav navbar-nav">
+        <?php foreach ($menu as $toplevel => $submenu) : ?>
+          <?php if (count($submenu) > 0) : ?>
+          <li class="dropdown">
+            <a class="dropdown-toggle" data-toggle="dropdown"><?php echo $toplevel; ?>
+            <span class="caret"></span></a>
+            <ul class="dropdown-menu">
+            <?php foreach ($submenu as $menuitem => $url) : ?>
+                <li><?php echo html::anchor($url, $menuitem); ?></li>
+            <?php endforeach; ?>
+            </ul>
+          </li>
+          <?php else : ?>
+          <li>
+            <a><?php echo $toplevel; ?></a>
+          </li>
+          <?php endif; ?>
+        <?php endforeach; ?>
+        </ul>
+      </div>
+    </nav>
+  <?php endif; ?>
 
-    <?php foreach ($menu as $toplevel => $submenu) : ?>
-
-        <!-- BEGIN: print the top level menu items -->
-        <li class="ui-state-default">
-        <?php
-        if (count($submenu) == 0) {
-          // No submenu, so treat as link to the home page.
-          echo html::anchor('home', $toplevel);
-        }
-        else {
-          echo '<a href="#">' . $toplevel . '</a>';
-        } ?>
-
-            <!-- BEGIN: print the sub menu items -->
-            <?php if (count($submenu) > 0) : ?>
-                <ul>
-                <?php foreach ($submenu as $menuitem => $url) : ?>
-                    <li class="ui-state-default"><?php echo html::anchor($url, $menuitem); ?></li>
-                <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-            <!-- END: print the sub menu items -->
-
-        </li>
-        <!-- END: print the top level menu items -->
-
-    <?php endforeach; ?>
-
-    </ul>
+  <div class="container">
+    <div id="breadcrumbs">
+      <?php echo $this->get_breadcrumbs(); ?>
+    </div>
+    <h1><?php echo $title; ?></h1>
+    <?php
+    $info = $this->session->get('flash_info', NULL);
+    if ($info) : ?>
+      <div class="alert alert-info">
+        <?php echo $info; ?>
+      </div>
+    <?php
+    endif;
+    $error = $this->session->get('flash_error', NULL);
+    if ($error) : ?>
+    <div class="alert alert-danger">
+      <?php echo $error; ?>
     </div>
     <?php endif; ?>
-    <!-- END: main menu (jquery/superfish) -->
-
-    <!-- BEGIN: page level content -->
-    <div id="content">
-    <div id="breadcrumbs">
-<?php echo $this->get_breadcrumbs(); ?>
-</div>
-        <h1><?php echo $title; ?></h1>
-<?php
-$info = $this->session->get('flash_info', NULL);
-if ($info) : ?>
-        <div class="ui-widget-content ui-corner-all ui-state-highlight page-notice" >
-        <?php echo $info; ?>
-        </div>
-<?php
-endif;
-$error = $this->session->get('flash_error', NULL);
-if ($error) :
-?>
-        <div class="ui-widget-content ui-corner-all ui-state-error page-notice">
-        <?php echo $error; ?>
-        </div>
-<?php endif; ?>
-        <?php echo $content; ?>
-
-    </div>
-    <!-- END: page level content -->
-
-    <!-- BEGIN: footer -->
-    <div id="footer">
+    <?php echo $content; ?>
+  </div><!-- /.container -->
+  <footer id="footer" class="container">
     <?php
     echo $siteTitle . ' | ' . Kohana::lang('misc.indicia_version') . ' ' . kohana::config('version.version');
     if (kohana::config('upgrade.continuous_upgrade')) {
       echo " (dev)";
     } ?>
-    </div>
-    <!-- END: footer -->
-
-</div>
+  </footer>
 
 </body>
 </html>

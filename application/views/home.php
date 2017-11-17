@@ -26,7 +26,7 @@
 
 ?>
 <script type='text/javascript'>
-$(document).ready(function(){
+jQuery(document).ready(function($){
   $('div#issues').hide();
   $('#issues_toggle').show();
   $('#issues_toggle').click(function(){
@@ -35,41 +35,41 @@ $(document).ready(function(){
 });
 </script>
 <?php if ($db_version < $app_version) : ?>
-<div class="ui-state-error ui-corner-all page-notice"><p>Your database needs to be upgraded as the application version is <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.
-<a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a></p></div>
-<?php
-endif;
-if (count($gettingStartedTips)) {
-  echo '<h2>Getting started</h2>';
-  foreach ($gettingStartedTips as $tip) {
-    echo '<div class="page-notice ui-widget-content ui-corner-all"><h3>' . $tip['title'] . '</h3>' .
-        '<div>' . $tip['description'] . '</div></div>';
-  }
-}
-if (count($configProblems) > 0) : ?>
-<h2>Configuration</h2>
-<div class="ui-state-error ui-corner-all page-notice">
-<p>There are configuration issues on this server.</p>
-<button id="issues_toggle" type="button" style="margin-left: 1em;">Show/Hide warnings</button>
-<div id='issues'>
-<?php
-foreach ($configProblems as $problem) {
-   echo '<div class="page-notice ui-widget-content ui-corner-all"><h3>' . $problem['title'] . '</h3>' .
-     '<div>' . $problem['description'].'</div></div>';
-}
-?>
-</div>
+<div class="alert alert-warning"><p>Your database needs to be upgraded as the application version is
+<?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.</p>
+<a class="btn btn-primary" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a>
 </div>
 <?php endif; ?>
-<h2>Welcome to the Indicia Warehouse!</h2>
 <p>Indicia is a toolkit that simplifies the construction of new websites which allow data entry, mapping and reporting
 of wildlife records. Indicia is an Open Source project managed by the <a href="http://www.brc.ac.uk/">Biological
 Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for Ecology & Hydrology<a/>.</p>
 <ul>
-  <li><a href="http://www.indicia.org.uk">Indicia project website<a/></li>
-  <li><a href="https://github.com/Indicia-Team">Indicia on GitHub<a/></li>
+  <li><a href="http://www.indicia.org.uk">Indicia project website</a></li>
+  <li><a href="https://github.com/Indicia-Team">Indicia on GitHub</a></li>
 </ul>
 
+<?php
+if (count($gettingStartedTips)) {
+  echo '<h2>Getting started</h2>';
+  foreach ($gettingStartedTips as $tip) {
+    echo '<div class="alert alert-warning"><h3>' . $tip['title'] . '</h3>' .
+        '<div>' . $tip['description'] . '</div></div>';
+  }
+}
+if (count($configProblems)) : ?>
+<h2>Configuration</h2>
+<div class="">
+<p>There are configuration issues on this server.</p>
+<button id="issues_toggle" class="btn btn-warning" type="button" style="margin-left: 1em;">Show/Hide warnings</button>
+<div id='issues'>
+<?php
+foreach ($configProblems as $problem) {
+   echo '<div class="alert alert-danger"><h3>' . $problem['title'] . '</h3>' .
+     '<div>' . $problem['description'].'</div></div>';
+}
+?>
+</div>
+<?php endif; ?>
 <?php
 if (count($notifications) !== 0) {
   /**
