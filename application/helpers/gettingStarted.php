@@ -36,13 +36,13 @@ class gettingStarted {
    *
    * @param object $db
    *   Kohana database object.
-   * @param array $authFilter
+   * @param array|null $authFilter
    *   User's website access filter, if not core admin.
    *
    * @return array
    *   List of tips.
    */
-  public static function getTips($db, array $authFilter) {
+  public static function getTips($db, $authFilter) {
     $tips = array();
     self::checkScheduledTasks($db, $tips);
     self::checkWebsite($db, $authFilter, $tips);
@@ -108,12 +108,12 @@ DESC;
    *
    * @param object $db
    *   Kohana database object.
-   * @param array $authFilter
+   * @param array|null $authFilter
    *   User's website access filter, if not core admin.
    * @param array $tips
    *   List of tips, which will be amended if any tips identified by this function.
    */
-  private static function checkWebsite($db, array $authFilter, array &$tips) {
+  private static function checkWebsite($db, $authFilter, array &$tips) {
     if (!empty($authFilter) && $authFilter['field'] === 'website_id') {
       // User is already allocated to some websites, so no need to prompt them to set them up.
       return;
@@ -139,12 +139,12 @@ DESC;
    *
    * @param object $db
    *   Kohana database object.
-   * @param array $authFilter
+   * @param array|null $authFilter
    *   User's website access filter, if not core admin.
    * @param array $tips
    *   List of tips, which will be amended if any tips identified by this function.
    */
-  private static function checkSurvey($db, array $authFilter, array &$tips) {
+  private static function checkSurvey($db, $authFilter, array &$tips) {
     $db
       ->select('count(id) as count')
       ->from('surveys')
