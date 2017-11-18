@@ -69,7 +69,7 @@ echo html::script(
     'media/js/jquery.url.js',
     'media/js/fancybox/source/jquery.fancybox.pack.js',
     'media/js/hasharray.js',
-    'media/js/jquery-ui.custom.min.js'
+    'media/js/jquery-ui.min.js'
   ), FALSE
 );
 ?>
@@ -81,13 +81,6 @@ echo html::script(
 <script type="text/javascript">
 /*<![CDATA[*/
   jQuery(document).ready(function() {
-    // Implement hover over highlighting on buttons, even for AJAX loaded content by using live events
-    $('.ui-state-default').live('mouseover', function() {
-      $(this).addClass('ui-state-hover');
-    });
-    $('.ui-state-default').live('mouseout', function() {
-      $(this).removeClass('ui-state-hover');
-    });
     // Hack to get fancybox working as a jQuery live, because some of our images load from AJAX calls,
     // e.g. on the species checklist taxa tab. So we temporarily create a dummy link to our image and click it.
     $('a.fancybox').live('click', function() {
