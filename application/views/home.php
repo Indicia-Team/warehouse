@@ -45,7 +45,7 @@ jQuery(document).ready(function($){
 <?php endif; ?>
 <p>Indicia is a toolkit that simplifies the construction of new websites which allow data entry, mapping and reporting
 of wildlife records. Indicia is an Open Source project managed by the <a href="http://www.brc.ac.uk/">Biological
-Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for Ecology & Hydrology<a/>.</p>
+Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for Ecology & Hydrology</a>.</p>
 <ul>
   <li><a href="http://www.indicia.org.uk">Indicia project website</a></li>
   <li><a href="https://github.com/Indicia-Team">Indicia on GitHub</a></li>
