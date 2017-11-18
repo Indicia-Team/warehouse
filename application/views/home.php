@@ -29,8 +29,11 @@
 jQuery(document).ready(function($){
   $('div#issues').hide();
   $('#issues_toggle').show();
-  $('#issues_toggle').click(function(){
-    $('div#issues').toggle('slow');
+  $('#issues_toggle').click(function() {
+    $('div#issues').toggle();
+    $('#issues_toggle').html(
+      $('div#issues:visible').length > 0 ? 'Hide warnings' : 'Show warnings'
+    )
   });
 });
 </script>
@@ -52,20 +55,18 @@ Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for E
 if (count($gettingStartedTips)) {
   echo '<h2>Getting started</h2>';
   foreach ($gettingStartedTips as $tip) {
-    echo '<div class="alert alert-warning"><h3>' . $tip['title'] . '</h3>' .
-        '<div>' . $tip['description'] . '</div></div>';
+    echo "<div class=\"alert alert-warning\"><strong>$tip[title] - </strong>$tip[description]</div>";
   }
 }
 if (count($configProblems)) : ?>
 <h2>Configuration</h2>
 <div class="">
 <p>There are configuration issues on this server.</p>
-<button id="issues_toggle" class="btn btn-warning" type="button" style="margin-left: 1em;">Show/Hide warnings</button>
+<button id="issues_toggle" class="btn btn-warning" type="button" style="margin-left: 1em;">Show warnings</button>
 <div id='issues'>
 <?php
 foreach ($configProblems as $problem) {
-   echo '<div class="alert alert-danger"><h3>' . $problem['title'] . '</h3>' .
-     '<div>' . $problem['description'].'</div></div>';
+   echo "<div class=\"alert alert-danger\"><strong>$problem[title] - </strong>$problem[description]</div>";
 }
 ?>
 </div>

@@ -27,34 +27,42 @@
  */
 
 // First grab a count of the failures.
-$failures=0;
+$failures = 0;
 foreach ($checks as $check) {
   if (!$check['success']) {
     $failures++;
   }
 }
-if ($failures>0) {
+if ($failures > 0) {
   foreach ($checks as $check) {
     if ($check['success']) {
-      if (isset($check['warning']))
-        echo html::page_error($check['title'], $check['description']);
-      else
-        echo html::page_notice($check['title'], $check['description'], 'check');
-    } else {
+      // Check allows install to proceed, but can still contain a warning.
+      if (isset($check['warning'])) {
+        echo html::page_notice($check['title'], $check['description'], 'warning', 'alert');
+      }
+      else {
+        echo html::page_notice($check['title'], $check['description'], 'success', 'ok-sign');
+      }
+    }
+    else {
       if (array_key_exists('action', $check)) {
-        echo html::page_error($check['title'], $check['description'],
-            $check['action']['title'], url::base(true).'setup_check/'.$check['action']['link']);
-      } else {
-        echo html::page_error($check['title'], $check['description']);
+        echo html::page_notice($check['title'], $check['description'], 'danger', 'minus-sign',
+            $check['action']['title'], url::base(TRUE) . 'setup_check/' . $check['action']['link']);
+      }
+      else {
+        echo html::page_notice($check['title'], $check['description'], 'danger', 'minus-sign');
       }
     }
   }
-} else { ?>
-<div class="page-notice ui-widget-content ui-corner-all">
-<div class="ui-widget-header ui-corner-all"><span class="ui-icon ui-icon-notice"></span>
-Installation Complete</div>
-<p>Congratulations! The Indicia Warehouse has been successfully installed. An admin account has been created for you with username=admin and no password and 
-you will be asked to enter a password when you first log in.</p>
-<a href="<?php echo url::base(); ?>index.php" class="button ui-state-default ui-corner-all">Proceed to the login page</a>
-</div>
-<?php } ?>
+}
+else {
+  echo html::page_notice(
+    'Installation Complete',
+    'Congratulations! The Indicia Warehouse has been successfully installed. An admin account has been created for '.
+      'you with username=admin and no password and you will be asked to enter a password when you first log in.',
+    'success',
+    'ok',
+    'Proceed to the login page',
+    url::base() . 'index.php'
+  );
+}
