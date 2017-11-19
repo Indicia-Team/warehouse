@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the attributes by surveys index page.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,9 +19,9 @@
  *
  * @package Core
  * @subpackage Views
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link  http://code.google.com/p/indicia/
+ * @link http://code.google.com/p/indicia/
  */
 
 ?>
@@ -114,8 +117,8 @@ function moveControl(source, target) {
 
 function makeBlocksDragDroppable() {
   // do a full refresh as there could be new items
-  $('.draggable-block').draggable('destroy');
-  $('.draggable-block').droppable('destroy');
+  $('.draggable-block.ui-draggable').draggable('destroy');
+  $('.draggable-block.ui-droppable').droppable('destroy');
   $('.draggable-block').draggable({
     axis: 'y',
     helper: 'clone',
@@ -138,8 +141,8 @@ function makeBlocksDragDroppable() {
 
 function makeControlsDragDroppable() {
   // do a full refresh as there could be new items
-  $('.draggable-control').draggable('destroy');
-  $('.draggable-control').droppable('destroy');
+  $('.draggable-control.ui-draggable').draggable('destroy');
+  $('.draggable-control.ui-droppable').droppable('destroy');
   $('.draggable-control').draggable({
     axis: 'y',
     helper: 'clone',
@@ -180,26 +183,26 @@ $(document).ready(function() {
   if ($('li.attribute-' + attrId).length!==0) {
     alert('This attribute already exists for the survey.');
   } else {
-      var existingAttrs = <?php
-        echo "{";
-        // the JavaScript needs a list of attribute captions\
-        $idx = 0;
-        foreach ($existingAttrs as $attr) {
-          echo '"id'.$attr->id.'":"'.$attr->caption.'"';
-          if ($idx<count($existingAttrs)-1) {
-            echo ",";
-          }
-          $idx++;
-        }
-        echo "}";
-      ?>;
+    var existingAttrs = <?php
+    echo "{";
+    // The JavaScript needs a list of attribute captions.
+    $idx = 0;
+    foreach ($existingAttrs as $attr) {
+      echo '"id' . $attr->id . '":"' . $attr->caption . '"';
+      if ($idx < count($existingAttrs) - 1) {
+        echo ",";
+      }
+      $idx++;
+    }
+    echo "}";
+    ?>;
 
-      $('#controls').append('<li id="attribute-'+attrId+'" style="border-color: red" '+
-            'class="attribute-'+attrId+' draggable-control ui-widget ui-widget-content ui-corner-all ui-helper-clearfix">' +
+    $('#controls').append('<li id="attribute-'+attrId+'" style="border-color: red" '+
+            'class="attribute-'+attrId+' draggable-control panel clearfix">' +
             '<span class="handle">&nbsp;</span>' +
             '<span class="caption">' + existingAttrs['id'+attrId] + ' (ID ' + attrId + ')*</span>' +
             '</li><li class="control-drop"></li>');
-      makeControlsDragDroppable();
+    makeControlsDragDroppable();
     $('#layout-change-form').show();
   }
   });
@@ -214,14 +217,14 @@ $(document).ready(function() {
     alert('The block name should consist of letters, numbers and spaces only.');
   } else {
       $('#top-blocks').append(
-          '<li id="new-block-'+block.replace(/ /g,'_')+'" style="border-color: red" '+'class="ui-widget draggable-block">' +
-          '<div class="ui-helper-clearfix">' +
+          '<li id="new-block-'+block.replace(/ /g,'_')+'" style="border-color: red" '+'class="draggable-block panel panel-primary">' +
+          '<div class="clearfix">' +
           '<span class="handle">&nbsp;</span>' +
           '<span class="caption">'+block + ' *</span>' +
-          '<a href="" class="block-rename">Rename</a>'+
+          '<a href="" class="block-rename btn btn-default btn-xs">Rename</a>'+
           '</div>' +
           '<ul id="child-blocks-new-block-'+block.replace(' ','_')+'" class="block-list"><li class="block-drop"></li></ul>'+
-          '<ul class="ui-widget ui-widget-content ui-corner-all control-list">'+
+          '<ul class="control-list">'+
           '<li class="control-drop"></li></ul></li>'+
           "<li class=\"block-drop\"></li>\n");
       $('#layout-change-form').show();
@@ -233,26 +236,26 @@ $(document).ready(function() {
   /**
   * Handle click on the rename link for a block. Replaces the caption span with a temporary input control and an apply button.
   */
-  $('.block-rename').live('click', function(event) {
+  $(document).on('click', '.block-rename', null, function(event) {
     event.preventDefault();
-  var caption=$(event.target).siblings('span.caption');
-  // Check we are not already in rename mode
-  if (caption.length>0) {
-    // strip the * from the caption if already edited
-    var current=caption.text().replace(/ \*$/,'');
-      // swap the span for a text input and Apply button
-    caption.replaceWith('<input type="text" class="caption" value="' + current + '"/><input type="button" class="rename-apply button ui-state-default ui-corner-all ui-widget-content" value="Apply" />');
-    var input=$(event.target).siblings('.caption');
-    input.focus();
-    input.select();
-    var btn=$(event.target).siblings('.rename-apply');
-    btn.click(function(event) {
-      $(event.target.parentNode.parentNode).css('border-color', 'red');
-      input.replaceWith('<span class="caption">' + input.val() + ' *</span>');
-      btn.remove();
-        $('#layout-change-form').show();
-    });
-  }
+    var caption=$(event.target).siblings('span.caption');
+    // Check we are not already in rename mode
+    if (caption.length>0) {
+      // strip the * from the caption if already edited
+      var current=caption.text().replace(/ \*$/,'');
+        // swap the span for a text input and Apply button
+      caption.replaceWith('<input type="text" class="caption" value="' + current + '"/><input type="button" class="rename-apply btn btn-primary btn-xs" value="Apply" />');
+      var input=$(event.target).siblings('.caption');
+      input.focus();
+      input.select();
+      var btn=$(event.target).siblings('.rename-apply');
+      btn.click(function(event) {
+        $(event.target.parentNode.parentNode).css('border-color', 'red');
+        input.replaceWith('<span class="caption">' + input.val() + ' *</span>');
+        btn.remove();
+          $('#layout-change-form').show();
+      });
+    }
   });
 
   $('.block-delete').click(function(event) {
@@ -270,10 +273,10 @@ $(document).ready(function() {
   // mark the block with a deleted class that will be handled later
   block.addClass('deleted');
   // restyle and remove the drag/drop capability of the deleted block
-  block.draggable('destroy');
-  block.find('.block-drop').droppable('destroy');
+  block.is('.ui-draggable').draggable('destroy');
+  block.find('.block-drop').is('.ui-droppable').droppable('destroy');
   block.find('.block-drop').removeClass('block-drop');
-  block.find('.control-drop').droppable('destroy');
+  block.find('.control-drop').is('.ui-droppable').droppable('destroy');
   block.find('.control-drop').removeClass('control-drop');
   block.find('a').css('display','none');
   block.find('.handle').css('display','none');
@@ -287,7 +290,7 @@ $(document).ready(function() {
     // mark the control with a deleted class that will be handled later
     control.addClass('deleted');
     // restyle and remove the drag/drop capability of the deleted control
-    control.draggable('destroy');
+    control.is('.ui-draggable').draggable('destroy');
     control.find('.control-drop').removeClass('control-drop');
     control.find('a').css('display','none');
     control.find('.handle').css('display','none');
@@ -300,46 +303,56 @@ $(document).ready(function() {
 });
 
 </script>
-<form action="" method="get">
-<fieldset>
+<form action="" method="get" class="form-inline">
 <?php
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+require_once DOCROOT . 'client_helpers/data_entry_helper.php';
+require_once DOCROOT . 'client_helpers/templates.bootstrap-3.php';
+
 echo data_entry_helper::select(array(
-  'fieldname'=>'type',
+  'fieldname' => 'type',
   'label' => 'Display attributes for',
-  'lookupValues' => array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations'),
-  'default' => $_GET['type'],
-  'class' => 'line-up',
-  'afterControl' => '<input type="submit" class="button ui-state-default ui-widget-content ui-corner-all line-up" id="change-type" value="Go" />'
+  'lookupValues' => array(
+    'sample' => 'Samples',
+    'occurrence' => 'Occurrences',
+    'location' => 'Locations',
+  ),
+  'default' => $_GET['type']
 ));
 ?>
-</fieldset>
+<input type="submit" class="btn btn-default" id="change-type" value="Go" />
 </form>
+<div id="attribute-by-survey-index">
 <ul id="top-blocks" class="block-list">
 <?php
 foreach($top_blocks as $block) {
-  echo '<li class="block-drop"></li>';
-  echo '<li id="block-'.$block->id.'" class="ui-widget draggable-block">';
-  echo "<div class=\"ui-helper-clearfix\">\n";
-  echo "<span class=\"handle\">&nbsp;</span>\n";
-  echo '<span class="caption">'.$block->name."</span>\n";
-  echo '<a href="" class="block-delete">Delete</a>';
-  echo '<a href="" class="block-rename">Rename</a>';
-  echo "</div>\n";
-  echo "<ul id=\"child-blocks-".$block->id."\" class=\"block-list\">\n";
-  $child_blocks = ORM::factory('form_structure_block')->
-        where('parent_id',$block->id)->
-        where($filter)->
-        orderby('weight', 'ASC')->find_all();
-  foreach($child_blocks as $child_block) {
-    echo '<li class="block-drop"></li>';
-    echo '<li id="block-'.$child_block->id.'" class="ui-widget draggable-block">';
-    echo "<div class=\"ui-helper-clearfix\">\n";
-    echo "<span class=\"handle\">&nbsp;</span>\n";
-    echo '<span class="caption">'.$child_block->name."</span>\n";
-    echo '<a href="" class="block-delete">Delete</a>';
-    echo '<a href="" class="block-rename">Rename</a>';
-    echo "</div>\n";
+  echo <<<PNLTOP
+<li class="block-drop"></li>
+<li id="block-$block->id" class="panel panel-primary draggable-block">
+  <div class="panel-heading clearfix">
+    <span class="handle">&nbsp;</span>
+    <span class="caption">$block->name</span>
+    <a href="" class="block-delete btn btn-warning btn-xs pull-right">Delete</a>
+    <a href="" class="block-rename btn btn-default btn-xs pull-right">Rename</a>
+  </div>
+  <ul id="child-blocks-$block->id" class="block-list">
+
+PNLTOP;
+  $child_blocks = ORM::factory('form_structure_block')
+    ->where('parent_id', $block->id)
+    ->where($filter)
+    ->orderby('weight', 'ASC')
+    ->find_all();
+  foreach ($child_blocks as $child_block) {
+    echo <<<PNLCHILD
+    <li class="block-drop"></li>
+    <li id="block-$child_block->id" class="panel panel-info draggable-block">
+      <div class="panel-heading clearfix">
+      <span class="handle">&nbsp;</span>
+      <span class="caption">$child_block->name</span>
+      <a href="" class="block-delete pull-right btn btn-warning btn-xs">Delete</a>
+      <a href="" class="block-rename pull-right btn btn-default btn-xs">Rename</a>
+    </div>
+PNLCHILD;
     get_controls($child_block->id, $controlfilter);
     echo "</li>\n";
   }
@@ -350,63 +363,62 @@ foreach($top_blocks as $block) {
 }
 ?><li class="block-drop"></li></ul>
 <?php
-get_controls(null,$controlfilter);
+get_controls(null, $controlfilter);
 
 function get_controls($block_id, $controlfilter) {
   $id = "controls";
-  if ($block_id) $id .= '-for-block-'.$block_id;
-  echo "<ul id=\"$id\" class=\"ui-widget ui-corner-all ui-widget-content control-list\">\n";
-  $child_controls = ORM::factory($_GET['type'].'_attributes_website')->
-        where('form_structure_block_id',$block_id)->
-        where($controlfilter)->
-        where('deleted','f')->
-        orderby('weight', 'ASC')->find_all();
-  foreach($child_controls as $control) {
+  if ($block_id) $id .= '-for-block-' . $block_id;
+  echo "<ul id=\"$id\" class=\"control-list\">\n";
+  $child_controls = ORM::factory($_GET['type'] . '_attributes_website')
+    ->where('form_structure_block_id', $block_id)
+    ->where($controlfilter)
+    ->where('deleted', 'f')
+    ->orderby('weight', 'ASC')->find_all();
+  foreach ($child_controls as $control) {
     echo '<li class="control-drop"></li>';
-    // prepare some dynamic property names
-    $attr = $_GET['type'].'_attribute';
-    $attrId = $attr.'_id';
-    echo '<li id="control-'.$control->id.'" class="attribute-'.$control->$attrId.' draggable-control ui-widget ui-widget-content ui-corner-all ui-helper-clearfix">'.
-        "<span class=\"handle\">&nbsp;</span>\n".
-        '<span class="caption">'.$control->$attr->caption." (ID {$control->$attrId})</span>\n".
-        '<a href="" class="control-delete">Delete</a>'.
-        '<a href="'.url::site().'attribute_by_survey/edit/'.$control->id.'?type='.$_GET['type']."\">Survey settings</a>\n".
-        '<a href="'.url::site().$_GET['type']."_attribute/edit/{$control->$attrId}\">Global settings</a>\n".
+    // Prepare some dynamic property names.
+    $attr = $_GET['type'] . '_attribute';
+    $attrId = $attr . '_id';
+    echo '<li id="control-' . $control->id . '" class="attribute-' . $control->$attrId . ' draggable-control panel panel-primary clearfix">'.
+        "<span class=\"handle\">&nbsp;</span>\n" .
+        '<span class="caption">' . $control->$attr->caption . " (ID {$control->$attrId})</span>\n" .
+        '<a class="control-delete pull-right btn btn-warning btn-xs">Delete</a>' .
+        '<a href="' . url::site() . 'attribute_by_survey/edit/' . $control->id . '?type=' . $_GET['type'] . "\" class=\"pull-right btn btn-default btn-xs\">Survey settings</a>\n" .
+        '<a href="' . url::site() . $_GET['type'] . "_attribute/edit/{$control->$attrId}\" class=\"pull-right btn btn-default btn-xs\">Global settings</a>\n" .
         "</li>\n";
   }
-  // extra item to allow drop at end of list
+  // Extra item to allow drop at end of list.
   echo '<li class="control-drop"></li>';
   echo "</ul>";
 }
 
  ?>
+ </div>
 
-<form style="display: none" id="layout-change-form" class="ui-state-highlight page-notice" action="<?php
+<form style="display: none" id="layout-change-form" class="inline-form panel alert alert-info" action="<?php
     echo url::site().'attribute_by_survey/layout_update/'.$this->uri->last_segment().'?type='.$_GET['type'];
 ?>" method="post">
-<fieldset>
 <input type="hidden" name="layout_updates" id="layout_updates"/>
 <span>The layout changes you have made will not be saved until you click the Save button.</span>
-<input type="submit" value="Save" id="layout-submit"/>
-</fieldset>
+<input type="submit" value="Save" id="layout-submit" class="btn btn-primary"/>
 </form>
-<form id="actions-new-block">
-<fieldset>
-<label for="new-block">Block name:</label>
-<input type="text" name="new-block" id="new-block" style="width: 200px;" class="line-up" />
-<input type="submit" value="Create new block" id="submit-new-block" class="button ui-widget-content ui-corner-all ui-state-default line-up" />
-</fieldset>
+<form id="actions-new-block" class="form-inline">
+  <div class="form-group">
+    <label for="new-block">Block name:</label>
+    <input type="text" name="new-block" id="new-block" class="form-control" />
+  </div>
+  <input type="submit" value="Create new block" id="submit-new-block" class="btn btn-default line-up" />
 </form>
-<form id="actions-add-existing">
-<fieldset>
-<label for="existing-attribute">Existing attribute:</label>
-<select id="existing-attribute" name="existing-attribute" style="width: 206px;" class="line-up">
+<form id="actions-add-existing" class="form-inline">
+  <div class="form-group">
+    <label for="existing-attribute">Existing attribute:</label>
+    <select id="existing-attribute" name="existing-attribute" class="form-control">
 <?php
 foreach ($existingAttrs as $attr) {
-  echo "<option value=\"{$attr->id}\">{$attr->caption} (ID {$attr->id})</option>\n";
+  echo "      <option value=\"{$attr->id}\">{$attr->caption} (ID {$attr->id})</option>\n";
 }
 ?>
-</select>
-<input type="submit" value="Add existing attribute" id="submit-existing-attribute" class="button ui-widget-content ui-corner-all ui-state-default line-up" />
-</fieldset>
+    </select>
+    <input type="submit" value="Add existing attribute" id="submit-existing-attribute" class="btn btn-default" />
+  </div>
 </form>
