@@ -55,7 +55,7 @@ echo html::stylesheet(
     //'media/css/forms',
     'media/js/fancybox/source/jquery.fancybox.css',
     'media/css/jquery.autocomplete',
-    'media/themes/' . $theme . '/jquery-ui.custom'
+    'media/themes/' . $theme . '/jquery-ui.theme.min'
   ),
   array('screen')
 );
@@ -79,19 +79,7 @@ echo html::script(
 <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
 <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
 <script type="text/javascript">
-/*<![CDATA[*/
-  jQuery(document).ready(function() {
-    // Hack to get fancybox working as a jQuery live, because some of our images load from AJAX calls,
-    // e.g. on the species checklist taxa tab. So we temporarily create a dummy link to our image and click it.
-    $('a.fancybox').live('click', function() {
-      jQuery("body").after('<a id="link_fancybox" style="display: hidden;" href="'+jQuery(this).attr('href')+'"></a>');
-      jQuery('#link_fancybox').fancybox();
-      jQuery('#link_fancybox').click();
-      jQuery('#link_fancybox').remove();
-      return false;
-    });
-  });
-/*]]>*/
+// @todo Do we need a delegate event to hook up FancyBox after any Ajax calls?
 </script>
 </head>
 <body>
