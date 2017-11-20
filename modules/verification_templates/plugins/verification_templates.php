@@ -34,7 +34,7 @@
  */
 function verification_templates_alter_menu($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('editor')) {
-    $menu['Admin']['Verification Templates'] = 'verification_template';
+    $menu['Admin']['Verification templates'] = 'verification_template';
   }
   return $menu;
 }
