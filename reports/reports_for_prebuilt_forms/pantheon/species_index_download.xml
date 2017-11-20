@@ -1,6 +1,6 @@
 <report
-    title="Full species index"
-    description="A report which lists all Pantheon species along with trait data."
+    title="Full species index for download"
+    description="A report which lists all Pantheon species along with trait data. Formatted for download."
     >
   <query website_filter_field="cttl.website_id">
 select #columns#
@@ -22,6 +22,7 @@ left join cache_termlists_terms isissatcode on isissatcode.meaning_id=t_sat.mean
 left join taxa_taxon_list_attribute_values av_r on av_r.taxa_taxon_list_id=ttl.id and av_r.deleted=false
 and av_r.taxa_taxon_list_attribute_id=#r_attr_id#
 left join cache_termlists_terms t_r on t_r.id=av_r.int_value
+left join cache_termlists_terms t_r_child on t_r_child.parent_id=t_r.id
 left join cache_termlists_terms t_r_parent on t_r_parent.id=t_r.parent_id
 left join cache_termlists_terms t_r_grandparent on t_r_grandparent.id=t_r_parent.parent_id
 left join taxa_taxon_list_attribute_values lguildv on lguildv.taxa_taxon_list_id=ttl.id and lguildv.deleted=false
@@ -81,15 +82,25 @@ where cttl.preferred=true
     <column name="designations" sql="array_to_string(array_agg(distinct coalesce(td.code, td.abbreviation, td.id::varchar)), ';')"
             display="Conservation status" aggregate="true" datatype="text" />
     <column name="larval_guild" sql="string_agg(distinct lguildterm.term,';')" display="Larval feeding guild" aggregate="true"
-            datatype="text" template="&lt;span&gt;{larval_guild}&lt;/span&gt;" />
+            datatype="text" template="{larval_guild}" />
     <column name="adult_guild" sql="string_agg(distinct aguildterm.term,';')" display="Adult feeding guild" aggregate="true"
-            datatype="text" template="&lt;span&gt;{adult_guild}&lt;/span&gt;" />
+            datatype="text" template="{adult_guild}" />
     <column name="broad_biotope" display="Broad biotope" aggregate="true" datatype="text"
-            sql="array_to_string(array_agg(distinct '&lt;span&gt;' || t_bb.term || '&lt;/span&gt;'), '; ')" />
+            sql="array_to_string(array_agg(distinct t_bb.term), '; ')" />
     <column name="specific_biotope" display="Habitat" aggregate="true" datatype="text"
-            sql="array_to_string(array_agg(distinct '&lt;span&gt;' || t_sb.term || '&lt;/span&gt;'), '; ')" />
+            sql="array_to_string(array_agg(distinct t_sb.term), '; ')" />
     <column name="resource" display="Resources" aggregate="true" datatype="text"
-            sql="'[' || array_to_string(array_agg(distinct '[' || t_r.id || ',' || case when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then 0 else t_r.parent_id end || ',&quot;' || t_r.term || '&quot;]'), ',') || ']'" />
+            sql="string_agg(distinct
+  case
+    when t_r_child.id is null then
+      case
+        when t_r_grandparent.id is not null and t_r_grandparent.parent_id is null then '!'
+        else t_r_parent.term || ' &gt;&gt; '
+      end || t_r.term
+    else null
+  end,
+  ', '
+)" />
     <column name="isis_sat_code" sql="string_agg(distinct isissatcode.term, ', ')" display="Specific assemblage type"
             datatype="text" aggregate="true" />
     <column name="horus_indices" display="Habitat score" aggregate="true" datatype="text"
