@@ -75,8 +75,27 @@ class Verification_template_Model extends ORM {
     }
 
     // although the template_statuses field is also an array, it is input differently, using a set of checkboxes
-    // so there is no equivalent code.
-
+    // so there is no equivalent code. However, force V1/V2 if V is set, similar for R4/R5 for R
+    if (isset($this->submission['fields']['template_statuses']) &&
+        !empty($this->submission['fields']['template_statuses']['value'])) {
+      if (in_array('V', $this->submission['fields']['template_statuses']['value']) &&
+          !in_array('V1', $this->submission['fields']['template_statuses']['value'])) {
+        $this->submission['fields']['template_statuses']['value'][] = 'V1';
+      }
+      if (in_array('V', $this->submission['fields']['template_statuses']['value']) &&
+          !in_array('V2', $this->submission['fields']['template_statuses']['value'])) {
+        $this->submission['fields']['template_statuses']['value'][] = 'V2';
+      }
+      if (in_array('R', $this->submission['fields']['template_statuses']['value']) &&
+          !in_array('R4', $this->submission['fields']['template_statuses']['value'])) {
+        $this->submission['fields']['template_statuses']['value'][] = 'R4';
+      }
+      if (in_array('R', $this->submission['fields']['template_statuses']['value']) &&
+          !in_array('R5', $this->submission['fields']['template_statuses']['value'])) {
+        $this->submission['fields']['template_statuses']['value'][] = 'R5';
+      }
+    }
+    
     return parent::presubmit();
   }
 
