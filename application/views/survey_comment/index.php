@@ -24,5 +24,5 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'survey_comment/create/'.$survey_id; ?>">
-<input type="submit" value="New survey comment" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New survey comment" class="btn btn-primary" />
 </form>

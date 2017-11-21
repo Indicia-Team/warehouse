@@ -305,8 +305,7 @@ $(document).ready(function() {
 </script>
 <form action="" method="get" class="form-inline">
 <?php
-require_once DOCROOT . 'client_helpers/data_entry_helper.php';
-require_once DOCROOT . 'client_helpers/templates.bootstrap-3.php';
+warehouse::loadHelpers(['data_entry_helper']);
 
 echo data_entry_helper::select(array(
   'fieldname' => 'type',

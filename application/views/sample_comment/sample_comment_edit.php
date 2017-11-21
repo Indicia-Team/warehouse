@@ -21,8 +21,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'sample_comment:id');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 ?>
 <p>This page allows you to specify the details of a sample comment.</p>
 <form class="cmxform" action="<?php echo url::site().'sample_comment/save'; ?>" method="post" enctype="multipart/form-data">
@@ -36,7 +36,7 @@ echo data_entry_helper::textarea(array(
   'label' => 'Comment',
   'fieldname' => 'sample_comment:comment',
   'default' => html::initial_value($values, 'sample_comment:comment')
-)); 
+));
 ?>
 </fieldset>
 <?php echo html::form_buttons($id!=null, false, false); ?>

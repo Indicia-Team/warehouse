@@ -24,6 +24,6 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'occurrence_medium/create/'.$occurrence_id; ?>">
-<input type="submit" value="New occurrence media file" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New occurrence media file" class="btn btn-primary" />
 </form>
 <br />

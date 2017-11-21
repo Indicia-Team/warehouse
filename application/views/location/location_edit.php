@@ -21,40 +21,42 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-$disabled_input=html::initial_value($values, 'metaFields:disabled_input');
-$disabled = ($disabled_input=='YES') ? 'disabled="disabled"' : '';
+$disabled_input = html::initial_value($values, 'metaFields:disabled_input');
+$disabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
 
 $id = html::initial_value($values, 'location:id');
 $parent_id = html::initial_value($values, 'location:parent_id');
 $boundary_geom = html::initial_value($values, 'location:boundary_geom');
 $centroid_geom = html::initial_value($values, 'location:centroid_geom');
-require_once(DOCROOT.'client_helpers/map_helper.php');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-require_once(DOCROOT.'client_helpers/form_helper.php');
+warehouse::loadHelpers([
+  'map_helper',
+  'data_entry_helper',
+  'form_helper'
+]);
 if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
+  data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
 ?>
 <script type="text/javascript">
 
-jQuery(document).ready(function() { 
-  
+jQuery(document).ready(function() {
+
   if ($('#location\\:public').attr('checked')) {
     $('#websites').hide();
   }
     $("#location\\:public").change(function() {
     if ($(this).attr('checked')) {
       $('input:checked[name^="joinsTo\\:website"]').attr('checked', false);
-      $('#attrs').hide();  
+      $('#attrs').hide();
     }
     $('#websites').toggle('slow');
   });
-  
+
 });
 </script>
 
 <p>
 <?php if ($disabled_input==='YES') : ?>
-The location is available to all websites so you don't have permission to change it. 
+The location is available to all websites so you don't have permission to change it.
 Please contact the warehouse owner to request changes.
 <?php else : ?>
 This page allows you to specify the details of a location.
@@ -106,8 +108,8 @@ This page allows you to specify the details of a location.
     'class' => 'control-width-3',
     'validation'=>'required',
     'disabled' => $disabled,
-  )); 
-  
+  ));
+
   ?>
   <input type="hidden" name="location:boundary_geom" id="imp-boundary-geom" value="<?php echo $boundary_geom; ?>"/>
   <p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
@@ -160,10 +162,10 @@ This page allows you to specify the details of a location.
   </fieldset>
 </div>
 
-<?php 
+<?php
   if (is_null($id) || $this->auth->logged_in('CoreAdmin') || ($values['location:public'] === 'f')) :
-  //No need to display for public locations unless core admin. 
-?>  
+  //No need to display for public locations unless core admin.
+?>
 <div id="websites">
   <fieldset>
   <legend>Location Websites</legend>
@@ -174,26 +176,26 @@ This page allows you to specify the details of a location.
     if (!is_null($websiteIds))
       $websites = ORM::factory('website')->in('id', $websiteIds)->where('deleted', 'false')->orderby('title','asc')->find_all();
     else
-      $websites = ORM::factory('website')->where('deleted', 'false')->orderby('title','asc')->find_all();        
+      $websites = ORM::factory('website')->where('deleted', 'false')->orderby('title','asc')->find_all();
     foreach ($websites as $website) {
       echo '<li><label for="website_'.$website->id.'" class="wide">'.$website->title.'</label>';
       echo '<input type="checkbox" name="joinsTo:website:'.$website->id.'" ';
-      if(!is_null($id)){      
+      if(!is_null($id)){
         if (array_key_exists('joinsTo:website:'.$website->id, $values)) {
           echo "checked=\"checked\"";
           $linkedWebsites[] = $website->id;
         }
       }
       echo '></li>';
-    }  
+    }
   ?>
   </ol>
   </fieldset>
 </div>
 <?php endif; ?>
 
-<?php 
-  if (!is_null($id) && $values['location:public'] === 'f') : 
+<?php
+  if (!is_null($id) && $values['location:public'] === 'f') :
   //No need to display for new locations or public locations.
   ?>
 <div id="attrs">
@@ -241,15 +243,10 @@ This page allows you to specify the details of a location.
    </ol>
    </fieldset>
 </div>
-<?php 
+<?php
 endif;
-echo html::form_buttons(html::initial_value($values, 'location:id')!=null, $disabled_input==='YES');
-data_entry_helper::$dumped_resources[] = 'jquery';
-data_entry_helper::$dumped_resources[] = 'jquery_ui';
-data_entry_helper::$dumped_resources[] = 'fancybox';
+echo html::form_buttons(html::initial_value($values, 'location:id') != null, $disabled_input === 'YES');
 data_entry_helper::enable_validation('location-edit');
-data_entry_helper::link_default_stylesheet();
 echo data_entry_helper::dump_javascript();
 ?>
 </form>
-  

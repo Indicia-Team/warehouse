@@ -24,5 +24,5 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'survey_medium/create/'.$survey_id; ?>" method="post">
-<input type="submit" value="New survey media file" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New survey media file" class="btn btn-primary" />
 </form>

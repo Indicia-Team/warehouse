@@ -37,7 +37,7 @@ add_parent_taxon = function() {
       if (isNaN(parseInt(data))) {
         // if text returned, it is a message to display
         alert(data);
-      } else { 
+      } else {
         // if OK, it returns the new record ID. Add it to the grid.
         indiciaData.reports.taxa_taxon_list.grid_taxa_taxon_list.addRecords('id', data);
       }
@@ -110,7 +110,7 @@ echo $grid;
 <?php if (isset($parent_id)): ?>
 <input type="hidden" value="<?php echo $parent_id; ?>" name="taxa_taxon_list:parent_id"/>
 <?php endif; ?>
-<input type="submit" value="New taxon" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New taxon" class="btn btn-primary" />
 </form>
 <br />
 <?php

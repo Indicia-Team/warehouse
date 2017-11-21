@@ -22,7 +22,7 @@
  */
 
 ?>
-<form enctype="multipart/form-data" class="linear-form" method="post" action="<?php echo url::site().$controllerpath.'/importer/'.$returnPage; ?>">
+<form enctype="multipart/form-data" class="form-inline" method="post" action="<?php echo url::site().$controllerpath.'/importer/'.$returnPage; ?>">
 <?php
 if ($staticFields != NULL) {
   foreach ($staticFields as $a => $b) {
@@ -30,9 +30,7 @@ if ($staticFields != NULL) {
   }
 }
 ?>
-<fieldset>
-<label for="csv_upload" class="auto wide">Upload a CSV file into this list:</label>
-<input type="file" name="csv_upload" id="csv_upload" size="40" />
+<label for="csv_upload">Upload a CSV file into this list:</label>
+<input type="file" name="csv_upload" id="csv_upload" class="form-control" />
 <input type="submit" value="Upload CSV File" class="btn btn-default" />
-</fieldset>
 </form>

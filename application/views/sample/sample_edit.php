@@ -20,14 +20,12 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
+warehouse::loadHelpers(['map_helper', 'data_entry_helper']);
 $id = html::initial_value($values, 'sample:id');
-require_once(DOCROOT.'client_helpers/map_helper.php');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-require_once(DOCROOT.'client_helpers/form_helper.php');
 if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
+  data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
 ?>
-<form class="cmxform" action="<?php echo url::site().'sample/save' ?>" method="post" id="sample-edit">
+<form class="cmxform" action="<?php echo url::site() . 'sample/save' ?>" method="post" id="sample-edit">
 <?php echo $metadata; ?>
 <fieldset>
 <input type="hidden" name="sample:id" value="<?php echo html::initial_value($values, 'sample:id'); ?>" />
@@ -57,25 +55,25 @@ echo data_entry_helper::sref_and_system(array(
     'systems' => spatial_ref::system_list(),
     'defaultSystem' => html::initial_value($values, 'sample:entered_sref_system'),
     'class' => 'control-width-3',
-    'validation'=>'required'
+    'validation' => 'required'
 ));
 ?>
 <p class="instruct">Zoom the map in by double-clicking then single click on the sample's centre to set the
 spatial reference. The more you zoom in, the more accurate the reference will be.</p>
 <?php
-$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 echo map_helper::map_panel(array(
     'readAuth' => $readAuth,
     'presetLayers' => array('google_satellite', 'google_streets'),
     'editLayer' => true,
     'layers' => array(),
-    'initial_lat'=>52,
-    'initial_long'=>-2,
-    'initial_zoom'=>7,
-    'width'=>870,
-    'height'=>400,
+    'initial_lat' => 52,
+    'initial_long' => -2,
+    'initial_zoom' => 7,
+    'width' => 870,
+    'height' => 400,
     'initialFeatureWkt' => html::initial_value($values, 'sample:geom'),
-    'standardControls' => array('layerSwitcher','panZoom')
+    'standardControls' => array('layerSwitcher', 'panZoom')
 ));
 echo data_entry_helper::text_input(array(
   'label' => 'Location Name',
@@ -176,13 +174,13 @@ echo data_entry_helper::select(array(
         'default' => $attr['value']
       ));
   }
-	
+
 }
  ?>
  </ol>
  </fieldset>
-<?php 
-echo html::form_buttons($id!=null, false, false); 
+<?php
+echo html::form_buttons($id!=null, false, false);
 data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';
 data_entry_helper::$dumped_resources[] = 'fancybox';
@@ -191,4 +189,3 @@ data_entry_helper::link_default_stylesheet();
 echo data_entry_helper::dump_javascript();
 ?>
 </form>
- 

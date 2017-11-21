@@ -21,20 +21,20 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'licences_website:id');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
-$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+  data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 
 ?>
-<form class="cmxform" action="<?php echo url::site().'licences_website/save' ?>" method="post" id="licences-websites-edit">
+<form class="cmxform" action="<?php echo url::site() . 'licences_website/save' ?>" method="post" id="licences-websites-edit">
   <?php echo $metadata; ?>
 <fieldset>
 <input type="hidden" name="licences_website:id" value="<?php echo html::initial_value($values, 'licences_website:id'); ?>" />
 <input type="hidden" name="licences_website:website_id" value="<?php echo html::initial_value($values, 'licences_website:website_id'); ?>" />
 <legend>Licence Details</legend>
-<?php 
+<?php
 
 echo data_entry_helper::select(array(
   'id'=>'licence-select',
@@ -53,8 +53,8 @@ echo data_entry_helper::select(array(
 ));
 ?>
 </fieldset>
-<?php 
-echo html::form_buttons($id!=null, false, false); 
+<?php
+echo html::form_buttons($id!=null, false, false);
 data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';
 data_entry_helper::$dumped_resources[] = 'fancybox';

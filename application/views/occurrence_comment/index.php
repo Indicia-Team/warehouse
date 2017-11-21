@@ -24,5 +24,5 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'occurrence_comment/create/'.$occurrence_id; ?>">
-<input type="submit" value="New occurrence comment" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New occurrence comment" class="btn btn-primary" />
 </form>

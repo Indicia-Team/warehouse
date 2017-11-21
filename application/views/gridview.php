@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
  /**
@@ -28,8 +28,8 @@
   *  $body - gridview_table object.
   */
 
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+warehouse::loadHelpers(['report_helper']);
+$readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 $colDefs = array();
 if (isset($columns)) {
   foreach ($columns as $fieldname => $title) {
@@ -49,39 +49,37 @@ if (isset($columns)) {
 $actions = $this->get_action_columns();
 foreach ($actions as &$action) {
   if (substr($action['url'], 0, 4) != 'http') {
-    $action['url'] = url::base(true).$action['url'];
+    $action['url'] = url::base(TRUE) . $action['url'];
   }
 }
-if (count($actions)>0) 
+if (count($actions) > 0)
   $colDefs[] = array(
     'display' => 'Actions',
     'actions' => $actions
   );
 $options = array(
   'id' => $id,
+  'class' => 'report-grid table',
   'readAuth' => $readAuth,
   'extraParams' => array(),
   'itemsPerPage' => kohana::config('pagination.default.items_per_page')
 );
-if (isset($orderby))
+if (isset($orderby)) {
   $options['orderby'] = $orderby;
+}
 if ($gridReport) {
   $options['dataSource'] = $gridReport;
   $options['extraParams'] += $filter;
   $options['columns'] = $colDefs;
-} else {
+}
+else {
   $options['mode'] = 'direct';
   $options['dataSource'] = $source;
   $options['view'] = 'gv';
   $options['filters'] = $filter;
-  $options['includeAllColumns'] = false;
+  $options['includeAllColumns'] = FALSE;
   $options['columns'] = $colDefs;
 }
-echo data_entry_helper::report_grid($options);
-data_entry_helper::link_default_stylesheet();
-// No need to re-link to jQuery
-data_entry_helper::$dumped_resources[] = 'jquery';
-data_entry_helper::$dumped_resources[] = 'jquery_ui';
-data_entry_helper::$dumped_resources[] = 'fancybox';
-echo data_entry_helper::dump_javascript();
+echo report_helper::report_grid($options);
+echo report_helper::dump_javascript();
 ?>

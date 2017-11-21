@@ -21,8 +21,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'websites_website_agreement:id');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
@@ -40,11 +40,11 @@ if ($this->auth->logged_in('CoreAdmin')) {
 // during edit of an existing websites_website_agreement.
 data_entry_helper::$javascript .= "
   $('#agreement-select').change(function(evt) {
-    jQuery.ajax({ 
-      type: 'GET', 
+    jQuery.ajax({
+      type: 'GET',
       url: '".url::site()."services/data/website_agreement/'+evt.target.value+'?mode=json&view=detail'+
-        '&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&callback=?', 
-      data: {}, 
+        '&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&callback=?',
+      data: {},
       success: function(data) {
         $.each(data[0], function(field, value) {
           $('#div-'+field+' .helpText .locked-info').remove();
@@ -59,7 +59,7 @@ data_entry_helper::$javascript .= "
                 $('#div-'+field).show();
                 break;
               case 'A':
-                $adminCase  
+                $adminCase
                 break;
               case 'R':
                 $('#div-'+field+' input').attr('checked', 'checked');
@@ -72,7 +72,7 @@ data_entry_helper::$javascript .= "
           }
         });
       },
-      dataType: 'json' 
+      dataType: 'json'
     });
   });
   $('#agreement-select').change();
@@ -85,8 +85,8 @@ data_entry_helper::$javascript .= "
 <input type="hidden" name="websites_website_agreement:id" value="<?php echo html::initial_value($values, 'websites_website_agreement:id'); ?>" />
 <input type="hidden" name="websites_website_agreement:website_id" value="<?php echo html::initial_value($values, 'websites_website_agreement:website_id'); ?>" />
 <legend>Website Agreement Participation Details</legend>
-<?php 
-/** 
+<?php
+/**
  * @todo: filter the select box to public agreements, or those created by the current user, unless core admin.
  */
 if ($this->uri->method(false) === 'edit') {
@@ -222,13 +222,9 @@ echo data_entry_helper::checkbox(array(
 ?>
 </div>
 </fieldset>
-<?php 
-echo html::form_buttons($id!=null, false, false); 
-data_entry_helper::$dumped_resources[] = 'jquery';
-data_entry_helper::$dumped_resources[] = 'jquery_ui';
-data_entry_helper::$dumped_resources[] = 'fancybox';
+<?php
+echo html::form_buttons($id != NULL, FALSE, FALSE);
 data_entry_helper::enable_validation('websites-website-agreement-edit');
-data_entry_helper::link_default_stylesheet();
 echo data_entry_helper::dump_javascript();
 ?>
 </form>

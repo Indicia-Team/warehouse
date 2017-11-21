@@ -23,13 +23,13 @@
 ?>
 <p>Provide a list of known identifiers used by this user on other systems. When identifiers are
 from systems which can be used during the login process on a client website (e.g. Twitter, Facebook
-or OpenID), identifiers can be used to ensure that even when logged in on multiple websites, a 
+or OpenID), identifiers can be used to ensure that even when logged in on multiple websites, a
 single recorder is recognised as such.</p>
 <?php echo $grid; ?>
 <form action="<?php echo url::site().'user_identifier/create/'.$user_id; ?>">
-<?php 
+<?php
 // @todo Also allow current user to add identifiers
 if ($this->auth->logged_in('CoreAdmin')): ?>
-<input type="submit" value="New identifier" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New identifier" class="btn btn-primary" />
 <?php endif; ?>
 </form>

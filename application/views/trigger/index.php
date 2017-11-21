@@ -23,5 +23,5 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'trigger/create'; ?>">
-<input type="submit" value="New trigger" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New trigger" class="btn btn-primary" />
 </form>

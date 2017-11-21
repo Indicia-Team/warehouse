@@ -20,10 +20,10 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
- 
+
 echo $grid;
 ?>
 <form action="<?php echo url::site().'title/create/'; ?>" method="post">
-<input type="submit" value="New title" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New title" class="btn btn-primary" />
 </form>
 <?php echo $upload_csv_form ?>

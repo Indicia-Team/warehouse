@@ -98,10 +98,9 @@ if (count($notifications) !== 0) {
     }
   }
   if (!empty($html)) : ?>
-    <div class="notifications ui-widget-content ui-corner-all">
-    <div class="ui-widget-header ui-corner-all">Here are your new notifications:</div>
+    <div class="notifications panel panel-default">
+    <div class="alert alert-info">Here are your new notifications:</div>
 <?php
     echo $html.'</div>';
   endif;
 }
-?>

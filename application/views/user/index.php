@@ -30,5 +30,5 @@
 
 <?php echo $grid; ?>
 <form action="<?php echo url::site(); ?>person/create_from_user">
-<input type="submit" value="New person" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New person" class="btn btn-primary" />
 </form>

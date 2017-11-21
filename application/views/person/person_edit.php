@@ -21,7 +21,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+warehouse::loadHelpers(['data_entry_helper']);
 if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
@@ -128,12 +128,12 @@ if (isset($_POST))
         'default' => $attr['value']
       ));
   }
-	
+
 }
  ?>
  </ol>
  </fieldset>
-<?php 
+<?php
 endif;
 echo html::form_buttons(html::initial_value($values, 'person:id')!=null)
 ?>

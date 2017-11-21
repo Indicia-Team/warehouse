@@ -25,6 +25,6 @@ echo $grid;
 ?>
 <form action="<?php echo url::site().'website/create'; ?>">
 <?php if ($this->auth->logged_in('CoreAdmin')): ?>
-<input type="submit" value="New website" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New website" class="btn btn-primary" />
 <?php endif; ?>
 </form>

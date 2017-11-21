@@ -108,7 +108,7 @@ $(document).ready(function() {
 <?php echo html::error_message($model->getError('taxon_relation:taxon_relation_type_id')); ?>
 </li>
 <li>
-<input type="button" value="Swap Taxa" onclick="var x = jQuery('#from_taxon').val(); jQuery('#from_taxon').val(jQuery('#to_taxon').val()); jQuery('#to_taxon').val(x); x = jQuery('#from_taxon_meaning_id').val(); jQuery('#from_taxon_meaning_id').val(jQuery('#to_taxon_meaning_id').val()); jQuery('#to_taxon_meaning_id').val(x)" class="ui-corner-all ui-state-default button" />
+<input type="button" value="Swap Taxa" onclick="var x = jQuery('#from_taxon').val(); jQuery('#from_taxon').val(jQuery('#to_taxon').val()); jQuery('#to_taxon').val(x); x = jQuery('#from_taxon_meaning_id').val(); jQuery('#from_taxon_meaning_id').val(jQuery('#to_taxon_meaning_id').val()); jQuery('#to_taxon_meaning_id').val(x)" class="btn btn-default" />
 </li>
 <li>
 <label for="from_taxon">Taxon Name:</label>

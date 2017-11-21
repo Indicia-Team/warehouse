@@ -24,6 +24,6 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'survey/create'; ?>" method="post">
-<input type="submit" value="New survey dataset" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New survey dataset" class="btn btn-primary" />
 </form>
 <?php echo $upload_csv_form ?>

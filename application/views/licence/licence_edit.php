@@ -21,8 +21,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'licence:id');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 ?>
 <p>This page allows you to specify the details of a licence that can be applied to records.</p>
 <form class="cmxform" id="licence-edit" action="<?php echo url::site().'licence/save'; ?>" method="post">

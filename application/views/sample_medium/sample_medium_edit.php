@@ -21,18 +21,17 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'sample_medium:id');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-require_once(DOCROOT.'client_helpers/form_helper.php');
 if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <p>This page allows you to specify the details of an sample media file.</p>
-<form class="cmxform" action="<?php echo url::site().'sample_medium/save'; ?>" method="post" 
+<form class="cmxform" action="<?php echo url::site().'sample_medium/save'; ?>" method="post"
       enctype="multipart/form-data" id="sample-medium-edit">
 <?php echo $metadata; ?>
 <fieldset>
-<?php 
+<?php
 echo data_entry_helper::hidden_text(array(
   'fieldname'=>'sample_medium:id',
   'default'=>$id
@@ -43,7 +42,7 @@ echo data_entry_helper::hidden_text(array(
 ));
 ?>
 <legend>Media file details</legend>
-<?php 
+<?php
 $mediaTypeId=html::initial_value($values, 'sample_medium:media_type_id');
 $mediaType = $mediaTypeId ? $other_data['media_type_terms'][$mediaTypeId] : 'Image:Local';
 if ($mediaType==='Image:Local') {
@@ -59,7 +58,7 @@ if ($mediaType==='Image:Local') {
     'label'=>'Upload image file',
     'fieldname'=>'image_upload',
     'default'=>html::initial_value($values, 'sample_medium:path')
-  ));  
+  ));
 } else {
   echo data_entry_helper::text_input(array(
     'label'=>'Path or URL',
@@ -88,8 +87,8 @@ if ($mediaTypeId && $mediaType!=='Image:Local') {
 ?>
 
 </fieldset>
-<?php 
-echo html::form_buttons($id!=null, false, false); 
+<?php
+echo html::form_buttons($id!=null, false, false);
 data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';
 data_entry_helper::$dumped_resources[] = 'fancybox';

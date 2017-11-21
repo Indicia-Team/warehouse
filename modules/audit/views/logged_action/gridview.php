@@ -35,7 +35,7 @@ foreach ($columns as $fieldname => $title) {
     'fieldname' => $fieldname,
     'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title
   );
-  if ($fieldname == 'path') 
+  if ($fieldname == 'path')
     $def['img'] = true;
   $colDefs[] = $def;
 }
@@ -45,7 +45,7 @@ foreach ($actions as &$action) {
     $action['url'] = url::base(true).$action['url'];
   }
 }
-if (count($actions)>0) 
+if (count($actions)>0)
   $colDefs[] = array(
     'display' => 'Actions',
     'actions' => $actions
@@ -56,7 +56,7 @@ $reloadUrl = data_entry_helper::get_reload_link_parts();
 
 // Filter by postgresql transaction
 $value = (isset($_GET['transaction_id'])) ? ' value="'.$_GET['transaction_id'].'"' : '';
-$r = '<form action="'.$reloadUrl['path'].'" method="get" class="linear-form" id="loggedActionFilterForm-Transaction">'.
+$r = '<form action="'.$reloadUrl['path'].'" method="get" class="form-inline" id="loggedActionFilterForm-Transaction">'.
 		'<label for="transaction_id" class="auto" style="width:auto">'.lang::get('Filter Events for a Postgres Transaction ID of ').'</label> '.
 		'<input type="text" name="transaction_id" id="transaction_id" class="filterInput"'.$value.'/> '.
 		'<input type="submit" value="Filter" class="run-filter ui-corner-all ui-state-default"/>'.
@@ -65,7 +65,7 @@ $r = '<form action="'.$reloadUrl['path'].'" method="get" class="linear-form" id=
 // Filter by indicia table and id
 $tables = array('samples', 'occurrences', 'locations');
 $search_key = (isset($_GET['search_key'])) ? ' value="'.$_GET['search_key'].'"' : '';
-$r .= '<form action="'.$reloadUrl['path'].'" method="get" class="linear-form" id="loggedActionFilterForm-Key">'.
+$r .= '<form action="'.$reloadUrl['path'].'" method="get" class="form-inline" id="loggedActionFilterForm-Key">'.
 		'<label for="search_table_name" class="auto" style="width:auto">'.lang::get('Filter Events for ').'</label> '.
 		'<select name="search_table_name" class="filterSelect" id="search_table_name"><option value="">&lt;Please select table name&gt;</option>';
 foreach ($tables as $table) {
@@ -73,7 +73,7 @@ foreach ($tables as $table) {
   	$r .= "<option value=\"".$table."\"$selected>".ucfirst($table)."</option>";
 }
 $r .= "</select> ".
-		'<label for="search_key" class="auto">'.lang::get('records with an Indicia ID of').'</label> '.  
+		'<label for="search_key" class="auto">'.lang::get('records with an Indicia ID of').'</label> '.
 		'<input type="text" name="search_key" id="search_key" class="filterInput"'.$search_key.'/> '.
 		'<input type="submit" value="Filter" class="run-filter ui-corner-all ui-state-default"/>'.
 		"</form>\n";

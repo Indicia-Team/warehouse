@@ -69,7 +69,7 @@ echo $grid;
   <?php if (isset($parent_id)): ?>
     <input type="hidden" value="<?php echo $parent_id; ?>" name="termlists_term:parent_id"/>
   <?php endif; ?>
-  <input type="submit" value="New term" class="ui-corner-all ui-state-default button" />
+  <input type="submit" value="New term" class="btn btn-primary" />
   </form>
 <?php endif; ?>
 <br />

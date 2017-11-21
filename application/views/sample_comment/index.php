@@ -24,5 +24,5 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'sample_comment/create/'.$sample_id; ?>">
-<input type="submit" value="New sample comment" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New sample comment" class="btn btn-primary" />
 </form>

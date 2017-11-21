@@ -24,5 +24,5 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'taxon_code/create/'.$taxon_meaning_id; ?>" method="post">
-<input type="submit" value="New code" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New code" class="btn btn-primary" />
 </form>

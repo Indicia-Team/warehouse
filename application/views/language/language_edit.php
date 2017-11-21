@@ -22,25 +22,23 @@
  */
 
 ?>
-<form class="cmxform" action="<?php echo url::site().'language/save' ?>" method="post">
+<form  action="<?php echo url::site().'language/save' ?>" method="post">
 <?php echo $metadata; ?>
 <fieldset>
 <legend>Language Details</legend>
-<ol>
-<li>
 <input type="hidden" name="language:id" value="<?php echo html::initial_value($values, 'language:id'); ?>" />
+<div class="form-group">
 <label for="iso">ISO language code</label>
-<input id="iso" name="language:iso" class="narrow" value="<?php echo html::initial_value($values, 'language:iso'); ?>"/>
+<input id="iso" name="language:iso" class="form-control" value="<?php echo html::initial_value($values, 'language:iso'); ?>"/>
 <?php echo html::error_message($model->getError('language:iso')); ?>
-</li>
-<li>
+</div>
+<div class="form-group">
 <label for="language">Language</label>
-<input id="language" name="language:language" value="<?php echo html::initial_value($values, 'language:language'); ?>" />
+<input id="language" name="language:language" class="form-control" value="<?php echo html::initial_value($values, 'language:language'); ?>" />
 <?php echo html::error_message($model->getError('language:language')); ?>
-</li>
-</ol>
+</div>
 </fieldset>
-<?php 
+<?php
 echo html::form_buttons(html::initial_value($values, 'language:id')!=null)
 ?>
 </form>

@@ -85,11 +85,11 @@ addLStaxon = function(){
   }
   var can_be_lumped = true;
   var can_be_split_into = true;
-    jQuery.ajax({ 
-      type: "GET", 
+    jQuery.ajax({
+      type: "GET",
       url: "<?php echo url::site() ?>services/data/taxon_relation?mode=json&view=list" +
-           "&to_taxon_meaning_id=" + jQuery('#LStaxon_meaning_id').val() + "&callback=?", 
-      data: {}, 
+           "&to_taxon_meaning_id=" + jQuery('#LStaxon_meaning_id').val() + "&callback=?",
+      data: {},
       success: function(trdata) {
         if(!(trdata instanceof Array)){
           // do nothing
@@ -101,8 +101,8 @@ addLStaxon = function(){
               can_be_split_into = false;
           }
         }},
-      dataType: 'json', 
-      async: false  
+      dataType: 'json',
+      async: false
     });
     if(jQuery('#LS_Taxon_Body').children().length % 2 == 1)
         cls = 'evenRow';
@@ -130,7 +130,7 @@ performLump = function(){
   }
   sa = {id : 'multiple',
         submission_list : {entries : []}};
-  
+
   jQuery('#LS_Taxon_Body').children().each(function(index, elem){
     // Build the taxon_relation submission
     sa.submission_list.entries.push({id : 'taxon_relation',
@@ -138,10 +138,10 @@ performLump = function(){
                    to_taxon_meaning_id : {value : jQuery(elem).data('meaning') },
                    taxon_relation_type_id : {value : <?php echo $lumpRecord->id; ?> }}});
     // next loop through all taxa_taxon_lists with the meaning id and set allow_data_entry to false
-    jQuery.ajax({ 
-        type: "GET", 
-        url: "<?php echo url::site() ?>services/data/taxa_taxon_list?mode=json&view=detail&taxon_meaning_id=" + jQuery(elem).data('meaning') + "&callback=?", 
-        data: {}, 
+    jQuery.ajax({
+        type: "GET",
+        url: "<?php echo url::site() ?>services/data/taxa_taxon_list?mode=json&view=detail&taxon_meaning_id=" + jQuery(elem).data('meaning') + "&callback=?",
+        data: {},
         success: function(ttlData) {
           if(ttlData instanceof Array){
             for (j=0; j< ttlData.length; j++){
@@ -153,19 +153,19 @@ performLump = function(){
                            preferred : {value : ttlData[j].preferred}}}); // the very fact that allow_data_entry is not in the submission should set it to 'false'
           }}
         },
-        dataType: 'json', 
-        async: false  
+        dataType: 'json',
+        async: false
     });
   });
   // send all changes as a single save transaction.
-  jQuery.ajax({ 
-      type: "POST", 
+  jQuery.ajax({
+      type: "POST",
       url: "<?php echo url::site() ?>services/data/save?mode=json",
-      data: {submission : JSON.stringify(sa)}, 
+      data: {submission : JSON.stringify(sa)},
       success: function(attrdata) {
       },
-      dataType: 'json', 
-      async: false  
+      dataType: 'json',
+      async: false
   });
   window.location.reload();
 }
@@ -186,7 +186,7 @@ performSplit = function(){
     }
     sa = {id : 'multiple',
           submission_list : {entries : []}};
-    
+
     jQuery('#LS_Taxon_Body').children().each(function(index, elem){
       // Build the taxon_relation submission
       sa.submission_list.entries.push({id : 'taxon_relation',
@@ -194,10 +194,10 @@ performSplit = function(){
                      to_taxon_meaning_id : {value : jQuery(elem).data('meaning') },
                      taxon_relation_type_id : {value : <?php echo $splitRecord->id; ?> }}});
     });
-      jQuery.ajax({ 
-        type: "GET", 
-        url: "<?php echo url::site() ?>services/data/taxa_taxon_list?mode=json&view=detail&taxon_meaning_id=<?php echo html::initial_value($values, 'taxon_meaning:id'); ?>&callback=?", 
-        data: {}, 
+      jQuery.ajax({
+        type: "GET",
+        url: "<?php echo url::site() ?>services/data/taxa_taxon_list?mode=json&view=detail&taxon_meaning_id=<?php echo html::initial_value($values, 'taxon_meaning:id'); ?>&callback=?",
+        data: {},
         success: function(ttlData) {
           if(ttlData instanceof Array){
             for (j=0; j< ttlData.length; j++){
@@ -209,18 +209,18 @@ performSplit = function(){
                            preferred : {value : ttlData[j].preferred}}}); // the very fact that allow_data_entry is not in the submission should set it to 'false'
           }}
         },
-        dataType: 'json', 
-        async: false  
+        dataType: 'json',
+        async: false
       });
     // send all changes as a single save transaction.
-    jQuery.ajax({ 
-        type: "POST", 
+    jQuery.ajax({
+        type: "POST",
         url: "<?php echo url::site() ?>services/data/save?mode=json",
-        data: {submission : JSON.stringify(sa)}, 
+        data: {submission : JSON.stringify(sa)},
         success: function(attrdata) {
         },
-        dataType: 'json', 
-        async: false  
+        dataType: 'json',
+        async: false
     });
     window.location.reload();
   }
@@ -256,15 +256,15 @@ performSplit = function(){
 ?>
     <input id="LStaxon" name="LStaxon" value="" />
     <input type="hidden" id="LStaxon_meaning_id" />
-    <input type="button" value="Add to List" onClick="addLStaxon()" class="ui-corner-all ui-state-default button" /><br/>
+    <input type="button" value="Add to List" onClick="addLStaxon()" class="btn btn-default" /><br/>
     <table id="LS_taxa_table" class="ui-widget ui-widget-content"><thead class="ui-widget-header" ><tr class="headingRow" >
         <th id="LS_Taxon">Taxon</th>
         <?php if($can_lump){ ?><th id="Already_Lumped">Already Lumped</th><?php } ?>
         <?php if($can_split){ ?><th id="Already_Split">Already part of a Split</th><?php } ?>
         <th id="LS_Task">Task</th></tr></thead><tbody id="LS_Taxon_Body"></tbody></table><br/>
     <div id="Link_and_Split_taxa_list"></div><br/>
-    <?php if($can_lump){ ?><input type="button" value="Perform Lump" onClick="performLump()" class="ui-corner-all ui-state-default button" /><br />Performing a lump will tag all the taxa in the list above as being lumped into this taxon. The flag to allow the taxa in the list to be used for data entry will be set to false. A check will be made to ensure that each of the taxa in the list have not already been lumped into another taxon. Please save any other changes to this taxon before carrying out this action.<br/><br/><?php } ?>
-    <?php if($can_split){ ?><input type="button" value="Perform Split" onClick="performSplit()" class="ui-corner-all ui-state-default button" /><br />Performing a split will tag all the taxa in the above list as being the created by splitting this taxon. The flag to allow this taxon to be used for data entry will be set to false. A check will be made to ensure that each of the taxa in the list have not already been tagged as being the result of splitting another taxon. Please save any other changes to this taxon before carrying out this action.<br/><?php } ?>
+    <?php if($can_lump){ ?><input type="button" value="Perform Lump" onClick="performLump()" class="btn btn-primary" /><br />Performing a lump will tag all the taxa in the list above as being lumped into this taxon. The flag to allow the taxa in the list to be used for data entry will be set to false. A check will be made to ensure that each of the taxa in the list have not already been lumped into another taxon. Please save any other changes to this taxon before carrying out this action.<br/><br/><?php } ?>
+    <?php if($can_split){ ?><input type="button" value="Perform Split" onClick="performSplit()" class="btn btn-primary" /><br />Performing a split will tag all the taxa in the above list as being the created by splitting this taxon. The flag to allow this taxon to be used for data entry will be set to false. A check will be made to ensure that each of the taxa in the list have not already been tagged as being the result of splitting another taxon. Please save any other changes to this taxon before carrying out this action.<br/><?php } ?>
 <?php } ?>
 </form>
 </div>

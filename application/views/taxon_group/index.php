@@ -24,7 +24,7 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'taxon_group/create'; ?>">
-<input type="submit" value="New taxon group" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New taxon group" class="btn btn-primary" />
 </form>
 <br />
 <?php echo $upload_csv_form ?>

@@ -50,7 +50,7 @@ echo data_entry_helper::textarea(array(
 ));
 ?>
 </fieldset>
-<input type="submit" name="submit" value="<?php echo kohana::lang('misc.save'); ?>" class="ui-corner-all ui-state-default button ui-priority-primary" />
-<input type="submit" name="submit" value="<?php echo kohana::lang('misc.cancel'); ?>" class="ui-corner-all ui-state-default button" />
-<input type="submit" name="submit" value="<?php echo kohana::lang('misc.unsubscribe'); ?>" onclick="if (!confirm('<?php echo kohana::lang('misc.confirm_unsubscribe'); ?>')) {return false;}" class="ui-corner-all ui-state-default button" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.save'); ?>" class="btn btn-primary" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.cancel'); ?>" class="btn btn-warning" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.unsubscribe'); ?>" onclick="if (!confirm('<?php echo kohana::lang('misc.confirm_unsubscribe'); ?>')) {return false;}" class="btn btn-default" />
 </form>

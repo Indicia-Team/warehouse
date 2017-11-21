@@ -21,17 +21,17 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'website_agreement:id');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
+  data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
 ?>
 <form class="cmxform" action="<?php echo url::site().'website_agreement/save' ?>" method="post" id="website-agreement-edit">
   <?php echo $metadata; ?>
 <fieldset>
 <input type="hidden" name="website_agreement:id" value="<?php echo html::initial_value($values, 'website_agreement:id'); ?>" />
 <legend>Website Agreement Details</legend>
-<?php 
+<?php
 echo data_entry_helper::text_input(array(
   'label' => 'Agreement title',
   'helpText' => 'Enter the title of the agreement',
@@ -150,18 +150,19 @@ echo data_entry_helper::select(array(
       'from other websites participating in the same agreement if they elect to provide data for editing.',
   'fieldname' => 'website_agreement:receive_for_editing',
   'default' => html::initial_value($values, 'website_agreement:receive_for_editing'),
-  'lookupValues' => array('D' => 'Not allowed','O' => 'Optional','A' => 'Optional, but must be setup by an administrator','R' => 'Required')
+  'lookupValues' => array(
+    'D' => 'Not allowed',
+    'O' => 'Optional',
+    'A' => 'Optional, but must be setup by an administrator',
+    'R' => 'Required'
+  )
 ));
 
 ?>
 </fieldset>
-<?php 
-echo html::form_buttons($id!=null, false, false); 
-data_entry_helper::$dumped_resources[] = 'jquery';
-data_entry_helper::$dumped_resources[] = 'jquery_ui';
-data_entry_helper::$dumped_resources[] = 'fancybox';
+<?php
+echo html::form_buttons($id != NULL, FALSE, FALSE);
 data_entry_helper::enable_validation('website-agreement-edit');
-data_entry_helper::link_default_stylesheet();
 echo data_entry_helper::dump_javascript();
 ?>
 </form>

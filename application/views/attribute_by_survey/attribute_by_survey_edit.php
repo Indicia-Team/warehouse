@@ -24,8 +24,7 @@
  * @link http://code.google.com/p/indicia/
  */
 
-require_once DOCROOT . 'client_helpers/data_entry_helper.php';
-require_once DOCROOT . 'client_helpers/templates.bootstrap-3.php';
+warehouse::loadHelpers(['data_entry_helper']);
 
 $attrModelName = str_replace('s_website', '', $model->object_name);
 $dataType = $model->$attrModelName->data_type;
@@ -124,7 +123,7 @@ switch ($dataType) {
 <form
   action="<?php echo url::site() . "attribute_by_survey/save/1?type=" . $_GET['type']; ?>"
   method="post">
-  <fieldset>
+  <fieldset class="validation-rules">
   <legend><?php echo $other_data['name']; ?> Attribute details</legend>
     <p>Set the validation rules to apply to values submitted for this attribute below.</p>
     <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:id"

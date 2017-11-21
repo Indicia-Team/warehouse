@@ -28,6 +28,6 @@ occurrences. Before they can be used the licences must be added to each website'
 allowing the specific licences available for each website to be controllled.</p>
 <?php echo $grid; ?>
 <form action="<?php echo url::site().'licence/create'; ?>" method="post">
-<input type="submit" value="New licence" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New licence" class="btn btn-primary" />
 </form>
 <?php echo $upload_csv_form ?>
