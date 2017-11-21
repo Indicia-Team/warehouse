@@ -1,6 +1,6 @@
 <report
-    title="Full species index"
-    description="A report which lists all Pantheon species along with trait data."
+    title="Full species index for download"
+    description="A report which lists all Pantheon species along with trait data, without HTML/grid formatting."
     >
   <query website_filter_field="cttl.website_id">
 select #columns#
@@ -31,13 +31,11 @@ where 1=1
     <column name="order" sql="si.order" display="Order" in_count="true" datatype="text" />
     <column name="rarity_score" sql="si.rarity_score" display="SQS" datatype="integer" />
     <column name="designations" sql="si.designations" display="Conservation status" datatype="text" />
-    <column name="larval_guild" sql="si.larval_guild" display="Larval feeding guild" datatype="text"
-            template="&lt;span&gt;{larval_guild}&lt;/span&gt;" />
-    <column name="adult_guild" sql="si.adult_guild" display="Adult feeding guild" datatype="text"
-            template="&lt;span&gt;{adult_guild}&lt;/span&gt;" />
-    <column name="broad_biotope" display="Broad biotope" datatype="text" sql="si.lexicon_broad_biotope" />
-    <column name="specific_biotope" display="Habitat" datatype="text" sql="si.lexicon_specific_biotope" />
-    <column name="resource" display="Resources" datatype="text" sql="si.lexicon_resource" />
+    <column name="larval_guild" sql="si.larval_guild" display="Larval feeding guild" datatype="text" />
+    <column name="adult_guild" sql="si.adult_guild" display="Adult feeding guild" datatype="text" />
+    <column name="broad_biotope" display="Broad biotope" datatype="text" sql="si.broad_biotope" />
+    <column name="specific_biotope" display="Habitat" datatype="text" sql="si.specific_biotope" />
+    <column name="resource" display="Resources" datatype="text" sql="si.resource" />
     <column name="isis_sat_code" sql="si.isis_sat_code" display="Specific assemblage type" datatype="text" />
     <column name="horus_indices" display="Habitat score" datatype="text" sql="si.horus_indices" />
     <column name="taxon_meaning_id" sql="si.taxon_meaning_id" visible="false"/>

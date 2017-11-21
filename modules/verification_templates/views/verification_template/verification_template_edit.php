@@ -58,7 +58,8 @@ echo data_entry_helper::checkbox_group(array(
         'V' => 'Accepted (V)', 'V1' => 'Accepted as correct (V1)', 'V2' => 'Accepted as considered correct (V2)',
         'C3' => 'Plausible (C3)',
         'R' => 'Not accepted (R)', 'R4' => 'Not accepted as unable to verify (R4)', 'R5' => 'Not accepted as incorrect (R5)'),
-    'helpText' => 'Choose which verification status changes this template will available for.',
+    'helpText' => 'Choose which verification status changes this template will available for. ' .
+        'Note that a template available for "V" will also be available for "V1" and "V2", and similar for "R" and "R4"/"R5".',
     'validation' => array('required'),
 ));
 // Not sortable
@@ -69,7 +70,6 @@ echo data_entry_helper::checkbox(array(
     'default' => html::initial_value($values, 'verification_template:restrict_to_website_id'),
     'helpText' => 'Select this option if you want this template to only apply to records from the website above.',
 ));
-echo '</fieldset>';
 echo data_entry_helper::textarea(array(
     'label' => 'Restrict to specified external keys',
     'fieldname' => 'verification_template:restrict_to_external_keys_list',
