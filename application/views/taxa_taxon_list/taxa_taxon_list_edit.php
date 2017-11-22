@@ -24,11 +24,9 @@ echo html::script(array(
   'media/js/jquery.ajaxQueue.js',
   'media/js/jquery.bgiframe.min.js',
   'media/js/jquery.autocomplete.js'
-), FALSE); 
+), FALSE);
 
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-require_once(DOCROOT.'client_helpers/map_helper.php');
-require_once(DOCROOT.'client_helpers/form_helper.php');
+warehouse::loadHelpers(['data_entry_helper', 'map_helper']);
 $id = html::initial_value($values, 'taxa_taxon_list:id');
 if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
@@ -72,32 +70,32 @@ $(document).ready(function() {
 echo html::error_message($model->getError('deleted'));
 ?>
 <div id="details">
-<form id="ttlMainForm" class="cmxform" action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="post">
-<?php 
+<form id="ttlMainForm" action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="post">
+<?php
 echo $metadata;
 ?>
 <fieldset>
-<input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
-<input type="hidden" name="taxa_taxon_list:taxon_list_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>" />
-<input type="hidden" name="taxon:id" value="<?php echo html::initial_value($values, 'taxon:id'); ?>" />
-<input type="hidden" name="taxon_meaning:id" value="<?php echo html::initial_value($values, 'taxon_meaning:id'); ?>" />
-<input type="hidden" name="taxa_taxon_list:preferred" value="t" />
-<legend>Naming</legend>
-<ol>
-<li>
-<label for="taxon">Taxon Name:</label>
-<input name="taxon:taxon" id="taxon" value="<?php echo html::initial_value($values, 'taxon:taxon'); ?>"/>
-<?php echo html::error_message($model->getError('taxon:taxon')); ?>
-</li>
-<li>
-<label for="authority">Authority:</label>
-<input id="authority" name="taxon:authority" value="<?php echo html::initial_value($values, 'taxon:authority'); ?>"/>
-<?php echo html::error_message($model->getError('taxon:authority')); ?>
-</li>
-<li>
-<label for="language_id">Language:</label>
-<select name="taxon:language_id" id="language_id">
-  <option value=''>&lt;Please select&gt;</option>
+  <legend>Naming</legend>
+  <input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
+  <input type="hidden" name="taxa_taxon_list:taxon_list_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>" />
+  <input type="hidden" name="taxon:id" value="<?php echo html::initial_value($values, 'taxon:id'); ?>" />
+  <input type="hidden" name="taxon_meaning:id" value="<?php echo html::initial_value($values, 'taxon_meaning:id'); ?>" />
+  <input type="hidden" name="taxa_taxon_list:preferred" value="t" />
+
+  <div class="form-group">
+    <label for="taxon">Taxon Name:</label>
+    <input name="taxon:taxon" id="taxon" class="form-control" value="<?php echo html::initial_value($values, 'taxon:taxon'); ?>"/>
+  </div>
+  <?php echo html::error_message($model->getError('taxon:taxon')); ?>
+  <div class="form-group">
+    <label for="authority">Authority:</label>
+    <input id="authority" class="form-control" name="taxon:authority" value="<?php echo html::initial_value($values, 'taxon:authority'); ?>"/>
+  </div>
+  <?php echo html::error_message($model->getError('taxon:authority')); ?>
+  <div class="form-group">
+    <label for="language_id">Language:</label>
+    <select class="form-control" name="taxon:language_id" id="language_id">
+      <option value=''>&lt;Please select&gt;</option>
 <?php
   $languages = ORM::factory('language')->orderby('language','asc')->find_all();
   $selected = html::initial_value($values, 'taxon:language_id');
@@ -109,20 +107,21 @@ echo $metadata;
     echo '>'.$lang->language.'</option>';
   }
 ?>
-</select>
-<?php echo html::error_message($model->getError('taxon:language_id')); ?>
-</li>
-<li>
-<label for="commonNames">Common Names:
-<span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter common names one per line. Optionally follow each name by a | character then the 3 character code for the language, e.g. 'Lobworm | eng'.">?</span></label>
-<textarea rows="3" cols="40" id="commonNames" name="metaFields:commonNames"><?php echo html::initial_value($values, 'metaFields:commonNames'); ?></textarea>
-</li>
-<li>
-<label for="synonyms" >Synonyms:
-<span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter synonyms one per line. Optionally follow each name by a | character then the taxon's authority, e.g. 'Zygaena viciae argyllensis | Tremewan. 1967'.">?</span></label>
-<textarea rows="3"  cols="40" id="synonyms" name="metaFields:synonyms"><?php echo html::initial_value($values, 'metaFields:synonyms'); ?></textarea>
-</li>
-</ol>
+    </select>
+  </div>
+  <?php echo html::error_message($model->getError('taxon:language_id')); ?>
+  <div class="form-group">
+    <label for="commonNames">Common Names:
+      <span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter common names one per line. Optionally follow each name by a | character then the 3 character code for the language, e.g. 'Lobworm | eng'.">?</span>
+    </label>
+    <textarea class="form-control" id="commonNames" name="metaFields:commonNames"><?php echo html::initial_value($values, 'metaFields:commonNames'); ?></textarea>
+  </div>
+  <div class="form-group">
+    <label for="synonyms" >Synonyms:
+      <span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter synonyms one per line. Optionally follow each name by a | character then the taxon's authority, e.g. 'Zygaena viciae argyllensis | Tremewan. 1967'.">?</span>
+    </label>
+    <textarea class="form-control" id="synonyms" name="metaFields:synonyms"><?php echo html::initial_value($values, 'metaFields:synonyms'); ?></textarea>
+  </div>
 </fieldset>
 <fieldset>
 <legend>Other Details</legend>
@@ -189,9 +188,9 @@ echo $metadata;
 <li>
 <input type="hidden" name="taxa_taxon_list:parent_id" id="parent_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:parent_id'); ?>" />
 <label for="parent">Parent Taxon:</label>
-<input id="parent" name="taxa_taxon_list:parent" value="<?php 
-$parent_id = html::initial_value($values, 'taxa_taxon_list:parent_id'); 
-echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $parent_id)->taxon->taxon) : ''; 
+<input id="parent" name="taxa_taxon_list:parent" value="<?php
+$parent_id = html::initial_value($values, 'taxa_taxon_list:parent_id');
+echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $parent_id)->taxon->taxon) : '';
 ?>" />
 </li>
 <li>
@@ -268,7 +267,7 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
         'default' => $attr['value']
       ));
   }
-	
+
 }
  ?>
  </ol>
@@ -286,14 +285,10 @@ data_entry_helper::$javascript .= "mapInitialisationHooks.push(function(div) {
     evt.feature.layer.removeFeatures(featuresToRemove);
     $('#imp-geom').val(evt.feature.geometry.toString());
   }
-  div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent}); 
+  div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent});
 });
 ";
-echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null); 
-data_entry_helper::$dumped_resources[] = 'jquery';
-data_entry_helper::$dumped_resources[] = 'jquery_ui';
-data_entry_helper::$dumped_resources[] = 'fancybox';
-data_entry_helper::link_default_stylesheet();
+echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null);
 echo data_entry_helper::dump_javascript();
 ?>
 </form>
