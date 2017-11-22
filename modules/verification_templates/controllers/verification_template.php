@@ -70,6 +70,23 @@ class Verification_template_Controller extends Gridview_Base_Controller {
    */
   protected function prepareOtherViewData($values)
   {
+    // $values can be empty, or populated from either the database, or from a failed POST
+    // For the failed post, the special fields/formats already exist.
+    if (isset($values['verification_template:restrict_to_external_keys_list'])) {
+      $restrictToExternalKeysList = $values['verification_template:restrict_to_external_keys_list'];
+    } else {
+      $restrictToExternalKeysList = implode("\n", self::array_parse(html::initial_value($values, 'verification_template:restrict_to_external_keys')));
+    }
+    if (isset($values['verification_template:restrict_to_family_external_keys_list'])) {
+      $restrictToFamilyExternalKeysList = $values['verification_template:restrict_to_family_external_keys_list'];
+    } else {
+      $restrictToFamilyExternalKeysList = implode("\n", self::array_parse(html::initial_value($values, 'verification_template:restrict_to_family_external_keys_list')));
+    }
+    if (isset($values['verification_template:template_statuses']) && is_array($values['verification_template:template_statuses'])) {
+      $templateStatuses = $values['verification_template:template_statuses'];
+    } else {
+      $templateStatuses = self::array_parse(html::initial_value($values, 'verification_template:template_statuses'));
+    }
     $websites = ORM::factory('website');
     if (!$this->auth->logged_in('CoreAdmin') && $this->auth_filter['field'] === 'website_id') {
       $websites = $websites->in('id', $this->auth_filter['values']);
@@ -82,9 +99,9 @@ class Verification_template_Controller extends Gridview_Base_Controller {
     // convert the 2 arrays for the keys from the postgres format string to a value that can be used on the form
     return array(
         'websites' => $arr,
-        'restrict_to_external_keys_list' => implode("\n", self::array_parse(html::initial_value($values, 'verification_template:restrict_to_external_keys'))),
-        'restrict_to_family_external_keys_list' => implode("\n", self::array_parse(html::initial_value($values, 'verification_template:restrict_to_family_external_keys'))),
-        'template_statuses' => self::array_parse(html::initial_value($values, 'verification_template:template_statuses'))
+        'restrict_to_external_keys_list' => $restrictToExternalKeysList,
+        'restrict_to_family_external_keys_list' => $restrictToFamilyExternalKeysList,
+        'template_statuses' => $templateStatuses,
       );
   }
 
