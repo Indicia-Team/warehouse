@@ -52,10 +52,10 @@ $siteTitle = html::specialchars($warehouseTitle);
 echo html::stylesheet(
   array(
     'media/css/warehouse',
-    //'media/css/forms',
     'media/js/fancybox/source/jquery.fancybox.css',
+    'media/css/jquery-ui.min',
     'media/css/jquery.autocomplete',
-    'media/themes/' . $theme . '/jquery-ui.theme.min'
+    "media/themes/$theme/jquery-ui.theme.min"
   ),
   array('screen')
 );

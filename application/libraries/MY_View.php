@@ -26,23 +26,23 @@
  * To declare a plugin, create a module with a plugins folder, containing a php file named the same as the module.
  * Inside this module, write a method called (module_name)_extend_ui and return an array of user interface extensions.
  * Each extension is a child array, containing a view (the name of the view it is extending), type (='tab'), controller
- * (the path to the controller function which should be displayed on the tab), title (the title of the tab). 
+ * (the path to the controller function which should be displayed on the tab), title (the title of the tab).
  */
 class View extends View_Core {
 
   protected $viewname='';
 
   /**
-   * When a view is rendered, check for plugins which are adding tabs to the view. If any exist, then 
+   * When a view is rendered, check for plugins which are adding tabs to the view. If any exist, then
    * wrap the current view output in the first tab of a jQuery tabs implementation and add links to the plugin output
    * for the other tabs.
    */
   public function render($print = FALSE, $renderer = FALSE) {
-    
+
     $output = parent::render($print, $renderer);
     $tabs = $this->get_tabs();
     // If only one tab, that is the current view, so don't bother tabifying it.
-    if (count($tabs)>1) {
+    if (count($tabs) > 1) {
       $js = "<script type=\"text/javascript\">
 jQuery(document).ready(function() {
   var t=$('#tabs').tabs();
@@ -72,20 +72,20 @@ jQuery(document).ready(function() {
     }
     return $output;
   }
-  
+
   /**
    * Work out the current argument list so they can be passed through to the tab. E.g. the current record ID.
    */
   private function get_args() {
     $uri = URI::instance();
-    if ($uri->total_arguments()) 
+    if ($uri->total_arguments())
       $args = '/'.implode('/', $uri->argument_array());
     else
       $args = '';
     return $args;
   }
-  
-  /** 
+
+  /**
    * Retrieve the list of tabs for the current view.
    */
   protected function get_tabs() {
@@ -94,11 +94,11 @@ jQuery(document).ready(function() {
     if ($this->viewname=='setup_check')
       return array('General'=>$this->viewname);
     else {
-      $uri = URI::instance();  
+      $uri = URI::instance();
       // use caching, so things don't slow down if there are lots of plugins
       $cacheId = 'tabs-'.$this->viewname.'-'.$uri->segment(2);
       $cache = Cache::instance();
-      if ($tabs = $cache->get($cacheId)) { 
+      if ($tabs = $cache->get($cacheId)) {
         return $tabs;
       } else {
         // $this->tabs is set by the controller to the default tabs for the view - excluding module extensions.
@@ -121,9 +121,9 @@ jQuery(document).ready(function() {
         $cache->set($cacheId, $tabs);
         return $tabs;
       }
-    }    
+    }
   }
-  
+
   /**
    * Takes a list of tabs and adds new tabs to them according to the supplied list of extensions.
    */
@@ -137,7 +137,7 @@ jQuery(document).ready(function() {
         $tabs[$extend['title']]=$extend['controller'];
     }
   }
-  
+
   /**
    * Override the set_filename property accessor to keep a record of the view name, letting us check for
    * plugins which are linked to this view's path.
