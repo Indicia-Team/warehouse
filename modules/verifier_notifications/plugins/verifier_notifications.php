@@ -26,16 +26,13 @@
  * Module sends out VT (verifier tasks) and PT (Pending Record Tasks) notifications which alert users when they have records to verify or
  * records at release_status "P" (pending) to check. If the Workflow module is enabled then we also send out notifications if a record has not been
  * verified yet and that verification check is overdue.
- * Example use - 
+ * Example use -
  * If a mentor needs to check the records of a student then that student's records can be set to "P" release status.
  * This module can then pick up these records and automatically send the notifications to the mentor
  */
 function verifier_notifications_scheduled_task($last_run_date, $db) {
-  try {
-    $useWorkflowModule=kohana::config('verifier_notifications.use_workflow_module');
-  } catch (Exception $ex) {
-    $useWorkflowModule=false;
-  }
+  $modules = kohana::config('config.modules');
+  $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
   $params = array(
     'notificationSourceType' => 'PT',
     'notificationSource' => 'pending_record_check_notifications',
@@ -75,18 +72,22 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
 
 /**
  * Process the notifications required for a task type.
- * @param string $type Type of task, either moderation or verification
- * @param array $params Parameters array defining the type name and messages
- * @param object $db Database connection object
+ *
+ * @param string $type
+ *   Type of task, either moderation or verification.
+ * @param array $params
+ *   Parameters array defining the type name and messages.
+ * @param object $db
+ *   Database connection object.
  */
 function verifier_notifications_process_task_type($type, $params, $db, $runOverdueCheckInstead) {
   $urls = array();
   try {
-    $urls=kohana::config("verifier_notifications.{$type}_urls");
+    $urls = kohana::config("verifier_notifications.{$type}_urls");
   } catch (Exception $e) {
-    // Config file not present
+    // Config file not present.
   }
-  // loop through the known moderation pages on each website
+  // loop through the known moderation/verification pages on each website
   foreach ($urls as $url) {
     $params['website_id'] = $url['website_id'];
     $params['title'] = $url['title'];
@@ -102,18 +103,27 @@ function verifier_notifications_process_task_type($type, $params, $db, $runOverd
 }
 
 /*
- * Get all filters where the user for the filter does not already have a notification of the type we are interested in (the source is different on the overdue notification)
+ * Get all filters where the user for the filter does not already have a notification of the type we are interested
+ * in (the source is different on the overdue notification)
  */
 function get_filters_without_existing_notification($db, $params) {
   $filters = $db
     ->select('DISTINCT f.id,f.definition,fu.user_id,u.username')
     ->from('filters f')
-    ->join('filters_users as fu','fu.filter_id','f.id')
-    ->join('users as u','u.id','fu.user_id')
+    ->join('filters_users as fu', 'fu.filter_id', 'f.id')
+    ->join('users as u', 'u.id', 'fu.user_id')
     ->join('users_websites as uw', 'uw.user_id', 'u.id')
-    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='".$params['notificationSourceType']."' and n.source='".$params['notificationSource']."'  and n.acknowledged=false)", '', 'LEFT')
-    ->where(array('f.sharing'=>$params['sharingFilter'], 'f.defines_permissions'=>'t','n.id'=>null,
-                  'uw.website_id'=>$params['website_id'], 'f.deleted'=>'f','fu.deleted'=>'f','u.deleted'=>'f'))
+    ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='" . $params['notificationSourceType'] .
+      "' and n.source='" . $params['notificationSource'] . "'  and n.acknowledged=false)", '', 'LEFT')
+    ->where(array(
+      'f.sharing' => $params['sharingFilter'],
+      'f.defines_permissions' => 't',
+      'n.id' => NULL,
+      'uw.website_id' => $params['website_id'],
+      'f.deleted' => 'f',
+      'fu.deleted' => 'f',
+      'u.deleted' => 'f'
+    ))
     ->get()->result_array(FALSE);
   return $filters;
 }
@@ -122,61 +132,70 @@ function get_filters_without_existing_notification($db, $params) {
  * Cycle each filter and check if there if there is a notification that needs creating
  */
 function loop_through_workflows_and_filters_and_create_notifications($db, $filters, $params, $runOverdueCheckInstead) {
-  $forceHighPriorityEmail=false;
-  //If workflow module is enabled then we also check for overdue veirifcations
-  if ($runOverdueCheckInstead===true) {  
+  $forceHighPriorityEmail = FALSE;
+  // If workflow module is enabled then we also check for overdue verifications.
+  if ($runOverdueCheckInstead === TRUE) {
     $recordReport = 'library/occurrences/overdue_occurrence_count';
-    $forceHighPriorityEmail=true;
-  } else {
+    $forceHighPriorityEmail = TRUE;
+  }
+  else {
     $recordReport = 'library/occdelta/filterable_occdelta_count';
   }
-  $notificationCounter=0;
-  //Supply 1 as the user id to give the code maximum privileges. Also force the main database connection 
-  //to allow access to the temporary occdelta table.
+  $notificationCounter = 0;
+  // Supply 1 as the user id to give the code maximum privileges. Also force the main database connection
+  // to allow access to the temporary occdelta table.
   $reportEngine = new ReportEngine(array($params['website_id']), 1, $db);
-  //When creating notifications keep a track of users we have created notifications for per verification page, this allows us to 
-  //avoid creating multiple notifications per user without having to check the database.
-  $alreadyCreatedNotifications=array();
-  //Go through each filter for users who don't have an outstanding notification of the required type.
-  foreach ($filters as $filterIdx=>$filter) {  
-    $extraParams = array('sharing'=>$params['sharingFilterFullName']);
-    if ($params['notificationSourceType']==='VT')
-      //Only look for completed record_status, we don't want to pick up V for instance, as these records are already verified
-      $extraParams = array_merge($extraParams,array('record_status'=>'C'));
-    else
-      //If we are only interested in detecting Pending records then provide a release_status P parameter, this will
-      //override the release_status R parameter that automatically appears in the report.
-      $extraParams = array_merge($extraParams,array('release_status'=>'P')); 
-    $reportParams = json_decode($filter['definition'],true) + $extraParams;
+  // When creating notifications keep a track of users we have created notifications for per verification page, this allows us to
+  // avoid creating multiple notifications per user without having to check the database.
+  $alreadyCreatedNotifications = array();
+  // Go through each filter for users who don't have an outstanding notification of the required type.
+  foreach ($filters as $filterIdx => $filter) {
+    $extraParams = array('sharing' => $params['sharingFilterFullName']);
+    if ($params['notificationSourceType'] === 'VT') {
+      // Only look for completed record_status, we don't want to pick up V for instance, as these records are already
+      // verified. Also include any release status and any confidential status for verification purposes.
+      $extraParams = array_merge($extraParams, array(
+        'record_status' => 'C',
+        'release_status' => 'A',
+        'confidential' => 'all',
+      ));
+    }
+    else {
+      // If we are only interested in detecting Pending records then provide a release_status P parameter, this will
+      // override the release_status R parameter that automatically appears in the report.
+      $extraParams = array_merge($extraParams, array('release_status' => 'P'));
+    }
+    $reportParams = json_decode($filter['definition'], TRUE) + $extraParams;
     try {
-      // don't run the filter unless we we haven't already created a notification for that user 
-      if (!in_array($filter['user_id'],$alreadyCreatedNotifications)) {
-        //Get the report data
-        //Use the filter as the params
-        $reportOutput=$reportEngine->requestReport("$recordReport.xml", 'local', 'xml', $reportParams);
+      // don't run the filter unless we we haven't already created a notification for that user
+      if (!in_array($filter['user_id'], $alreadyCreatedNotifications)) {
+        // Get the report data.
+        // Use the filter as the params.
+        $reportOutput = $reportEngine->requestReport("$recordReport.xml", 'local', 'xml', $reportParams);
       }
       //If applicable records are returned then create notification
       if (!empty($reportOutput) && $reportOutput['content']['records'][0]['count'] > 0) {
-        //Save the new notification
-        save_notification($filter['user_id'],$params,$forceHighPriorityEmail);
+        // Save the new notification.
+        save_notification($filter['user_id'], $params, $forceHighPriorityEmail);
         $notificationCounter++;
-        $alreadyCreatedNotifications[]=$filter['user_id'];
+        $alreadyCreatedNotifications[] = $filter['user_id'];
       }
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       echo $e->getMessage();
-      error_logger::log_error('Error occurred when creating '.$params['notificationSource'], $e);  
+      error_logger::log_error('Error occurred when creating ' . $params['notificationSource'], $e);
     }
   }
   //Display message to show how many notifications were created.
-  if ($notificationCounter==0)
-    echo $params['noNotificationsCreatedMessage'].'</br>';
-  elseif ($notificationCounter==1)
-    echo $notificationCounter.' '.$params['oneNotificationCreatedMessage'].'</br>';
-  else 
-    echo $notificationCounter.' '.$params['multipleNotificationsCreatedMessage'].'</br>';
+  if ($notificationCounter == 0)
+    echo $params['noNotificationsCreatedMessage'] . '</br>';
+  elseif ($notificationCounter == 1)
+    echo $notificationCounter . ' ' . $params['oneNotificationCreatedMessage'] . '</br>';
+  else
+    echo $notificationCounter . ' ' . $params['multipleNotificationsCreatedMessage'] . '</br>';
 }
 
-function save_notification($userId,$params,$forceHighPriorityEmail) {
+function save_notification($userId, $params, $forceHighPriorityEmail) {
   //Save the new notification
   $notificationObj = ORM::factory('notification');
   //For overdue notifications the source field is different even though they both use VT type
@@ -185,7 +204,7 @@ function save_notification($userId,$params,$forceHighPriorityEmail) {
   $notificationObj->triggered_on=date("Ymd H:i:s");
   $notificationObj->user_id=$userId;
   //Use VT "Verifier Task" or PT "Pending Record Task" notification type as we are informing the verifier that they need to perform a task.
-  $notificationObj->source_type=$params['notificationSourceType']; 
+  $notificationObj->source_type=$params['notificationSourceType'];
   $notificationObj->data=json_encode(
     array('username'=>$params['title'],
           'comment'=>"<a href=\"$params[url]\">$params[notificationComment]</a>",
@@ -205,10 +224,10 @@ function verifier_notifications_metadata() {
   } catch (Exception $ex) {
     $useWorkflowModule=false;
   }
-  if ($useWorkflowModule===true) {  
+  if ($useWorkflowModule===true) {
     $requiresOccurrencesDelta=false;
   } else {
-    $requiresOccurrencesDelta=true;  
+    $requiresOccurrencesDelta=true;
   }
   return array(
     'requires_occurrences_delta'=>$requiresOccurrencesDelta

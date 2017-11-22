@@ -93,9 +93,9 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
   // Chop comma off end of set.
   $frequencyToRunString = substr($frequencyToRunString, 0, -1);
   try {
-    $useWorkflowModule=kohana::config('notification_emails.use_workflow_module');
+    $useWorkflowModule = kohana::config('notification_emails.use_workflow_module');
   } catch (Exception $ex) {
-    $useWorkflowModule=false;
+    $useWorkflowModule = FALSE;
   }
   //Get all the notifications that need sending.
   //These are either ones where a user has a notification setting that matches the notification and frequency run we are about to do,
@@ -116,8 +116,8 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
           --This part just deals with the normal situation where we include a notification email if the user has a setting that matches the current run or has its escalate_email_priority set (so we always send immediately)
           LEFT JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND (unf.notification_frequency in (".$frequencyToRunString.") OR escalate_email_priority IS NOT NULL) AND unf.deleted='f'
           LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency";
-  if ($useWorkflowModule===true) {
-    $notificationsToSendEmailsForSql .="
+  if ($useWorkflowModule === TRUE) {
+    $notificationsToSendEmailsForSql .= "
             -- If there is a species that needs sending immediately, make sure the task is a verification task and the user has a notification setting (although we don't care what the frequency is of the setting) and then
             -- if the current run is immediate/hourly then include the notification in the run
             LEFT JOIN workflow_metadata wm on 'IH' in (".$frequencyToRunString.") AND lower(wm.entity)='occurrence' AND lower(wm.key)='taxa_taxon_list_external_key' AND (wm.key_value=t.external_key AND t.external_key IS NOT NULL) AND wm.verifier_notifications_immediate=true AND wm.deleted=false
@@ -129,7 +129,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
           --Send a notification if the user has a notification setting and notification that matches the current run
           --and the notification hasn't already been set (or nothing has ever been sent)
           AND ((unf.id IS NOT NULL AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL OR unflr.id IS NULL))";
-  if ($useWorkflowModule===true) {
+  if ($useWorkflowModule === TRUE) {
     $notificationsToSendEmailsForSql .= "
           -- Do same for high priority species verification tasks to be automatically included in the immediate hourly run
           OR  (wm.id IS NOT NULL AND unfMetaDataLinked.id IS NOT NULL AND (n.id>unflrMetaDataLinked.last_max_notification_id OR unflrMetaDataLinked.last_max_notification_id IS NULL or unflrMetaDataLinked.id IS NULL))";
@@ -175,10 +175,11 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
       'comment' => 'Message',
       'record_status' => 'Record status'
     );
-    $emailHighPriority=false;
+    $emailHighPriority = FALSE;
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
-      if ($notificationToSendEmailsFor['escalate_email_priority']==2)
-        $emailHighPriority=true;
+      if ($notificationToSendEmailsFor['escalate_email_priority'] == 2) {
+        $emailHighPriority = TRUE;
+      }
       // This user is not the first user but we have detected that it is not the same user we added a notification to
       // the email for last time, this means we need to send out the previous user's email and start building a
       // new email.
@@ -187,7 +188,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
           $emailContent .= "</tbody>\n</table>\n";
         }
         send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl, $emailHighPriority);
-        $emailHighPriority=false;
+        $emailHighPriority = FALSE;
         // Used to mark the notifications in an email if an email send is successful, once email send attempt has been
         // made we can reset the list ready for the next email.
         $notificationIds = array();
@@ -223,8 +224,11 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
               $record[$field] = $systemName;
             }
             elseif ($field === 'record_status') {
-              $record[$field] = $recordStatuses[$record['record_status'] . (empty($record['record_substatus']) ?
-                  '' : $record['record_substatus'])];
+              $statusCode = $record['record_status'] .
+                (empty($record['record_substatus']) ? '' : $record['record_substatus']);
+              if (isset($recordStatuses[$statusCode])) {
+                $record[$field] = $recordStatuses[$statusCode];
+              }
             }
             elseif ($field === 'occurrence_id') {
               $record[$field] = notificationEmailsHyperlinkId(
@@ -247,7 +251,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
     }
     //if we have run out of notifications to send we will have finished going around the loop, so we just need to send out the last email whatever happens
     send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl,$emailHighPriority);
-    $emailHighPriority=false;
+    $emailHighPriority = FALSE;
     $emailSentCounter++;
     // Save the maximum notification id against the jobs we are going to run now, so we know that we have done the
     // notifications up to that id and next time the jobs are run they only need to work with notifications later
@@ -413,7 +417,7 @@ function send_out_user_email($db, $emailContent, $userId, $notificationIds, $ema
     try {
       $notificationsLinkUrl = kohana::config('notification_emails.notifications_page_url');
     }
-    //If there is a problem getting the link configuration, then do nothing at all, we can just ignore the link.
+    // If there is a problem getting the link configuration, then do nothing at all, we can just ignore the link.
     catch (exception $e) {
     }
     if (!empty($notificationsLinkUrl)) {

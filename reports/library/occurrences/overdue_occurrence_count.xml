@@ -4,14 +4,17 @@
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
     SELECT #columns#
-    FROM occurrences o
-      join taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id AND ttl.deleted=false
-      join taxa t on t.id = ttl.taxon_id AND t.deleted=false
-      join workflow_metadata wm on lower(wm.entity)='occurrence' AND lower(wm.key)='taxa_taxon_list_id' AND wm.key_value=t.external_key AND wm.deleted=false
+    FROM cache_occurrences_functional o
+      join taxa_taxon_lists ttl ON ttl.id = o.taxa_taxon_list_id AND ttl.deleted=false
+      join taxa t ON t.id = ttl.taxon_id AND t.deleted=false
+      join workflow_metadata wm ON lower(wm.entity)='occurrence'
+        AND lower(wm.key)='taxa_taxon_list_external_key'
+        AND wm.key_value=t.external_key
+        AND wm.deleted=false
       #agreements_join#
       #joins#
-    WHERE 1=1 AND o.deleted=false AND ((now()-(wm.verification_delay_hours * '1 hour'::interval)) > o.created_on) AND
-    o.release_status='R' AND o.record_status='C' AND 
+    WHERE 1=1 AND ((now()-(wm.verification_delay_hours * '1 hour'::interval)) > o.created_on) AND
+    o.release_status='R' AND o.record_status='C' AND
     #sharing_filter#
     #idlist#
   </query>
@@ -22,7 +25,7 @@
     <param name="taxa_taxon_list_id" datatype="integer" emptyvalue="" default="">
       <where>o.taxa_taxon_list_id='#taxa_taxon_list_id#'</where>
     </param>
-  </params>  
+  </params>
   <columns>
     <column name='count' display='Count' sql="count(o.id)" datatype="integer" aggregate="true"/>
   </columns>

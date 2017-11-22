@@ -31,13 +31,12 @@ $config['verification_urls'] = array(
     'url' => 'http://www.brc.ac.uk/irecord/verification'
   )
 );
-// same again but for pending check/moderation tasks
+// Same again but for pending check/moderation tasks.
 $config['moderation_urls'] = array(
   array(
     'website_id' => 23,
     'title' => 'iRecord',
     'url' => 'http://www.brc.ac.uk/irecord/moderation',
-    'linkText'=>'Click here to view mentoring records needing your help.'
+    'linkText' => 'Click here to view mentoring records needing your help.'
   )
 );
-$config['use_workflow_module'] = FALSE;
