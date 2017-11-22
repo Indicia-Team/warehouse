@@ -22,9 +22,9 @@
       from cache_termlists_terms t_l1
       join taxa_taxon_list_attribute_values av_l1 on av_l1.int_value=t_l1.id
         and av_l1.taxa_taxon_list_attribute_id in (#other_classification_attr_ids#) and av_l1.deleted=false
-      join cache_taxa_taxon_lists cttl on cttl.id=av_l1.taxa_taxon_list_id
+      join cache_taxa_taxon_lists cttl on cttl.preferred_taxa_taxon_list_id=av_l1.taxa_taxon_list_id
       #joins#
-      join taxa_taxon_lists ttl on ttl.id=cttl.id
+      join taxa_taxon_lists ttl on ttl.id=cttl.preferred_taxa_taxon_list_id
       left join (
         select av_l11.int_value as l1_id, round(avg(rscv.int_value)*100) as sqi
         from cache_taxa_taxon_lists cttl
@@ -44,9 +44,10 @@
         )
       ) on ttd.taxon_id=ttl.taxon_id and ttd.deleted=false
       where av_l1.taxa_taxon_list_attribute_id in (#other_classification_attr_ids#)
-        and t_l1.parent_id is null
+        and (t_l1.parent_id is null or (av_l1.taxa_taxon_list_attribute_id=#resource_attr_id# and t_l1.term='dung &amp; carrion'))
       group by t_l1.id, t_l1.id, t_l1.term, sqi.sqi, av_l1.taxa_taxon_list_attribute_id
     ) as sub
+    where 1=1
   </query>
   <order_bys>
     <order_by>count desc</order_by>
@@ -69,6 +70,7 @@
       </joins>
     </param>
     <param name="other_classification_attr_ids" display="Other attribute IDs" datatype="integer[]"/>
+    <param name="resource_attr_id" display="Resource attribute ID" datatype="integer"/>
     <param name="conservation_group_id" display="Conservation group" datatype="integer" default="">
       <join>join pantheon.conservation_groups_termlist_terms cg on cg.termlist_term_id=t_l1.id</join>
     </param>

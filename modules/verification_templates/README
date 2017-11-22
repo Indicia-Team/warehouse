@@ -1,0 +1,3 @@
+
+This module has the ability to appear in the main menu of the warehouse, but it is initially switched off.
+If this is required, uncomment the function verification_templates_alter_menu in the plugin.

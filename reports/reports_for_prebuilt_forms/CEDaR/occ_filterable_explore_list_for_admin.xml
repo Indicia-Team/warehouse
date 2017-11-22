@@ -9,6 +9,7 @@ The other difference for CEDaR is we allow filtering by taxon_list_id."
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="true">
   SELECT #columns#
   FROM cache_occurrences o
+  JOIN occurrences o_non_cache on o_non_cache.id=o.id AND o_non_cache.deleted=false
   JOIN samples smp on smp.id = o.sample_id AND smp.deleted=false
   JOIN websites w on w.id=o.website_id and w.deleted=false
   #agreements_join#
@@ -53,7 +54,7 @@ The other difference for CEDaR is we allow filtering by taxon_list_id."
     <column name='zero_abundance' display='Zero abundance' sql='o.zero_abundance' visible="false" />
     <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
-    <column name='record_substatus' display='State' sql='o.record_substatus' visible="false" />
+    <column name='record_substatus' display='Record sub-state' sql='o.record_substatus' visible="false" />
     <column name='release_status' display='State' sql='o.release_status' visible="false" />
     <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
     <column name='belongs_to_user' display='Belongs to user' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#user_id#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
@@ -67,11 +68,21 @@ The other difference for CEDaR is we allow filtering by taxon_list_id."
         end"
     />
     <column name='query' visible='false' sql='o.query' />
-    <column name='status_hint' visible="false"
+    <column name='record_status_readable' display='Status' sql="case when o.record_status='I' then 'In progress' 
+        when o.record_status='C' then 'Complete' 
+        when o.record_status='V' then 'Verified'
+        when o.record_status='R' then 'Rejected'
+        when o.record_status='D' then 'Dubious/queried'
+        when o.record_status='T' then 'Test' END" />
+    <column name='status_hint'
             sql="case o.record_status when 'V' then 'Accepted' when 'R' then 'Not accepted' when 'T' then 'Test'
-              when 'C' then case when record_substatus=3 then 'Plausible' when o.certainty='C' then 'Recorder considered this certain' when o.certainty='L' then 'Recorder considered this likely' when o.certainty='U' then 'Recorder considered this uncertain' else 'Not reviewed' end
+              when 'C' then case when o.record_substatus=3 then 'Plausible' when o.certainty='C' then 'Recorder considered this certain' when o.certainty='L' then 'Recorder considered this likely' when o.certainty='U' then 'Recorder considered this uncertain' else 'Not reviewed' end
             end ||
             case o.record_substatus when 1 then ' as correct' when 2 then ' as considered correct' when 4 then ' as unable to verify' when 5 then ' as incorrect' else '' end ||
-            case o.query when 'A' then ', query raised and answered' when 'Q' then ', query raised' else '' end" />
+            case o.query when 'A' then ', query raised and answered' when 'Q' then ', query raised' else '' end" display='Status details' />
+    <column name='Verifier' 
+            sql="o.verifier" display='Verifier' />
+    <column name='Decision source' 
+            sql="case when o_non_cache.record_decision_source='H' then 'Human' when o_non_cache.record_decision_source='M' then 'Machine' END" display='Decision source' />
   </columns>
 </report>

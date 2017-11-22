@@ -29,6 +29,19 @@
  */
 class workflow {
 
+  private static $configForEntities = [];
+
+  public static function getEntityConfig($entity) {
+    if (!isset(self::$configForEntities[$entity])) {
+      $config = Kohana::config('workflow');
+      if (!isset($config['entities'])) {
+        throw new exception('Incorrect workflow configuration - missing entities.');
+      }
+      self::$configForEntities[$entity] = isset($config['entities'][$entity]) ? $config['entities'][$entity] : NULL;
+    }
+    return self::$configForEntities[$entity];
+  }
+
   /**
    * Applies undo data to rewind records to their originally posted state.
    *
@@ -37,8 +50,6 @@ class workflow {
    *
    * @param object $db
    *   Database connection.
-   * @param array $config
-   *   Workflow module configuration for the entity.
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
    * @param object $oldRecord
@@ -46,27 +57,28 @@ class workflow {
    * @param object $newRecord
    *   ORM Validation object containing the new record details.
    */
-  public static function applyRewindsIfRequired($db, array $config, $entity, $oldRecord, &$newRecord) {
+  public static function applyRewindsIfRequired($db, $entity, $oldRecord, &$newRecord) {
+    $entityConfig = self::getEntityConfig($entity);
     // Can't rewind a new record, or if the config does not define keys to filter on.
-    if (!isset($config['keys']) || empty($oldRecord->id)) {
+    if (!isset($entityConfig['keys']) || empty($oldRecord->id)) {
       return;
     }
     $eventTypes = [];
-    foreach ($config['keys'] as $keyDef) {
+    foreach ($entityConfig['keys'] as $keyDef) {
       $keyChanged = false;
       // We need to know if the key has changed to decide whether to wind back.
       // If the key is in the main entity, we can directly compare the old and new keys.
       if ($keyDef['table'] === $entity) {
         $keyCol = $keyDef['column'];
-        $keyChanged = (string) $oldRecord->$column !== $newRecord->column;
+        $keyChanged = (string) $oldRecord->$column !== (string) $newRecord->column;
       }
       else {
         // Find the definintion of the extra data table that contains the column we need to look for changes in. We can
         // then look to see if the foreign key pointing to that table has changed.
-        foreach ($config['extraData'] as $extraDataDef) {
+        foreach ($entityConfig['extraData'] as $extraDataDef) {
           if ($extraDataDef['table'] === $keyDef['table']) {
             $column = $extraDataDef['originating_table_column'];
-            $keyChanged = (string) $oldRecord->$column !== $newRecord->$column;
+            $keyChanged = (string) $oldRecord->$column !== (string) $newRecord->$column;
           }
         }
       }
@@ -154,8 +166,8 @@ class workflow {
    */
   public static function getEventsForRecords($db, $websiteId, $entity, array $entityIdList, array $eventTypes) {
     $r = [];
-    $config = kohana::config('workflow');
-    if (!isset($config['entities'][$entity])) {
+    $entityConfig = self::getEntityConfig($entity);
+    if (empty($entityConfig)) {
       // Entity not configured for workflow.
       return $r;
     }
@@ -164,9 +176,8 @@ class workflow {
       // Operation's website does not belong to a workflow group.
       return $r;
     }
-    $config = $config['entities'][$entity];
     $table = inflector::plural($entity);
-    foreach ($config['keys'] as $keyDef) {
+    foreach ($entityConfig['keys'] as $keyDef) {
       $qry = $db
         ->select('workflow_events.key_value, workflow_events.event_type, workflow_events.mimic_rewind_first, ' .
           "workflow_events.values, $table.id as {$entity}_id")
@@ -184,7 +195,7 @@ class workflow {
       else {
         $qry->join($keyDef['table'], "$keyDef[table].$keyDef[column]", 'workflow_events.key_value');
         // Cross reference to the extraData for the same table to find the field name which matches $newRecord->column.
-        foreach ($config['extraData'] as $extraDataDef) {
+        foreach ($entityConfig['extraData'] as $extraDataDef) {
           if ($extraDataDef['table'] === $keyDef['table']) {
             $qry->join(
               $table,
@@ -215,8 +226,6 @@ class workflow {
    *   Database connection.
    * @param int $websiteId
    *   ID of the website the update is associated with.
-   * @param array $config
-   *   Workflow module configuration for the entity.
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
    * @param object $oldRecord
@@ -224,16 +233,17 @@ class workflow {
    * @param object $newRecord
    *   ORM Validation object containing the new record details.
    */
-  public static function applyWorkflow($db, $websiteId, array $config, $entity, $oldRecord, &$newRecord) {
+  public static function applyWorkflow($db, $websiteId, $entity, $oldRecord, &$newRecord) {
     $state = [];
     $groupCodes = self::getGroupCodesForThisWebsite($websiteId);
+    $entityConfig = self::getEntityConfig($entity);
     if (empty($groupCodes)) {
       // Operation's website does not belong to a workflow group so abort.
       return $state;
     }
-    foreach ($config['keys'] as $keyDef) {
-      $qry = self::buildEventQueryForKey($db, $groupCodes, $config, $entity, $oldRecord, $newRecord, $keyDef);
-      self::applyEventsQueryToRecord($qry, $config, $entity, $oldRecord, $newRecord, $state);
+    foreach ($entityConfig['keys'] as $keyDef) {
+      $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $oldRecord, $newRecord, $keyDef);
+      self::applyEventsQueryToRecord($qry, $entity, $oldRecord, $newRecord, $state);
     }
     return $state;
   }
@@ -248,8 +258,6 @@ class workflow {
    *   Database connection.
    * @param array $groupCodes
    *   List of workflow groups to get events for.
-   * @param array $config
-   *   Workflow module configuration for the entity.
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
    * @param object $oldRecord
@@ -262,7 +270,8 @@ class workflow {
    * @return object
    *   Query object.
    */
-  private static function buildEventQueryForKey($db, $groupCodes, array $config, $entity, $oldRecord, $newRecord, array $keyDef) {
+  private static function buildEventQueryForKey($db, $groupCodes, $entity, $oldRecord, $newRecord, array $keyDef) {
+    $entityConfig = self::getEntityConfig($entity);
     $eventTypes = [];
     $qry = $db
       ->select('workflow_events.event_type, workflow_events.mimic_rewind_first, workflow_events.values')
@@ -276,14 +285,14 @@ class workflow {
       $column = $keyDef['column'];
       $qry->where('workflow_events.key_value', $newRecord->$column);
       // It's a set event if the key is changing in the main entity table.
-      if ($newRecord->$column !== (string) $oldRecord->$column) {
+      if ((string) $newRecord->$column !== (string) $oldRecord->$column) {
         $eventTypes[] = 'S';
       }
     }
     else {
       $qry->join($keyDef['table'], "$keyDef[table].$keyDef[column]", 'workflow_events.key_value');
       // Cross reference to the extraData for the same table to find the field name which matches $newRecord->column.
-      foreach ($config['extraData'] as $extraDataDef) {
+      foreach ($entityConfig['extraData'] as $extraDataDef) {
         if ($extraDataDef['table'] === $keyDef['table']) {
           $originatingColumn = $extraDataDef['originating_table_column'];
           $qry->where(
@@ -292,7 +301,7 @@ class workflow {
           );
           // It's a set event if the foreign key in the main data table which points to the extraData record holding
           // the key is changing.
-          if ($newRecord->$originatingColumn !== (string) $oldRecord->$originatingColumn) {
+          if ((string) $newRecord->$originatingColumn !== (string) $oldRecord->$originatingColumn) {
             $eventTypes[] = 'S';
           }
         }
@@ -327,8 +336,8 @@ class workflow {
   private static function getGroupCodesForThisWebsite($websiteId) {
     $config = kohana::config('workflow_groups');
     $r = [];
-    foreach ($config['groups'] as $group => $websiteIds) {
-      if (in_array($websiteId, $websiteIds)) {
+    foreach ($config['groups'] as $group => $groupDef) {
+      if (in_array($websiteId, $groupDef['member_website_ids'])) {
         $r[] = $group;
       }
     }
@@ -343,8 +352,6 @@ class workflow {
    *
    * @param object $qry
    *   Query object set up to retrieve the events to apply.
-   * @param array $config
-   *   Workflow module configuration for the entity.
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
    * @param object $oldRecord
@@ -354,7 +361,7 @@ class workflow {
    * @param array $state
    *   State data to pass through to the post-process hook, containing undo data.
    */
-  private static function applyEventsQueryToRecord($qry, array $config, $entity, $oldRecord, &$newRecord, array &$state) {
+  private static function applyEventsQueryToRecord($qry, $entity, $oldRecord, &$newRecord, array &$state) {
     $events = $qry->get();
     foreach ($events as $event) {
       $newUndoRecord = array();
@@ -392,7 +399,8 @@ class workflow {
    * @return array
    *   Associative array of the database fields and values which need to be applied.
    */
-  public static function processEvent($event, $entity, array $oldValues, array $newValues, &$state) {
+  public static function processEvent($event, $entity, array $oldValues, array $newValues, array &$state) {
+    $entityConfig = self::getEntityConfig($entity);
     $columnDeltaList = [];
     $valuesToApply = [];
     $setColumns = json_decode($event->values, TRUE);
@@ -408,12 +416,13 @@ class workflow {
       elseif (!empty($oldValues['id'])) {
         $undo_value = isset($oldValues[$deltaColumn]) ? $oldValues[$deltaColumn] : NULL;
       }
-      elseif (isset($config['defaults'][$deltaColumn])) {
-        $undo_value = $config['defaults'][$deltaColumn];
-      }
       else {
         $undo_value = NULL;
       }
+      if ($undo_value === NULL && isset($entityConfig['defaults'][$deltaColumn])) {
+        $undo_value = $entityConfig['defaults'][$deltaColumn];
+      }
+
       if ($deltaValue !== $undo_value) {
         $newUndoRecord[$deltaColumn] = $undo_value;
         $valuesToApply[$deltaColumn] = $deltaValue;
@@ -421,6 +430,30 @@ class workflow {
     }
     $state[] = array('event_type' => $event->event_type, 'old_data' => $newUndoRecord);
     return $valuesToApply;
+  }
+
+  /**
+   * Returns true if the current user is allowed to view the workflow configuration pages.
+   *
+   * @param object $auth
+   *   Kohana authorisation object.
+   *
+   * @return bool
+   *   True or False.
+   */
+  public static function allowWorkflowConfigAccess($auth) {
+    $workflowAvailable = $auth->logged_in('CoreAdmin');
+    if (!$workflowAvailable) {
+      $config = kohana::config('workflow_groups');
+      $r = [];
+      foreach ($config['groups'] as $group => $groupDef) {
+        $workflowAvailable = $auth->has_website_access('admin', $groupDef['owner_website_id']);
+        if ($workflowAvailable) {
+          break;
+        }
+      }
+    }
+    return $workflowAvailable;
   }
 
   /**
