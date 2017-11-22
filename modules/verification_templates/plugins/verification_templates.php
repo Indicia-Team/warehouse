@@ -1,5 +1,9 @@
 <?php
+
 /**
+ * @file
+ * Plugin file for the verification templates module.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Modules
+ * @package Modules
  * @subpackage Verification_templates
- * @author     Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link       https://github.com/Indicia-Team/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/
  */
 
 /**
@@ -28,14 +32,12 @@
  * @return array
  *   List of menu items exposed by this plugin.
  */
-/*
 function verification_templates_alter_menu($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('editor')) {
-    $menu['Admin']['Verification Templates'] = 'verification_template';
+    $menu['Admin']['Verification templates'] = 'verification_template';
   }
   return $menu;
 }
-*/
 
 /**
  * Implements the extend_data_services hook.
@@ -48,4 +50,3 @@ function verification_templates_alter_menu($menu, $auth) {
 function verification_templates_extend_data_services() {
   return array('verification_templates' => array());
 }
-

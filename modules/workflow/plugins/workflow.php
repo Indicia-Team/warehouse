@@ -37,8 +37,8 @@
 function workflow_alter_menu($menu, $auth) {
   $workflowAvailable = workflow::allowWorkflowConfigAccess($auth);
   if ($workflowAvailable) {
-    $menu['Admin']['Workflow Events'] = 'workflow_event';
-    $menu['Admin']['Workflow Metadata'] = 'workflow_metadata';
+    $menu['Admin']['Workflow events'] = 'workflow_event';
+    $menu['Admin']['Workflow metadata'] = 'workflow_metadata';
   }
   return $menu;
 }
