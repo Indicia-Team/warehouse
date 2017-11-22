@@ -103,7 +103,6 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
   //then makes sure the notification is sent as part of the immediate/hourly batch no matter what the
   //frequency is for on the verifier's notification setting for that source type
   $notificationsToSendEmailsForSql = "
-    set search_path TO indicia, public;
     SELECT distinct n.id, n.user_id, n.source_type, n.source, n.data, n.escalate_email_priority, u.username,
           coalesce(p.first_name, u.username) as name_to_use, o.website_id
         FROM notifications n
@@ -113,7 +112,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
           LEFT JOIN occurrences o on o.id=n.linked_id
           LEFT JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id and ttl.deleted=false
           LEFT JOIN taxa t on t.id = ttl.taxon_id and t.deleted=false
-  
+
           --This part just deals with the normal situation where we include a notification email if the user has a setting that matches the current run or has its escalate_email_priority set (so we always send immediately)
           LEFT JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND (unf.notification_frequency in (".$frequencyToRunString.") OR escalate_email_priority IS NOT NULL) AND unf.deleted='f'
           LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency";
@@ -123,19 +122,19 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
             -- if the current run is immediate/hourly then include the notification in the run
             LEFT JOIN workflow_metadata wm on 'IH' in (".$frequencyToRunString.") AND lower(wm.entity)='occurrence' AND lower(wm.key)='taxa_taxon_list_external_key' AND (wm.key_value=t.external_key AND t.external_key IS NOT NULL) AND wm.verifier_notifications_immediate=true AND wm.deleted=false
             LEFT JOIN user_email_notification_settings unfMetaDataLinked ON unfMetaDataLinked.notification_source_type=n.source_type AND n.source_type = 'VT' AND unfMetaDataLinked.user_id = n.user_id AND unfMetaDataLinked.deleted='f'
-            LEFT JOIN user_email_notification_frequency_last_runs unflrMetaDataLinked ON unflrMetaDataLinked.notification_frequency='IH'"; 
+            LEFT JOIN user_email_notification_frequency_last_runs unflrMetaDataLinked ON unflrMetaDataLinked.notification_frequency='IH'";
   }
-  $notificationsToSendEmailsForSql .= "   
+  $notificationsToSendEmailsForSql .= "
         WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f'
           --Send a notification if the user has a notification setting and notification that matches the current run
           --and the notification hasn't already been set (or nothing has ever been sent)
           AND ((unf.id IS NOT NULL AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL OR unflr.id IS NULL))";
-  if ($useWorkflowModule===true) {    
+  if ($useWorkflowModule===true) {
     $notificationsToSendEmailsForSql .= "
           -- Do same for high priority species verification tasks to be automatically included in the immediate hourly run
           OR  (wm.id IS NOT NULL AND unfMetaDataLinked.id IS NOT NULL AND (n.id>unflrMetaDataLinked.last_max_notification_id OR unflrMetaDataLinked.last_max_notification_id IS NULL or unflrMetaDataLinked.id IS NULL))";
   }
-  $notificationsToSendEmailsForSql .= "         
+  $notificationsToSendEmailsForSql .= "
         )
         ORDER BY n.user_id, u.username, n.source_type, n.id
   ";
