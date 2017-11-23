@@ -361,7 +361,8 @@ class ReportEngine {
       // Okay, all the parameters have been provided.
       $this->mergeCountQuery();
       $this->mergeQuery();
-      if ($this->limit === 0 || $this->limit === '0' || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords'] === 0)) {
+      if ($this->limit === 0 || $this->limit === '0'
+        || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords'] === '0')) {
         // Optimisation for zero limited queries.
         $data = array();
       }
@@ -943,7 +944,7 @@ SQL;
               }
             }
             elseif (($paramDefs[$name]['datatype'] === 'integer' || $paramDefs[$name]['datatype'] === 'float') && !is_numeric($value)) {
-              throw new exception('Invalid numeric parameter value');
+              throw new exception("Invalid numeric parameter value $value for $name");
             }
             elseif (($paramDefs[$name]['datatype'] === 'integer[]' || $paramDefs[$name]['datatype'] === 'float[]')) {
               // Array check on numeric parameter values.

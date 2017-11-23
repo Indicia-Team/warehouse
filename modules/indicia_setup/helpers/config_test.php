@@ -31,13 +31,18 @@ class config_test {
 
   /**
    * Check the system configuration.
-   * @param boolean $problems_only If true then only reports on problems, not successful checks. Defaults to false.
-   * @param boolean $force If true then forces a check even if the system configuration has been completed.
+   *
+   * @param boolean $problems_only
+   *   If true then only reports on problems, not successful checks. Defaults to false.
+   *
+   * @param boolean $force
+   *   If true then forces a check even if the system configuration has been completed.
    */
-  public static function check_config($problems_only=false, $force=false) {
+  public static function check_config($problems_only = FALSE, $force = FALSE) {
     $result = array();
+    $hasConfig = !empty(kohana::config_load('indicia', FALSE));
     // If the Indicia config is present, then everything has passed, so we can skip the tests unless it is being forced.
-    if ($force || kohana::config_load('indicia', false)==null) {
+    if ($force || !$hasConfig) {
       self::check_php_version($result, $problems_only);
       self::check_postgres($result, $problems_only);
       self::check_curl($result, $problems_only);
@@ -46,12 +51,11 @@ class config_test {
       self::check_zip($result, $problems_only);
       self::check_dir_permissions($result, $problems_only);
       self::check_email($result, $problems_only);
-      // Check db must be the last one
+      // Check db must be the last one.
       self::check_db($result, $problems_only);
     }
     return $result;
   }
-
 
   /**
    * Ensure that the PHP version running on the server is at least 5.2, which supports
@@ -149,9 +153,8 @@ class config_test {
    */
   private static function check_php_version(&$messages, $problems_only) {
     // PHP_VERSION_ID is available as of PHP 5.2.7, if our
-    // version is lower than that, then emulate it
-    if(!defined('PHP_VERSION_ID'))
-    {
+    // version is lower than that, then emulate it.
+    if (!defined('PHP_VERSION_ID')) {
         $version = PHP_VERSION;
         define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
     }
@@ -293,7 +296,8 @@ class config_test {
         'success' => true,
         'warning' => true
       ));
-    } elseif (!$problems_only) {
+    }
+    elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'Zip Library',
         'description' => '<p>The Zip library is installed.</p>',
@@ -390,7 +394,7 @@ class config_test {
    * @param string $fail A natural language description of the fail state.
    */
   private static function check_dir_permission($readonly, &$good_dirs, &$bad_dirs, $folder_name, $dir, $pass, $fail) {
-    $access_str=$readonly ? 'readable' : 'writeable';
+    $access_str = $readonly ? 'readable' : 'writeable';
     $dir = realpath($dir);
     if (!is_readable($dir))
       array_push($bad_dirs,

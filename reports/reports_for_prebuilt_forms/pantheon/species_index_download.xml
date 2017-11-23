@@ -1,0 +1,45 @@
+<report
+    title="Full species index for download"
+    description="A report which lists all Pantheon species along with trait data, without HTML/grid formatting."
+    >
+  <query website_filter_field="cttl.website_id">
+select #columns#
+from pantheon.species_index si
+#joins#
+where 1=1
+#filters#
+  </query>
+  <order_bys>
+    <order_by>si.order, si.family, si.species</order_by>
+  </order_bys>
+  <params>
+    <param name='taxon_group_id' display='Taxon group' description='ID of taxon group to filter to' datatype='integer' default=''>
+      <where>si.taxon_group_id=#taxon_group_id#</where>
+    </param>
+    <param name="trait_attr_id" display="Trait attribute Id" default=""
+           description="Trait attribute id to filter to species having this trait." datatype="integer">
+      <join>join taxa_taxon_list_attribute_values filtv on filtv.taxa_taxon_list_id=si.preferred_taxa_taxon_list_id and filtv.deleted=false
+        and filtv.taxa_taxon_list_attribute_id=#trait_attr_id#</join>
+    </param>
+    <param name="trait_term_id" display="Parent trait term ID" datatype="integer" default="">
+      <where>filtv.int_value=#trait_term_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="species" sql="si.species" display="Species" in_count="true" datatype="text" />
+    <column name="family" sql="si.family" display="Family" in_count="true" datatype="text" />
+    <column name="order" sql="si.order" display="Order" in_count="true" datatype="text" />
+    <column name="rarity_score" sql="si.rarity_score" display="SQS" datatype="integer" />
+    <column name="designations" sql="si.designations" display="Conservation status" datatype="text" />
+    <column name="larval_guild" sql="si.larval_guild" display="Larval feeding guild" datatype="text" />
+    <column name="adult_guild" sql="si.adult_guild" display="Adult feeding guild" datatype="text" />
+    <column name="broad_biotope" display="Broad biotope" datatype="text" sql="si.broad_biotope" />
+    <column name="specific_biotope" display="Habitat" datatype="text" sql="si.specific_biotope" />
+    <column name="resource" display="Resources" datatype="text" sql="si.resource" />
+    <column name="isis_sat_code" sql="si.isis_sat_code" display="Specific assemblage type" datatype="text" />
+    <column name="horus_indices" display="Habitat score" datatype="text" sql="si.horus_indices" />
+    <column name="taxon_meaning_id" sql="si.taxon_meaning_id" visible="false"/>
+    <column name="taxon_list_id" sql="si.taxon_list_id" visible="false"/>
+    <column name="associations" display="Associations" datatype="text" sql="si.associations" />
+  </columns>
+</report>

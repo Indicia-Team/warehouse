@@ -24,7 +24,7 @@
     <column name='sample_id' sql='s.id' display='Sample ID' in_count='true'/>
     <column name='sample_type' sql="'sample'" aggregate="true" />
     <column name='site_name' sql='coalesce(l.name,s.location_name)' display='Site Name' />
-    <column name='date_of_survey' sql='s.date_start' display='Date of Survey' />
+    <column name='date_of_survey' sql='vague_date_to_string(date_start, date_end, date_type)' display='Date of Survey' />
     <column name='surveyor' sql='s.recorder_names' display='Surveyor' />
     <column name='grid_ref' sql='s.entered_sref' display='Grid Ref' />
     <column name='comments' sql='s.comment' display='Comments' />
