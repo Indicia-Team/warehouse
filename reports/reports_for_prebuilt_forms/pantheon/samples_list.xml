@@ -5,7 +5,7 @@
   <query website_filter_field="o.website_id">
     select #columns#
     from samples s
-    left join cache_occurrences o on o.sample_id=s.id
+    left join cache_occurrences_functional o on o.sample_id=s.id
     left join (taxa_taxon_list_attribute_values ttlav
     join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttlav.deleted=false
     and ttla.caption='ecological division'
