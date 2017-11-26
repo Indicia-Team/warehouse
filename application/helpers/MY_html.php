@@ -24,12 +24,22 @@ defined('SYSPATH') or die('No direct script access.');
 
 class html extends html_Core {
 
- /**
-  * Outputs an error message in a span, but only if there is something to output
-  */
-  public static function error_message($message)
-  {
-    if ($message) echo '<br/><span class="form-notice ui-state-error ui-corner-all">'.$message.'</span>';
+  /**
+   * Outputs an error message in a span, but only if there is something to output.
+   */
+  public static function error_message($message) {
+    if ($message) {
+      echo "<span class=\"help-block\">$message</span>";
+    }
+  }
+
+  /**
+   * Outputs an error message in a span, but only if there is something to output.
+   */
+  public static function error_class($message) {
+    if ($message) {
+      echo "has-error";
+    }
   }
 
   /**
@@ -86,15 +96,15 @@ HTML;
   public static function form_buttons($allowDelete, $readOnly = FALSE, $allowUserSelectNextPage = TRUE) {
     $r = '<fieldset class="button-set form-inline">' . "\n";
     if ($readOnly) {
-      $r .= '<input type="submit" name="submit" value="' . kohana::lang('misc.cancel') . '" class="btn btn-default" />'."\n";
-
-    } else {
-      $r .= '<input type="submit" name="submit" value="' . kohana::lang('misc.save') . '" class="btn btn-primary" />' . "\n";
-      $r .= '<input type="submit" name="submit" value="' . kohana::lang('misc.cancel') . '" class="btn btn-default" />' . "\n";
+      $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.cancel') . '" class="btn btn-default" />'."\n";
+    }
+    else {
+      $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.save') . '" class="btn btn-primary" />' . "\n";
+      $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.cancel') . '" class="btn btn-default" />' . "\n";
       if ($allowDelete) {
-        $r .= '<input type="submit" name="submit" value="' . kohana::lang('misc.delete') . '" onclick="if (!confirm(\'' . kohana::lang('misc.confirm_delete').'\')) {return false;}" class="btn btn-warning" />'."\n";
+        $r .= '  <input type="submit" name="submit" value="' . kohana::lang('misc.delete') . '" onclick="if (!confirm(\'' . kohana::lang('misc.confirm_delete').'\')) {return false;}" class="btn btn-warning" />'."\n";
       }
-      // add a drop down to select action after submit clicked. Needs to remember its previous setting from the session,
+      // Add a drop down to select action after submit clicked. Needs to remember its previous setting from the session,
       // since we normally arrive here after a redirect.
       if (isset($_SESSION['what-next']) && $_SESSION['what-next'] === 'add') {
         $selAdd = ' selected="selected"';
@@ -107,15 +117,16 @@ HTML;
     if ($allowUserSelectNextPage) {
       $langThen = kohana::lang('misc.then');
       $r .= <<<CTRL
-<label for="next-action">$langThen</label>
-<select id="what-next" class="form-control" name="what-next">
-<option value="return"$selReturn>go back to the list</option>
-<option value="add"$selAdd>add new</option>
-</select>
+  <label for="next-action">$langThen</label>
+  <select id="what-next" class="form-control" name="what-next">
+    <option value="return"$selReturn>go back to the list</option>
+    <option value="add"$selAdd>add new</option>
+  </select>
+
 CTRL;
     }
   }
-  $r .= '</fieldset>';
+  $r .= "</fieldset>\n";
   return $r;
 }
 
