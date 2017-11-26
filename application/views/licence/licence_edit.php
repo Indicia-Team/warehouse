@@ -71,11 +71,7 @@ $id = html::initial_value($values, 'licence:id');
   </fieldset>
   <?php
   echo html::form_buttons($id!=null, false, false);
-  data_entry_helper::$dumped_resources[] = 'jquery';
-  data_entry_helper::$dumped_resources[] = 'jquery_ui';
-  data_entry_helper::$dumped_resources[] = 'fancybox';
   data_entry_helper::enable_validation('licence-edit');
-  data_entry_helper::link_default_stylesheet();
   echo data_entry_helper::dump_javascript();
   ?>
 </form>
