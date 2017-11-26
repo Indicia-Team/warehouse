@@ -123,35 +123,40 @@ class ORM extends ORM_Core {
 
   /**
    * Constructor allows plugins to modify the data model.
-   * @var int $id ID of the record to load. If null then creates a new record. If -1 then the ORM
-   * object is not initialised, providing access to the variables only.
+   *
+   * @var int $id
+   *   ID of the record to load. If null then creates a new record. If -1 then the ORM
+   *   object is not initialised, providing access to the variables only.
    */
-  public function __construct($id = NULL)
-  {
-    if (is_object($id) || $id!=-1) {
-      // use caching, so things don't slow down if there are lots of plugins. the object_name does not
+  public function __construct($id = NULL) {
+    if (is_object($id) || $id != -1) {
+      // Use caching, so things don't slow down if there are lots of plugins. the object_name does not
       // exist yet as we haven't called the parent construct, so we build our own.
       $object_name = strtolower(substr(get_class($this), 0, -6));
-      $cacheId = 'orm-'.$object_name;
+      $cacheId = "orm-$object_name";
       $this->cache = Cache::instance();
       $ormRelations = $this->cache->get($cacheId);
-      if ($ormRelations === null) {
-        // now look for modules which plugin to tweak the orm relationships.
+      if ($ormRelations === NULL) {
+        // Now look for modules which plugin to tweak the orm relationships.
         foreach (Kohana::config('config.modules') as $path) {
           $plugin = basename($path);
           if (file_exists("$path/plugins/$plugin.php")) {
-            require_once("$path/plugins/$plugin.php");
-            if (function_exists($plugin.'_extend_orm')) {
-              $extends = call_user_func($plugin.'_extend_orm');
+            require_once "$path/plugins/$plugin.php";
+            if (function_exists($plugin . '_extend_orm')) {
+              $extends = call_user_func($plugin . '_extend_orm');
               if (isset($extends[$object_name])) {
-                if (isset($extends[$object_name]['has_one']))
+                if (isset($extends[$object_name]['has_one'])) {
                   $this->has_one = array_merge($this->has_one, $extends[$object_name]['has_one']);
-                if (isset($extends[$object_name]['has_many']))
+                }
+                if (isset($extends[$object_name]['has_many'])) {
                   $this->has_many = array_merge($this->has_many, $extends[$object_name]['has_many']);
-                if (isset($extends[$object_name]['belongs_to']))
+                }
+                if (isset($extends[$object_name]['belongs_to'])) {
                   $this->belongs_to = array_merge($this->belongs_to, $extends[$object_name]['belongs_to']);
-                if (isset($extends[$object_name]['has_and_belongs_to_many']))
+                }
+                if (isset($extends[$object_name]['has_and_belongs_to_many'])) {
                   $this->has_and_belongs_to_many = array_merge($this->has_and_belongs_to_many, $extends[$object_name]['has_and_belongs_to_many']);
+                }
               }
             }
           }
@@ -163,7 +168,8 @@ class ORM extends ORM_Core {
           'has_and_belongs_to_many' => $this->has_and_belongs_to_many
         );
         $this->cache->set($cacheId, $cacheArray);
-      } else {
+      }
+      else {
         $this->has_one = $ormRelations['has_one'];
         $this->has_many = $ormRelations['has_many'];
         $this->belongs_to = $ormRelations['belongs_to'];
@@ -182,17 +188,22 @@ class ORM extends ORM_Core {
       'model' => $this->object_name,
       'id' => $this->id,
     );
-    // Add the external key and timestamps if present
-    if (!empty($this->external_key))
+    // Add the external key and timestamps if present.
+    if (!empty($this->external_key)) {
       $r['external_key'] = $this->external_key;
-    if (!empty($this->created_on))
+    }
+    if (!empty($this->created_on)) {
       $r['created_on'] = $this->created_on;
-    if (!empty($this->updated_on))
+    }
+    if (!empty($this->updated_on)) {
       $r['updated_on'] = $this->updated_on;
-    if (count($this->nestedChildModelIds))
+    }
+    if (count($this->nestedChildModelIds)) {
       $r['children'] = $this->nestedChildModelIds;
-    if (count($this->nestedParentModelIds))
+    }
+    if (count($this->nestedParentModelIds)) {
       $r['parents'] = $this->nestedParentModelIds;
+    }
     return $r;
   }
 
@@ -201,77 +212,81 @@ class ORM extends ORM_Core {
    * @param   array  values to load
    * @return  ORM
    */
-  public function load_values(array $values)
-  {
-    // clear out any values which match this attribute field prefix
+  public function load_values(array $values) {
+    // Clear out any values which match this attribute field prefix.
     if (isset($this->attrs_field_prefix)) {
-      foreach ($values as $key=>$value) {
-        if (substr($key, 0, strlen($this->attrs_field_prefix)+1)==$this->attrs_field_prefix.':') {
+      foreach ($values as $key => $value) {
+        if (substr($key, 0, strlen($this->attrs_field_prefix) + 1) === $this->attrs_field_prefix . ':') {
           unset($values[$key]);
         }
       }
     }
     parent::load_values($values);
-    // Add in date field
-    if (array_key_exists('date_type', $this->object) && !empty($this->object['date_type']))
-    {
-      $vd = vague_date::vague_date_to_string(array
-      (
+    // Add in date field.
+    if (array_key_exists('date_type', $this->object) && !empty($this->object['date_type'])) {
+      $vd = vague_date::vague_date_to_string([
         $this->object['date_start'],
         $this->object['date_end'],
-        $this->object['date_type']
-      ));
+        $this->object['date_type'],
+      ]);
       $this->object['date'] = $vd;
     }
     return $this;
   }
 
   /**
-   * Override the reload_columns method to add the vague_date virtual field
-   * @param bool $force Reload the columns from the db even if already loaded
-   * @return $this|\ORM
+   * Override the reload_columns method to add the vague_date virtual field.
+   *
+   * @param bool $force
+   *   Reload the columns from the db even if already loaded.
+   *
+   * @return object
+   *   $this returned to allow chaining.
+   *
    * @throws \Kohana_Database_Exception
    */
-  public function reload_columns($force = FALSE)
-  {
-    if ($force === TRUE OR empty($this->table_columns))
-    {
-      // Load table columns
+  public function reload_columns($force = FALSE){
+    if ($force === TRUE || empty($this->table_columns)) {
+      // Load table columns.
       $this->table_columns = postgreSQL::list_fields($this->table_name, $this->db);
-      // Vague date
-      if (array_key_exists('date_type', $this->table_columns))
-      {
+      // Vague date.
+      if (array_key_exists('date_type', $this->table_columns)) {
         $this->table_columns['date']['type'] = 'String';
       }
     }
-
     return $this;
   }
 
   /**
+   * Retrieve an error message.
+   *
    * Provide an accessor so that the view helper can retrieve the error for the model by field name.
    * Will also retrieve errors from linked models (models that were posted in the same submission)
    * if the field name is of the form model:fieldname.
    *
-   * @param string $fieldname Name of the field to retrieve errors for. The fieldname can either be
-   * simple, or of the form model:fieldname in which linked models can also be checked for errors. If the
-   * submission structure defines the fieldPrefix for the model then this is used instead of the model name.
-   * @return string The error text.
+   * @param string $fieldname
+   *   Name of the field to retrieve errors for. The fieldname can either be simple, or of the form
+   *   model:fieldname in which linked models can also be checked for errors. If the submission
+   *   structure defines the fieldPrefix for the model then this is used instead of the model name.
+   *
+   * @return string
+   *   The error text.
    */
   public function getError($fieldname) {
-    $r='';
+    $r = '';
     if (array_key_exists($fieldname, $this->errors)) {
-      // model is unspecified, so load error from this model.
-      $r=$this->errors[$fieldname];
-    } elseif (strpos($fieldname, ':')!==false) {
-      list($model, $field)=explode(':', $fieldname);
-      // model is specified
-      $struct=$this->get_submission_structure();
+      // Model is unspecified, so load error from this model.
+      $r = $this->errors[$fieldname];
+    }
+    elseif (strpos($fieldname, ':') !== FALSE) {
+      list($model, $field) = explode(':', $fieldname);
+      // Model is specified.
+      $struct = $this->get_submission_structure();
       $fieldPrefix = array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $this->object_name;
-      if ($model==$fieldPrefix) {
+      if ($model == $fieldPrefix) {
         // model is this model
         if (array_key_exists($field, $this->errors)) {
-          $r=$this->errors[$field];
+          $r = $this->errors[$field];
         }
       }
     }
@@ -280,14 +295,14 @@ class ORM extends ORM_Core {
 
   /**
    * Retrieve an array containing all errors.
+   *
    * The array entries are of the form 'entity:field => value'.
    */
-  public function getAllErrors()
-  {
-    // Get this model's errors, ensuring array keys have prefixes identifying the entity
+  public function getAllErrors() {
+    // Get this model's errors, ensuring array keys have prefixes identifying the entity.
     foreach ($this->errors as $key => $value) {
-      if (strpos($key, ':')===false) {
-        $this->errors[$this->object_name.':'.$key]=$value;
+      if (strpos($key, ':') === FALSE) {
+        $this->errors[$this->object_name . ':' . $key] = $value;
         unset($this->errors[$key]);
       }
     }
@@ -479,14 +494,17 @@ class ORM extends ORM_Core {
   public function caption() {
     if ($this->id) {
       return $this->__get($this->search_field);
-    } else {
+    }
+    else {
       return $this->getNewItemCaption();
     }
   }
 
   /**
    * Retrieve the caption of a new entry of this model type. Overrideable as required.
-   * @return string Caption for a new entry.
+   *
+   * @return string
+   *   Caption for a new entry.
    */
   protected function getNewItemCaption() {
     return ucwords(str_replace('_', ' ', $this->object_name));
@@ -494,16 +512,19 @@ class ORM extends ORM_Core {
 
   /**
    * Indicates if this model type can create new instances from data supplied in its caption format.
-   * Overrideable as required.
-   * @return boolean, override to true if your model supports this.
+   *
+   * @return bool
+   *   Override to true if your model supports this.
    */
   protected function canCreateFromCaption() {
-    return false;
+    return FALSE;
   }
 
   /**
    * Puts each supplied caption in a submission and sends it to the supplied model.
-   * @return array, an array of record id values for the created records.
+   *
+   * @return array
+   *   An array of record id values for the created records.
    */
   private function createRecordsFromCaptions() {
     $r = array();
