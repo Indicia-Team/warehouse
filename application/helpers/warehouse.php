@@ -36,12 +36,7 @@ class warehouse {
       require_once DOCROOT . "client_helpers/$helper.php";
     }
     require_once DOCROOT . 'client_helpers/templates.bootstrap-3.php';
-    helper_base::$resource_list['defaultStylesheet']['stylesheets'] = array(
-      helper_base::$base_url . "media/css/default_site.css",
-      helper_base::$base_url . "media/css/theme-bootstrap-3.css"
-    );
-    helper_base::link_default_stylesheet();
-    // No need to re-link to jQuery.
+    // No need to re-link to jQuery as included in tempalate.
     helper_base::$dumped_resources[] = 'jquery';
     helper_base::$dumped_resources[] = 'jquery_ui';
     helper_base::$dumped_resources[] = 'fancybox';

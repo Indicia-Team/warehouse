@@ -1,5 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html>
 <?php
 
 /**
@@ -55,7 +54,9 @@ echo html::stylesheet(
     'media/js/fancybox/source/jquery.fancybox.css',
     'media/css/jquery-ui.min',
     'media/css/jquery.autocomplete',
-    "media/themes/$theme/jquery-ui.theme.min"
+    "media/themes/$theme/jquery-ui.theme.min",
+    'media/css/default_site.css',
+    'media/css/theme-bootstrap-3.css',
   ),
   array('screen')
 );
@@ -76,8 +77,6 @@ echo html::script(
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
       integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
       crossorigin="anonymous"></script>
-<!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-<script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
 <script type="text/javascript">
 // @todo Do we need a delegate event to hook up FancyBox after any Ajax calls?
 </script>
