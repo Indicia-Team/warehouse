@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
+ * @package Core
  * @subpackage Controllers
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -33,12 +33,17 @@
  */
 class Indicia_Controller extends Template_Controller {
 
-  // Template view name
+  /**
+   * Name of the main template view file.
+   *
+   * @var string
+   */
   public $template = 'templates/template';
 
   /**
    * Array of page specific breadcrumbs. Subclasses can append to this as required.
-   * @var array $page_breadcrumbs
+   *
+   * @var array
    */
   protected $page_breadcrumbs = array();
 
@@ -48,9 +53,8 @@ class Indicia_Controller extends Template_Controller {
    */
   private $allowedPersonIds;
 
-  public function __construct()
-  {
-    // AJAX requests don't need an outer template
+  public function __construct() {
+    // AJAX requests don't need an outer template.
     if (request::is_ajax()) {
       $this->template = 'templates/blank';
     }
@@ -63,9 +67,10 @@ class Indicia_Controller extends Template_Controller {
     $this->db = Database::instance();
     $this->auth = new Auth;
     $this->session = new Session;
-    if ($this->auth->logged_in())
+    if ($this->auth->logged_in()) {
       $this->template->menu = self::get_menu();
-    $title=kohana::config('indicia.warehouse_title');
+    }
+    $title = kohana::config('indicia.warehouse_title');
     $this->template->warehouseTitle = $title ? $title : 'Indicia Warehouse';
   }
 
@@ -73,10 +78,10 @@ class Indicia_Controller extends Template_Controller {
    * Overriding the render method gives us a single point to check that this page
    * is authorised.
    */
-  public function _render()
-  {
-    if(!$this->page_authorised())
+  public function _render() {
+    if (!$this->page_authorised()) {
       $this->access_denied('page');
+    }
     parent::_render();
   }
 
@@ -85,65 +90,69 @@ class Indicia_Controller extends Template_Controller {
    * @return array Menu structure
    */
   protected function get_menu() {
-    // use caching, so things don't slow down if there are lots of plugins which extend the menu. Caching must be per
+    // Use caching, so things don't slow down if there are lots of plugins which extend the menu. Caching must be per
     // user as they will have different access rights.
-    $cacheId = 'indicia-menu-'.$_SESSION['auth_user']->id;
+    $cacheId = 'indicia-menu-' . $_SESSION['auth_user']->id;
     $cache = Cache::instance();
     if ($cached = $cache->get($cacheId)) {
       return $cached;
-    } else {
-      $menu = array ('Home' => array());
-      if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin'))
-        $menu['Lookup lists'] = array(
-          'Species lists'=>'taxon_list',
-          'Taxon groups'=>'taxon_group',
-          'Term lists'=>'termlist',
-          'Locations'=>'location',
-          'Survey datasets'=>'survey',
-          'People'=>'person'
-        );
-      if ($this->auth->has_any_website_access('admin') || $this->auth->logged_in('CoreAdmin'))
-        $menu['Custom attributes'] = array(
-          'Occurrence attributes'=>'occurrence_attribute',
-          'Sample attributes'=>'sample_attribute',
-          'Location attributes'=>'location_attribute',
-          'Survey attributes'=>'survey_attribute',
-          'Person attributes'=>'person_attribute',
-          'Taxon attributes'=>'taxa_taxon_list_attribute',
-          'Term attributes'=>'termlists_term_attribute'
-        );
-      if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin'))
-        $menu['Entered data'] = array(
+    }
+    else {
+      $menu = ['Home' => []];
+      if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin')) {
+        $menu['Lookup lists'] = [
+          'Species lists' => 'taxon_list',
+          'Taxon groups' => 'taxon_group',
+          'Term lists' => 'termlist',
+          'Locations' => 'location',
+          'Survey datasets' => 'survey',
+          'People' => 'person'
+        ];
+      }
+      if ($this->auth->has_any_website_access('admin') || $this->auth->logged_in('CoreAdmin')) {
+        $menu['Custom attributes'] = [
+          'Occurrence attributes' => 'occurrence_attribute',
+          'Sample attributes' => 'sample_attribute',
+          'Location attributes' => 'location_attribute',
+          'Survey attributes' => 'survey_attribute',
+          'Person attributes' => 'person_attribute',
+          'Taxon attributes' => 'taxa_taxon_list_attribute',
+          'Term attributes' => 'termlists_term_attribute'
+        ];
+      }
+      if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin')) {
+        $menu['Entered data'] = [
           'Occurrences' => 'occurrence',
           'Samples' => 'sample',
           'Reports' => 'report'
-        );
-      $adminMenu = array('Triggers &amp; notifications' => 'trigger');
+        ];
+      }
+      $adminMenu = ['Triggers &amp; notifications' => 'trigger'];
       // Core admin can see all users or websites plus web admins can see their own users and websites.
       if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin')) {
-        $adminMenu['Websites']='website';
-        $adminMenu['Users']='user';
+        $adminMenu['Websites'] = 'website';
+        $adminMenu['Users'] = 'user';
       }
-      if($this->auth->logged_in('CoreAdmin')) {
-        $adminMenu['Website agreements']='website_agreement';
-        $adminMenu['Languages']='language';
-        $adminMenu['Licences']='licence';
-        $adminMenu['Titles']='title';
-        $adminMenu['Taxon ranks']='taxon_rank';
-        $adminMenu['Taxon relations']='taxon_relation_type';
+      if ($this->auth->logged_in('CoreAdmin')) {
+        $adminMenu['Website agreements'] = 'website_agreement';
+        $adminMenu['Languages'] = 'language';
+        $adminMenu['Licences'] = 'licence';
+        $adminMenu['Titles'] = 'title';
+        $adminMenu['Taxon ranks'] = 'taxon_rank';
+        $adminMenu['Taxon relations'] = 'taxon_relation_type';
       }
       $menu['Admin'] = $adminMenu;
-      $menu['Logged in as '.$_SESSION['auth_user']->username] = array(
-          'Set new password' => 'new_password',
-          'Logout'=>'logout'
-      );
-      // Now look for any modules which extend the menu
+      $menu['Logged in as ' . $_SESSION['auth_user']->username] = [
+        'Set new password' => 'new_password',
+        'Logout' => 'logout',
+      ];
+      // Now look for any modules which extend the menu.
       foreach (Kohana::config('config.modules') as $path) {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
-          require_once("$path/plugins/$plugin.php");
-          if (function_exists($plugin.'_alter_menu')) {
-            $menu = call_user_func($plugin.'_alter_menu', $menu, $this->auth);
+          require_once "$path/plugins/$plugin.php";
+          if (function_exists($plugin . '_alter_menu')) {
+            $menu = call_user_func($plugin . '_alter_menu', $menu, $this->auth);
           }
         }
       }
@@ -281,7 +290,7 @@ class Indicia_Controller extends Template_Controller {
     }
     if (array_key_exists('metaFields', $struct)) {
       foreach ($struct['metaFields'] as $m) {
-        $r["metaField:$m"]='';
+        $r["metaField:$m"] = '';
       }
     }
 
@@ -392,16 +401,15 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-  * Sets the model submission, saves the submission array.
-  */
-  protected function submit($deletion=false)
-  {
-    if (($id = $this->model->submit()) != null)
-    {
-      // Record has saved correctly
+   * Sets the model submission, saves the submission array.
+   */
+  protected function submit($deletion = FALSE) {
+    if (($id = $this->model->submit()) != NULL) {
+      // Record has saved correctly.
       $this->show_submit_succ($id, $deletion);
-    } else {
-      // Record has errors - now embedded in model
+    }
+    else {
+      // Record has errors - now embedded in model.
       $this->show_submit_fail();
     }
   }
@@ -409,11 +417,11 @@ class Indicia_Controller extends Template_Controller {
   /**
   * Returns to the index view for this controller.
   */
-  protected function show_submit_succ($id, $deletion=false)
-  {
-    Kohana::log("debug", "Submitted record ".$id." successfully.");
+  protected function show_submit_succ($id, $deletion = FALSE) {
+    Kohana::log("debug", "Submitted record " . $id . " successfully.");
     $action = $deletion ? "deleted" : "saved";
-    $this->session->set_flash('flash_info', "The record was $action successfully. <a href=\"".url::site().$this->model->object_name."/edit/$id\">Click here to edit</a>.");
+    $this->session->set_flash('flash_info', "The record was $action successfully. <a href=\"" . url::site() .
+      $this->model->object_name . "/edit/$id\">Click here to edit</a>.");
     $this->redirectToIndex();
   }
 
@@ -423,11 +431,14 @@ class Indicia_Controller extends Template_Controller {
    */
   private function redirectToIndex() {
     // What to do next setting needs to be kept between sessions as it persists after the redirect, so
-    // we can repopulate the select on data entry forms with the previuos value
-    if (isset($_POST['what-next'])) $_SESSION['what-next'] = $_POST['what-next'];
-    if(isset($_POST['return_url'])) {
+    // we can repopulate the select on data entry forms with the previuos value.
+    if (isset($_POST['what-next'])) {
+      $_SESSION['what-next'] = $_POST['what-next'];
+    }
+    if (isset($_POST['return_url'])) {
       url::redirect($_POST['return_url']);
-    } else {
+    }
+    else {
       url::redirect($this->get_return_page());
     }
   }
@@ -435,22 +446,22 @@ class Indicia_Controller extends Template_Controller {
   /**
   * Returns to the edit page to correct errors - now embedded in the model
   */
-  protected function show_submit_fail()
-  {
-    $page_errors=$this->model->getPageErrors();
-    if (count($page_errors)!=0) {
-      $this->session->set_flash('flash_error', implode('<br/>',$page_errors));
-    } else {
+  protected function show_submit_fail() {
+    $page_errors = $this->model->getPageErrors();
+    if (count($page_errors) > 0) {
+      $this->session->set_flash('flash_error', implode('<br/>', $page_errors));
+    }
+    else {
       $this->session->set_flash('flash_error', 'The record could not be saved.');
     }
     $values = $this->getDefaults();
     $values = array_merge($values, $_POST);
+    helper_base::$validation_errors = $this->model->getAllErrors();
     $this->showEditPage($values);
   }
 
-  protected function setError($title, $message)
-  {
-    $this->template->title   = $title;
+  protected function setError($title, $message) {
+    $this->template->title = $title;
     $this->template->content = new View('templates/error_message');
     $this->template->content->message = $message;
   }
@@ -550,7 +561,7 @@ class Indicia_Controller extends Template_Controller {
         ->from('termlists_terms')
         ->join('terms', 'terms.id', 'termlists_terms.term_id')
         ->where(array('termlists_terms.termlist_id' => $termlist, 'termlists_terms.deleted' => 'f', 'terms.deleted' => 'f'))
-        ->orderby(array('termlists_terms.sort_order'=>'ASC', 'terms.term'=>'ASC'));
+        ->orderby(array('termlists_terms.sort_order' => 'ASC', 'terms.term' => 'ASC'));
     if ($where)
       $terms = $terms->where($where);
     $terms = $terms->get();
