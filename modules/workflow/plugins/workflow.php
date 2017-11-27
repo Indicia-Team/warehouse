@@ -54,7 +54,7 @@ function workflow_alter_menu($menu, $auth) {
 function workflow_extend_data_services() {
   return array(
     'workflow_events' => array(),
-    'workflow_metadata' => array()
+    'workflow_metadata' => array('allow_full_access' => TRUE)
   );
 }
 
