@@ -71,11 +71,13 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
       }
     }
     // Load workflow groups from configuration file.
-    $config = kohana::config('workflow_groups');
+    $config = kohana::config('workflow_groups', FALSE, FALSE);
     $groups = [];
-    foreach ($config['groups'] as $group => $groupDef) {
-      if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_website_access('admin', $groupDef['owner_website_id'])) {
-        $groups[] = $group;
+    if ($config) {
+      foreach ($config['groups'] as $group => $groupDef) {
+        if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_website_access('admin', $groupDef['owner_website_id'])) {
+          $groups[] = $group;
+        }
       }
     }
     return array(
