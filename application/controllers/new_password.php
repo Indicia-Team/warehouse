@@ -16,8 +16,8 @@
  *
  * @package Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @link https://github.com/indicia-team/warehouse
  * @license http://www.gnu.org/licenses/gpl.html GPL
  */
 
@@ -131,7 +131,7 @@ class New_Password_Controller extends Indicia_Controller {
       $this->template->content->message = 'Attempt to set password when not logged in.';
       return;
     }
-    
+
     $user_validation = new Validation($_POST);
     $person_validation = new Validation($_POST);
 
@@ -172,7 +172,7 @@ class New_Password_Controller extends Indicia_Controller {
 
     }
   }
-  
+
   protected function page_authorised()
   {
     return true;

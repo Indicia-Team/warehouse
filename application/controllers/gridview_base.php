@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
+ * @package Core
  * @subpackage Controllers
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
@@ -76,9 +76,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     // Templating
     $this->template->title = $this->pagetitle;
     $this->template->content = $this->view;
-    
+
     // Setup breadcrumbs
-    $this->page_breadcrumbs[] = html::anchor($this->modelname, $this->pagetitle);    
+    $this->page_breadcrumbs[] = html::anchor($this->modelname, $this->pagetitle);
   }
 
   /**
@@ -104,16 +104,16 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $this->upload_csv_form->controllerpath = $this->controllerpath;
     $this->view->upload_csv_form = $this->upload_csv_form;
   }
-  
+
   /**
    * Overridable function to determine if an edit page should be read only or not.
    * @return boolean True if edit page should be read only.
    */
   protected function get_read_only($values) {
-    return false;   
+    return false;
   }
-  
-  /** 
+
+  /**
    * Controller function to display a generic import wizard for any data.
    */
   public function importer() {
@@ -124,9 +124,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     // but make it clear the bottom level breadcrumb is the importer
     $this->page_breadcrumbs[count($this->page_breadcrumbs)-1] = kohana::lang('misc.model_import', $this->model->caption());
   }
-  
+
   /**
-   * Loads the custom attributes for a taxon, sample, location, survey, person or occurrence into the load array. 
+   * Loads the custom attributes for a taxon, sample, location, survey, person or occurrence into the load array.
    * Also sets up any lookup lists required.
    * This is only called by sub-classes for entities that have associated attributes.
    */
@@ -182,7 +182,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $r['attributes'] = $attrs;
     // now work out if we need termlist content for lookups
     foreach ($attrs as $attr) {
-      // if there are any lookup lists in the attributes, preload the options     
+      // if there are any lookup lists in the attributes, preload the options
       if (!empty($attr['termlist_id'])) {
         $r['terms_'.$attr['termlist_id']]=$this->get_termlist_terms($attr['termlist_id']);
         $r['terms_'.$attr['termlist_id']][''] = '-no value-';

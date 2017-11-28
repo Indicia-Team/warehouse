@@ -14,17 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Config
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
 
-$config['uncountable'] = array
-(
+$config['uncountable'] = [
   'access',
   'advice',
   'art',
@@ -65,10 +64,9 @@ $config['uncountable'] = array
   'work',
   'workflow_undo',
   'workflow_metadata',
-);
+];
 
-$config['irregular'] = array
-(
+$config['irregular'] = [
   'child' => 'children',
   'clothes' => 'clothing',
   'man' => 'men',
@@ -88,4 +86,4 @@ $config['irregular'] = array
   'location_medium' => 'location_media',
   'taxon_medium' => 'taxon_media',
   'survey_medium' => 'survey_media'
-);
+];

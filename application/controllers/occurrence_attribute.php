@@ -16,8 +16,8 @@
  *
  * @package Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @link https://github.com/indicia-team/warehouse
  * @license http://www.gnu.org/licenses/gpl.html GPL
  */
 
@@ -29,8 +29,7 @@
  */
 class Occurrence_attribute_Controller extends Attr_Gridview_Base_Controller {
 
-  public function __construct()
-  {
+  public function __construct() {
     $this->prefix = 'occurrence';
     parent::__construct();
   }
