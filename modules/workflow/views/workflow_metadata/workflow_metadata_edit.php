@@ -1,5 +1,9 @@
 <?php
+
 /**
+ * @file
+ * View template for the workflow metadata edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,16 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Modules
+ * @package Modules
  * @subpackage Workflow
- * @author     Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link       https://github.com/Indicia-Team/
+ * @author ndicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
+require_once DOCROOT . 'client_helpers/data_entry_helper.php';
+if (isset($_POST)) {
+  data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
+}
 ?>
 <form class="iform" action="<?php echo url::site(); ?>workflow_metadata/save" method="post" id="entry-form">
   <fieldset>
@@ -31,35 +36,42 @@ if (isset($_POST))
 data_entry_helper::link_default_stylesheet();
 data_entry_helper::enable_validation('entry-form');
 echo data_entry_helper::hidden_text(array(
-    'fieldname'=>'workflow_metadata:id',
-    'default'=>html::initial_value($values, 'workflow_metadata:id')
+    'fieldname' => 'workflow_metadata:id',
+    'default' => html::initial_value($values, 'workflow_metadata:id')
 ));
 echo data_entry_helper::select(array(
-    'label'=>'Entity',
-    'fieldname'=>'workflow_metadata:entity',
+    'label' => 'Workflow group',
+    'fieldname' => 'workflow_metadata:group_code',
+    'lookupValues' => $other_data['groupSelectItems'],
+    'default' => html::initial_value($values, 'workflow_metadata:group_code'),
+    'validation' => array('required')
+  ));
+echo data_entry_helper::select(array(
+    'label' => 'Entity',
+    'fieldname' => 'workflow_metadata:entity',
     'lookupValues' => $other_data['entitySelectItems'],
-    'default'=>html::initial_value($values, 'workflow_metadata:entity'),
+    'default' => html::initial_value($values, 'workflow_metadata:entity'),
     'validation' => array('required')
 ));
 echo data_entry_helper::hidden_text(array(
-    'fieldname'=>'old_workflow_metadata_key',
-    'default'=>html::initial_value($values, 'workflow_metadata:key')
+    'fieldname' => 'old_workflow_metadata_key',
+    'default' => html::initial_value($values, 'workflow_metadata:key')
 ));
 echo data_entry_helper::select(array(
-    'label'=>'Key',
-    'fieldname'=>'workflow_metadata:key',
+    'label' => 'Key',
+    'fieldname' => 'workflow_metadata:key',
     'lookupValues' => array(),
     'validation' => array('required')
 ));
 echo data_entry_helper::text_input(array(
-    'label'=>'Key Value',
-    'fieldname'=>'workflow_metadata:key_value',
-    'default'=>html::initial_value($values, 'workflow_metadata:key_value'),
+    'label' => 'Key Value',
+    'fieldname' => 'workflow_metadata:key_value',
+    'default' => html::initial_value($values, 'workflow_metadata:key_value'),
     'validation' => array('required')
 ));
 echo data_entry_helper::text_input(array(
-    'label'=>'Verification delay (hours)',
-    'fieldname'=>'workflow_metadata:verification_delay_hours',
+    'label' => 'Verification delay (hours)',
+    'fieldname' => 'workflow_metadata:verification_delay_hours',
     'default'=>html::initial_value($values, 'workflow_metadata:verification_delay_hours'),
     'validation' => array('required','integer','min(0)')
 ));
@@ -68,10 +80,11 @@ echo data_entry_helper::checkbox(array(
     'fieldname' => 'workflow_metadata:verifier_notifications_immediate',
     'default' => html::initial_value($values, 'workflow_metadata:verifier_notifications_immediate') // default false
 ));
-if(isset($values['workflow_metadata:id'])) {
+if (isset($values['workflow_metadata:id'])) {
   $default = html::initial_value($values, 'workflow_metadata:log_all_communications');
-} else {
-  $default = true;
+}
+else {
+  $default = TRUE;
 }
 echo data_entry_helper::checkbox(array(
     'label' => 'Log all communications',
@@ -80,7 +93,7 @@ echo data_entry_helper::checkbox(array(
 ));
 
 echo $metadata;
-echo html::form_buttons(html::initial_value($values, 'workflow_metadata:id')!=null, false, false);
+echo html::form_buttons(html::initial_value($values, 'workflow_metadata:id') != NULL, FALSE, FALSE);
 
 ?>
 <script type="text/javascript">

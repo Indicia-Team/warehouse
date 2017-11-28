@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Modules
+ * @package Modules
  * @subpackage Workflow
- * @author     Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link       https://github.com/Indicia-Team/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
 /**
@@ -30,9 +30,10 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
     parent::__construct('workflow_metadata');
     $this->columns = array(
       'id' => 'ID',
+      'group_code' => 'Workflow group',
       'entity' => 'Entity',
       'key' => 'Key',
-      'key_value' => 'Key value'
+      'key_value' => 'Key value',
     );
     $this->pagetitle = 'Workflow module metadata specification';
   }
@@ -41,7 +42,7 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
     return array(
       array(
         'caption' => 'Edit',
-        'url' => 'workflow_metadata/edit/{id}'
+        'url' => 'workflow_metadata/edit/{id}',
       )
     );
   }
@@ -49,13 +50,23 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
   protected function prepareOtherViewData($values) {
     $config = kohana::config('workflow');
     $entitySelectItems = array();
-
     foreach ($config['entities'] as $entity => $entityDef) {
       $entitySelectItems[$entity] = $entityDef['title'];
     }
+    // Load workflow groups from configuration file.
+    $groupConfig = kohana::config('workflow_groups', FALSE, FALSE);
+    $groups = [];
+    if ($groupConfig) {
+      foreach ($groupConfig['groups'] as $group => $groupDef) {
+        if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_website_access('admin', $groupDef['owner_website_id'])) {
+          $groups[] = $group;
+        }
+      }
+    }
     return array(
       'entities' => $config['entities'],
-      'entitySelectItems' => $entitySelectItems
+      'entitySelectItems' => $entitySelectItems,
+      'groupSelectItems' => $groups,
     );
   }
 

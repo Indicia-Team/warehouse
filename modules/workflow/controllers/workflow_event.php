@@ -18,7 +18,7 @@
  * @subpackage Workflow
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/Indicia-Team/
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
 /**
