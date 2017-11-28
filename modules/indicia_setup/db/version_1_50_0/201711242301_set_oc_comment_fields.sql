@@ -14,11 +14,11 @@ BEGIN
     audit := TRUE;
     RAISE INFO 'audit active';
   EXCEPTION
-    WHEN OTHERS THEN 
+    WHEN OTHERS THEN
       audit := FALSE;
       RAISE INFO 'audit inactive';
   END;
-  
+
   UPDATE occurrence_comments SET confidential = 'f';
 
   ALTER TABLE occurrence_comments
@@ -26,7 +26,7 @@ BEGIN
     ALTER COLUMN confidential SET NOT NULL;
 
   IF audit THEN
-    SELECT audit.audit_table('occurrence_comments', true, 'occurrence_id'); 
+    PERFORM audit.audit_table('occurrence_comments', true, 'occurrence_id');
   END IF;
 
   RETURN audit;
