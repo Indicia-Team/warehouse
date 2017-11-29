@@ -965,6 +965,8 @@ SQL;
               $value = $date->format('Y-m-d');
             }
             if (!empty($paramDefs[$name]['preprocess']) && !empty($value) && $value !== 'NULL') {
+              // Ensure the original value can be used as well as the processed value.
+              $query = preg_replace("/#$name-unprocessed#/", $value, $query);
               // Use a preprocessing query to calculate the actual param value to use.
               $prequery = str_replace("#$name#", $value, $paramDefs[$name]['preprocess']);
               $output = $this->reportDb->query($prequery)->result_array(FALSE);

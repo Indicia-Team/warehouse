@@ -1,7 +1,8 @@
 <report
-    title="Explore occurrences map (standard filters, low resolution)"
-    description="A list of occurrences including geometry information designed for mapping output. Output is aggregated
-    to grid squares suitable for lower resolution output when zoomed out."
+    title="Explore occurrences map (standard filters, low resolution, workflow)"
+    description="A list of occurrences including geometry information designed for mapping output with additional
+      columns and parameters to support workflow. Output is aggregated to grid squares suitable for lower resolution
+      output when zoomed out."
     featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
@@ -13,6 +14,9 @@
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   LEFT JOIN index_websites_website_agreements canEdit on canEdit.from_website_id=o.website_id
     and canEdit.to_website_id in (#website_ids#) and canEdit.provide_for_editing=true
+  JOIN workflow_metadata wm ON wm.key='taxa_taxon_list_external_key'
+          and wm.key_value=o.taxa_taxon_list_external_key
+          and wm.group_code='#workflow_group_code-unprocessed#'
   #agreements_join#
   #joins#
   WHERE #sharing_filter#
@@ -35,8 +39,15 @@
     </param>
     <param name="workflow_group_code" display="Workflow group code" default=""
            description="Code for the Workflow group to show associated records for."
-           preprocess="select '''' || string_agg(key_value, ''', ''') || '''' from workflow_metadata where key='taxa_taxon_list_external_key' and entity='occurrence'">
+           preprocess="
+             select '''' || string_agg(key_value, ''', ''') || '''' from workflow_metadata
+             where key='taxa_taxon_list_external_key' and entity='occurrence'
+             and group_code='#workflow_group_code#'
+             ">
       <where>o.taxa_taxon_list_external_key in (#workflow_group_code#)</where>
+    </param>
+    <param name="workflow_overdue" display="Overdue records only" default="" datatype="boolean">
+      <where>o.created_on &lt; now() - (wm.verification_delay_hours::varchar || ' hours')::interval</where>
     </param>
   </params>
   <columns>
@@ -51,9 +62,9 @@
     <column name='taxon_group_id' sql='o.taxon_group_id' on_demand="true" datatype="integer" />
     <column name='taxa_taxon_list_id' sql='o.taxa_taxon_list_id' on_demand="true" datatype="integer" />
     <column name='location_name' sql='o.location_name' on_demand="true" datatype="text" />
-    <column name='entered_sref' on_demand="true" display='Original grid ref' datatype="text" visible="false"
+    <column name='entered_sref' on_demand="true" datatype="text" visible="false"
         sql="coalesce(snf.public_entered_sref, regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g'), onf.output_sref)" />
-    <column name="output_sref" sql="onf.output_sref" on_demand="true" display="Grid ref" datatype="text" />
+    <column name="output_sref" sql="onf.output_sref" on_demand="true" datatype="text" />
     <column name='date_start' sql='o.date_start' on_demand="true" visible='false' />
     <column name='date_end' sql='o.date_end' on_demand="true" visible='false' />
     <column name='date_type' sql='o.date_type' on_demand="true" visible='false' />
@@ -70,9 +81,33 @@ end" datatype="text" />
     <column name="occurrence_ids" visible="false" sql="array_to_string(array_agg(o.id), ',')" aggregate="true" />
     <column name="taxon_meaning_ids" visible="false" sql="array_to_string(array_agg(distinct o.taxon_meaning_id), ',')" aggregate="true" />
     <column name="geom" visible="false" mappable="true" sql="st_astext(case when msq.size > #sq_size# then s.geom else msq.geom end)" in_count="true" />
-    <column name="sensitivity_precision" on_demand="true" display="Sensitivity blur (m)" visible="true" sql="onf.sensitivity_precision" />
-    <column name="confidential" on_demand="true" display="Confidential" visible="true"
+    <column name="sensitivity_precision" on_demand="true" visible="true" sql="onf.sensitivity_precision" />
+    <column name="confidential" on_demand="true" visible="true"
       sql="case o.confidential when 't' then '&amp;#x2714;' else '&amp;#x2718;' end" />
-    <column name="release_status" on_demand="true" display="Release status" visible="true" sql="o.release_status" />
+    <column name="release_status" on_demand="true" visible="true" sql="o.release_status" />
+    <column name="workflow_status" on_demand="true" visible="true" sql="case
+    when o.record_status='C' and o.record_substatus is null and o.created_on &lt; now() - (wm.verification_delay_hours::varchar || ' hours')::interval then 'overdue'
+    when o.record_status='C' and o.record_substatus is null and o.created_on &lt; now() - ((wm.verification_delay_hours-12)::varchar || ' hours')::interval then 'overdue-soon'
+    else '' end" />
+    <column name='fc' visible='false' feature_style="fillColor" aggregate="true"
+      sql="case
+  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
+  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '-12 hours'::interval then '#fdae61'
+  when min(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
+  else '#abd9e9'
+end" />
+    <column name='sc' visible='false' feature_style="strokeColor" aggregate="true"
+          sql="case
+  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
+  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '-12 hours'::interval then '#fdae61'
+  when min(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
+  else '#abd9e9'
+end" />
+    <column name='fo' visible='false' feature_style="fillOpacity" aggregate="true"
+          sql="case
+  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '-12 hours'::interval then 0.6
+  else 0.5
+end" />
+
   </columns>
 </report>
