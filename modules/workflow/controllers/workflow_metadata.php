@@ -59,7 +59,7 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
     if ($groupConfig) {
       foreach ($groupConfig['groups'] as $group => $groupDef) {
         if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_website_access('admin', $groupDef['owner_website_id'])) {
-          $groups[] = $group;
+          $groups[$group] = $group;
         }
       }
     }

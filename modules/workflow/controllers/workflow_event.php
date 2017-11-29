@@ -76,7 +76,7 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
     if ($config) {
       foreach ($config['groups'] as $group => $groupDef) {
         if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_website_access('admin', $groupDef['owner_website_id'])) {
-          $groups[] = $group;
+          $groups[$group] = $group;
         }
       }
     }
