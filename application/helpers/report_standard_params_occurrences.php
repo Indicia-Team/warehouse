@@ -700,7 +700,7 @@ class report_standard_params_occurrences {
     select tc.id, tc.external_key
     from q
     join cache_taxa_taxon_lists tc on tc.parent_id = q.id
-  ) select '''' || array_to_string(array_agg(distinct external_key::varchar], ''',''') || '''' from q",
+  ) select '''' || array_to_string(array_agg(distinct external_key::varchar), ''',''') || '''' from q",
       ],
       // Version of the above optimised for searching for higher taxa.
       'higher_taxa_taxon_list_list' => [
@@ -724,7 +724,7 @@ class report_standard_params_occurrences {
     select tc.id, tc.family_taxa_taxon_list_id
     from q
     join cache_taxa_taxon_lists tc on tc.parent_id = q.id and tc.taxon_rank_sort_order<=180
-  ) select array_to_string(array_agg(distinct family_taxa_taxon_list_id::varchar], ',') from q",
+  ) select array_to_string(array_agg(distinct family_taxa_taxon_list_id::varchar), ',') from q",
       ],
       'taxon_meaning_list' => [
         'datatype' => 'integer[]',
@@ -747,7 +747,7 @@ class report_standard_params_occurrences {
     select tc.id, tc.taxon_meaning_id
     from q
     join cache_taxa_taxon_lists tc on tc.parent_id = q.id
-  ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar], ',') from q",
+  ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q",
       ],
       'taxon_designation_list' => [
         'datatype' => 'integer[]',
