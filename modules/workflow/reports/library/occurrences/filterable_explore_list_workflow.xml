@@ -45,7 +45,7 @@
       <where>o.taxa_taxon_list_external_key in (#workflow_group_code#)</where>
     </param>
     <param name="workflow_overdue" display="Overdue records only" default="" datatype="boolean">
-      <where>o.created_on &lt; now() - (wm.verification_delay_hours::varchar || ' hours')::interval</where>
+      <where>get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval</where>
     </param>
   </params>
   <columns>
@@ -109,8 +109,8 @@ end" datatype="text" />
       sql="case o.confidential when 't' then '&amp;#x2714;' else '&amp;#x2718;' end" />
     <column name="release_status" display="Release status" visible="true" sql="o.release_status" />
     <column name="workflow_status" display="Workflow status" visible="true" sql="case
-    when o.created_on &lt; now() - (wm.verification_delay_hours::varchar || ' hours')::interval then 'overdue'
-    when o.created_on &lt; now() - ((wm.verification_delay_hours-12)::varchar || ' hours')::interval then 'overdue-soon'
+    when get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval then 'overdue'
+    when get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt;= '-12 hours'::interval then 'overdue-soon'
     else '' end" />
   </columns>
 </report>
