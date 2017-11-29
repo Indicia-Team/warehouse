@@ -3,7 +3,7 @@ ALTER TABLE workflow_metadata
 
 COMMENT ON COLUMN workflow_metadata.group_code IS 'Code identifying the group of websites which this metadata applies to.';
 
-UPDATE workflow_metadata SET group_code=(SELECT max(group_code) FROM workflow_events);
+UPDATE workflow_metadata SET group_code=(SELECT group_code FROM workflow_events limit 1);
 
  ALTER TABLE workflow_metadata
   ALTER COLUMN group_code SET NOT NULL;
