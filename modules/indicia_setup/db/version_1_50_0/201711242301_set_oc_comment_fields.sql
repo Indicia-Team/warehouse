@@ -7,6 +7,7 @@ $BODY$
   DECLARE test regproc;
 BEGIN
 
+  audit := FALSE;
   IF EXISTS (
       SELECT 1
       FROM   information_schema.tables
@@ -17,11 +18,7 @@ BEGIN
     DROP TRIGGER IF EXISTS audit_trigger_stm ON occurrence_comments;
     audit := TRUE;
     RAISE INFO 'audit active';
-  EXCEPTION
-    WHEN OTHERS THEN
-      audit := FALSE;
-      RAISE INFO 'audit inactive';
-  END;
+  END IF;
 
   UPDATE occurrence_comments SET confidential = 'f';
 
