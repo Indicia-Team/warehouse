@@ -7,8 +7,12 @@ $BODY$
   DECLARE test regproc;
 BEGIN
 
-  BEGIN
-    SELECT to_regproc('audit.audit_table') INTO test;
+  IF EXISTS (
+      SELECT 1
+      FROM   information_schema.tables
+      WHERE  table_schema = 'audit'
+      AND    table_name = 'audit_table'
+    ) THEN
     DROP TRIGGER IF EXISTS audit_trigger_row ON occurrence_comments;
     DROP TRIGGER IF EXISTS audit_trigger_stm ON occurrence_comments;
     audit := TRUE;
