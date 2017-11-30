@@ -48,7 +48,7 @@ class report_standard_params_samples {
       array('input_form', 'input_form_list', TRUE)
     );
   }
-  
+
   /**
    * @return array List of parameters that have an associated operation parameter. E.g. along
    * with the sample_id parameter you can supply sample_id='>=' to define the operation
@@ -150,14 +150,14 @@ class report_standard_params_samples {
       'input_date_from' => array('datatype'=>'date', 'display'=>'Input date from',
         'description'=>'Input date of first sample to include in the output',
         'wheres' =>array(
-          array('value'=>'', 'operator'=>'', 
+          array('value'=>'', 'operator'=>'',
             'sql'=>"('#input_date_from#'='Click here' OR s.created_on >= '#input_date_from#'::timestamp)")
         )
       ),
       'input_date_to' => array('datatype'=>'date', 'display'=>'Input date to',
         'description'=>'Input date of last sample to include in the output',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 
+          array('value'=>'', 'operator'=>'',
             'sql'=>"('#input_date_to#'='Click here' OR (s.created_on <= '#input_date_to#'::timestamp OR (length('#input_date_to#')<=10 AND s.created_on < cast('#input_date_to#' as date) + '1 day'::interval)))")
         )
       ),
@@ -170,14 +170,14 @@ class report_standard_params_samples {
       'edited_date_from' => array('datatype'=>'date', 'display'=>'Last update date from',
         'description'=>'Last update date of first sample to include in the output',
         'wheres' =>array(
-          array('value'=>'', 'operator'=>'', 
+          array('value'=>'', 'operator'=>'',
             'sql'=>"('#edited_date_from#'='Click here' OR s.updated_on >= '#edited_date_from#'::timestamp)")
         )
       ),
       'edited_date_to' => array('datatype'=>'date', 'display'=>'Last update date to',
         'description'=>'Last update date of last sample to include in the output',
         'wheres' => array(
-          array('value'=>'', 'operator'=>'', 
+          array('value'=>'', 'operator'=>'',
             'sql'=>"('#edited_date_to#'='Click here' OR (s.updated_on <= '#edited_date_to#'::timestamp OR (length('#edited_date_to#')<=10 AND s.updated_on < cast('#edited_date_to#' as date) + '1 day'::interval)))")
         )
       ),
@@ -219,6 +219,23 @@ class report_standard_params_samples {
           // The all filter does not need any SQL
         )
       ),
+      'has_photos' => [
+        'datatype' => 'boolean',
+        'display' => 'Photos',
+        'description' => 'Only include samples which have photos?',
+        'wheres' => [
+          [
+            'value' => '1',
+            'operator' => 'equal',
+            'sql' => "s.media_count>0",
+          ],
+          [
+            'value' => '0',
+            'operator' => 'equal',
+            'sql' => "s.media_count=0",
+          ],
+        ],
+      ],
       'user_id' => array('datatype'=>'integer', 'display'=>"Current user's warehouse ID"),
       'my_records' => array('datatype'=>'boolean', 'display'=>"Only include my records",
         'wheres' => array(
