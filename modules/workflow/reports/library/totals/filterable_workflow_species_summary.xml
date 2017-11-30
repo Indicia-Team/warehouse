@@ -1,10 +1,10 @@
 <report
-    title="Workflow species summary"
+    title="Workflow species summary (filterable)"
     description="Lists workflow species with summary stats including count of pending and reviewed records as well as
       average response times."
     featured="true"
 >
-  <query website_filter_field="o.website_id">
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
 select #columns#
 from workflow_metadata wm
 join cache_taxa_taxon_lists cttl on cttl.external_key=wm.key_value
