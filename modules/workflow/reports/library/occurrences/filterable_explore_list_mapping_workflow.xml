@@ -108,7 +108,7 @@ end" />
   when get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &lt; '-12 hours'::interval then '#2c7bb6'
   else '#abd9e9'
 end" />
-  <column name='fo' visible='false' feature_style="fillOpacity" aggregate="true"
+  <column name='fo' visible='false' feature_style="fillOpacity"
           sql="case
   when get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt;= '-12 hours'::interval then 0.5
   else 0.5

@@ -36,7 +36,7 @@
     <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
       <where>st_intersects(msq.geom, st_geomfromtext('#bounds#', 900913))</where>
     </param>
-    <param name="workflow_grgioup_code" display="Workflow group code" default=""
+    <param name="workflow_group_code" display="Workflow group code" default=""
            description="Code for the Workflow group to show associated records for."
            preprocess="
              select '''' || string_agg(key_value, ''', ''') || '''' from workflow_metadata
