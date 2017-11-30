@@ -576,9 +576,14 @@ class report_standard_params_occurrences {
         'description' => 'Only include records which have photos?',
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
+            'value' => '1',
+            'operator' => 'equal',
             'sql' => "o.media_count>0",
+          ],
+          [
+            'value' => '0',
+            'operator' => 'equal',
+            'sql' => "o.media_count=0",
           ],
         ],
       ],
@@ -895,9 +900,14 @@ class report_standard_params_occurrences {
       'has_photos' => [
         'wheres' => [
           [
-            'value' => '',
-            'operator' => '',
+            'value' => '1',
+            'operator' => 'equal',
             'sql' => "o.images is not null",
+          ],
+          [
+            'value' => '0',
+            'operator' => 'equal',
+            'sql' => "o.images is null",
           ],
         ],
       ],
