@@ -2,7 +2,6 @@
     title="Explore occurrences map (standard filters, workflow)"
     description="A list of occurrences including geometry information designed for mapping output with additional
       columns and parameters to support workflow."
-    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
   SELECT #columns#

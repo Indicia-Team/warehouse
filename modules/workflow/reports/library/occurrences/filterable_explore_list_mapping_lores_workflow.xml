@@ -3,7 +3,6 @@
     description="A list of occurrences including geometry information designed for mapping output with additional
       columns and parameters to support workflow. Output is aggregated to grid squares suitable for lower resolution
       output when zoomed out."
-    featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
   SELECT #columns#
