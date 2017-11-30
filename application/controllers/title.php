@@ -14,38 +14,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 /**
  * Controller providing CRUD access to the list of titles for people.
  *
- * @package	Core
+ * @package Core
  * @subpackage Controllers
  */
 class Title_Controller extends Gridview_Base_Controller {
 
   /**
-     * Constructor
-     */
-  public function __construct()
-  {
+   * Constructor.
+   */
+  public function __construct() {
     parent::__construct('title');
     $this->columns = array(
-      'title'=>''
+      'title' => ''
       );
     $this->pagetitle = "Titles";
-  }  
+  }
 
-  /** 
+  /**
    * No access to the titles list unless core admin.
    */
-  protected function page_authorised()
-  {
+  protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin');
   }
+
 }
