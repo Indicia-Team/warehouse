@@ -37,7 +37,7 @@
     <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">
       <where>st_intersects(msq.geom, st_geomfromtext('#bounds#', 900913))</where>
     </param>
-    <param name="workflow_group_code" display="Workflow group code" default=""
+    <param name="workflow_grgioup_code" display="Workflow group code" default=""
            description="Code for the Workflow group to show associated records for."
            preprocess="
              select '''' || string_agg(key_value, ''', ''') || '''' from workflow_metadata
@@ -47,7 +47,7 @@
       <where>o.taxa_taxon_list_external_key in (#workflow_group_code#)</where>
     </param>
     <param name="workflow_overdue" display="Overdue records only" default="" datatype="boolean">
-      <where>get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval</where>
+      <where>get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval</where>
     </param>
   </params>
   <columns>
@@ -91,21 +91,21 @@ end" datatype="text" />
     else '' end" />
     <column name='fc' visible='false' feature_style="fillColor" aggregate="true"
       sql="case
-  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
-  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
-  when min(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
+  when min(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
   else '#abd9e9'
 end" />
     <column name='sc' visible='false' feature_style="strokeColor" aggregate="true"
           sql="case
-  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
-  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
-  when min(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
+  when min(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
   else '#abd9e9'
 end" />
     <column name='fo' visible='false' feature_style="fillOpacity" aggregate="true"
           sql="case
-  when max(get_worfklow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then 0.6
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then 0.6
   else 0.5
 end" />
 
