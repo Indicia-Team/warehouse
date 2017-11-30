@@ -213,8 +213,64 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     )
   );
 
-  public function getDataSet()
-  {
+  /**
+   * A list of standard parameters for reports with some values to try against them.
+   *
+   * @var array
+   *
+   * @todo Add tests for higher_taxa_taxon_list which needs hierarchical taxon data.
+   * @todo Add tests for taxon_designation_list.
+   */
+  private $standardParamTests = [
+    ['idlist' => '1,2'],
+    ['searchArea' => 'POINT(100000 200000)'],
+    ['occurrence_id' => 1],
+    ['occurrence_id' => 1, 'occurrence_id_op' => '>'],
+    ['taxon_rank_sort_order' => 180],
+    ['taxon_rank_sort_order' => 180, 'taxon_rank_sort_order_op' => '<='],
+    ['location_name' => 'here'],
+    ['location_list' => '1,2'],
+    ['location_list' => '1,2', 'location_list_op' => 'in'],
+    ['indexed_location_list' => '1,2'],
+    ['indexed_location_list' => '1,2', 'indexed_location_list_op' => 'not in'],
+    ['date_from' => '29/02/2004'],
+    ['date_to' => '31/12/2016'],
+    ['date_age' => '2 months'],
+    ['input_date_from' => '29/02/2004'],
+    ['input_date_to' => '31/12/2016'],
+    ['input_date_age' => '4 days'],
+    ['edited_date_from' => '29/02/2004'],
+    ['edited_date_to' => '31/12/2016'],
+    ['edited_date_age' => '1 year'],
+    ['verified_date_from' => '29/02/2004'],
+    ['verified_date_to' => '31/12/2016'],
+    ['verified_date_age' => '3 hours'],
+    ['quality' => 'V'],
+    ['exclude_sensitive' => 1],
+    ['confidential' => 'all'],
+    ['release_status' => 'A'],
+    ['marine_flag' => 'Y'],
+    ['autochecks' => 'P'],
+    ['has_photos' => 1],
+    ['user_id' => 2],
+    ['my_records' => 1],
+    ['created_by_id' => 1],
+    ['group_id' => 1],
+    ['implicit_group_id' => 2],
+    ['website_list' => '1,2'],
+    ['website_list' => '1,2', 'website_list_op' => 'in'],
+    ['survey_list' => '1,2'],
+    ['survey_list' => '1,2', 'survey_list_op' => 'not in'],
+    ['input_form_list' => 'enter-records'],
+    ['input_form_list' => 'enter-records', 'input_form_list_op' => 'not in'],
+    ['taxon_group_list' => '1,2'],
+    ['taxa_taxon_list_list' => '1,2'],
+    ['taxon_meaning_list' => '10000,10001'],
+    ['identification_difficulty' => 3],
+    ['identification_difficulty' => 3, 'identification_difficulty_op' => '<=']
+  ];
+
+  public function getDataSet() {
     $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     return $ds1;
   }
@@ -232,12 +288,12 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
   public function setup() {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
-    
+
     $this->auth = report_helper::get_read_write_auth(1, 'password');
     // make the tokens re-usable
-    $this->auth['write_tokens']['persist_auth']=true;    
+    $this->auth['write_tokens']['persist_auth']=true;
   }
-  
+
   private function getResponse($url, $post = FALSE, $params = array()) {
     Kohana::log('debug', "Making request to $url");
     $session = curl_init();
@@ -253,7 +309,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     Kohana::log('debug', "Received response " . print_r($response, TRUE));
     return $response;
   }
-  
+
   public function testRequestReportGetJson() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Report_Test::testRequestReportGetJson");
     $params = array(
@@ -271,7 +327,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertNotCount(0, $response, "Database contains no records to report on");
     $this->assertTrue(isset($response[0]['title']), 'Report get JSON response not as expected');
   }
-  
+
   public function testRequestReportPostJson() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Report_Test::testRequestReportPostJson");
     $params = array(
@@ -288,7 +344,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertFalse(isset($response['error']), 'testRequestReportPostJson returned error. ' . var_export($response, true));
     $this->assertTrue(isset($response[0]['title']), 'Report post JSON response not as expected');
   }
-  
+
   public function testRequestReportGetXML() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Report_Test::testRequestReportGetXML");
     $params = array(
@@ -301,11 +357,11 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $url = report_helper::$base_url.'index.php/services/report/requestReport?'.http_build_query($params, '', '&');
     $response = self::getResponse($url);
     // valid xml response will decode
-    $response = new SimpleXmlElement($response, true);    
+    $response = new SimpleXmlElement($response, true);
     $this->assertFalse(isset($response->error), 'testRequestReportGetXML returned error. ' . var_export($response, true));
     $this->assertTrue(isset($response->record[0]->title), 'Report get XML response not as expected');
   }
-  
+
   public function testRequestReportPostXML() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Report_Test::testRequestReportPostXML");
     $params = array(
@@ -318,13 +374,13 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
     $response = self::getResponse($url, TRUE, $params);
     // valid xml response will decode
-    $response = new SimpleXmlElement($response, true);    
+    $response = new SimpleXmlElement($response, true);
     $this->assertFalse(isset($response->error), 'testRequestReportPostXML returned error. ' . var_export($response, true));
     $this->assertTrue(isset($response->record[0]->title), 'Report post XML response not as expected');
   }
-  
+
   /**
-   * A small test for a report with advanced features. 
+   * A small test for a report with advanced features.
    */
   public function testAdvancedReport() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Report_Test::testAdvancedReport");
@@ -348,7 +404,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(array_key_exists('attr_location_test_text', $response[0]),
         'Advanced report should return column for test_text');
   }
-  
+
   /**
    * Repeat check for advanced report output, this time requesting an attribute by ID rather than name.
    */
@@ -403,13 +459,13 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     $response = json_decode($response, true);
     $this->assertTrue(isset($response['error']), 'Invalid report request should return error');
   }
-  
+
   public function testLookupCustomAttrs() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Report_Test::testLookupCustomAttrs");
     $response = $this->getReportResponse(
       'library/locations/locations_list.xml', array('locattrs' => 'Test lookup', 'location_type_id' => 2));
     $this->assertFalse(isset($response['error']), 'testLookupCustomAttrs returned error. ' . var_export($response, true));
-    $this->assertCount(1, $response, 'Report response should only include 1 record');    
+    $this->assertCount(1, $response, 'Report response should only include 1 record');
     $this->assertTrue(array_key_exists('attr_location_test_lookup', $response[0]),
         'Locations report should return column for test_lookup');
     $this->assertTrue(array_key_exists('attr_location_term_test_lookup', $response[0]),
@@ -551,6 +607,17 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
           }
         }
       }
+    }
+  }
+
+  /**
+   * Runs a test that simply ensures a range of standard parameter filters don't generate invalid SQL.
+   */
+  public function testAllStandardParams() {
+    foreach ($this->standardParamTests as $params) {
+      $response = $this->getReportResponse("library/occurrences/filterable_explore_list.xml", $params);
+      $this->assertFalse(isset($response['error']),
+        "library/occurrences/filterable_explore_list.xml returned an error with standard params " . var_export($params, TRUE));
     }
   }
 

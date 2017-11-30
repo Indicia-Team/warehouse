@@ -1,6 +1,9 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
+ * @file
+ * Model for the workflow_metadata table.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Modules
+ * @package Modules
  * @subpackage Workflow
- * @author     Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link       https://github.com/Indicia-Team/
+ * @author ndicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the workflow_metadata table.
@@ -27,22 +32,28 @@
 class Workflow_metadata_Model extends ORM {
   public $search_field='id';
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user');
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  );
   protected $has_and_belongs_to_many = array();
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
-    $array->pre_filter('trim'); 
+    // Uses PHP trim() to remove whitespace from beginning and end of all fields before validation.
+    $array->pre_filter('trim');
+    $array->add_rules('group_code', 'required');
     $array->add_rules('entity', 'required');
     $array->add_rules('key', 'required');
     $array->add_rules('key_value', 'required');
     $array->add_rules('verification_delay_hours', 'required');
 
-    // Explicitly add those fields for which we don't do validation
-    $this->unvalidatedFields = array('deleted',
-                                     'verifier_notifications_immediate',
-                                     'log_all_communications');
-    
+    // Explicitly add those fields for which we don't do validation.
+    $this->unvalidatedFields = array(
+      'deleted',
+      'verifier_notifications_immediate',
+      'log_all_communications',
+    );
+
     return parent::validate($array, $save);
   }
 
