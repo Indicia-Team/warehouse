@@ -1,8 +1,11 @@
+/* Drop version with a typo */
+DROP FUNCTION IF EXISTS get_worfklow_overdue_by(character, integer, timestamp without time zone, integer);
+
 /**
  * For a given record status and creation date, calculates how overdue checking it is according to the
  * workflow module.
 */
-CREATE OR REPLACE FUNCTION get_worfklow_overdue_by(
+CREATE OR REPLACE FUNCTION get_workflow_overdue_by(
     record_status character,
     record_substatus integer,
     created_on timestamp without time zone,
