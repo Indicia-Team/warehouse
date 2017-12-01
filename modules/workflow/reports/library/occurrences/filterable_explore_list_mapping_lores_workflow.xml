@@ -85,21 +85,22 @@ end" datatype="text" />
       sql="case o.confidential when 't' then '&amp;#x2714;' else '&amp;#x2718;' end" />
     <column name="release_status" on_demand="true" visible="true" sql="o.release_status" />
     <column name="workflow_status" on_demand="true" visible="true" sql="case
-    when o.record_status='C' and o.record_substatus is null and o.created_on &lt; now() - (wm.verification_delay_hours::varchar || ' hours')::interval then 'overdue'
-    when o.record_status='C' and o.record_substatus is null and o.created_on &lt; now() - ((wm.verification_delay_hours-12)::varchar || ' hours')::interval then 'overdue-soon'
-    else '' end" />
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then 'overdue'
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then 'overdue-soon'
+  else ''
+end" />
     <column name='fc' visible='false' feature_style="fillColor" aggregate="true"
       sql="case
-  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
-  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
-  when min(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
+  when min(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
   else '#abd9e9'
 end" />
     <column name='sc' visible='false' feature_style="strokeColor" aggregate="true"
           sql="case
-  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
-  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
-  when min(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
+  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
+  when min(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
   else '#abd9e9'
 end" />
     <column name='fo' visible='false' feature_style="fillOpacity" aggregate="true"

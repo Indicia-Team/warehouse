@@ -53,11 +53,11 @@ and cttl.taxon_list_id=#taxon_list_id#
     <column name="taxon" display="Species" sql="cttl.taxon" />
     <column name="occurrence_count" display="Records" aggregate="true" sql="count(o.*)" />
     <column name="overdue" display="Overdue" aggregate="true"
-      sql="sum(case when get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval then 1 else 0 end)" />
+      sql="sum(case when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval then 1 else 0 end)" />
     <column name="overdue_soon" display="Overdue soon" aggregate="true"
       sql="sum(case when
-    get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '-12 hours'::interval
-    and get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &lt;= '0 hours'::interval
+    get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt; '-12 hours'::interval
+    and get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &lt;= '0 hours'::interval
     then 1 else 0 end)" />
     <column name="pending_review" display="Pending review" aggregate="true"
       sql="sum(case when o.record_status = 'C' and o.record_substatus is null then 1 else 0 end)" />

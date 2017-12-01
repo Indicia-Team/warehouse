@@ -108,8 +108,8 @@ end" datatype="text" />
       sql="case o.confidential when 't' then '&amp;#x2714;' else '&amp;#x2718;' end" />
     <column name="release_status" display="Release status" visible="true" sql="o.release_status" />
     <column name="workflow_status" display="Workflow status" visible="true" sql="case
-    when get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval then 'overdue'
-    when get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt;= '-12 hours'::interval then 'overdue-soon'
+    when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval then 'overdue'
+    when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt;= '-12 hours'::interval then 'overdue-soon'
     else '' end" />
   </columns>
 </report>
