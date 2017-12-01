@@ -66,21 +66,23 @@ HTML;
   }
 
   /**
-  * Returns the initial value for an edit control on a page. This is either loaded from the $_POST
-  * array (if reloading after a failed attempt to save) or from the model or initial default value
-  * otherwise.
-  *
-  * @param ORM $values List of values to load in an array
-  * @param string fieldname The fieldname should be of form model:fieldname. If the model
-  * part indicates a different model then the field value will be loaded from the other
-  * model (assuming that model is linked to the main one. E.g.'taxon:description' would load the
-  * $model->taxon->description field.
-  */
+   * Returns the initial value for an edit control on a page. This is either loaded from the $_POST
+   * array (if reloading after a failed attempt to save) or from the model or initial default value
+   * otherwise.
+   *
+   * @param ORM $values
+   *   List of values to load in an array
+   * @param string $fieldname
+   *   The fieldname should be of form model:fieldname. If the model part indicates a different model
+   *   then the field value will be loaded from the other model (assuming that model is linked to the
+   *   main one. E.g.'taxon:description' would load the $model->taxon->description field.
+   */
   public static function initial_value($values, $fieldname) {
     if (array_key_exists($fieldname, $values)) {
       return self::specialchars($values[$fieldname]);
-    } else {
-      return null;
+    }
+    else {
+      return NULL;
     }
   }
 

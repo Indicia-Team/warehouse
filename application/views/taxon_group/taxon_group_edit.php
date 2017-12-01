@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the taxon group edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,24 +24,33 @@
  * @link http://code.google.com/p/indicia/
  */
 
-?><p>This page allows you to specify the details of a taxon group.</p>
-<form action="<?php echo url::site() . 'taxon_group/save'; ?>" method="post">
-<?php echo $metadata ?>
-<fieldset>
-  <legend>Taxon Group details</legend>
-  <input type="hidden" class="form-control" name="taxon_group:id" value="<?php echo html::initial_value($values, 'taxon_group:id'); ?>" />
-  <div class="form-group">
-    <label for="title">Title</label>
-    <input id="title" class="form-control" name="taxon_group:title" value="<?php echo html::initial_value($values, 'taxon_group:title'); ?>" />
-  </div>
-  <?php echo html::error_message($model->getError('taxon_group:title')); ?>
-  <div class="form-group">
-    <label for="title">External key</label>
-    <input id="title" class="form-control" name="taxon_group:external_key" value="<?php echo html::initial_value($values, 'taxon_group:external_key'); ?>" />
-  </div>
-<?php echo html::error_message($model->getError('taxon_group:external_key')); ?>
-</fieldset>
-<?php
-echo html::form_buttons(html::initial_value($values, 'taxon_group:id')!=null);
+warehouse::loadHelpers(['data_entry_helper']);
+$id = html::initial_value($values, 'taxon_group:id');
 ?>
+<p>This page allows you to specify the details of a taxon group.</p>
+<form id="taxon-group-edit" action="<?php echo url::site() . 'taxon_group/save'; ?>" method="post">
+  <?php echo $metadata ?>
+  <input type="hidden" name="taxon_group:id" value="<?php echo $id; ?>" />
+  <fieldset>
+    <legend>Taxon Group details</legend>
+    <?php
+    echo data_entry_helper::text_input(array(
+      'label' => 'Title',
+      'fieldname' => 'taxon_group:title',
+      'default' => html::initial_value($values, 'taxon_group:title'),
+      'validation' => array('required'),
+    ));
+    echo data_entry_helper::text_input(array(
+      'label' => 'External key',
+      'fieldname' => 'taxon_group:external_key',
+      'default' => html::initial_value($values, 'taxon_group:external_key'),
+    ));
+    ?>
+    <?php echo html::error_message($model->getError('taxon_group:external_key')); ?>
+  </fieldset>
+  <?php
+  echo html::form_buttons($id !== NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('taxon-group-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>

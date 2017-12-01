@@ -14,32 +14,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
+$id = html::initial_value($values, 'language:id');
 ?>
-<form  action="<?php echo url::site().'language/save' ?>" method="post">
-<?php echo $metadata; ?>
-<fieldset>
-<legend>Language Details</legend>
-<input type="hidden" name="language:id" value="<?php echo html::initial_value($values, 'language:id'); ?>" />
-<div class="form-group">
-<label for="iso">ISO language code</label>
-<input id="iso" name="language:iso" class="form-control" value="<?php echo html::initial_value($values, 'language:iso'); ?>"/>
-<?php echo html::error_message($model->getError('language:iso')); ?>
-</div>
-<div class="form-group">
-<label for="language">Language</label>
-<input id="language" name="language:language" class="form-control" value="<?php echo html::initial_value($values, 'language:language'); ?>" />
-<?php echo html::error_message($model->getError('language:language')); ?>
-</div>
-</fieldset>
-<?php
-echo html::form_buttons(html::initial_value($values, 'language:id')!=null)
-?>
+<form id="language-edit" action="<?php echo url::site() . 'language/save' ?>" method="post">
+  <fieldset>
+  <legend>Language details <?php echo $metadata; ?></legend>
+    <input type="hidden" name="language:id" value="<?php echo $id; ?>" />
+    <?php
+    echo data_entry_helper::text_input(array(
+      'label' => 'ISO language code',
+      'fieldname' => 'language:iso',
+      'default' => html::initial_value($values, 'language:iso'),
+      'helpText' => 'The ISO standard code for this language.',
+      'validation' => array('required')
+    ));
+    echo data_entry_helper::text_input(array(
+      'label' => 'Language name',
+      'fieldname' => 'language:language',
+      'default' => html::initial_value($values, 'language:language'),
+      'helpText' => 'The display name for this language.',
+      'validation' => array('required')
+    ));
+    ?>
+  </fieldset>
+  <?php
+  echo html::form_buttons($id != NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('language-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
-
