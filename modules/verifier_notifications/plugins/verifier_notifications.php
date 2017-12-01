@@ -31,8 +31,12 @@
  * This module can then pick up these records and automatically send the notifications to the mentor
  */
 function verifier_notifications_scheduled_task($last_run_date, $db) {
-  $modules = kohana::config('config.modules');
-  $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
+  try {
+    $modules = kohana::config('config.modules');
+    $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
+  } catch (Exception $ex) {
+    $useWorkflowModule=false;
+  }
   $params = array(
     'notificationSourceType' => 'PT',
     'notificationSource' => 'pending_record_check_notifications',
@@ -220,7 +224,8 @@ function save_notification($userId, $params, $forceHighPriorityEmail) {
  */
 function verifier_notifications_metadata() {
   try {
-    $useWorkflowModule=kohana::config('verifier_notifications.use_workflow_module');
+    $modules = kohana::config('config.modules');
+    $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
   } catch (Exception $ex) {
     $useWorkflowModule=false;
   }

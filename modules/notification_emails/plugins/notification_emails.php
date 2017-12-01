@@ -93,7 +93,8 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
   // Chop comma off end of set.
   $frequencyToRunString = substr($frequencyToRunString, 0, -1);
   try {
-    $useWorkflowModule = kohana::config('notification_emails.use_workflow_module');
+    $modules = kohana::config('config.modules');
+    $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);;
   } catch (Exception $ex) {
     $useWorkflowModule = FALSE;
   }
