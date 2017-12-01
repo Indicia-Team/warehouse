@@ -334,11 +334,13 @@ class workflow {
    * @return array
    */
   private static function getGroupCodesForThisWebsite($websiteId) {
-    $config = kohana::config('workflow_groups');
+    $config = kohana::config('workflow_groups', FALSE, FALSE);
     $r = [];
-    foreach ($config['groups'] as $group => $groupDef) {
-      if (in_array($websiteId, $groupDef['member_website_ids'])) {
-        $r[] = $group;
+    if ($config) {
+      foreach ($config['groups'] as $group => $groupDef) {
+        if (in_array($websiteId, $groupDef['member_website_ids'])) {
+          $r[] = $group;
+        }
       }
     }
     return $r;
@@ -444,12 +446,14 @@ class workflow {
   public static function allowWorkflowConfigAccess($auth) {
     $workflowAvailable = $auth->logged_in('CoreAdmin');
     if (!$workflowAvailable) {
-      $config = kohana::config('workflow_groups');
+      $config = kohana::config('workflow_groups', FALSE, FALSE);
       $r = [];
-      foreach ($config['groups'] as $group => $groupDef) {
-        $workflowAvailable = $auth->has_website_access('admin', $groupDef['owner_website_id']);
-        if ($workflowAvailable) {
-          break;
+      if ($config) {
+        foreach ($config['groups'] as $group => $groupDef) {
+          $workflowAvailable = $auth->has_website_access('admin', $groupDef['owner_website_id']);
+          if ($workflowAvailable) {
+            break;
+          }
         }
       }
     }
