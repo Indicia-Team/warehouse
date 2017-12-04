@@ -26,8 +26,9 @@
 $(document).ready(function(){
   $('div#metadata').hide();
   $('#metadata_toggle span').show();
-  $('#metadata_toggle span').click(function(){
-    $('div#metadata').toggle('slow');
+  $('#metadata_toggle span').click(function() {
+    $('#metadata_toggle span').html($('div#metadata:visible').length > 0 ? 'Show metadata' : 'Hide metadata')
+    $('div#metadata').toggle();
   });
 });
 </script>
