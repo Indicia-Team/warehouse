@@ -38,4 +38,3 @@ $config['record_details_page_urls'] = array(
 // The sub arrays can contain optional title and/or description elements to set the text included in the notification
 // email.
 $config['notification_types']=array();
-$config['use_workflow_module']=false;

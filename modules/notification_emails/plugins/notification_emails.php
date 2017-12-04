@@ -104,14 +104,14 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
   //then makes sure the notification is sent as part of the immediate/hourly batch no matter what the
   //frequency is for on the verifier's notification setting for that source type
   $notificationsToSendEmailsForSql = "
-    SELECT distinct n.id, n.user_id, n.source_type, n.source, n.data, n.escalate_email_priority, u.username,
-          coalesce(p.first_name, u.username) as name_to_use, o.website_id
+    SELECT distinct n.id, n.user_id, n.source_type, n.source, n.linked_id, n.data, n.escalate_email_priority, u.username,
+          coalesce(p.first_name, u.username) as name_to_use, cof.website_id, cof.query
         FROM notifications n
           JOIN users u ON u.id = n.user_id AND u.deleted=false
           JOIN people p ON p.id = u.person_id AND p.deleted=false
 
-          LEFT JOIN occurrences o on o.id=n.linked_id
-          LEFT JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id and ttl.deleted=false
+          LEFT JOIN cache_occurrences_functional cof on cof.id=n.linked_id
+          LEFT JOIN taxa_taxon_lists ttl on ttl.id = cof.taxa_taxon_list_id and ttl.deleted=false
           LEFT JOIN taxa t on t.id = ttl.taxon_id and t.deleted=false
 
           --This part just deals with the normal situation where we include a notification email if the user has a setting that matches the current run or has its escalate_email_priority set (so we always send immediately)
@@ -174,7 +174,9 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
       'username' => 'From',
       'occurrence_id' => 'Record ID',
       'comment' => 'Message',
-      'record_status' => 'Record status'
+      'record_status' => 'Record status',
+      //Column for link to comments page, doesn't need header title
+      'query' => ''
     );
     $emailHighPriority = FALSE;
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
@@ -212,7 +214,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
           }
           $emailContent .= "<table>\n<thead><tr>";
           foreach ($dataFieldsToOutput as $field => $caption) {
-            if (isset($record[$field])) {
+            if (isset($record[$field])||$field==='query') {
               $emailContent .= "<th>$caption</th>";
             }
           }
@@ -220,24 +222,34 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
         }
         $emailContent .= '<tr>';
         foreach ($dataFieldsToOutput as $field => $caption) {
-          if (isset($record[$field])) {
+          $htmlToDisplay='';
+          if (isset($record[$field]) || $field==='query') {
             if ($field === 'username' && ($record[$field] === 'admin' || $record[$field] === 'system')) {
-              $record[$field] = $systemName;
+              $htmlToDisplay = $systemName;
             }
             elseif ($field === 'record_status') {
               $statusCode = $record['record_status'] .
                 (empty($record['record_substatus']) ? '' : $record['record_substatus']);
               if (isset($recordStatuses[$statusCode])) {
-                $record[$field] = $recordStatuses[$statusCode];
+                $htmlToDisplay = $recordStatuses[$statusCode];
               }
             }
             elseif ($field === 'occurrence_id') {
-              $record[$field] = notificationEmailsHyperlinkId(
+              $htmlToDisplay = notificationEmailsHyperlinkId(
                   $record[$field],
                   $notificationToSendEmailsFor['website_id']
               );
+            } elseif ($field === 'query') {
+              //Only allow commenting on occurrence records which have been queried
+              if ($notificationToSendEmailsFor['query']=='Q'&&!empty($record['occurrence_id'])) {
+                  $htmlToDisplay = recordCommentsHyperlinkId(
+                      $notificationToSendEmailsFor['user_id'],
+                      $record['occurrence_id']);
+              }
             }
-            $emailContent .= '<td style="padding-right: 1em;">' . $record[$field] . '</td>';
+            if (empty($htmlToDisplay))
+              $htmlToDisplay=''; 
+            $emailContent .= '<td style="padding-right: 1em;">' . $htmlToDisplay . '</td>';
           }
         }
         $emailContent .= '</tr>';
@@ -249,7 +261,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
     }
     if ($currentType !== '') {
       $emailContent .= "</tbody></table>\n";
-    }
+    } 
     //if we have run out of notifications to send we will have finished going around the loop, so we just need to send out the last email whatever happens
     send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl,$emailHighPriority);
     $emailHighPriority = FALSE;
@@ -324,6 +336,32 @@ function notificationEmailsGetSharedWebsiteList($websiteId) {
   // Tag all cache entries for this website so they can be cleared together when changes are saved.
   $cache->set($cacheId, $r, $tag);
   return $r;
+}
+
+/**
+ * Creates a hyperlink to the comments page, if a suitable link provided in the configuration.
+ *
+ * @param int $userId
+ *   User ID.
+ * @param int $occurrenceId
+ *   Record occurrence Id.
+ *
+ * @return string
+ */
+function recordCommentsHyperlinkId($userId, $occurrenceId) {
+  try {
+    $recordCommentsPage = kohana::config('notification_emails.comment_page_url');
+    $warehouseUrl=kohana::config('notification_emails.warehouse_url');
+    // Handle config file not present.
+  }
+  catch (Exception $e) {
+    return null;
+  }
+  $url=$recordCommentsPage.
+                  '?warehouse_url='.kohana::config('notification_emails.warehouse_url').
+                  '&user_id='.$userId.
+                  '&occurrence_id='.$occurrenceId; 
+  return "<a title=\"Comment on queried record $occurrenceId\" href=\"$url\">Comment here</a>";  
 }
 
 /*
