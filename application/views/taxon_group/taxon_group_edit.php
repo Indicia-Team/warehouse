@@ -21,7 +21,7 @@
  * @subpackage Views
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 warehouse::loadHelpers(['data_entry_helper']);
@@ -29,22 +29,21 @@ $id = html::initial_value($values, 'taxon_group:id');
 ?>
 <p>This page allows you to specify the details of a taxon group.</p>
 <form id="taxon-group-edit" action="<?php echo url::site() . 'taxon_group/save'; ?>" method="post">
-  <?php echo $metadata ?>
   <input type="hidden" name="taxon_group:id" value="<?php echo $id; ?>" />
   <fieldset>
-    <legend>Taxon Group details</legend>
+    <legend>Taxon Group details<?php echo $metadata ?></legend>
     <?php
-    echo data_entry_helper::text_input(array(
+    echo data_entry_helper::text_input([
       'label' => 'Title',
       'fieldname' => 'taxon_group:title',
       'default' => html::initial_value($values, 'taxon_group:title'),
-      'validation' => array('required'),
-    ));
-    echo data_entry_helper::text_input(array(
+      'validation' => ['required'],
+    ]);
+    echo data_entry_helper::text_input([
       'label' => 'External key',
       'fieldname' => 'taxon_group:external_key',
       'default' => html::initial_value($values, 'taxon_group:external_key'),
-    ));
+    ]);
     ?>
     <?php echo html::error_message($model->getError('taxon_group:external_key')); ?>
   </fieldset>
