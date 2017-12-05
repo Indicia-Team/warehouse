@@ -21,7 +21,7 @@
  * @subpackage Views
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 ?>
 <div class="row">
@@ -31,7 +31,7 @@
       <fieldset>
         <legend>Login details</legend>
         <?php
-        if (! empty($error_message)) {
+        if (!empty($error_message)) {
           echo html::error_message($error_message);
         }
         ?>
@@ -49,6 +49,6 @@
       </fieldset>
       <input type="submit" value="Login" class="btn btn-primary" />
     </form>
-    <br /><a href="<?php echo url::site(); ?>forgotten_password">Request an email allowing you to reset your password</a>.
+    <br /><a href="<?php echo url::site(); ?>forgotten_password">Forgotten password?</a>
   </div>
 </div>

@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the forgotten password form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,30 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
-
-?>This page is used when you have forgotten your password. You may enter either your Username or your email address in the field below, and an email will be sent to you. In this email will be a link to a webpage which will allow you to enter a new password.
-This ensures that only the person at the registered email account for a user will be able to change the password. <br /><br />
-<?php if ( ! empty($error_message) )
-{
-    echo html::error_message($error_message);
+?>
+<p>Please enter either your username or your email address in the field below and an email will be sent to you
+allowing you to reset your password.</p>
+<?php
+warehouse::loadHelpers(['data_entry_helper']);
+if (!empty($error_message)) {
+  echo html::error_message($error_message);
 }
 ?>
-<form class="cmxform"  name = "login" action="<?php echo url::site(); ?>forgotten_password" method="post">
-<fieldset>
-<legend>User ID</legend>
-<ol>
-<li>
-  <label for="UserID">User Name or Email Address</label>
-  <input type = "text" name = "UserID" id = "UserID" value="" class="narrow" >
-</li>
-</ol>
-</fieldset>
-  <input type = "submit" value = "Request Forgotten Password Email" >
+<form name = "login" action="<?php echo url::site(); ?>forgotten_password" method="post">
+  <fieldset>
+    <?php
+    echo data_entry_helper::text_input([
+      'label' => 'Username or email address',
+      'fieldname' => 'UserID',
+    ]);
+    ?>
+  </fieldset>
+  <a class="btn btn-default" href="<?php echo url::site(); ?>login">Back</a>
+  <input class="btn btn-primary" type="submit" value="Request forgotten password email">
 </form>
-<br />If you have now remembered your password and would like to log on as normal, <a href="<?php echo url::site(); ?>login">click here to return to the log on page</a>.

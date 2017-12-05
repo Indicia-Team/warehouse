@@ -40,7 +40,7 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       $this->template->content->link_to_logout = 'YES';
       return;
     }
-    $this->template->title = 'Forgotten Password Email Request';
+    $this->template->title = 'Forgotten password email request';
     $this->template->content = new View('login/forgotten_password');
     if (request::method() == 'post') {
       $post = new Validation($_POST);
@@ -56,9 +56,7 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       if (!$this->check_can_login($user)) {
         return;
       }
-
       $this->auth->send_forgotten_password_mail($user, $person);
-
       $this->template->title = 'Email Sent';
       $this->template->content = new View('login/login_message');
       $this->template->content->message = 'An email providing a link which will allow your password to be reset has been sent to the specified email address, or if a username was provided, to the registered email address for that user.<br />';
