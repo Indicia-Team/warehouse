@@ -14,24 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Indicia
- * @subpackage Libraries
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Report Engine.
  *
  * The report engine allows for accession of predefined or provided reports.
- *
- * @package Indicia
- * @subpackage Controller
- * @license http://www.gnu.org/licenses/gpl.html GPL
- * @author Nicholas Clarke <xxx@xxx.net> / $Author$
- * @copyright xxxx
- * @version $Rev$ / $LastChangedDate$
  */
 
 /**

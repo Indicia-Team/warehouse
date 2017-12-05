@@ -14,23 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Websites table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Websites_Website_Agreement_Model extends ORM
 {
-  
+
   protected $belongs_to = array(
     'website',
     'website_agreement',
@@ -65,7 +59,7 @@ class Websites_Website_Agreement_Model extends ORM
 
     return parent::validate($array, $save);
   }
-  
+
   public function caption()
   {
     if ($this->id) {
@@ -74,9 +68,9 @@ class Websites_Website_Agreement_Model extends ORM
       return $this->getNewItemCaption();
     }
   }
-  
+
   /**
-   * Override the save method to additionally refresh index_websites_website_agreement with the 
+   * Override the save method to additionally refresh index_websites_website_agreement with the
    * latest information about website agreements.
    */
   public function save() {

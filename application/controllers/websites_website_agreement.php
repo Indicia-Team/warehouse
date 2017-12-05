@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the list of websites in agreements.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Websites_website_agreement_Controller extends Gridview_Base_Controller
 {
@@ -45,7 +40,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
     $this->pagetitle = "Agreements for website";
     $this->set_website_access('admin');
   }
-  
+
   /**
   * Override the default index functionality to filter by website.
   */
@@ -77,7 +72,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
     return $r;
   }
 
-  
+
   /**
    * Website agreements only editable by core admin or admin of website.
    */
@@ -114,7 +109,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
     }
     parent::save();
   }
-  
+
   /**
    * Define non-standard behaviour for the breadcrumbs, since this is accessed via a website list
    */
@@ -131,7 +126,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
   	$this->page_breadcrumbs[] = html::anchor('website/edit/'.$websiteId.'?tab=Agreements', $websiteTitle);
 	  $this->page_breadcrumbs[] = $this->model->caption();
   }
-  
+
   /**
    * Override the default return page behaviour so that after saving an agreement participation you
    * are returned to the list of agreements on the sub-tab of the website.

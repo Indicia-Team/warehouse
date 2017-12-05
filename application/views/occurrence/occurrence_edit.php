@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 ?>
@@ -26,8 +24,8 @@
   'media/js/jquery.ajaxQueue.js',
   'media/js/jquery.bgiframe.min.js',
   'media/js/jquery.autocomplete.js'
-), FALSE); 
-$id = html::initial_value($values, 'occurrence:id'); 
+), FALSE);
+$id = html::initial_value($values, 'occurrence:id');
 $sample = $model->sample;
 $website_id = $sample->survey->website_id;
 ?>
@@ -93,13 +91,13 @@ $(document).ready(function() {
   $("input#taxon").result(function(event, data){
     $("input#taxa_taxon_list_id").attr('value', data.id);
   });
-  jQuery('.vague-date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});    
+  jQuery('.vague-date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
   jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
 });
 </script>
 <form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">
-<?php 
-echo $metadata; 
+<?php
+echo $metadata;
 ?>
 <fieldset class="readonly">
 <legend>Sample summary</legend>
@@ -144,7 +142,7 @@ print form::hidden('occurrence:sample_id', html::initial_value($values, 'occurre
 <ol>
 <li>
 <label for='taxon'>Taxon:</label>
-<?php 
+<?php
 print form::input('taxon', $model->taxa_taxon_list->taxon->taxon);
 print form::hidden('occurrence:taxa_taxon_list_id', html::initial_value($values, 'occurrence:taxa_taxon_list_id'));
 echo html::error_message($model->getError('occurrence:taxa_taxon_list_id')); ?>
@@ -189,8 +187,8 @@ echo html::error_message($model->getError('occurrence:external_key'));
 <li>
 <label for='occurrence:record_status'>Record Status:</label>
 <?php
-print form::dropdown('occurrence:record_status', array('I' => 'In Progress', 'C' => 'Completed', 'S' => 'Sent for verification', 'V' => 'Verified', 
-    'R' => 'Rejected', 'D' => 'Queried', 'T' => 'Test'), 
+print form::dropdown('occurrence:record_status', array('I' => 'In Progress', 'C' => 'Completed', 'S' => 'Sent for verification', 'V' => 'Verified',
+    'R' => 'Rejected', 'D' => 'Queried', 'T' => 'Test'),
     html::initial_value($values, 'occurrence:record_status'));
 echo html::error_message($model->getError('occurrence:record_status'));
 ?>
@@ -198,8 +196,8 @@ echo html::error_message($model->getError('occurrence:record_status'));
 <li>
 <label for='occurrence:release_status'>Release Status:</label>
 <?php
-print form::dropdown('occurrence:release_status', array('R' => 'Released', 'P' => 'Recorder has requested a precheck before release', 
-    'U'=>'Record is part of a project that has not yet released its records'), 
+print form::dropdown('occurrence:release_status', array('R' => 'Released', 'P' => 'Recorder has requested a precheck before release',
+    'U'=>'Record is part of a project that has not yet released its records'),
     html::initial_value($values, 'occurrence:release_status'));
 echo html::error_message($model->getError('occurrence:release_status'));
 ?>
@@ -212,7 +210,7 @@ Verified on <?php echo html::initial_value($values, 'occurrence:verified_on') ?>
 <li>
 <label for='occurrence:downloaded_flag'>Download Status:</label>
 <?php
-print form::dropdown('occurrence:downloaded_flag', array('N' => 'Not Downloaded', 'I' => 'Trial Downloaded', 'F' => 'Downloaded - Read Only'), 
+print form::dropdown('occurrence:downloaded_flag', array('N' => 'Not Downloaded', 'I' => 'Trial Downloaded', 'F' => 'Downloaded - Read Only'),
     html::initial_value($values, 'occurrence:downloaded_flag'), 'disabled="disabled"');
 echo html::error_message($model->getError('occurrence:downloaded_flag'));
 ?>
@@ -241,7 +239,7 @@ foreach ($values['attributes'] as $attr) {
       echo form::input($name, $attr['value'], 'class="vague-date-picker"');
       break;
     case 'L':
-      echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['raw_value']);	  
+      echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['raw_value']);
       break;
     case 'B':
       echo form::dropdown($name, array(''=>'','0'=>'false','1'=>'true'), $attr['value']);
@@ -250,12 +248,12 @@ foreach ($values['attributes'] as $attr) {
       echo form::input($name, $attr['value']);
   }
   echo '<br/>'.html::error_message($model->getError($name)).'</li>';
-  
+
 }
  ?>
  </ol>
  </fieldset>
- 
+
 <?php echo html::form_buttons(html::initial_value($values, 'occurrence:id')!=null, false, false); ?>
 </form>
 

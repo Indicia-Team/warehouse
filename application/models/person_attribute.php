@@ -14,24 +14,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Person_Attributes table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Person_Attribute_Model extends ATTR_ORM {
 
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'termlist');
-  
+
   // The person attributes are defined per website, not per survey
   protected $has_survey_restriction = false;
 
@@ -40,15 +34,15 @@ class Person_Attribute_Model extends ATTR_ORM {
   );
 
   protected $has_and_belongs_to_many = array('websites');
-  
+
   public function validate(Validation $array, $save = FALSE) {
     $this->unvalidatedFields = array('synchronisable');
     return parent::validate($array, $save);
   }
-  
+
   /**
    * After saving, ensures that the join records linking the attribute to a website are created or deleted.
-   * @return boolean Returns true to indicate success. 
+   * @return boolean Returns true to indicate success.
    */
   protected function postSubmit($isInsert) {
     // Record has saved correctly or is being reused
@@ -59,7 +53,7 @@ class Person_Attribute_Model extends ATTR_ORM {
     }
     return true;
   }
-  
+
   /**
    * Get the list of known system functions for person attributes, each with a title and description
    * of their usage.

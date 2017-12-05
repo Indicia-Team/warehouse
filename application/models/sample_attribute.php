@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Sample_Attributes table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Sample_Attribute_Model extends ATTR_ORM {
 
@@ -42,7 +36,7 @@ class Sample_Attribute_Model extends ATTR_ORM {
     $this->unvalidatedFields = array('applies_to_location');
     return parent::validate($array, $save);
   }
-  
+
   /**
    * Get the list of known system functions for sample attributes, each with a title and description
    * of their usage.

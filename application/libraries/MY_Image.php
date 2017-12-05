@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Libraries
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 ini_set('gd.jpeg_ignore_warning', 1);
@@ -47,7 +45,7 @@ class Image extends Image_Core {
         $uploadpath = $uploadpath.'/';
       if ($subdir != "" && substr($subdir,-1) != '\\' && substr($subdir,-1) != '/')
         $subdir = $subdir.'/';
-      
+
       // Test file extension against allowed types
       $fileParts = explode('.', $filename);
       $ext = strtolower(array_pop($fileParts));
@@ -59,7 +57,7 @@ class Image extends Image_Core {
       else {
         $allowed_image = in_array($ext, $config['image']);
       }
-      
+
       if ($allowed_image) {
         // website specific config available?
         $config = $website_id ? kohana::config('indicia.image_handling_website_'.$website_id) : false;

@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the surveys list.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Survey_Controller extends Gridview_Base_Controller {
 
@@ -54,12 +49,12 @@ class Survey_Controller extends Gridview_Base_Controller {
     );
     $this->template->content = $this->view;
   }
-  
+
   protected function prepareOtherViewData($values)
-  { 
+  {
     $websites = ORM::factory('website');
     if (!empty($values['survey:parent_id']))
-      // parent list already has a link to a website, so we can't change it 
+      // parent list already has a link to a website, so we can't change it
       $websites = $websites->in('id', ORM::factory('survey', $values['survey:parent_id'])->website_id);
     elseif (!empty($values['survey:website_id']))
       // can't change website for existing survey
@@ -73,9 +68,9 @@ class Survey_Controller extends Gridview_Base_Controller {
       'websites' => $arr
     );
   }
-  
+
   /**
-   * Override the default action columns for a grid - just an edit link - to 
+   * Override the default action columns for a grid - just an edit link - to
    * add a link to the attributes list for othe survey.
    */
   protected function get_action_columns() {
@@ -90,7 +85,7 @@ class Survey_Controller extends Gridview_Base_Controller {
       )
     );
   }
-  
+
     /**
    * Return a list of the tabs to display for this controller's actions.
    */
@@ -116,7 +111,7 @@ class Survey_Controller extends Gridview_Base_Controller {
 
   /**
    * Check access to a survey when editing. The survey's website must be in the list
-   * of websites the user is authorised to administer.   
+   * of websites the user is authorised to administer.
    */
   protected function record_authorised ($id)
   {
@@ -127,14 +122,14 @@ class Survey_Controller extends Gridview_Base_Controller {
     }
     return true;
   }
-  
+
   /**
    * You can only access the list of surveys if at least an editor of one website.
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
-  
+
   /**
    * Retrieves additional values from the model that are required by the edit form.
    * @return array List of additional values required by the form.
@@ -149,10 +144,10 @@ class Survey_Controller extends Gridview_Base_Controller {
     ));
   	return $r;
   }
-  
+
   /**
    * Load default values either when creating a survey new or reloading after a validation failure.
-   * This adds the custome attributes list to the data available for the view. 
+   * This adds the custome attributes list to the data available for the view.
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
@@ -162,5 +157,5 @@ class Survey_Controller extends Gridview_Base_Controller {
     ));
     return $r;
   }
-  
+
 }

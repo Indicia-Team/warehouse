@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
- * Controller providing CRUD access to the images for an occurrence media file
- *
- * @package  Core
- * @subpackage Controllers
+ * Controller providing CRUD access to the images for an occurrence media file.
  */
 class Occurrence_medium_Controller extends Gridview_Base_Controller
 {
@@ -83,17 +78,17 @@ class Occurrence_medium_Controller extends Gridview_Base_Controller
       return $this->model->object_name;
     }
   }
-  
+
   /**
-   * Get the list of terms ready for the media types list. 
+   * Get the list of terms ready for the media types list.
    */
   protected function prepareOtherViewData($values)
-  {    
+  {
     return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')    
-    );   
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')
+    );
   }
-  
+
   /**
    * Define non-standard behaviuor for the breadcrumbs, since this is accessed via an occurrence
    */

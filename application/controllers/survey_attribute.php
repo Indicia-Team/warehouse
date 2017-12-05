@@ -14,20 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Controller for survey attributes.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Survey_attribute_Controller extends Attr_Gridview_Base_Controller {
 
@@ -36,7 +31,7 @@ class Survey_attribute_Controller extends Attr_Gridview_Base_Controller {
     $this->prefix = 'survey';
     parent::__construct();
   }
-  
+
   /**
    * Returns the shared view for all custom attribute edits.
    */
@@ -44,7 +39,7 @@ class Survey_attribute_Controller extends Attr_Gridview_Base_Controller {
     $this->associationsView=new View('templates/attribute_associations_website');
     return 'custom_attribute/custom_attribute_edit';
   }
-  
+
   /**
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.

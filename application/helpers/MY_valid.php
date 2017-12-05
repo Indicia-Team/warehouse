@@ -13,19 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Helpers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Extension class for the kohana core validation class. Provides additional Indicia specific
- * validation methods. 
- * @link http://code.google.com/p/indicia/wiki/WarehouseCodeValidation 
+ * validation methods.
+ * @link http://code.google.com/p/indicia/wiki/WarehouseCodeValidation
  */
 
 class Valid extends valid_Core {
@@ -51,7 +49,7 @@ class Valid extends valid_Core {
    * $todo Should we consider caching the system?
    */
   public static function sref($sref, $system)
-  { 
+  {
     $system = $system[0];
     return spatial_ref::is_valid($sref, $system);
   }
@@ -87,9 +85,9 @@ class Valid extends valid_Core {
    */
   public static function unique($column_value, $args){
     $db = new Database();
-    if ($args[2] == ''){      
+    if ($args[2] == ''){
       $number_of_records = $db->count_records($args[0], array($args[1] => $column_value, 'deleted'=>'f'));
-    } else {      
+    } else {
       $number_of_records = $db->count_records($args[0], array($args[1] => $column_value, 'id !=' => $args[2], 'deleted'=>'f'));
     }
 
@@ -160,7 +158,7 @@ class Valid extends valid_Core {
 
     return TRUE;
   }
-  
+
   /**
    * Validate that a value is at least as high as a specified minimum value.
    *
@@ -172,19 +170,19 @@ class Valid extends valid_Core {
   {
     return $value >= $min[0];
   }
-  
+
   /**
    * Validate that a value is at least as high as a specified minimum value.
    *
    * @param string $value Value to validate
    * @param int $min Maximum value accepted
-   * @return  bool  
+   * @return  bool
    */
   public static function maximum($value, $max)
   {
     return $value <= $max[0];
   }
-  
+
   /**
    * Validates that a value is a list of comma separated emails.
    * @param string $value Value to validate

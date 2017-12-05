@@ -14,17 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage LIbraries
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 abstract class ATTR_ORM extends Valid_ORM {
 
   public $search_field='caption';
-  
+
   /**
    * Defines if the available attributes for a submission are filtered by survey_id.
    * @var boolean
@@ -149,7 +147,7 @@ abstract class ATTR_ORM extends Valid_ORM {
    * After saving, ensures that the join records linking the attribute to a website
    * & survey combination are created or deleted.
    * @param boolean True if this is a new inserted record, false for an update.
-   * @return boolean Returns true to indicate success. 
+   * @return boolean Returns true to indicate success.
    */
   protected function postSubmit($isInsert) {
     // Only save for the websites we have access to
@@ -173,12 +171,12 @@ abstract class ATTR_ORM extends Valid_ORM {
 
   /**
    * Internal function to ensure that an attribute is linked to a website/survey combination
-   * or alternatively is unlinked from the combination. Checks the existing data and 
+   * or alternatively is unlinked from the combination. Checks the existing data and
    * creates or deletes the join record as and when necessary.
    * @param integer $attr_id Id of the attribute.
    * @param integer $website_id ID of the website.
    * @param integer $survey_id ID of the survey.
-   * @param boolean $checked True if there should be a link, false if not. 
+   * @param boolean $checked True if there should be a link, false if not.
    */
   protected function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked)
   {

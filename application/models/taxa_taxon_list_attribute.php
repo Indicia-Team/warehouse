@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Taxa_Taxon_List_Attributes table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxa_Taxon_List_Attribute_Model extends ATTR_ORM {
 
@@ -37,16 +31,16 @@ class Taxa_Taxon_List_Attribute_Model extends ATTR_ORM {
   );
 
   protected $has_and_belongs_to_many = array('websites');
-  
+
   public function validate(Validation $array, $save = FALSE) {
     $array->add_rules('for_verification_check', 'required');
     return parent::validate($array, $save);
   }
-  
+
   /**
-   * After saving, ensures that the join records linking the attribute to a taxon 
+   * After saving, ensures that the join records linking the attribute to a taxon
    * list are created or deleted.
-   * @return boolean Returns true to indicate success.  
+   * @return boolean Returns true to indicate success.
    */
   protected function postSubmit($isInsert) {
     $lists = ORM::factory('taxon_list')->find_all();
@@ -58,11 +52,11 @@ class Taxa_Taxon_List_Attribute_Model extends ATTR_ORM {
 
   /**
    * Internal function to ensure that an attribute is linked to a taxon list
-   * or alternatively is unlinked from the list. Checks the existing data and 
+   * or alternatively is unlinked from the list. Checks the existing data and
    * creates or deletes the join record as and when necessary.
    * @param integer $attr_id Id of the attribute.
    * @param integer $list_id ID of the taxon list.
-   * @param boolean $checked True if there should be a link, false if not. 
+   * @param boolean $checked True if there should be a link, false if not.
    */
   private function set_attribute_taxon_list_record($attr_id, $list_id, $checked)
   {

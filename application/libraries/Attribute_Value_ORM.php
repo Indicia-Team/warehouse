@@ -14,18 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage LIbraries
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
  /**
  * Extension to the ORM library which includes handling for attribute value validation.
  * Subclasses should call attribute_validation in their validate() method. They can also implement a
  * protected method called get_survey_specific_rules which returns a Kohana result object for a query
- * to get the validation_rules field if there are any specific to the survey. 
+ * to get the validation_rules field if there are any specific to the survey.
  */
 abstract class Attribute_Value_ORM extends ORM {
 
@@ -44,7 +42,7 @@ abstract class Attribute_Value_ORM extends ORM {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules($type.'_attribute_id', 'required');
-    $array->add_rules($type.'_id', 'required');    
+    $array->add_rules($type.'_id', 'required');
     $values= $array->as_array();
     // We apply the validation rules specified in the sample attribute
     // table to the value given.
@@ -106,30 +104,30 @@ abstract class Attribute_Value_ORM extends ORM {
           }
         }
       }
-      
+
     }
   }
-  
+
   public function save() {
     if ($this->delete_if_empty())
       return $this;
     else
       return parent::save();
   }
-  
+
   /**
-   * Detect if the attribute value is empty. If so, either delete and save it, or if it does not exist just 
+   * Detect if the attribute value is empty. If so, either delete and save it, or if it does not exist just
    * skip saving it.
    */
   protected function delete_if_empty() {
     $arr = $this->as_array();
     foreach ($arr as $field => $content) {
-      if (substr($field, -6)=='_value') { 
-        if ($content!=="" && $content!==null) 
+      if (substr($field, -6)=='_value') {
+        if ($content!=="" && $content!==null)
           // not empty, so can exit
           return false;
         else
-          // empty values should be null, especially if we empty something other than a string. 
+          // empty values should be null, especially if we empty something other than a string.
           $this->$field=null;
       }
     }
@@ -137,11 +135,11 @@ abstract class Attribute_Value_ORM extends ORM {
     if ($this->id!==0) {
       $this->deleted='t';
       parent::save();
-    } 
-    
+    }
+
     return true;
   }
-  
+
   /**
   * Override set handler to translate WKT to PostGIS internal spatial data.
   */

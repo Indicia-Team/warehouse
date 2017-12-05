@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the media files for a taxon
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Taxon_medium_Controller extends Gridview_Base_Controller
 {
@@ -45,7 +40,7 @@ class Taxon_medium_Controller extends Gridview_Base_Controller
   * Override the default index functionality to filter by taxon_meaning_id.
   */
   public function index()
-  { 
+  {
     if ($this->uri->total_arguments()>0) {
       $ttl = ORM::factory('taxa_taxon_list', $this->uri->argument(1));
       $this->base_filter=array('taxon_meaning_id' => $ttl->taxon_meaning_id);
@@ -53,32 +48,32 @@ class Taxon_medium_Controller extends Gridview_Base_Controller
     parent::index();
     // pass the taxa_taxon_list id into the view, so the create button can use it to autoset
     // the taxon of the new image.
-    if ($this->uri->total_arguments()>0) 
+    if ($this->uri->total_arguments()>0)
       $this->view->taxa_taxon_list_id=$ttl->id;
   }
-  
+
   /**
-   *  Setup the default values to use when loading this controller to create a new image.   
+   *  Setup the default values to use when loading this controller to create a new image.
    */
-  protected function getDefaults() {    
-    $r = parent::getDefaults();    
+  protected function getDefaults() {
+    $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
       // taxa_taxon_list id is passed as first argument in URL when creating. But the image
       // gets linked by meaning, so fetch the meaning_id.
-      $ttl = ORM::Factory('taxa_taxon_list', $this->uri->argument(1)); 
+      $ttl = ORM::Factory('taxa_taxon_list', $this->uri->argument(1));
       $r['taxa_taxon_list:id'] = $this->uri->argument(1);
       $r['taxon_medium:taxon_meaning_id'] = $ttl->taxon_meaning_id;
       $r['taxon_medium:caption'] = kohana::lang('misc.new_image');
     }
     return $r;
   }
-  
+
   /**
-   * Setup the default values to use when loading this controller to edit an existing image.   
+   * Setup the default values to use when loading this controller to edit an existing image.
    */
-  protected function getModelValues() {    
+  protected function getModelValues() {
     $r = parent::getModelValues();
-    // The image is linked to a taxon meaning, but we need to use this to link back to the 
+    // The image is linked to a taxon meaning, but we need to use this to link back to the
     // preferred taxa in taxon list, so when you save it knows where to go back to.
     $ttl = ORM::Factory('taxa_taxon_list')->where(array(
       'taxon_meaning_id' => $this->model->taxon_meaning_id,
@@ -87,17 +82,17 @@ class Taxon_medium_Controller extends Gridview_Base_Controller
     $r['taxa_taxon_list:id'] = $ttl->id;
     return $r;
   }
-  
+
   /**
-   * Get the list of terms ready for the media types list. 
+   * Get the list of terms ready for the media types list.
    */
   protected function prepareOtherViewData($values)
-  {    
+  {
     return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')    
-    );   
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')
+    );
   }
-  
+
   /**
    * Override the default return page behaviour so that after saving an image you
    * are returned to the taxa_taxon_list entry which has the image.
@@ -109,7 +104,7 @@ class Taxon_medium_Controller extends Gridview_Base_Controller
       return $this->model->object_name;
     }
   }
-  
+
   /**
    * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a taxon
    */
@@ -123,7 +118,7 @@ class Taxon_medium_Controller extends Gridview_Base_Controller
       // creating a new one so our argument is the taxa_taxon_list id
       $ttlId = $this->uri->argument(1);
       $ttl = ORM::Factory('taxa_taxon_list', $ttlId);
-      
+
     }
     $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$ttl->taxon_list_id, $ttl->taxon_list->title);
     $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$ttl->taxon_list_id.'?tab=Taxa', 'Taxa');

@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the person attributes.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
 
@@ -34,9 +29,9 @@ class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
     $this->prefix = 'person';
     parent::__construct();
   }
-  
-  /** 
-   * Override saave to store the synchronisable field. 
+
+  /**
+   * Override saave to store the synchronisable field.
    */
   public function save() {
     if ($_POST['metaFields:disabled_input'] == 'NO') {
@@ -46,7 +41,7 @@ class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
     }
     parent::save();
   }
-  
+
   /**
    * Returns the shared view for all custom attribute edits.
    */
@@ -54,7 +49,7 @@ class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
     $this->associationsView=new View('templates/attribute_associations_website');
     return 'custom_attribute/custom_attribute_edit';
   }
-  
+
   /**
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.

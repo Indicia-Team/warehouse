@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Controllers
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the taxa that belong to a checklist.
- *
- * @package  Core
- * @subpackage Controllers
  */
 class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 {
@@ -44,7 +39,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     );
     $this->pagetitle = "Species";
   }
-  
+
  /**
   * Override the default index functionality to filter by taxon_list.
   */
@@ -55,7 +50,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->pagetitle = "Species in ".$taxonList->title;
     $this->internal_index($taxon_list_id, $taxonList);
   }
- 
+
   public function children($id) {
     $parentTtl = ORM::factory('taxa_taxon_list', $id);
     $this->base_filter['parent_id'] = $id;
@@ -65,7 +60,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     // the parent of the new list.
     $this->view->parent_id=$id;
   }
-  
+
   private function internal_index($taxon_list_id, $taxonList) {
     // No further filtering of the gridview required as the very fact you can access the parent taxon list
     // means you can access all the taxa for it.
@@ -78,7 +73,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     if (!empty($taxonList->parent_id)) {
       unset($this->base_filter['parent_id']);
     }
-    parent::index(); 
+    parent::index();
     $this->view->taxon_list_id = $taxon_list_id;
     $this->view->parent_list_id = $taxonList->parent_id;
     $this->upload_csv_form->staticFields = array(
@@ -137,7 +132,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       // after a validation failure, the list id is in the post data
       $r['taxa_taxon_list:taxon_list_id'] = $_POST['taxa_taxon_list:taxon_list_id'];
     }
-    $this->loadAttributes($r, 
+    $this->loadAttributes($r,
         array('taxon_list_id'=>array($r['taxa_taxon_list:taxon_list_id']))
     );
     return $r;
@@ -247,7 +242,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     }
     return $syn;
   }
-  
+
   /**
    * Controller action for the lumping and splitting tab.
    */
@@ -387,7 +382,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
         ->get()->result_array(false);
       if (empty($rows))
         $messages[] = "$pasted_taxon could not be found in the parent list";
-      elseif (count($rows)>1 && ($rows[0]['preferred']==='f' || $rows[1]['preferred']==='t') && 
+      elseif (count($rows)>1 && ($rows[0]['preferred']==='f' || $rows[1]['preferred']==='t') &&
           ($rows[0]['allow_data_entry']==='f' || $rows[1]['allow_data_entry']==='t'))
         $messages[] = "$pasted_taxon was found but could not be used to identify a unique taxon in the parent list";
       else {

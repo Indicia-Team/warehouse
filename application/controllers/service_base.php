@@ -14,26 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
- 
+
 /**
  * Exception class for Indicia services.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class ServiceError extends Exception {
 }
 
 /**
  * Exception class for exception that contain an array of sub-errors, such as a submission validation failure.
- *
- * @package	Core
  */
 class ArrayException extends ServiceError {
 
@@ -55,45 +48,30 @@ class ArrayException extends ServiceError {
 
 /**
  * Exception class for submission validation problems.
- * 
- * @package Core
- * @subpackage Controllers
  */
 class ValidationError extends ArrayException {
 }
 
 /**
  * Exception class for authentication failures.
- * 
- * @package Core
- * @subpackage Controllers
  */
 class AuthenticationError extends ServiceError {
 }
 
 /**
  * Exception class for authorisation failures.
- * 
- * @package Core
- * @subpackage Controllers
  */
 class AuthorisationError extends ServiceError {
 }
 
 /**
  * Exception class for inaccessible entities or view combinations.
- * 
- * @package Core
- * @subpackage Controllers
  */
 class EntityAccessError extends ServiceError {
 }
 
 /**
  * Base controller class for Indicia Service controllers.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Service_Base_Controller extends Controller {
 
@@ -225,7 +203,7 @@ class Service_Base_Controller extends Controller {
   {
     if($e instanceof ValidationError || $e instanceof InvalidArgumentException)
       $statusCode = 400;
-    elseif($e instanceof AuthenticationError || $e instanceof AuthorisationError) 
+    elseif($e instanceof AuthenticationError || $e instanceof AuthorisationError)
       $statusCode = 403; // not 401 as not using browser or official digest authentication
     elseif($e instanceof EntityAccessError)
       $statusCode = 404;

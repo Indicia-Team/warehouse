@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller for the trigger page.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Trigger_Controller extends Gridview_Base_Controller {
 
@@ -42,13 +37,13 @@ class Trigger_Controller extends Gridview_Base_Controller {
     );
     $this->pagetitle = "Triggers";
   }
-  
+
   public function index() {
     $this->base_filter['private_for_user_id'] = array(null, $_SESSION['auth_user']->id);
     $this->base_filter['user_id'] = array(null, $_SESSION['auth_user']->id);
     parent::index();
   }
-  
+
   /**
    * Override to specify action columns for subscription.
    */
@@ -72,47 +67,47 @@ class Trigger_Controller extends Gridview_Base_Controller {
     );
     return $r;
   }
-  
-  /** 
+
+  /**
   * Provide the list of trigger templates to the edit view
   */
   protected function prepareOtherViewData($values) {
-    $files = Array();    
+    $files = Array();
     $templateDir = Kohana::config('indicia.localReportDir').'/trigger_templates/';
     $dh = opendir($templateDir);
     while ($file = readdir($dh))  {
       if ($file != '..' && $file != '.' && is_file($templateDir.$file))
-      { 
+      {
         $file = str_replace('.xml', '', $file);
         $files["trigger_templates/$file"] = $file;
       }
     }
     return array('triggerFileList' => $files);
   }
-  
+
   public function record_authorised($id)
   {
     return $this->auth->logged_in('CoreAdmin');
   }
-  
+
   /**
    * Controller action to display the parameters editing page for the report associated with this
    * trigger. Displayed after clicking Next on the main edit page.
    */
   public function edit_params($id=null) {
-    $this->model = ORM::Factory($this->model->object_name, $id);    
-    if ($id) 
+    $this->model = ORM::Factory($this->model->object_name, $id);
+    if ($id)
       // existing record, so we can get the params json data to convert it to individual params
-      $params = json_decode($this->model->params_json, true);    
+      $params = json_decode($this->model->params_json, true);
     else
-      $params = array(); 
+      $params = array();
     $this->setView('trigger/params_edit', 'Parameters for '.$this->model->caption(), array(
       'values'=>$_POST,
       'other_data' => array('defaults' => $params)
-    )); 
+    ));
     $this->defineEditBreadcrumbs();
   }
-  
+
   /**
    * Override the save method so we can convert the report parameters form into a JSON
    * value to store in the triggers.json_params field.
@@ -128,8 +123,8 @@ class Trigger_Controller extends Gridview_Base_Controller {
         $params[$param] = $value;
       }
     }
-    $_POST['params_json'] = json_encode($params);   
+    $_POST['params_json'] = json_encode($params);
     parent::save();
   }
-  
+
 }

@@ -316,7 +316,7 @@ abstract class Database_Driver {
   {
     if ( ! $this->db_config['escape'])
       return $value;
-      
+
     switch (gettype($value)) // this is not a recomended way of testing...
     {
       case 'string':

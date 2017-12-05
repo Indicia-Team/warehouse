@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 ?>
@@ -97,8 +95,8 @@
 </li>
 <?php
 endif;
-if (isset($password_field) and $password_field != '') { 
-  echo $password_field; 
+if (isset($password_field) and $password_field != '') {
+  echo $password_field;
   echo html::error_message($model->getError('user:password'));
 } ?>
 </ol>

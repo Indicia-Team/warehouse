@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Location_Attributes_Websites table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Location_Attributes_Website_Model extends Valid_ORM
 {
@@ -35,7 +29,7 @@ class Location_Attributes_Website_Model extends Valid_ORM
     'location_attribute',
     'website',
   );
-  
+
   protected $belongs_to = array(
     'created_by'=>'user',
   );
@@ -45,7 +39,7 @@ class Location_Attributes_Website_Model extends Valid_ORM
     $array->pre_filter('trim');
     $this->unvalidatedFields = array(
         'location_attribute_id',
-        'website_id', 
+        'website_id',
         'restrict_to_survey_id',
         'default_text_value',
         'default_float_value',
@@ -57,9 +51,9 @@ class Location_Attributes_Website_Model extends Valid_ORM
         'restrict_to_location_type_id');
     return parent::validate($array, $save, array());
   }
-  
+
   /**
-   * Return a displayable caption for the item.   
+   * Return a displayable caption for the item.
    */
   public function caption()
   {
@@ -67,14 +61,14 @@ class Location_Attributes_Website_Model extends Valid_ORM
       return ($this->location_attribute != null ? $this->location_attribute->caption : '');
     } else {
       return 'Location Attribute';
-    }    
+    }
   }
-  
-  /** 
+
+  /**
    * Map a virtual field called default_value onto the relevant default value fields, depending on the data type.
    */
   protected function preSubmit()
-  { 
+  {
     if (isset($this->submission['fields']['default_value']['value'])) {
       $attr = ORM::factory('location_attribute', $this->submission['fields']['location_attribute_id']['value']);
       switch ($attr->data_type) {
@@ -93,13 +87,13 @@ class Location_Attributes_Website_Model extends Valid_ORM
           $vagueDate = vague_date::string_to_vague_date($this->submission['fields']['default_value']['value']);
           $this->submission['fields']['default_date_start_value']['value']=$vagueDate[0];
           $this->submission['fields']['default_date_end_value']['value']=$vagueDate[1];
-          $this->submission['fields']['default_date_type_value']['value']=$vagueDate[2];            
+          $this->submission['fields']['default_date_type_value']['value']=$vagueDate[2];
       }
     }
     return parent::presubmit();
   }
-  
-  /** 
+
+  /**
    * Create a virtual field called default_value from the relevant default value fields, depending on the data type.
    */
   public function __get($column)
@@ -116,12 +110,12 @@ class Location_Attributes_Website_Model extends Valid_ORM
         return parent::__get('default_int_value');
         case 'D':
         case 'V':
-        $vagueDate = array(parent::__get('default_date_start_value'), 
-            parent::__get('default_date_end_value'), 
+        $vagueDate = array(parent::__get('default_date_start_value'),
+            parent::__get('default_date_end_value'),
           parent::__get('default_date_type_value'));
-        return vague_date::vague_date_to_string($vagueDate);           
+        return vague_date::vague_date_to_string($vagueDate);
       }
-    } else 
+    } else
       return parent::__get($column);
   }
 

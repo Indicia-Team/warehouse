@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Controllers
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -27,9 +25,6 @@
  * Controller that implements any scheduled tasks, such as checking triggers against the recent
  * records to look for notifications. This controller does not have a user interface, it is intended
  * to be automated on a schedule.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Scheduled_Tasks_Controller extends Controller {
   private $last_run_date;
@@ -65,7 +60,7 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->checkTriggers();
     }
     $tmtask = microtime(true) - $tm;
-    if ($tmtask>5) 
+    if ($tmtask>5)
       self::msg("Triggers & notifications scheduled task took $tmtask seconds.", 'alert');
     $this->runScheduledPlugins($system, $tasks);
     if (in_array('notifications', $tasks)) {
@@ -77,7 +72,7 @@ class Scheduled_Tasks_Controller extends Controller {
     $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('id' => 1));
     self::msg("Ok!");
     $tm = microtime(true) - $tm;
-    if ($tm>30) 
+    if ($tm>30)
       self::msg("Scheduled tasks for ".implode(', ', $tasks)." took $tm seconds.", 'alert');
   }
 
@@ -181,16 +176,16 @@ class Scheduled_Tasks_Controller extends Controller {
     $nrNotifications = count($notifications);
     if($nrNotifications > 0)
       self::msg("Found $nrNotifications notifications");
-    else 
+    else
       self::msg("No notifications found");
-    
+
     $currentUserId = null;
     $currentCc = null;
     $emailContent='';
     $notificationIds = array();
     foreach ($notifications as $notification) {
       $notificationIds[] = $notification->id;
-      if (($currentUserId != $notification->user_id) || ($currentCc != $notification->cc)) {        
+      if (($currentUserId != $notification->user_id) || ($currentCc != $notification->cc)) {
         if ($currentUserId) {
           // send current email data
           $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $currentCc);
@@ -242,7 +237,7 @@ class Scheduled_Tasks_Controller extends Controller {
         }
         // send the email
         $swift->send($message, $recipients, $email_config['address']);
-        kohana::log('info', 'Email notification sent to '. $user->email_address);        
+        kohana::log('info', 'Email notification sent to '. $user->email_address);
       }
     } catch (Exception $e) {
       // Email not sent, so undo marking of notification as complete.
@@ -417,7 +412,7 @@ class Scheduled_Tasks_Controller extends Controller {
       }
     }
   }
-  
+
   /**
    * Loop through any plugin modules which declare scheduled tasks and run them.
    * @param object $system System model instance.
@@ -436,7 +431,7 @@ class Scheduled_Tasks_Controller extends Controller {
         ->from('system')
         ->in('name', $plugins)
         ->orderby('last_scheduled_task_check', 'ASC')
-        ->get();  
+        ->get();
     $sortedPlugins = array();
     foreach ($pluginsFromDb as $plugin) {
       $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check===null ? $currentTime : $plugin->last_scheduled_task_check;
@@ -448,7 +443,7 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     echo '<br/>';
     var_export($sortedPlugins);
-    echo '<br/>';    
+    echo '<br/>';
     //Make sure data_cleaner runs before auto_verify module
     if (array_key_exists('data_cleaner', $sortedPlugins))
       $sortedPlugins = array('data_cleaner' => $sortedPlugins['data_cleaner']) + $sortedPlugins;
@@ -475,7 +470,7 @@ class Scheduled_Tasks_Controller extends Controller {
         if (!$this->pluginMetadata['requires_occurrences_delta'] || $this->occdeltaCount>0 || $this->pluginMetadata['always_run']) {
           // call the plugin, only if there are records to process, or it doesn't care
           self::msg("Running $plugin");
-          call_user_func($plugin.'_scheduled_task', $timestamp, $this->db, $currentTime); 
+          call_user_func($plugin.'_scheduled_task', $timestamp, $this->db, $currentTime);
         }
         // log plugins which take more than 5 seconds
         $took=microtime(true) - $tm;
@@ -495,7 +490,7 @@ class Scheduled_Tasks_Controller extends Controller {
       }
     }
   }
-  
+
   private function getScheduledPlugins() {
     $cacheId = 'scheduled-plugin-names';
     $cache = Cache::instance();
@@ -515,7 +510,7 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     return $plugins;
   }
-  
+
   /**
    * If a plugin needs a different occurrences delta table to the one we've got currently prepared, then
    * build it.
@@ -533,11 +528,11 @@ class Scheduled_Tasks_Controller extends Controller {
         $this->db->query('DROP TABLE IF EXISTS occdelta;');
         // This query uses a 2 stage process as it is faster than joining occurrences to cache_occurrences.
         $query = "
-select distinct o.id 
+select distinct o.id
 into temporary occlist
-from occurrences o 
+from occurrences o
 where o.updated_on>'$timestamp' and o.updated_on<='$currentTime'
-union 
+union
 select o.id from occurrences o
 join samples s on s.id=o.sample_id and s.deleted=false
 where s.updated_on>'$timestamp' and s.updated_on<='$currentTime'
@@ -548,11 +543,11 @@ join samples sp on sp.id=s.parent_id and sp.deleted=false
 where sp.updated_on>'$timestamp' and sp.updated_on<='$currentTime'
 order by id;
 
-select co.*, 
+select co.*,
 	case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
-	case 
-	  when o.created_on>'$timestamp' then o.created_on 
-	  else greatest(o.updated_on, s.updated_on, sp.updated_on) 
+	case
+	  when o.created_on>'$timestamp' then o.created_on
+	  else greatest(o.updated_on, s.updated_on, sp.updated_on)
 	end as timestamp,
 	w.verification_checks_enabled
 into temporary occdelta
@@ -575,7 +570,7 @@ drop table occlist;";
       }
     }
   }
-  
+
   /**
    * if processing too many records, clear out the excess.
    */
@@ -592,7 +587,7 @@ drop table occlist;";
       $this->occdeltaCount=$this->db->count_records('occdelta');
     }
   }
-  
+
   /**
    * Loads the metadata for the given plugin name.
    * @param string $plugin Name of the plugin
@@ -604,7 +599,7 @@ drop table occlist;";
       'always_run' => FALSE
     ), $this->pluginMetadata);
   }
-  
+
   /**
    * Echoes out a message and adds to the kohana log.
    * @param string $msg Message text
@@ -612,7 +607,7 @@ drop table occlist;";
    */
   private function msg($msg, $status='debug') {
     echo "$msg<br/>";
-    if ($status==='error') 
+    if ($status==='error')
       kohana::log('error', 'Error occurred whilst running scheduled tasks.');
     kohana::log($status, $msg);
   }

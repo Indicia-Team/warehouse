@@ -14,18 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 ?>
-<?php 
+<?php
 foreach ($update as $row):
   echo '<p>Location with name "'.$row.'" updated. (<a href="edit/'.$location_id[$row].'">Edit</a>)</p>';
 endforeach; ?>
-<?php 
+<?php
 foreach ($create as $row):
   echo '<p>New location with name "'.$row.'" created. (<a href="edit/'.$location_id[$row].'">Edit</a>)</p>';
 endforeach; ?>

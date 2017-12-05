@@ -14,22 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'websites_website_agreement:id');
-if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
-$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+if (isset($_POST)) {
+  data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
+}
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 if ($this->auth->logged_in('CoreAdmin')) {
   $adminCase = "$('#div-'+field).attr('enabled',true);
                 $('#div-'+field).css('opacity',1);";
-} else {
+}
+else {
   $adminCase = "$('#div-'+field+' input').attr('checked','');
                 $('#div-'+field).attr('enabled',false);
                 $('#div-'+field).css('opacity',0.5);";
@@ -42,8 +42,8 @@ data_entry_helper::$javascript .= "
   $('#agreement-select').change(function(evt) {
     jQuery.ajax({
       type: 'GET',
-      url: '".url::site()."services/data/website_agreement/'+evt.target.value+'?mode=json&view=detail'+
-        '&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&callback=?',
+      url: '" . url::site() . "services/data/website_agreement/'+evt.target.value+'?mode=json&view=detail'+
+        '&auth_token=$readAuth[auth_token]&nonce=$readAuth[nonce]&callback=?',
       data: {},
       success: function(data) {
         $.each(data[0], function(field, value) {
@@ -79,7 +79,7 @@ data_entry_helper::$javascript .= "
 ";
 
 ?>
-<form class="cmxform" action="<?php echo url::site().'websites_website_agreement/save' ?>" method="post" id="websites-website-agreement-edit">
+<form class="cmxform" action="<?php echo url::site() . 'websites_website_agreement/save' ?>" method="post" id="websites-website-agreement-edit">
   <?php echo $metadata; ?>
 <fieldset>
 <input type="hidden" name="websites_website_agreement:id" value="<?php echo html::initial_value($values, 'websites_website_agreement:id'); ?>" />
@@ -89,11 +89,11 @@ data_entry_helper::$javascript .= "
 /**
  * @todo: filter the select box to public agreements, or those created by the current user, unless core admin.
  */
-if ($this->uri->method(false) === 'edit') {
+if ($this->uri->method(FALSE) === 'edit') {
   echo '<div style="display: none">';
 }
-echo data_entry_helper::select(array(
-  'id'=>'agreement-select',
+echo data_entry_helper::select([
+  'id' => 'agreement-select',
   'label' => 'Agreement to participate in',
   'helpText' => 'Select the agreement that this website should belong to',
   'fieldname' => 'websites_website_agreement:website_agreement_id',
@@ -105,9 +105,9 @@ echo data_entry_helper::select(array(
   'extraParams' => $readAuth,
   'blankText' => '<please select>',
   'class' => 'required',
-  'caching' => false
-));
-if ($this->uri->method(false)=='edit') {
+  'caching' => FALSE,
+]);
+if ($this->uri->method(FALSE) === 'edit') {
   echo '</div>';
 }
 ?>
@@ -118,7 +118,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website provides its data to other agreement participants for reporting.',
   'fieldname' => 'websites_website_agreement:provide_for_reporting',
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_reporting'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div>
 <div id="div-receive_for_reporting"><?php
@@ -127,7 +127,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website receives data from other agreement participants for reporting.',
   'fieldname' => 'websites_website_agreement:receive_for_reporting',
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_reporting'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div>
 <div id="div-provide_for_peer_review"><?php
@@ -136,7 +136,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website provides its data to other agreement participants for peer review, e.g. browsing and commenting on records.',
   'fieldname' => 'websites_website_agreement:provide_for_peer_review',
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_peer_review'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div>
 <div id="div-receive_for_peer_review"><?php
@@ -145,7 +145,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website receives data from other agreement participants for reporting, e.g. browsing and commenting on records.',
   'fieldname' => 'websites_website_agreement:receive_for_peer_review',
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_peer_review'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div>
 <div id="div-provide_for_verification"><?php
@@ -154,7 +154,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website provides its data to other agreement participants for verification.',
   'fieldname' => 'websites_website_agreement:provide_for_verification',
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_verification'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div>
 <div id="div-receive_for_verification"><?php
@@ -163,7 +163,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website receives data from other agreement participants for verification.',
   'fieldname' => 'websites_website_agreement:receive_for_verification',
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_verification'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div>
 <div id="div-provide_for_data_flow"><?php
@@ -172,7 +172,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website provides its data to other agreement participants for data flow, e.g. for passing data onto national information portals.',
   'fieldname' => 'websites_website_agreement:provide_for_data_flow',
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_data_flow'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div>
 <div id="div-receive_for_data_flow"><?php
@@ -181,7 +181,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website receives data from other agreement participants for data flow, e.g. for passing data onto national information portals.',
   'fieldname' => 'websites_website_agreement:receive_for_data_flow',
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_data_flow'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div>
 <div id="div-provide_for_moderation"><?php
@@ -190,7 +190,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website provides its data to other agreement participants for moderation, e.g. to check images before publishing.',
   'fieldname' => 'websites_website_agreement:provide_for_moderation',
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_moderation'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div>
 <div id="div-receive_for_moderation"><?php
@@ -199,7 +199,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website receives data from other agreement participants for moderation, e.g. to check images before publishing.',
   'fieldname' => 'websites_website_agreement:receive_for_moderation',
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_moderation'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?>
 </div>
@@ -209,7 +209,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website provides its data to other agreement participants for editing.',
   'fieldname' => 'websites_website_agreement:provide_for_editing',
   'default' => html::initial_value($values, 'websites_website_agreement:provide_for_editing'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?> </div><div id="div-receive_for_editing"><?php
 echo data_entry_helper::checkbox(array(
@@ -217,7 +217,7 @@ echo data_entry_helper::checkbox(array(
   'helpText' => 'Check this box if the website receives data from other agreement participants for editing.',
   'fieldname' => 'websites_website_agreement:receive_for_editing',
   'default' => html::initial_value($values, 'websites_website_agreement:receive_for_editing'),
-  'labelClass' => 'control-width-4'
+  'labelClass' => 'control-width-4',
 ));
 ?>
 </div>

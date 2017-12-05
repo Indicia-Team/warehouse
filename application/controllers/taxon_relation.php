@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Controllers
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the relationships for a taxon
- *
- * @package  Core
- * @subpackage Controllers
  */
 class Taxon_relation_Controller extends Gridview_Base_Controller
 {
@@ -39,12 +34,12 @@ class Taxon_relation_Controller extends Gridview_Base_Controller
     );
     $this->pagetitle = "Relationships";
   }
-  
+
  /**
   * Override the default index functionality to filter by sample_id.
   */
   public function index()
-  { 
+  {
     if ($this->uri->total_arguments()>0) {
       $taxa_taxon_list_id = $this->uri->argument(1);
       $ttl = ORM::factory('taxa_taxon_list', $taxa_taxon_list_id);

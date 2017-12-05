@@ -14,26 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Termlists_Terms table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Termlists_term_Model extends Base_Name_Model {
 
   public $search_field='term';
 
   protected $lookup_against='lookup_term';
-  
+
   protected $list_id_field = 'termlist_id';
 
   protected $belongs_to = array(
@@ -154,7 +148,7 @@ class Termlists_term_Model extends Base_Name_Model {
             $success=false;
             foreach($sm->errors as $key=>$value) {
               $this->errors[$sm->object_name.':'.$key]=$value;
-            }          
+            }
           }
         }
       } catch (Exception $e) {
@@ -215,17 +209,17 @@ class Termlists_term_Model extends Base_Name_Model {
       'preferred'=>'t'
     );
   }
-  
+
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
   public function fixed_values_form() {
     return array(
-      'term:language_id' => array( 
-        'display'=>'Language', 
-        'description'=>'Select the language to import preferred terms for.', 
+      'term:language_id' => array(
+        'display'=>'Language',
+        'description'=>'Select the language to import preferred terms for.',
         'datatype'=>'lookup',
-        'population_call'=>'direct:language:id:language' 
+        'population_call'=>'direct:language:id:language'
       )
     );
   }

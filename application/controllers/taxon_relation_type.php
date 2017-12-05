@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the list of titles for people.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Taxon_Relation_Type_Controller extends Gridview_Base_Controller {
 
@@ -41,7 +36,7 @@ class Taxon_Relation_Type_Controller extends Gridview_Base_Controller {
       'reverse_term'=>'',
       'relation_code'=>'');
     $this->pagetitle = "Taxon Relation Types";
-  }  
+  }
 
   public function record_authorised($id)
   {

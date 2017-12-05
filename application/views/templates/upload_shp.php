@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 if (function_exists('dbase_open') && function_exists('zip_open')) {
@@ -35,7 +33,7 @@ if (function_exists('dbase_open') && function_exists('zip_open')) {
 <input type="submit" value="Upload ZIP File" />
 </fieldset>
 </form>
-<?php 
+<?php
 } else {
   print "<p><i>";
   if (!function_exists('dbase_open'))

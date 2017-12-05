@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the list of Warehouse users.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class User_Controller extends Gridview_Base_Controller {
 
@@ -140,7 +135,7 @@ class User_Controller extends Gridview_Base_Controller {
       $base_username = $person->surname;
     else
       $base_username = $person->first_name.'_'.$person->surname;
-    $base_username = strtolower(preg_replace("/[^A-Za-z]/", "_", $base_username)); 
+    $base_username = strtolower(preg_replace("/[^A-Za-z]/", "_", $base_username));
     if(strlen($base_username) < $minlen)
       $username = sprintf($base_username.'%0'.($minlen-strlen($base_username)).'d', $inc++);
     else {
@@ -178,10 +173,10 @@ class User_Controller extends Gridview_Base_Controller {
       }
     }
   }
-  
+
   /**
    * If trying to edit an existing user record, ensure the user has rights to a website the logged in user can access.
-   * Note that the /user/edit action is not really expected as the user is edited from the person ID, but this is here 
+   * Note that the /user/edit action is not really expected as the user is edited from the person ID, but this is here
    * as a safety check in case the user tries to guess the url for user editing and the base class edit method kicks in.
    */
   public function record_authorised($id) {
@@ -191,7 +186,7 @@ class User_Controller extends Gridview_Base_Controller {
       $u = ORM::factory('user', $id);
       $allowedPersonIds = $this->getAllowedPersonIds();
       return $allowedPersonIds === true || in_array($u->person_id, $allowedPersonIds);
-    } 
+    }
     return true;
   }
 
@@ -202,7 +197,7 @@ class User_Controller extends Gridview_Base_Controller {
   {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
   }
-  
+
   /**
    * Return a list of the tabs to display for this controller's actions.
    */
@@ -217,5 +212,5 @@ class User_Controller extends Gridview_Base_Controller {
       'actions'=>array('edit_from_person')
     ));
   }
-  
+
 }

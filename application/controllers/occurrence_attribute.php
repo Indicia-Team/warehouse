@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
  * @author Indicia Team
- * @link https://github.com/indicia-team/warehouse
  * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the occurrence attributes.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Occurrence_attribute_Controller extends Attr_Gridview_Base_Controller {
 

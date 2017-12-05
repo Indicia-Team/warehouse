@@ -14,34 +14,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Surveys table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Survey_Model extends ORM_Tree {
 
   protected $ORM_Tree_children = "surveys";
-  
+
   protected $has_many = array(
     'sample_media'
   );
-  
+
   protected $belongs_to = array(
       'owner'=>'person',
       'website',
       'created_by'=>'user',
       'updated_by'=>'user');
-  
+
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   protected $attrs_submission_name='srvAttributes';

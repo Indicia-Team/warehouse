@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the taxon groups list.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Taxon_Group_Controller extends Gridview_Base_Controller {
   public function __construct() {
@@ -35,7 +30,7 @@ class Taxon_Group_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "Taxon Groups";
     $this->session = Session::instance();
   }
-  
+
   /**
    * You can only access the list of groups if at least an editor of one website.
    */

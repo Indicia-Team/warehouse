@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
  * @author Indicia Team
- * @link https://github.com/Indicia-Team/warehouse
  * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller for the language page.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Language_Controller extends Gridview_Base_Controller {
 

@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Views
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 $disabled_input=html::initial_value($values, 'metaFields:disabled_input');
@@ -26,7 +24,7 @@ $enabled = ($disabled_input=='YES') ? 'disabled="disabled"' : '';
 ?>
 <p>
 <?php if ($disabled_input==='YES') : ?>
-The attribute was created by another user so you don't have permission to change the attribute's specification, although you can 
+The attribute was created by another user so you don't have permission to change the attribute's specification, although you can
 change the attribute assignments at the bottom of the page. Please contact the warehouse owner to request changes.
 <?php else : ?>
 This page allows you to specify a new or edit an existing custom attribute for <?php echo strtolower($other_data['name']); ?> data.
@@ -56,7 +54,7 @@ This page allows you to specify a new or edit an existing custom attribute for <
         <?php echo html::error_message($model->getError($model->object_name.':description')); ?>
     </li>
   <?php endif; ?>
-  
+
   <?php if (method_exists($this->model, 'get_system_functions')) : ?>
   <li><label for="system_function">System function:</label>
     <select name="<?php echo $model->object_name; ?>:system_function" id="system_function">
@@ -215,9 +213,9 @@ $(document).ready(function() {
       echo '>'.$termlist->title.'</option>';
     }
     ?>
-  </select> 
-  <?php 
-  echo html::error_message($model->getError($model->object_name.':termlist_id')); 
+  </select>
+  <?php
+  echo html::error_message($model->getError($model->object_name.':termlist_id'));
   echo '<a id="termlist-link" target="_blank" href="">edit in new tab</a>';
   ?>
   </li>
@@ -300,7 +298,7 @@ $(document).ready(function() {
   <li id="li_valid_time"><label class="narrow" for="valid_integer">Time</label><?php echo form::checkbox('valid_time', TRUE, isset($model->valid_time) AND ($model->valid_time == 't'), 'class="vnarrow" '.$enabled ) ?></li>
 </ol>
 </fieldset>
-<?php 
+<?php
 // Output the view that lets this custom attribute associate with websites, surveys, checklists
 // or whatever is appropriate for the attribute type.
 $this->associationsView->other_data=$other_data;

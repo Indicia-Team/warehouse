@@ -14,17 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 $id = html::initial_value($values, 'taxon_code:id');
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 ?>
-<p>This page allows you to specify the details of a taxon code. Different types of code can be made available by adding terms 
+<p>This page allows you to specify the details of a taxon code. Different types of code can be made available by adding terms
 to the taxon codes termlist.</p>
 <form class="cmxform" action="<?php echo url::site().'taxon_code/save'; ?>" method="post">
 <?php echo $metadata; ?>
@@ -52,7 +50,7 @@ echo data_entry_helper::select(array(
 ));
 ?>
 </fieldset>
-<?php 
+<?php
 echo html::form_buttons($id!=null, false, false);
 data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';

@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 ?>
 <form action="<?php echo url::site().$controllerpath.'/upload_shp2'; ?>" method="post" class="cmxform">
@@ -37,9 +35,9 @@
 <input type='checkbox' class="vnarrow" name="use_sref_system"/>Select this checkbox when using the boundary above and you wish the centroid to be generated using this sref. If not checked, the centroid will be generated in EPSG:4326 (Lat Long)<br/>
 <label for='type' class='wide' >Location type for all:</label>
 <select id='type' name='type' >
-<?php 
+<?php
   $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
-  
+
   echo '<option value="" >&lt;Not applicable&gt;</option>';
   foreach ($terms as $term) {
     echo '<option value="'.$term->id.'" >'.$term->term.'</option>';
@@ -52,7 +50,7 @@
   if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id')
     $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
   else {
-    $websites = ORM::factory('website')->orderby('title','asc')->find_all();        
+    $websites = ORM::factory('website')->orderby('title','asc')->find_all();
     echo '<option value="all" >&lt;Available to all&gt;</option>';
   }
   foreach ($websites as $website) {

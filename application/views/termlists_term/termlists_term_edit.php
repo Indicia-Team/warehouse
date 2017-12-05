@@ -14,18 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 ?>
 <?php
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 echo html::error_message($model->getError('termlist_id'));
-$term_id=html::initial_value($values, 'termlists_term:term_id'); 
+$term_id=html::initial_value($values, 'termlists_term:term_id');
 ?>
 <form class="cmxform" action="<?php echo url::site().'termlists_term/save' ?>" method="post">
 <?php echo $metadata ?>
@@ -63,9 +61,9 @@ $term_id=html::initial_value($values, 'termlists_term:term_id');
 <li>
 <input type="hidden" name="termlists_term:parent_id" value="<?php echo html::initial_value($values, 'termlists_term:parent_id'); ?>" />
 <label for="parent">Parent Term:</label>
-<input id="parent" name="termlists_term:parent" readonly="readonly" value="<?php 
-$parent_id = html::initial_value($values, 'termlists_term:parent_id'); 
-echo ($parent_id != null) ? html::specialchars(ORM::factory('termlists_term', $parent_id)->term->term) : ''; 
+<input id="parent" name="termlists_term:parent" readonly="readonly" value="<?php
+$parent_id = html::initial_value($values, 'termlists_term:parent_id');
+echo ($parent_id != null) ? html::specialchars(ORM::factory('termlists_term', $parent_id)->term->term) : '';
 ?>" />
 </li>
 <li>
@@ -138,8 +136,8 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('termlists_term', $p
       ?>
     </ol>
   </fieldset>
-<?php 
+<?php
 echo html::form_buttons(html::initial_value($values, 'termlists_term:id')!=null);
-echo html::error_message($model->getError('deleted')); 
+echo html::error_message($model->getError('deleted'));
 ?>
 </form>

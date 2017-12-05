@@ -14,8 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
@@ -23,9 +21,6 @@
 
 /**
  * Controller providing CRUD access to the images for a location media file
- *
- * @package Core
- * @subpackage Controllers
  */
 class Location_medium_Controller extends Gridview_Base_Controller
 {
