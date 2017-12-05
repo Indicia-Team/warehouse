@@ -799,7 +799,7 @@ class report_standard_params_occurrences {
             'sql' => 'join taxa_taxon_list_attribute_values ttl_attribute_terms ' .
               'on ttl_attribute_terms.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id ' .
               'and ttl_attribute_terms.taxa_taxon_list_attribute_id in (#taxa_taxon_list_attribute_ids#) ' .
-              'and ttl_attribute_terms.int_value in (#taxa_taxon_list_attribute_terms_ids#)',
+              'and ttl_attribute_terms.int_value in (#taxa_taxon_list_attribute_termlist_term_ids#)',
           ],
         ],
       ],
