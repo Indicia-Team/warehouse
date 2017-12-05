@@ -267,7 +267,8 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
     ['taxa_taxon_list_list' => '1,2'],
     ['taxon_meaning_list' => '10000,10001'],
     ['identification_difficulty' => 3],
-    ['identification_difficulty' => 3, 'identification_difficulty_op' => '<=']
+    ['identification_difficulty' => 3, 'identification_difficulty_op' => '<='],
+    ['taxa_taxon_list_attribute_ids' => '1,2', 'taxa_taxon_list_attribute_ids' => '3,4']
   ];
 
   public function getDataSet() {
