@@ -67,6 +67,26 @@ class Licences_website_Controller extends Gridview_Base_Controller {
   }
 
   /**
+   * Additional information for the edit view.
+   *
+   * Returns some addition information required by the edit view, which is not associated with
+   * a particular record.
+   */
+  protected function prepareOtherViewData($values) {
+    $licenses = $this->db
+      ->select('id, title')
+      ->from('licences')
+      ->get();
+    $arr = [];
+    foreach ($licenses as $licence) {
+      $arr[$licence->id] = $licence->title;
+    }
+    return array(
+      'licences' => $arr
+    );
+  }
+
+  /**
    * Licences_websites only editable by core admin or admin of website.
    */
   public function record_authorised($id) {
