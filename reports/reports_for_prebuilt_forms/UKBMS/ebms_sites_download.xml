@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="UKBMS Site Download Report" description="Lists saved sites and their attributes.">
+  <query website_filter_field="l.website_id">
+  SELECT #field_sql#
+  FROM detail_locations l
+  JOIN cache_termlists_terms ctt ON ctt.id=l.location_type_id
+  #joins#
+  WHERE #website_filter# AND l.parent_id IS NULL
+  #filters#
+  #order_by#
+  </query>
+  <field_sql>
+      l.id AS site_id,
+      l.name AS site_name,
+      l.code AS site_code,
+      ctt.term AS site_type,
+      l.centroid_sref,
+      l.centroid_sref_system
+  </field_sql>
+  <order_bys>
+    <order_by>l.name</order_by>
+  </order_bys>
+  <params>
+    <!-- Legacy: EBMS and UKBMS assign locations via an attribute holding the CMS user ID, not the Indicia ID -->
+    <param name="cms_user_id" display="CMS User ID" description="CMS User ID" datatype="integer" default="" />
+    <param name="cms_attribute_id" display="CMS Atribute ID" description="Attribute used to hold the CMS User ID" datatype="integer" default="" >
+      <where>EXISTS (SELECT id FROM location_attribute_values lav WHERE lav.location_id = l.id
+      AND lav.location_attribute_id = #cms_attribute_id#
+      AND lav.int_value = #cms_user_id# AND lav.deleted=false)</where>
+    </param>
+    <param name="locattrs" display="Location attribute list" description="Comma separated list of location attribute IDs to include" datatype="locattrs" />
+    <param name="location_type_id" display="Location Type ID" description="Enter the type of location" datatype="lookup"
+            population_call="report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=" >
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="site_id" display="Site ID" />
+    <column name="site_name" display="Site Name" />
+    <column name="site_code" display="Site Code" />
+    <column name="site_type" display="Site Type" />
+    <column name="centroid_sref" display="SRef" />
+    <column name="centroid_sref_system" display="System" />
+  </columns>
+</report>

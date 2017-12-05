@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="EBMS Occurrence Download Report" description="Lists saved occurrences. Normally invoked from download tab on annual summary page.">
+  <query website_filter_field="o.website_id" samples_id_field="parent.id" samples2_id_field="s.id" >
+  SELECT #field_sql#
+  FROM samples parent
+  JOIN surveys su ON su.id = parent.survey_id
+  JOIN samples s ON s.parent_id=parent.id AND s.deleted=false
+  JOIN locations l ON parent.location_id=l.id
+  JOIN cache_termlists_terms ctt ON ctt.id=l.location_type_id
+  JOIN locations l2 ON s.location_id=l2.id
+  JOIN occurrences o ON o.sample_id=s.id AND o.deleted=false
+  JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+      AND (CAST(cttl.taxon_list_id AS character varying)='#taxon_list_id#' OR '#taxon_list_id#' = '')
+  #joins#
+  WHERE parent.deleted = false
+  AND #website_filter#
+  #filters#
+  AND (trim('#date_from#')='' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+  #order_by#
+  </query>
+  <field_sql>
+      su.title AS survey,
+      parent.id as sample_id,
+      o.id as occurrence_id,
+      ctt.term as site_type,
+      l.code as site_code,
+      '' as date, --- allows proper positioning of date column in report
+      parent.date_start,
+      parent.date_end,
+      parent.date_type,
+      l2.code as section_number,
+      coalesce(l.code,l.name)||'.'||substring(l2.code from 2) as section_code,
+      coalesce(cttl.default_common_name, cttl.preferred_taxon) as common,
+      cttl.preferred_taxon as preferred
+  </field_sql>
+  <order_bys>
+    <order_by>l.code, parent.date_start, section_number, cttl.taxonomic_sort_order, o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="survey_list" display="Survey IDs" description="Comma separated list of survey IDs" datatype="integer[]" default="" >
+      <where>s.survey_id in (#survey_list#)</where>
+    </param>
+    <param name="survey_id" display="Survey" description="Select the survey, or leave for all surveys" datatype="lookup" default="" 
+        population_call="direct:survey:id:title">
+      <where>s.survey_id=#survey_id#</where>
+    </param>
+    <param name="date_from" display="Date From" datatype="date" default="" />
+    <param name="date_to" display="Date To" datatype="date" default="" />
+    <param name="user_id" display="Indicia User ID" description="Enter the Indicia ID of the user" datatype="int" >
+      <where>parent.created_by_id=#user_id#</where>
+    </param>
+    <param name="taxon_list_id" display="Taxon list ID" description="ID of the taxon list to show" datatype="int" />
+    <param name="locattrs" display="Sample attribute list" description="Comma separated list of sample attribute IDs to include" datatype="locattrs"  default="" />
+    <param name="loc2attrs" display="Section sample attribute list" description="Comma separated list of section sample attribute IDs to include" datatype="loc2attrs" default="" />
+    <param name="smpattrs" display="Sample attribute list" description="Comma separated list of sample attribute IDs to include" datatype="smpattrs" default="" />
+    <param name="smp2attrs" display="Section sample attribute list" description="Comma separated list of section sample attribute IDs to include" datatype="smp2attrs" default="" />
+    <param name="occattrs" display="Occurrence attribute list" description="Comma separated list of occurrence attribute IDs to include" datatype="occattrs" default="" />
+    <param name="location_id" display="Location ID" description="Enter the ID of the location" datatype="int" default="" >
+      <where>parent.location_id=#location_id#</where>
+    </param>
+    <param name="location_list" display="Location List" description="Enter a comma separated list of location IDs" datatype="text" default="" >
+      <where>('#location_list#' = '(-1)' OR parent.location_id IN #location_list#)</where>
+    </param>
+    <param name="location_type_id" display="Location Type ID" description="Enter the type of location" datatype="lookup"
+            population_call="report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=" >
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+    
+  </params>
+  <columns>
+    <column name="survey" display="Survey" />
+    <column name="sample_id" display="Sample ID" />
+    <column name="occurrence_id" display="Occurrence ID" />
+    <column name="site_type" display="Site Type" />
+    <column name="site_code" display="Site Code" />
+    <column name="date" display="Date" />
+    <column name="section_number" display="Section No." />
+    <column name="section_code" display="Section Code" />
+    <column name="common" display="Species" /> 
+    <column name="preferred" display="Preferred" /> 
+  </columns>
+</report>
