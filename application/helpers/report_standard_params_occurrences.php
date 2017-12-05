@@ -787,7 +787,7 @@ class report_standard_params_occurrences {
         'description' => 'List of taxa_taxon_list_attribute_ids that will be searched for terms when using the ' .
           'taxa_taxon_list_attribute_terms_ids parameter.',
       ],
-      'taxa_taxon_list_attribute_terms_ids' => [
+      'taxa_taxon_list_attribute_termlist_term_ids' => [
         'datatype' => 'integer[]',
         'display' => 'Taxon attribute term IDs',
         'description' => 'List of termlist_term_ids that must be linked to the taxa returned by the report as taxa ' .
