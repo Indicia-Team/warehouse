@@ -393,7 +393,7 @@ function get_controls($block_id, $controlfilter) {
  </div>
 
 <form style="display: none" id="layout-change-form" class="inline-form panel alert alert-info" action="<?php
-    echo url::site().'attribute_by_survey/layout_update/'.$this->uri->last_segment().'?type='.$_GET['type'];
+    echo url::site() . 'attribute_by_survey/layout_update/' . $this->uri->last_segment() . '?type=' . $_GET['type'];
 ?>" method="post">
 <input type="hidden" name="layout_updates" id="layout_updates"/>
 <span>The layout changes you have made will not be saved until you click the Save button.</span>

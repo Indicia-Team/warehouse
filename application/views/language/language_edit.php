@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the language edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -27,24 +30,24 @@ $id = html::initial_value($values, 'language:id');
   <legend>Language details <?php echo $metadata; ?></legend>
     <input type="hidden" name="language:id" value="<?php echo $id; ?>" />
     <?php
-    echo data_entry_helper::text_input(array(
+    echo data_entry_helper::text_input([
       'label' => 'ISO language code',
       'fieldname' => 'language:iso',
       'default' => html::initial_value($values, 'language:iso'),
       'helpText' => 'The ISO standard code for this language.',
-      'validation' => array('required')
-    ));
-    echo data_entry_helper::text_input(array(
+      'validation' => ['required'],
+    ]);
+    echo data_entry_helper::text_input([
       'label' => 'Language name',
       'fieldname' => 'language:language',
       'default' => html::initial_value($values, 'language:language'),
       'helpText' => 'The display name for this language.',
-      'validation' => array('required')
-    ));
+      'validation' => ['required'],
+    ]);
     ?>
   </fieldset>
   <?php
-  echo html::form_buttons($id != NULL, FALSE, FALSE);
+  echo html::form_buttons(!empty($id), FALSE, FALSE);
   data_entry_helper::enable_validation('language-edit');
   echo data_entry_helper::dump_javascript();
   ?>

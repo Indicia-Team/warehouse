@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the license edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'licence:id');
 ?>
 <p>This page allows you to specify the details of a licence that can be applied to records.</p>
-<form id="licence-edit" action="<?php echo url::site().'licence/save'; ?>" method="post">
+<form id="licence-edit" action="<?php echo url::site() . 'licence/save'; ?>" method="post">
   <?php echo $metadata; ?>
   <fieldset>
     <input type="hidden" name="licence:id" value="<?php echo $id ?>" />
@@ -68,7 +71,7 @@ $id = html::initial_value($values, 'licence:id');
     ?>
   </fieldset>
   <?php
-  echo html::form_buttons($id!=null, false, false);
+  echo html::form_buttons($id != NULL, FALSE, FALSE);
   data_entry_helper::enable_validation('licence-edit');
   echo data_entry_helper::dump_javascript();
   ?>

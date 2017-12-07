@@ -56,7 +56,8 @@ class html extends html_Core {
     $iconSpan = empty($icon) ? '' : "<span class=\"glyphicon glyphicon-$icon\"></span> ";
     $link = empty($linkTitle) ? '' : "<br/><a href=\"$link\" class=\"btn btn-default\">$linkTitle</a>";
     return <<<HTML
-<div class="alert alert-$level">
+<div class="alert alert-$level alert-dismissable">
+  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
   $iconSpan<strong>$title - </strong>
   $description$link
 </div>

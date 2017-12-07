@@ -63,7 +63,7 @@ class Indicia_Controller extends Template_Controller {
     $this->auth = new Auth;
     $this->session = new Session;
     if ($this->auth->logged_in()) {
-      $this->template->menu = self::get_menu();
+      $this->template->menu = self::getMenu();
     }
     $title = kohana::config('indicia.warehouse_title');
     $this->template->warehouseTitle = $title ? $title : 'Indicia Warehouse';
@@ -81,23 +81,25 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-   * Method which builds the main menu. Has a default structure which can be modified by plugin modules.
-   * @return array Menu structure
+   * Method which builds the main site navigation menu.
+   *
+   * Has a default structure which can be modified by plugin modules.
+   *
+   * @return array
+   *   Menu structure
    */
-  protected function get_menu() {
+  protected function getMenu() {
     // Use caching, so things don't slow down if there are lots of plugins which extend the menu. Caching must be per
     // user as they will have different access rights.
-    $cacheId = 'indicia-menu-' . $_SESSION['auth_user']->id;
+    $cacheId = 'indicia-menu-' . $_SESSION['auth_user']->id . '-' . Kohana::config('version.version');
     $cache = Cache::instance();
     if ($cached = $cache->get($cacheId)) {
       return $cached;
     }
     else {
-      $menu = ['Home' => []];
+      $menu = ['Home' => '/'];
       if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin')) {
         $menu['Lookup lists'] = [
-          'Species lists' => 'taxon_list',
-          'Taxon groups' => 'taxon_group',
           'Term lists' => 'termlist',
           'Locations' => 'location',
           'Survey datasets' => 'survey',
@@ -116,27 +118,34 @@ class Indicia_Controller extends Template_Controller {
         ];
       }
       if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin')) {
-        $menu['Entered data'] = [
+        $menu['Taxonomy'] = [
+          'Species lists' => 'taxon_list',
+          'Taxon groups' => 'taxon_group',
+        ];
+        if ($this->auth->logged_in('CoreAdmin')) {
+          $menu['Taxonomy']['Taxon ranks'] = 'taxon_rank';
+          $menu['Taxonomy']['Taxon relations'] = 'taxon_relation_type';
+        }
+      }
+      if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin')) {
+        $menu['Observations data'] = [
           'Occurrences' => 'occurrence',
           'Samples' => 'sample',
           'Reports' => 'report'
         ];
       }
-      $adminMenu = ['Triggers &amp; notifications' => 'trigger'];
+      $menu['Admin'] = ['Triggers &amp; notifications' => 'trigger'];
       // Core admin can see all users or websites plus web admins can see their own users and websites.
       if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin')) {
-        $adminMenu['Websites'] = 'website';
-        $adminMenu['Users'] = 'user';
+        $menu['Admin']['Websites'] = 'website';
+        $menu['Admin']['Users'] = 'user';
       }
       if ($this->auth->logged_in('CoreAdmin')) {
-        $adminMenu['Website agreements'] = 'website_agreement';
-        $adminMenu['Languages'] = 'language';
-        $adminMenu['Licences'] = 'licence';
-        $adminMenu['Titles'] = 'title';
-        $adminMenu['Taxon ranks'] = 'taxon_rank';
-        $adminMenu['Taxon relations'] = 'taxon_relation_type';
+        $menu['Admin']['Website agreements'] = 'website_agreement';
+        $menu['Admin']['Languages'] = 'language';
+        $menu['Admin']['Licences'] = 'licence';
+        $menu['Admin']['Titles'] = 'title';
       }
-      $menu['Admin'] = $adminMenu;
       $menu['Logged in as ' . $_SESSION['auth_user']->username] = [
         'Set new password' => 'new_password',
         'Logout' => 'logout',
@@ -504,7 +513,7 @@ class Indicia_Controller extends Template_Controller {
       // Put the error out
       error_logger::log_error('Error occurred when loading view.', $e);
       // Can't set a flash message here, as view has already failed to load.
-      echo "<div class=\"alert alert-warning page-notice\">".
+      echo "<div class=\"alert alert-danger page-notice\">".
           "<strong>Error occurred when loading page.</strong><br/>".$e->getMessage().
           "<br/>For more information refer to the application log file.</div>";
     }

@@ -18,71 +18,67 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-?>
-<?php
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'taxon_list:id');
 $parent_id = html::initial_value($values, 'taxon_list:parent_id');
 $disabled = $this->get_read_only($values) ? 'disabled="disabled" ' : '';
-if ($parent_id != null) : ?>
-<h1>Subset of:
-<a href="<?php echo url::site() ?>taxon_list/edit/<?php echo $parent_id ?>" >
-<?php echo ORM::factory("taxon_list", $parent_id)->title ?>
-</a>
-</h1>
+if (!empty($parent_id)) : ?>
+  <h1>Subset of:
+    <a href="<?php echo url::site() ?>taxon_list/edit/<?php echo $parent_id ?>" >
+      <?php echo ORM::factory("taxon_list", $parent_id)->title ?>
+    </a>
+  </h1>
 <?php endif; ?>
-<div id="details">
 <?php if ($this->get_read_only($values)) : ?>
-<div class="page-notice ui-state-highlight ui-corner-all">You do not have the required privileges to edit this record.</div>
+  <div class="alert alert-warning">You do not have the required privileges to edit this record.</div>
 <?php endif; ?>
-<form class="cmxform" action="<?php echo url::site().'taxon_list/save' ?>" method="post" >
-<?php echo $metadata ?>
-<fieldset>
-  <legend>List Details</legend>
-  <input type="hidden" name="id" id="id" value="<?php echo $id; ?>" />
-  <input type="hidden" name="parent_id" id="parent_id" value="<?php echo $parent_id; ?>" />
-  <div class="form-group">
-    <label for="title">Title</label>
-    <div class="input-group">
-      <input id="title" name="taxon_list:title" class="form-control" <?php echo $disabled; ?>
-        value="<?php echo html::initial_value($values, 'taxon_list:title'); ?>"/>
-      <div class="input-group-addon"><span class="deh-required">*</span></div>
-    </div>
-    <?php echo html::error_message($model->getError('taxon_list:title')); ?>
-  </div>
-  <div class="form-group">
-    <label for="description">Description</label>
-    <textarea rows="7" <?php echo $disabled; ?> class="form-control" id="description" name="taxon_list:description">
-      <?php echo html::initial_value($values, 'taxon_list:description'); ?></textarea>
-    <?php echo html::error_message($model->getError('taxon_list:description')); ?>
-  </div>
-  <div class="form-group">
-    <label for="website">Owned by</label>
-    <select id="website_id" name="taxon_list:website_id" class="form-control" <?php echo $disabled; ?>>
+<form id="taxon-list-edit" action="<?php echo url::site() . 'taxon_list/save' ?>" method="post">
+  <fieldset>
+    <legend>List details<?php echo $metadata ?></legend>
+    <input type="hidden" name="id" id="id" value="<?php echo $id; ?>" />
+    <input type="hidden" name="parent_id" id="parent_id" value="<?php echo $parent_id; ?>" />
     <?php
-    // if we have a new child list, default the website to the parent's website
-    if (empty($id) && !empty($values['parent_website_id']))
-      $website_id=$values['parent_website_id'];
-    else
-      $website_id = html::initial_value($values, 'taxon_list:website_id');
-
-    if ($this->auth->logged_in('CoreAdmin') || (!$website_id && $id !== null)) {
-      // Core admin can select Warehouse as owner. Other users can only have this option in the list if the
-      // list is already assigned to the warehouse in which case the list is read only.
-      echo '<option value="">&lt;Warehouse&gt;</option>';
+    echo data_entry_helper::text_input([
+      'label' => 'Title',
+      'fieldname' => 'taxon_list:title',
+      'default' => html::initial_value($values, 'taxon_list:title'),
+      'validation' => ['required'],
+      'disabled' => $disabled,
+    ]);
+    echo data_entry_helper::textarea([
+      'label' => 'Description',
+      'fieldname' => 'taxon_list:description',
+      'default' => html::initial_value($values, 'taxon_list:description'),
+      'validation' => ['required'],
+      'disabled' => $disabled,
+    ]);
+    // If we have a new child list, default the website to the parent's website.
+    if (empty($id) && !empty($values['parent_website_id'])) {
+      $websiteId = $values['parent_website_id'];
     }
-    foreach ($other_data['websites'] as $website) {
-      echo '  <option value="'.$website->id.'" ';
-      if ($website->id==$website_id)
-        echo 'selected="selected" ';
-      echo '>'.$website->title.'</option>';
+    else {
+      $websiteId = html::initial_value($values, 'taxon_list:website_id');
     }
+    $options = [
+      'label' => 'Owned by',
+      'fieldname' => 'taxon_list:website_id',
+      'blankText' => '&lt;Warehouse&gt;',
+      'lookupValues' => $other_data['websites'],
+      'default' => $websiteId,
+      'disabled' => $disabled,
+    ];
+    if ($this->auth->logged_in('CoreAdmin') || (!$websiteId && $id !== NULL)) {
+      // Core admin can select Warehouse as owner. Other users can only have
+      // this option in the list if the list is already assigned to the
+      // warehouse in which case the list is read only.
+      $options['blankText'] = '<Warehouse>';
+    }
+    echo data_entry_helper::select($options);
     ?>
-    </select>
-    <?php echo html::error_message($model->getError('taxon_list:website_id')); ?>
-  </div>
-</fieldset>
-<?php
-  echo html::form_buttons(html::initial_value($values, 'taxon_list:id')!=null, $this->get_read_only($values));
-?>
+  </fieldset>
+  <?php
+  echo html::form_buttons(!empty($id), $this->get_read_only($values), FALSE);
+  data_entry_helper::enable_validation('taxon-list-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
-</div>

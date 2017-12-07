@@ -53,7 +53,13 @@ Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for E
 if (count($gettingStartedTips)) {
   echo '<h2>Getting started</h2>';
   foreach ($gettingStartedTips as $tip) {
-    echo "<div class=\"alert alert-warning\"><strong>$tip[title] - </strong>$tip[description]</div>";
+    echo <<<TIP
+<div class="alert alert-warning alert-dismissible">
+  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+  <strong>$tip[title] - </strong>$tip[description]
+</div>
+
+TIP;
   }
 }
 if (count($configProblems)) : ?>

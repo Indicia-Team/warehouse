@@ -21,14 +21,12 @@
 
 ?>
 <?php
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-echo html::error_message($model->getError('termlist_id'));
-$term_id=html::initial_value($values, 'termlists_term:term_id');
+warehouse::loadHelpers(['data_entry_helper']);
+$term_id = html::initial_value($values, 'termlists_term:term_id');
 ?>
-<form class="cmxform" action="<?php echo url::site().'termlists_term/save' ?>" method="post">
-<?php echo $metadata ?>
+<form class="cmxform" action="<?php echo url::site() . 'termlists_term/save' ?>" method="post">
 <fieldset>
-<legend>Term Details</legend>
+<legend>Term Details<?php echo $metadata ?></legend>
 <input type="hidden" name="termlists_term:id" value="<?php echo html::initial_value($values, 'termlists_term:id'); ?>" />
 <input type="hidden" name="termlists_term:termlist_id" value="<?php echo html::initial_value($values, 'termlists_term:termlist_id'); ?>" />
 <input type="hidden" name="term:id" value="<?php echo html::initial_value($values, 'term:id'); ?>" />

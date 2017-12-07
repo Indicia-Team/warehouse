@@ -37,65 +37,62 @@ if ($parent_id != NULL) : ?>
 </a>
 </h1>
 <?php endif; ?>
-<div id="details">
 <form action="<?php echo url::site() . 'termlist/save'; ?>" method="post">
-<?php echo $metadata ?>
-<fieldset>
-<legend>List Details</legend>
-<input type="hidden" name="termlist:id" value="<?php echo $id; ?>" />
-<input type="hidden" name="termlist:parent_id" value="<?php echo $parent_id; ?>" />
-<?php
-if ($disabled_input === 'YES') : ?>
-  <p>The termlist is available to all websites so you don't have permission to change it.
-  Please contact the warehouse owner to request changes.</p>
-<?php
-endif;
-echo data_entry_helper::text_input(array(
-  'label' => 'Title',
-  'fieldname' => 'termlist:title',
-  'default' => html::initial_value($values, 'termlist:title'),
-  'validation' => 'required',
-  'disabled' => $disabled,
-));
-echo data_entry_helper::textarea(array(
-  'label' => 'Description',
-  'fieldname' => 'termlist:description',
-  'default' => html::initial_value($values, 'termlist:description'),
-  'disabled' => $disabled,
-));
-// Prevent changing of owner if this is a child termlist.
-if ($parent_id != NULL && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== NULL) {
-  $disabled = 'disabled="disabled';
-  $website_id = $values['parent_website_id'];
-}
-else {
-  $website_id = html::initial_value($values, 'termlist:website_id');
-}
-$options = array();
-if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
-  $websites = ORM::factory('website')->in('id', $this->auth_filter['values'])->orderby('title', 'asc')->find_all();
-}
-else {
-  $websites = ORM::factory('website')->orderby('title', 'asc')->find_all();
-}
-foreach ($websites as $website) {
-  $options[$website->id] = $website->title;
-}
-echo data_entry_helper::select(array(
-  'label' => 'Owned by',
-  'fieldname' => "termlist:website_id",
-  'default' => $website_id,
-  'disabled' => $disabled,
-  'blankText' => '<Warehouse>',
-  'lookupValues' => $options,
-));
-?>
-</fieldset>
-<?php
-echo html::form_buttons(html::initial_value($values, 'termlist:id') != NULL && html::initial_value($values, 'termlist:id')!='', false, false);
-echo html::error_message($model->getError('deleted'));
-data_entry_helper::enable_validation('termlist-edit');
-echo data_entry_helper::dump_javascript();
-?>
+  <fieldset>
+  <legend>List Details<?php echo $metadata ?></legend>
+    <input type="hidden" name="termlist:id" value="<?php echo $id; ?>" />
+    <input type="hidden" name="termlist:parent_id" value="<?php echo $parent_id; ?>" />
+    <?php
+    if ($disabled_input === 'YES') : ?>
+      <p>The termlist is available to all websites so you don't have permission to change it.
+      Please contact the warehouse owner to request changes.</p>
+    <?php
+    endif;
+    echo data_entry_helper::text_input(array(
+      'label' => 'Title',
+      'fieldname' => 'termlist:title',
+      'default' => html::initial_value($values, 'termlist:title'),
+      'validation' => 'required',
+      'disabled' => $disabled,
+    ));
+    echo data_entry_helper::textarea(array(
+      'label' => 'Description',
+      'fieldname' => 'termlist:description',
+      'default' => html::initial_value($values, 'termlist:description'),
+      'disabled' => $disabled,
+    ));
+    // Prevent changing of owner if this is a child termlist.
+    if ($parent_id != NULL && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== NULL) {
+      $disabled = 'disabled="disabled';
+      $website_id = $values['parent_website_id'];
+    }
+    else {
+      $website_id = html::initial_value($values, 'termlist:website_id');
+    }
+    $options = array();
+    if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
+      $websites = ORM::factory('website')->in('id', $this->auth_filter['values'])->orderby('title', 'asc')->find_all();
+    }
+    else {
+      $websites = ORM::factory('website')->orderby('title', 'asc')->find_all();
+    }
+    foreach ($websites as $website) {
+      $options[$website->id] = $website->title;
+    }
+    echo data_entry_helper::select(array(
+      'label' => 'Owned by',
+      'fieldname' => "termlist:website_id",
+      'default' => $website_id,
+      'disabled' => $disabled,
+      'blankText' => '<Warehouse>',
+      'lookupValues' => $options,
+    ));
+    ?>
+  </fieldset>
+  <?php
+  echo html::form_buttons(!empty($id), FALSE, FALSE);
+  echo html::error_message($model->getError('deleted'));
+  data_entry_helper::enable_validation('termlist-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
-</div>

@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Controller for the taxon relation type entity.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,21 +28,30 @@
 class Taxon_Relation_Type_Controller extends Gridview_Base_Controller {
 
   /**
-     * Constructor
-     */
-  public function __construct()
-  {
+   * Constructor.
+   */
+  public function __construct() {
     parent::__construct('taxon_relation_type');
     $this->columns = array(
-      'caption'=>'',
-      'forward_term'=>'',
-      'reverse_term'=>'',
-      'relation_code'=>'');
-    $this->pagetitle = "Taxon Relation Types";
+      'caption' => '',
+      'forward_term' => '',
+      'reverse_term' => '',
+      'relation_code' => '',
+    );
+    $this->pagetitle = 'Taxon relation types';
   }
 
-  public function record_authorised($id)
-  {
+  /**
+   * Ensures taxon relation configuration is an administrator task.
+   *
+   * @param int $id
+   *   Record ID.
+   *
+   * @return bool
+   *   True if page access allowed.
+   */
+  public function record_authorised($id) {
     return $this->auth->logged_in('CoreAdmin');
   }
+
 }

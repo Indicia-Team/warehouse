@@ -80,21 +80,25 @@ echo html::script(
 </script>
 </head>
 <body>
-  <div id="banner"><img id="logo" src="<?php echo url::base();?>media/images/indicia_logo.png" width="248" height="100" alt="Indicia"/></div>
+  <div id="banner"><a href="<?php echo url::site(); ?>"><img id="logo" src="<?php echo url::base();?>media/images/indicia-logo.png" width="255" height="100" alt="Indicia"/></a></div>
     <?php if (isset($menu)) : ?>
     <nav class="navbar navbar-inverse">
       <div class="container-fluid">
         <ul class="nav navbar-nav">
-        <?php foreach ($menu as $toplevel => $submenu) : ?>
-          <?php if (count($submenu) > 0) : ?>
+        <?php foreach ($menu as $toplevel => $contents) : ?>
+          <?php if (is_array($contents) && count($contents) > 0) : ?>
           <li class="dropdown">
             <a class="dropdown-toggle" data-toggle="dropdown"><?php echo $toplevel; ?>
             <span class="caret"></span></a>
             <ul class="dropdown-menu">
-            <?php foreach ($submenu as $menuitem => $url) : ?>
+            <?php foreach ($contents as $menuitem => $url) : ?>
                 <li><?php echo html::anchor($url, $menuitem); ?></li>
             <?php endforeach; ?>
             </ul>
+          </li>
+          <?php elseif (is_string($contents)) : ?>
+          <li>
+            <?php echo html::anchor($contents, $toplevel); ?>
           </li>
           <?php else : ?>
           <li>

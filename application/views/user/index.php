@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of users.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,13 +23,13 @@
  */
 
 ?>
-<div class="ui-widget-content ui-corner-all ui-state-highlight page-notice" >
-  <strong>Notes:</strong>
-  <p>All Users must have an associated 'Person' - in order to create a new user the 'Person' must exist first.</p>
-  <p>In order to be on the list of potential users, the person must have an email address.</p>
+<div class="alert alert-info alert-dismissable">
+  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+  <strong>Note - </strong>All Users must have an associated 'Person' - in order to create a new user the 'Person' must exist first.
+  In order to be on the list of potential users, the person must have an email address.
 </div>
 
 <?php echo $grid; ?>
 <form action="<?php echo url::site(); ?>person/create_from_user">
-<input type="submit" value="New person" class="btn btn-primary" />
+  <input type="submit" value="New person" class="btn btn-primary" />
 </form>
