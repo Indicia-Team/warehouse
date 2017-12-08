@@ -22,6 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+warehouse::loadHelpers(['report_helper']);
 ?>
 <script type='text/javascript'>
 jQuery(document).ready(function($){
@@ -48,7 +49,6 @@ Records Centre</a>, within the <a href="http://www.ceh.ac.uk/">NERC Centre for E
   <li><a href="http://www.indicia.org.uk">Indicia project website</a></li>
   <li><a href="https://github.com/Indicia-Team">Indicia on GitHub</a></li>
 </ul>
-
 <?php
 if (count($gettingStartedTips)) {
   echo '<h2>Getting started</h2>';
@@ -63,48 +63,29 @@ TIP;
   }
 }
 if (count($configProblems)) : ?>
-<h2>Configuration</h2>
-<div class="">
-<p>There are configuration issues on this server.</p>
-<button id="issues_toggle" class="btn btn-warning" type="button" style="margin-left: 1em;">Show warnings</button>
-<div id='issues'>
-<?php
-foreach ($configProblems as $problem) {
-   echo "<div class=\"alert alert-danger\"><strong>$problem[title] - </strong>$problem[description]</div>";
-}
-?>
-</div>
-<?php endif; ?>
-<?php
-if (count($notifications) !== 0) {
-  /**
-   * @todo. This code should use notifications loaded from report grid, with new capability to
-   * decode the json into grid columns.
-   */
-  $html = '';
-  foreach($notifications as $notification) {
-    $struct = json_decode($notification->data, true);
-    if (isset($struct['headings'])) {
-      $html .= "<h2>Notifications from $notification->source</h2>";
-      $html .= "<table><thead>\n<tr><th>";
-      $html .= implode('</th><th>', $struct['headings']);
-      $html .= "</th></tr>\n</thead>\n";
-      foreach ($struct['data'] as $recordGroup) {
-        $html .= "<tbody>\n";
-        foreach ($recordGroup as $record) {
-          $html .= '<tr><td>';
-          $html .= implode('</td><td>', $record);
-          $html .= "</td><td></tr>\n";
-        }
-        $html .= "</tbody>\n";
-      }
-      $html .= "</tbody>\n</table>\n";
+  <h2>Configuration</h2>
+  <p>There are configuration issues on this server.</p>
+  <button id="issues_toggle" class="btn btn-warning" type="button" style="margin-left: 1em;">Show warnings</button>
+  <div id="issues">
+    <?php
+    foreach ($configProblems as $problem) {
+      echo "<div class=\"alert alert-danger\"><strong>$problem[title] - </strong>$problem[description]</div>";
     }
-  }
-  if (!empty($html)) : ?>
-    <div class="notifications panel panel-default">
-    <div class="alert alert-info">Here are your new notifications:</div>
+    ?>
+  </div>
+<?php endif; ?>
+<div id="notifications">
+<h2>Notifications</h2>
 <?php
-    echo $html.'</div>';
-  endif;
-}
+//@todo Configure output columns
+//@todo Add acknowledge & acknowledge all buttons
+$readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+echo report_helper::report_grid([
+  'dataSource' => 'library/notifications/notifications_list',
+  'readAuth' => $readAuth,
+  'extraParams' => [
+    'user_id' => $_SESSION['auth_user']->id,
+    'source_types' => '',
+    'system_name' => 'Indicia',
+  ]
+]);

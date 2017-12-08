@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of term list termss.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -43,27 +46,27 @@ var add_parent_term = function() {
 </script>
 <?php
 
-  require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-  $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-  echo '<div class="linear-form">';
-  echo data_entry_helper::autocomplete(array(
-    'label'=>'Add term',
-    'fieldname'=>'add-from-parent',
-    'helpText'=>'Search for terms in the parent list to quickly add them into this list.',
-    'table' => 'termlists_term',
-    'captionField' => 'term',
-    'valueField' => 'id',
-    'extraParams' => $readAuth + array('termlist_id'=>$parent_list_id),
-    'afterControl' => '<input type="button" value="Add" onclick="add_parent_term();" />'
-  ));
-  echo '</div>';
+warehouse::loadHelpers(['data_entry_helper']);
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+echo '<div class="linear-form">';
+echo data_entry_helper::autocomplete(array(
+  'label' => 'Add term',
+  'fieldname' => 'add-from-parent',
+  'helpText' => 'Search for terms in the parent list to quickly add them into this list.',
+  'table' => 'termlists_term',
+  'captionField' => 'term',
+  'valueField' => 'id',
+  'extraParams' => $readAuth + array('termlist_id'=>$parent_list_id),
+  'afterControl' => '<input type="button" value="Add" onclick="add_parent_term();" />'
+));
+echo '</div>';
 endif;
 
 echo $grid;
 ?>
 <br/>
 <?php if (!$readonly) : ?>
-  <form action="<?php echo url::site().'termlists_term/create/'.$termlist_id; ?>" method="post">
+  <form action="<?php echo url::site() . "termlists_term/create/$termlist_id"; ?>" method="post">
   <?php if (isset($parent_id)): ?>
     <input type="hidden" value="<?php echo $parent_id; ?>" name="termlists_term:parent_id"/>
   <?php endif; ?>
@@ -81,6 +84,6 @@ if (isset($parent_list_id)) {
     data_entry_helper::$dumped_resources[] = 'jquery';
   }
   data_entry_helper::link_default_stylesheet();
-  echo data_entry_helper::dump_javascript(true);
+  echo data_entry_helper::dump_javascript(TRUE);
 }
 ?>

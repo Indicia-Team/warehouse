@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of term lists.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,7 +24,7 @@
 
 echo $grid;
 ?>
-<form action="<?php echo url::site().'termlist/create'; ?>" method="post">
+<form action="<?php echo url::site() . 'termlist/create'; ?>" method="post">
 <?php if (isset($parent_id)) : ?>
 <input type="hidden" name="parent_id" value="<?php echo $parent_id; ?>" />
 <?php endif; ?>
