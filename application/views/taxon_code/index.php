@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of taxon codes.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,6 +24,6 @@
 
 echo $grid;
 ?>
-<form action="<?php echo url::site().'taxon_code/create/'.$taxon_meaning_id; ?>" method="post">
+<form action="<?php echo url::site() . 'taxon_code/create/' . $taxon_meaning_id; ?>" method="post">
 <input type="submit" value="New code" class="btn btn-primary" />
 </form>
