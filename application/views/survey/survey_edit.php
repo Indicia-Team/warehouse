@@ -28,7 +28,7 @@ $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohan
 <?php echo $metadata ?>
 <fieldset>
 <legend>Survey dataset details</legend>
-<?php 
+<?php
 echo data_entry_helper::hidden_text(array(
   'fieldname'=>'survey:id',
   'default'=>html::initial_value($values, 'survey:id')
@@ -47,16 +47,55 @@ echo data_entry_helper::textarea(array(
   'validation' => 'required',
   'helpText' => 'Provide an optional description of your survey to help when browsing survey datasets on the warehouse'
 ));
+$rules = <<<RULES
+[
+  "required"
+]
+RULES;
+$schema = <<<SCHEMA
+{
+  "type":"map",
+  "title":"Fields to extend validation for",
+  "mapping": {
+    "occurrence.comment": {
+      "type":"str",
+      "desc":"Comment provided with a sample",
+      "enum": $rules
+    },
+    "sample.comment": {
+      "type":"str",
+      "desc":"Comment provided with a sample",
+      "enum": $rules
+    },
+    "sample.location_name": {
+      "type":"str",
+      "desc":"Location name given for a sample",
+      "enum": $rules
+    }
+  },
+  "desc":"List of columns and the values they are to be set to, when event is triggered."
+}
+
+SCHEMA;
+echo data_entry_helper::jsonwidget([
+  'label' => 'Additional core field validation rules',
+  'fieldname' => 'survey:core_validation_rules',
+  'default' => html::initial_value($values, 'survey:core_validation_rules'),
+  'validation' => 'required',
+  'helpText' => 'Provide additional validation rules to apply to core Indicia fields for this survey dataset, for ' .
+    'example to set the sample.location_name field to required.',
+  'schema' => $schema,
+]);
 echo data_entry_helper::autocomplete(array(
-		'label' => 'Parent survey',
-		'fieldname' => 'survey:parent_id',
-		'table' => 'survey',
-		'captionField' => 'title',
-		'valueField' => 'id',
-		'extraParams' => $readAuth,
-		'default' => html::initial_value($values, 'survey:parent_id'),
-		'defaultCaption' => html::initial_value($values, 'parent:title'),
-    'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports'
+  'label' => 'Parent survey',
+  'fieldname' => 'survey:parent_id',
+  'table' => 'survey',
+  'captionField' => 'title',
+  'valueField' => 'id',
+  'extraParams' => $readAuth,
+  'default' => html::initial_value($values, 'survey:parent_id'),
+  'defaultCaption' => html::initial_value($values, 'parent:title'),
+  'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports'
 ));
 echo data_entry_helper::select(array(
   'label'=>'Website',
@@ -126,12 +165,12 @@ if (array_key_exists('survey:auto_accept_max_difficulty',$values)) {
         'default' => $attr['value']
       ));
   }
-	
+
 }
  ?>
  </ol>
  </fieldset>
-<?php 
+<?php
 endif;
 echo html::form_buttons(html::initial_value($values, 'survey:id')!=null);
 data_entry_helper::$dumped_resources[] = 'jquery';
@@ -141,7 +180,7 @@ data_entry_helper::enable_validation('survey-edit');
 data_entry_helper::link_default_stylesheet();
 data_entry_helper::$javascript .= "
 // ensure the parent lookup does not allow an inappropriate survey to be selected (i.e. self or wrong website)
-function setParentFilter() {  
+function setParentFilter() {
   var filter={\"query\":{}};
   filter.query.notin=['id', [1]];
   filter.query.where=['website_id', $('#survey\\\\:website_id').val()];
