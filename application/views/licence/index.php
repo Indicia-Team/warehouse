@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of licences.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,14 +21,10 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-
 ?>
-
 <p>This is the master list of licences available on this warehouse which can be applied to
 occurrences. Before they can be used the licences must be added to each website's Licences tab,
 allowing the specific licences available for each website to be controllled.</p>
 <?php echo $grid; ?>
-<form action="<?php echo url::site().'licence/create'; ?>" method="post">
-<input type="submit" value="New licence" class="btn btn-primary" />
-</form>
-<?php echo $upload_csv_form ?>
+<a href="<?php echo url::site() . 'licence/create'; ?>" class="btn btn-primary">New licence</a>
+<?php echo $upload_csv_form;

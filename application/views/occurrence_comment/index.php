@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of occurrence comments.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,6 +24,6 @@
 
 echo $grid;
 ?>
-<form action="<?php echo url::site().'occurrence_comment/create/'.$occurrence_id; ?>">
-<input type="submit" value="New occurrence comment" class="btn btn-primary" />
-</form>
+<a href="<?php echo url::site() . 'occurrence_comment/create/' . $occurrence_id; ?>" class="btn btn-primary">
+  New occurrence comment
+</a>

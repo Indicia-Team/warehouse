@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of location media.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,6 +24,6 @@
 
 echo $grid;
 ?>
-<form action="<?php echo url::site().'location_medium/create/'.$location_id; ?>" method="post">
-<input type="submit" value="New location image" class="btn btn-primary" />
-</form>
+<a href="<?php echo url::site() . 'location_medium/create/' . $location_id; ?>" class="btn btn-primary">
+  New location image
+</a>

@@ -20,7 +20,6 @@
  */
 
 echo $grid ?>
-<form action="<?php echo url::site().$this->prefix.'_attribute/create'; ?>">
-<input type="hidden" name="website_id" value="" />
-<input type="submit" value="New <?php echo inflector::singular($this->pagetitle); ?>" class="btn btn-primary" />
-</form>
+<a href="<?php echo url::site() . $this->prefix . '_attribute/create'; ?>" class="btn btn-primary">
+  New <?php echo inflector::singular($this->pagetitle); ?>
+</a>

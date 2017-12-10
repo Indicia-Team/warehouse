@@ -599,7 +599,7 @@ class Location_Controller extends Gridview_Base_Controller {
     return array(
       array(
         'controller' => 'location/children',
-        'title' => 'Child Locations',
+        'title' => 'Child locations',
         'actions' => array('edit')
       ), array(
         'controller' => 'sample/index_from_location',
@@ -607,7 +607,7 @@ class Location_Controller extends Gridview_Base_Controller {
         'actions' => array('edit')
       ), array(
         'controller' => 'location_medium',
-        'title' => 'Media Files',
+        'title' => 'Media files',
         'actions' => array('edit')
       )
     );

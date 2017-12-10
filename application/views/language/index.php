@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of languages.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,9 +24,5 @@
 
 echo $grid;
 ?>
-<form action="<?php echo url::site().'language/create'; ?>" method="post">
-<input type="submit" value="New language" class="btn btn-primary" />
-</form>
-<br />
-<?php echo $upload_csv_form ?>
-
+<a href="<?php echo url::site() . 'language/create'; ?>" class="btn btn-primary">New language</a>
+<?php echo $upload_csv_form;
