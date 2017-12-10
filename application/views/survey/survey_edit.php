@@ -49,6 +49,41 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'validation' => 'required',
       'helpText' => 'Provide an optional description of your survey to help when browsing survey datasets on the warehouse'
     ));
+    $rules = '["required"]';
+    $schema = <<<SCHEMA
+{
+  "type":"map",
+  "title":"Fields to extend validation for",
+  "mapping": {
+    "occurrence.comment": {
+      "type":"str",
+      "desc":"Comment provided with a sample",
+      "enum": $rules
+    },
+    "sample.comment": {
+      "type":"str",
+      "desc":"Comment provided with a sample",
+      "enum": $rules
+    },
+    "sample.location_name": {
+      "type":"str",
+      "desc":"Location name given for a sample",
+      "enum": $rules
+    }
+  },
+  "desc":"List of columns and the values they are to be set to, when event is triggered."
+}
+
+SCHEMA;
+    echo data_entry_helper::jsonwidget([
+      'label' => 'Additional core field validation rules',
+      'fieldname' => 'survey:core_validation_rules',
+      'default' => html::initial_value($values, 'survey:core_validation_rules'),
+      'validation' => 'required',
+      'helpText' => 'Provide additional validation rules to apply to core Indicia fields for this survey dataset, for ' .
+        'example to set the sample.location_name field to required.',
+      'schema' => $schema,
+    ]);
     echo data_entry_helper::autocomplete(array(
       'label' => 'Parent survey',
       'fieldname' => 'survey:parent_id',

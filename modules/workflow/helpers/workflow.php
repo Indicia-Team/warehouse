@@ -321,6 +321,11 @@ class workflow {
         }
         // @todo Consider unverifying? Should rewind just the verification?
       }
+      // Occurrence specific record status change events.
+      if ($entity === 'occurrence' && $newRecord->release_status !== $oldRecord->release_status) {
+        // Translate Released to Fully released event type - other codes are the same.
+        $eventTypes[] = ($newRecord->release_status === 'R') ? 'F' : $newRecord->release_status;
+      }
       $qry->in('workflow_events.event_type', $eventTypes);
     }
     return $qry;
@@ -367,7 +372,7 @@ class workflow {
     $events = $qry->get();
     foreach ($events as $event) {
       $newUndoRecord = array();
-      kohana::log('debug', 'Processing event: ' . var_export($event, true));
+      kohana::log('debug', 'Processing event: ' . var_export($event, TRUE));
       $valuesToApply = self::processEvent(
         $event,
         $entity,
