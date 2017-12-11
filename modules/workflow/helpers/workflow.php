@@ -312,7 +312,8 @@ class workflow {
         $eventTypes[] = 'S';
       }
       // Occurrence specific record status change events.
-      if ($entity === 'occurrence' && $newRecord->record_status !== $oldRecord->record_status) {
+      if ($entity === 'occurrence' && isset($newRecord->record_status)
+        && $newRecord->record_status !== $oldRecord->record_status) {
         if ($newRecord->record_status === 'V') {
           $eventTypes[] = 'V';
         }
@@ -322,7 +323,8 @@ class workflow {
         // @todo Consider unverifying? Should rewind just the verification?
       }
       // Occurrence specific record status change events.
-      if ($entity === 'occurrence' && $newRecord->release_status !== $oldRecord->release_status) {
+      if ($entity === 'occurrence' && isset($newRecord->release_status)
+        && $newRecord->release_status !== $oldRecord->release_status) {
         // Translate Released to Fully released event type - other codes are the same.
         $eventTypes[] = ($newRecord->release_status === 'R') ? 'F' : $newRecord->release_status;
       }
