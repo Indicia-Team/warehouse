@@ -47,45 +47,61 @@ echo data_entry_helper::textarea(array(
   'validation' => 'required',
   'helpText' => 'Provide an optional description of your survey to help when browsing survey datasets on the warehouse'
 ));
-$rules = <<<RULES
-[
-  "required"
-]
-RULES;
-$schema = <<<SCHEMA
-{
-  "type":"map",
-  "title":"Fields to extend validation for",
-  "mapping": {
-    "occurrence.comment": {
-      "type":"str",
-      "desc":"Comment provided with a sample",
-      "enum": $rules
-    },
-    "sample.comment": {
-      "type":"str",
-      "desc":"Comment provided with a sample",
-      "enum": $rules
-    },
-    "sample.location_name": {
-      "type":"str",
-      "desc":"Location name given for a sample",
-      "enum": $rules
-    }
-  },
-  "desc":"List of columns and the values they are to be set to, when event is triggered."
-}
-
-SCHEMA;
-echo data_entry_helper::jsonwidget([
-  'label' => 'Additional core field validation rules',
-  'fieldname' => 'survey:core_validation_rules',
-  'default' => html::initial_value($values, 'survey:core_validation_rules'),
-  'validation' => 'required',
-  'helpText' => 'Provide additional validation rules to apply to core Indicia fields for this survey dataset, for ' .
-    'example to set the sample.location_name field to required.',
-  'schema' => $schema,
-]);
+?>
+<fieldset>
+  <legend>Enforce required fields</legend>
+  <p>
+    Certain fields are provided by Indicia for every sample and record added to the database. Tick the fields
+    below for fields which you would like to ensure are always populated when records are submitted to this survey
+    dataset.
+  </p>
+  <?php
+  echo data_entry_helper::checkbox([
+    'label' => 'Occurrence comment',
+    'fieldname' => 'occurrence-comment-required',
+    'default' => html::initial_value($values, 'occurrence-comment-required'),
+    'helpText' => 'Is a record comment required when saving an occurrence?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Occurrence sensitivity precision',
+    'fieldname' => 'occurrence-sensitivity_precision-required',
+    'default' => html::initial_value($values, 'occurrence-sensitivity_precision-required'),
+    'helpText' => 'Is an sensitivity precision (blur) required when saving an occurrence? This enforces that records ' .
+      'will be sensitive for this survey dataset.',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample comment',
+    'fieldname' => 'sample-comment-required',
+    'default' => html::initial_value($values, 'sample-comment-required'),
+    'helpText' => 'Is an overall comment required when saving a sample?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample licence',
+    'fieldname' => 'sample-licence_id-required',
+    'default' => html::initial_value($values, 'sample-licence_id-required'),
+    'helpText' => 'Is an explicit record licence (e.g. CC0) required when saving a sample?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample location ID',
+    'fieldname' => 'sample-location_id-required',
+    'default' => html::initial_value($values, 'sample-location_id-required'),
+    'helpText' => 'Is a link to a location record required when saving a sample?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample location name',
+    'fieldname' => 'sample-location_name-required',
+    'default' => html::initial_value($values, 'sample-location_name-required'),
+    'helpText' => 'Is a location name required when saving a sample?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample recorder names',
+    'fieldname' => 'sample-recorder_names-required',
+    'default' => html::initial_value($values, 'sample-recorder_names-required'),
+    'helpText' => 'Is the recorder names field value required when saving a sample?',
+  ]);
+  ?>
+</fieldset>
+<?php
 echo data_entry_helper::autocomplete(array(
   'label' => 'Parent survey',
   'fieldname' => 'survey:parent_id',
