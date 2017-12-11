@@ -1,4 +1,6 @@
-<?php defined('SYSPATH') or die('No direct access allowed.');
+<?php
+
+defined('SYSPATH') or die('No direct access allowed.');
 
 $lang = [
   'address' => [
@@ -81,7 +83,7 @@ $lang = [
     'maximum' => 'The value specified for this number is too high',
     'minimum' => 'The value specified for this number is too low',
     'required' => 'The value is required.',
-    'regex'   => 'Invalid format.',
+    'regex' => 'Invalid format.',
   ],
   'geom' => [
     'required' => 'The spatial reference must be supplied.',
@@ -108,6 +110,12 @@ $lang = [
   'language_id' => [
     'required' => 'The language is required.',
   ],
+  'location_name' => [
+    'required' => 'The location name is required.',
+  ],
+  'location_id' => [
+    'required' => 'This record must be linked to a location.',
+  ],
   'name' => [
     'required' => 'The name is required.',
   ],
@@ -117,12 +125,15 @@ $lang = [
   'password' => [
     'required' => 'The password cannot be blank.',
     'length' => 'The password must be between 7 and 30 letters in length.',
-    'matches' => 'The passwordfields must match.',
-    'matches_post' => 'The password fields must match.',
+    'matches' => 'The password and repeat password fields must match.',
+    'matches_post' => 'The password and repeat password fields must match.',
     'default' => 'Invalid input.',
   ],
   'path' => [
     'required' => 'The image file must be supplied.',
+  ],
+  'recorder_names' => [
+    'required' => 'The recorder names must be supplied.',
   ],
   'sample_id' => [
     'required' => 'The sample must be supplied.',
@@ -182,7 +193,8 @@ $lang = [
   'title' => [
     'required' => 'The title cannot be blank.',
     'standard_text' => 'Only standard characters are allowed.',
-    // Note that the title name is used for fields which are of different max lengths, so can't be more specific.
+    // Note that the title name is used for fields which are of different max
+    // lengths, so can't be more specific.
     'length' => 'The title supplied is too long.',
     'unique' => 'This title must be unique.',
     'default' => 'Invalid input.',
@@ -208,8 +220,7 @@ $lang = [
   ],
   'media_upload' => [
     'valid' => 'The file is being tagged as invalid.',
-    'required' => 'The file has not been uploaded to the warehouse. One possible reason is that its size may exceed ' .
-      'the server upload limits.',
+    'required' => 'The file has not been uploaded to the warehouse. One possible reason is that its size may exceed the server upload limits.',
     'size' => 'The file size exceeds the maximum allowed.',
     'type' => 'The file is not one of the allowed types.',
     'default' => 'Invalid file.',

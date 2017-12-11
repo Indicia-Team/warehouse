@@ -353,6 +353,21 @@ class ORM extends ORM_Core {
    *   Rethrows any exceptions occurring on validate.
    */
   public function validate(Validation $array, $save = FALSE) {
+    if (!empty($this->identifiers['survey_id'])) {
+      $qry = $this->db
+        ->select('core_validation_rules')
+        ->from('surveys')
+        ->where('id', $this->identifiers['survey_id'])
+        ->get()
+        ->current();
+      $rules = json_decode($qry->core_validation_rules, TRUE);
+      if (isset($rules[$this->object_name])) {
+        foreach ($rules[$this->object_name] as $field => $rules) {
+          $array->add_rules($field, $rules);
+        }
+      }
+    }
+
     // Set the default created/updated information.
     if ($this->wantToUpdateMetadata)
       $this->set_metadata();

@@ -142,6 +142,18 @@ class Survey_Controller extends Gridview_Base_Controller {
     $this->loadAttributes($r, array(
         'website_id'=>array($r['website_id'])
     ));
+    // Convert the JSON in the db for core field additional validation rules
+    // into default values for the UI form.
+    if (!empty($this->model->core_validation_rules)) {
+      $ruleTables = json_decode($this->model->core_validation_rules, TRUE);
+      foreach ($ruleTables as $table => $rules) {
+        foreach ($rules as $field => $rule) {
+          if (strpos($rule, 'required') !== FALSE) {
+            $r["{$table}-{$field}-required"] = '1';
+          }
+        }
+      }
+    }
   	return $r;
   }
 
@@ -156,6 +168,29 @@ class Survey_Controller extends Gridview_Base_Controller {
       'website_id'=>array($r['website_id'])
     ));
     return $r;
+  }
+
+  /**
+   * Override save method.
+   *
+   * Translate validation rule field checkboxes on edit form into the JSON
+   * core_validation_rules field value.
+   */
+  public function save() {
+    $rules = [];
+    foreach ($_POST as $field => $value) {
+      if (preg_match('/^(?P<table>(occurrence|sample))\-(?P<field>.+)\-(?P<rule>.+)$/', $field, $matches)) {
+        if (!isset($rules[$matches['table']])) {
+          $rules[$matches['table']] = [];
+        }
+        // If checkbox checked, then set the rule.
+        if ($value === '1') {
+          $rules[$matches['table']][$matches['field']] = $matches['rule'];
+        }
+      }
+    }
+    $_POST['survey:core_validation_rules'] = json_encode($rules);
+    parent::save();
   }
 
 }
