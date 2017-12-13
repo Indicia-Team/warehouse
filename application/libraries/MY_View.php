@@ -28,45 +28,54 @@
  */
 class View extends View_Core {
 
-  protected $viewname='';
+  protected $viewname = '';
 
   /**
-   * When a view is rendered, check for plugins which are adding tabs to the view. If any exist, then
-   * wrap the current view output in the first tab of a jQuery tabs implementation and add links to the plugin output
-   * for the other tabs.
+   * Render a view.
+   *
+   * When a view is rendered, check for plugins which are adding tabs to the
+   * view. If any exist, then wrap the current view output in the first tab
+   * of a jQuery tabs implementation and add links to the plugin output for the
+   * other tabs.
    */
   public function render($print = FALSE, $renderer = FALSE) {
-
     $output = parent::render($print, $renderer);
     $tabs = $this->get_tabs();
     // If only one tab, that is the current view, so don't bother tabifying it.
     if (count($tabs) > 1) {
-      $js = "<script type=\"text/javascript\">
-jQuery(document).ready(function() {
-  var t=$('#tabs').tabs();
-  var initTab='".(array_key_exists('tab', $_GET) ? $_GET['tab'] : '')."';
-  if (initTab!='') {
-    t.tabs('select', '#' + initTab);
-  }
-});
-</script>";
-      $prefix = "<div id=\"tabs\"><ul>\n";
-      $suffix = "</div>\n";
+      $tabLinks = [];
       $args = $this->get_args();
-      foreach ($tabs as $tab=>$controller) {
-        if ($controller==$this->viewname)
-          // this is the default page
-          $path="#main";
-        else {
-          // a plugin page
-          $path=url::site()."$controller$args";
+      foreach ($tabs as $tab => $controller) {
+        if ($controller === $this->viewname) {
+          // This is the default page.
+          $path = "#main";
         }
-        $prefix .= '<li><a href="'.$path.'" title="'.$tab.'"><span>'.$tab."</span></a></li>\n";
-        $suffix .= '<div id="'.str_replace(' ','_', $tab).'"></div>';
+        else {
+          // A plugin page.
+          $path = url::site() . "$controller$args";
+        }
+        $safe = preg_replace('/[^a-z]/', '_', strtolower($tab));
+        $tabLinks[] = "<li id=\"tab-$safe\"><a href=\"$path\" title=\"$tab\"><span>$tab</span></a></li>";
       }
-      $prefix .= "</ul>\n<div id=\"main\">";
-      $suffix .= "</div>\n";
-      $output = "$js$prefix$output$suffix";
+      $tabsLi = implode("\n    ", $tabLinks);
+      $selectedTab = empty($_GET['tab']) ? '' : $_GET['tab'];
+      $output = <<<HTML
+<div id="tabs">
+  <ul>
+    $tabsLi
+  </ul>
+  <div id="main">$output</div>
+</tabs>
+<script type="text/javascript">
+  jQuery(document).ready(function($) {
+    var tabs = $('#tabs').tabs();
+    if ('$selectedTab') {
+      var tabIndex = $('#tab-$selectedTab').index();
+      tabs.tabs('option', 'active', tabIndex);
+    }
+  });
+</script>
+HTML;
     }
     return $output;
   }

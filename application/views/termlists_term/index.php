@@ -32,10 +32,10 @@ var add_parent_term = function() {
       termlists_term_id: $('#add-from-parent').val()
     }, function(data, textStatus) {
       if (isNaN(parseInt(data))) {
-        // if text returned, it is a message to display
+        // If text returned, it is a message to display.
         alert(data);
       } else {
-        // if OK, it returns the new record ID. Add it to the grid, using the global var created
+        // If OK, it returns the new record ID. Add it to the grid, using the global var created
         // when the grid was created.
         indiciaData.reports.termlists_term.grid_termlists_term.addRecords('id', data);
       }
@@ -56,7 +56,7 @@ echo data_entry_helper::autocomplete(array(
   'table' => 'termlists_term',
   'captionField' => 'term',
   'valueField' => 'id',
-  'extraParams' => $readAuth + array('termlist_id'=>$parent_list_id),
+  'extraParams' => $readAuth + array('termlist_id' => $parent_list_id),
   'afterControl' => '<input type="button" value="Add" onclick="add_parent_term();" />'
 ));
 echo '</div>';
@@ -67,7 +67,7 @@ echo $grid;
 <br/>
 <?php if (!$readonly) : ?>
   <form action="<?php echo url::site() . "termlists_term/create/$termlist_id"; ?>" method="post">
-  <?php if (isset($parent_id)): ?>
+  <?php if (isset($parent_id)) : ?>
     <input type="hidden" value="<?php echo $parent_id; ?>" name="termlists_term:parent_id"/>
   <?php endif; ?>
   <input type="submit" value="New term" class="btn btn-primary" />
@@ -80,10 +80,10 @@ if (!$readonly) {
 }
 if (isset($parent_list_id)) {
   if (request::is_ajax()) {
-    // When viewing as an AJAX loaded tab, don't reload jQuery as it is already on the page.
+    // When viewing as an AJAX loaded tab, don't reload jQuery as it is
+    // already on the page.
     data_entry_helper::$dumped_resources[] = 'jquery';
   }
   data_entry_helper::link_default_stylesheet();
   echo data_entry_helper::dump_javascript(TRUE);
 }
-?>
