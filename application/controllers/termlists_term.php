@@ -32,12 +32,12 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
 
     $this->base_filter['parent_id'] = NULL;
     $this->base_filter['preferred'] = 't';
-    $this->columns = array(
+    $this->columns = [
       'id' => '',
       'term' => '',
       'language' => '',
       'sort_order' => 'Sort Order',
-      );
+    ];
     $this->pagetitle = "Terms";
   }
 
@@ -119,7 +119,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $syn = "";
     foreach ($res as $synonym) {
       $syn .= $synonym->term->term;
-      $syn .=  ($synonym->term->language_id != NULL) ?
+      $syn .= ($synonym->term->language_id != NULL) ?
         " | " . $synonym->term->language->iso . "\n" : '';
     }
     return $syn;
@@ -169,10 +169,9 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
    * Get the list of terms ready for the sources list.
    */
   protected function prepareOtherViewData($values) {
-    return array(
-      'source_terms' => $this->get_termlist_terms('indicia:term_sources'),
+    return [
       'parent_term' => $this->model->parent->term->term,
-    );
+    ];
   }
 
   /**
