@@ -736,6 +736,7 @@ class XMLReportReader_Core implements ReportReader
     $default = ($reader===null) ? null : $reader->getAttribute('default');
     $description = ($reader===null) ? '' : $reader->getAttribute('description');
     $query = ($reader===null) ? '' : $reader->getAttribute('query');
+    $preprocess = ($reader===null) ? '' : $reader->getAttribute('preprocess');
     $lookup_values = ($reader===null) ? '' : $reader->getAttribute('lookup_values');
     $population_call = ($reader===null) ? '' : $reader->getAttribute('population_call');
     $linked_to = ($reader===null) ? '' : $reader->getAttribute('linked_to');
@@ -751,6 +752,7 @@ class XMLReportReader_Core implements ReportReader
       if ($default != null) $this->params[$name]['default'] = $default;
       if ($description != '') $this->params[$name]['description'] = $description;
       if ($query != '') $this->params[$name]['query'] = $query;
+      if ($preprocess != '') $this->params[$name]['preprocess'] = $preprocess;
       if ($lookup_values != '') $this->params[$name]['lookup_values'] = $lookup_values;
       if ($population_call != '') $this->params[$name]['population_call'] = $population_call;
       if ($linked_to != '') $this->params[$name]['linked_to'] = $linked_to;
@@ -766,6 +768,7 @@ class XMLReportReader_Core implements ReportReader
         'display'=>$display,
         'description'=>$description,
         'query' => $query,
+        'preprocess' => $preprocess,
         'lookup_values' => $lookup_values,
         'population_call' => $population_call,
         'linked_to' => $linked_to,

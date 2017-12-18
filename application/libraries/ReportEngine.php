@@ -361,7 +361,8 @@ class ReportEngine {
       // Okay, all the parameters have been provided.
       $this->mergeCountQuery();
       $this->mergeQuery();
-      if ($this->limit === 0 || $this->limit === '0' || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords'] === 0)) {
+      if ($this->limit === 0 || $this->limit === '0'
+        || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords'] === '0')) {
         // Optimisation for zero limited queries.
         $data = array();
       }
@@ -645,7 +646,7 @@ and tt.deleted = FALSE
 ORDER by tt.id;
 SQL;
                 $termResponse = $this->reportDb->query(
-                  ""
+                  $sql
                 );
               }
               $newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
@@ -943,7 +944,7 @@ SQL;
               }
             }
             elseif (($paramDefs[$name]['datatype'] === 'integer' || $paramDefs[$name]['datatype'] === 'float') && !is_numeric($value)) {
-              throw new exception('Invalid numeric parameter value');
+              throw new exception("Invalid numeric parameter value $value for $name");
             }
             elseif (($paramDefs[$name]['datatype'] === 'integer[]' || $paramDefs[$name]['datatype'] === 'float[]')) {
               // Array check on numeric parameter values.
@@ -964,6 +965,8 @@ SQL;
               $value = $date->format('Y-m-d');
             }
             if (!empty($paramDefs[$name]['preprocess']) && !empty($value) && $value !== 'NULL') {
+              // Ensure the original value can be used as well as the processed value.
+              $query = preg_replace("/#$name-unprocessed#/", $value, $query);
               // Use a preprocessing query to calculate the actual param value to use.
               $prequery = str_replace("#$name#", $value, $paramDefs[$name]['preprocess']);
               $output = $this->reportDb->query($prequery)->result_array(FALSE);

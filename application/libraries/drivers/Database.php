@@ -330,12 +330,28 @@ abstract class Database_Driver {
         $value = sprintf('%F', $value);
       break;
       case 'array':
-      	$retVal = array();
-      	for($i=0; $i< count($value); $i++){
-      		// We are assuming that the values are integers, convert from text.
-      		$retVal[] = (int) $value[$i]; 
-      	}
-      	$value = 'ARRAY['.implode(', ',$retVal).']::integer[]';
+        $retVal = array();
+        // Check if any strings
+        $stringFound = false;
+        for($i=0; $i < count($value); $i++){
+          if(gettype($value[$i]) === 'string') {
+            $stringFound = true;
+            break;
+          }
+        }
+        if(count($value)===0) {
+          return 'NULL';
+        }
+        for($i=0; $i < count($value); $i++){
+          if ($stringFound) {
+            $retVal[] = '\''.$this->escape_str($value[$i]).'\'';
+          } else {
+            // We are assuming that the values are integers, convert from text.
+            $retVal[] = (int) $value[$i];
+          }
+        }
+        $value = 'ARRAY[' . implode(', ',$retVal).']::' .
+                 ($stringFound ? 'varchar' : 'integer') . '[]';
         break;
       default:
         $value = ($value === NULL) ? 'NULL' : $value;

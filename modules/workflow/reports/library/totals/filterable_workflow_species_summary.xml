@@ -1,0 +1,85 @@
+<report
+    title="Workflow species summary (filterable)"
+    description="Lists workflow species with summary stats including count of pending and reviewed records as well as
+      average response times."
+    featured="true"
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id" standard_params="occurrences">
+select #columns#
+from workflow_metadata wm
+join cache_taxa_taxon_lists cttl on cttl.external_key=wm.key_value
+left join cache_occurrences_functional o on o.taxa_taxon_list_external_key=cttl.external_key
+left join occurrence_comments ocfirst on ocfirst.id = (
+    select id
+    from occurrence_comments
+    where occurrence_id=o.id and deleted=false
+    and (record_status is not null or query=true)
+    order by id asc
+    limit 1)
+left join occurrence_comments ocfirstreview on ocfirstreview.id = (
+    select id
+    from occurrence_comments
+    where occurrence_id=o.id and deleted=false
+    and record_status is not null
+    order by id asc
+    limit 1)
+  and ocfirstreview.record_status is not null
+#agreements_join#
+#joins#
+where #sharing_filter#
+and wm.key='taxa_taxon_list_external_key'
+and cttl.preferred=true
+and cttl.taxon_list_id=#taxon_list_id#
+  </query>
+  <order_bys>
+    <order_by>cttl.taxon</order_by>
+  </order_bys>
+  <params>
+    <param name="workflow_group_code" display="Workflow group code" default=""
+           description="Code for the Workflow group to show associated records for."
+           preprocess="
+             select '''' || string_agg(key_value, ''', ''') || '''' from workflow_metadata
+             where key='taxa_taxon_list_external_key' and entity='occurrence'
+             and group_code='#workflow_group_code#'
+             ">
+      <where>o.taxa_taxon_list_external_key in (#workflow_group_code#)</where>
+    </param>
+    <param name="taxon_list_id" display="Taxon List" description="Select the taxon list to load species from"
+      datatype="lookup" population_call="direct:taxon_list:id:title" default="" />
+    <param name="recent_filter" display="Recent is newer than" datatype="string" default="6 months"
+      description="How old can records be before they are not considered recent" />
+  </params>
+  <columns>
+    <column name="taxon" display="Species" sql="cttl.taxon" />
+    <column name="occurrence_count" display="Records" aggregate="true" sql="count(o.*)" />
+    <column name="overdue" display="Overdue" aggregate="true"
+      sql="sum(case when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval then 1 else 0 end)" />
+    <column name="overdue_soon" display="Overdue soon" aggregate="true"
+      sql="sum(case when
+    get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt; '-12 hours'::interval
+    and get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &lt;= '0 hours'::interval
+    then 1 else 0 end)" />
+    <column name="pending_review" display="Pending review" aggregate="true"
+      sql="sum(case when o.record_status = 'C' and o.record_substatus is null then 1 else 0 end)" />
+    <column name="accepted" display="Accepted" aggregate="true"
+      sql="sum(case when o.record_status = 'V' then 1 else 0 end)" />
+    <column name="not_accepted" display="Not accepted" aggregate="true"
+      sql="sum(case when o.record_status = 'R' then 1 else 0 end)" />
+    <column name="queried" display="Queried" aggregate="true"
+      sql="sum(case when o.record_status = 'C' and o.record_substatus is null and o.query='Q' then 1 else 0 end)" />
+    <column name="answered" display="Answered" aggregate="true"
+      sql="sum(case when o.record_status = 'C' and o.record_substatus is null and o.query='A' then 1 else 0 end)" />
+    <column name="average_first_response_days" display="Average first response days" aggregate="true"
+      sql="round((extract('epoch' from avg(coalesce(ocfirst.created_on, o.verified_on) - o.created_on))/(3600*24))::numeric, 2)" />
+    <column name="average_first_review_response_days" display="Average first review response days" aggregate="true"
+      sql="round((extract('epoch' from avg(coalesce(ocfirstreview.created_on, o.verified_on) - o.created_on))/(3600*24))::numeric, 2)" />
+    <column name="average_closure_days" display="Average closure days" aggregate="true"
+      sql="round((extract('epoch' from avg(o.verified_on - o.created_on))/(3600*24))::numeric, 2)" />
+    <column name="average_first_response_recent_days" display="Average first response days (recent data)" aggregate="true"
+      sql="round((extract('epoch' from avg(case when o.created_on &gt; now() - '#recent_filter#'::interval then coalesce(ocfirst.created_on, o.verified_on) - o.created_on else null end))/(3600*24))::numeric, 2)" />
+    <column name="average_first_review_response_recent_days" display="Average first review response days (recent data)" aggregate="true"
+      sql="round((extract('epoch' from avg(case when o.created_on &gt; now() - '#recent_filter#'::interval then coalesce(ocfirstreview.created_on, o.verified_on) - o.created_on else null end))/(3600*24))::numeric, 2)" />
+    <column name="average_closure_recent_days" display="Average closure days (recent data)" aggregate="true"
+      sql="round((extract('epoch' from avg(case when o.created_on &gt; now() - '#recent_filter#'::interval then o.verified_on - o.created_on else null end))/(3600*24))::numeric, 2)" />
+  </columns>
+</report>

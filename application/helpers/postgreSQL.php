@@ -262,6 +262,9 @@ and n.id is null"
         {
           $result[$row->column_name]['null'] = TRUE;
         }
+        if(strtolower(trim($row->data_type))=== 'array' && $row->udt_name === '_varchar') {
+          $result[$row->column_name]['type'] = 'string';
+        }
       }
       if (!isset($result))
         throw new Kohana_Database_Exception('database.table_not_found', $entity);
