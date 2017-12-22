@@ -25,14 +25,12 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site() . 'location/create'; ?>" method="post">
-<input type="submit" value="New location" class="btn btn-primary" />
-<?php if (isset($parent_id)) : ?>
-  <input name="parent_id" type="hidden" value="<?php echo $parent_id; ?>" />
-<?php endif; ?>
+  <input type="submit" value="New location" class="btn btn-primary" />
+  <?php if (isset($parent_id)) : ?>
+    <input name="parent_id" type="hidden" value="<?php echo $parent_id; ?>" />
+  <?php endif; ?>
 </form>
 <br />
 <?php
 echo $upload_csv_form;
 echo $upload_shp_form;
-
-

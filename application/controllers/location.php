@@ -87,7 +87,8 @@ class Location_Controller extends Gridview_Base_Controller {
     // Only allow core admin to edit public locations.
     if ($this->auth->logged_in('CoreAdmin')) {
       $r['metaFields:disabled_input'] = 'NO';
-    } else {
+    }
+    else {
       $r['metaFields:disabled_input'] = ($this->model->public === TRUE || $this->model->public === 't') ? 'YES' : 'NO';
     }
     $this->loadLocationAttributes($r);
@@ -115,7 +116,7 @@ class Location_Controller extends Gridview_Base_Controller {
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    // when creating a location, we don't know the websites for the location, so cannot
+    // When creating a location, we don't know the websites for the location, so cannot
     // filter the attribute values available. Therefore they are not displayed until
     // after the location has been saved. Therefore no need to call loadAttributes.
     // We do when editing after a validation failure though.
@@ -124,7 +125,7 @@ class Location_Controller extends Gridview_Base_Controller {
     }
     else {
       // not an existing record: check if the parent_id has been posted to us., by a "create child"
-      if(!isset($r['location:parent_id']) && isset($_POST['parent_id'])) {
+      if (!isset($r['location:parent_id']) && isset($_POST['parent_id'])) {
         $r['location:parent_id'] = $_POST['parent_id'];
         $parent = ORM::factory('location', $r['location:parent_id']);
         $r['parent:name'] = $parent->name;
@@ -171,14 +172,16 @@ class Location_Controller extends Gridview_Base_Controller {
       // Following helps for files from Macs.
       ini_set('auto_detect_line_endings', 1);
       $view = new View('location/upload_shp');
-      $zip = new ZipArchive;
+      $zip = new ZipArchive();
       $res = $zip->open($zipTempFile);
       if ($res != TRUE) {
         $this->setError('Upload file problem', 'Could not open Zip archive file - possible invalid format.');
         return;
       }
       $directory = $this->create_zip_extract_dir();
-      if($directory == FALSE) return;
+      if ($directory == FALSE) {
+        return;
+      }
       if (!$zip->extractTo($directory)) {
         $this->setError('Upload file problem', 'Could not extract Zip archive file contents.');
         return;
@@ -187,12 +190,17 @@ class Location_Controller extends Gridview_Base_Controller {
       $dbf = 0;
       $shp = 0;
       for ($i = 0; $i < $zip->numFiles; $i++) {
-        if (basename($zip->getNameIndex($i)) != basename($zip->getNameIndex($i), '.dbf')) {
-          $entry = $zip->getNameIndex($i);
+        $file = $zip->getNameIndex($i);
+        if (substr(basename($file), 0, 1) === '.') {
+          // Hidden file.
+          continue;
+        }
+        if (strcasecmp(pathinfo($file, PATHINFO_EXTENSION), 'dbf') === 0) {
+          $entry = $file;
           $dbf++;
         }
-        if (basename($zip->getNameIndex($i)) != basename($zip->getNameIndex($i), '.shp')) {
-          $shpentry = $zip->getNameIndex($i);
+        if (strcasecmp(pathinfo($file, PATHINFO_EXTENSION), 'shp') === 0) {
+          $shpentry = $file;
           $shp++;
         }
       }
@@ -218,12 +226,12 @@ class Location_Controller extends Gridview_Base_Controller {
       }
       $_SESSION['extracted_basefile'] = $directory . basename($entry, '.dbf');
       $zip->close();
-      $this->template->title = "Choose details in " . $entry . " for " . $this->pagetitle;
+      $this->template->title = "Choose details in " . $shpentry . " for " . $this->pagetitle;
       try {
         $dbasedb = dbase_open($directory . $entry, 0);
       }
       catch (Exception $e) {
-        // error handled next
+        // Error handled next.
       }
       if ($dbasedb) {
         // Read some data ..
@@ -234,6 +242,7 @@ class Location_Controller extends Gridview_Base_Controller {
         $this->setError('Upload file problem', "Could not open $entry from Zip archive.");
         return;
       }
+      $view->columns = [];
       $view->model = $this->model;
       $view->controllerpath = $this->controllerpath;
       $view->systems = kohana::config('sref_notations.sref_notations');
@@ -332,9 +341,9 @@ class Location_Controller extends Gridview_Base_Controller {
         }
 
         if(array_key_exists('use_parent', $_POST)) {
-          //Ensure parent already exists and is unique  - no account of website taken...
+          // Ensure parent already exists and is unique  - no account of website taken...
           $parent = trim($row[$_POST['parent']]);
-          $parentSelector = array_key_exists('use_parent_code', $_POST) ? 'code' : 'name';
+          $parentSelector = $_POST['parent_link_field'];
           $parent_locations = $this->findLocations(array($parentSelector => $parent));
           if(count($parent_locations) == 0) {
             $this->setError('Upload problem', "Could not find non deleted parent where $parentSelector = $parent");
@@ -375,7 +384,7 @@ class Location_Controller extends Gridview_Base_Controller {
 
         if ($myLocation->loaded) {
           // update existing record
-          if(array_key_exists('boundary', $_POST)) {
+          if ($_POST['geometries'] === 'boundary') {
             $myLocation->__set('boundary_geom', $this->wkt);
             $myLocation->setCentroid(isset($_POST['use_sref_system']) && $_POST['use_sref_system'] && isset($_POST['srid']) && $_POST['srid'] != '' ? $_POST['srid'] : '4326');
           } else {
@@ -446,7 +455,9 @@ class Location_Controller extends Gridview_Base_Controller {
   }
 
   function loadData($type, $data) {
-    if (!$data) return $data;
+    if (!$data) {
+      return $data;
+    }
     $tmp = unpack($type, $data);
     return current($tmp);
   }
@@ -461,7 +472,7 @@ class Location_Controller extends Gridview_Base_Controller {
    *   Array of matched locations.
    */
   function findLocations($fields) {
-    //Where there is no parent, look for existing location attached to chosen website
+    // Where there is no parent, look for existing location attached to chosen website.
     $query = $this->db
       ->select('locations.id')
       ->from('locations');
