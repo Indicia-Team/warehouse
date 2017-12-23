@@ -28,9 +28,12 @@ $config['entities'] = array(
   'occurrence' => array(
     'title' => 'Occurrence',
     'event_types' => array(
-      array('code' => 'S', 'title' => 'Set'),
+      array('code' => 'S', 'title' => 'Initially set as workflow record'),
       array('code' => 'V', 'title' => 'Verification'),
       array('code' => 'R', 'title' => 'Rejection'),
+      array('code' => 'U', 'title' => 'Unreleased'),
+      array('code' => 'P', 'title' => 'Pending review'),
+      array('code' => 'F', 'title' => 'Fully released'),
     ),
     'keys' => array(
       array(
