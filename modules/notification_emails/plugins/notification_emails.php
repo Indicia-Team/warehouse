@@ -25,7 +25,7 @@
  */
 
 /**
- * Hook to ORM to enable the relationship between users and notification settings.
+ * Hook ORM to enable the relationship from users to notification settings.
  */
 function notification_emails_extend_orm() {
   return array(
@@ -38,7 +38,8 @@ function notification_emails_extend_orm() {
 /**
  * Implements the extend_data_services hook.
  *
- * Determines the data entities which should be added to those available via data services.
+ * Determines the data entities which should be added to those available via
+ * data services.
  *
  * @return array
  *   List of database entities exposed by this plugin with configuration.
@@ -54,8 +55,9 @@ function notification_emails_extend_data_services() {
 /**
  * Implements the scheduled_task plugin hook.
  *
- * When the scheduled tasks are run, send out emails to users with details of their notifications based on their
- * subscription settings (e.g. they could be setup to receive emails about species alerts on a weekly basis).
+ * When the scheduled tasks are run, send out emails to users with details of
+ * their notifications based on their subscription settings (e.g. they could
+ * be setup to receive emails about species alerts on a weekly basis).
  *
  * @param string $last_run_date
  *   Timestamp when this scheduled task process was last initiated.
@@ -63,12 +65,13 @@ function notification_emails_extend_data_services() {
  *   Database access object.
  */
 function notification_emails_scheduled_task($last_run_date, $db) {
-  // We need to first determine which jobs to run, for instance, if it is less than a week since the last weekly job
-  // was run, then the weekly job doesn't need running yet.
+  // We need to first determine which jobs to run, for instance, if it is less
+  // than a week since the last weekly job was run, then the weekly job doesn't
+  // need running yet.
   $frequenciesToRun = notification_emails::getFrequenciesToRunNow($db);
   // Don't do anything if there are no jobs to run.
   if (!empty($frequenciesToRun[0])) {
-    runEmailNotificationJobs($db, $frequenciesToRun);
+    run_email_notification_jobs($db, $frequenciesToRun);
   }
   else {
     echo 'There are no email notification jobs to run at the moment.<br/>';
@@ -83,10 +86,11 @@ function notification_emails_scheduled_task($last_run_date, $db) {
  * @param array $frequenciesToRun
  *   List of notification frequencies we are processing this time round.
  */
-function runEmailNotificationJobs($db, array $frequenciesToRun) {
+function run_email_notification_jobs($db, array $frequenciesToRun) {
   $subscriptionSettingsPageUrl = url::base() . 'subscription_settings.php';
   $frequencyToRunString = '';
-  // Gather all the notification frequency jobs we need to run into a set ready to pass into sql
+  // Gather all the notification frequency jobs we need to run into a set
+  // ready to pass into sql.
   foreach ($frequenciesToRun as $frequencyToRunArray) {
     $frequencyToRunString .= "'" . $frequencyToRunArray['notification_frequency'] . "'" . ',';
   }
@@ -94,51 +98,79 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
   $frequencyToRunString = substr($frequencyToRunString, 0, -1);
   try {
     $modules = kohana::config('config.modules');
-    $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);;
-  } catch (Exception $ex) {
+    $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
+  }
+  catch (Exception $ex) {
     $useWorkflowModule = FALSE;
   }
-  //Get all the notifications that need sending.
-  //These are either ones where a user has a notification setting that matches the notification and frequency run we are about to do,
-  //Or alternatively if it a high priority species (e.g. red alert invasive) defined by verifier_notifications_immediate=true
-  //then makes sure the notification is sent as part of the immediate/hourly batch no matter what the
-  //frequency is for on the verifier's notification setting for that source type
-  $notificationsToSendEmailsForSql = "
-    SELECT distinct n.id, n.user_id, n.source_type, n.source, n.linked_id, n.data, n.escalate_email_priority, u.username,
-          coalesce(p.first_name, u.username) as name_to_use, cof.website_id, cof.query
-        FROM notifications n
-          JOIN users u ON u.id = n.user_id AND u.deleted=false
-          JOIN people p ON p.id = u.person_id AND p.deleted=false
+  // Get all the notifications that need sending.
+  // These are either ones where a user has a notification setting that
+  // matches the notification and frequency run we are about to do, or
+  // alternatively if it a high priority species (e.g. red alert invasive)
+  // defined by verifier_notifications_immediate=true then makes sure the
+  // notification is sent as part of the immediate/hourly batch no matter what
+  // the frequency is for on the verifier's notification setting for that
+  // source type.
+  $notificationsToSendEmailsForSql = <<<SQL
+SELECT distinct n.id, n.user_id, n.source_type, n.source, n.linked_id, n.data, n.escalate_email_priority, u.username,
+      coalesce(p.first_name, u.username) as name_to_use, cof.website_id, cof.query
+FROM notifications n
+JOIN users u ON u.id = n.user_id AND u.deleted=false
+JOIN people p ON p.id = u.person_id AND p.deleted=false
+LEFT JOIN cache_occurrences_functional cof on cof.id=n.linked_id
+LEFT JOIN taxa_taxon_lists ttl on ttl.id = cof.taxa_taxon_list_id and ttl.deleted=false
+LEFT JOIN taxa t on t.id = ttl.taxon_id and t.deleted=false
+--This part just deals with the normal situation where we include a notification email if the user has a setting that
+-- matches the current run or has its escalate_email_priority set (so we always send immediately).
+LEFT JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type
+  AND unf.user_id = n.user_id
+  AND (unf.notification_frequency in ($frequencyToRunString) OR escalate_email_priority IS NOT NULL)
+  AND unf.deleted='f'
+LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency
 
-          LEFT JOIN cache_occurrences_functional cof on cof.id=n.linked_id
-          LEFT JOIN taxa_taxon_lists ttl on ttl.id = cof.taxa_taxon_list_id and ttl.deleted=false
-          LEFT JOIN taxa t on t.id = ttl.taxon_id and t.deleted=false
+SQL;
+  if ($useWorkflowModule === TRUE) {
+    $notificationsToSendEmailsForSql .= <<<SQL
+-- If there is a species that needs sending immediately, make sure the task is a verification task and the user has a notification setting (although we don't care what the frequency is of the setting) and then
+-- if the current run is immediate/hourly then include the notification in the run
+LEFT JOIN workflow_metadata wm ON 'IH' IN ($frequencyToRunString)
+  AND lower(wm.entity)='occurrence'
+  AND lower(wm.key)='taxa_taxon_list_external_key'
+  AND (wm.key_value=t.external_key AND t.external_key IS NOT NULL)
+  AND wm.verifier_notifications_immediate=true
+  AND wm.deleted=false
+LEFT JOIN user_email_notification_settings unfMetaDataLinked ON unfMetaDataLinked.notification_source_type=n.source_type
+  AND n.source_type = 'VT'
+  AND unfMetaDataLinked.user_id = n.user_id
+  AND unfMetaDataLinked.deleted='f'
+LEFT JOIN user_email_notification_frequency_last_runs unflrMetaDataLinked ON unflrMetaDataLinked.notification_frequency='IH'
 
-          --This part just deals with the normal situation where we include a notification email if the user has a setting that matches the current run or has its escalate_email_priority set (so we always send immediately)
-          LEFT JOIN user_email_notification_settings unf ON unf.notification_source_type=n.source_type AND unf.user_id = n.user_id AND (unf.notification_frequency in (".$frequencyToRunString.") OR escalate_email_priority IS NOT NULL) AND unf.deleted='f'
-          LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_frequency=unflr.notification_frequency";
-  if ($useWorkflowModule === TRUE) {
-    $notificationsToSendEmailsForSql .= "
-            -- If there is a species that needs sending immediately, make sure the task is a verification task and the user has a notification setting (although we don't care what the frequency is of the setting) and then
-            -- if the current run is immediate/hourly then include the notification in the run
-            LEFT JOIN workflow_metadata wm on 'IH' in (".$frequencyToRunString.") AND lower(wm.entity)='occurrence' AND lower(wm.key)='taxa_taxon_list_external_key' AND (wm.key_value=t.external_key AND t.external_key IS NOT NULL) AND wm.verifier_notifications_immediate=true AND wm.deleted=false
-            LEFT JOIN user_email_notification_settings unfMetaDataLinked ON unfMetaDataLinked.notification_source_type=n.source_type AND n.source_type = 'VT' AND unfMetaDataLinked.user_id = n.user_id AND unfMetaDataLinked.deleted='f'
-            LEFT JOIN user_email_notification_frequency_last_runs unflrMetaDataLinked ON unflrMetaDataLinked.notification_frequency='IH'";
+SQL;
   }
-  $notificationsToSendEmailsForSql .= "
-        WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f'
-          --Send a notification if the user has a notification setting and notification that matches the current run
-          --and the notification hasn't already been set (or nothing has ever been sent)
-          AND ((unf.id IS NOT NULL AND (n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL OR unflr.id IS NULL))";
+  $notificationsToSendEmailsForSql .= <<<SQL
+WHERE n.email_sent = 'f' AND n.source_type<>'T' AND n.acknowledged = 'f'
+--Send a notification if the user has a notification setting and notification that matches the current run
+--and the notification hasn't already been set (or nothing has ever been sent)
+AND (
+  (unf.id IS NOT NULL AND (
+    n.id>unflr.last_max_notification_id OR unflr.last_max_notification_id IS NULL OR unflr.id IS NULL
+  ))
+
+SQL;
   if ($useWorkflowModule === TRUE) {
-    $notificationsToSendEmailsForSql .= "
-          -- Do same for high priority species verification tasks to be automatically included in the immediate hourly run
-          OR  (wm.id IS NOT NULL AND unfMetaDataLinked.id IS NOT NULL AND (n.id>unflrMetaDataLinked.last_max_notification_id OR unflrMetaDataLinked.last_max_notification_id IS NULL or unflrMetaDataLinked.id IS NULL))";
+    $notificationsToSendEmailsForSql .= <<<SQL
+  -- Do same for high priority species verification tasks to be automatically included in the immediate hourly run
+  OR (wm.id IS NOT NULL AND unfMetaDataLinked.id IS NOT NULL AND (
+    n.id>unflrMetaDataLinked.last_max_notification_id OR unflrMetaDataLinked.last_max_notification_id IS NULL or unflrMetaDataLinked.id IS NULL
+  ))
+
+SQL;
   }
-  $notificationsToSendEmailsForSql .= "
-        )
-        ORDER BY n.user_id, u.username, n.source_type, n.id
-  ";
+  $notificationsToSendEmailsForSql .= <<<SQL
+)
+ORDER BY n.user_id, u.username, n.source_type, n.id
+
+SQL;
   $notificationsToSendEmailsFor = $db->query($notificationsToSendEmailsForSql)->result_array(FALSE);
   if (empty($notificationsToSendEmailsFor)) {
     echo 'There are no email notifications to send at the moment.<br/>';
@@ -146,7 +178,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
   else {
     // Get address to send emails from.
     $email_config = array();
-    //Try and get from configuration file if possible
+    // Try and get from configuration file if possible.
     try {
       $email_config['address'] = kohana::config('notification_emails.email_sender_address');
       $systemName = kohana::config('notification_emails.system_name');
@@ -162,8 +194,10 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
       return FALSE;
     }
     $emailSentCounter = 0;
-    //All the notifications that need to be sent in an email are grouped by user, as we cycle through the notifications then we can track who the user was for the previous notification.
-    //When this user id then changes, we know we need to start building an new email to a new user.
+    // All the notifications that need to be sent in an email are grouped by
+    // user, as we cycle through the notifications then we can track who the
+    // user was for the previous notification. When this user id then changes,
+    // we know we need to start building an new email to a new user.
     $previousUserId = 0;
     $notificationIds = array();
     $emailContent = start_building_new_email($notificationsToSendEmailsFor[0]);
@@ -175,25 +209,28 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
       'occurrence_id' => 'Record ID',
       'comment' => 'Message',
       'record_status' => 'Record status',
-      //Column for link to comments page, doesn't need header title
-      'query' => ''
+      // Column for link to comments page, doesn't need header title.
+      'query' => '',
     );
     $emailHighPriority = FALSE;
     foreach ($notificationsToSendEmailsFor as $notificationToSendEmailsFor) {
       if ($notificationToSendEmailsFor['escalate_email_priority'] == 2) {
         $emailHighPriority = TRUE;
       }
-      // This user is not the first user but we have detected that it is not the same user we added a notification to
-      // the email for last time, this means we need to send out the previous user's email and start building a
-      // new email.
+      // This user is not the first user but we have detected that it is not
+      // the same user we added a notification to the email for last time, this
+      // means we need to send out the previous user's email and start building
+      // a new email.
       if ($notificationToSendEmailsFor['user_id'] != $previousUserId && $previousUserId !== 0) {
         if ($currentType !== '') {
           $emailContent .= "</tbody>\n</table>\n";
         }
-        send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl, $emailHighPriority);
+        send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config['address'],
+          $subscriptionSettingsPageUrl, $emailHighPriority);
         $emailHighPriority = FALSE;
-        // Used to mark the notifications in an email if an email send is successful, once email send attempt has been
-        // made we can reset the list ready for the next email.
+        // Used to mark the notifications in an email if an email send is
+        // successful, once email send attempt has been made we can reset the
+        // list ready for the next email.
         $notificationIds = array();
         $emailSentCounter++;
         // As we just sent out a an email, we can start building a new one.
@@ -214,7 +251,7 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
           }
           $emailContent .= "<table>\n<thead><tr>";
           foreach ($dataFieldsToOutput as $field => $caption) {
-            if (isset($record[$field])||$field==='query') {
+            if (isset($record[$field]) || $field === 'query') {
               $emailContent .= "<th>$caption</th>";
             }
           }
@@ -222,8 +259,8 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
         }
         $emailContent .= '<tr>';
         foreach ($dataFieldsToOutput as $field => $caption) {
-          $htmlToDisplay='';
-          if (isset($record[$field]) || $field==='query') {
+          $htmlToDisplay = '';
+          if (isset($record[$field]) || $field === 'query') {
             if ($field === 'username' && ($record[$field] === 'admin' || $record[$field] === 'system')) {
               $htmlToDisplay = $systemName;
             }
@@ -235,40 +272,49 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
               }
             }
             elseif ($field === 'occurrence_id') {
-              $htmlToDisplay = notificationEmailsHyperlinkId(
+              $htmlToDisplay = notification_emails_hyperlink_id(
                   $record[$field],
                   $notificationToSendEmailsFor['website_id']
               );
-            } elseif ($field === 'query') {
-              //Only allow commenting on occurrence records which have been queried
-              if ($notificationToSendEmailsFor['query']=='Q'&&!empty($record['occurrence_id'])) {
-                  $htmlToDisplay = recordCommentsHyperlinkId(
-                      $notificationToSendEmailsFor['user_id'],
-                      $record['occurrence_id']);
+            }
+            elseif ($field === 'query') {
+              // Only allow commenting on occurrence records which have been
+              // queried.
+              if ($notificationToSendEmailsFor['query'] === 'Q'&&!empty($record['occurrence_id'])) {
+                $htmlToDisplay = record_comments_hyperlink_id(
+                  $notificationToSendEmailsFor['user_id'],
+                  $record['occurrence_id']
+                );
               }
             }
-            if (empty($htmlToDisplay))
-              $htmlToDisplay=''; 
+            if (empty($htmlToDisplay)) {
+              $htmlToDisplay = '';
+            }
             $emailContent .= '<td style="padding-right: 1em;">' . $htmlToDisplay . '</td>';
           }
         }
         $emailContent .= '</tr>';
       }
-      //Log the notification id so we know that this will have to be set to email_sent in the database for the notification
+      // Log the notification id so we know that this will have to be set to
+      // email_sent in the database for the notification.
       $notificationIds[] = $notificationToSendEmailsFor['id'];
       // Update the user_id tracker as we cycle through the notifications.
       $previousUserId = $notificationToSendEmailsFor['user_id'];
     }
     if ($currentType !== '') {
       $emailContent .= "</tbody></table>\n";
-    } 
-    //if we have run out of notifications to send we will have finished going around the loop, so we just need to send out the last email whatever happens
-    send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config, $subscriptionSettingsPageUrl,$emailHighPriority);
+    }
+    // If we have run out of notifications to send we will have finished going
+    // around the loop, so we just need to send out the last email whatever
+    // happens.
+    send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config,
+      $subscriptionSettingsPageUrl, $emailHighPriority);
     $emailHighPriority = FALSE;
     $emailSentCounter++;
-    // Save the maximum notification id against the jobs we are going to run now, so we know that we have done the
-    // notifications up to that id and next time the jobs are run they only need to work with notifications later
-    // than that id.
+    // Save the maximum notification id against the jobs we are going to run
+    // now, so we know that we have done the notifications up to that id and
+    // next time the jobs are run they only need to work with notifications
+    // later than that id.
     // Also set the date/time the job was run.
     update_last_run_metadata($db, $frequenciesToRun);
     if ($emailSentCounter == 0) {
@@ -284,7 +330,9 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
 }
 
 /**
- * Converts a record ID into a hyperlink to the details page, if a suitable link provided in the configuration.
+ * Converts a record ID into a hyperlink to the details page.
+ *
+ * Only does the conversion if a suitable link provided in the configuration.
  *
  * @param int $id
  *   Record ID.
@@ -292,8 +340,9 @@ function runEmailNotificationJobs($db, array $frequenciesToRun) {
  *   Website the record came from.
  *
  * @return string
+ *   Hyperlink HTML.
  */
-function notificationEmailsHyperlinkId($id, $websiteId) {
+function notification_emails_hyperlink_id($id, $websiteId) {
   try {
     $recordDetailsPages = kohana::config('notification_emails.record_details_page_urls');
     // Handle config file not present.
@@ -304,7 +353,7 @@ function notificationEmailsHyperlinkId($id, $websiteId) {
   foreach ($recordDetailsPages as $page) {
     $found = $page['website_id'] == $websiteId;
     if (!$found) {
-      $ids = explode(',', notificationEmailsGetSharedWebsiteList($websiteId));
+      $ids = explode(',', notification_emails_get_shared_website_list($websiteId));
       $found = in_array($websiteId, $ids);
     }
     if ($found) {
@@ -315,7 +364,7 @@ function notificationEmailsHyperlinkId($id, $websiteId) {
   return $id;
 }
 
-function notificationEmailsGetSharedWebsiteList($websiteId) {
+function notification_emails_get_shared_website_list($websiteId) {
   $tag = "website-shares-$websiteId";
   $cacheId = "$tag-reporting";
   $cache = Cache::instance();
@@ -333,13 +382,16 @@ function notificationEmailsGetSharedWebsiteList($websiteId) {
     $ids[] = $row->to_website_id;
   }
   $r = implode(',', $ids);
-  // Tag all cache entries for this website so they can be cleared together when changes are saved.
+  // Tag all cache entries for this website so they can be cleared together
+  // when changes are saved.
   $cache->set($cacheId, $r, $tag);
   return $r;
 }
 
 /**
- * Creates a hyperlink to the comments page, if a suitable link provided in the configuration.
+ * Creates a hyperlink to the comments page.
+ *
+ * Only if a suitable link provided in the configuration.
  *
  * @param int $userId
  *   User ID.
@@ -347,29 +399,33 @@ function notificationEmailsGetSharedWebsiteList($websiteId) {
  *   Record occurrence Id.
  *
  * @return string
+ *   Hyperlink HTML.
  */
-function recordCommentsHyperlinkId($userId, $occurrenceId) {
+function record_comments_hyperlink_id($userId, $occurrenceId) {
   try {
     $recordCommentsPage = kohana::config('notification_emails.comment_page_url');
-    $warehouseUrl=kohana::config('notification_emails.warehouse_url');
+    $warehouseUrl = kohana::config('notification_emails.warehouse_url');
     // Handle config file not present.
   }
   catch (Exception $e) {
-    return null;
+    return NULL;
   }
-  $url=$recordCommentsPage.
-                  '?warehouse_url='.kohana::config('notification_emails.warehouse_url').
-                  '&user_id='.$userId.
-                  '&occurrence_id='.$occurrenceId; 
-  return "<a title=\"Comment on queried record $occurrenceId\" href=\"$url\">Comment here</a>";  
+  $url = "$recordCommentsPage?user_id=$userId&occurrence_id=$occurrenceId&warehouse_url=" .
+    kohana::config('notification_emails.warehouse_url');
+  return "<a title=\"Comment on queried record $occurrenceId\" href=\"$url\">Comment here</a>";
 }
 
-/*
- * Create the first part of the email to send (i.e. the part before the list of notifications itself)
+/**
+ * Create the first part of the email to send.
+ *
+ * Creates the email part before the list of notifications itself.
+ *
+ * @param array $notificationToSendEmailsFor
+ *   Notification data.
  */
-function start_building_new_email($notificationToSendEmailsFor) {
-  // How do we address the user at the start of the email e.g. Dear user, To user, How is your day going user?
-  // Get this from config if available.
+function start_building_new_email(array $notificationToSendEmailsFor) {
+  // How do we address the user at the start of the email e.g. Dear user,
+  // To user, How is your day going user? Get this from config if available.
   $defaultUserAddress = 'Dear';
   try {
     $emailContent = kohana::config('notification_emails.how_to_address_username');
@@ -401,9 +457,12 @@ function start_building_new_email($notificationToSendEmailsFor) {
   return $emailContent;
 }
 
-/*
- * Save the maximum notification id against the jobs we are running now, so we know that we have done the notifications up to that id and next time the jobs are run
- * they only need to work with notifications later than that id.
+/**
+ * Updates metadata relating to the last run.
+ *
+ * Save the maximum notification id against the jobs we are running now, so we
+ * know that we have done the notifications up to that id and next time the
+ * jobs are run they only need to work with notifications later than that id.
  * Also set the date/time the job was run.
  */
 function update_last_run_metadata($db, $frequenciesToUpdate) {
@@ -411,7 +470,8 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
     SELECT max(n.id) as new_max_notification_id
     FROM notifications n
   ")->result_array(FALSE);
-  // Cycle through the frequency jobs we are running this time as only these need updating.
+  // Cycle through the frequency jobs we are running this time as only these
+  // need updating.
   foreach ($frequenciesToUpdate as $frequencyToUpdate) {
     $updateData = $db->query("
       UPDATE user_email_notification_frequency_last_runs
@@ -421,16 +481,38 @@ function update_last_run_metadata($db, $frequenciesToUpdate) {
   }
 }
 
-/*
+/**
  * Actually send the email to the user.
+ *
+ * @param object $db
+ *   Database object.
+ * @param string $emailContent
+ *   Content to send in the email body.
+ * @param int $userId
+ *   User's warehouse ID.
+ * @param array $notificationIds
+ *   List of notification IDs.
+ * @param string $emailAddress
+ *   Email address to send to.
+ * @param string $subscriptionSettingsPageUrl
+ *   URL of the subscription settings page to include a link to.
+ * @param bool $highPriority
+ *   Flag set if the email should be high priority.
  */
-function send_out_user_email($db, $emailContent, $userId, $notificationIds, $email_config, $subscriptionSettingsPageUrl, $highPriority) {
+function send_out_user_email(
+    $db,
+    $emailContent,
+    $userId,
+    array $notificationIds,
+    $emailAddress,
+    $subscriptionSettingsPageUrl,
+    $highPriority) {
   $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
     url::base() . '">Click here to update your subscription settings.</a><br/><br/>';
   $cc = NULL;
   $swift = email::connect();
-  // Use a transaction to allow us to prevent the email sending and marking of notification as done
-  // getting out of step.
+  // Use a transaction to allow us to prevent the email sending and marking of
+  // notification as done getting out of step.
   try {
     // Get the user's email address from the people table.
     $userResults = $db
@@ -456,16 +538,18 @@ function send_out_user_email($db, $emailContent, $userId, $notificationIds, $ema
     try {
       $notificationsLinkUrl = kohana::config('notification_emails.notifications_page_url');
     }
-    // If there is a problem getting the link configuration, then do nothing at all, we can just ignore the link.
+    // If there is a problem getting the link configuration, then do nothing
+    // at all, we can just ignore the link.
     catch (exception $e) {
     }
     if (!empty($notificationsLinkUrl)) {
       try {
         $notificationsLinkText = kohana::config('notification_emails.notifications_page_url_text');
       }
-      // Leave variable as empty if exception, then the next "if" statement can pick up empty variable.
-      // This works better as it still works if the variable is empty but no exception has been generated
-      // (e.g an empty option has been provided by user).
+      // Leave variable as empty if exception, then the next "if" statement can
+      // pick up empty variable. This works better as it still works if the
+      // variable is empty but no exception has been generated (e.g an empty
+      // option has been provided by user).
       catch (exception $e) {
       }
       if (empty($notificationsLinkText)) {
@@ -473,22 +557,24 @@ function send_out_user_email($db, $emailContent, $userId, $notificationIds, $ema
       }
       $emailContent .= '<a href="' . $notificationsLinkUrl . '">' . $notificationsLinkText . '</a></br>';
     }
-    $message = new Swift_Message($emailSubject, $emailContent,
-                                 'text/html');
-    if ($highPriority=true)
+    $message = new Swift_Message($emailSubject, $emailContent, 'text/html');
+    if ($highPriority = TRUE) {
       $message->setPriority(2);
+    }
     $recipients = new Swift_RecipientList();
     $recipients->addTo($userResults[0]->email_address);
     // Send the email.
-    $swift->send($message, $recipients, $email_config['address']);
+    $swift->send($message, $recipients, $emailAddress);
     kohana::log('info', 'Email notification sent to ' . $userResults[0]->email_address);
-    // All notifications that have been sent out in an email are marked so we don't resend them.
+    // All notifications that have been sent out in an email are marked so we
+    // don't resend them.
     $db
       ->set('email_sent', 'true')
       ->from('notifications')
       ->in('id', $notificationIds)
       ->update();
-    // As Verifier Tasks, Pending Record Tasks need to be actioned, we don't auto acknowledge them.
+    // As Verifier Tasks, Pending Record Tasks need to be actioned, we don't
+    // auto acknowledge them.
     $db
       ->set('acknowledged', 't')
       ->from('notifications')
