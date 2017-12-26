@@ -131,7 +131,8 @@ LEFT JOIN user_email_notification_frequency_last_runs unflr ON unf.notification_
 SQL;
   if ($useWorkflowModule === TRUE) {
     $notificationsToSendEmailsForSql .= <<<SQL
--- If there is a species that needs sending immediately, make sure the task is a verification task and the user has a notification setting (although we don't care what the frequency is of the setting) and then
+-- If there is a species that needs sending immediately, make sure the task is a verification task and the user
+-- has a notification setting (although we don't care what the frequency is of the setting) and then
 -- if the current run is immediate/hourly then include the notification in the run
 LEFT JOIN workflow_metadata wm ON 'IH' IN ($frequencyToRunString)
   AND lower(wm.entity)='occurrence'
