@@ -18,9 +18,7 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
+warehouse::loadHelpers(['data_entry_helper']);
 ?>
 <form class="iform" action="<?php echo url::site(); ?>trigger_action/save" method="post">
 <fieldset>

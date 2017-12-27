@@ -21,9 +21,6 @@
 
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'websites_website_agreement:id');
-if (isset($_POST)) {
-  data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
-}
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 if ($this->auth->logged_in('CoreAdmin')) {
   $adminCase = "$('#div-'+field).attr('enabled',true);

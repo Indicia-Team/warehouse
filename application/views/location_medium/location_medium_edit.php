@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the location media edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,10 +22,8 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-warehouse::loadHelpers(['data_entry_helper', 'form_helper']);
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'location_medium:id');
-if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <p>This page allows you to specify the details of an location media file.</p>
 <form class="cmxform" action="<?php echo url::site().'location_medium/save'; ?>" method="post"

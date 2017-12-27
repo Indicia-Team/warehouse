@@ -31,13 +31,9 @@ $boundary_geom = html::initial_value($values, 'location:boundary_geom');
 $centroid_geom = html::initial_value($values, 'location:centroid_geom');
 warehouse::loadHelpers([
   'map_helper',
-  'data_entry_helper',
-  'form_helper',
+  'data_entry_helper'
 ]);
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-if (isset($_POST)) {
-  data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
-}
 ?>
 <script type="text/javascript">
 

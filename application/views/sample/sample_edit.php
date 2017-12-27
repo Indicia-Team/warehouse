@@ -20,8 +20,6 @@
  */
 warehouse::loadHelpers(['map_helper', 'data_entry_helper']);
 $id = html::initial_value($values, 'sample:id');
-if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
 ?>
 <form class="cmxform" action="<?php echo url::site() . 'sample/save' ?>" method="post" id="sample-edit">
 <?php echo $metadata; ?>

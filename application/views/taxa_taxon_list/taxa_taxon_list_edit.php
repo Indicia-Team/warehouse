@@ -26,8 +26,6 @@ echo html::script(array(
 
 warehouse::loadHelpers(['data_entry_helper', 'map_helper']);
 $id = html::initial_value($values, 'taxa_taxon_list:id');
-if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <script type="text/javascript" >
 $(document).ready(function() {

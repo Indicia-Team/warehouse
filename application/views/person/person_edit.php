@@ -20,8 +20,6 @@
  */
 
 warehouse::loadHelpers(['data_entry_helper']);
-if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <p>This page allows you to specify a persons details.</p>
 <form class="cmxform" action="<?php echo url::site().'person/save'; ?>" method="post">

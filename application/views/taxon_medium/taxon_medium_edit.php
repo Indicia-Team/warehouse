@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the taxon media edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,11 +22,8 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'taxon_medium:id');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-require_once(DOCROOT.'client_helpers/form_helper.php');
-if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <p>This page allows you to specify the details of an taxon media file.</p>
 <form class="cmxform" action="<?php echo url::site().'taxon_medium/save'; ?>" method="post"
