@@ -46,6 +46,14 @@
     <param name="workflow_overdue" display="Overdue records only" default="" datatype="boolean">
       <where>get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval</where>
     </param>
+    <param name="workflow_overdue_notification" display="Workflow overdue notification status" datatype="lookup"
+       default="" lookup_values="yes:Notification exists,no:Notification doesn't exist">
+      <joins>
+        <join value="yes" operator="equal">JOIN notifications n on n.linked_id=o.id AND n.source_type='VT'</join>
+        <join value="no" operator="equal">LEFT JOIN notifications n on n.linked_id=o.id AND n.source_type='VT'</join>
+      </joins>
+      <where value="no" operator="equal">n.id IS NULL</where>
+    </param>
   </params>
   <columns>
     <column name="occurrence_id" display="ID" sql="o.id" datatype="integer"
