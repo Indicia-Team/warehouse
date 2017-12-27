@@ -102,9 +102,13 @@ class Indicia_Controller extends Template_Controller {
         $menu['Lookup lists'] = [
           'Term lists' => 'termlist',
           'Locations' => 'location',
-          'Survey datasets' => 'survey',
           'People' => 'person'
         ];
+        if ($this->auth->logged_in('CoreAdmin')) {
+          $menu['Lookup lists']['Languages'] = 'language';
+          $menu['Lookup lists']['Licences'] = 'licence';
+          $menu['Lookup lists']['Titles'] = 'title';
+        }
       }
       if ($this->auth->has_any_website_access('admin') || $this->auth->logged_in('CoreAdmin')) {
         $menu['Custom attributes'] = [
@@ -129,8 +133,9 @@ class Indicia_Controller extends Template_Controller {
       }
       if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin')) {
         $menu['Observations data'] = [
-          'Occurrences' => 'occurrence',
+          'Survey datasets' => 'survey',
           'Samples' => 'sample',
+          'Occurrences' => 'occurrence',
           'Reports' => 'report'
         ];
       }
@@ -142,9 +147,6 @@ class Indicia_Controller extends Template_Controller {
       }
       if ($this->auth->logged_in('CoreAdmin')) {
         $menu['Admin']['Website agreements'] = 'website_agreement';
-        $menu['Admin']['Languages'] = 'language';
-        $menu['Admin']['Licences'] = 'licence';
-        $menu['Admin']['Titles'] = 'title';
       }
       $menu['Logged in as ' . $_SESSION['auth_user']->username] = [
         'Set new password' => 'new_password',
