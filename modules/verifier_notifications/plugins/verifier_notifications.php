@@ -17,12 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Verifier notifications
- * @subpackage Plugins
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link http://code.google.com/p/indicia/
  */
+
+/**
+ * Return plugin metadata for the verifier notificaitons module.
+ */
+function verifier_notifications_metadata() {
+  return [
+    'requires_occurrences_delta' => TRUE,
+    'always_run' => verifier_notifications_use_workflow_module(),
+  ];
+}
 
 /**
  * Scheduled task hook.
@@ -39,13 +47,6 @@
  * notifications to the mentor.
  */
 function verifier_notifications_scheduled_task($last_run_date, $db) {
-  try {
-    $modules = kohana::config('config.modules');
-    $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
-  }
-  catch (Exception $ex) {
-    $useWorkflowModule = FALSE;
-  }
   $params = array(
     'notificationSourceType' => 'PT',
     'notificationSource' => 'pending_record_check_notifications',
@@ -68,19 +69,54 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
     'multipleNotificationsCreatedMessage' => 'new verification notifications have been created.',
   );
   verifier_notifications_process_task_type('verification', $params, $db, FALSE);
-  if ($useWorkflowModule === TRUE) {
-    $params = array(
-      'notificationSourceType' => 'VT',
-      'notificationSource' => 'verification_overdue_notifications',
-      'notificationComment' => 'You have overdue records to verify.',
-      'sharingFilter' => 'V',
-      'sharingFilterFullName' => 'verification',
-      'noNotificationsCreatedMessage' => 'No overdue verification notifications have been created.',
-      'oneNotificationCreatedMessage' => 'overdue verification notification has been created.',
-      'multipleNotificationsCreatedMessage' => 'overdue verification notifications have been created.',
-    );
-    verifier_notifications_process_task_type('verification', $params, $db, TRUE);
+  if (verifier_notifications_use_workflow_module()) {
+    $config = kohana::config('workflow_groups', FALSE, FALSE);
+    if ($config) {
+      foreach (array_keys($config['groups']) as $group) {
+        verifier_notifications::processOverdueVerifications($db, $group, $last_run_date);
+      }
+    }
   }
+}
+
+/**
+ * Check if the workflow module enabled.
+ *
+ * @return bool
+ *   Returns true if the workflow module enabled.
+ */
+function verifier_notifications_use_workflow_module() {
+  try {
+    $modules = kohana::config('config.modules');
+    $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
+  }
+  catch (Exception $ex) {
+    $useWorkflowModule = FALSE;
+  }
+  return $useWorkflowModule;
+}
+
+/**
+ * Retrieves the configured list of URLs pointing to pages for a task type.
+ *
+ * @param string $type
+ *   Task type, e.g. verification.
+ *
+ * @return array
+ *   List of configured URLs.
+ */
+function verifier_notification_urls_for_task_type($type) {
+  try {
+    $urls = kohana::config("verifier_notifications.{$type}_urls");
+    if (!$urls) {
+      $urls = [];
+    }
+  }
+  catch (Exception $e) {
+    // Config file not present.
+    $urls = [];
+  }
+  return $urls;
 }
 
 /**
@@ -93,28 +129,22 @@ function verifier_notifications_scheduled_task($last_run_date, $db) {
  * @param object $db
  *   Database connection object.
  */
-function verifier_notifications_process_task_type($type, array $params, $db, $runOverdueCheckInstead) {
-  $urls = array();
-  try {
-    $urls = kohana::config("verifier_notifications.{$type}_urls");
-  }
-  catch (Exception $e) {
-    // Config file not present.
-  }
+function verifier_notifications_process_task_type($type, array $params, $db) {
+  $urls = verifier_notification_urls_for_task_type($type);
   // Loop through the known moderation/verification pages on each website.
   foreach ($urls as $url) {
     $params['website_id'] = $url['website_id'];
     $params['title'] = $url['title'];
     $params['url'] = $url['url'];
-    if (!empty($url['linkTitle'])) {
-      $params['notificationComment'] = $url['linkTitle'];
+    if (!empty($url['linkText'])) {
+      $params['notificationComment'] = $url['linkText'];
     }
     // Get all filters where the user for the filter does not already have an
-    // unacknowledged notification  of that type and the user is associated
+    // unacknowledged notification of that type and the user is associated
     // with the website of the moderation page.
     $filters = get_filters_without_existing_notification($db, $params);
     // Fire the notifications for records matching these filters.
-    loop_through_workflows_and_filters_and_create_notifications($db, $filters, $params, $runOverdueCheckInstead);
+    loop_through_workflows_and_filters_and_create_notifications($db, $filters, $params);
   }
 }
 
@@ -141,7 +171,7 @@ function get_filters_without_existing_notification($db, array $params) {
     ->join('users as u', 'u.id', 'fu.user_id')
     ->join('users_websites as uw', 'uw.user_id', 'u.id')
     ->join('notifications as n', "(n.user_id=fu.user_id and n.source_type='" . $params['notificationSourceType'] .
-      "' and n.source='" . $params['notificationSource'] . "'  and n.acknowledged=false)", '', 'LEFT')
+      "' and n.source='" . $params['notificationSource'] . "'  and n.acknowledged=false and n.linked_id is null)", '', 'LEFT')
     ->where(array(
       'f.sharing' => $params['sharingFilter'],
       'f.defines_permissions' => 't',
@@ -161,16 +191,8 @@ function get_filters_without_existing_notification($db, array $params) {
  * Cycle each filter and check if there if there is a notification that needs
  * creating.
  */
-function loop_through_workflows_and_filters_and_create_notifications($db, $filters, $params, $runOverdueCheckInstead) {
+function loop_through_workflows_and_filters_and_create_notifications($db, $filters, $params) {
   $forceHighPriorityEmail = FALSE;
-  // If workflow module is enabled then we also check for overdue verifications.
-  if ($runOverdueCheckInstead === TRUE) {
-    $recordReport = 'library/occurrences/overdue_occurrence_count';
-    $forceHighPriorityEmail = TRUE;
-  }
-  else {
-    $recordReport = 'library/occdelta/filterable_occdelta_count';
-  }
   $notificationCounter = 0;
   // Supply 1 as the user id to give the code maximum privileges. Also force
   // the main database connection to allow access to the temporary occdelta
@@ -207,7 +229,7 @@ function loop_through_workflows_and_filters_and_create_notifications($db, $filte
       if (!in_array($filter['user_id'], $alreadyCreatedNotifications)) {
         // Get the report data.
         // Use the filter as the params.
-        $reportOutput = $reportEngine->requestReport("$recordReport.xml", 'local', 'xml', $reportParams);
+        $reportOutput = $reportEngine->requestReport("library/occdelta/filterable_occdelta_count.xml", 'local', 'xml', $reportParams);
       }
       // If applicable records are returned then create notification.
       if (!empty($reportOutput) && $reportOutput['content']['records'][0]['count'] > 0) {
@@ -266,25 +288,4 @@ function save_notification($userId, array $params, $forceHighPriorityEmail) {
     $notificationObj->escalate_email_priority = 2;
   }
   $notificationObj->save();
-}
-
-/**
- * Return plugin metadata for the verifier notificaitons module.
- *
- * If we aren't using overdue occurrences then we only need to run task when
- * occdelta is populated (new or updated occurrences). If checking overdue
- * occurrences then it needs running anyway regardless of occdelta as
- * occurrence can become overdue without being updated.
- */
-function verifier_notifications_metadata() {
-  try {
-    $modules = kohana::config('config.modules');
-    $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
-  }
-  catch (Exception $e) {
-    $useWorkflowModule = FALSE;
-  }
-  return array(
-    'requires_occurrences_delta' => $useWorkflowModule === FALSE,
-  );
 }
