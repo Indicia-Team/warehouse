@@ -946,7 +946,7 @@ SQL;
                 }
               }
             }
-            elseif ($paramDefs[$name]['datatype'] === 'date' && preg_match('/\d{4}$/', $value)) {
+            elseif ($paramDefs[$name]['datatype'] === 'date' && preg_match('/^\d\d?[\/\-]\d\d?[\/\-]\d{4}$/', $value)) {
               // Force ISO date for SQL safety.
               // @todo This needs further work for i18n if non-European.
               $date = DateTime::createFromFormat('d/m/Y', $value);
@@ -962,6 +962,9 @@ SQL;
               $prequery = str_replace("#$name#", $value, $paramDefs[$name]['preprocess']);
               $output = $this->reportDb->query($prequery)->result_array(FALSE);
               $value = implode(',', $output[0]);
+              if (empty($value)) {
+                $value = "''";
+              }
             }
             $query = preg_replace("/#$name#/", $value, $query);
           }
