@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the workflow events index page.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,22 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Modules
- * @subpackage Workflow
- * @author     Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link       https://github.com/Indicia-Team/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/
  */
- 
- 
+
 echo $grid;
 ?>
-<form action="<?php echo url::site().'workflow_event/create'; ?>" method="post">
+<form action="<?php echo url::site() . 'workflow_event/create'; ?>" method="post">
   <input type="submit" value="New Workflow event" class="ui-corner-all ui-state-default button" />
 </form>
 <?php
-$systemTableEntries = $this->db->select('*')->from('system')->where('name','workflow')->get()->as_array(true);
-foreach($systemTableEntries as $systemTableEntry) {
-  echo 'Workflow module version : '.$systemTableEntry->version.'<span style="display:none;">ID '.$systemTableEntry->id.", last script : ".$systemTableEntry->last_run_script."</span><br>";
+$systemTableEntries = $this->db->select('*')->from('system')->where('name', 'workflow')->get()->as_array(TRUE);
+foreach ($systemTableEntries as $systemTableEntry) {
+  echo 'Workflow module version : ' . $systemTableEntry->version .
+    '<span style="display:none;">' .
+    "ID $systemTableEntry->id, last script: $systemTableEntry->last_run_script" .
+    '</span><br>';
 }
-?>
