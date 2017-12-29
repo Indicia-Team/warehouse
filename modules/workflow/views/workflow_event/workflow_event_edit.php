@@ -80,9 +80,10 @@ if (isset($_POST)) {
       'validation' => array('required'),
     ));
     echo data_entry_helper::checkbox(array(
-      'label' => 'Mimic Rewind first',
+      'label' => 'Rewind record state first',
       'fieldname' => 'workflow_event:mimic_rewind_first',
       'default' => html::initial_value($values, 'workflow_event:mimic_rewind_first'),
+      'helpText' => 'Rest the record to its initial state as provided by the recorder before applying the changes.'
     ));
     echo data_entry_helper::jsonwidget(array(
       'fieldname' => 'workflow_event:values',
