@@ -28,6 +28,7 @@ require_once DOCROOT . 'client_helpers/data_entry_helper.php';
 if (isset($_POST)) {
   data_entry_helper::dump_errors(array('errors' => $this->model->getAllErrors()));
 }
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <form action="<?php echo url::site(); ?>workflow_event/save" method="post" id="entry-form">
   <fieldset>
@@ -39,18 +40,68 @@ if (isset($_POST)) {
       'fieldname' => 'workflow_event:id',
       'default' => html::initial_value($values, 'workflow_event:id'),
     ));
-    echo data_entry_helper::select(array(
-      'label' => 'Workflow group',
-      'fieldname' => 'workflow_event:group_code',
-      'lookupValues' => $other_data['groupSelectItems'],
-      'default' => html::initial_value($values, 'workflow_event:group_code'),
-      'validation' => array('required'),
+    $messages = [];
+    // Where controls have no choice available, show a message instead.
+    if (count($other_data['groupSelectItems']) === 1) {
+      $group = array_keys($other_data['groupSelectItems'])[0];
+      echo data_entry_helper::hidden_text(array(
+        'fieldname' => 'workflow_event:group_code',
+        'default' => $group,
+      ));
+      $messages[] = "associated with $group";
+    }
+    if (count($other_data['entitySelectItems']) === 1) {
+      $entity = array_keys($other_data['entitySelectItems'])[0];
+      echo data_entry_helper::hidden_text(array(
+        'fieldname' => 'workflow_event:entity',
+        'default' => $entity,
+      ));
+      $messages[] = "for changes to " . inflector::plural($entity);
+    }
+    if (count($messages)) {
+      echo '<p>This event will be ' . implode(' ', $messages) . '.</p>';
+    }
+    if (count($other_data['groupSelectItems']) !== 1) {
+      echo data_entry_helper::select(array(
+        'label' => 'Workflow group',
+        'fieldname' => 'workflow_event:group_code',
+        'lookupValues' => $other_data['groupSelectItems'],
+        'default' => html::initial_value($values, 'workflow_event:group_code'),
+        'validation' => array('required'),
+      ));
+    }
+    if (count($other_data['entitySelectItems']) !== 1) {
+      echo data_entry_helper::select(array(
+        'label' => 'Entity',
+        'fieldname' => 'workflow_event:entity',
+        'lookupValues' => $other_data['entitySelectItems'],
+        'default' => html::initial_value($values, 'workflow_event:entity'),
+        'validation' => array('required'),
+      ));
+    }
+    echo data_entry_helper::hidden_text(array(
+      'fieldname' => 'old_workflow_event_key',
+      'default' => html::initial_value($values, 'workflow_event:key'),
     ));
     echo data_entry_helper::select(array(
-      'label' => 'Entity',
-      'fieldname' => 'workflow_event:entity',
-      'lookupValues' => $other_data['entitySelectItems'],
-      'default' => html::initial_value($values, 'workflow_event:entity'),
+      'label' => 'Key',
+      'fieldname' => 'workflow_event:key',
+      'lookupValues' => array(),
+      'validation' => array('required'),
+    ));
+    // Code currently assumes only taxa_taxon_list_external_key possible in the key options.
+    $params = $readAuth;
+    if ($listId = Kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE)) {
+      $params += array('taxon_list_id' => $listId);
+    }
+    echo data_entry_helper::species_autocomplete(array(
+      'label' => 'Linked taxon',
+      'fieldname' => 'workflow_event:key_value',
+      'valueField' => 'external_key',
+      'default' => html::initial_value($values, 'workflow_event:key_value'),
+      'speciesIncludeBothNames' => TRUE,
+      'speciesIncludeTaxonGroup' => TRUE,
+      'extraParams' => $params,
       'validation' => array('required'),
     ));
     echo data_entry_helper::hidden_text(array(
@@ -63,27 +114,11 @@ if (isset($_POST)) {
       'lookupValues' => array(),
       'validation' => array('required'),
     ));
-    echo data_entry_helper::hidden_text(array(
-      'fieldname' => 'old_workflow_event_key',
-      'default' => html::initial_value($values, 'workflow_event:key'),
-    ));
-    echo data_entry_helper::select(array(
-      'label' => 'Key',
-      'fieldname' => 'workflow_event:key',
-      'lookupValues' => array(),
-      'validation' => array('required'),
-    ));
-    echo data_entry_helper::text_input(array(
-      'label' => 'Key Value',
-      'fieldname' => 'workflow_event:key_value',
-      'default' => html::initial_value($values, 'workflow_event:key_value'),
-      'validation' => array('required'),
-    ));
     echo data_entry_helper::checkbox(array(
       'label' => 'Rewind record state first',
       'fieldname' => 'workflow_event:mimic_rewind_first',
       'default' => html::initial_value($values, 'workflow_event:mimic_rewind_first'),
-      'helpText' => 'Rest the record to its initial state as provided by the recorder before applying the changes.'
+      'helpText' => 'Reset the record to its initial state before applying the changes below.',
     ));
     echo data_entry_helper::jsonwidget(array(
       'fieldname' => 'workflow_event:values',
@@ -122,11 +157,16 @@ if (isset($_POST)) {
           if(previous_value === null || previous_value==="")
             previous_value = $("#old_workflow_event_key").val();
           $("#workflow_event\\:key option").remove();
-          for(var i = 0; i< entityKeys.length; i++) {
-            if(entityKeys[i] === $("#workflow_event\\:entity").val()) {
-              for(var j = 0; j< entities[entityKeys[i]].keys.length; j++) {
+          for (var i = 0; i< entityKeys.length; i++) {
+            if (entityKeys[i] === $("#workflow_event\\:entity").val()) {
+              for (var j = 0; j< entities[entityKeys[i]].keys.length; j++) {
                 $("#workflow_event\\:key").append('<option value="'+entities[entityKeys[i]].keys[j].db_store_value+
                     '">'+entities[entityKeys[i]].keys[j].title+'</option>');
+              }
+              if (entities[entityKeys[i]].keys.length === 1) {
+                $('#ctrl-wrap-workflow_event-key').hide();
+              } else {
+                $('#ctrl-wrap-workflow_event-key').show();
               }
             }
           }
