@@ -95,10 +95,13 @@ function notify_verifications_and_comments_scheduled_task($last_run_date) {
     else {
       if ($notification->auto_generated === 't' && substr($notification->generated_by, 0, 12) === 'data_cleaner'
           && $notification->record_owner === 't') {
-        $comment = "The following message was attached to your record of $notification->taxon at $notification->public_entered_sref on $date " .
-            "when it was checked using the <a target=\"_blank\" href=\"http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner.aspx\" target=\"_blank\">" .
-            "NBN Record Cleaner</a>. This does not mean the record is incorrect or is being disputed; the information below is merely a flag against the record that " .
-            "might provide useful information for recording and verification purposes.";
+        $comment = <<<TXT
+The following message was attached to your record of $notification->taxon at $notification->public_entered_sref on $date
+when it was checked using the
+<a target="_blank" href="http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner.aspx"> NBN Record
+Cleaner</a>. This does not mean the record is incorrect or is being disputed; the information below is merely a flag
+against the record that might provide useful information for recording and verification purposes.
+TXT;
       }
       elseif ($notification->verified_on > $last_run_date && $notification->record_status !== 'I'
           && $notification->record_status !== 'T' && $notification->record_status !== 'C') {
@@ -106,14 +109,16 @@ function notify_verifications_and_comments_scheduled_task($last_run_date) {
           $comment = "Your record of $notification->taxon at $notification->public_entered_sref on $date was examined by an expert.";
         }
         else {
-          $comment = "A record of $notification->taxon at $notification->public_entered_sref on $date which you'd previously commented on was examined by an expert.";
+          $comment = "A record of $notification->taxon at $notification->public_entered_sref on $date which you'd " .
+            "previously commented on was examined by an expert.";
         }
       }
       elseif ($notification->record_owner === 't') {
         $comment = "A comment was added to your record of $notification->taxon at $notification->public_entered_sref on $date.";
       }
       else {
-        $comment = "A reply was added to the record of $notification->taxon at $notification->public_entered_sref on $date which you've previously commented on.";
+        $comment = "A reply was added to the record of $notification->taxon at $notification->public_entered_sref " .
+          "on $date which you've previously commented on.";
       }
       $comment .= "<br/><em>$notification->comment</em>";
     }
