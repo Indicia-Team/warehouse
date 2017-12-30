@@ -34,6 +34,7 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
       'entity' => 'Entity',
       'key' => 'Key',
       'key_value' => 'Key value',
+      'label' => 'Label',
     );
     $this->pagetitle = 'Workflow module metadata specification';
   }

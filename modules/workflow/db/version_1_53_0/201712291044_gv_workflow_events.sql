@@ -15,7 +15,7 @@ CREATE OR REPLACE VIEW gv_workflow_events AS
 }', ''), '":"', '='), '",
   "', '; ') as values,
    we.group_code,
-   cttl.preferred_taxon
+   cttl.preferred_taxon as label
   FROM workflow_events we
-  LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.external_key = key_value
+  LEFT JOIN cache_taxa_taxon_lists cttl ON cttl.external_key = we.key_value AND we.key='taxa_taxon_list_external_key'
   WHERE we.deleted = false;
