@@ -43,6 +43,7 @@ class verifier_notifications {
    */
   public static function processOverdueVerifications($db, $workflowGroup, $lastRunDate) {
     $urls = verifier_notification_urls_for_task_type('verification');
+    $occurrencesDoneForUser = [];
     // Loop through the known moderation/verification pages on each website.
     foreach ($urls as $url) {
       $reportEngine = new ReportEngine([$url['website_id']], 1, $db);
@@ -64,12 +65,22 @@ FROM cache_occurrences_functional co
 WHERE co.id IN ($occurrenceIdList);
 SQL;
         $db->query($sql);
-        // Run all filters against occdelta_overdue and generate notifications for the output.
+        // Run all filters against occdelta_overdue and generate notifications
+        // for the output.
         foreach ($filters as $filter) {
           $reportParams = json_decode($filter['definition'], TRUE);
           $reportOutput = $reportEngine->requestReport(
             "library/occdelta_overdue/filterable_explore_list.xml", 'local', 'xml', $reportParams);
           foreach ($reportOutput['content']['records'] as $overdueRecordToNotify) {
+            if (in_array("$overdueRecordToNotify[occurrence_id]:$filter[user_id]", $occurrencesDoneForUser)) {
+              // Can skip this notification - the user probably has overlapping
+              // verification filters.
+              continue;
+            }
+            else {
+              // Remember we've done this one.
+              $occurrencesDoneForUser[] = "$overdueRecordToNotify[occurrence_id]:$filter[user_id]";
+            }
             // Save the new notification.
             $notificationObj = ORM::factory('notification');
             $notificationObj->source = 'verification_overdue_notifications';
@@ -138,10 +149,14 @@ SQL;
   private static function getAllOverdueRecordsForWebsite($reportEngine, $workflowGroup, $lastRunDate) {
     // Get all new overdue records for website_id (+shared) into occdelta that
     // aren't already notified.
-    $reportParams['workflow_overdue'] = '1';
-    $reportParams['workflow_overdue_notification'] = 'no';
-    $reportParams['workflow_group_code'] = $workflowGroup;
-    $reportParams['edited_date_from'] = $lastRunDate;
+    $reportParams = [
+      'workflow_overdue' => '1',
+      'workflow_overdue_notification' => 'no',
+      'workflow_group_code' => $workflowGroup,
+      'edited_date_from' => $lastRunDate,
+      'confidential' => 'all',
+      'release_status' => 'A',
+    ];
     $reportOutput = $reportEngine->requestReport(
       "library/occurrences/filterable_explore_list_workflow.xml", 'local', 'xml', $reportParams);
     return $reportOutput['content']['records'];
