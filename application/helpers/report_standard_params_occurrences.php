@@ -781,6 +781,28 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'taxa_taxon_list_attribute_ids' => [
+        'datatype' => 'integer[]',
+        'display' => 'Taxon attribute IDs',
+        'description' => 'List of taxa_taxon_list_attribute_ids that will be searched for terms when using the ' .
+          'taxa_taxon_list_attribute_terms_ids parameter.',
+      ],
+      'taxa_taxon_list_attribute_termlist_term_ids' => [
+        'datatype' => 'integer[]',
+        'display' => 'Taxon attribute term IDs',
+        'description' => 'List of termlist_term_ids that must be linked to the taxa returned by the report as taxa ' .
+          'taxon list attributes. Use in conjunction with taxa_taxon_list_attribute_ids.',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => 'join taxa_taxon_list_attribute_values ttl_attribute_terms ' .
+              'on ttl_attribute_terms.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id ' .
+              'and ttl_attribute_terms.taxa_taxon_list_attribute_id in (#taxa_taxon_list_attribute_ids#) ' .
+              'and ttl_attribute_terms.int_value in (#taxa_taxon_list_attribute_termlist_term_ids#)',
+          ],
+        ],
+      ],
     ];
   }
 
