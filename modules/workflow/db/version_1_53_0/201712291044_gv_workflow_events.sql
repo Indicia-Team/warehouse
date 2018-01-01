@@ -1,4 +1,6 @@
-CREATE OR REPLACE VIEW gv_workflow_events AS
+DROP VIEW gv_workflow_events;
+
+CREATE VIEW gv_workflow_events AS
  SELECT DISTINCT ON (we.id) we.id, we.entity,
    case we.event_type
      when 'S' THEN 'Initially set as workflow tracked record'
