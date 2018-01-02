@@ -26,73 +26,66 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'sample_medium:id');
 ?>
 <p>This page allows you to specify the details of an sample media file.</p>
-<form class="cmxform" action="<?php echo url::site().'sample_medium/save'; ?>" method="post"
+<form action="<?php echo url::site() . 'sample_medium/save'; ?>" method="post"
       enctype="multipart/form-data" id="sample-medium-edit">
-<?php echo $metadata; ?>
-<fieldset>
-<?php
-echo data_entry_helper::hidden_text(array(
-  'fieldname'=>'sample_medium:id',
-  'default'=>$id
-));
-echo data_entry_helper::hidden_text(array(
-  'fieldname'=>'sample_medium:sample_id',
-  'default'=>html::initial_value($values, 'sample_medium:sample_id')
-));
-?>
-<legend>Media file details</legend>
-<?php
-$mediaTypeId=html::initial_value($values, 'sample_medium:media_type_id');
-$mediaType = $mediaTypeId ? $other_data['media_type_terms'][$mediaTypeId] : 'Image:Local';
-if ($mediaType==='Image:Local') {
-  if (html::initial_value($values, 'sample_medium:path')) {
-    echo '<label>Image:</label>';
-    echo html::sized_image(html::initial_value($values, 'sample_medium:path')) . '</br>';
-  }
-  echo data_entry_helper::hidden_text(array(
-    'fieldname'=>'sample_medium:path',
-    'default'=>html::initial_value($values, 'sample_medium:path')
-  ));
-  echo data_entry_helper::image_upload(array(
-    'label'=>'Upload image file',
-    'fieldname'=>'image_upload',
-    'default'=>html::initial_value($values, 'sample_medium:path')
-  ));
-} else {
-  echo data_entry_helper::text_input(array(
-    'label'=>'Path or URL',
-    'fieldname'=>'sample_medium:path',
-    'default'=>html::initial_value($values, 'sample_medium:path'),
-    'class' => 'control-width-5'
-  ));
-}
+  <fieldset>
+    <legend>Media file details<?php echo $metadata; ?></legend>
+    <?php
+    echo data_entry_helper::hidden_text([
+      'fieldname' => 'sample_medium:id',
+      'default' => $id,
+    ]);
+    echo data_entry_helper::hidden_text([
+      'fieldname' => 'sample_medium:sample_id',
+      'default' => html::initial_value($values, 'sample_medium:sample_id'),
+    ]);
+    $mediaTypeId = html::initial_value($values, 'sample_medium:media_type_id');
+    $mediaType = $mediaTypeId ? $other_data['media_type_terms'][$mediaTypeId] : 'Image:Local';
+    if ($mediaType === 'Image:Local') {
+      if (html::initial_value($values, 'sample_medium:path')) {
+        echo '<label>Image:</label>';
+        echo html::sized_image(html::initial_value($values, 'sample_medium:path')) . '</br>';
+      }
+      echo data_entry_helper::hidden_text([
+        'fieldname' => 'sample_medium:path',
+        'default' => html::initial_value($values, 'sample_medium:path'),
+      ]);
+      echo data_entry_helper::image_upload([
+        'label' => 'Upload image file',
+        'fieldname' => 'image_upload',
+        'default' => html::initial_value($values, 'sample_medium:path'),
+      ]);
+    }
+    else {
+      echo data_entry_helper::text_input([
+        'label' => 'Path or URL',
+        'fieldname' => 'sample_medium:path',
+        'default' => html::initial_value($values, 'sample_medium:path'),
+        'class' => 'control-width-5',
+      ]);
+    }
+    echo data_entry_helper::text_input([
+      'label' => 'Caption',
+      'fieldname' => 'sample_medium:caption',
+      'default' => html::initial_value($values, 'sample_medium:caption'),
+      'class' => 'control-width-5',
+    ]);
+    if ($mediaTypeId && $mediaType !== 'Image:Local') {
+      echo data_entry_helper::select([
+        'label' => 'Media type',
+        'fieldname' => 'sample_medium:media_type_id',
+        'default' => $mediaTypeId,
+        'lookupValues' => $other_data['media_type_terms'],
+        'blankText' => '<Please select>',
+        'class' => 'control-width-5',
+      ]);
+    }
+    ?>
 
-echo data_entry_helper::text_input(array(
-  'label'=>'Caption',
-  'fieldname'=>'sample_medium:caption',
-  'default'=>html::initial_value($values, 'sample_medium:caption'),
-  'class' => 'control-width-5'
-));
-if ($mediaTypeId && $mediaType!=='Image:Local') {
-  echo data_entry_helper::select(array(
-    'label' => 'Media type',
-    'fieldname' => 'sample_medium:media_type_id',
-    'default' => $mediaTypeId,
-    'lookupValues' => $other_data['media_type_terms'],
-    'blankText' => '<Please select>',
-    'class' => 'control-width-5'
-  ));
-}
-?>
-
-</fieldset>
-<?php
-echo html::form_buttons($id!=null, false, false);
-data_entry_helper::$dumped_resources[] = 'jquery';
-data_entry_helper::$dumped_resources[] = 'jquery_ui';
-data_entry_helper::$dumped_resources[] = 'fancybox';
-data_entry_helper::enable_validation('sample-medium-edit');
-data_entry_helper::link_default_stylesheet();
-echo data_entry_helper::dump_javascript();
-?>
+  </fieldset>
+  <?php
+  echo html::form_buttons($id !== NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('sample-medium-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
