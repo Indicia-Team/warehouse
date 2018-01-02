@@ -308,7 +308,7 @@ SQL;
     // If we have run out of notifications to send we will have finished going
     // around the loop, so we just need to send out the last email whatever
     // happens.
-    send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config,
+    send_out_user_email($db, $emailContent, $previousUserId, $notificationIds, $email_config['address'],
       $subscriptionSettingsPageUrl, $emailHighPriority);
     $emailHighPriority = FALSE;
     $emailSentCounter++;
