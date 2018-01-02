@@ -504,9 +504,13 @@ class report_standard_params_occurrences {
         'display' => 'Release status',
         'description' => 'Release status of the record',
         'lookup_values' =>
-          'R:Released,RM:Released by other recorders plus my own unreleased records;' .
-          'U:Unreleased because part of a project that has not yet released the records,' .
-          'P:Recorder has requested a precheck before release,A:All',
+          'R:Released,' .
+          'RM:Released by other recorders plus my own unreleased records;' .
+          'U:Unreleased because records belong of a project that has not yet released the records,' .
+          'RU:Released plus unreleased because records belong to a project that has not yet released the records,' .
+          'P:Recorder has requested a precheck before release,' .
+          'RP:Released plus records where recorder has requested a precheck before release,' .
+          'A:All',
         'wheres' => [
           [
             'value' => 'R',
@@ -519,9 +523,19 @@ class report_standard_params_occurrences {
             'sql' => "o.release_status='U'",
           ],
           [
+            'value' => 'RU',
+            'operator' => 'equal',
+            'sql' => "o.release_status in ('R','U')",
+          ],
+          [
             'value' => 'P',
             'operator' => 'equal',
             'sql' => "o.release_status='P'",
+          ],
+          [
+            'value' => 'RP',
+            'operator' => 'equal',
+            'sql' => "o.release_status in ('R','P')",
           ],
           [
             'value' => 'RM',
