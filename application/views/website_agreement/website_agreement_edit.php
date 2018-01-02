@@ -25,22 +25,22 @@
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'website_agreement:id');
 ?>
-<form class="cmxform" action="<?php echo url::site() . 'website_agreement/save' ?>" method="post" id="website-agreement-edit">
+<form action="<?php echo url::site() . 'website_agreement/save' ?>" method="post" id="website-agreement-edit">
   <fieldset>
-    <input type="hidden" name="website_agreement:id" value="<?php echo html::initial_value($values, 'website_agreement:id'); ?>" />
     <legend>Website Agreement Details<?php echo $metadata; ?></legend>
+    <input type="hidden" name="website_agreement:id" value="<?php echo html::initial_value($values, 'website_agreement:id'); ?>" />
     <?php
     echo data_entry_helper::text_input([
       'label' => 'Agreement title',
       'helpText' => 'Enter the title of the agreement',
       'fieldname' => 'website_agreement:title',
-      'default' => html::initial_value($values, 'website_agreement:title')
+      'default' => html::initial_value($values, 'website_agreement:title'),
     ]);
     echo data_entry_helper::textarea([
       'label' => 'Description',
       'helpText' => 'Enter an optional description of the agreement',
       'fieldname' => 'website_agreement:description',
-      'default' => html::initial_value($values, 'website_agreement:description')
+      'default' => html::initial_value($values, 'website_agreement:description'),
     ]);
     echo data_entry_helper::select([
       'label' => 'Providing data for reporting',
