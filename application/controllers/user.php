@@ -28,19 +28,20 @@ class User_Controller extends Gridview_Base_Controller {
     parent::__construct('user');
     $this->pagetitle = "Users";
     $this->model = new User_Model();
-    // use a report to load the users list so the parameters can be more complex
+    // Use a report to load the users list so the parameters can be more complex.
     $this->gridReport = 'library/users/users_list';
     $this->base_filter = array('include_unlinked_people' => '1');
     // apply permissions for the users you can administer
-    if (!$this->auth->logged_in('CoreAdmin'))
+    if (!$this->auth->logged_in('CoreAdmin')) {
       $this->auth_filter = array('field' => 'admin_user_id', 'values' => $_SESSION['auth_user']->id);
+    }
   }
 
   /**
    * Override the default page action (which loads the main grid of users) to add notes to the page as
    * a flash.
    */
-  public function page($page_no, $filter=null) {
+  public function page($page_no, $filter = NULL) {
     parent::page($page_no, $filter);
   }
 
@@ -48,24 +49,23 @@ class User_Controller extends Gridview_Base_Controller {
    * Override the default action columns so we get Edit User, Edit Person and Send Forgotten Pwd Email links.
    */
   protected function get_action_columns() {
-    return array(
-      array(
-        'caption'=>'Edit user details',
-        'url'=>'user/edit_from_person/{person_id}'
-      ),
-      array(
-        'caption'=>'Edit person details',
-        'url'=>'person/edit_from_user/{person_id}'
-      ),
-      array(
-        'caption'=>'Send forgotten password email',
-        'url'=>'forgotten_password/send_from_user/{person_id}'
-      )
-    );
+    return [
+      [
+        'caption' => 'Edit user details',
+        'url' => 'user/edit_from_person/{person_id}',
+      ],
+      [
+        'caption' => 'Edit person details',
+        'url' => 'person/edit_from_user/{person_id}',
+      ],
+      [
+        'caption' => 'Send forgotten password email',
+        'url' => 'forgotten_password/send_from_user/{person_id}',
+      ]
+    ];
   }
 
-  protected function password_fields($password = '', $password2 = '')
-  {
+  protected function password_fields($password = '', $password2 = '') {
     return '<li><label for="password">Password</label><input id="password" name="password" value="'.html::specialchars($password).'" />' .
         html::error_message($this->model->getError('password')) .
         '</li><li><label for="password">Repeat Password</label><input id="password2" name="password2" value="'.html::specialchars($password2).'" /></li>';
@@ -82,94 +82,99 @@ class User_Controller extends Gridview_Base_Controller {
    */
   public function edit_from_person($id) {
     $allowedPersonIds = $this->getAllowedPersonIds();
-    if (!is_null($id) && $allowedPersonIds!==true && !in_array($id, $allowedPersonIds)) {
+    if (!is_null($id) && $allowedPersonIds !== TRUE && !in_array($id, $allowedPersonIds)) {
       $this->access_denied();
       return;
     }
-    $this->model = new User_Model(array('person_id' => $id, 'deleted'=>'f'));
+    $this->model = new User_Model(array('person_id' => $id, 'deleted' => 'f'));
+    $values = $this->getModelValues();
     $websites = ORM::Factory('website')->in_allowed_websites()->find_all();
-    if ( $this->model->loaded ) {
+    if ($this->model->loaded) {
       $this->setView('user/user_edit', 'User', array('password_field' => ''));
       foreach ($websites as $website) {
         $users_website = ORM::factory('users_website', array('user_id' => $this->model->id, 'website_id' => $website->id));
-        $this->model->users_websites[$website->id]=
-            array(
-              'id' => $website->id
-              ,'name' => 'website_'.$website->id
-              ,'title' => $website->title
-              ,'value' => ($users_website->loaded ? $users_website->site_role_id : null)
-              );
+        $this->model->users_websites[$website->id] = [
+          'id' => $website->id,
+          'name' => 'website_' . $website->id,
+          'title' => $website->title,
+          'value' => ($users_website->loaded ? $users_website->site_role_id : NULL)
+        ];
       }
-    } else {
-      // new user
+    }
+    else {
+      // New user.
       $login_config = Kohana::config('login');
       $person = ORM::factory('person', $id);
-       if ($person->email_address == null)
-          {
-           $this->setError('Invocation error: missing email address', 'You cannot create user details for a person who has no email_address');
-          }
-      else
-      {
+      if ($person->email_address == NULL) {
+        $this->setError('Invocation error: missing email address', 'You cannot create user details for a person who has no email_address');
+      }
+      else {
         $this->setView('user/user_edit', 'User',
           array('password_field' => $this->password_fields($login_config['default_password'], $login_config['default_password'])));
         $this->template->content->model->person_id = $id;
         $this->template->content->model->username = $this->new_username($person);
-        foreach ($websites as $website)
-          $this->model->users_websites[$website->id]=
-              array(
-                'id' => $website->id
-                ,'name' => 'website_'.$website->id
-                ,'title' => $website->title
-                ,'value' => null
-                );
+        foreach ($websites as $website) {
+          $this->model->users_websites[$website->id] = [
+            'id' => $website->id,
+            'name' => 'website_' . $website->id,
+            'title' => $website->title,
+            'value' => NULL,
+          ];
+        }
       }
     }
+    $this->template->content->values = $values;
     $this->defineEditBreadcrumbs();
   }
 
-  protected function new_username($person)
-  {
-    $minlen=5;
-    $inc=1;
-    if($person->first_name=='')
+  protected function new_username($person) {
+    $minlen = 5;
+    $inc = 1;
+    if ($person->first_name == '') {
       $base_username = $person->surname;
-    else
-      $base_username = $person->first_name.'_'.$person->surname;
-    $base_username = strtolower(preg_replace("/[^A-Za-z]/", "_", $base_username));
-    if(strlen($base_username) < $minlen)
-      $username = sprintf($base_username.'%0'.($minlen-strlen($base_username)).'d', $inc++);
+    }
     else {
-      $inc++; // numbers bolted on start at 2 on purpose.
+      $base_username = $person->first_name . '_' . $person->surname;
+    }
+    $base_username = strtolower(preg_replace("/[^A-Za-z]/", "_", $base_username));
+    if (strlen($base_username) < $minlen) {
+      $username = sprintf($base_username . '%0' . ($minlen - strlen($base_username)) . 'd', $inc++);
+    }
+    else {
+      // Numbers bolted on start at 2 on purpose.
+      $inc++;
       $username = $base_username;
     }
-    // check for uniqueness
-    while(ORM::factory('user', array('username'=>$username))->loaded){
-      if(strlen($base_username) < $minlen)
-        $username = sprintf($base_username.'%0'.($minlen-strlen($base_username)).'d', $inc++);
-      else
-        $username = sprintf($base_username.'%d', $inc++);
+    // Check for uniqueness.
+    while (ORM::factory('user', array('username' => $username))->loaded) {
+      if (strlen($base_username) < $minlen) {
+        $username = sprintf($base_username . '%0' . ($minlen - strlen($base_username)) . 'd', $inc++);
+      }
+      else {
+        $username = sprintf($base_username . '%d', $inc++);
+      }
     }
     return $username;
   }
 
   protected function show_submit_fail() {
-    $page_error=$this->model->getError('general');
+    $page_error = $this->model->getError('general');
     if ($page_error) {
       $this->session->set_flash('flash_error', $page_error);
     }
     $this->setView('user/user_edit', 'User',
         array('password_field' => array_key_exists('password', $_POST) ? $this->password_fields($_POST['password'], $_POST['password2']) : ''));
 
-    // copy the values of the websites into the users_websites array
+    // Copy the values of the websites into the users_websites array.
     $websites = ORM::Factory('website')->in_allowed_websites()->find_all();
     foreach ($websites as $website) {
-      if (isset($_POST['website_'.$website->id])) {
-        $this->model->users_websites[$website->id]=
-          array('id' => $website->id
-            ,'name' => 'website_'.$website->id
-            ,'title' => $website->title
-            ,'value' => (is_numeric($_POST['website_'.$website->id]) ? $_POST['website_'.$website->id] : NULL)
-          );
+      if (isset($_POST['website_' . $website->id])) {
+        $this->model->users_websites[$website->id] = [
+          'id' => $website->id,
+          'name' => 'website_' . $website->id,
+          'title' => $website->title,
+          'value' => (is_numeric($_POST['website_' . $website->id]) ? $_POST['website_' . $website->id] : NULL),
+        ];
       }
     }
   }
@@ -181,20 +186,19 @@ class User_Controller extends Gridview_Base_Controller {
    */
   public function record_authorised($id) {
     if ($this->auth->logged_in('CoreAdmin'))
-      return true;
-    elseif (!is_null($id) AND !is_null($this->auth_filter)) {
+      return TRUE;
+    elseif (!is_null($id) && !is_null($this->auth_filter)) {
       $u = ORM::factory('user', $id);
       $allowedPersonIds = $this->getAllowedPersonIds();
-      return $allowedPersonIds === true || in_array($u->person_id, $allowedPersonIds);
+      return $allowedPersonIds === TRUE || in_array($u->person_id, $allowedPersonIds);
     }
-    return true;
+    return TRUE;
   }
 
   /**
    * Website admins and core admins area allowed view the users list.
    */
-  protected function page_authorised ()
-  {
+  protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
   }
 
@@ -202,15 +206,17 @@ class User_Controller extends Gridview_Base_Controller {
    * Return a list of the tabs to display for this controller's actions.
    */
   protected function getTabs($name) {
-    return array(array(
-      'controller' => 'user_identifier',
-      'title' => 'Identifiers',
-      'actions'=>array('edit')
-    ), array(
-      'controller' => 'user_identifier/index_from_person',
-      'title' => 'Identifiers',
-      'actions'=>array('edit_from_person')
-    ));
+    return [
+      [
+        'controller' => 'user_identifier',
+        'title' => 'Identifiers',
+        'actions' => ['edit'],
+      ], [
+        'controller' => 'user_identifier/index_from_person',
+        'title' => 'Identifiers',
+        'actions' => ['edit_from_person'],
+      ],
+    ];
   }
 
 }

@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the sample comment edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,7 +26,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'sample_comment:id');
 ?>
 <p>This page allows you to specify the details of a sample comment.</p>
-<form action="<?php echo url::site().'sample_comment/save'; ?>" method="post" enctype="multipart/form-data">
+<form action="<?php echo url::site() . 'sample_comment/save'; ?>" method="post" enctype="multipart/form-data">
   <fieldset>
     <input type="hidden" name="sample_comment:id" value="<?php echo $id ?>" />
     <input type="hidden" name="sample_comment:sample_id" value="<?php echo html::initial_value($values, 'sample_comment:sample_id'); ?>" />
@@ -32,7 +35,8 @@ $id = html::initial_value($values, 'sample_comment:id');
     echo data_entry_helper::textarea(array(
       'label' => 'Comment',
       'fieldname' => 'sample_comment:comment',
-      'default' => html::initial_value($values, 'sample_comment:comment')
+      'default' => html::initial_value($values, 'sample_comment:comment'),
+      'validation' => ['required'],
     ));
     ?>
   </fieldset>

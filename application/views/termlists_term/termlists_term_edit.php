@@ -21,7 +21,6 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-
 ?>
 <?php
 warehouse::loadHelpers(['data_entry_helper']);

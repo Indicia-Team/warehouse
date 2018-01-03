@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of sample comments.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,6 +24,6 @@
 
 echo $grid;
 ?>
-<form action="<?php echo url::site().'sample_comment/create/'.$sample_id; ?>">
-<input type="submit" value="New sample comment" class="btn btn-primary" />
+<form action="<?php echo url::site() . 'sample_comment/create/' . $sample_id; ?>">
+  <input type="submit" value="New sample comment" class="btn btn-primary" />
 </form>

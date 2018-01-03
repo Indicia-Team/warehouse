@@ -31,24 +31,25 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   <fieldset>
     <legend>Survey dataset details</legend>
     <?php
-    echo data_entry_helper::hidden_text(array(
+    echo data_entry_helper::hidden_text([
       'fieldname' => 'survey:id',
-      'default' => html::initial_value($values, 'survey:id')
-    ));
-    echo data_entry_helper::text_input(array(
+      'default' => html::initial_value($values, 'survey:id'),
+    ]);
+    echo data_entry_helper::text_input([
       'label' => 'Title',
       'fieldname' => 'survey:title',
       'default' => html::initial_value($values, 'survey:title'),
       'validation' => 'required',
       'helpText' => 'Provide a title for your survey dataset',
-    ));
-    echo data_entry_helper::textarea(array(
+    ]);
+    echo data_entry_helper::textarea([
       'label' => 'Description',
       'fieldname' => 'survey:description',
       'default' => html::initial_value($values, 'survey:description'),
       'validation' => 'required',
-      'helpText' => 'Provide an optional description of your survey to help when browsing survey datasets on the warehouse'
-    ));
+      'helpText' => 'Provide an optional description of your survey to help when browsing survey datasets on the ' .
+        'warehouse',
+    ]);
     ?>
     <fieldset>
       <legend>Enforce required fields</legend>
@@ -113,22 +114,22 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'extraParams' => $readAuth,
       'default' => html::initial_value($values, 'survey:parent_id'),
       'defaultCaption' => html::initial_value($values, 'parent:title'),
-      'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports'
+      'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports',
     ));
     echo data_entry_helper::select(array(
       'label' => 'Website',
       'fieldname' => 'survey:website_id',
       'default' => html::initial_value($values, 'survey:website_id'),
       'lookupValues' => $other_data['websites'],
-      'helpText' => 'The survey must belong to a website registration'
+      'helpText' => 'The survey must belong to a website registration',
     ));
     // Only show fields, if fields have been found in the database (the auto verify module is installed).
     if (array_key_exists('survey:auto_accept', $values)) {
       echo data_entry_helper::checkbox(array(
-      'label' => 'Auto Accept',
-      'fieldname' => 'survey:auto_accept',
-      'default' => html::initial_value($values, 'survey:auto_accept'),
-      'helpText' => 'Should the automatic verification module attempt to auto verify records in this survey?'
+        'label' => 'Auto Accept',
+        'fieldname' => 'survey:auto_accept',
+        'default' => html::initial_value($values, 'survey:auto_accept'),
+        'helpText' => 'Should the automatic verification module attempt to auto verify records in this survey?',
       ));
     }
     if (array_key_exists('survey:auto_accept_max_difficulty', $values)) {
@@ -137,7 +138,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
         'fieldname' => 'survey:auto_accept_max_difficulty',
         'class' => 'control-width-1',
         'default' => html::initial_value($values, 'survey:auto_accept_max_difficulty'),
-        'helpText' => 'If Auto Accept is set, then this is the minimum identification difficulty that will be auto verified.'
+        'helpText' => 'If Auto Accept is set, then this is the minimum identification difficulty that will be auto verified.',
       ));
     }
     ?>
@@ -149,7 +150,8 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
     <?php
     foreach ($values['attributes'] as $attr) {
       $name = 'srvAttr:' . $attr['survey_attribute_id'];
-      // If this is an existing attribute, tag it with the attribute value record id so we can re-save it.
+      // If this is an existing attribute, tag it with the attribute value
+      // record id so we can re-save it.
       if ($attr['id']) {
         $name .= ':' . $attr['id'];
       }
@@ -159,7 +161,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
           echo data_entry_helper::date_picker([
             'label' => $attr['caption'],
             'fieldname' => $name,
-            'default' => $attr['value']
+            'default' => $attr['value'],
           ]);
           break;
 
@@ -169,7 +171,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
             'fieldname' => $name,
             'default' => $attr['raw_value'],
             'lookupValues' => $values['terms_' . $attr['termlist_id']],
-            'blankText' => '<Please select>'
+            'blankText' => '<Please select>',
           ]);
           break;
 
@@ -177,7 +179,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
           echo data_entry_helper::checkbox([
             'label' => $attr['caption'],
             'fieldname' => $name,
-            'default' => $attr['value']
+            'default' => $attr['value'],
           ]);
           break;
 
@@ -185,7 +187,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
           echo data_entry_helper::text_input([
             'label' => $attr['caption'],
             'fieldname' => $name,
-            'default' => $attr['value']
+            'default' => $attr['value'],
           ]);
       }
     }
@@ -194,7 +196,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   </fieldset>
   <?php
   endif;
-  echo html::form_buttons(html::initial_value($values, 'survey:id') != NULL);
+  echo html::form_buttons(html::initial_value($values, 'survey:id') !== NULL);
   data_entry_helper::enable_validation('survey-edit');
   data_entry_helper::$javascript .= <<<JS
 // ensure the parent lookup does not allow an inappropriate survey to be selected (i.e. self or wrong website)
