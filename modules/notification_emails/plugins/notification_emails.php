@@ -260,7 +260,7 @@ SQL;
         }
         $emailContent .= '<tr>';
         foreach ($dataFieldsToOutput as $field => $caption) {
-          $htmlToDisplay = '';
+          $htmlToDisplay = isset($record[$field]) ? $record[$field] : '';
           if (isset($record[$field]) || $field === 'query') {
             if ($field === 'username' && ($record[$field] === 'admin' || $record[$field] === 'system')) {
               $htmlToDisplay = $systemName;
