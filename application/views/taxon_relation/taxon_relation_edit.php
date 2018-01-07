@@ -18,11 +18,7 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-echo html::script(array(
-  'media/js/jquery.ajaxQueue.js',
-  'media/js/jquery.bgiframe.min.js',
-  'media/js/jquery.autocomplete.js'
-), FALSE);
+
 $id = html::initial_value($values, 'taxon_relation:id');
 $relations = ORM::factory('taxon_relation_type')->orderby('id','asc')->find_all();
 ?>

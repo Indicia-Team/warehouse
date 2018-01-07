@@ -18,14 +18,11 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-echo html::script(array(
-  'media/js/jquery.ajaxQueue.js',
-  'media/js/jquery.bgiframe.min.js',
-  'media/js/jquery.autocomplete.js'
-), FALSE);
 
 warehouse::loadHelpers(['data_entry_helper', 'map_helper']);
 $id = html::initial_value($values, 'taxa_taxon_list:id');
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+
 ?>
 <script type="text/javascript" >
 $(document).ready(function() {
@@ -65,130 +62,118 @@ $(document).ready(function() {
 <?php
 echo html::error_message($model->getError('deleted'));
 ?>
-<div id="details">
-<form id="ttlMainForm" action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="post">
-<?php
-echo $metadata;
-?>
-<fieldset>
-  <legend>Naming</legend>
-  <input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
-  <input type="hidden" name="taxa_taxon_list:taxon_list_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>" />
-  <input type="hidden" name="taxon:id" value="<?php echo html::initial_value($values, 'taxon:id'); ?>" />
-  <input type="hidden" name="taxon_meaning:id" value="<?php echo html::initial_value($values, 'taxon_meaning:id'); ?>" />
-  <input type="hidden" name="taxa_taxon_list:preferred" value="t" />
-
-  <div class="form-group">
-    <label for="taxon">Taxon Name:</label>
-    <input name="taxon:taxon" id="taxon" class="form-control" value="<?php echo html::initial_value($values, 'taxon:taxon'); ?>"/>
-  </div>
-  <?php echo html::error_message($model->getError('taxon:taxon')); ?>
-  <div class="form-group">
-    <label for="authority">Authority:</label>
-    <input id="authority" class="form-control" name="taxon:authority" value="<?php echo html::initial_value($values, 'taxon:authority'); ?>"/>
-  </div>
-  <?php echo html::error_message($model->getError('taxon:authority')); ?>
-  <div class="form-group">
-    <label for="language_id">Language:</label>
-    <select class="form-control" name="taxon:language_id" id="language_id">
-      <option value=''>&lt;Please select&gt;</option>
-<?php
-  $languages = ORM::factory('language')->orderby('language','asc')->find_all();
-  $selected = html::initial_value($values, 'taxon:language_id');
-  foreach ($languages as $lang) {
-    echo '	<option value="'.$lang->id.'" ';
-    if ($lang->id==$selected) {
-      echo 'selected="selected" ';
-    }
-    echo '>'.$lang->language.'</option>';
-  }
-?>
-    </select>
-  </div>
-  <?php echo html::error_message($model->getError('taxon:language_id')); ?>
-  <div class="form-group">
-    <label for="commonNames">Common Names:
-      <span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter common names one per line. Optionally follow each name by a | character then the 3 character code for the language, e.g. 'Lobworm | eng'.">?</span>
-    </label>
-    <textarea class="form-control" id="commonNames" name="metaFields:commonNames"><?php echo html::initial_value($values, 'metaFields:commonNames'); ?></textarea>
-  </div>
-  <div class="form-group">
-    <label for="synonyms" >Synonyms:
-      <span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter synonyms one per line. Optionally follow each name by a | character then the taxon's authority, e.g. 'Zygaena viciae argyllensis | Tremewan. 1967'.">?</span>
-    </label>
-    <textarea class="form-control" id="synonyms" name="metaFields:synonyms"><?php echo html::initial_value($values, 'metaFields:synonyms'); ?></textarea>
-  </div>
-</fieldset>
-<fieldset>
-<legend>Other Details</legend>
+<form id="taxa-taxon-list-edit" action="<?php echo url::site() . 'taxa_taxon_list/save' ?>" method="post">
+  <fieldset>
+    <legend>Naming<?php echo $metadata; ?></legend>
+    <input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
+    <input type="hidden" name="taxa_taxon_list:taxon_list_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>" />
+    <input type="hidden" name="taxon:id" value="<?php echo html::initial_value($values, 'taxon:id'); ?>" />
+    <input type="hidden" name="taxon_meaning:id" value="<?php echo html::initial_value($values, 'taxon_meaning:id'); ?>" />
+    <input type="hidden" name="taxa_taxon_list:preferred" value="t" />
+    <?php
+    echo data_entry_helper::text_input([
+      'fieldname' => 'taxon:taxon',
+      'label' => 'Taxon name',
+      'default' => html::initial_value($values, 'taxon:taxon'),
+      'validation' => ['required'],
+    ]);
+    echo data_entry_helper::text_input([
+      'fieldname' => 'taxon:attribute',
+      'label' => 'Attribute',
+      'default' => html::initial_value($values, 'taxon:attribute'),
+      'helpText' => 'E.g. sensu stricto or leave blank',
+    ]);
+    echo data_entry_helper::text_input([
+      'fieldname' => 'taxon:authority',
+      'label' => 'Authority',
+      'default' => html::initial_value($values, 'taxon:authority'),
+    ]);
+    echo data_entry_helper::select([
+      'fieldname' => 'taxon:language_id',
+      'label' => 'Language',
+      'default' => html::initial_value($values, 'taxon:language_id'),
+      'table' => 'language',
+      'valueField' => 'id',
+      'captionField' => 'language',
+      'extraParams' => $readAuth + ['orderby' => 'language'],
+      'validation' => ['required'],
+      'blankText' => '<please select>',
+    ]);
+    echo data_entry_helper::textarea([
+      'fieldname' => 'metaFields:commonNames',
+      'label' => 'Common names',
+      'default' => html::initial_value($values, 'metaFields:commonNames'),
+      'helpText' => "Enter common names one per line. Optionally follow each name by a | character then the 3 " .
+        "character code for the language, e.g. 'Lobworm | eng'.",
+    ]);
+    echo data_entry_helper::textarea([
+      'fieldname' => 'metaFields:synonyms',
+      'label' => 'Synonyms',
+      'default' => html::initial_value($values, 'metaFields:synonyms'),
+      'helpText' => "Enter synonyms one per line. Optionally follow each name by a | character then the taxon's " .
+        "authority, e.g. 'Zygaena viciae argyllensis | Tremewan. 1967'.",
+    ]);
+    ?>
+  </fieldset>
+  <fieldset>
+    <legend>Other Details</legend>
+    <?php
+    echo data_entry_helper::select([
+      'fieldname' => 'taxon:taxon_group_id',
+      'label' => 'Taxon group',
+      'default' => html::initial_value($values, 'taxon:taxon_group_id'),
+      'table' => 'taxon_group',
+      'valueField' => 'id',
+      'captionField' => 'title',
+      'extraParams' => $readAuth + ['orderby' => 'title'],
+      'validation' => ['required'],
+      'blankText' => '<please select>',
+    ]);
+    echo data_entry_helper::select([
+      'fieldname' => 'taxon:taxon_rank_id',
+      'label' => 'Taxon rank',
+      'default' => html::initial_value($values, 'taxon:taxon_rank_id'),
+      'table' => 'taxon_rank',
+      'valueField' => 'id',
+      'captionField' => 'rank',
+      'extraParams' => $readAuth + ['orderby' => 'sort_order'],
+      'blankText' => '<please select>',
+    ]);
+    echo data_entry_helper::textarea([
+      'fieldname' => 'taxon:description',
+      'label' => 'Description',
+      'default' => html::initial_value($values, 'taxon:description'),
+      'helpText' => 'General description which applies to this taxon on all lists it is linked to.',
+    ]);
+    echo data_entry_helper::textarea([
+      'fieldname' => 'taxa_taxon_list:description',
+      'label' => 'Description on this list',
+      'default' => html::initial_value($values, 'taxa_taxon_list:description'),
+      'helpText' => 'Description which applies only to this taxon within the context of this list.',
+    ]);
+    echo data_entry_helper::text_input([
+      'fieldname' => 'taxon:external_key',
+      'label' => 'External key',
+      'default' => html::initial_value($values, 'taxon:external_key'),
+      'helpText' => 'Unique key for this taxon concept as defined by an external source. For example in the UK ' .
+        'this field is typically used to store an NBN Taxon Version Key.',
+    ]);
+    echo data_entry_helper::text_input([
+      'fieldname' => 'taxon_meaning:id',
+      'label' => 'Taxon meaning ID',
+      'default' => html::initial_value($values, 'taxon_meaning:id'),
+      'helpText' => 'Unique ID assigned to this taxomic concept by Indicia.',
+      'disabled' => TRUE,
+    ]);
+    echo data_entry_helper::species_autocomplete([
+      'fieldname' => 'taxa_taxon_list:parent_id',
+      'default' => html::initial_value($values, 'taxa_taxon_list:parent_id'),
+      'extra_params' => $readAuth + [
+        'taxon_list_id' => $values['taxa_taxon_list:taxon_list_id'],
+      ],
+    ]);
+    ?>
 <ol>
-<li>
-<label for="taxon_group_id">Taxon Group:</label>
-<select id="taxon_group_id" name="taxon:taxon_group_id">
-  <option value=''>&lt;Please select&gt;</option>
-<?php
-  $taxon_groups = ORM::factory('taxon_group')->orderby('title','asc')->where('deleted', 'f')->find_all();
-  $selected = html::initial_value($values, 'taxon:taxon_group_id');
-  foreach ($taxon_groups as $group) {
-    echo '	<option value="'.$group->id.'" ';
-    if ($group->id==$selected) {
-      echo 'selected="selected" ';
-    }
-    echo '>'.$group->title.'</option>';
-  }
-?>
-</select>
-<?php echo html::error_message($model->getError('taxon:taxon_group_id')); ?>
-</li>
-<li>
-<label for="taxon_rank_id">Taxon Rank:</label>
-<select id="taxon_rank_id" name="taxon:taxon_rank_id">
-  <option value=''>&lt;Please select&gt;</option>
-<?php
-  $taxon_ranks = ORM::factory('taxon_rank')->orderby('sort_order','asc')->where('deleted', 'f')->find_all();
-  $selected = html::initial_value($values, 'taxon:taxon_rank_id');
-  foreach ($taxon_ranks as $rank) {
-    echo '	<option value="'.$rank->id.'" ';
-    if ($rank->id==$selected) {
-      echo 'selected="selected" ';
-    }
-    echo '>'.$rank->rank.'</option>';
-  }
-?>
-</select>
-<?php echo html::error_message($model->getError('taxon:taxon_rank_id')); ?>
-</li>
-<li>
-<label for="description">General description:</label>
-<textarea rows="3"  cols="40" id="description" name="taxon:description"><?php echo html::initial_value($values, 'taxon:description'); ?></textarea>
-</li>
-<li>
-<label for="description">Description specific to this list:</label>
-<textarea rows="3"  cols="40" id="list_description" name="taxa_taxon_list:description"><?php echo html::initial_value($values, 'taxa_taxon_list:description'); ?></textarea>
-</li>
-<li>
-<label for="external_key">External Key:
-<span class="ui-state-highlight ui-widget-content ui-corner-all" title=
-"The external key can be used to provide the identifier of a taxon from an external system which was used to source this name. For example in the UK this field is typically used to store an NBN Taxon Version Key."
->?</span></label>
-<input id="external_key" name="taxon:external_key" value="<?php echo html::initial_value($values, 'taxon:external_key'); ?>"/>
-<?php echo html::error_message($model->getError('taxon:external_key')); ?>
-</li>
-<li>
-<label for="taxon_meaning_id">Taxon Meaning ID:
-<span class="ui-state-highlight ui-widget-content ui-corner-all" title=
-"The taxon meaning ID is a number which uniquely identifies the underlying organism. If there are many names for an organism or the names are spread across several lists then all the names should share the same taxon meaning id. This makes it easy to pick up all records of a species when reporting or mapping. It is automatically assigned by the system and cannot be changed."
->?</span></label>
-<span id="taxon_meaning_id" style="display: inline-block; margin: 4px"><?php echo html::initial_value($values, 'taxon_meaning:id'); ?></span>
-</li>
-<li>
-<input type="hidden" name="taxa_taxon_list:parent_id" id="parent_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:parent_id'); ?>" />
-<label for="parent">Parent Taxon:</label>
-<input id="parent" name="taxa_taxon_list:parent" value="<?php
-$parent_id = html::initial_value($values, 'taxa_taxon_list:parent_id');
-echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $parent_id)->taxon->taxon) : '';
-?>" />
-</li>
 <li>
 <label for="taxonomic_sort_order">Sort Order in List:</label>
 <input id="taxonomic_sort_order" name="taxa_taxon_list:taxonomic_sort_order" class="narrow" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxonomic_sort_order'); ?>" />
@@ -267,27 +252,27 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
 }
  ?>
  </ol>
- </fieldset>
-<?php
-// some script to handle drawn polygons. Only allow 1 polygon on the layer
-data_entry_helper::$javascript .= "mapInitialisationHooks.push(function(div) {
-  function featureChangeEvent(evt) {
-    var featuresToRemove=[];
-    $.each(evt.feature.layer.features, function(idx, feature) {
-      if (feature.id !== evt.feature.id) {
-        featuresToRemove.push(feature);
-      }
-    });
-    evt.feature.layer.removeFeatures(featuresToRemove);
-    $('#imp-geom').val(evt.feature.geometry.toString());
-  }
-  div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent});
-});
-";
-echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null);
-echo data_entry_helper::dump_javascript();
-?>
+  </fieldset>
+  <?php
+  // some script to handle drawn polygons. Only allow 1 polygon on the layer
+  data_entry_helper::$javascript .= "mapInitialisationHooks.push(function(div) {
+    function featureChangeEvent(evt) {
+      var featuresToRemove=[];
+      $.each(evt.feature.layer.features, function(idx, feature) {
+        if (feature.id !== evt.feature.id) {
+          featuresToRemove.push(feature);
+        }
+      });
+      evt.feature.layer.removeFeatures(featuresToRemove);
+      $('#imp-geom').val(evt.feature.geometry.toString());
+    }
+    div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent});
+  });
+  ";
+  echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL);
+  data_entry_helper::enable_validation('taxa_taxon_list-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
-</div>
 
 

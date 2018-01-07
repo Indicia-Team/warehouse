@@ -19,12 +19,6 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-?>
-<?php echo html::script(array(
-  'media/js/jquery.ajaxQueue.js',
-  'media/js/jquery.bgiframe.min.js',
-  'media/js/jquery.autocomplete.js'
-), FALSE);
 $id = html::initial_value($values, 'occurrence:id');
 $sample = $model->sample;
 $website_id = $sample->survey->website_id;
