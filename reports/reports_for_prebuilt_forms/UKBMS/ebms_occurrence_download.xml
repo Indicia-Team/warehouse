@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="EBMS Occurrence Download Report - 2" description="Lists saved occurrences. Normally invoked easy download page.">
+  <query website_filter_field="o.website_id" samples_id_field="sp.id" samples2_id_field="sc.id" standard_params="true">
+  SELECT #columns#
+  FROM cache_occurrences o
+  JOIN websites w on w.id=o.website_id and w.deleted=false
+  JOIN samples sc on sc.id=o.sample_id and sc.deleted=false
+  JOIN samples sp on sp.id=sc.parent_id and sp.deleted=false
+  JOIN locations l ON sp.location_id=l.id
+  JOIN cache_termlists_terms ctt ON ctt.id=l.location_type_id
+  JOIN locations l2 ON sc.location_id=l2.id
+  #agreements_join#
+  #joins#
+  WHERE #sharing_filter# 
+  #idlist#
+  </query>
+  <order_bys>
+    <order_by>o.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name="locattrs" display="Sample attribute list" description="Comma separated list of sample attribute IDs to include" datatype="locattrs"  default="" />
+    <param name="loc2attrs" display="Section sample attribute list" description="Comma separated list of section sample attribute IDs to include" datatype="loc2attrs" default="" />
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name="smp2attrs" display="Section sample attribute list" description="Comma separated list of section sample attribute IDs to include" datatype="smp2attrs" default="" />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name="location_type_id" display="Location Type ID" description="Enter the type of location" datatype="lookup"
+            population_call="report:library/terms/terms_list:termlists_term_id:term:termlist_external_key=indicia:location_types,termlist_id=" >
+      <where>l.location_type_id=#location_type_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name='source' display='Source' sql="w.title || ' | ' || o.survey_title" datatype="text" />
+    <column name='sample_id' display='Sample ID' sql='sp.id' datatype="integer" />
+    <column name='occurrence_id' display='ID' sql='o.id' datatype="integer" />
+    <column name="site_type" display="Site Type" sql='ctt.term' datatype="text" />
+    <column name="site_code" display="Site Code" sql='l.code' datatype="text" />
+    <column name="date" sql="''" display="Date" datatype="text" />
+    <column name='date_start' sql='sp.date_start' visible='false' />
+    <column name='date_end' sql='sp.date_end' visible='false' />
+    <column name='date_type' sql='sp.date_type' visible='false' />
+    <column name="section_number" display="Section No." sql='l2.code' />
+    <column name="section_code" display="Section Code" sql="coalesce(l.code,l.name)||'.'||substring(l2.code from 2)" />
+    <column name="common" display="Species" sql="o.default_common_name" /> 
+    <column name="preferred" display="Preferred" sql="o.preferred_taxon" /> 
+    <column name='created_by_id' visible='false' sql='o.created_by_id' datatype="integer" />
+    <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
+    <column name='belongs_to_user' display='Belongs to User' sql="CASE WHEN CAST(o.created_by_id AS character varying) = '#user_id#' AND o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+    <column name='belongs_to_site' display='Belongs to Site' sql="CASE WHEN o.website_id IN (#website_ids#) THEN true ELSE false END" visible="false" />
+  </columns>
+</report>
