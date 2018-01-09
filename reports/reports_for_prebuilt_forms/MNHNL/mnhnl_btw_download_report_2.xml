@@ -15,10 +15,10 @@
   WHERE #sharing_filter# 
   AND ('#quality#'::text = 'NA'::text OR quality_check('#quality#', co.record_status, co.certainty)=true)
   AND co.survey_id='#survey_id#'
-  AND ('#download#'::text != 'OFF'::text     OR co.downloaded_flag = 'F'::bpchar)
-  AND ('#download#'::text != 'INITIAL'::text OR co.downloaded_flag in ('N'::bpchar, 'I'::bpchar))
+  AND ('#download#'::text != 'OFF'::text     OR o.downloaded_flag = 'F'::bpchar)
+  AND ('#download#'::text != 'INITIAL'::text OR o.downloaded_flag in ('N'::bpchar, 'I'::bpchar))
   AND (('#download#'::text != 'CONFIRM'::text AND '#download#'::text != 'FINAL'::text) OR
-        (co.downloaded_flag = 'I'::bpchar AND
+        (o.downloaded_flag = 'I'::bpchar AND
           NOT EXISTS (select io.id from occurrences io, samples sc
       								where io.sample_id = sc.id
       								and sc.parent_id = s.id
