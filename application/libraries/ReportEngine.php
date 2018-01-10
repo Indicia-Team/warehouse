@@ -1050,9 +1050,7 @@ SQL;
       }
       if ($orderBy) {
         $orderBy = $this->checkOrderByForVagueDate($orderBy);
-        if (strpos($query, 'distinct on') === FALSE) {
-          $orderBy = $this->optimiseQueryPlan($orderBy);
-        }
+        $orderBy = $this->optimiseQueryPlan($orderBy);
         // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
         $count = 0;
         $query = preg_replace("/#order_by#/", "ORDER BY $orderBy", $query, -1, $count);
@@ -1078,8 +1076,9 @@ SQL;
   /**
    * Query plan optimisations.
    *
-   * Forces a switch of query plan to avoid slow queries where the record count is less than the limit, causing a
-   * walk through the entire table.
+   * Ensures that the ORDER BY makes best use of indexes by adding NULLS LAST,
+   * as PostgreSQL will only use an index with an exact match. All our indexes
+   * are NULLS LAST.
    *
    * @param string $orderBy
    *   Current query order by setting.
@@ -1090,14 +1089,8 @@ SQL;
    * @link http://stackoverflow.com/questions/6037843/extremely-slow-postgresql-query-with-order-and-limit-clauses
    */
   private function optimiseQueryPlan($orderBy) {
-    if (preg_match('/o.id (desc|asc)/i', $orderBy)
-        && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') || isset($_REQUEST['knownCount']))) {
-      // Grab the count now. If less than the limit, we fudge the order by to switch query plan.
-      $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->record_count();
-      if ($count !== FALSE && $count < $this->limit) {
-        kohana::log('debug', 'Optimising query plan by changing sort order to o.id+0.');
-        return str_replace('.id', '.id+0', $orderBy);
-      }
+    if (stripos($orderBy, 'NULLS LAST') === FALSE) {
+      $orderBy = preg_replace('/ (\bdesc\b|\basc\b)/i', ' ${1} NULLS LAST', $orderBy);
     }
     return $orderBy;
   }
