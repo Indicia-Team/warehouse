@@ -90,11 +90,9 @@ $(document).ready(function() {
 });
 </script>
 <form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">
-<?php
-echo $metadata;
-?>
+
 <fieldset class="readonly">
-<legend>Sample summary</legend>
+<legend>Sample summary<?php echo $metadata; ?></legend>
 <ol>
 <li>
 <label>Sample link:</label>

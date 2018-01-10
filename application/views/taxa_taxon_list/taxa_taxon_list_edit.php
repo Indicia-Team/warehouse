@@ -23,43 +23,6 @@ warehouse::loadHelpers(['data_entry_helper', 'map_helper']);
 $id = html::initial_value($values, 'taxa_taxon_list:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 
-?>
-<script type="text/javascript" >
-$(document).ready(function() {
-  $("input#parent").autocomplete("<?php echo url::site() ?>services/data/taxa_taxon_list", {
-    minChars : 1,
-    mustMatch : true,
-    extraParams : {
-      taxon_list_id : "<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>",
-      orderby : "taxon",
-      mode : "json",
-      qfield : "taxon",
-      preferred : 'true'
-    },
-    parse: function(data) {
-      var results = [];
-      $.each(data, function(i, item) {
-        results[results.length] = {
-          'data' : item,
-          'value' : item.id,
-          'result' : item.taxon };
-      });
-      return results;
-    },
-    formatItem: function(item) {
-      return item.taxon;
-    },
-    formatResult: function(item) {
-      return item.id;
-    }
-  });
-  $("input#parent").result(function(event, data){
-    $("input#parent_id").attr('value', data.id);
-  });
-});
-</script>
-
-<?php
 echo html::error_message($model->getError('deleted'));
 ?>
 <form id="taxa-taxon-list-edit" action="<?php echo url::site() . 'taxa_taxon_list/save' ?>" method="post">
@@ -166,9 +129,10 @@ echo html::error_message($model->getError('deleted'));
       'disabled' => TRUE,
     ]);
     echo data_entry_helper::species_autocomplete([
+      'label' => 'Parent taxon',
       'fieldname' => 'taxa_taxon_list:parent_id',
       'default' => html::initial_value($values, 'taxa_taxon_list:parent_id'),
-      'extra_params' => $readAuth + [
+      'extraParams' => $readAuth + [
         'taxon_list_id' => $values['taxa_taxon_list:taxon_list_id'],
       ],
     ]);
@@ -255,24 +219,24 @@ echo html::error_message($model->getError('deleted'));
   </fieldset>
   <?php
   // some script to handle drawn polygons. Only allow 1 polygon on the layer
-  data_entry_helper::$javascript .= "mapInitialisationHooks.push(function(div) {
-    function featureChangeEvent(evt) {
-      var featuresToRemove=[];
-      $.each(evt.feature.layer.features, function(idx, feature) {
-        if (feature.id !== evt.feature.id) {
-          featuresToRemove.push(feature);
-        }
-      });
-      evt.feature.layer.removeFeatures(featuresToRemove);
-      $('#imp-geom').val(evt.feature.geometry.toString());
-    }
-    div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent});
-  });
-  ";
+  /*data_entry_helper::$javascript .= <<<JS
+mapInitialisationHooks.push(function(div) {
+  function featureChangeEvent(evt) {
+    var featuresToRemove=[];
+    $.each(evt.feature.layer.features, function(idx, feature) {
+      if (feature.id !== evt.feature.id) {
+        featuresToRemove.push(feature);
+      }
+    });
+    evt.feature.layer.removeFeatures(featuresToRemove);
+    $('#imp-geom').val(evt.feature.geometry.toString());
+  }
+  div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent});
+});
+
+JS;*/
   echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL);
   data_entry_helper::enable_validation('taxa_taxon_list-edit');
   echo data_entry_helper::dump_javascript();
   ?>
 </form>
-
-
