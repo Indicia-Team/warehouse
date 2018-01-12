@@ -39,6 +39,12 @@
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
 		        query='SELECT id, title as caption FROM surveys' />
     <param name='closed_attr_id' display='Sample Attribute ID for Closed flag: ' description='ID of sample_attribute for sample closed flag' datatype='int' />
+    <param name="date_from" display="Date From" datatype="date">
+      <where>(s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>(s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='co.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
