@@ -29,7 +29,7 @@ legend {
 <body>
 <form method="POST">
 <?php
-if (empty($_GET['user_id']) || empty($_GET['warehouse_url'])) {
+if (empty($_GET['user_id'])) {
   echo '<p>Invalid link</p>';
 } else {
   //If there is a POST, then the user has saved, so process this
@@ -160,7 +160,7 @@ class subscription_settings {
   //Get an authentication
   private static function getAuth($website_id,$password) {
     $postargs = "website_id=$website_id";
-    $response = self::http_post($_GET['warehouse_url'].'/index.php/services/security/get_read_write_nonces', $postargs);
+    $response = self::http_post(self::get_warehouse_url().'index.php/services/security/get_read_write_nonces', $postargs);
     $nonces = json_decode($response, true);
     return array(
       'read'=>array(
@@ -226,7 +226,7 @@ class subscription_settings {
         $request .= '&'.self::array_to_query_string($options['extraParams'], true);
     }
     if (!isset($response) || $response===false) {
-      $response = self::http_post($_GET['warehouse_url'].'/'.$request, null);
+      $response = self::http_post(self::get_warehouse_url().$request, null);
     }
     $r = json_decode($response, true);
     if (!is_array($r)) {
@@ -306,7 +306,7 @@ class subscription_settings {
     $configuration = self::get_page_configuration();
     $auth=self::getAuth(0-$_GET['user_id'],$configuration['privateKey']);
     $writeTokens=$auth['write'];
-    $request = $_GET['warehouse_url']."/index.php/services/data/$entity";
+    $request = self::get_warehouse_url()."index.php/services/data/$entity";
     $postargs = 'submission='.urlencode(json_encode($submission));
     // passthrough the authentication tokens as POST data. Use parameter writeTokens
     foreach($writeTokens as $token => $value){
@@ -315,6 +315,10 @@ class subscription_settings {
     $postargs .= '&user_id='.$_GET['user_id'];
     $response = self::http_post($request, $postargs);
     return $response;
+  }
+  
+  private static function get_warehouse_url() {
+    return $_SERVER['HTTP_HOST'].dirname($_SERVER['PHP_SELF']).'/';
   }
 }
 ?>
