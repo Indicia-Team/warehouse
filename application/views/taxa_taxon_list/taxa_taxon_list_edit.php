@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the taxa taxon list edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -66,15 +69,13 @@ echo html::error_message($model->getError('deleted'));
       'fieldname' => 'metaFields:commonNames',
       'label' => 'Common names',
       'default' => html::initial_value($values, 'metaFields:commonNames'),
-      'helpText' => "Enter common names one per line. Optionally follow each name by a | character then the 3 " .
-        "character code for the language, e.g. 'Lobworm | eng'.",
+      'helpText' => "Enter common names one per line. Optionally follow each name by a | character then the 3 character code for the language, e.g. 'Lobworm | eng'.",
     ]);
     echo data_entry_helper::textarea([
       'fieldname' => 'metaFields:synonyms',
       'label' => 'Synonyms',
       'default' => html::initial_value($values, 'metaFields:synonyms'),
-      'helpText' => "Enter synonyms one per line. Optionally follow each name by a | character then the taxon's " .
-        "authority, e.g. 'Zygaena viciae argyllensis | Tremewan. 1967'.",
+      'helpText' => "Enter synonyms one per line. Optionally follow each name by a | character then the taxon's authority, e.g. 'Zygaena viciae argyllensis | Tremewan. 1967'.",
     ]);
     ?>
   </fieldset>
@@ -118,8 +119,7 @@ echo html::error_message($model->getError('deleted'));
       'fieldname' => 'taxon:external_key',
       'label' => 'External key',
       'default' => html::initial_value($values, 'taxon:external_key'),
-      'helpText' => 'Unique key for this taxon concept as defined by an external source. For example in the UK ' .
-        'this field is typically used to store an NBN Taxon Version Key.',
+      'helpText' => 'Unique key for this taxon concept as defined by an external source. For example in the UK this field is typically used to store an NBN Taxon Version Key.',
     ]);
     echo data_entry_helper::text_input([
       'fieldname' => 'taxon_meaning:id',
@@ -139,86 +139,95 @@ echo html::error_message($model->getError('deleted'));
       'speciesIncludeAuthorities' => TRUE,
       'speciesIncludeTaxonGroup' => TRUE,
     ]);
+    echo data_entry_helper::text_input([
+      'label' => 'Sort order in list',
+      'fieldname' => 'taxa_taxon_list:taxonomic_sort_order',
+      'default' => html::initial_value($values, 'taxa_taxon_list:taxonomic_sort_order')
+    ]);
+    echo data_entry_helper::text_input([
+      'label' => 'Search code',
+      'fieldname' => 'taxon:search_code',
+      'default' => html::initial_value($values, 'taxon:search_code')
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Allow data entry',
+      'fieldname' => 'taxa_taxon_list:allow_data_entry',
+      'default' => html::initial_value($values, 'taxa_taxon_list:allow_data_entry')
+    ]);
     ?>
-<ol>
-<li>
-<label for="taxonomic_sort_order">Sort Order in List:</label>
-<input id="taxonomic_sort_order" name="taxa_taxon_list:taxonomic_sort_order" class="narrow" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxonomic_sort_order'); ?>" />
-<?php echo html::error_message($model->getError('taxa_taxon_list:taxonomic_sort_order')); ?>
-</li>
-<li>
-<label for="search_code">Search Code:</label>
-<input id="search_code" name="taxon:search_code" class="narrow" value="<?php echo html::initial_value($values, 'taxon:search_code'); ?>"/>
-<?php echo html::error_message($model->getError('taxon:search_code')); ?>
-</li>
-<li>
-<label for="allow_data_entry">Allow Data Entry:</label>
-<?php // ensure that an unchecked checkbox still sends the value ?>
-<input type="hidden" name="taxa_taxon_list:allow_data_entry" value="0" />
-<?php echo form::checkbox(array('id' => 'allow_data_entry', 'name' => 'taxa_taxon_list:allow_data_entry'), TRUE, array_key_exists('taxa_taxon_list:allow_data_entry', $values) AND ($values['taxa_taxon_list:allow_data_entry'] == 't') ) ?>
-</li>
-</ol>
-</fieldset>
-<fieldset>
- <legend>Taxon Attributes</legend>
- <ol>
- <?php
- foreach ($values['attributes'] as $attr) {
-	$name = 'taxAttr:'.$attr['taxa_taxon_list_attribute_id'];
-  // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
-  if ($attr['id']) $name .= ':'.$attr['id'];
-	switch ($attr['data_type']) {
-    case 'D':
-    case 'V':
-      echo data_entry_helper::date_picker(array(
-        'label' => $attr['caption'],
-        'fieldname' => $name,
-        'default' => $attr['value']
-      ));
-      break;
-    case 'L':
-      echo data_entry_helper::select(array(
-        'label' => $attr['caption'],
-        'fieldname' => $name,
-        'default' => $attr['raw_value'],
-        'lookupValues' => $values['terms_'.$attr['termlist_id']],
-        'blankText' => '<Please select>'
-      ));
-      break;
-    case 'B':
-      echo data_entry_helper::checkbox(array(
-        'label' => $attr['caption'],
-        'fieldname' => $name,
-        'default' => $attr['value']
-      ));
-      break;
-    case 'G':
-      echo '<input type="hidden" name="'.$name.'" value="'.$attr['value'].'" id="imp-geom"/>';
-      echo '<label>'.$attr['caption'].':</label>';
-      echo map_helper::map_panel(array(
-        'presetLayers' => array('osm'),
-        'editLayer' => true,
-        'clickForSpatialRef'=>false,
-        'layers' => array(),
-        'initial_lat'=>55,
-        'initial_long'=>-2,
-        'initial_zoom'=>4,
-        'width'=>870,
-        'height'=>400,
-        'standardControls' => array('panZoomBar','layerSwitcher','hoverFeatureHighlight','drawPolygon','modifyFeature','clearEditLayer')
-      ));
-      break;
-    default:
-      echo data_entry_helper::text_input(array(
-        'label' => $attr['caption'],
-        'fieldname' => $name,
-        'default' => $attr['value']
-      ));
-  }
+  </fieldset>
+  <fieldset>
+    <legend>Taxon Attributes</legend>
+    <ol>
+      <?php
+      foreach ($values['attributes'] as $attr) {
+        $name = "taxAttr:$attr[taxa_taxon_list_attribute_id]";
+        // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
+        if ($attr['id']) {
+          $name .= ":$attr[id]";
+        }
+        switch ($attr['data_type']) {
+          case 'D':
+          case 'V':
+            echo data_entry_helper::date_picker(array(
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value']
+            ));
+            break;
 
-}
- ?>
- </ol>
+          case 'L':
+            echo data_entry_helper::select(array(
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['raw_value'],
+              'lookupValues' => $values["terms_$attr[termlist_id]"],
+              'blankText' => '<Please select>',
+            ));
+            break;
+
+          case 'B':
+            echo data_entry_helper::checkbox(array(
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value'],
+            ));
+            break;
+
+          case 'G':
+            echo "<input type=\"hidden\" name=\"$name\" value=\"$attr[value]\" id=\"imp-geom\"/>";
+            echo "<label>$attr[caption]:</label>";
+            echo map_helper::map_panel(array(
+              'presetLayers' => array('osm'),
+              'editLayer' => TRUE,
+              'clickForSpatialRef' => FALSE,
+              'layers' => [],
+              'initial_lat' => 55,
+              'initial_long' => -2,
+              'initial_zoom' => 4,
+              'width' => '100%',
+              'height' => 400,
+              'standardControls' => [
+                'panZoomBar',
+                'layerSwitcher',
+                'hoverFeatureHighlight',
+                'drawPolygon',
+                'modifyFeature',
+                'clearEditLayer',
+              ],
+            ));
+            break;
+
+          default:
+            echo data_entry_helper::text_input(array(
+              'label' => $attr['caption'],
+              'fieldname' => $name,
+              'default' => $attr['value']
+            ));
+        }
+      }
+      ?>
+    </ol>
   </fieldset>
   <?php
   // some script to handle drawn polygons. Only allow 1 polygon on the layer
