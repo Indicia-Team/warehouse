@@ -135,6 +135,9 @@ echo html::error_message($model->getError('deleted'));
       'extraParams' => $readAuth + [
         'taxon_list_id' => $values['taxa_taxon_list:taxon_list_id'],
       ],
+      'speciesIncludeBothNames' => TRUE,
+      'speciesIncludeAuthorities' => TRUE,
+      'speciesIncludeTaxonGroup' => TRUE,
     ]);
     ?>
 <ol>
