@@ -260,7 +260,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
       'time',
       'digit',
       'integer',
-    ];
+    ]);
     foreach ($ruleNames) as $rule) {
       if (array_key_exists('valid_' . $rule, $_POST) && $_POST['valid_' . $rule] == 1) {
         array_push($rules, $rule);
