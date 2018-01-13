@@ -3,9 +3,11 @@
   <params>
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
+    <param name="date_from" display="Date From" datatype="date" emptyvalue='' default='' />
+    <param name="date_to" display="Date To" datatype="date" emptyvalue='' default='' />
   </params>
   <vagueDate enableProcessing='true' />
-  <table tablename="samples" where="#this#.deleted = FALSE and #this#.parent_id IS NULL and #this#.survey_id = #survey_id#" > 
+  <table tablename="samples" where="#this#.deleted = FALSE and #this#.parent_id IS NULL and #this#.survey_id = #survey_id# AND ('#date_from#' = '' OR #this#.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date)) AND ('#date_to#' = '' OR #this#.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))" > 
     <subTable tablename="locations" where="#this#.deleted = FALSE" >
       <tabColumn name='name' display='Transect'/>
     </subTable>

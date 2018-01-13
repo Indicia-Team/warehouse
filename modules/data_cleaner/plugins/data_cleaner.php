@@ -10,12 +10,13 @@ function data_cleaner_alter_menu($menu, $auth) {
 }
 
 /** 
- * Adds the verification_rule entity to the list available via data services.
+ * Adds the verification_rule and verification_rule_metadata entities to the list available via data services.
  * @return array List of additional entities to expose via the data services.
  */
 function data_cleaner_extend_data_services() {
   return array(
-    'verification_rules'=>array('readOnly')
+      'verification_rules' => array('readOnly', 'allow_full_access' => 1),
+      'verification_rule_metadata' => array('readOnly', 'allow_full_access' => 1),
   );
 }
 
