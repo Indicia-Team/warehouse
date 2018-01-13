@@ -778,9 +778,9 @@ SQL;
             'updated_on' => $downloaded_on
           )
         );
-    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL' ? 'I' : 'N'))
-      ->update('cache_occurrences',
-          array('downloaded_flag' => ($mode == 'FINAL' ? 'F' : 'I')));
+//    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL' ? 'I' : 'N'))
+//      ->update('cache_occurrences',
+//          array('downloaded_flag' => ($mode == 'FINAL' ? 'F' : 'I')));
     $db->query('COMMIT;');
   }
 
@@ -963,7 +963,12 @@ SQL;
               $output = $this->reportDb->query($prequery)->result_array(FALSE);
               $value = implode(',', $output[0]);
               if (empty($value)) {
-                $value = "''";
+                if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'])) {
+                  $value = "-999999";
+                }
+                else {
+                  $value = "'@@invalid@@filter@@'";
+                }
               }
             }
             $query = preg_replace("/#$name#/", $value, $query);

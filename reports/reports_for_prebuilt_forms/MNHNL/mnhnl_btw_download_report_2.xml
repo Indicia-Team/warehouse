@@ -15,10 +15,10 @@
   WHERE #sharing_filter# 
   AND ('#quality#'::text = 'NA'::text OR quality_check('#quality#', co.record_status, co.certainty)=true)
   AND co.survey_id='#survey_id#'
-  AND ('#download#'::text != 'OFF'::text     OR co.downloaded_flag = 'F'::bpchar)
-  AND ('#download#'::text != 'INITIAL'::text OR co.downloaded_flag in ('N'::bpchar, 'I'::bpchar))
+  AND ('#download#'::text != 'OFF'::text     OR o.downloaded_flag = 'F'::bpchar)
+  AND ('#download#'::text != 'INITIAL'::text OR o.downloaded_flag in ('N'::bpchar, 'I'::bpchar))
   AND (('#download#'::text != 'CONFIRM'::text AND '#download#'::text != 'FINAL'::text) OR
-        (co.downloaded_flag = 'I'::bpchar AND
+        (o.downloaded_flag = 'I'::bpchar AND
           NOT EXISTS (select io.id from occurrences io, samples sc
       								where io.sample_id = sc.id
       								and sc.parent_id = s.id
@@ -39,6 +39,12 @@
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
 		        query='SELECT id, title as caption FROM surveys' />
     <param name='closed_attr_id' display='Sample Attribute ID for Closed flag: ' description='ID of sample_attribute for sample closed flag' datatype='int' />
+    <param name="date_from" display="Date From" datatype="date">
+      <where>(s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
+    </param>
+    <param name="date_to" display="Date To" datatype="date">
+      <where>(s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='co.id' datatype='integer' template="&lt;div class='status-{record_status} certainty-{certainty}'&gt;{occurrence_id}&lt;/div&gt;" />
