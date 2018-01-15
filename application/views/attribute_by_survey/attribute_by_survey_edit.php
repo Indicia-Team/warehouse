@@ -28,7 +28,7 @@ $attrModelName = str_replace('s_website', '', $model->object_name);
 $dataType = $model->$attrModelName->data_type;
 switch ($dataType) {
   case "T":
-     // Text.
+    // Text.
     $enable_list = array(
       'valid_required',
       'valid_length',
@@ -125,40 +125,47 @@ switch ($dataType) {
   <legend><?php echo $other_data['name']; ?> Attribute details</legend>
     <p>Set the validation rules to apply to values submitted for this attribute below.</p>
     <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:id"
-	    value="<?php echo $values[$this->type . '_attributes_website:id']; ?>" />
-    <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:restrict_to_survey_id" value="<?php echo $values[$this->type.'_attributes_website:restrict_to_survey_id']; ?>" />
-    <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:<?php echo $this->type; ?>_attribute_id" value="<?php echo $values[$this->type.'_attributes_website:'.$this->type.'_attribute_id']; ?>" />
-<?php if (in_array('valid_required', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_required', TRUE, isset($model->valid_required) AND ($model->valid_required == 't')) ?>
-      Required</label>
-    </div>
-<?php endif; ?>
-<?php if (in_array('valid_length', $enable_list)) : ?>
-    <div class="form-inline">
-      <div class="checkbox">
-        <label>
-          <?php echo form::checkbox('valid_length', TRUE, isset($model->valid_length) && ($model->valid_length == 't')) ?>
-        Length</label>
-      </div>
-      <input id="valid_length_min" name="valid_length_min" class="form-control"
-        value="<?php echo html::specialchars($model->valid_length_min); ?>" />
-      -
-      <input id="valid_length_max" name="valid_length_max" class="form-control"
-        value="<?php echo html::specialchars($model->valid_length_max); ?>" />
-    </div>
-<?php echo html::error_message($model->getError('valid_length'));
-endif;
-if (in_array('valid_alpha', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_alpha', TRUE, isset($model->valid_alpha) && ($model->valid_alpha === 't')) ?>
-        Alphabetic
-      </label>
-    </div>
-<?php endif;
-if (in_array('valid_email', $enable_list)) : ?>
+      value="<?php echo $values[$this->type . '_attributes_website:id']; ?>" />
+    <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:restrict_to_survey_id"
+      value="<?php echo $values[$this->type . '_attributes_website:restrict_to_survey_id']; ?>" />
+    <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:<?php echo $this->type; ?>_attribute_id"
+      value="<?php echo $values[$this->type . '_attributes_website:' . $this->type . '_attribute_id']; ?>" />
+    <?php
+    if (in_array('valid_required', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'label' => 'Required',
+        'fieldname' => 'valid_required',
+        'default' => $model->valid_required,
+        'helpText' => 'Force a value to be provided.'
+      ]);
+    }
+    if (in_array('valid_length', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'label' => 'Length',
+        'fieldname' => 'valid_length',
+        'default' => $model->valid_length,
+        'helpText' => 'Specify a minimum or maximum number of characters required.',
+      ]);
+      echo data_entry_helper::text_input([
+        'fieldname' => 'valid_length_min',
+        'default' => $model->valid_length_min,
+      ]);
+      // Todo inline this form.
+      echo ' - ';
+      echo data_entry_helper::text_input([
+        'fieldname' => 'valid_length_min',
+        'default' => $model->valid_length_min,
+      ]);
+    }
+    if (in_array('valid_alpha', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'label' => 'Alphabetic',
+        'fieldname' => 'valid_alpha',
+        'default' => $model->valid_alpha,
+        'helpText' => 'Allow characters a-z only.'
+      ]);
+    }
+    if (in_array('valid_email', $enable_list)) : ?>
     <div class="checkbox">
       <label>
         <?php echo form::checkbox('valid_email', TRUE, isset($model->valid_email) && ($model->valid_email === 't')) ?>

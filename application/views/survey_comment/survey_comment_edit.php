@@ -36,7 +36,7 @@ warehouse::loadHelpers(['data_entry_helper']);
     echo data_entry_helper::textarea(array(
       'label' => 'Comment',
       'fieldname' => 'survey_comment:comment',
-      'default' => html::initial_value($values, 'survey_comment:comment')
+      'default' => html::initial_value($values, 'survey_comment:comment'),
     ));
     ?>
   </fieldset>
