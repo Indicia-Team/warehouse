@@ -121,11 +121,9 @@ class XMLReportReader_Core implements ReportReader
   * (=user's data) depending on the type of data from other websites to include in this report.
   * @param array $colsToInclude Optional list of column names to include in the report output.
   */
-  public function __construct($report, $websiteIds, $sharing='reporting', $colsToInclude = array())
-  {
+  public function __construct($report, $websiteIds, $sharing='reporting', $colsToInclude = array()) {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
-    try
-    {
+    try {
       $a = explode('/', $report);
       $this->name = $a[count($a)-1];
       $reader = new XMLReader();
@@ -719,6 +717,41 @@ class XMLReportReader_Core implements ReportReader
   }
 
   /**
+   * Retrieves the lookup values for a lookup parameter as a HTML table.
+   *
+   * @param array $param
+   *   Parameter definition.
+   *
+   * @return string
+   *   Table as HTML.
+   */
+  private function getLookupValuesAsTable(array $param) {
+    $values = explode(',', $param['lookup_values']);
+    $rows = [];
+    foreach ($values as $value) {
+      $tokens = explode(':', $value);
+      $rows[] = "<tr><th scope=\"row\">$tokens[0]</th><td>$tokens[1]</td></tr>";
+    }
+    $rows = implode("<br/>    ", $rows);
+    $table = <<<TBL
+<table>
+  <caption>Lookup values</caption>
+  <thead>
+    <tr>
+      <th>Value</th>
+      <th>Caption</th>
+    </tr>
+  </thead>
+  <tbody>
+    $rows
+  </tbody>
+</table>
+
+TBL;
+    return $table;
+  }
+
+  /**
    * Merges a parameter into the list of parameters read for the report. Updates existing
    * ones if there is a name match.
    * @todo Review the handling of $this->surveyParam
@@ -774,6 +807,9 @@ class XMLReportReader_Core implements ReportReader
         'linked_to' => $linked_to,
         'linked_filter_field' => $linked_filter_field
       );
+    }
+    if ($this->params[$name]['datatype'] === 'lookup') {
+      $this->params[$name]['description'] .= '<br/>' . $this->getLookupValuesAsTable($this->params[$name]);
     }
     // if we have a default value, keep a list
     if (isset($this->params[$name]['default']) && $this->params[$name]['default']!==null) {
