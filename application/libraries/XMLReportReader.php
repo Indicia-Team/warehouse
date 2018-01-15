@@ -726,11 +726,16 @@ class XMLReportReader_Core implements ReportReader
    *   Table as HTML.
    */
   private function getLookupValuesAsTable(array $param) {
+    if (empty($param['lookup_values'])) {
+      return NULL;
+    }
     $values = explode(',', $param['lookup_values']);
     $rows = [];
     foreach ($values as $value) {
       $tokens = explode(':', $value);
-      $rows[] = "<tr><th scope=\"row\">$tokens[0]</th><td>$tokens[1]</td></tr>";
+      if (count($tokens) === 2) {
+        $rows[] = "<tr><th scope=\"row\">$tokens[0]</th><td>$tokens[1]</td></tr>";
+      }
     }
     $rows = implode("<br/>    ", $rows);
     $table = <<<TBL
