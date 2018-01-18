@@ -103,7 +103,7 @@ echo html::script(
         </ul>
       </div>
     </nav>
-  <?php endif; ?>
+    <?php endif; ?>
 
   <div class="container">
     <div id="breadcrumbs">
