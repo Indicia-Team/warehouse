@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * A template for outputting an error message.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,4 +25,4 @@
 /**
  * Template to output error messages in the Warehouse.
  */
-echo $message; ?>
+echo $message;
