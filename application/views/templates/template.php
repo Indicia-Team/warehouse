@@ -39,15 +39,11 @@ $siteTitle = html::specialchars($warehouseTitle);
 <meta id="baseURI" name="baseURI" content="<?php echo url::site() ?>" />
 <meta id="routedURI" name="routedURI" content="<?php echo url::site() . router::$routed_uri; ?>" />
 <title><?php echo $siteTitle; ?> | <?php echo $title ?></title>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
-  crossorigin="anonymous">
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
-  integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
-  crossorigin="anonymous">
 <?php
 echo html::stylesheet(
   array(
+    'vendor/bootstrap/css/bootstrap.min.css',
+    'vendor/bootstrap/css/bootstrap-theme.min.css',
     'media/css/warehouse',
     'media/js/fancybox/source/jquery.fancybox.css',
     'media/css/jquery-ui.min',
@@ -68,13 +64,11 @@ echo html::script(
     'media/js/jquery.url.js',
     'media/js/fancybox/source/jquery.fancybox.pack.js',
     'media/js/hasharray.js',
-    'media/js/jquery-ui.min.js'
+    'media/js/jquery-ui.min.js',
+    'vendor/bootstrap/js/bootstrap.min.js',
   ), FALSE
 );
 ?>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
-      integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
-      crossorigin="anonymous"></script>
 <script type="text/javascript">
 // @todo Do we need a delegate event to hook up FancyBox after any Ajax calls?
 </script>
