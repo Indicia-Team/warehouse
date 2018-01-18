@@ -814,7 +814,8 @@ TBL;
       );
     }
     if ($this->params[$name]['datatype'] === 'lookup') {
-      $this->params[$name]['description'] .= '<br/>' . $this->getLookupValuesAsTable($this->params[$name]);
+      $this->params[$name]['description_extra'] = $this->getLookupValuesAsTable($this->params[$name]);
+      $this->params[$name]['description'];
     }
     // if we have a default value, keep a list
     if (isset($this->params[$name]['default']) && $this->params[$name]['default']!==null) {
