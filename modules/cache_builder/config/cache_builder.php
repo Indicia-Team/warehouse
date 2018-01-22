@@ -228,16 +228,18 @@ $config['taxa_taxon_lists']['key_field'] = 'ttl.id';
 $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
   'Ranks' => "
 with recursive q as (
-  select ttl1.id, ttl1.id as child_id, ttl1.taxon as child_taxon, ttl2.parent_id,
-      t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
+  select ttl1.id as child_id, ttl1.taxon as child_taxon, ttl2.parent_id,
+      ttl2.raw_id as raw_ttl_id, t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
   from cache_taxa_taxon_lists ttl1
-  join cache_taxa_taxon_lists ttl2 on ttl2.external_key=ttl1.external_key and ttl2.taxon_list_id=#master_list_id#
+  join cache_taxa_taxon_lists ttl2 on ttl2.external_key=ttl1.external_key
+    and ttl2.taxon_list_id=#master_list_id# and ttl2.preferred=true and ttl2.allow_data_entry=true
   join taxa_taxon_lists ttl2raw on ttl2raw.id=ttl2.id and ttl2raw.deleted=false
   join taxa t on t.id=ttl2raw.taxon_id and t.deleted=false and t.deleted=false
   join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
   join needs_update_taxa_taxon_lists nu on nu.id=ttl1.id
   union all
-  select ttl.id, q.child_id, q.child_taxon, ttl.parent_id, t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
+  select q.child_id, q.child_taxon, ttl.parent_id,
+      ttl.id as rank_ttl_id, t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
   from q
   join taxa_taxon_lists ttl on ttl.id=q.parent_id and ttl.deleted=false
   join taxa t on t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
@@ -245,24 +247,27 @@ with recursive q as (
 ) select distinct * into temporary rankupdate from q;
 
 update cache_taxa_taxon_lists cttl
-set kingdom_taxa_taxon_list_id=ru.id, kingdom_taxon=rank_taxon
+set kingdom_taxa_taxon_list_id=ru.rank_ttl_id, kingdom_taxon=rank_taxon
 from rankupdate ru
-where ru.child_id=cttl.id and ru.rank='Kingdom';
+where ru.child_id=cttl.id and ru.rank='Kingdom'
+and (cttl.kingdom_taxa_taxon_list_id<>ru.rank_ttl_id or cttl.kingdom_taxon<>rank_taxon);
 
 update cache_taxa_taxon_lists cttl
-set order_taxa_taxon_list_id=ru.id, order_taxon=rank_taxon
+set order_taxa_taxon_list_id=ru.rank_ttl_id, order_taxon=rank_taxon
 from rankupdate ru
-where ru.child_id=cttl.id and ru.rank='Order';
+where ru.child_id=cttl.id and ru.rank='Order'
+and (cttl.order_taxa_taxon_list_id<>ru.rank_ttl_id or cttl.order_taxon<>rank_taxon);
 
 update cache_taxa_taxon_lists cttl
-set family_taxa_taxon_list_id=ru.id, family_taxon=rank_taxon
+set family_taxa_taxon_list_id=ru.rank_ttl_id, family_taxon=rank_taxon
 from rankupdate ru
-where ru.child_id=cttl.id and ru.rank='Family';
+where ru.child_id=cttl.id and ru.rank='Family'
+and (cttl.family_taxa_taxon_list_id<>ru.rank_ttl_id or cttl.family_taxon<>rank_taxon);
 
 update cache_taxa_taxon_lists cttl
 set taxon_rank_id=ru.taxon_rank_id, taxon_rank=ru.rank, taxon_rank_sort_order=ru.taxon_rank_sort_order
 from rankupdate ru
-where ru.id=cttl.id;
+where ru.child_id=cttl.id;
 
 drop table rankupdate;"
 );
