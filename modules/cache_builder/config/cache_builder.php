@@ -228,46 +228,89 @@ $config['taxa_taxon_lists']['key_field'] = 'ttl.id';
 $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
   'Ranks' => "
 with recursive q as (
-  select ttl1.id as child_id, ttl1.taxon as child_taxon, ttl2.parent_id,
-      ttl2.raw_id as raw_ttl_id, t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
+  select distinct ttl1.id as child_id, ttl1.taxon as child_taxon, ttlpref.parent_id,
+      ttlpref.id as rank_ttl_id, t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
   from cache_taxa_taxon_lists ttl1
-  join cache_taxa_taxon_lists ttl2 on ttl2.external_key=ttl1.external_key
-    and ttl2.taxon_list_id=#master_list_id# and ttl2.preferred=true and ttl2.allow_data_entry=true
-  join taxa_taxon_lists ttl2raw on ttl2raw.id=ttl2.id and ttl2raw.deleted=false
-  join taxa t on t.id=ttl2raw.taxon_id and t.deleted=false and t.deleted=false
+  join cache_taxa_taxon_lists ttlpref on ttlpref.external_key=ttl1.external_key
+    and ttlpref.taxon_list_id=#master_list_id# and ttlpref.preferred=true and ttlpref.allow_data_entry=true
+  join taxa_taxon_lists ttlprefraw on ttlprefraw.id=ttlpref.id and ttlprefraw.deleted=false
+  join taxa t on t.id=ttlprefraw.taxon_id and t.deleted=false and t.deleted=false
   join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
   join needs_update_taxa_taxon_lists nu on nu.id=ttl1.id
+  where ttl1.taxon_list_id=#master_list_id#
   union all
   select q.child_id, q.child_taxon, ttl.parent_id,
       ttl.id as rank_ttl_id, t.taxon as rank_taxon, tr.rank, tr.id as taxon_rank_id, tr.sort_order as taxon_rank_sort_order
   from q
-  join taxa_taxon_lists ttl on ttl.id=q.parent_id and ttl.deleted=false
+  join taxa_taxon_lists ttl on ttl.id=q.parent_id and ttl.deleted=false and ttl.taxon_list_id=#master_list_id#
   join taxa t on t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
   join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
 ) select distinct * into temporary rankupdate from q;
 
-update cache_taxa_taxon_lists cttl
+-- Update data for the higher taxa kingdom, order and family.
+update cache_taxa_taxon_lists u
 set kingdom_taxa_taxon_list_id=ru.rank_ttl_id, kingdom_taxon=rank_taxon
-from rankupdate ru
-where ru.child_id=cttl.id and ru.rank='Kingdom'
-and (cttl.kingdom_taxa_taxon_list_id<>ru.rank_ttl_id or cttl.kingdom_taxon<>rank_taxon);
+from cache_taxa_taxon_lists cttl
+left join rankupdate ru on ru.child_id=cttl.preferred_taxa_taxon_list_id and ru.rank='Kingdom'
+where cttl.id=u.id
+and (
+  coalesce(cttl.kingdom_taxa_taxon_list_id, 0)<>coalesce(ru.rank_ttl_id, 0)
+  or coalesce(cttl.kingdom_taxon, '')<>coalesce(rank_taxon, '')
+);
 
-update cache_taxa_taxon_lists cttl
+update cache_taxa_taxon_lists u
 set order_taxa_taxon_list_id=ru.rank_ttl_id, order_taxon=rank_taxon
-from rankupdate ru
-where ru.child_id=cttl.id and ru.rank='Order'
-and (cttl.order_taxa_taxon_list_id<>ru.rank_ttl_id or cttl.order_taxon<>rank_taxon);
+from cache_taxa_taxon_lists cttl
+left join rankupdate ru on ru.child_id=cttl.preferred_taxa_taxon_list_id and ru.rank='Order'
+where cttl.id=u.id
+and (
+  coalesce(cttl.order_taxa_taxon_list_id, 0)<>coalesce(ru.rank_ttl_id, 0)
+  or coalesce(cttl.order_taxon, '')<>coalesce(rank_taxon, '')
+);
 
-update cache_taxa_taxon_lists cttl
+update cache_taxa_taxon_lists u
 set family_taxa_taxon_list_id=ru.rank_ttl_id, family_taxon=rank_taxon
-from rankupdate ru
-where ru.child_id=cttl.id and ru.rank='Family'
-and (cttl.family_taxa_taxon_list_id<>ru.rank_ttl_id or cttl.family_taxon<>rank_taxon);
+from cache_taxa_taxon_lists cttl
+left join rankupdate ru on ru.child_id=cttl.preferred_taxa_taxon_list_id and ru.rank='Family'
+where cttl.id=u.id
+and (
+  coalesce(cttl.family_taxa_taxon_list_id, 0)<>coalesce(ru.rank_ttl_id, 0)
+  or coalesce(cttl.family_taxon, '')<>coalesce(rank_taxon, '')
+);
 
-update cache_taxa_taxon_lists cttl
+UPDATE cache_occurrences_functional u
+SET family_taxa_taxon_list_id=ru.rank_ttl_id
+FROM cache_occurrences_functional co
+LEFT JOIN rankupdate ru ON ru.child_id=co.preferred_taxa_taxon_list_id AND ru.rank='Family'
+WHERE co.id=u.id
+AND (
+  coalesce(co.family_taxa_taxon_list_id, 0)<>coalesce(ru.rank_ttl_id, 0)
+);
+
+-- Update rank data for the same level.
+update cache_taxa_taxon_lists u
 set taxon_rank_id=ru.taxon_rank_id, taxon_rank=ru.rank, taxon_rank_sort_order=ru.taxon_rank_sort_order
 from rankupdate ru
-where ru.child_id=cttl.id;
+where ru.child_id=u.preferred_taxa_taxon_list_id
+and ru.child_id=ru.rank_ttl_id
+and (coalesce(u.taxon_rank_id, 0) <> ru.taxon_rank_id
+  or coalesce(u.taxon_rank, '')<>ru.rank
+  or coalesce(u.taxon_rank_sort_order, 0)<>ru.taxon_rank_sort_order
+);
+
+update cache_taxon_searchterms u
+set taxon_rank_sort_order=ru.taxon_rank_sort_order
+from rankupdate ru
+where ru.child_id=u.preferred_taxa_taxon_list_id
+and ru.child_id=ru.rank_ttl_id
+and coalesce(u.taxon_rank_sort_order, 0)<>ru.taxon_rank_sort_order;
+
+update cache_occurrences_functional u
+set taxon_rank_sort_order=ru.taxon_rank_sort_order
+from rankupdate ru
+where ru.child_id=u.preferred_taxa_taxon_list_id
+and ru.child_id=ru.rank_ttl_id
+and coalesce(u.taxon_rank_sort_order, 0)<>ru.taxon_rank_sort_order;
 
 drop table rankupdate;"
 );
