@@ -1,3 +1,4 @@
+-- #slow script#
 
 -- Build a complete hierarchy so we can spot changes required in the cache tables
 WITH RECURSIVE q AS (
