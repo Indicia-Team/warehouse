@@ -9,7 +9,7 @@ WITH RECURSIVE q AS (
       ttlpref.id AS rank_ttl_id, t.taxon AS rank_taxon, tr.rank, tr.id AS taxon_rank_id, tr.sort_order AS taxon_rank_sort_order
   FROM cache_taxa_taxon_lists ttl1
   JOIN cache_taxa_taxon_lists ttlpref ON ttlpref.external_key=ttl1.external_key
-    AND ttlpref.taxon_list_id=(SELECT uksi_taxon_list_id FROM uksi.uksi_settings) AND ttlpref.preferred=true AND ttlpref.allow_data_entry=true
+    AND ttlpref.taxon_list_id=#list_id# AND ttlpref.preferred=true AND ttlpref.allow_data_entry=true
   JOIN taxa_taxon_lists ttlprefraw ON ttlprefraw.id=ttlpref.id AND ttlprefraw.deleted=false
   JOIN taxa t ON t.id=ttlprefraw.taxon_id AND t.deleted=false AND t.deleted=false
   JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id AND tr.deleted=false AND tr.deleted=false
@@ -18,7 +18,7 @@ WITH RECURSIVE q AS (
   SELECT q.child_id, q.child_taxon, ttl.parent_id,
       ttl.id AS rank_ttl_id, t.taxon AS rank_taxon, tr.rank, tr.id AS taxon_rank_id, tr.sort_order AS taxon_rank_sort_order
   from q
-  JOIN taxa_taxon_lists ttl ON ttl.id=q.parent_id AND ttl.deleted=false AND ttl.taxon_list_id=(SELECT uksi_taxon_list_id FROM uksi.uksi_settings)
+  JOIN taxa_taxon_lists ttl ON ttl.id=q.parent_id AND ttl.deleted=false AND ttl.taxon_list_id=#list_id#
   JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false AND t.deleted=false
   JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id AND tr.deleted=false AND tr.deleted=false
 ) SELECT DISTINCT * INTO temporary rankupdate FROM q;
