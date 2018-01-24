@@ -83,7 +83,7 @@ where ru.child_id=u.preferred_taxa_taxon_list_id
 AND ru.child_id=ru.rank_ttl_id
 AND coalesce(u.taxon_rank_sort_order, 0)<>ru.taxon_rank_sort_order;
 
-UPDATE cache_occurrences_nonfunctional u
+UPDATE cache_occurrences_functional u
 SET taxon_rank_sort_order=ru.taxon_rank_sort_order
 FROM rankupdate ru
 where ru.child_id=u.preferred_taxa_taxon_list_id
