@@ -1,6 +1,9 @@
--- #slow script#
+-- #postgres user#
 
--- Build a complete hierarchy so we can spot changes required in the cache tables
+-- Important! Run this script once for each full hierarchical taxonomic taxon list,
+-- replacing #list_id# as required.
+
+-- Build a complete hierarchy so we can spot changes required in the cache tables.
 WITH RECURSIVE q AS (
   SELECT distinct ttl1.id AS child_id, ttl1.taxon AS child_taxon, ttlpref.parent_id,
       ttlpref.id AS rank_ttl_id, t.taxon AS rank_taxon, tr.rank, tr.id AS taxon_rank_id, tr.sort_order AS taxon_rank_sort_order
@@ -10,7 +13,7 @@ WITH RECURSIVE q AS (
   JOIN taxa_taxon_lists ttlprefraw ON ttlprefraw.id=ttlpref.id AND ttlprefraw.deleted=false
   JOIN taxa t ON t.id=ttlprefraw.taxon_id AND t.deleted=false AND t.deleted=false
   JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id AND tr.deleted=false AND tr.deleted=false
-  WHERE ttl1.taxon_list_id=(SELECT uksi_taxon_list_id FROM uksi.uksi_settings)
+  WHERE ttl1.taxon_list_id=#list_id#
   UNION ALL
   SELECT q.child_id, q.child_taxon, ttl.parent_id,
       ttl.id AS rank_ttl_id, t.taxon AS rank_taxon, tr.rank, tr.id AS taxon_rank_id, tr.sort_order AS taxon_rank_sort_order
