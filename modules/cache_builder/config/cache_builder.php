@@ -299,7 +299,7 @@ JOIN cache_taxa_taxon_lists cttl on cttl.id=nu.id
 WHERE nu.id=u.taxa_taxon_list_id
 AND (
   COALESCE(u.taxon_rank_sort_order, 0)<>COALESCE(cttl.taxon_rank_sort_order, 0)
-  OR COALESCE(u.family_taxa_taxon_list_id, 0)=COALESCE(cttl.family_taxa_taxon_list_id, 0)
+  OR COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttl.family_taxa_taxon_list_id, 0)
 );
 
 DROP TABLE rankupdate;"
