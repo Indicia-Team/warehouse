@@ -1,5 +1,9 @@
 <?php
+
 /**
+ * @file
+ * Plugin file for the Data Cleaner WithoutPolygon module.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,48 +17,61 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Data Cleaner
+ * @package Data Cleaner
  * @subpackage Plugins
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 /**
- * Hook into the data cleaner to declare checks for the difficulty of identification
- * of a species.
- * @return type array of rules.
+ * Implements data_cleaner_rules().
+ *
+ * Hook into the data cleaner to declare checks for the difficulty of
+ * identification of a species.
+ *
+ * @return array
+ *   Definition of the rule.
  */
 function data_cleaner_without_polygon_data_cleaner_rules() {
   return array(
     'testType' => 'WithoutPolygon',
-    'required' => array('Metadata'=>array('DataFieldName','DataRecordId')),
-    'optional' => array('10km_GB'=>array('*'), '10km_Ireland'=>array('*'), '10km_CI'=>array('*'), '1km_GB'=>array('*'), '1km_Ireland'=>array('*'), '1km_CI'=>array('*')),
+    'required' => array('Metadata' => array('DataFieldName', 'DataRecordId')),
+    'optional' => array(
+      '10km_GB' => array('*'),
+      '10km_Ireland' => array('*'),
+      '10km_CI' => array('*'),
+      '1km_GB' => array('*'),
+      '1km_Ireland' => array('*'),
+      '1km_CI' => array('*'),
+    ),
     'queries' => array(
       array(
-        'joins' => 
-            "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
-            "join verification_rule_metadata vrm on vrm.key='DataRecordId' and vrm.value=co.taxa_taxon_list_external_key ".
-            "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='WithoutPolygon' ".
-            "join verification_rule_metadata isSpecies on isSpecies.value='Species' and isSpecies.key='DataFieldName' and isSpecies.verification_rule_id=vr.id ".
-            "join verification_rule_data vrd on vrd.verification_rule_id=vr.id and vrd.header_name='geom' and ".
-            "((not vr.reverse_rule and not st_intersects(vrd.value_geom, co.public_geom)) or (vr.reverse_rule and st_intersects(vrd.value_geom, co.public_geom))) "
+        'joins' =>
+        "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id " .
+        "join verification_rule_metadata vrm on vrm.key='DataRecordId' and vrm.value=co.taxa_taxon_list_external_key " .
+        "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='WithoutPolygon' " .
+        "join verification_rule_metadata isSpecies on isSpecies.value='Species' and isSpecies.key='DataFieldName' and isSpecies.verification_rule_id=vr.id " .
+        "join verification_rule_data vrd on vrd.verification_rule_id=vr.id and vrd.header_name='geom' and " .
+        "((not vr.reverse_rule and not st_intersects(vrd.value_geom, co.public_geom)) or (vr.reverse_rule and st_intersects(vrd.value_geom, co.public_geom))) ",
       ),
       array(
         'joins' =>
-          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
-          "join verification_rule_metadata vrm on vrm.key='Taxon' and vrm.value=cttl.preferred_taxon ".
-          "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='WithoutPolygon' ".
-          "join verification_rule_metadata isSpecies on isSpecies.value='Species' and isSpecies.key='DataFieldName' and isSpecies.verification_rule_id=vr.id ".
-          "join verification_rule_data vrd on vrd.verification_rule_id=vr.id and vrd.header_name='geom' and ".
-          "((not vr.reverse_rule and not st_intersects(vrd.value_geom, co.public_geom)) or (vr.reverse_rule and st_intersects(vrd.value_geom, co.public_geom))) "
-      )
-    )
+        "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id " .
+        "join verification_rule_metadata vrm on vrm.key='Taxon' and vrm.value=cttl.preferred_taxon " .
+        "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='WithoutPolygon' " .
+        "join verification_rule_metadata isSpecies on isSpecies.value='Species' and isSpecies.key='DataFieldName' and isSpecies.verification_rule_id=vr.id " .
+        "join verification_rule_data vrd on vrd.verification_rule_id=vr.id and vrd.header_name='geom' and " .
+        "((not vr.reverse_rule and not st_intersects(vrd.value_geom, co.public_geom)) or (vr.reverse_rule and st_intersects(vrd.value_geom, co.public_geom))) ",
+      ),
+    ),
   );
 }
 
-/** 
- * Postprocessing for building a geom from the list of grid squares to make an SQL based check easy
+/**
+ * Postprocessing for building a geom from the list of grid squares.
+ *
+ * Designed to make an SQL based check easy.
  */
 function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
   $db->query('create temporary table geoms_without_polygon (geom geometry)');
@@ -62,43 +79,58 @@ function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
     $r = $db->select('key, header_name')
       ->from('verification_rule_data')
       ->where('verification_rule_id', $id)
-      ->in('header_name', array('10km_GB', '10km_Ireland', '1km_GB', '1km_Ireland', '10km_CI', '1km_CI'))
+      ->in('header_name', array(
+        '10km_GB', '10km_Ireland',
+        '1km_GB',
+        '1km_Ireland',
+        '10km_CI',
+        '1km_CI',
+      ))
       ->get()->result();
     $wktList = array();
-    foreach($r as $gridSquare) {
+    foreach ($r as $gridSquare) {
       switch ($gridSquare->header_name) {
         case '10km_GB':
         case '1km_GB':
-          $system='osgb';
+          $system = 'osgb';
           break;
+
         case '10km_Ireland':
         case '1km_Ireland':
-          $system='osie';
+          $system = 'osie';
           break;
+
         case '10km_CI':
         case '1km_CI':
-          $system='utm30ed50';
+          $system = 'utm30ed50';
           break;
+
         default:
-          continue; // we don't know this grid square type - should not have come back from the query
+          // We don't know this grid square type - should not have come back
+          // from the query.
+          continue;
       }
-      $srid=kohana::config('sref_notations.internal_srid');
+      $srid = kohana::config('sref_notations.internal_srid');
       try {
-        $wktList[]="(st_geomfromtext('".spatial_ref::sref_to_internal_wkt($gridSquare->key, $system)."', $srid))";
-      } catch (Exception $e) {
-        kohana::debug('alert', 'Did not import grid square '.$gridSquare->key." for rule $id");
+        $wktList[] = "(st_geomfromtext('" . spatial_ref::sref_to_internal_wkt($gridSquare->key, $system) . "', $srid))";
+      }
+      catch (Exception $e) {
+        kohana::debug('alert', "Did not import grid square $gridSquare->key for rule $id");
         error_logger::log_error('Importing without polygon rules', $e);
       }
     }
-    if (!empty($wktList))
-      $db->query("insert into geoms_without_polygon values ".implode(',',$wktList));
-    $date=date("Ymd H:i:s");
-    $uid=$_SESSION['auth_user']->id;
+    if (!empty($wktList)) {
+      $db->query("insert into geoms_without_polygon values " . implode(',', $wktList));
+    }
+    $date = date("Ymd H:i:s");
+    $uid = $_SESSION['auth_user']->id;
     $db->query("delete from verification_rule_data where verification_rule_id=$id and header_name='geom'");
-    $db->query('insert into verification_rule_data (verification_rule_id, header_name, data_group, key, value, value_geom, created_on, created_by_id, updated_on, updated_by_id) '.
-        "select $id, 'geom', 1, 'geom', '-', st_union(geom), '$date', $uid, '$date', $uid from geoms_without_polygon");
+    $db->query('insert into verification_rule_data (verification_rule_id, header_name, data_group, key, value, ' .
+      'value_geom, created_on, created_by_id, updated_on, updated_by_id) ' .
+      "select $id, 'geom', 1, 'geom', '-', st_union(geom), '$date', $uid, '$date', $uid from geoms_without_polygon");
     $db->query('drop table geoms_without_polygon');
-  } catch (Exception $e) {
+  }
+  catch (Exception $e) {
     $db->query('drop table geoms_without_polygon');
     throw $e;
   }
