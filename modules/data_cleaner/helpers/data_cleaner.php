@@ -26,7 +26,7 @@
  * Helper class to provide library functions for the data_cleaner module.
  */
 class data_cleaner {
-  
+
 /**
  * Build a list of all the rules that are exposed by enabled data cleaner rule modules.
  * @return array List of rules
@@ -54,7 +54,7 @@ class data_cleaner {
     }
     return $rules;
   }
-  
+
   /**
    * Retrieve the definition of a single rule.
    * @param string $type Rule type name
@@ -74,9 +74,9 @@ class data_cleaner {
     // If we got this far then the rule type is not found.
     throw new exception ("Test type $type not found");
   }
-  
+
   /**
-   * Parses a data cleaner verification rule test file into an array of sections, 
+   * Parses a data cleaner verification rule test file into an array of sections,
    * each contining an array of key value pairs.
    * Very similar to PHP's parse_ini_string but a bit more tolerant, e.g of comments used.
    * @param type $content Content of the verification rule test file.
@@ -99,9 +99,9 @@ class data_cleaner {
         // reset for the next section
         $currentSection = trim(strtolower($matches['section']));
         $currentSectionData=array();
-      } elseif (preg_match('/^([^=\r\n]+)=([^\r\n]*)$/', $line, $matches)) 
+      } elseif (preg_match('/^([^=\r\n]+)=([^\r\n]*)$/', $line, $matches))
         $currentSectionData[trim(strtolower($matches[1]))]=trim($matches[2]);
-      elseif (preg_match('/^(?P<key>.+)$/', $line, $matches)) 
+      elseif (preg_match('/^(?P<key>.+)$/', $line, $matches))
         $currentSectionData[trim(strtolower($matches['key']))]='-';
     }
     // set the final section content
@@ -109,5 +109,5 @@ class data_cleaner {
       $r[$currentSection]=$currentSectionData;
     return $r;
   }
-  
+
 }

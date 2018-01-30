@@ -13,22 +13,65 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Data Cleaner
+ * @package Data Cleaner
  * @subpackage Plugins
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
+function data_cleaner_period_within_year_cache_sql() {
+  return <<<SQL
+insert into cache_verification_rules_period_within_year
+-- Non-stage linked rules
+select vr.id as verification_rule_id,
+ vr.reverse_rule,
+ vrmkey.value as taxa_taxon_list_external_key,
+ extract(doy from cast('2012' || vrmstart.value as date)) as start_date,
+ extract(doy from cast('2012' || vrmend.value as date)) as end_date,
+ vrmsurvey.value::integer as survey_id,
+ null as stages
+from verification_rules vr
+join verification_rule_metadata vrmkey on vrmkey.verification_rule_id=vr.id and vrmkey.key ilike 'Tvk' and vrmkey.deleted=false
+left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key ilike 'StartDate' and length(vrmstart.value)=4
+ and vrmstart.deleted=false
+left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key ilike 'EndDate' and length(vrmend.value)=4
+ and vrmend.deleted=false
+left join verification_rule_metadata vrmsurvey on vrmsurvey.verification_rule_id=vr.id and vrmsurvey.key='SurveyId' and vrmsurvey.deleted=false
+where vr.test_type='PeriodWithinYear'
+and vr.deleted=false
+and (vrmstart.id is not null or vrmend.id is not null)
+and vr.id=#id#
+union
+-- Stage linked rules
+select vr.id,
+ vr.reverse_rule,
+ vrmkey.value as taxa_taxon_list_external_key,
+ extract(doy from cast('2012' || vrdstart.value as date)) as start_date,
+ extract(doy from cast('2012' || vrdend.value as date)) as end_date,
+ vrmsurvey.value::integer as survey_id,
+ string_to_array(lower(vrdstage.value), ',') as stages
+from verification_rules vr
+join verification_rule_metadata vrmkey on vrmkey.verification_rule_id=vr.id and vrmkey.key ilike 'Tvk' and vrmkey.deleted=false
+join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key ilike 'Stage'
+left join verification_rule_data vrdstart on vrdstart.verification_rule_id=vr.id and vrdstart.key='StartDate' and vrdstart.data_group=vrdstage.data_group
+left join verification_rule_data vrdend on vrdend.verification_rule_id=vr.id and vrdend.key='EndDate' and vrdend.data_group=vrdstage.data_group
+left join verification_rule_metadata vrmsurvey on vrmsurvey.verification_rule_id=vr.id and vrmsurvey.key='SurveyId' and vrmsurvey.deleted=false
+where vr.test_type='PeriodWithinYear'
+and vr.deleted=false
+and vr.id=#id#;
+SQL;
+}
+
 /**
- * Hook into the data cleaner to declare checks for the test of record time of year. 
+ * Hook into the data cleaner to declare checks for the test of record time of year.
  * @return type array of rules.
  */
 function data_cleaner_period_within_year_data_cleaner_rules() {
   return array(
     'testType' => 'periodWithinYear',
     'optional' => array(
-        'Metadata'=>array('Tvk','TaxonMeaningId','Taxon','StartDate','EndDate','DataFieldName','SurveyId'), 
+        'Metadata'=>array('Tvk','TaxonMeaningId','Taxon','StartDate','EndDate','DataFieldName','SurveyId'),
         'Data'=>array('Stage','StartDate','EndDate')
     ),
     'queries' => array(
@@ -39,7 +82,7 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
       // The overall performance is also better with 6 simpler queries than one complex one.
       // Query 1 - TVK linked rules, not stage filtered.
       array(
-        'joins' => 
+        'joins' =>
             "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
             "join verification_rule_metadata vrm on vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk' ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
@@ -93,7 +136,7 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
       ),
       // Query 4 - TVK linked rules, stage filtered.
       array(
-        'joins' => 
+        'joins' =>
             "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id ".
             "join verification_rule_metadata vrm on vrm.value=co.taxa_taxon_list_external_key and vrm.key='Tvk' ".
             "join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='PeriodWithinYear' ".
@@ -104,7 +147,7 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
             "join occurrence_attribute_values oav on oav.occurrence_id=co.id and oav.deleted=false ".
             "left join cache_termlists_terms ctt on ctt.id=oav.int_value and string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(ctt.term),'') ".
             "join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oav.deleted=false ".
-            "  and lower(oa.system_function) in ('sex_stage', 'stage') ", 
+            "  and lower(oa.system_function) in ('sex_stage', 'stage') ",
         'where' =>
             // This logic allows a text value, lookup value or caption of a checked boolean attribute to count as the stage to filter on.
             "(string_to_array(lower(vrdstage.value),',') @> string_to_array(lower(oav.text_value),'') ".
@@ -182,7 +225,7 @@ function data_cleaner_period_within_year_data_cleaner_rules() {
   );
 }
 
-/** 
+/**
  * Taxon version keys should really be uppercase, so enforce this. Otherwise the query needs to be case insensitive which makes it slow.
  */
 function data_cleaner_period_within_year_data_cleaner_postprocess($id, $db) {

@@ -33,17 +33,17 @@ class Verification_rule_Model extends ORM {
   protected $belongs_to = array(
       'created_by'=>'user',
       'updated_by'=>'user');
-  
+
   protected $has_many = array(
     'verification_rule_data',
     'verification_rule_metadata'
   );
-  
+
   /**
    * @var boolean Is this model instance being used to create a new rule?
    */
   protected $isNewRule = false;
-  
+
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required', 'length[1,100]');
@@ -57,17 +57,17 @@ class Verification_rule_Model extends ORM {
   /**
    * Return the submission structure, which includes defining the text for the data
    * in the rule file as a metaField which is specially handled.
-   * 
+   *
    * @return array Submission structure for a verification_rule entry.
    */
   public function get_submission_structure()
   {
     return array(
         'model'=>$this->object_name,
-        'metaFields'=>array('data','metadata')      
+        'metaFields'=>array('data','metadata')
     );
   }
-  
+
   /**
    * Saves the part of the rule file metadata section which needs to go into the verification_rule
    * record. A rule file will be overwritten if it comes from the same source url and filename.
@@ -79,7 +79,7 @@ class Verification_rule_Model extends ORM {
   public function save_verification_rule($source_url, $filename, &$metadata) {
     // find existing or new verification rule record. Empty string stored in db as null.
     if (empty($source_url))
-      $source_url=null;  
+      $source_url=null;
     $this->where(array('source_url'=>$source_url, 'source_filename'=>$filename, 'deleted'=>'f'))->find();
     // because in a previous version the filename got stored without the path, look for existing rules
     // to overwrite so we don't end up with duplicate rules.
@@ -99,7 +99,7 @@ class Verification_rule_Model extends ORM {
     else
       $errorMsg = 'Test failed';
     $reverseRule = isset($metadata['reverserule']) && strtolower($metadata['reverserule'])==='true' ? 't' : 'f';
-    
+
     $submission = array(
       'verification_rule:title'=>$title,
       'verification_rule:test_type'=>$metadata['testtype'],
@@ -130,7 +130,7 @@ class Verification_rule_Model extends ORM {
     if (count($this->getAllErrors())>0)
       throw new exception("Errors saving $filename to database - ".print_r($this->getAllErrors(), true));
   }
-  
+
   /**
    * Uses to associative array of metadata values to ensure that the correct list of metadata
    * records exists for the current rule instance.
@@ -168,7 +168,7 @@ class Verification_rule_Model extends ORM {
           $vrm->submit();
           if (count($vrm->getAllErrors())>0)
             throw new exception("Errors saving $filename to database - ".print_r($vrm->getAllErrors(), true));
-        } elseif (isset($currentRule['required']['Metadata']) && in_array($field, $currentRule['required']['Metadata'])) 
+        } elseif (isset($currentRule['required']['Metadata']) && in_array($field, $currentRule['required']['Metadata']))
           throw new exception("Required field $field missing from the metadata");
       }
     }
@@ -176,13 +176,13 @@ class Verification_rule_Model extends ORM {
     $deleteQuery = 'update verification_rule_metadata set deleted=true where verification_rule_id='.$this->id;
     if (count($recordsInSubmission))
       $deleteQuery .= ' and not ('.implode(' or ', $recordsInSubmission).')';
-    $this->db->query($deleteQuery);     
+    $this->db->query($deleteQuery);
   }
-  
+
   public function save_verification_rule_data($currentRule, $data) {
     $fields = array_merge_recursive($currentRule['required'], $currentRule['optional']);
     unset($fields['Metadata']);
-    // counter to keep track of groups of related field values in a data section. Not implemented properly 
+    // counter to keep track of groups of related field values in a data section. Not implemented properly
     // at the moment but we are likely to need this e.g. for periodInYear checks with multiple stages.
     $dataGroup=1;
     $rows = array();
@@ -193,7 +193,7 @@ class Verification_rule_Model extends ORM {
     $expect = array_keys(array_change_key_case($fields));
     $dontWant = array_diff($got, $expect);
     if (count($dontWant)) {
-      
+
       kohana::log('debug', 'got '.print_r($got, true)); // this is the nested values, should be top level
       kohana::log('debug', 'expect '.print_r($expect, true)); // this is the top level category
       kohana::log('debug', 'dontWant '.print_r($dontWant, true));
@@ -209,28 +209,28 @@ class Verification_rule_Model extends ORM {
           if (count($dontWant))
             throw new exception('The following data keys are not recognised for this rule type: '.implode(',', $dontWant).print_r($dataContent, true));
         }
-      
+
         foreach ($dataContent as $key) {
           if ($key==='*') {
             // * means that any field value is allowed
             foreach ($data[strtolower($dataSection)] as $anyField=>$anyValue)
               $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$anyField, 'value'=>$anyValue);
           }
-          elseif (isset($data[strtolower($dataSection)][strtolower($key)])) 
+          elseif (isset($data[strtolower($dataSection)][strtolower($key)]))
             // doing specific named fields
-            $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$key, 
+            $rows[] = array('dataSection'=>$dataSection, 'dataGroup'=>$dataGroup, 'key'=>$key,
                 'value'=>$data[strtolower($dataSection)][strtolower($key)]);
           else {
-            if (isset($currentRule['required'][$dataSection]) && in_array($key, $currentRule['required'][$dataSection])) 
+            if (isset($currentRule['required'][$dataSection]) && in_array($key, $currentRule['required'][$dataSection]))
               throw new exception("Required field $key missing from the data for section $dataSection");
-            
+
           }
         }
       }
     }
     $this->save_verification_rule_data_records($rows);
   }
-  
+
   /**
    * Call this method after making any updates to a verification rule including the data
    * and metadata.
@@ -242,32 +242,32 @@ class Verification_rule_Model extends ORM {
     if (function_exists($ppMethod)) {
       call_user_func($ppMethod, $this->id, $this->db);
     }
-    
+
   }
-  
+
   /**
    * Save a verification rule data record, either overwriting existing or creating a new one.
    * Avoids ORM for performance reasons as some files can be pretty big.
    * @param integer $vrId
    * @param array $rows
    */
-  private function save_verification_rule_data_records($rows) { 
+  private function save_verification_rule_data_records($rows) {
     $done=array();
     $recordsInSubmission=array();
     // only worth trying an update if we are updating an existing rule.
     if (!$this->isNewRule) {
       foreach ($rows as $idx=>$row) {
-        $updated = $this->db->update('verification_rule_data', 
-          array('value'=>$row['value'], 'updated_on'=>date("Ymd H:i:s"), 
+        $updated = $this->db->update('verification_rule_data',
+          array('value'=>$row['value'], 'updated_on'=>date("Ymd H:i:s"),
             'updated_by_id'=>$_SESSION['auth_user']->id, 'deleted'=>'f'),
           array(
-            'header_name'=>$row['dataSection'], 'data_group'=>$row['dataGroup'], 
+            'header_name'=>$row['dataSection'], 'data_group'=>$row['dataGroup'],
             'verification_rule_id'=>$this->id, 'key'=>strval($row['key'])
           )
         );
         if (count($updated))
           $done[]=$idx;
-        $recordsInSubmission[] = "(header_name='".$row['dataSection']."' and data_group='".$row['dataGroup']."'". 
+        $recordsInSubmission[] = "(header_name='".$row['dataSection']."' and data_group='".$row['dataGroup']."'".
             " and verification_rule_id='".$this->id."' and key='".strval($row['key'])."')";
       }
       // Construct a query to remove any existing records
@@ -290,15 +290,18 @@ class Verification_rule_Model extends ORM {
       $this->db->query("insert into verification_rule_data(header_name, data_group, verification_rule_id, key, value, ".
           "updated_on, updated_by_id, created_on, created_by_id) values $rowList");
   }
-  
+
  /**
-  * Overrides the postSubmit function to add in additional metadata and data values. 
+  * Overrides the postSubmit function to perform additional db changes.
+  *
+  * * Add in additional metadata calculated from other rule data.
+  * * Allows rules which use a cache table for performance to updatae the
+  *   cache.
   */
-  protected function postSubmit($isInsert)
-  {
+  protected function postSubmit($isInsert) {
     require_once(DOCROOT.'client_helpers/helper_base.php');
     $result = true;
-    if (isset($this->submission['metaFields'])) { 
+    if (isset($this->submission['metaFields'])) {
       $currentRule = data_cleaner::get_rule($this->test_type);
       if (isset($this->submission['metaFields']['metadata']['value'])) {
         $metadata = helper_base::explode_lines_key_value_pairs($this->submission['metaFields']['metadata']['value']);
@@ -308,7 +311,18 @@ class Verification_rule_Model extends ORM {
         $this->postProcessRule($currentRule);
       }
     }
+    // If the rule type uses a cache table to improve performance, update it.
+    $rule = trim(strtolower(preg_replace('/([A-Z])/', '_$1', $this->test_type)), '_');
+    require_once MODPATH . "data_cleaner_$rule/plugins/data_cleaner_$rule.php";
+    if (function_exists("data_cleaner_{$rule}_cache_sql")) {
+      $this->db->query("delete from cache_verification_rules_$rule where verification_rule_id=$this->id");
+      if ($this->deleted === 'f') {
+        $sql = call_user_func("data_cleaner_{$rule}_cache_sql");
+        $sql = str_replace('#id#', $this->id, $sql);
+        $this->db->query($sql);
+      }
+    }
     return true;
   }
-  
+
 }
