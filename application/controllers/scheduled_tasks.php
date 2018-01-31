@@ -569,7 +569,6 @@ create index ix_occdelta_taxa_taxon_list_id on occdelta(taxa_taxon_list_id);
 
 drop table occlist;";
         $this->db->query($query);
-        echo "<br/><pre>$query</pre></br>";
         $this->occdeltaStartTimestamp=$timestamp;
         $this->occdeltaEndTimestamp=$currentTime;
         // if processing more than a few thousand records at a time, things will slow down. So we'll cut off the delta at the second which

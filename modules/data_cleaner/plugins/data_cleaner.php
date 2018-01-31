@@ -156,7 +156,6 @@ SQL;
       // occurrence ids that fail the check.
       try {
         $count += $db->query($sql)->count();
-        echo "<br/><pre>$sql</pre></br>";
       }
       catch (Exception $e) {
         echo "Query failed<br/>";
