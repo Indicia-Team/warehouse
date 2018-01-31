@@ -22,6 +22,31 @@
  * @link http://code.google.com/p/indicia/
  */
 
+
+/**
+ * Updates the cached copy of identification difficulty rules.
+ *
+ * After saving a record, does an insert of the updated cache entry, helping
+ * to impprove performance.
+ */
+function data_cleaner_identification_difficulty_cache_sql() {
+  return <<<SQL
+insert into cache_verification_rules_identification_difficulty
+select distinct vr.id as verification_rule_id,
+  coalesce(vrdtvk.key, cttltaxon.external_key) as taxa_taxon_list_external_key,
+  coalesce(vrdtvk.value, vrdtaxa.value)::int as id_difficulty
+from verification_rules vr
+left join verification_rule_data vrdtvk on vrdtvk.verification_rule_id=vr.id
+  and vrdtvk.header_name='Data' and vrdtvk.deleted=false
+left join verification_rule_data vrdtaxa on vrdtaxa.verification_rule_id=vr.id
+  and vrdtaxa.header_name='Taxa' and vrdtaxa.deleted=false
+left join cache_taxa_taxon_lists cttltaxon on cttltaxon.preferred_taxon=vrdtaxa.value and cttltaxon.preferred=true
+where vr.test_type='IdentificationDifficulty'
+and vr.deleted=false
+and vr.id=#id#;
+SQL;
+}
+
 /**
  * Returns definitions of the rule queries.
  *
@@ -32,6 +57,13 @@
  *   array of rules.
  */
 function data_cleaner_identification_difficulty_data_cleaner_rules() {
+  $joinSql = <<<SQL
+join cache_verification_rules_identification_difficulty vr on vr.taxa_taxon_list_external_key=co.taxa_taxon_list_external_key
+join verification_rule_data vrdini on vrdini.verification_rule_id=vr.verification_rule_id
+  and vrdini.header_name='INI'
+  and vrdini.key::int=vr.id_difficulty
+  and vrdini.key::int>1 and vrdini.deleted=false
+SQL;
   return array(
     'testType' => 'IdentificationDifficulty',
     'optional' => array(
@@ -40,26 +72,12 @@ function data_cleaner_identification_difficulty_data_cleaner_rules() {
       'INI' => array('*'),
     ),
     'errorMsgField' => 'vrdini.value',
-    'queries' => array(
-      // Test where the rule is keyed by TVK.
-      array(
-        'joins' =>
-          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id " .
-          "join verification_rule_data vrd on vrd.header_name='Data' and vrd.key = co.taxa_taxon_list_external_key and vrd.deleted=false " .
-          "join verification_rules vr on vr.id=vrd.verification_rule_id and vr.test_type='IdentificationDifficulty' and vr.deleted=false " .
-          "join verification_rule_data vrdini on vrdini.verification_rule_id=vr.id and vrdini.header_name='INI' and vrdini.key=vrd.value and cast(vrdini.key as int)>1 and vrdini.deleted=false",
+    'queries' => [
+      [
+        'joins' => $joinSql,
         'subtypeField' => 'vrdini.key',
-      ),
-      // Repeat test where the rule is keyed by species name.
-      array(
-        'joins' =>
-          "join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id " .
-          "join verification_rule_data vrd on vrd.header_name='Taxa' and vrd.key = cttl.preferred_taxon and vrd.deleted=false " .
-          "join verification_rules vr on vr.id=vrd.verification_rule_id and vr.test_type='IdentificationDifficulty' and vr.deleted=false " .
-          "join verification_rule_data vrdini on vrdini.verification_rule_id=vr.id and vrdini.header_name='INI' and vrdini.key=vrd.value and cast(vrdini.key as int)>1 and vrdini.deleted=false",
-        'subtypeField' => 'vrdini.key',
-      )
-    )
+      ],
+    ],
   );
 }
 
