@@ -1,3 +1,5 @@
+-- #slow script#
+
 -- Non-stage linked rules
 select vr.id as verification_rule_id,
   vr.reverse_rule,
