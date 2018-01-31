@@ -158,9 +158,7 @@ SQL;
         $count += $db->query($sql)->count();
       }
       catch (Exception $e) {
-        echo "Query failed<br/>";
-        echo $e->getMessage() . '<br/>';
-        echo $db->last_query() . '<br/>';
+        echo 'Query failed<br/>' . $e->getMessage() . '<br/><pre style="color: red">' . $db->last_query() . '</pre><br/>';
       }
     }
     $tm = microtime(TRUE) - $tm;
