@@ -1,11 +1,11 @@
 -- #slow script#
 
 -- Non-stage linked rules
+drop table if exists cache_verification_rules_period_within_year;
+
 select vr.id as verification_rule_id,
   vr.reverse_rule,
-  vrmkey.value as taxa_taxon_list_external_key,
-  vrmtaxon.value as taxon,
-  vrmmeaning.value::integer as taxon_meaning_id,
+  coalesce(vrmkey.value, cttltaxon.external_key, cttlmeaning.external_key) as taxa_taxon_list_external_key,
   extract(doy from cast('2012' || vrmstart.value as date)) as start_date,
   extract(doy from cast('2012' || vrmend.value as date)) as end_date,
   vrmsurvey.value::integer as survey_id,
@@ -17,8 +17,10 @@ left join verification_rule_metadata vrmkey on vrmkey.verification_rule_id=vr.id
   and vrmkey.key ilike 'Tvk' and vrmkey.deleted=false
 left join verification_rule_metadata vrmtaxon on vrmtaxon.verification_rule_id=vr.id
   and vrmtaxon.key='Taxon' and vrmtaxon.deleted=false
+left join cache_taxa_taxon_lists cttltaxon on cttltaxon.preferred_taxon=vrmtaxon.value and cttltaxon.preferred=true
 left join verification_rule_metadata vrmmeaning on vrmmeaning.verification_rule_id=vr.id
   and vrmmeaning.key='TaxonMeaningId' and vrmmeaning.deleted=false
+left join cache_taxa_taxon_lists cttlmeaning on cttltaxon.taxon_meaning_id=vrmmeaning.value::integer and cttlmeaning.preferred=true
 left join verification_rule_metadata vrmstart on vrmstart.verification_rule_id=vr.id and vrmstart.key ilike 'StartDate' and length(vrmstart.value)=4
   and vrmstart.deleted=false
 left join verification_rule_metadata vrmend on vrmend.verification_rule_id=vr.id and vrmend.key ilike 'EndDate' and length(vrmend.value)=4
@@ -30,9 +32,7 @@ where vr.test_type='PeriodWithinYear'
 union
 select vr.id as verification_rule_id,
   vr.reverse_rule,
-  vrmkey.value as taxa_taxon_list_external_key,
-  vrmtaxon.value as taxon,
-  vrmmeaning.value::integer as taxon_meaning_id,
+  coalesce(vrmkey.value, cttltaxon.external_key, cttlmeaning.external_key) as taxa_taxon_list_external_key,
   extract(doy from cast('2012' || vrstart.value as date)) as start_date,
   extract(doy from cast('2012' || vrend.value as date)) as end_date,
   vrmsurvey.value::integer as survey_id,
@@ -43,8 +43,10 @@ left join verification_rule_metadata vrmkey on vrmkey.verification_rule_id=vr.id
   and vrmkey.key ilike 'Tvk' and vrmkey.deleted=false
 left join verification_rule_metadata vrmtaxon on vrmtaxon.verification_rule_id=vr.id
   and vrmtaxon.key='Taxon' and vrmtaxon.deleted=false
+left join cache_taxa_taxon_lists cttltaxon on cttltaxon.taxon=vrmtaxon.value and cttltaxon.preferred=true
 left join verification_rule_metadata vrmmeaning on vrmmeaning.verification_rule_id=vr.id
   and vrmmeaning.key='TaxonMeaningId' and vrmmeaning.deleted=false
+left join cache_taxa_taxon_lists cttlmeaning on cttltaxon.taxon_meaning_id=vrmmeaning.value::integer and cttlmeaning.preferred=true
 join verification_rule_data vrdstage on vrdstage.verification_rule_id=vr.id and vrdstage.key ilike 'Stage'
 left join verification_rule_data vrstart on vrstart.verification_rule_id=vr.id and vrstart.key ilike 'StartDate' and length(vrstart.value)=4
   and vrstart.deleted=false
