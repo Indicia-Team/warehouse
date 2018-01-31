@@ -25,6 +25,30 @@
  */
 
 /**
+ * Updates the cached copy of period within year rules.
+ *
+ * After saving a record, does an insert of the updated cache entry, helping
+ * to impprove performance.
+ */
+function data_cleaner_without_polygon_cache_sql() {
+  return <<<SQL
+insert into cache_verification_rules_without_polygon
+select distinct vr.id as verification_rule_id,
+  vr.reverse_rule,
+  vrmkey.value as taxa_taxon_list_external_key,
+  vrd.value_geom as geom,
+  vr.error_message
+from verification_rules vr
+join verification_rule_metadata vrmkey on vrmkey.key='DataRecordId' and vrmkey.deleted=false
+join verification_rule_metadata isSpecies on isSpecies.value='Species' and isSpecies.deleted=false
+join verification_rule_data vrd on vrd.verification_rule_id=vr.id and vrd.header_name='geom' and vrd.deleted=false
+where vr.test_type='WithoutPolygon'
+and vr.deleted=false
+and vr.id=#id#;
+SQL;
+}
+
+/**
  * Implements data_cleaner_rules().
  *
  * Hook into the data cleaner to declare checks for the difficulty of
@@ -34,41 +58,24 @@
  *   Definition of the rule.
  */
 function data_cleaner_without_polygon_data_cleaner_rules() {
-  $queryByTvk = <<<SQL
-join verification_rule_metadata vrm on vrm.key='DataRecordId' and vrm.value=co.taxa_taxon_list_external_key
-join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='WithoutPolygon'
-join verification_rule_metadata isSpecies on isSpecies.value='Species'
-  and isSpecies.key='DataFieldName'
-  and isSpecies.verification_rule_id=vr.id
-join verification_rule_data vrd on vrd.verification_rule_id=vr.id
-  and vrd.header_name='geom'
-  and (
-    (not vr.reverse_rule and not st_intersects(vrd.value_geom, co.public_geom))
-    or (vr.reverse_rule and st_intersects(vrd.value_geom, co.public_geom))
-  )
--- left join to exclude records in squares with other verified records of the same species already present.
-left join cache_occurrences_functional o2 on o2.taxa_taxon_list_external_key=co.taxa_taxon_list_external_key
+  $joinSql = <<<SQL
+join cache_verification_rules_without_polygon vr on vr.taxa_taxon_list_external_key=co.taxa_taxon_list_external_key
+left join cache_occurrences_functional o2 on o2.id<>co.id
+  -- same species
+  and o2.taxa_taxon_list_external_key=co.taxa_taxon_list_external_key
+  -- accepted
   and o2.record_status='V'
+  -- same grid square
   and o2.map_sq_10km_id=co.map_sq_10km_id
 SQL;
-
-  $queryByTaxon = <<<SQL
-join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
-join verification_rule_metadata vrm on vrm.key='Taxon' and vrm.value=cttl.preferred_taxon
-join verification_rules vr on vr.id=vrm.verification_rule_id and vr.test_type='WithoutPolygon'
-join verification_rule_metadata isSpecies on isSpecies.value='Species'
-  and isSpecies.key='DataFieldName'
-  and isSpecies.verification_rule_id=vr.id
-join verification_rule_data vrd on vrd.verification_rule_id=vr.id
-  and vrd.header_name='geom'
-  and (
-    (not vr.reverse_rule and not st_intersects(vrd.value_geom, co.public_geom))
-    or (vr.reverse_rule and st_intersects(vrd.value_geom, co.public_geom))
-  )
--- left join to exclude records in squares with other verified records of the same species already present.
-left join cache_occurrences_functional o2 on o2.taxa_taxon_list_external_key=co.taxa_taxon_list_external_key
-  and o2.record_status='V'
-  and o2.map_sq_10km_id=co.map_sq_10km_id
+  $whereSql = <<<SQL
+vr.reverse_rule=(st_intersects(co.public_geom, vr.geom) and not st_touches(co.public_geom, vr.geom))
+SQL;
+  $groupBy = <<<SQL
+group by co.id, co.taxa_taxon_list_external_key,
+  co.verification_checks_enabled, co.record_status, vr.error_message
+-- at least 2 similar records
+having count(o2.id) < 2
 SQL;
 
   return array(
@@ -85,13 +92,9 @@ SQL;
     'queries' => array(
       // Species identified by taxon version key (DataRecordId).
       array(
-        'joins' => $queryByTvk,
-        'where' => 'o2.id is null',
-      ),
-      // Species identified by taxon name (Taxon).
-      array(
-        'joins' => $queryByTaxon,
-        'where' => 'o2.id is null',
+        'joins' => $joinSql,
+        'where' => $whereSql,
+        'groupBy' => $groupBy
       ),
     ),
   );
