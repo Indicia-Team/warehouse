@@ -122,7 +122,7 @@ class Data_cleaner_Controller extends Service_Base_Controller {
    * Performs the task of running the rules against the temporary
    */
   private function runRules($db) {
-    $rules = data_cleaner::get_rules();
+    $rules = data_cleaner::getRules();
     if (!empty($_REQUEST['rule_types']))
       $ruleTypes = json_decode(strtoupper($_REQUEST['rule_types']), true);
     $r = array();

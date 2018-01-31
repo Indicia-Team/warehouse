@@ -66,7 +66,7 @@ function data_cleaner_metadata() {
  * Hook into the task scheduler to run the rules against new records.
  */
 function data_cleaner_scheduled_task($timestamp, $db, $endtime) {
-  $rules = data_cleaner::get_rules();
+  $rules = data_cleaner::getRules();
   data_cleaner_cleanout_old_messages($rules, $db);
   data_cleaner_run_rules($rules, $db);
   data_cleaner_update_occurrence_metadata($db, $endtime);
@@ -134,22 +134,29 @@ function data_cleaner_run_rules($rules, $db) {
       $errorMsgSuffix = isset($query['errorMsgSuffix']) ? $query['errorMsgSuffix'] : (isset($rule['errorMsgSuffix']) ? $rule['errorMsgSuffix'] : '');
       $subtypeField = empty($query['subtypeField']) ? '' : ", generated_by_subtype";
       $subtypeValue = empty($query['subtypeField']) ? '' : ", $query[subtypeField]";
-      $sql = "insert into occurrence_comments (comment, created_by_id, created_on,
-      updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required$subtypeField)
-  select distinct $ruleErrorField$errorMsgSuffix, 1, now(), 1, now(), co.id, true, '$rule[plugin]', $implies_manual_check_required$subtypeValue
-  from occdelta co";
+      $sql = <<<SQL
+insert into occurrence_comments (comment, created_by_id, created_on,
+  updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required$subtypeField)
+select distinct $ruleErrorField$errorMsgSuffix,
+  1, now(), 1, now(), co.id, true, '$rule[plugin]', $implies_manual_check_required$subtypeValue
+from occdelta co
+SQL;
       if (isset($query['joins'])) {
-        $sql .= "\n" . $query['joins'];
+        $sql .= "\n$query[joins]";
       }
       $sql .= "\nwhere ";
       if (isset($query['where'])) {
         $sql .= "$query[where] \nand ";
       }
       $sql .= "co.verification_checks_enabled=true\nand co.record_status not in ('I','V','R','D')";
+      if (isset($query['groupBy'])) {
+        $sql .= "\n$query[groupBy]";
+      }
       // We now have the query ready to run which will return a list of the
       // occurrence ids that fail the check.
       try {
         $count += $db->query($sql)->count();
+        echo "<br/><pre>$sql</pre></br>";
       }
       catch (Exception $e) {
         echo "Query failed<br/>";

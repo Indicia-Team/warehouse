@@ -441,7 +441,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     if (strpos($filecontent, "\xEF\xBB\xBF") !== 0) {
       $filecontent = utf8_encode($filecontent);
     }
-    $settings = data_cleaner::parse_test_file($filecontent);
+    $settings = data_cleaner::parseTestFile($filecontent);
     $this->readRuleContent($settings, $cacheArr['files'][$totaldone]['path'], $cacheArr['files'][$totaldone]['source_url']);
     return $cacheArr['files'][$totaldone]['display'];
   }
@@ -484,7 +484,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       throw new exception("Missing Metadata TestType value in $filename");
     }
     require_once MODPATH . 'data_cleaner/plugins/data_cleaner.php';
-    $currentRule = data_cleaner::get_rule($rulesettings['metadata']['testtype']);
+    $currentRule = data_cleaner::getRule($rulesettings['metadata']['testtype']);
     // Ensure that the required key/value pairs for this rule type are all
     // present.
     foreach ($currentRule['required'] as $category => $keys) {

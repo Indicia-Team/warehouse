@@ -302,11 +302,11 @@ class Verification_rule_Model extends ORM {
     require_once(DOCROOT.'client_helpers/helper_base.php');
     $result = true;
     if (isset($this->submission['metaFields'])) {
-      $currentRule = data_cleaner::get_rule($this->test_type);
+      $currentRule = data_cleaner::getRule($this->test_type);
       if (isset($this->submission['metaFields']['metadata']['value'])) {
         $metadata = helper_base::explode_lines_key_value_pairs($this->submission['metaFields']['metadata']['value']);
         $this->save_verification_rule_metadata($currentRule, $metadata);
-        $data = data_cleaner::parse_test_file($this->submission['metaFields']['data']['value']);
+        $data = data_cleaner::parseTestFile($this->submission['metaFields']['data']['value']);
         $this->save_verification_rule_data($currentRule, $data);
         $this->postProcessRule($currentRule);
       }
