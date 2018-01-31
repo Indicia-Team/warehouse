@@ -101,8 +101,8 @@ left join (cache_occurrences_functional o2
   and o2.record_status='V'
   -- within 7 days of the day in year
   and abs(extract(doy from o2.date_start) - extract(doy from co.date_start)) < 7
-  -- nearby - distance set to 100,000 units of web-mercator, not exactly metres
-  and st_distance(co.public_geom, o2.public_geom) < 100000
+  -- nearby
+  and o2.map_sq_10km_id=co.map_sq_10km_id
   -- the compared record is only used if it matches the rule stage if one is specified
   and (vr.stages @> string_to_array(lower(coalesce(onf2.attr_stage, onf2.attr_sex_stage)),'') or vr.stages is null)
   and (co.stage is null or lower(coalesce(onf2.attr_stage, onf2.attr_sex_stage)) = co.stage)
