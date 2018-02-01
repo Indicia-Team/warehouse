@@ -54,15 +54,21 @@ class Data_cleaner_Controller extends Service_Base_Controller {
     // authenticate requesting website for this service
     $this->authenticate('read');
     if (isset($_REQUEST['sample']))
-      $sample = json_decode($_REQUEST['sample'], true);
+      $sample = json_decode($_REQUEST['sample'], TRUE);
     if (isset($_REQUEST['occurrences']))
-      $occurrences = json_decode($_REQUEST['occurrences'], true);
-    if (empty($sample) || empty($occurrences) )
+      $occurrences = json_decode($_REQUEST['occurrences'], TRUE);
+    if (empty($sample) || empty($occurrences))
       $this->response='Invalid parameters';
     else {
       $db = new Database();
-      // Create an empty template table
-      $db->query("SELECT * INTO TEMPORARY occdelta FROM cache_occurrences_functional LIMIT 0;");
+      // Create an empty template table.
+      $db->query(<<<SQL
+SELECT *, null::text as stage
+INTO TEMPORARY occdelta
+FROM cache_occurrences_functional
+LIMIT 0;
+SQL
+);
       // Ensure the verify service always performs checks
       $db->query("ALTER TABLE occdelta ADD COLUMN verification_checks_enabled boolean NOT NULL DEFAULT true;");
       try {
