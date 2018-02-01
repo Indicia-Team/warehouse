@@ -49,6 +49,8 @@ class Data_cleaner_Controller extends Service_Base_Controller {
    * E.g. ["WithoutPolygon","PeriodWithinYear"] to run just without polygon and period within year checks.
    * @return JSON A JSON array containing a list of notifications. Each notification is a JSON
    * object, with taxa_taxon_list_id and message properties.
+   *
+   * @todo Occurrence stage information should be made available to verification rules.
    */
   public function verify() {
     // authenticate requesting website for this service
