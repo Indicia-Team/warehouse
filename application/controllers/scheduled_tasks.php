@@ -141,6 +141,7 @@ class Scheduled_Tasks_Controller extends Controller {
                 $allowedData[$allowedWebsite->website_id] = $parsedData['websiteRecordData'][$allowedWebsite->website_id];
             }
           }
+          $digestMode = ($action->param2 === NULL ? $action->default_digest_mode : $action->param2);
           if (count($allowedData) > 0) {
             $this->db->insert('notifications', array(
               'source' => $trigger->name,
@@ -149,12 +150,16 @@ class Scheduled_Tasks_Controller extends Controller {
               'user_id' => $action->param1,
               // Use digest mode the user selected for this notification, or
               // their default if not specific.
-              'digest_mode' => ($action->param2 === NULL ? $action->default_digest_mode : $action->param2),
+              'digest_mode' => $digestMode,
               'cc' => $action->param3,
             ));
           }
+          $this->doDirectTriggerNotifications(
+            $trigger->name,
+            $data['content']['records'],
+            $digestMode
+          );
         }
-        doDirectTriggerNotifications($data['content']['records']);
       }
     }
   }
@@ -165,11 +170,32 @@ class Scheduled_Tasks_Controller extends Controller {
    * If a trigger query specifies notify_user_ids as a column, then this gives
    * a list of user IDs which must be told about the trigger firing.
    *
+   * @param string $triggerName
+   *   Name of the trigger which fired.
    * @param array $records
    *   Output from the trigger report.
+   * @param string $digestMode
+   *   Digest frequency code.
    */
-  private function doDirectTriggerNotifications($records) {
-
+  private function doDirectTriggerNotifications($triggerName, $records, $digestMode) {
+    // This only applies if a notify_user_ids column in report output.
+    if (count($records) === 0 || !isset($records[0]['notify_user_ids'])) {
+      return;
+    }
+    foreach ($records as $record) {
+      $userIds = explode(',', $record['notify_user_ids']);
+      unset($record['notify_user_ids']);
+      unset($record['website_id']);
+      foreach ($userIds as $userId) {
+        $this->db->insert('notifications', array(
+          'source' => $triggerName,
+          'source_type' => 'T',
+          'data' => json_encode(array('data' => $record)),
+          'user_id' => $userId,
+          'digest_mode' => $digestMode,
+        ));
+      }
+    }
   }
 
   /**
