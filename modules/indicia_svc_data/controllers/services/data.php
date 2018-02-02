@@ -80,6 +80,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'sample_attribute_value',
     'sample_comment',
     'sample_medium',
+    'species_alert',
     'survey',
     'survey_attribute',
     'survey_attribute_value',
@@ -102,6 +103,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   protected $allow_full_access = array(
     'filter',
     'filters_user',
+    'species_alert',
     'taxa_taxon_list',
     'taxa_taxon_list_attribute',
     'taxon_rank',

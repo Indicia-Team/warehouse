@@ -296,7 +296,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     // find a list of the taxon ids for this meaning which are already in the list.
     $existing = ORM::factory('taxa_taxon_list')->where(array(
       'taxon_list_id'=>$thisListId,
-      'taxon_meaning_id'=>$ttl->taxon_meaning_id
+      'taxon_meaning_id'=>$ttl->taxon_meaning_id,
+      'deleted'=>'f'
     ))->find_all();
     $existingTaxa = array();
     foreach($existing as $item)

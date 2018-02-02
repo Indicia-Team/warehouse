@@ -83,70 +83,112 @@ class Scheduled_Tasks_Controller extends Controller {
   protected function checkTriggers() {
     self::msg("Checking triggers");
     kohana::log('info', "Checking triggers");
-    // Get a list of all the triggers that have at least one action
+    // Get a list of all the triggers that have at least one action.
     $result = $this->getTriggerQuery();
-    // For each trigger, we need to get the output of the report file which defines the trigger
-    foreach ($result as $trigger)
-    {
-      $params = json_decode($trigger->params_json, true);
+    // For each trigger, we need to get the output of the report file which
+    // defines the trigger.
+    foreach ($result as $trigger) {
+      $params = json_decode($trigger->params_json, TRUE);
       $params['date'] = $this->last_run_date;
       $reportEngine = new ReportEngine();
-      $data=$reportEngine->requestReport($trigger->trigger_template_file.'.xml', 'local', 'xml', $params);
+      $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
       if (!isset($data['content']['records'])) {
- 	      kohana::log('error', 'Error in trigger file ' . $trigger->trigger_template_file . '.xml');
+        kohana::log('error', 'Error in trigger file ' . $trigger->trigger_template_file . '.xml');
         continue;
       }
-      if (count($data['content']['records']>0)) {
+      if (count($data['content']['records'] > 0)) {
         $parsedData = $this->parseData($data);
         self::msg($trigger->name . ": " . count($data['content']['records']) . " records found");
-        //Note escaping disabled in where clause to permit use of CAST expression
+        // Note escaping disabled in where clause to permit use of CAST expression.
         $actions = $this->db
-            ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
-            ->from('trigger_actions, users')
-            ->join('people', 'people.id', 'users.person_id')
-            ->where(array(
-                'trigger_id' => $trigger->id,
-                'type' => "'E'",
-                'users.id' => 'CAST(param1 AS INT)',
-                'trigger_actions.deleted' => "'f'",
-                'users.deleted' => "'f'",
-                'people.deleted' => "'f'"
-            ), NULL, false)
-            ->get();
+          ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
+          ->from('trigger_actions, users')
+          ->join('people', 'people.id', 'users.person_id')
+          ->where(array(
+              'trigger_id' => $trigger->id,
+              'type' => "'E'",
+              'users.id' => 'CAST(param1 AS INT)',
+              'trigger_actions.deleted' => "'f'",
+              'users.deleted' => "'f'",
+              'people.deleted' => "'f'"
+          ), NULL, FALSE)
+          ->get();
         foreach ($actions as $action) {
-          if ($action->core_role_id!==1) {
-            // if not a core admin, we will need to do a filter on websites the user has access to.
+          if ($action->core_role_id !== 1) {
+            // If not a core admin, we will need to do a filter on websites the user has access to.
             $userWebsites = $this->db
-                  ->select('website_id')
-                  ->from('users_websites')
-                  ->where('user_id', $action->param1)
-                  ->get();
+              ->select('website_id')
+              ->from('users_websites')
+              ->where('user_id', $action->param1)
+              ->get();
           }
 
           // Insert data in notifications table, either for the user to manually acknowledge, or for a digest mail to be built.
-          // First build a list of data for the user's websites
-          if ($action->core_role_id==1) {
+          // First build a list of data for the user's websites.
+          if ($action->core_role_id == 1) {
             // core admin can see any data
             $allowedData = $parsedData['websiteRecordData'];
-          } else {
+          }
+          else {
             $allowedData = array();
             foreach ($userWebsites as $allowedWebsite) {
               if (isset($parsedData['websiteRecordData'][$allowedWebsite->website_id]))
                 $allowedData[$allowedWebsite->website_id] = $parsedData['websiteRecordData'][$allowedWebsite->website_id];
             }
           }
-          if (count($allowedData)>0) {
+          $digestMode = ($action->param2 === NULL ? $action->default_digest_mode : $action->param2);
+          if (count($allowedData) > 0) {
             $this->db->insert('notifications', array(
               'source' => $trigger->name,
               'source_type' => 'T',
-              'data' => json_encode(array('headings'=>$parsedData['headingData'], 'data' => $allowedData)),
+              'data' => json_encode(array('headings' => $parsedData['headingData'], 'data' => $allowedData)),
               'user_id' => $action->param1,
-              // use digest mode the user selected for this notification, or their default if not specific
-              'digest_mode' => ($action->param2===null ? $action->default_digest_mode : $action->param2),
-              'cc' => $action->param3
+              // Use digest mode the user selected for this notification, or
+              // their default if not specific.
+              'digest_mode' => $digestMode,
+              'cc' => $action->param3,
             ));
           }
+          $this->doDirectTriggerNotifications(
+            $trigger->name,
+            $data['content']['records'],
+            $digestMode
+          );
         }
+      }
+    }
+  }
+
+  /**
+   * Direct trigger notifications.
+   *
+   * If a trigger query specifies notify_user_ids as a column, then this gives
+   * a list of user IDs which must be told about the trigger firing.
+   *
+   * @param string $triggerName
+   *   Name of the trigger which fired.
+   * @param array $records
+   *   Output from the trigger report.
+   * @param string $digestMode
+   *   Digest frequency code.
+   */
+  private function doDirectTriggerNotifications($triggerName, $records, $digestMode) {
+    // This only applies if a notify_user_ids column in report output.
+    if (count($records) === 0 || !isset($records[0]['notify_user_ids'])) {
+      return;
+    }
+    foreach ($records as $record) {
+      $userIds = explode(',', $record['notify_user_ids']);
+      unset($record['notify_user_ids']);
+      unset($record['website_id']);
+      foreach ($userIds as $userId) {
+        $this->db->insert('notifications', array(
+          'source' => $triggerName,
+          'source_type' => 'T',
+          'data' => json_encode(array('data' => $record)),
+          'user_id' => $userId,
+          'digest_mode' => $digestMode,
+        ));
       }
     }
   }
@@ -156,38 +198,43 @@ class Scheduled_Tasks_Controller extends Controller {
   */
   private function doDigestNotifications($swift) {
     self::msg("Checking notifications");
-    // First, build a list of the notifications we are going to do
+    // First, build a list of the notifications we are going to do.
     $digestTypes = array('I');
     $date = getdate();
     $lastdate = getdate(strtotime($this->last_run_date));
-    if ($date['yday']!=$lastdate['yday'] || $date['year']!=$lastdate['year'])
+    if ($date['yday'] != $lastdate['yday'] || $date['year'] != $lastdate['year']) {
       $digestTypes[] = 'D';
-    if ($date['yday']-$lastdate['yday']>=7 || $date['wday']<$lastdate['wday'])
+    }
+    if ($date['yday'] - $lastdate['yday'] >= 7 || $date['wday'] < $lastdate['wday']) {
       $digestTypes[] = 'W';
+    }
 
-    // Get a list of the notifications to send, ordered by user so we can construct each email
+    // Get a list of the notifications to send, ordered by user so we can
+    // construct each email.
     $notifications = $this->db
       ->select('id, source, source_type, data, user_id, cc')
       ->from('notifications')
-      ->where('acknowledged','f')
+      ->where('acknowledged', 'f')
       ->in('notifications.digest_mode', $digestTypes)
       ->orderby(array('notifications.user_id' => 'ASC', 'notifications.cc' => 'ASC'))
       ->get();
     $nrNotifications = count($notifications);
-    if($nrNotifications > 0)
+    if ($nrNotifications > 0) {
       self::msg("Found $nrNotifications notifications");
-    else
+    }
+    else {
       self::msg("No notifications found");
+    }
 
-    $currentUserId = null;
-    $currentCc = null;
-    $emailContent='';
+    $currentUserId = NULL;
+    $currentCc = NULL;
+    $emailContent = '';
     $notificationIds = array();
     foreach ($notifications as $notification) {
       $notificationIds[] = $notification->id;
       if (($currentUserId != $notification->user_id) || ($currentCc != $notification->cc)) {
         if ($currentUserId) {
-          // send current email data
+          // Send current email data.
           $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $currentCc);
           $notificationIds = array();
         }
@@ -197,9 +244,9 @@ class Scheduled_Tasks_Controller extends Controller {
       }
       $emailContent .= self::unparseData($notification->data);
     }
-    // make sure we send the email to the last person in the list
-    if ($currentUserId!==null) {
-      // send current email data
+    // Make sure we send the email to the last person in the list.
+    if ($currentUserId !== null) {
+      // Send current email data.
       $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $currentCc);
     }
   }
@@ -215,31 +262,32 @@ class Scheduled_Tasks_Controller extends Controller {
           ->in('id', $notificationIds)
           ->update();
       $email_config = Kohana::config('email');
-      $userResults = $this->db->
-          select('people.email_address')
-          ->from('people')
-          ->join('users', 'users.person_id', 'people.id')
-          ->where('users.id', $userId)
-          ->limit(1)
-          ->get();
+      $userResults = $this->db
+        ->select('people.email_address')
+        ->from('people')
+        ->join('users', 'users.person_id', 'people.id')
+        ->where('users.id', $userId)
+        ->limit(1)
+        ->get();
       if (!isset($email_config['address'])) {
         self::msg('Email address not provided in email configuration', 'error');
         return;
       }
-      foreach($userResults as $user) {
+      foreach ($userResults as $user) {
         $message = new Swift_Message(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), $emailContent,
                                      'text/html');
         $recipients = new Swift_RecipientList();
         $recipients->addTo($user->email_address);
-        $cc = explode(',',$cc);
+        $cc = explode(',', $cc);
         foreach ($cc as $ccEmail) {
           $recipients->addCc(trim($ccEmail));
         }
-        // send the email
+        // Send the email.
         $swift->send($message, $recipients, $email_config['address']);
-        kohana::log('info', 'Email notification sent to '. $user->email_address);
+        kohana::log('info', 'Email notification sent to ' . $user->email_address);
       }
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       // Email not sent, so undo marking of notification as complete.
       $this->db->rollback();
       throw $e;
@@ -252,13 +300,18 @@ class Scheduled_Tasks_Controller extends Controller {
    * making additional work should we go database agnostic.
    */
   private function getTriggerQuery() {
-    // Additional join to trigger_actions just prevents us from processing triggers with nothing to do.
+    // Additional join to trigger_actions just prevents us from processing
+    // triggers with nothing to do.
     return $this->db
-        ->select('DISTINCT triggers.id, triggers.name, triggers.trigger_template_file, triggers.params_json')
-        ->from('triggers')
-        ->join('trigger_actions', 'trigger_actions.trigger_id', 'triggers.id')
-        ->where(array('enabled'=>'true','triggers.deleted'=>'false','trigger_actions.deleted'=>'false'))
-        ->get();
+      ->select('DISTINCT triggers.id, triggers.name, triggers.trigger_template_file, triggers.params_json')
+      ->from('triggers')
+      ->join('trigger_actions', 'trigger_actions.trigger_id', 'triggers.id')
+      ->where(array(
+        'enabled' => 'true',
+        'triggers.deleted' => 'false',
+        'trigger_actions.deleted' => 'false',
+      ))
+      ->get();
   }
 
   /**
@@ -269,18 +322,20 @@ class Scheduled_Tasks_Controller extends Controller {
    * data back to the notified users appropriate to their website rights.
    */
   private function parseData($data) {
-    // build the column headers. Get the HTML (for immediate use) as well as the array data (for storing the notifications).
+    // Build the column headers. Get the HTML (for immediate use) as well as
+    // the array data (for storing the notifications).
     $headingData = array();
-    foreach ($data['content']['columns'] as $column=>$cfg) {
-      if ($cfg['visible']!=='false') {
+    foreach ($data['content']['columns'] as $column => $cfg) {
+      if ($cfg['visible'] !== 'false') {
         $headingData[] = empty($cfg['display']) ? $column : $cfg['display'];
       }
     }
-    // build the blocks of data, one per website, so we can tailor the output table to each recipient.
+    // Build the blocks of data, one per website, so we can tailor the output
+    // table to each recipient.
     $websiteRecordData = array();
     foreach ($data['content']['records'] as $idx => $record) {
       $recordAsArray = array();
-      foreach ($data['content']['columns'] as $column=>$cfg) {
+      foreach ($data['content']['columns'] as $column => $cfg) {
         if ($cfg['visible']!=='false') {
           // allow for an incorrect column def in the report, as a broken report can block the scheduled tasks otherwise.
           $recordAsArray[] = empty($record[$column]) ? '' : $record[$column];
@@ -294,18 +349,17 @@ class Scheduled_Tasks_Controller extends Controller {
     );
   }
 
-
   /**
    * Converts data stored in the notifications table into an HTML grid.
    */
   private function unparseData($data) {
-    $struct = json_decode($data, true);
+    $struct = json_decode($data, TRUE);
     $r = "<table><thead>\n<tr><th>";
     $r .= implode('</th><th>', $struct['headings']);
     $r .= "</th></tr>\n</thead>\n<tbody>\n";
     // The sructure has an entry per allowed website for the notified user, containing a list of records.
-    foreach ($struct['data'] as $website=>$records) {
-      foreach($records as $record) {
+    foreach ($struct['data'] as $website => $records) {
+      foreach ($records as $record) {
         $r .= '<tr><td>';
         $r .= implode('</td><td>', $record);
         $r .= "</td></tr>\n";
@@ -319,54 +373,54 @@ class Scheduled_Tasks_Controller extends Controller {
    * Look for records posted by recorders who have given their email address and want to receive a summary of the record they are posting.
    */
   private function doRecordOwnerNotifications($swift) {
-    // Get a list of the records which contributors want to get a summary back for
+    // Get a list of the records which contributors want to get a summary back for.
     $emailsRequired = $this->db
-        ->select('DISTINCT occurrences.id as occurrence_id, sav2.text_value as email_address, surveys.title as survey')
-        ->from('occurrences')
-        ->join('samples', 'samples.id', 'occurrences.sample_id')
-        ->join('surveys', 'surveys.id', 'samples.survey_id')
-        ->join('sample_attribute_values as sav1', 'sav1.sample_id', 'samples.id')
-        ->join('sample_attributes as sa1', 'sa1.id', 'sav1.sample_attribute_id')
-        ->join('sample_attribute_values as sav2', 'sav2.sample_id', 'samples.id')
-        ->join('sample_attributes as sa2', 'sa2.id', 'sav2.sample_attribute_id')
-        ->where(array(
-            'sa1.caption'=>'Email me a copy of the record',
-            'sa2.caption'=>'Email',
-            'samples.created_on>=' => $this->last_run_date
-        ))
-        ->get();
+      ->select('DISTINCT occurrences.id as occurrence_id, sav2.text_value as email_address, surveys.title as survey')
+      ->from('occurrences')
+      ->join('samples', 'samples.id', 'occurrences.sample_id')
+      ->join('surveys', 'surveys.id', 'samples.survey_id')
+      ->join('sample_attribute_values as sav1', 'sav1.sample_id', 'samples.id')
+      ->join('sample_attributes as sa1', 'sa1.id', 'sav1.sample_attribute_id')
+      ->join('sample_attribute_values as sav2', 'sav2.sample_id', 'samples.id')
+      ->join('sample_attributes as sa2', 'sa2.id', 'sav2.sample_attribute_id')
+      ->where(array(
+          'sa1.caption' => 'Email me a copy of the record',
+          'sa2.caption' => 'Email',
+          'samples.created_on>=' => $this->last_run_date
+      ))
+      ->get();
 
-    // get a list of the records we need details of, so we can hit the db more efficiently.
+    // Get a list of the records we need details of, so we can hit the db more efficiently.
     $recordsToFetch = array();
     foreach ($emailsRequired as $email) {
       $recordsToFetch[] = $email->occurrence_id;
     }
     $occurrences = $this->db
-        ->select('o.id, ttl.taxon, s.date_start, s.date_end, s.date_type, s.entered_sref as spatial_reference, '.
-            's.location_name, o.comment as sample_comment, o.comment as occurrence_comment')
-        ->from('samples as s')
-        ->join('occurrences as o','o.sample_id','s.id')
-        ->join('list_taxa_taxon_lists as ttl','ttl.id','o.taxa_taxon_list_id')
-        ->in('o.id',$recordsToFetch)
-        ->get();
+      ->select('o.id, ttl.taxon, s.date_start, s.date_end, s.date_type, s.entered_sref as spatial_reference, '.
+          's.location_name, o.comment as sample_comment, o.comment as occurrence_comment')
+      ->from('samples as s')
+      ->join('occurrences as o', 'o.sample_id', 's.id')
+      ->join('list_taxa_taxon_lists as ttl', 'ttl.id', 'o.taxa_taxon_list_id')
+      ->in('o.id', $recordsToFetch)
+      ->get();
     // Copy the occurrences to an array so we can build a structured list of data, keyed by ID
     $occurrenceArray = array();
     foreach ($occurrences as $occurrence) {
       $occurrenceArray[$occurrence->id] = $occurrence;
     }
     $attrArray = array();
-    // Get the sample attributes
+    // Get the sample attributes.
     $attrValues = $this->db
         ->select('o.id, av.caption, av.value')
         ->from('list_sample_attribute_values as av')
-        ->join('samples as s','s.id','av.sample_id')
-        ->join('occurrences as o','o.sample_id','s.id')
-        ->in('o.id',$recordsToFetch)
+        ->join('samples as s', 's.id','av.sample_id')
+        ->join('occurrences as o', 'o.sample_id', 's.id')
+        ->in('o.id', $recordsToFetch)
         ->get();
     foreach ($attrValues as $attrValue) {
       $attrArray[$attrValue->id][$attrValue->caption] = $attrValue->value;
     }
-    // Get the occurrence attributes
+    // Get the occurrence attributes.
     $attrValues = $this->db
         ->select('av.occurrence_id, av.caption, av.value')
         ->from('list_occurrence_attribute_values av')
@@ -392,14 +446,21 @@ class Scheduled_Tasks_Controller extends Controller {
   }
 
   /*
-  * Takes the content of an array keyed bby occurrence ID, looks up the item for the required
-  * occurrence, and puts the content of this item into a set of rows (one row per name/value pair)
-  * with one table cell for the key, and one for the value
-  */
+   * Takes the content of an array keyed bby occurrence ID, looks up the item for the required
+   * occurrence, and puts the content of this item into a set of rows (one row per name/value pair)
+   * with one table cell for the key, and one for the value
+   */
   private function addArrayToEmailTable($occurrenceId, $array, &$emailContent) {
-    $excludedFields = array('date_end','date_type','Email me a copy of the record','CMS Username','CMS User ID','Email','Happy for Contact?');
-    foreach ($array[$occurrenceId] as $field=>$value) {
-      if ($field=='date_start') {
+    $excludedFields = array(
+      'date_end',
+      'date_type',
+      'Email me a copy of the record',
+      'CMS Username',
+      'CMS User ID',
+      'Email','Happy for Contact?'
+    );
+    foreach ($array[$occurrenceId] as $field => $value) {
+      if ($field === 'date_start') {
         $value = vague_date::vague_date_to_string(array(
           $array[$occurrenceId]->date_start,
           $array[$occurrenceId]->date_end,
@@ -415,31 +476,36 @@ class Scheduled_Tasks_Controller extends Controller {
 
   /**
    * Loop through any plugin modules which declare scheduled tasks and run them.
-   * @param object $system System model instance.
-   * @param array $tasks Array of plugin names to run, or array containing "all_modules" to run them all.
+   *
+   * @param object $system
+   *   System model instance.
+   * @param array $tasks
+   *   Array of plugin names to run, or array containing "all_modules" to run
+   *   them all.
    */
-  private function runScheduledPlugins($system, $tasks) {
+  private function runScheduledPlugins($system, array $tasks) {
     // take 1 second off current time to use as the end of the scanned time period. Avoids possibilities of records
     // being lost half way through the current second.
-    $t = time()-1;
+    $t = time() - 1;
     $currentTime = date("Y-m-d H:i:s", $t);
     $plugins = $this->getScheduledPlugins();
     // Load the plugins and last run date info from the system table. Any not run before will start from the current timepoint.
     // We need this to be sorted, so we can process the list of changed records for each group of plugins with the same timestamp together.
     $pluginsFromDb = $this->db
-        ->select('name, last_scheduled_task_check')
-        ->from('system')
-        ->in('name', $plugins)
-        ->orderby('last_scheduled_task_check', 'ASC')
-        ->get();
+      ->select('name, last_scheduled_task_check')
+      ->from('system')
+      ->in('name', $plugins)
+      ->orderby('last_scheduled_task_check', 'ASC')
+      ->get();
     $sortedPlugins = array();
     foreach ($pluginsFromDb as $plugin) {
       $sortedPlugins[$plugin->name] = $plugin->last_scheduled_task_check===null ? $currentTime : $plugin->last_scheduled_task_check;
     }
     // Any new plugins not run before should also be included in the list
     foreach ($plugins as $plugin) {
-      if (!isset($sortedPlugins[$plugin]))
+      if (!isset($sortedPlugins[$plugin])) {
         $sortedPlugins[$plugin] = $currentTime;
+      }
     }
     echo '<br/>';
     var_export($sortedPlugins);
@@ -455,37 +521,37 @@ class Scheduled_Tasks_Controller extends Controller {
     //Make sure the verifier notification emails run last as the emails are sent out based on the results of other modules such as
     //notifications generated
     if (array_key_exists('verifier_notification_emails', $sortedPlugins)) {
-      $temp=$sortedPlugins['verifier_notification_emails'];
+      $temp = $sortedPlugins['verifier_notification_emails'];
       unset($sortedPlugins['verifier_notification_emails']);
-      $sortedPlugins['verifier_notification_emails']=$temp;
+      $sortedPlugins['verifier_notification_emails'] = $temp;
     }
-    // Now go through timestamps in order of time since they were run
-    foreach ($sortedPlugins as $plugin=>$timestamp) {
+    // Now go through timestamps in order of time since they were run.
+    foreach ($sortedPlugins as $plugin => $timestamp) {
       // allow the list of scheduled plugins we are running to be controlled from the URL parameters.
       if (in_array('all_modules', $tasks) || in_array($plugin, $tasks)) {
-        require_once(MODPATH."$plugin/plugins/$plugin.php");
+        require_once MODPATH . "$plugin/plugins/$plugin.php";
         $this->loadPluginMetadata($plugin);
         $this->loadOccurrencesDelta($plugin, $timestamp, $currentTime);
-        $tm = microtime(true);
+        $tm = microtime(TRUE);
         if (!$this->pluginMetadata['requires_occurrences_delta'] || $this->occdeltaCount>0 || $this->pluginMetadata['always_run']) {
           // call the plugin, only if there are records to process, or it doesn't care
           self::msg("Running $plugin");
-          call_user_func($plugin.'_scheduled_task', $timestamp, $this->db, $currentTime);
+          call_user_func($plugin . '_scheduled_task', $timestamp, $this->db, $currentTime);
         }
         // log plugins which take more than 5 seconds
-        $took=microtime(true) - $tm;
-        if ($took>5)
+        $took = microtime(TRUE) - $tm;
+        if ($took > 5)
           self::msg("Scheduled plugin $plugin took $took seconds", 'alert');
         // mark the time of the last scheduled task check so we can get the correct list of updates next time
         $timestamp = $this->pluginMetadata['requires_occurrences_delta'] ? $this->occdeltaEndTimestamp : $currentTime;
-        if (!$this->db->update('system', array('last_scheduled_task_check'=>$timestamp), array('name' => $plugin))->count())
+        if (!$this->db->update('system', array('last_scheduled_task_check' => $timestamp), array('name' => $plugin))->count())
           $this->db->insert('system', array(
-              'version' => '0.1.0',
-              'name' => $plugin,
-              'repository'=>'Not specified',
-              'release_date'=>date('Y-m-d', $t),
-              'last_scheduled_task_check'=>$timestamp,
-              'last_run_script'=>null
+            'version' => '0.1.0',
+            'name' => $plugin,
+            'repository' => 'Not specified',
+            'release_date' => date('Y-m-d', $t),
+            'last_scheduled_task_check' => $timestamp,
+            'last_run_script' => NULL,
           ));
       }
     }
@@ -501,7 +567,7 @@ class Scheduled_Tasks_Controller extends Controller {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
           require_once("$path/plugins/$plugin.php");
-          if (function_exists($plugin.'_scheduled_task')) {
+          if (function_exists($plugin . '_scheduled_task')) {
             $plugins[] = $plugin;
           }
         }
@@ -544,16 +610,18 @@ where sp.updated_on>'$timestamp' and sp.updated_on<='$currentTime'
 order by id;
 
 select co.*,
-	case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
-	case
-	  when o.created_on>'$timestamp' then o.created_on
-	  else greatest(o.updated_on, s.updated_on, sp.updated_on)
-	end as timestamp,
-	w.verification_checks_enabled
+  case when o.created_on>'$timestamp' then 'C' when o.deleted=true then 'D' else 'U' end as CUD,
+  case
+    when o.created_on>'$timestamp' then o.created_on
+    else greatest(o.updated_on, s.updated_on, sp.updated_on)
+  end as timestamp,
+  w.verification_checks_enabled,
+  lower(coalesce(onf.attr_stage, onf.attr_sex_stage)) as stage
 into temporary occdelta
 from occlist ol
 join occurrences o on o.id=ol.id
 join cache_occurrences_functional co on co.id=o.id
+join cache_occurrences_nonfunctional onf on onf.id=co.id
 join samples s on s.id=o.sample_id and s.deleted=false
 left join samples sp on sp.id=s.parent_id and sp.deleted=false
 join websites w on w.id=o.website_id and w.deleted=false;
@@ -602,13 +670,17 @@ drop table occlist;";
 
   /**
    * Echoes out a message and adds to the kohana log.
-   * @param string $msg Message text
-   * @param string $status Kohana log message status
+   *
+   * @param string $msg
+   *   Message text.
+   * @param string $status
+   *   Kohana log message status.
    */
-  private function msg($msg, $status='debug') {
+  private function msg($msg, $status = 'debug') {
     echo "$msg<br/>";
-    if ($status==='error')
+    if ($status === 'error') {
       kohana::log('error', 'Error occurred whilst running scheduled tasks.');
+    }
     kohana::log($status, $msg);
   }
 

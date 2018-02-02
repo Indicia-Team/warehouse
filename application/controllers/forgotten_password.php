@@ -59,9 +59,9 @@ class Forgotten_Password_Controller extends Indicia_Controller {
   }
 
   public function check_can_login($user) {
-    if (is_null($user->core_role_id) && ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->find_all()===0)
-    {
-      $this->template->content->error_message = $_POST['UserID'] . ' does not have permission to log on to this website';
+    if (is_null($user->core_role_id) && ORM::factory('users_website')
+      ->where('user_id', $user->id)->where('site_role_id IS NOT ', NULL)->find_all() === 0) {
+      $this->template->content->error_message = $_POST['UserID'].' does not have permission to log on to this website';
       return FALSE;
     }
     return TRUE;
@@ -92,9 +92,16 @@ class Forgotten_Password_Controller extends Indicia_Controller {
     $user->save();
     try {
       $swift = email::connect();
-      $message = new Swift_Message($email_config['forgotten_passwd_title'],
-                                 View::factory('templates/forgotten_password_email_2')->set(array('server' => $email_config['server_name'], 'new_password_link' => '<a href="'.url::site().'new_password/email/'.$link_code.'">'.url::site().'new_password/email/'.$link_code.'</a>')),
-                                 'text/html');
+      $message = new Swift_Message(
+        $email_config['forgotten_passwd_title'],
+        View::factory('templates/forgotten_password_email')->set(array(
+          'server' => $email_config['server_name'],
+          'senderName' => "an Administrator's",
+          'new_password_link' => '<a href="' . url::site() . "new_password/email/$link_code\">" .
+            url::site() . "new_password/email/$link_code</a>",
+        )),
+        'text/html'
+      );
       $recipients = new Swift_RecipientList();
       $recipients->addTo($person->email_address, $person->first_name . ' ' . $person->surname);
       $swift->send($message, $recipients, $email_config['address']);

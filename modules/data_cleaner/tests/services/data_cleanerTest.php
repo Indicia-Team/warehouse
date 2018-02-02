@@ -36,16 +36,16 @@ require_once 'client_helpers/data_entry_helper.php';
  * @backupStaticAttributes disabled
  */
 class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
-  
+
   protected $request;
-  
+
   /**
    * @return PHPUnit_Extensions_Database_DataSet_IDataSet
    */
   public function getDataSet()
   {
     $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
-   
+
     // Create a rule to test against
     $ds2 = new Indicia_ArrayDataSet(
       array(
@@ -93,29 +93,29 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
             'updated_by_id' => 1,
           ),
         ),
-      )  
+      )
     );
-    
+
     $compositeDs = new PHPUnit_Extensions_Database_DataSet_CompositeDataSet();
     $compositeDs->addDataSet($ds1);
-    $compositeDs->addDataSet($ds2); 
+    $compositeDs->addDataSet($ds2);
     return $compositeDs;
   }
 
   public function setUp() {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
-    
+
     $auth = data_entry_helper::get_read_auth(1, 'password');
     $token = $auth['auth_token'];
     $nonce = $auth['nonce'];
     $this->request = data_entry_helper::$base_url .
             "index.php/services/data_cleaner/verify?auth_token=$token&nonce=$nonce";
-        
+
     $cache = Cache::instance();
     $cache->delete('data-cleaner-rules');
   }
-  
+
   /**
    * A quick check that the functionality to report errors if the parameters are
    * incomplete or wrong works.
@@ -125,28 +125,29 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals($response['output'], 'Invalid parameters');
   }
 
-  /** 
+  /**
    * PeriodWithinYear Rule.
    * Check that a date out of range is identified as an error.
    * data_cleaner_period_within_year module must be enabled.
    */
   public function testPeriodWithinYearFail() {
     $response = data_entry_helper::http_post($this->request, array(
-      'sample'=>json_encode(array(
-        'sample:survey_id'=>1,
-        'sample:date'=>'12/09/2012', 
-        'sample:entered_sref'=>'SU1234',
-        'sample:entered_sref_system'=>'osgb'
+      'sample' => json_encode(array(
+        'sample:survey_id' => 1,
+        'sample:date' => '12/09/2012',
+        'sample:entered_sref' => 'SU1234',
+        'sample:entered_sref_system' => 'osgb',
       )),
-      'occurrences'=>json_encode(array(
+      'occurrences' => json_encode(array(
         array(
-          'occurrence:taxa_taxon_list_id'=>1
-        ))
-      ),
-      'rule_types'=>json_encode(array('PeriodWithinYear'))
+          'occurrence:taxa_taxon_list_id' => 1,
+        ),
+      )),
+      'rule_types' => json_encode(array('PeriodWithinYear')),
     ));
-    $errors = json_decode($response['output'], true);
-    
+    var_export($response);
+    $errors = json_decode($response['output'], TRUE);
+
     $this->assertTrue($response['result'], 'Invalid response');
     $this->assertInternalType('array', $errors, 'Errors list not returned');
     $this->assertEquals(1, count($errors), 'Errors list empty. Is the data_cleaner_period_within_year module installed?');
@@ -155,8 +156,8 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
     $this->assertArrayHasKey('message', $errors[0], 'Errors list missing message');
     $this->assertEquals('PeriodWithinYear test failed', $errors[0]['message'], 'Incorrect message returned');
   }
-  
-  /** 
+
+  /**
    * PeriodWithinYear Rule.
    * Check that a date in range is identified as okay.
    * data_cleaner_period_within_year module must be enabled.
@@ -165,7 +166,7 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
     $response = data_entry_helper::http_post($this->request, array(
       'sample'=>json_encode(array(
         'sample:survey_id'=>1,
-        'sample:date'=>'12/08/2012', 
+        'sample:date'=>'12/08/2012',
         'sample:entered_sref'=>'SU1234',
         'sample:entered_sref_system'=>'osgb'
       )),
@@ -177,10 +178,10 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
       'rule_types'=>json_encode(array('PeriodWithinYear'))
     ));
     $errors = json_decode($response['output'], true);
-    
+
     $this->assertTrue($response['result'], 'Invalid response');
     $this->assertInternalType('array', $errors, 'Errors list not returned');
     $this->assertCount(0, $errors, 'Errors contanied in list');
   }
-  
+
 }

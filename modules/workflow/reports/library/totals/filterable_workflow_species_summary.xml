@@ -50,6 +50,7 @@ and cttl.taxon_list_id=#taxon_list_id#
       description="How old can records be before they are not considered recent" />
   </params>
   <columns>
+    <column name="id" sql="cttl.id" visible="false" in_count="true" />
     <column name="taxon" display="Species" sql="cttl.taxon" />
     <column name="occurrence_count" display="Records" aggregate="true" sql="count(o.*)" />
     <column name="overdue" display="Overdue" aggregate="true"

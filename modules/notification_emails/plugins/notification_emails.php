@@ -405,12 +405,14 @@ function notification_emails_get_shared_website_list($websiteId) {
 function record_comments_hyperlink_id($userId, $occurrenceId) {
   try {
     $recordCommentsPage = kohana::config('notification_emails.comment_page_url');
+    //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
     $warehouseUrl = kohana::config('notification_emails.warehouse_url');
     // Handle config file not present.
   }
   catch (Exception $e) {
     return NULL;
   }
+  //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
   $url = "$recordCommentsPage?user_id=$userId&occurrence_id=$occurrenceId&warehouse_url=" .
     kohana::config('notification_emails.warehouse_url');
   return "<a title=\"Comment on queried record $occurrenceId\" href=\"$url\">Comment here</a>";
@@ -508,6 +510,7 @@ function send_out_user_email(
     $emailAddress,
     $subscriptionSettingsPageUrl,
     $highPriority) {
+  //AVB note: The warehouse_url param is now redundant and can be removed next time testing is carried out on this page.
   $emailContent .= '<br><a href="' . $subscriptionSettingsPageUrl . '?user_id=' . $userId . '&warehouse_url=' .
     url::base() . '">Click here to update your subscription settings.</a><br/><br/>';
   $cc = NULL;

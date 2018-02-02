@@ -103,12 +103,15 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'speciesIncludeTaxonGroup' => TRUE,
       'extraParams' => $params,
       'validation' => array('required'),
+      'helpText' => 'Search for the taxon name this metadata form applies to.'
     ));
     echo data_entry_helper::text_input(array(
-      'label' => 'Verification delay (hours)',
+      'label' => 'Verification is due in',
       'fieldname' => 'workflow_metadata:verification_delay_hours',
       'default' => html::initial_value($values, 'workflow_metadata:verification_delay_hours'),
       'validation' => array('required', 'integer', 'min(0)'),
+      'helpText' => 'Number of hours after record entry when verification becomes overdue.',
+      'afterControl' => 'hours',
     ));
     echo data_entry_helper::checkbox(array(
       'label' => 'Send immediate notification emails to verifiers',

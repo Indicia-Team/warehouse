@@ -68,6 +68,8 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
         'lookupValues' => $other_data['groupSelectItems'],
         'default' => html::initial_value($values, 'workflow_event:group_code'),
         'validation' => array('required'),
+        'helpText' => 'The workflow groups available must be configured by the warehouse administrator and define ' .
+          'which website\'s records will be affected by this event definition.'
       ));
     }
     if (count($other_data['entitySelectItems']) !== 1) {

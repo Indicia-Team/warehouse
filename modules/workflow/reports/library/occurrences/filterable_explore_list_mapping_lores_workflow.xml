@@ -97,25 +97,21 @@ end" datatype="text" />
   when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then 'overdue-soon'
   else ''
 end" />
+
     <column name='fc' visible='false' feature_style="fillColor" aggregate="true"
       sql="case
-  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
-  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
-  when min(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
-  else '#abd9e9'
+  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#d7191c'
+  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#abd9e9'
+  when sum(case when o.record_status='C' and o.record_substatus=4 then 1 else 0 end)>0 then '#fdae61'
+  else '#008837'
 end" />
     <column name='sc' visible='false' feature_style="strokeColor" aggregate="true"
           sql="case
-  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt; '0 hours'::interval then '#d7191c'
-  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then '#fdae61'
-  when min(get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours)) &lt; '-12 hours'::interval then '#2c7bb6'
-  else '#abd9e9'
+  when sum(case o.record_status when 'R' then 1 else 0 end)>0 then '#a10003'
+  when sum(case o.record_status when 'C' then 1 else 0 end)>0 then '#5095ad'
+  when sum(case when o.record_status='C' and o.record_substatus=4 then 1 else 0 end)>0 then '#bf5e00'
+  else '#006629'
 end" />
-    <column name='fo' visible='false' feature_style="fillOpacity" aggregate="true"
-          sql="case
-  when max(get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours)) &gt;= '-12 hours'::interval then 0.6
-  else 0.5
-end" />
-
+    <column name='fo' visible='false' feature_style="fillOpacity" aggregate="true" sql="0.7" />
   </columns>
 </report>

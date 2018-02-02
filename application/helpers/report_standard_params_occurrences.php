@@ -710,13 +710,13 @@ class report_standard_params_occurrences {
         // Faster than embedding this query in the report.
         'preprocess' =>
           "with recursive q as (
-    select id, external_key
+    select preferred_taxa_taxon_list_id, external_key
     from cache_taxa_taxon_lists t
     where id in (#taxa_taxon_list_list#)
     union all
-    select tc.id, tc.external_key
+    select tc.preferred_taxa_taxon_list_id, tc.external_key
     from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.id
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id
   ) select '''' || array_to_string(array_agg(distinct external_key::varchar), ''',''') || '''' from q",
       ],
       // Version of the above optimised for searching for higher taxa.
@@ -734,13 +734,13 @@ class report_standard_params_occurrences {
         // Faster than embedding this query in the report.
         'preprocess' =>
           "with recursive q as (
-    select id, family_taxa_taxon_list_id
+    select preferred_taxa_taxon_list_id, family_taxa_taxon_list_id
     from cache_taxa_taxon_lists t
     where id in (#higher_taxa_taxon_list_list#)
     union all
-    select tc.id, tc.family_taxa_taxon_list_id
+    select tc.preferred_taxa_taxon_list_id, tc.family_taxa_taxon_list_id
     from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.id and tc.taxon_rank_sort_order<=180
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id and tc.taxon_rank_sort_order<=180
   ) select array_to_string(array_agg(distinct family_taxa_taxon_list_id::varchar), ',') from q",
       ],
       'taxon_meaning_list' => [
@@ -757,13 +757,13 @@ class report_standard_params_occurrences {
         // Faster than embedding this query in the report.
         'preprocess' =>
           "with recursive q as (
-    select id, taxon_meaning_id
+    select preferred_taxa_taxon_list_id, taxon_meaning_id
     from cache_taxa_taxon_lists t
     where taxon_meaning_id in (#taxon_meaning_list#)
     union all
-    select tc.id, tc.taxon_meaning_id
+    select tc.preferred_taxa_taxon_list_id, tc.taxon_meaning_id
     from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.id
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id
   ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q",
       ],
       'taxon_designation_list' => [
