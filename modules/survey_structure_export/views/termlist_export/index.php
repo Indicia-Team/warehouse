@@ -24,7 +24,7 @@ echo data_entry_helper::textarea(array(
       'default' => $termlistId,
     ));
 
-    echo '<input type="submit" name="submit" value="Import" class="ui-corner-all ui-state-default button ui-priority-primary" />' . "\n";
+    echo '<input type="submit" name="submit" value="Import" class="btn btn-primary" />' . "\n";
     data_entry_helper::link_default_stylesheet();
     echo data_entry_helper::dump_javascript();
     ?>
