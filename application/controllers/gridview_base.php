@@ -127,33 +127,33 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    */
   protected function loadAttributes(&$r, $in) {
     // First load up the possible attribute list
-    $this->db->from('list_'.$this->model->object_name.'_attributes');
-    foreach($in as $field=>$values)
+    $this->db->from('list_' . $this->model->object_name . '_attributes');
+    foreach($in as $field => $values)
       if (count($values))
         $this->db->in($field, $values);
     if ($this->model->include_public_attributes) {
-      $this->db->orwhere('public','t');
+      $this->db->orwhere('public', 't');
     }
-    $result = $this->db->get()->as_array(true);
+    $result = $this->db->get()->as_array(TRUE);
     $attrs = array();
-    foreach($result as $attr) {
+    foreach ($result as $attr) {
       $attrs[$attr->id] = array(
-        'id' => null, // the attribute value ID, which we don't know yet
-        $this->model->object_name.'_id'=>null,
-        $this->model->object_name.'_attribute_id' => $attr->id,
+        'id' => NULL, // the attribute value ID, which we don't know yet
+        $this->model->object_name . '_id' => NULL,
+        $this->model->object_name . '_attribute_id' => $attr->id,
         'data_type' => $attr->data_type,
         'caption' => $attr->caption,
-        'value' => null,
-        'raw_value' => null,
-        'termlist_id' => $attr->termlist_id,
+        'value' => NULL,
+        'raw_value' => NULL,
+        'termlist_id' => isset($attr->lookup_termlist_id) ? $attr->lookup_termlist_id : $attr->termlist_id,
         'validation_rules' => $attr->validation_rules
       );
     }
     // now load up the values and splice into the array
-    if ($this->model->id!==0) {
-      $where = array($this->model->object_name.'_id'=>$this->model->id);
+    if ($this->model->id !== 0) {
+      $where = array($this->model->object_name . '_id' => $this->model->id);
       $this->db
-        ->from('list_'.$this->model->object_name.'_attribute_values')
+        ->from('list_' . $this->model->object_name . '_attribute_values')
         ->where($where);
       $result = $this->db->get()->as_array(false);
       $toRemove = array();
