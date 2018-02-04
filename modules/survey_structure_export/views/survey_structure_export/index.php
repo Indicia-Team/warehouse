@@ -26,7 +26,7 @@ echo data_entry_helper::textarea([
       'default' => $surveyId,
     ));
 
-    echo '<input type="submit" name="submit" value="Import" class="ui-corner-all ui-state-default button ui-priority-primary" />' . "\n";
+    echo '<input type="submit" name="submit" value="Import" class="btn btn-primary" />' . "\n";
     data_entry_helper::enable_validation('survey-structure-import');
     echo data_entry_helper::dump_javascript();
     ?>
