@@ -65,7 +65,7 @@ class View extends View_Core {
     $tabsLi
   </ul>
   <div id="main">$output</div>
-</tabs>
+</div>
 <script type="text/javascript">
   jQuery(document).ready(function($) {
     var tabs = $('#tabs').tabs();
