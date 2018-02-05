@@ -318,8 +318,7 @@ class Indicia_Controller extends Template_Controller {
   * sent by a submit button with value Delete, then the record is marked for
   * deletion.
   */
-  public function save()
-  {
+  public function save() {
     if (!$this->page_authorised()) {
       $this->session->set_flash('flash_error', "You appear to be attempting to edit a page you do not have rights to.");
       $this->redirectToIndex();
