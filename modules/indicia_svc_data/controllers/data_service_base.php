@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Services
- * @subpackage Data
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Base controller class for data & reporting services.
- *
- * @package  Services
- * @subpackage Data
  */
 class Data_Service_Base_Controller extends Service_Base_Controller {
 
@@ -51,84 +46,134 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   * Generic method to handle a request for data or a report. Depends on the sub-class
   * implementing a read_data method.
   */
-  protected function handle_request()
-  {
-    // Authenticate for a 'read' parameter
+  protected function handle_request() {
+    // Authenticate for a 'read' parameter.
     kohana::log('debug', 'Requesting data from Warehouse');
-    kohana::log('debug', print_r($_REQUEST, true));
+    kohana::log('debug', print_r($_REQUEST, TRUE));
     $this->authenticate('read');
-    // return data will return an assoc array containing records and/or parameterRequest.
-    $records=$this->read_data();
+    // Return data will return an assoc array containing records and/or parameterRequest.
+    $records = $this->read_data();
     $mode = $this->get_output_mode();
     $responseStruct = $this->get_response_structure($records);
-    switch ($mode)
-    {
+    switch ($mode) {
       case 'json':
-        $a =  json_encode($responseStruct);
-        if (array_key_exists('callback', $_REQUEST))
-        {
-          $a = $_REQUEST['callback']."(".$a.")";
+        $a = json_encode($responseStruct);
+        if (array_key_exists('callback', $_REQUEST)) {
+          $a = "$_REQUEST[callback]($a)";
           $this->content_type = 'Content-Type: application/javascript';
-        } else {
+        }
+        else {
           $this->content_type = 'Content-Type: application/json';
         }
         $this->response = $a;
         break;
+
       case 'xml':
-        if (array_key_exists('xsl', $_REQUEST))
-        {
+        if (array_key_exists('xsl', $_REQUEST)) {
           $xsl = $_REQUEST['xsl'];
-          if (!strpos($xsl, '/'))
-          // xsl is not a fully qualified path, so point it to the media folder.
-          $xsl = url::base().'media/services/stylesheets/'.$xsl;
+          if (!strpos($xsl, '/')) {
+            // xsl is not a fully qualified path, so point it to the media folder.
+            $xsl = url::base() . "media/services/stylesheets/$xsl";
+          }
         }
-        else
-        {
+        else {
           $xsl = '';
         }
         $this->response = $this->xml_encode($responseStruct, $xsl, TRUE);
         $this->content_type = 'Content-Type: text/xml';
         break;
+
       case 'csv':
-        $this->response =  $this->csv_encode($records);
+        $this->response = $this->csv_encode($records);
         $this->content_type = 'Content-Type: text/comma-separated-values';
         break;
+
       case 'tsv':
-        $this->response =  $this->tsv_encode($records);
+        $this->response = $this->tsv_encode($records);
         $this->content_type = 'Content-Type: text/tab-separated-values';
         break;
+
       case 'nbn':
-        $this->response =  $this->nbn_encode($records);
+        $this->response = $this->nbn_encode($records);
         $this->content_type = 'Content-Type: text/plain';
         break;
-      case 'gpx': 
+
+      case 'gpx':
         $this->response = $this->gpx_encode($records, TRUE);
         $this->content_type = 'Content-Type: application/gpx+xml';
         break;
-      case 'kml': // Keyhole Markup Language 
+
+      case 'kml':
+        // Keyhole Markup Language.
         $this->response = $this->kml_encode($records, TRUE);
         $this->content_type = 'Content-Type: application/vnd.google-earth.kml+xml';
         break;
+
+      case 'dwca':
+        // Darwin Core archive.
+        $content = $this->csv_encode($records);
+        $zip = new ZipArchive();
+        $res = $zip->open('download.zip', ZipArchive::CREATE);
+        if ($res === TRUE) {
+          // Note we add a Byte Order Marker to the CSV for UTF-8 support.
+          $zip->addFromString('occurrences.csv', chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF')) . $content);
+          $columns = [];
+          if (isset($this->view_columns)) {
+            $idx = 0;
+            foreach ($this->view_columns as $column) {
+              $term = empty($column['term']) ? '' : "term=\"$column[term]\" ";
+              $columns[] = "<field index=\"$idx\" $term/>";
+              $idx++;
+            }
+          }
+          $columns = implode("\n      ", $columns);
+          $meta = <<<META
+<?xml version="1.0"?>
+<archive xmlns="http://rs.tdwg.org/dwc/text/">
+  <core encoding="UTF-8" linesTerminatedBy="\r\n" fieldsTerminatedBy="," fieldsEnclosedBy="&quot;" ignoreHeaderLines="1" rowType="http://rs.tdwg.org/dwc/terms/Occurrence">
+    <files>
+      <location>occurrences.csv</location>
+      <id index="0"/>
+      $columns
+    </files>
+  </core>
+</archive>
+META;
+          $zip->addFromString('meta.xml', $meta);
+          // Request (POST) can supply content of an EML file to include.
+          if (!empty($_REQUEST['eml'])) {
+            $zip->addFromString('eml.xml', $_REQUEST['eml']);
+          }
+          $handle = fopen('download.zip', "rb");
+          $contents = '';
+          while (!feof($handle)) {
+            $contents .= fread($handle, 8192);
+          }
+          fclose($handle);
+          $zip->close();
+          $this->content_type = 'Content-Type: application/zip';
+          $this->response = $contents;
+        }
+        break;
+
       default:
-        // Code to load from a view
-        if (file_exists('views',"services/data/$entity/$mode"))
-        {
+        // Code to load from a view.
+        if (file_exists('views', "services/data/$entity/$mode")) {
           $this->response = $this->view_encode($records, View::factory("services/data/$entity/$mode"));
         }
-        else
-        {
+        else {
           throw new EntityAccessError("$this->entity data cannot be read using mode $mode.", 1002);
         }
     }
   }
-  
-  /** 
+
+  /**
    * By default, a service request returns the records only. This can be controlled by the GET or POST parameters
-   * wantRecords (default 1), wantColumns (default 0), wantCount (default 0) and wantParameters (default 0). If there is 
-   * only one of these set to true, then the requested structure is returned alone. Otherwise the structure returned is 
+   * wantRecords (default 1), wantColumns (default 0), wantCount (default 0) and wantParameters (default 0). If there is
+   * only one of these set to true, then the requested structure is returned alone. Otherwise the structure returned is
    * 'records' => $records, 'columns' => $this->view_columns, 'count' => n.
-   * Note that if the report parameters are incomplete, then the response will always be just the 
-   * parameter request. 
+   * Note that if the report parameters are incomplete, then the response will always be just the
+   * parameter request.
    */
   protected function get_response_structure($data) {
     $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords']!=='0';
@@ -137,11 +182,11 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $wantParameters = (isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters']==='1')
       || ($wantRecords && !isset($data['records']));
     $array = array();
-    if ($wantRecords && isset($data['records'])) 
+    if ($wantRecords && isset($data['records']))
       $array['records'] = $data['records'];
-    if ($wantColumns && isset($this->view_columns)) 
+    if ($wantColumns && isset($this->view_columns))
       $array['columns'] = $this->view_columns;
-    if ($wantParameters && isset($data['parameterRequest'])) 
+    if ($wantParameters && isset($data['parameterRequest']))
       $array['parameterRequest'] = $data['parameterRequest'];
     if ($wantCount) {
       $count = $this->record_count();
@@ -154,46 +199,43 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     else
       return $array;
   }
-  
+
   /**
-   * Default implementation of method to get the record count. Must be implemented in subclasses in order to get the 
+   * Default implementation of method to get the record count. Must be implemented in subclasses in order to get the
    * count and therefore enable pagination.
    */
   protected function record_count() {
-    return false;
+    return FALSE;
   }
 
   /**
-  * Encode the results of a query array as a csv string
-  */
-  protected function csv_encode($array)
-  {
-    return $this->do_encode($array,'csv');
+   * Encode the results of a query array as a csv string.
+   */
+  protected function csv_encode($array) {
+    return $this->do_encode($array, 'csv');
   }
-  
+
   /**
-  * Encode the results of a query array as a tsv (tab separated value) string
-  */
-  protected function tsv_encode($array)
-  {
-    return $this->do_encode($array,'tsv');
+   * Encode the results of a query array as a tsv (tab separated value) string.
+   */
+  protected function tsv_encode($array) {
+    return $this->do_encode($array, 'tsv');
   }
-  
+
   /**
-  * Encode the results of a query array as an NBN exchange format string
-  */
-  protected function nbn_encode($array)
-  {
-    return $this->do_encode($array,'nbn');
+   * Encode the results of a query array as an NBN exchange format string
+   */
+  protected function nbn_encode($array) {
+    return $this->do_encode($array, 'nbn');
   }
-  
+
   /**
    * Encode an array using the supplied type of encoding.
    */
   protected function do_encode($array, $type) {
     $fn = "get_$type";
     // Get the column titles in the first row
-    if(!is_array($array) || !isset($array['records']) || !is_array($array['records']) || count($array['records']) == 0)
+    if (!is_array($array) || !isset($array['records']) || !is_array($array['records']) || count($array['records']) == 0)
       return '';
     $headers = array_keys($array['records'][0]);
     if(isset($this->view_columns)){
@@ -261,7 +303,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $output.=$newline;
     return $output;
   }
-  
+
   /**
    * Return a line of TSV (tab separated values) from an array.
    * IANA compliant: no tabs allowed in the fields, so we replace any.
@@ -278,9 +320,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $output.=$newline;
     return $output;
   }
-  
+
   /**
-  * Return a line of NBN exchange format data from an array. 
+  * Return a line of NBN exchange format data from an array.
   */
   function get_nbn($data)
   {
@@ -558,7 +600,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         if ($value && !is_array($value))
         {
           // convert images to html
-          if ($element==='images') 
+          if ($element==='images')
             $value='<img width="300" src="'.$root.str_replace(',', '"/><img width="300" src="'.$root, $value).'"/>';
           $data .= ($indent?str_repeat("\t", 2+$recursion):'').
                    '<Data name="'.$element.'">'.($indent ? "\r\n".str_repeat("\t", 3+$recursion) : '').
@@ -686,7 +728,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     }
     return false;
   }
-  
+
   protected function kml_line($ring, $indent, $recursion, $type){
     $coords = explode(',',$ring);
     $data = ($indent ? str_repeat("\t", $recursion) : '').
@@ -700,7 +742,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
              '</'.$type.'>'.($indent ? "\r\n" : '');
     return $data;
   }
-  
+
   /**
    * Encodes an array as gpx - fixed format XML style.
    * Uses $this->entity to decide the name of the root element.
@@ -732,11 +774,11 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       $data .= $this->gpx_encode_array($recordNum, $root, $value, $indent, 1);
       $recordNum++;
     }
-  
+
     $data .= "</gpx>";
     return $data;
   }
-  
+
   /**
    * Encodes an array element as GPX - fixed format XML style.
    */
@@ -766,7 +808,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
           $elements[] = htmlspecialchars($element).' : '.htmlspecialchars($value);
     }
     $desc = count($elements)>0 ? '<desc><![CDATA['.implode("\r\n",$elements).']]></desc>' : '';
-    
+
     // identify geometry. The geometry in GPX must be long/lat decimal degrees (WGS84, EPSG:4326). See comments in KML.
     $geoms = array();
     if(array_key_exists('geom',$array))
@@ -781,7 +823,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       $data .= implode('',$geoms);
   	return $data;
   }
-  
+
   protected function wkt_to_gpx($name, $desc, $geom, $indent, $recursion){
     $geom = trim($geom);
     $data = '';
@@ -859,7 +901,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   	}
   	return false;
   }
-  
+
   protected function gpx_route($name, $desc, $ring, $indent, $recursion, $closed){
     $coords = explode(',',$ring);
     $numCoords = count($coords);
