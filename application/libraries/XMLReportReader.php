@@ -1021,8 +1021,8 @@ TBL;
           $this->columns[$name]['sql'] : $this->columns[$name]['internal_sql'];
   }
 
-  private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='', $autodef=true)
-  {
+  private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='',
+    $orderby='', $mappable='', $autodef=true) {
     if (array_key_exists($name, $this->columns))
     {
       if ($display != '') $this->columns[$name]['display'] = $display;
@@ -1038,6 +1038,7 @@ TBL;
       if ($orderby != '') $this->columns[$name]['orderby'] = $orderby;
       if ($mappable != '') $this->columns[$name]['mappable'] = $mappable;
       if ($autodef != '') $this->columns[$name]['autodef'] = $autodef;
+      if ($term != '') $this->columns[$name]['term'] = $term;
     }
     else
     {
@@ -1050,7 +1051,9 @@ TBL;
           'img' => $img == '' ? 'false' : $img,
           'orderby' => $orderby,
           'mappable' => empty($mappable) ? 'false' : $mappable,
-          'autodef' => $autodef);
+          'autodef' => $autodef,
+          'term' => $term
+        );
     }
   }
 
