@@ -145,15 +145,7 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
       )),
       'rule_types' => json_encode(array('PeriodWithinYear')),
     ));
-
-    echo "\n" . var_export($response, true) . "\n";
-
-    $auth = data_entry_helper::get_read_auth(1, 'password');
-    $samples = data_entry_helper::get_population_data([
-      'table' => 'sample',
-      'extraParams' => $auth
-    ]);
-    echo "\n" . var_export($samples, true) . "\n";
+    var_export($response);
     $errors = json_decode($response['output'], TRUE);
 
     $this->assertTrue($response['result'], 'Invalid response');
