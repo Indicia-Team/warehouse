@@ -1,6 +1,6 @@
 <report
-    title="Darwin Core occurrences (standard filters)"
-    description="A list of occurrences in Darwin Core format."
+    title="Darwin Core occurrences for NBN Atlas (standard filters)"
+    description="A list of occurrences in Darwin Core format with NBN Atlas specific columns."
     featured="true"
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
