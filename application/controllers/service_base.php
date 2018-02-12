@@ -14,26 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
- 
+
 /**
  * Exception class for Indicia services.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class ServiceError extends Exception {
 }
 
 /**
  * Exception class for exception that contain an array of sub-errors, such as a submission validation failure.
- *
- * @package	Core
  */
 class ArrayException extends ServiceError {
 
@@ -44,78 +37,78 @@ class ArrayException extends ServiceError {
    */
   public function __construct($message, $code, $errors) {
     $this->errors = $errors;
-    // make sure everything is assigned properly
+    // Make sure everything is assigned properly.
     parent::__construct($message, $code);
   }
 
   public function errors() {
     return $this->errors;
   }
+
 }
 
 /**
  * Exception class for submission validation problems.
- * 
- * @package Core
- * @subpackage Controllers
  */
 class ValidationError extends ArrayException {
 }
 
 /**
  * Exception class for authentication failures.
- * 
- * @package Core
- * @subpackage Controllers
  */
 class AuthenticationError extends ServiceError {
 }
 
 /**
  * Exception class for authorisation failures.
- * 
- * @package Core
- * @subpackage Controllers
  */
 class AuthorisationError extends ServiceError {
 }
 
 /**
  * Exception class for inaccessible entities or view combinations.
- * 
- * @package Core
- * @subpackage Controllers
  */
 class EntityAccessError extends ServiceError {
 }
 
 /**
  * Base controller class for Indicia Service controllers.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Service_Base_Controller extends Controller {
 
   /**
-   * @var boolean Defines if the user is logged into the warehouse.
+   * Defines if the user is logged into the warehouse.
+   *
+   * @var bool
    */
-  protected $in_warehouse = false;
+  protected $in_warehouse = FALSE;
 
   /**
-   * @var int Id of the website calling the service. Obtained when performing read authentication and used
-   * to filter the response. A value of 0 indicates the warehouse.
+   * Id of the website calling the service.
+   *
+   * Obtained when performing read authentication and used to filter the
+   * response. A value of 0 indicates the warehouse.
+   *
+   * @var int
    */
-  protected $website_id = null;
+  protected $website_id = NULL;
 
   /**
-   * @var int Id of the indicia user ID calling the service. Obtained when performing read authentication and can be used
-   * to filter the response. Null if not provided in the report call.
+   * Id of the indicia user ID calling the service.
+   *
+   * Obtained when performing read authentication and can be used to filter the
+   * response. Null if not provided in the report call.
+   *
+   * @var int
    */
-  protected $user_id = null;
+  protected $user_id = NULL;
 
   /**
-   * @var boolean Flag set to true when user has core admin rights. Only applies when the request originates from the warehouse.
+   * Flag set to true when user has core admin rights.
+   *
+   * Only applies when the request originates from the warehouse.
+   *
+   * @var bool
    */
   protected $user_is_core_admin = false;
 
@@ -126,16 +119,14 @@ class Service_Base_Controller extends Controller {
   * @param string $mode Whether the authentication token is required to have read or write access.
   * Possible values are 'read' and 'write'. Defaults to 'write'.
   */
-  protected function authenticate($mode = 'write')
-  {
+  protected function authenticate($mode = 'write') {
     // Read calls are done using get values, so we merge the two arrays
     $array = array_merge($_POST, $_GET);
     $authentic = FALSE; // default
-    if (array_key_exists('nonce', $array) && array_key_exists('auth_token',$array))
-    {
+    if (array_key_exists('nonce', $array) && array_key_exists('auth_token', $array)) {
       $nonce = $array['nonce'];
       $this->cache = new Cache;
-      // get all cache entries that match this nonce
+      // Get all cache entries that match this nonce
       $paths = $this->cache->exists($nonce);
       foreach($paths as $path) {
         // Find the parts of each file name, which is the cache entry ID, then the mode.
@@ -143,7 +134,7 @@ class Service_Base_Controller extends Controller {
         // check this cached nonce is for the correct read or write operation.
         if ($mode == $tokens[1]) {
           $id = $this->cache->get($tokens[0]);
-          if ($id>0) {
+          if ($id > 0) {
             // normal state, the ID is positive, which means we are authenticating a remote website
             $website = ORM::factory('website', $id);
             if ($website->id)
@@ -158,45 +149,49 @@ class Service_Base_Controller extends Controller {
             $authentic=true;
           }
           if ($authentic) {
-            if ($id>0) {
+            if ($id > 0) {
               $this->website_id = $id;
               if (isset($_REQUEST['user_id']) && $_REQUEST['user_id']) {
-                $this->user_id=$_REQUEST['user_id'];
-                // if the request included a user ID, put it in the global var so all ORM saves can use it
+                $this->user_id = $_REQUEST['user_id'];
+                // If the request included a user ID, put it in the global var so all ORM saves can use it
                 global $remoteUserId;
                 $remoteUserId = $this->user_id;
               }
             } else {
-              $this->in_warehouse = true;
+              $this->in_warehouse = TRUE;
               $this->website_id = 0; // the Warehouse
               $this->user_id = 0 - $id; // user id was passed as a negative number to differentiate from a website id
-              // get a list of the websites this user can see
+              // Get a list of the websites this user can see.
               $user = ORM::Factory('user', $this->user_id);
-              $this->user_is_core_admin=($user->core_role_id===1);
+              $this->user_is_core_admin = ($user->core_role_id === 1);
               if (!$this->user_is_core_admin) {
                 $this->user_websites = array();
-                $userWebsites = ORM::Factory('users_website')->where(array('user_id'=>$this->user_id, 'site_role_id is not'=>null, 'banned'=>'f'))->find_all();
+                $userWebsites = ORM::Factory('users_website')->where(array(
+                  'user_id' => $this->user_id,
+                  'site_role_id is not' => NULL,
+                  'banned' => 'f'
+                ))->find_all();
                 foreach ($userWebsites as $userWebsite)
                   $this->user_websites[] = $userWebsite->website_id;
               }
             }
             // reset the nonce if requested. Doing it here will mean only gets reset if not already timed out.
-            if(array_key_exists('reset_timeout', $array) && $array['reset_timeout']=='true') {
+            if (array_key_exists('reset_timeout', $array) && $array['reset_timeout'] == 'true') {
               Kohana::log('info', "Nonce timeout reset.");
               $this->cache->set($nonce, $id, $mode);
             }
           }
         }
       }
-    } else {
+    }
+    else {
       $auth = new Auth();
       $authentic = ($auth->logged_in() || $auth->auto_login());
       $this->in_warehouse = $authentic;
       $this->user_is_core_admin = $auth->logged_in('CoreAdmin');
     }
 
-    if (!$authentic)
-    {
+    if (!$authentic) {
       Kohana::log('info', "Unable to authenticate.");
       throw new AuthenticationError("unauthorised", 1);
     };
@@ -204,17 +199,27 @@ class Service_Base_Controller extends Controller {
 
   /**
    * Set the content type and then issue the response.
+   *
+   * Response data can be a string in $this->response, or the contents of a
+   * temporary file in $this->responseFile. The temporary file will be
+   * deleted once the contents are returned.
    */
-  protected function send_response()
-  {
-    // last thing we do is set the output
-    if (isset($this->content_type))
-    {
+  protected function send_response() {
+    // Last thing we do is set the output.
+    if (isset($this->content_type)) {
       header($this->content_type);
     }
-    echo $this->response;
+    if (!empty($this->responseFile)) {
+      readfile($this->responseFile);
+      // Tidy up the temporary file.
+      if (!unlink($this->responseFile)) {
+        kohana::log('alert', "Could not delete temporary file $this->responseFile");
+      }
+    }
+    else {
+      echo $this->response;
+    }
   }
-
 
   /**
    * Return an error XML or json document to the client
@@ -225,7 +230,7 @@ class Service_Base_Controller extends Controller {
   {
     if($e instanceof ValidationError || $e instanceof InvalidArgumentException)
       $statusCode = 400;
-    elseif($e instanceof AuthenticationError || $e instanceof AuthorisationError) 
+    elseif($e instanceof AuthenticationError || $e instanceof AuthorisationError)
       $statusCode = 403; // not 401 as not using browser or official digest authentication
     elseif($e instanceof EntityAccessError)
       $statusCode = 404;
