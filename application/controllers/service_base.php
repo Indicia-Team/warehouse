@@ -199,15 +199,27 @@ class Service_Base_Controller extends Controller {
 
   /**
    * Set the content type and then issue the response.
+   *
+   * Response data can be a string in $this->response, or the contents of a
+   * temporary file in $this->responseFile. The temporary file will be
+   * deleted once the contents are returned.
    */
   protected function send_response() {
     // Last thing we do is set the output.
     if (isset($this->content_type)) {
       header($this->content_type);
     }
-    echo $this->response;
+    if (!empty($this->responseFile)) {
+      readfile($this->responseFile);
+      // Tidy up the temporary file.
+      if (!unlink($this->responseFile)) {
+        kohana::log('alert', "Could not delete temporary file $this->responseFile");
+      }
+    }
+    else {
+      echo $this->response;
+    }
   }
-
 
   /**
    * Return an error XML or json document to the client
