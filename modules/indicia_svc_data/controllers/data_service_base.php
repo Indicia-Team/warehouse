@@ -165,12 +165,12 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
 <?xml version="1.0"?>
 <archive xmlns="http://rs.tdwg.org/dwc/text/">
   <core encoding="UTF-8" linesTerminatedBy="\r\n" fieldsTerminatedBy="," fieldsEnclosedBy="&quot;" ignoreHeaderLines="1" rowType="http://rs.tdwg.org/dwc/terms/Occurrence">
-  <files>
-    <location>occurrences.csv</location>
-  </files>
-  <id index="0"/>
-  $columns
-</core>
+    <files>
+      <location>occurrences.csv</location>
+    </files>
+    <id index="0"/>
+    $columns
+  </core>
 </archive>
 META;
     $zip->addFromString('meta.xml', $meta);
