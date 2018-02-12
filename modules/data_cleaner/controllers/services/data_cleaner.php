@@ -120,24 +120,31 @@ SQL
       $date_type = $vd[2];
       $db->query("insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id)
           values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type',  st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
+      kohana::log('debug', "insert into occdelta (website_id, survey_id, date_start, date_end, date_type, public_geom, taxa_taxon_list_id)
+      values ($website_id, $survey_id, '$date_start', '$date_end', '$date_type',  st_geomfromtext('$geom', $srid), $taxa_taxon_list_id);");
     }
     // patch in some extra details about the taxon required for each cache entry
     $db->query("update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxa_taxon_list_external_key=ttl.external_key ".
         "from list_taxa_taxon_lists ttl where ttl.id=o.taxa_taxon_list_id");
+    kohana::log('debug', "update occdelta o set taxon_meaning_id=ttl.taxon_meaning_id, taxa_taxon_list_external_key=ttl.external_key ".
+    "from list_taxa_taxon_lists ttl where ttl.id=o.taxa_taxon_list_id");
   }
 
   /**
    * Performs the task of running the rules against the temporary
    */
   private function runRules($db) {
+    kohana::log('debug', 'Running verification rules');
     $rules = data_cleaner::getRules();
     if (!empty($_REQUEST['rule_types']))
       $ruleTypes = json_decode(strtoupper($_REQUEST['rule_types']), true);
     $r = array();
     foreach ($rules as $rule) {
       // skip rule types if only running certain ones
-      if (isset($ruleTypes) && !in_array(strtoupper($rule['testType']), $ruleTypes))
+      if (isset($ruleTypes) && !in_array(strtoupper($rule['testType']), $ruleTypes)) {
+        kohana::log('debug', "Skipping $rule[testType] because not in rule types : " . var_export($ruleTypes, TRUE));
         continue;
+      }
       if (isset($rule['errorMsgField']))
         // rules are able to specify a different field (e.g. from the verification rule data) to provide the error message.
         $errorField = $rule['errorMsgField'];
@@ -155,6 +162,7 @@ SQL
           $sql .= "\nand " . $query['where'];
         // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
         $messages = $db->query($sql)->result_array(false);
+        kohana::log('debug', "$sql");
         $r = $r + $messages;
       }
     }
