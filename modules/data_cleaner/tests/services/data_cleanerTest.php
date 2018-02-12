@@ -157,7 +157,6 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
       )),
       'rule_types' => json_encode(array('PeriodWithinYear')),
     ));
-    var_export($response);
     $errors = json_decode($response['output'], TRUE);
 
     $this->assertTrue($response['result'], 'Invalid response');
