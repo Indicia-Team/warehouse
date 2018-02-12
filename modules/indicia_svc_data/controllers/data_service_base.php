@@ -113,46 +113,21 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         // Darwin Core archive.
         $content = $this->csv_encode($records);
         $zip = new ZipArchive();
-        $res = $zip->open('download.zip', ZipArchive::CREATE);
+        $filename = DOCROOT . 'extract/' . uniqid('dwca-download-') . '.zip';
+        $res = $zip->open($filename, ZipArchive::CREATE);
         if ($res === TRUE) {
-          // Note we add a Byte Order Marker to the CSV for UTF-8 support.
+          // Add the CSV file to the zip archive - aote we add a Byte Order
+          // Marker to the CSV for UTF-8 support.
           $zip->addFromString('occurrences.csv', chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF')) . $content);
-          $columns = [];
-          if (isset($this->view_columns)) {
-            $idx = 0;
-            foreach ($this->view_columns as $column) {
-              $term = empty($column['term']) ? '' : "term=\"$column[term]\" ";
-              $columns[] = "<field index=\"$idx\" $term/>";
-              $idx++;
-            }
-          }
-          $columns = implode("\n      ", $columns);
-          $meta = <<<META
-<?xml version="1.0"?>
-<archive xmlns="http://rs.tdwg.org/dwc/text/">
-  <core encoding="UTF-8" linesTerminatedBy="\r\n" fieldsTerminatedBy="," fieldsEnclosedBy="&quot;" ignoreHeaderLines="1" rowType="http://rs.tdwg.org/dwc/terms/Occurrence">
-    <files>
-      <location>occurrences.csv</location>
-      <id index="0"/>
-      $columns
-    </files>
-  </core>
-</archive>
-META;
-          $zip->addFromString('meta.xml', $meta);
+          // Add the meta.xml file with column details.
+          $this->addColumnsMetaToDwcA($zip);
           // Request (POST) can supply content of an EML file to include.
           if (!empty($_REQUEST['eml'])) {
             $zip->addFromString('eml.xml', $_REQUEST['eml']);
           }
-          $handle = fopen('download.zip', "rb");
-          $contents = '';
-          while (!feof($handle)) {
-            $contents .= fread($handle, 8192);
-          }
-          fclose($handle);
           $zip->close();
           $this->content_type = 'Content-Type: application/zip';
-          $this->response = $contents;
+          $this->responseFile = $filename;
         }
         break;
 
@@ -165,6 +140,40 @@ META;
           throw new EntityAccessError("$this->entity data cannot be read using mode $mode.", 1002);
         }
     }
+  }
+
+  /**
+   * Takes a Dwc-A zip file and adds the meta.xml file to it.
+   *
+   * Builds metadata from the current report's columns list.
+   *
+   * @param ZipArchive $zip
+   *   Archive zip file object.
+   */
+  private function addColumnsMetaToDwcA(ZipArchive $zip) {
+    $columns = [];
+    if (isset($this->view_columns)) {
+      $idx = 0;
+      foreach ($this->view_columns as $column) {
+        $term = empty($column['term']) ? '' : "term=\"$column[term]\" ";
+        $columns[] = "<field index=\"$idx\" $term/>";
+        $idx++;
+      }
+    }
+    $columns = implode("\n    ", $columns);
+    $meta = <<<META
+<?xml version="1.0"?>
+<archive xmlns="http://rs.tdwg.org/dwc/text/">
+  <core encoding="UTF-8" linesTerminatedBy="\r\n" fieldsTerminatedBy="," fieldsEnclosedBy="&quot;" ignoreHeaderLines="1" rowType="http://rs.tdwg.org/dwc/terms/Occurrence">
+  <files>
+    <location>occurrences.csv</location>
+  </files>
+  <id index="0"/>
+  $columns
+</core>
+</archive>
+META;
+    $zip->addFromString('meta.xml', $meta);
   }
 
   /**
