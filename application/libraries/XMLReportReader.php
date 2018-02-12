@@ -1038,7 +1038,6 @@ TBL;
       if ($orderby != '') $this->columns[$name]['orderby'] = $orderby;
       if ($mappable != '') $this->columns[$name]['mappable'] = $mappable;
       if ($autodef != '') $this->columns[$name]['autodef'] = $autodef;
-      if ($term != '') $this->columns[$name]['term'] = $term;
     }
     else
     {
@@ -1052,7 +1051,6 @@ TBL;
           'orderby' => $orderby,
           'mappable' => empty($mappable) ? 'false' : $mappable,
           'autodef' => $autodef,
-          'term' => $term
         );
     }
   }
