@@ -812,9 +812,9 @@ SQL;
             'updated_on' => $downloaded_on
           )
         );
-    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL' ? 'I' : 'N'))
-      ->update('cache_occurrences',
-          array('downloaded_flag' => ($mode == 'FINAL' ? 'F' : 'I')));
+//    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL' ? 'I' : 'N'))
+//      ->update('cache_occurrences',
+//          array('downloaded_flag' => ($mode == 'FINAL' ? 'F' : 'I')));
     $db->query('COMMIT;');
   }
 

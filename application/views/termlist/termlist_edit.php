@@ -49,7 +49,7 @@ if ($disabled_input==='YES') : ?>
 <?php
 endif;
 echo data_entry_helper::text_input(array(
-  'label' => 'Titlde',
+  'label' => 'Title',
   'fieldname' => 'termlist:title',
   'default' => html::initial_value($values, 'termlist:title'),
   'validation' => 'required',
