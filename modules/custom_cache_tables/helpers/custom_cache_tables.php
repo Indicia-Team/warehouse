@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Custom cache tables module plugin.
+ * Custom cache tables module helper class.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
