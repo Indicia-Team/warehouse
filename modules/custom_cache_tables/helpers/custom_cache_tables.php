@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Custom cache tables module plugin.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -67,10 +70,10 @@ class custom_cache_tables {
           }
         }
         // If the table already exists, delete it.
-        if (!empty($lastDoneInfo[$defname])) {
-          $db->query("DROP TABLE custom_cache_tables.$defname");
+        if (!empty($lastDoneInfo[$defname]) && (!isset($metadata['autodrop']) || $metadata['autodrop'] === TRUE)) {
+          $db->query("DROP TABLE IF EXISTS custom_cache_tables.$defname");
         }
-        echo "building cache table $defname<br/>";
+        echo "Building cache table $defname<br/>";
         self::buildTable($db, $defname);
         $lastDoneInfo[$defname] = date(DATE_ISO8601);
       }
