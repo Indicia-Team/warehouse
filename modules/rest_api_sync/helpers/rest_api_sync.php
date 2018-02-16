@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,25 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	REST Api Sync
- * @subpackage Helpers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
  defined('SYSPATH') or die('No direct script access.');
 
 /**
- *
+ * Helper class for syncing to RESTful APIs.
  */
 class rest_api_sync {
 
   public static $client_user_id;
-
-  public static function get_server_projects_url($server_url) {
-    return $server_url . '/projects';
-  }
 
   public static function get_server_taxon_observations_url($server_url, $projectId,
       $edited_date_from, $edited_date_to) {
@@ -42,7 +37,7 @@ class rest_api_sync {
       'page_size' => 500
     ));
   }
-  
+
   public static function get_server_annotations_url($server_url, $projectId,
       $edited_date_from, $edited_date_to) {
     return $server_url . '/annotations?' . http_build_query(array(
@@ -60,7 +55,7 @@ class rest_api_sync {
   public static function get_server_taxon_observations($url, $serverId) {
     return self::get_data_from_rest_url($url, $serverId);
   }
-  
+
   public static function get_server_annotations($url, $serverId) {
     return self::get_data_from_rest_url($url, $serverId);
   }
@@ -80,16 +75,17 @@ class rest_api_sync {
     curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
     // Do the request
     $response = curl_exec($session);
-    $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE); 
+    $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
     // Check for an error, or check if the http response was not OK.
     if ($curlErrno || $httpCode != 200) {
       echo "Error occurred accessing $url<br/>";
+      echo $response;
       kohana::log('error', "Rest API Sync error $httpCode");
       kohana::log('error', 'cUrl POST request failed.');
       if ($curlErrno) {
-        kohana::log('error', 'Error number: '.$curlErrno);
-        kohana::log('error', 'Error message: '.curl_error($session));
+        kohana::log('error', 'Error number: ' . $curlErrno);
+        kohana::log('error', 'Error message: ' . curl_error($session));
       }
       echo 'Request failed<br/>';
       echo "$url<br/>";

@@ -79,7 +79,7 @@ class Rest_Api_Sync_Controller extends Controller {
     echo "<h1>REST API Sync</h1>";
     foreach ($servers as $server_id => $server) {
       echo "<h2>$server_id</h2>";
-      $next_page_of_projects_url = rest_api_sync::get_server_projects_url($server['url']);
+      $next_page_of_projects_url = rest_api_sync_indicia::getServerProjectsUrl($server['url']);
       while ($next_page_of_projects_url) {
         $response = rest_api_sync::get_server_projects($next_page_of_projects_url, $server_id);
         if (!isset($response['data'])) {
@@ -90,6 +90,7 @@ class Rest_Api_Sync_Controller extends Controller {
         $projects = $response['data'];
         foreach ($projects as $project) {
           $this->fromDateTime = variable::get("rest_api_sync_$project[id]_last_run", '1600-01-01', FALSE);
+          $this->fromDateTime = '2016-10-25T20:21:52';
           // Add a second on, since we processed all the records from the last
           // second.
           $this->fromDateTime = date("Y-m-d\TH:i:s", strtotime($this->fromDateTime . ' +1 second'));
