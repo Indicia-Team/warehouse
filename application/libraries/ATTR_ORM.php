@@ -23,12 +23,20 @@ abstract class ATTR_ORM extends Valid_ORM {
   public $search_field = 'caption';
 
   /**
-   * Defines if the available attributes for a submission are filtered by survey_id.
+   * Defines if the available attrs for a submission are filtered by survey_id.
    *
    * @var bool
    */
-  protected $has_survey_restriction = true;
+  protected $hasSurveyRestriction = TRUE;
 
+  /**
+   * Validate data about to be submitted.
+   *
+   * @param Validation $array
+   *   Form data to validate.
+   * @param bool $save
+   *   True if save should happen when validation passes.
+   */
   public function validate(Validation $array, $save = FALSE) {
     // Uses PHP trim() to remove whitespace from beginning and end of all
     // fields before validation.
@@ -69,14 +77,17 @@ abstract class ATTR_ORM extends Valid_ORM {
       // the attribute has changed.
       $cache = new Cache();
       // Type is the object name with _attribute stripped from the end.
-      $type = substr($this->object_name, 0, strlen($this->object_name)-10);
+      $type = substr($this->object_name, 0, strlen($this->object_name) - 10);
       $cache->delete('attrInfo_' . $type . '_' . $this->id);
     }
     return $save && $parent_valid;
   }
 
   /**
-   * As we share a generic form, the submission structure is generic to all custom attributes.   *
+   * Retrieve the submission structure.
+   *
+   * As we share a generic form, the submission structure is generic to all
+   * custom attributes.
    */
   public function get_submission_structure() {
     return array(
@@ -84,16 +95,19 @@ abstract class ATTR_ORM extends Valid_ORM {
       'metaFields' => array(
         'disabled_input',
         'quick_termlist_create',
-        'quick_termlist_terms'
-      )
+        'quick_termlist_terms',
+      ),
     );
   }
 
   /**
-   * If saving a re-used attribute, then don't bother posting the main record data as it can't be changed. The postSubmit
-   * can still occur though to link it to websites and surveys.
+   * Validate the submission then save it.
    *
-   * @return integer
+   * If saving a re-used attribute, then don't bother posting the main record
+   * data as it can't be changed. The postSubmit can still occur though to link
+   * it to websites and surveys.
+   *
+   * @return int
    *   Id of the attribute.
    */
   protected function validateAndSubmit() {
@@ -108,10 +122,13 @@ abstract class ATTR_ORM extends Valid_ORM {
   }
 
   /**
+   * Finds the websites posted by the edit form.
+   *
    * Uses the Post data to find all the websites that are going to be linked to
    * an attribute being saved.
    *
    * @return array
+   *   Array of websites to link to attribute.
    */
   private static function getWebsitesInPost() {
     $matches = preg_grep('/^website_\d+/', array_keys($_POST));
@@ -124,8 +141,10 @@ abstract class ATTR_ORM extends Valid_ORM {
   }
 
   /**
-   * A new attribute submission can contain metaField information to declare a list
-   * of terms which will be inserted into a new termlist and linked to the
+   * Code to run pre-submission.
+   *
+   * A new attribute submission can contain metaField information to declare a
+   * list of terms which will be inserted into a new termlist and linked to the
    * attribute.
    *
    * @throws \exception
@@ -142,7 +161,7 @@ abstract class ATTR_ORM extends Valid_ORM {
       $termlist->set_submission_data(array(
         'title' => $s['fields']['caption']['value'],
         'description' => 'Termlist created for attribute ' . $s['fields']['caption']['value'],
-        'website_id' => count($websiteIds) == 1 ? $websiteIds[0] : NULL
+        'website_id' => count($websiteIds) == 1 ? $websiteIds[0] : NULL,
       ));
       if (!$termlist->submit()) {
         throw new exception('Failed to create attribute termlist');
@@ -155,7 +174,7 @@ abstract class ATTR_ORM extends Valid_ORM {
             'term:fk_language:iso' => kohana::config('indicia.default_lang'),
             'sort_order' => $idx + 1,
             'termlist_id' => $termlist->id,
-            'preferred' => 't'
+            'preferred' => 't',
           ));
           if (!$termlists_term->submit()) {
             throw new exception('Failed to create attribute termlist term');
@@ -167,8 +186,10 @@ abstract class ATTR_ORM extends Valid_ORM {
   }
 
   /**
-   * After saving, ensures that the join records linking the attribute to a website
-   * & survey combination are created or deleted.
+   * Code to run after submission.
+   *
+   * After saving, ensures that the join records linking the attribute to a
+   * website & survey combination are created or deleted.
    *
    * @param bool $isInsert
    *   True if this is a new inserted record, false for an update.
@@ -186,13 +207,13 @@ abstract class ATTR_ORM extends Valid_ORM {
     }
     foreach ($websites as $website) {
       // First check for non survey specific checkbox.
-      $this->set_attribute_website_record($this->id, $website->id, NULL, isset($_POST['website_'.$website->id]));
+      $this->setAttributeWebsiteRecord($this->id, $website->id, NULL, isset($_POST["website_$website->id"]));
       // Then if attributes on this model are restricted by survey, check the
       // survey checkboxes.
-      if ($this->has_survey_restriction) {
+      if ($this->hasSurveyRestriction) {
         $surveys = ORM::factory('survey')->where('website_id', $website->id)->find_all();
         foreach ($surveys as $survey) {
-          $this->set_attribute_website_record($this->id, $website->id, $survey->id, isset($_POST['website_'.$website->id.'_'.$survey->id]));
+          $this->setAttributeWebsiteRecord($this->id, $website->id, $survey->id, isset($_POST["website_{$website->id}_{$survey->id}"]));
         }
       }
     }
@@ -200,9 +221,12 @@ abstract class ATTR_ORM extends Valid_ORM {
   }
 
   /**
-   * Internal function to ensure that an attribute is linked to a website/survey combination
-   * or alternatively is unlinked from the combination. Checks the existing data and
-   * creates or deletes the join record as and when necessary.
+   * Joins an attribute to a website.
+   *
+   * Internal function to ensure that an attribute is linked to a
+   * website/survey combination or alternatively is unlinked from the
+   * combination. Checks the existing data and creates or deletes the join
+   * record as and when necessary.
    *
    * @param int $attr_id
    *   Id of the attribute.
@@ -210,16 +234,15 @@ abstract class ATTR_ORM extends Valid_ORM {
    *   ID of the website.
    * @param int $survey_id
    *   ID of the survey.
-   *
    * @param bool $checked
    *   True if there should be a link, false if not.
    */
-  protected function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked) {
+  protected function setAttributeWebsiteRecord($attr_id, $website_id, $survey_id, $checked) {
     $filter = array(
       $this->object_name . '_id' => $attr_id,
-      'website_id' => $website_id
+      'website_id' => $website_id,
     );
-    if ($this->has_survey_restriction) {
+    if ($this->hasSurveyRestriction) {
       $filter['restrict_to_survey_id'] = $survey_id;
     }
     $attributes_website = ORM::factory(inflector::plural($this->object_name) . '_website', $filter);
@@ -238,9 +261,9 @@ abstract class ATTR_ORM extends Valid_ORM {
       $fields = array(
         $this->object_name . '_id' => array('value' => $attr_id),
         'website_id' => array('value' => $website_id),
-        'deleted' => array('value' => 'f')
+        'deleted' => array('value' => 'f'),
       );
-      if ($this->has_survey_restriction) {
+      if ($this->hasSurveyRestriction) {
         $fields['restrict_to_survey_id'] = array('value' => $survey_id);
       }
       $save_array = array(
