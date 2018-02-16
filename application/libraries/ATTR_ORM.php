@@ -14,50 +14,63 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage LIbraries
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
-
 abstract class ATTR_ORM extends Valid_ORM {
 
-  public $search_field='caption';
-  
+  public $search_field = 'caption';
+
   /**
    * Defines if the available attributes for a submission are filtered by survey_id.
-   * @var boolean
+   *
+   * @var bool
    */
   protected $has_survey_restriction = true;
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
-    // merge unvalidated fields, in case the subclass has set any.
-    if (!isset($this->unvalidatedFields))
+    // Merge unvalidated fields, in case the subclass has set any.
+    if (!isset($this->unvalidatedFields)) {
       $this->unvalidatedFields = array();
-    $this->unvalidatedFields = array_merge($this->unvalidatedFields,
-      array('validation_rules', 'public', 'multi_value', 'deleted', 'description', 'source_id'));
+    }
+    $this->unvalidatedFields = array_merge(
+      $this->unvalidatedFields,
+      array(
+        'validation_rules',
+        'public',
+        'multi_value',
+        'deleted',
+        'description',
+        'source_id',
+        'caption_i18n',
+      )
+    );
     $array->add_rules('caption', 'required');
     $array->add_rules('data_type', 'required');
     if (array_key_exists('data_type', $array->as_array()) && $array['data_type'] == 'L') {
       if (empty($array['termlist_id'])) {
         $array->add_rules('termlist_id', 'required');
-      } else
+      }
+      else {
         array_push($this->unvalidatedFields, 'termlist_id');
+      }
     }
     $array->add_rules('system_function', 'length[1,30]');
     $parent_valid = parent::validate($array, $save);
-    // clean up cached required fields in case validation rules have changed
-    $cache=Cache::instance();
+    // Clean up cached required fields in case validation rules have changed.
+    $cache = Cache::instance();
     $cache->delete_tag('required-fields');
     if ($save && $parent_valid) {
-      // clear the cache used for attribute datatype and validation rules since the attribute has changed
-      $cache = new Cache;
-      // Type is the object name with _attribute stripped from the end
+      // Clear the cache used for attribute datatype and validation rules since
+      // the attribute has changed.
+      $cache = new Cache();
+      // Type is the object name with _attribute stripped from the end.
       $type = substr($this->object_name, 0, strlen($this->object_name)-10);
-      $cache->delete('attrInfo_'.$type.'_'.$this->id);
+      $cache->delete('attrInfo_' . $type . '_' . $this->id);
     }
     return $save && $parent_valid;
   }
@@ -67,8 +80,12 @@ abstract class ATTR_ORM extends Valid_ORM {
    */
   public function get_submission_structure() {
     return array(
-      'model'=>$this->object_name,
-      'metaFields' => array('disabled_input', 'quick_termlist_create', 'quick_termlist_terms')
+      'model' => $this->object_name,
+      'metaFields' => array(
+        'disabled_input',
+        'quick_termlist_create',
+        'quick_termlist_terms'
+      )
     );
   }
 
@@ -76,14 +93,16 @@ abstract class ATTR_ORM extends Valid_ORM {
    * If saving a re-used attribute, then don't bother posting the main record data as it can't be changed. The postSubmit
    * can still occur though to link it to websites and surveys.
    *
-   * @return integer Id of the attribute.
+   * @return integer
+   *   Id of the attribute.
    */
   protected function validateAndSubmit() {
     if (isset($this->submission['metaFields']) && isset($this->submission['metaFields']['disabled_input']) &&
-        $this->submission['metaFields']['disabled_input']['value']=='YES') {
+        $this->submission['metaFields']['disabled_input']['value'] === 'YES') {
       $this->find($this->submission['fields']['id']['value']);
       return $this->id;
-    } else {
+    }
+    else {
       return parent::validateAndSubmit();
     }
   }
@@ -91,6 +110,7 @@ abstract class ATTR_ORM extends Valid_ORM {
   /**
    * Uses the Post data to find all the websites that are going to be linked to
    * an attribute being saved.
+   *
    * @return array
    */
   private static function getWebsitesInPost() {
@@ -107,6 +127,7 @@ abstract class ATTR_ORM extends Valid_ORM {
    * A new attribute submission can contain metaField information to declare a list
    * of terms which will be inserted into a new termlist and linked to the
    * attribute.
+   *
    * @throws \exception
    */
   protected function preSubmit() {
@@ -121,7 +142,7 @@ abstract class ATTR_ORM extends Valid_ORM {
       $termlist->set_submission_data(array(
         'title' => $s['fields']['caption']['value'],
         'description' => 'Termlist created for attribute ' . $s['fields']['caption']['value'],
-        'website_id' => count($websiteIds) == 1 ? $websiteIds[0] : null
+        'website_id' => count($websiteIds) == 1 ? $websiteIds[0] : NULL
       ));
       if (!$termlist->submit()) {
         throw new exception('Failed to create attribute termlist');
@@ -148,19 +169,26 @@ abstract class ATTR_ORM extends Valid_ORM {
   /**
    * After saving, ensures that the join records linking the attribute to a website
    * & survey combination are created or deleted.
-   * @param boolean True if this is a new inserted record, false for an update.
-   * @return boolean Returns true to indicate success. 
+   *
+   * @param bool $isInsert
+   *   True if this is a new inserted record, false for an update.
+   *
+   * @return bool
+   *   Returns true to indicate success.
    */
   protected function postSubmit($isInsert) {
-    // Only save for the websites we have access to
-    if (empty($_POST['restricted-to-websites']))
+    // Only save for the websites we have access to.
+    if (empty($_POST['restricted-to-websites'])) {
       $websites = ORM::factory('website')->find_all();
-    else
-      $websites = ORM::factory('website')->in('id',explode(',', $_POST['restricted-to-websites']))->find_all();
+    }
+    else {
+      $websites = ORM::factory('website')->in('id', explode(',', $_POST['restricted-to-websites']))->find_all();
+    }
     foreach ($websites as $website) {
-      // First check for non survey specific checkbox
-      $this->set_attribute_website_record($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
-      // then if attributes on this model are restricted by survey, check the survey checkboxes
+      // First check for non survey specific checkbox.
+      $this->set_attribute_website_record($this->id, $website->id, NULL, isset($_POST['website_'.$website->id]));
+      // Then if attributes on this model are restricted by survey, check the
+      // survey checkboxes.
       if ($this->has_survey_restriction) {
         $surveys = ORM::factory('survey')->where('website_id', $website->id)->find_all();
         foreach ($surveys as $survey) {
@@ -168,45 +196,59 @@ abstract class ATTR_ORM extends Valid_ORM {
         }
       }
     }
-    return true;
+    return TRUE;
   }
 
   /**
    * Internal function to ensure that an attribute is linked to a website/survey combination
-   * or alternatively is unlinked from the combination. Checks the existing data and 
+   * or alternatively is unlinked from the combination. Checks the existing data and
    * creates or deletes the join record as and when necessary.
-   * @param integer $attr_id Id of the attribute.
-   * @param integer $website_id ID of the website.
-   * @param integer $survey_id ID of the survey.
-   * @param boolean $checked True if there should be a link, false if not. 
+   *
+   * @param int $attr_id
+   *   Id of the attribute.
+   * @param int $website_id
+   *   ID of the website.
+   * @param int $survey_id
+   *   ID of the survey.
+   *
+   * @param bool $checked
+   *   True if there should be a link, false if not.
    */
-  protected function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked)
-  {
-    $filter = array($this->object_name.'_id' => $attr_id
-                , 'website_id' => $website_id);
-    if ($this->has_survey_restriction)
+  protected function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked) {
+    $filter = array(
+      $this->object_name . '_id' => $attr_id,
+      'website_id' => $website_id
+    );
+    if ($this->has_survey_restriction) {
       $filter['restrict_to_survey_id'] = $survey_id;
-    $attributes_website = ORM::factory(inflector::plural($this->object_name).'_website', $filter);
-    if($attributes_website->loaded) {
-      // existing record
-      if($checked == true and $attributes_website->deleted == 't') {
+    }
+    $attributes_website = ORM::factory(inflector::plural($this->object_name) . '_website', $filter);
+    if ($attributes_website->loaded) {
+      // Existing record.
+      if ($checked == TRUE and $attributes_website->deleted === 't') {
         $attributes_website->__set('deleted', 'f');
         $attributes_website->save();
-      } else if ($checked == false and $attributes_website->deleted == 'f')  {
+      }
+      elseif ($checked == FALSE and $attributes_website->deleted == 'f') {
         $attributes_website->__set('deleted', 't');
         $attributes_website->save();
       }
-    } else if ($checked == true) {
-      $fields = array($this->object_name.'_id' => array('value' => $attr_id),
-          'website_id' => array('value' => $website_id),
-          'deleted' => array('value' => 'f'));
-      if ($this->has_survey_restriction)
+    }
+    elseif ($checked == TRUE) {
+      $fields = array(
+        $this->object_name . '_id' => array('value' => $attr_id),
+        'website_id' => array('value' => $website_id),
+        'deleted' => array('value' => 'f')
+      );
+      if ($this->has_survey_restriction) {
         $fields['restrict_to_survey_id'] = array('value' => $survey_id);
+      }
       $save_array = array(
-                'id' => $attributes_website->object_name
-                ,'fields' => $fields
-                ,'fkFields' => array()
-                ,'superModels' => array());
+        'id' => $attributes_website->object_name,
+        'fields' => $fields,
+        'fkFields' => array(),
+        'superModels' => array(),
+      );
       $attributes_website->submission = $save_array;
       $attributes_website->submit();
     }
