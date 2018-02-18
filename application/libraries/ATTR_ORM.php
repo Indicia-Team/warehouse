@@ -277,4 +277,46 @@ abstract class ATTR_ORM extends Valid_ORM {
     }
   }
 
+  /**
+   * Override set handler to store caption translations as JSON.
+   */
+  public function __set($key, $value) {
+    if ($key === 'caption_i18n') {
+      $list = explode("\n", $value);
+      $obj = [];
+      foreach ($list as $item) {
+        $parts = explode('|', $item);
+        if (count($parts) === 2) {
+          $obj[trim($parts[1])] = trim($parts[0]);
+        }
+        else {
+          throw new exception('Invalid format');
+        }
+      }
+      $value = json_encode($obj);
+    }
+    parent::__set($key, $value);
+  }
+
+  /**
+   * Retrieves the value of a column in the model. If caption_i18n, reformats for editing.
+   *
+   * @param string $column
+   * @return string
+   */
+  public function __get($column) {
+    $value = parent::__get($column);
+    if ($column === 'caption_i18n' && $value !== NULL) {
+      $obj = json_decode($value, TRUE);
+      if (!empty($obj)) {
+        $list = [];
+        foreach ($obj as $lang => $term) {
+          $list[] = "$term|$lang";
+        }
+        $value = implode("\n", $list);
+      }
+    }
+    return $value;
+  }
+
 }

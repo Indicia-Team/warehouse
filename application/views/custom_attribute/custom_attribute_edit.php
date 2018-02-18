@@ -51,6 +51,23 @@ the warehouse owner to request changes.</div>
       'validation' => ['required'],
       'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
     ]);
+    if (array_key_exists('caption_i18n', $this->model->as_array())) {
+      $defaultLang = kohana::config('indicia.default_lang');
+      $helpText = <<<TXT
+If you need to specify the localise the attribute caption into different languages for use in report outputs, specify
+the caption above using language code $defaultLang and enter additional translations here. Enter one per line, followed
+by a pipe (|) character then the ISO language code. E.g.<br/>
+Compter|fra<br/>
+Anzahl|deu<br/>
+TXT;
+      echo data_entry_helper::textarea([
+        'fieldname' => "$model->object_name:caption_i18n",
+        'label' => 'Caption in other languages',
+        'default' => html::initial_value($values, "$model->object_name:caption_i18n"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'helpText' => $helpText,
+      ]);
+    }
     if (array_key_exists('description', $this->model->as_array())) {
       echo data_entry_helper::textarea([
         'fieldname' => "$model->object_name:description",
