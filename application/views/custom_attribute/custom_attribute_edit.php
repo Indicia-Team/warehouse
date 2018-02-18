@@ -138,7 +138,7 @@ the warehouse owner to request changes.</div>
     echo data_entry_helper::checkbox([
       'fieldname' => "$model->object_name:public",
       'label' => $other_data['publicFieldName'],
-      'default' => html::initial_value($values,"$model->object_name:public"),
+      'default' => html::initial_value($values, "$model->object_name:public"),
     ]);
     if ($model->object_name === 'sample_attribute') {
       echo data_entry_helper::checkbox([
@@ -159,67 +159,135 @@ the warehouse owner to request changes.</div>
     ?>
   </fieldset>
   <fieldset <?php echo $disabled_input === 'YES' ? ' class="ui-state-disabled"' : ''; ?>>
-  <legend>Validation Rules</legend>
-<ol>
-  <li id="li_valid_required">
-    <label class="narrow" for="valid_required">Required</label>
-    <?php echo form::checkbox('valid_required', TRUE, isset($model->valid_required) && ($model->valid_required == 't'), 'class="vnarrow" ' . $enabled); ?>
-    <p class="helpText">Note, checking this option will make the attribute GLOBALLY required for all surveys which use it.
-      Consider making it required on a survey dataset basis instead.</p>
-  </li>
-  <li id="li_valid_length"><label class="narrow" for="valid_length">Length</label><?php echo form::checkbox('valid_length', TRUE, isset($model->valid_length) && ($model->valid_length == 't'), 'class="vnarrow" ' . $enabled); ?>
-    Between <input class="narrow" id="valid_length_min" name="valid_length_min"
-    value="<?php echo html::specialchars($model->valid_length_min); ?>"
-    <?php echo $enabled?> /> and <input class="narrow"
-    id="valid_length_max" name="valid_length_max"
-    value="<?php echo html::specialchars($model->valid_length_max); ?>"
-    <?php echo $enabled?> /> <?php echo html::error_message($model->getError('valid_length')); ?>
-  </li>
-  <li id="li_valid_alpha"><label class="narrow" for="valid_alpha">Alphabetic</label><?php echo form::checkbox('valid_alpha', TRUE, isset($model->valid_alpha) && ($model->valid_alpha == 't'), 'class="vnarrow" ' . $enabled); ?></li>
-  <li id="li_valid_email"><label class="narrow" for="valid_email">Email
-  Address</label><?php echo form::checkbox('valid_email', TRUE, isset($model->valid_email) && ($model->valid_email == 't'), 'class="vnarrow" ' . $enabled); ?></li>
-  <li id="li_valid_url"><label class="narrow" for="valid_url">URL</label><?php echo form::checkbox('valid_url', TRUE, isset($model->valid_url) && ($model->valid_url == 't'), 'class="vnarrow" ' . $enabled); ?></li>
-  <li id="li_valid_alpha_numeric"><label class="narrow"
-    for="valid_alpha_numeric">Alphanumeric</label><?php echo form::checkbox('valid_alpha_numeric', TRUE, isset($model->valid_alpha_numeric) && ($model->valid_alpha_numeric == 't'), 'class="vnarrow" ' . $enabled); ?></li>
-  <li id="li_valid_numeric"><label class="narrow" for="valid_numeric">Numeric</label><?php echo form::checkbox('valid_numeric', TRUE, isset($model->valid_numeric) && ($model->valid_numeric == 't'), 'class="vnarrow" ' . $enabled); ?></li>
-  <li id="li_valid_digit"><label class="narrow" for="valid_digit">Digits Only</label><?php echo form::checkbox('valid_digit', TRUE, isset($model->valid_digit) && ($model->valid_digit == 't'), 'class="vnarrow" ' . $enabled); ?></li>
-  <li id="li_valid_integer"><label class="narrow" for="valid_integer">Integer</label><?php echo form::checkbox('valid_integer', TRUE, isset($model->valid_integer) && ($model->valid_integer == 't'), 'class="vnarrow" ' . $enabled); ?></li>
-  <li id="li_valid_standard_text"><label class="narrow"
-    for="valid_standard_text">Standard Text</label><?php echo form::checkbox('valid_standard_text', TRUE, isset($model->valid_standard_text) && ($model->valid_standard_text == 't'), 'class="vnarrow" ' . $enabled); ?></li>
-  <li id="li_valid_decimal"><label class="narrow" for="valid_decimal">Formatted
-  Decimal</label><?php echo form::checkbox('valid_decimal', TRUE, isset($model->valid_decimal) && ($model->valid_decimal == 't'), 'class="vnarrow" ' . $enabled); ?><input
-    class="narrow" id="valid_dec_format" name="valid_dec_format"
-    value="<?php echo html::specialchars($model->valid_dec_format); ?>"
-    <?php echo $enabled?> /> <?php echo html::error_message($model->getError('valid_decimal')); ?>
-  </li>
-  <li id="li_valid_regex"><label class="narrow" for="valid_regex">Regular
-  Expression</label><?php echo form::checkbox('valid_regex', TRUE, isset($model->valid_regex) && ($model->valid_regex == 't'), 'class="vnarrow" ' . $enabled); ?><input
-    class="narrow" id="valid_regex_format" name="valid_regex_format"
-    value="<?php echo html::specialchars($model->valid_regex_format); ?>"
-    <?php echo $enabled?> /> <?php echo html::error_message($model->getError('valid_regex')); ?>
-  </li>
-  <li id="li_valid_min"><label class="narrow" for="valid_min">Minimum
-  value</label><?php echo form::checkbox('valid_min', TRUE, isset($model->valid_min) && ($model->valid_min == 't'), 'class="vnarrow" ' . $enabled); ?><input
-    class="narrow" id="valid_min_value" name="valid_min_value"
-    value="<?php echo html::specialchars($model->valid_min_value); ?>"
-    <?php echo $enabled?> /> <?php echo html::error_message($model->getError('valid_min')); ?>
-  </li>
-  <li id="li_valid_max"><label class="narrow" for="valid_max">Maximum
-  value</label><?php echo form::checkbox('valid_max', TRUE, isset($model->valid_max) && ($model->valid_max == 't'), 'class="vnarrow" ' . $enabled); ?><input
-    class="narrow" id="valid_max_value" name="valid_max_value"
-    value="<?php echo html::specialchars($model->valid_max_value); ?>"
-    <?php echo $enabled?> /> <?php echo html::error_message($model->getError('valid_max')); ?>
-  </li>
-  <li id="li_valid_date_in_past">
-    <label class="narrow" for="valid_date_in_past">Date is in past</label>
+    <legend>Validation rules</legend>
     <?php
-    echo form::checkbox('valid_date_in_past', TRUE, isset($model->valid_date_in_past) && ($model->valid_date_in_past == 't'), 'class="vnarrow" ' . $enabled);
-    echo html::error_message($model->getError('valid_date_in_past'));
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_required',
+      'label' => 'Required',
+      'default' => $model->valid_required,
+      'helpText' => 'Note, checking this option will make the attribute GLOBALLY required for all surveys which use it. ' .
+        'Consider making it required on a survey dataset basis instead.',
+    ]);
+    $valMin = html::specialchars($model->valid_length_min);
+    $valMax = html::specialchars($model->valid_length_max);
+    $ctrls = <<<HTML
+between <input type="text" id="valid_length_min" name="valid_length_min" value="$valMin"/>
+and <input type="text" id="valid_length_max" name="valid_length_max" value="$valMax"/>
+HTML;
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_length',
+      'label' => 'Length',
+      'default' => $model->valid_length,
+      'helpText' => 'Enforce the minimum and/or maximum length of a text value.',
+      'afterControl' => $ctrls,
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_alpha',
+      'label' => 'Alphabetic characters only',
+      'default' => $model->valid_alpha,
+      'helpText' => 'Enforce that any value provided consists of alphabetic characters only.',
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_numeric',
+      'label' => 'Numeric characters only',
+      'default' => $model->valid_numeric,
+      'helpText' => 'Enforce that any value provided consists of numeric characters only.',
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_alpha_numeric',
+      'label' => 'Alphanumeric characters only',
+      'default' => $model->valid_alpha_numeric,
+      'helpText' => 'Enforce that any value provided consists of alphabetic and numeric characters only.',
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_digit',
+      'label' => 'Digits only',
+      'default' => $model->valid_digit,
+      'helpText' => 'Enforce that any value provided consists of digits (0-9) only, with no decimal points or dashes.',
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_integer',
+      'label' => 'Integer',
+      'default' => $model->valid_integer,
+      'helpText' => 'Enforce that any value provided is a valid whole number. Consider using an integer data type instead of text.',
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_standard_text',
+      'label' => 'Standard text',
+      'default' => $model->valid_standard_text,
+      'helpText' => 'Enforce that any value provided is valid text (Letters, numbers, whitespace, dashes, full-stops and underscores are allowed..',
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_email',
+      'label' => 'Email address',
+      'default' => $model->valid_email,
+      'helpText' => 'Enforce that any value provided is a valid email address format.',
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_url',
+      'label' => 'URL',
+      'default' => $model->valid_url,
+      'helpText' => 'Enforce that any value provided is a valid URL format.',
+    ]);
+    $val = html::specialchars($model->valid_dec_format);
+    $ctrls = <<<HTML
+<input type="text" id="valid_dec_format" name="valid_dec_format" value="$val"/>
+HTML;
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_decimal',
+      'label' => 'Formatted decimal',
+      'default' => $model->valid_decimal,
+      'helpText' => 'Validate a decimal format against the provided pattern, e.g. 2 (2 digits) or 2,2 (2 digits before and 2 digits after the decimal point).',
+      'afterControl' => $ctrls,
+    ]);
+    $val = html::specialchars($model->valid_regex_format);
+    $ctrls = <<<HTML
+<input type="text" id="valid_regex_format" name="valid_regex_format" value="$val"/>
+HTML;
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_regex',
+      'label' => 'Regular expression',
+      'default' => $model->valid_regex,
+      'helpText' => 'Validate the supplied value against a regular expression, e.g. /^(sunny|cloudy)$/',
+      'afterControl' => $ctrls,
+    ]);
+    $val = html::specialchars($model->valid_min_value);
+    $ctrls = <<<HTML
+<input type="text" id="valid_min_value" name="valid_min_value" value="$val"/>
+HTML;
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_min',
+      'label' => 'Minimum value',
+      'default' => $model->valid_min,
+      'helpText' => 'Ensure the value is at least this',
+      'afterControl' => $ctrls,
+    ]);
+    $val = html::specialchars($model->valid_max_value);
+    $ctrls = <<<HTML
+<input type="text" id="valid_max_value" name="valid_max_value" value="$val"/>
+HTML;
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_max',
+      'label' => 'Maximum value',
+      'default' => $model->valid_max,
+      'helpText' => 'Ensure the value is at most this',
+      'afterControl' => $ctrls,
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_date_in_past',
+      'label' => 'Date in past',
+      'default' => $model->valid_date_in_past,
+      'helpText' => 'Ensure that the date values provided are in the past.',
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'valid_time',
+      'label' => 'Time',
+      'default' => $model->valid_time,
+      'helpText' => 'Ensure that the value provided is a valid time format.',
+    ]);
+
     ?>
-  </li>
-  <li id="li_valid_time"><label class="narrow" for="valid_integer">Time</label><?php echo form::checkbox('valid_time', TRUE, isset($model->valid_time) && ($model->valid_time == 't'), 'class="vnarrow" ' . $enabled); ?></li>
-</ol>
-</fieldset>
+  </fieldset>
 <?php
 // Output the view that lets this custom attribute associate with websites,
 // surveys, checklists or whatever is appropriate for the attribute type.
@@ -253,51 +321,99 @@ function showHideTermlistLink() {
 }
 
 function toggleOptions() {
-  var enable_list = [];
-  var disable_list = [];
+  var enable = [];
   var data_type = $('select#data_type').val();
+  var allRules = [
+    'required',
+    'length',
+    'alpha',
+    'alpha_numeric',
+    'numeric',
+    'email',
+    'url',
+    'digit',
+    'integer',
+    'standard_text',
+    'decimal',
+    'regex',
+    'min',
+    'max',
+    'date_in_past',
+    'time'
+  ];
   $('select#termlist_id').attr('disabled', 'disabled');
   $("#termlist-link").hide();
   $('#quick-termlist').hide();
+
   switch(data_type) {
     case "T": // text
-      enable_list = ['valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_time'];
-      disable_list = ['valid_digit','valid_integer','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past'];
+      enable = [
+        'required',
+        'length',
+        'alpha',
+        'email',
+        'url',
+        'alpha_numeric',
+        'numeric',
+        'standard_text',
+        'decimal',
+        'regex',
+        'time'
+      ];
       break;
     case "L": // Lookup List
       $('select#termlist_id').removeAttr('disabled');
-      enable_list = ['valid_required'];
-      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_digit','valid_integer','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_time'];
-<?php if (!html::initial_value($values, $model->object_name . ':id')) : ?>
+      enable = [
+        'required'
+      ];
+      <?php if (empty($id)) : ?>
       $('#quick-termlist').show();
-<?php endif; ?>
+      <?php endif; ?>
       break;
     case "I": // Integer
-        enable_list = ['valid_required','valid_digit','valid_integer','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value'];
-        disable_list = ['valid_numeric','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_standard_text','valid_date_in_past','valid_time'];
-        break;
+      enable = [
+        'required',
+        'digit',
+        'decimal',
+        'regex',
+        'min',
+        'max'
+      ];
+      break;
     case "F": // Float
-      enable_list = ['valid_required','valid_numeric','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value'];
-      disable_list = ['valid_digit','valid_integer','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_standard_text','valid_date_in_past','valid_time'];
+      enable = [
+        'required',
+        'numeric',
+        'decimal',
+        'regex',
+        'min',
+        'max'
+      ];
       break;
     case "D": // Specific Date
     case "V": // Vague Date
-      enable_list = ['valid_required','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past'];
-      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_digit','valid_integer','valid_time'];
+      enable = [
+        'required',
+        'min',
+        'max',
+        'date_in_past'
+      ];
       break;
     case "B": // Boolean
-      enable_list = ['valid_required'];
-      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_digit','valid_integer','valid_time'];
+      enable = [
+        'required'
+      ];
       break;
     default:
-      disable_list = ['valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_digit','valid_integer','valid_time'];
+      enable = [];
       break;
   };
-  $.each(enable_list, function(i, item) {
-    $('#li_'+item).show();
-  });
-  $.each(disable_list, function(i, item) {
-    $('#li_'+item).hide();
+  $.each(allRules, function(i, item) {
+    if ($.inArray(item, enable) === -1) {
+      $('#ctrl-wrap-sample_attribute-valid_' + item).hide();
+    } else {
+      $('#ctrl-wrap-sample_attribute-valid_' + item).show();
+    }
   });
   showHideTermlistLink();
 };
