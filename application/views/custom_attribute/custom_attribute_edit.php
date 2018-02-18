@@ -22,236 +22,144 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+global $indicia_templates;
+warehouse::loadHelpers(['data_entry_helper']);
+$id = html::initial_value($values, "$model->object_name:id");
 $disabled_input = html::initial_value($values, 'metaFields:disabled_input');
 $enabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
 ?>
-<p>
 <?php if ($disabled_input === 'YES') : ?>
-The attribute was created by another user so you don't have permission to change the attribute's specification, although you can
-change the attribute assignments at the bottom of the page. Please contact the warehouse owner to request changes.
+<div class="alert alert-warning">The attribute was created by another user so you don't have permission to change the
+attribute's specification, although you can change the attribute assignments at the bottom of the page. Please contact
+the warehouse owner to request changes.</div>
 <?php else : ?>
-This page allows you to specify a new or edit an existing custom attribute for <?php echo strtolower($other_data['name']); ?> data.
+<div class="alert alert-info">This page allows you to specify a new or edit an existing custom attribute for
+<?php echo strtolower($other_data['name']); ?> data.</div>
 <?php endif; ?>
-</p>
-<form
-  action="<?php echo url::site() . "$other_data[controllerpath]/save"; ?>"
-  method="post"><input type="hidden" name="<?php echo $model->object_name; ?>:id"
-  value="<?php echo html::initial_value($values, "$model->object_name:id"); ?>" />
-<input type="hidden" name="metaFields:disabled_input"
-  value="<?php echo $disabled_input; ?>" />
-<fieldset <?php
-if ($disabled_input === 'YES') {
-  echo ' class="ui-state-disabled"';
-} ?>>
-<legend><?php echo $other_data['name']; ?> Attribute details</legend>
-<ol>
-  <li>
-    <label for="caption">Caption</label>
-    <input id="caption" name="<?php echo $model->object_name; ?>:caption"
-        value="<?php echo html::initial_value($values, "$model->object_name:caption"); ?>"
-    <?php echo $enabled; ?> /> <?php echo html::error_message($model->getError("$model->object_name:caption")); ?>
-  </li>
-  <?php if (array_key_exists('description', $this->model->as_array())) : ?>
-    <li>
-      <label for="description">Description:</label>
-      <textarea id="description" name="<?php echo $model->object_name; ?>:description" <?php echo $enabled; ?>
-        ><?php echo html::initial_value($values, "$model->object_name:description"); ?></textarea>
-        <?php echo html::error_message($model->getError("$model->object_name:description")); ?>
-    </li>
-  <?php endif; ?>
-
-  <?php if (method_exists($this->model, 'get_system_functions')) : ?>
-  <li><label for="system_function">System function:</label>
-    <select name="<?php echo $model->object_name; ?>:system_function" id="system_function">
-      <option value="">-none-</option>
-      <?php
+<form id="custom-attribute-edit"
+      action="<?php echo url::site() . "$other_data[controllerpath]/save"; ?>"
+      method="post"><input type="hidden" name="<?php echo $model->object_name; ?>:id"
+      value="<?php echo $id; ?>" />
+  <input type="hidden" name="metaFields:disabled_input" value="<?php echo $disabled_input; ?>" />
+  <fieldset<?php echo $disabled_input === 'YES' ? ' class="ui-state-disabled"' : ''; ?>>
+    <legend><?php echo $other_data['name']; ?> attribute details<?php echo $metadata; ?></legend>
+    <?php
+    echo data_entry_helper::text_input([
+      'fieldname' => "$model->object_name:caption",
+      'label' => 'Caption',
+      'default' => html::initial_value($values, "$model->object_name:caption"),
+      'validation' => ['required'],
+      'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+    ]);
+    if (array_key_exists('description', $this->model->as_array())) {
+      echo data_entry_helper::textarea([
+        'fieldname' => "$model->object_name:description",
+        'label' => 'Description',
+        'default' => html::initial_value($values, "$model->object_name:description"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+      ]);
+    }
+    if (method_exists($this->model, 'get_system_functions')) {
+      $options = [];
+      $hints = [];
       foreach ($this->model->get_system_functions() as $function => $def) {
-        $selected = html::initial_value($values, "$model->object_name:system_function") === $function ? ' selected="selected"' : '';
-        echo "<option title=\"$def[description]\" value=\"$function\"$selected>$def[title]</option>\n";
+        $options[$function] = $def['title'];
+        $hints[$def['title']] = $def['description'];
       }
-      ?>
-    </select>
-  </li>
-  <?php endif; ?>
-  <?php if (array_key_exists('source_id', $this->model->as_array()) && !empty($other_data['source_terms'])) : ?>
-    <li><label for="source_id">Source of attribute:</label>
-      <select name="<?php echo $model->object_name; ?>:source_id" id="source_id">
-        <option value="">-none-</option>
-        <?php
-        foreach ($other_data['source_terms'] as $id => $term) {
-          $selected = html::initial_value($values, "$model->object_name:source_id") === $id ? ' selected="selected"' : '';
-          echo "<option value=\"$id\"$selected>$term</option>\n";
-        }
-        ?>
-      </select>
-    </li>
-  <?php endif; ?>
-  <li><label for="data_type">Data Type</label> <script
-    type="text/javascript">
-$(document).ready(function() {
-  $('#quick_termlist_create').change(function (e) {
-    if ($(e.currentTarget).attr('checked')) {
-      $('#quick_termlist_terms-cntr').show();
-      $('#termlist-picker').hide();
-    } else {
-      $('#quick_termlist_terms-cntr').hide();
-      $('#termlist-picker').show();
+      $indicia_templates['sys_func_item'] = '<option value="{value}" {selected} {title}>{caption}</option>';
+      echo data_entry_helper::select([
+        'fieldname' => "$model->object_name:system_function",
+        'label' => 'System function',
+        'default' => html::initial_value($values, "$model->object_name:system_function"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'blankText' => '-none-',
+        'lookupValues' => $options,
+        'optionHints' => $hints,
+        'itemTemplate' => 'sys_func_item',
+      ]);
     }
-  });
-});
-function showHideTermlistLink() {
-  $("#termlist-link").attr('href', '<?php echo url::site() . 'termlist/edit/'; ?>'+$('#termlist_id').val());
-  if ($('#termlist_id').val()!=='' && $('#data_type').val()==='L') {
-    $("#termlist-link").show();
-  } else {
-    $("#termlist-link").hide();
-  }
-}
-
-function toggleOptions(data_type)
-{
-  var enable_list = [];
-  var disable_list = [];
-  $('select#termlist_id').attr('disabled', 'disabled');
-  $("#termlist-link").hide();
-  $('#quick-termlist').hide();
-  switch(data_type) {
-    case "T": // text
-      enable_list = ['valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_time'];
-      disable_list = ['valid_digit','valid_integer','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past'];
-      break;
-    case "L": // Lookup List
-      $('select#termlist_id').removeAttr('disabled');
-      enable_list = ['valid_required'];
-      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_digit','valid_integer','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_time'];
-<?php if (!html::initial_value($values, $model->object_name . ':id')) : ?>
-      $('#quick-termlist').show();
-<?php endif; ?>
-      break;
-    case "I": // Integer
-        enable_list = ['valid_required','valid_digit','valid_integer','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value'];
-        disable_list = ['valid_numeric','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_standard_text','valid_date_in_past','valid_time'];
-        break;
-    case "F": // Float
-      enable_list = ['valid_required','valid_numeric','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value'];
-      disable_list = ['valid_digit','valid_integer','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_standard_text','valid_date_in_past','valid_time'];
-      break;
-    case "D": // Specific Date
-    case "V": // Vague Date
-      enable_list = ['valid_required','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past'];
-      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_digit','valid_integer','valid_time'];
-      break;
-    case "B": // Boolean
-      enable_list = ['valid_required'];
-      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_digit','valid_integer','valid_time'];
-      break;
-    default:
-      disable_list = ['valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_digit','valid_integer','valid_time'];
-      break;
-  };
-  $.each(enable_list, function(i, item) {
-    $('#li_'+item).show();
-  });
-  $.each(disable_list, function(i, item) {
-    $('#li_'+item).hide();
-  });
-  showHideTermlistLink();
-};
-<?php
-  if ($disabled_input == 'NO') {
-?>
-$(document).ready(function() {
-  toggleOptions($('select#data_type').attr('value'));
-  $('#termlist_id').change(function(e) {
-    showHideTermlistLink();
-  });
-});
-<?php
-  }
-?>
-</script> <select id="data_type" name="<?php echo $model->object_name; ?>:data_type"
-<?php echo $enabled; ?>
-    onchange="toggleOptions(this.value);">
-    <option value=''>&lt;Please Select&gt;</option>
-    <?php
-    $optionlist = array(
-      'T' => 'Text',
-      'L' => 'Lookup List',
-      'I' => 'Integer',
-      'F' => 'Float',
-      'D' => 'Specific Date',
-      'V' => 'Vague Date',
-      'B' => 'Boolean',
-    );
-    foreach ($optionlist as $key => $option) {
-      $selected = $key === html::initial_value($values, "$model->object_name:data_type")
-        ? 'selected="selected" ' : '';
-      echo "  <option value=\"$key\" $selected>$option</option>";
+    if (array_key_exists('source_id', $this->model->as_array()) && !empty($other_data['source_terms'])) {
+      echo data_entry_helper::select([
+        'fieldname' => "$model->object_name:source_id",
+        'label' => 'Source of attribute',
+        'default' => html::initial_value($values, "$model->object_name:source_id"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'blankText' => '-none-',
+        'lookupValues' => $other_data['source_terms'],
+      ]);
+    }
+    echo data_entry_helper::select([
+      'fieldname' => "$model->object_name:data_type",
+      'id' => 'data_type',
+      'label' => 'Data type',
+      'default' => html::initial_value($values, "$model->object_name:data_type"),
+      'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+      'lookupValues' => [
+        'T' => 'Text',
+        'L' => 'Lookup List',
+        'I' => 'Integer',
+        'F' => 'Float',
+        'D' => 'Specific Date',
+        'V' => 'Vague Date',
+        'B' => 'Boolean',
+      ],
+      'validation' => ['required'],
+    ]);
+    echo "<div id=\"quick-termlist\" style=\"display: none;\">\n";
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'metaFields:quick_termlist_create',
+      'id' => 'quick_termlist_create',
+      'label' => 'Create a new termlist',
+      'helpText' => 'Tick this box to create a new termlist with the same name as this attribute and populate it with a provided list of terms.',
+    ]);
+    echo "<div id=\"quick-termlist-terms\" style=\"display: none;\">\n";
+    echo data_entry_helper::textarea([
+      'fieldname' => 'metaFields:quick_termlist_terms',
+      'label' => 'Terms',
+      'helpText' => 'Enter terms into this box, one per line. A termlist with the same name as the attribute will be created and populated with this list of terms in the order provided.',
+    ]);
+    echo '</div>';
+    echo '</div>';
+    echo data_entry_helper::select([
+      'fieldname' => "$model->object_name:termlist_id",
+      'id' => 'termlist_id',
+      'label' => 'Termlist',
+      'default' => html::initial_value($values, "$model->object_name:termlist_id"),
+      'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+      'blankText' => '<Please select>',
+      'lookupValues' => $other_data['termlists'],
+    ]);
+    echo '<a id="termlist-link" target="_blank" href="">edit in new tab</a>';
+    echo data_entry_helper::checkbox([
+      'fieldname' => "$model->object_name:multi_value",
+      'label' => 'Allow multiple values',
+      'default' => html::initial_value($values, "$model->object_name:multi_value"),
+    ]);
+    echo data_entry_helper::checkbox([
+      'fieldname' => "$model->object_name:public",
+      'label' => $other_data['publicFieldName'],
+      'default' => html::initial_value($values,"$model->object_name:public"),
+    ]);
+    if ($model->object_name === 'sample_attribute') {
+      echo data_entry_helper::checkbox([
+        'fieldname' => "$model->object_name:applies_to_location",
+        'label' => 'Applies to location',
+        'default' => html::initial_value($values, "$model->object_name:applies_to_location"),
+        'helpText' => 'Tick this box for attributes which describe something inherent to the site/location itself',
+      ]);
+    }
+    elseif ($model->object_name === 'person_attribute') {
+      echo data_entry_helper::checkbox([
+        'fieldname' => "$model->object_name:synchronisable",
+        'label' => 'Synchronisable with client website user profiles',
+        'default' => html::initial_value($values, "$model->object_name:synchronisable"),
+        'helpText' => 'Tick this box for attributes which can be linked to a user account profile on a client site.',
+      ]);
     }
     ?>
-  </select> <?php echo html::error_message($model->getError("$model->object_name:data_type")); ?>
-  </li>
-  <li id="quick-termlist" style="display: none;">
-    <div>
-      <label for="quick_termlist_create">Create a new termlist:</label>
-      <input type="checkbox" id="quick_termlist_create" name="metaFields:quick_termlist_create" value="t" />
-      <p class="helpText">Tick this box to create a new termlist with the same name as this
-      attribute and populate it with a provided list of terms.</p>
-    </div>
-    <div id="quick_termlist_terms-cntr" style="display: none;">
-      <label for="quick_termlist_terms">Terms:</label>
-      <textarea id="quick_termlist_terms" name="metaFields:quick_termlist_terms" rows="10"></textarea>
-      <p class="helpText">Enter terms into this box, one per line. A termlist with the same name as the attribute
-      will be created and populated with this list of terms in the order provided.</p>
-    </div>
-  </li>
-
-  <li id="termlist-picker"><label for="termlist_id">Termlist</label> <select id="termlist_id"
-    name="<?php echo $model->object_name; ?>:termlist_id" <?php echo $enabled; ?>>
-    <option value=''>&lt;Please Select&gt;</option>
-    <?php
-    if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
-      $termlists = ORM::factory('termlist')->where('deleted', 'f')->in('website_id', $this->auth_filter['values'])->orderby('title', 'asc')->find_all();
-    }
-    else {
-      $termlists = ORM::factory('termlist')->where('deleted', 'f')->orderby('title', 'asc')->find_all();
-    }
-    foreach ($termlists as $termlist) {
-      $selected = $termlist->id == html::initial_value($values, "$model->object_name:termlist_id")
-        ? 'selected="selected" ' : '';
-      echo "  <option value=\"$termlist->id\" $selected>$termlist->title</option>";
-    }
-    ?>
-  </select>
-  <?php
-  echo html::error_message($model->getError("$model->object_name:termlist_id"));
-  echo '<a id="termlist-link" target="_blank" href="">edit in new tab</a>';
-  ?>
-  </li>
-  <li><label class="wide" for="multi_value">Allow Multiple Values</label>
-  <?php echo form::checkbox("$model->object_name:multi_value", TRUE, (html::initial_value($values, "$model->object_name:multi_value") === 't'), 'class="vnarrow" ' . $enabled); ?>
-  </li>
-  <li><label class="wide" for="public"><?php echo $other_data['publicFieldName']; ?></label>
-  <?php echo form::checkbox("$model->object_name:public", TRUE, (html::initial_value($values, "$model->object_name:public") === 't'), 'class="vnarrow" ' . $enabled); ?>
-  </li>
-  <?php if ($model->object_name === 'sample_attribute') : ?>
-  <li><label class="wide" for="public">Applies to location</label>
-  <?php echo form::checkbox("$model->object_name:applies_to_location", TRUE, (html::initial_value($values, "$model->object_name:applies_to_location") === 't'), 'class="vnarrow" ' . $enabled); ?>
-  </li>
-  <?php endif; ?>
-  <?php if ($model->object_name === 'person_attribute') : ?>
-  <li><label class="wide" for="public">Synchronisable with client website user profiles:</label>
-  <?php echo form::checkbox("$model->object_name:synchronisable", TRUE, (html::initial_value($values, "$model->object_name:synchronisable") === 't'), 'class="vnarrow" ' . $enabled); ?>
-  </li>
-  <?php endif; ?>
-</ol>
-</fieldset>
-<fieldset <?php
-if ($disabled_input === 'YES') {
-  echo ' class="ui-state-disabled"';
-}
-?>>
-<legend>Validation Rules</legend>
+  </fieldset>
+  <fieldset <?php echo $disabled_input === 'YES' ? ' class="ui-state-disabled"' : ''; ?>>
+  <legend>Validation Rules</legend>
 <ol>
   <li id="li_valid_required">
     <label class="narrow" for="valid_required">Required</label>
@@ -318,6 +226,92 @@ if ($disabled_input === 'YES') {
 $this->associationsView->other_data = $other_data;
 $this->associationsView->model = $model;
 echo $this->associationsView;
-echo $metadata;
-echo html::form_buttons(html::initial_value($values, "$model->object_name:id") !== NULL);
+echo html::form_buttons(!empty($id), FALSE, FALSE);
+data_entry_helper::enable_validation('custom-attribute-edit');
+echo data_entry_helper::dump_javascript();
 ?></form>
+
+<script type="text/javascript">
+$(document).ready(function() {
+  $('#quick_termlist_create').change(function (e) {
+    if ($(e.currentTarget).attr('checked')) {
+      $('#quick-termlist-terms').show();
+      $('#termlist-picker').hide();
+    } else {
+      $('#quick-termlist-terms').hide();
+      $('#termlist-picker').show();
+    }
+  });
+});
+function showHideTermlistLink() {
+  $("#termlist-link").attr('href', '<?php echo url::site() . 'termlist/edit/'; ?>'+$('#termlist_id').val());
+  if ($('#termlist_id').val()!=='' && $('#data_type').val()==='L') {
+    $("#termlist-link").show();
+  } else {
+    $("#termlist-link").hide();
+  }
+}
+
+function toggleOptions() {
+  var enable_list = [];
+  var disable_list = [];
+  var data_type = $('select#data_type').val();
+  $('select#termlist_id').attr('disabled', 'disabled');
+  $("#termlist-link").hide();
+  $('#quick-termlist').hide();
+  switch(data_type) {
+    case "T": // text
+      enable_list = ['valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_time'];
+      disable_list = ['valid_digit','valid_integer','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past'];
+      break;
+    case "L": // Lookup List
+      $('select#termlist_id').removeAttr('disabled');
+      enable_list = ['valid_required'];
+      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_digit','valid_integer','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_time'];
+<?php if (!html::initial_value($values, $model->object_name . ':id')) : ?>
+      $('#quick-termlist').show();
+<?php endif; ?>
+      break;
+    case "I": // Integer
+        enable_list = ['valid_required','valid_digit','valid_integer','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value'];
+        disable_list = ['valid_numeric','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_standard_text','valid_date_in_past','valid_time'];
+        break;
+    case "F": // Float
+      enable_list = ['valid_required','valid_numeric','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value'];
+      disable_list = ['valid_digit','valid_integer','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_standard_text','valid_date_in_past','valid_time'];
+      break;
+    case "D": // Specific Date
+    case "V": // Vague Date
+      enable_list = ['valid_required','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past'];
+      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_digit','valid_integer','valid_time'];
+      break;
+    case "B": // Boolean
+      enable_list = ['valid_required'];
+      disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_digit','valid_integer','valid_time'];
+      break;
+    default:
+      disable_list = ['valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_digit','valid_integer','valid_time'];
+      break;
+  };
+  $.each(enable_list, function(i, item) {
+    $('#li_'+item).show();
+  });
+  $.each(disable_list, function(i, item) {
+    $('#li_'+item).hide();
+  });
+  showHideTermlistLink();
+};
+<?php
+  if ($disabled_input == 'NO') {
+?>
+$(document).ready(function() {
+  toggleOptions();
+  $('select#data_type').change(toggleOptions);
+  $('#termlist_id').change(function(e) {
+    showHideTermlistLink();
+  });
+});
+<?php
+  }
+?>
+</script>
