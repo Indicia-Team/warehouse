@@ -33,7 +33,7 @@ class Identifier_attribute_Model extends ATTR_ORM {
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'termlist');
 
   // The identifier attributes are website wide
-  protected $has_survey_restriction = false;
+  protected $hasSurveyRestriction = false;
 
   protected $has_many = array(
     'identifier_attribute_values',
