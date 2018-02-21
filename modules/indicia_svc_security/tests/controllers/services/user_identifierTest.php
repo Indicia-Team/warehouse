@@ -76,11 +76,24 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
             'updated_on' => '2016-07-22:16:00:00',
             'updated_by_id' => 1,
             'website_id' => 2,
-            'comment' => 'Occurrence for unit testing',
+            'comment' => 'Occurrence for unit testing - user 1',
             'taxa_taxon_list_id' => 1,
             'record_status' => 'C',
             'release_status' => 'R',
-            'confidential' => 'f'
+            'confidential' => 'f',
+          ),
+          array(
+            'sample_id' => 2,
+            'created_on' => '2016-07-22:16:00:00',
+            'created_by_id' => 1,
+            'updated_on' => '2016-07-22:16:00:00',
+            'updated_by_id' => 1,
+            'website_id' => 2,
+            'comment' => 'Occurrence for unit testing - user 2',
+            'taxa_taxon_list_id' => 1,
+            'record_status' => 'C',
+            'release_status' => 'R',
+            'confidential' => 'f',
           ),
         ),
         'sample_attribute_values' => array(
@@ -254,7 +267,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     ), 9998, 'u1', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
-    // response should definitely include a user id
+    // Response should definitely include a user id.
     $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: '.$response['output']);
     $uid2 = $output->userId;
     // This user should be a member of website2.
@@ -264,9 +277,9 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     // Now the crux - we have 2 different users on 2 websites. What happens if they turn out to be the same person?
     // This request should return an array of the 2 possible users.
     $response = $this->callGetUserIdService($auth2, array(
-      array('type' => 'email','identifier' => 'tracking2@test.com'),
-      array('type' => 'facebook','identifier' => 'fbtracking2'),
-      array('type' => 'twitter','identifier' => 'twittertracking1')
+      array('type' => 'email', 'identifier' => 'tracking2@test.com'),
+      array('type' => 'facebook', 'identifier' => 'fbtracking2'),
+      array('type' => 'twitter', 'identifier' => 'twittertracking1'),
     ), 9998, 'u1', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
@@ -295,6 +308,10 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals($uid2, $output->userId, 'Failed to split users and retreive the correct user ID');
 
     // Recall the service, this time forcing a merge of the 2 possible users.
+    // We'll allocate an occurrence to each of the 2 users first to ensure
+    // that merging picks up the records.
+    $this->db->query("update occurrences set created_by_id=$uid1 where comment='Occurrence for unit testing - user 1'");
+    $this->db->query("update occurrences set created_by_id=$uid2 where comment='Occurrence for unit testing - user 2'");
     $response = $this->callGetUserIdService($auth2, array(
       array('type' => 'email','identifier' => 'tracking2@test.com'),
       array('type' => 'facebook','identifier' => 'fbtracking2'),
@@ -304,8 +321,8 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $output = json_decode($response['output']);
     $uid3 = $output->userId;
     $this->assertEquals($uid2, $uid3, 'Merge request did not return the correct user');
-    // This user should "own" the 2 records from the core fixture plus one from this test class' dataset posted earlier
-    $this->assertEquals(3, $this->db->select('id')->from('occurrences')->where(array('created_by_id'=>$uid3))
+    // This user should "own" the 2 records that we linked to uid1 and uid2 earlier.
+    $this->assertEquals(2, $this->db->select('id')->from('occurrences')->where(array('created_by_id'=>$uid3))
       ->get()->count(), 'Occurrence not owned by user');
 
     // cleanup
