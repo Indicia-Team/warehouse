@@ -217,6 +217,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'output_sref_systems' => [
+        'datatype' => 'string[]',
+        'display' => 'Output reference systems',
+        'description' => 'Comma separated list of output spatial reference systems to filter to. Allows broad geographic limits to be applied.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "onf.output_sref_system IN (#output_sref_systems#)",
+          ],
+        ],
+      ],
       'date_from' => [
         'datatype' => 'date',
         'display' => 'Date from',
@@ -584,8 +596,8 @@ class report_standard_params_occurrences {
       ],
       'has_photos' => [
         'datatype' => 'boolean',
-        'display' => 'Photo records only',
-        'description' => 'Only include records which have photos?',
+        'display' => 'Photo records filter',
+        'description' => 'Include or exclude records which have photos.',
         'wheres' => [
           [
             'value' => '1',
@@ -596,6 +608,23 @@ class report_standard_params_occurrences {
             'value' => '0',
             'operator' => 'equal',
             'sql' => "o.media_count=0",
+          ],
+        ],
+      ],
+      'zero_abundance' => [
+        'datatype' => 'boolean',
+        'display' => 'Zero abundance filter',
+        'description' => 'Include or exclude zero abundance records.',
+        'wheres' => [
+          [
+            'value' => '1',
+            'operator' => 'equal',
+            'sql' => "o.zero_abundance=true",
+          ],
+          [
+            'value' => '0',
+            'operator' => 'equal',
+            'sql' => "o.zero_abundance=false",
           ],
         ],
       ],

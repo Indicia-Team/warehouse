@@ -27,7 +27,8 @@ $config = array(
   'mediumint' => array('type' => 'int', 'max' => 8388607),
   'int' => array('type' => 'int', 'max' => 2147483647),
   'integer' => array('type' => 'int', 'max' => 2147483647),
-  // max bigint reduced by one due to bug in json-c PHP module not accepting max_int_value
+  // Max bigint reduced by one due to bug in json-c PHP module not accepting
+  // max_int_value.
   'bigint' => array('type' => 'int', 'max' => 9223372036854775806),
   'float' => array('type' => 'float'),
   'float unsigned' => array('type' => 'float', 'min' => 0),
@@ -44,26 +45,27 @@ $config = array(
   'varbinary' => array('type' => 'string', 'binary' => TRUE),
   'blob' => array('type' => 'string', 'binary' => TRUE),
   'text' => array('type' => 'string'),
-  'array' => array('type' => 'int')
+  'array' => array('type' => 'int'),
+  'jsonb' => array('type' => 'string', 'binary' => TRUE),
 );
 
-// DOUBLE
+// DOUBLE.
 $config['double'] = $config['double precision'] = $config['decimal'] = $config['real'] = $config['numeric'] = $config['float'];
 $config['double unsigned'] = $config['float unsigned'];
 
-// BIT
+// BIT.
 $config['bit'] = $config['boolean'];
 
-// TIMESTAMP
+// TIMESTAMP.
 $config['timestamp'] = $config['timestamp without time zone'] = $config['datetime'];
 
-// ENUM
+// ENUM.
 $config['enum'] = $config['set'] = $config['varchar'];
 
-// TEXT
+// TEXT.
 $config['tinytext'] = $config['mediumtext'] = $config['longtext'] = $config['text'];
 
-// BLOB
+// BLOB.
 $config['user-defined'] = $config['tsvector'] = $config['tinyblob'] = $config['mediumblob'] = $config['longblob'] = $config['clob'] = $config['bytea'] = $config['blob'];
 
 // CHARACTER

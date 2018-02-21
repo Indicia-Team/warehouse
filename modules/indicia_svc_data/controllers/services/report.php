@@ -52,7 +52,7 @@
 class Report_Controller extends Data_Service_Base_Controller {
 
   private $reportEngine;
-  
+
   private function setup() {
     $this->authenticate('read');
     $websites = $this->website_id ? array($this->website_id) : null;
@@ -72,33 +72,42 @@ class Report_Controller extends Data_Service_Base_Controller {
   *
   */
   public function requestReport()
-  { 
+  {
     try {
       $tm = microtime(true);
       $this->setup();
       $this->entity = 'record';
       $this->handle_request();
       $mode = $this->get_output_mode();
-      switch($mode) {
-        case 'json' :
-      	case 'csv' :
-        case 'tsv' :
-        case 'xml' :
-        case 'gpx' :
-        case 'kml' :
-          $extension=$mode;
+      switch ($mode) {
+        case 'json':
+      	case 'csv':
+        case 'tsv':
+        case 'xml':
+        case 'gpx':
+        case 'kml':
+          $extension = $mode;
           break;
-        default : $extension='txt';
+
+        case 'dwca':
+          $extension = 'zip';
+          break;
+
+        default:
+          $extension = 'txt';
       }
-      if (array_key_exists('filename', $_REQUEST))
+      if (array_key_exists('filename', $_REQUEST)) {
         $downloadfilename = $_REQUEST['filename'];
-      else
-        $downloadfilename='download';
-      header('Content-Disposition: attachment; filename="'.$downloadfilename.'.'.$extension.'"');
-      if ($mode=='csv') {
-        // prepend a byte order marker, so Excel recognises the CSV file as UTF8
-        if (!empty($this->response))
+      }
+      else {
+        $downloadfilename = 'download';
+      }
+      header("Content-Disposition: attachment; filename=\"$downloadfilename.$extension\"");
+      if ($mode === 'csv') {
+        // Prepend a byte order marker, so Excel recognises the CSV file as UTF8.
+        if (!empty($this->response)) {
           echo chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF'));
+        }
       }
       $this->send_response();
       if (class_exists('request_logging')) {
@@ -119,11 +128,11 @@ class Report_Controller extends Data_Service_Base_Controller {
     $this->setup();
     $data = $this->reportEngine->requestMetadata($_GET['report']);
     $r = json_encode($data);
-    if (array_key_exists('callback', $_REQUEST))
-    {
-      $r = $_REQUEST['callback']."(".$r.")";
+    if (array_key_exists('callback', $_REQUEST)) {
+      $r = "$_REQUEST[callback]($r)";
       $this->content_type = 'Content-Type: application/javascript';
-    } else {
+    }
+    else {
       $this->content_type = 'Content-Type: application/json';
     }
     echo $r;
@@ -165,7 +174,7 @@ class Report_Controller extends Data_Service_Base_Controller {
     }
     return $data['content'];
   }
-  
+
   /**
    * Report parameters can contain spaces in the names, for example smpattr:CMS User ID=3, which means filter on the attribute
    * called CMS User ID for value 3. Unfortunately PHP mangles incoming $_GET key names, replacing spaces and dots with underscores. So
@@ -190,13 +199,6 @@ class Report_Controller extends Data_Service_Base_Controller {
     return $vars;
   }
 
-  private function formatJSON($stuff)
-  {
-    // Set the correct MIME type
-    header("Content-Type: application/json");
-    echo json_encode($stuff);
-  }
-  
   protected function record_count() {
     return $this->reportEngine->record_count();
   }

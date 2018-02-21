@@ -29,6 +29,15 @@
  */
 class warehouse {
 
+  /**
+   * Loads any of the client helper libraries.
+   *
+   * Also ensures that the correct resources are loaded when the libraries are
+   * used within the context of the warehouse.
+   *
+   * @param array $helpers
+   *   Array of helper file names without the php extension.
+   */
   public static function loadHelpers(array $helpers) {
     foreach ($helpers as $helper) {
       require_once DOCROOT . "client_helpers/$helper.php";

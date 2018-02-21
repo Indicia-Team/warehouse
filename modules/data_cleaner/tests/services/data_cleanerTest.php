@@ -93,6 +93,18 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
             'updated_by_id' => 1,
           ),
         ),
+        'cache_verification_rules_period_within_year' => array(
+          array(
+            'verification_rule_id' => '1',
+            'reverse_rule' => 'f',
+            'taxa_taxon_list_external_key' => 'TESTKEY',
+            'start_date' => '214',
+            'end_date' => '244',
+            'survey_id' => NULL,
+            'stages' => NULL,
+            'error_message' => 'PeriodWithinYear test failed',
+          ),
+        ),
       )
     );
 
@@ -145,7 +157,6 @@ class Controllers_Services_Data_Cleaner_Test extends Indicia_DatabaseTestCase {
       )),
       'rule_types' => json_encode(array('PeriodWithinYear')),
     ));
-    var_export($response);
     $errors = json_decode($response['output'], TRUE);
 
     $this->assertTrue($response['result'], 'Invalid response');

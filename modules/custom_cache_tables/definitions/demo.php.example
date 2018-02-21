@@ -1,14 +1,55 @@
 <?php
 
+/**
+ * @file
+ * Custom cache tables demo configuration.
+ *
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
+ */
+
 function get_demo_metadata() {
   return array(
-    'frequency' => '',
-    'detect_changes_query' => ''
+    // Define the frequency of table update. Set to a PHP parseable date
+    // interval, e.g. 1 hour, 3 hours or 1 week.
+    'frequency' => '1 day',
+    // Return a count of records that need changing since the last update. Use
+    // a parameter #date# to fiter for changes since the last table update.
+    'detect_changes_query' => "SELECT count(*) as count FROM occurrences WHERE updated_on>'#date#'",
+    // Autodrop can be set to FALSE if the query provided below handles the
+    // drop of the the cache table, or the update is just a refresh.
+    'autodrop' => FALSE,
   );
 }
 
 function get_demo_query() {
   return <<<'QRY'
+SELECT o.website_id,
+  COUNT(DISTINCT CASE WHEN o.zero_abundance IS NULL THEN NULL ELSE o.taxa_taxon_list_external_key END) as species_count,
+  COUNT(*) as occurrences_count,
+  SUM(o.media_count) as photos_count
+INTO custom_cache_tables.temp_demo
+FROM cache_occurrences_functional o
+GROUP BY o.website_id;
 
+GRANT SELECT ON custom_cache_tables.temp_demo to indicia_report_user;
+
+DROP TABLE IF EXISTS custom_cache_tables.demo;
+
+ALTER TABLE custom_cache_tables.temp_demo RENAME TO demo;
 QRY;
 }

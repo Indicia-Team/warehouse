@@ -33,7 +33,7 @@ class Survey_Attribute_Model extends ATTR_ORM {
   protected $has_and_belongs_to_many = array('websites');
 
   // The person attributes are defined per website, not per survey
-  protected $has_survey_restriction = false;
+  protected $hasSurveyRestriction = false;
 
   /**
    * After saving, ensures that the join records linking the attribute to a website are created or deleted.
@@ -44,7 +44,7 @@ class Survey_Attribute_Model extends ATTR_ORM {
     $websites = ORM::factory('website')->find_all();
     foreach ($websites as $website) {
       // Check for website checkbox ticked
-      $this->set_attribute_website_record($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
+      $this->setAttributeWebsiteRecord($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
     }
     return true;
   }
