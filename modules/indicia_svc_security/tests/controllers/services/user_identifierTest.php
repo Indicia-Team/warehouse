@@ -243,10 +243,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     // response should definitely include a positive whole number for the user id
     $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: '.$response['output']);
     $uid1 = $output->userId;
-    // This user should "own" the records posted in the core fixture, since the sample has the same CMS User ID and the same website.
-    $this->assertEquals(2, $this->db->select('id')->from('occurrences')->where(array('created_by_id' => $uid1))
-      ->get()->count(), "Occurrences not owned by user $uid1 after calling get user ID service");
-    // Plus the user should be a member of website1.
+    // This user should be a member of website1.
     $this->assertEquals(1, $this->db->select('id')->from('users_websites')->where(array('website_id' => 1, 'user_id' => $uid1))
       ->get()->count(), 'Created user has not been added to the website 1 members list.');
 
@@ -260,10 +257,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     // response should definitely include a user id
     $this->assertObjectHasAttribute('userId', $output, 'The response from createUser call was invalid: '.$response['output']);
     $uid2 = $output->userId;
-    // This user should "own" the record posted earlier, since it was posted with the same CMS User ID to the same website.
-    $this->assertEquals(1, $this->db->select('id')->from('occurrences')->where(array('created_by_id' => $uid2))
-      ->get()->count(), "Occurrence 2 not owned by user $uid2");
-    // Plus the user should be a member of website2.
+    // This user should be a member of website2.
     $this->assertEquals(1, $this->db->select('id')->from('users_websites')->where(array('website_id'=>2, 'user_id'=>$uid2))
       ->get()->count(), 'Created user has not been added to the website 2 members list.');
 
