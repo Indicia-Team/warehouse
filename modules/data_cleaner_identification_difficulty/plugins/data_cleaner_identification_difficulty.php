@@ -60,7 +60,7 @@ function data_cleaner_identification_difficulty_data_cleaner_rules() {
 join cache_verification_rules_identification_difficulty vr on vr.taxa_taxon_list_external_key=co.taxa_taxon_list_external_key
 join verification_rule_data vrdini on vrdini.verification_rule_id=vr.verification_rule_id
   and vrdini.header_name='INI'
-  and vrdini.key::int=vr.id_difficulty
+  and vrdini.key=vr.id_difficulty
   and vrdini.key::int>1 and vrdini.deleted=false
 -- join to exclude warning user's who've already ID'd this species successfully.
 left join cache_occurrences_functional o2 on o2.id<>co.id
