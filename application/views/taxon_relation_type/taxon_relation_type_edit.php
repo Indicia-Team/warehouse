@@ -48,8 +48,7 @@ $id = html::initial_value($values, 'taxon_relation_type:id');
         'fieldname' => 'taxon_relation_type:reverse_term',
         'validation' => ['required'],
         'default' => html::initial_value($values, 'taxon_relation_type:reverse_term'),
-        'helpText' =>
-            'Term or phrase used when describing the relationship in the reverse direction, e.g. "is predated by"',
+        'helpText' => 'Term or phrase used when describing the relationship in the reverse direction, e.g. "is predated by"',
       ]);
       echo data_entry_helper::select([
         'label' => 'Relation behaviour',
@@ -61,7 +60,7 @@ $id = html::initial_value($values, 'taxon_relation_type:id');
           '1' => 'At Least Partial Overlap',
           '3' => 'Same or part of',
           '7' => 'The same as',
-        ]
+        ],
       ]);
     ?>
   </fieldset>
