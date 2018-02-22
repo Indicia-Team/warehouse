@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Controller class for workflow metadata.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -48,7 +51,7 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
     );
   }
 
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     $config = kohana::config('workflow');
     $entitySelectItems = array();
     foreach ($config['entities'] as $entity => $entityDef) {

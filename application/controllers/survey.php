@@ -50,8 +50,7 @@ class Survey_Controller extends Gridview_Base_Controller {
     $this->template->content = $this->view;
   }
 
-  protected function prepareOtherViewData($values)
-  {
+  protected function prepareOtherViewData(array $values) {
     $websites = ORM::factory('website');
     if (!empty($values['survey:parent_id']))
       // parent list already has a link to a website, so we can't change it

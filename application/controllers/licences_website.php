@@ -67,7 +67,7 @@ class Licences_website_Controller extends Gridview_Base_Controller {
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     $licenses = $this->db
       ->select('id, title')
       ->from('licences')

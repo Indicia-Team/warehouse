@@ -102,10 +102,13 @@ class Taxon_code_Controller extends Gridview_Base_Controller {
    * Get the list of terms ready for the code types list. We only want child terms as the parent
    * terms are categories such as searchable.
    */
-  protected function prepareOtherViewData($values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'code_type_terms' => $this->get_termlist_terms('indicia:taxon_code_types', array('parent_id is not'=>null))
+      'code_type_terms' => $this->get_termlist_terms(
+        'indicia:taxon_code_types',
+        array('parent_id is not' => NULL)
+      ),
     );
   }
+
 }

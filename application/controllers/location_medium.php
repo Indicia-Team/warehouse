@@ -82,7 +82,7 @@ class Location_medium_Controller extends Gridview_Base_Controller
   /**
    * Get the list of terms ready for the media types list.
    */
-  protected function prepareOtherViewData($values)
+  protected function prepareOtherViewData(array $values)
   {
     return array(
       'media_type_terms' => $this->get_termlist_terms('indicia:media_types')

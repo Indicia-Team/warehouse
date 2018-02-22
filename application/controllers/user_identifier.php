@@ -147,10 +147,9 @@ class User_identifier_Controller extends Gridview_Base_Controller
   /**
    * Get the list of terms ready for the sample methods list.
    */
-  protected function prepareOtherViewData($values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'identifier_types' => $this->get_termlist_terms('indicia:user_identifier_types')
+      'identifier_types' => $this->get_termlist_terms('indicia:user_identifier_types'),
     );
   }
 

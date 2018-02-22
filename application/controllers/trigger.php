@@ -69,15 +69,14 @@ class Trigger_Controller extends Gridview_Base_Controller {
   }
 
   /**
-  * Provide the list of trigger templates to the edit view
+  * Provide the list of trigger templates to the edit view.
   */
-  protected function prepareOtherViewData($values) {
-    $files = Array();
-    $templateDir = Kohana::config('indicia.localReportDir').'/trigger_templates/';
+  protected function prepareOtherViewData(array $values) {
+    $files = array();
+    $templateDir = Kohana::config('indicia.localReportDir') . '/trigger_templates/';
     $dh = opendir($templateDir);
-    while ($file = readdir($dh))  {
-      if ($file != '..' && $file != '.' && is_file($templateDir.$file))
-      {
+    while ($file = readdir($dh)) {
+      if ($file != '..' && $file != '.' && is_file($templateDir . $file)) {
         $file = str_replace('.xml', '', $file);
         $files["trigger_templates/$file"] = $file;
       }
@@ -85,8 +84,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
     return array('triggerFileList' => $files);
   }
 
-  public function record_authorised($id)
-  {
+  public function record_authorised($id) {
     return $this->auth->logged_in('CoreAdmin');
   }
 

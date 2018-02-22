@@ -63,7 +63,7 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
     );
     $this->pagetitle = "Survey based data summariser definition";
   }
-  
+
   protected function get_action_columns() {
   	return array(
   			array(
@@ -100,7 +100,7 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
   public function create(){
   	Kohana::show_404();
   }
-  
+
   protected function show_submit_fail()
   {
     $page_errors=$this->model->getPageErrors();
@@ -119,12 +119,11 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
     ));
   	$this->defineEditBreadcrumbs();
   }
-  
-  protected function prepareOtherViewData($values)
-  { 
+
+  protected function prepareOtherViewData(array $values) {
 	$survey = new Survey_Model($values['summariser_definition:survey_id']);
   	$attrsRet = array(''=>'(Each occurrence has count=1)');
-    
+
     $models = ORM::factory('occurrence_attributes_website')->
     		where(array('restrict_to_survey_id'=>$values['summariser_definition:survey_id'],'deleted'=>'f'))->
     		find_all();
@@ -136,10 +135,10 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
     			where('deleted','f')->in('data_type',array('I','F'))->in('id',$attrIds)->
     			orderby('caption')->find_all();
 	    if(count($attrs)>0)
-	    	foreach ($attrs as $attr) 
+	    	foreach ($attrs as $attr)
     			$attrsRet[$attr->id] = $attr->caption.' (ID '.$attr->id.')';
     }
-    
+
     return array(
       'survey_title' => $survey->title,
       'occAttrs' => $attrsRet
@@ -148,7 +147,7 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
 
   /**
    * Check access to a survey when editing. The survey's website must be in the list
-   * of websites the user is authorised to administer.   
+   * of websites the user is authorised to administer.
    */
   protected function record_authorised ($id)
   {
@@ -159,16 +158,16 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
     }
     return true;
   }
-  
+
   /**
    * You can only access the list of surveys if at least an editor of one website.
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
-  
+
 }
-/* 
+/*
  * This is triggered by changes to occurrence records, not by a report.
  * How this is output is determined by the front end.
  */

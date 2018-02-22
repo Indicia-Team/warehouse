@@ -168,7 +168,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of terms ready for the sources list.
    */
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     return [
       'parent_term' => $this->model->parent->term->term,
     ];

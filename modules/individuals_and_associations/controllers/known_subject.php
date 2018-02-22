@@ -48,7 +48,7 @@ class Known_subject_Controller extends Gridview_Base_Controller {
   {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
-  
+
   protected function getModelValues() {
     $r = parent::getModelValues();
     $r['joinsTo:taxa_taxon_list:id'] = $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list');
@@ -60,16 +60,16 @@ class Known_subject_Controller extends Gridview_Base_Controller {
     $this->loadAttributes($r, array(
         'website_id'=>$websiteId,
     ));
-    return $r;      
+    return $r;
   }
-  
+
   /**
    * Load default values either when creating a sample new or reloading after a validation failure.
-   * This adds the custom attributes list to the data available for the view. 
+   * This adds the custom attributes list to the data available for the view.
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    $r['joinsTo:taxa_taxon_list:id'] = 
+    $r['joinsTo:taxa_taxon_list:id'] =
       $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list');
     if (array_key_exists('known_subject:id', $_POST)) {
       $websiteId = $r['known_subject:website_id'];
@@ -81,17 +81,16 @@ class Known_subject_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * Get the list of terms ready for the subject type list. 
+   * Get the list of terms ready for the subject type list.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'subject_type_terms' => $this->get_termlist_terms('indicia:assoc:subject_type')    
-    );   
+      'subject_type_terms' => $this->get_termlist_terms('indicia:assoc:subject_type'),
+    );
   }
 
   protected function reformatTaxaJoinsForList($values, $singular_table, $id_only=false) {
-    // re-format values for joined taxa. These are returned suitable for checkboxes, 
+    // re-format values for joined taxa. These are returned suitable for checkboxes,
     // but we put them in an array suitable for a list type control
     // as array(id = 'value', ... ) or id $id_only is true, array(id1, id2, ...)
     $join_ids = array();
@@ -104,10 +103,10 @@ class Known_subject_Controller extends Gridview_Base_Controller {
         $name = ORM::Factory($singular_table, $id)->taxon->taxon;
         $join_ids[$id] = $name;
       }
-    }              
-    return $join_ids;      
+    }
+    return $join_ids;
   }
-  
+
     /**
    * Return a list of the tabs to display for this controller's actions.
    */
@@ -117,7 +116,7 @@ class Known_subject_Controller extends Gridview_Base_Controller {
         'controller' => 'known_subject_comment',
         'title' => 'Comments',
         'actions'=>array('edit')
-      )      
+      )
     );
   }
 }

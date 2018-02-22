@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Base controller class for Indicia controllers.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,9 +25,11 @@
  defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Base class for controllers in the Indicia Core module. Provides standard functionality
- * across all pages, e.g. checking user is authenticated and if not redirecting them to the
- * home page, or checking if a system upgrade is available and required.
+ * Base class for controllers in the Indicia Core module.
+ *
+ * Provides standard functionality across all pages, e.g. checking user is
+ * authenticated and if not redirecting them to the home page, or checking if a
+ *  system upgrade is available and required.
  */
 class Indicia_Controller extends Template_Controller {
 
@@ -44,6 +49,7 @@ class Indicia_Controller extends Template_Controller {
 
   /**
    * List of person IDs the user has edit rights to.
+   *
    * @var array
    */
   private $allowedPersonIds;
@@ -55,13 +61,12 @@ class Indicia_Controller extends Template_Controller {
     }
     parent::__construct();
 
-    // assign view array with system information
-    //
+    // Assign view array with system information.
     $this->template->system = Kohana::config_load('version');
 
     $this->db = Database::instance();
-    $this->auth = new Auth;
-    $this->session = new Session;
+    $this->auth = new Auth();
+    $this->session = new Session();
     if ($this->auth->logged_in()) {
       $this->template->menu = self::getMenu();
     }
@@ -70,8 +75,9 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-   * Overriding the render method gives us a single point to check that this page
-   * is authorised.
+   * Overriding the render method.
+   *
+   * Gives us a single point to check that this page is authorised.
    */
   public function _render() {
     if (!$this->page_authorised()) {
@@ -168,25 +174,28 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-   * Handler for the Create action on all controllers. Creates the default data required
-   * when instantiating a new record and loads it into the edit form view.
+   * Handler for the Create action on all controllers.
+   *
+   * Creates the default data required when instantiating a new record and
+   * loads it into the edit form view.
    */
   public function create() {
-    if (!$this->record_authorised(null)) {
+    if (!$this->record_authorised(NULL)) {
       $this->access_denied();
       return;
     }
     $values = $this->getDefaults();
     if (!isset($values)) {
-      throw new Exception('Internal error. getDefaults method did not return an array of values for '.
-          $this->model->object_name.'. Please ensure the getDefaults method returns a value in the controller.');
+      throw new Exception('Internal error. getDefaults method did not return an array of values for ' .
+          $this->model->object_name . '. Please ensure the getDefaults method returns a value in the controller.');
     }
     $this->showEditPage($values);
   }
 
   /**
-   * Handler for the Edit action on all controllers. Loads the values required from the model
-   * and any attached supermodels.
+   * Handler for the Edit action on all controllers.
+   *
+   * Loads the values required from the model and any attached supermodels.
    */
   public function edit($id) {
     if (!$this->record_authorised($id)) {
@@ -199,19 +208,20 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-   * Code that is run when showing a controller's edit page - either from the create action
-   * or the edit action.
+   * Code that is run when showing a controller's edit page.
    *
-   * @param int $id The record id (for editing) or null (for create).
-   * @param array $valuse Associative array of valuse to populate into the form.   *
-   * @access private
+   * Occurs either from the create action or the edit action. Prepares info
+   * required by the view.
+   *
+   * @param array $values
+   *   Associative array of valuse to populate into the form.
    */
-  protected function showEditPage($values) {
+  protected function showEditPage(array $values) {
     $other = $this->prepareOtherViewData($values);
-    $this->setView($this->editViewName(), $this->model->caption(), array(
-      'values'=>$values,
-      'other_data'=>$other
-    ));
+    $this->setView($this->editViewName(), $this->model->caption(), [
+      'values' => $values,
+      'other_data' => $other,
+    ]);
     $this->defineEditBreadcrumbs();
   }
 
@@ -220,7 +230,7 @@ class Indicia_Controller extends Template_Controller {
    */
   protected function editViewName() {
     $mn = $this->model->object_name;
-    return $mn."/".$mn."_edit";
+    return "$mn/{$mn}_edit";
   }
 
   /**
@@ -232,40 +242,53 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-   * Provide an overridable method for preparing any additional data required by a view that does
-   * not depend on the specific record. This includes preparing the list of terms to preload
-   * into lookup lists or combo boxes.
+   * Allow other view data to be added by descendants.
    *
-   * @param array $values Existing data values for the view.
-   * @return array Array of additional data items required, or null.
+   * Provide an overridable method for preparing any additional data required
+   * by a view that does not depend on the specific record. This includes
+   * preparing the list of terms to preload into lookup lists or combo boxes.
+   *
+   * @param array $values
+   *   Existing data values for the view.
+   *
+   * @return array
+   *   Array of additional data items required, or null.
    */
-  protected function prepareOtherViewData($values)
-  {
-    return null;
+  protected function prepareOtherViewData(array $values) {
+    return NULL;
   }
 
   /**
    * Default behaviour is to allow access to records if logged in.
+   *
+   * @param int $id
+   *   ID of the record to check.
    */
   protected function record_authorised($id) {
     return $this->page_authorised();
   }
 
   /**
-   * Returns an array of all values from this model and its super models ready to be
-   * loaded into a form.
+   * Retrieve model data to load into edit form.
+   *
+   * Returns an array of all values from this model and its super models ready
+   * to be loaded into a form.
+   *
+   * @return array
+   *   List of model values keyed by fieldname.
    */
   protected function getModelValues() {
     $struct = $this->model->get_submission_structure();
-    // Get this model's values. If the structure needs a specified field prefix then use it, otherwise it will default to the model name.
+    // Get this model's values. If the structure needs a specified field prefix
+    // then use it, otherwise it will default to the model name.
     $r = $this->model->getPrefixedValuesArray(
-        array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : null
+      array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : NULL
     );
     if (array_key_exists('superModels', $struct)) {
-      foreach ($struct['superModels'] as $super=>$content) {
+      foreach ($struct['superModels'] as $super => $content) {
         // Merge the supermodel's values into the main array. Use a specified fieldPrefix if there is one.
         $r = array_merge($r, $this->model->$super->getPrefixedValuesArray(
-            array_key_exists('fieldPrefix', $content) ? $content['fieldPrefix'] : null
+            array_key_exists('fieldPrefix', $content) ? $content['fieldPrefix'] : NULL
         ));
       }
     }
@@ -274,7 +297,8 @@ class Indicia_Controller extends Template_Controller {
       foreach ($struct['joinsTo'] as $joinsTo) {
         $ids = array();
         foreach ($this->model->$joinsTo as $joinedModel) {
-          $r['joinsTo:'.inflector::singular($joinsTo).':'.$joinedModel->id] = 'on';
+          $joinsToEntity = inflector::singular($joinsTo);
+          $r["joinsTo:$joinsToEntity:$joinedModel->id"] = 'on';
         }
       }
     }
@@ -282,15 +306,20 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-   * Constructs an array of the default values required when loading a new edit form.
-   * Each entry is of the form "model:field => value". Loads both the defaults from this
-   * controller's main model, and any supermodels it has.
+   * Retrieve default values for an edit form.
+   *
+   * Constructs an array of the default values required when loading a new
+   * edit form. Each entry is of the form "model:field => value". Loads both
+   * the defaults from this controller's main model, and any supermodels it has.
+   *
+   * @return array
+   *   List of default values keyed by fieldname.
    */
   protected function getDefaults() {
     $struct = $this->model->get_submission_structure();
     $r = $this->model->getDefaults();
     if (array_key_exists('superModels', $struct)) {
-      foreach ($struct['superModels'] as $super=>$content) {
+      foreach ($struct['superModels'] as $super => $content) {
         $r = array_merge($r, ORM::Factory($super)->getDefaults());
       }
     }
@@ -299,91 +328,105 @@ class Indicia_Controller extends Template_Controller {
         $r["metaField:$m"] = '';
       }
     }
-
     return $r;
   }
 
   /**
-   * Overrideable function that checks the user has access rights to the current page. Can
-   * be used to check for a certain role, for example.
+   * Check user has page access.
+   *
+   * Overrideable function that checks the user has access rights to the
+   * current page. Can be used to check for a certain role, for example.
    */
-  protected function page_authorised()
-  {
-    return ($this->uri->segment(1)=='login') || $this->auth->logged_in();
+  protected function page_authorised() {
+    return ($this->uri->segment(1) === 'login') || $this->auth->logged_in();
   }
 
   /**
-  * Handler for the Save action on all controllers. Saves the post array by
-  * passing it into the model and then submitting it. If the post array was
-  * sent by a submit button with value Delete, then the record is marked for
-  * deletion.
-  */
+   * Edit form save handler.
+   *
+   * Handler for the Save action on all controllers. Saves the post array by
+   * passing it into the model and then submitting it. If the post array was
+   * sent by a submit button with value Delete, then the record is marked for
+   * deletion.
+   */
   public function save() {
     if (!$this->page_authorised()) {
       $this->session->set_flash('flash_error', "You appear to be attempting to edit a page you do not have rights to.");
       $this->redirectToIndex();
     }
-    elseif ($_POST['submit']=='Cancel') {
+    elseif ($_POST['submit'] === 'Cancel') {
       $this->redirectToIndex();
-    } else {
+    }
+    else {
       // Are we editing an existing record? If so, load it.
       if (array_key_exists('id', $_POST)) {
         $this->model = ORM::factory($this->model->object_name, $_POST['id']);
-      } else {
+      }
+      else {
         $this->model = ORM::factory($this->model->object_name);
       }
-
       // Were we instructed to delete the post?
       $deletion = $_POST['submit'] == kohana::lang('misc.delete') || $_POST['submit'] == kohana::lang('misc.unsubscribe');
       $_POST['deleted'] = $deletion ? 't' : 'f';
-      // Pass the post object to the model and then submit it
+      // Pass the post object to the model and then submit it.
       $this->model->set_submission_data($_POST);
       $this->submit($deletion);
     }
   }
 
-
   /**
-  * Retrieve a suitable title for the edit page, depending on whether it is a new record
-  * or an existing one.
-  */
-  protected function getEditPageTitle($model, $name)
-  {
-    if ($model->id)
-      return "Edit ".$model->caption();
-    else
-      return "New ".$model->caption();
+   * Get the edit page title.
+   *
+   * Retrieve a suitable title for the edit page, depending on whether it is a
+   * new record or an existing one.
+   *
+   * @return string
+   *   Page title.
+   */
+  protected function getEditPageTitle($model, $name) {
+    if ($model->id) {
+      return "Edit " . $model->caption();
+    }
+    else {
+      return "New " . $model->caption();
+    }
   }
 
   /**
-  * Return the metadata sub-template for the edit page of any model. Returns nothing
-  * if there is no ID (so no metadata).
-  */
-  protected function GetMetadataView($model)
-  {
-    if ($this->model->id)
-    {
+   * Retrive the view used for the metadata panel.
+   *
+   * Return the metadata sub-template for the edit page of any model. Returns
+   * nothing if there is no ID (so no metadata).
+   *
+   * @return View
+   *   View object.
+   */
+  protected function getMetadataView($model) {
+    if ($this->model->id) {
       $metadata = new View('templates/metadata');
       $metadata->model = $model;
       return $metadata;
-    } else {
+    }
+    else {
       return '';
     }
   }
 
   /**
-  * set view
-  *
-  * @param string $name View name
-  * @param string $pagetitle Page title
-  */
-  protected function setView( $name, $pagetitle = '', $viewArgs = array() )
-  {
-    try{
-      // on error rest on the website_edit page
+   * Set view
+   *
+   * @param string $name
+   *   View name.
+   * @param string $pagetitle
+   *   Page title.
+   */
+  protected function setView($name, $pagetitle = '', $viewArgs = array()) {
+    echo $name;
+    try {
+      // On error rest on the website_edit page
       // errors are now embedded in the model
       $view                    = new View( $name );
-      $view->metadata          = $this->GetMetadataView(  $this->model );
+      $view->metadata          = $this->getMetadataView(  $this->model );
       $this->template->title   = $this->getEditPageTitle( $this->model, $pagetitle );
       $view->model             = $this->model;
       $view->tabs              = $this->getTabs($name);
@@ -392,7 +435,8 @@ class Indicia_Controller extends Template_Controller {
         $view->set($arg, $val);
       }
       $this->template->content = $view;
-    } catch (Exception $e) {
+    }
+    catch (Exception $e) {
       error_logger::log_error("Problem displaying view $name", $e);
       throw $e;
     }

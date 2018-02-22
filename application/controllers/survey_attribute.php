@@ -26,8 +26,7 @@
  */
 class Survey_attribute_Controller extends Attr_Gridview_Base_Controller {
 
-  public function __construct()
-  {
+  public function __construct() {
     $this->prefix = 'survey';
     parent::__construct();
   }
@@ -36,7 +35,7 @@ class Survey_attribute_Controller extends Attr_Gridview_Base_Controller {
    * Returns the shared view for all custom attribute edits.
    */
   protected function editViewName() {
-    $this->associationsView=new View('templates/attribute_associations_website');
+    $this->associationsView = new View('templates/attribute_associations_website');
     return 'custom_attribute/custom_attribute_edit';
   }
 
@@ -44,10 +43,9 @@ class Survey_attribute_Controller extends Attr_Gridview_Base_Controller {
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData($values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array_merge(
-      (array)parent::prepareOtherViewData($values),
+      (array) parent::prepareOtherViewData($values),
       array('publicFieldName' => 'Public (available for all survey datasets on this warehouse)')
     );
   }

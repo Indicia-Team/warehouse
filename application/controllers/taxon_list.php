@@ -68,7 +68,7 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   /**
    * Get a list of the websites that the user is allowed to assign this checklist to.
    */
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     $websites = ORM::factory('website');
     if (!$this->auth->logged_in('CoreAdmin') && $this->auth_filter['field'] === 'website_id') {
       $websites = $websites->in('id', $this->auth_filter['values']);
@@ -79,7 +79,7 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
       $array[$item->id] = $item->title;
     }
     return array(
-      'websites' => $array
+      'websites' => $array,
     );
   }
 
