@@ -121,7 +121,7 @@ switch ($dataType) {
 <form
   action="<?php echo url::site() . "attribute_by_survey/save/1?type=" . $_GET['type']; ?>"
   method="post">
-  <fieldset class="validation-rules">
+  <fieldset id="validation-rules">
   <legend><?php echo $other_data['name']; ?> Attribute details</legend>
     <p>Set the validation rules to apply to values submitted for this attribute below.</p>
     <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:id"
@@ -136,7 +136,7 @@ switch ($dataType) {
         'label' => 'Required',
         'fieldname' => 'valid_required',
         'default' => $model->valid_required,
-        'helpText' => 'Force a value to be provided.'
+        'helpText' => 'Force a value to be provided.',
       ]);
     }
     if (in_array('valid_length', $enable_list)) {
@@ -144,202 +144,235 @@ switch ($dataType) {
         'label' => 'Length',
         'fieldname' => 'valid_length',
         'default' => $model->valid_length,
-        'helpText' => 'Specify a minimum or maximum number of characters required.',
+        'helpText' => 'Enforce the minimum and/or maximum length of a text value.',
       ]);
-      echo data_entry_helper::text_input([
-        'fieldname' => 'valid_length_min',
-        'default' => $model->valid_length_min,
-      ]);
-      // Todo inline this form.
-      echo ' - ';
-      echo data_entry_helper::text_input([
-        'fieldname' => 'valid_length_min',
-        'default' => $model->valid_length_min,
-      ]);
+      $valMin = html::specialchars($model->valid_length_min);
+      $valMax = html::specialchars($model->valid_length_max);
+      echo <<<HTML
+<div id="valid_length_inputs">
+length between <input type="text" id="valid_length_min" name="valid_length_min" value="$valMin"/>
+and <input type="text" id="valid_length_max" name="valid_length_max" value="$valMax"/> characters
+</div>
+
+HTML;
     }
     if (in_array('valid_alpha', $enable_list)) {
       echo data_entry_helper::checkbox([
         'label' => 'Alphabetic',
         'fieldname' => 'valid_alpha',
         'default' => $model->valid_alpha,
-        'helpText' => 'Allow characters a-z only.'
+        'helpText' => 'Enforce that any value provided consists of alphabetic characters only.',
       ]);
     }
-    if (in_array('valid_email', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_email', TRUE, isset($model->valid_email) && ($model->valid_email === 't')) ?>
-        Valid email address format
-    </label>
-    </div>
-<?php endif;
-if (in_array('valid_url', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_url', TRUE, isset($model->valid_url) && ($model->valid_url === 't')) ?>
-        Valid URL format
-      </label>
-    </div>
-<?php endif;
-if (in_array('valid_alpha_numeric', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_alpha_numeric', TRUE, isset($model->valid_alpha_numeric) && ($model->valid_alpha_numeric === 't')) ?>
-        Alphanumeric (letters and numbers only)
-      </label>
-    </div>
-<?php endif;
-if (in_array('valid_numeric', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_numeric', TRUE, isset($model->valid_numeric) && ($model->valid_numeric === 't')) ?>
-        Numeric
-      </label>
-    </div>
-<?php endif;
-if (in_array('valid_digit', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_url', TRUE, isset($model->valid_digit) && ($model->valid_digit === 't')) ?>
-        Digits only
-      </label>
-    </div>
-<?php endif;
-// only integers will have this option, so set by default.
-if (in_array('valid_integer', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_integer', TRUE, !isset($model->valid_integer) || ($model->valid_integer === 't')) ?>
-        Integer
-      </label>
-    </div>
-<?php endif;
-if (in_array('valid_standard_text', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_standard_text', TRUE, isset($model->valid_standard_text) && ($model->valid_standard_text === 't')) ?>
-        Standard text only (letters, numbers, whitespace, dashes, periods, and underscores are allowed)
-      </label>
-    </div>
-<?php endif;
-if (in_array('valid_decimal', $enable_list)) : ?>
-    <div class="form-inline">
-      <div class="checkbox">
-        <label>
-          <?php echo form::checkbox('valid_decimal', TRUE, isset($model->valid_decimal) && ($model->valid_decimal === 't')) ?>
-          Decimal format (e.g. "2" to specify 2 decimal places, or "4,2" to force 4 digits and 2 decimals)
-        </label>
-      </div>
-      <input id="valid_dec_format" name="valid_dec_format" class="form-control"
-        value="<?php echo html::specialchars($model->valid_dec_format); ?>" />
-    </div>
-<?php echo html::error_message($model->getError('valid_decimal'));
-endif;
-if (in_array('valid_regex', $enable_list)) : ?>
-    <div class="form-inline">
-      <div class="checkbox">
-        <label>
-          <?php echo form::checkbox('valid_regex', TRUE, isset($model->valid_regex) && ($model->valid_regex === 't')) ?>
-          Enforce format using a regular expression
-        </label>
-      </div>
-      <input id="valid_regex_format" name="valid_regex_format" class="form-control"
-        value="<?php echo html::specialchars($model->valid_regex_format); ?>" />
-    </div>
-<?php echo html::error_message($model->getError('valid_regex'));
-endif;
-if (in_array('valid_min', $enable_list)) : ?>
-    <div class="form-inline">
-      <div class="checkbox">
-        <label>
-          <?php echo form::checkbox('valid_min', TRUE, isset($model->valid_min) && ($model->valid_min === 't')) ?>
-          Minimum value
-        </label>
-      </div>
-      <input id="valid_min_value" name="valid_min_value" class="form-control"
-        value="<?php echo html::specialchars($model->valid_min_value); ?>" />
-    </div>
-<?php endif;
-if (in_array('valid_max', $enable_list)) : ?>
-    <div class="form-inline">
-      <div class="checkbox">
-        <label>
-          <?php echo form::checkbox('valid_max', TRUE, isset($model->valid_max) && ($model->valid_max === 't')) ?>
-          Maximum value
-        </label>
-      </div>
-      <input id="valid_max_value" name="valid_max_value" class="form-control"
-        value="<?php echo html::specialchars($model->valid_max_value); ?>" />
-    </div>
-<?php endif;
-if (in_array('valid_date_in_past', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_date_in_past', TRUE, isset($model->valid_date_in_past) && ($model->valid_date_in_past === 't')) ?>
-        Date is in the past
-      </label>
-    </div>
-<?php endif;
-if (in_array('valid_time', $enable_list)) : ?>
-    <div class="checkbox">
-      <label>
-        <?php echo form::checkbox('valid_time', TRUE, isset($model->valid_time) && ($model->valid_time === 't')) ?>
-        Valid time format (hh:mm)
-      </label>
-    </div>
-<?php endif; ?>
+    if (in_array('valid_numeric', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_numeric',
+        'label' => 'Numeric characters only',
+        'default' => $model->valid_numeric,
+        'helpText' => 'Enforce that any value provided consists of numeric characters only.',
+      ]);
+    }
+    if (in_array('valid_alpha_numeric', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_alpha_numeric',
+        'label' => 'Alphanumeric characters only',
+        'default' => $model->valid_alpha_numeric,
+        'helpText' => 'Enforce that any value provided consists of alphabetic and numeric characters only.',
+      ]);
+    }
+    if (in_array('valid_digit', $enable_list)) {
+      echo valid_digit::checkbox([
+        'fieldname' => 'valid_digit',
+        'label' => 'Digits only',
+        'default' => $model->valid_digit,
+        'helpText' => 'Enforce that any value provided consists of digits (0-9) only, with no decimal points or dashes.',
+      ]);
+    }
+    if (in_array('valid_integer', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_integer',
+        'label' => 'Integer',
+        'default' => $model->valid_integer,
+        'helpText' => 'Enforce that any value provided is a valid whole number. Consider using an integer data type instead of text.',
+      ]);
+    }
+    if (in_array('valid_standard_text', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_standard_text',
+        'label' => 'Standard text',
+        'default' => $model->valid_standard_text,
+        'helpText' => 'Enforce that any value provided is valid text (Letters, numbers, whitespace, dashes, full-stops and underscores are allowed..',
+      ]);
+    }
+    if (in_array('valid_email', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_email',
+        'label' => 'Email address',
+        'default' => $model->valid_email,
+        'helpText' => 'Enforce that any value provided is a valid email address format.',
+      ]);
+    }
+    if (in_array('valid_url', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_url',
+        'label' => 'URL',
+        'default' => $model->valid_url,
+        'helpText' => 'Enforce that any value provided is a valid URL format.',
+      ]);
+    }
+    if (in_array('valid_decimal', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_decimal',
+        'label' => 'Formatted decimal',
+        'default' => $model->valid_decimal,
+        'helpText' => 'Validate a decimal format against the provided pattern, e.g. 2 (2 digits) or 2,2 (2 digits before and 2 digits after the decimal point).',
+      ]);
+      $val = html::specialchars($model->valid_dec_format);
+      echo <<<HTML
+<div id="valid_decimal_inputs">
+Format <input type="text" id="valid_dec_format" name="valid_dec_format" value="$val"/>
+</div>
+
+HTML;
+    }
+    if (in_array('valid_regex', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_regex',
+        'label' => 'Regular expression',
+        'default' => $model->valid_regex,
+        'helpText' => 'Validate the supplied value against a regular expression, e.g. /^(sunny|cloudy)$/',
+      ]);
+      $val = html::specialchars($model->valid_regex_format);
+      echo <<<HTML
+<div id="valid_regex_inputs">
+<input type="text" id="valid_regex_format" name="valid_regex_format" value="$val"/>
+</div>
+
+HTML;
+    }
+    if (in_array('valid_min', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_min',
+        'label' => 'Minimum value',
+        'default' => $model->valid_min,
+        'helpText' => 'Ensure the value is at least the minimum that you specify',
+      ]);
+      $val = html::specialchars($model->valid_min_value);
+      echo <<<HTML
+<div id="valid_min_inputs">
+Value must be at least <input type="text" id="valid_min_value" name="valid_min_value" value="$val"/>
+</div>
+
+HTML;
+    }
+    if (in_array('valid_max', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_max',
+        'label' => 'Maximum value',
+        'default' => $model->valid_max,
+        'helpText' => 'Ensure the value is at most the maximum that you specify',
+      ]);
+      $val = html::specialchars($model->valid_max_value);
+      echo <<<HTML
+<div id="valid_max_inputs">
+Value must be at most <input type="text" id="valid_max_value" name="valid_max_value" value="$val"/>
+</div>
+
+HTML;
+    }
+    if (in_array('valid_date_in_past', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_date_in_past',
+        'label' => 'Date in past',
+        'default' => $model->valid_date_in_past,
+        'helpText' => 'Ensure that the date values provided are in the past.',
+      ]);
+    }
+    if (in_array('valid_time', $enable_list)) {
+      echo data_entry_helper::checkbox([
+        'fieldname' => 'valid_time',
+        'label' => 'Time',
+        'default' => $model->valid_time,
+        'helpText' => 'Ensure that the value provided is a valid time format.',
+      ]);
+    }
+    ?>
   </fieldset>
   <fieldset>
-  <legend>Other information</legend>
-<?php
-$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-echo data_entry_helper::outputAttribute(
-  array(
-    'caption' => 'Default value',
-    'data_type' => $dataType,
-    'fieldname' => 'default_value',
-    'id' => 'default_value',
-    'termlist_id' => $model->$attrModelName->termlist_id,
-    'default' => $model->default_value
-  ),
-  array(
-    'extraParams' => $readAuth
-  )
-);
-?>
-<?php
-$controlTypeId = html::initial_value($values, $_GET['type'] . '_attributes_website:control_type_id');
-$types = array('' => '<Not specified>');
+    <legend>Other settings</legend>
+    <?php
+    $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+    echo data_entry_helper::outputAttribute(
+      array(
+        'caption' => 'Default value',
+        'data_type' => $dataType,
+        'fieldname' => 'default_value',
+        'id' => 'default_value',
+        'termlist_id' => $model->$attrModelName->termlist_id,
+        'default' => $model->default_value,
+      ),
+      array(
+        'extraParams' => $readAuth,
+      )
+    );
+    $controlTypeId = html::initial_value($values, $_GET['type'] . '_attributes_website:control_type_id');
+    $types = array('' => '<Not specified>');
 
-foreach ($other_data['controlTypes'] as $controlType) {
-  $types[$controlType->id] = $controlType->control;
-}
-echo data_entry_helper::select(array(
-  'label' => 'Default control type',
-  'fieldname' => $model->object_name . ':control_type_id',
-  'lookupValues' => $types,
-  'default' => $controlTypeId
-));
+    foreach ($other_data['controlTypes'] as $controlType) {
+      $types[$controlType->id] = $controlType->control;
+    }
+    echo data_entry_helper::select(array(
+      'label' => 'Default control type',
+      'fieldname' => $model->object_name . ':control_type_id',
+      'lookupValues' => $types,
+      'default' => $controlTypeId,
+    ));
 
-if ($_GET['type']=='location') {
-  $terms = array(''=>'<Not specified>')+$this->get_termlist_terms('indicia:location_types');
-  echo data_entry_helper::select(array(
-    'label' => 'Location Type',
-    'fieldname' => 'location_attributes_website:restrict_to_location_type_id',
-    'lookupValues' => $terms,
-    'default' => html::initial_value($values, 'location_attributes_website:restrict_to_location_type_id'),
-    'helpText' => 'If you want this attribute to only apply for locations of a certain type, select the type here.'
-  ));
-} elseif ($_GET['type']=='sample') {
-  $terms = array(''=>'<Not specified>')+$this->get_termlist_terms('indicia:sample_methods');
-  echo data_entry_helper::select(array(
-    'label' => 'Sample Method',
-    'fieldname' => 'sample_attributes_website:restrict_to_sample_method_id',
-    'lookupValues' => $terms,
-    'default' => html::initial_value($values, 'sample_attributes_website:restrict_to_sample_method_id'),
-    'helpText' => 'If you want this attribute to only apply for samples of a certain method, select the method here.'
-  ));
-}
-echo $metadata;
-echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!=null, false, false);
-?></fieldset></form>
+    if ($_GET['type'] === 'location') {
+      $terms = array('' => '<Not specified>') + $this->get_termlist_terms('indicia:location_types');
+      echo data_entry_helper::select(array(
+        'label' => 'Location Type',
+        'fieldname' => 'location_attributes_website:restrict_to_location_type_id',
+        'lookupValues' => $terms,
+        'default' => html::initial_value($values, 'location_attributes_website:restrict_to_location_type_id'),
+        'helpText' => 'If you want this attribute to only apply for locations of a certain type, select the type here.',
+      ));
+    }
+    elseif ($_GET['type'] === 'sample') {
+      $terms = array('' => '<Not specified>') + $this->get_termlist_terms('indicia:sample_methods');
+      echo data_entry_helper::select(array(
+        'label' => 'Sample Method',
+        'fieldname' => 'sample_attributes_website:restrict_to_sample_method_id',
+        'lookupValues' => $terms,
+        'default' => html::initial_value($values, 'sample_attributes_website:restrict_to_sample_method_id'),
+        'helpText' => 'If you want this attribute to only apply for samples of a certain method, select the method here.',
+      ));
+    }
+    echo $metadata;
+    echo html::form_buttons(html::initial_value($values, 'custom_attribute:id') !== NULL, FALSE, FALSE);
+    ?>
+  </fieldset>
+</form>
+<script type="text/javascript">
+$(document).ready(function() {
+  // Changing a checkbox for a validation rule may need to show or hide the
+  // related inputs.
+  $('#validation-rules :checkbox').change(function(evt) {
+    var selector = '#' + evt.currentTarget.id + '_inputs';
+    if ($(selector).length>0) {
+      if ($(evt.currentTarget).is(':checked')) {
+        $(selector).slideDown();
+      } else {
+        $(selector).slideUp();
+      }
+    }
+  });
+  // Perform initial setup of inputs linked to rule checkboxes.
+  $.each($('#validation-rules :checkbox'), function() {
+    var selector = '#' + this.id + '_inputs';
+    if ($(selector).length>0 && !$(this).is(':checked')) {
+      $(selector).hide();
+    }
+  });
+});
+</script>

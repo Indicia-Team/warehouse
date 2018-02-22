@@ -453,6 +453,8 @@ $(document).ready(function() {
   $('#termlist_id').change(function(e) {
     showHideTermlistLink();
   });
+  // Changing a checkbox for a validation rule may need to show or hide the
+  // related inputs.
   $('#validation-rules :checkbox').change(function(evt) {
     var selector = '#' + evt.currentTarget.id + '_inputs';
     if ($(selector).length>0) {
@@ -463,6 +465,7 @@ $(document).ready(function() {
       }
     }
   });
+  // Perform initial setup of inputs linked to rule checkboxes.
   $.each($('#validation-rules :checkbox'), function() {
     var selector = '#' + this.id + '_inputs';
     if ($(selector).length>0 && !$(this).is(':checked')) {
