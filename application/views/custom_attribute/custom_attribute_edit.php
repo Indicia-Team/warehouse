@@ -315,16 +315,17 @@ HTML;
 
     ?>
   </fieldset>
-<?php
-// Output the view that lets this custom attribute associate with websites,
-// surveys, checklists or whatever is appropriate for the attribute type.
-$this->associationsView->other_data = $other_data;
-$this->associationsView->model = $model;
-echo $this->associationsView;
-echo html::form_buttons(!empty($id), FALSE, FALSE);
-data_entry_helper::enable_validation('custom-attribute-edit');
-echo data_entry_helper::dump_javascript();
-?></form>
+  <?php
+  // Output the view that lets this custom attribute associate with websites,
+  // surveys, checklists or whatever is appropriate for the attribute type.
+  $this->associationsView->other_data = $other_data;
+  $this->associationsView->model = $model;
+  echo $this->associationsView;
+  echo html::form_buttons(!empty($id), FALSE, FALSE);
+  data_entry_helper::enable_validation('custom-attribute-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
+</form>
 
 <script type="text/javascript">
 $(document).ready(function() {

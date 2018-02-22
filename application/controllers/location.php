@@ -402,7 +402,7 @@ class Location_Controller extends Gridview_Base_Controller {
           $fields = array(
             'name' => array('value' => $location_name),
             'deleted' => array('value' => 'f'),
-            'public' => array('value' => ($_POST['website_id'] == 'all' ? 't' : 'f'))
+            'public' => array('value' => ($_POST['website_id'] === 'all' ? 't' : 'f'))
           );
           if (array_key_exists('boundary', $_POST)) {
             // Centroid is calculated in Location_Model::preSubmit.

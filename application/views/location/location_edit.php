@@ -165,9 +165,10 @@ This page allows you to specify the details of a location.
 ?>
 <div id="websites">
   <fieldset>
-  <legend>Location Websites</legend>
-  <ol>
-  <?php
+    <legend>Location websites</legend>
+    <p>This location is available
+    <ol>
+    <?php
     $websiteIds = $this->get_allowed_website_id_list('editor');
     $linkedWebsites = array();
     if (!is_null($websiteIds))
