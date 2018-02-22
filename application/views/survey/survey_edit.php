@@ -27,9 +27,8 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
 ?>
 <p>This page allows you to specify the details of a survey in which samples and records can be organised.</p>
 <form action="<?php echo url::site() . 'survey/save'; ?>" method="post" id="survey-edit">
-  <?php echo $metadata ?>
   <fieldset>
-    <legend>Survey dataset details</legend>
+    <legend>Survey dataset details<?php echo $metadata ?></legend>
     <?php
     echo data_entry_helper::hidden_text([
       'fieldname' => 'survey:id',
@@ -47,8 +46,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'fieldname' => 'survey:description',
       'default' => html::initial_value($values, 'survey:description'),
       'validation' => 'required',
-      'helpText' => 'Provide an optional description of your survey to help when browsing survey datasets on the ' .
-        'warehouse',
+      'helpText' => 'Provide an optional description of your survey to help when browsing survey datasets on the warehouse',
     ]);
     ?>
     <fieldset>
@@ -69,8 +67,7 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
         'label' => 'Occurrence sensitivity precision',
         'fieldname' => 'occurrence-sensitivity_precision-required',
         'default' => html::initial_value($values, 'occurrence-sensitivity_precision-required'),
-        'helpText' => 'Is an sensitivity precision (blur) required when saving an occurrence? This enforces that records ' .
-          'will be sensitive for this survey dataset.',
+        'helpText' => 'Is an sensitivity precision (blur) required when saving an occurrence? This enforces that records will be sensitive for this survey dataset.',
       ]);
       echo data_entry_helper::checkbox([
         'label' => 'Sample comment',
@@ -123,7 +120,8 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'lookupValues' => $other_data['websites'],
       'helpText' => 'The survey must belong to a website registration',
     ));
-    // Only show fields, if fields have been found in the database (the auto verify module is installed).
+    // Only show fields, if fields have been found in the database (the auto
+    // verify module is installed).
     if (array_key_exists('survey:auto_accept', $values)) {
       echo data_entry_helper::checkbox(array(
         'label' => 'Auto Accept',
@@ -146,7 +144,6 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
   <?php if (array_key_exists('attributes', $values) && count($values['attributes']) > 0) : ?>
   <fieldset>
     <legend>Custom attributes</legend>
-    <ol>
     <?php
     foreach ($values['attributes'] as $attr) {
       $name = 'srvAttr:' . $attr['survey_attribute_id'];
@@ -192,7 +189,6 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       }
     }
     ?>
-    </ol>
   </fieldset>
   <?php
   endif;
