@@ -40,14 +40,14 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
 jQuery(document).ready(function() {
 
   if ($('#location\\:public').attr('checked')) {
-    $('#websites').hide();
+    $('#websites-list').hide();
   }
     $("#location\\:public").change(function() {
     if ($(this).attr('checked')) {
       $('input:checked[name^="joinsTo\\:website"]').attr('checked', false);
       $('#attrs').hide();
     }
-    $('#websites').toggle('slow');
+    $('#websites-list').toggle('slow');
   });
 
 });
@@ -161,32 +161,53 @@ This page allows you to specify the details of a location.
 
 <?php
   if (is_null($id) || $this->auth->logged_in('CoreAdmin') || ($values['location:public'] === 'f')) :
-  //No need to display for public locations unless core admin.
+  // No need to display for public locations unless core admin.
 ?>
 <div id="websites">
   <fieldset>
     <legend>Location websites</legend>
-    <p>This location is available
-    <ol>
     <?php
-    $websiteIds = $this->get_allowed_website_id_list('editor');
-    $linkedWebsites = array();
-    if (!is_null($websiteIds))
-      $websites = ORM::factory('website')->in('id', $websiteIds)->where('deleted', 'false')->orderby('title','asc')->find_all();
-    else
-      $websites = ORM::factory('website')->where('deleted', 'false')->orderby('title','asc')->find_all();
-    foreach ($websites as $website) {
-      echo '<li><label for="website_'.$website->id.'" class="wide">'.$website->title.'</label>';
-      echo '<input type="checkbox" name="joinsTo:website:'.$website->id.'" ';
-      if(!is_null($id)){
-        if (array_key_exists('joinsTo:website:'.$website->id, $values)) {
-          echo "checked=\"checked\"";
-          $linkedWebsites[] = $website->id;
-        }
-      }
-      echo '></li>';
+    if ($this->auth->logged_in('CoreAdmin')) {
+      // Only core admin can create public locations.
+      echo data_entry_helper::checkbox(array(
+        'label' => 'Available to all websites',
+        'fieldname' => 'location:public',
+        'default' => html::initial_value($values, 'location:public'),
+        'disabled' => $disabled,
+      ));
     }
-  ?>
+    ?>
+    <div id="websites-list">
+    <p>This location is available to any website ticked in the list below:</p>
+    <ol>
+      <?php
+      $websiteIds = $this->get_allowed_website_id_list('editor');
+      $linkedWebsites = array();
+      if (!is_null($websiteIds)) {
+        $websites = ORM::factory('website')
+          ->in('id', $websiteIds)
+          ->where('deleted', 'false')
+          ->orderby('title', 'asc')
+          ->find_all();
+      }
+      else {
+        $websites = ORM::factory('website')
+          ->where('deleted', 'false')
+          ->orderby('title', 'asc')
+          ->find_all();
+      }
+      foreach ($websites as $website) {
+        echo '<li><label for="website_' . $website->id . '" class="wide">' . $website->title . '</label>';
+        echo '<input type="checkbox" name="joinsTo:website:' . $website->id . '" ';
+        if (!is_null($id)) {
+          if (array_key_exists('joinsTo:website:' . $website->id, $values)) {
+            echo "checked=\"checked\"";
+            $linkedWebsites[] = $website->id;
+          }
+        }
+        echo '></li>';
+      }
+    ?>
   </ol>
   </fieldset>
 </div>
@@ -194,7 +215,7 @@ This page allows you to specify the details of a location.
 
 <?php
   if (!is_null($id) && $values['location:public'] === 'f') :
-  //No need to display for new locations or public locations.
+  // No need to display for new locations or public locations.
   ?>
 <div id="attrs">
   <fieldset>
