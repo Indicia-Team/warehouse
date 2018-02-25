@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the website -> website agreement edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -76,152 +79,150 @@ data_entry_helper::$javascript .= "
 ";
 
 ?>
-<form class="cmxform" action="<?php echo url::site() . 'websites_website_agreement/save' ?>" method="post" id="websites-website-agreement-edit">
-  <?php echo $metadata; ?>
-<fieldset>
-<input type="hidden" name="websites_website_agreement:id" value="<?php echo html::initial_value($values, 'websites_website_agreement:id'); ?>" />
-<input type="hidden" name="websites_website_agreement:website_id" value="<?php echo html::initial_value($values, 'websites_website_agreement:website_id'); ?>" />
-<legend>Website Agreement Participation Details</legend>
-<?php
-/**
- * @todo: filter the select box to public agreements, or those created by the current user, unless core admin.
- */
-if ($this->uri->method(FALSE) === 'edit') {
-  echo '<div style="display: none">';
-}
-echo data_entry_helper::select([
-  'id' => 'agreement-select',
-  'label' => 'Agreement to participate in',
-  'helpText' => 'Select the agreement that this website should belong to',
-  'fieldname' => 'websites_website_agreement:website_agreement_id',
-  'default' => html::initial_value($values, 'websites_website_agreement:website_agreement_id'),
-  'labelClass' => 'control-width-4',
-  'table' => 'website_agreement',
-  'captionField' => 'title',
-  'valueField' => 'id',
-  'extraParams' => $readAuth,
-  'blankText' => '<please select>',
-  'class' => 'required',
-  'caching' => FALSE,
-]);
-if ($this->uri->method(FALSE) === 'edit') {
-  echo '</div>';
-}
-?>
-<p>This sharing agreement has the following options:</p>
-<div id="div-provide_for_reporting"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Provides data for reporting',
-  'helpText' => 'Check this box if the website provides its data to other agreement participants for reporting.',
-  'fieldname' => 'websites_website_agreement:provide_for_reporting',
-  'default' => html::initial_value($values, 'websites_website_agreement:provide_for_reporting'),
-  'labelClass' => 'control-width-4',
-));
-?> </div>
-<div id="div-receive_for_reporting"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Receives data for reporting',
-  'helpText' => 'Check this box if the website receives data from other agreement participants for reporting.',
-  'fieldname' => 'websites_website_agreement:receive_for_reporting',
-  'default' => html::initial_value($values, 'websites_website_agreement:receive_for_reporting'),
-  'labelClass' => 'control-width-4',
-));
-?> </div>
-<div id="div-provide_for_peer_review"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Provides data for peer review',
-  'helpText' => 'Check this box if the website provides its data to other agreement participants for peer review, e.g. browsing and commenting on records.',
-  'fieldname' => 'websites_website_agreement:provide_for_peer_review',
-  'default' => html::initial_value($values, 'websites_website_agreement:provide_for_peer_review'),
-  'labelClass' => 'control-width-4',
-));
-?> </div>
-<div id="div-receive_for_peer_review"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Receives data for peer review',
-  'helpText' => 'Check this box if the website receives data from other agreement participants for reporting, e.g. browsing and commenting on records.',
-  'fieldname' => 'websites_website_agreement:receive_for_peer_review',
-  'default' => html::initial_value($values, 'websites_website_agreement:receive_for_peer_review'),
-  'labelClass' => 'control-width-4',
-));
-?> </div>
-<div id="div-provide_for_verification"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Provides data for verification',
-  'helpText' => 'Check this box if the website provides its data to other agreement participants for verification.',
-  'fieldname' => 'websites_website_agreement:provide_for_verification',
-  'default' => html::initial_value($values, 'websites_website_agreement:provide_for_verification'),
-  'labelClass' => 'control-width-4',
-));
-?> </div>
-<div id="div-receive_for_verification"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Receives data for verification',
-  'helpText' => 'Check this box if the website receives data from other agreement participants for verification.',
-  'fieldname' => 'websites_website_agreement:receive_for_verification',
-  'default' => html::initial_value($values, 'websites_website_agreement:receive_for_verification'),
-  'labelClass' => 'control-width-4',
-));
-?> </div>
-<div id="div-provide_for_data_flow"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Provides data for data flow',
-  'helpText' => 'Check this box if the website provides its data to other agreement participants for data flow, e.g. for passing data onto national information portals.',
-  'fieldname' => 'websites_website_agreement:provide_for_data_flow',
-  'default' => html::initial_value($values, 'websites_website_agreement:provide_for_data_flow'),
-  'labelClass' => 'control-width-4',
-));
-?> </div>
-<div id="div-receive_for_data_flow"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Receives data for data flow',
-  'helpText' => 'Check this box if the website receives data from other agreement participants for data flow, e.g. for passing data onto national information portals.',
-  'fieldname' => 'websites_website_agreement:receive_for_data_flow',
-  'default' => html::initial_value($values, 'websites_website_agreement:receive_for_data_flow'),
-  'labelClass' => 'control-width-4',
-));
-?> </div>
-<div id="div-provide_for_moderation"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Provides data for moderation',
-  'helpText' => 'Check this box if the website provides its data to other agreement participants for moderation, e.g. to check images before publishing.',
-  'fieldname' => 'websites_website_agreement:provide_for_moderation',
-  'default' => html::initial_value($values, 'websites_website_agreement:provide_for_moderation'),
-  'labelClass' => 'control-width-4',
-));
-?> </div>
-<div id="div-receive_for_moderation"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Receives data for moderation',
-  'helpText' => 'Check this box if the website receives data from other agreement participants for moderation, e.g. to check images before publishing.',
-  'fieldname' => 'websites_website_agreement:receive_for_moderation',
-  'default' => html::initial_value($values, 'websites_website_agreement:receive_for_moderation'),
-  'labelClass' => 'control-width-4',
-));
-?>
-</div>
-<div id="div-provide_for_editing"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Provides data for editing',
-  'helpText' => 'Check this box if the website provides its data to other agreement participants for editing.',
-  'fieldname' => 'websites_website_agreement:provide_for_editing',
-  'default' => html::initial_value($values, 'websites_website_agreement:provide_for_editing'),
-  'labelClass' => 'control-width-4',
-));
-?> </div><div id="div-receive_for_editing"><?php
-echo data_entry_helper::checkbox(array(
-  'label' => 'Receives data for editing',
-  'helpText' => 'Check this box if the website receives data from other agreement participants for editing.',
-  'fieldname' => 'websites_website_agreement:receive_for_editing',
-  'default' => html::initial_value($values, 'websites_website_agreement:receive_for_editing'),
-  'labelClass' => 'control-width-4',
-));
-?>
-</div>
-</fieldset>
-<?php
-echo html::form_buttons($id != NULL, FALSE, FALSE);
-data_entry_helper::enable_validation('websites-website-agreement-edit');
-echo data_entry_helper::dump_javascript();
-?>
+<form action="<?php echo url::site() . 'websites_website_agreement/save' ?>" method="post" id="websites-website-agreement-edit">
+  <fieldset>
+    <legend>Website Agreement Participation Details<?php echo $metadata; ?></legend>
+    <input type="hidden" name="websites_website_agreement:id" value="<?php echo html::initial_value($values, 'websites_website_agreement:id'); ?>" />
+    <input type="hidden" name="websites_website_agreement:website_id" value="<?php echo html::initial_value($values, 'websites_website_agreement:website_id'); ?>" />
+
+    <?php
+    // @todo: filter the select box to public agreements, or those created by the current user, unless core admin.
+    if ($this->uri->method(FALSE) === 'edit') {
+      echo '<div style="display: none">';
+    }
+    echo data_entry_helper::select([
+      'id' => 'agreement-select',
+      'label' => 'Agreement to participate in',
+      'helpText' => 'Select the agreement that this website should belong to',
+      'fieldname' => 'websites_website_agreement:website_agreement_id',
+      'default' => html::initial_value($values, 'websites_website_agreement:website_agreement_id'),
+      'labelClass' => 'control-width-4',
+      'table' => 'website_agreement',
+      'captionField' => 'title',
+      'valueField' => 'id',
+      'extraParams' => $readAuth,
+      'blankText' => '<please select>',
+      'class' => 'required',
+      'caching' => FALSE,
+    ]);
+    if ($this->uri->method(FALSE) === 'edit') {
+      echo '</div>';
+    }
+    ?>
+    <p>This sharing agreement has the following options:</p>
+    <div id="div-provide_for_reporting"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Provides data for reporting',
+      'helpText' => 'Check this box if the website provides its data to other agreement participants for reporting.',
+      'fieldname' => 'websites_website_agreement:provide_for_reporting',
+      'default' => html::initial_value($values, 'websites_website_agreement:provide_for_reporting'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div>
+    <div id="div-receive_for_reporting"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Receives data for reporting',
+      'helpText' => 'Check this box if the website receives data from other agreement participants for reporting.',
+      'fieldname' => 'websites_website_agreement:receive_for_reporting',
+      'default' => html::initial_value($values, 'websites_website_agreement:receive_for_reporting'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div>
+    <div id="div-provide_for_peer_review"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Provides data for peer review',
+      'helpText' => 'Check this box if the website provides its data to other agreement participants for peer review, e.g. browsing and commenting on records.',
+      'fieldname' => 'websites_website_agreement:provide_for_peer_review',
+      'default' => html::initial_value($values, 'websites_website_agreement:provide_for_peer_review'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div>
+    <div id="div-receive_for_peer_review"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Receives data for peer review',
+      'helpText' => 'Check this box if the website receives data from other agreement participants for reporting, e.g. browsing and commenting on records.',
+      'fieldname' => 'websites_website_agreement:receive_for_peer_review',
+      'default' => html::initial_value($values, 'websites_website_agreement:receive_for_peer_review'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div>
+    <div id="div-provide_for_verification"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Provides data for verification',
+      'helpText' => 'Check this box if the website provides its data to other agreement participants for verification.',
+      'fieldname' => 'websites_website_agreement:provide_for_verification',
+      'default' => html::initial_value($values, 'websites_website_agreement:provide_for_verification'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div>
+    <div id="div-receive_for_verification"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Receives data for verification',
+      'helpText' => 'Check this box if the website receives data from other agreement participants for verification.',
+      'fieldname' => 'websites_website_agreement:receive_for_verification',
+      'default' => html::initial_value($values, 'websites_website_agreement:receive_for_verification'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div>
+    <div id="div-provide_for_data_flow"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Provides data for data flow',
+      'helpText' => 'Check this box if the website provides its data to other agreement participants for data flow, e.g. for passing data onto national information portals.',
+      'fieldname' => 'websites_website_agreement:provide_for_data_flow',
+      'default' => html::initial_value($values, 'websites_website_agreement:provide_for_data_flow'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div>
+    <div id="div-receive_for_data_flow"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Receives data for data flow',
+      'helpText' => 'Check this box if the website receives data from other agreement participants for data flow, e.g. for passing data onto national information portals.',
+      'fieldname' => 'websites_website_agreement:receive_for_data_flow',
+      'default' => html::initial_value($values, 'websites_website_agreement:receive_for_data_flow'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div>
+    <div id="div-provide_for_moderation"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Provides data for moderation',
+      'helpText' => 'Check this box if the website provides its data to other agreement participants for moderation, e.g. to check images before publishing.',
+      'fieldname' => 'websites_website_agreement:provide_for_moderation',
+      'default' => html::initial_value($values, 'websites_website_agreement:provide_for_moderation'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div>
+    <div id="div-receive_for_moderation"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Receives data for moderation',
+      'helpText' => 'Check this box if the website receives data from other agreement participants for moderation, e.g. to check images before publishing.',
+      'fieldname' => 'websites_website_agreement:receive_for_moderation',
+      'default' => html::initial_value($values, 'websites_website_agreement:receive_for_moderation'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?>
+    </div>
+    <div id="div-provide_for_editing"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Provides data for editing',
+      'helpText' => 'Check this box if the website provides its data to other agreement participants for editing.',
+      'fieldname' => 'websites_website_agreement:provide_for_editing',
+      'default' => html::initial_value($values, 'websites_website_agreement:provide_for_editing'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?> </div><div id="div-receive_for_editing"><?php
+    echo data_entry_helper::checkbox(array(
+      'label' => 'Receives data for editing',
+      'helpText' => 'Check this box if the website receives data from other agreement participants for editing.',
+      'fieldname' => 'websites_website_agreement:receive_for_editing',
+      'default' => html::initial_value($values, 'websites_website_agreement:receive_for_editing'),
+      'labelClass' => 'control-width-4',
+    ));
+    ?>
+    </div>
+  </fieldset>
+  <?php
+  echo html::form_buttons($id !== NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('websites-website-agreement-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
