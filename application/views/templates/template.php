@@ -51,12 +51,10 @@ echo html::stylesheet(
     "media/themes/$theme/jquery-ui.theme.min",
     'media/css/default_site.css',
     'media/css/theme-bootstrap-3.css',
+    'media/css/menus',
   ),
   array('screen')
 );
-echo html::stylesheet(array('media/css/menus'), array('screen'));
-?>
-<?php
 echo html::script(
   array(
     'media/js/json2.js',
@@ -68,6 +66,10 @@ echo html::script(
     'vendor/bootstrap/js/bootstrap.min.js',
   ), FALSE
 );
+if (isset($jsFile)) {
+  echo html::script([$jsFile], FALSE);
+}
+
 ?>
 <script type="text/javascript">
 // @todo Do we need a delegate event to hook up FancyBox after any Ajax calls?

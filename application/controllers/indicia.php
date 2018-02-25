@@ -60,7 +60,6 @@ class Indicia_Controller extends Template_Controller {
       $this->template = 'templates/blank';
     }
     parent::__construct();
-
     // Assign view array with system information.
     $this->template->system = Kohana::config_load('version');
 
@@ -69,6 +68,17 @@ class Indicia_Controller extends Template_Controller {
     $this->session = new Session();
     if ($this->auth->logged_in()) {
       $this->template->menu = self::getMenu();
+    }
+    // If there is a file with same name as the main view, load it into a
+    // variable in the template so the script can be included.
+    $jsFile = Router::$controller . '/' . Router::$method . '.js';
+    $jsFile = preg_replace(
+      '/\/controllers\/.*/',
+      '/views/' . Router::$controller . '/' . Router::$method . '.js',
+      Router::$controller_path
+    );
+    if (file_exists("$jsFile")) {
+      $this->template->jsFile = str_replace(DOCROOT, '', $jsFile);
     }
     $title = kohana::config('indicia.warehouse_title');
     $this->template->warehouseTitle = $title ? $title : 'Indicia Warehouse';
@@ -421,16 +431,12 @@ class Indicia_Controller extends Template_Controller {
    *   Page title.
    */
   protected function setView($name, $pagetitle = '', $viewArgs = array()) {
-    echo $name;
     try {
-      // On error rest on the website_edit page
-      // errors are now embedded in the model
-      $view                    = new View( $name );
-      $view->metadata          = $this->getMetadataView(  $this->model );
-      $this->template->title   = $this->getEditPageTitle( $this->model, $pagetitle );
-      $view->model             = $this->model;
-      $view->tabs              = $this->getTabs($name);
-
+      $view = new View($name);
+      $view->metadata = $this->getMetadataView($this->model);
+      $this->template->title = $this->getEditPageTitle($this->model, $pagetitle);
+      $view->model = $this->model;
+      $view->tabs = $this->getTabs($name);
       foreach ($viewArgs as $arg => $val) {
         $view->set($arg, $val);
       }
