@@ -156,7 +156,7 @@ class Scheduled_Tasks_Controller extends Controller {
           }
           $this->doDirectTriggerNotifications(
             $trigger->name,
-            $data['content']['records'],
+            ['headings' => $parsedData['headingData'], 'data' => $data['content']['records']],
             $digestMode
           );
         }
@@ -172,17 +172,18 @@ class Scheduled_Tasks_Controller extends Controller {
    *
    * @param string $triggerName
    *   Name of the trigger which fired.
-   * @param array $records
-   *   Output from the trigger report.
+   * @param array $data
+   *   Info to store in the notification including the record from the trigger
+   *   report.
    * @param string $digestMode
    *   Digest frequency code.
    */
-  private function doDirectTriggerNotifications($triggerName, $records, $digestMode) {
+  private function doDirectTriggerNotifications($triggerName, array $data, $digestMode) {
     // This only applies if a notify_user_ids column in report output.
-    if (count($records) === 0 || !isset($records[0]['notify_user_ids'])) {
+    if (count($data['data']) === 0 || !isset($records[0]['notify_user_ids'])) {
       return;
     }
-    foreach ($records as $record) {
+    foreach ($data['data'] as $record) {
       $userIds = explode(',', $record['notify_user_ids']);
       unset($record['notify_user_ids']);
       unset($record['website_id']);
@@ -190,7 +191,7 @@ class Scheduled_Tasks_Controller extends Controller {
         $this->db->insert('notifications', array(
           'source' => $triggerName,
           'source_type' => 'T',
-          'data' => json_encode(array('data' => $record)),
+          'data' => json_encode($data),
           'user_id' => $userId,
           'digest_mode' => $digestMode,
         ));
