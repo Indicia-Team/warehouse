@@ -180,7 +180,7 @@ class Scheduled_Tasks_Controller extends Controller {
    */
   private function doDirectTriggerNotifications($triggerName, array $data, $digestMode) {
     // This only applies if a notify_user_ids column in report output.
-    if (count($data['data']) === 0 || !isset($records[0]['notify_user_ids'])) {
+    if (count($data['data']) === 0 || !isset($data['data'][0]['notify_user_ids'])) {
       return;
     }
     foreach ($data['data'] as $record) {
