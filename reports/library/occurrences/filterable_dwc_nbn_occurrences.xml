@@ -41,6 +41,10 @@
             sql="o.external_key"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/otherCatalogNumbers" />
+    <column name="eventID"
+            sql="o.sample_id"
+            datatype="integer"
+            term="http://rs.tdwg.org/dwc/terms/eventID" />
     <column name="scientificName"
             sql="cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')"
             datatype="text"
