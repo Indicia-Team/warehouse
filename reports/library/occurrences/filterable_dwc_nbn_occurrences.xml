@@ -65,8 +65,8 @@
             term="http://purl.org/dc/terms/rightsHolder" />
       <!-- check since using output_sref, this is not relevant? -->
       <column name="coordinateUncertaintyInMeters"
-            sql="0"
-            datatype="integer"
+            sql="get_sref_precision(onf.output_sref, onf.output_sref_system, snf.attr_sref_precision)"
+            datatype="float"
             term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
       <column name="gridReference"
             sql="onf.output_sref"
