@@ -359,18 +359,23 @@ class Scheduled_Tasks_Controller extends Controller {
    */
   private function unparseData($data) {
     $struct = json_decode($data, TRUE);
-    $r = "<table><thead>\n<tr><th>";
-    $r .= implode('</th><th>', $struct['headings']);
-    $r .= "</th></tr>\n</thead>\n<tbody>\n";
-    // The sructure has an entry per allowed website for the notified user, containing a list of records.
+    $r = "<table>\n";
+    if (!empty($struct['headings'])) {
+      $r .= "  <thead>\n    <tr>      <th>";
+      $r .= implode('</th>      <th>', $struct['headings']);
+      $r .= "</th>\n    </tr>\n  </thead>\n";
+    }
+    $r .= "  <tbody>\n";
+    // The sructure has an entry per allowed website for the notified user,
+    // containing a list of records.
     foreach ($struct['data'] as $website => $records) {
       foreach ($records as $record) {
-        $r .= '<tr><td>';
-        $r .= implode('</td><td>', $record);
-        $r .= "</td></tr>\n";
+        $r .= '    <tr>      <td>';
+        $r .= implode('</td>      <td>', $record);
+        $r .= "</td>\n    </tr>\n";
       }
     }
-    $r .= "</tbody>\n</table>\n";
+    $r .= "  </tbody>\n</table>\n";
     return $r;
   }
 
