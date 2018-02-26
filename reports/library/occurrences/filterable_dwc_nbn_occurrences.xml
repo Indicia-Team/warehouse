@@ -37,6 +37,10 @@
             sql="'#occurrence_id_prefix#' || o.id::text"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/occurrenceID" />
+    <column name="otherCatalogNumbers"
+            sql="o.external_key"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/otherCatalogNumbers" />
     <column name="scientificName"
             sql="cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')"
             datatype="text"
