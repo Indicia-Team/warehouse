@@ -68,7 +68,25 @@
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/vernacularName" />
     <column name="eventDate"
-          sql="to_char(o.date_start, 'YYYY-MM-DD') || CASE WHEN o.date_end=o.date_start THEN '' ELSE '/' || to_char(o.date_end, 'YYYY-MM-DD') END"
+          sql="CASE o.date_type
+  /* DwC cannot cope with a month or season in unknown year. */
+  WHEN 'M' THEN 'Unknown'
+  WHEN 'S' THEN 'Unknown'
+  WHEN 'U' THEN 'Unknown'
+  /* Year */
+  WHEN 'Y' THEN to_char(o.date_start, 'YYYY')
+  /* Year and month */
+  WHEN 'O' THEN to_char(o.date_start, 'YYYY-MM')
+  /* Other formats output using full date variations */
+  ELSE COALESCE(to_char(o.date_start, 'YYYY-MM-DD'), '') || CASE
+    /* exact date - no need for anything else */
+    WHEN COALESCE(to_char(o.date_start, 'YYYY-MM-DD'), '')=COALESCE(to_char(o.date_end, 'YYYY-MM-DD'), '') THEN ''
+    /* if just day in month different and rest same, can add just day in month */
+    WHEN COALESCE(to_char(o.date_start, 'YYYY-MM'), '')=COALESCE(to_char(o.date_end, 'YYYY-MM'), '') THEN '/' || COALESCE(to_char(o.date_end, 'DD'), '')
+    /* otherwise a fully specified date range */
+    ELSE '/' || COALESCE(to_char(o.date_end, 'YYYY-MM-DD'), '')
+  END
+END"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/eventDate" />
     <!-- @todo formatting on recordedBy -->
@@ -87,19 +105,32 @@
           term="http://purl.org/dc/terms/rightsHolder" />
     <!-- check since using output_sref, this is not relevant? -->
     <column name="coordinateUncertaintyInMeters"
-          sql="get_sref_precision(onf.output_sref, onf.output_sref_system, snf.attr_sref_precision)"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
+    get_sref_precision(onf.output_sref, onf.output_sref_system, null)
+  ELSE COALESCE(snf.attr_sref_precision, 50)
+END"
           datatype="float"
           term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
     <column name="gridReference"
-          sql="onf.output_sref"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN onf.output_sref
+  ELSE null
+END"
           datatype="text"
           term="http://data.nbn.org/nbn/terms/gridReference" />
     <column name="decimaLatitude"
-          sql="st_y(st_transform(st_centroid(o.public_geom), 4326))"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
+  ELSE st_y(st_transform(st_centroid(o.public_geom), 4326))
+END"
           datatype="integer"
           term="http://rs.tdwg.org/dwc/terms/decimaLatitude" />
     <column name="decimaLongitude"
-          sql="st_x(st_transform(st_centroid(o.public_geom), 4326))"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
+  ELSE st_x(st_transform(st_centroid(o.public_geom), 4326))
+END"
           datatype="integer"
           term="http://rs.tdwg.org/dwc/terms/decimaLongitude" />
     <column name="datasetName"
@@ -115,7 +146,7 @@
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/basisOfRecord" />
     <column name="identificationVerificationStatus"
-          sql="CASE o.record_status || COALESCE(o.record_substatus, '')
+          sql="CASE o.record_status || COALESCE(o.record_substatus::text, '')
           WHEN 'V' THEN 'Accepted'
           WHEN 'V1' THEN 'Accepted - correct'
           WHEN 'V2' THEN 'Accepted - considered correct'

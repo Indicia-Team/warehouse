@@ -306,7 +306,7 @@ class ReportEngine {
         $value = $this->providedParams[$param];
         $checked_value = security::checkParam($value, $check['type'], $check['regex']);
         if ($checked_value !== FALSE) {
-          $this->$param = $checked_value;
+          $this->$param = $param === 'orderby' ? pg_escape_identifier($checked_value) : $checked_value;
         }
         else {
           Kohana::log('alert', "Invalid parameter, $param, with value '$value' in request for report, $report.");
