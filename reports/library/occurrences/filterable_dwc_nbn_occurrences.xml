@@ -68,7 +68,25 @@
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/vernacularName" />
     <column name="eventDate"
-          sql="to_char(o.date_start, 'YYYY-MM-DD') || CASE WHEN o.date_end=o.date_start THEN '' ELSE '/' || to_char(o.date_end, 'YYYY-MM-DD') END"
+          sql="CASE o.date_type
+  /* DwC cannot cope with a month or season in unknown year. */
+  WHEN 'M' THEN 'Unknown'
+  WHEN 'S' THEN 'Unknown'
+  WHEN 'U' THEN 'Unknown'
+  /* Year */
+  WHEN 'Y' THEN to_char(o.date_start, 'YYYY')
+  /* Year and month */
+  WHEN 'O' THEN to_char(o.date_start, 'YYYY-MM')
+  /* Other formats output using full date variations */
+  ELSE COALESCE(to_char(o.date_start, 'YYYY-MM-DD'), '') || CASE
+    /* exact date - no need for anything else */
+    WHEN COALESCE(to_char(o.date_start, 'YYYY-MM-DD'), '')=COALESCE(to_char(o.date_end, 'YYYY-MM-DD'), '') THEN ''
+    /* if just day in month different and rest same, can add just day in month */
+    WHEN COALESCE(to_char(o.date_start, 'YYYY-MM'), '')=COALESCE(to_char(o.date_end, 'YYYY-MM'), '') THEN '/' || COALESCE(to_char(o.date_end, 'DD'), '')
+    /* otherwise a fully specified date range */
+    ELSE '/' || COALESCE(to_char(o.date_end, 'YYYY-MM-DD'), '')
+  END
+END"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/eventDate" />
     <!-- @todo formatting on recordedBy -->
