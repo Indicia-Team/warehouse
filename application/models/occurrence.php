@@ -45,11 +45,13 @@ class Occurrence_Model extends ORM {
     'verified_by' => 'user'
   );
   // Declare that this model has child attributes, and the name of the node in the submission which contains them.
-  protected $has_attributes = true;
+  protected $has_attributes = TRUE;
   protected $attrs_submission_name = 'occAttributes';
   public $attrs_field_prefix = 'occAttr';
   protected $additional_csv_fields = array(
     // Extra lookup options.
+    'occurrence:fk_taxa_taxon_list:genus' => 'Genus (builds binomial name)',
+    'occurrence:fk_taxa_taxon_list:specific' => 'Specific name/epithet (builds binomial name)',
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
     'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
     // Allow details of 4 images to be uploaded in CSV files.
@@ -61,6 +63,32 @@ class Occurrence_Model extends ORM {
     'occurrence_medium:caption:3' => 'Media Caption 3',
     'occurrence_medium:path:4' => 'Media Path 4',
     'occurrence_medium:caption:4' => 'Media Caption 4'
+  );
+
+  // During an import it is possible to merge different columns in a CSV row to make a database field
+  public $special_import_field_processing_defn = array(
+      'occurrence:fk_taxa_taxon_list' => array(
+          'template' => '%s %s',
+          'columns' => array('occurrence:fk_taxa_taxon_list:genus', 'occurrence:fk_taxa_taxon_list:specific')
+        )
+      );
+
+  public $import_duplicate_check_combinations = array(
+      array(
+        'description' => 'Occurrence External Key',
+        'fields' => array(
+            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'occurrence:external_key'),
+        ),
+      ),
+      array(
+        'description' => 'Sample and Taxon',
+        'fields' => array(
+            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'occurrence:sample_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'occurrence:taxa_taxon_list_id'),
+        ),
+      ),
   );
 
   /**
@@ -449,7 +477,7 @@ class Occurrence_Model extends ORM {
       $comment = ORM::factory('occurrence_comment');
       $comment->validate(new Validation($data), TRUE);
     }
-    return true;
+    return TRUE;
   }
 
   /**
@@ -538,7 +566,7 @@ class Occurrence_Model extends ORM {
       ),
       'sample:entered_sref_system' => array(
         'display' => 'Spatial ref. system',
-        'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
+        'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $srefs)
@@ -565,7 +593,7 @@ class Occurrence_Model extends ORM {
     if (!empty($options['activate_global_sample_method']) && $options['activate_global_sample_method'] === 't') {
       $retVal['sample:sample_method_id'] = array(
         'display' => 'Sample Method',
-        'description' => 'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a '.
+        'description' => 'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a ' .
         'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $sample_methods)
@@ -574,7 +602,7 @@ class Occurrence_Model extends ORM {
     if (!empty($options['activate_parent_sample_method_filter']) && $options['activate_parent_sample_method_filter']==='t') {
       $retVal['fkFilter:sample:sample_method_id'] = array(
         'display' => 'Parent Sample Method',
-        'description' => 'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked '.
+        'description' => 'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked ' .
         'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $parent_sample_methods)
@@ -583,7 +611,7 @@ class Occurrence_Model extends ORM {
     if (!empty($options['activate_location_location_type_filter']) && $options['activate_location_location_type_filter']==='t') {
       $retVal['fkFilter:location:location_type_id'] = array(
         'display' => 'Location Type',
-        'description' => 'If this import file includes samples which reference locations records, you can restrict the type of locations looked '.
+        'description' => 'If this import file includes samples which reference locations records, you can restrict the type of locations looked ' .
         'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $locationTypes)
@@ -602,9 +630,9 @@ class Occurrence_Model extends ORM {
         'description' => 'Select the term list which will be used to match the association types.',
         'datatype' => 'lookup',
         'population_call' => 'direct:termlist:id:title'
-//          ,'linked_to' => 'website_id',
-//          'linked_filter_field' => 'website_id',
-//              'filterIncludesNulls'=>true
+        // ,'linked_to' => 'website_id',
+        // 'linked_filter_field' => 'website_id',
+        // 'filterIncludesNulls' => TRUE
       );
       $retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id'] = array(
         'display' => 'Second species list',
