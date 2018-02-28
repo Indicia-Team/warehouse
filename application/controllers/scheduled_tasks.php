@@ -207,7 +207,7 @@ class Scheduled_Tasks_Controller extends Controller {
       }
     }
     // Now for each user, add their notifications.
-    foreach ($userNotificatons as $user => $userData) {
+    foreach ($userNotifications as $user => $userData) {
       $this->db->insert('notifications', array(
         'source' => $triggerName,
         'source_type' => 'T',
