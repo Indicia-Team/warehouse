@@ -45,29 +45,6 @@ class postgreSQL {
     }
   }
 
-  public static function setOccurrenceCreatorByCmsUser($websiteId, $userId, $cmsUserId, $db = NULL) {
-    if (!$db) {
-      $db = new Database();
-    }
-    $db->query(<<<QRY
-update occurrences as o
-set created_by_id=$userId, updated_by_id=$userId, updated_on=now()
-from sample_attribute_values sav
-join sample_attributes sa
-    on sa.id=sav.sample_attribute_id
-    and sa.caption='CMS User ID'
-    and sa.deleted=false
-where o.sample_id = sav.sample_id
-and sav.deleted=false
-and o.deleted=false
-and o.website_id=$websiteId
-and sav.int_value=$cmsUserId
-and o.created_by_id<>$userId
-and o.created_by_id=1
-QRY
-    );
-  }
-
   /**
    * Select verification and comment notification details since last run date.
    *

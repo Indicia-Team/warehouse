@@ -31,35 +31,35 @@
 class Person_Attribute_Model extends ATTR_ORM {
 
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'termlist');
-  
+
   // The person attributes are defined per website, not per survey
-  protected $has_survey_restriction = false;
+  protected $hasSurveyRestriction = false;
 
   protected $has_many = array(
     'person_attributes_values',
   );
 
   protected $has_and_belongs_to_many = array('websites');
-  
+
   public function validate(Validation $array, $save = FALSE) {
     $this->unvalidatedFields = array('synchronisable');
     return parent::validate($array, $save);
   }
-  
+
   /**
    * After saving, ensures that the join records linking the attribute to a website are created or deleted.
-   * @return boolean Returns true to indicate success. 
+   * @return boolean Returns true to indicate success.
    */
   protected function postSubmit($isInsert) {
     // Record has saved correctly or is being reused
     $websites = ORM::factory('website')->find_all();
     foreach ($websites as $website) {
       // Check for website checkbox ticked
-      $this->set_attribute_website_record($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
+      $this->setAttributeWebsiteRecord($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
     }
     return true;
   }
-  
+
   /**
    * Get the list of known system functions for person attributes, each with a title and description
    * of their usage.
