@@ -31,15 +31,17 @@ class rest_api_sync {
   public static function getDataFromRestUrl($url, $serverId) {
     // @todo is this the most optimal place to retrieve config?
     $servers = Kohana::config('rest_api_sync.servers');
-    $shared_secret = $servers[$serverId]['shared_secret'];
-    $userId = self::$client_user_id;
     $session = curl_init();
     // Set the POST options.
     curl_setopt ($session, CURLOPT_URL, $url);
-    curl_setopt($session, CURLOPT_HEADER, false);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $hmac = hash_hmac("sha1", $url, $shared_secret, $raw_output=FALSE);
-    curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
+    curl_setopt($session, CURLOPT_HEADER, FALSE);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
+    if (empty($servers[$serverId]['serverType']) || $servers[$serverId]['serverType'] === 'Indicia') {
+      $shared_secret = $servers[$serverId]['shared_secret'];
+      $userId = self::$client_user_id;
+      $hmac = hash_hmac("sha1", $url, $shared_secret, $raw_output = FALSE);
+      curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
+    }
     // Do the request
     $response = curl_exec($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
@@ -58,10 +60,9 @@ class rest_api_sync {
       echo "$url<br/>";
       throw new exception('Request to server failed');
     }
-    $data = json_decode($response, true);
+    $data = json_decode($response, TRUE);
     return $data;
   }
-
 
   /**
    * Logs a message.

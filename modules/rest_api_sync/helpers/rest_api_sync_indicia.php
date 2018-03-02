@@ -219,6 +219,7 @@ class rest_api_sync_indicia {
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         catch (exception $e) {
+          $tracker['errors']++;
           rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
               json_encode($observation), $tracker);
         }
@@ -331,7 +332,7 @@ class rest_api_sync_indicia {
   }
 
   public static function getServerAnnotations($url, $serverId) {
-    return rest_api_sync::getDataFromRestUrl($url, $serverId);
+    return self::getDataFromRestUrl($url, $serverId);
   }
 
 }

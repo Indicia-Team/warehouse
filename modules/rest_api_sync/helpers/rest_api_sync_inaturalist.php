@@ -59,6 +59,45 @@ class rest_api_sync_inaturalist {
 
   public static function syncServer($db, $serverId, $server) {
     self::$db = $db;
+    $data = rest_api_sync::getDataFromRestUrl(
+      "$server[url]?d1=2017-12-03&d2=2017-12-09&place_id=6858&verifiable=true&quality_grade=research",
+      $serverId
+    );
+    $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
+    $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
+    foreach ($data['results'] as $iNatRecord) {
+      list($north, $east) = explode(',', $iNatRecord['location']);
+      $observation = [
+        'id' => $iNatRecord['id'],
+        'taxonName' => $iNatRecord['taxon']['name'],
+        'startDate' => $iNatRecord['observed_on'],
+        'endDate' => $iNatRecord['observed_on'],
+        'dateType' => 'D',
+        'recorder' => $iNatRecord['user']['login'],
+        'east' => $east,
+        'north' => $north,
+        'projection' => 'WGS84',
+        'precision' => $iNatRecord['positional_accuracy'],
+        'siteName' => $iNatRecord['place_guess'],
+        'href' => $iNatRecord['uri'],
+      ];
+      try {
+        $is_new = api_persist::taxon_observation(
+          self::$db,
+          $observation,
+          $server['website_id'],
+          $server['survey_id'],
+          $taxon_list_id
+        );
+        $tracker[$is_new ? 'inserts' : 'updates']++;
+      }
+      catch (exception $e) {
+        $tracker['errors']++;
+        rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
+            json_encode($observation), $tracker);
+      };
+    }
+    echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
   }
 
 }
