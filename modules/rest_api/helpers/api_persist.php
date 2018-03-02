@@ -162,16 +162,20 @@ class api_persist {
    * @throws \exception
    */
   private static function find_taxon($db, $taxon_list_id, $taxon_version_key) {
-    $taxa = $db->select('id')
+    $taxa = $db->select('taxa_taxon_list_id')
       ->from('cache_taxa_taxon_lists')
       ->where(array(
-        'taxon_list_id'=>$taxon_list_id,
-        'external_key' => $taxon_version_key,
-        'preferred' => 't'
-      ))->get()->result_array(false);
-    if (count($taxa)===1)
-      return $taxa[0]['id'];
+        'taxon_list_id' => $taxon_list_id,
+        'search_code' => $taxon_version_key,
+        'simplified' => false,
+      ))
+      ->get()
+      ->result_array(FALSE);
+    if (count($taxa) === 1) {
+      return $taxa[0]['taxa_taxon_list_id'];
+    }
     else {
+      echo $db->last_query();
       throw new exception("Could not find a unique preferred taxon for key $taxon_version_key");
     }
   }

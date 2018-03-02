@@ -28,40 +28,7 @@ class rest_api_sync {
 
   public static $client_user_id;
 
-  public static function get_server_taxon_observations_url($server_url, $projectId,
-      $edited_date_from, $edited_date_to) {
-    return $server_url . '/taxon-observations?' . http_build_query(array(
-      'proj_id' => $projectId,
-      'edited_date_from' => $edited_date_from,
-      'edited_date_to' => $edited_date_to,
-      'page_size' => 500
-    ));
-  }
-
-  public static function get_server_annotations_url($server_url, $projectId,
-      $edited_date_from, $edited_date_to) {
-    return $server_url . '/annotations?' . http_build_query(array(
-      'proj_id' => $projectId,
-      'edited_date_from' => $edited_date_from,
-      'edited_date_to' => $edited_date_to,
-      'page_size' => 500
-    ));
-  }
-
-  public static function get_server_projects($url, $serverId) {
-    return self::get_data_from_rest_url($url, $serverId);
-  }
-
-  public static function get_server_taxon_observations($url, $serverId) {
-    return self::get_data_from_rest_url($url, $serverId);
-  }
-
-  public static function get_server_annotations($url, $serverId) {
-    return self::get_data_from_rest_url($url, $serverId);
-  }
-
-
-  private static function get_data_from_rest_url($url, $serverId) {
+  public static function getDataFromRestUrl($url, $serverId) {
     // @todo is this the most optimal place to retrieve config?
     $servers = Kohana::config('rest_api_sync.servers');
     $shared_secret = $servers[$serverId]['shared_secret'];
@@ -93,6 +60,32 @@ class rest_api_sync {
     }
     $data = json_decode($response, true);
     return $data;
+  }
+
+
+  /**
+   * Logs a message.
+   *
+   * The message is displayed on the screen and to the Kohana error log using
+   * the supplied status as the error level. If a tracker array is supplied and
+   * the status indicates an error, $tracker['errors'] is incremented.
+   *
+   * @param string $status
+   *   Message status, either error or debug.
+   * @param string $msg
+   *   Message to log.
+   * @param array $tracker
+   *   Array tracking count of inserts, updates and errors.
+   */
+  public static function log($status, $msg, array &$tracker = NULL) {
+    kohana::log($status, "REST API Sync: $msg");
+    if ($status === 'error') {
+      $msg = "ERROR: $msg";
+      if ($tracker) {
+        $tracker['errors']++;
+      }
+    }
+    echo str_replace("\n", '<br/>', $msg) . '<br/>';
   }
 
 }
