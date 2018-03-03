@@ -35,13 +35,13 @@ class Indicia_Controller extends Template_Controller {
 
   // Template view name
   public $template = 'templates/template';
-  
+
   /**
-   * Array of page specific breadcrumbs. Subclasses can append to this as required. 
+   * Array of page specific breadcrumbs. Subclasses can append to this as required.
    * @var array $page_breadcrumbs
    */
   protected $page_breadcrumbs = array();
-  
+
   /**
    * List of person IDs the user has edit rights to.
    * @var array
@@ -63,8 +63,20 @@ class Indicia_Controller extends Template_Controller {
     $this->db = Database::instance();
     $this->auth = new Auth;
     $this->session = new Session;
-    if ($this->auth->logged_in())
+    if ($this->auth->logged_in()) {
       $this->template->menu = self::get_menu();
+    }
+    // If there is a file with same name as the main view, load it into a
+    // variable in the template so the script can be included.
+    $jsFile = Router::$controller . '/' . Router::$method . '.js';
+    $jsFile = preg_replace(
+      '/\/controllers\/.*/',
+      '/views/' . Router::$controller . '/' . Router::$method . '.js',
+      Router::$controller_path
+    );
+    if (file_exists("$jsFile")) {
+      $this->template->jsFile = str_replace(DOCROOT, '', $jsFile);
+    }
     $title=kohana::config('indicia.warehouse_title');
     $this->template->warehouseTitle = $title ? $title : 'Indicia Warehouse';
   }
@@ -79,7 +91,7 @@ class Indicia_Controller extends Template_Controller {
       $this->access_denied('page');
     parent::_render();
   }
-  
+
   /**
    * Method which builds the main menu. Has a default structure which can be modified by plugin modules.
    * @return array Menu structure
@@ -147,14 +159,14 @@ class Indicia_Controller extends Template_Controller {
           }
         }
       }
-      $cache->set($cacheId, $menu); 
+      $cache->set($cacheId, $menu);
     }
     return $menu;
   }
-  
+
   /**
    * Handler for the Create action on all controllers. Creates the default data required
-   * when instantiating a new record and loads it into the edit form view.    
+   * when instantiating a new record and loads it into the edit form view.
    */
   public function create() {
     if (!$this->record_authorised(null)) {
@@ -168,10 +180,10 @@ class Indicia_Controller extends Template_Controller {
     }
     $this->showEditPage($values);
   }
-  
+
   /**
    * Handler for the Edit action on all controllers. Loads the values required from the model
-   * and any attached supermodels.    
+   * and any attached supermodels.
    */
   public function edit($id) {
     if (!$this->record_authorised($id)) {
@@ -180,26 +192,26 @@ class Indicia_Controller extends Template_Controller {
     }
     $this->model = ORM::Factory($this->model->object_name, $id);
     $values = $this->getModelValues();
-    $this->showEditPage($values);     
+    $this->showEditPage($values);
   }
-  
+
   /**
    * Code that is run when showing a controller's edit page - either from the create action
    * or the edit action.
-   * 
+   *
    * @param int $id The record id (for editing) or null (for create).
-   * @param array $valuse Associative array of valuse to populate into the form.   * 
-   * @access private   
+   * @param array $valuse Associative array of valuse to populate into the form.   *
+   * @access private
    */
-  protected function showEditPage($values) { 
+  protected function showEditPage($values) {
     $other = $this->prepareOtherViewData($values);
     $this->setView($this->editViewName(), $this->model->caption(), array(
       'values'=>$values,
       'other_data'=>$other
-    )); 
+    ));
     $this->defineEditBreadcrumbs();
   }
-  
+
   /**
    * Returns the default name for the edit view, but can be overridden.
    */
@@ -207,101 +219,101 @@ class Indicia_Controller extends Template_Controller {
     $mn = $this->model->object_name;
     return $mn."/".$mn."_edit";
   }
-  
+
   /**
    * Default behaviour for the edit page breadcrumbs. Can be overrridden.
    */
-  protected function defineEditBreadcrumbs() { 
+  protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
     $this->page_breadcrumbs[] = $this->model->caption();
   }
-  
+
   /**
    * Provide an overridable method for preparing any additional data required by a view that does
-   * not depend on the specific record. This includes preparing the list of terms to preload 
-   * into lookup lists or combo boxes. 
-   * 
+   * not depend on the specific record. This includes preparing the list of terms to preload
+   * into lookup lists or combo boxes.
+   *
    * @param array $values Existing data values for the view.
    * @return array Array of additional data items required, or null.
    */
   protected function prepareOtherViewData($values)
-  {    
-    return null;   
+  {
+    return null;
   }
-  
+
   /**
-   * Default behaviour is to allow access to records if logged in.   
-   */   
+   * Default behaviour is to allow access to records if logged in.
+   */
   protected function record_authorised($id) {
     return $this->page_authorised();
   }
-  
+
   /**
-   * Returns an array of all values from this model and its super models ready to be 
-   * loaded into a form.   
+   * Returns an array of all values from this model and its super models ready to be
+   * loaded into a form.
    */
   protected function getModelValues() {
     $struct = $this->model->get_submission_structure();
-    // Get this model's values. If the structure needs a specified field prefix then use it, otherwise it will default to the model name.    
+    // Get this model's values. If the structure needs a specified field prefix then use it, otherwise it will default to the model name.
     $r = $this->model->getPrefixedValuesArray(
         array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : null
     );
     if (array_key_exists('superModels', $struct)) {
       foreach ($struct['superModels'] as $super=>$content) {
-        // Merge the supermodel's values into the main array. Use a specified fieldPrefix if there is one.         
+        // Merge the supermodel's values into the main array. Use a specified fieldPrefix if there is one.
         $r = array_merge($r, $this->model->$super->getPrefixedValuesArray(
             array_key_exists('fieldPrefix', $content) ? $content['fieldPrefix'] : null
         ));
-      } 
+      }
     }
     // Output a list of values for each joined record in the joinsTo links.
     if (array_key_exists('joinsTo', $struct)) {
-      foreach ($struct['joinsTo'] as $joinsTo) {        
-        $ids = array();    
+      foreach ($struct['joinsTo'] as $joinsTo) {
+        $ids = array();
         foreach ($this->model->$joinsTo as $joinedModel) {
           $r['joinsTo:'.inflector::singular($joinsTo).':'.$joinedModel->id] = 'on';
-        }                 
-      }      
+        }
+      }
     }
-    return $r;
-  }
-  
-  /**
-   * Constructs an array of the default values required when loading a new edit form. 
-   * Each entry is of the form "model:field => value". Loads both the defaults from this 
-   * controller's main model, and any supermodels it has.
-   */
-  protected function getDefaults() {    
-    $struct = $this->model->get_submission_structure();
-    $r = $this->model->getDefaults();    
-    if (array_key_exists('superModels', $struct)) {
-      foreach ($struct['superModels'] as $super=>$content) {         
-        $r = array_merge($r, ORM::Factory($super)->getDefaults());
-      } 
-    }
-    if (array_key_exists('metaFields', $struct)) {
-      foreach ($struct['metaFields'] as $m) {
-        $r["metaField:$m"]='';
-      } 
-    } 
-    
     return $r;
   }
 
   /**
-   * Overrideable function that checks the user has access rights to the current page. Can 
+   * Constructs an array of the default values required when loading a new edit form.
+   * Each entry is of the form "model:field => value". Loads both the defaults from this
+   * controller's main model, and any supermodels it has.
+   */
+  protected function getDefaults() {
+    $struct = $this->model->get_submission_structure();
+    $r = $this->model->getDefaults();
+    if (array_key_exists('superModels', $struct)) {
+      foreach ($struct['superModels'] as $super=>$content) {
+        $r = array_merge($r, ORM::Factory($super)->getDefaults());
+      }
+    }
+    if (array_key_exists('metaFields', $struct)) {
+      foreach ($struct['metaFields'] as $m) {
+        $r["metaField:$m"]='';
+      }
+    }
+
+    return $r;
+  }
+
+  /**
+   * Overrideable function that checks the user has access rights to the current page. Can
    * be used to check for a certain role, for example.
-   */   
+   */
   protected function page_authorised()
   {
     return ($this->uri->segment(1)=='login') || $this->auth->logged_in();
   }
-  
+
   /**
-  * Handler for the Save action on all controllers. Saves the post array by 
-  * passing it into the model and then submitting it. If the post array was 
-  * sent by a submit button with value Delete, then the record is marked for 
-  * deletion. 
+  * Handler for the Save action on all controllers. Saves the post array by
+  * passing it into the model and then submitting it. If the post array was
+  * sent by a submit button with value Delete, then the record is marked for
+  * deletion.
   */
   public function save()
   {
@@ -318,23 +330,23 @@ class Indicia_Controller extends Template_Controller {
       } else {
         $this->model = ORM::factory($this->model->object_name);
       }
-      
-      // Were we instructed to delete the post?      
-      $deletion = $_POST['submit'] == kohana::lang('misc.delete') || $_POST['submit'] == kohana::lang('misc.unsubscribe');    
+
+      // Were we instructed to delete the post?
+      $deletion = $_POST['submit'] == kohana::lang('misc.delete') || $_POST['submit'] == kohana::lang('misc.unsubscribe');
       $_POST['deleted'] = $deletion ? 't' : 'f';
       // Pass the post object to the model and then submit it
       $this->model->set_submission_data($_POST);
       $this->submit($deletion);
     }
   }
-  
+
 
   /**
   * Retrieve a suitable title for the edit page, depending on whether it is a new record
   * or an existing one.
   */
   protected function getEditPageTitle($model, $name)
-  {  
+  {
     if ($model->id)
       return "Edit ".$model->caption();
     else
@@ -364,7 +376,7 @@ class Indicia_Controller extends Template_Controller {
   * @param string $pagetitle Page title
   */
   protected function setView( $name, $pagetitle = '', $viewArgs = array() )
-  {  
+  {
     try{
       // on error rest on the website_edit page
       // errors are now embedded in the model
@@ -383,7 +395,7 @@ class Indicia_Controller extends Template_Controller {
       throw $e;
     }
   }
-  
+
   /**
    * Overrideable function which allows a controller to declare the different tabs it exposes for each view.
    */
@@ -416,13 +428,13 @@ class Indicia_Controller extends Template_Controller {
     $this->session->set_flash('flash_info', "The record was $action successfully. <a href=\"".url::site().$this->model->object_name."/edit/$id\">Click here to edit</a>.");
     $this->redirectToIndex();
   }
-  
+
   /**
    * Redirects the browser to the relevant index page which this came from (e.g. after saving an edit).   *
-   * @access private   
+   * @access private
    */
   private function redirectToIndex() {
-    // What to do next setting needs to be kept between sessions as it persists after the redirect, so 
+    // What to do next setting needs to be kept between sessions as it persists after the redirect, so
     // we can repopulate the select on data entry forms with the previuos value
     if (isset($_POST['what-next'])) $_SESSION['what-next'] = $_POST['what-next'];
     if(isset($_POST['return_url'])) {
@@ -516,16 +528,16 @@ class Indicia_Controller extends Template_Controller {
   protected function get_return_page() {
     $r = $this->model->object_name;
     if (isset($_POST['what-next'])) {
-      if ($_POST['what-next']=='add') $r .= '/create';      
+      if ($_POST['what-next']=='add') $r .= '/create';
     }
     return $r;
-    
+
   }
 
   /**
    * Returns a set of terms for a termlist, which can be used to populate a termlist drop down.
    *
-   * @param string $termlist ID of the termlist or name of the termlist, from the 
+   * @param string $termlist ID of the termlist or name of the termlist, from the
    * termlist's external_key field.
    * @param array $where Associative array of field values to filter for.
    * @return array Associative array of terms, with each entry being id => term.
@@ -553,7 +565,7 @@ class Indicia_Controller extends Template_Controller {
         ->join('terms', 'terms.id', 'termlists_terms.term_id')
         ->where(array('termlists_terms.termlist_id' => $termlist, 'termlists_terms.deleted' => 'f', 'terms.deleted' => 'f'))
         ->orderby(array('termlists_terms.sort_order'=>'ASC', 'terms.term'=>'ASC'));
-    if ($where) 
+    if ($where)
       $terms = $terms->where($where);
     $terms = $terms->get();
     foreach ($terms as $term) {
@@ -561,7 +573,7 @@ class Indicia_Controller extends Template_Controller {
     }
     return $arr;
   }
-  
+
   public function get_breadcrumbs()
   {
     $breadcrumbHtml = '';
@@ -623,7 +635,7 @@ class Indicia_Controller extends Template_Controller {
       return $ids;
     }
   }
-  
+
   /**
    * Retrieves a list of person_ids that the user is allowed to edit (i.e. the ones
    * which belong to websites they administer). Returns true if core admin.
@@ -671,9 +683,9 @@ class Indicia_Controller extends Template_Controller {
     }
     return $this->allowedPersonIds;
   }
-  
+
   /**
-   * Ensures that the extract directory for zip files exists. 
+   * Ensures that the extract directory for zip files exists.
    * @return string The directory path.
    */
   protected function create_zip_extract_dir() {

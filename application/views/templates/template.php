@@ -49,7 +49,8 @@ echo html::stylesheet(
     'media/css/forms',
     'media/js/fancybox/source/jquery.fancybox.css',
     'media/css/jquery.autocomplete',
-    'media/themes/' . $theme . '/jquery-ui.custom'
+    'media/themes/' . $theme . '/jquery-ui.custom',
+    'media/css/menus',
   ),
   array('screen')
 );
@@ -64,7 +65,9 @@ echo html::script(
     'media/js/jquery-ui.custom.min.js'
   ), FALSE
 );
-echo html::stylesheet(array('media/css/menus'), array('screen'));
+if (isset($jsFile)) {
+  echo html::script([$jsFile], FALSE);
+}
 ?>
 <script type="text/javascript">
 /*<![CDATA[*/
