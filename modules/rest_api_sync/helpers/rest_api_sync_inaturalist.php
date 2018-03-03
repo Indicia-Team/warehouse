@@ -27,15 +27,6 @@
 class rest_api_sync_inaturalist {
 
   /**
-   * ISO datetime that the sync was last run.
-   *
-   * Used to filter requests for records to only get changes.
-   *
-   * @var string
-   */
-  private static $fromDateTime;
-
-  /**
    * Processing state.
    *
    * Current processing state, used to track initial setup.
@@ -55,25 +46,49 @@ class rest_api_sync_inaturalist {
    */
   private static $processingDateLimit;
 
-  private static $db;
+  public static function syncServer($serverId, $server) {
+    $db = Database::instance();
+    $page = 1;
+    $timestampAtStart = date('c');
+    do {
+      $moreToDo = self::syncPage($page, $db, $serverId, $server);
+      $page++;
+    } while ($moreToDo);
+    variable_set("rest_api_sync_iNaturalist_last_run", $timestampAtStart);
+  }
 
-  public static function syncServer($db, $serverId, $server) {
-    self::$db = $db;
+  private static function syncPage($page, $db, $serverId, $server) {
+    // @todo use updated_since to filter to recent changes
+    // @todo paginate through the response.
+    // @todo images
+    // @todo licence
+
+    $fromDateTime = variable::get("rest_api_sync_iNaturalist_last_run", '1600-01-01T00:00:00+00:00', FALSE);
+
     $data = rest_api_sync::getDataFromRestUrl(
-      "$server[url]?d1=2017-12-03&d2=2017-12-09&place_id=6858&verifiable=true&quality_grade=research",
+      "$server[url]?" . http_build_query(array_merge(
+        $server['parameters'],
+        [
+          'updated_since' => $fromDateTime,
+          'per_page' => 100,
+          'page' => $page,
+        ]
+      )),
       $serverId
     );
+    echo "$server[url]?" . http_build_query($server['parameters']) . '<br><br/>';
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     foreach ($data['results'] as $iNatRecord) {
+      echo '<pre>'; var_export($iNatRecord); echo '</pre><br><br/>';
       list($north, $east) = explode(',', $iNatRecord['location']);
-      $observation = [
+      /*$observation = [
         'id' => $iNatRecord['id'],
         'taxonName' => $iNatRecord['taxon']['name'],
         'startDate' => $iNatRecord['observed_on'],
         'endDate' => $iNatRecord['observed_on'],
         'dateType' => 'D',
-        'recorder' => $iNatRecord['user']['login'],
+        'recorder' => empty($iNatRecord['user']['name']) ? $iNatRecord['user']['login'] : $iNatRecord['user']['name'],
         'east' => $east,
         'north' => $north,
         'projection' => 'WGS84',
@@ -83,7 +98,7 @@ class rest_api_sync_inaturalist {
       ];
       try {
         $is_new = api_persist::taxon_observation(
-          self::$db,
+          $db,
           $observation,
           $server['website_id'],
           $server['survey_id'],
@@ -95,9 +110,10 @@ class rest_api_sync_inaturalist {
         $tracker['errors']++;
         rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
             json_encode($observation), $tracker);
-      };
+      };*/
     }
     echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
+    return $data['total_results'] / 100 > $page;
   }
 
 }

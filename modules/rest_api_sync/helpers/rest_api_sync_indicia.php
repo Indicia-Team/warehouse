@@ -57,8 +57,8 @@ class rest_api_sync_indicia {
 
   private static $db;
 
-  public static function syncServer($db, $serverId, $server) {
-    self::$db = $db;
+  public static function syncServer($serverId, $server) {
+    self::$db = Database::instance();
     $next_page_of_projects_url = self::getServerProjectsUrl($server['url']);
     while ($next_page_of_projects_url) {
       $response = self::getServerProjects($next_page_of_projects_url, $serverId);
