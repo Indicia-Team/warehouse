@@ -69,7 +69,6 @@ echo html::script(
 if (isset($jsFile)) {
   echo html::script([$jsFile], FALSE);
 }
-
 ?>
 <script type="text/javascript">
 // @todo Do we need a delegate event to hook up FancyBox after any Ajax calls?

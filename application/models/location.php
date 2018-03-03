@@ -26,15 +26,69 @@ class Location_Model extends ORM_Tree {
 
   public $search_field='name';
 
+  protected $lookup_against='detail_location';
+  // This needs id, name, code, external_key, website_id and location_type_id
+
   protected $ORM_Tree_children = "locations";
   protected $has_and_belongs_to_many = array('websites', 'groups');
   protected $has_many = array('samples', 'location_attribute_values', 'location_media');
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'location_type'=>'termlists_term');
+  protected $belongs_to = array('created_by' => 'user', 'updated_by' => 'user', 'location_type' => 'termlists_term');
 
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
-  protected $has_attributes=true;
+  protected $has_attributes=TRUE;
   protected $attrs_submission_name='locAttributes';
   public $attrs_field_prefix='locAttr';
+
+  // Declare additional fields required when posting via CSV.
+  protected $additional_csv_fields=array(
+      // extra lookup options
+      'location:fk_parent:code' => 'Parent location Code',
+      'location:fk_parent:external_key' => 'Parent location External key',
+  );
+
+  public $import_duplicate_check_combinations = array(
+      array(
+        'description' => 'Location External Key',
+        'fields' => array(
+            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'location:location_type_id'),
+            array('fieldName' => 'location:external_key'),
+        ),
+      ),
+      array(
+        'description' => 'Location Name',
+        'fields' => array(
+            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'location:location_type_id'),
+            array('fieldName' => 'location:name'),
+        ),
+      ),
+      array(
+        'description' => 'Location Code',
+        'fields' => array(
+            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'location:location_type_id'),
+            array('fieldName' => 'location:code'),
+        ),
+      ),
+      array(
+        'description' => 'Location Grid Ref',
+        'fields' => array(
+            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'location:location_type_id'),
+            array('fieldName' => 'location:centroid_sref'),
+        ),
+      ),
+      array(
+        'description' => 'Location Parent and Code',
+        'fields' => array(
+            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'location:location_type_id'),
+            array('fieldName' => 'location:parent_id'),
+            array('fieldName' => 'location:code'),
+        ),
+      ),
+  );
 
   public function validate(Validation $array, $save = FALSE) {
     $orig_values = $array->as_array();
@@ -62,12 +116,10 @@ class Location_Model extends ORM_Tree {
   /**
    * Override set handler to translate WKT to PostGIS internal spatial data.
    */
-  public function __set($key, $value)
-  {
-    if (substr($key,-5) == '_geom')
-    {
+  public function __set($key, $value) {
+    if (substr($key,-5) == '_geom') {
       if ($value) {
-        $row = $this->db->query("SELECT ST_GeomFromText('$value', ".kohana::config('sref_notations.internal_srid').") AS geom")->current();
+        $row = $this->db->query("SELECT ST_GeomFromText('$value', " . kohana::config('sref_notations.internal_srid') . ") AS geom")->current();
         $value = $row->geom;
       }
     }
@@ -77,11 +129,10 @@ class Location_Model extends ORM_Tree {
   /**
    * Override get handler to translate PostGIS internal spatial data to WKT.
    */
-  public function __get($column)
-  {
+  public function __get($column) {
     $value = parent::__get($column);
 
-    if  (substr($column,-5) == '_geom' && !empty($value)) {
+    if (substr($column,-5) == '_geom' && !empty($value)) {
       $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
       $value = $row->wkt;
     }
@@ -97,7 +148,7 @@ class Location_Model extends ORM_Tree {
   public function get_submission_structure() {
     return array(
       'model' => 'location',
-      'joinsTo' => array('websites')
+      'joinsTo' => array('websites'),
     );
   }
 
@@ -105,8 +156,7 @@ class Location_Model extends ORM_Tree {
    * Handle the case where a new record is created with a centroid_sref but without the geom being pre-calculated.
    * E.g. when importing from a shape file, or when JS is disabled on the client.
    */
-  protected function preSubmit()
-  {
+  protected function preSubmit() {
     // Allow a location to be submitted with a spatial ref and system but no centroid_geom. If so we
     // can work out the Geom
     if (!empty($this->submission['fields']['centroid_sref']['value']) &&
@@ -118,10 +168,12 @@ class Location_Model extends ORM_Tree {
             $this->submission['fields']['centroid_sref']['value'],
             $this->submission['fields']['centroid_sref_system']['value']
         );
-      } catch (Exception $e) {
+      }
+      catch (Exception $e) {
         $this->errors['centroid_sref'] = $e->getMessage();
       }
-    } elseif (empty($this->submission['fields']['centroid_sref']['value']) &&
+    }
+    elseif (empty($this->submission['fields']['centroid_sref']['value']) &&
         empty($this->submission['fields']['centroid_geom']['value']) &&
         !empty($this->submission['fields']['boundary_geom']['value'])) {
       kohana::log('debug', 'working out centroid from boundary');
@@ -130,15 +182,14 @@ class Location_Model extends ORM_Tree {
       $boundary = $this->submission['fields']['boundary_geom']['value'];
       if (!empty($this->submission['fields']['centroid_sref_system']['value']))
         $centroid = $this->calcCentroid($boundary, $this->submission['fields']['centroid_sref_system']['value']);
-      else
-        $centroid = $this->calcCentroid($boundary);
+      else $centroid = $this->calcCentroid($boundary);
       $this->submission['fields']['centroid_geom']['value'] = $centroid['wkt'];
       $this->submission['fields']['centroid_sref']['value'] = $centroid['sref'];
       $this->submission['fields']['centroid_sref_system']['value'] = $centroid['sref_system'];
     }
     // Empty boundary geom is allowed but must be null
     if (isset($this->submission['fields']['boundary_geom']['value']) && empty($this->submission['fields']['boundary_geom']['value']))
-      $this->submission['fields']['boundary_geom']['value'] = null;
+      $this->submission['fields']['boundary_geom']['value'] = NULL;
     $this->preSubmitTidySref();
     return parent::presubmit();
   }
@@ -158,19 +209,21 @@ class Location_Model extends ORM_Tree {
   }
 
   /*
-  * Calculates centroid of a location from a boundary wkt
-  */
+   * Calculates centroid of a location from a boundary wkt
+   */
   protected function calcCentroid($boundary, $system = '4326') {
-    $row = $this->db->query("SELECT ST_AsText(ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid')."))) AS wkt")->current();
-    $result = array('wkt' => $row->wkt,
+    $row = $this->db->query("SELECT ST_AsText(ST_Centroid(ST_GeomFromText('$boundary', " . kohana::config('sref_notations.internal_srid') . "))) AS wkt")->current();
+    $result = array(
+      'wkt' => $row->wkt,
       'sref' => spatial_ref::internal_wkt_to_sref($row->wkt, intval($system)),
-      'sref_system' => $system);
+      'sref_system' => $system
+    );
     return $result;
-}
+  }
 
   /*
-  * Sets centroid from boundary_geom
-  */
+   * Sets centroid from boundary_geom
+   */
   public function setCentroid($system = '4326') {
     $boundary = $this->__get('boundary_geom', $system);
     $centroid = $this->calcCentroid($boundary, $system);
@@ -179,31 +232,57 @@ class Location_Model extends ORM_Tree {
     $this->__set('centroid_sref_system', $centroid['sref_system']);
   }
 
+  private static function getConvertedOptionValue($first, $second) {
+    return str_replace(array(',', ':'), array('&#44', '&#56'), $first) .
+            ":" .
+            str_replace(array(',', ':'), array('&#44', '&#56'), $second);
+  }
+
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
   public function fixed_values_form() {
     $srefs = array();
     $systems = spatial_ref::system_metadata();
-    foreach ($systems as $code=>$metadata)
-      $srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
-    				":".
-    				str_replace(array(',',':'), array('&#44', '&#56'), $metadata['title']);
+    foreach ($systems as $code => $metadata)
+        $srefs[] = self::getConvertedOptionValue($code, $metadata['title']);
+
+    $location_types = array(":Defined in file");
+    $parent_location_types = array(":No filter");
+    $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
+    foreach ($terms as $term) {
+      $location_types[] = self::getConvertedOptionValue($term->id, $term->term);
+      $parent_location_types[] = self::getConvertedOptionValue($term->id, $term->term);
+    }
 
     return array(
       'website_id' => array(
-        'display'=>'Website',
-        'description'=>'Select the website to import records into.',
-        'datatype'=>'lookup',
-        'population_call'=>'direct:website:id:title'
+        'display' => 'Website',
+        'description' => 'Select the website to import records into.',
+        'datatype' => 'lookup',
+        'population_call' => 'direct:website:id:title'
       ),
       'location:centroid_sref_system' => array(
-        'display'=>'Spatial Ref. System',
-        'description'=>'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
+        'display' => 'Spatial Ref. System',
+        'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
             'column in the import file which is mapped to the Location Spatial Reference System field containing the spatial reference system code.',
-        'datatype'=>'lookup',
+        'datatype' => 'lookup',
         'lookup_values'=>implode(',', $srefs)
-      )
+      ),
+      'location:location_type_id' => array(
+        'display' => 'Location Type',
+        'description' => 'Select the Location Type for all locations in this import file. Note, if you have a file with a mix of location type then you need a ' .
+                         'column in the import file which is mapped to the Location Type field.',
+        'datatype' => 'lookup',
+        'lookup_values' => implode(',', $location_types)
+      ),
+      'fkFilter:location:location_type_id' => array(
+        'display' => 'Parent Location Type',
+        'description' => 'If this import file includes locations which reference parent locations records, you can restrict the type of parent locations looked ' .
+                         'up by setting this location type. It is not currently possible to use a column in the file to do this on a location by location basis.',
+        'datatype' => 'lookup',
+        'lookup_values' => implode(',', $parent_location_types)
+      ),
     );
   }
 

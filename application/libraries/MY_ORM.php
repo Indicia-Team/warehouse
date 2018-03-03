@@ -14,9 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author Indicia Team
- * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @package    Core
+ * @subpackage Libraries
+ * @author    Indicia Team
+ * @license    http://www.gnu.org/licenses/gpl.html GPL
+ * @link     http://code.google.com/p/indicia/
  */
 
 /**
@@ -30,21 +32,18 @@ class ORM extends ORM_Core {
 
   /**
    * Authorised website ID from the service authentication.
-   *
-   * @var int
+   * @var integer
    */
-  public static $authorisedWebsiteId = 0;
+  public static $authorisedWebsiteId=0;
   /**
   * Should foreign key lookups be cached? Set to true during import for example.
-  *
   * @var bool
   */
-  public static $cacheFkLookups = FALSE;
+  public static $cacheFkLookups = false;
 
 
   /**
    * Tracks list of all inserted, updated or deleted records in this transaction.
-   *
    * @var array
    */
   public static $changedRecords;
@@ -56,31 +55,25 @@ class ORM extends ORM_Core {
   public $submission = array();
 
   /**
-   * Describes the list of nested models that are present after a submission. E.g. the list of
+   * @var array Describes the list of nested models that are present after a submission. E.g. the list of
    * occurrences in a sample.
-   *
-   * @var array
    */
   private $nestedChildModelIds = array();
   private $nestedParentModelIds = array();
 
   /**
-   * The default field that is searchable is called title. Override this when a different field name is used.
-   *
-   * @var string
+   * @var string The default field that is searchable is called title. Override this when a different field name is used.
    */
   public $search_field='title';
 
   protected $errors = array();
 
   /**
-   * Flag that gets set if a unique key violation has occurred on attempting a save.
-   *
-   * @var bool
+   * @var boolean Flag that gets set if a unique key violation has occurred on attempting a save.
    */
-  public $uniqueKeyViolation = FALSE;
+  public $uniqueKeyViolation = false;
 
-  protected $identifiers = array('website_id' => NULL, 'survey_id' => NULL);
+  protected $identifiers = array('website_id'=>null,'survey_id'=>null);
 
   /**
    * @var array unvalidatedFields allows a list of fields which are not validated in anyway to be declared
@@ -92,35 +85,31 @@ class ORM extends ORM_Core {
   /**
    * @var array An array which a model can populate to declare additional fields that can be submitted for csv upload.
    */
-  protected $additional_csv_fields = array();
+  protected $additional_csv_fields=array();
 
   /**
-   * Does the model have custom attributes? Defaults to false.
-   *
-   * @var bool
+   * @var boolean Does the model have custom attributes? Defaults to false.
    */
   protected $has_attributes = false;
 
   /**
-   * @var bool If the model has custom attributes, are public ones always available across the warehouse, or
+   * @var boolean If the model has custom attributes, are public ones always available across the warehouse, or
    * does it require a link to a website to include the attribute in the submissable data? Defaults to false.
    */
-  public $include_public_attributes = FALSE;
+  public $include_public_attributes = false;
 
   /**
-   * Is this model for an existing record that is being saved over?
-   *
-   * @var bool
+   * @var boolean Is this model for an existing record that is being saved over?
    */
-  protected $existing = FALSE;
+  protected $existing = false;
 
   private $cache;
 
   /**
    * Default behaviour on save is to update metadata. If we detect no changes we can skip this.
-   * @var bool
+   * @var boolean
    */
-  public $wantToUpdateMetadata = TRUE;
+  public $wantToUpdateMetadata = true;
 
   private $attrValModels = array();
 
@@ -134,40 +123,35 @@ class ORM extends ORM_Core {
 
   /**
    * Constructor allows plugins to modify the data model.
-   *
-   * @param int $id
-   *   ID of the record to load. If null then creates a new record. If -1 then the ORM
-   *   object is not initialised, providing access to the variables only.
+   * @var int $id ID of the record to load. If null then creates a new record. If -1 then the ORM
+   * object is not initialised, providing access to the variables only.
    */
-  public function __construct($id = NULL) {
-    if (is_object($id) || $id != -1) {
-      // Use caching, so things don't slow down if there are lots of plugins. the object_name does not
+  public function __construct($id = NULL)
+  {
+    if (is_object($id) || $id!=-1) {
+      // use caching, so things don't slow down if there are lots of plugins. the object_name does not
       // exist yet as we haven't called the parent construct, so we build our own.
       $object_name = strtolower(substr(get_class($this), 0, -6));
-      $cacheId = "orm-$object_name";
+      $cacheId = 'orm-'.$object_name;
       $this->cache = Cache::instance();
       $ormRelations = $this->cache->get($cacheId);
-      if ($ormRelations === NULL) {
-        // Now look for modules which plugin to tweak the orm relationships.
+      if ($ormRelations === null) {
+        // now look for modules which plugin to tweak the orm relationships.
         foreach (Kohana::config('config.modules') as $path) {
           $plugin = basename($path);
           if (file_exists("$path/plugins/$plugin.php")) {
-            require_once "$path/plugins/$plugin.php";
-            if (function_exists($plugin . '_extend_orm')) {
-              $extends = call_user_func($plugin . '_extend_orm');
+            require_once("$path/plugins/$plugin.php");
+            if (function_exists($plugin.'_extend_orm')) {
+              $extends = call_user_func($plugin.'_extend_orm');
               if (isset($extends[$object_name])) {
-                if (isset($extends[$object_name]['has_one'])) {
+                if (isset($extends[$object_name]['has_one']))
                   $this->has_one = array_merge($this->has_one, $extends[$object_name]['has_one']);
-                }
-                if (isset($extends[$object_name]['has_many'])) {
+                if (isset($extends[$object_name]['has_many']))
                   $this->has_many = array_merge($this->has_many, $extends[$object_name]['has_many']);
-                }
-                if (isset($extends[$object_name]['belongs_to'])) {
+                if (isset($extends[$object_name]['belongs_to']))
                   $this->belongs_to = array_merge($this->belongs_to, $extends[$object_name]['belongs_to']);
-                }
-                if (isset($extends[$object_name]['has_and_belongs_to_many'])) {
+                if (isset($extends[$object_name]['has_and_belongs_to_many']))
                   $this->has_and_belongs_to_many = array_merge($this->has_and_belongs_to_many, $extends[$object_name]['has_and_belongs_to_many']);
-                }
               }
             }
           }
@@ -179,8 +163,7 @@ class ORM extends ORM_Core {
           'has_and_belongs_to_many' => $this->has_and_belongs_to_many
         );
         $this->cache->set($cacheId, $cacheArray);
-      }
-      else {
+      } else {
         $this->has_one = $ormRelations['has_one'];
         $this->has_many = $ormRelations['has_many'];
         $this->belongs_to = $ormRelations['belongs_to'];
@@ -199,109 +182,96 @@ class ORM extends ORM_Core {
       'model' => $this->object_name,
       'id' => $this->id,
     );
-    // Add the external key and timestamps if present.
-    if (!empty($this->external_key)) {
+    // Add the external key and timestamps if present
+    if (!empty($this->external_key))
       $r['external_key'] = $this->external_key;
-    }
-    if (!empty($this->created_on)) {
+    if (!empty($this->created_on))
       $r['created_on'] = $this->created_on;
-    }
-    if (!empty($this->updated_on)) {
+    if (!empty($this->updated_on))
       $r['updated_on'] = $this->updated_on;
-    }
-    if (count($this->nestedChildModelIds)) {
+    if (count($this->nestedChildModelIds))
       $r['children'] = $this->nestedChildModelIds;
-    }
-    if (count($this->nestedParentModelIds)) {
+    if (count($this->nestedParentModelIds))
       $r['parents'] = $this->nestedParentModelIds;
-    }
     return $r;
   }
 
   /**
-   * Override load_values to add in a vague date field. Also strips out any custom attribute values which don't go
-   * into this model.
-   *
-   * @param array
-   *   Values to load.
-   *
+   * Override load_values to add in a vague date field. Also strips out any custom attribute values which don't go into this model.
+   * @param   array  values to load
    * @return  ORM
    */
-  public function load_values(array $values) {
-    // Clear out any values which match this attribute field prefix.
+  public function load_values(array $values)
+  {
+    // clear out any values which match this attribute field prefix
     if (isset($this->attrs_field_prefix)) {
-      foreach ($values as $key => $value) {
-        if (substr($key, 0, strlen($this->attrs_field_prefix) + 1) === $this->attrs_field_prefix . ':') {
+      foreach ($values as $key=>$value) {
+        if (substr($key, 0, strlen($this->attrs_field_prefix)+1)==$this->attrs_field_prefix.':') {
           unset($values[$key]);
         }
       }
     }
     parent::load_values($values);
-    // Add in date field.
-    if (array_key_exists('date_type', $this->object) && !empty($this->object['date_type'])) {
-      $vd = vague_date::vague_date_to_string([
+    // Add in date field
+    if (array_key_exists('date_type', $this->object) && !empty($this->object['date_type']))
+    {
+      $vd = vague_date::vague_date_to_string(array
+      (
         $this->object['date_start'],
         $this->object['date_end'],
-        $this->object['date_type'],
-      ]);
+        $this->object['date_type']
+      ));
       $this->object['date'] = $vd;
     }
     return $this;
   }
 
   /**
-   * Override the reload_columns method to add the vague_date virtual field.
-   *
-   * @param bool $force
-   *   Reload the columns from the db even if already loaded.
-   *
-   * @return object
-   *   $this returned to allow chaining.
-   *
+   * Override the reload_columns method to add the vague_date virtual field
+   * @param bool $force Reload the columns from the db even if already loaded
+   * @return $this|\ORM
    * @throws \Kohana_Database_Exception
    */
-  public function reload_columns($force = FALSE) {
-    if ($force === TRUE || empty($this->table_columns)) {
-      // Load table columns.
+  public function reload_columns($force = FALSE)
+  {
+    if ($force === TRUE OR empty($this->table_columns))
+    {
+      // Load table columns
       $this->table_columns = postgreSQL::list_fields($this->table_name, $this->db);
-      // Vague date.
-      if (array_key_exists('date_type', $this->table_columns)) {
+      // Vague date
+      if (array_key_exists('date_type', $this->table_columns))
+      {
         $this->table_columns['date']['type'] = 'String';
       }
     }
+
     return $this;
   }
 
   /**
-   * Retrieve an error message.
-   *
    * Provide an accessor so that the view helper can retrieve the error for the model by field name.
    * Will also retrieve errors from linked models (models that were posted in the same submission)
    * if the field name is of the form model:fieldname.
    *
-   * @param string $fieldname
-   *   Name of the field to retrieve errors for. The fieldname can either be simple, or of the form
-   *   model:fieldname in which linked models can also be checked for errors. If the submission
-   *   structure defines the fieldPrefix for the model then this is used instead of the model name.
-   *
-   * @return string
-   *   The error text.
+   * @param string $fieldname Name of the field to retrieve errors for. The fieldname can either be
+   * simple, or of the form model:fieldname in which linked models can also be checked for errors. If the
+   * submission structure defines the fieldPrefix for the model then this is used instead of the model name.
+   * @return string The error text.
    */
   public function getError($fieldname) {
-    $r = '';
+    $r='';
     if (array_key_exists($fieldname, $this->errors)) {
-      // Model is unspecified, so load error from this model.
-      $r = $this->errors[$fieldname];
-    }
-    elseif (strpos($fieldname, ':') !== FALSE) {
-      list($model, $field) = explode(':', $fieldname);
-      // Model is specified.
-      $struct = $this->get_submission_structure();
+      // model is unspecified, so load error from this model.
+      $r=$this->errors[$fieldname];
+    } elseif (strpos($fieldname, ':')!==false) {
+      list($model, $field)=explode(':', $fieldname);
+      // model is specified
+      $struct=$this->get_submission_structure();
       $fieldPrefix = array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $this->object_name;
-      if ($model == $fieldPrefix) {
+      if ($model==$fieldPrefix) {
         // model is this model
         if (array_key_exists($field, $this->errors)) {
-          $r = $this->errors[$field];
+          $r=$this->errors[$field];
         }
       }
     }
@@ -310,14 +280,14 @@ class ORM extends ORM_Core {
 
   /**
    * Retrieve an array containing all errors.
-   *
    * The array entries are of the form 'entity:field => value'.
    */
-  public function getAllErrors() {
-    // Get this model's errors, ensuring array keys have prefixes identifying the entity.
+  public function getAllErrors()
+  {
+    // Get this model's errors, ensuring array keys have prefixes identifying the entity
     foreach ($this->errors as $key => $value) {
-      if (strpos($key, ':') === FALSE) {
-        $this->errors[$this->object_name . ':' . $key] = $value;
+      if (strpos($key, ':')===false) {
+        $this->errors[$this->object_name.':'.$key]=$value;
         unset($this->errors[$key]);
       }
     }
@@ -524,17 +494,14 @@ class ORM extends ORM_Core {
   public function caption() {
     if ($this->id) {
       return $this->__get($this->search_field);
-    }
-    else {
+    } else {
       return $this->getNewItemCaption();
     }
   }
 
   /**
    * Retrieve the caption of a new entry of this model type. Overrideable as required.
-   *
-   * @return string
-   *   Caption for a new entry.
+   * @return string Caption for a new entry.
    */
   protected function getNewItemCaption() {
     return ucwords(str_replace('_', ' ', $this->object_name));
@@ -542,19 +509,16 @@ class ORM extends ORM_Core {
 
   /**
    * Indicates if this model type can create new instances from data supplied in its caption format.
-   *
-   * @return bool
-   *   Override to true if your model supports this.
+   * Overrideable as required.
+   * @return boolean, override to true if your model supports this.
    */
   protected function canCreateFromCaption() {
-    return FALSE;
+    return false;
   }
 
   /**
    * Puts each supplied caption in a submission and sends it to the supplied model.
-   *
-   * @return array
-   *   An array of record id values for the created records.
+   * @return array, an array of record id values for the created records.
    */
   private function createRecordsFromCaptions() {
     $r = array();
@@ -563,36 +527,33 @@ class ORM extends ORM_Core {
     $modelname = $this->submission['fields']['insert_captions_to_create']['value'];
     $m = ORM::factory($modelname);
     if ($m->canCreateFromCaption()) {
-      // Get the array of captions.
+      // get the array of captions
       $fieldname = $this->submission['fields']['insert_captions_use']['value'];
       if (empty($this->submission['fields'][$fieldname])
         || empty($this->submission['fields'][$fieldname]['value'])) {
         return $r;
       }
       $captions = $this->submission['fields'][$fieldname]['value'];
-      // Build a skeleton submission.
+      // build a skeleton submission
       $sub = array(
         'id' => $modelname,
         'fields' => array(
           'caption' => array()
         )
       );
-      // Submit each caption to create a record, unless it exists.
+      // submit each caption to create a record, unless it exists
       $i=0;
       foreach ($captions as $value) {
-        // Sanitize caption.
-        $value = trim(preg_replace('/\s+/', ' ', $value));
+        // sanitize caption
+        $value = trim(preg_replace('/\s+/',' ', $value));
         $id = $m->findByCaption($value);
-        if ($id > 0) {
-          // Record exists.
+        if ($id > 0) { // record exists
           $r[$i] = $id;
-        }
-        else {
-          // Create new record.
+        } else { // create new record
           $sub['fields']['caption']['value'] = $value;
           $m = ORM::factory($modelname);
           $m->submission = $sub;
-          // Copy down the website id and survey id.
+          // copy down the website id and survey id
           $m->identifiers = array_merge($this->identifiers);
           $r[$i] = $m->inner_submit();
         }
@@ -607,28 +568,27 @@ class ORM extends ORM_Core {
    * When using a sublist control (or any similar multi-value control), non-existing
    * values added  to the list are posted as captions, These need to be converted to
    * IDs in the table identified
-   * Puts each supplied record id into the submission to replace the captions
+   Puts each supplied record id into the submission to replace the captions
    * so we store IDs instead.
-   *
    * @param array $ids
+   * @return boolean.
    */
   private function createIdsFromCaptions($ids) {
     $fieldname = $this->submission['fields']['insert_captions_use']['value'];
-    if (empty($ids)) {
-      $this->submission['fields'][$fieldname] = array('value' => array());
+    if(empty($ids)){
+	$this->submission['fields'][$fieldname] = array('value'=>array());
     }
-    else {
-      $keys = array_fill(0, count($ids), 'value');
-      $a = array_fill_keys($keys, $ids);
-      $this->submission['fields'][$fieldname] = $a;
+    else{
+    	$keys = array_fill(0, sizeof($ids), 'value');
+    	$a = array_fill_keys($keys, $ids);
+    	$this->submission['fields'][$fieldname] = $a;
     }
+    return true;
   }
 
   /**
    * Overridden if this model type can create new instances from data supplied in its caption format.
-   *
-   * @return integer
-   *   The id of the first matching record with the supplied caption or 0 if no match.
+   * @return integer The id of the first matching record with the supplied caption or 0 if no match.
    */
   protected function findByCaption($caption) {
     return 0;
@@ -656,7 +616,7 @@ class ORM extends ORM_Core {
         $type = $this->table_columns[$field]['type'];
         switch ($type) {
           case 'int':
-            $this->submission['fields'][$field]['value'] = NULL;
+            $this->submission['fields'][$field]['value'] = null;
             break;
           }
       }
@@ -682,28 +642,22 @@ class ORM extends ORM_Core {
    */
   protected function populateIdentifiers() {
     if (array_key_exists('website_id', $this->submission['fields'])) {
-      if (is_array($this->submission['fields']['website_id'])) {
+      if (is_array($this->submission['fields']['website_id']))
         $this->identifiers['website_id'] = $this->submission['fields']['website_id']['value'];
-      }
-      else {
+      else
         $this->identifiers['website_id'] = $this->submission['fields']['website_id'];
-      }
     }
     if (array_key_exists('survey_id', $this->submission['fields'])) {
-      if (is_array($this->submission['fields']['survey_id'])) {
+      if (is_array($this->submission['fields']['survey_id']))
         $this->identifiers['survey_id'] = $this->submission['fields']['survey_id']['value'];
-      }
-      else {
+      else
         $this->identifiers['survey_id'] = $this->submission['fields']['survey_id'];
-      }
     }
   }
 
   /**
    * Wraps the process of submission in a transaction.
-   *
-   * @return int
-   *   If successful, returns the id of the created/found record. If not, returns null - errors are embedded in the model.
+   * @return integer If successful, returns the id of the created/found record. If not, returns null - errors are embedded in the model.
    */
   public function submit() {
     Kohana::log('debug', 'Commencing new transaction.');
@@ -713,19 +667,17 @@ class ORM extends ORM_Core {
       $this->preProcess();
       $res = $this->inner_submit();
       $this->postProcess();
-    }
-    catch (Exception $e) {
-      $this->errors['general'] = '<strong>An error occurred</strong><br/>' . $e->getMessage();
+    } catch (Exception $e) {
+      $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
       error_logger::log_error('Exception during inner_submit.', $e);
-      $res = NULL;
+      $res = null;
     }
     if ($res) {
       Kohana::log('debug', 'Committing transaction.');
       $this->db->query('COMMIT;');
-    }
-    else {
+    } else {
       Kohana::log('debug', 'Rolling back transaction.');
-      kohana::log('debug', var_export($this->getAllErrors(), TRUE));
+      kohana::log('debug', var_export($this->getAllErrors(), true));
       $this->db->query('ROLLBACK;');
     }
     return $res;
@@ -736,7 +688,7 @@ class ORM extends ORM_Core {
    */
   private function preProcess() {
     // Initialise the variable which tracks the records we are about to submit.
-    self::$changedRecords = ['update' => [], 'insert' => [], 'delete' => []];
+    self::$changedRecords = array('update'=>array(),'insert'=>array(),'delete'=>array());
   }
 
   /**
@@ -746,16 +698,13 @@ class ORM extends ORM_Core {
    */
   private function postProcess() {
     if (class_exists('cache_builder')) {
-      if (!empty(self::$changedRecords['insert']['occurrence'])) {
+      if (!empty(self::$changedRecords['insert']['occurrence']))
         cache_builder::insert($this->db, 'occurrences', self::$changedRecords['insert']['occurrence']);
-      }
-      if (!empty(self::$changedRecords['update']['occurrence'])) {
+      if (!empty(self::$changedRecords['update']['occurrence']))
         cache_builder::update($this->db, 'occurrences', self::$changedRecords['update']['occurrence']);
-      }
-      if (!empty(self::$changedRecords['delete']['occurrence'])) {
+      if (!empty(self::$changedRecords['delete']['occurrence']))
         cache_builder::delete($this->db, 'occurrences', self::$changedRecords['delete']['occurrence']);
-      }
-      $samples = array();
+      $samples=array();
       if (!empty(self::$changedRecords['insert']['sample'])) {
         $samples = self::$changedRecords['insert']['sample'];
         cache_builder::insert($this->db, 'samples', self::$changedRecords['insert']['sample']);
@@ -764,24 +713,20 @@ class ORM extends ORM_Core {
         $samples += self::$changedRecords['update']['sample'];
         cache_builder::update($this->db, 'samples', self::$changedRecords['update']['sample']);
       }
-      if (!empty(self::$changedRecords['delete']['sample'])) {
+      if (!empty(self::$changedRecords['delete']['sample']))
         cache_builder::delete($this->db, 'samples', self::$changedRecords['delete']['sample']);
-      }
       if (!empty($samples)) {
         postgreSQL::insertMapSquaresForSamples($samples, 1000, $this->db);
         postgreSQL::insertMapSquaresForSamples($samples, 2000, $this->db);
         postgreSQL::insertMapSquaresForSamples($samples, 10000, $this->db);
-      }
-      else {
-        // Might be directly inserting an occurrence. No need to do this if inserting a sample, as the above code does the
+      } else {
+        // might be directly inserting an occurrence. No need to do this if inserting a sample, as the above code does the
         // occurrences in bulk.
         $occurrences=array();
-        if (!empty(self::$changedRecords['insert']['occurrence'])) {
+        if (!empty(self::$changedRecords['insert']['occurrence']))
           $occurrences = self::$changedRecords['insert']['occurrence'];
-        }
-        if (!empty(self::$changedRecords['update']['occurrence'])) {
+        if (!empty(self::$changedRecords['update']['occurrence']))
           $occurrences += self::$changedRecords['update']['occurrence'];
-        }
         if (!empty($occurrences)) {
           postgreSQL::insertMapSquaresForOccurrences($occurrences, 1000, $this->db);
           postgreSQL::insertMapSquaresForOccurrences($occurrences, 2000, $this->db);
@@ -793,8 +738,8 @@ class ORM extends ORM_Core {
         !empty(self::$changedRecords['update']['occurrence_association'])) {
       // We've got some associations between occurrences that could not have the to_occurrence_id
       // foreign key filled in yet, since the occurrence referred to did not exist at the time of
-      // saving.
-      foreach (Occurrence_association_Model::$to_occurrence_id_pointers as $associationId => $pointer) {
+      // saving
+      foreach(Occurrence_association_Model::$to_occurrence_id_pointers as $associationId => $pointer) {
         if (!empty($this->dynamicRowIdReferences["occurrence:$pointer"]))
           $this->db->from('occurrence_associations')
               ->set('to_occurrence_id', $this->dynamicRowIdReferences["occurrence:$pointer"])
@@ -818,9 +763,9 @@ class ORM extends ORM_Core {
    * If successful, returns the id of the created/found record.
    * If not, returns null - errors are embedded in the model.
    */
-  public function inner_submit() {
-    $this->wantToUpdateMetadata = TRUE;
-    $isInsert = $this->id === 0
+  public function inner_submit(){
+    $this->wantToUpdateMetadata = true;
+    $isInsert = $this->id===0
         && (!isset($this->submission['fields']['id']) || !$this->submission['fields']['id']);
     $this->handleCaptionSubmission();
     $return = $this->populateFkLookups();
@@ -831,42 +776,37 @@ class ORM extends ORM_Core {
       $this->preSubmit();
       $this->removeUnwantedFields();
       $return = $this->validateAndSubmit();
-      $return = $this->checkRequiredAttributes() ? $return : NULL;
+      $return = $this->checkRequiredAttributes() ? $return : null;
       if ($this->id) {
         // Make sure we got a record to save against before attempting to post children. Post attributes first
         // before child records because the parent (e.g. Sample) attribute values sometimes affect the cached data
         // (e.g. the recorders stored in cache_occurrences)
-        $return = $this->createAttributes($isInsert) ? $return : NULL;
-        $return = $this->createChildRecords() ? $return : NULL;
-        $return = $this->createJoinRecords() ? $return : NULL;
+        $return = $this->createAttributes($isInsert) ? $return : null;
+        $return = $this->createChildRecords() ? $return : null;
+        $return = $this->createJoinRecords() ? $return : null;
 
-        if ($isInsert) {
+        if ($isInsert)
           $addTo=&self::$changedRecords['insert'];
-        }
-        elseif (isset($this->deleted) && $this->deleted === 't') {
+        elseif (isset($this->deleted) && $this->deleted==='t')
           $addTo=&self::$changedRecords['delete'];
-        }
-        else {
+        else
           $addTo=&self::$changedRecords['update'];
-        }
         if (!isset($addTo[$this->object_name]))
           $addTo[$this->object_name] = array();
         $addTo[$this->object_name][] = $this->id;
       }
-      // Call postSubmit.
+      // Call postSubmit
       if ($return) {
         $ps = $this->postSubmit($isInsert);
-        if ($ps == NULL) {
-          $return = NULL;
+        if ($ps == null) {
+          $return = null;
         }
       }
-      if (kohana::config('config.log_threshold') == '4') {
-        kohana::log('debug', 'Done inner submit of model ' . $this->object_name . ' with result ' . $return);
+      if (kohana::config('config.log_threshold')=='4') {
+        kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
       }
     }
-    if (!$return) {
-      kohana::log('debug', kohana::debug($this->getAllErrors()));
-    }
+    if (!$return) kohana::log('debug', kohana::debug($this->getAllErrors()));
     return $return;
   }
 
@@ -874,47 +814,41 @@ class ORM extends ORM_Core {
    * Remove any fields from the submission that are not in the model and are not custom attributes of the model.
    */
   private function removeUnwantedFields() {
-    foreach ($this->submission['fields'] as $field => $content) {
-      if (!array_key_exists($field, $this->table_columns) && !(isset($this->attrs_field_prefix)
-          && preg_match('/^' . $this->attrs_field_prefix . '\:/', $field))) {
+    foreach($this->submission['fields'] as $field => $content) {
+      if ( !array_key_exists($field, $this->table_columns) && !(isset($this->attrs_field_prefix) && preg_match('/^'.$this->attrs_field_prefix.'\:/', $field)) )
         unset($this->submission['fields'][$field]);
-      }
     }
   }
 
   /**
    * Actually validate and submit the inner submission.
    *
-   * @return int
-   *   Id of the submitted record, or null if this failed.
-   *
-   * @throws Exception
-   *   On access denied to the website of an existing record.
+   * @return int Id of the submitted record, or null if this failed.
+   * @throws Exception On access denied to the website of an existing record.
    */
   protected function validateAndSubmit() {
-    $return = NULL;
+    $return = null;
     $collapseVals = create_function('$arr',
         'if (is_array($arr)) {
            return $arr["value"];
          } else {
            return $arr;
          }');
-    // Flatten the array to one that can be validated.
+    // Flatten the array to one that can be validated
     $vArray = array_map($collapseVals, $this->submission['fields']);
     if (!empty($vArray['website_id']) && !empty(self::$authorisedWebsiteId) && $vArray['website_id']!==self::$authorisedWebsiteId)
       throw new Exception('Access to write to this website denied.', 2001);
     // If we're editing an existing record, merge with the existing data.
-    // NB id is 0, not null, when creating a new user.
-    if (array_key_exists('id', $vArray) && $vArray['id'] != NULL && $vArray['id'] != 0) {
+    // NB id is 0, not null, when creating a new user
+    if (array_key_exists('id', $vArray) && $vArray['id'] != null && $vArray['id'] != 0) {
       $this->find($vArray['id']);
       $thisValues = $this->as_array();
       unset($thisValues['updated_by_id']);
       unset($thisValues['updated_on']);
       // don't overwrite existing website_ids otherwise things like shared verification portals end up
       // grabbing records to their own website ID.
-      if (!empty($thisValues['website_id']) && !empty($vArray['website_id'])) {
+      if (!empty($thisValues['website_id']) && !empty($vArray['website_id']))
         unset($vArray['website_id']);
-      }
       // If there are no changed fields between the current and new record, skip the metadata update.
       // We have the problem that array objects appear as strings in $thisValues "{x,y}" but as PHP arrays in $vArray
       // The function array_intersect_assoc can't handle this
@@ -930,52 +864,49 @@ class ORM extends ORM_Core {
       }
       // Allow for different ways of submitting bool. Don't want to trigger metadata updates if submitting 'on' instead of true
       // for example.
-      foreach ($vArray as $key => $value) {
+      foreach ($vArray as $key=>$value) {
         if (isset($this->$key)
-            && (($this->$key === 't' && ($value === 'on' || $value === 1))
-            ||  ($this->$key === 'f' && ($value === 'off' || $value === 0)))) {
+            && (($this->$key==='t' && ($value==='on' || $value===1))
+            ||  ($this->$key==='f' && ($value==='off' || $value===0))))
           $exactMatches[$key] = $this->$key;
-        }
       }
       $fieldsWithValuesInSubmission = array_intersect_key($thisValues, $vArray);
-      $this->wantToUpdateMetadata = count($exactMatches) !== count($fieldsWithValuesInSubmission);
+      $this->wantToUpdateMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
       $vArray = array_merge($thisValues, $vArray);
       $this->existing=true;
     }
-    Kohana::log("debug", "About to validate the following array in model " . $this->object_name);
+    Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
     Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
     try {
-      if (array_key_exists('deleted', $vArray) && $vArray['deleted'] === 't') {
+      if (array_key_exists('deleted', $vArray) && $vArray['deleted']=='t') {
         // For a record deletion, we don't want to validate and save anything. Just mark delete it.
-        $this->deleted = 't';
+        $this->deleted='t';
         $this->set_metadata();
-        $v = $this->save();
+        $v=$this->save();
+      } else {
+        // Create a new record by calling the validate method
+        $v=$this->validate(new Validation($vArray), true);
       }
-      else {
-        // Create a new record by calling the validate method.
-        $v = $this->validate(new Validation($vArray), TRUE);
-      }
-    }
-    catch (Exception $e) {
-      $v = FALSE;
-      $this->errors['general'] = $e->getMessage();
+    } catch (Exception $e) {
+      $v=false;
+      $this->errors['general']=$e->getMessage();
       error_logger::log_error('Exception during validation', $e);
     }
     if ($v) {
       // Record has successfully validated so return the id.
-      Kohana::log("debug", "Record $this->id has validated successfully");
+      Kohana::log("debug", "Record ".$this->id." has validated successfully");
       $return = $this->id;
-    }
-    else {
+    } else {
       // Errors.
       Kohana::log("debug", "Record did not validate");
-      // Log more detailed information on why.
+      // Log more detailed information on why
       foreach ($this->errors as $f => $e) {
-        Kohana::log("debug", "Field " . $f . ": " . $e);
+        Kohana::log("debug", "Field ".$f.": ".$e);
       }
     }
     return $return;
   }
+
 
   /**
    * When a field is present in the model that is an fkField, this means it contains a lookup
@@ -984,25 +915,23 @@ class ORM extends ORM_Core {
    * record.
    * Respects the setting $cacheFkLookups to use the cache if possible.
    *
-   * @return bool
-   *   True if all lookups populated successfully.
+   * @return boolean True if all lookups populated successfully.
    */
   private function populateFkLookups() {
-    $r = TRUE;
+    $r=true;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
         if (!empty($b['fkSearchValue'])) {
           // if doing a parent lookup in a list based entity (terms or taxa), then filter to lookup within the list.
-          if (isset($this->list_id_field) && $b['fkIdField'] === 'parent_id' && !isset($b['fkSearchFilterField'])) {
-            $b['fkSearchFilterField'] = $this->list_id_field;
-            $b['fkSearchFilterValue'] = $this->submission['fields'][$this->list_id_field]['value'];
+          if (isset($this->list_id_field) && $b['fkIdField']==='parent_id' && !isset($b['fkSearchFilterField'])) {
+            $b['fkSearchFilterField']=$this->list_id_field;
+            $b['fkSearchFilterValue']=$this->submission['fields'][$this->list_id_field]['value'];
           }
           $fk = $this->fkLookup($b);
           if ($fk) {
             $this->submission['fields'][$b['fkIdField']] = array('value' => $fk);
-          }
-          else {
-            // Look for a translation of the field name.
+          } else {
+            // look for a translation of the field name
             $lookingIn = kohana::lang("default.dd:{$this->object_name}:$a");
             if ($lookingIn === "default.dd:$this->object_name:$a") {
               $fields = $this->getSubmittableFields(FALSE);
@@ -1011,7 +940,7 @@ class ORM extends ORM_Core {
                 $fields[$this->object_name . ':' . $a];
             }
             $this->errors[$a] = "Could not find \"$b[fkSearchValue]\" in $lookingIn";
-            $r = FALSE;
+            $r=false;
           }
         }
       }
@@ -1026,23 +955,20 @@ class ORM extends ORM_Core {
    *  fkSearchValue => value to find in search field
    *  fkSearchFilterField => field by which to filter search
    *  fkSearchFilterValue => filter value
+   *  fkExcludeDeletedRecords => whether to include a where clause to exclude deleted records.
+   *  fkWebsite => optional website_id filter.
    *
    * @return Foreign key value or false if not found
    */
   protected function fkLookup($fkArr) {
-    $r = FALSE;
+    $r = false;
     $key = '';
     if (isset($fkArr['fkSearchFilterValue'])) {
-      if (is_array($fkArr['fkSearchFilterValue'])) {
-        $filterValue = $fkArr['fkSearchFilterValue']['value'];
-      }
-      else {
-        $filterValue = $fkArr['fkSearchFilterValue'];
-      }
-    }
-    else {
-      $filterValue = '';
-    }
+    	if(is_array($fkArr['fkSearchFilterValue']))
+	    	$filterValue = $fkArr['fkSearchFilterValue']['value'];
+    	else
+	    	$filterValue = $fkArr['fkSearchFilterValue'];
+    } else $filterValue = '';
 
     if (ORM::$cacheFkLookups) {
       $keyArr=array('lookup', $fkArr['fkTable'], $fkArr['fkSearchField'], $fkArr['fkSearchValue']);
@@ -1055,25 +981,31 @@ class ORM extends ORM_Core {
 
     if (!$r) {
       $where = array($fkArr['fkSearchField'] => $fkArr['fkSearchValue']);
-      // Does the lookup need to be filtered, e.g. to a taxon or term list?.
+      // does the lookup need to be filtered, e.g. to a taxon or term list?
       if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) {
         $where[$fkArr['fkSearchFilterField']] = $filterValue;
       }
+      if (isset($fkArr['fkExcludeDeletedRecords']) && $fkArr['fkExcludeDeletedRecords']) {
+          $where['deleted'] = 'f';
+      }
+      if (isset($fkArr['fkWebsite'])) {
+          $where['website_id'] = $fkArr['fkWebsite'];
+      }
+      // for locations we have to filter by the website
       $matches = $this->db
         ->select('id')
         ->from(inflector::plural($fkArr['fkTable']))
         ->where($where)
         ->limit(1)
         ->get();
-      if (count($matches) === 0 && $fkArr['fkSearchField'] !== 'id') {
-        // Try a slower case insensitive search before giving up, but don't bother if id specified as ints don't like ilike
+      if (count($matches)===0 && $fkArr['fkSearchField']!='id') {
+        // try a slower case insensitive search before giving up, but don't bother if id specified as ints don't like ilike
         $this->db
           ->select('id')
           ->from(inflector::plural($fkArr['fkTable']))
-          ->where("(" . $fkArr['fkSearchField'] . " ilike '" . strtolower(str_replace("'", "''", $fkArr['fkSearchValue'])) . "')");
-        if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) {
-          $this->db->where(array($fkArr['fkSearchFilterField'] => $filterValue));
-        }
+          ->where("(".$fkArr['fkSearchField']." ilike '".strtolower(str_replace("'","''",$fkArr['fkSearchValue']))."')");
+        if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField'])
+          $this->db->where(array($fkArr['fkSearchFilterField']=>$filterValue));
         $matches = $this->db
           ->limit(1)
           ->get();
@@ -1089,6 +1021,8 @@ class ORM extends ORM_Core {
     return $r;
   }
 
+
+
   /**
    * Generate any records that this model contains an FK reference to in the
    * Supermodels part of the submission.
@@ -1097,39 +1031,37 @@ class ORM extends ORM_Core {
     // Iterate through supermodels, calling their submit methods with subarrays
     if (array_key_exists('superModels', $this->submission)) {
       foreach ($this->submission['superModels'] as &$a) {
-        // Establish the right model - either an existing one or create a new one.
-        $id = array_key_exists('id', $a['model']['fields']) ? $a['model']['fields']['id']['value'] : NULL;
+        // Establish the right model - either an existing one or create a new one
+        $id = array_key_exists('id', $a['model']['fields']) ? $a['model']['fields']['id']['value'] : null;
         if ($id) {
           $m = ORM::factory($a['model']['id'], $id);
-        }
-        else {
+        } else {
           $m = ORM::factory($a['model']['id']);
         }
-        // Don't accidentally delete a parent when deleting a child.
+        // Don't accidentally delete a parent when deleting a child
         unset($a['model']['fields']['deleted']);
-        // Call the submit method for that model and check whether it returns correctly
+        // Call the submit method for that model and
+        // check whether it returns correctly
         $m->submission = $a['model'];
-        // Copy up the website id and survey id.
+        // copy up the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
         $this->nestedParentModelIds[] = $m->get_submission_response_metadata();
-        // Copy the submission back so we pick up updated foreign keys that have been looked up. E.g. if submitting a
-        // taxa taxon list, and the taxon supermodel has an fk lookup, we need to keep it so that it gets copied
-        // into common names and synonyms.
+        // copy the submission back so we pick up updated foreign keys that have been looked up. E.g. if submitting a taxa taxon list, and the
+        // taxon supermodel has an fk lookup, we need to keep it so that it gets copied into common names and synonyms
         $a['model'] = $m->submission;
         if ($result) {
           $this->submission['fields'][$a['fkId']]['value'] = $result;
-        }
-        else {
-          $fieldPrefix = (array_key_exists('field_prefix', $a['model'])) ? $a['model']['field_prefix'] . ':' : '';
-          foreach ($m->errors as $key => $value) {
-            $this->errors[$fieldPrefix . $key] = $value;
+        } else {
+          $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
+          foreach($m->errors as $key=>$value) {
+            $this->errors[$fieldPrefix.$key]=$value;
           }
-          return FALSE;
+          return false;
         }
       }
     }
-    return TRUE;
+    return true;
   }
 
   /**
@@ -1137,51 +1069,50 @@ class ORM extends ORM_Core {
    * submission.
    */
   private function createChildRecords() {
-    $r = TRUE;
+    $r=true;
     if (array_key_exists('subModels', $this->submission)) {
-      // Iterate through the subModel array, linking them to this model.
+      // Iterate through the subModel array, linking them to this model
       foreach ($this->submission['subModels'] as $key => $a) {
-        Kohana::log("debug", "Submitting submodel " . $a['model']['id'] . ".");
+        Kohana::log("debug", "Submitting submodel ".$a['model']['id'].".");
         // Establish the right model
         $modelName = $a['model']['id'];
-        // Alias old images tables to new media tables.
+        // alias old images tables to new media tables
         $modelName=preg_replace('/^([a-z_]+)_image$/', '${1}_medium', $modelName);
         $m = ORM::factory($modelName);
-        // Set the correct parent key in the subModel.
+        // Set the correct parent key in the subModel
         $fkId = $a['fkId'];
         $a['model']['fields'][$fkId]['value'] = $this->id;
-        // Copy any request fields.
-        if (isset($a['copyFields'])){
-          foreach ($a['copyFields'] as $from => $to) {
-            Kohana::log("debug",
-              "Setting " . $to . " field (from parent record " . $from . " field) to value " . $this->$from);
+        // copy any request fields
+        if(isset($a['copyFields'])){
+          foreach($a['copyFields'] as $from => $to){
+            Kohana::log("debug", "Setting ".$to." field (from parent record ".$from." field) to value ".$this->$from);
             $a['model']['fields'][$to]['value'] = $this->$from;
           }
         }
-        // Call the submit method for that model and check whether it returns correctly.
+        // Call the submit method for that model and
+        // check whether it returns correctly
         $m->submission = $a['model'];
-        // Copy down the website id and survey id.
+        // copy down the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
         $this->nestedChildModelIds[] = $m->get_submission_response_metadata();
         if ($m->wantToUpdateMetadata && !$this->wantToUpdateMetadata && preg_match('/_(image|medium)$/', $m->object_name)) {
-          // We didn't update the parent's metadata. But a child image has been changed, so we want to update the parent record metadata.
+          // we didn't update the parent's metadata. But a child image has been changed, so we want to update the parent record metadata.
           // i.e. adding an image to a record causes the record to be edited and therefore to get its status reset.
-          $this->wantToUpdateMetadata = TRUE;
+          $this->wantToUpdateMetadata = true;
           $this->set_metadata();
-          $this->validate(new Validation($this->as_array()), TRUE);
+          $this->validate(new Validation($this->as_array()), true);
         }
 
         if (!$result) {
-          $fieldPrefix = (array_key_exists('field_prefix', $a['model'])) ? $a['model']['field_prefix'] . ':' : '';
-          // Remember this model so that its errors can be reported.
-          foreach($m->errors as $key => $value) {
-            $this->errors[$fieldPrefix . $key] = $value;
+          $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
+          // Remember this model so that its errors can be reported
+          foreach($m->errors as $key=>$value) {
+            $this->errors[$fieldPrefix.$key]=$value;
           }
           $r=false;
-        }
-        elseif (!preg_match('/^\d+$/', $key)) {
-          // Sub-model list is an associative array. This means there might be references
+        } elseif (!preg_match('/^\d+$/', $key)) {
+          // sub-model list is an associative array. This means there might be references
           // to these keys elsewhere in the submission. Basically dynamic references to
           // rows which don't yet exist.
           $this->dynamicRowIdReferences["$modelName:$key"] = $m->id;
@@ -1200,29 +1131,29 @@ class ORM extends ORM_Core {
         // $ids is now a list of the related ids that should be linked to this model via
         // a join table.
         $table = inflector::plural($model);
-        // Get the list of ids that are missing from the current state.
+        // Get the list of ids that are missing from the current state
         $to_add = array_diff($ids, $this->$table->as_array());
-        // Get the list of ids that are currently joined but need to be disconnected.
+        // Get the list of ids that are currently joined but need to be disconnected
         $to_delete = array_diff($this->$table->as_array(), $ids);
         $joinModel = inflector::singular($this->join_table($table));
         // Remove any joins that are to records that should no longer be joined.
         foreach ($to_delete as $id) {
           // @todo: This could be optimised by not using ORM to do the deletion.
           $delModel = ORM::factory($joinModel,
-            array($this->object_name . '_id' => $this->id, $model . '_id' => $id));
+            array($this->object_name.'_id' => $this->id, $model.'_id' => $id));
           $delModel->delete();
         }
         // And add any new joins
         foreach ($to_add as $id) {
           $addModel = ORM::factory($joinModel);
           $addModel->validate(new Validation(array(
-              $this->object_name . '_id' => $this->id, $model . '_id' => $id
-          )), TRUE);
+              $this->object_name.'_id' => $this->id, $model.'_id' => $id
+          )), true);
         }
       }
       $this->save();
     }
-    return TRUE;
+    return true;
   }
 
   /**
@@ -1230,74 +1161,71 @@ class ORM extends ORM_Core {
    * ensures that each of them has a submodel in the submission.
    */
   private function checkRequiredAttributes() {
-    $r = TRUE;
-    $typeFilter = NULL;
+    $r = true;
+    $typeFilter = null;
     // Test if this model has an attributes sub-table. Also to have required attributes, we must be posting into a
     // specified survey or website at least.
     if ($this->has_attributes) {
-      $got_values = array();
+      $got_values=array();
       $empties = array();
-      if (isset($this->submission['metaFields'][$this->attrs_submission_name])) {
+      if (isset($this->submission['metaFields'][$this->attrs_submission_name]))
+      {
         // Old way of submitting attribute values but still supported - attributes are stored in a metafield. Find the ones we actually have a value for
-        // Provided for backwards compatibility only.
+        // Provided for backwards compatibility only
         foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $attr) {
           if ($attr['fields']['value']) {
-            array_push($got_values, $attr['fields'][$this->object_name . '_attribute_id']);
+            array_push($got_values, $attr['fields'][$this->object_name.'_attribute_id']);
           }
         }
-        // Check for location type or sample method which can be used to filter the attributes available.
-        foreach ($this->submission['fields'] as $field => $content)
+        // check for location type or sample method which can be used to filter the attributes available
+        foreach($this->submission['fields'] as $field => $content)
           // if we have a location type or sample method, we will use it as a filter on the attribute list
-          if ($field === 'location_type_id' || $field === 'sample_method_id') {
+          if ($field=='location_type_id' || $field=='sample_method_id')
             $typeFilter = $content['value'];
-          }
-      }
-      else {
+      } else {
         // New way of submitting attributes embeds attr values direct in the main table submission values.
-        foreach ($this->submission['fields'] as $field => $content) {
-          // Look for pattern smpAttr:(fk_)nn (or occAttr, taxAttr, trmAttr, locAttr, srvAttr or psnAttr).
-          $isAttribute = preg_match('/^' . $this->attrs_field_prefix . '\:(fk_)?[0-9]+/', $field, $baseAttrName);
+        foreach($this->submission['fields'] as $field => $content) {
+          // look for pattern smpAttr:(fk_)nn (or occAttr, taxAttr, trmAttr, locAttr, srvAttr or psnAttr)
+          $isAttribute = preg_match('/^'.$this->attrs_field_prefix.'\:(fk_)?[0-9]+/', $field, $baseAttrName);
           if ($isAttribute) {
-            // Extract the nn, this is the attribute id.
+            // extract the nn, this is the attribute id
             preg_match('/[0-9]+/', $baseAttrName[0], $attrId);
-            if (isset($content['value']) && $content['value'] !== '') {
+            if (isset($content['value']) && $content['value'] !== '')
               array_push($got_values, $attrId[0]);
-            }
             else {
-              // Keep track of the empty field names, so we can attach any required validation errors
-              // directly to the exact field name.
+              // keep track of the empty field names, so we can attach any required validation errors
+              // directly to the exact field name
               $empties[$baseAttrName[0]] = $field;
             }
           }
-          // If we have a location type or sample method, we will use it as a filter on the attribute list
-          if ($field === 'location_type_id' || $field === 'sample_method_id') {
+          // if we have a location type or sample method, we will use it as a filter on the attribute list
+          if ($field=='location_type_id' || $field=='sample_method_id')
             $typeFilter = $content['value'];
-          }
         }
       }
-      $fieldPrefix = (array_key_exists('field_prefix', $this->submission)) ? $this->submission['field_prefix'] . ':' : '';
-      // As the required fields list is relatively static, we use the cache. This cache entry gets cleared when
+      $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
+      // as the required fields list is relatively static, we use the cache. This cache entry gets cleared when
       // a custom attribute is saved so it should always be up to date.
       $key = $this->getRequiredFieldsCacheKey($typeFilter);
       $result = $this->cache->get($key);
-      if ($result === NULL) {
-        // Setup basic query to get custom attrs.
-        $result = $this->getAttributes(TRUE, $typeFilter);
+      if ($result===null) {
+        // setup basic query to get custom attrs.
+        $result=$this->getAttributes(true, $typeFilter);
         $this->cache->set($key, $result, array('required-fields'));
       }
 
-      foreach ($result as $row) {
+      foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
           // There is a required attr which we don't have a value for the submission for. But if posting an existing occurrence, the
           // value may already exist in the db, so only validate any submitted blank attributes which will be in the empties array and
           // skip any attributes that were not in the submission.
-          $fieldname = $fieldPrefix . $this->attrs_field_prefix . ':' . $row->id;
+          $fieldname = $fieldPrefix.$this->attrs_field_prefix.':'.$row->id;
           if (empty($this->submission['fields']['id']['value']) || isset($empties[$fieldname])) {
-            // Map to the exact name of the field if it is available.
+            // map to the exact name of the field if it is available
             if (isset($empties[$fieldname])) $fieldname = $empties[$fieldname];
-            $this->errors[$fieldname] = 'Please specify a value for the '.$row->caption . '.';
-            kohana::log('debug', 'No value for ' . $row->caption . ' in ' . print_r($got_values, TRUE));
-            $r = FALSE;
+            $this->errors[$fieldname]='Please specify a value for the '.$row->caption .'.';
+            kohana::log('debug', 'No value for '.$row->caption . ' in '.print_r($got_values, true));
+            $r=false;
           }
         }
       }
@@ -1309,11 +1237,8 @@ class ORM extends ORM_Core {
    * Default implementation of a method which retrieves the cache key required to store the list
    * of required fields. Override when there are other values which define the required fields
    * in the cache, e.g. for people each combination of website IDs defines a cache entry.
-   *
    * @param type $typeFilter
-   *
-   * @return string
-   *   The cache key.
+   * @return string The cache key.
    */
   protected function getRequiredFieldsCacheKey($typeFilter) {
     $keyArr = array_merge(array('required', $this->object_name), $this->identifiers);
@@ -1335,45 +1260,42 @@ class ORM extends ORM_Core {
   protected function getAttributes($required = false, $typeFilter = null, $hasSurveyRestriction = true) {
     if (empty($this->identifiers['website_id']))
       return array();
-    $attr_entity = $this->object_name . '_attribute';
-    $this->db->select($attr_entity . 's.id', $attr_entity . 's.caption', $attr_entity . 's.data_type');
-    $this->db->from($attr_entity . 's');
-    $this->db->where($attr_entity . 's.deleted', 'f');
+    $attr_entity = $this->object_name.'_attribute';
+    $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption', $attr_entity.'s.data_type');
+    $this->db->from($attr_entity.'s');
+    $this->db->where($attr_entity.'s.deleted', 'f');
     if (($this->identifiers['website_id'] || $this->identifiers['survey_id']) && $this->db->table_exists($attr_entity.'s_websites')) {
-      $this->db->join($attr_entity . 's_websites', $attr_entity . 's_websites.' . $attr_entity . '_id', $attr_entity.'s.id');
-      $this->db->where($attr_entity . 's_websites.deleted', 'f');
+      $this->db->join($attr_entity.'s_websites', $attr_entity.'s_websites.'.$attr_entity.'_id', $attr_entity.'s.id');
+      $this->db->where($attr_entity.'s_websites.deleted', 'f');
       if ($this->identifiers['website_id'])
-        $this->db->where($attr_entity . 's_websites.website_id', $this->identifiers['website_id']);
+        $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
       if ($this->identifiers['survey_id'] && $hasSurveyRestriction)
-        $this->db->in($attr_entity . 's_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
+        $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
       // note we concatenate the validation rules to check both global and website specific rules for requiredness.
       if ($required) {
-        $this->db->where('(' . $attr_entity . "s_websites.validation_rules like '%required%' or " .
-          $attr_entity . "s.validation_rules like '%required%')");
+        $this->db->where('('.$attr_entity."s_websites.validation_rules like '%required%' or ".$attr_entity."s.validation_rules like '%required%')");
       }
-      // Ensure that only attrs for the record's sample method or location type, or unrestricted attrs,
-      // are returned.
-      if ($this->object_name === 'location' || $this->object_name === 'sample') {
-        if ($this->object_name === 'location')
+      // ensure that only attrs for the record's sample method or location type, or unrestricted attrs,
+      // are returned
+      if ($this->object_name=='location' || $this->object_name=='sample') {
+        if ($this->object_name=='location')
           $this->db->join('termlists_terms as tlt', 'tlt.id',
               'location_attributes_websites.restrict_to_location_type_id', 'left');
-        elseif ($this->object_name === 'sample') {
+        elseif ($this->object_name=='sample') {
           $this->db->join('termlists_terms as tlt', 'tlt.id',
               'sample_attributes_websites.restrict_to_sample_method_id', 'left');
         }
         $this->db->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt.meaning_id', 'left');
-        $ttlIds = [NULL];
-        if ($typeFilter) {
+        $ttlIds = array(null);
+        if ($typeFilter)
           $ttlIds[] = $typeFilter;
-        }
         $this->db->in('tlt2.id', $ttlIds);
       }
+    } elseif ($required) {
+      $this->db->like($attr_entity.'s.validation_rules', '%required%');
     }
-    elseif ($required) {
-      $this->db->like($attr_entity . 's.validation_rules', '%required%');
-    }
-    $this->db->orderby($attr_entity . 's.caption', 'ASC');
-    return $this->db->get()->result_array(TRUE);
+    $this->db->orderby($attr_entity.'s.caption', 'ASC');
+    return $this->db->get()->result_array(true);
   }
 
   /**
@@ -1386,26 +1308,18 @@ class ORM extends ORM_Core {
    * supermodels list. For example, when adding an occurrence via import, you supply
    * the fields for the sample to create rather than a lookup value for the existing
    * samples.
-   *
-   * @param bool $fk
-   * @param int $website_id
-   *   If set then custom attributes are limited to those for this website.
-   * @param int $survey_id
-   *   If set then custom attributes are limited to those for this survey.
-   * @param int $attrTypeFilter
-   *   Specify a location type meaning id or a sample method meaning id to filter the returned attributes to those
-   *   which apply to the given type or method.
-   *
-   * @return array
-   *   The list of submittable field definitions.
+   * @param boolean $fk
+   * @param integer $website_id If set then custom attributes are limited to those for this website.
+   * @param integer $survey_id If set then custom attributes are limited to those for this survey.
+   * @param int @attrTypeFilter Specify a location type meaning id or a sample method meaning id to
+   * filter the returned attributes to those which apply to the given type or method.
+   * @return array The list of submittable field definitions.
    */
-  public function getSubmittableFields($fk = FALSE, $website_id = NULL, $survey_id = NULL, $attrTypeFilter = NULL, $use_associations = FALSE) {
-    if ($website_id !== NULL) {
-      $this->identifiers['website_id'] = $website_id;
-    }
-    if ($survey_id !== NULL) {
-      $this->identifiers['survey_id'] = $survey_id;
-    }
+  public function getSubmittableFields($fk = false, $website_id=null, $survey_id=null, $attrTypeFilter=null, $use_associations = false) {
+    if ($website_id!==null)
+      $this->identifiers['website_id']=$website_id;
+    if ($survey_id!==null)
+      $this->identifiers['survey_id']=$survey_id;
     $fields = $this->getPrefixedColumnsArray($fk);
     $fields = array_merge($fields, $this->additional_csv_fields);
     ksort($fields);
@@ -1413,7 +1327,7 @@ class ORM extends ORM_Core {
       $result = $this->getAttributes(FALSE, $attrTypeFilter);
       foreach ($result as $row) {
         if ($row->data_type == 'L' && $fk) {
-          // Lookup lists store a foreign key.
+          // Lookup lists store a foreign key
           $fieldname = $this->attrs_field_prefix . ':fk_' . $row->id;
         }
         else {
@@ -1427,19 +1341,19 @@ class ORM extends ORM_Core {
     if (array_key_exists('superModels', $struct)) {
       // currently can only have associations if a single superModel exists.
       if($use_associations && count($struct['superModels'])===1){
-        // Fuplicate all the existing fields, but rename adding a 2 to model end.
-        $newFields = array();
-        foreach ($fields as $name => $caption) {
-          $parts = explode(':', $name);
-          if ($parts[0] == $struct['model'] || $parts[0] == $struct['model'] . '_image' || $parts[0] == $this->attrs_field_prefix) {
-            $parts[0] .= '_2';
-            $newFields[implode(':', $parts)] = ($caption != '' ? $caption . ' (2)' : '');
-          }
-        }
-        $fields = array_merge($fields, ORM::factory($struct['model'] . '_association')->getSubmittableFields($fk, $website_id, $survey_id, null, false));
-        $fields = array_merge($fields, $newFields);
+      	// duplicate all the existing fields, but rename adding a 2 to model end.
+      	$newFields = array();
+      	foreach($fields as $name=>$caption){
+      		$parts=explode(':',$name);
+      		if($parts[0]==$struct['model'] || $parts[0]==$struct['model'].'_image' || $parts[0]==$this->attrs_field_prefix) {
+      			$parts[0] .= '_2';
+      			$newFields[implode(':',$parts)] = ($caption != '' ? $caption.' (2)' : '');
+      		}
+      	}
+      	$fields = array_merge($fields, ORM::factory($struct['model'].'_association')->getSubmittableFields($fk, $website_id, $survey_id, null, false));
+      	$fields = array_merge($fields,$newFields);
       }
-      foreach ($struct['superModels'] as $super => $content) {
+      foreach ($struct['superModels'] as $super=>$content) {
         $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $website_id, $survey_id, $attrTypeFilter, false));
       }
     }
@@ -1453,65 +1367,58 @@ class ORM extends ORM_Core {
 
   /**
    * Retrieves a list of the required fields for this model and its related models.
-   *
    * @param <type> $fk
    * @param int $website_id
-   *   ID of the website, used to obtain custom attributes to include in the list.
    * @param int $survey_id
-   *   ID of the survey dataset, used to obtain custom attributes to include in the list.
    *
-   * @return array
-   *   List of the fields which are required.
+   * @return array List of the fields which are required.
    */
-  public function getRequiredFields($fk = FALSE, $website_id = NULL, $survey_id = NULL, $use_associations = FALSE) {
-    if ($website_id !== NULL) {
-      $this->identifiers['website_id'] = $website_id;
-    }
-    if ($website_id !== NULL) {
-      $this->identifiers['survey_id'] = $survey_id;
-    }
+  public function getRequiredFields($fk = false, $website_id=null, $survey_id=null, $use_associations = false) {
+    if ($website_id!==null)
+      $this->identifiers['website_id']=$website_id;
+    if ($website_id!==null)
+      $this->identifiers['survey_id']=$survey_id;
     $sub = $this->get_submission_structure();
-    $arr = new Validation(array('id' => 1));
-    $this->validate($arr, FALSE);
+    $arr = new Validation(array('id'=>1));
+    $this->validate($arr, false);
     $fields = array();
-    foreach ($arr->errors() as $column => $error) {
-      if ($error == 'required') {
+    foreach ($arr->errors() as $column=>$error) {
+      if ($error=='required') {
         if ($fk && substr($column, -3) == "_id") {
-          // Don't include the fk link field if the submission is supposed to contain full data
-          // for the supermodel record rather than just a link.
-          if (!isset($sub['superModels'][substr($column, 0, -3)])) {
-            $fields[] = $this->object_name . ":fk_" . substr($column, 0, -3);
-          }
-        }
-        else {
-          $fields[] = $this->object_name . ":$column";
+          // don't include the fk link field if the submission is supposed to contain full data
+          // for the supermodel record rather than just a link
+          if (!isset($sub['superModels'][substr($column, 0, -3)]))
+            $fields[] = $this->object_name.":fk_".substr($column, 0, -3);
+        } else {
+          $fields[] = $this->object_name.":$column";
         }
       }
     }
     if ($this->has_attributes) {
-      $result = $this->getAttributes(TRUE);
-      foreach ($result as $row) {
-        $fields[] = $this->attrs_field_prefix . ':' . $row->id;
+      $result = $this->getAttributes(true);
+      foreach($result as $row) {
+        $fields[] = $this->attrs_field_prefix.':'.$row->id;
       }
     }
 
     if (array_key_exists('superModels', $sub)) {
-      // Currently can only have associations if a single superModel exists.
-      if ($use_associations && count($sub['superModels']) === 1) {
-        // Duplicate all the existing fields, but rename adding a 2 to model end.
-        $newFields = array();
-        foreach ($fields as $id) {
-          $parts = explode(':', $id);
-          if ($parts[0] == $sub['model'] || $parts[0] == "$sub[model]_image" || $parts[0] == $this->attrs_field_prefix) {
-            $parts[0] .= '_2';
-            $newFields[] = implode(':', $parts);
-          }
-        }
-        $fields = array_merge($fields, $newFields);
-        $fields = array_merge($fields, ORM::factory($sub['model'] . '_association')->getRequiredFields($fk, $website_id, $survey_id, FALSE));
-      }
-      foreach ($sub['superModels'] as $super => $content) {
-        $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $website_id, $survey_id, FALSE));
+    	// currently can only have associations if a single superModel exists.
+    	if($use_associations && count($sub['superModels'])===1){
+    		// duplicate all the existing fields, but rename adding a 2 to model end.
+    		$newFields = array();
+    		foreach($fields as $id){
+    			$parts=explode(':',$id);
+    			if($parts[0]==$sub['model'] || $parts[0]==$sub['model'].'_image' || $parts[0]==$this->attrs_field_prefix) {
+    				$parts[0] .= '_2';
+    				$newFields[] = implode(':',$parts);
+    			}
+    		}
+    		$fields = array_merge($fields,$newFields);
+    		$fields = array_merge($fields, ORM::factory($sub['model'].'_association')->getRequiredFields($fk, $website_id, $survey_id, false));
+    	}
+
+      foreach ($sub['superModels'] as $super=>$content) {
+        $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($fk, $website_id, $survey_id, false));
       }
     }
     return $fields;
@@ -1520,19 +1427,17 @@ class ORM extends ORM_Core {
   /**
    * Returns the array of values, with each key prefixed by the model name then :.
    *
-   * @param string $prefix
-   *   Optional prefix, only required when overriding the model name being used as a prefix.
-   *
-   * @return array
-   *   Prefixed key value pairs.
+   * @param string $prefix Optional prefix, only required when overriding the model name
+   * being used as a prefix.
+   * @return array Prefixed key value pairs.
    */
-  public function getPrefixedValuesArray($prefix = NULL) {
+  public function getPrefixedValuesArray($prefix=null) {
     $r = array();
     if (!$prefix) {
-      $prefix = $this->object_name;
+      $prefix=$this->object_name;
     }
-    foreach ($this->as_array() as $key => $val) {
-      $r["$prefix:$key"] = $val;
+    foreach ($this->as_array() as $key=>$val) {
+      $r["$prefix:$key"]=$val;
     }
     return $r;
   }
@@ -1540,25 +1445,22 @@ class ORM extends ORM_Core {
   /**
    * Returns the array of columns, with each column prefixed by the model name then :.
    *
-   * @return array
-   *   Prefixed columns.
+   * @return array Prefixed columns.
    */
-  protected function getPrefixedColumnsArray($fk = FALSE, $skipHiddenFields = TRUE) {
+  protected function getPrefixedColumnsArray($fk=false, $skipHiddenFields=true) {
     $r = array();
-    $prefix = $this->object_name;
+    $prefix=$this->object_name;
     $sub = $this->get_submission_structure();
-    foreach ($this->table_columns as $column => $type) {
+    foreach ($this->table_columns as $column=>$type) {
       if ($skipHiddenFields && isset($this->hidden_fields) && in_array($column, $this->hidden_fields))
         continue;
       if ($fk && substr($column, -3) == "_id") {
         // don't include the fk link field if the submission is supposed to contain full data
         // for the supermodel record rather than just a link
-        if (!isset($sub['superModels'][substr($column, 0, -3)])) {
-          $r["$prefix:fk_" . substr($column, 0, -3)] = '';
-        }
-      }
-      else {
-        $r["$prefix:$column"] = '';
+        if (!isset($sub['superModels'][substr($column, 0, -3)]))
+          $r["$prefix:fk_".substr($column, 0, -3)]='';
+      } else {
+        $r["$prefix:$column"]='';
       }
     }
     return $r;
@@ -1574,17 +1476,16 @@ class ORM extends ORM_Core {
       // Deprecated submission format attributes are stored in a metafield.
       if (isset($this->submission['metaFields'][$this->attrs_submission_name])) {
         return self::createAttributesFromMetafields();
-      }
-      else {
-        // Loop to find the custom attributes embedded in the table fields.
-        $multiValueData = array();
+      } else {
+        // loop to find the custom attributes embedded in the table fields
+        $multiValueData=array();
         foreach ($this->submission['fields'] as $field => $content) {
-          if (preg_match('/^' . $this->attrs_field_prefix . ':(fk_)?[\d]+(:([\d]+)?(:[^:]*)?)?$/', $field)) {
+          if (preg_match('/^'.$this->attrs_field_prefix.':(fk_)?[\d]+(:([\d]+)?(:[^:]*)?)?$/', $field)) {
             $value = $content['value'];
-            // Attribute name is of form tblAttr:attrId:valId:uniqueIdx.
+            // Attribute name is of form tblAttr:attrId:valId:uniqueIdx
             $arr = explode(':', $field);
             $attrId = $arr[1];
-            $valueId = count($arr) > 2 ? $arr[2] : NULL;
+            $valueId = count($arr)>2 ? $arr[2] : null;
             $attrDef = self::loadAttrDef($this->object_name, $attrId);
             // If this attribute is a multivalue array, then any existing attributes which are not in the submission for the same attr ID should be removed.
             // We need to keep an array of the multi-value attribute IDs, with a sub-array for the existing values that were included in the submission,
@@ -1621,7 +1522,7 @@ class ORM extends ORM_Core {
               default:
                 $vf = 'text_value';
             }
-            $this->db->from($this->object_name.'_attribute_values')->set(array('deleted'=>'t', 'updated_on'=>date("Ymd H:i:s")))
+          	$this->db->from($this->object_name.'_attribute_values')->set(array('deleted'=>'t', 'updated_on'=>date("Ymd H:i:s")))
                 ->where(array($this->object_name.'_attribute_id'=>$spec['attrId'], $this->object_name.'_id'=>$this->id, 'deleted'=>'f'))
                 ->notin($vf, $spec['values'])
                 ->update();
@@ -1700,7 +1601,7 @@ class ORM extends ORM_Core {
     $dataType = $attrDef->data_type;
     $vf = null;
 
-    $fieldPrefix = (array_key_exists('field_prefix', $this->submission)) ? $this->submission['field_prefix'].':' : '';
+    $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
     // For attribute value errors, we need to report e.g smpAttr:attrId[:attrValId] as the error key name, not
     // the table and field name as normal.
     $fieldId = $fieldPrefix.$this->attrs_field_prefix.':'.$attrId;
@@ -1842,18 +1743,11 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Load the definition of an attribute from the database (cached).
-   *
-   * @param string $attrTable
-   *   Attribute type name, e.g. sample or occurrence.
-   * @param integer $attrId
-   *   The ID of the attribute.
-   *
-   * @return Object
-   *   The definition of the attribute.
-   *
-   * @throws Exception
-   *   When attribute ID not found.
+   * Load the definition of an attribute from the database (cached)
+   * @param string $attrTable Attribute type name, e.g. sample or occurrence
+   * @param integer $attrId The ID of the attribute
+   * @return Object The definition of the attribute.
+   * @throws Exception When attribute ID not found.
    */
   protected function loadAttrDef($attrType, $attrId) {
     if (substr($attrId, 0, 3) == 'fk_')
@@ -1946,11 +1840,11 @@ class ORM extends ORM_Core {
    * @return array The submission structure containing the fkFields element.
    */
   public function getFkFields($submission, $saveArray) {
-    if($this->object_name != $submission['id'])
-      $submissionModel = ORM::Factory($submission['id'], -1);
+  	if($this->object_name != $submission['id'])
+    	$submissionModel = ORM::Factory($submission['id'], -1);
     else $submissionModel = $this;
 
-    foreach ($submission['fields'] as $field=>$value) {
+  	foreach ($submission['fields'] as $field=>$value) {
       if (substr($field, 0, 3)=='fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
         // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
@@ -1966,7 +1860,6 @@ class ORM extends ORM_Core {
            $fkTable = $fieldName;
         }
         // Create model without initialising, so we can just check the lookup variables
-        kohana::log('debug', $fkTable);
         $fkModel = ORM::Factory($fkTable, -1);
         // allow the linked lookup field to override the default model search field
         if (count($fieldTokens)>1)
@@ -1981,8 +1874,13 @@ class ORM extends ORM_Core {
           'fkTable' => $lookupAgainst,
           'fkSearchField' => $fkModel->search_field,
           'fkSearchValue' => trim($value['value']),
-          'readableTableName' => ucfirst(preg_replace('/[\s_]+/', ' ', $fkTable))
+          'readableTableName' => ucfirst(preg_replace('/[\s_]+/', ' ', $fkTable)),
+          'fkExcludeDeletedRecords' => ($lookupAgainst === $fkTable),
         );
+        $struct = $submissionModel->get_submission_structure();
+        if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
+            $submission['fkFields'][$field]['fkWebsite'] = $submission['fields']['website_id']['value'];
+        }
         // if the save array defines a filter against the lookup table then also store that.
         // 2 formats: field level or table level : "fkFilter:[fieldname|tablename]:[column]=[value]
         // E.g. a search in the taxa_taxon_list table may want to filter by the taxon list. This is done
@@ -1991,25 +1889,25 @@ class ORM extends ORM_Core {
         foreach ($saveArray as $filterfield=>$filtervalue) {
           if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
               substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
-            // found a filter for this field or fkTable. So extract the field name as the 3rd part
-            $arr = explode(':', $filterfield);
-            $submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
-            // and remember the value
-            $submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
+        		// found a filter for this field or fkTable. So extract the field name as the 3rd part
+        		$arr = explode(':', $filterfield);
+        		$submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
+        		// and remember the value
+        		$submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
             }
         }
         // Alternative location is in the submission array itself:
         // this allows for multiple records with different filters, E.G. when submitting occurrences as associations,
         // may want different taxon lists, will be entered as occurrence<n>:fkFilter:<table>:<field> = <value>
         foreach ($submission['fields'] as $filterfield=>$filtervalue) {
-          if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
-                  substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
-            // found a filter for this field or fkTable. So extract the field name as the 3rd part
-            $arr = explode(':', $filterfield);
-            $submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
-            // and remember the value
-            $submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
-          }
+        	if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
+                	substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
+        		// found a filter for this field or fkTable. So extract the field name as the 3rd part
+        		$arr = explode(':', $filterfield);
+        		$submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
+        		// and remember the value
+        		$submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
+        	}
         }
 
       }
@@ -2142,4 +2040,126 @@ class ORM extends ORM_Core {
     return $value;
   }
 
+  /**
+   * Build a sql query to fetch an existing record based on the contents of the save array.
+   * Loads a value according to the types defined by the column metadata.
+   *
+   * There are several possiblities:
+   * The field list only refers to _id, not fk_
+   * 1) There is a straight match between [<model>:]fieldname in the saveArray, and [<model>:]fieldname in the fields list.
+   *    The where clause is just the fieldname => value from saveArray.
+   * 2) There is a straight match between [<model>:]fieldname_id in the saveArray, and [<model>:]fieldname_id in the fields list.
+   *    The where clause is just the fieldname_id => value from saveArray.
+   * 3) There is a match between [<model>:]fk_fieldname[:lookupfield] in the saveArray, and [<model>:]fieldname_id in the fields list.
+   *    The value in the saveArray is looked up, and the where clause is the fieldname_id => looked up value.
+   * If the model is included in one, it must be included in the other.
+   */
+  public function buildWhereFromSaveArray($saveArray, $fields, $wheres, &$join, $assocSuffix = "") {
+    $struct = $this->get_submission_structure();
+    $table = inflector::plural($this->object_name);
+    if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
+        $join = "JOIN ".inflector::plural($this->object_name) . '_websites w ON (w.website_id = ' . $saveArray['website_id'] .
+            " AND w." .$this->object_name."_id = ".$table.".id) ";
+        $fields = array_diff( $fields, array('website_id') );
+    } else $join = "";
+    foreach ($fields as $field) {
+      $fieldTokens = explode(':',$field);
+      $prefix = ($fieldTokens[0] === $this->object_name . $assocSuffix ? $this->object_name . $assocSuffix . ':' : '');
+      if ($fieldTokens[0] === $this->object_name . $assocSuffix) {
+        array_shift($fieldTokens);
+      }
+
+      if (substr($fieldTokens[0], -3) !== '_id') {
+          if (!isset($saveArray[$field])) {
+              return FALSE;
+          }
+          if ($fieldTokens[0] === 'date') {
+              $vd = vague_date::string_to_vague_date($saveArray[$field]);
+              $wheres .= " AND (".$table . ".date_start = '".$vd[0]."')";
+              $wheres .= " AND (".$table . ".date_end = '".$vd[1]."')";
+              $wheres .= " AND (".$table . ".date_type = '".$vd[2]."')";
+          }
+          else {
+              $wheres .= " AND (".$table . "." . $fieldTokens[0] . " = '".$saveArray[$field]."')";
+          }
+      } else {
+          // There is a possibility that we are looking for for a supermodel id which is represented as an ID
+          // in the supermodel itself. At this point the $correctedField ends in _id.
+          $superModelIDField = substr($fieldTokens[0], 0, -3); // cut off _id
+          $ss = $this->get_submission_structure();
+          if (isset($saveArray[$superModelIDField . ':id'])) {
+              $wheres .= " AND (".$table . "." . $fieldTokens[0] . " = ".$saveArray[$superModelIDField . ':id'].")";
+          }
+          else {
+            $found = FALSE;
+            foreach ($saveArray as $saveField => $saveValue) {
+              $saveTokens = explode(':', $saveField);
+              if (($prefix !== '' && $saveTokens[0] === $this->object_name . $assocSuffix) || ($prefix === '' && $saveTokens[0] !== $this->object_name . $assocSuffix)) {
+                  if ($saveTokens[0] === $this->object_name . $assocSuffix) {
+                      array_shift($saveTokens);
+                  }
+                  $correctedField = (substr($saveTokens[0], 0, 3) == 'fk_' ? substr($saveTokens[0], 3) . '_id' : $saveTokens[0]);
+                  if ($fieldTokens[0] === $correctedField) {
+                      $found = TRUE;
+                      if ($saveTokens[0] !== $correctedField) { // saveTokens points to fk_, whilst corrected points to _id
+                          // This field is a fk_* field which contains the text caption of a record which we need to lookup.
+                          // First work out the model to lookup against. The format is fk_{fieldname}(:{search field override})?
+                          // Create model without initialising, so we can just check the lookup variables
+                          // allow the linked lookup field to override the default model search field
+                          // let the model map the lookup against a view if necessary
+                          $fieldName = substr($saveTokens[0],3);
+                          if (array_key_exists($fieldName, $this->belongs_to)) {
+                              $fkTable = $this->belongs_to[$fieldName];
+                          } elseif (array_key_exists($fieldName, $this->has_one)) { // this ignores the ones which are just models in list: the key is used to point to another model
+                              $fkTable = $this->has_one[$fieldName];
+                          } elseif ($fieldName === 'parent'){
+                              $fkTable = $this->object_name;
+                          } else {
+                              $fkTable = $fieldName;
+                          }
+                          $fkModel = ORM::Factory($fkTable, -1);
+                          if (count($saveTokens)>1)
+                            $fkModel->search_field = $saveTokens[1];
+                          $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;
+                          $fkLookup = array(
+                              'fkTable' => $lookupAgainst,
+                              'fkSearchField' => $fkModel->search_field,
+                              'fkSearchValue' => trim($saveValue),
+                              'fkExcludeDeletedRecords' => ($lookupAgainst === $fkTable),
+//                              'fkWebsite' => $saveArray['website_id'],
+                          );
+                          $struct = $fkModel->get_submission_structure();
+                          if (isset($struct['joinsTo']) && in_array('websites', $struct['joinsTo'])) {
+                              $fkLookup['fkWebsite'] = $saveArray['website_id'];
+                          }
+                          foreach ($saveArray as $filterfield=>$filtervalue) {
+                              if (substr($filterfield, 0, strlen("fkFilter:$fieldName:")) == "fkFilter:$fieldName:" ||
+                                  substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
+                                      // found a filter for this field or fkTable. So extract the field name as the 3rd part
+                                      $arr = explode(':', $filterfield);
+                                      if ($arr[0] === $this->object_name) {
+                                          array_shift($arr);
+                                      }
+                                      $fkLookup['fkSearchFilterField'] = $arr[2];
+                                      $fkLookup['fkSearchFilterValue'] = $filtervalue;
+                                  }
+                          }
+                          $fk = $this->fkLookup($fkLookup);
+                          if ($fk) {
+                              $wheres .= " AND (".$table . "." . $correctedField . " = '".$fk."')";
+                          }
+                      } else {
+                          $wheres .= " AND (".$table . "." . $correctedField . " = '".$saveValue."')";
+                      }
+                  }
+              }
+            }
+            if (!$found) {
+                return FALSE;
+            }
+          }
+      }
+    }
+    return $wheres;
+  }
 }

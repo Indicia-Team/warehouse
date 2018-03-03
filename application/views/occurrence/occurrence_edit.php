@@ -90,7 +90,6 @@ $(document).ready(function() {
 });
 </script>
 <form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">
-
 <fieldset class="readonly">
 <legend>Sample summary<?php echo $metadata; ?></legend>
 <ol>
@@ -212,6 +211,13 @@ echo html::error_message($model->getError('occurrence:downloaded_flag'));
 Downloaded on <?php echo html::initial_value($values, 'occurrence:downloaded_on') ?>
 </li>
 <?php endif; ?>
+<li>
+<label for='occurrence:metadata'>Metadata:</label>
+<?php
+print form::textarea('occurrence:metadata', empty($values['occurrence:metadata']) ? NULL : $values['occurrence:metadata']);
+echo html::error_message($model->getError('occurrence:metadata'));
+?>
+</li>
 </ol>
 </fieldset>
 <fieldset>

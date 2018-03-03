@@ -8,8 +8,9 @@
     SELECT #columns#
     FROM cache_occurrences_functional o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
-    JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-    JOIN cache_samples_nonfunctional snf on snf.id=o.sample_id
+    JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
+    JOIN cache_taxon_searchterms cts ON cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.name_type='A'
+    JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
@@ -37,85 +38,135 @@
             sql="'#occurrence_id_prefix#' || o.id::text"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/occurrenceID" />
+    <column name="otherCatalogNumbers"
+            sql="o.external_key"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/otherCatalogNumbers" />
+    <column name="eventID"
+            sql="o.sample_id"
+            datatype="integer"
+            term="http://rs.tdwg.org/dwc/terms/eventID" />
     <column name="scientificName"
-            sql="cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')"
+            sql="CASE cttl.language_iso
+              WHEN 'lat' THEN cttl.taxon || COALESCE(' ' || cttl.authority, '')
+              ELSE cttl.preferred_taxon || COALESCE(' ' || cttl.preferred_authority, '')
+            END"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/scientificName" />
     <column name="taxonID"
-            sql="cttl.external_key"
+            sql="CASE cttl.language_iso
+              WHEN 'lat' THEN cts.search_code
+              ELSE cttl.external_key
+            END"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/taxonID" />
-      <column name="eventDate"
-            sql="to_char(o.date_start, 'YYYY-MM-DD') || CASE WHEN o.date_end=o.date_start THEN '' ELSE '/' || to_char(o.date_end, 'YYYY-MM-DD') END"
+    <column name="vernacularName"
+            sql="CASE cttl.language_iso
+              WHEN 'lat' THEN null
+              ELSE cttl.taxon
+            END"
             datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/eventDate" />
-      <!-- @todo formatting on recordedBy -->
-      <column name="recordedBy"
-            sql="snf.recorders"
-            datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/recordedBy" />
-      <!-- @todo decide default licence by dataset -->
-      <column name="licence"
-            sql="onf.licence_code"
-            datatype="text"
-            term="http://purl.org/dc/terms/license" />
-      <column name="rightsHolder"
-            sql="null::text"
-            datatype="text"
-            term="http://purl.org/dc/terms/rightsHolder" />
-      <!-- check since using output_sref, this is not relevant? -->
-      <column name="coordinateUncertaintyInMeters"
-            sql="0"
-            datatype="integer"
-            term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
-      <column name="gridReference"
-            sql="onf.output_sref"
-            datatype="text"
-            term="http://data.nbn.org/nbn/terms/gridReference" />
-      <column name="decimaLatitude"
-            sql="st_y(st_transform(st_centroid(o.public_geom), 4326))"
-            datatype="integer"
-            term="http://rs.tdwg.org/dwc/terms/decimaLatitude" />
-      <column name="decimaLongitude"
-            sql="st_x(st_transform(st_centroid(o.public_geom), 4326))"
-            datatype="integer"
-            term="http://rs.tdwg.org/dwc/terms/decimaLongitude" />
-      <column name="datasetName"
-            sql="snf.website_title || ' | ' || CASE WHEN SUBSTRING(snf.survey_title FROM 1 FOR LENGTH(snf.website_title)) = snf.website_title THEN trim(substring(snf.survey_title FROM LENGTH(snf.website_title)+1)) ELSE snf.survey_title END"
-            datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/datasetName" />
-      <column name="locality"
-            sql="o.location_name"
-            datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/locality" />
-      <column name="basisOfRecord"
-            sql="'not recorded'"
-            datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/basisOfRecord" />
-      <column name="identificationVerificationStatus"
-            sql="case o.record_status when 'C' then 'Unconfirmed' else 'Accepted' end"
-            datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/identificationVerificationStatus" />
-      <column name="identifiedBy"
-            sql="coalesce(attr_det_full_name, attr_det_first_name || ' ' || attr_det_last_name, snf.recorders)"
-            datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/identifiedBy" />
-      <column name="occurrenceStatus"
-            sql="'present'"
-            datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/occurrenceStatus" />
-      <column name="occurrenceRemarks"
-            sql="onf.comment"
-            datatype="text"
-            term="http://rs.tdwg.org/dwc/terms/occurrenceRemarks" />
-      <column name="identificationverificationStatus2"
-            sql="CASE o.record_status || COALESCE(o.record_substatus::text, '')
-      WHEN 'V1' then 'Correct'
-      WHEN 'V2' then 'Considered correct'
-      WHEN 'C3' then 'Plausible'
-      WHEN 'C4' then 'Not reviewed'
-    END"
-            datatype="text"
-            term="http://data.nbn.org/nbn/terms/identificationverificationStatus2" />
+            term="http://rs.tdwg.org/dwc/terms/vernacularName" />
+    <column name="eventDate"
+          sql="CASE o.date_type
+  /* DwC cannot cope with a month or season in unknown year. */
+  WHEN 'M' THEN 'Unknown'
+  WHEN 'S' THEN 'Unknown'
+  WHEN 'U' THEN 'Unknown'
+  /* Year */
+  WHEN 'Y' THEN to_char(o.date_start, 'YYYY')
+  /* Year and month */
+  WHEN 'O' THEN to_char(o.date_start, 'YYYY-MM')
+  /* Other formats output using full date variations */
+  ELSE COALESCE(to_char(o.date_start, 'YYYY-MM-DD'), '') || CASE
+    /* exact date - no need for anything else */
+    WHEN COALESCE(to_char(o.date_start, 'YYYY-MM-DD'), '')=COALESCE(to_char(o.date_end, 'YYYY-MM-DD'), '') THEN ''
+    /* if just day in month different and rest same, can add just day in month */
+    WHEN COALESCE(to_char(o.date_start, 'YYYY-MM'), '')=COALESCE(to_char(o.date_end, 'YYYY-MM'), '') THEN '/' || COALESCE(to_char(o.date_end, 'DD'), '')
+    /* otherwise a fully specified date range */
+    ELSE '/' || COALESCE(to_char(o.date_end, 'YYYY-MM-DD'), '')
+  END
+END"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/eventDate" />
+    <!-- @todo formatting on recordedBy -->
+    <column name="recordedBy"
+          sql="snf.recorders"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/recordedBy" />
+    <!-- @todo decide default licence by dataset -->
+    <column name="licence"
+          sql="onf.licence_code"
+          datatype="text"
+          term="http://purl.org/dc/terms/license" />
+    <column name="rightsHolder"
+          sql="null::text"
+          datatype="text"
+          term="http://purl.org/dc/terms/rightsHolder" />
+    <!-- check since using output_sref, this is not relevant? -->
+    <column name="coordinateUncertaintyInMeters"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
+    get_sref_precision(onf.output_sref, onf.output_sref_system, null)
+  ELSE COALESCE(snf.attr_sref_precision, 50)
+END"
+          datatype="float"
+          term="http://rs.tdwg.org/dwc/terms/coordinateUncertaintyInMeters" />
+    <column name="gridReference"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN onf.output_sref
+  ELSE null
+END"
+          datatype="text"
+          term="http://data.nbn.org/nbn/terms/gridReference" />
+    <column name="decimaLatitude"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
+  ELSE st_y(st_transform(st_centroid(o.public_geom), 4326))
+END"
+          datatype="integer"
+          term="http://rs.tdwg.org/dwc/terms/decimaLatitude" />
+    <column name="decimaLongitude"
+          sql="CASE
+  WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
+  ELSE st_x(st_transform(st_centroid(o.public_geom), 4326))
+END"
+          datatype="integer"
+          term="http://rs.tdwg.org/dwc/terms/decimaLongitude" />
+    <column name="datasetName"
+          sql="snf.website_title || ' | ' || CASE WHEN SUBSTRING(snf.survey_title FROM 1 FOR LENGTH(snf.website_title)) = snf.website_title THEN trim(substring(snf.survey_title FROM LENGTH(snf.website_title)+1)) ELSE snf.survey_title END"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/datasetName" />
+    <column name="locality"
+          sql="o.location_name"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/locality" />
+    <column name="basisOfRecord"
+          sql="'not recorded'"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/basisOfRecord" />
+    <column name="identificationVerificationStatus"
+          sql="CASE o.record_status || COALESCE(o.record_substatus::text, '')
+          WHEN 'V' THEN 'Accepted'
+          WHEN 'V1' THEN 'Accepted - correct'
+          WHEN 'V2' THEN 'Accepted - considered correct'
+          WHEN 'C' THEN 'Unconfirmed - not reviewed'
+          WHEN 'C3' THEN 'Unconfirmed – plausible'
+          ELSE null
+          END"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/identificationVerificationStatus" />
+    <column name="identifiedBy"
+          sql="coalesce(attr_det_full_name, attr_det_first_name || ' ' || attr_det_last_name, snf.recorders)"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/identifiedBy" />
+    <column name="occurrenceStatus"
+          sql="'present'"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/occurrenceStatus" />
+    <column name="occurrenceRemarks"
+          sql="onf.comment"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/occurrenceRemarks" />
   </columns>
 </report>

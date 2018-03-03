@@ -83,7 +83,7 @@ class Scheduled_Tasks_Controller extends Controller {
   protected function checkTriggers() {
     self::msg("Checking triggers");
     kohana::log('info', "Checking triggers");
-    // Get a list of all the triggers that have at least one action.
+    // Get a distinct list of all the triggers that have at least one action.
     $result = $this->getTriggerQuery();
     // For each trigger, we need to get the output of the report file which
     // defines the trigger.
@@ -149,12 +149,12 @@ class Scheduled_Tasks_Controller extends Controller {
               'cc' => $action->param3,
             ));
           }
-          $this->doDirectTriggerNotifications(
-            $trigger->name,
-            $data['content']['records'],
-            $digestMode
-          );
         }
+        $this->doDirectTriggerNotifications(
+          $trigger->name,
+          ['headings' => $parsedData['headingData'], 'data' => $parsedData['websiteRecordData']],
+          $digestMode
+        );
       }
     }
   }
@@ -167,29 +167,49 @@ class Scheduled_Tasks_Controller extends Controller {
    *
    * @param string $triggerName
    *   Name of the trigger which fired.
-   * @param array $records
-   *   Output from the trigger report.
+   * @param array $data
+   *   Info to store in the notification including the record from the trigger
+   *   report.
    * @param string $digestMode
    *   Digest frequency code.
    */
-  private function doDirectTriggerNotifications($triggerName, $records, $digestMode) {
+  private function doDirectTriggerNotifications($triggerName, array $data, $digestMode) {
     // This only applies if a notify_user_ids column in report output.
-    if (count($records) === 0 || !isset($records[0]['notify_user_ids'])) {
+    if (count($data['data']) === 0 || !in_array('notify_user_ids', $data['headings'])) {
       return;
     }
-    foreach ($records as $record) {
-      $userIds = explode(',', $record['notify_user_ids']);
-      unset($record['notify_user_ids']);
-      unset($record['website_id']);
-      foreach ($userIds as $userId) {
-        $this->db->insert('notifications', array(
-          'source' => $triggerName,
-          'source_type' => 'T',
-          'data' => json_encode(array('data' => $record)),
-          'user_id' => $userId,
-          'digest_mode' => $digestMode,
-        ));
+    // Don't want to include the notify_user_ids in the notifications
+    // themselves.
+    if (($notifyUserIdsCol = array_search('notify_user_ids', $data['headings'])) !== FALSE) {
+      unset($data['headings'][$notifyUserIdsCol]);
+    }
+    // Keep a list of users to notify.
+    $userNotificatons = [];
+    // For each record, attach it to any user that needs to be notified.
+    foreach ($data['data'] as $websiteId => $records) {
+      foreach ($records as $record) {
+        $userIds = explode(',', $record[$notifyUserIdsCol]);
+        unset($record[$notifyUserIdsCol]);
+        foreach ($userIds as $userId) {
+          if (!isset($userNotifications["user:$userId"])) {
+            $userNotifications["user:$userId"] = [];
+          }
+          if (!isset($userNotifications["user:$userId"]["$websiteId"])) {
+            $userNotifications["user:$userId"]["$websiteId"] = [];
+          }
+          $userNotifications["user:$userId"]["$websiteId"][] = $record;
+        }
       }
+    }
+    // Now for each user, add their notifications.
+    foreach ($userNotifications as $user => $userData) {
+      $this->db->insert('notifications', array(
+        'source' => $triggerName,
+        'source_type' => 'T',
+        'data' => json_encode(['headings' => $data['headings'], 'data' => $userData]),
+        'user_id' => str_replace('user:', '', $user),
+        'digest_mode' => $digestMode,
+      ));
     }
   }
 
@@ -354,18 +374,23 @@ class Scheduled_Tasks_Controller extends Controller {
    */
   private function unparseData($data) {
     $struct = json_decode($data, TRUE);
-    $r = "<table><thead>\n<tr><th>";
-    $r .= implode('</th><th>', $struct['headings']);
-    $r .= "</th></tr>\n</thead>\n<tbody>\n";
-    // The sructure has an entry per allowed website for the notified user, containing a list of records.
+    $r = "<table>\n";
+    if (!empty($struct['headings'])) {
+      $r .= "  <thead>\n    <tr>      <th>";
+      $r .= implode('</th>      <th>', $struct['headings']);
+      $r .= "</th>\n    </tr>\n  </thead>\n";
+    }
+    $r .= "  <tbody>\n";
+    // The sructure has an entry per allowed website for the notified user,
+    // containing a list of records.
     foreach ($struct['data'] as $website => $records) {
       foreach ($records as $record) {
-        $r .= '<tr><td>';
-        $r .= implode('</td><td>', $record);
-        $r .= "</td></tr>\n";
+        $r .= '    <tr>      <td>';
+        $r .= implode('</td>      <td>', $record);
+        $r .= "</td>\n    </tr>\n";
       }
     }
-    $r .= "</tbody>\n</table>\n";
+    $r .= "  </tbody>\n</table>\n";
     return $r;
   }
 

@@ -281,7 +281,7 @@ abstract class ATTR_ORM extends Valid_ORM {
    * Override set handler to store caption translations as JSON.
    */
   public function __set($key, $value) {
-    if ($key === 'caption_i18n') {
+    if ($key === 'caption_i18n' && !empty($value)) {
       $list = explode("\n", $value);
       $obj = [];
       foreach ($list as $item) {
