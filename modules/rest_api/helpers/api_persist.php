@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @subpackage REST API
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
@@ -31,7 +29,6 @@
  */
 class api_persist {
 
-
   /**
    * Persists a taxon-observation resource.
    * @param $db
@@ -43,21 +40,26 @@ class api_persist {
    * @throws \exception
    */
   public static function taxon_observation($db, $observation, $website_id, $survey_id, $taxon_list_id) {
-
     // @todo Persist custom attribute values
-
-    $ttl_id = self::find_taxon($db, $taxon_list_id, $observation['taxonVersionKey']);
-    if (!$ttl_id)
+    if (!empty($observation['taxonVersionKey'])) {
+      $lookup = ['search_code' => $observation['taxonVersionKey']];
+    }
+    elseif (!empty($observation['taxonName'])) {
+      $lookup = ['original' => $observation['taxonName']];
+    }
+    $ttl_id = self::findTaxon($db, $taxon_list_id, $lookup);
+    if (!$ttl_id) {
       throw new exception("Could not find taxon for $observation[taxonVersionKey]");
+    }
     $values = self::get_taxon_observation_values($website_id, $observation, $ttl_id);
 
     self::check_mandatory_fields($observation, 'taxon-observation');
-
     $existing = self::find_existing_observation($db, $observation['id'], $survey_id);
     if (count($existing)) {
       $values['occurrence:id'] = $existing[0]['id'];
       $values['sample:id'] = $existing[0]['sample_id'];
-    } else {
+    }
+    else {
       $values['sample:survey_id'] = $survey_id;
     }
 
@@ -75,9 +77,10 @@ class api_persist {
     $obs = ORM::factory('occurrence');
     $obs->set_submission_data($values);
     $obs->submit();
-    if (count($obs->getAllErrors())!==0)
+    if (count($obs->getAllErrors())!==0) {
       throw new exception("Error occurred submitting an occurrence\n" . kohana::debug($obs->getAllErrors()));
-    return count($existing)===0;
+    }
+    return count($existing) === 0;
   }
 
   public static function annotation($db, $annotation, $survey_id) {
@@ -154,31 +157,56 @@ class api_persist {
   }
 
   /**
-   * Retrieves a taxon's ID from the database, looking up using a taxon version key.
-   * @param Database_Core $db Database instance
-   * @param integer $taxon_list_id
-   * @param string $taxon_version_key
-   * @return int Taxa_taxon_list_id of the found record.
+   * Looks up a taxon's ID from the database.
+   *
+   * @param Database_Core $db
+   *   Database instance.
+   * @param int $taxon_list_id
+   *   Taxon list to lookup against.
+   * @param array $lookup
+   *   Array of field/value pairs look up (e.g
+   *   ['external_key' => '<Taxon version key>'])
+   *
+   * @return int
+   *   Taxa_taxon_list_id of the found record.
+   *
    * @throws \exception
    */
-  private static function find_taxon($db, $taxon_list_id, $taxon_version_key) {
-    $taxa = $db->select('id')
-      ->from('cache_taxa_taxon_lists')
-      ->where(array(
-        'taxon_list_id'=>$taxon_list_id,
-        'external_key' => $taxon_version_key,
-        'preferred' => 't'
-      ))->get()->result_array(false);
-    if (count($taxa)===1)
-      return $taxa[0]['id'];
+  private static function findTaxon($db, $taxon_list_id, array $lookup) {
+    $filter = empty($lookup['original'])
+      ? '' : "AND searchterm like '" . pg_escape_string($lookup['original']) . "%'\n";
+    foreach ($lookup as $key => $value) {
+      $filter .= "AND $key='$value'\n";
+    }
+    $qry = <<<SQL
+SELECT taxon_meaning_id, taxa_taxon_list_id
+FROM cache_taxon_searchterms
+WHERE taxon_list_id=$taxon_list_id
+AND simplified='f'
+$filter
+ORDER BY preferred DESC
+SQL;
+    $taxa = $db->query($qry)->result_array(FALSE);
+    // Need to know if the search found a single unique taxon concept so count the taxon meanings
+    $uniqueConcepts = [];
+    foreach ($taxa as $taxon) {
+      $uniqueConcepts[$taxon['taxon_meaning_id']] = $taxon['taxon_meaning_id'];
+    }
+    if (count($uniqueConcepts) === 1) {
+      // If we found 1 concept, then the first match will be fine.
+      return $taxa[0]['taxa_taxon_list_id'];
+    }
     else {
-      throw new exception("Could not find a unique preferred taxon for key $taxon_version_key");
+      // If ambiguous about the concept then the search has failed.
+      kohana::log('debug', $db->last_query());
+      throw new exception('Could not find a unique preferred taxon for lookup ' . json_encode($lookup));
     }
   }
 
   /**
    * Checks that all the mandatory fields for a given resource type are populated. Returns
    * an array of missing field names, empty if the record is complete.
+   *
    * @param $array
    * @param $resourceName
    * @throws \exception
@@ -186,27 +214,41 @@ class api_persist {
   private static function check_mandatory_fields($array, $resourceName) {
     $required = array();
     // deletions have no other mandatory fields except the id to delete
-    if (!empty($resource['delete']) && $resource['delete']==='T')
+    if (!empty($resource['delete']) && $resource['delete'] === 'T')
       $array[] = 'id';
-    else
+    else {
       switch ($resourceName) {
         case 'taxon-observation':
-          $required = array('id', 'href', 'taxonVersionKey', /*'taxonName', */'startDate',
-            'endDate', 'dateType', 'gridReference', 'projection',
-            'precision', 'recorder');
-          // Conditionally required fields
+          $required = array(
+            'id',
+            'href', /*'taxonName', */
+            'startDate',
+            'endDate',
+            'dateType',
+            'projection',
+            'precision',
+            'recorder',
+          );
+          // Conditionally required fields.
           if (empty($array['gridReference'])) {
-            $array[] = 'east';
-            $array[] = 'north';
+            $required[] = 'east';
+            $required[] = 'north';
+            if (empty($array['east']) || empty($array['north'])) {
+              $required[] = 'gridReference';
+            }
           }
+          $required[] = empty($array['taxonVersionKey']) ? 'taxonName' : 'taxonVersionKey';
           break;
+
         case 'annotation':
           // @todo Mandatory fields for an annotation.
           break;
       }
+    }
     $missing = array_diff($required, array_keys($array));
-    if (!empty($missing))
+    if (!empty($missing)) {
       throw new exception("$resourceName has missing mandatory field values: " . implode(', ', $missing));
+    }
   }
 
   /**
@@ -230,7 +272,7 @@ class api_persist {
     if ($recordOriginHere)
       $filter['o.id'] = substr($id, strlen($thisSystemUserId));
     else {
-      $filter['o.external_key'] = $id;
+      $filter['o.external_key'] = (string) $id;
       $filter['s.survey_id'] = $survey_id;
     }
     $existing = $db->select('o.id, o.sample_id')

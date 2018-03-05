@@ -19,32 +19,32 @@
  * @link http://code.google.com/p/indicia/
  */
 
-define('MAX_RECORDS_TO_PROCESS', 2000);
-
 /**
  * Controller for syncing records from another source.
  *
  * Controller class to provide an endpoint for initiating the synchronisation of
  * two warehouses via the REST API.
  */
-class Rest_Api_Sync_Controller extends Controller {
+class Rest_api_sync_skipped_record_Controller extends Gridview_Base_Controller {
+
+  public function __construct() {
+    parent::__construct('rest_api_sync_skipped_record');
+    $this->columns = array(
+      'server_id' => 'Server ID',
+      'source_id' => 'Source ID',
+      'dest_table' => 'Destination table',
+      'error_message' => 'Message',
+    );
+    $this->pagetitle = "REST API sync";
+    $this->session = Session::instance();
+  }
 
   /**
-   * Main controller method for the rest_api_sync module.
-   *
-   * Initiates a synchronisation.
+   * No default edit action column for this grid.
    */
-  public function index() {
-    kohana::log('debug', 'Initiating REST API Sync');
-    echo "<h1>REST API Sync</h1>";
-    $servers = Kohana::config('rest_api_sync.servers');
-    rest_api_sync::$clientUserId = Kohana::config('rest_api_sync.user_id');
-    foreach ($servers as $serverId => $server) {
-      echo "<h2>$serverId</h2>";
-      $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
-      $helperClass = 'rest_api_sync_' . strtolower($serverType);
-      $helperClass::syncServer($serverId, $server);
-    }
+  protected function get_action_columns() {
+    return array(
+    );
   }
 
 }
