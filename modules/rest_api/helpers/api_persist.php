@@ -13,8 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @subpackage REST API
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
@@ -31,7 +29,6 @@
  */
 class api_persist {
 
-
   /**
    * Persists a taxon-observation resource.
    * @param $db
@@ -43,21 +40,20 @@ class api_persist {
    * @throws \exception
    */
   public static function taxon_observation($db, $observation, $website_id, $survey_id, $taxon_list_id) {
-
     // @todo Persist custom attribute values
     if (!empty($observation['taxonVersionKey'])) {
-      $lookup = ['external_key' => $observation['taxonVersionKey']];
+      $lookup = ['search_code' => $observation['taxonVersionKey']];
     }
     elseif (!empty($observation['taxonName'])) {
       $lookup = ['original' => $observation['taxonName']];
     }
     $ttl_id = self::findTaxon($db, $taxon_list_id, $lookup);
-    if (!$ttl_id)
+    if (!$ttl_id) {
       throw new exception("Could not find taxon for $observation[taxonVersionKey]");
+    }
     $values = self::get_taxon_observation_values($website_id, $observation, $ttl_id);
 
     self::check_mandatory_fields($observation, 'taxon-observation');
-
     $existing = self::find_existing_observation($db, $observation['id'], $survey_id);
     if (count($existing)) {
       $values['occurrence:id'] = $existing[0]['id'];
@@ -177,15 +173,20 @@ class api_persist {
    * @throws \exception
    */
   private static function findTaxon($db, $taxon_list_id, array $lookup) {
-    $taxa = $db->select('taxon_meaning_id, taxa_taxon_list_id')
-      ->from('cache_taxon_searchterms')
-      ->where(array_merge([
-        'taxon_list_id' => $taxon_list_id,
-        'simplified' => 'f',
-      ], $lookup))
-      ->orderby('preferred', 'DESC')
-      ->get()
-      ->result_array(FALSE);
+    $filter = empty($lookup['original'])
+      ? '' : "AND searchterm like '" . pg_escape_string($lookup['original']) . "%'\n";
+    foreach ($lookup as $key => $value) {
+      $filter .= "AND $key='$value'\n";
+    }
+    $qry = <<<SQL
+SELECT taxon_meaning_id, taxa_taxon_list_id
+FROM cache_taxon_searchterms
+WHERE taxon_list_id=$taxon_list_id
+AND simplified='f'
+$filter
+ORDER BY preferred DESC
+SQL;
+    $taxa = $db->query($qry)->result_array(FALSE);
     // Need to know if the search found a single unique taxon concept so count the taxon meanings
     $uniqueConcepts = [];
     foreach ($taxa as $taxon) {
@@ -197,7 +198,7 @@ class api_persist {
     }
     else {
       // If ambiguous about the concept then the search has failed.
-      echo $db->last_query() . '<br/>';
+      kohana::log('debug', $db->last_query());
       throw new exception('Could not find a unique preferred taxon for lookup ' . json_encode($lookup));
     }
   }

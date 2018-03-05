@@ -46,43 +46,38 @@ class rest_api_sync_inaturalist {
    */
   private static $processingDateLimit;
 
-  public static function syncServer($serverId, $server) {
-    $db = Database::instance();
+  public static function syncServer($serverId, $server, $page = NULL) {
     $page = 1;
     $timestampAtStart = date('c');
     do {
-      $moreToDo = self::syncPage($page, $db, $serverId, $server);
+      $moreToDo = self::syncPage($serverId, $server, $page);
       $page++;
     } while ($moreToDo);
     variable_set("rest_api_sync_iNaturalist_last_run", $timestampAtStart);
   }
 
-  private static function syncPage($page, $db, $serverId, $server) {
-    // @todo use updated_since to filter to recent changes
-    // @todo paginate through the response.
+  public static function syncPage($serverId, $server, $page) {
     // @todo images
     // @todo licence
-
+    $db = Database::instance();
     $fromDateTime = variable::get("rest_api_sync_iNaturalist_last_run", '1600-01-01T00:00:00+00:00', FALSE);
-
+    $pageSize = 30;
     $data = rest_api_sync::getDataFromRestUrl(
       "$server[url]?" . http_build_query(array_merge(
         $server['parameters'],
         [
           'updated_since' => $fromDateTime,
-          'per_page' => 100,
+          'per_page' => $pageSize,
           'page' => $page,
         ]
       )),
       $serverId
     );
-    echo "$server[url]?" . http_build_query($server['parameters']) . '<br><br/>';
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     foreach ($data['results'] as $iNatRecord) {
-      echo '<pre>'; var_export($iNatRecord); echo '</pre><br><br/>';
       list($north, $east) = explode(',', $iNatRecord['location']);
-      /*$observation = [
+      $observation = [
         'id' => $iNatRecord['id'],
         'taxonName' => $iNatRecord['taxon']['name'],
         'startDate' => $iNatRecord['observed_on'],
@@ -105,15 +100,47 @@ class rest_api_sync_inaturalist {
           $taxon_list_id
         );
         $tracker[$is_new ? 'inserts' : 'updates']++;
+        $db->query("UPDATE rest_api_sync_skipped_records SET current=false " .
+          "WHERE server_id='$serverId' AND source_id='$iNatRecord[id]' AND dest_table='occurrences'");
       }
       catch (exception $e) {
         $tracker['errors']++;
         rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
             json_encode($observation), $tracker);
-      };*/
+        $msg = pg_escape_string($e->getMessage());
+        $createdById = $_SESSION['auth_user']->id;
+        $sql = <<<QRY
+INSERT INTO rest_api_sync_skipped_records (
+  server_id,
+  source_id,
+  dest_table,
+  error_message,
+  current,
+  created_on,
+  created_by_id
+)
+VALUES (
+  '$serverId',
+  '$iNatRecord[id]',
+  'occurrences',
+  '$msg',
+  true,
+  now(),
+  $createdById
+)
+QRY;
+        $db->query($sql);
+      };
     }
-    echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
-    return $data['total_results'] / 100 > $page;
+    rest_api_sync::log(
+      'info',
+      "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
+    );
+    return [
+      'moreToDo' => $data['total_results'] / $pageSize > $page,
+      'pageCount' => ceil($data['total_results'] / $pageSize),
+      'recordCount' => $data['total_results'],
+    ];
   }
 
 }

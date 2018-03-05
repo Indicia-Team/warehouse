@@ -35,31 +35,47 @@ class Rest_Api_Sync_Controller extends Indicia_Controller {
    * Initiates a synchronisation.
    */
   public function index() {
-    $view = new View('rest_api_sync/rest_api_sync');
+    $view = new View('rest_api_sync/index');
     $this->template->content = $view;
     $this->template->title = 'REST API sync';
-    kohana::log('debug', 'Initiating REST API Sync');
-    /*echo "<h1>REST API Sync</h1>";
     $servers = Kohana::config('rest_api_sync.servers');
-    if (!isset($servers)) {
-      echo '<div class="alert alert-warning"><strong>Warning!</strong> no configurations defined for the rest_api_sync module.</div>';
-    }*/
-  }
-
-  public function process_all() {
-    $servers = Kohana::config('rest_api_sync.servers');
-
-    foreach ($servers as $serverId => $server) {
-      echo "<h2>$serverId</h2>";
-      $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
-      $helperClass = 'rest_api_sync_' . strtolower($serverType);
-      $helperClass::syncServer($serverId, $server);
-    }
+    $view->noServerConfig = empty($servers);
   }
 
   public function process_batch() {
+    $this->auto_render = FALSE;
     rest_api_sync::$client_user_id = Kohana::config('rest_api_sync.user_id');
-
+    $servers = Kohana::config('rest_api_sync.servers');
+    $serverIdx = empty($_GET['serverIdx']) ? 1 : $_GET['serverIdx'];
+    $page = empty($_GET['page']) ? 1 : $_GET['page'];
+    $serverId = array_keys($servers)[$serverIdx - 1];
+    $server = $servers[$serverId];
+    $serverType = isset($server['serverType']) ? $server['serverType'] : 'indicia';
+    $helperClass = 'rest_api_sync_' . strtolower($serverType);
+    $progressInfo = $helperClass::syncPage($serverId, $server, $page);
+    if ($progressInfo['moreToDo']) {
+      $page++;
+    }
+    else {
+      $page = 1;
+      $serverIdx++;
+    }
+    if ($serverIdx > count($servers)) {
+      echo json_encode([
+        'state' => 'done',
+        'log' => rest_api_sync::$log,
+      ]);
+    } else {
+      echo json_encode([
+        'state' => 'in progress',
+        'serverIdx' => $serverIdx,
+        'page' => $page,
+        'pageCount' => $progressInfo['pageCount'],
+        'recordCount' => $progressInfo['recordCount'],
+        'servers' => array_keys($servers),
+        'log' => rest_api_sync::$log,
+      ]);
+    }
   }
 
 }

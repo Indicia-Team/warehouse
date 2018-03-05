@@ -28,12 +28,25 @@ class rest_api_sync {
 
   public static $client_user_id;
 
+  public static $log = [];
+
+  /**
+   * Gets a page of data from another server's REST API
+   *
+   * @param string $url
+   *   URL of the service to access.
+   * @param string $serverId
+   *   Identifier of the service being called.
+   *
+   * @return array
+   *   List of records.
+   */
   public static function getDataFromRestUrl($url, $serverId) {
     // @todo is this the most optimal place to retrieve config?
     $servers = Kohana::config('rest_api_sync.servers');
     $session = curl_init();
     // Set the POST options.
-    curl_setopt ($session, CURLOPT_URL, $url);
+    curl_setopt($session, CURLOPT_URL, $url);
     curl_setopt($session, CURLOPT_HEADER, FALSE);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
     if (empty($servers[$serverId]['serverType']) || $servers[$serverId]['serverType'] === 'Indicia') {
@@ -42,22 +55,18 @@ class rest_api_sync {
       $hmac = hash_hmac("sha1", $url, $shared_secret, $raw_output = FALSE);
       curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
     }
-    // Do the request
+    // Do the request.
     $response = curl_exec($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
     // Check for an error, or check if the http response was not OK.
     if ($curlErrno || $httpCode != 200) {
-      echo "Error occurred accessing $url<br/>";
-      echo $response;
-      kohana::log('error', "Rest API Sync error $httpCode");
-      kohana::log('error', 'cUrl POST request failed.');
+      self::log('error', "Rest API Sync error $httpCode calling $url");
+      self::log('error', 'cUrl POST request failed.');
       if ($curlErrno) {
-        kohana::log('error', 'Error number: ' . $curlErrno);
-        kohana::log('error', 'Error message: ' . curl_error($session));
+        self::log('error', 'Error number: ' . $curlErrno);
+        self::log('error', 'Error message: ' . curl_error($session));
       }
-      echo 'Request failed<br/>';
-      echo "$url<br/>";
       throw new exception('Request to server failed');
     }
     $data = json_decode($response, TRUE);
@@ -86,7 +95,7 @@ class rest_api_sync {
         $tracker['errors']++;
       }
     }
-    echo str_replace("\n", '<br/>', $msg) . '<br/>';
+    self::$log[] = str_replace("\n", '<br/>', $msg);
   }
 
 }
