@@ -30,3 +30,14 @@ COMMENT ON COLUMN rest_api_sync_skipped_records.current IS 'Is this information 
 COMMENT ON COLUMN rest_api_sync_skipped_records.created_on IS 'Date this record was created.';
 COMMENT ON COLUMN rest_api_sync_skipped_records.created_by_id IS 'Foreign key to the users table (creator).';
 
+CREATE OR REPLACE VIEW gv_rest_api_sync_skipped_records AS
+ SELECT sr.id,
+    sr.server_id,
+    sr.source_id,
+    sr.dest_table,
+    sr.error_message,
+    sr.created_on,
+    u.username
+   FROM rest_api_sync_skipped_records sr
+   JOIN users u on u.id=sr.created_by_id
+  WHERE sr.current = true;

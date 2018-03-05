@@ -53,14 +53,14 @@ class rest_api_sync_inaturalist {
       $moreToDo = self::syncPage($serverId, $server, $page);
       $page++;
     } while ($moreToDo);
-    variable_set("rest_api_sync_iNaturalist_last_run", $timestampAtStart);
+    variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
   }
 
   public static function syncPage($serverId, $server, $page) {
     // @todo images
     // @todo licence
     $db = Database::instance();
-    $fromDateTime = variable::get("rest_api_sync_iNaturalist_last_run", '1600-01-01T00:00:00+00:00', FALSE);
+    $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
     $pageSize = 30;
     $data = rest_api_sync::getDataFromRestUrl(
       "$server[url]?" . http_build_query(array_merge(
@@ -108,7 +108,7 @@ class rest_api_sync_inaturalist {
         rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
             json_encode($observation), $tracker);
         $msg = pg_escape_string($e->getMessage());
-        $createdById = $_SESSION['auth_user']->id;
+        $createdById = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
         $sql = <<<QRY
 INSERT INTO rest_api_sync_skipped_records (
   server_id,

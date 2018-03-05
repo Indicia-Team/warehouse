@@ -86,6 +86,20 @@ class rest_api_sync_indicia {
   }
 
   /**
+   * Currently just a stub function to treat the whole Indicia sync as a page.
+   *
+   * Enables use from the UI.
+   */
+  public static function syncPage($serverId, $server, $page) {
+    self::syncServer($serverId, $server);
+    return [
+      'moreToDo' => FALSE,
+      'pageCount' => 1,
+      'recordCount' => -1,
+    ];
+  }
+
+  /**
    * Retrieve the database survey_id to use for synced records.
    *
    * Retrieves the database survey_id to use when storing the data obtained for
@@ -139,7 +153,6 @@ class rest_api_sync_indicia {
    *   Database ID of the survey being imported into.
    */
   private static function syncFromProject(array $server, $serverId, array $project, $survey_id) {
-    echo "<h3>$project[id]</h3>";
     $state = variable::get("rest_api_sync_$project[id]_state", 'load-taxon-observations');
     // Unless the config forces a specific resource to load, we must
     // initially load observations before annotations otherwise we get
@@ -231,7 +244,6 @@ class rest_api_sync_indicia {
       }
       $next_page_of_taxon_observations_url = isset($data['paging']['next']) ? $data['paging']['next'] : FALSE;
     }
-    echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
     if (!$load_all && $processedCount >= MAX_RECORDS_TO_PROCESS) {
       self::$processingDateLimit = $last_completely_processed_date;
     }
@@ -293,7 +305,6 @@ class rest_api_sync_indicia {
       }
       $nextPageOfAnnotationsUrl = isset($data['paging']['next']) ? $data['paging']['next'] : FALSE;
     }
-    echo "<strong>Annotations</strong><br/><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
     if (!$load_all && $processedCount >= MAX_RECORDS_TO_PROCESS) {
       self::$processingDateLimit = $last_completely_processed_date;
     }
@@ -332,7 +343,7 @@ class rest_api_sync_indicia {
   }
 
   public static function getServerAnnotations($url, $serverId) {
-    return self::getDataFromRestUrl($url, $serverId);
+    return rest_api_sync::getDataFromRestUrl($url, $serverId);
   }
 
 }

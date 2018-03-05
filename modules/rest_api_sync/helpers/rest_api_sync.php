@@ -26,7 +26,7 @@
  */
 class rest_api_sync {
 
-  public static $client_user_id;
+  public static $clientUserId;
 
   public static $log = [];
 
@@ -51,7 +51,7 @@ class rest_api_sync {
     curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
     if (empty($servers[$serverId]['serverType']) || $servers[$serverId]['serverType'] === 'Indicia') {
       $shared_secret = $servers[$serverId]['shared_secret'];
-      $userId = self::$client_user_id;
+      $userId = self::$clientUserId;
       $hmac = hash_hmac("sha1", $url, $shared_secret, $raw_output = FALSE);
       curl_setopt($session, CURLOPT_HTTPHEADER, array("Authorization: USER:$userId:HMAC:$hmac"));
     }
@@ -59,10 +59,10 @@ class rest_api_sync {
     $response = curl_exec($session);
     $httpCode = curl_getinfo($session, CURLINFO_HTTP_CODE);
     $curlErrno = curl_errno($session);
-    // Check for an error, or check if the http response was not OK.
+    // Check fo r an error, or check if the http response was not OK.
     if ($curlErrno || $httpCode != 200) {
       self::log('error', "Rest API Sync error $httpCode calling $url");
-      self::log('error', 'cUrl POST request failed.');
+      self::log('error', "cUrl POST request failed. Status $httpCode.");
       if ($curlErrno) {
         self::log('error', 'Error number: ' . $curlErrno);
         self::log('error', 'Error message: ' . curl_error($session));

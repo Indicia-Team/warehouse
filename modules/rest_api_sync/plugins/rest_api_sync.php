@@ -27,7 +27,13 @@
  */
 function rest_api_sync_alter_menu($menu, $auth) {
   if ($auth->logged_in('CoreAdmin')) {
-    $menu['Admin']['Rest API sync'] = 'rest_api_sync';
+    $menu['Admin']['Rest API sync'] = 'rest_api_sync_skipped_record';
   }
   return $menu;
+}
+
+function rest_api_sync_extend_data_services() {
+  return array(
+    'rest_api_sync_skipped_records' => array(),
+  );
 }

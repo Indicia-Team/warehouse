@@ -1,5 +1,8 @@
 $(document).ready(function docReady() {
+  var startInfo;
+
   $('#progress').hide();
+  $('#output').hide();
   $('#progress').progressbar();
   function doRequest(data) {
     $.ajax({
@@ -9,12 +12,17 @@ $(document).ready(function docReady() {
       success: function successResponse(response) {
         var chunkPercentage;
         var progress;
-        $('#output').append(response.log.join('<br/>'));
+        $('#output .panel-body').append(response.log.join('<br/>'));
         if (response.state === 'done') {
-          $('#output').append('<div class="alert alert-success">Synchronisation complete</div>');
+          $('#output .panel-body').append('<div class="alert alert-success">Synchronisation complete</div>');
           $('#progress').hide();
+          $.ajax({
+            url: 'rest_api_sync/end',
+            dataType: 'json',
+            data: startInfo
+          });
         } else {
-          chunkPercentage = 100 / response.servers.length;
+          chunkPercentage = 100 / startInfo.servers.length;
           progress = ((response.serverIdx - 1) + ((response.page - 1) / response.pageCount)) * chunkPercentage;
           $('#progress').progressbar('value', progress);
           doRequest({
@@ -32,6 +40,15 @@ $(document).ready(function docReady() {
   $('#start-sync').click(function startSync() {
     $('#start-sync').attr('disabled', 'disabled');
     $('#progress').show();
-    doRequest({});
+    $('#output').show();
+    $('#rest_api_sync_skipped_record.report-grid-container').hide();
+    $.ajax({
+      url: 'rest_api_sync/start',
+      dataType: 'json',
+      success: function successResponse(response) {
+        startInfo = response;
+        doRequest({});
+      }
+    });
   });
 });

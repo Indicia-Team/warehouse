@@ -19,32 +19,39 @@
  * @link http://code.google.com/p/indicia/
  */
 
-define('MAX_RECORDS_TO_PROCESS', 2000);
-
 /**
  * Controller for syncing records from another source.
  *
  * Controller class to provide an endpoint for initiating the synchronisation of
  * two warehouses via the REST API.
  */
-class Rest_Api_Sync_Controller extends Indicia_Controller {
+class Rest_api_sync_Controller extends Indicia_Controller {
 
-  /**
-   * Main controller method for the rest_api_sync module.
-   *
-   * Initiates a synchronisation.
-   */
-  public function index() {
-    $view = new View('rest_api_sync/index');
-    $this->template->content = $view;
-    $this->template->title = 'REST API sync';
+  public function start() {
+    $this->auto_render = FALSE;
     $servers = Kohana::config('rest_api_sync.servers');
-    $view->noServerConfig = empty($servers);
+    echo json_encode([
+      'servers' => array_keys($servers),
+      'startTime' => date('c'),
+    ]);
   }
 
+  public function end() {
+    $this->auto_render = FALSE;
+    $servers = Kohana::config('rest_api_sync.servers');
+    foreach (array_keys($servers) as $serverId) {
+      variable::set("rest_api_sync_{$serverId}_last_run", $_GET['startTime']);
+    }
+  }
+
+  /**
+   * Endpoint for the JS AJAX call to process the next page.
+   *
+   * Echos back JSON progress info.
+   */
   public function process_batch() {
     $this->auto_render = FALSE;
-    rest_api_sync::$client_user_id = Kohana::config('rest_api_sync.user_id');
+    rest_api_sync::$clientUserId = Kohana::config('rest_api_sync.user_id');
     $servers = Kohana::config('rest_api_sync.servers');
     $serverIdx = empty($_GET['serverIdx']) ? 1 : $_GET['serverIdx'];
     $page = empty($_GET['page']) ? 1 : $_GET['page'];
@@ -65,14 +72,14 @@ class Rest_Api_Sync_Controller extends Indicia_Controller {
         'state' => 'done',
         'log' => rest_api_sync::$log,
       ]);
-    } else {
+    }
+    else {
       echo json_encode([
         'state' => 'in progress',
         'serverIdx' => $serverIdx,
         'page' => $page,
         'pageCount' => $progressInfo['pageCount'],
         'recordCount' => $progressInfo['recordCount'],
-        'servers' => array_keys($servers),
         'log' => rest_api_sync::$log,
       ]);
     }
