@@ -67,6 +67,6 @@
     <column name="locality_ids" sql="array_to_string(array_agg(locality.id), '|')" aggregate="true" visible="false" />
     <column name='website_id' sql="o.website_id" visible="false" />
     <column name='default_common_name' sql='cttl.default_common_name' visible="false" />
-    <column name='metadata' visible="false" sql='occ.metadata' />
+    <column name='metadata' visible="false" sql='occ.metadata::text' />
   </columns>
 </report>
