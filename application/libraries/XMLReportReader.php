@@ -33,7 +33,8 @@ class XMLReportReader_Core implements ReportReader
   private $description;
   private $row_class;
   private $query;
-  private $countQuery=null;
+  private $countQueryBase = NULL;
+  private $countFields;
   private $field_sql;
   private $order_by;
   private $params = array();
@@ -285,7 +286,8 @@ class XMLReportReader_Core implements ReportReader
         // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
         // otherwise the same.
         if (!empty($field_sql)) {
-          $this->countQuery = str_replace('#field_sql#', ' count(' . $this->count_field . ') ', $this->query);
+          $this->countQueryBase = str_replace('#field_sql#', '#count#', $this->query);
+          $this->countFields = $this->count_field;
           $this->query = str_replace('#field_sql#', $field_sql, $this->query);
         }
         // column SQL is part of the SQL statement, or defined in a field_sql element.
@@ -400,44 +402,49 @@ class XMLReportReader_Core implements ReportReader
     $sql = array();
     $distinctSql = array();
     $countSql = array();
-    foreach ($this->columns as $col=>$def) {
+    foreach ($this->columns as $col => $def) {
       if (!empty($this->colsToInclude) && !in_array($col, $this->colsToInclude))
         continue;
       if (isset($def['sql'])) {
-        if (!isset($def['on_demand']) || $def['on_demand']!=="true")
+        if (!isset($def['on_demand']) || $def['on_demand'] !== "true")
           $sql[] = $def['sql'] . ' as ' . pg_escape_identifier($col);
-        if (isset($def['distincton']) && $def['distincton']=='true') {
+        if (isset($def['distincton']) && $def['distincton'] == 'true') {
           $distinctSql[] = $def['internal_sql'];
           // in_count lets the xml file exclude distinct on columns from the count query
-          if (!isset($def['in_count']) || $def['in_count']=='true') {
-            $countSql[] = $def['internal_sql'];
-          }
-        } else {
-          // if the column is not distinct on, then it defaults to not in the count
-          if (isset($def['in_count']) && $def['in_count']=='true') {
+          if (!isset($def['in_count']) || $def['in_count'] == 'true') {
             $countSql[] = $def['internal_sql'];
           }
         }
-      } elseif ($col === 'date' && empty($def['sql']) && $this->vagueDateProcessing) {
+        else {
+          // if the column is not distinct on, then it defaults to not in the count
+          if (isset($def['in_count']) && $def['in_count'] == 'true') {
+            $countSql[] = $def['internal_sql'];
+          }
+        }
+      }
+      elseif ($col === 'date' && empty($def['sql']) && $this->vagueDateProcessing) {
         $sql[] = 'null as date';
       }
     }
-    if (count($distinctSql)>0) {
-      $distincton = ' distinct on ('.implode(', ', $distinctSql).') ';
-    } else {
-      $distincton = '';
-    }
-    if (count($countSql)>1) {
-      $this->countQuery = str_replace('#columns#', ' count(distinct coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')) ", $this->query);
-    }
-    elseif (count($countSql)===1) {
-      $this->countQuery = str_replace('#columns#', ' count(distinct ' . $countSql[0] . ') ', $this->query);
+    if (count($distinctSql) > 0) {
+      $distincton = ' distinct on (' . implode(', ', $distinctSql) . ') ';
     }
     else {
-      $this->countQuery = str_replace('#columns#', ' count(' . $this->count_field . ') ', $this->query);
+      $distincton = '';
     }
-    // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to
-    // add custom attribute fields.
+    $this->countQueryBase = str_replace('#columns#', '#count#', $this->query);
+    if (count($countSql) > 1) {
+      // Concatenate the fields so we can get a distinct list.
+      $this->countFields = 'distinct coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')";
+    }
+    elseif (count($countSql) === 1) {
+      $this->countFields = 'distinct ' . $countSql[0];
+    }
+    else {
+      $this->countFields = $this->count_field;
+    }
+    // Merge this back into the query. Note we drop in a #fields# tag so that
+    // the query processor knows where to add custom attribute fields.
     $this->query = str_replace('#columns#', $distincton . implode(",\n", $sql) . '#fields#', $this->query);
   }
 
@@ -449,17 +456,17 @@ class XMLReportReader_Core implements ReportReader
    */
   private function buildGroupBy() {
     $sql = array();
-    foreach ($this->columns as $col=>$def) {
+    foreach ($this->columns as $col => $def) {
       if (isset($def['internal_sql'])
-          && (!isset($def['aggregate']) || $def['aggregate']!='true')
-          && (!isset($def['on_demand']) || $def['on_demand']!='true')) {
+          && (!isset($def['aggregate']) || $def['aggregate'] != 'true')
+          && (!isset($def['on_demand']) || $def['on_demand'] != 'true')) {
         $sql[] = $def['internal_sql'];
       }
     }
     // Add the non-aggregated fields to the end of the query. Leave a token so that the query processor
     // can add more, e.g. if there are custom attribute columns, and also has a suitable place for a HAVING clause.
-    if (count($sql)>0) {
-      if (strpos($this->query, '#group_bys#')===FALSE)
+    if (count($sql) > 0) {
+      if (strpos($this->query, '#group_bys#') === FALSE)
         $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys# #having#';
       else
         $this->query = str_replace('#group_bys#', "GROUP BY " . implode(', ', $sql) . '#group_bys# #having#', $this->query);
@@ -467,18 +474,16 @@ class XMLReportReader_Core implements ReportReader
   }
 
   /**
-  * <p> Returns the title of the report. </p>
-  */
-  public function getTitle()
-  {
+   * Returns the title of the report.
+   */
+  public function getTitle() {
     return $this->title;
   }
 
   /**
-  * <p> Returns the description of the report. </p>
-  */
-  public function getDescription()
-  {
+   * Returns the description of the report.
+   */
+  public function getDescription() {
     return $this->description;
   }
 
@@ -546,9 +551,29 @@ class XMLReportReader_Core implements ReportReader
     return $query;
   }
 
-  public function getCountQuery()
-  {
-    return $this->countQuery;
+  /**
+   * Retrieve the query required to count the records.
+   *
+   * @return string
+   *   SQL statement.
+   */
+  public function getCountQuery() {
+    return str_replace('#count#', "COUNT($this->countFields)", $this->countQueryBase);
+  }
+
+  /**
+   * Retrieve the query required to count the records, but with fields instead.
+   *
+   * SELECT ..., ..., ... instead of SELECT COUNT(...), allowing a limit to be
+   * applied to prevent counting past the first page of a report grid. Used to
+   * facilitate an optimisation to prevent bad abort early query plans being
+   * chosen.
+   *
+   * @return string
+   *   SQL statement.
+   */
+  public function getCountQueryWithRowData() {
+    return str_replace('#count#', $this->countFields, $this->countQueryBase);
   }
 
   /**
