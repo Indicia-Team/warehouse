@@ -129,12 +129,12 @@ $config['modules'] = array
          MODPATH.'indicia_svc_spatial',   // Spatial services
          MODPATH.'indicia_setup',         // Setup procedures
          MODPATH.'sref_osgb',             // OSGB grid notation
-         MODPATH.'sref_osie',             // Irish grid notation (TM75)   
+         MODPATH.'sref_osie',             // Irish grid notation (TM75)
          MODPATH.'sref_channel_islands',  // Jersey and Guernsey grid notations
          MODPATH.'sref_utm',              // UTM grid notation
          MODPATH.'demo',                  // Demo and test pages
+         MODPATH.'data_cleaner'           // automatic record checks
          MODPATH.'cache_builder',         // build a cache for performance reporting
          MODPATH.'spatial_index_builder', // index of location occurrence overlaps
-         MODPATH.'data_cleaner'           // automatic record checks
 //         ,MODPATH.'summary_builder'       // build a cache for improving the performance of reporting summary data
 );

@@ -1,9 +1,6 @@
 <?php
 
 /**
- * @file
- * Warehouse version configuration.
- *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,8 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Config
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/Indicia-Team/warehouse
@@ -27,21 +22,26 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * The application files' version number.
+ * Model class for the Rest_api_sync_skipped_records table.
  *
- * @var string
+ * @package Core
+ * @subpackage Models
  */
-$config['version'] = '1.56.0';
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2018-03-09';
+class Rest_api_sync_skipped_record_Model extends ORM {
 
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+  public $search_field='source_id';
+
+  protected $belongs_to = array('created_by'=>'user');
+
+  public function validate(Validation $array, $save = FALSE) {
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
+    $array->pre_filter('trim');
+    $array->add_rules('server_id', 'required');
+    $array->add_rules('source_id', 'required');
+    $array->add_rules('dest_table', 'required');
+    $array->add_rules('error_message', 'required');
+    return parent::validate($array, $save);
+  }
+
+}

@@ -13,6 +13,7 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter#
+  AND oc.confidential=false
   #idlist#
   </query>
   <order_bys>

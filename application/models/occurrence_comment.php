@@ -51,7 +51,8 @@ class Occurrence_comment_model extends ORM {
       'record_substatus',
       'external_key',
       'correspondence_data',
-      'reference'
+      'reference',
+      'confidential',
     );
     return parent::validate($array, $save);
 

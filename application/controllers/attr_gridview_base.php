@@ -62,13 +62,24 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
    * a particular record.
    */
   protected function prepareOtherViewData($values) {
+    if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
+      $termlists = ORM::factory('termlist')->where('deleted', 'f')->in('website_id', $this->auth_filter['values'])->orderby('title', 'asc')->find_all();
+    }
+    else {
+      $termlists = ORM::factory('termlist')->where('deleted', 'f')->orderby('title', 'asc')->find_all();
+    }
+    $termlistArray = [];
+    foreach ($termlists as $list) {
+      $termlistArray[$list->id] = $list->title;
+    }
     return array(
       'name' => ucwords(str_replace('_', ' ', $this->prefix)),
       'controllerpath' => $this->controllerpath,
       'webrec_entity' => $this->prefix . '_attributes_website',
       'webrec_key' => $this->prefix . '_attribute_id',
       'publicFieldName' => 'Available to other Websites',
-      'source_terms' => $this->get_termlist_terms('indicia:attribute_sources')
+      'source_terms' => $this->get_termlist_terms('indicia:attribute_sources'),
+      'termlists' => $termlistArray,
     );
   }
 

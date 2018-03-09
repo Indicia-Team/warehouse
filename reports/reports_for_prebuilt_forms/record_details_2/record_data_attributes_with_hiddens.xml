@@ -14,7 +14,8 @@
               WHEN 'D' THEN 'Specific Date'
               WHEN 'V' THEN 'Vague Date'
               ELSE a.data_type
-          END AS data_type, a.caption,
+          END AS data_type,
+          CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
           CASE a.data_type
               WHEN 'T' THEN CASE WHEN substring(a.caption from (char_length(a.caption)-5) for 4) = 'link' AND substring(av.text_value from 0 for 4) = 'http' THEN
                 '&lt;a href="' || av.text_value || '"&gt;' || av.text_value || '&lt;/a&gt;'
@@ -61,7 +62,8 @@
             WHEN 'D' THEN 'Specific Date'
             WHEN 'V' THEN 'Vague Date'
             ELSE a.data_type
-        END AS data_type, a.caption,
+        END AS data_type,
+        CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
         CASE a.data_type
             WHEN 'T' THEN av.text_value
             WHEN 'L' THEN lookup.term::text
@@ -107,7 +109,8 @@
             WHEN 'D' THEN 'Specific Date'
             WHEN 'V' THEN 'Vague Date'
             ELSE a.data_type
-        END AS data_type, a.caption,
+        END AS data_type,
+        CASE '#language#' WHEN '' THEN a.caption ELSE COALESCE(TRIM(BOTH '"' FROM (a.caption_i18n->'#language#')::varchar), a.caption) END AS caption,
         CASE a.data_type
             WHEN 'T' THEN av.text_value
             WHEN 'L' THEN lookup.term::text
@@ -151,5 +154,7 @@
         datatype='lookup' lookup_values='caption:Caption,system_function:System Function, e.g. email' />
     <param name='operator' display='Include or exclude' description="Do you want to include only the list of attributes you've defined, or exclude them?"
         datatype='lookup' lookup_values='in:Include,not in:Exclude' />
+    <param name='language' display='Language' description="ISO 3 letter code of language to use for captions if available."
+        datatype='text' default='' />
   </params>
 </report>

@@ -131,14 +131,15 @@ class Scheduled_Tasks_Controller extends Controller {
           // Insert data in notifications table, either for the user to manually acknowledge, or for a digest mail to be built.
           // First build a list of data for the user's websites.
           if ($action->core_role_id == 1) {
-            // core admin can see any data
+            // Core admin can see any data.
             $allowedData = $parsedData['websiteRecordData'];
           }
           else {
             $allowedData = array();
             foreach ($userWebsites as $allowedWebsite) {
-              if (isset($parsedData['websiteRecordData'][$allowedWebsite->website_id]))
+              if (isset($parsedData['websiteRecordData'][$allowedWebsite->website_id])) {
                 $allowedData[$allowedWebsite->website_id] = $parsedData['websiteRecordData'][$allowedWebsite->website_id];
+              }
             }
           }
           $digestMode = ($action->param2 === NULL ? $action->default_digest_mode : $action->param2);
@@ -155,11 +156,63 @@ class Scheduled_Tasks_Controller extends Controller {
             ));
           }
         }
+        $this->doTriggerLogComments(
+          $trigger->name,
+          ['headings' => $parsedData['headingData'], 'data' => $parsedData['websiteRecordData']]
+        );
         $this->doDirectTriggerNotifications(
           $trigger->name,
           ['headings' => $parsedData['headingData'], 'data' => $parsedData['websiteRecordData']],
           $digestMode
         );
+      }
+    }
+  }
+
+  /**
+   * Allow trigger reports to log occurrence comments.
+   *
+   * Where the output of a trigger report includes data in a log_comment
+   * column, add this info to the occurrenec_comments table.
+   *
+   * @param string $triggerName
+   *   Name of the trigger which fired.
+   * @param array $data
+   *   Info to store in the notification including the record from the trigger
+   *   report.
+   */
+  private function doTriggerLogComments($triggerName, array $data) {
+    // This only applies if a log_comment and occurrence_id columns in report
+    // output.
+    if (count($data['data']) === 0 || !in_array('log_comment', $data['headings']) ||
+        !in_array('occurrence_id', $data['headings'])) {
+      return;
+    }
+    // Don't want to include the log_comment and occurrence_id in the
+    // notifications themselves.
+    $logCommentCol = array_search('log_comment', $data['headings']);
+    unset($data['headings'][$logCommentCol]);
+    $occIDCol = array_search('occurrence_id', $data['headings']);
+    unset($data['headings'][$occIDCol]);
+    // For each record, check if log_comment is populated, if so, save the
+    // comment.
+    foreach ($data['data'] as $websiteId => $records) {
+      foreach ($records as $record) {
+        if (!empty($record[$logCommentCol])) {
+          $this->db->insert('occurrence_comments', array(
+            'comment' => $record[$logCommentCol],
+            'created_by_id' => 1,
+            'created_on' => date('Y-m-d H:i:s'),
+            'updated_by_id' => 1,
+            'updated_on' => date('Y-m-d H:i:s'),
+            'occurrence_id' => $record[$occIDCol],
+            'generated_by' => 'notificatons',
+          ));
+        }
+        else {
+          echo 'Skipping as no comment to insert: ' . $record[$occIDCol] . '<br/>';
+        }
+        unset($record[$logCommentCol]);
       }
     }
   }
@@ -361,8 +414,9 @@ class Scheduled_Tasks_Controller extends Controller {
     foreach ($data['content']['records'] as $idx => $record) {
       $recordAsArray = array();
       foreach ($data['content']['columns'] as $column => $cfg) {
-        if ($cfg['visible']!=='false') {
-          // allow for an incorrect column def in the report, as a broken report can block the scheduled tasks otherwise.
+        if ($cfg['visible'] !== 'false') {
+          // Allow for an incorrect column def in the report, as a broken
+          // report can block the scheduled tasks otherwise.
           $recordAsArray[] = empty($record[$column]) ? '' : $record[$column];
         }
       }
@@ -379,18 +433,23 @@ class Scheduled_Tasks_Controller extends Controller {
    */
   private function unparseData($data) {
     $struct = json_decode($data, TRUE);
-    $r = "<table><thead>\n<tr><th>";
-    $r .= implode('</th><th>', $struct['headings']);
-    $r .= "</th></tr>\n</thead>\n<tbody>\n";
-    // The sructure has an entry per allowed website for the notified user, containing a list of records.
+    $r = "<table>\n";
+    if (!empty($struct['headings'])) {
+      $r .= "  <thead>\n    <tr>      <th>";
+      $r .= implode('</th>      <th>', $struct['headings']);
+      $r .= "</th>\n    </tr>\n  </thead>\n";
+    }
+    $r .= "  <tbody>\n";
+    // The sructure has an entry per allowed website for the notified user,
+    // containing a list of records.
     foreach ($struct['data'] as $website => $records) {
       foreach ($records as $record) {
-        $r .= '<tr><td>';
-        $r .= implode('</td><td>', $record);
-        $r .= "</td></tr>\n";
+        $r .= '    <tr>      <td>';
+        $r .= implode('</td>      <td>', $record);
+        $r .= "</td>\n    </tr>\n";
       }
     }
-    $r .= "</tbody>\n</table>\n";
+    $r .= "  </tbody>\n</table>\n";
     return $r;
   }
 
