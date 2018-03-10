@@ -198,22 +198,27 @@ class XMLReportReader_Core implements ReportReader
                 // drop a marker in so we can insert custom attr fields later
                 $field_sql .= '#fields#';
                 break;
+
               case 'order_by':
                 $reader->read();
                 $this->order_by[] = $reader->value;
                 break;
+
               case 'param':
                 $this->mergeParam($reader->getAttribute('name'), $reader);
                 break;
+
               case 'column':
                 $this->mergeXmlColumn($reader);
                 break;
+
               case 'table':
-                $this->automagic = true;
+                $this->automagic = TRUE;
                 $this->setTable(
                     $reader->getAttribute('tablename'),
                     $reader->getAttribute('where'));
                 break;
+
               case 'subTable':
                 $this->setSubTable(
                     $reader->getAttribute('tablename'),
@@ -222,18 +227,20 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('join'),
                     $reader->getAttribute('where'));
                 break;
+
               case 'tabColumn':
-                 $this->mergeTabColumn(
-                    $reader->getAttribute('name'),
-                    $reader->getAttribute('func'),
-                    $reader->getAttribute('display'),
-                    $reader->getAttribute('style'),
-                    $reader->getAttribute('feature_style'),
-                    $reader->getAttribute('class'),
-                    $reader->getAttribute('visible'),
-                    false
-                    );
+                $this->mergeTabColumn(
+                  $reader->getAttribute('name'),
+                  $reader->getAttribute('func'),
+                  $reader->getAttribute('display'),
+                  $reader->getAttribute('style'),
+                  $reader->getAttribute('feature_style'),
+                  $reader->getAttribute('class'),
+                  $reader->getAttribute('visible'),
+                  FALSE
+                );
                 break;
+
               case 'attributes':
                 $this->setAttributes(
                     $reader->getAttribute('where'),
@@ -241,37 +248,41 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('hideVagueDateFields'),// determines whether to hide the main vague date fields for attributes.
                     $reader->getAttribute('meaningIdLanguage'));//if not set, lookup lists use term_id. If set, look up lists use meaning_id, with value either 'preferred' or the 3 letter iso language to use.
                 break;
+
               case 'vagueDate': // This switches off vague date processing.
                 $this->vagueDateProcessing = $reader->getAttribute('enableProcessing');
                 break;
+
               case 'download': // This enables download processing.. potentially dangerous as updates DB.
                 $this->setDownload($reader->getAttribute('mode'));
                 break;
+
               case 'mergeTabColumn':
-                 $this->setMergeTabColumn(
-                    $reader->getAttribute('name'),
-                    $reader->getAttribute('tablename'),
-                    $reader->getAttribute('separator'),
-                    $reader->getAttribute('where'),
-                    $reader->getAttribute('display'),
-                    $reader->getAttribute('visible'));
+                $this->setMergeTabColumn(
+                  $reader->getAttribute('name'),
+                  $reader->getAttribute('tablename'),
+                  $reader->getAttribute('separator'),
+                  $reader->getAttribute('where'),
+                  $reader->getAttribute('display'),
+                  $reader->getAttribute('visible')
+                );
                 break;
               }
               break;
+
           case (XMLReader::END_ELEMENT):
-            switch ($reader->name)
-              {
-                case 'subTable':
-                  $this->tableIndex=$this->tables[$this->tableIndex]['parent'];
+            switch ($reader->name) {
+              case 'subTable':
+                $this->tableIndex = $this->tables[$this->tableIndex]['parent'];
                 break;
-              }
-             break;
+            }
+            break;
         }
       }
       $reader->close();
       // Add a token to mark where additional filters can insert in the WHERE clause.
-      if ($this->query && strpos($this->query, '#filters#')===false) {
-        if (strpos($this->query, '#order_by#')!==false)
+      if ($this->query && strpos($this->query, '#filters#') === false) {
+        if (strpos($this->query, '#order_by#') !== false)
           $this->query = str_replace('#order_by#', "#filters#\n#order_by#", $this->query);
         else
           $this->query .= '#filters#';
@@ -282,7 +293,8 @@ class XMLReportReader_Core implements ReportReader
         if ($this->hasAggregates) {
           $this->buildGroupBy();
         }
-      } elseif ($this->query) {
+      }
+      elseif ($this->query) {
         // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
         // otherwise the same.
         if (!empty($field_sql)) {
@@ -304,10 +316,10 @@ class XMLReportReader_Core implements ReportReader
   /**
    * Apply the website and sharing related filters to the query.
    */
-  public function applyPrivilegesFilters(&$query, $websiteIds, $training, $sharing, $userId) {
+  public function applyWebsitePermissions(&$query, $websiteIds, $training, $sharing, $userId) {
     if ($websiteIds) {
       if (in_array('', $websiteIds)) {
-        foreach($websiteIds as $key=>$value) {
+        foreach ($websiteIds as $key => $value) {
           if (empty($value))
             unset($websiteIds[$key]);
         }
@@ -488,10 +500,9 @@ class XMLReportReader_Core implements ReportReader
   }
 
   /**
-  * <p> Returns the query specified. </p>
-  */
-  public function getQuery()
-  {
+   * Returns the query specified.
+   */
+  public function getQuery() {
     if ( $this->automagic == false) {
       return $this->query;
     }
