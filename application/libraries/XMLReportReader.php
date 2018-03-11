@@ -447,16 +447,19 @@ class XMLReportReader_Core implements ReportReader
     $this->countQueryBase = str_replace('#columns#', '#count#', $this->query);
     if (count($countSql) > 1) {
       // Concatenate the fields so we can get a distinct list.
-      $this->countFields = 'distinct coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')";
+      $this->countFields = 'coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')";
     }
     elseif (count($countSql) === 1) {
-      $this->countFields = 'distinct ' . $countSql[0];
+      $this->countFields = $countSql[0];
     }
     else {
       $this->countFields = $this->count_field;
     }
-    // Merge this back into the query. Note we drop in a #fields# tag so that
-    // the query processor knows where to add custom attribute fields.
+    if (count($countSql) > 0 && !preg_match('/distinct #columns#/i', $this->query)) {
+      $this->countFields = "DISTINCT $this->countFields";
+    }
+    // Merge the distincton back into the query. Note we drop in a #fields# tag
+    // so that the query processor knows where to add custom attribute fields.
     $this->query = str_replace('#columns#', $distincton . implode(",\n", $sql) . '#fields#', $this->query);
   }
 
