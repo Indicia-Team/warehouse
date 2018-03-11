@@ -200,6 +200,6 @@ class Report_Controller extends Data_Service_Base_Controller {
   }
 
   protected function record_count() {
-    return $this->reportEngine->record_count();
+    return $this->reportEngine->recordCount();
   }
 }

@@ -185,10 +185,10 @@ META;
    * parameter request.
    */
   protected function get_response_structure($data) {
-    $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords']!=='0';
-    $wantColumns = isset($_REQUEST['wantColumns']) && $_REQUEST['wantColumns']==='1';
-    $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount']==='1';
-    $wantParameters = (isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters']==='1')
+    $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords'] !== '0';
+    $wantColumns = isset($_REQUEST['wantColumns']) && $_REQUEST['wantColumns'] === '1';
+    $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1';
+    $wantParameters = (isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters'] === '1')
       || ($wantRecords && !isset($data['records']));
     $array = array();
     if ($wantRecords && isset($data['records']))
@@ -199,11 +199,11 @@ META;
       $array['parameterRequest'] = $data['parameterRequest'];
     if ($wantCount) {
       $count = $this->record_count();
-      if ($count!==false)
-        $array['count']=$count;
+      if ($count !== FALSE)
+        $array['count'] = $count;
     }
     // if only returning records, simplify the array down to just return the list of records rather than the full structure
-    if (count($array)===1 && isset($array['records']))
+    if (count($array) === 1 && isset($array['records']))
       return array_pop($array);
     else
       return $array;
@@ -247,19 +247,21 @@ META;
     if (!is_array($array) || !isset($array['records']) || !is_array($array['records']) || count($array['records']) == 0)
       return '';
     $headers = array_keys($array['records'][0]);
-    if(isset($this->view_columns)){
+    if (isset($this->view_columns)){
       $newheaders = array();
       foreach ($headers as $header) {
-        if(isset($this->view_columns[$header])){
-          if(isset($this->view_columns[$header]['display'])){
+        if (isset($this->view_columns[$header])) {
+          if (isset($this->view_columns[$header]['display'])) {
             $newheader = $this->view_columns[$header]['display'];
-          } else {
+          }
+          else {
             $newheader = $header;
           }
-          if(!isset($this->view_columns[$header]['visible']) || $this->view_columns[$header]['visible'] !== 'false'){
+          if (!isset($this->view_columns[$header]['visible']) || $this->view_columns[$header]['visible'] !== 'false') {
             $newheaders[] = $newheader;
           }
-        } else {
+        }
+        else {
           $newheaders[] = $header;
         }
       }
@@ -267,14 +269,15 @@ META;
     }
     $result = $this->$fn($headers);
     foreach ($array['records'] as $row) {
-      if(isset($this->view_columns)){
+      if (isset($this->view_columns)) {
         $newrow = array();
         foreach ($row as $key => $value) {
-          if(isset($this->view_columns[$key])){
-             if(!isset($this->view_columns[$key]['visible']) || $this->view_columns[$key]['visible'] !== 'false'){
+          if (isset($this->view_columns[$key])){
+            if (!isset($this->view_columns[$key]['visible']) || $this->view_columns[$key]['visible'] !== 'false') {
               $newrow[] = $value;
             }
-          } else {
+          }
+          else {
             $newrow[] = $value;
           }
         }
