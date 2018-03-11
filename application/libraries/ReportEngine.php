@@ -444,7 +444,7 @@ class ReportEngine {
     else {
       $countQuery = $this->reportReader->getCountQuery();
     }
-    if ($countQuery === NULL) {
+    if (empty($countQuery)) {
       return FALSE;
     }
     $countQuery = $this->mergeQueryWithParams($countQuery, FALSE);
