@@ -384,9 +384,9 @@ class ReportEngine {
     }
     else {
       // Okay, all the parameters have been provided.
-      $this->mergeCountQuery();
-      $this->mergeQuery();
+      $this->query = $this->buildQuery();
       if ($this->limit === 0 || $this->limit === '0'
+        || (isset($this->recordCountResult) && $this->recordCountResult === 0)
         || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords'] === '0')) {
         // Optimisation for zero limited queries.
         $data = array();
@@ -408,7 +408,7 @@ class ReportEngine {
       }
       $r = array(
         'columns' => $this->columns,
-        'records' => $data
+        'records' => $data,
       );
       if (isset($includedParams) && count($includedParams) > 0) {
         $r['parameterRequest'] = $includedParams;
@@ -417,36 +417,82 @@ class ReportEngine {
     }
   }
 
-  public function record_count() {
-    if (isset($this->countQuery) && $this->countQuery !== NULL) {
-      if (isset($this->recordCountResult)) {
-        return $this->recordCountResult;
-      }
-      // If there is a HAVING clause in the query, then we cannot count aggregate queries in the normal way which is to
-      // strip the group by and count the appropriate fields. We have to run the full grouped query with the HAVING
-      // clause included, then use a subquery to count the rows.
-      if (!empty($this->having)) {
-        $unlimitedQuery = preg_replace('/LIMIT \d+/i', '', $this->query);
-        $this->countQuery = "SELECT count(*) FROM ($unlimitedQuery) AS subquery";
-      }
-      $tm = microtime(TRUE);
-      $r = $this->reportDb->query($this->countQuery)->result_array(FALSE);
-      $tm = microtime(TRUE) - $tm;
-      if ($tm > 5) {
-        kohana::log('alert', "Count query took $tm seconds.");
-        kohana::log('alert', $this->report);
-        kohana::log('alert', $this->countQuery);
-      }
-      // Query could return no rows, in which case return zero. Or multiple if counting several UNIONED queries.
-      $count = 0;
-      foreach ($r as $row)
-        $count += $row['count'];
-      $this->recordCountResult = $count;
-      return $count;
+  /**
+   * Runs a count query.
+   *
+   * Can be limited if we only want to know if there are enough records to fill
+   * the first page of a grid.
+   *
+   * @param int $limit
+   *   Max records to bother counting.
+   *
+   * @return int
+   *   Record count. FALSE if count not possible.
+   */
+  public function recordCount($limit = 0) {
+    if (isset($_REQUEST['knownCount'])) {
+      return $_REQUEST['knownCount'];
+    }
+    elseif (isset($this->recordCountResult)) {
+      return $this->recordCountResult;
+    }
+
+    // Grab the query from the report reader.
+    if ($limit > 0) {
+      $countQuery = $this->reportReader->getCountQueryWithRowData();
     }
     else {
+      $countQuery = $this->reportReader->getCountQuery();
+    }
+    if ($countQuery === NULL) {
       return FALSE;
     }
+    $countQuery = $this->mergeQueryWithParams($countQuery, FALSE);
+    $this->reportReader->applyWebsitePermissions(
+      $countQuery, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId
+    );
+    // If there is a HAVING clause in the query, then we cannot count
+    // aggregate queries in the normal way which is to strip the group by and
+    // count the appropriate fields. We have to run the full grouped query
+    // with the HAVING clause included, then use a subquery to count the rows.
+    if (!empty($this->having)) {
+      // If using a filter on an aggregated column we use a HAVING clause, we
+      // need to base our count on the rows in the original query. So, grab the
+      // main query from the report reader without the ORDER BY.
+      $query = $this->buildQuery(FALSE);
+      // Apply any limits on the number of records to bother counting.
+      $limitClause = empty($limit) ? '' : " LIMIT $limit";
+      $innerQuery = preg_replace('/LIMIT \d+/i', '', $query);
+      $countQuery = "SELECT COUNT(*) FROM ($innerQuery$limitClause) AS subquery";
+    }
+    elseif ($limit > 0) {
+      // Apply any limits on the number of records to bother counting.
+      $countQuery = "SELECT COUNT(*) FROM ($countQuery LIMIT $limit) AS subquery";
+    }
+    $tm = microtime(TRUE);
+    $r = $this->reportDb->query($countQuery)->result_array(FALSE);
+    kohana::log('debug', 'Count query: ' . $countQuery);
+    $tm = microtime(TRUE) - $tm;
+    if ($tm > 5) {
+      kohana::log('alert', "Count query took $tm seconds.");
+      kohana::log('alert', $this->report);
+      kohana::log('alert', $countQuery);
+    }
+    // Query could return no rows, in which case return zero. Or multiple if
+    // counting several UNIONED queries.
+    $count = 0;
+    foreach ($r as $row) {
+      $count += $row['count'];
+    }
+    // If the count query was unlimited or successfully found all the records
+    // we can remember it and the result.
+    if ($limit === 0 || $count < $limit) {
+      $this->countQuery = $countQuery;
+      $this->recordCountResult = $count;
+      // Since we've got the count data, we may as well return it.
+      $_REQUEST['wantCount'] = '1';
+    }
+    return $count;
   }
 
   /**
@@ -866,28 +912,21 @@ SQL;
     }
   }
 
-  private function mergeQuery() {
+  /**
+   * Perform the build of the main report query.
+   */
+  private function buildQuery($includeOrderBy = TRUE) {
     // Grab the query from the report reader.
     $query = $this->reportReader->getQuery();
-    $this->query = $this->mergeQueryWithParams($query);
-    $this->reportReader->applyPrivilegesFilters(
-      $this->query, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId);
+    $query = $this->mergeQueryWithParams($query, $includeOrderBy);
+    $this->reportReader->applyWebsitePermissions(
+      $query, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId
+    );
+    return $query;
   }
 
-  private function mergeCountQuery() {
-    // Grab the query from the report reader.
-    $query = $this->reportReader->getCountQuery();
-    if ($query !== NULL) {
-      $this->countQuery = $this->mergeQueryWithParams($query, TRUE);
-      $this->reportReader->applyPrivilegesFilters(
-        $this->countQuery, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId);
-    }
-    else {
-      $this->countQuery = NULL;
-    }
-  }
-
-  private function mergeQueryWithParams($query, $counting = FALSE) {
+  private function mergeQueryWithParams($query, $includeOrderBy = TRUE) {
+    $this->having = [];
     // Replace each parameter in place.
     $paramDefs = $this->reportReader->getParams();
     // Clear the list of standardised parameter joins so we start afresh.
@@ -1062,7 +1101,7 @@ SQL;
       array('', '', '', $having, '', ''),
     $query);
     // Allow the URL to provide a sort order override.
-    if (!$counting) {
+    if ($includeOrderBy) {
       // Prioritise any URL provided sort order, but still keep any other sort ordering in the report.
       $orderBy = $this->reportReader->getOrderClause();
       if ($orderBy) {
@@ -1084,7 +1123,8 @@ SQL;
         if ($count === 0) {
           $query .= " ORDER BY $orderBy";
         }
-      } else {
+      }
+      else {
         $query = preg_replace("/#order_by#/", "", $query);
       }
       if (isset($this->limit)) {
@@ -1103,8 +1143,21 @@ SQL;
   /**
    * Query plan optimisations.
    *
-   * Forces a switch of query plan to avoid slow queries where the record count is less than the limit, causing a
-   * walk through the entire table.
+   * Forces a switch of query plan to avoid slow queries where the record count
+   * is less than the limit, causing a walk through the entire table.
+   *
+   * If loading the first page of a report grid then the PG query planner may
+   * opt to scan an index as it judges the first page of records matching the
+   * filter will be found in the first part of the index. If this is a mistake
+   * and there aren't enough records to fill the first page the result is a
+   * very slow index scan, loading all the records and filtering them until the
+   * whole table has been checked. To avoid this, when performing a limited
+   * query we use a fairly fast variant on the record count query which only
+   * counts up to the number of records on the page. If we discover there
+   * aren't enought records for the first page, we change the sort order to
+   * confuse the query planner so it can't walk the index. This results in an
+   * indexed filter of the records first, followed by a sort, which is much
+   * faster.
    *
    * @param string $orderBy
    *   Current query order by setting.
@@ -1115,10 +1168,21 @@ SQL;
    * @link http://stackoverflow.com/questions/6037843/extremely-slow-postgresql-query-with-order-and-limit-clauses
    */
   private function optimiseQueryPlan($orderBy) {
-    if (preg_match('/o.id (desc|asc)/i', $orderBy)
-        && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') || isset($_REQUEST['knownCount']))) {
-      // Grab the count now. If less than the limit, we fudge the order by to switch query plan.
-      $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->record_count();
+    // If we are limited to a relatively few number of records.
+    if (!empty($this->limit) && $this->limit < 200) {
+      $count = FALSE;
+      if (preg_match('/o.id (desc|asc)/i', $orderBy)
+          && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') || isset($_REQUEST['knownCount']))) {
+        // Grab the count now. If less than the limit, we fudge the order by to
+        // switch query plan.
+        $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->recordCount();
+      }
+      else {
+        // Don't want a full count, but because of high risk of an abort early
+        // plan causing a full table scan, do a limited count first to see if
+        // more than 1 page of data.
+        $count = $this->recordCount($this->limit);
+      }
       if ($count !== FALSE && $count < $this->limit) {
         kohana::log('debug', 'Optimising query plan by changing sort order to o.id+0.');
         return str_replace('.id', '.id+0', $orderBy);
