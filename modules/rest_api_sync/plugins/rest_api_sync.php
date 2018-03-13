@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Warehouse version configuration.
+ * Plugin methods for the rest_api_sync module.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -19,27 +19,21 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link https://github.com/indicia-team/warehouse/
  */
 
-defined('SYSPATH') or die('No direct script access.');
+/**
+ * Create a menu item for the Rest API sync UI.
+ */
+function rest_api_sync_alter_menu($menu, $auth) {
+  if ($auth->logged_in('CoreAdmin')) {
+    $menu['Admin']['Rest API sync'] = 'rest_api_sync_skipped_record';
+  }
+  return $menu;
+}
 
-/**
- * The application files' version number.
- *
- * @var string
- */
-$config['version'] = '1.56.3';
-/**
- * Version release date.
- *
- * @var string
- */
-$config['release_date'] = '2018-03-11';
-
-/**
- * Link to the code repository downloads page.
- *
- * @var string
- */
-$config['repository'] = 'https://github.com/Indicia-Team/warehouse/releases';
+function rest_api_sync_extend_data_services() {
+  return array(
+    'rest_api_sync_skipped_records' => array(),
+  );
+}

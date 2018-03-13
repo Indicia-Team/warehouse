@@ -1426,7 +1426,7 @@ class Rest_Controller extends Controller {
     $output = $this->reportEngine->requestReport("$report.xml", 'local', 'xml',
       $params, !empty($this->resourceOptions['cached']));
     // Include count query results if not already known from a previous request
-    $output['count'] =  empty($_GET['known_count']) ? $this->reportEngine->record_count() : $_GET['known_count'];
+    $output['count'] =  empty($_GET['known_count']) ? $this->reportEngine->recordCount() : $_GET['known_count'];
     return $output;
   }
 

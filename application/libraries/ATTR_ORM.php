@@ -153,7 +153,7 @@ abstract class ATTR_ORM extends Valid_ORM {
     $s = $this->submission;
     if (isset($s['metaFields']) &&
         isset($s['metaFields']['quick_termlist_create']) &&
-        $s['metaFields']['quick_termlist_create']['value'] === 't' &&
+        $s['metaFields']['quick_termlist_create']['value'] === '1' &&
         (empty($s['fields']['termlist_id']) || empty($s['fields']['termlist_id']['value']))) {
       $terms = data_entry_helper::explode_lines($s['metaFields']['quick_termlist_terms']['value']);
       $termlist = ORM::factory('termlist');

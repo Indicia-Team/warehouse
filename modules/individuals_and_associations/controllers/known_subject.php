@@ -96,10 +96,11 @@ class Known_subject_Controller extends Gridview_Base_Controller {
     $join_ids = array();
     $join_keys = preg_grep('/^joinsTo:'.$singular_table.':[0-9]+$/', array_keys($values));
     foreach ($join_keys as $key) {
-      $id = substr($key, strlen('joinsTo:'.$singular_table.':'));
+      $id = substr($key, strlen("joinsTo:$singular_table:"));
       if ($id_only) {
         $join_ids[] = $id;
-      } else {
+      }
+      else {
         $name = ORM::Factory($singular_table, $id)->taxon->taxon;
         $join_ids[$id] = $name;
       }
@@ -107,7 +108,7 @@ class Known_subject_Controller extends Gridview_Base_Controller {
     return $join_ids;
   }
 
-    /**
+  /**
    * Return a list of the tabs to display for this controller's actions.
    */
   protected function getTabs($name) {
@@ -116,7 +117,7 @@ class Known_subject_Controller extends Gridview_Base_Controller {
         'controller' => 'known_subject_comment',
         'title' => 'Comments',
         'actions'=>array('edit')
-      )
+      ),
     );
   }
 }

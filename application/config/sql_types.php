@@ -46,6 +46,7 @@ $config = array(
   'blob' => array('type' => 'string', 'binary' => TRUE),
   'text' => array('type' => 'string'),
   'array' => array('type' => 'int'),
+  'json' => array('type' => 'string'),
   'jsonb' => array('type' => 'string', 'binary' => TRUE),
 );
 

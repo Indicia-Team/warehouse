@@ -483,7 +483,7 @@ CREATE OR REPLACE VIEW list_taxa_taxon_list_attribute_values AS
     NULL::unknown AS taxa_taxon_list_id,
     a.id AS taxa_taxon_list_attribute_id,
     a.caption,
-    a.caption_i18n,
+    a.caption_i18n::text,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -509,7 +509,7 @@ UNION
     ttl.id AS taxa_taxon_list_id,
     a.id AS taxa_taxon_list_attribute_id,
     a.caption,
-    a.caption_i18n,
+    a.caption_i18n::text,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar

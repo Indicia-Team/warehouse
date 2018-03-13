@@ -8,6 +8,8 @@
   join cache_occurrences_nonfunctional onf on onf.id=o.id
   join cache_samples_nonfunctional snf on snf.id=o.sample_id
   join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  -- for metadata
+  join occurrences occ on occ.id=o.id and occ.deleted=false
   join samples s on s.id=o.sample_id and s.deleted=false
   left join samples sparent on sparent.id=s.parent_id and sparent.deleted=false
   left join locations l on l.id=s.location_id and l.deleted=false
@@ -65,5 +67,6 @@
     <column name="locality_ids" sql="array_to_string(array_agg(locality.id), '|')" aggregate="true" visible="false" />
     <column name='website_id' sql="o.website_id" visible="false" />
     <column name='default_common_name' sql='cttl.default_common_name' visible="false" />
+    <column name='metadata' visible="false" sql='occ.metadata::text' />
   </columns>
 </report>
