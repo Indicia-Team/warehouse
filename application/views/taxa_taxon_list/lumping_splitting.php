@@ -225,7 +225,7 @@ performSplit = function(){
 </script>
 
 <div id="lumpandsplit">
-<form class="cmxform" >
+<form>
   Lumping and splitting are special cases of Relationships. They implement a means to implement changes in the taxon list over time, as individual taxa are split up into a set of taxa, or the opposite, where several taxa are lumped together into another.<br/><br/>
 <?php
   if($can_split == false){
