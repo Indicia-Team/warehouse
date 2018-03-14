@@ -11,6 +11,7 @@
   #joins#
   WHERE #sharing_filter#
   AND o.record_status&lt;&gt;'R'
+  AND o.media_count>0
   </query>
   <order_bys>
     <order_by>o.id DESC</order_by>

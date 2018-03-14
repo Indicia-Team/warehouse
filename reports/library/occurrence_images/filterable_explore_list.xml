@@ -14,7 +14,8 @@
   JOIN cache_termlists_terms mtype on mtype.id=om.media_type_id
   #agreements_join#
   #joins#
-  WHERE #sharing_filter# 
+  WHERE #sharing_filter#
+  AND o.media_count>0
   #idlist#
   </query>
   <order_bys>
@@ -25,6 +26,10 @@
            description='Comma separated list of sample attribute IDs to include as columns in the report' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include as columns in the report' datatype='occattrs' default='' />
     <param name='default_input_form' display='Default input form' description='Input form path to use when no other available' default='' />
+    <param name="moderation" display="Moderation" description="Defined moderation requirements" datatype="lookup" default=''
+        lookup_values="exclude_anon_unverified:Exclude anonymous unverified records">
+      <where value="exclude_anon_unverified">(o.created_by_id&lt;&gt;1 or o.record_status='V')</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' template="&lt;div class='status-{record_status} certainty-{certainty} record-id'&gt;{occurrence_id}&lt;/div&gt;" datatype="integer" />
@@ -35,7 +40,7 @@
 	      ELSE '&lt;em&gt;' || cttl.preferred_taxon || '&lt;/em&gt;' || COALESCE('&lt;br/&gt;' || cttl.default_common_name, '') END" datatype='text' />
     <column name='taxon_group' display='Taxon Group' sql='cttl.taxon_group' datatype="text" />
     <column name='taxon_group_id' display='Taxon Group ID' sql='o.taxon_group_id' visible='false' datatype="integer" />
-    <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype="integer" />   
+    <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype="integer" />
     <column name='location_name' display='Site name' sql='o.location_name' datatype="text" />
     <column name='entered_sref' display='Grid Ref' sql="regexp_replace(#sample_sref_field#, ',[^ ]', ', ', 'g')" datatype="text" />
     <column name='date_start' sql='o.date_start' visible='false' />
