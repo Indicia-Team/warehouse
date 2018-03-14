@@ -69,12 +69,13 @@ class Indicia_Controller extends Template_Controller {
     if ($this->auth->logged_in()) {
       $this->template->menu = self::getMenu();
     }
-    // If there is a file with same name as the main view, load it into a
-    // variable in the template so the script can be included.
-    $jsFile = Router::$controller . '/' . Router::$method . '.js';
+    // If there is a file with same name as the controller actionw, load it
+    // into a variable in the template so the script can be included. Treat
+    // the edit and create actions as the same for this purpose.
+    $method = Router::$method === 'create' ? 'edit' : Router::$method;
     $jsFile = preg_replace(
       '/\/controllers\/.*/',
-      '/views/' . Router::$controller . '/' . Router::$method . '.js',
+      '/views/' . Router::$controller . "/$method.js",
       Router::$controller_path
     );
     if (file_exists($jsFile)) {

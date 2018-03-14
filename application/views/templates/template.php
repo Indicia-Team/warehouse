@@ -51,7 +51,6 @@ echo html::stylesheet(
     "media/themes/$theme/jquery-ui.theme.min",
     'media/css/default_site.css',
     'media/css/theme-bootstrap-3.css',
-    'media/css/menus',
   ),
   array('screen')
 );
@@ -86,9 +85,9 @@ if (isset($jsFile)) {
             <a class="dropdown-toggle" data-toggle="dropdown"><?php echo $toplevel; ?>
             <span class="caret"></span></a>
             <ul class="dropdown-menu">
-            <?php foreach ($contents as $menuitem => $url) : ?>
-                <li><?php echo html::anchor($url, $menuitem); ?></li>
-            <?php endforeach; ?>
+              <?php foreach ($contents as $menuitem => $url) : ?>
+              <li><?php echo html::anchor($url, $menuitem); ?></li>
+              <?php endforeach; ?>
             </ul>
           </li>
           <?php elseif (is_string($contents)) : ?>

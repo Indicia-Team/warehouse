@@ -30,9 +30,10 @@ class Taxon_Relation_Model extends ORM {
     'updated_by' => 'user',
     'from_taxon_meaning' => 'taxon_meaning',
     'to_taxon_meaning' => 'taxon_meaning',
-    'taxon_relation_type');
+    'taxon_relation_type',
+  );
 
-  public function validate(Validation $array, $save = false) {
+  public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('from_taxon_meaning_id', 'required');
     $array->add_rules('to_taxon_meaning_id', 'required');

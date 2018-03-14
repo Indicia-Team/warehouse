@@ -19,108 +19,78 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'taxon_relation:id');
-$relations = ORM::factory('taxon_relation_type')->orderby('id','asc')->find_all();
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+$relations = ORM::factory('taxon_relation_type')->orderby('id', 'asc')->find_all();
+$relationsList = [];
+foreach ($relations as $relation) {
+  $relationsList[] = [
+    'id' => $relation->id,
+    'forward_term' => $relation->forward_term,
+    'reverse_term' => $relation->reverse_term,
+  ];
+}
+$relationsJson = json_encode($relationsList);
+data_entry_helper::$javascript .= "indiciaData.subTypes = $relationsJson;\n";
 ?>
-<script type="text/javascript" >
-var subTypes = [
-<?php
-  foreach ($relations as $relation) {
-    echo '	{id: '.$relation->id.', forward_term: "'.$relation->forward_term.'", reverse_term: "'.$relation->reverse_term.'"},';
-  }
-?>
-];
-
-$(document).ready(function() {
-  $("input#from_taxon,input#to_taxon").autocomplete("<?php echo url::site() ?>services/data/taxa_taxon_list", {
-    minChars : 1,
-//    mustMatch : true,
-    extraParams : {
-      orderby : "taxon",
-      mode : "json",
-      deleted : 'false',
-      view : 'detail',
-      qfield : 'taxon'
-    },
-    parse: function(data) {
-      var results = [];
-      $.each(data, function(i, item) {
-        results[results.length] = {
-          'data' : item,
-          'value' : item.taxon_meaning_id,
-          'result' : item.taxon };
-      });
-      return results;
-    },
-    formatItem: function(item) {
-      return item.taxon;
-    },
-    formatResult: function(item) {
-      return item.taxon_meaning_id;
-    }
-  });
-  $("input#from_taxon").result(function(event, data){
-    $("input#from_taxon_meaning_id").attr('value', data.taxon_meaning_id);
-  });
-  $("input#to_taxon").result(function(event, data){
-    $("input#to_taxon_meaning_id").attr('value', data.taxon_meaning_id);
-  });
-  $("#taxon_relation_type_id").change(function(){
-    for (var i = 0; i < subTypes.length; i++){
-      if (subTypes[i].id == jQuery(this).val()) {
-        jQuery("#term").val(subTypes[i].forward_term);
-      }
-    }
-  });
-});
-</script>
 <p>This page allows you to specify the details of a taxon relationship.</p>
-<form class="cmxform" action="<?php echo url::site().'taxon_relation/save'; ?>" method="post" enctype="multipart/form-data">
-<?php echo $metadata; ?>
-<fieldset>
-<input type="hidden" name="taxon_relation:id" value="<?php echo $id ?>" />
-<input type="hidden" id="from_taxon_meaning_id" name="taxon_relation:from_taxon_meaning_id" value="<?php echo html::initial_value($values, 'taxon_relation:from_taxon_meaning_id'); ?>" />
-<input type="hidden" id="to_taxon_meaning_id" name="taxon_relation:to_taxon_meaning_id" value="<?php echo html::initial_value($values, 'taxon_relation:to_taxon_meaning_id'); ?>" />
-<input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
-<legend>Relationship details</legend>
-<ol>
-<li>
-<label for="taxon_relation_type_id">Relationship</label>
-<select name="taxon_relation:taxon_relation_type_id" id="taxon_relation_type_id">
-  <option value=''>&lt;Please select&gt;</option>
-<?php
-  $selected = html::initial_value($values, 'taxon_relation:taxon_relation_type_id');
-  foreach ($relations as $relation) {
-    echo '	<option value="'.$relation->id.'" ';
-    if ($relation->id==$selected) {
-      echo 'selected="selected" ';
-    }
-    echo '>'.$relation->caption.'</option>';
-  }
-?>
-</select>
-<?php echo html::error_message($model->getError('taxon_relation:taxon_relation_type_id')); ?>
-</li>
-<li>
-<input type="button" value="Swap Taxa" onclick="var x = jQuery('#from_taxon').val(); jQuery('#from_taxon').val(jQuery('#to_taxon').val()); jQuery('#to_taxon').val(x); x = jQuery('#from_taxon_meaning_id').val(); jQuery('#from_taxon_meaning_id').val(jQuery('#to_taxon_meaning_id').val()); jQuery('#to_taxon_meaning_id').val(x)" class="btn btn-default" />
-</li>
-<li>
-<label for="from_taxon">Taxon Name:</label>
-<input name="taxon:from_taxon" id="from_taxon" value="<?php echo html::initial_value($values, 'taxon:from_taxon'); ?>"/>
-<?php echo html::error_message($model->getError('taxon:taxon')); ?>
-</li>
-<li>
-<label for="term"></label>
-<input name="relation:term" id="term" value="<?php echo html::initial_value($values, 'relation:term'); ?>" disabled="disabled" />
-<?php echo html::error_message($model->getError('taxon:taxon')); ?>
-</li>
-<li>
-<label for="to_taxon">Taxon Name:</label>
-<input name="taxon:to_taxon" id="to_taxon" value="<?php echo html::initial_value($values, 'taxon:to_taxon'); ?>"/>
-<?php echo html::error_message($model->getError('taxon:taxon')); ?>
-</li>
+<form id="taxon-relation-edit" action="<?php echo url::site() . 'taxon_relation/save'; ?>" method="post">
+  <fieldset>
+    <legend>Relationship details<?php echo $metadata; ?></legend>
+    <input type="hidden" name="taxon_relation:id" value="<?php echo $id ?>" />
+    <input type="hidden" id="from_taxon_meaning_id" name="taxon_relation:from_taxon_meaning_id" value="<?php echo html::initial_value($values, 'taxon_relation:from_taxon_meaning_id'); ?>" />
+    <input type="hidden" id="to_taxon_meaning_id" name="taxon_relation:to_taxon_meaning_id" value="<?php echo html::initial_value($values, 'taxon_relation:to_taxon_meaning_id'); ?>" />
+    <input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
+    <?php
+    echo data_entry_helper::select([
+      'label' => 'Relationship',
+      'blankText' => '<Please select>',
+      'fieldname' => 'taxon_relation:taxon_relation_type_id',
+      'default' => 'taxon_relation:taxon_relation_type_id',
+      'table' => 'taxon_relation_type',
+      'valueField' => 'id',
+      'captionField' => 'caption',
+      'extraParams' => $readAuth,
+      'validation' => ['required'],
+    ])
+    ?>
+    <input type="button" id="swap-taxa" value="Swap Taxa" class="btn btn-default" />
+    <?php
 
-</ol>
-</fieldset>
-<?php echo html::form_buttons($id!=null, false, false); ?>
+
+    // @todo Problem with getting the taxon_list_id after a validation failure.
+    $speciesLookupOptions = [
+      'valueField' => 'taxon_meaning_id',
+      'extraParams' => $readAuth + [
+        'taxon_list_id' => $values['taxa_taxon_list:taxon_list_id'],
+      ],
+      'speciesIncludeBothNames' => TRUE,
+      'speciesIncludeAuthorities' => TRUE,
+      'speciesIncludeTaxonGroup' => TRUE,
+    ];
+
+
+    echo data_entry_helper::species_autocomplete($speciesLookupOptions + [
+      'label' => 'From taxon',
+      'fieldname' => 'taxon_relation:from_taxon_meaning_id',
+      'default' => html::initial_value($values, 'taxon_relation:from_taxon_meaning_id'),
+      'defaultCaption' => html::initial_value($values, 'taxon:from_taxon'),
+    ]);
+    ?>
+    <div class="alert alert-info" id="term"><?php echo html::initial_value($values, 'relation:term'); ?></div>
+    <?php
+    echo data_entry_helper::species_autocomplete($speciesLookupOptions + [
+      'fieldname' => 'taxon:to_taxon',
+      'valueField' => 'taxon_meaning_id',
+      'default' => html::initial_value($values, 'taxon_relation:to_taxon_meaning_id'),
+      'defaultCaption' => html::initial_value($values, 'taxon:to_taxon'),
+    ]);
+    ?>
+  </fieldset>
+  <?php
+  echo html::form_buttons($id !== NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('taxon-relation-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
