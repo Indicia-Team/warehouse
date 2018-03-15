@@ -2,7 +2,7 @@
 <report title="Broad list of people for lookup"
         description="A list of people known to a website including both registered users and people only stored in a
         custom attribute.">
-  <query website_filter_field="uw.website_id">
+  <query website_filter_field="uw.website_id" count_field="u.id, p.surname || ', ' || p.first_name, p.email_address">
     SELECT #columns#
     FROM users u
     JOIN users_websites uw ON u.id = uw.user_id AND uw.site_role_id IS NOT NULL
