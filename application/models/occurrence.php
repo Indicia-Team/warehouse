@@ -591,7 +591,7 @@ class Occurrence_Model extends ORM {
         'default' => 'C'
       )
     );
-    if (!empty($options['activate_global_sample_method']) && $options['activate_global_sample_method'] === 't') {
+    if (!empty($options['activate_global_sample_method']) && ($options['activate_global_sample_method'] === 't' || $options['activate_global_sample_method'] === true)) {
       $retVal['sample:sample_method_id'] = array(
         'display' => 'Sample Method',
         'description' => 'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a ' .
@@ -600,7 +600,7 @@ class Occurrence_Model extends ORM {
         'lookup_values' => implode(',', $sample_methods)
       );
     }
-    if (!empty($options['activate_parent_sample_method_filter']) && $options['activate_parent_sample_method_filter']==='t') {
+    if (!empty($options['activate_parent_sample_method_filter']) && ($options['activate_parent_sample_method_filter']==='t' || $options['activate_parent_sample_method_filter']=== true)) {
       $retVal['fkFilter:sample:sample_method_id'] = array(
         'display' => 'Parent Sample Method',
         'description' => 'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked ' .
@@ -619,7 +619,7 @@ class Occurrence_Model extends ORM {
       );
     }
 
-    if (!empty($options['occurrence_associations']) && $options['occurrence_associations'] === 't' &&
+    if (!empty($options['occurrence_associations']) && ($options['occurrence_associations'] === 't' || $options['occurrence_associations'] === TRUE) &&
         self::_check_module_active('occurrence_associations')) {
       $retVal['useAssociations'] = array(
         'display' => 'Use associations',
