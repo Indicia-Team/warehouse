@@ -195,7 +195,7 @@ class Import_Controller extends Service_Base_Controller {
     if (isset($metadata['importMergeFields'])) {
       $metadata['importMergeFields'] = json_decode($metadata['importMergeFields'], TRUE);
     }
-
+    
     // the metadata can also hold auth tokens and user_id, though they do not need decoding.
     self::internal_cache_upload_metadata($metadata);
     echo "OK";
@@ -321,8 +321,8 @@ class Import_Controller extends Service_Base_Controller {
       // check if the conditions for special field processing are met - all the columns are in the mapping.
       $specialFieldProcessing = array();
       if (isset($model->special_import_field_processing_defn)) {
-        foreach ($model->special_import_field_processing_defn as $col => $defn) {
-          $columns = array();
+        foreach ($model->special_import_field_processing_defn as $column => $defn) {
+            $columns = array();
           $index = 0;
           foreach ($metadata['mappings'] as $col => $attr) {
             if ($col !== 'RememberAll' && substr($col, -9) !== '_Remember' && $col != 'AllowLookup') {
@@ -333,9 +333,7 @@ class Import_Controller extends Service_Base_Controller {
             $index++;
           }
           if (count($defn['columns']) === count(array_keys($columns))) {
-            foreach ($metadata['mappings'] as $col => $attr) {
-              $specialFieldProcessing[$col] = TRUE;
-            }
+              $specialFieldProcessing[$column] = TRUE;
           }
         }
       }
@@ -388,15 +386,15 @@ class Import_Controller extends Service_Base_Controller {
             $index++;
           }
         }
-        foreach ($specialFieldProcessing as $col => $indices) {
-          if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
-            $saveArray[$col] = vsprintf($model->special_import_field_processing_defn[$col]->template,
-                    array_map(function ($column) {
+        foreach ($specialFieldProcessing as $col => $discard) {
+            if (!isset($saveArray[$col]) || $saveArray[$col] == '') {
+            $saveArray[$col] = vsprintf($model->special_import_field_processing_defn[$col]['template'],
+                array_map(function ($column) use ($saveArray){
                         return $saveArray[$column];
-                    },
-                    $model->special_import_field_processing_defn[$col] ));
-            foreach ($model->special_import_field_processing_defn[$col]->columns as $column) {
-              unset($saveArray[$col]);
+                      },
+                      $model->special_import_field_processing_defn[$col]['columns']));
+            foreach ($model->special_import_field_processing_defn[$col]['columns'] as $column) {
+              unset($saveArray[$column]);
             }
           }
         }
@@ -405,7 +403,8 @@ class Import_Controller extends Service_Base_Controller {
           foreach ($fieldSpec['virtualFields'] as $subFieldSpec) {
             $col = $fieldSpec['fieldName'] . ':' . $subFieldSpec['fieldNameSuffix'];
             if (isset($saveArray[$col])) {
-              $merge[] = (isset($subFieldSpec['dataPrefix']) ? $subFieldSpec['dataPrefix'] : '') .
+              if($saveArray[$col] !== '')
+                $merge[] = (isset($subFieldSpec['dataPrefix']) ? $subFieldSpec['dataPrefix'] : '') .
                                 $saveArray[$col] .
                                 (isset($subFieldSpec['dataSuffix']) ? $subFieldSpec['dataSuffix'] : '');
               unset($saveArray[$col]);
@@ -763,7 +762,10 @@ class Import_Controller extends Service_Base_Controller {
             $superModel = ORM::Factory($modelName);
             self::mergeExistingRecordIDs($modelName, $modelName, $sm->attrs_field_prefix, "", $metadata, $superModel, $saveArray, TRUE);
           }
-          else if ($modelName === 'term' && isset($metadata['mappings']) && isset($metadata['mappings']['lookupSelect' . $model->object_name]) && $metadata['mappings']['lookupSelect' . $model->object_name] !== '') {
+          else if ($modelName === 'term' && isset($metadata['mappings']) &&
+              isset($metadata['mappings']['lookupSelect' . $model->object_name]) &&
+              $metadata['mappings']['lookupSelect' . $model->object_name] !== '' &&
+              isset($saveArray['term:term'])) {
             // special case for termlist_terms, and their term supermodel: have to look up using complex query to get the link between the termlist and the term
             // no attributes. No website join. The term and termlist_id have to be provided at this point.
             $db = Database::instance();
@@ -784,6 +786,44 @@ class Import_Controller extends Service_Base_Controller {
               $saveArray[$modelName . ':id'] = $existing[0]['term_id'];
               $saveArray['meaning:id'] = $existing[0]['meaning_id'];
               // No attributes for terms.
+            }
+          }
+          else if ($modelName === 'taxon' && isset($metadata['mappings']) && 
+              isset($metadata['mappings']['lookupSelect' . $model->object_name]) && 
+              $metadata['mappings']['lookupSelect' . $model->object_name] !== '') {
+            // same for taxa_taxon_lists, and their taxon supermodel: have to look up using complex query to get the link between the taxon_list and the taxon
+            // This has attributes. No website join. The taxon and taxon_list_id have to be provided at this point.
+            $fields = json_decode($metadata['mappings']['lookupSelect' . $model->object_name]);
+            $fields = array_map(
+              function ($field) {
+                return $field->fieldName;
+              }, $fields);
+              $db = Database::instance();
+              // Have to use a db as this may have a join
+            $query = "SELECT ttl.taxon_id, ttl.taxon_meaning_id " .
+                  "FROM indicia.taxa_taxon_lists ttl " .
+                  "JOIN indicia.taxa t ON t.id = ttl.taxon_id AND t.deleted = false " .
+                  "JOIN indicia.taxon_lists tl ON tl.id = ttl.taxon_list_id AND tl.deleted = false " .
+                  "WHERE ttl.deleted = false " .
+                  "AND t.language_id = " . $saveArray['taxon:language_id'] .
+                  (isset($saveArray['taxa_taxon_list:fk_taxon_list']) ?
+                      " AND tl.title = '" . $saveArray['taxa_taxon_list:fk_taxon_list'] . "'" :
+                      " AND ttl.taxon_list_id = " . $saveArray['taxa_taxon_list:taxon_list_id']);
+            if (in_array('taxon:taxon', $fields) && isset($saveArray['taxon:taxon'])) {
+              $query .= "AND t.taxon='" . $saveArray['taxon:taxon'] . "' ";
+              $existing = $db->query($query)->result_array(FALSE);
+            } else if (in_array('taxon:external_key', $fields) && isset($saveArray['taxon:external_key'])) {
+              $query .= "AND t.external_key ='" . $saveArray['taxon:external_key'] . "' ";
+              $existing = $db->query($query)->result_array(FALSE);
+            } else {
+              $existing = array();
+            }
+            if (count($existing) > 0) {
+              // If an previous record exists, we have to check for existing attributes.
+              // Note this only works properly on single value attributes.
+              $saveArray[$modelName . ':id'] = $existing[0]['taxon_id'];
+              $saveArray['taxon_meaning:id'] = $existing[0]['taxon_meaning_id'];
+              // TODO attributes.
             }
           }
         }
