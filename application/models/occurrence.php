@@ -108,24 +108,46 @@ class Occurrence_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     if ($save) {
       $this->logDeterminations($array);
-      $fields = $this->submission['fields'];
-      // If updating an existing record that has been checked by a verifier, without setting a new record status and
-      // without changing the release status (i.e. releasing the record from a silo) then reset the current verification
-      // status.
-      $isChecked = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
-      $settingNewRecordStatus =
-        (!empty($fields['record_status']) && $fields['record_status']['value'] !== 'C') ||
-        (!empty($fields['record_substatus']) && $fields['record_status']['value'] == 4);
-      $releasing = !empty($fields['release_status']);
-      if ($this->id && $isChecked && !$settingNewRecordStatus && !$releasing && $this->wantToUpdateMetadata) {
-        // If we update a processed occurrence but don't set the verification or release state, revert it to
-        // completed/awaiting verification.
-        $array->verified_by_id = NULL;
-        $array->verified_on = NULL;
-        $array->record_status = 'C';
-        $array->record_substatus = NULL;
-        $this->requeuedForVerification = TRUE;
+      $fields = array_merge($this->submission['fields']);
+      $newStatus = empty($fields['record_status']) ? $this->record_status : $fields['record_status']['value'];
+      $newSubstatus = empty($fields['record_substatus']) ? $this->record_status : $fields['record_substatus']['value'];
+      $releaseStatusChanging = !empty($fields['release_status']) && $fields['release_status']['value'] !== $this->release_status;
+      $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
+      $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
+      $isAlreadyReviewed = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
+      // Is this post going to change the record status or substatus?
+      if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
+        if ($newStatus === 'V' || $newStatus === 'R') {
+          // If verifying or not verifying, then set the verification metadata.
+          $defaultUserId = Kohana::config('indicia.defaultPersonId');
+          $array->verified_by_id = $this->get_current_user_id();
+          $array->verified_on = date("Ymd H:i:s");
+        }
+        else {
+          // If any status other than accepted or not accepted we don't want
+          // the verification metadata filled in.
+          $array->verified_by_id = NULL;
+          $array->verified_on = NULL;
+        }
       }
+      elseif ($this->wantToUpdateMetadata && $isAlreadyReviewed) {
+        // We are making a change to a previously reviewed record that doesn't
+        // explicitly set the status. If the change is to the release status
+        // or occurrence metadata field, then we don't do anything, otherwise
+        // we reset the verification data.
+        if ((!$releaseStatusChanging && !$metadataFieldChanging) || $identChanging) {
+          $array->verified_by_id = NULL;
+          $array->verified_on = NULL;
+          $array->record_status = 'C';
+          $array->record_substatus = NULL;
+          $this->requeuedForVerification = TRUE;
+        }
+      }
+    }
+    if ($array->record_status === 'C' && $array->record_substatus !== NULL && $array->record_substatus !== 3) {
+      // Plausible the only valid substatus for C (pending review). Other cases
+      // can occur if record form only posts a status.
+      $array->record_substatus = NULL;
     }
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
@@ -441,26 +463,6 @@ class Occurrence_Model extends ORM {
       $currentUserId = $this->get_current_user_id();
       if ($currentUserId !==1 )
         $this->submission['fields']['determiner_id']['value'] = $currentUserId;
-    }
-    if (array_key_exists('record_status', $this->submission['fields'])) {
-      $rs = $this->submission['fields']['record_status']['value'];
-      // If we are making it verified in the submitted data, but we don't already have a verifier in
-      // the database.
-      if (($rs == 'V' || $rs == 'R') && !$this->verified_by_id) {
-        $defaultUserId = Kohana::config('indicia.defaultPersonId');
-        // Set the verifier to the logged in user, or the default user ID from config if not logged
-        // into Warehouse, if it is not in the submission
-        if (!array_key_exists('verified_by_id', $this->submission['fields']))
-          $this->submission['fields']['verified_by_id']['value'] = isset($_SESSION['auth_user']) ? $_SESSION['auth_user'] : $defaultUserId;
-        // and store the date of the verification event if not specified.
-        if (!array_key_exists('verified_on', $this->submission['fields']))
-          $this->submission['fields']['verified_on']['value'] = date("Ymd H:i:s");
-      }
-      elseif ($rs === 'C' || $rs === 'I') {
-        // Completed or in progress data not verified.
-        $this->submission['fields']['verified_by_id']['value'] = '';
-        $this->submission['fields']['verified_on']['value'] = '';
-      }
     }
     parent::preSubmit();
   }
