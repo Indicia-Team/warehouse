@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for a list of custom attributes.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify

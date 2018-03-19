@@ -43,34 +43,30 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
   }
 
   public function index() {
-    // get the survey id from the segments in the URI
-    $segments=$this->uri->segment_array();
+    // Get the survey id from the segments in the URI.
+    $segments = $this->uri->segment_array();
     $this->_survey_id = $segments[2];
-    $this->pagetitle = 'Attributes for '.$this->getSurvey()->title;
+    $this->pagetitle = 'Attributes for ' . $this->getSurvey()->title;
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $this->page_breadcrumbs[] = $this->pagetitle;
-    $this->template->content=new View('attribute_by_survey/index');
-    $this->template->title=$this->pagetitle;
-    $filter = array('survey_id'=>$this->_survey_id);
+    $this->template->content = new View('attribute_by_survey/index');
+    $this->template->title = $this->pagetitle;
+    $filter = array('survey_id' => $this->_survey_id);
     $top_blocks = ORM::factory('form_structure_block')
-      ->where('parent_id',null)
+      ->where('parent_id', NULL)
       ->where('type', strtoupper(substr($this->type, 0, 1)))
       ->where($filter)
       ->orderby('weight', 'ASC')
       ->find_all();
     $this->template->content->top_blocks = $top_blocks;
     $this->template->content->filter = $filter;
-    // make a copy of the filter, tweaked for control filtering
-    $controlfilter = array_merge($filter);
-    $controlfilter['restrict_to_survey_id'] = $controlfilter['survey_id'];
-    unset($controlfilter['survey_id']);
-    $this->template->content->controlfilter = $controlfilter;
+    $this->template->content->controlfilter = ['restrict_to_survey_id' => $this->_survey_id];
     // Provide a list of publicly available attributes so existing ones can be added.
     $attrs = ORM::factory($this->type . '_attribute')
-      ->where(array('public'=>'t', 'deleted' => 'f'))
+      ->where(array('public' => 't', 'deleted' => 'f'))
       ->orderby('caption')
       ->find_all();
-    $this->template->content->existingAttrs=$attrs;
+    $this->template->content->existingAttrs = $attrs;
   }
 
   public function edit($id) {
@@ -85,21 +81,21 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
    * for re-ordering the controls.
    */
   public function layout_update() {
-    // Get the survey id from the segments in the URI
-    $segments=$this->uri->segment_array();
+    // Get the survey id from the segments in the URI.
+    $segments = $this->uri->segment_array();
     $this->_survey_id = $segments[3];
-    $structure = json_decode($_POST['layout_updates'],true);
+    $structure = json_decode($_POST['layout_updates'], TRUE);
     $websiteId = ORM::Factory('survey', $this->_survey_id)->website_id;
     $this->saveBlockList($structure['blocks'], NULL, $websiteId);
     $this->saveControlList($structure['controls'], NULL, $websiteId);
     $this->session->set_flash('flash_info', "The form layout changes have been saved.");
-    url::redirect('attribute_by_survey/' . $this->_survey_id . '?type='.$this->type);
+    url::redirect("attribute_by_survey/$this->_survey_id?type=$this->type");
   }
 
   private function saveBlockList($list, $blockId, $websiteId) {
     $weight = 0;
     foreach ($list as $block) {
-    $changed = FLSE;
+      $changed = FLSE;
       if (substr($block['id'], 0, 10) === 'new-block-') {
         $model = ORM::factory('form_structure_block');
         $model->name = $block['name'];
@@ -108,7 +104,8 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
         $model->type = strtoupper(substr($_GET['type'], 0, 1));
         $model->parent_id = $blockId;
         $changed = TRUE;
-      } elseif (substr($block['id'], 0, 6) == 'block-') {
+      }
+      elseif (substr($block['id'], 0, 6) == 'block-') {
         $id = str_replace('block-', '', $block['id']);
         $model = ORM::factory('form_structure_block', $id);
         if ($model->weight != $weight || $model->parent_id != $blockId || $model->name != $block['name']) {

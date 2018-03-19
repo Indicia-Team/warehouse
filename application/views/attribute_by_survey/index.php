@@ -84,9 +84,18 @@ PNLCHILD;
 <?php
 get_controls(NULL, $controlfilter);
 
-function get_controls($block_id, $controlfilter) {
+/**
+ * Echos the list of controls inside a block level.
+ *
+ * @param string $block_id
+ *   ID of the block, or NULL for top level.
+ * @param array Filter to apply, e.g. to the correct survey.
+ */
+function get_controls($block_id, array $controlfilter) {
   $id = "controls";
-  if ($block_id) $id .= '-for-block-' . $block_id;
+  if ($block_id) {
+    $id .= '-for-block-' . $block_id;
+  }
   echo "<ul id=\"$id\" class=\"control-list\">\n";
   $child_controls = ORM::factory($_GET['type'] . '_attributes_website')
     ->where('form_structure_block_id', $block_id)
@@ -97,22 +106,27 @@ function get_controls($block_id, $controlfilter) {
     echo '<li class="control-drop"></li>';
     // Prepare some dynamic property names.
     $attr = $_GET['type'] . '_attribute';
-    $attrId = $attr . '_id';
-    echo '<li id="control-' . $control->id . '" class="attribute-' . $control->$attrId . ' draggable-control panel panel-primary clearfix">'.
-        "<span class=\"handle\">&nbsp;</span>\n" .
-        '<span class="caption">' . $control->$attr->caption . " (ID {$control->$attrId})</span>\n" .
-        '<a class="control-delete pull-right btn btn-warning btn-xs">Delete</a>' .
-        '<a href="' . url::site() . 'attribute_by_survey/edit/' . $control->id . '?type=' . $_GET['type'] . "\" class=\"pull-right btn btn-default btn-xs\">Survey settings</a>\n" .
-        '<a href="' . url::site() . $_GET['type'] . "_attribute/edit/{$control->$attrId}\" class=\"pull-right btn btn-default btn-xs\">Global settings</a>\n" .
-        "</li>\n";
+    $attrIdField = $attr . '_id';
+    $attrId = $control->$attrIdField;
+    $caption = $control->$attr->caption;
+    $siteUrl = url::site();
+    echo <<<HTML
+<li id="control-$control->id" class="$attrId draggable-control panel panel-primary clearfix">
+  <span class="handle\">&nbsp;</span>
+  <span class="caption"> $caption (ID {$attrId})</span>
+  <a class="control-delete pull-right btn btn-warning btn-xs">Delete</a>
+  <a href="{$siteUrl}attribute_by_survey/edit/$control->id?type=$_GET[type]" class="pull-right btn btn-default btn-xs">Survey settings</a>
+  <a href="$siteUrl$_GET[type]_attribute/edit/{$control->$attrIdField}" class="pull-right btn btn-default btn-xs">Global settings</a>
+</li>
+HTML;
   }
   // Extra item to allow drop at end of list.
   echo '<li class="control-drop"></li>';
   echo "</ul>";
 }
 
- ?>
- </div>
+  ?>
+</div>
 
 <form style="display: none" id="layout-change-form" class="inline-form panel alert alert-info" action="<?php
     echo url::site() . 'attribute_by_survey/layout_update/' . $this->uri->last_segment() . '?type=' . $_GET['type'];
@@ -148,4 +162,3 @@ foreach ($existingAttrs as $attr) {
   $attrs["id$attr->id"] = $attr->caption;
 }
 data_entry_helper::$javascript .= "indiciaData.existingAttrs = " . json_encode($existingAttrs) . ";\n";
-?>

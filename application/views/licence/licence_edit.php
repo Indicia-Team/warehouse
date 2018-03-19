@@ -37,20 +37,20 @@ $id = html::initial_value($values, 'licence:id');
       'fieldname' => 'licence:title',
       'default' => html::initial_value($values, 'licence:title'),
       'helpText' => 'The main label used for this licence.',
-      'validation' => array('required')
+      'validation' => array('required'),
     ));
     echo data_entry_helper::text_input(array(
       'label' => 'Code',
       'fieldname' => 'licence:code',
       'default' => html::initial_value($values, 'licence:code'),
       'helpText' => 'The abbreviation or code used for this licence.',
-      'validation' => array('required')
+      'validation' => array('required'),
     ));
     echo data_entry_helper::textarea(array(
       'label' => 'Description',
       'fieldname' => 'licence:description',
       'default' => html::initial_value($values, 'licence:description'),
-      'helpText' => 'A description of this licence.'
+      'helpText' => 'A description of this licence.',
     ));
     echo data_entry_helper::text_input(array(
       'label' => 'URL (readable)',
@@ -58,7 +58,7 @@ $id = html::initial_value($values, 'licence:id');
       'default' => html::initial_value($values, 'licence:url_readable'),
       'helpText' => 'Link to the online licence page in plain rather than legal language if available.',
       'validation' => array('url'),
-      'class' => 'control-width-6'
+      'class' => 'control-width-6',
     ));
     echo data_entry_helper::text_input(array(
       'label' => 'URL (legal)',
@@ -66,7 +66,7 @@ $id = html::initial_value($values, 'licence:id');
       'default' => html::initial_value($values, 'licence:url_legal'),
       'helpText' => 'Link to the online licence page in legal rather than plain language if available.',
       'validation' => array('url'),
-      'class' => 'control-width-6'
+      'class' => 'control-width-6',
     ));
     ?>
   </fieldset>
