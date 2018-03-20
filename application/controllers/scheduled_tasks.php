@@ -324,22 +324,22 @@ class Scheduled_Tasks_Controller extends Controller {
       $emailContent .= self::unparseData($notification->data);
     }
     // Make sure we send the email to the last person in the list.
-    if ($currentUserId !== null) {
+    if ($currentUserId !== NULL) {
       // Send current email data.
       $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $currentCc);
     }
   }
 
   private function sendEmail($notificationIds, $swift, $userId, $emailContent, $cc) {
-    // Use a transaction to allow us to prevent the email sending and marking of notification as done
-    // getting out of step
+    // Use a transaction to allow us to prevent the email sending and marking
+    // of notification as done getting out of step.
     $this->db->begin();
     try {
       $this->db
-          ->set('acknowledged', 't')
-          ->from('notifications')
-          ->in('id', $notificationIds)
-          ->update();
+        ->set('acknowledged', 't')
+        ->from('notifications')
+        ->in('id', $notificationIds)
+        ->update();
       $email_config = Kohana::config('email');
       $userResults = $this->db
         ->select('people.email_address')
@@ -458,7 +458,12 @@ class Scheduled_Tasks_Controller extends Controller {
    * Look for records posted by recorders who have given their email address and want to receive a summary of the record they are posting.
    */
   private function doRecordOwnerNotifications($swift) {
-    // Get a list of the records which contributors want to get a summary back for.
+    // Workflow module can dictate that communications should be logged for
+    // some species.
+    $modules = kohana::config('config.modules');
+    $useWorkflowModule = in_array(MODPATH . 'workflow', $modules);
+    // Get a list of the records which contributors want to get a summary back
+    // for.
     $emailsRequired = $this->db
       ->select('DISTINCT occurrences.id as occurrence_id, sav2.text_value as email_address, surveys.title as survey')
       ->from('occurrences')
@@ -469,27 +474,40 @@ class Scheduled_Tasks_Controller extends Controller {
       ->join('sample_attribute_values as sav2', 'sav2.sample_id', 'samples.id')
       ->join('sample_attributes as sa2', 'sa2.id', 'sav2.sample_attribute_id')
       ->where(array(
-          'sa1.caption' => 'Email me a copy of the record',
-          'sa2.caption' => 'Email',
-          'samples.created_on>=' => $this->last_run_date,
+        'sa1.caption' => 'Email me a copy of the record',
+        'sa2.caption' => 'Email',
+        'samples.created_on>=' => $this->last_run_date,
       ))
       ->where('sav1.int_value<>0')
       ->get();
-
-    // Get a list of the records we need details of, so we can hit the db more efficiently.
-    $recordsToFetch = array();
+    // Get a list of the records we need details of, so we can hit the db more
+    // efficiently, plus a list of occurrence IDs and associated email
+    // addresses.
+    $recordsToFetch = [];
+    $occurrenceEmails = [];
     foreach ($emailsRequired as $email) {
       $recordsToFetch[] = $email->occurrence_id;
+      $occurrenceEmails[$email->occurrence_id] = $email->email_address;
     }
-    $occurrences = $this->db
+    $qry = $this->db
       ->select('o.id, ttl.taxon, s.date_start, s.date_end, s.date_type, s.entered_sref as spatial_reference, '.
           's.location_name, o.comment as sample_comment, o.comment as occurrence_comment')
       ->from('samples as s')
       ->join('occurrences as o', 'o.sample_id', 's.id')
-      ->join('list_taxa_taxon_lists as ttl', 'ttl.id', 'o.taxa_taxon_list_id')
-      ->in('o.id', $recordsToFetch)
-      ->get();
-    // Copy the occurrences to an array so we can build a structured list of data, keyed by ID
+      ->join('cache_taxa_taxon_lists as ttl', 'ttl.id', 'o.taxa_taxon_list_id')
+      ->in('o.id', $recordsToFetch);
+    if ($useWorkflowModule) {
+      // Extra query info to determine if comms need to be logged for this
+      // species.
+      $qry
+        ->select('wm.log_all_communications')
+        ->join('workflow_metadata as wm', 'wm.key_value', 'ttl.external_key', 'LEFT')
+        ->in('wm.entity', ['occurrence', NULL])
+        ->in('wm.key', ['taxa_taxon_list_external_key', NULL]);
+    }
+    $occurrences = $qry->get();
+    // Copy the occurrences to an array so we can build a structured list of
+    // data, keyed by ID.
     $occurrenceArray = array();
     foreach ($occurrences as $occurrence) {
       $occurrenceArray[$occurrence->id] = $occurrence;
@@ -497,27 +515,27 @@ class Scheduled_Tasks_Controller extends Controller {
     $attrArray = array();
     // Get the sample attributes.
     $attrValues = $this->db
-        ->select('o.id, av.caption, av.value')
-        ->from('list_sample_attribute_values as av')
-        ->join('samples as s', 's.id','av.sample_id')
-        ->join('occurrences as o', 'o.sample_id', 's.id')
-        ->in('o.id', $recordsToFetch)
-        ->get();
+      ->select('o.id, av.caption, av.value')
+      ->from('list_sample_attribute_values as av')
+      ->join('samples as s', 's.id', 'av.sample_id')
+      ->join('occurrences as o', 'o.sample_id', 's.id')
+      ->in('o.id', $recordsToFetch)
+      ->get();
     foreach ($attrValues as $attrValue) {
       $attrArray[$attrValue->id][$attrValue->caption] = $attrValue->value;
     }
     // Get the occurrence attributes.
     $attrValues = $this->db
-        ->select('av.occurrence_id, av.caption, av.value')
-        ->from('list_occurrence_attribute_values av')
-        ->in('av.occurrence_id',$recordsToFetch)
-        ->get();
+      ->select('av.occurrence_id, av.caption, av.value')
+      ->from('list_occurrence_attribute_values av')
+      ->in('av.occurrence_id', $recordsToFetch)
+      ->get();
     foreach ($attrValues as $attrValue) {
       $attrArray[$attrValue->occurrence_id][$attrValue->caption] = $attrValue->value;
     }
     $email_config = Kohana::config('email');
     foreach ($emailsRequired as $email) {
-      $emailContent = 'Thank you for sending your record to '.$email->survey.'. Here are the details of your contribution for your records.<br/><table>';
+      $emailContent = "Thank you for sending your record to $email->survey. Here are the details of your contribution for your records.<br/><table>";
       $this->addArrayToEmailTable($email->occurrence_id, $occurrenceArray, $emailContent);
       $this->addArrayToEmailTable($email->occurrence_id, $attrArray, $emailContent);
       $emailContent .= "</table>";
@@ -526,8 +544,32 @@ class Scheduled_Tasks_Controller extends Controller {
                                      'text/html');
       $recipients = new Swift_RecipientList();
       $recipients->addTo($email->email_address);
-      // send the email
+      // Send the email.
       $swift->send($message, $recipients, $email_config['address']);
+    }
+    if ($useWorkflowModule) {
+      foreach ($occurrences as $occurrence) {
+        if ($occurrence->log_all_communications === 't') {
+          $this->db->insert('occurrence_comments', array(
+            'occurrence_id' => $occurrence->id,
+            'comment' => "An acknowledgement email was sent to the record contributor.",
+            'correspondence_data' => json_encode([
+              'email' => [
+                [
+                  'from' => $email_config['address'],
+                  'to' => $occurrenceEmails[$occurrence->id],
+                  'subject' => kohana::lang('misc.notification_subject', kohana::config('email.server_name')),
+                  'body' => 'Details of the record and attributes sent as part of a digest email.',
+                ],
+              ],
+            ]),
+            'created_by_id' => 1,
+            'created_on' => date('Y-m-d H:i:s'),
+            'updated_by_id' => 1,
+            'updated_on' => date('Y-m-d H:i:s'),
+          ));
+        }
+      }
     }
   }
 
