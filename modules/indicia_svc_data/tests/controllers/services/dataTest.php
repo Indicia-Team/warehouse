@@ -453,7 +453,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
   public function testCreateOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateOccurrence");
     $array = array(
-      'sample:survey_id' => 1,
+      'website_id' => 1,
+      'survey_id' => 1,
       'sample:entered_sref' => 'SU1234',
       'sample:entered_sref_system' => 'osgb',
       'sample:date' => '02/09/2017',
