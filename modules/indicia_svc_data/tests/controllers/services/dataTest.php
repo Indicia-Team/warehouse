@@ -7,8 +7,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
   protected $auth;
 
-  public function getDataSet()
-  {
+  public function getDataSet() {
     $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     return $ds1;
   }
@@ -18,7 +17,7 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     parent::setUp();
 
     $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
-    // make the tokens re-usable
+    // Make the tokens re-usable.
     $this->auth['write_tokens']['persist_auth']=true;
   }
 
@@ -449,6 +448,29 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
     Kohana::log('debug', "Submission response to sample 3 save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['error']), 'Submitting a sample wth bad vague date did not fail');
+  }
+
+  public function testCreateOccurrence() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateOccurrence");
+    $array = array(
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'occurrence:taxa_taxon_list_id' => 1,
+    );
+    $structure = array(
+      'model' => 'sample',
+      'subModels' => array(
+        'occurrence' => array('fk' => 'sample_id')
+      )
+    );
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+
+    Kohana::log('debug', "Submission response to sample 1 save " . print_r($r, TRUE));
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
   }
 
   private function getSampleAsCsv($id, $regexExpected) {
