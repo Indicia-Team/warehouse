@@ -118,13 +118,12 @@ class Occurrence_Model extends ORM {
       // Is this post going to change the record status or substatus?
       if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
         if ($newStatus === 'V' || $newStatus === 'R') {
-          // If verifying or not verifying, then set the verification metadata.
-          $defaultUserId = Kohana::config('indicia.defaultPersonId');
+          // If verifying or rejecting, then set the verification metadata.
           $array->verified_by_id = $this->get_current_user_id();
           $array->verified_on = date("Ymd H:i:s");
         }
         else {
-          // If any status other than accepted or not accepted we don't want
+          // If any status other than verified or rejected we don't want
           // the verification metadata filled in.
           $array->verified_by_id = NULL;
           $array->verified_on = NULL;
