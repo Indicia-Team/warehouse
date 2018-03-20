@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Controllers
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/Indicia-Team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -33,9 +31,9 @@
  */
 class Scheduled_Tasks_Controller extends Controller {
   private $last_run_date;
-  private $occdeltaStartTimestamp='';
-  private $occdeltaEndTimestamp='';
-  private $occdeltaCount=0;
+  private $occdeltaStartTimestamp = '';
+  private $occdeltaEndTimestamp = '';
+  private $occdeltaCount = 0;
   private $pluginMetadata;
 
   public function __construct()  {
@@ -50,12 +48,13 @@ class Scheduled_Tasks_Controller extends Controller {
    * If tasks are not specified then everything is run.
    */
   public function index() {
-    $tm = microtime(true);
+    $tm = microtime(TRUE);
     $this->db = new Database();
     $system = new System_Model();
     if (isset($_GET['tasks'])) {
-      $tasks = explode(',',$_GET['tasks']);
-    } else {
+      $tasks = explode(',', $_GET['tasks']);
+    }
+    else {
       $tasks = array('notifications', 'all_modules');
     }
     // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
@@ -64,9 +63,10 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->last_run_date = $system->getLastScheduledTaskCheck();
       $this->checkTriggers();
     }
-    $tmtask = microtime(true) - $tm;
-    if ($tmtask>5)
+    $tmtask = microtime(TRUE) - $tm;
+    if ($tmtask > 5) {
       self::msg("Triggers & notifications scheduled task took $tmtask seconds.", 'alert');
+    }
     $this->runScheduledPlugins($system, $tasks);
     if (in_array('notifications', $tasks)) {
       $swift = email::connect();
@@ -74,11 +74,12 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->doDigestNotifications($swift);
     }
     // mark the time of the last scheduled task check, so we can get diffs next time
-    $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('id' => 1));
+    $this->db->update('system', array('last_scheduled_task_check' => "'" . date('c', $currentTime) . "'"), array('id' => 1));
     self::msg("Ok!");
-    $tm = microtime(true) - $tm;
-    if ($tm>30)
-      self::msg("Scheduled tasks for ".implode(', ', $tasks)." took $tm seconds.", 'alert');
+    $tm = microtime(TRUE) - $tm;
+    if ($tm > 30) {
+      self::msg("Scheduled tasks for " . implode(', ', $tasks) . " took $tm seconds.", 'alert');
+    }
   }
 
   /**
@@ -470,8 +471,9 @@ class Scheduled_Tasks_Controller extends Controller {
       ->where(array(
           'sa1.caption' => 'Email me a copy of the record',
           'sa2.caption' => 'Email',
-          'samples.created_on>=' => $this->last_run_date
+          'samples.created_on>=' => $this->last_run_date,
       ))
+      ->where('sav1.int_value<>0')
       ->get();
 
     // Get a list of the records we need details of, so we can hit the db more efficiently.
