@@ -143,7 +143,8 @@ class Occurrence_Model extends ORM {
         }
       }
     }
-    if ($array->record_status === 'C' && $array->record_substatus !== NULL && $array->record_substatus !== 3) {
+    if (!empty($array->record_status) && !empty($array->record_substatus)
+        && $array->record_status === 'C' && $array->record_substatus !== 3) {
       // Plausible the only valid substatus for C (pending review). Other cases
       // can occur if record form only posts a status.
       $array->record_substatus = NULL;
