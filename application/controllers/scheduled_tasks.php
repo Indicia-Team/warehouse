@@ -189,12 +189,8 @@ class Scheduled_Tasks_Controller extends Controller {
         !in_array('occurrence_id', $data['headings'])) {
       return;
     }
-    // Don't want to include the log_comment and occurrence_id in the
-    // notifications themselves.
     $logCommentCol = array_search('log_comment', $data['headings']);
-    unset($data['headings'][$logCommentCol]);
     $occIDCol = array_search('occurrence_id', $data['headings']);
-    unset($data['headings'][$occIDCol]);
     // For each record, check if log_comment is populated, if so, save the
     // comment.
     foreach ($data['data'] as $websiteId => $records) {
@@ -213,7 +209,6 @@ class Scheduled_Tasks_Controller extends Controller {
         else {
           echo 'Skipping as no comment to insert: ' . $record[$occIDCol] . '<br/>';
         }
-        unset($record[$logCommentCol]);
       }
     }
   }
@@ -237,18 +232,27 @@ class Scheduled_Tasks_Controller extends Controller {
     if (count($data['data']) === 0 || !in_array('notify_user_ids', $data['headings'])) {
       return;
     }
-    // Don't want to include the notify_user_ids in the notifications
-    // themselves.
-    if (($notifyUserIdsCol = array_search('notify_user_ids', $data['headings'])) !== FALSE) {
-      unset($data['headings'][$notifyUserIdsCol]);
+    // Don't want to include the system functionality columns in the
+    // notifications themselves.
+    $sysCols = ['notify_user_ids', 'log_comment', 'occurrence_id'];
+    $colsToRemove = [];
+    foreach ($sysCols as $col) {
+      if (($colIdx = array_search($col, $data['headings'])) !== FALSE) {
+        $colsToRemove[] = $colIdx;
+        if ($col === 'notify_user_ids') {
+          $notifyUserIdsCol = $colIdx;
+        }
+      }
     }
+    $data['headings'] = array_diff_key($data['headings'], array_flip($colsToRemove));
     // Keep a list of users to notify.
     $userNotificatons = [];
     // For each record, attach it to any user that needs to be notified.
-    foreach ($data['data'] as $websiteId => $records) {
-      foreach ($records as $record) {
+    foreach ($data['data'] as $websiteId => &$records) {
+      foreach ($records as &$record) {
         $userIds = explode(',', $record[$notifyUserIdsCol]);
-        unset($record[$notifyUserIdsCol]);
+        // Clean out system functionality columns.
+        $record = array_diff_key($record, array_flip($colsToRemove));
         foreach ($userIds as $userId) {
           if (!isset($userNotifications["user:$userId"])) {
             $userNotifications["user:$userId"] = [];
