@@ -110,7 +110,7 @@ class Occurrence_Model extends ORM {
       $this->logDeterminations($array);
       $fields = array_merge($this->submission['fields']);
       $newStatus = empty($fields['record_status']) ? $this->record_status : $fields['record_status']['value'];
-      $newSubstatus = empty($fields['record_substatus']) ? $this->record_status : $fields['record_substatus']['value'];
+      $newSubstatus = empty($fields['record_substatus']) ? $this->record_substatus : $fields['record_substatus']['value'];
       $releaseStatusChanging = !empty($fields['release_status']) && $fields['release_status']['value'] !== $this->release_status;
       $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
       $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
