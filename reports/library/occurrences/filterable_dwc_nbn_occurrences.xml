@@ -164,6 +164,10 @@ END"
           sql="'present'"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/occurrenceStatus" />
+    <column name="eventRemarks"
+          sql="snf.comment"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/eventRemarks" />
     <column name="occurrenceRemarks"
           sql="onf.comment"
           datatype="text"
