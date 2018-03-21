@@ -60,6 +60,14 @@
             END"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/taxonID" />
+    <column name="lifeStage"
+            sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/lifeStage" />
+    <column name="sex"
+            sql="COALESCE(onf.attr_stage, onf.attr_sex)"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/sex" />
     <column name="vernacularName"
             sql="CASE cttl.language_iso
               WHEN 'lat' THEN null
