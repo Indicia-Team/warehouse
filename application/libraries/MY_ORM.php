@@ -856,7 +856,7 @@ class ORM extends ORM_Core {
       // These array columns are used so rarely that this less optimised solution is not important
       $exactMatches = array();
       foreach ($thisValues as $column => $value) {
-        if (isset($vArray[$column]) &&
+        if (array_key_exists($column, $vArray) &&
             !is_array($vArray[$column]) &&
             (string) $vArray[$column] === (string) $value) {
           $exactMatches[] = $value;
