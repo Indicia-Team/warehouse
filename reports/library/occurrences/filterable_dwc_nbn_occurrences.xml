@@ -68,6 +68,10 @@
             sql="COALESCE(onf.attr_stage, onf.attr_sex)"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/sex" />
+    <column name="individualCount"
+            sql="onf.attr_sex_stage_count"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/individualCount" />
     <column name="vernacularName"
             sql="CASE cttl.language_iso
               WHEN 'lat' THEN null
