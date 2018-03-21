@@ -119,14 +119,14 @@ END"
 END"
           datatype="text"
           term="http://data.nbn.org/nbn/terms/gridReference" />
-    <column name="decimaLatitude"
+    <column name="decimalLatitude"
           sql="CASE
   WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
   ELSE st_y(st_transform(st_centroid(o.public_geom), 4326))
 END"
           datatype="integer"
           term="http://rs.tdwg.org/dwc/terms/decimaLatitude" />
-    <column name="decimaLongitude"
+    <column name="decimalLongitude"
           sql="CASE
   WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
   ELSE st_x(st_transform(st_centroid(o.public_geom), 4326))
