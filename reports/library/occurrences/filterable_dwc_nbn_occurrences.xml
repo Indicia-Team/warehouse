@@ -154,7 +154,7 @@ END"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/locality" />
     <column name="basisOfRecord"
-          sql="'Unknown'"
+          sql="'Occurrence'"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/basisOfRecord" />
     <column name="identificationVerificationStatus"
