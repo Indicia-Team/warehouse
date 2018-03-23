@@ -67,7 +67,7 @@ class workflow {
     $rewoundRecord = (object) $oldRecord->as_array();
     // Can't rewind a new record, or if the config does not define keys to filter on.
     if (!isset($entityConfig['keys']) || empty($oldRecord->id)) {
-      return;
+      return $rewoundRecord;
     }
     $eventTypes = [];
     foreach ($entityConfig['keys'] as $keyDef) {
@@ -250,6 +250,7 @@ class workflow {
     $state = [];
     $groupCodes = self::getGroupCodesForThisWebsite($websiteId);
     $entityConfig = self::getEntityConfig($entity);
+    $rewoundValues = (array) $rewoundRecord;
     if (empty($groupCodes)) {
       // Operation's website does not belong to a workflow group so abort.
       return $state;
@@ -258,14 +259,14 @@ class workflow {
       // Apply state changes in 2 steps as order is important
       // First state change, oldRecord to rewoundRecord. Not necessary if
       // oldRecord and rewoundRecord are the same.
-      if ($oldRecord->as_array() != (array) $rewoundRecord) {
+      if ($oldRecord->as_array() != $rewoundValues) {
         $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $oldRecord, $rewoundRecord, $keyDef);
-        self::applyEventsQueryToRecord($qry, $entity, $oldRecord, $newRecord, $state);
+        self::applyEventsQueryToRecord($qry, $entity, $rewoundValues, $newRecord, $state);
         kohana::log('error', 'EventsQuery oldToRewound: ' . $db->last_query());
       }
       // Second state change, rewoundRecord to newRecord.
       $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $rewoundRecord, $newRecord, $keyDef);
-      self::applyEventsQueryToRecord($qry, $entity, $oldRecord, $newRecord, $state);
+      self::applyEventsQueryToRecord($qry, $entity, $rewoundValues, $newRecord, $state);
     }
     return $state;
   }
@@ -386,14 +387,15 @@ class workflow {
    *   Query object set up to retrieve the events to apply.
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
-   * @param object $oldRecord
-   *   ORM object containing the old record details.
+   * @param array $oldValues
+   *   Array containing the old record values, to allow undo state data to be
+   *   retrieved.
    * @param object $newRecord
    *   ORM Validation object containing the new record details.
    * @param array $state
    *   State data to pass through to the post-process hook, containing undo data.
    */
-  private static function applyEventsQueryToRecord($qry, $entity, $oldRecord, &$newRecord, array &$state) {
+  private static function applyEventsQueryToRecord($qry, $entity, array $oldValues, &$newRecord, array &$state) {
     $events = $qry->get();
     foreach ($events as $event) {
       $newUndoRecord = array();
@@ -401,7 +403,7 @@ class workflow {
       $valuesToApply = self::processEvent(
         $event,
         $entity,
-        $oldRecord->as_array(),
+        $oldValues,
         $newRecord->as_array(),
         $state
       );
@@ -422,7 +424,8 @@ class workflow {
    * @param string $entity
    *   Name of the database entity being saved, e.g. occurrence.
    * @param array $oldValues
-   *   Array of the record values before the save operation.
+   *   Array of the record values before the save operation. Used to retrieve
+   *   values for undo state data.
    * @param array $newValues
    *   Array of the record values that were submitted to be saved, causing the event to fire.
    * @param array $state
