@@ -944,6 +944,8 @@ SQL;
       }
     }
     // Now loop through the joins to insert the values into the query.
+    // Can't guarentee order of providedParams: need to process *attrs param before any custom attribute filters,
+    // specifically need to call mergeAttrListParam before custom attribute filters
     foreach ($this->providedParams as $name => $value) {
       if (isset($paramDefs[$name])) {
         if ($value === '') {
@@ -1048,33 +1050,37 @@ SQL;
           }
         }
       }
-      elseif (isset($this->customAttributes[$name])) {
-        // Request includes a custom attribute column being used as a filter.
-        if ($this->customAttributes[$name]['string']) {
-          $value = "'" . pg_escape_string($value) . "'";
+    }
+    foreach ($this->providedParams as $name => $value) {
+      if (!isset($paramDefs[$name])) {
+        if (isset($this->customAttributes[$name])) {
+          // Request includes a custom attribute column being used as a filter.
+          if ($this->customAttributes[$name]['string']) {
+            $value = "'" . pg_escape_string($value) . "'";
+          }
+          $filter = str_replace('#filtervalue#', $value, $this->customAttributes[$name]['filter']);
+          $query = str_replace('#filters#', "AND $filter\n#filters#", $query);
         }
-        $filter = str_replace('#filtervalue#', $value, $this->customAttributes[$name]['filter']);
-        $query = str_replace('#filters#', "AND $filter\n#filters#", $query);
-      }
-      elseif (isset($this->reportReader->filterableColumns[$name])) {
-        $field = $this->reportReader->filterableColumns[$name]['sql'];
-        $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
-        if (isset($this->reportReader->columns[$name]['aggregate'])
-            && $this->reportReader->columns[$name]['aggregate'] === 'true') {
-          $this->having[] = $filterClause;
+        elseif (isset($this->reportReader->filterableColumns[$name])) {
+          $field = $this->reportReader->filterableColumns[$name]['sql'];
+          $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
+          if (isset($this->reportReader->columns[$name]['aggregate'])
+              && $this->reportReader->columns[$name]['aggregate'] === 'true') {
+            $this->having[] = $filterClause;
+          }
+          else {
+            $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
+          }
         }
-        else {
+        elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches)
+            && array_key_exists($matches['prefix'].'date_start', $this->reportReader->columns)
+            && array_key_exists($matches['prefix'].'date_end', $this->reportReader->columns)
+            && array_key_exists($matches['prefix'].'date_type', $this->reportReader->columns)) {
+          // Special handling for a filter on a vague date added column.
+          $field = $this->reportReader->columns[$matches['prefix'] . 'date_start']['sql'];
+          $filterClause = $this->getFilterClause($field, 'date', $operator, $value);
           $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
         }
-      }
-      elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches)
-          && array_key_exists($matches['prefix'].'date_start', $this->reportReader->columns)
-          && array_key_exists($matches['prefix'].'date_end', $this->reportReader->columns)
-          && array_key_exists($matches['prefix'].'date_type', $this->reportReader->columns)) {
-        // Special handling for a filter on a vague date added column.
-        $field = $this->reportReader->columns[$matches['prefix'] . 'date_start']['sql'];
-        $filterClause = $this->getFilterClause($field, 'date', $operator, $value);
-        $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
       }
     }
     // Column replacements and additional join to samples for geometry permissions autoswitching.

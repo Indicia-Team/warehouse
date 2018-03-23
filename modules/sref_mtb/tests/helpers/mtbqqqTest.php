@@ -21,6 +21,12 @@ class Helpers_mtbqqq_Test extends PHPUnit_Framework_TestCase {
     $this->assertTrue(mtbqqq::is_valid($sref));  
     $sref='1846/111';
     $this->assertTrue(mtbqqq::is_valid($sref));  
+    $sref='1846.1';
+    $this->assertTrue(mtbqqq::is_valid($sref));
+    $sref='1846.11';
+    $this->assertTrue(mtbqqq::is_valid($sref));
+    $sref='1846.111';
+    $this->assertTrue(mtbqqq::is_valid($sref));
   }
   
   public function testSrefToWktQ() {

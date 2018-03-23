@@ -60,6 +60,18 @@
             END"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/taxonID" />
+    <column name="lifeStage"
+            sql="COALESCE(onf.attr_stage, onf.attr_sex_stage)"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/lifeStage" />
+    <column name="sex"
+            sql="COALESCE(onf.attr_stage, onf.attr_sex)"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/sex" />
+    <column name="individualCount"
+            sql="onf.attr_sex_stage_count"
+            datatype="text"
+            term="http://rs.tdwg.org/dwc/terms/individualCount" />
     <column name="vernacularName"
             sql="CASE cttl.language_iso
               WHEN 'lat' THEN null
@@ -119,14 +131,14 @@ END"
 END"
           datatype="text"
           term="http://data.nbn.org/nbn/terms/gridReference" />
-    <column name="decimaLatitude"
+    <column name="decimalLatitude"
           sql="CASE
   WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
   ELSE st_y(st_transform(st_centroid(o.public_geom), 4326))
 END"
           datatype="integer"
           term="http://rs.tdwg.org/dwc/terms/decimaLatitude" />
-    <column name="decimaLongitude"
+    <column name="decimalLongitude"
           sql="CASE
   WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN null
   ELSE st_x(st_transform(st_centroid(o.public_geom), 4326))
@@ -142,7 +154,7 @@ END"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/locality" />
     <column name="basisOfRecord"
-          sql="'not recorded'"
+          sql="'Occurrence'"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/basisOfRecord" />
     <column name="identificationVerificationStatus"
@@ -164,6 +176,10 @@ END"
           sql="'present'"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/occurrenceStatus" />
+    <column name="eventRemarks"
+          sql="snf.comment"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/eventRemarks" />
     <column name="occurrenceRemarks"
           sql="onf.comment"
           datatype="text"

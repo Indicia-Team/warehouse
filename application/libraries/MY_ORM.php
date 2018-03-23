@@ -856,7 +856,7 @@ class ORM extends ORM_Core {
       // These array columns are used so rarely that this less optimised solution is not important
       $exactMatches = array();
       foreach ($thisValues as $column => $value) {
-        if (isset($vArray[$column]) &&
+        if (array_key_exists($column, $vArray) &&
             !is_array($vArray[$column]) &&
             (string) $vArray[$column] === (string) $value) {
           $exactMatches[] = $value;
@@ -2067,6 +2067,8 @@ class ORM extends ORM_Core {
       $prefix = ($fieldTokens[0] === $this->object_name . $assocSuffix ? $this->object_name . $assocSuffix . ':' : '');
       if ($fieldTokens[0] === $this->object_name . $assocSuffix) {
         array_shift($fieldTokens);
+      } else if (count($fieldTokens) > 1) { // different table specified.
+        continue;
       }
 
       if (substr($fieldTokens[0], -3) !== '_id') {
