@@ -55,10 +55,16 @@ class workflow {
    * @param object $oldRecord
    *   ORM object containing the old record details.
    * @param object $newRecord
-   *   ORM Validation object containing the new record details.
+   *   ORM Validation object containing the new record details. Will be updated
+   *   with the rewind changes.
+   *
+   * @return object
+   *   Clone of the old record object, but with the rewinds applied.
    */
-  public static function applyRewindsIfRequired($db, $entity, $oldRecord, &$newRecord) {
+  public static function getRewoundRecord($db, $entity, $oldRecord, &$newRecord) {
     $entityConfig = self::getEntityConfig($entity);
+    // Clone the old record data to apply our rewind changes to.
+    $rewoundRecord = (object) $oldRecord->as_array();
     // Can't rewind a new record, or if the config does not define keys to filter on.
     if (!isset($entityConfig['keys']) || empty($oldRecord->id)) {
       return;
@@ -97,10 +103,17 @@ class workflow {
       $fieldRewinds = self::getRewindChangesForRecords($db, $entity, [$oldRecord->id], $eventTypes);
       if (isset($fieldRewinds["$entity.$oldRecord->id"])) {
         foreach ($fieldRewinds["$entity.$oldRecord->id"] as $field => $value) {
+          // Apply the rewind changes to a clone of the old record as well as
+          // the new record so we have the record in 3 states:
+          // 1) original
+          // 2) original after rewind
+          // 3) updated after rewind.
           $newRecord->$field = $value;
+          $rewoundRecord->$field = $value;
         }
       }
     }
+    return $rewoundRecord;
   }
 
   /**
@@ -233,7 +246,7 @@ class workflow {
    * @param object $newRecord
    *   ORM Validation object containing the new record details.
    */
-  public static function applyWorkflow($db, $websiteId, $entity, $oldRecord, &$newRecord) {
+  public static function applyWorkflow($db, $websiteId, $entity, $oldRecord, $rewoundRecord, &$newRecord) {
     $state = [];
     $groupCodes = self::getGroupCodesForThisWebsite($websiteId);
     $entityConfig = self::getEntityConfig($entity);
@@ -242,7 +255,16 @@ class workflow {
       return $state;
     }
     foreach ($entityConfig['keys'] as $keyDef) {
-      $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $oldRecord, $newRecord, $keyDef);
+      // Apply state changes in 2 steps as order is important
+      // First state change, oldRecord to rewoundRecord. Not necessary if
+      // oldRecord and rewoundRecord are the same.
+      if ($oldRecord->as_array() != (array) $rewoundRecord) {
+        $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $oldRecord, $rewoundRecord, $keyDef);
+        self::applyEventsQueryToRecord($qry, $entity, $oldRecord, $newRecord, $state);
+        kohana::log('error', 'EventsQuery oldToRewound: ' . $db->last_query());
+      }
+      // Second state change, rewoundRecord to newRecord.
+      $qry = self::buildEventQueryForKey($db, $groupCodes, $entity, $rewoundRecord, $newRecord, $keyDef);
       self::applyEventsQueryToRecord($qry, $entity, $oldRecord, $newRecord, $state);
     }
     return $state;
@@ -291,7 +313,8 @@ class workflow {
     }
     else {
       $qry->join($keyDef['table'], "$keyDef[table].$keyDef[column]", 'workflow_events.key_value');
-      // Cross reference to the extraData for the same table to find the field name which matches $newRecord->column.
+      // Cross reference to the extraData for the same table to find the field
+      // name which matches $newRecord->column.
       foreach ($entityConfig['extraData'] as $extraDataDef) {
         if ($extraDataDef['table'] === $keyDef['table']) {
           $originatingColumn = $extraDataDef['originating_table_column'];
@@ -299,8 +322,8 @@ class workflow {
             "$extraDataDef[table].$extraDataDef[target_table_column]",
             $newRecord->$originatingColumn
           );
-          // It's a set event if the foreign key in the main data table which points to the extraData record holding
-          // the key is changing.
+          // It's a set event if the foreign key in the main data table which
+          // points to the extraData record holding the key is changing.
           if ((string) $newRecord->$originatingColumn !== (string) $oldRecord->$originatingColumn) {
             $eventTypes[] = 'S';
           }
@@ -413,7 +436,6 @@ class workflow {
     $columnDeltaList = [];
     $valuesToApply = [];
     $setColumns = json_decode($event->values, TRUE);
-    kohana::log('debug', var_export($event, TRUE));
     if ($event->mimic_rewind_first === 't' && !empty($oldValues['id'])) {
       self::mimicRewind($entity, $oldValues['id'], $columnDeltaList, $state);
     }
