@@ -146,6 +146,6 @@ $config['modules'] = array
   MODPATH.'scratchpad',            // scratchpad tables for keeping quick lists
   MODPATH.'auto_verify',           // verification acceptance based on data cleaner rules
   MODPATH.'milestones',            // milestone achievements against milestones
-
+  MODPATH.'workflow',              // control of record flags through verification workflow
   MODPATH.'phpUnit',               // Required for testing
 );
