@@ -43,6 +43,39 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   protected $ORM_Tree_children = 'taxa_taxon_lists';
   protected $list_id_field = 'taxon_list_id';
 
+  // During an import it is possible to merge different columns in a CSV row to make a database field
+  protected $additional_csv_fields = array(
+      // Extra lookup options.
+      'taxon:taxon:genus' => 'Genus (builds binomial name)',
+      'taxon:taxon:specific' => 'Specific name/epithet (builds binomial name)',
+  );
+  public $special_import_field_processing_defn = array(
+      'taxon:taxon' => array(
+          'template' => '%s %s',
+          'columns' => array('taxon:taxon:genus', 'taxon:taxon:specific')
+      )
+  );
+  
+  public $import_duplicate_check_combinations = array(
+      array('description' => 'Species list And Taxon name',
+          'fields' => array(array('fieldName' => 'taxa_taxon_list:taxon_list_id'),
+              array('fieldName' => 'taxon:taxon'),
+              array('fieldName' => 'taxa_taxon_list:taxon_id', 'notInMappings' => TRUE),
+          )),
+      array('description' => 'Species list And Taxon external key',
+          'fields' => array(array('fieldName' => 'taxa_taxon_list:taxon_list_id'),
+              array('fieldName' => 'taxon:external_key'),
+              array('fieldName' => 'taxa_taxon_list:taxon_id', 'notInMappings' => TRUE),
+          )),
+      array('description' => 'Species list, Parent taxon name And Taxon name',
+          'fields' => array(array('fieldName' => 'taxa_taxon_list:taxon_list_id'),
+              array('fieldName' => 'taxon:taxon'),
+              array('fieldName' => 'taxa_taxon_list:taxon_id', 'notInMappings' => TRUE),
+              array('fieldName' => 'taxa_taxon_list:parent_id')
+          )),
+  );
+  public $process_synonyms = TRUE;
+
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('taxon_id', 'required');
@@ -126,8 +159,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
           unset($arrSyn[$key]);
           Kohana::log("debug", "Known synonym: ".$syn->taxon->taxon. ', language ' . $syn->taxon->language->iso . ', Authority ' . $syn->taxon->authority);
         }
-        else
-        {
+        else if ($syn->taxon->language->iso !== 'lat' || $this->process_synonyms) { // only delete if a common name (not latin) OR process_synonyms is switched on
           // Synonym not in new list has been deleted - remove it from the db
           $syn->deleted = 't';
           if ($this->common_taxon_id==$syn->taxon->id) {

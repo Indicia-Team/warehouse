@@ -10,6 +10,7 @@
   JOIN cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
   #joins#
   WHERE #website_filter#
+  AND o.media_count>0
   #filters#
   </query>
   <field_sql>

@@ -36,7 +36,7 @@ class mtbqqq extends mtb {
   public static function is_valid($sref)
   {
     $sref = self::clean($sref);
-    return preg_match('/^\d\d\d\d(\/[1-4][1-4]?[1-4]?)?$/', $sref)<>0;
+    return preg_match('/^\d\d\d\d([\/\.][1-4][1-4]?[1-4]?)?$/', $sref)<>0;
   }
 
   /**
@@ -46,12 +46,10 @@ class mtbqqq extends mtb {
   public static function sref_to_wkt($sref)
   {
     $sref=self::clean($sref);
-    if (!self::is_valid($sref))
-      throw new InvalidArgumentException('Spatial reference is not a recognisable grid square.', 4001);
     // Split the input string main square part into x & y.
-    $gridYTop = substr($sref, 0, 2);
-    $gridXLeft = substr($sref, 2, 2);
-    // Top left cell of grid system is 0901 (yy=09, xx=01)
+    if (!self::is_valid($sref) || ($gridYTop = substr($sref, 0, 2)) === '00' || ($gridXLeft = substr($sref, 2, 2)) === '00')
+      throw new InvalidArgumentException('Spatial reference is not a recognisable grid square.', 4001);
+    // Top left cell of grid system is 0901 relative to srid bounds (yy=09, xx=01): we extend further
     $gridYTop -= GRIDORIGIN_Y;
     $gridXLeft -= GRIDORIGIN_X;
     // Each cell is 6 minutes high, = 0.1 degree. Top of grid is 55.1

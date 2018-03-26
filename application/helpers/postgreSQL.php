@@ -585,18 +585,24 @@ SQL
   }
 
   /**
-   * Returns a construct containing several bits of information required to build the taxon search SQL.
+   * Obtain search filter information.
+   *
+   * Returns a construct containing several bits of information required to
+   * build the taxon search SQL.
    *
    * @param array $options
+   *   Options as passed to the taxonSearchQuery function.
    *
    * @return array
    *   Contains the following information:
-   *   * searchFilter - the SQL required to perform a searchf or the provided search value.
-   *   * searchTermNoWildcards - the search term modified to exclude wildcards
-   *   * headlineColumnSql - the SQL requird to generated the highlighted output version of the found term (which
-   *     emboldens parts of the searched text which caused the hit to occur).
+   *   * searchFilter - the SQL required to perform a search for the provided
+   *     search value.
+   *   * searchTermNoWildcards - the search term modified to exclude wildcards.
+   *   * headlineColumnSql - the SQL requird to generated the highlighted
+   *     output version of the found term (which emboldens parts of the
+   *     searched text which caused the hit to occur).
    */
-  private static function taxonSearchGetQuerySearchFilterData($options) {
+  private static function taxonSearchGetQuerySearchFilterData(array $options) {
     if (!empty($options['searchQuery'])) {
       $searchFilters = array();
       // Cleanup.
@@ -609,8 +615,9 @@ SQL
         $searchField .= " || ' ' || coalesce(authority, '')";
       }
       if (preg_match('/\*[^\s]/', strtolower($searchTerm))) {
-        // Search term contains a wildcard not at the end of a word, so enable a basic text search which supports this.
-        // Use term simplification to reduce misses due to punctuation, spacing, capitalisation etc.
+        // Search term contains a wildcard not at the end of a word, so enable
+        // a basic text search which supports this. Use term simplification to
+        // reduce misses due to punctuation, spacing, capitalisation etc.
         $likesearchterm = preg_replace('[^a-zA-Z0-9%\+\?*]', '', str_replace(array('*', ' '), '%', str_replace('ae', 'e', preg_replace('/\(.+\)/', '', strtolower($searchTerm))))) . '%';
         $searchFilters[] = "(cts.simplified=true and searchterm like '$likesearchterm')";
         $highlightRegex = '(' . preg_replace(array(
@@ -630,12 +637,13 @@ SQL
       }
       else {
         // No wildcard in a word, so we can use full text search - this must
-        // match one of the indexes created
+        // match one of the indexes created.
         $searchFilters[] = "(cts.simplified=false and to_tsvector('simple', quote_literal(quote_literal($searchField))) @@ to_tsquery('simple', '$fullTextSearchTerm'))";
         $headlineColumnSql = "ts_headline('simple', quote_literal(quote_literal($searchField)), to_tsquery('simple', '$fullTextSearchTerm')) as highlighted";
       }
       if ($options['abbreviations'] && preg_match('/^[a-z0-9]{5}$/', strtolower($searchTerm))) {
-        // abbreviations allowed and 5 characters input, so also include search for them.
+        // Abbreviations allowed and 5 characters input, so also include search
+        // for them.
         $searchFilters[] = "(cts.name_type='A' and cts.searchterm = '$searchTerm')";
       }
       return array(
@@ -664,7 +672,7 @@ SQL
    *
    * @return string
    */
-  private static function taxonSearchGetColsListSql($isCount, $searchFilterData) {
+  private static function taxonSearchGetColsListSql($isCount, array $searchFilterData) {
     if ($isCount) {
       return 'count(*)';
     }
@@ -703,8 +711,9 @@ SQL;
    * @param array $searchFilterData
    *
    * @return string
+   *   SQL for the ORDER BY clause.
    */
-  private static function taxonSearchGetOrderBySql($isCount, $searchFilterData) {
+  private static function taxonSearchGetOrderBySql($isCount, array $searchFilterData) {
     if ($isCount) {
       return '';
     }
@@ -741,12 +750,15 @@ SQL;
    * Count queries do not set the limit or offset.
    *
    * @param array $options
+   *
    * @return string
+   *   SQL for the LIMIT and OFFSET clauses.
    */
-  private static function taxonSearchGetLimitOffsetSql($options) {
+  private static function taxonSearchGetLimitOffsetSql(array $options) {
     if ($options['count']) {
       return '';
-    } else {
+    }
+    else {
       $limitOffset = array();
       if (isset($options['limit']) && preg_match('/^\d+$/', $options['limit'])) {
         $limitOffset[] = "limit $options[limit]";
