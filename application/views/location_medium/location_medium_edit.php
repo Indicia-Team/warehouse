@@ -61,7 +61,6 @@ $id = html::initial_value($values, 'location_medium:id');
         'label' => 'Path or URL',
         'fieldname' => 'location_medium:path',
         'default' => html::initial_value($values, 'location_medium:path'),
-        'class' => 'control-width-5',
       ]);
     }
 
@@ -69,7 +68,6 @@ $id = html::initial_value($values, 'location_medium:id');
       'label' => 'Caption',
       'fieldname' => 'location_medium:caption',
       'default' => html::initial_value($values, 'location_medium:caption'),
-      'class' => 'control-width-5',
     ]);
     if ($mediaTypeId && $mediaType !== 'Image:Local') {
       echo data_entry_helper::select([
@@ -77,8 +75,7 @@ $id = html::initial_value($values, 'location_medium:id');
         'fieldname' => 'location_medium:media_type_id',
         'default' => $mediaTypeId,
         'lookupValues' => $other_data['media_type_terms'],
-        'blankText' => '<Please select>',
-        'class' => 'control-width-5',
+        'blankText' => '<Please select>'
       ]);
     }
     ?>

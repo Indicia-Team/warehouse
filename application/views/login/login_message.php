@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the messages displayed by log in processes.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify

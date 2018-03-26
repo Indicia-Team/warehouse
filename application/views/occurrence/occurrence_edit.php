@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the occurrence edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,6 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'occurrence:id');
 $sample = $model->sample;
 $website_id = $sample->survey->website_id;
@@ -89,26 +93,33 @@ $(document).ready(function() {
   jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
 });
 </script>
-<form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">
-<fieldset class="readonly">
-<legend>Sample summary<?php echo $metadata; ?></legend>
+<form action="<?php echo url::site() . 'occurrence/save' ?>" method="post" id="occurrence-edit">
+  <fieldset class="readonly">
+    <legend>Sample summary<?php echo $metadata; ?></legend>
+    <label>Sample link:</label>
+    <a href="<?php echo url::site(); ?>sample/edit/<?php echo $sample->id; ?>">ID <?php echo $sample->id;?></a><br/>
+    <?php
+    echo data_entry_helper::text_input([
+      'label' => 'Survey',
+      'fieldname' => 'sample-survey',
+      'default' => $sample->survey->title,
+      'readonly' => TRUE,
+    ]);
+    echo data_entry_helper::text_input([
+      'label' => 'Date',
+      'fieldname' => 'sample-date',
+      'default' => $sample->date,
+      'readonly' => TRUE,
+    ]);
+    echo data_entry_helper::text_input([
+      'label' => 'Spatial reference',
+      'fieldname' => 'sample-entered-sref',
+      'default' => $sample->entered_sref,
+      'readonly' => TRUE,
+    ]);
+    ?>
 <ol>
-<li>
-<label>Sample link:</label>
-<a href="<?php echo url::site(); ?>sample/edit/<?php echo $sample->id; ?>">ID <?php echo $sample->id;?></a>
-</li>
-<li>
-<label>Survey:</label>
-<input readonly="readonly" type="text" value="<?php echo $sample->survey->title; ?>"/>
-</li>
-<li>
-<label>Date:</label>
-<input readonly="readonly" type="text" value="<?php echo $sample->date; ?>"/>
-</li>
-<li>
-<label>Spatial reference:</label>
-<input readonly="readonly" type="text" value="<?php echo $sample->entered_sref; ?>"/>
-</li>
+
 <?php if (!empty($sample->licence->code)) : ?>
 <li>
   <label>Licence:</label>
@@ -250,8 +261,11 @@ foreach ($values['attributes'] as $attr) {
 }
  ?>
  </ol>
- </fieldset>
+  </fieldset>
 
-<?php echo html::form_buttons(html::initial_value($values, 'occurrence:id')!=null, false, false); ?>
+  <?php
+  echo html::form_buttons($id !== NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('occurrence-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
-

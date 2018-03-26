@@ -131,7 +131,8 @@
     <input type="submit" value="Upload Data" id="upload-button" class="btn btn-primary" />
     <br/>
     <?php
-    // We stick these at the bottom so that all the other things will be parsed first.
+    // We stick these at the bottom so that all the other things will be parsed
+    // first.
     foreach ($this->input->post() as $a => $b) {
       echo "<input type=\"radio\" value=\"$b\" name=\"$a\" />";
     }
