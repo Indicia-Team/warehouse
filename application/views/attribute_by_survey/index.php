@@ -89,7 +89,8 @@ get_controls(NULL, $controlfilter);
  *
  * @param string $block_id
  *   ID of the block, or NULL for top level.
- * @param array Filter to apply, e.g. to the correct survey.
+ * @param array
+ *   Filter to apply, e.g. to the correct survey.
  */
 function get_controls($block_id, array $controlfilter) {
   $id = "controls";
