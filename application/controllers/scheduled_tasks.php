@@ -16,11 +16,7 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
-<<<<<<< HEAD
  * @link https://github.com/indicia-team/warehouse
-=======
- * @link https://github.com/Indicia-Team/warehouse
->>>>>>> develop
  */
 
  defined('SYSPATH') or die('No direct script access.');
