@@ -55,6 +55,8 @@ abstract class ATTR_ORM extends Valid_ORM {
         'description',
         'source_id',
         'caption_i18n',
+        'term_name',
+        'term_identifier',
       )
     );
     $array->add_rules('caption', 'required');

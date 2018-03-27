@@ -9,14 +9,27 @@
     FROM cache_occurrences_functional o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-    JOIN cache_taxon_searchterms cts ON cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.name_type='A'
+    JOIN cache_taxon_searchterms cts ON cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
+    LEFT JOIN (sample_attribute_values vdatasetID
+      JOIN sample_attributes adatasetID ON adatasetID.id=vdatasetID.sample_attribute_id AND adatasetID.term_name='datasetID'
+    ) ON vdatasetID.sample_id=o.sample_id AND vdatasetID.deleted=false
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
     #idlist#
   </query>
   <params>
+    <param name="dataset_name"
+           display="Dataset name"
+           datatype="string"
+           default="Indicia"
+           description="Name of the dataset to populate into Dwc datasetName." />
+    <param name="rights_holder"
+           display="Rights holder"
+           datatype="string"
+           default="Not set"
+           description="A person or organisation owning or managing rights over the resource." />
     <param name="smpattrs"
            display="Sample attribute list"
            datatype="smpattrs"
@@ -112,10 +125,9 @@ END"
           datatype="text"
           term="http://purl.org/dc/terms/license" />
     <column name="rightsHolder"
-          sql="null::text"
+          sql="'#rights_holder#'"
           datatype="text"
           term="http://purl.org/dc/terms/rightsHolder" />
-    <!-- check since using output_sref, this is not relevant? -->
     <column name="coordinateUncertaintyInMeters"
           sql="CASE
   WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
@@ -146,9 +158,17 @@ END"
           datatype="integer"
           term="http://rs.tdwg.org/dwc/terms/decimaLongitude" />
     <column name="datasetName"
-          sql="snf.website_title || ' | ' || CASE WHEN SUBSTRING(snf.survey_title FROM 1 FOR LENGTH(snf.website_title)) = snf.website_title THEN trim(substring(snf.survey_title FROM LENGTH(snf.website_title)+1)) ELSE snf.survey_title END"
+          sql="'#dataset_name#'"
           datatype="text"
           term="http://rs.tdwg.org/dwc/terms/datasetName" />
+    <column name="datasetID"
+          sql="vdatasetID.text_value"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/datasetID" />
+    <column name="collectionCode"
+          sql="snf.website_title || ' | ' || CASE WHEN SUBSTRING(snf.survey_title FROM 1 FOR LENGTH(snf.website_title)) = snf.website_title THEN trim(substring(snf.survey_title FROM LENGTH(snf.website_title)+1)) ELSE snf.survey_title END"
+          datatype="text"
+          term="http://rs.tdwg.org/dwc/terms/collectionCode" />
     <column name="locality"
           sql="o.location_name"
           datatype="text"
