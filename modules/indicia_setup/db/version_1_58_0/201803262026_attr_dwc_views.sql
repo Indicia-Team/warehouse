@@ -5,6 +5,8 @@ CREATE OR REPLACE VIEW list_survey_attributes AS
   SELECT a.id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     fsb2.name AS outer_structure_block,
     fsb.name AS inner_structure_block,
     a.data_type,
@@ -41,6 +43,8 @@ CREATE OR REPLACE VIEW list_sample_attributes AS
   SELECT a.id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     fsb2.name AS outer_structure_block,
     fsb.name AS inner_structure_block,
     a.data_type,
@@ -80,6 +84,8 @@ CREATE OR REPLACE VIEW list_occurrence_attributes AS
     a.id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     fsb2.name AS outer_structure_block,
     fsb.name AS inner_structure_block,
     a.data_type, ct.control AS control_type,
@@ -117,6 +123,8 @@ CREATE OR REPLACE VIEW list_location_attributes AS
     a.id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     fsb2.name AS outer_structure_block,
     fsb.name AS inner_structure_block,
     a.data_type, ct.control AS control_type,
@@ -154,6 +162,8 @@ CREATE OR REPLACE VIEW list_taxa_taxon_list_attributes AS
   SELECT a.id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     fsb2.name AS outer_structure_block,
     fsb.name AS inner_structure_block,
     a.data_type,
@@ -189,6 +199,8 @@ CREATE OR REPLACE VIEW list_termlists_term_attributes AS
   SELECT a.id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     fsb2.name AS outer_structure_block,
     fsb.name AS inner_structure_block,
     a.data_type,
@@ -227,6 +239,8 @@ CREATE OR REPLACE VIEW list_person_attributes AS
  SELECT a.id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     fsb2.name AS outer_structure_block,
     fsb.name AS inner_structure_block,
     a.data_type,
@@ -266,6 +280,8 @@ CREATE OR REPLACE VIEW list_survey_attribute_values AS
     a.id AS survey_attribute_id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -319,6 +335,8 @@ CREATE OR REPLACE VIEW list_sample_attribute_values AS
     a.id AS sample_attribute_id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -373,6 +391,8 @@ CREATE OR REPLACE VIEW list_occurrence_attribute_values AS
     a.id AS occurrence_attribute_id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -429,6 +449,8 @@ CREATE OR REPLACE VIEW list_location_attribute_values AS
     a.id AS location_attribute_id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -484,6 +506,8 @@ CREATE OR REPLACE VIEW list_taxa_taxon_list_attribute_values AS
     a.id AS taxa_taxon_list_attribute_id,
     a.caption,
     a.caption_i18n::text,
+    a.term_name,
+    a.term_identifier,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -510,6 +534,8 @@ UNION
     a.id AS taxa_taxon_list_attribute_id,
     a.caption,
     a.caption_i18n::text,
+    a.term_name,
+    a.term_identifier,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -566,6 +592,8 @@ CREATE OR REPLACE VIEW list_termlists_term_attribute_values AS
     a.id AS termlists_term_attribute_id,
     a.caption,
     a.caption_i18n,
+    a.term_name,
+    a.term_identifier,
     CASE a.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
@@ -620,6 +648,8 @@ CREATE OR REPLACE VIEW list_person_attribute_values AS
     pa.id AS person_attribute_id,
     pa.caption,
     pa.caption_i18n,
+    pa.term_name,
+    pa.term_identifier,
     CASE pa.data_type
       WHEN 'T'::bpchar THEN 'Text'::bpchar
       WHEN 'L'::bpchar THEN 'Lookup List'::bpchar
