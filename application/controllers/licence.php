@@ -36,7 +36,10 @@ class Licence_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * You can only access the list of licences if at least an editor of one website.
+   * Check if page access authorised.
+   *
+   * You can only access the list of licences if at least an editor of one
+   * website.
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
@@ -45,9 +48,9 @@ class Licence_Controller extends Gridview_Base_Controller {
   /**
    * Returns model values ready to load onto a form.
    *
-   * Returns an array of all values from this model and its super models ready to be
-   * loaded into a form. For this controller, we need to also need to flash a warning
-   * about editing existing licence records.
+   * Returns an array of all values from this model and its super models ready
+   * to be loaded into a form. For this controller, we need to also need to
+   * flash a warning about editing existing licence records.
    */
   protected function getModelValues() {
     $r = parent::getModelValues();

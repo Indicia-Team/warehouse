@@ -68,6 +68,34 @@ TXT;
         'helpText' => $helpText,
       ]);
     }
+    if (array_key_exists('term_name', $this->model->as_array())) {
+      $helpText = <<<TXT
+If the attribute is linked to a standardised glossary such as Darwin Core then provide the term name. Otherwise provide
+a brief alphanumeric only (with no spaces) version of the attribute name to give it a unique identifier within the
+context of the survey dataset to make it easier to refer to in configuration.
+TXT;
+      echo data_entry_helper::text_input([
+        'fieldname' => "$model->object_name:term_name",
+        'label' => 'Term name',
+        'default' => html::initial_value($values, "$model->object_name:term_name"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'helpText' => $helpText,
+      ]);
+    }
+    if (array_key_exists('term_identifier', $this->model->as_array())) {
+      $helpText = <<<TXT
+If the attribute is linked to a standardised glossary such as Darwin Core then provide the term identifier, typically
+the URL to the term definition.
+TXT;
+      echo data_entry_helper::text_input([
+        'fieldname' => "$model->object_name:term_identifier",
+        'label' => 'Term identifier',
+        'default' => html::initial_value($values, "$model->object_name:term_identifier"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'helpText' => $helpText,
+        'class' => 'control-width-6',
+      ]);
+    }
     if (array_key_exists('description', $this->model->as_array())) {
       echo data_entry_helper::textarea([
         'fieldname' => "$model->object_name:description",

@@ -839,7 +839,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     $decoded = json_decode($value);
     // Strings which contain commas but not valid JSON are almost certainly mistakes.
     if ($decoded === null && strpos($value, ',') !== false) {
-      ValidationError('Validation error', 2003, 'Invalid format for array parameter.');
+      throw new ValidationError('Validation error', 2003, 'Invalid format for array parameter.');
     }
     return $decoded === null ? $value : $decoded;
   }
