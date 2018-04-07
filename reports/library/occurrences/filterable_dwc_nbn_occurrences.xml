@@ -25,6 +25,11 @@
            datatype="string"
            default="Indicia"
            description="Name of the dataset to populate into Dwc datasetName." />
+    <param name="rights_holder"
+           display="Rights holder"
+           datatype="string"
+           default="Not set"
+           description="A person or organisation owning or managing rights over the resource." />
     <param name="smpattrs"
            display="Sample attribute list"
            datatype="smpattrs"
@@ -120,10 +125,9 @@ END"
           datatype="text"
           term="http://purl.org/dc/terms/license" />
     <column name="rightsHolder"
-          sql="null::text"
+          sql="'#rights_holder#'"
           datatype="text"
           term="http://purl.org/dc/terms/rightsHolder" />
-    <!-- check since using output_sref, this is not relevant? -->
     <column name="coordinateUncertaintyInMeters"
           sql="CASE
   WHEN o.sensitive=true OR snf.privacy_precision IS NOT NULL OR snf.entered_sref_system NOT SIMILAR TO '[0-9]+' THEN
