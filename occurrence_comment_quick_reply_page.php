@@ -41,6 +41,7 @@ require_once 'client_helpers/data_entry_helper.php';
 $auth = occcurrenceCommentQuickReplyPage::getAuth('Indicia');
 $tokenDbData = data_entry_helper::get_population_data(array(
   'table' => 'comment_quick_reply_page_auth',
+  'caching' => FALSE,
   'extraParams' => $auth['read'],
   'nocache' => TRUE,
 ));
@@ -93,6 +94,7 @@ else {
       $auth = occcurrenceCommentQuickReplyPage::getAuth($configuration['privateKey']);
       $occurrenceDetails = data_entry_helper::get_population_data(array(
         'table' => 'occurrence',
+        'caching' => FALSE,
         'extraParams' => $auth['read'] + array('view' => 'cache', 'id' => $_GET['occurrence_id']),
       ));
       echo '<h1>Record details and comments</h1>';
