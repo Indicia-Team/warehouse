@@ -23,72 +23,13 @@
  */
 
 warehouse::loadHelpers(['data_entry_helper']);
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 $id = html::initial_value($values, 'occurrence:id');
 $sample = $model->sample;
 $website_id = $sample->survey->website_id;
 ?>
 <script type="text/javascript" >
 $(document).ready(function() {
-  $("input#determiner").autocomplete("<?php echo url::site() ?>services/data/person", {
-    minChars : 1,
-    mustMatch : true,
-    extraParams : {
-      orderby : "caption",
-      mode : "json",
-      deleted : 'false',
-      website_id : '<?php echo $website_id ?>',
-      qfield : 'caption'
-    },
-    parse: function(data) {
-      var results = [];
-      $.each(data, function(i, item) {
-        results[results.length] = {
-          'data' : item,
-          'value' : item.id,
-          'result' : item.caption };
-      });
-      return results;
-    },
-    formatItem: function(item) {
-      return item.caption;
-    },
-    formatResult: function(item) {
-      return item.id;
-    }
-  });
-  $("input#determiner").result(function(event, data){
-    $("input#determiner_id").attr('value', data.id);
-  });
-  $("input#taxon").autocomplete("<?php echo url::site() ?>services/data/taxa_taxon_list", {
-    minChars : 1,
-    mustMatch : true,
-    extraParams : {
-      orderby : "taxon",
-      mode : "json",
-      deleted : 'false',
-      website_id : '<?php echo $website_id ?>',
-      qfield: "taxon"
-    },
-    parse: function(data) {
-      var results = [];
-      $.each(data, function(i, item) {
-        results[results.length] = {
-          'data' : item,
-          'value' : item.id,
-          'result' : item.taxon };
-      });
-      return results;
-    },
-    formatItem: function(item) {
-      return item.taxon;
-    },
-    formatResult: function(item) {
-      return item.id;
-    }
-  });
-  $("input#taxon").result(function(event, data){
-    $("input#taxa_taxon_list_id").attr('value', data.id);
-  });
   jQuery('.vague-date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
   jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
 });
@@ -117,84 +58,110 @@ $(document).ready(function() {
       'default' => $sample->entered_sref,
       'readonly' => TRUE,
     ]);
+    $licence = $sample->licence;
+    if (!empty($licence->code)) {
+      echo data_entry_helper::text_input([
+        'label' => 'Licence',
+        'fieldname' => 'sample-licence-code',
+        'default' => $licence->code,
+        'readonly' => TRUE,
+      ]);
+      if (!empty($licence->url_readable)) {
+        echo "<a href=\"$licence->url_readable\" target=\"_blank\">more info</a> ";
+      }
+      if (!empty($sample->licence->url_legal)) {
+        echo "<a href=\"$licence->url_legal\" target=\"_blank\">legal</a> ";
+      }
+    }
     ?>
-<ol>
+  </fieldset>
+  <fieldset>
+    <legend>Occurrence Details</legend>
+    <?php
+    print form::hidden('occurrence:id', $id);
+    print form::hidden('occurrence:website_id', html::initial_value($values, 'occurrence:website_id'));
+    print form::hidden('occurrence:sample_id', html::initial_value($values, 'occurrence:sample_id'));
+    echo data_entry_helper::species_autocomplete([
+      'label' => 'Taxon',
+      'fieldname' => 'occurrence:taxa_taxon_list_id',
+      'default' => html::initial_value($values, 'occurrence:taxa_taxon_list_id'),
+      'defaultCaption' => $model->taxa_taxon_list->taxon->taxon,
+      'extraParams' => $readAuth + [
+        'taxon_list_id' => $model->taxa_taxon_list->taxon_list_id,
+      ],
+      'speciesIncludeBothNames' => TRUE,
+      'speciesIncludeAuthorities' => TRUE,
+      'speciesIncludeTaxonGroup' => TRUE,
+    ]);
+    echo data_entry_helper::textarea([
+      'label' => 'Record comment',
+      'fieldname' => 'occurrence:comment',
+      'default' => html::initial_value($values, 'occurrence:comment'),
+    ]);
+    $defaultDeterminer = '';
+    if ($model->determiner_id) {
+      if (!empty($model->determiner->first_name)) {
+        $defaultDeterminer = $model->determiner->first_name . ' ' . $model->determiner->last_name;
+      }
+      else {
+        $defaultDeterminer = $model->determiner->last_name;
+      }
+    }
+    echo data_entry_helper::autocomplete([
+      'label' => 'Determiner',
+      'fieldname' => 'occurrence:determiner_id',
+      'report' => 'library/people/people_names_lookup',
+      'captionField' => 'person_name',
+      'valueField' => 'id',
+      'extraParams' => $readAuth,
+      'default' => html::initial_value($values, 'occurrence:determiner_id'),
+      'defaultCaption' => $defaultDeterminer,
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Confidential',
+      'fieldname' => 'occurrence:confidential',
+      'default' => html::initial_value($values, 'occurrence:confidential'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Zero abundance',
+      'fieldname' => 'occurrence:zero_abundance',
+      'default' => html::initial_value($values, 'occurrence:zero_abundance'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Training',
+      'fieldname' => 'occurrence:training',
+      'default' => html::initial_value($values, 'occurrence:training'),
+      'helpText' => 'Tick if a fake record for training purposes',
+    ]);
+    echo data_entry_helper::text_input([
+      'label' => 'External key',
+      'fieldname' => 'occurrence:external_key',
+      'default' => html::initial_value($values, 'occurrence:external_key'),
+      'helpText' => 'Key from external system which this record was sourced from, if relevant.',
+    ]);
+    echo 'Setting plausible not working';
+    echo data_entry_helper::select([
+      'label' => 'Record status',
+      'fieldname' => 'occurrence:record_status:combined',
+      'lookupValues' => [
+        'V' => 'Accepted',
+        'V1' => 'Accepted as correct',
+        'V2' => 'Accepted as considered correct',
+        'C' => 'Pending review',
+        'C3' => 'Plausible',
+        'R' => 'Not accepted',
+        'R4' => 'Not accepted as unable to verify',
+        'R5' => 'Not accepted as incorrect',
+        'D' => 'Dubious',
+        'T' => 'Test',
+        'I' => 'Incomplete',
+      ],
+      'default' =>
+        html::initial_value($values, 'occurrence:record_status') .
+        html::initial_value($values, 'occurrence:record_substatus'),
+    ]);
+    ?>
 
-<?php if (!empty($sample->licence->code)) : ?>
-<li>
-  <label>Licence:</label>
-  <input readonly="readonly" type="text" value="<?php echo $sample->licence->code; ?>"/>
-  <?php if (!empty($sample->licence->url_readable)) : ?>
-    <a href="<?php echo $sample->licence->url_readable; ?>" target="_blank">more info</a>
-  <?php endif; ?>
-  <?php if (!empty($sample->licence->url_legal)) : ?>
-    <a href="<?php echo $sample->licence->url_legal; ?>" target="_blank">legal</a>
-  <?php endif; ?>
-</li>
-<?php endif; ?>
-</ol>
-</fieldset>
-<fieldset>
-<?php
-print form::hidden('occurrence:id', $id);
-print form::hidden('occurrence:website_id', html::initial_value($values, 'occurrence:website_id'));
-print form::hidden('occurrence:sample_id', html::initial_value($values, 'occurrence:sample_id'));
-?>
-<legend>Occurrence Details</legend>
-<ol>
-<li>
-<label for='taxon'>Taxon:</label>
-<?php
-print form::input('taxon', $model->taxa_taxon_list->taxon->taxon);
-print form::hidden('occurrence:taxa_taxon_list_id', html::initial_value($values, 'occurrence:taxa_taxon_list_id'));
-echo html::error_message($model->getError('occurrence:taxa_taxon_list_id')); ?>
-</li>
-<li>
-<label for='occurrence:comment'>Comment:</label>
-<?php
-print form::textarea('occurrence:comment', html::initial_value($values, 'occurrence:comment'));
-echo html::error_message($model->getError('occurrence:comment'));
-?>
-</li>
-<li>
-<label for='determiner'>Determiner:</label>
-<?php
-$fname = $model->determiner_id ? $model->determiner->first_name : '';
-$sname = $model->determiner_id ? $model->determiner->surname : '';
-print form::input('determiner', $fname.' '.$sname);
-print form::hidden('occurrence:determiner_id', html::initial_value($values, 'occurrence:determiner_id'));
-echo html::error_message($model->getError('occurrence:determiner_id')); ?>
-</li>
-<li>
-<label for='occurrence:confidential'>Confidential:</label>
-<?php
-print form::checkbox('occurrence:confidential', 't', html::initial_value($values, 'occurrence:confidential')=='t' ? 1 : 0);
-echo html::error_message($model->getError('occurrence:confidential'));
-?>
-</li>
-<li>
-<label for='occurrence:zero_abundance'>Zero abundance:</label>
-<?php
-print form::checkbox('occurrence:zero_abundance', 't', html::initial_value($values, 'occurrence:zero_abundance')=='t' ? 1 : 0);
-echo html::error_message($model->getError('occurrence:zero_abundance'));
-?>
-</li>
-<li>
-<label for='occurrence:external_key'>External Key:</label>
-<?php
-print form::input('occurrence:external_key', html::initial_value($values, 'occurrence:external_key'));
-echo html::error_message($model->getError('occurrence:external_key'));
-?>
-</li>
-<li>
-<label for='occurrence:record_status'>Record Status:</label>
-<?php
-print form::dropdown('occurrence:record_status', array('I' => 'In Progress', 'C' => 'Completed', 'S' => 'Sent for verification', 'V' => 'Verified',
-    'R' => 'Rejected', 'D' => 'Queried', 'T' => 'Test'),
-    html::initial_value($values, 'occurrence:record_status'));
-echo html::error_message($model->getError('occurrence:record_status'));
-?>
-</li>
 <li>
 <label for='occurrence:release_status'>Release Status:</label>
 <?php

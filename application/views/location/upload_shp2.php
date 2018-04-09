@@ -1,6 +1,12 @@
 <?php
 
 /**
+ * @file
+ * SHP file upload feedback template.
+ *
+ * Template for the feedback given for each location created or updated after
+ * uploading a SHP file.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify

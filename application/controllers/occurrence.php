@@ -84,13 +84,12 @@ class Occurrence_controller extends Gridview_Base_Controller {
     return $r;
   }
 
-  public function save()
-  {
-    // unchecked check boxes are not in POST, so set false values.
-    if (!isset($_POST['occurrence:confidential']))
-      $_POST['occurrence:confidential'] = 'f';
-    if (!isset($_POST['occurrence:zero_abundance']))
-      $_POST['occurrence:zero_abundance'] = 'f';
+  public function save() {
+    if (!empty($_POST['occurrence:record_status:combined'])) {
+      $_POST['occurrence:record_status'] = substr($_POST['occurrence:record_status:combined'], 0, 1);
+      $_POST['occurrence:record_substatus'] = substr($_POST['occurrence:record_status:combined'], 1, 1);
+    }
+    kohana::log('debug', var_export($_POST, true));
     parent::save();
   }
 

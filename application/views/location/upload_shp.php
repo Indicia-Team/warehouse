@@ -152,5 +152,3 @@ $(document).ready(function() {
   });
 });
 </script>
-
-
