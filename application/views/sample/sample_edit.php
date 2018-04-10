@@ -129,7 +129,7 @@ $site = url::site();
    ?>
   </fieldset>
   <fieldset>
-    <legend>Survey Specific Attributes</legend>
+    <legend>Survey specific attributes</legend>
     <?php
     foreach ($values['attributes'] as $attr) {
       $name = "smpAttr:$attr[sample_attribute_id]";

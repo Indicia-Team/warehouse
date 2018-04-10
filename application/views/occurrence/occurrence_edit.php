@@ -139,7 +139,6 @@ $(document).ready(function() {
       'default' => html::initial_value($values, 'occurrence:external_key'),
       'helpText' => 'Key from external system which this record was sourced from, if relevant.',
     ]);
-    echo 'Setting plausible not working';
     echo data_entry_helper::select([
       'label' => 'Record status',
       'fieldname' => 'occurrence:record_status:combined',
@@ -160,74 +159,90 @@ $(document).ready(function() {
         html::initial_value($values, 'occurrence:record_status') .
         html::initial_value($values, 'occurrence:record_substatus'),
     ]);
+    echo data_entry_helper::select([
+      'label' => 'Release status',
+      'fieldname' => 'occurrence:release_status',
+      'lookupValues' => [
+        'R' => 'Released',
+        'P' => 'Recorder has requested a precheck before release',
+        'U' => 'Record is part of a project that has not yet released its records',
+      ],
+      'default' => html::initial_value($values, 'occurrence:release_status'),
+    ]);
+    if (html::initial_value($values, 'occurrence:record_status') == 'V') {
+      echo 'Verified on ' . html::initial_value($values, 'occurrence:verified_on') .
+        ' by ' . $model->verified_by->username;
+    }
+    echo data_entry_helper::select([
+      'label' => 'Download status',
+      'fieldname' => 'occurrence:downloaded_flag',
+      'lookupValues' => [
+        'N' => 'Not downloaded',
+        'I' => 'Trial downloaded',
+        'F' => 'Downloaded - read only',
+      ],
+      'default' => html::initial_value($values, 'occurrence:downloaded_flag'),
+      'helpText' => 'Flag used to track when records have been transferred elsewhere so this is no longer the top copy.',
+    ]);
+    if (html::initial_value($values, 'occurrence:downloaded_flag') !== 'N'
+      && !empty($values['occurrence:downloaded_on'])) {
+      echo 'Downloaded on ' . html::initial_value($values, 'occurrence:downloaded_on');
+    }
+    echo data_entry_helper::textarea([
+      'label' => 'Metadata',
+      'fieldname' => 'occurrence:metadata',
+      'default' => html::initial_value($values, 'occurrence:metadata'),
+      'helpText' => 'JSON format additional metadata for this record.',
+    ]);
     ?>
+  </fieldset>
+  <fieldset>
+    <legend>Survey specific attributes</legend>
+    <?php
+    foreach ($values['attributes'] as $attr) {
+      $name = "occAttr:$attr[occurrence_attribute_id]";
+      // If this is an existing attribute, tag it with the attribute value
+      // record id so we can re-save it.
+      if ($attr['id']) {
+        $name .= ":$attr[id]";
+      }
+      switch ($attr['data_type']) {
+        case 'D':
+        case 'V':
+          echo data_entry_helper::date_picker(array(
+            'label' => $attr['caption'],
+            'fieldname' => $name,
+            'default' => $attr['value'],
+          ));
+          break;
 
-<li>
-<label for='occurrence:release_status'>Release Status:</label>
-<?php
-print form::dropdown('occurrence:release_status', array('R' => 'Released', 'P' => 'Recorder has requested a precheck before release',
-    'U'=>'Record is part of a project that has not yet released its records'),
-    html::initial_value($values, 'occurrence:release_status'));
-echo html::error_message($model->getError('occurrence:release_status'));
-?>
-</li>
-<?php if (html::initial_value($values, 'occurrence:record_status') == 'V'): ?>
-<li>
-Verified on <?php echo html::initial_value($values, 'occurrence:verified_on') ?> by <?php echo $model->verified_by->username; ?>
-</li>
-<?php endif; ?>
-<li>
-<label for='occurrence:downloaded_flag'>Download Status:</label>
-<?php
-print form::dropdown('occurrence:downloaded_flag', array('N' => 'Not Downloaded', 'I' => 'Trial Downloaded', 'F' => 'Downloaded - Read Only'),
-    html::initial_value($values, 'occurrence:downloaded_flag'), 'disabled="disabled"');
-echo html::error_message($model->getError('occurrence:downloaded_flag'));
-?>
-</li>
-<?php if (html::initial_value($values, 'occurrence:downloaded_flag') == 'I' || html::initial_value($values, 'occurrence:downloaded_flag') == 'F'): ?>
-<li>
-Downloaded on <?php echo html::initial_value($values, 'occurrence:downloaded_on') ?>
-</li>
-<?php endif; ?>
-<li>
-<label for='occurrence:metadata'>Metadata:</label>
-<?php
-print form::textarea('occurrence:metadata', empty($values['occurrence:metadata']) ? NULL : $values['occurrence:metadata']);
-echo html::error_message($model->getError('occurrence:metadata'));
-?>
-</li>
-</ol>
-</fieldset>
-<fieldset>
- <legend>Survey Specific Attributes</legend>
- <ol>
- <?php
-foreach ($values['attributes'] as $attr) {
-  $name = 'occAttr:'.$attr['occurrence_attribute_id'];
-  // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
-  if ($attr['id']) $name .= ':'.$attr['id'];
-  echo '<li><label for="">'.$attr['caption']."</label>\n";
-  switch ($attr['data_type']) {
-    case 'D':
-      echo form::input($name, $attr['value'], 'class="date-picker"');
-      break;
-    case 'V':
-      echo form::input($name, $attr['value'], 'class="vague-date-picker"');
-      break;
-    case 'L':
-      echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['raw_value']);
-      break;
-    case 'B':
-      echo form::dropdown($name, array(''=>'','0'=>'false','1'=>'true'), $attr['value']);
-      break;
-    default:
-      echo form::input($name, $attr['value']);
-  }
-  echo '<br/>'.html::error_message($model->getError($name)).'</li>';
+        case 'L':
+          echo data_entry_helper::select(array(
+            'label' => $attr['caption'],
+            'fieldname' => $name,
+            'default' => $attr['raw_value'],
+            'lookupValues' => $values["terms_$attr[termlist_id]"],
+            'blankText' => '<Please select>',
+          ));
+          break;
 
-}
- ?>
- </ol>
+        case 'B':
+          echo data_entry_helper::checkbox(array(
+            'label' => $attr['caption'],
+            'fieldname' => $name,
+            'default' => $attr['value'],
+          ));
+          break;
+
+        default:
+          echo data_entry_helper::text_input(array(
+            'label' => $attr['caption'],
+            'fieldname' => $name,
+            'default' => $attr['value'],
+          ));
+      }
+    }
+    ?>
   </fieldset>
 
   <?php
