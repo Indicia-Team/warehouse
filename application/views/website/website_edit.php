@@ -58,10 +58,10 @@ Warehouse instance.</p>
       'default' => html::initial_value($values, 'website:password'),
     ]);
 
-    echo data_entry_helper::text_input([
+    echo data_entry_helper::password_input([
       'label' => 'Retype password',
-      'fieldname' => 'website:password2',
-      'default' => html::initial_value($values, 'website:password2'),
+      'fieldname' => 'password2',
+      'default' => html::initial_value($values, 'password2'),
     ]);
 
     echo data_entry_helper::checkbox([
