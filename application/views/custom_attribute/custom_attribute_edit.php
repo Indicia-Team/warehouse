@@ -29,17 +29,17 @@ $disabled_input = html::initial_value($values, 'metaFields:disabled_input');
 $enabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
 ?>
 <?php if ($disabled_input === 'YES') : ?>
-<div class="alert alert-warning">The attribute was created by another user so you don't have permission to change the
-attribute's specification, although you can change the attribute assignments at the bottom of the page. Please contact
-the warehouse owner to request changes.</div>
+  <div class="alert alert-warning">The attribute was created by another user so you don't have permission to change the
+  attribute's specification, although you can change the attribute assignments at the bottom of the page. Please contact
+  the warehouse owner to request changes.</div>
 <?php else : ?>
-<div class="alert alert-info">This page allows you to specify a new or edit an existing custom attribute for
-<?php echo strtolower($other_data['name']); ?> data.</div>
+  <div class="alert alert-info">This page allows you to specify a new or edit an existing custom attribute for
+  <?php echo strtolower($other_data['name']); ?> data.</div>
 <?php endif; ?>
 <form id="custom-attribute-edit"
       action="<?php echo url::site() . "$other_data[controllerpath]/save"; ?>"
-      method="post"><input type="hidden" name="<?php echo $model->object_name; ?>:id"
-      value="<?php echo $id; ?>" />
+      method="post">
+  <input type="hidden" name="<?php echo $model->object_name; ?>:id" value="<?php echo $id; ?>" />
   <input type="hidden" name="metaFields:disabled_input" value="<?php echo $disabled_input; ?>" />
   <fieldset<?php echo $disabled_input === 'YES' ? ' class="ui-state-disabled"' : ''; ?>>
     <legend><?php echo $other_data['name']; ?> attribute details<?php echo $metadata; ?></legend>

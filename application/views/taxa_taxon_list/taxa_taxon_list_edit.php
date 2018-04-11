@@ -142,17 +142,17 @@ echo html::error_message($model->getError('deleted'));
     echo data_entry_helper::text_input([
       'label' => 'Sort order in list',
       'fieldname' => 'taxa_taxon_list:taxonomic_sort_order',
-      'default' => html::initial_value($values, 'taxa_taxon_list:taxonomic_sort_order')
+      'default' => html::initial_value($values, 'taxa_taxon_list:taxonomic_sort_order'),
     ]);
     echo data_entry_helper::text_input([
       'label' => 'Search code',
       'fieldname' => 'taxon:search_code',
-      'default' => html::initial_value($values, 'taxon:search_code')
+      'default' => html::initial_value($values, 'taxon:search_code'),
     ]);
     echo data_entry_helper::checkbox([
       'label' => 'Allow data entry',
       'fieldname' => 'taxa_taxon_list:allow_data_entry',
-      'default' => html::initial_value($values, 'taxa_taxon_list:allow_data_entry')
+      'default' => html::initial_value($values, 'taxa_taxon_list:allow_data_entry'),
     ]);
     ?>
   </fieldset>
@@ -162,7 +162,8 @@ echo html::error_message($model->getError('deleted'));
       <?php
       foreach ($values['attributes'] as $attr) {
         $name = "taxAttr:$attr[taxa_taxon_list_attribute_id]";
-        // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
+        // If this is an existing attribute, tag it with the attribute value
+        // record id so we can re-save it.
         if ($attr['id']) {
           $name .= ":$attr[id]";
         }
@@ -172,7 +173,7 @@ echo html::error_message($model->getError('deleted'));
             echo data_entry_helper::date_picker(array(
               'label' => $attr['caption'],
               'fieldname' => $name,
-              'default' => $attr['value']
+              'default' => $attr['value'],
             ));
             break;
 
@@ -222,7 +223,7 @@ echo html::error_message($model->getError('deleted'));
             echo data_entry_helper::text_input(array(
               'label' => $attr['caption'],
               'fieldname' => $name,
-              'default' => $attr['value']
+              'default' => $attr['value'],
             ));
         }
       }
@@ -230,23 +231,6 @@ echo html::error_message($model->getError('deleted'));
     </ol>
   </fieldset>
   <?php
-  // some script to handle drawn polygons. Only allow 1 polygon on the layer
-  /*data_entry_helper::$javascript .= <<<JS
-mapInitialisationHooks.push(function(div) {
-  function featureChangeEvent(evt) {
-    var featuresToRemove=[];
-    $.each(evt.feature.layer.features, function(idx, feature) {
-      if (feature.id !== evt.feature.id) {
-        featuresToRemove.push(feature);
-      }
-    });
-    evt.feature.layer.removeFeatures(featuresToRemove);
-    $('#imp-geom').val(evt.feature.geometry.toString());
-  }
-  div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent});
-});
-
-JS;*/
   echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id') !== NULL);
   data_entry_helper::enable_validation('taxa_taxon_list-edit');
   echo data_entry_helper::dump_javascript();

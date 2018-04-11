@@ -156,9 +156,6 @@ $(document).ready(function() {
   <li><label class="wide" for="public">Available to other Websites</label>
   <?php echo form::checkbox($model->object_name.':public', TRUE, (html::initial_value($values, $model->object_name.':public') == 't'), 'class="vnarrow" '.$enabled ) ?>
   </li>
-  <li><label class="wide" for="for_verification_check">Used for automated verification checks</label>
-  <?php echo form::checkbox($model->object_name.':for_verification_check', TRUE, (html::initial_value($values, $model->object_name.':for_verification_check') == 't'), 'class="vnarrow" '.$enabled ) ?>
-  </li>
 </ol>
 </fieldset>
 <fieldset

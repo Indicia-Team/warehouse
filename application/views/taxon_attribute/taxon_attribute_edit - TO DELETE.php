@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Edit view template for taxa taxon list custom attributes.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,32 +22,166 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-$disabled_input=html::initial_value($values, 'metaFields:disabled_input');
-$enabled = ($disabled_input=='YES') ? 'disabled="disabled"' : '';
+global $indicia_templates;
+warehouse::loadHelpers(['data_entry_helper']);
+$id = html::initial_value($values, "$model->object_name:id");
+$disabled_input = html::initial_value($values, 'metaFields:disabled_input');
+$enabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
 ?>
-<p>
-<?php if ($disabled_input==='YES') : ?>
-The attribute was created by another user so you don't have permission to change the attribute's specification, although you can
-change the attribute assignments at the bottom of the page. Please contact the warehouse owner to request changes.
+<?php if ($disabled_input === 'YES') : ?>
+  <div class="alert alert-warning">The attribute was created by another user so you don't have permission to change the
+  attribute's specification, although you can change the attribute assignments at the bottom of the page. Please contact
+  the warehouse owner to request changes.</div>
 <?php else : ?>
-This page allows you to specify a new or edit an existing custom attribute for <?php echo strtolower($other_data['name']); ?> data.
+  <div class="alert alert-info">This page allows you to specify a new or edit an existing custom attribute for
+  <?php echo strtolower($other_data['name']); ?> data.</div>
 <?php endif; ?>
-</p>
-<form class="cmxform"
-  action="<?php echo url::site().$other_data['controllerpath']."/save"; ?>"
-  method="post"><input type="hidden" name="<?php echo $model->object_name; ?>:id"
-  value="<?php echo html::initial_value($values, $model->object_name.':id'); ?>" />
-<input type="hidden" name="metaFields:disabled_input"
-  value="<?php echo $disabled_input; ?>" />
-<fieldset
-<?php if ($disabled_input=='YES') echo ' class="ui-state-disabled"'; ?>>
-<legend><?php echo $other_data['name']; ?> Attribute details</legend>
+<form id="taxa-taxon-list-attribute-edit"
+      action="<?php echo url::site() . "$other_data[controllerpath]/save"; ?>"
+      method="post">
+  <input type="hidden" name="<?php echo $model->object_name; ?>:id" value="<?php echo $id; ?>" />
+  <input type="hidden" name="metaFields:disabled_input" value="<?php echo $disabled_input; ?>" />
+  <fieldset<?php echo $disabled_input === 'YES' ? ' class="ui-state-disabled"' : ''; ?>>
+    <legend><?php echo $other_data['name']; ?> attribute details<?php echo $metadata; ?></legend>
+    <?php
+    echo data_entry_helper::text_input([
+      'fieldname' => "$model->object_name:caption",
+      'label' => 'Caption',
+      'default' => html::initial_value($values, "$model->object_name:caption"),
+      'validation' => ['required'],
+      'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+    ]);
+    if (array_key_exists('caption_i18n', $this->model->as_array())) {
+      $defaultLang = kohana::config('indicia.default_lang');
+      $helpText = <<<TXT
+If you need to specify the localise the attribute caption into different languages for use in report outputs, specify
+the caption above using language code $defaultLang and enter additional translations here. Enter one per line, followed
+by a pipe (|) character then the ISO language code. E.g.<br/>
+Compter|fra<br/>
+Anzahl|deu<br/>
+TXT;
+      echo data_entry_helper::textarea([
+        'fieldname' => "$model->object_name:caption_i18n",
+        'label' => 'Caption in other languages',
+        'default' => html::initial_value($values, "$model->object_name:caption_i18n"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'helpText' => $helpText,
+      ]);
+    }
+    if (array_key_exists('term_name', $this->model->as_array())) {
+      $helpText = <<<TXT
+If the attribute is linked to a standardised glossary such as Darwin Core then provide the term name. Otherwise provide
+a brief alphanumeric only (with no spaces) version of the attribute name to give it a unique identifier within the
+context of the survey dataset to make it easier to refer to in configuration.
+TXT;
+      echo data_entry_helper::text_input([
+        'fieldname' => "$model->object_name:term_name",
+        'label' => 'Term name',
+        'default' => html::initial_value($values, "$model->object_name:term_name"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'helpText' => $helpText,
+      ]);
+    }
+    if (array_key_exists('term_identifier', $this->model->as_array())) {
+      $helpText = <<<TXT
+If the attribute is linked to a standardised glossary such as Darwin Core then provide the term identifier, typically
+the URL to the term definition.
+TXT;
+      echo data_entry_helper::text_input([
+        'fieldname' => "$model->object_name:term_identifier",
+        'label' => 'Term identifier',
+        'default' => html::initial_value($values, "$model->object_name:term_identifier"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'helpText' => $helpText,
+        'class' => 'control-width-6',
+      ]);
+    }
+    if (array_key_exists('description', $this->model->as_array())) {
+      echo data_entry_helper::textarea([
+        'fieldname' => "$model->object_name:description",
+        'label' => 'Description',
+        'default' => html::initial_value($values, "$model->object_name:description"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+      ]);
+    }
+    if (method_exists($this->model, 'get_system_functions')) {
+      $options = [];
+      $hints = [];
+      foreach ($this->model->get_system_functions() as $function => $def) {
+        $options[$function] = $def['title'];
+        $hints[$def['title']] = $def['description'];
+      }
+      $indicia_templates['sys_func_item'] = '<option value="{value}" {selected} {title}>{caption}</option>';
+      echo data_entry_helper::select([
+        'fieldname' => "$model->object_name:system_function",
+        'label' => 'System function',
+        'default' => html::initial_value($values, "$model->object_name:system_function"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'blankText' => '-none-',
+        'lookupValues' => $options,
+        'optionHints' => $hints,
+        'itemTemplate' => 'sys_func_item',
+      ]);
+    }
+    if (array_key_exists('source_id', $this->model->as_array()) && !empty($other_data['source_terms'])) {
+      echo data_entry_helper::select([
+        'fieldname' => "$model->object_name:source_id",
+        'label' => 'Source of attribute',
+        'default' => html::initial_value($values, "$model->object_name:source_id"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'blankText' => '-none-',
+        'lookupValues' => $other_data['source_terms'],
+      ]);
+    }
+    echo data_entry_helper::select([
+      'fieldname' => "$model->object_name:data_type",
+      'id' => 'data_type',
+      'label' => 'Data type',
+      'default' => html::initial_value($values, "$model->object_name:data_type"),
+      'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+      'lookupValues' => [
+        'T' => 'Text',
+        'L' => 'Lookup List',
+        'I' => 'Integer',
+        'F' => 'Float',
+        'D' => 'Specific Date',
+        'V' => 'Vague Date',
+        'B' => 'Boolean',
+      ],
+      'validation' => ['required'],
+    ]);
+    echo "<div id=\"quick-termlist\" style=\"display: none;\">\n";
+    echo data_entry_helper::checkbox([
+      'fieldname' => 'metaFields:quick_termlist_create',
+      'id' => 'quick_termlist_create',
+      'label' => 'Create a new termlist',
+      'helpText' => 'Tick this box to create a new termlist with the same name as this attribute and populate it with a provided list of terms.',
+    ]);
+    echo "<div id=\"quick-termlist-terms\" style=\"display: none;\">\n";
+    echo data_entry_helper::textarea([
+      'fieldname' => 'metaFields:quick_termlist_terms',
+      'label' => 'Terms',
+      'helpText' => 'Enter terms into this box, one per line. A termlist with the same name as the attribute will be created and populated with this list of terms in the order provided.',
+    ]);
+    echo '</div>';
+    echo '</div>';
+    echo data_entry_helper::select([
+      'fieldname' => "$model->object_name:termlist_id",
+      'id' => 'termlist_id',
+      'label' => 'Termlist',
+      'default' => html::initial_value($values, "$model->object_name:termlist_id"),
+      'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+      'blankText' => '<Please select>',
+      'lookupValues' => $other_data['termlists'],
+    ]);
+    echo '<a id="termlist-link" target="_blank" href="">edit terms in new tab</a>';
+    echo data_entry_helper::checkbox([
+      'fieldname' => "$model->object_name:multi_value",
+      'label' => 'Allow multiple values',
+      'default' => html::initial_value($values, "$model->object_name:multi_value"),
+    ]);
+    ?>
 <ol>
-  <li><label for="caption">Caption</label> <input id="caption"
-    name="<?php echo $model->object_name; ?>:caption"
-    value="<?php echo html::initial_value($values, $model->object_name.':caption'); ?>"
-    <?php echo $enabled; ?> /> <?php echo html::error_message($model->getError($model->object_name.':caption')); ?>
-  </li>
   <li><label for="data_type">Data Type</label> <script
     type="text/javascript">
 function toggleOptions(data_type)
@@ -149,9 +286,6 @@ $(document).ready(function() {
   </li>
   <li><label class="wide" for="public">Available to other Websites</label>
   <?php echo form::checkbox($model->object_name.':public', TRUE, (html::initial_value($values, $model->object_name.':public') == 't'), 'class="vnarrow" '.$enabled ) ?>
-  </li>
-  <li><label class="wide" for="for_verification_check">Used for automated verification checks</label>
-  <?php echo form::checkbox($model->object_name.':for_verification_check', TRUE, (html::initial_value($values, $model->object_name.':for_verification_check') == 't'), 'class="vnarrow" '.$enabled ) ?>
   </li>
 </ol>
 </fieldset>

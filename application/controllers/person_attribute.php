@@ -54,10 +54,9 @@ class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array_merge(
-      (array)parent::prepareOtherViewData(array $values),
+      parent::prepareOtherViewData($values),
       array('publicFieldName' => 'Public (available for all people on this warehouse)')
     );
   }

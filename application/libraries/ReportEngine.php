@@ -1165,6 +1165,7 @@ SQL;
    * @link http://stackoverflow.com/questions/6037843/extremely-slow-postgresql-query-with-order-and-limit-clauses
    */
   private function optimiseQueryPlan($orderBy) {
+    return $orderBy;
     // If we are limited to a relatively few number of records.
     if (!empty($this->limit) && $this->limit < 200) {
       $count = FALSE;

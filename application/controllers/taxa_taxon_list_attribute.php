@@ -44,26 +44,8 @@ class Taxa_taxon_list_attribute_Controller extends Attr_Gridview_Base_Controller
    * Returns the view specific to taxon attribute edits.
    */
   protected function editViewName() {
-    return 'taxon_attribute/taxon_attribute_edit';
-  }
-
-  /**
-   * Returns some addition information required by the edit view, which is not associated with
-   * a particular record.
-   */
-  protected function prepareOtherViewData(array $values) {
-    return array(
-      'name' => ucfirst($this->prefix),
-      'controllerpath' => $this->controllerpath,
-    );
-  }
-
-  public function save() {
-    if ($_POST['metaFields:disabled_input']==='NO') {
-      // Make sure checkboxes have a value as unchecked values don't appear in $_POST
-      if (!array_key_exists($this->model->object_name.':for_verification_check', $_POST)) $_POST[$this->model->object_name.':for_verification_check'] = '0';
-    }
-    parent::save();
+    $this->associationsView = new View('templates/attribute_associations_taxon_list');
+    return 'custom_attribute/custom_attribute_edit';
   }
 
 }
