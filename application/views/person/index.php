@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of people.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,7 +24,7 @@
 
 echo $grid;
 ?>
-<form action="<?php echo url::site().'person/create'; ?>" method="post">
+<form action="<?php echo url::site() . 'person/create'; ?>" method="post">
 <input type="submit" value="New person" class="btn btn-primary" />
 </form>
 <?php

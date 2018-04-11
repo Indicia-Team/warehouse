@@ -40,5 +40,5 @@ $id = html::initial_value($values, 'sample_comment:id');
     ));
     ?>
   </fieldset>
-<?php echo html::form_buttons($id !== NULL, FALSE, FALSE); ?>
+  <?php echo html::form_buttons($id !== NULL, FALSE, FALSE); ?>
 </form>

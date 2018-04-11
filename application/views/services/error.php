@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for an error message XML response.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,11 +21,12 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
+
 header("Content-Type: application/xml");
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <error>
   <message>$message</message>\n";
-if (!empty($code))
+if (!empty($code)) {
   echo "  <code>$code</code>\n";
+}
 echo "</error>";
-?>

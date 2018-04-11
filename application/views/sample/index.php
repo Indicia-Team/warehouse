@@ -23,5 +23,4 @@
  */
 
 echo $grid;
-?>
-<?php echo $upload_csv_form ?>
+echo $upload_csv_form;

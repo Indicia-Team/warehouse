@@ -89,11 +89,7 @@ $id = html::initial_value($values, 'survey_medium:id');
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);
-  data_entry_helper::$dumped_resources[] = 'jquery';
-  data_entry_helper::$dumped_resources[] = 'jquery_ui';
-  data_entry_helper::$dumped_resources[] = 'fancybox';
   data_entry_helper::enable_validation('survey-medium-edit');
-  data_entry_helper::link_default_stylesheet();
   echo data_entry_helper::dump_javascript();
   ?>
 </form>

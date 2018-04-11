@@ -81,7 +81,6 @@ $id = html::initial_value($values, 'sample_medium:id');
       ]);
     }
     ?>
-
   </fieldset>
   <?php
   echo html::form_buttons($id !== NULL, FALSE, FALSE);

@@ -109,7 +109,7 @@ $id = html::initial_value($values, 'occurrence_comment:id');
       foreach ($correspondence as $type => $list) {
         echo '<table class="table table-condensed"><caption>' . ucfirst($type) . '</caption><tbody>';
         foreach ($list as $item) {
-          foreach($item as $key => $value) {
+          foreach ($item as $key => $value) {
             echo "<tr><th scope=\"row\">$key</th><td><pre>$value</pre></td></tr>";
           }
         }

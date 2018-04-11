@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the sample edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +21,7 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
+
 warehouse::loadHelpers(['map_helper', 'data_entry_helper']);
 $id = html::initial_value($values, 'sample:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
@@ -60,22 +64,22 @@ $site = url::site();
     spatial reference. The more you zoom in, the more accurate the reference will be.</p>
     <?php
     echo map_helper::map_panel(array(
-        'readAuth' => $readAuth,
-        'presetLayers' => array('osm'),
-        'editLayer' => TRUE,
-        'layers' => array(),
-        'initial_lat' => 52,
-        'initial_long' => -2,
-        'initial_zoom' => 7,
-        'width' => '100%',
-        'height' => 400,
-        'initialFeatureWkt' => html::initial_value($values, 'sample:geom'),
-        'standardControls' => array('layerSwitcher', 'panZoom', 'fullscreen')
+      'readAuth' => $readAuth,
+      'presetLayers' => array('osm'),
+      'editLayer' => TRUE,
+      'layers' => array(),
+      'initial_lat' => 52,
+      'initial_long' => -2,
+      'initial_zoom' => 7,
+      'width' => '100%',
+      'height' => 400,
+      'initialFeatureWkt' => html::initial_value($values, 'sample:geom'),
+      'standardControls' => array('layerSwitcher', 'panZoom', 'fullscreen'),
     ));
     echo data_entry_helper::text_input(array(
       'label' => 'Location Name',
       'fieldname' => 'sample:location_name',
-      'default' => html::initial_value($values, 'sample:location_name')
+      'default' => html::initial_value($values, 'sample:location_name'),
     ));
     $location_id = html::initial_value($values, 'sample:location_id');
     if (!empty($location_id)) {
@@ -124,9 +128,9 @@ $site = url::site();
       'valueField' => 'id',
       'captionField' => 'title',
       'blankText' => '<Please select>',
-      'extraParams' => $readAuth
+      'extraParams' => $readAuth,
     ));
-   ?>
+    ?>
   </fieldset>
   <fieldset>
     <legend>Survey specific attributes</legend>

@@ -33,5 +33,3 @@ echo report_helper::dump_javascript();
 ?>
 <input type="submit" value="Load report" />
 </form>
-
-

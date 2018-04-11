@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of sample media.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,6 +24,6 @@
 
 echo $grid;
 ?>
-<form action="<?php echo url::site().'sample_medium/create/'.$sample_id; ?>" method="post">
-<input type="submit" value="New sample image" class="btn btn-primary" />
+<form action="<?php echo url::site() . "sample_medium/create/$sample_id"; ?>" method="post">
+  <input type="submit" value="New sample image" class="btn btn-primary" />
 </form>
