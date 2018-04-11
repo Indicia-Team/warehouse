@@ -237,8 +237,8 @@ class user_identifier {
           'pav.text_value, pav.int_value, pav.float_value, pav.date_start_value, pav.deleted')
         ->from('person_attributes as pa')
         ->join('person_attributes_websites as paw', 'paw.person_attribute_id', 'pa.id')
-        ->join('person_attribute_values as pav', 'pav.person_attribute_id', 'pa.id', 'LEFT')
-        ->in('pav.person_id',array(null, $userPersonObj->person_id))
+        ->join('person_attribute_values as pav',"pav.person_attribute_id=pa.id "
+                . "AND (pav.person_id IS NULL OR pav.person_id=".$userPersonObj->person_id.") AND pav.deleted=false",'','LEFT')
         ->where(array(
           'pa.synchronisable'=>'t',
           'pa.deleted'=>'f',
