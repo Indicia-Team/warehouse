@@ -25,7 +25,7 @@
  * Base class for controllers which provide CRUD access to the lists of custom attributes
  * associated with locations, occurrences, taxa_taxon_list or sample entities.
  */
-abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
+abstract class Attr_Base_Controller extends Gridview_Base_Controller {
 
   /**
    * Controller constructor.
@@ -56,8 +56,8 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
   /**
    * Additional information for the edit view.
    *
-   * Returns some addition information required by the edit view, which is not associated with
-   * a particular record.
+   * Returns some addition information required by the edit view, which is not
+   * associated with a particular record.
    */
   protected function prepareOtherViewData(array $values) {
     if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {

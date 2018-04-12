@@ -46,7 +46,7 @@ class Location_Controller extends Gridview_Base_Controller {
    */
   protected function prepareOtherViewData(array $values) {
     return array(
-      'type_terms' => $this->get_termlist_terms('indicia:location_types')
+      'type_terms' => $this->get_termlist_terms('indicia:location_types'),
     );
   }
 

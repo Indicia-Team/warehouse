@@ -24,10 +24,9 @@
 /**
  * Controller for location attributes.
  */
-class Location_attribute_Controller extends Attr_Gridview_Base_Controller {
+class Location_attribute_Controller extends Survey_Linked_Attr_Controller {
 
-  public function __construct()
-  {
+  public function __construct() {
     $this->prefix = 'location';
     parent::__construct();
   }

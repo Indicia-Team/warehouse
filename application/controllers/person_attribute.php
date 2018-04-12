@@ -22,7 +22,7 @@
 /**
  * Controller providing CRUD access to the person attributes.
  */
-class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
+class Person_attribute_Controller extends Attr_Base_Controller {
 
   public function __construct()
   {

@@ -73,8 +73,9 @@ class Occurrence_medium_Controller extends Gridview_Base_Controller
    */
   protected function get_return_page() {
     if (array_key_exists('occurrence_medium:occurrence_id', $_POST)) {
-      return "occurrence/edit/".$_POST['occurrence_medium:occurrence_id']."?tab=Media_Files";
-    } else {
+      return "occurrence/edit/" . $_POST['occurrence_medium:occurrence_id'] . "?tab=Media_Files";
+    }
+    else {
       return $this->model->object_name;
     }
   }
@@ -82,10 +83,9 @@ class Occurrence_medium_Controller extends Gridview_Base_Controller
   /**
    * Get the list of terms ready for the media types list.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types'),
     );
   }
 
@@ -95,10 +95,11 @@ class Occurrence_medium_Controller extends Gridview_Base_Controller
   protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('occurrence', 'Occurrences');
     if ($this->model->id) {
-      // editing an existing item
+      // Editing an existing item.
       $occurrenceId = $this->model->occurrence_id;
-    } else {
-      // creating a new one so our argument is the location id
+    }
+    else {
+      // Creating a new one so our argument is the location id.
       $occurrenceId = $this->uri->argument(1);
     }
     $occ = ORM::factory('occurrence', $occurrenceId);

@@ -22,22 +22,20 @@
 /**
  * Controller providing CRUD access to the taxa_taxon_list attributes.
  */
-class Taxa_taxon_list_attribute_Controller extends Attr_Gridview_Base_Controller {
+class Taxa_taxon_list_attribute_Controller extends Attr_Base_Controller {
 
-  public function __construct()
-  {
+  public function __construct() {
     $this->prefix = 'taxa_taxon_list';
     parent::__construct();
     $this->pagetitle = "Taxon Attributes";
-    // override the default columns for custom attributes, as taxon attributes are attached
-    // to websites not taxon lists.
-    $this->columns = array
-    (
-      'id'=>'',
-      'taxon_list'=>'Species List',
-      'caption'=>'',
-      'data_type'=>'Data type'
-    );
+    // Override the default columns for custom attributes, as taxon attributes
+    // are attached to websites not taxon lists.
+    $this->columns = [
+      'id' => '',
+      'taxon_list' => 'Species List',
+      'caption' => '',
+      'data_type' => 'Data type',
+    ];
   }
 
   /**

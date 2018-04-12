@@ -22,7 +22,7 @@
 /**
  * Controller providing CRUD access to the sample attributes list.
  */
-class Sample_attribute_Controller extends Attr_Gridview_Base_Controller {
+class Sample_attribute_Controller extends Survey_Linked_Attr_Controller {
 
   public function __construct() {
     $this->prefix = 'sample';

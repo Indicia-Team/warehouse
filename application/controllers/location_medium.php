@@ -73,7 +73,7 @@ class Location_medium_Controller extends Gridview_Base_Controller
    */
   protected function get_return_page() {
     if (array_key_exists('location_medium:location_id', $_POST)) {
-      return "location/edit/".$_POST['location_medium:location_id']."?tab=Media_Files";
+      return "location/edit/" . $_POST['location_medium:location_id'] . "?tab=Media_Files";
     } else {
       return $this->model->object_name;
     }
@@ -82,10 +82,9 @@ class Location_medium_Controller extends Gridview_Base_Controller
   /**
    * Get the list of terms ready for the media types list.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types'),
     );
   }
 
@@ -95,10 +94,11 @@ class Location_medium_Controller extends Gridview_Base_Controller
   protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('location', 'Locations');
     if ($this->model->id) {
-      // editing an existing item
+      // Editing an existing item.
       $locationId = $this->model->location_id;
-    } else {
-      // creating a new one so our argument is the location id
+    }
+    else {
+      // Creating a new one so our argument is the location id.
       $locationId = $this->uri->argument(1);
     }
     $loc = ORM::factory('location', $locationId);
