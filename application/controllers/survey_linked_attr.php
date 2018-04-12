@@ -27,7 +27,6 @@ abstract class Survey_Linked_Attr_Controller extends Attr_Base_Controller {
 
   protected function prepareOtherViewData(array $values) {
     $baseData = parent::prepareOtherViewData($values);
-    var_export($_POST);
     $qry = $this->db
       ->select([
         'w.id as website_id',
@@ -39,32 +38,29 @@ abstract class Survey_Linked_Attr_Controller extends Attr_Base_Controller {
         '(aww.id is not null) as selected_all_surveys',
       ])
       ->from('websites as w')
-      ->join('surveys as s', 's.website_id', 'w.id', 'LEFT')
+      ->join('surveys as s', [
+        's.website_id' => 'w.id',
+        's.deleted' => FALSE,
+      ], NULL, 'LEFT')
       ->join("$baseData[webrec_entity]s as aw", [
         'aw.website_id' => 'w.id',
         "aw.$baseData[webrec_key]" => (int) $values["{$this->prefix}_attribute:id"],
         'aw.restrict_to_survey_id' => 's.id',
+        'aw.deleted' => FALSE,
       ], NULL, 'LEFT')
       ->join("$baseData[webrec_entity]s as aww", [
         'aww.website_id' => 'w.id',
-        "aw.$baseData[webrec_key]" => (int) $values["{$this->prefix}_attribute:id"],
-        'aw.restrict_to_survey_id' => NULL,
+        "aww.$baseData[webrec_key]" => (int) $values["{$this->prefix}_attribute:id"],
+        'aww.restrict_to_survey_id' => NULL,
+        'aww.deleted' => FALSE,
       ], NULL, 'LEFT')
-      ->where('w.deleted', 'f')
-      ->in('s.deleted', [NULL, 'f'])
-      ->in('aw.deleted', [NULL, 'f'])
-      ->in('aww.deleted', [NULL, 'f']);
+      ->where('w.deleted', 'f');
     if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
       $qry->in('w.id', $this->auth_filter['values']);
     }
     $websiteSurveyLinks = $qry
       ->orderby(['w.title' => 'ASC', 's.title' => 'ASC'])
       ->get()->result_array(TRUE);
-    /*
-@todo
-Add permissions filter to above query
-Then update the template view for the links to use this rather than run all the multiple queries.
-*/
     return array_merge(
       $baseData,
       [
