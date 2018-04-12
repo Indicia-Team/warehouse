@@ -123,7 +123,7 @@ abstract class Database_Driver {
           $key .= ' =';
         }
 
-        $value = ($value == TRUE) ? ' 1' : ' 0';
+        $value = ($value == TRUE) ? " 't'" : " 'f'";
       }
       else
       {
