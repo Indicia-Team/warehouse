@@ -1,33 +1,20 @@
 <fieldset>
   <legend><?php echo $other_data['name']; ?> attribute species list allocation</legend>
+  <div class="alert alert-info">
+    Tick the species lists below that you would like this attribute to be made available for.
+  </div>
   <ol>
     <?php
-    // TODO this query must filter out the taxon_lists_taxa_taxon_list_attributes.deleted flag (in (false or null))
-    if (is_null($this->auth_filter) || $this->auth_filter['field'] !== 'website_id') {
-      $lists = ORM::factory('taxon_list')
-        ->where(['deleted' => 'f'])
-        ->orderby('title', 'asc')
-        ->find_all();
-    }
-    else {
-      $lists = ORM::factory('taxon_list')
-        ->where(['deleted' => 'f'])
-        ->in('website_id', $this->auth_filter['values'])
-        ->orderby('title', 'asc')
-        ->find_all();
-    }
-    foreach ($lists as $list) {
-      $rec = $this->db->select('id')
-        ->from('taxon_lists_taxa_taxon_list_attributes')
-        ->where([
-          'taxon_list_id' => $list->id,
-          'taxa_taxon_list_attribute_id' => html::initial_value($values, "$model->object_name:id"),
-          'deleted' => 'f',
-        ])
-        ->get()->result_array();
-      echo '<li><label for="taxon_list_' . $list->id . '" class="wide">' . $list->title . '</label>';
-      echo form::checkbox('taxon_list_' . $list->id, TRUE, count($rec) > 0, 'class="vnarrow"');
-      echo '</li>';
+    foreach ($other_data['taxonLists'] as $list) {
+      $checked = !empty($list->taxon_lists_taxa_taxon_list_attributes_id) ? ' checked="checked"' : '';
+      echo <<<HTML
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="taxon_list_$list->id" value="1"$checked>
+    $list->title
+  </label>
+</div>
+HTML;
     }
     ?>
   </ol>
