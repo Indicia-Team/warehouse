@@ -6,6 +6,12 @@
   $siteUrl = url::site();
   // Loop through all the website and survey combinations possible.
   foreach ($other_data['websiteSurveyLinks'] as $idx => $linkOption) {
+    if (!isset($linkOption->selected)) {
+      $linkOption->selected = 'f';
+    }
+    if (!isset($linkOption->selected_all_surveys)) {
+      $linkOption->selected_all_surveys = 'f';
+    }
     // If this combination is for a survey (i.e. not a survey-less website),
     // build the survey checkbox for the form.
     if (!empty($linkOption->survey_id)) {

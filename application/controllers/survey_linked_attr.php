@@ -33,30 +33,37 @@ abstract class Survey_Linked_Attr_Controller extends Attr_Base_Controller {
         's.id as survey_id',
         'w.title as website_title',
         's.title as survey_title',
-        'aw.id as website_join_id',
-        '(aw.id is not null) as selected',
-        '(aww.id is not null) as selected_all_surveys',
       ])
       ->from('websites as w')
       ->join('surveys as s', [
         's.website_id' => 'w.id',
         's.deleted' => FALSE,
       ], NULL, 'LEFT')
-      ->join("$baseData[webrec_entity]s as aw", [
-        'aw.website_id' => 'w.id',
-        "aw.$baseData[webrec_key]" => (int) $values["{$this->prefix}_attribute:id"],
-        'aw.restrict_to_survey_id' => 's.id',
-        'aw.deleted' => FALSE,
-      ], NULL, 'LEFT')
-      ->join("$baseData[webrec_entity]s as aww", [
-        'aww.website_id' => 'w.id',
-        "aww.$baseData[webrec_key]" => (int) $values["{$this->prefix}_attribute:id"],
-        'aww.restrict_to_survey_id' => NULL,
-        'aww.deleted' => FALSE,
-      ], NULL, 'LEFT')
       ->where('w.deleted', 'f');
+    // Limit websites if not core admin.
     if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
       $qry->in('w.id', $this->auth_filter['values']);
+    }
+    // If editing, load existing data.
+    if (isset($values["{$this->prefix}_attribute:id"])) {
+      $qry
+        ->select([
+          'aw.id as website_join_id',
+          '(aw.id is not null) as selected',
+          '(aww.id is not null) as selected_all_surveys',
+        ])
+        ->join("$baseData[webrec_entity]s as aw", [
+          'aw.website_id' => 'w.id',
+          "aw.$baseData[webrec_key]" => (int) $values["{$this->prefix}_attribute:id"],
+          'aw.restrict_to_survey_id' => 's.id',
+          'aw.deleted' => FALSE,
+        ], NULL, 'LEFT')
+        ->join("$baseData[webrec_entity]s as aww", [
+          'aww.website_id' => 'w.id',
+          "aww.$baseData[webrec_key]" => (int) $values["{$this->prefix}_attribute:id"],
+          'aww.restrict_to_survey_id' => NULL,
+          'aww.deleted' => FALSE,
+        ], NULL, 'LEFT');
     }
     $websiteSurveyLinks = $qry
       ->orderby(['w.title' => 'ASC', 's.title' => 'ASC'])

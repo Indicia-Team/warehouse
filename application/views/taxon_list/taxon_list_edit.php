@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the taxon list edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,6 +21,7 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
+
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'taxon_list:id');
 $parent_id = html::initial_value($values, 'taxon_list:parent_id');

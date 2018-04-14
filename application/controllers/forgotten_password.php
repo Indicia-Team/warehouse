@@ -61,7 +61,7 @@ class Forgotten_Password_Controller extends Indicia_Controller {
   public function check_can_login($user) {
     if (is_null($user->core_role_id) && ORM::factory('users_website')
       ->where('user_id', $user->id)->where('site_role_id IS NOT ', NULL)->find_all() === 0) {
-      $this->template->content->error_message = $_POST['UserID'].' does not have permission to log on to this website';
+      $this->template->content->error_message = $_POST['UserID'] . ' does not have permission to log on to this website';
       return FALSE;
     }
     return TRUE;

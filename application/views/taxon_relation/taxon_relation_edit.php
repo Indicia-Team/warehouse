@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the taxon relations edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify

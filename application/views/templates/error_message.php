@@ -25,4 +25,5 @@
 /**
  * Template to output error messages in the Warehouse.
  */
-echo $message;
+?>
+<div class="alert alert-danger"><?php echo $message; ?></div>

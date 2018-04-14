@@ -358,7 +358,7 @@ HTML;
 <script type="text/javascript">
 $(document).ready(function() {
   $('#quick_termlist_create').change(function (e) {
-    if ($(e.currentTarget).attr('checked')) {
+    if ($(e.currentTarget).is(':checked')) {
       $('#quick-termlist-terms').show();
       $('#termlist-picker').hide();
     } else {
@@ -466,9 +466,9 @@ function toggleOptions() {
   };
   $.each(allRules, function(i, item) {
     if ($.inArray(item, enable) === -1) {
-      $('#ctrl-wrap-sample_attribute-valid_' + item).hide();
+      $('#ctrl-wrap-valid_' + item).hide();
     } else {
-      $('#ctrl-wrap-sample_attribute-valid_' + item).show();
+      $('#ctrl-wrap-valid_' + item).show();
     }
   });
   showHideTermlistLink();

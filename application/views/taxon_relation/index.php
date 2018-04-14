@@ -25,6 +25,6 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site() . 'taxon_relation/create/' . $taxa_taxon_list_id; ?>">
-<input type="submit" value="New taxon relation" class="btn btn-primary" />
+  <input type="submit" value="New taxon relation" class="btn btn-primary" />
 </form>
 <?php echo $upload_csv_form;

@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of taxon media.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
