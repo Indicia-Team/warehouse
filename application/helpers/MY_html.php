@@ -27,7 +27,7 @@ class html extends html_Core {
    */
   public static function error_message($message) {
     if ($message) {
-      echo "<span class=\"help-block\">$message</span>";
+      echo "<div class=\"alert alert-danger\">$message</div>";
     }
   }
 
