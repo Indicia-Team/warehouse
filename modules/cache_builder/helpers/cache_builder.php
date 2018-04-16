@@ -51,7 +51,7 @@ class cache_builder {
         else
           $queries['insert'] = str_replace('#join_needs_update#', $queries['join_needs_update'] . ' and (nu.deleted=false or nu.deleted is null)', $queries['insert']);
         cache_builder::run_statement($db, $table, $queries['insert'], 'insert');
-        if (isset($queries['extra_multi_record_updates'])) 
+        if (isset($queries['extra_multi_record_updates']))
           cache_builder::run_statement($db, $table, $queries['extra_multi_record_updates'], 'final update');
         if (!variable::get("populated-$table")) {
           $cacheQuery = $db->query("select count(*) from cache_$table")->result_array(false);
@@ -70,7 +70,7 @@ class cache_builder {
       throw $e;
     }
   }
-  
+
   /**
    * Inserts a single record into the cache, e.g. could be used as soon as a record is submitted.
    * @param object $db Database object.
@@ -93,7 +93,7 @@ class cache_builder {
       self::final_queries($db, $table, $ids);
     }
   }
-  
+
   /**
    * Updates a single record in the cache, e.g. could be used as soon as a record is edited.
    * @param object $db Database object.
@@ -116,7 +116,7 @@ class cache_builder {
       self::final_queries($db, $table, $ids);
     }
   }
-  
+
   /**
    * Deletes a single record from the cache, e.g. could be used as soon as a record is deleted.
    * @param object $db Database object.
@@ -129,20 +129,31 @@ class cache_builder {
         $db->delete("cache_{$table}_functional", array('id' => $id));
         $db->delete("cache_{$table}_nonfunctional", array('id' => $id));
         if ($table==='samples') {
-          $db->delete("cache_occurrences_functional", array('sample_id' => $id));
+          // Slightly more complex delete query to ensure indexes used.
+          $sql = <<<SQL
+DELETE FROM cache_occurrences_functional o
+USING samples s
+JOIN surveys su on su.id=s.survey_id
+WHERE s.id=$id
+AND o.sample_id=s.id
+AND o.survey_id=su.id
+AND o.website_id=su.website_id
+SQL;
+kohana::log('debug', $sql);
+          $db->query($sql);
           $db->query("delete from cache_occurrences_nonfunctional where id in (select id from occurrences where sample_id=$id)");
         }
       } else
         $db->delete("cache_$table", array('id' => $id));
     }
   }
-  
+
   public static function final_queries($db, $table, $ids) {
     $queries = kohana::config("cache_builder.$table");
     $doneCount = 0;
     if (isset($queries['extra_single_record_updates'])) {
       $idlist=implode(',', $ids);
-      if (is_array($queries['extra_single_record_updates'])) 
+      if (is_array($queries['extra_single_record_updates']))
         foreach($queries['extra_single_record_updates'] as $key=>&$sql) {
           $result=$db->query(str_replace('#ids#', $idlist, $sql));
           $doneCount += $result->count();
@@ -161,9 +172,9 @@ class cache_builder {
    * @param objcet $db Database connection.
    * @param string $table Name of the table being cached, e.g. occurrences.
    * @param string $query A query which selects a list of IDs for all new, updated or
-   * deleted records (including looking for updates or deletions caused by related 
+   * deleted records (including looking for updates or deletions caused by related
    * records).
-   * @param string $last_run_date Date/time of the last time the cache builder was 
+   * @param string $last_run_date Date/time of the last time the cache builder was
    * run, used to filter records to only the recent changes. Supplied as a string
    * suitable for injection into an SQL query.
    */
@@ -171,7 +182,7 @@ class cache_builder {
     $query = str_replace('#date#', $last_run_date, $queries['get_changed_items_query']);
     $db->query("create temporary table needs_update_$table as $query");
     if (!variable::get("populated-$table")) {
-      // as well as the changed records, pick up max 5000 previous records, which is important for initial population. 
+      // as well as the changed records, pick up max 5000 previous records, which is important for initial population.
       // 5000 is an arbitrary number to compromise between performance and cache population.
       // of the cache
       $query = $queries['get_missing_items_query'] . ' limit 5000';
@@ -196,7 +207,7 @@ class cache_builder {
   }
 
   /**
-   * Deletes all records from the cache table which are in the table of records to update and 
+   * Deletes all records from the cache table which are in the table of records to update and
    * where the deleted flag is true.
    * @param object $db Database connection.
    * @param string $table Name of the table being cached.
@@ -215,10 +226,10 @@ class cache_builder {
   }
 
   /**
-   * Runs an insert or update statemnet to update one of 
-   * the cache tables. 
+   * Runs an insert or update statemnet to update one of
+   * the cache tables.
    * @param object $db Database connection.
-   * @param string $query Query used to perform the update or insert. Can be a string, or an 
+   * @param string $query Query used to perform the update or insert. Can be a string, or an
    *   associative array of SQL strings if multiple required to do the task.
    * @param string $action Term describing the action, used for feedback only.
    */
