@@ -139,7 +139,6 @@ AND o.sample_id=s.id
 AND o.survey_id=su.id
 AND o.website_id=su.website_id
 SQL;
-kohana::log('debug', $sql);
           $db->query($sql);
           $db->query("delete from cache_occurrences_nonfunctional where id in (select id from occurrences where sample_id=$id)");
         }
