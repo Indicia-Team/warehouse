@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Helper class for persisting records to the database.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,7 +23,10 @@
  */
 
 /**
- * Helper class for data persistence (create, update & deleted) operations for the REST API.
+ * Helper class for data persistence operations for the API.
+ *
+ * User by the REST API as well as REST API Sync modules for data persitance
+ * (create, update & deletes) .
  *
  * @package Services
  * @subpackage REST API
@@ -33,19 +39,23 @@ class api_persist {
   /**
    * Persists a taxon-observation resource.
    *
-   * @param $db
+   * @param object $db
    *   Database connection object.
-   * @param $observation
-   * @param $website_id
-   * @param $survey_id
-   * @param $taxon_list_id
+   * @param array $observation
+   *   Observation data.
+   * @param int $website_id
+   *   Website ID being saved into.
+   * @param int $survey_id
+   *   Survey dataset ID being saved into.
+   * @param int $taxon_list_id
+   *   Taxon list used for species name lookups.
    *
    * @return bool
-   *   True if a new record was create, false if an existing one was updated.
+   *   True if a new record was creates, false if an existing one was updated.
    *
    * @throws \exception
    */
-  public static function taxon_observation($db, $observation, $website_id, $survey_id, $taxon_list_id) {
+  public static function taxonObservation($db, array $observation, $website_id, $survey_id, $taxon_list_id) {
     // @todo Persist custom attribute values
     if (!empty($observation['taxonVersionKey'])) {
       $lookup = ['search_code' => $observation['taxonVersionKey']];
@@ -59,7 +69,7 @@ class api_persist {
     }
     $values = self::getTaxonObservationValues($db, $website_id, $observation, $ttl_id);
 
-    self::check_mandatory_fields($observation, 'taxon-observation');
+    self::checkMandatoryFields($observation, 'taxon-observation');
     $existing = self::findExistingObservation($db, $observation['id'], $survey_id);
     if (count($existing)) {
       $values['occurrence:id'] = $existing[0]['id'];
@@ -71,12 +81,12 @@ class api_persist {
 
     // Set the spatial reference depending on the projection information
     // supplied.
-    self::set_sref_data($values, $observation, 'sample:entered_sref');
+    self::setSrefData($values, $observation, 'sample:entered_sref');
     // @todo Should the precision field be stored in a custom attribute?
     // Site handling. If a known site with a SiteKey, we can create a record in
     // locations, otherwise use the free text location_name field.
     if (!empty($observation['SiteKey'])) {
-      $values['sample:location_id'] = self::get_location_id($db, $website_id, $observation);
+      $values['sample:location_id'] = self::getLocationId($db, $website_id, $observation);
     }
     elseif (!empty($observation['siteName'])) {
       $values['sample:location_name'] = $observation['siteName'];
@@ -91,16 +101,20 @@ class api_persist {
   }
 
   /**
-   * Undocumented function
+   * Persists an annotation resource.
    *
-   * @param $db
+   * @param object $db
    *   Database connection object.
-   * @param [type] $annotation
-   * @param [type] $survey_id
-   * @return void
+   * @param array $annotation
+   *   Annotation data.
+   * @param int $survey_id
+   *   Survey dataset ID being saved into.
+   *
+   * @return bool
+   *   True if new annotation inserted, false if updated.
    */
   public static function annotation($db, $annotation, $survey_id) {
-    self::map_record_status($annotation);
+    self::mapRecordStatus($annotation);
     // Set up a values array for the annotation post.
     $values = self::getAnnotationValues($db, $annotation);
     // Link to the existing observation.
@@ -112,14 +126,14 @@ class api_persist {
     }
     $values['occurrence_comment:occurrence_id'] = $existingObs[0]['id'];
     // Link to existing annotation if appropriate.
-    $existing = self::find_existing_annotation($db, $annotation['id'], $existingObs[0]['id']);
+    $existing = self::findExistingAnnotation($db, $annotation['id'], $existingObs[0]['id']);
     if ($existing) {
       $values['occurrence_comment:id'] = $existing[0]['id'];
     }
     $annotationObj = ORM::factory('occurrence_comment');
     $annotationObj->set_submission_data($values);
     $annotationObj->submit();
-    self::update_observation_with_annotation_details($db, $existingObs[0]['id'], $annotation);
+    self::updateObservationWithAnnotationDetails($db, $existingObs[0]['id'], $annotation);
     if (count($annotationObj->getAllErrors()) !== 0) {
       throw new exception("Error occurred submitting an annotation\n" . kohana::debug($annotationObj->getAllErrors()));
     }
@@ -130,19 +144,21 @@ class api_persist {
    * Builds the values array required to post a taxon-observation resource to the local
    * database.
    *
-   * @param $db
+   * @param object $db
    *   Database connection object.
-   * @param integer $website_id
+   * @param int $website_id
+   *   Website ID.
    * @param array $observation
    *   Taxon-observation resource data.
-   * @param $ttl_id
+   * @param int $ttl_id
+   *   ID of the taxa taxon list the observation points to.
    *
    * @return array
    *   Values array to use for submission building.
    *
    * @todo Reuse the last sample if it matches
    */
-  private static function getTaxonObservationValues($db, $website_id, $observation, $ttl_id) {
+  private static function getTaxonObservationValues($db, $website_id, array $observation, $ttl_id) {
     $values = array(
       'website_id' => $website_id,
       'sample:date_start'     => $observation['startDate'],
@@ -180,10 +196,9 @@ SQL;
   }
 
   /**
-   * Builds the values array required to post an annotation resource to the
-   * local database.
+   * Builds the values array required to post an annotation resource to the db.
    *
-   * @param $db
+   * @param object $db
    *   Database connection object.
    * @param array $annotation
    *   Annotation resource data.
@@ -191,22 +206,22 @@ SQL;
    * @return array
    *   Values array to use for submission building.
    */
-  private static function getAnnotationValues($db, $annotation) {
+  private static function getAnnotationValues($db, array $annotation) {
     return array(
       'occurrence_comment:comment' => $annotation['comment'],
-      'occurrence_comment:email_address' => self::value_or_null($annotation, 'emailAddress'),
-      'occurrence_comment:record_status' => self::value_or_null($annotation, 'record_status'),
-      'occurrence_comment:record_substatus' => self::value_or_null($annotation, 'record_substatus'),
+      'occurrence_comment:email_address' => self::valueOrNull($annotation, 'emailAddress'),
+      'occurrence_comment:record_status' => self::valueOrNull($annotation, 'record_status'),
+      'occurrence_comment:record_substatus' => self::valueOrNull($annotation, 'record_substatus'),
       'occurrence_comment:query' => $annotation['question'],
       'occurrence_comment:person_name' => $annotation['authorName'],
-      'occurrence_comment:external_key' => $annotation['id']
+      'occurrence_comment:external_key' => $annotation['id'],
     );
   }
 
   /**
    * Looks up a taxon's ID from the database.
    *
-   * @param Database_Core $db
+   * @param object $db
    *   Database instance.
    * @param int $taxon_list_id
    *   Taxon list to lookup against.
@@ -234,7 +249,8 @@ $filter
 ORDER BY preferred DESC
 SQL;
     $taxa = $db->query($qry)->result_array(FALSE);
-    // Need to know if the search found a single unique taxon concept so count the taxon meanings
+    // Need to know if the search found a single unique taxon concept so count
+    // the taxon meanings.
     $uniqueConcepts = [];
     foreach ($taxa as $taxon) {
       $uniqueConcepts[$taxon['taxon_meaning_id']] = $taxon['taxon_meaning_id'];
@@ -255,10 +271,12 @@ SQL;
    * an array of missing field names, empty if the record is complete.
    *
    * @param $array
-   * @param $resourceName
+   * @param string $resourceName
+   *   Name of the resource being checked.
+   *
    * @throws \exception
    */
-  private static function check_mandatory_fields($array, $resourceName) {
+  private static function checkMandatoryFields($array, $resourceName) {
     $required = array();
     // deletions have no other mandatory fields except the id to delete
     if (!empty($resource['delete']) && $resource['delete'] === 'T')
@@ -299,14 +317,16 @@ SQL;
   }
 
   /**
-   * Retrieve existing observation details from the database for an ID supplied by
-   * a call to the REST API.
+   * Finds an existing observation.
    *
-   * @param Core_Database $db
+   * Retrieve existing observation details from the database for an ID supplied
+   * by a call to the REST API.
+   *
+   * @param object $db
    *   Database instance.
    * @param string $id
    *   The taxon-observation's ID as returned by a call to the REST api.
-   * @param integer $survey_id
+   * @param int $survey_id
    *   The database survey ID value to lookup within.
    *
    * @return array
@@ -341,61 +361,77 @@ SQL;
   /**
    * Retrieve existing comment details from the database for an annotation ID supplied by
    * a call to the REST API.
-   * @param Core_Database $db Database instance
-   * @param string $id The taxon-observation's ID as returned by a call to the REST api.
-   * @param integer $occ_id The database observation ID value to lookup within.
+   *
+   * @param object $db
+   *   Database instance.
+   * @param string $id
+   *   The taxon-observation's ID as returned by a call to the REST api.
+   * @param integer $occ_id
+   *   The database observation ID value to lookup within.
    * @return array Array containing occurrence comment ID for any existing matching records.
    */
-  private static function find_existing_annotation($db, $id, $occ_id) {
+  private static function findExistingAnnotation($db, $id, $occ_id) {
     // @todo Add external key to comments table? OR do we use the timestamp?
     $userId = Kohana::config('rest_api_sync.user_id');
     $recordOriginHere = substr($id, 0, strlen($userId)) === $userId;
-    // Look for an existing record to overwrite
+    // Look for an existing record to overwrite.
     $filter = array(
       'oc.deleted' => 'f',
       'occurrence_id' => $occ_id
     );
     // @todo What happens if origin here but record missing?
-    if ($recordOriginHere)
-      $filter['oc.id'] = substr($id, strlen($userId)-1);
-    else
+    if ($recordOriginHere) {
+      $filter['oc.id'] = substr($id, strlen($userId) - 1);
+    }
+    else {
       $filter['oc.external_key'] = $id;
+    }
     $existing = $db->select('oc.id')
       ->from('occurrence_comments oc')
       ->join('cache_occurrences as o', 'o.id', 'oc.occurrence_id')
-      ->where($filter)->get()->result_array(false);
+      ->where($filter)->get()->result_array(FALSE);
     return $existing;
   }
 
   /**
    * Uses the data in an observation to set the spatial reference information in a values array
    * before it can be submitted via ORM to the database.
-   * @param array $values The values array to add the spatial reference information to.
-   * @param array $observation The observation data array.
-   * @param string $fieldname The name of the spatial reference field to be set in the values array, e.g. sample:entered_sref.
+   *
+   * @param array $values
+   *   The values array to add the spatial reference information to.
+   * @param array $observation
+   *   The observation data array.
+   * @param string $fieldname
+   *   The name of the spatial reference field to be set in the values array,
+   *   e.g. sample:entered_sref.
    */
-  private static function set_sref_data(&$values, $observation, $fieldname) {
-    if ($observation['projection']==='OSGB' || $observation['projection']==='OSI') {
+  private static function setSrefData(&$values, $observation, $fieldname) {
+    if ($observation['projection'] === 'OSGB' || $observation['projection'] === 'OSI') {
       $values[$fieldname] = strtoupper(str_replace(' ', '', $observation['gridReference']));
-      $values[$fieldname . '_system'] = $observation['projection']==='OSGB' ? 'OSGB' : 'OSIE';
+      $values[$fieldname . '_system'] = $observation['projection'] === 'OSGB' ? 'OSGB' : 'OSIE';
     }
-    elseif ($observation['projection']==='WGS84') {
-      $values[$fieldname] = self::format_lat_long($observation['north'], $observation['east']);
+    elseif ($observation['projection'] === 'WGS84') {
+      $values[$fieldname] = self::formatLatLong($observation['north'], $observation['east']);
       $values[$fieldname . '_system'] = 4326;
     }
-    elseif ($observation['projection']==='OSGB36') {
-      $values[$fieldname] = self::format_east_north($observation['east'], $observation['north']);
+    elseif ($observation['projection'] === 'OSGB36') {
+      $values[$fieldname] = self::formatEastNorth($observation['east'], $observation['north']);
       $values[$fieldname . '_system'] = 27700;
     }
   }
 
   /**
-   * Returns a formatted decimal latitude and longitude string
+   * Returns a formatted decimal latitude and longitude string.
+   *
    * @param float $lat
+   *   Latitude.
    * @param float $long
-   * @return string Formatted lat long.
+   *   Longitude.
+   *
+   * @return string
+   *   Formatted lat long.
    */
-  private static function format_lat_long($lat, $long) {
+  private static function formatLatLong($lat, $long) {
     $ns = $lat >= 0 ? 'N' : 'S';
     $ew = $long >= 0 ? 'E' : 'W';
     $lat = abs($lat);
@@ -404,12 +440,16 @@ SQL;
   }
 
   /**
-   * Returns a formatted decimal east and north string
+   * Returns a formatted decimal east and north string.
+   *
    * @param $east
+   *   Easting.
    * @param $north
+   *   Northing.
    * @return string
+   *   Formatted easting/northing.
    */
-  private static function format_east_north($east, $north) {
+  private static function formatEastNorth($east, $north) {
     return "$east, $north";
   }
 
@@ -418,12 +458,18 @@ SQL;
    * The observation must have a SiteKey specified which will be used to lookup a location linked
    * to the server's website ID. If it does not exist, then it will be created using the observation's
    * spatial reference as a centroid.
-   * @param Core_Database $db Database instance
-   * @param integer $website_id ID of the website registration the location should be looked up from.
-   * @param array $observation The observation data array.
-   * @return int The ID of the location record in the database.
+   *
+   * @param object $db
+   *   Database instance.
+   * @param int $website_id
+   *   ID of the website registration the location should be looked up from.
+   * @param array $observation
+   *   The observation data array.
+   *
+   * @return int
+   *   The ID of the location record in the database.
    */
-  private static function get_location_id($db, $website_id, $observation) {
+  private static function getLocationId($db, $website_id, $observation) {
     $existing = $db->select('l.id')
       ->from('locations as l')
       ->join('locations_websites as lw', 'lw.location_id', 'l.id')
@@ -431,12 +477,13 @@ SQL;
         'l.deleted' => 'f',
         'lw.deleted' => 'f',
         'lw.website_id' => $website_id,
-        'l.code' => $observation['SiteKey']
-      ))->get()->result_array(false);
-    if (count($existing))
+        'l.code' => $observation['SiteKey'],
+      ))->get()->result_array(FALSE);
+    if (count($existing)) {
       return $existing[0]['id'];
+    }
     else {
-      return self::create_location($website_id, $observation);
+      return self::createLocation($website_id, $observation);
     }
   }
 
@@ -444,18 +491,24 @@ SQL;
    * Creates a location in the database from the information supplied in an observation. The
    * observation should have a SiteKey specified so that future observations for the same SiteKey
    * can be linked to the same location.
-   * @param integer $website_id ID of the database registration to add the location to.
-   * @param array $observation The observation data array.
-   * @return integer The ID of the location record created in the database.
+   *
+   * @param int $website_id
+   *   ID of the database registration to add the location to.
+   * @param array $observation
+   *   The observation data array.
+   *
+   * @return int
+   *   The ID of the location record created in the database.
+   *
    * @todo Join the location to the server's associated website
    */
-  private static function create_location($website_id, $observation) {
+  private static function createLocation($website_id, array $observation) {
     $location = ORM::factory('location');
     $values = array(
       'location:code' => $observation['siteKey'],
       'location:name' => $observation['siteName']
     );
-    self::set_sref_data($values, $observation, 'location:centroid_sref');
+    self::setSrefData($values, $observation, 'location:centroid_sref');
     $location->set_submission_data($values);
     $location->submit();
     // @todo Error handling on submission.
@@ -465,71 +518,85 @@ SQL;
 
   /**
    * Converts the record status codes in an annotation into Indicia codes.
-   * @param $annotation
+   *
+   * @param array $annotation
+   *   Annotation data.
    */
-  private static function map_record_status(&$annotation) {
-    if (empty($annotation['statusCode1']))
-      $annotation['record_status'] = null;
+  private static function mapRecordStatus(array &$annotation) {
+    if (empty($annotation['statusCode1'])) {
+      $annotation['record_status'] = NULL;
+    }
     else {
       switch ($annotation['statusCode1']) {
-        case 'A': // accepted = verified
+        case 'A':
+          // Accepted = verified.
           $annotation['record_status'] = 'V';
           break;
-        case 'N': // not accepted = rejected
+
+        case 'N':
+          // Not accepted = rejected.
           $annotation['record_status'] = 'R';
           break;
+
         default:
           $annotation['record_status'] = 'C';
       }
     }
-    if (empty($annotation['statusCode2']))
-      $annotation['record_substatus'] = null;
-    else
+    if (empty($annotation['statusCode2'])) {
+      $annotation['record_substatus'] = NULL;
+    }
+    else {
       $annotation['record_substatus'] = $annotation['statusCode2'];
+    }
   }
 
   /**
    * If an annotation provides a newer record status or identification than that already
    * associated with an observation, updates the observation.
    *
-   * @param integer $occurrence_id ID of the associated occurrence record in the database.
-   * @param array $annotation Annotation object loaded from the REST API.
+   * @param int $occurrence_id
+   *   ID of the associated occurrence record in the database.
+   * @param array $annotation
+   *   Annotation object loaded from the REST API.
+   *
    * @throws exception
    */
-  private static function update_observation_with_annotation_details($db, $occurrence_id, $annotation) {
-    // Find the original record to compare against
+  private static function updateObservationWithAnnotationDetails($db, $occurrence_id, array $annotation) {
+    // Find the original record to compare against.
     $oldRecords = $db
       ->select('record_status, record_substatus, taxa_taxon_list_id')
       ->from('cache_occurrences')
       ->where('id', $occurrence_id)
-      ->get()->result_array(false);
-    if (!count($oldRecords))
+      ->get()->result_array(FALSE);
+    if (!count($oldRecords)) {
       throw new exception('Could not find cache_occurrences record associated with a comment.');
+    }
 
-    // Find the taxon information supplied with the comment's TVK
+    // Find the taxon information supplied with the comment's TVK.
     $newTaxa = $db
       ->select('id, taxonomic_sort_order, taxon, authority, preferred_taxon, default_common_name, search_name, ' .
         'external_key, taxon_meaning_id, taxon_group_id, taxon_group')
       ->from('cache_taxa_taxon_lists')
-      ->where(array(
-        'preferred'=>'t',
-        'external_key'=>$annotation['taxonVersionKey']),
-        'taxon_list_id', kohana::config('rest_api_sync.taxon_list_id')
-      )
+      ->where([
+        'preferred' => 't',
+        'external_key' => $annotation['taxonVersionKey'],
+        'taxon_list_id' => kohana::config('rest_api_sync.taxon_list_id'),
+      ])
       ->limit(1)
-      ->get()->result_array(false);
-    if (!count($newTaxa))
+      ->get()->result_array(FALSE);
+    if (!count($newTaxa)) {
       throw new exception('Could not find cache_taxa_taxon_lists record associated with an update from a comment.');
+    }
 
     $oldRecord = $oldRecords[0];
     $newTaxon = $newTaxa[0];
 
-    $new_status = $annotation['record_status']===$oldRecord['record_status']
-      ? false : $annotation['record_status'];
-    $new_substatus = $annotation['record_substatus']===$oldRecord['record_substatus']
-      ? false : $annotation['record_substatus'];
-    $new_ttlid = $newTaxon['id']===$oldRecord['taxa_taxon_list_id']
-      ? false : $newTaxon['id'];
+    $new_status = $annotation['record_status'] === $oldRecord['record_status']
+      ? FALSE : $annotation['record_status'];
+    $new_substatus = $annotation['record_substatus'] === $oldRecord['record_substatus']
+      ? FALSE : $annotation['record_substatus'];
+    $new_ttlid = $newTaxon['id'] === $oldRecord['taxa_taxon_list_id']
+      ? FALSE : $newTaxon['id'];
 
     // Does the comment imply an allowable change to the occurrence's attributes?
     if ($new_status || $new_substatus || $new_ttlid) {
@@ -578,11 +645,13 @@ SQL;
 
   /**
    * Simple utility function to return a value from an array, or null if not present.
+   *
    * @param $array
    * @param $key
+   *
    * @return mixed
    */
-  private static function value_or_null($array, $key) {
-    return isset($array[$key]) ? $array[$key] : null;
+  private static function valueOrNull($array, $key) {
+    return isset($array[$key]) ? $array[$key] : NULL;
   }
 }

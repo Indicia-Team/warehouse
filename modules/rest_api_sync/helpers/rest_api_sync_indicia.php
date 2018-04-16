@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Helper class for synchronising records from an Indicia server.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -57,6 +60,14 @@ class rest_api_sync_indicia {
 
   private static $db;
 
+  /**
+   * Synchronise a set of data loaded from the Indicia warehouse server.
+   *
+   * @param string $serverId
+   *   ID of the server as defined in the configuration.
+   * @param array $server
+   *   Server configuration.
+   */
   public static function syncServer($serverId, $server) {
     self::$db = Database::instance();
     $next_page_of_projects_url = self::getServerProjectsUrl($server['url']);
@@ -90,7 +101,7 @@ class rest_api_sync_indicia {
    *
    * Enables use from the UI.
    */
-  public static function syncPage($serverId, $server, $page) {
+  public static function syncPage($serverId, $server) {
     self::syncServer($serverId, $server);
     return [
       'moreToDo' => FALSE,
@@ -228,7 +239,7 @@ class rest_api_sync_indicia {
           unset($observation['datasetName']);
         }
         try {
-          $is_new = api_persist::taxon_observation(self::$db, $observation, $server['website_id'], $survey_id, $taxon_list_id);
+          $is_new = api_persist::taxonObservation(self::$db, $observation, $server['website_id'], $survey_id, $taxon_list_id);
           $tracker[$is_new ? 'inserts' : 'updates']++;
         }
         catch (exception $e) {

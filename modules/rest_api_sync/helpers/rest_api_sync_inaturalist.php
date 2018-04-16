@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Helper class for synchronising records from an iNaturalist server.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,8 +23,6 @@
  */
 
  defined('SYSPATH') or die('No direct script access.');
-
-
 
 /**
  * Helper class for syncing to the RESTful API on iNaturalist.
@@ -48,7 +49,15 @@ class rest_api_sync_inaturalist {
    */
   private static $processingDateLimit;
 
-  public static function syncServer($serverId, $server, $page = NULL) {
+  /**
+   * Synchronise a set of data loaded from the iNat server.
+   *
+   * @param string $serverId
+   *   ID of the server as defined in the configuration.
+   * @param array $server
+   *   Server configuration.
+   */
+  public static function syncServer($serverId, $server) {
     $page = 1;
     $timestampAtStart = date('c');
     do {
@@ -58,7 +67,20 @@ class rest_api_sync_inaturalist {
     variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
   }
 
-  public static function syncPage($serverId, $server, $page) {
+  /**
+   * Synchronise a single page of data loaded from the iNat server.
+   *
+   * @param string $serverId
+   *   ID of the server as defined in the configuration.
+   * @param array $server
+   *   Server configuration.
+   * @param int $page
+   *   Page number.
+   *
+   * @return array
+   *   Status info.
+   */
+  public static function syncPage($serverId, array $server, $page) {
     // @todo images
     // @todo licence
     $db = Database::instance();
@@ -103,7 +125,7 @@ class rest_api_sync_inaturalist {
         }
       }
       try {
-        $is_new = api_persist::taxon_observation(
+        $is_new = api_persist::taxonObservation(
           $db,
           $observation,
           $server['website_id'],
