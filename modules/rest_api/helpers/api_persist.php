@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 /**
@@ -31,12 +32,17 @@ class api_persist {
 
   /**
    * Persists a taxon-observation resource.
+   *
    * @param $db
+   *   Database connection object.
    * @param $observation
    * @param $website_id
    * @param $survey_id
    * @param $taxon_list_id
-   * @return bool True if a new record was create, false if an existing one was updated.
+   *
+   * @return bool
+   *   True if a new record was create, false if an existing one was updated.
+   *
    * @throws \exception
    */
   public static function taxon_observation($db, $observation, $website_id, $survey_id, $taxon_list_id) {
@@ -51,10 +57,10 @@ class api_persist {
     if (!$ttl_id) {
       throw new exception("Could not find taxon for $observation[taxonVersionKey]");
     }
-    $values = self::get_taxon_observation_values($website_id, $observation, $ttl_id);
+    $values = self::getTaxonObservationValues($db, $website_id, $observation, $ttl_id);
 
     self::check_mandatory_fields($observation, 'taxon-observation');
-    $existing = self::find_existing_observation($db, $observation['id'], $survey_id);
+    $existing = self::findExistingObservation($db, $observation['id'], $survey_id);
     if (count($existing)) {
       $values['occurrence:id'] = $existing[0]['id'];
       $values['sample:id'] = $existing[0]['sample_id'];
@@ -63,11 +69,12 @@ class api_persist {
       $values['sample:survey_id'] = $survey_id;
     }
 
-    // Set the spatial reference depending on the projection information supplied.
+    // Set the spatial reference depending on the projection information
+    // supplied.
     self::set_sref_data($values, $observation, 'sample:entered_sref');
     // @todo Should the precision field be stored in a custom attribute?
-    // Site handling. If a known site with a SiteKey, we can create a record in locations, otherwise use the
-    // free text location_name field.
+    // Site handling. If a known site with a SiteKey, we can create a record in
+    // locations, otherwise use the free text location_name field.
     if (!empty($observation['SiteKey'])) {
       $values['sample:location_id'] = self::get_location_id($db, $website_id, $observation);
     }
@@ -77,25 +84,34 @@ class api_persist {
     $obs = ORM::factory('occurrence');
     $obs->set_submission_data($values);
     $obs->submit();
-    if (count($obs->getAllErrors())!==0) {
+    if (count($obs->getAllErrors()) !== 0) {
       throw new exception("Error occurred submitting an occurrence\n" . kohana::debug($obs->getAllErrors()));
     }
     return count($existing) === 0;
   }
 
+  /**
+   * Undocumented function
+   *
+   * @param $db
+   *   Database connection object.
+   * @param [type] $annotation
+   * @param [type] $survey_id
+   * @return void
+   */
   public static function annotation($db, $annotation, $survey_id) {
     self::map_record_status($annotation);
-    // set up a values array for the annotation post
-    $values = self::get_annotation_values($annotation);
-    // link to the existing observation
-    $existingObs = self::find_existing_observation($db, $annotation['taxonObservation']['id'], $survey_id);
+    // Set up a values array for the annotation post.
+    $values = self::getAnnotationValues($db, $annotation);
+    // Link to the existing observation.
+    $existingObs = self::findExistingObservation($db, $annotation['taxonObservation']['id'], $survey_id);
     if (!count($existingObs)) {
       // @todo Proper error handling as annotation can't be imported. Perhaps should obtain
       // and import the observation via the API?
       throw new exception("Attempt to import annotation $annotation[id] but taxon observation not found.");
     }
     $values['occurrence_comment:occurrence_id'] = $existingObs[0]['id'];
-    // link to existing annotation if appropriate
+    // Link to existing annotation if appropriate.
     $existing = self::find_existing_annotation($db, $annotation['id'], $existingObs[0]['id']);
     if ($existing) {
       $values['occurrence_comment:id'] = $existing[0]['id'];
@@ -104,47 +120,78 @@ class api_persist {
     $annotationObj->set_submission_data($values);
     $annotationObj->submit();
     self::update_observation_with_annotation_details($db, $existingObs[0]['id'], $annotation);
-    if (count($annotationObj->getAllErrors())!==0)
+    if (count($annotationObj->getAllErrors()) !== 0) {
       throw new exception("Error occurred submitting an annotation\n" . kohana::debug($annotationObj->getAllErrors()));
-    return count($existing)===0;
+    }
+    return count($existing) === 0;
   }
 
   /**
    * Builds the values array required to post a taxon-observation resource to the local
    * database.
    *
+   * @param $db
+   *   Database connection object.
    * @param integer $website_id
-   * @param array $observation taxon-observation resource data.
+   * @param array $observation
+   *   Taxon-observation resource data.
    * @param $ttl_id
-   * @return array Values array to use for submission building.
+   *
+   * @return array
+   *   Values array to use for submission building.
+   *
    * @todo Reuse the last sample if it matches
    */
-  private static function get_taxon_observation_values($website_id, $observation, $ttl_id) {
-    return array(
+  private static function getTaxonObservationValues($db, $website_id, $observation, $ttl_id) {
+    $values = array(
       'website_id' => $website_id,
       'sample:date_start'     => $observation['startDate'],
       'sample:date_end'       => $observation['endDate'],
       'sample:date_type'      => $observation['dateType'],
-      'sample:recorder_names' => isset($observation['recorder'])
-        ? $observation['recorder'] : 'Unknown',
+      'sample:recorder_names' => isset($observation['recorder']) ? $observation['recorder'] : 'Unknown',
       'occurrence:taxa_taxon_list_id' => $ttl_id,
       'occurrence:external_key' => $observation['id'],
-      'occurrence:zero_abundance' => isset($observation['zeroAbundance'])
-        ? strtolower($observation['zeroAbundance']) : 'f',
+      'occurrence:zero_abundance' => isset($observation['zeroAbundance']) ? strtolower($observation['zeroAbundance']) : 'f',
       'occurrence:sensitivity_precision' => isset($observation['sensitive'])
-      && strtolower($observation['sensitive'])==='t' ? 10000 : null,
-      'occurrence:record_status' => 'C'
+        && strtolower($observation['sensitive']) === 't' ? 10000 : NULL,
     );
+    if (isset($observation['occAttrs'])) {
+      foreach ($observation['occAttrs'] as $id => $value) {
+        // Lookup the term if we can.
+        $qry = <<<SQL
+SELECT t.id
+FROM occurrence_attributes a
+JOIN cache_termlists_terms t ON t.termlist_id=a.termlist_id AND t.term='$value'
+WHERE a.id=$id AND a.data_type='L'
+SQL;
+        $term = $db->query($qry)->result_array(FALSE);
+        // Use the found term ID if we found one. Otherwise submit the iNat
+        // value (which will presumably fail validation if this is a lookup).
+        $values["occAttr:$id"] = count($term) > 0 ? $term[0]['id'] : $value;
+      }
+    }
+    echo '<pre>';
+    var_export($observation);
+    echo '</pre><br/>';
+    echo '<pre>';
+    var_export($values);
+    echo '</pre><br/>';
+    return $values;
   }
 
   /**
-   * Builds the values array required to post an annotation resource to the local
-   * database.
+   * Builds the values array required to post an annotation resource to the
+   * local database.
    *
-   * @param array $annotation annotation resource data.
-   * @return array Values array to use for submission building.
+   * @param $db
+   *   Database connection object.
+   * @param array $annotation
+   *   Annotation resource data.
+   *
+   * @return array
+   *   Values array to use for submission building.
    */
-  private static function get_annotation_values($annotation) {
+  private static function getAnnotationValues($db, $annotation) {
     return array(
       'occurrence_comment:comment' => $annotation['comment'],
       'occurrence_comment:email_address' => self::value_or_null($annotation, 'emailAddress'),
@@ -254,23 +301,31 @@ SQL;
   /**
    * Retrieve existing observation details from the database for an ID supplied by
    * a call to the REST API.
-   * @param Core_Database $db Database instance
-   * @param string $id The taxon-observation's ID as returned by a call to the REST api.
-   * @param integer $survey_id The database survey ID value to lookup within.
-   * @return array Array containing occurrence and sample ID for any existing matching records.
+   *
+   * @param Core_Database $db
+   *   Database instance.
+   * @param string $id
+   *   The taxon-observation's ID as returned by a call to the REST api.
+   * @param integer $survey_id
+   *   The database survey ID value to lookup within.
+   *
+   * @return array
+   *   Array containing occurrence and sample ID for any existing matching
+   *   records.
    */
-  private static function find_existing_observation($db, $id, $survey_id) {
+  private static function findExistingObservation($db, $id, $survey_id) {
     $thisSystemUserId = Kohana::config('rest_api_sync.user_id');
     $recordOriginHere = substr($id, 0, strlen($thisSystemUserId)) === $thisSystemUserId;
-    // Look for an existing record to overwrite
+    // Look for an existing record to overwrite.
     $filter = array(
       'o.deleted' => 'f',
-      's.deleted' => 'f'
+      's.deleted' => 'f',
     );
     // @todo Do we want to overwrite existing records which originated here?
     // @todo What happens if origin here but record missing?
-    if ($recordOriginHere)
+    if ($recordOriginHere) {
       $filter['o.id'] = substr($id, strlen($thisSystemUserId));
+    }
     else {
       $filter['o.external_key'] = (string) $id;
       $filter['s.survey_id'] = $survey_id;
@@ -278,7 +333,8 @@ SQL;
     $existing = $db->select('o.id, o.sample_id')
       ->from('occurrences o')
       ->join('samples as s', 'o.sample_id', 's.id')
-      ->where($filter)->get()->result_array(false);
+      ->where($filter)
+      ->get()->result_array(FALSE);
     return $existing;
   }
 

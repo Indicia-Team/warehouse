@@ -21,6 +21,8 @@
 
  defined('SYSPATH') or die('No direct script access.');
 
+
+
 /**
  * Helper class for syncing to the RESTful API on iNaturalist.
  */
@@ -50,9 +52,9 @@ class rest_api_sync_inaturalist {
     $page = 1;
     $timestampAtStart = date('c');
     do {
-      $moreToDo = self::syncPage($serverId, $server, $page);
+      $syncStatus = self::syncPage($serverId, $server, $page);
       $page++;
-    } while ($moreToDo);
+    } while ($syncStatus['moreToDo']);
     variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
   }
 
@@ -91,6 +93,15 @@ class rest_api_sync_inaturalist {
         'siteName' => $iNatRecord['place_guess'],
         'href' => $iNatRecord['uri'],
       ];
+      if (!empty($server['attrs']) && !empty($iNatRecord['annotations'])) {
+        foreach ($iNatRecord['annotations'] as $annotation) {
+          $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
+          if (isset($server['attrs'][$iNatAttr])) {
+            $attrTokens = explode(':', $server['attrs'][$iNatAttr]);
+            $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $annotation['controlled_value']['label'];
+          }
+        }
+      }
       try {
         $is_new = api_persist::taxon_observation(
           $db,
