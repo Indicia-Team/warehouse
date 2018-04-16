@@ -36,19 +36,19 @@ $config['taxon_list_id'] = 1;
  */
 $config['dataset_name_attr_id'] = 99;
 
-// The following configuration is a temporary definition of the projects available for 
+// The following configuration is a temporary definition of the projects available for
 // each website.
 // @todo Move this configuration into a database table.
-$config['servers']=array(
-  // keyed by server system ID
+$config['servers'] = array(
+  // Keyed by server system ID.
   'XYZ' => array(
-    // the local website registration used to store each project
+    // The local website registration used to store each project.
     'website_id' => 5,
-    // remote API URL
+    // Remote API URL.
     'url' => 'http://localhost/indicia/index.php/services/rest',
-    // secret shared with the remote API
+    // Secret shared with the remote API.
     'shared_secret' => '123password',
     // Optional. Which resources will we try to retrieve from this API?
-    'resources' => array('taxon-observations', 'annotations')
-  )
+    'resources' => array('taxon-observations', 'annotations'),
+  ),
 );

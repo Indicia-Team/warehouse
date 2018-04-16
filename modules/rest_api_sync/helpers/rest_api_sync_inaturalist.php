@@ -49,6 +49,8 @@ class rest_api_sync_inaturalist {
    */
   private static $processingDateLimit;
 
+  private static $controlledTerms = [];
+
   /**
    * Synchronise a set of data loaded from the iNat server.
    *
@@ -60,11 +62,41 @@ class rest_api_sync_inaturalist {
   public static function syncServer($serverId, $server) {
     $page = 1;
     $timestampAtStart = date('c');
+    self::loadControlledTerms($serverId, $server);
     do {
       $syncStatus = self::syncPage($serverId, $server, $page);
       $page++;
     } while ($syncStatus['moreToDo']);
     variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
+  }
+
+  /**
+   * Loads the controlled terms information from iNat.
+   *
+   * @param string $serverId
+   *   ID of the server as defined in the configuration.
+   * @param array $server
+   *   Server configuration.
+   */
+  private static function loadControlledTerms($serverId, $server) {
+    if (!empty(self::$controlledTerms)) {
+      // Already loaded.
+      return;
+    }
+    $data = rest_api_sync::getDataFromRestUrl(
+      "$server[url]/controlled_terms",
+      $serverId
+    );
+    foreach ($data['results'] as $iNatControlledTerm) {
+      $termLookup = [];
+      foreach ($iNatControlledTerm['values'] as $iNatValue) {
+        $termLookup[$iNatValue['id']] = $iNatValue['label'];
+      }
+      self::$controlledTerms[$iNatControlledTerm['id']] = [
+        'label' => $iNatControlledTerm['label'],
+        'values' => $termLookup,
+      ];
+    }
   }
 
   /**
@@ -87,7 +119,7 @@ class rest_api_sync_inaturalist {
     $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
     $pageSize = 30;
     $data = rest_api_sync::getDataFromRestUrl(
-      "$server[url]?" . http_build_query(array_merge(
+      "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
         [
           'updated_since' => $fromDateTime,
@@ -100,6 +132,11 @@ class rest_api_sync_inaturalist {
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     foreach ($data['results'] as $iNatRecord) {
+      if (empty($iNatRecord['taxon']['name'])) {
+        // Skip names with no identification.
+        kohana::log('debug', "iNat record $iNatRecord[id] skipped as no identification.");
+        continue;
+      }
       list($north, $east) = explode(',', $iNatRecord['location']);
       $observation = [
         'id' => $iNatRecord['id'],
@@ -120,7 +157,9 @@ class rest_api_sync_inaturalist {
           $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
           if (isset($server['attrs'][$iNatAttr])) {
             $attrTokens = explode(':', $server['attrs'][$iNatAttr]);
-            $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $annotation['controlled_value']['label'];
+            $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
+            $controlledValueId = $annotation['controlled_value_id'];
+            $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $controlledTermValues[$controlledValueId];
           }
         }
       }

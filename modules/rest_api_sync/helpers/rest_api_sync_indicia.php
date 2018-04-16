@@ -185,7 +185,6 @@ class rest_api_sync_indicia {
         // loading-taxon-observations state.
         self::$processingDateLimit = date("Y-m-d\TH:i:s -1 week");
       }
-
     }
     variable::set("rest_api_sync_$project[id]_state", $state);
   }

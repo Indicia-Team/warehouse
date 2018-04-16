@@ -62,6 +62,8 @@ class api_persist {
     }
     elseif (!empty($observation['taxonName'])) {
       $lookup = ['original' => $observation['taxonName']];
+    } else {
+      echo '<pre>' . var_export($observation, true) . '</pre>';
     }
     $ttl_id = self::findTaxon($db, $taxon_list_id, $lookup);
     if (!$ttl_id) {
@@ -186,12 +188,6 @@ SQL;
         $values["occAttr:$id"] = count($term) > 0 ? $term[0]['id'] : $value;
       }
     }
-    echo '<pre>';
-    var_export($observation);
-    echo '</pre><br/>';
-    echo '<pre>';
-    var_export($values);
-    echo '</pre><br/>';
     return $values;
   }
 
