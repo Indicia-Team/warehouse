@@ -36,6 +36,8 @@
  */
 class api_persist {
 
+  private static $licences = NULL;
+
   /**
    * Persists a taxon-observation resource.
    *
@@ -62,8 +64,6 @@ class api_persist {
     }
     elseif (!empty($observation['taxonName'])) {
       $lookup = ['original' => $observation['taxonName']];
-    } else {
-      echo '<pre>' . var_export($observation, true) . '</pre>';
     }
     $ttl_id = self::findTaxon($db, $taxon_list_id, $lookup);
     if (!$ttl_id) {
@@ -76,6 +76,7 @@ class api_persist {
     if (count($existing)) {
       $values['occurrence:id'] = $existing[0]['id'];
       $values['sample:id'] = $existing[0]['sample_id'];
+      self::applyExistingImageIds($db, $values);
     }
     else {
       $values['sample:survey_id'] = $survey_id;
@@ -173,6 +174,19 @@ class api_persist {
       'occurrence:sensitivity_precision' => isset($observation['sensitive'])
         && strtolower($observation['sensitive']) === 't' ? 10000 : NULL,
     );
+    if (!empty($observation['licenceCode'])) {
+      $values['sample:licence_id'] = self::getLicenceIDFromCode($db, $observation['licenceCode']);
+    }
+    if (!empty($observation['media'])) {
+      foreach ($observation['media'] as $idx => $medium) {
+        $values["occurrence_medium:path:$idx"] = $medium['path'];
+        $values["occurrence_medium:caption:$idx"] = $medium['caption'];
+        $values["occurrence_medium:fk_media_type_id:$idx"] = $medium['mediaType'];
+        if (!empty($medium['licenceCode'])) {
+          $values["occurrence_medium:licence_id:$idx"] = self::getLicenceIDFromCode($db, $medium['licenceCode']);
+        }
+      }
+    }
     if (isset($observation['occAttrs'])) {
       foreach ($observation['occAttrs'] as $id => $value) {
         // Lookup the term if we can.
@@ -212,6 +226,21 @@ SQL;
       'occurrence_comment:person_name' => $annotation['authorName'],
       'occurrence_comment:external_key' => $annotation['id'],
     );
+  }
+
+  private static function getLicenceIDFromCode($db, $licenceCode) {
+    if (self::$licences === NULL) {
+      $qry = <<<SQL
+SELECT id, code
+FROM licences;
+SQL;
+      $licenceData = $db->query($qry)->result_array(FALSE);
+      self::$licences = [];
+      foreach ($licenceData as $licence) {
+        self::$licences[strtolower($licence['code'])] = $licence['id'];
+      }
+    }
+    return self::$licences[$licenceCode];
   }
 
   /**
@@ -352,6 +381,44 @@ SQL;
       ->where($filter)
       ->get()->result_array(FALSE);
     return $existing;
+  }
+
+  /**
+   * Match incoming images to the existing media IDs in the database.
+   *
+   * For an existing record submission that contains images, ensure that the
+   * existing images are overwritten rather than duplicated.
+   *
+   * @param object $db
+   *   Database connection.
+   * @param array $values
+   *   Submitted values which will be updated with existing image IDs.
+   */
+  private static function applyExistingImageIds($db, array &$values) {
+    // Find the images with paths in the incoming data.
+    $pathValueKeys = preg_grep('/^occurrence_medium:path:\d+$/', array_keys($values));
+    if (count($pathValueKeys) === 0) {
+      // No incoming images so nothing to do.
+      return;
+    }
+    // Get the portion of the submitted values that are image path fields.
+    $pathValues = array_intersect_key($values, array_combine($pathValueKeys, $pathValueKeys));
+    // Find the existing database records.
+    $existing = $db->select('id, path')
+      ->from('occurrence_media')
+      ->where([
+        'occurrence_id' => $values['occurrence:id'],
+        'deleted' => 'f',
+      ])
+      ->get()->result_array(FALSE);
+    // Match the database records to the incoming values using the path.
+    foreach ($existing as $dbImage) {
+      $key = array_search($dbImage['path'], $pathValues);
+      if ($key !== FALSE) {
+        // Add the image ID to the submitted values to cause an update.
+        $values[str_replace(':path:', ':id:', $key)] = $dbImage['id'];
+      }
+    }
   }
 
   /**
@@ -650,4 +717,5 @@ SQL;
   private static function valueOrNull($array, $key) {
     return isset($array[$key]) ? $array[$key] : NULL;
   }
+
 }

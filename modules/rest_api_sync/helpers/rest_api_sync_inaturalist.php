@@ -113,8 +113,6 @@ class rest_api_sync_inaturalist {
    *   Status info.
    */
   public static function syncPage($serverId, array $server, $page) {
-    // @todo images
-    // @todo licence
     $db = Database::instance();
     $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
     $pageSize = 30;
@@ -151,7 +149,20 @@ class rest_api_sync_inaturalist {
         'precision' => $iNatRecord['positional_accuracy'],
         'siteName' => $iNatRecord['place_guess'],
         'href' => $iNatRecord['uri'],
+        // American English in iNat field name - sic.
+        'licenceCode' => $iNatRecord['license_code'],
       ];
+      if (!empty($iNatRecord['photos'])) {
+        $observation['media'] = [];
+        foreach ($iNatRecord['photos'] as $iNatPhoto) {
+          $observation['media'][] = [
+            'path' => $iNatPhoto['id'],
+            'caption' => $iNatPhoto['attribution'],
+            'mediaType' => 'Image:iNaturalist',
+            'licenceCode' => $iNatPhoto['license_code'],
+          ];
+        }
+      }
       if (!empty($server['attrs']) && !empty($iNatRecord['annotations'])) {
         foreach ($iNatRecord['annotations'] as $annotation) {
           $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
@@ -208,6 +219,7 @@ QRY;
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
+    echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
     return [
       'moreToDo' => $data['total_results'] / $pageSize > $page,
       'pageCount' => ceil($data['total_results'] / $pageSize),
