@@ -20,18 +20,16 @@
  */
 
 if (function_exists('zip_open')) {
-  print form::open("$controllerpath/upload_shp", array('ENCTYPE' => 'multipart/form-data'));
+  echo "<form action=\"$controllerpath/upload_shp\" method=\"post\" class=\"form-inline\" enctype=\"multipart/form-data\">";
   if ($staticFields != NULL) {
     foreach ($staticFields as $a => $b) {
       print form::hidden($a, $b);
     }
   }
 ?>
-<fieldset>
-  <label for="zip_upload" class="auto wide">Upload a Zipped up SHP fileset into this list:</label>
-  <input type="file" name="zip_upload" id="zip_upload" size="40" />
-  <input type="submit" value="Upload ZIP File" />
-</fieldset>
+  <label for="zip_upload">Upload a Zipped up SHP fileset into this list:</label>
+  <input type="file" name="zip_upload" id="zip_upload" class="form-control" />
+  <input type="submit" class="btn btn-default" value="Upload ZIP File" />
 </form>
 <?php
 }

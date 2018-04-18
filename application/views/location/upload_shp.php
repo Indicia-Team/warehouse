@@ -82,7 +82,7 @@
     </div>
     <div class="form-group">
       <label for="website_id">Default Website to attach any new locations to:</label>
-      <select id="website_id" name="type" class="form-control">
+      <select id="website_id" name="website_id" class="form-control">
         <?php
         if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
           $websites = ORM::factory('website')
@@ -119,11 +119,12 @@
       </thead>
       <tbody>
         <?php foreach ($columns as $col) : ?>
+          <?php $colName = $col->getName(); ?>
           <tr>
-            <td><?php echo $col['name']; ?></td>
-            <td><input type="radio" class="narrow" value="<?php echo $col['name']; ?>" name="name" /></td>
-            <td><input type="radio" class="narrow" value="<?php echo $col['name']; ?>" name="parent" /></td>
-            <td><input type="radio" class="narrow" value="<?php echo $col['name']; ?>" name="code" /></td>
+            <td><?php echo $colName; ?></td>
+            <td><input type="radio" class="narrow" value="<?php echo $colName; ?>" name="name" /></td>
+            <td><input type="radio" class="narrow" value="<?php echo $colName; ?>" name="parent" /></td>
+            <td><input type="radio" class="narrow" value="<?php echo $colName; ?>" name="code" /></td>
           </tr>
         <?php endforeach; ?>
       </tbody>

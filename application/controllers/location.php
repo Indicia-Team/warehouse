@@ -21,6 +21,15 @@
 
  defined('SYSPATH') or die('No direct script access.');
 
+// dBase file parsing classes.
+require 'vendor/php-xbase/src/XBase/Memo.php';
+require 'vendor/php-xbase/src/XBase/Table.php';
+require 'vendor/php-xbase/src/XBase/Column.php';
+require 'vendor/php-xbase/src/XBase/Record.php';
+
+use XBase\Table;
+use XBase\Record;
+
 /**
  * Controller providing CRUD access to the locations data.
  */
@@ -228,21 +237,14 @@ class Location_Controller extends Gridview_Base_Controller {
       $zip->close();
       $this->template->title = "Choose details in " . $shpentry . " for " . $this->pagetitle;
       try {
-        $dbasedb = dbase_open($directory . $entry, 0);
+        $table = new Table($directory . $entry);
+        $view->columns = $table->getColumns();
       }
       catch (Exception $e) {
-        // Error handled next.
-      }
-      if ($dbasedb) {
-        // Read some data ..
-        $view->columns = dbase_get_header_info($dbasedb);
-        dbase_close($dbasedb);
-      }
-      else {
-        $this->setError('Upload file problem', "Could not open $entry from Zip archive.");
+        $this->setError('Upload file problem', "Could not open $entry from Zip archive. The error was: " . $e->getMessage());
+        error_logger::log_error('Error when uploading SHP file', $e);
         return;
       }
-      $view->columns = [];
       $view->model = $this->model;
       $view->controllerpath = $this->controllerpath;
       $view->systems = kohana::config('sref_notations.sref_notations');
@@ -303,12 +305,13 @@ class Location_Controller extends Gridview_Base_Controller {
     $view = new View('location/upload_shp2');
     $view->update = [];
     $view->create = [];
+    $view->errors = [];
     $view->location_id = [];
     // create the file pointer, plus one for errors
     $count = 0;
     $this->template->title = "Confirm Shapefile upload for $this->pagetitle";
-    $dbasedb = dbase_open($basefile.'.dbf', 0);
-    if (!array_key_exists('name', $_POST))  {
+    $dBaseTable = new Table("$basefile.dbf");
+    if (!array_key_exists('name', $_POST)) {
       $this->setError('Upload problem', 'Name column in .dbf file must be specified.');
       return;
     }
@@ -316,40 +319,47 @@ class Location_Controller extends Gridview_Base_Controller {
       $this->setError('Upload problem', 'Parent column in .dbf file must be specified.');
       return;
     }
-    if ($dbasedb) {
-      // read some data ..
-      $record_numbers = dbase_numrecords($dbasedb);
-      $handle = fopen($basefile . '.shp', "rb");
-      //Don't care about file header: jump direct to records.
-      fseek($handle, 100, SEEK_SET);
-
-      for ($i = 1; $i <= $record_numbers; $i++) {
-        $row = dbase_get_record_with_names($dbasedb, $i);
-        $location_name = $_POST['prepend'] . trim(utf8_encode($row[$_POST['name']]));
+    // Read some data ..
+    $handle = fopen($basefile . '.shp', "rb");
+    // Don't care about file header: jump direct to records.
+    fseek($handle, 100, SEEK_SET);
+    $doneNames = [];
+    while ($record = $dBaseTable->nextRecord()) {
+      try {
+        $locationName = $_POST['prepend'] . $this->getDbaseRecordFieldValue($record, $_POST['name']);
+        if (in_array($locationName, $doneNames)) {
+          throw new Exception('Multiple entries present for this location in the SHP file. Only the first has been imported. Please merge to a single multi-polygon and re-import.');
+        }
+        $doneNames[] = $locationName;
         $this->loadFromFile($handle);
-
-        if(kohana::config('sref_notations.internal_srid') != $_POST['srid']) {
-          //convert to internal srid. First convert +/-90 to a value just off, as Google Maps doesn't cope with the poles!
+        if (kohana::config('sref_notations.internal_srid') != $_POST['srid']) {
+          // Convert to internal srid. First convert +/-90 to a value just off,
+          // as Google Maps doesn't cope with the poles!
           $this->wkt = str_replace(
-              array(' 90,', ' -90,', ' 90)', ' -90)'),
-              array(' 89.99999999,', ' -89.99999999,', ' 89.99999999)', ' -89.99999999)'),
-              $this->wkt
+            array(' 90,', ' -90,', ' 90)', ' -90)'),
+            array(' 89.99999999,', ' -89.99999999,', ' 89.99999999)', ' -89.99999999)'),
+            $this->wkt
           );
-          $result = $this->db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('".$this->wkt."',".$_POST['srid']."),".
-          kohana::config('sref_notations.internal_srid').")) AS wkt;")->current();
+          try {
+            $result = $this->db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('$this->wkt', $_POST[srid])," .
+              kohana::config('sref_notations.internal_srid') . ")) AS wkt;")->current();
+          }
+          catch (Exception $e) {
+            throw new Exception('Failed to transform the geometry - did you choose the correct SRID (projection) for the SHP file?');
+          }
           $this->wkt = $result->wkt;
         }
 
-        if(array_key_exists('use_parent', $_POST)) {
+        if (array_key_exists('use_parent', $_POST)) {
           // Ensure parent already exists and is unique  - no account of website taken...
-          $parent = trim($row[$_POST['parent']]);
+          $parent = $this->getDbaseRecordFieldValue($record, $_POST['parent']);
           $parentSelector = $_POST['parent_link_field'];
           $parent_locations = $this->findLocations(array($parentSelector => $parent));
-          if(count($parent_locations) == 0) {
+          if (count($parent_locations) == 0) {
             $this->setError('Upload problem', "Could not find non deleted parent where $parentSelector = $parent");
             return;
           }
-          if(count($parent_locations) > 1) {
+          if (count($parent_locations) > 1) {
             $this->setError('Upload problem', "Found more than one non deleted parent where $parentSelector = $parent");
             return;
           }
@@ -357,21 +367,25 @@ class Location_Controller extends Gridview_Base_Controller {
         }
 
         if (isset($parent_id)) {
-          //Where there is a parent, look for existing child location with same name - no account of website taken...
-          $my_locations=ORM::factory('location')->where('name', $location_name)->where('parent_id', $parent_id)->where('deleted', 'false')->find_all();
-          if(count($my_locations) > 1) {
-            $this->setError('Upload problem', 'Found ' . count($my_locations) . ' non deleted children where name = '.$location_name." and parent $parentSelector = $parent");
-            return;
+          // Where there is a parent, look for existing child location with
+          // same name - no account of website taken...
+          $my_locations = ORM::factory('location')->where('name', $locationName)->where('parent_id', $parent_id)->where('deleted', 'false')->find_all();
+          if (count($my_locations) > 1) {
+            throw new Exception('Found ' . count($my_locations) . " non deleted children where name = $locationName and parent $parentSelector = $parent");
           }
-          $myLocation = ORM::factory('location', array('name' => $location_name, 'parent_id' => $parent_id, 'deleted' => 'false'));
+          $myLocation = ORM::factory('location', [
+            'name' => $locationName,
+            'parent_id' => $parent_id,
+            'deleted' => 'false',
+          ]);
         }
         else {
-          $my_locations_args = array('name' => $location_name);
+          $my_locations_args = array('name' => $locationName);
           if (array_key_exists('type', $_POST))
             $my_locations_args['location_type_id'] = $_POST['type'];
           $my_locations = $this->findLocations($my_locations_args);
           if (count($my_locations) > 1) {
-            $this->setError('Upload problem', 'Found more than one location where name = ' . $location_name);
+            throw new Exception('Found more than one location where name = ' . $locationName);
             return;
           }
           elseif (count($my_locations) === 1) {
@@ -393,14 +407,14 @@ class Location_Controller extends Gridview_Base_Controller {
             $myLocation->__set('centroid_sref_system', $_POST['srid']);
           }
           $myLocation->save();
-          $description = $location_name . (isset($parent) ? ' - parent ' . $parent : '');
+          $description = $locationName . (isset($parent) ? ' - parent ' . $parent : '');
           $view->update[] = $description;
           $view->location_id[$description] = $myLocation->id;
         }
         else {
           // Create a new record.
           $fields = array(
-            'name' => array('value' => $location_name),
+            'name' => array('value' => $locationName),
             'deleted' => array('value' => 'f'),
             'public' => array('value' => ($_POST['website_id'] === 'all' ? 't' : 'f'))
           );
@@ -419,8 +433,8 @@ class Location_Controller extends Gridview_Base_Controller {
           if (array_key_exists('use_parent', $_POST)) {
             $fields['parent_id'] = array('value' => $parent_id);
           }
-          if(array_key_exists('code', $_POST)) {
-            $fields['code'] = array('value' => trim($row[$_POST['code']]));
+          if (array_key_exists('code', $_POST)) {
+            $fields['code'] = array('value' => $this->getDbaseRecordFieldValue($record, $_POST['code']));
           }
           if (array_key_exists('type', $_POST)) {
             $fields['location_type_id'] = array('value' => $_POST['type']);
@@ -438,20 +452,42 @@ class Location_Controller extends Gridview_Base_Controller {
           $myLocation->submission = $save_array;
           $myLocation->submit();
 
-          $description = $location_name . (isset($parent) ? ' - parent ' . $parent : '');
+          $description = $locationName . (isset($parent) ? ' - parent ' . $parent : '');
           $view->create[] = $description;
           $view->location_id[$description] = $myLocation->id;
         }
       }
-      fclose($handle);
-      dbase_close($dbasedb);
+      catch (Exception $e) {
+        $view->errors[] = [
+          'msg' => $e->getMessage(),
+          'name' => $locationName,
+        ];
+      }
     }
+    fclose($handle);
     kohana::log('debug', 'locations import done');
     $view->model = $this->model;
     $view->controllerpath = $this->controllerpath;
     $this->template->content = $view;
     $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
     $this->page_breadcrumbs[] = 'Setup SHP File upload';
+  }
+
+  /**
+   * Retrieve a field value from a dBase record.
+   *
+   * Ensures properly trimmed and utf8 encoded.
+   *
+   * @param \XBase\Record $record
+   *   dBase record object.
+   * @param string $name
+   *   Nane of the field.
+   *
+   * @return string
+   *   Field value.
+   */
+  private function getDbaseRecordFieldValue(Record $record, $name) {
+    return trim(utf8_encode($record->forceGetString($name)));
   }
 
   function loadData($type, $data) {

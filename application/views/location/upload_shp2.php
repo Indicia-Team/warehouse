@@ -26,9 +26,12 @@
  */
 ?>
 <?php
+foreach ($errors as $error) {
+  echo "<div class=\"alert alert-warning\"><strong>$error[name]</strong> $error[msg]</div>";
+}
 foreach ($update as $row) {
-  echo '<p>Location with name "' . $row . '" updated. (<a href="edit/' . $location_id[$row] . '">Edit</a>)</p>';
+  echo "<div class=\"alert alert-success\"><strong>$row</strong> updated. (<a href=\"edit/" . $location_id[$row] . "\">Edit</a>)</div>";
 }
 foreach ($create as $row) {
-  echo '<p>New location with name "' . $row . '" created. (<a href="edit/' . $location_id[$row] . '">Edit</a>)</p>';
+  echo "<div class=\"alert alert-success\"><strong>$row</strong> inserted. (<a href=\"edit/" . $location_id[$row] . "\">Edit</a>)</div>";
 }
