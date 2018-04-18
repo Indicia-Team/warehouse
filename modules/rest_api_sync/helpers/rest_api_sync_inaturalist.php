@@ -156,7 +156,7 @@ class rest_api_sync_inaturalist {
         $observation['media'] = [];
         foreach ($iNatRecord['photos'] as $iNatPhoto) {
           $observation['media'][] = [
-            'path' => $iNatPhoto['id'],
+            'path' => $iNatPhoto['url'],
             'caption' => $iNatPhoto['attribution'],
             'mediaType' => 'Image:iNaturalist',
             'licenceCode' => $iNatPhoto['license_code'],

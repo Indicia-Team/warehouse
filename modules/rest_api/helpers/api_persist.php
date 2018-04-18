@@ -181,6 +181,9 @@ class api_persist {
       foreach ($observation['media'] as $idx => $medium) {
         $values["occurrence_medium:path:$idx"] = $medium['path'];
         $values["occurrence_medium:caption:$idx"] = $medium['caption'];
+
+// @todo Media type ID not working
+
         $values["occurrence_medium:fk_media_type_id:$idx"] = $medium['mediaType'];
         if (!empty($medium['licenceCode'])) {
           $values["occurrence_medium:licence_id:$idx"] = self::getLicenceIDFromCode($db, $medium['licenceCode']);
