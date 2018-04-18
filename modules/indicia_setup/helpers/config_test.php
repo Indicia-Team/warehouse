@@ -47,7 +47,6 @@ class config_test {
       self::check_postgres($result, $problems_only);
       self::check_curl($result, $problems_only);
       self::check_gd2($result, $problems_only);
-      self::check_dBase($result, $problems_only);
       self::check_zip($result, $problems_only);
       self::check_dir_permissions($result, $problems_only);
       self::check_email($result, $problems_only);
@@ -259,39 +258,6 @@ class config_test {
         'title' => 'gd2 Library',
         'description' => 'The gd2 library is installed.',
         'success' => true
-      ));
-    }
-  }
-
-  /**
-   * Ensure that the dBase library is installed.
-   *
-   * @param array $messages List of messages that any information should be appended to.
-   * @param boolean $problems_only Set to true to report only the problems, not the successful
-   * checks. False reports both failures and successes.
-   */
-  private static function check_dBase(&$messages, $problems_only) {
-    if (!function_exists('dbase_open')) {
-      $description = <<<MSG
-The dBase library is not installed on this web server. This is required to enable upload of SHP files containing
-location boundaries, but does not stop Indicia working. To fix this for servers running PHP 5.2, find your php.ini file
-in the PHP installation folder and find the line <strong>;extension=php_dbase.dll</strong>. Remove the semi-colon from
-the start of the line and save the file, then restart your webserver process. If you compiled PHP yourself, you must
-compile PHP with dbase support by using the --enable-dbase configuration option.
-MSG;
-      // Note that this does NOT prevent installation, only give a warning.
-      array_push($messages, array(
-        'title' => 'dBase Library',
-        'description' => "<p>$description</p>",
-        'success' => TRUE,
-        'warning' => TRUE
-      ));
-    }
-    elseif (!$problems_only) {
-      array_push($messages, array(
-        'title' => 'dBase Library',
-        'description' => '<p>The dBase library is installed.</p>',
-        'success' => TRUE
       ));
     }
   }
