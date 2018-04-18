@@ -51,9 +51,9 @@ $config['entities'] = array(
       ),
     ),
     'setableColumns' => array(
-      'confidential',
-      'sensitivity_precision',
-      'release_status',
+      'confidential' => ['t', 'f'],
+      'sensitivity_precision' => ['100', '1000', '2000', '10000', '100000'],
+      'release_status' => ['U', 'R', 'P'],
     ),
     'defaults' => array(
       'confidential' => 'f',

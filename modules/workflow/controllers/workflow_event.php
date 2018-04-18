@@ -70,8 +70,12 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
 
     foreach ($entities as $entity => $entityDef) {
       $entitySelectItems[$entity] = $entityDef['title'];
-      foreach ($entityDef['setableColumns'] as $column) {
-        $jsonMapping[] = '"' . $column . '": {"type":"str","desc":"' . $entity . ' ' . $column . '"}';
+      foreach ($entityDef['setableColumns'] as $column => $values) {
+        $jsonMapping[$column] = [
+          'type' => 'str',
+          'desc' => "Set the $entity.$column field to the chosen value when this event occurs.",
+          'enum' => $values,
+        ];
       }
     }
     // Load workflow groups from configuration file.
@@ -88,8 +92,12 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
       'entities' => $entities,
       'groupSelectItems' => $groups,
       'entitySelectItems' => $entitySelectItems,
-      'jsonSchema' => '{"type":"map", "title":"Columns to set", "mapping": {' . implode(',', $jsonMapping) .
-        '},"desc":"List of columns and the values they are to be set to, when event is triggered."}',
+      'jsonSchema' => json_encode([
+        'type' => 'map',
+        'title' => 'Colunms to set',
+        'mapping' => $jsonMapping,
+        'desc' => 'List of columns and the values they are to be set to, when event is triggered.',
+      ]),
     );
   }
 
