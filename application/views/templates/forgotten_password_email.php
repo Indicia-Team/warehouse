@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Template for the forgotten password email content.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,7 +21,6 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-
 ?>
 <h1>Forgotten Password</h1>
 <p>This email was sent automatically by the <?php echo $server?> server in response to <?php echo $senderName; ?>

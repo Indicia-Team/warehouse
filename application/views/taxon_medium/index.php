@@ -25,5 +25,5 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site().'taxon_medium/create/'.$taxa_taxon_list_id; ?>" method="post">
-<input type="submit" value="New taxon image" class="btn btn-primary" />
+  <input type="submit" value="New taxon image" class="btn btn-primary" />
 </form>

@@ -84,6 +84,14 @@ if (isset($parent_list_id)) : ?>
         'external_key' => 'External key',
       ),
     ]);
+    $taxaToAddCtrls = <<<HTML
+<textarea style="display: none" id="taxa_to_add" rows="10" cols="40"/>
+<input type="button" value="Add" onclick="add_parent_taxon();"
+  title="Click this button to add the taxa searched for in the Add species box to your child list"/>
+<input type="button" value="Add many..." onclick="convert_to_list_mode();"
+  title="Click this button to be able to paste in a list of taxa to add"/>
+<input type="button" style="display: none" value="Add list" id="add-list" onclick="add_parent_taxon_list();" />
+HTML;
     echo data_entry_helper::species_autocomplete([
       'label' => 'Add species',
       'fieldname' => 'add-from-parent',
@@ -92,12 +100,7 @@ if (isset($parent_list_id)) : ?>
       'speciesIncludeBothNames' => TRUE,
       'speciesIncludeTaxonGroup' => TRUE,
       'extraParams' => $readAuth + ['taxon_list_id' => $parent_list_id],
-      'afterControl' => '<textarea style="display: none" id="taxa_to_add" rows="10" cols="40"/>' .
-        '<input type="button" value="Add" onclick="add_parent_taxon();" ' .
-        'title="Click this button to add the taxa searched for in the Add species box to your child list"/>' .
-        '<input type="button" value="Add many..." onclick="convert_to_list_mode();" ' .
-        'title="Click this button to be able to paste in a list of taxa to add"/>' .
-        '<input type="button" style="display: none" value="Add list" id="add-list" onclick="add_parent_taxon_list();" />',
+      'afterControl' => $taxaToAddCtrls,
     ]);
   ?>
     <label for="output-log">Output log:</label>

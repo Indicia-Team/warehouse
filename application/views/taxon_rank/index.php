@@ -27,6 +27,6 @@
 echo $grid;
 ?>
 <form action="<?php echo url::site() . 'taxon_rank/create'; ?>" method="post">
-<input type="submit" value="New taxon rank" class="btn btn-primary" />
+  <input type="submit" value="New taxon rank" class="btn btn-primary" />
 </form>
 <?php echo $upload_csv_form;

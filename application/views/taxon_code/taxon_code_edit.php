@@ -50,8 +50,7 @@ terms to the taxon codes termlist.</p>
       'lookupValues' => $other_data['code_type_terms'],
       'blankText' => '<Please select>',
       'validation' => array('required'),
-      'helpText' => 'Select the type of code you are specifying for the taxon. New codes can be added to the ' .
-        'Taxon code types termlist.',
+      'helpText' => 'Select the type of code you are specifying for the taxon. New codes can be added to the Taxon code types termlist.',
     ]);
     ?>
   </fieldset>

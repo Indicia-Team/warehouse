@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the metadata panels for each data item edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,7 +21,6 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-
 ?>
 <script type='text/javascript'>
 $(document).ready(function(){
@@ -42,11 +44,13 @@ $(document).ready(function(){
       Record ID is <?php echo ($model->id) ? $model->id : '<new record>'; ?>
     </li>
     <li class="list-group-item">
-    Created on <?php echo html::specialchars($model->created_on); ?> by <?php echo (($model->created_by_id != null) ? (html::specialchars($model->created_by->person->surname)) : ''); ?>.
+    Created on <?php echo html::specialchars($model->created_on); ?>
+    by <?php echo (($model->created_by_id != NULL) ? (html::specialchars($model->created_by->person->surname)) : ''); ?>.
     </li>
-      <?php if (isset($model->updated_on)) : ?>
+    <?php if (isset($model->updated_on)) : ?>
     <li class="list-group-item">
-      Updated on <?php echo html::specialchars($model->updated_on); ?> by <?php echo (($model->updated_by_id != null) ? (html::specialchars($model->updated_by->person->surname)) : ''); ?>.
+      Updated on <?php echo html::specialchars($model->updated_on); ?>
+      by <?php echo (($model->updated_by_id != NULL) ? (html::specialchars($model->updated_by->person->surname)) : ''); ?>.
     </li>
     <?php endif; ?>
   </ul>

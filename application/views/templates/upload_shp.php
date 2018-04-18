@@ -19,27 +19,26 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-if (function_exists('dbase_open') && function_exists('zip_open')) {
-  print form::open($controllerpath.'/upload_shp', array('ENCTYPE'=>'multipart/form-data'));
-  if ($staticFields != null) {
+if (function_exists('zip_open')) {
+  print form::open("$controllerpath/upload_shp", array('ENCTYPE' => 'multipart/form-data'));
+  if ($staticFields != NULL) {
     foreach ($staticFields as $a => $b) {
       print form::hidden($a, $b);
     }
   }
 ?>
 <fieldset>
-<label for="zip_upload" class="auto wide">Upload a Zipped up SHP fileset into this list:</label>
-<input type="file" name="zip_upload" id="zip_upload" size="40" />
-<input type="submit" value="Upload ZIP File" />
+  <label for="zip_upload" class="auto wide">Upload a Zipped up SHP fileset into this list:</label>
+  <input type="file" name="zip_upload" id="zip_upload" size="40" />
+  <input type="submit" value="Upload ZIP File" />
 </fieldset>
 </form>
 <?php
-} else {
-  print "<p><i>";
-  if (!function_exists('dbase_open'))
-    print "PHP dBase Library is not loaded. ";
-  if (!function_exists('zip_open'))
-    print "PHP Zip Library is not loaded. ";
-  print "Shape file upload disabled.</i></p>";
 }
-?>
+else {
+  echo <<<HTML
+<div class="alert alert-info">
+  PHP Zip Library is not available on this server. SHP file upload disabled.
+</div>
+HTML;
+}
