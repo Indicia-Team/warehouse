@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>  
+<html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -26,8 +26,8 @@ fieldset {
 legend {
   font-weight: bold;
 }
-textarea { 
-    width: 100%; 
+textarea {
+    width: 100%;
     min-height: 150px;
 }
 </style>
@@ -35,75 +35,78 @@ textarea {
 <body>
 <form id="comment-form" method="POST" >
 <?php
-require_once 'client_helpers/data_entry_helper.php';
-// Request the saved authorisation number
-// from the database for this particular occurrence.
-$auth = occcurrenceCommentQuickReplyPage::getAuth('Indicia');
-$tokenDbData = data_entry_helper::get_population_data(array(
-  'table' => 'comment_quick_reply_page_auth',
-  'caching' => FALSE,
-  'extraParams' => $auth['read'],
-  'nocache' => TRUE,
-));
-$tokenDetails = array();
-// Should only be one row, but cycle through just in case.
-foreach ($tokenDbData as $tokenRow) {
-  if ($tokenRow['occurrence_id'] == $_GET['occurrence_id'] && $tokenRow['token'] == $_GET['auth']) {
-    $tokenDetails = $tokenRow;
-  }
-}
-if ((empty($_GET['user_id'])&&empty($_GET['email_address'])) || empty($_GET['occurrence_id'] || empty($_GET['auth']))) {
+if ((empty($_GET['user_id']) && empty($_GET['email_address'])) || empty($_GET['occurrence_id'] || empty($_GET['auth']))) {
   echo '<p>Invalid link</p>';
 }
 else {
-  $configuration = occcurrenceCommentQuickReplyPage::getPageConfiguration();
-  // If there is a POST, then the user has saved, so process this.
-  if (!empty($_POST)) {
-    $response = occcurrenceCommentQuickReplyPage::buildSubmission($configuration, $tokenDetails['id']);
-    $decodedResponse = json_decode($response);
-    if (isset($decodedResponse->error)) {
-      echo 'Error occurred';
-      ?><h2>A problem seems to have occurred, the response from the server is as follows:</h2><?php
-      echo print_r($response, TRUE);
-      ?><br><form><input type=button value="Return To Record Comments Screen" onClick="window.location = document.URL;"></form><?php
-    }
-    else {
-      ?>
-      <fieldset class="fieldset-auto-width">
-      <h2>Thank You</h2>
-      <p>Your comment has been saved successfully.</p>
-      <p>You posted the following comment:</p>
-      <p><?php
-      $commentText = $_POST['comment-text'];
-      echo $commentText;
-      ?><p>
-      </fieldset>
-      <br>
-      <form><input type="button" value="Close" onclick="self.close();"></form><?php
-    }
+  require_once 'client_helpers/data_entry_helper.php';
+  // Request the saved authorisation number
+  // from the database for this particular occurrence.
+  $auth = occcurrenceCommentQuickReplyPage::getAuth('Indicia');
+  $tokenDbData = data_entry_helper::get_population_data(array(
+    'table' => 'comment_quick_reply_page_auth',
+    'caching' => FALSE,
+    'extraParams' => $auth['read'] + [
+      'occurrence_id' => $_GET['occurrence_id'],
+      'token' => $_GET['auth'],
+    ],
+    'nocache' => TRUE,
+  ));
+  if (count($tokenDbData) !== 1) {
+    echo '<p>Invalid link</p>';
   }
   else {
-    // The authorisation number must exist and
-    // also match the one in the database if we are going to continue.
-    if (empty($tokenDetails['token'])||$_GET['auth'] != $tokenDetails['token']) {
-      echo '<p>Authorisation failed. It may be that the link has already been used.</p>';
+    $tokenDetails = $tokenDbData[0];
+    $configuration = occcurrenceCommentQuickReplyPage::getPageConfiguration();
+    // If there is a POST, then the user has saved, so process this.
+    if (!empty($_POST)) {
+      $response = occcurrenceCommentQuickReplyPage::buildSubmission($configuration, $tokenDetails['id']);
+      $decodedResponse = json_decode($response);
+      if (isset($decodedResponse->error)) {
+        echo 'Error occurred';
+        ?><h2>A problem seems to have occurred, the response from the server is as follows:</h2><?php
+        echo print_r($response, TRUE);
+        ?><br><form><input type=button value="Return To Record Comments Screen" onClick="window.location = document.URL;"></form><?php
+      }
+      else {
+        ?>
+        <fieldset class="fieldset-auto-width">
+        <h2>Thank You</h2>
+        <p>Your comment has been saved successfully.</p>
+        <p>You posted the following comment:</p>
+        <p><?php
+        $commentText = $_POST['comment-text'];
+        echo $commentText;
+        ?><p>
+        </fieldset>
+        <br>
+        <?php
+      }
     }
     else {
-      // Get the record details if we are going to display the page and
-      // then pass this to the functions.
-      $auth = occcurrenceCommentQuickReplyPage::getAuth($configuration['privateKey']);
-      $occurrenceDetails = data_entry_helper::get_population_data(array(
-        'table' => 'occurrence',
-        'caching' => FALSE,
-        'extraParams' => $auth['read'] + array('view' => 'cache', 'id' => $_GET['occurrence_id']),
-      ));
-      echo '<h1>Record details and comments</h1>';
-      if ($occurrenceDetails[0]['query'] !== 'Q') {
-        echo '<em style="color:red">This record no longer has a queried status and therefore doesn\'t require you to make a comment at this present time.</em><br>';
+      // The authorisation number must exist and
+      // also match the one in the database if we are going to continue.
+      if (empty($tokenDetails['token']) || $_GET['auth'] !== $tokenDetails['token']) {
+        var_export($tokenDetails);
+        echo '<p>Authorisation failed. It may be that the link has already been used.</p>';
       }
-      echo occcurrenceCommentQuickReplyPage::displayOccurrenceDetails($configuration, $occurrenceDetails);
-      echo occcurrenceCommentQuickReplyPage::displayExistingOccurrenceComments($configuration, $occurrenceDetails[0]['query']);?>
-      </form><?php
+      else {
+        // Get the record details if we are going to display the page and
+        // then pass this to the functions.
+        $auth = occcurrenceCommentQuickReplyPage::getAuth($configuration['privateKey']);
+        $occurrenceDetails = data_entry_helper::get_population_data(array(
+          'table' => 'occurrence',
+          'caching' => FALSE,
+          'extraParams' => $auth['read'] + array('view' => 'cache', 'id' => $_GET['occurrence_id']),
+        ));
+        echo '<h1>Record details and comments</h1>';
+        if ($occurrenceDetails[0]['query'] !== 'Q') {
+          echo '<em style="color:red">This record no longer has a queried status and therefore doesn\'t require you to make a comment at this present time.</em><br>';
+        }
+        echo occcurrenceCommentQuickReplyPage::displayOccurrenceDetails($configuration, $occurrenceDetails);
+        echo occcurrenceCommentQuickReplyPage::displayExistingOccurrenceComments($configuration, $occurrenceDetails[0]['query']);?>
+        </form><?php
+      }
     }
   }
 }
@@ -148,7 +151,7 @@ class OcccurrenceCommentQuickReplyPage {
     include $configuration['cssPath'];
     echo "</style>\n";
     require_once $configuration['dataEntryHelperPath'];
-    ?>  
+    ?>
     <fieldset class="fieldset-auto-width"><legend>Details</legend>
     <?php
     echo "<p>Species: " . $occurrenceDetails[0]['taxon'] . "</p>";
