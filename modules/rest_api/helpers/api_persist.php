@@ -38,6 +38,8 @@ class api_persist {
 
   private static $licences = NULL;
 
+  private static $mediaTypes = [];
+
   /**
    * Persists a taxon-observation resource.
    *
@@ -181,10 +183,7 @@ class api_persist {
       foreach ($observation['media'] as $idx => $medium) {
         $values["occurrence_medium:path:$idx"] = $medium['path'];
         $values["occurrence_medium:caption:$idx"] = $medium['caption'];
-
-// @todo Media type ID not working
-
-        $values["occurrence_medium:fk_media_type_id:$idx"] = $medium['mediaType'];
+        $values["occurrence_medium:media_type_id:$idx"] = self::getMediaTypeId($db, $medium['mediaType']);
         if (!empty($medium['licenceCode'])) {
           $values["occurrence_medium:licence_id:$idx"] = self::getLicenceIDFromCode($db, $medium['licenceCode']);
         }
@@ -206,6 +205,40 @@ SQL;
       }
     }
     return $values;
+  }
+
+  /**
+   * Converts a media type name into the termlists_term_id to store in the db.
+   *
+   * @param object $db
+   *   Database connection object.
+   * @param string $mediaType
+   *   Media type name, e.g. Image:Local.
+   *
+   * @return int
+   *   Termlists_terms.id value.
+   *
+   * @throws Exception
+   */
+  private static function getMediaTypeId($db, $mediaType) {
+    if (empty(self::$mediaTypes[$mediaType])) {
+      $data = $db->select('t.id')
+        ->from('cache_termlists_terms as t')
+        ->join('termlists as tl', 'tl.id', 't.termlist_id')
+        ->where([
+          't.term' => $mediaType,
+          'tl.external_key' => 'indicia:media_types',
+          'tl.deleted' => 'false',
+        ])
+        ->get()->result_array(FALSE);
+      if (count($data) === 1) {
+        self::$mediaTypes[$mediaType] = $data[0]['id'];
+      }
+      else {
+        throw new Exception("Could not find unique match for media type $mediaType in the media types termlist.");
+      }
+    }
+    return self::$mediaTypes[$mediaType];
   }
 
   /**
@@ -289,7 +322,6 @@ SQL;
     }
     else {
       // If ambiguous about the concept then the search has failed.
-      kohana::log('debug', $db->last_query());
       throw new exception('Could not find a unique preferred taxon for lookup ' . json_encode($lookup));
     }
   }
