@@ -2,7 +2,7 @@
 
 -- DROP TABLE comment_quick_reply_page_auths;
 
-CREATE TABLE comment_quick_reply_page_auths
+CREATE TABLE IF NOT EXISTS comment_quick_reply_page_auths
 (
   id serial NOT NULL,
   occurrence_id int not null,
@@ -31,7 +31,7 @@ COMMENT ON COLUMN comment_quick_reply_page_auths.deleted IS 'Has this record bee
 
 DROP VIEW IF EXISTS list_occurrences;
 
-CREATE OR REPLACE VIEW list_comment_quick_reply_page_auths AS 
+CREATE OR REPLACE VIEW list_comment_quick_reply_page_auths AS
 SELECT rcpat.id, rcpat.occurrence_id, rcpat.token
 FROM comment_quick_reply_page_auths rcpat
 WHERE rcpat.deleted = false;
@@ -48,6 +48,8 @@ CREATE OR REPLACE FUNCTION delete_quick_reply_auth()
     $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
+
+DROP TRIGGER IF EXISTS delete_quick_reply_auth_trigger;
 
 CREATE TRIGGER delete_quick_reply_auth_trigger
   AFTER UPDATE
