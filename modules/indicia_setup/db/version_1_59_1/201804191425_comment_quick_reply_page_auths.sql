@@ -49,7 +49,7 @@ CREATE OR REPLACE FUNCTION delete_quick_reply_auth()
   LANGUAGE plpgsql VOLATILE
   COST 100;
 
-DROP TRIGGER IF EXISTS delete_quick_reply_auth_trigger;
+DROP TRIGGER IF EXISTS delete_quick_reply_auth_trigger ON cache_occurrences_functional;
 
 CREATE TRIGGER delete_quick_reply_auth_trigger
   AFTER UPDATE
