@@ -38,7 +38,7 @@ SELECT
     'https://creativecommons.org/licenses/by-nd/4.0/legalcode',
     '4.0',
     now(), 1, now(), 1
-WHERE NOT EXISTS (SELECT id FROM licences WHERE code='CC-BY-ND')
+WHERE NOT EXISTS (SELECT id FROM licences WHERE code='CC-BY-ND');
 
 INSERT INTO licences(
     title,
