@@ -250,7 +250,7 @@ class OcccurrenceCommentQuickReplyPage {
     }
     $website_id = 0 - $userId;
     $postargs = "website_id=$website_id";
-    $response = self::httpPost(self::getWarehouseUrl() . '/index.php/services/security/get_read_write_nonces', $postargs);
+    $response = self::httpPost(self::getWarehouseUrl() . 'index.php/services/security/get_read_write_nonces', $postargs);
     $nonces = json_decode($response, TRUE);
     return array(
       'read' => array(
@@ -268,7 +268,7 @@ class OcccurrenceCommentQuickReplyPage {
    * Need the warehouse url for various functions.
    */
   private static function getWarehouseUrl() {
-    return $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/';
+    return $_SERVER['HTTP_HOST'] . '/' . trim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/') . '/';
   }
 
   /**
@@ -391,7 +391,7 @@ class OcccurrenceCommentQuickReplyPage {
     $configuration = self::getPageConfiguration();
     $auth = self::getAuth($configuration['privateKey']);
     $writeTokens = $auth['write'];
-    $request = self::getWarehouseUrl() . "/index.php/services/data/$entity";
+    $request = self::getWarehouseUrl() . "index.php/services/data/$entity";
     $postargs = 'submission=' . urlencode(json_encode($submission));
     // Passthrough the authentication tokens as POST data.
     // Use parameter writeTokens.
