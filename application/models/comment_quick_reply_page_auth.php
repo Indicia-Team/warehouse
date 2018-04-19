@@ -1,4 +1,6 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -14,34 +16,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
+ * @package Core
+ * @subpackage Models
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse
+ * @link http://code.google.com/p/indicia/
  */
 
 /**
- * Model class for the Location_Media table.
+ * Model class for the user_trusts table.
  *
- * @link http://indicia-docs.readthedocs.io/en/latest/developing/data-model.html
+ * @package Core
+ * @subpackage Models
+ * @link http://code.google.com/p/indicia/wiki/DataModel
  */
-class Location_Medium_Model extends ORM {
-  public $search_field = 'caption';
-
+class Comment_Quick_Reply_Page_Auth_Model extends ORM {
   protected $belongs_to = array(
+    'user',
     'created_by' => 'user',
     'updated_by' => 'user',
-    'occurrence',
   );
 
+  public $search_field = 'trust';
+
+  /**
+   * Inform system which fields require validation.
+   */
   public function validate(Validation $array, $save = FALSE) {
-
+    /* Uses PHP trim() to remove whitespace from beginning
+    and end of all fields before validation.*/
     $array->pre_filter('trim');
-    $array->add_rules('location_id', 'required');
-    $array->add_rules('path', 'required');
-    $array->add_rules('media_type_id', 'integer');
-    $array->add_rules('licence_id', 'integer');
+    $array->add_rules('occurrence_id', 'required');
+    $array->add_rules('token', 'required');
+    $values = $array->as_array();
 
-    $this->unvalidatedFields = array('caption', 'external_details', 'exif');
+    // Explicitly add those fields for which we don't do validation.
+    $this->unvalidatedFields = array(
+      'deleted',
+    );
     return parent::validate($array, $save);
   }
 
