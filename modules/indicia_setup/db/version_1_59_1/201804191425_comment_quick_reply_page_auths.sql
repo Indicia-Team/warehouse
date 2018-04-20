@@ -29,7 +29,7 @@ COMMENT ON COLUMN comment_quick_reply_page_auths.updated_on IS 'Date this record
 COMMENT ON COLUMN comment_quick_reply_page_auths.updated_by_id IS 'Foreign key to the users table (last updater).';
 COMMENT ON COLUMN comment_quick_reply_page_auths.deleted IS 'Has this record been deleted?';
 
-DROP VIEW IF EXISTS list_occurrences;
+DROP VIEW IF EXISTS list_comment_quick_reply_page_auths;
 
 CREATE OR REPLACE VIEW list_comment_quick_reply_page_auths AS
 SELECT rcpat.id, rcpat.occurrence_id, rcpat.token
