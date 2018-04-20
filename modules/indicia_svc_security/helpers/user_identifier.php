@@ -174,7 +174,7 @@ SQL;
         if (isset($request['users_to_merge'])) {
           // If limiting to a known set of users...
           $usersToMerge = implode(',', json_decode($request['users_to_merge']));
-          $sql .= "AND u.id IN ($usersToMerge)";
+          $sql .= "\nAND u.id IN ($usersToMerge)";
         }
         $r = $userPersonObj->db->query($sql)->result_array(TRUE);
         foreach ($r as $existingUser) {
