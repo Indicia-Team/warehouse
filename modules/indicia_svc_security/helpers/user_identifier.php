@@ -1,4 +1,5 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,13 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Services
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse/
  */
 
-
+defined('SYSPATH') or die('No direct script access.');
 class user_identifier {
   protected $db;
   /**
@@ -70,7 +70,9 @@ class user_identifier {
    * peer_review, verification, data_flow, moderation, editing. They will then be stored
    * against the user account. </li>
    * </ul>
-   * @return JSON JSON object containing the following properties:
+   *
+   * @return JSON
+   *   JSON object containing the following properties:
    *   userId - If a single user account has been identified then returns the
    *     Indicia user ID for the existing or newly created account. Otherwise
    *     not returned.
@@ -95,74 +97,86 @@ class user_identifier {
   // identifiers: looks like these are explicitly escaped and go through ORM.
   // surname: looks like only goes through ORM so escaped.
   // first_name: looks like only goes through ORM so escaped.
-  // cms_user_id: Must be an integer
   // warehouse_user_id: only goes through query builder so escaped.
   // force: not passed to any query.
   // users_to_merge: looks like these all go through query builder so are escaped.
   // attribute_values: looks like these all go through ORM so are escaped.
   // shares_to_prevent: not passed to any query
-  if (array_key_exists('cms_user_id',$request)) {
-    $cms_user_id = security::checkParam($request['cms_user_id'], 'int');
-    if ($cms_user_id === FALSE) {
-      Kohana::log('alert', "Invalid parameter, cms_user_id, with value '{$request['cms_user_id']}' in request to user_identifier/get_user_id service.");
-      throw new Exception('Invalid request.');
-    }
-  }
 
-    if (!array_key_exists('identifiers', $request))
+    if (!array_key_exists('identifiers', $request)) {
       throw new exception('Error: missing identifiers parameter');
+    }
     $identifiers = json_decode($request['identifiers']);
-    if (!is_array($identifiers))
+    if (!is_array($identifiers)) {
       throw new Exception('Error: identifiers parameter not of correct format');
-    if (empty($request['surname']))
+    }
+    if (empty($request['surname'])) {
       throw new exception('Call to get_user_id requires a surname in the GET or POST data.');
+    }
     $userPersonObj = new stdClass();
     $userPersonObj->db = new Database();
     if (!empty($request['warehouse_user_id'])) {
       $userId = $request['warehouse_user_id'];
-      $qry = $userPersonObj->db->select('person_id')->from('users')->where(array('id'=>$userId))->get()->result_array(false);
-      if (!isset($qry[0]))
+      $qry = $userPersonObj->db->select('person_id')
+        ->from('users')
+        ->where([
+          'id' => $userId,
+          'deleted' => 'f',
+        ])
+        ->get()->result_array(FALSE);
+      if (!isset($qry[0])) {
         throw new exception("Error: unknown warehouse_user_id ($userId)");
+      }
       $userPersonObj->person_id = $qry[0]['person_id'];
-    } else {
+    }
+    else {
       $existingUsers = array();
-      // work through the list of identifiers and find the users for the ones we already know about,
-      // plus find the list of identifiers we've not seen before.
-      // email is a special identifier used to create person.
-      $email = null;
+      // Work through the list of identifiers and find the users for the ones
+      // we already know about, plus find the list of identifiers we've not
+      // seen before.
+      // Email is a special identifier used to create person.
+      $email = NULL;
       foreach ($identifiers as $identifier) {
-        // store the email address, since this is always required to create a person
-        if ($identifier->type==='email') {
-          $email=$identifier->identifier;
-          // The query to find an existing user is slightly different for emails, since the
-          // email can be in the user identifier list or the person record
-          $joinType='LEFT';
-        } else
-          $joinType='INNER';
-        $userPersonObj->db->select('DISTINCT u.id as user_id, u.person_id')
-            ->from('users as u')
-            ->join('people as p', 'p.id', 'u.person_id')
-            ->join('user_identifiers as um', 'um.user_id', 'u.id', $joinType)
-            ->join('termlists_terms as tlt1', 'tlt1.id', 'um.type_id', $joinType)
-            ->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt1.meaning_id', $joinType)
-            ->join('terms as t', 't.id', 'tlt2.term_id', $joinType)
-            ->where(array('u.deleted'=>'f', 'p.deleted'=>'f'));
         $ident = pg_escape_string($identifier->identifier);
         $type = pg_escape_string($identifier->type);
-        if ($identifier->type==='email') {
-          // Filter to find either the user identifier or the email in the person record
-          $userPersonObj->db->where("(um.identifier='$ident' OR p.email_address='$ident')");
-          $userPersonObj->db->where("(t.term='$type' OR p.email_address='$ident')");
-        } else {
-          $userPersonObj->db->where("um.identifier='$ident'");
-          $userPersonObj->db->where("t.term='$type'");
-        }
+        $sql = '';
+        if ($identifier->type === 'email') {
+          $email = $identifier->identifier;
+          // For emails. do a direct check on person.email_address in addition
+          // to the query on user_identifiers.
+          $sql = <<<SQL
+SELECT DISTINCT u.id as user_id, u.person_id
+FROM users u
+JOIN people p ON p.id=u.person_id AND p.deleted=false
+WHERE u.deleted=false
+AND p.email_address='$ident'
+UNION
 
-        if (isset($request['users_to_merge'])) {
-          $usersToMerge = json_decode($request['users_to_merge']);
-          $userPersonObj->db->in('user_id', $usersToMerge);
+SQL;
+
         }
-        $r = $userPersonObj->db->get()->result_array(TRUE);
+        // SQL must look in existing user_identifiers.
+        $sql .= <<<SQL
+SELECT DISTINCT u.id as user_id, u.person_id
+FROM users u
+JOIN people p
+  ON p.id=u.person_id
+  AND p.deleted=false
+JOIN user_identifiers AS um
+  ON um.user_id = u.id
+  AND um.deleted=false
+  AND um.identifier='$ident'
+JOIN cache_termlists_terms t
+  ON t.id=um.type_id
+  AND t.preferred_term='$type'
+WHERE u.deleted=false
+SQL;
+        if (isset($request['users_to_merge'])) {
+          // If limiting to a known set of users...
+          $usersToMerge = implode(',', json_decode($request['users_to_merge']));
+          $sql .= "AND u.id IN ($usersToMerge)";
+        }
+        $r = $userPersonObj->db->query($sql)->result_array(TRUE);
         foreach ($r as $existingUser) {
           // Create a placeholder for the known user we just found.
           if (!isset($existingUsers[$existingUser->user_id])) {
@@ -321,72 +335,97 @@ class user_identifier {
   }
 
   /**
+   * Stores user_identifier records.
+   *
    * For the list of identifiers passed through for a user, ensure they are all
    * persisted in the database.
    */
   private static function storeIdentifiers($userId, $identifiers, $userPersonObj, $websiteId) {
-    // build a list of all the identifier types we will need, to ensure that we have terms for them.
+    // Build a list of all the identifier types we will need, to ensure that we
+    // have terms for them.
     $typeTerms = array();
     foreach ($identifiers as $identifier) {
-      if (!in_array($identifier->type, $typeTerms))
-        $typeTerms[]=$identifier->type;
+      if (!in_array($identifier->type, $typeTerms)) {
+        $typeTerms[] = $identifier->type;
+      }
     }
-    // now ensure the termlist is populated
+    // Now ensure the termlist is populated.
     $defaultLang = kohana::config('indicia.default_lang');
     foreach ($typeTerms as $term) {
       $qry = $userPersonObj->db->select('t.id')
-          ->from('terms as t')
-          ->join('termlists_terms as tlt', array('tlt.term_id'=>'t.id'))
-          ->join('termlists as tl', array('tl.id'=>'tlt.termlist_id'))
-          ->where(array('t.deleted'=>'f', 't.term'=>$term, 'tl.external_key'=>'indicia:user_identifier_types',
-               'tlt.deleted'=>'f', 'tl.deleted'=>'f'))
-          ->get()->result_array(false);
-      if (count($qry)===0) {
-        // missing term so insert
+        ->from('terms as t')
+        ->join('termlists_terms as tlt', array('tlt.term_id' => 't.id'))
+        ->join('termlists as tl', array('tl.id' => 'tlt.termlist_id'))
+        ->where(array(
+          't.deleted' => 'f',
+          't.term' => $term,
+          'tl.external_key' => 'indicia:user_identifier_types',
+          'tlt.deleted' => 'f',
+          'tl.deleted' => 'f'
+        ))
+        ->get()->result_array(FALSE);
+      if (count($qry) === 0) {
+        // Missing term so insert.
         $userPersonObj->db->query("SELECT insert_term('$term', '$defaultLang', null, 'indicia:user_identifier_types');");
       }
     }
     // Check each identifier to see if it already exists for the user.
     foreach ($identifiers as $identifier) {
       $r = $userPersonObj->db->select('ui.user_id')
-          ->from('terms as t')
-          ->join('termlists_terms as tlt1', array('tlt1.term_id'=>'t.id'))
-          ->join('termlists_terms as tlt2', array('tlt2.meaning_id'=>'tlt1.meaning_id'))
-          ->join('user_identifiers as ui', array('ui.type_id'=>'tlt2.id'))
-          ->where(array(
-              't.term'=>$identifier->type,
-              'ui.user_id' => $userId,
-              'ui.identifier' => $identifier->identifier,
-              't.deleted' => 'f',
-              'tlt1.deleted' => 'f',
-              'tlt2.deleted' => 'f',
-              'ui.deleted' => 'f'))
-          ->get()->result_array(false);
+        ->from('terms as t')
+        ->join('termlists_terms as tlt1', array('tlt1.term_id' => 't.id'))
+        ->join('termlists_terms as tlt2', array('tlt2.meaning_id' => 'tlt1.meaning_id'))
+        ->join('user_identifiers as ui', array('ui.type_id' => 'tlt2.id'))
+        ->where(array(
+          't.term' => $identifier->type,
+          'ui.user_id' => $userId,
+          'ui.identifier' => $identifier->identifier,
+          't.deleted' => 'f',
+          'tlt1.deleted' => 'f',
+          'tlt2.deleted' => 'f',
+          'ui.deleted' => 'f'
+        ))
+        ->get()->result_array(FALSE);
       if (!count($r)) {
-        // identifier does not yet exist so create it
+        // Identifier does not yet exist so create it.
         self::loadIdentifierTypes($userPersonObj);
-        $new=ORM::factory('user_identifier');
+        $new = ORM::factory('user_identifier');
         $data = array(
-          'user_id'=>$userId,
-          'type_id'=>$userPersonObj->identifierTypes[$identifier->type],
-          'identifier'=>$identifier->identifier
+          'user_id' => $userId,
+          'type_id' => $userPersonObj->identifierTypes[$identifier->type],
+          'identifier' => $identifier->identifier
         );
-        $new->validate(new Validation($data), true);
+        $new->validate(new Validation($data), TRUE);
         self::checkErrors($new);
       }
-      if ($identifier->type==='email')
+      if ($identifier->type === 'email') {
         self::updateEmailAddress($identifier->identifier, $userPersonObj, $websiteId);
+      }
     }
   }
 
   /**
-   * When updating an email identifier, as this is the latest update copy it into the person record
-   * and update all associated sample attribute values from this website.
+   * Update stored email address for a person.
+   *
+   * When updating an email identifier, as this is the latest update copy it
+   * into the person record and update all associated sample attribute values
+   * from this website.
    */
   private static function updateEmailAddress($email, $userPersonObj, $websiteId) {
-    $userPersonObj->db->update('people', array('email_address'=>$email), array('id'=>$userPersonObj->person_id));
-    // update all sample attribute values matching other email addresses for this account and linked to the user ID and website to this email
-    $userPersonObj->db->query(<<<QRY
+    // Check if email address has changed.
+    $currentValCheck = $userPersonObj->db->select('email_address')
+      ->from('people')
+      ->where('id', $userPersonObj->person_id)
+      ->get()->result_array(FALSE);
+    // If changed, update the person record and any attribute data.
+    if (count($currentValCheck) === 1 && $currentValCheck[0]['email_address'] !== $email) {
+      $userPersonObj->db->update('people',
+        ['email_address' => $email],
+        ['id' => $userPersonObj->person_id]
+      );
+      // Update all sample attribute values matching other email addresses for
+      // this account and linked to the user ID and website to this email.
+      $userPersonObj->db->query(<<<QRY
 update sample_attribute_values sav
 set text_value=p.email_address
 from people p
@@ -400,7 +439,8 @@ and sav.sample_id=s.id
 and sav.text_value<>p.email_address
 and sav.text_value=ui.identifier
 QRY
-  );
+      );
+    }
   }
 
   /**
@@ -408,7 +448,7 @@ QRY
    */
   private static function loadIdentifierTypes($userPersonObj) {
     if (!isset($userPersonObj->identifierTypes)) {
-      $userPersonObj->identifierTypes=array();
+      $userPersonObj->identifierTypes = array();
       $terms = $userPersonObj->db
         ->select('termlists_terms.id, term')
         ->from('termlists_terms')
@@ -429,8 +469,8 @@ QRY
   private static function checkErrors($model) {
     $errors = $model->getAllErrors();
     if (count($errors)) {
-      kohana::log('debug', 'Errors on user identifier saved model: '.print_r($errors, true));
-      throw new exception(print_r($errors, true));
+      kohana::log('debug', 'Errors on user identifier saved model: '.print_r($errors, TRUE));
+      throw new exception(print_r($errors, TRUE));
     }
   }
 
@@ -441,10 +481,10 @@ QRY
   private static function associateWebsite($userId, $userPersonObj, $websiteId) {
     $qry = $userPersonObj->db->select('id')
         ->from('users_websites')
-        ->where(array('user_id'=>$userId, 'website_id'=>$websiteId))
-        ->get()->result_array(false);
+        ->where(array('user_id' => $userId, 'website_id' => $websiteId))
+        ->get()->result_array(FALSE);
 
-    if (count($qry)===0)
+    if (count($qry) === 0)
       // insert new join record
       $uw=ORM::factory('users_website');
     else {
