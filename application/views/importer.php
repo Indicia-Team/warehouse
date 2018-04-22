@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Import template for the import form displayed under index grids.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,11 +22,7 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-/**
- * This is a view which outputs a parameters entry form to capture values that will apply to every row during an import, such as the website id.
- */
-
-require_once DOCROOT . 'client_helpers/import_helper.php';
+warehouse::loadHelpers(['import_helper']);
 $auth = import_helper::get_read_write_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 
 echo import_helper::importer(array(
@@ -34,12 +33,6 @@ echo import_helper::importer(array(
     'activate_global_sample_method' => 't',
     'activate_location_location_type_filter' => 't',
     'occurrence_associations' => 't',
-  )
+  ),
 ));
-import_helper::$dumped_resources[] = 'jquery';
-import_helper::$dumped_resources[] = 'jquery-ui';
 echo import_helper::dump_javascript();
-
-?>
-
-

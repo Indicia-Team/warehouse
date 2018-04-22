@@ -69,6 +69,17 @@ $id = html::initial_value($values, 'location_medium:id');
       'fieldname' => 'location_medium:caption',
       'default' => html::initial_value($values, 'location_medium:caption'),
     ]);
+    echo data_entry_helper::select(array(
+      'label' => 'Licence',
+      'helpText' => 'Licence which applies to this photo if set.',
+      'fieldname' => 'location_medium:licence_id',
+      'default' => html::initial_value($values, 'location_medium:licence_id'),
+      'table' => 'licence',
+      'valueField' => 'id',
+      'captionField' => 'title',
+      'blankText' => '<Please select>',
+      'extraParams' => $readAuth,
+    ));
     if ($mediaTypeId && $mediaType !== 'Image:Local') {
       echo data_entry_helper::select([
         'label' => 'Media type',

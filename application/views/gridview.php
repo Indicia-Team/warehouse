@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the output of a data entity's index grid.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,8 +22,9 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
- /**
-  * Generates a paginated grid for table view. Requires a number of variables passed to it:
+ /*
+  * Generates a paginated grid for table view. Requires a number of variables
+  * passed to it:
   *  $columns - array of column names
   *  $pagination - the pagination object
   *  $body - gridview_table object.
@@ -36,7 +40,7 @@ if (isset($columns)) {
     }
     $def = array(
       'fieldname' => $fieldname,
-      'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title
+      'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title,
     );
     if ($fieldname == 'path') {
       $def['img'] = TRUE;
@@ -50,17 +54,18 @@ foreach ($actions as &$action) {
     $action['url'] = url::base(TRUE) . $action['url'];
   }
 }
-if (count($actions) > 0)
+if (count($actions) > 0) {
   $colDefs[] = array(
     'display' => 'Actions',
-    'actions' => $actions
+    'actions' => $actions,
   );
+}
 $options = array(
   'id' => $id,
   'class' => 'report-grid table',
   'readAuth' => $readAuth,
   'extraParams' => array(),
-  'itemsPerPage' => kohana::config('pagination.default.items_per_page')
+  'itemsPerPage' => kohana::config('pagination.default.items_per_page'),
 );
 if (isset($orderby)) {
   $options['orderby'] = $orderby;
@@ -80,4 +85,3 @@ else {
 }
 echo report_helper::report_grid($options);
 echo report_helper::dump_javascript();
-?>

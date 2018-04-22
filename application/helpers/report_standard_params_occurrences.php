@@ -141,7 +141,7 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "st_intersects(o.public_geom, st_makevalid(st_geomfromtext('#searchArea#',900913)))",
+            'sql' => "st_intersects(#sample_geom_field#, st_makevalid(st_geomfromtext('#searchArea#',900913)))",
           ],
         ],
       ],

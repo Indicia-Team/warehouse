@@ -1,0 +1,42 @@
+<report
+    title="Locations list from search location"
+    description="Allows user to search for locations of a given type based on another location.
+Locations might intersect the boundary, be a child via parent_id field, or simply return the same location
+user is searching for."
+>
+  <query website_filter_field="" training_filter_field="">
+    SELECT #columns#
+    FROM locations l
+    JOIN locations lParent on (lParent.id=l.id OR lParent.id=l.parent_id OR 
+      st_intersects(lParent.boundary_geom,coalesce(l.boundary_geom,l.centroid_geom)))
+      AND lParent.id=#location_id#
+      AND lParent.deleted=false
+    LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+    AND l.deleted=false
+    --Note: we don't need to worry about the parent location locations_websites; it is passed in to the report, so we 
+    --always work with the location we are given regardless. It is up to the code passing in that parent to do it correctly.
+    AND (l.public=true or lw.website_id in (#website_ids#))
+    #order_by#
+  </query>
+  <order_bys>
+    <order_by>l.name ASC</order_by>
+  </order_bys>
+  <params>
+    <param name="location_id" display="Location ID" />
+    <param name="location_type_id" display="Location Type" datatype="lookup" default=""
+       description="Select the location type, or leave blank to not filter by location type."
+       population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=">
+    <where>l.location_type_id=#location_type_id#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="location_id" display="ID" sql="l.id" />
+    <column name="name" display="Name" sql="l.name" />
+    <column name="centroid_sref" display="Centroid" sql="l.centroid_sref" />
+    <column name="centroid_sref_system" visible="false" sql="l.centroid_sref_system" />
+    <column name="boundary_geom" display="Boundary" sql="l.boundary_geom" />
+  </columns>
+</report>

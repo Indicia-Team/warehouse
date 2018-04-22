@@ -466,7 +466,7 @@ cache_termlists_terms:
     term: "twitter"
     language_iso: "eng"
     language: "English"
-    preferred_term: "email"
+    preferred_term: "twitter"
     preferred_language_iso: "eng"
     preferred_language: "English"
     meaning_id: 10004

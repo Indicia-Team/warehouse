@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Helper class for synchronising records from an iNaturalist server.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -46,24 +49,75 @@ class rest_api_sync_inaturalist {
    */
   private static $processingDateLimit;
 
-  public static function syncServer($serverId, $server, $page = NULL) {
+  private static $controlledTerms = [];
+
+  /**
+   * Synchronise a set of data loaded from the iNat server.
+   *
+   * @param string $serverId
+   *   ID of the server as defined in the configuration.
+   * @param array $server
+   *   Server configuration.
+   */
+  public static function syncServer($serverId, $server) {
     $page = 1;
     $timestampAtStart = date('c');
+    self::loadControlledTerms($serverId, $server);
     do {
-      $moreToDo = self::syncPage($serverId, $server, $page);
+      $syncStatus = self::syncPage($serverId, $server, $page);
       $page++;
-    } while ($moreToDo);
+    } while ($syncStatus['moreToDo']);
     variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
   }
 
-  public static function syncPage($serverId, $server, $page) {
-    // @todo images
-    // @todo licence
+  /**
+   * Loads the controlled terms information from iNat.
+   *
+   * @param string $serverId
+   *   ID of the server as defined in the configuration.
+   * @param array $server
+   *   Server configuration.
+   */
+  private static function loadControlledTerms($serverId, $server) {
+    if (!empty(self::$controlledTerms)) {
+      // Already loaded.
+      return;
+    }
+    $data = rest_api_sync::getDataFromRestUrl(
+      "$server[url]/controlled_terms",
+      $serverId
+    );
+    foreach ($data['results'] as $iNatControlledTerm) {
+      $termLookup = [];
+      foreach ($iNatControlledTerm['values'] as $iNatValue) {
+        $termLookup[$iNatValue['id']] = $iNatValue['label'];
+      }
+      self::$controlledTerms[$iNatControlledTerm['id']] = [
+        'label' => $iNatControlledTerm['label'],
+        'values' => $termLookup,
+      ];
+    }
+  }
+
+  /**
+   * Synchronise a single page of data loaded from the iNat server.
+   *
+   * @param string $serverId
+   *   ID of the server as defined in the configuration.
+   * @param array $server
+   *   Server configuration.
+   * @param int $page
+   *   Page number.
+   *
+   * @return array
+   *   Status info.
+   */
+  public static function syncPage($serverId, array $server, $page) {
     $db = Database::instance();
     $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
     $pageSize = 30;
     $data = rest_api_sync::getDataFromRestUrl(
-      "$server[url]?" . http_build_query(array_merge(
+      "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
         [
           'updated_since' => $fromDateTime,
@@ -76,6 +130,11 @@ class rest_api_sync_inaturalist {
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     foreach ($data['results'] as $iNatRecord) {
+      if (empty($iNatRecord['taxon']['name'])) {
+        // Skip names with no identification.
+        kohana::log('debug', "iNat record $iNatRecord[id] skipped as no identification.");
+        continue;
+      }
       list($north, $east) = explode(',', $iNatRecord['location']);
       $observation = [
         'id' => $iNatRecord['id'],
@@ -90,9 +149,33 @@ class rest_api_sync_inaturalist {
         'precision' => $iNatRecord['positional_accuracy'],
         'siteName' => $iNatRecord['place_guess'],
         'href' => $iNatRecord['uri'],
+        // American English in iNat field name - sic.
+        'licenceCode' => $iNatRecord['license_code'],
       ];
+      if (!empty($iNatRecord['photos'])) {
+        $observation['media'] = [];
+        foreach ($iNatRecord['photos'] as $iNatPhoto) {
+          $observation['media'][] = [
+            'path' => $iNatPhoto['url'],
+            'caption' => $iNatPhoto['attribution'],
+            'mediaType' => 'Image:iNaturalist',
+            'licenceCode' => $iNatPhoto['license_code'],
+          ];
+        }
+      }
+      if (!empty($server['attrs']) && !empty($iNatRecord['annotations'])) {
+        foreach ($iNatRecord['annotations'] as $annotation) {
+          $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
+          if (isset($server['attrs'][$iNatAttr])) {
+            $attrTokens = explode(':', $server['attrs'][$iNatAttr]);
+            $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
+            $controlledValueId = $annotation['controlled_value_id'];
+            $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $controlledTermValues[$controlledValueId];
+          }
+        }
+      }
       try {
-        $is_new = api_persist::taxon_observation(
+        $is_new = api_persist::taxonObservation(
           $db,
           $observation,
           $server['website_id'],
@@ -136,6 +219,7 @@ QRY;
       'info',
       "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]"
     );
+    echo "<strong>Observations</strong><br/>Inserts: $tracker[inserts]. Updates: $tracker[updates]. Errors: $tracker[errors]<br/>";
     return [
       'moreToDo' => $data['total_results'] / $pageSize > $page,
       'pageCount' => ceil($data['total_results'] / $pageSize),

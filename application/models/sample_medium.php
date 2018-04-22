@@ -21,20 +21,27 @@
 
 /**
  * Model class for the Sample_Media table.
+ *
+ * @link http://indicia-docs.readthedocs.io/en/latest/developing/data-model.html
  */
 class Sample_Medium_Model extends ORM {
   public $search_field = 'caption';
 
-  protected $belongs_to = array('created_by' => 'user', 'updated_by' => 'user',
-    'sample');
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'sample',
+  );
 
-  public function validate(Validation $array, $save = false) {
+  public function validate(Validation $array, $save = FALSE) {
 
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
     $array->add_rules('path', 'required');
+    $array->add_rules('media_type_id', 'integer');
+    $array->add_rules('licence_id', 'integer');
 
-    $this->unvalidatedFields = array('caption', 'external_details', 'media_type_id', 'exif');
+    $this->unvalidatedFields = array('caption', 'external_details', 'exif');
     return parent::validate($array, $save);
   }
 

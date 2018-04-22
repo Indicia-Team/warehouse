@@ -2,7 +2,7 @@
 
 -- DROP TABLE comment_quick_reply_page_auths;
 
-CREATE TABLE comment_quick_reply_page_auths
+CREATE TABLE IF NOT EXISTS comment_quick_reply_page_auths
 (
   id serial NOT NULL,
   occurrence_id int not null,
@@ -29,28 +29,9 @@ COMMENT ON COLUMN comment_quick_reply_page_auths.updated_on IS 'Date this record
 COMMENT ON COLUMN comment_quick_reply_page_auths.updated_by_id IS 'Foreign key to the users table (last updater).';
 COMMENT ON COLUMN comment_quick_reply_page_auths.deleted IS 'Has this record been deleted?';
 
-DROP VIEW IF EXISTS list_occurrences;
+DROP VIEW IF EXISTS list_comment_quick_reply_page_auths;
 
-CREATE OR REPLACE VIEW list_comment_quick_reply_page_auths AS 
+CREATE OR REPLACE VIEW list_comment_quick_reply_page_auths AS
 SELECT rcpat.id, rcpat.occurrence_id, rcpat.token
 FROM comment_quick_reply_page_auths rcpat
 WHERE rcpat.deleted = false;
-
-CREATE OR REPLACE FUNCTION delete_quick_reply_auth()
-  RETURNS trigger AS
-  $BODY$
-    BEGIN
-      IF (OLD.query = 'Q' AND NEW.query != 'Q') THEN
-        UPDATE comment_quick_reply_page_auths SET deleted = true, updated_on=now() WHERE occurrence_id = OLD.id AND deleted=false;
-      END IF;
-     RETURN OLD;
-    END;
-    $BODY$
-  LANGUAGE plpgsql VOLATILE
-  COST 100;
-
-CREATE TRIGGER delete_quick_reply_auth_trigger
-  AFTER UPDATE
-  ON cache_occurrences_functional
-  FOR EACH ROW
-  EXECUTE PROCEDURE delete_quick_reply_auth();
