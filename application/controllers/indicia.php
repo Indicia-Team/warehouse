@@ -191,6 +191,10 @@ class Indicia_Controller extends Template_Controller {
       return;
     }
     $this->model = ORM::Factory($this->model->object_name, $id);
+    if ($this->model->deleted === 't') {
+      $this->session->set_flash('flash_error', "This record has been deleted.");
+      $this->redirectToIndex();
+    }
     $values = $this->getModelValues();
     $this->showEditPage($values);
   }
@@ -424,8 +428,13 @@ class Indicia_Controller extends Template_Controller {
   protected function show_submit_succ($id, $deletion=false)
   {
     Kohana::log("debug", "Submitted record ".$id." successfully.");
+    $modelPath = url::site() . $this->model->object_name;
     $action = $deletion ? "deleted" : "saved";
-    $this->session->set_flash('flash_info', "The record was $action successfully. <a href=\"".url::site().$this->model->object_name."/edit/$id\">Click here to edit</a>.");
+    $msg = "The record was $action successfully.";
+    if (!$deletion) {
+      $msg .= " <a href=\"$modelPath/edit/$id\">Click here to edit</a>.";
+    }
+    $this->session->set_flash('flash_info', $msg);
     $this->redirectToIndex();
   }
 
