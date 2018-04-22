@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the output of a data entity's index grid.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,22 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
- /**
-  * Generates a paginated grid for table view. Requires a number of variables passed to it:
+ /*
+  * Generates a paginated grid for table view. Requires a number of variables
+  * passed to it:
   *  $columns - array of column names
   *  $pagination - the pagination object
   *  $body - gridview_table object.
   */
 
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+warehouse::loadHelpers(['data_entry_helper']);
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 $colDefs = array();
 if (isset($columns)) {
   foreach ($columns as $fieldname => $title) {
@@ -38,7 +40,7 @@ if (isset($columns)) {
     }
     $def = array(
       'fieldname' => $fieldname,
-      'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title
+      'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title,
     );
     if ($fieldname == 'path') {
       $def['img'] = TRUE;
@@ -49,39 +51,37 @@ if (isset($columns)) {
 $actions = $this->get_action_columns();
 foreach ($actions as &$action) {
   if (substr($action['url'], 0, 4) != 'http') {
-    $action['url'] = url::base(true).$action['url'];
+    $action['url'] = url::base(TRUE) . $action['url'];
   }
 }
-if (count($actions)>0) 
+if (count($actions) > 0) {
   $colDefs[] = array(
     'display' => 'Actions',
-    'actions' => $actions
+    'actions' => $actions,
   );
+}
 $options = array(
   'id' => $id,
   'readAuth' => $readAuth,
   'extraParams' => array(),
-  'itemsPerPage' => kohana::config('pagination.default.items_per_page')
+  'itemsPerPage' => kohana::config('pagination.default.items_per_page'),
 );
-if (isset($orderby))
+if (isset($orderby)) {
   $options['orderby'] = $orderby;
+}
 if ($gridReport) {
   $options['dataSource'] = $gridReport;
   $options['extraParams'] += $filter;
   $options['columns'] = $colDefs;
-} else {
+}
+else {
   $options['mode'] = 'direct';
   $options['dataSource'] = $source;
   $options['view'] = 'gv';
   $options['filters'] = $filter;
-  $options['includeAllColumns'] = false;
+  $options['includeAllColumns'] = FALSE;
   $options['columns'] = $colDefs;
 }
 echo data_entry_helper::report_grid($options);
 data_entry_helper::link_default_stylesheet();
-// No need to re-link to jQuery
-data_entry_helper::$dumped_resources[] = 'jquery';
-data_entry_helper::$dumped_resources[] = 'jquery_ui';
-data_entry_helper::$dumped_resources[] = 'fancybox';
 echo data_entry_helper::dump_javascript();
-?>
