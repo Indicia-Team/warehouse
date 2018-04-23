@@ -1845,33 +1845,42 @@ SQL;
   }
 
   /**
-   * If sorting on the date column (the extra column added by vague date processing) then switch the sort order back
-   * to use date_start.
+   * Ensure sorts against vague date fields work.
+   *
+   * If sorting on the date column (the extra column added by vague date
+   * processing) then switch the sort order back to use date_start.
+   *
+   * @param string $orderBy
+   *   The current order by fields.
+   *
+   * @return string
+   *   Altered order by fields.
    */
-  private function checkOrderByForVagueDate($order_by) {
-    $order_by = trim($order_by);
-    if ($this->getVagueDateProcessing() && !empty($order_by)) {
+  private function checkOrderByForVagueDate($orderBy) {
+    $orderBy = trim($orderBy);
+    if ($this->getVagueDateProcessing() && !empty($orderBy)) {
       $this->prepareColumns();
       $cols = array_keys($this->columns);
       // Find if we have a date_start column to switch date sort fields to.
       for ($i = 0; $i < count($cols); $i++) {
         if (substr(($cols[$i]), -10) == 'date_start') {
-          // Got a date_start field available in the cols, so switch any date sort fields over.
-          $sortfields = explode(',', $order_by);
+          // Got a date_start field available in the cols, so switch any date
+          // sort fields over.
+          $sortfields = explode(',', $orderBy);
           $prefix = substr($cols[$i], 0, strlen($cols[$i]) - 10);
           foreach ($sortfields as &$field) {
             $tokens = explode(' ', $field);
-            if ($tokens[0] === $prefix . 'date') {
+            if (trim($tokens[0], '"') === $prefix . 'date') {
               $tokens[0] = $cols[$i];
               $field = implode(' ', $tokens);
             }
           }
-          $order_by = implode(',', $sortfields);
+          $orderBy = implode(',', $sortfields);
           break;
         }
       }
     }
-    return $order_by;
+    return $orderBy;
   }
 
   private function executeQuery() {
