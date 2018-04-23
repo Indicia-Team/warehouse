@@ -48,6 +48,9 @@ class warehouse {
     helper_base::$dumped_resources[] = 'jquery';
     helper_base::$dumped_resources[] = 'jquery_ui';
     helper_base::$dumped_resources[] = 'fancybox';
+    // Ensure correct protocol, in case both http and https supported.
+    $protocol = empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off' ? 'http' : 'https';
+    helper_base::$base_url = preg_replace('/^https?/', $protocol, helper_base::$base_url);
   }
 
 }
