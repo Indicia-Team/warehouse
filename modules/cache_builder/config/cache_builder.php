@@ -153,6 +153,13 @@ $config['taxa_taxon_lists']['get_changed_items_query'] = "
 $config['taxa_taxon_lists']['delete_query']['taxa'] = "
   delete from cache_taxa_taxon_lists where id in (select id from needs_update_taxa_taxon_lists where deleted=true)";
 
+$config['taxa_taxon_lists']['delete_query']['paths'] = "
+  delete from cache_taxon_paths ctp
+  using needs_update_taxa_taxon_lists nu
+  join taxa_taxon_lists ttl on ttl.id=nu.id and ttl.preferred=true
+  where nu.deleted=true
+  and ttl.taxon_meaning_id=ctp.taxon_meaning_id and ttl.taxon_list_id=ctp.taxon_list_id";
+
 $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     set preferred=ttl.preferred,
       taxon_list_id=tl.id,
@@ -236,101 +243,99 @@ $config['taxa_taxon_lists']['join_needs_update'] = 'join needs_update_taxa_taxon
 $config['taxa_taxon_lists']['key_field'] = 'ttl.id';
 
 $config['taxa_taxon_lists']['extra_multi_record_updates'] = array(
+  'setup' => "
+    WITH RECURSIVE q AS (
+      SELECT ttl.id
+      FROM taxa_taxon_lists ttl
+      JOIN needs_update_taxa_taxon_lists nu ON nu.id=ttl.id
+      WHERE ttl.deleted=false
+      UNION ALL
+      SELECT ttl.id
+      FROM q
+      JOIN taxa_taxon_lists ttl ON ttl.parent_id=q.id and ttl.deleted=false AND ttl.preferred=true
+    )
+    SELECT DISTINCT *
+    INTO TEMPORARY descendants FROM q;
+
+    WITH RECURSIVE q AS (
+      SELECT distinct ttlpref.id AS child_pref_ttl_id, ttlpref.parent_id, ttlpref.taxon_meaning_id AS rank_taxon_meaning_id,
+      tr.rank, tr.sort_order as taxon_rank_sort_order, ttlpref.taxon_list_id
+      FROM taxa_taxon_lists ttlpref
+      JOIN taxa t ON t.id=ttlpref.taxon_id and t.deleted=false and t.deleted=false
+      JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
+      JOIN descendants d ON d.id=ttlpref.id
+      WHERE ttlpref.preferred=true
+      AND ttlpref.deleted=false
+      UNION ALL
+      SELECT q.child_pref_ttl_id, ttl.parent_id,
+          ttl.taxon_meaning_id AS rank_taxon_meaning_id, tr.rank, tr.sort_order AS taxon_rank_sort_order, ttl.taxon_list_id
+      FROM q
+      JOIN taxa_taxon_lists ttl ON ttl.id=q.parent_id and ttl.deleted=false and ttl.taxon_list_id=q.taxon_list_id
+      JOIN taxa t ON t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
+      JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
+    )
+    SELECT child_pref_ttl_id, array_agg(rank_taxon_meaning_id order by taxon_rank_sort_order) as path
+    INTO TEMPORARY ttl_path
+    FROM q
+    GROUP BY child_pref_ttl_id
+    ORDER BY child_pref_ttl_id;",
+  'Taxon paths' => "
+    UPDATE cache_taxon_paths ctp
+    SET path=tp.path, external_key=t.external_key
+    FROM taxa_taxon_lists ttl
+    JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+    JOIN ttl_path tp ON tp.child_pref_ttl_id=ttl.id
+    WHERE ctp.taxon_meaning_id=ttl.taxon_meaning_id AND ctp.taxon_list_id=ttl.taxon_list_id
+    AND (ctp.path<>tp.path OR COALESCE(ctp.external_key, '')<>COALESCE(t.external_key, ''))
+    AND ttl.deleted=false;
+
+    INSERT INTO cache_taxon_paths (taxon_meaning_id, taxon_list_id, external_key, path)
+    SELECT DISTINCT ON (ttl.taxon_meaning_id, ttl.taxon_list_id) ttl.taxon_meaning_id, ttl.taxon_list_id, t.external_key, tp.path
+    FROM taxa_taxon_lists ttl
+    JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
+    JOIN ttl_path tp ON tp.child_pref_ttl_id=ttl.id
+    LEFT JOIN cache_taxon_paths ctp ON ctp.taxon_meaning_id=ttl.taxon_meaning_id AND ctp.taxon_list_id=ttl.taxon_list_id
+    WHERE ctp.taxon_meaning_id IS NULL
+    AND ttl.deleted=false;
+
+    DELETE FROM cache_taxon_paths
+    USING cache_taxon_paths ctp
+    LEFT JOIN taxa_taxon_lists ttl ON ttl.taxon_meaning_id=ctp.taxon_meaning_id AND ttl.taxon_list_id=ctp.taxon_list_id AND ttl.deleted=false
+    WHERE ttl.id IS NULL
+    AND cache_taxon_paths.taxon_meaning_id=ctp.taxon_meaning_id AND cache_taxon_paths.taxon_list_id=ctp.taxon_list_id;",
   'Ranks' => "
-WITH RECURSIVE q AS (
-  SELECT distinct ttl1.external_key AS child_external_key, ttl1.preferred_taxon AS child_taxon, ttlpref.parent_id,
-      ttlpref.id AS rank_ttl_id, ttlpref.external_key AS rank_external_key, t.taxon AS rank_taxon, tr.rank, tr.id AS taxon_rank_id, tr.sort_order AS taxon_rank_sort_order
-  FROM cache_taxa_taxon_lists ttl1
-  JOIN cache_taxa_taxon_lists ttlpref ON ttlpref.external_key=ttl1.external_key
-    and ttlpref.taxon_list_id=#master_list_id# and ttlpref.preferred=true and ttlpref.allow_data_entry=true
-  JOIN taxa_taxon_lists ttlprefraw ON ttlprefraw.id=ttlpref.id and ttlprefraw.deleted=false
-  JOIN taxa t ON t.id=ttlprefraw.taxon_id and t.deleted=false and t.deleted=false
-  JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
-  JOIN needs_update_taxa_taxon_lists nu ON nu.id=ttl1.id
-  UNION ALL
-  SELECT q.child_external_key, q.child_taxon, ttl.parent_id,
-      ttl.id AS rank_ttl_id, t.external_key AS rank_external_key, t.taxon AS rank_taxon, tr.rank, tr.id AS taxon_rank_id, tr.sort_order AS taxon_rank_sort_order
-  FROM q
-  JOIN taxa_taxon_lists ttl ON ttl.id=q.parent_id and ttl.deleted=false
-  JOIN taxa t ON t.id=ttl.taxon_id and t.deleted=false and t.deleted=false
-  JOIN taxon_ranks tr ON tr.id=t.taxon_rank_id and tr.deleted=false and tr.deleted=false
-) SELECT DISTINCT * INTO TEMPORARY rankupdate FROM q;
+    UPDATE cache_taxa_taxon_lists u
+    SET family_taxa_taxon_list_id=cttlf.id, family_taxon=cttlf.taxon,
+      order_taxa_taxon_list_id=cttlo.id, order_taxon=cttlo.taxon,
+      kingdom_taxa_taxon_list_id=cttlk.id, kingdom_taxon=cttlk.taxon
+    FROM cache_taxa_taxon_lists cttl
+    -- Ensure only changed taxon concepts are updated
+    JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
+    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlo ON cttlo.taxon_meaning_id=ANY(ctp.path) and cttlo.taxon_rank='Order' and cttlo.taxon_list_id=1 AND cttlo.preferred=true
+    LEFT JOIN cache_taxa_taxon_lists cttlk ON cttlk.taxon_meaning_id=ANY(ctp.path) and cttlk.taxon_rank='Kingdom' and cttlk.taxon_list_id=1 AND cttlk.preferred=true
+    WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
+    AND (COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0)
+      OR COALESCE(u.family_taxon, '')<>COALESCE(cttlf.taxon, '')
+      OR COALESCE(u.order_taxa_taxon_list_id, 0)<>COALESCE(cttlo.id, 0)
+      OR COALESCE(u.order_taxon, '')<>COALESCE(cttlo.taxon, '')
+      OR COALESCE(u.kingdom_taxa_taxon_list_id, 0)<>COALESCE(cttlk.id, 0)
+      OR COALESCE(u.kingdom_taxon, '')<>COALESCE(cttlk.taxon, '')
+    );
 
-UPDATE cache_taxa_taxon_lists u
-SET kingdom_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id, kingdom_taxon=ruHigherConcept.rank_taxon
-FROM cache_taxa_taxon_lists cttl
--- Ensure only changed taxon concepts are updated
-JOIN rankupdate ruThisConcept ON ruThisConcept.rank_external_key = cttl.external_key
--- Find the correct higher taxon data
-LEFT JOIN rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=cttl.external_key AND ruHigherConcept.rank='Kingdom'
-WHERE cttl.id=u.id
-AND (
-  COALESCE(cttl.kingdom_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0)
-  OR COALESCE(cttl.kingdom_taxon, '')<>COALESCE(ruHigherConcept.rank_taxon, '')
-);
-
-UPDATE cache_taxa_taxon_lists u
-SET order_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id, order_taxon=ruHigherConcept.rank_taxon
-FROM cache_taxa_taxon_lists cttl
--- Ensure only changed taxon concepts are updated
-JOIN rankupdate ruThisConcept ON ruThisConcept.rank_external_key = cttl.external_key
--- Find the correct higher taxon data
-LEFT JOIN rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=cttl.external_key AND ruHigherConcept.rank='Order'
-WHERE cttl.id=u.id
-AND (
-  COALESCE(cttl.order_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0)
-  OR COALESCE(cttl.order_taxon, '')<>COALESCE(ruHigherConcept.rank_taxon, '')
-);
-
-UPDATE cache_taxa_taxon_lists u
-SET family_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id, family_taxon=ruHigherConcept.rank_taxon
-FROM cache_taxa_taxon_lists cttl
--- Ensure only changed taxon concepts are updated
-JOIN rankupdate ruThisConcept ON ruThisConcept.rank_external_key = cttl.external_key
--- Find the correct higher taxon data
-LEFT join rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=cttl.external_key AND ruHigherConcept.rank='Family'
-WHERE cttl.id=u.id
-AND (
-  COALESCE(cttl.family_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0)
-  OR COALESCE(cttl.family_taxon, '')<>COALESCE(ruHigherConcept.rank_taxon, '')
-);
-
-UPDATE cache_taxa_taxon_lists cttl
-SET taxon_rank_id=ru.taxon_rank_id, taxon_rank=ru.rank, taxon_rank_sort_order=ru.taxon_rank_sort_order
-FROM rankupdate ru
-WHERE ru.child_external_key=cttl.external_key
-AND ru.child_external_key=ru.rank_external_key
-AND (
-  COALESCE(cttl.taxon_rank_id, 0)<>COALESCE(ru.taxon_rank_id, 0)
-  OR COALESCE(cttl.taxon_rank, '')<>COALESCE(ru.rank, '')
-  OR COALESCE(cttl.taxon_rank_sort_order, 0)<>COALESCE(ru.taxon_rank_sort_order, 0)
-);
-
-UPDATE cache_taxon_searchterms cts
-SET taxon_rank_sort_order=ru.taxon_rank_sort_order
-FROM rankupdate ru
-WHERE ru.child_external_key=cts.external_key
-AND ru.child_external_key=ru.rank_external_key
-AND COALESCE(cts.taxon_rank_sort_order, 0)<>COALESCE(ru.taxon_rank_sort_order, 0);
-
-UPDATE cache_occurrences_functional co
-SET taxon_rank_sort_order=ru.taxon_rank_sort_order
-FROM rankupdate ru
-WHERE ru.child_external_key=co.taxa_taxon_list_external_key
-AND ru.child_external_key=ru.rank_external_key
-AND COALESCE(co.taxon_rank_sort_order, 0)<>COALESCE(ru.taxon_rank_sort_order, 0);
-
-UPDATE cache_occurrences_functional u
-SET family_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id
-FROM cache_occurrences_functional co
--- Ensure only changed taxon concepts are updated
-JOIN rankupdate ruThisConcept ON ruThisConcept.rank_external_key = co.external_key
--- Find the correct higher taxon data
-LEFT join rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=co.external_key AND ruHigherConcept.rank='Family'
-WHERE co.id=u.id
-AND COALESCE(co.family_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0);
-
-DROP TABLE rankupdate;"
+    UPDATE cache_occurrences_functional u
+    SET family_taxa_taxon_list_id=cttlf.id
+    FROM cache_taxa_taxon_lists cttl
+    -- Ensure only changed taxon concepts are updated
+    JOIN descendants nu ON nu.id=cttl.preferred_taxa_taxon_list_id
+    JOIN cache_taxon_paths ctp ON ctp.external_key=cttl.external_key AND ctp.taxon_list_id=#master_list_id#
+    LEFT JOIN cache_taxa_taxon_lists cttlf ON cttlf.taxon_meaning_id=ANY(ctp.path) and cttlf.taxon_rank='Family' and cttlf.taxon_list_id=1 AND cttlf.preferred=true
+    WHERE cttl.taxon_meaning_id=u.taxon_meaning_id
+    AND COALESCE(u.family_taxa_taxon_list_id, 0)<>COALESCE(cttlf.id, 0);",
+  "teardown" => "
+    DROP TABLE descendants;
+    DROP TABLE ttl_path;",
 );
 
 // --------------------------------------------------------------------------------------------------------------------------
