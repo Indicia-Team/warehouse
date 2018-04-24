@@ -83,17 +83,17 @@ class Occurrence_medium_Controller extends Gridview_Base_Controller
       return $this->model->object_name;
     }
   }
-  
+
   /**
-   * Get the list of terms ready for the media types list. 
+   * Get the list of terms ready for the media types list.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values)
+  {
     return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')    
-    );   
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')
+    );
   }
-  
+
   /**
    * Define non-standard behaviuor for the breadcrumbs, since this is accessed via an occurrence
    */

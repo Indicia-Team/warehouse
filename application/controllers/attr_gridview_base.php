@@ -61,7 +61,7 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
       $termlists = ORM::factory('termlist')->where('deleted', 'f')->in('website_id', $this->auth_filter['values'])->orderby('title', 'asc')->find_all();
     }

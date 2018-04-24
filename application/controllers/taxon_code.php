@@ -41,14 +41,14 @@ class Taxon_code_Controller extends Gridview_Base_Controller {
       'code'=>''
       );
     $this->pagetitle = "Codes";
-  }  
+  }
 
   /**
    * Override the default index functionality to filter by taxa_taxon_list_id (as identified
    * by the taxon owning the tab).
    */
   public function index()
-  { 
+  {
     if ($this->uri->total_arguments()>0) {
       $ttl = ORM::factory('taxa_taxon_list', $this->uri->argument(1));
       $this->base_filter=array('taxon_meaning_id' => $ttl->taxon_meaning_id);
@@ -60,28 +60,28 @@ class Taxon_code_Controller extends Gridview_Base_Controller {
       $this->view->taxon_meaning_id=$this->uri->argument(1);
     }
   }
-  
+
   /**
-   *  Setup the default values to use when loading this controller to create a new taxon code.   
+   *  Setup the default values to use when loading this controller to create a new taxon code.
    */
-  protected function getDefaults() {    
-    $r = parent::getDefaults();    
+  protected function getDefaults() {
+    $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
       // taxa_taxon_list id is passed as first argument in URL when creating. But the code
       // gets linked by meaning, so fetch the meaning_id.
-      $ttl = ORM::Factory('taxa_taxon_list', $this->uri->argument(1)); 
+      $ttl = ORM::Factory('taxa_taxon_list', $this->uri->argument(1));
       $r['taxa_taxon_list:id'] = $this->uri->argument(1);
       $r['taxon_code:taxon_meaning_id'] = $ttl->taxon_meaning_id;
     }
     return $r;
   }
-  
+
   /**
-   * Setup the default values to use when loading this controller to edit an existing code.   
+   * Setup the default values to use when loading this controller to edit an existing code.
    */
-  protected function getModelValues() {    
+  protected function getModelValues() {
     $r = parent::getModelValues();
-    // The code is linked to a taxon meaning, but we need to use this to link back to the 
+    // The code is linked to a taxon meaning, but we need to use this to link back to the
     // preferred taxa in taxon list, so when you save it knows where to go back to.
     $ttl = ORM::Factory('taxa_taxon_list')->where(array(
       'taxon_meaning_id' => $this->model->taxon_meaning_id,
@@ -90,7 +90,7 @@ class Taxon_code_Controller extends Gridview_Base_Controller {
     $r['taxa_taxon_list:id'] = $ttl->id;
     return $r;
   }
-  
+
 /**
    * Override the default return page behaviour so that after saving a code you
    * are returned to the taxa_taxon_list entry which has the code.
@@ -102,15 +102,15 @@ class Taxon_code_Controller extends Gridview_Base_Controller {
       return $this->model->object_name;
     }
   }
-  
+
   /**
    * Get the list of terms ready for the code types list. We only want child terms as the parent
    * terms are categories such as searchable.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values)
+  {
     return array(
-      'code_type_terms' => $this->get_termlist_terms('indicia:taxon_code_types', array('parent_id is not'=>null))    
-    );   
+      'code_type_terms' => $this->get_termlist_terms('indicia:taxon_code_types', array('parent_id is not'=>null))
+    );
   }
 }

@@ -43,7 +43,7 @@ class Termlists_term_attribute_Controller extends Attr_Gridview_Base_Controller 
       'data_type'=>'Data type'
     );
   }
-  
+
   /**
    * Returns the view specific to termlists_term attribute edits.
    */
@@ -55,7 +55,7 @@ class Termlists_term_attribute_Controller extends Attr_Gridview_Base_Controller 
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     return array(
       'name' => ucfirst($this->prefix),
       'controllerpath' => $this->controllerpath

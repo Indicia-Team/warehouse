@@ -51,7 +51,7 @@ class Identifier_Controller extends Gridview_Base_Controller {
   {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
-  
+
   protected function getModelValues() {
     $r = parent::getModelValues();
     // load data for attributes
@@ -59,12 +59,12 @@ class Identifier_Controller extends Gridview_Base_Controller {
     $this->loadAttributes($r, array(
         'website_id'=>$websiteId,
     ));
-    return $r;      
+    return $r;
   }
-  
+
   /**
    * Load default values either when creating a sample new or reloading after a validation failure.
-   * This adds the custom attributes list to the data available for the view. 
+   * This adds the custom attributes list to the data available for the view.
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
@@ -78,16 +78,16 @@ class Identifier_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * Get the list of terms ready for the type lists. 
+   * Get the list of terms ready for the type lists.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values)
+  {
     return array(
-      'issue_authority_terms' => $this->get_termlist_terms('indicia:assoc:issue_authority'), 
-      'issue_scheme_terms' => $this->get_termlist_terms('indicia:assoc:issue_scheme'), 
-      'identifier_type_terms' => $this->get_termlist_terms('indicia:assoc:identifier_type'),  
-      'status_options' => array('M' => 'Manufactured', 'I' => 'Issued', 'A' => 'Attached', 'R' => 'Retired', 'U' => 'Unknown'),  
-    );   
+      'issue_authority_terms' => $this->get_termlist_terms('indicia:assoc:issue_authority'),
+      'issue_scheme_terms' => $this->get_termlist_terms('indicia:assoc:issue_scheme'),
+      'identifier_type_terms' => $this->get_termlist_terms('indicia:assoc:identifier_type'),
+      'status_options' => array('M' => 'Manufactured', 'I' => 'Issued', 'A' => 'Attached', 'R' => 'Retired', 'U' => 'Unknown'),
+    );
   }
 
 }

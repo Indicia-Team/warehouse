@@ -45,7 +45,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       );
     $this->pagetitle = "Terms";
   }
-  
+
  /**
   * Override the default index functionality to filter by termlist.
   */
@@ -73,7 +73,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       return array();
     }
   }
- 
+
   public function children($id) {
     $parentTlt = ORM::factory('termlists_term', $id);
     $this->base_filter['parent_id'] = $id;
@@ -82,12 +82,12 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     // the parent of the new list.
     $this->view->parent_id=$id;
   }
-  
+
   private function internal_index($termlist_id) {
     // No further filtering of the gridview required as the very fact you can access the parent termlist
     // means you can access all the taxa for it.
     $this->base_filter['termlist_id'] = $termlist_id;
-    parent::index(); 
+    parent::index();
     $this->view->termlist_id = $termlist_id;
     $list = ORM::factory('termlist', $termlist_id);
     $this->view->parent_list_id = $list->parent_id;
@@ -169,7 +169,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of terms ready for the sources list.
    */
-  protected function prepareOtherViewData($values)
+  protected function prepareOtherViewData(array $values)
   {
     return array(
       'source_terms' => $this->get_termlist_terms('indicia:term_sources')
@@ -242,7 +242,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       // last resort if we don't know the list, just show the whole lot of lists
       return $this->model->object_name;
   }
-  
+
   /**
    * Return a list of the tabs to display for this controller's actions.
    */
@@ -253,12 +253,12 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       'actions'=>array('edit')
     ));
   }
-  
+
   /**
    * AJAX controller method for the ability to add a term from a parent list into a child list.
    * Takes the child (destination) termlist id and the source termlist term id as parameters
    * in the $_POST data.
-   * @todo Should make a base class for termlists_term and taxa_taxon_list to handle this sort of stuff. 
+   * @todo Should make a base class for termlists_term and taxa_taxon_list to handle this sort of stuff.
    */
   public function add_parent_term() {
     // no template as this is for AJAX

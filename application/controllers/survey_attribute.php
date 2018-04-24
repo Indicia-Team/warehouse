@@ -36,7 +36,7 @@ class Survey_attribute_Controller extends Attr_Gridview_Base_Controller {
     $this->prefix = 'survey';
     parent::__construct();
   }
-  
+
   /**
    * Returns the shared view for all custom attribute edits.
    */
@@ -44,12 +44,12 @@ class Survey_attribute_Controller extends Attr_Gridview_Base_Controller {
     $this->associationsView=new View('templates/attribute_associations_website');
     return 'custom_attribute/custom_attribute_edit';
   }
-  
+
   /**
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData($values)
+  protected function prepareOtherViewData(array $values)
   {
     return array_merge(
       (array)parent::prepareOtherViewData($values),

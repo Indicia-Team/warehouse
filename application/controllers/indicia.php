@@ -240,7 +240,7 @@ class Indicia_Controller extends Template_Controller {
    * @param array $values Existing data values for the view.
    * @return array Array of additional data items required, or null.
    */
-  protected function prepareOtherViewData($values)
+  protected function prepareOtherViewData(array $values)
   {
     return null;
   }

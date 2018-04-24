@@ -45,7 +45,7 @@ class User_identifier_Controller extends Gridview_Base_Controller
     // @todo Users should have access to their own identifiers
     $this->set_website_access('admin');
   }
-  
+
   /**
   * Override the default index functionality to filter by website.
   */
@@ -56,7 +56,7 @@ class User_identifier_Controller extends Gridview_Base_Controller
     parent::index();
     $this->view->user_id = $user_id;
   }
-  
+
   /**
   * Override the default index functionality to filter by website.
   */
@@ -93,7 +93,7 @@ class User_identifier_Controller extends Gridview_Base_Controller
     return $r;
   }
 
-  
+
   /**
    * User identifiers only editable by core admin or the owner.
    * @todo Owner can access
@@ -109,7 +109,7 @@ class User_identifier_Controller extends Gridview_Base_Controller
   public function page_authorised() {
     return $this->auth->logged_in('CoreAdmin');
   }
-  
+
   /**
    * Define non-standard behaviour for the breadcrumbs, since this is accessed via a user list
    */
@@ -126,7 +126,7 @@ class User_identifier_Controller extends Gridview_Base_Controller
   	$this->page_breadcrumbs[] = html::anchor('user/edit/'.$userId.'?tab=Identifiers', $user);
 	  $this->page_breadcrumbs[] = $this->model->caption();
   }
-  
+
   /**
    * Override the default return page behaviour so that after saving an identifier you
    * are returned to the list of identifiers on the sub-tab of the user.
@@ -148,15 +148,15 @@ class User_identifier_Controller extends Gridview_Base_Controller
       // last resort if we don't know the list, just show the whole lot of agreements
       return $this->model->object_name;
   }
-  
+
   /**
-   * Get the list of terms ready for the sample methods list. 
+   * Get the list of terms ready for the sample methods list.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values)
+  {
     return array(
       'identifier_types' => $this->get_termlist_terms('indicia:user_identifier_types')
-    );   
+    );
   }
 
 }

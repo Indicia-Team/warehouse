@@ -34,9 +34,9 @@ class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
     $this->prefix = 'person';
     parent::__construct();
   }
-  
-  /** 
-   * Override saave to store the synchronisable field. 
+
+  /**
+   * Override saave to store the synchronisable field.
    */
   public function save() {
     if ($_POST['metaFields:disabled_input'] == 'NO') {
@@ -46,7 +46,7 @@ class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
     }
     parent::save();
   }
-  
+
   /**
    * Returns the shared view for all custom attribute edits.
    */
@@ -54,12 +54,12 @@ class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
     $this->associationsView=new View('templates/attribute_associations_website');
     return 'custom_attribute/custom_attribute_edit';
   }
-  
+
   /**
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData($values)
+  protected function prepareOtherViewData(array $values)
   {
     return array_merge(
       (array)parent::prepareOtherViewData($values),
