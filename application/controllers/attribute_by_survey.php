@@ -31,24 +31,24 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
 {
   private $_survey=null;
   private $_website_id=null;
-  private $_survey_id=null;  
+  private $_survey_id=null;
 
   public function __construct()
   {
     parent::__construct();
-    if (!is_numeric($this->uri->last_segment())) 
+    if (!is_numeric($this->uri->last_segment()))
       throw new Exception('Page cannot be accessed without a survey filter');
-    if (!isset($_GET['type'])) 
+    if (!isset($_GET['type']))
       throw new Exception('Page cannot be accessed without a type parameter');
     if ($_GET['type']!='sample' && $_GET['type']!='occurrence' && $_GET['type']!='location')
-      throw new Exception('Type parameter in URL is invalid'); 
+      throw new Exception('Type parameter in URL is invalid');
     $this->type=$_GET['type'];
     $this->pagetitle = 'Attributes for a survey';
     $this->get_auth();
     $this->auth_filter = $this->gen_auth_filter;
     $this->model = ORM::factory($this->type.'_attributes_website');
   }
-  
+
   public function index() {
     // get the survey id from the segments in the URI
     $segments=$this->uri->segment_array();
@@ -77,14 +77,14 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
         orderby('caption')->find_all();
     $this->template->content->existingAttrs=$attrs;
   }
-  
+
   public function edit($id) {
     $segments=$this->uri->segment_array();
     $m = ORM::factory($_GET['type'].'_attributes_website', $segments[3]);
     $this->_website_id = $m->website_id;
-    return parent::edit($id);    
+    return parent::edit($id);
   }
-  
+
   /**
    * Handle the layout_update action, which uses $_POST data to find a list of commands
    * for re-ordering the controls
@@ -100,7 +100,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     $this->session->set_flash('flash_info', "The form layout changes have been saved.");
     url::redirect('attribute_by_survey/'.$this->_survey_id.'?type='.$this->type);
   }
-  
+
   private function saveBlockList($list, $blockId, $websiteId) {
     $weight = 0;
     foreach ($list as $block) {
@@ -120,7 +120,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
           $model->parent_id=$blockId;
           $model->weight = $weight;
           $model->name = $block['name'];
-          $changed = true;      
+          $changed = true;
         }
       } else {
         continue;
@@ -130,7 +130,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
         if (substr($block['id'], 0, 6)=='block-')
         $model->delete();
         $id=null;
-      } elseif ($changed) {      
+      } elseif ($changed) {
         $model->save();
         $id = $model->id;
       }
@@ -138,9 +138,9 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       $this->saveBlockList($block['blocks'], $model->id, $websiteId);
       $this->saveControlList($block['controls'], $id, $websiteId);
       $weight++;
-    }  
+    }
   }
-  
+
   private function saveControlList($list, $blockId, $websiteId) {
     $weight = 0;
     foreach ($list as $control) {
@@ -148,7 +148,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       if (substr($control['id'], 0, 8)=='control-') {
         $ctrlId = str_replace('control-','',$control['id']);
         $model = ORM::factory($_GET['type'].'_attributes_website', $ctrlId);
-      } elseif (substr($control['id'], 0, 10)=='attribute-') {      
+      } elseif (substr($control['id'], 0, 10)=='attribute-') {
         $attrId = str_replace('attribute-','',$control['id']);
         // get model for a new record
         $model = ORM::factory($_GET['type'].'_attributes_website');
@@ -156,11 +156,11 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
         // link the model to the existing attribute we have the ID for
         $model->$attrVar = $attrId;
         $model->restrict_to_survey_id = $this->_survey_id;
-        $model->website_id = $websiteId;  
-        $changed = true;    
+        $model->website_id = $websiteId;
+        $changed = true;
       } else {
         continue;
-      }    
+      }
       if ($model->weight!=$weight) {
         $model->weight = $weight;
         $changed = true;
@@ -184,7 +184,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       }
     }
   }
-  
+
   /**
    * Retrieve the list of websites the user has access to. The list is then stored in
    * $this->gen_auth_filter. Also checks if the user is core admin.
@@ -202,7 +202,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       $website_id_values[] = null;
       $this->gen_auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
     }
-    else $this->gen_auth_filter = null;    
+    else $this->gen_auth_filter = null;
   }
 
   /**
@@ -211,21 +211,21 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   protected function editViewName() {
     return "attribute_by_survey/attribute_by_survey_edit";
   }
-  
+
   /**
-   * Setup the values to be loaded into the edit view. For this class, we need to explode the 
+   * Setup the values to be loaded into the edit view. For this class, we need to explode the
    * items out of the validation_rules field, which our base class can do.
    */
   protected function getModelValues() {
-    $r = parent::getModelValues();    
+    $r = parent::getModelValues();
     $this->model->populate_validation_rules();
-    return $r;  
+    return $r;
   }
-  
+
   /**
    * Load additional data required by the edit view.
    */
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     $survey = ORM::Factory('survey', $values[$this->type.'_attributes_website:restrict_to_survey_id']);
     $attr = ORM::Factory($_GET['type'].'_attribute', $values[$this->type.'_attributes_website:'.$this->type.'_attribute_id']);
     $controlTypes = $this->db->
@@ -239,12 +239,12 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       'controlTypes' => $controlTypes
     );
   }
-  
-  public function save() {       
+
+  public function save() {
     // Build the validation_rules field from the set of controls that are associated with it.
     $rules = array();
-    foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past','time','digit','integer') as $rule) {          
-      if (array_key_exists('valid_'.$rule, $_POST) && $_POST['valid_'.$rule]==1) {            
+    foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past','time','digit','integer') as $rule) {
+      if (array_key_exists('valid_'.$rule, $_POST) && $_POST['valid_'.$rule]==1) {
         array_push($rules, $rule);
       }
     }
@@ -255,24 +255,24 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)         $rules[] = 'maximum['.$_POST['valid_max_value'].']';
 
     $_POST['validation_rules'] = implode("\r\n", $rules);
-    
+
     parent::save();
   }
-  
+
   protected function get_return_page() {
     $surveyPostKey = $this->type.'_attributes_website:restrict_to_survey_id';
     if (isset($_POST[$surveyPostKey])) {
-      return 'attribute_by_survey/'.$_POST[$surveyPostKey].'?type='.$this->type;      
+      return 'attribute_by_survey/'.$_POST[$surveyPostKey].'?type='.$this->type;
     } else {
       // If $_POST data not available, then just return to the survey list. Shouldn't really happen.
       return 'survey';
-    }    
+    }
   }
-  
+
   /**
    * Set the edit page breadcrumbs to cope with the fact this controller handles all *_attributes_website models.
    */
-  protected function defineEditBreadcrumbs() { 
+  protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $survey = ORM::Factory('survey', $this->model->restrict_to_survey_id);
     $this->page_breadcrumbs[] = html::anchor('/attribute_by_survey/'.$this->model->restrict_to_survey_id.'?type='.$this->type, 'Attributes for '.$survey->title);
@@ -293,7 +293,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     } else
       return true;
   }
-  
+
   /**
    * Lazy loading of the survey ORM object. Only want to do this once.
    */

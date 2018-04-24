@@ -27,7 +27,7 @@
  * index - taxa_taxon_designation/1 where 1 is the taxa_taxon_list_id
  * create - taxa_taxon_designation/create/1 where 1 is the taxa_taxon_list_id
  * edit - taxa_taxon_designation/edit/1?taxa_taxon_list_id=2 where 1 is the taxa_taxon_designation_id and 2 is the taxa_taxon_list_id.
- * Passing the taxa taxon list id like this allows the return page and breadcrumb to be set correctly, because the designation is 
+ * Passing the taxa taxon list id like this allows the return page and breadcrumb to be set correctly, because the designation is
  * bound to a taxon which is not specific to a list.
  */
 class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
@@ -42,7 +42,7 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
     );
     $this->pagetitle = "Taxon Designations";
   }
-  
+
   /**
    * Override loading of action columns to ensure the taxa taxon list id is passed to the edit view.
    */
@@ -61,7 +61,7 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of designations ready to pick from.
    */
-  protected function prepareOtherViewData($values)
+  protected function prepareOtherViewData(array $values)
   {
     $results=$this->db->select('taxon_designations.id, taxon_designations.title')
         ->from('taxon_designations')
@@ -74,7 +74,7 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
     }
     // also setup a taxon name
     $this->taxon_name = ORM::Factory('taxon', $values['taxa_taxon_designation:taxon_id'])->caption();
-    if ($this->uri->method(false)=='create') 
+    if ($this->uri->method(false)=='create')
       // Taxa taxon list id is passed as first argument in URL when creating
       $ttl_id=$this->uri->argument(1);
     else
@@ -99,7 +99,7 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
     }
     return $r;
   }
-  
+
   /**
    * After editing a taxon's designation, return to the designations tab of the taxon's edit page.
    */
@@ -110,11 +110,11 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
     ))->find();
     return 'taxa_taxon_list/edit/'.$ttl->id.'?tab=Designations';
   }
-  
+
   /**
    * Set the edit page breadcrumbs to link back through the species and checklist.
    */
-  protected function defineEditBreadcrumbs() { 
+  protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
     $listTitle = ORM::Factory('taxon_list', $this->taxon_list_id)->title;
     $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$this->taxon_list_id.'?tab=taxa', $listTitle);

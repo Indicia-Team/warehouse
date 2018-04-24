@@ -60,15 +60,15 @@ class Verification_template_Controller extends Gridview_Base_Controller {
     // Should not get here as auth_filter populated if not core admin.
     return FALSE;
   }
-  
+
   /**
    * Additional information for the edit view.
    * This converts the array fields into values suitable for a textarea
-   * 
+   *
    * @param array $values Existing data values for the view.
    * @return array Array of additional data items required.
    */
-  protected function prepareOtherViewData($values)
+  protected function prepareOtherViewData(array $values)
   {
     // $values can be empty, or populated from either the database, or from a failed POST
     // For the failed post, the special fields/formats already exist.

@@ -47,17 +47,17 @@ class Location_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * Get the list of terms ready for the location types list. 
+   * Get the list of terms ready for the location types list.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values)
+  {
     return array(
-      'type_terms' => $this->get_termlist_terms('indicia:location_types')    
-    );   
+      'type_terms' => $this->get_termlist_terms('indicia:location_types')
+    );
   }
 
   /**
-   * Check access to the edit page of a location. Locations cannot be edited if not core admin, unless they are linked 
+   * Check access to the edit page of a location. Locations cannot be edited if not core admin, unless they are linked
    * to your website(s) or are not linked to anything.
    */
   protected function record_authorised ($id)
@@ -66,20 +66,20 @@ class Location_Controller extends Gridview_Base_Controller {
     {
       $l = ORM::factory('locations_website')->where(array('location_id'=>$id))->in('website_id', $this->auth_filter['values'])->find();
       if ($l->loaded) return true;
-      
+
       $l = ORM::factory('locations_website')->where(array('location_id'=>$id))->find();
       if ($l->loaded) return false;
     }
     return true;
   }
-  
+
   /**
    * You can only access the list of locations if at least an editor of one website.
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
-  
+
   /**
    * Retrieves additional values from the model that are required by the edit form.
    * @return array List of additional values required by the form.
@@ -95,11 +95,11 @@ class Location_Controller extends Gridview_Base_Controller {
     $this->loadLocationAttributes($r);
     if ($this->model->parent_id)
       $r['parent:name'] = $this->model->parent->name;
-    return $r;      
+    return $r;
   }
-  
+
   /**
-   * Find the websites this location is linked to so we can load the appropriate 
+   * Find the websites this location is linked to so we can load the appropriate
    * attribute list.
    */
   private function loadLocationAttributes(&$valueArray) {
@@ -115,11 +115,11 @@ class Location_Controller extends Gridview_Base_Controller {
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    // when creating a location, we don't know the websites for the location, so cannot 
-    // filter the attribute values available. Therefore they are not displayed until 
+    // when creating a location, we don't know the websites for the location, so cannot
+    // filter the attribute values available. Therefore they are not displayed until
     // after the location has been saved. Therefore no need to call loadAttributes.
     // We do when editing after a validation failure though.
-    if ($this->model->id!==0) 
+    if ($this->model->id!==0)
       $this->loadLocationAttributes($r);
     else // not an existing record: check if the parent_id has been posted to us., by a "create child"
     {
@@ -129,7 +129,7 @@ class Location_Controller extends Gridview_Base_Controller {
         $r['parent:name'] = $parent->name;
       }
     }
-    	
+
     return $r;
   }
 
@@ -156,12 +156,12 @@ class Location_Controller extends Gridview_Base_Controller {
    * used for the location name, and optionally for the name of the parent location.
    * A lot of this is stolen from the csv upload code.
    */
-  public function upload_shp() {    
+  public function upload_shp() {
     $sizelimit = kohana::config('indicia.maxUploadSize');
     $_FILES = Validation::factory($_FILES)->add_rules(
         'zip_upload', 'upload::valid', 'upload::required', 'upload::type[zip]', "upload::size[$sizelimit]"
     );
-    
+
     if ($_FILES->validate()) {
       // move the file to the standard upload directory
       $zipTempFile = upload::save('zip_upload');
@@ -243,16 +243,16 @@ class Location_Controller extends Gridview_Base_Controller {
       $error = '';
       foreach ($errors as $key => $val) {
         switch ($val) {
-          case 'required': 
+          case 'required':
             $error .= 'The file failed to upload. It might be larger than the file size limit configured for this server.<br/>';
             break;
-          case 'valid': 
+          case 'valid':
             $error .= 'The uploaded file is not valid.<br/>';
             break;
-          case 'type': 
+          case 'type':
             $error .= 'The uploaded file is not a zip file. The Shapefile should be uploaded in a Zip Archive file, which should also contain the .dbf file containing the data for each record.<br/>';
             break;
-          case 'size': 
+          case 'size':
             $error .= 'The upload file is greater than the limit of '.$sizelimit.'b.<br/>';
             break;
           default : $error .= 'An unknown error occurred when checking the upload file.<br/>';
@@ -313,8 +313,8 @@ class Location_Controller extends Gridview_Base_Controller {
         if(kohana::config('sref_notations.internal_srid') != $_POST['srid']) {
           //convert to internal srid. First convert +/-90 to a value just off, as Google Maps doesn't cope with the poles!
           $this->wkt = str_replace(
-              array(' 90,', ' -90,', ' 90)', ' -90)'), 
-              array(' 89.99999999,', ' -89.99999999,', ' 89.99999999)', ' -89.99999999)'), 
+              array(' 90,', ' -90,', ' 90)', ' -90)'),
+              array(' 89.99999999,', ' -89.99999999,', ' 89.99999999)', ' -89.99999999)'),
               $this->wkt
           );
           $result = $this->db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('".$this->wkt."',".$_POST['srid']."),".
@@ -402,7 +402,7 @@ class Location_Controller extends Gridview_Base_Controller {
               ,'fields' => $fields
               ,'fkFields' => array()
               ,'superModels' => array());
-          if ($_POST['website_id'] != 'all') 
+          if ($_POST['website_id'] != 'all')
             $save_array['joinsTo']=array('website'=>array($_POST['website_id']));
           $myLocation->submission = $save_array;
           $myLocation->submit();
@@ -422,14 +422,14 @@ class Location_Controller extends Gridview_Base_Controller {
     $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
     $this->page_breadcrumbs[] = 'Setup SHP File upload';
   }
-  
+
   function loadData($type, $data)
   {
     if (!$data) return $data;
     $tmp = unpack($type, $data);
     return current($tmp);
   }
-  
+
   /**
    * Finds a list of locations that match a field against a value. Filtered by website if appropriate.
    * @param string $name Field name to filter on.

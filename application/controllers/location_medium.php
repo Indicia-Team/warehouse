@@ -45,7 +45,7 @@ class Location_medium_Controller extends Gridview_Base_Controller
   * Override the default index functionality to filter by location_id.
   */
   public function index()
-  { 
+  {
     if ($this->uri->total_arguments()>0) {
       $this->base_filter=array('location_id' => $this->uri->argument(1));
     }
@@ -56,12 +56,12 @@ class Location_medium_Controller extends Gridview_Base_Controller
       $this->view->location_id=$this->uri->argument(1);
     }
   }
-  
+
   /**
-   *  Setup the default values to use when loading this controller to edit a new page.   
+   *  Setup the default values to use when loading this controller to edit a new page.
    */
-  protected function getDefaults() {    
-    $r = parent::getDefaults();    
+  protected function getDefaults() {
+    $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
       // location id is passed as first argument in URL when creating. But the image
       // gets linked by meaning, so fetch the meaning_id.
@@ -71,7 +71,7 @@ class Location_medium_Controller extends Gridview_Base_Controller
     }
     return $r;
   }
-  
+
   /**
    * Override the default return page behaviour so that after saving an image you
    * are returned to the location entry which has the image.
@@ -83,15 +83,15 @@ class Location_medium_Controller extends Gridview_Base_Controller
       return $this->model->object_name;
     }
   }
-  
+
   /**
-   * Get the list of terms ready for the media types list. 
+   * Get the list of terms ready for the media types list.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values)
+  {
     return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')    
-    );   
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')
+    );
   }
 
   /**

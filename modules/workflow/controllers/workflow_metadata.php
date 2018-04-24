@@ -48,7 +48,7 @@ class Workflow_metadata_Controller extends Gridview_Base_Controller {
     );
   }
 
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     $config = kohana::config('workflow');
     $entitySelectItems = array();
     foreach ($config['entities'] as $entity => $entityDef) {

@@ -30,7 +30,7 @@
  * @subpackage Controllers
  */
 class Subject_observation_Controller extends Gridview_Base_Controller {
-  
+
   public $sample_id;
 
   public function __construct()
@@ -70,31 +70,31 @@ class Subject_observation_Controller extends Gridview_Base_Controller {
     parent::index();
     $this->view->sample_id = $this->sample_id;
   }
-  
+
   /**
-   * Returns an array of all values from this model and its super models ready to be 
+   * Returns an array of all values from this model and its super models ready to be
    * loaded into a form. For this controller, we need to also setup the custom attributes
    * available to display on the form.
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $r['joinsTo:occurrence:id'] = 
+    $r['joinsTo:occurrence:id'] =
       $this->reformatTaxaJoinsForList($r, 'occurrence', true);
     $r = $this->addSample($r, $r['subject_observation:sample_id']);
     $this->loadAttributes($r, array(
         'website_id'=>array($r['subject_observation:website_id']),
         'restrict_to_survey_id'=>array(null, $r['sample:survey_id']),
     ));
-   return $r;  
+   return $r;
   }
-  
+
   /**
    * Load default values either when creating a sample new or reloading after a validation failure.
-   * This adds the custom attributes list to the data available for the view. 
+   * This adds the custom attributes list to the data available for the view.
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    $r['joinsTo:occurrence:id'] = 
+    $r['joinsTo:occurrence:id'] =
       $this->reformatTaxaJoinsForList($r, 'occurrence', true);
     $r = $this->addSample($r, $_POST['subject_observation:sample_id']);
     $this->loadAttributes($r, array(
@@ -103,9 +103,9 @@ class Subject_observation_Controller extends Gridview_Base_Controller {
     ));
     return $r;
   }
-  
+
   /**
-   * Adds sample data to the values array. 
+   * Adds sample data to the values array.
    */
   private function addSample($values, $id) {
     $sample = ORM::Factory('sample', $id);
@@ -118,21 +118,21 @@ class Subject_observation_Controller extends Gridview_Base_Controller {
     $values['subject_observation:sample_id'] = $sample->id;
     return $values;
   }
-  
+
   /**
-   * Get the list of terms ready for the subject type list. 
+   * Get the list of terms ready for the subject type list.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values)
+  {
     return array(
-      'subject_type_terms' => $this->get_termlist_terms('indicia:assoc:subject_type'),  
-      'count_qualifier_terms' => $this->get_termlist_terms('indicia:assoc:count_qualifier'),  
-      'sample_id' => $this->sample_id,  
-    );   
+      'subject_type_terms' => $this->get_termlist_terms('indicia:assoc:subject_type'),
+      'count_qualifier_terms' => $this->get_termlist_terms('indicia:assoc:count_qualifier'),
+      'sample_id' => $this->sample_id,
+    );
   }
-  
+
   protected function reformatTaxaJoinsForList($values, $singular_table, $id_only=false) {
-    // re-format values for joined taxa. These are returned suitable for checkboxes, 
+    // re-format values for joined taxa. These are returned suitable for checkboxes,
     // but we put them in an array suitable for a list type control
     // as array(id = 'value', ... ) or id $id_only is true, array(id1, id2, ...)
     $join_ids = array();
@@ -145,10 +145,10 @@ class Subject_observation_Controller extends Gridview_Base_Controller {
         $name = ORM::Factory($singular_table, $id)->taxa_taxon_list->taxon->taxon;
         $join_ids[$id] = $name;
       }
-    }              
-    return $join_ids;      
+    }
+    return $join_ids;
   }
-  
+
   public function save()
   {
     /*
@@ -160,7 +160,7 @@ class Subject_observation_Controller extends Gridview_Base_Controller {
     */
     parent::save();
   }
-  
+
   /**
    * Return a list of the tabs to display for this controller's actions.
    */
