@@ -468,14 +468,17 @@ SQL
   }
 
   /**
-   * Converts the input text into a parameter that can be passed into PostgreSQL's full text search.
+   * Converts the input text into a parameter for PostgreSQL's full text search.
    *
    * @param string $search
+   *   Search text.
    * @param array $options
+   *   Search options.
    *
    * @return string
+   *   Full text search parameter.
    */
-  private static function taxonSearchGetFullTextSearchTerm($search, $options) {
+  private static function taxonSearchGetFullTextSearchTerm($search, array $options) {
     $booleanTokens = array('&', '|');
     $searchWithBooleanLogic = trim(str_replace(
       array(' and ', ' or ', '*'),
@@ -608,6 +611,7 @@ SQL
     if (!empty($options['searchQuery'])) {
       $searchFilters = array();
       // Cleanup.
+      $search = trim(preg_replace('/\s+/', ' ', str_replace('-', ' ', $options['searchQuery'])));
       $fullTextSearchTerm = self::taxonSearchGetFullTextSearchTerm($search, $options);
       $searchTerm = str_replace(array(' and ', ' or ', ' & ', ' | '), '', $search);
       $searchTermNoWildcards = str_replace('*', ' ', $searchTerm);
