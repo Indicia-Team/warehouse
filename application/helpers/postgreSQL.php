@@ -608,7 +608,6 @@ SQL
     if (!empty($options['searchQuery'])) {
       $searchFilters = array();
       // Cleanup.
-      $search = trim(preg_replace('/\s+/', ' ', str_replace('-', '', $options['searchQuery'])));
       $fullTextSearchTerm = self::taxonSearchGetFullTextSearchTerm($search, $options);
       $searchTerm = str_replace(array(' and ', ' or ', ' & ', ' | '), '', $search);
       $searchTermNoWildcards = str_replace('*', ' ', $searchTerm);
