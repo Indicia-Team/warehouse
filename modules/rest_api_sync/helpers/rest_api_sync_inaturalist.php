@@ -130,51 +130,54 @@ class rest_api_sync_inaturalist {
     $taxon_list_id = Kohana::config('rest_api_sync.taxon_list_id');
     $tracker = array('inserts' => 0, 'updates' => 0, 'errors' => 0);
     foreach ($data['results'] as $iNatRecord) {
-      if (empty($iNatRecord['taxon']['name'])) {
-        // Skip names with no identification.
-        kohana::log('debug', "iNat record $iNatRecord[id] skipped as no identification.");
-        continue;
-      }
-      list($north, $east) = explode(',', $iNatRecord['location']);
-      $observation = [
-        'id' => $iNatRecord['id'],
-        'taxonName' => $iNatRecord['taxon']['name'],
-        'startDate' => $iNatRecord['observed_on'],
-        'endDate' => $iNatRecord['observed_on'],
-        'dateType' => 'D',
-        'recorder' => empty($iNatRecord['user']['name']) ? $iNatRecord['user']['login'] : $iNatRecord['user']['name'],
-        'east' => $east,
-        'north' => $north,
-        'projection' => 'WGS84',
-        'precision' => $iNatRecord['positional_accuracy'],
-        'siteName' => $iNatRecord['place_guess'],
-        'href' => $iNatRecord['uri'],
-        // American English in iNat field name - sic.
-        'licenceCode' => $iNatRecord['license_code'],
-      ];
-      if (!empty($iNatRecord['photos'])) {
-        $observation['media'] = [];
-        foreach ($iNatRecord['photos'] as $iNatPhoto) {
-          $observation['media'][] = [
-            'path' => $iNatPhoto['url'],
-            'caption' => $iNatPhoto['attribution'],
-            'mediaType' => 'Image:iNaturalist',
-            'licenceCode' => $iNatPhoto['license_code'],
-          ];
+      try {
+        if (empty($iNatRecord['taxon']['name'])) {
+          // Skip names with no identification.
+          throw new exception("iNat record $iNatRecord[id] skipped as no identification.");
         }
-      }
-      if (!empty($server['attrs']) && !empty($iNatRecord['annotations'])) {
-        foreach ($iNatRecord['annotations'] as $annotation) {
-          $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
-          if (isset($server['attrs'][$iNatAttr])) {
-            $attrTokens = explode(':', $server['attrs'][$iNatAttr]);
-            $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
-            $controlledValueId = $annotation['controlled_value_id'];
-            $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $controlledTermValues[$controlledValueId];
+        elseif (empty($iNatRecord['location'])) {
+          // Skip names with no identification.
+          throw new exception("iNat record $iNatRecord[id] skipped as the location is private.");
+        }
+        list($north, $east) = explode(',', $iNatRecord['location']);
+        $observation = [
+          'id' => $iNatRecord['id'],
+          'taxonName' => $iNatRecord['taxon']['name'],
+          'startDate' => $iNatRecord['observed_on'],
+          'endDate' => $iNatRecord['observed_on'],
+          'dateType' => 'D',
+          'recorder' => empty($iNatRecord['user']['name']) ? $iNatRecord['user']['login'] : $iNatRecord['user']['name'],
+          'east' => $east,
+          'north' => $north,
+          'projection' => 'WGS84',
+          'precision' => $iNatRecord['positional_accuracy'],
+          'siteName' => $iNatRecord['place_guess'],
+          'href' => $iNatRecord['uri'],
+          // American English in iNat field name - sic.
+          'licenceCode' => $iNatRecord['license_code'],
+        ];
+        if (!empty($iNatRecord['photos'])) {
+          $observation['media'] = [];
+          foreach ($iNatRecord['photos'] as $iNatPhoto) {
+            $observation['media'][] = [
+              'path' => $iNatPhoto['url'],
+              'caption' => $iNatPhoto['attribution'],
+              'mediaType' => 'Image:iNaturalist',
+              'licenceCode' => $iNatPhoto['license_code'],
+            ];
           }
         }
-      }
-      try {
+        if (!empty($server['attrs']) && !empty($iNatRecord['annotations'])) {
+          foreach ($iNatRecord['annotations'] as $annotation) {
+            $iNatAttr = "controlled_attribute:$annotation[controlled_attribute_id]";
+            if (isset($server['attrs'][$iNatAttr])) {
+              $attrTokens = explode(':', $server['attrs'][$iNatAttr]);
+              $controlledTermValues = self::$controlledTerms[$annotation['controlled_attribute_id']]['values'];
+              $controlledValueId = $annotation['controlled_value_id'];
+              $observation[$attrTokens[0] . 's'][$attrTokens[1]] = $controlledTermValues[$controlledValueId];
+            }
+          }
+        }
         $is_new = api_persist::taxonObservation(
           $db,
           $observation,
@@ -189,7 +192,7 @@ class rest_api_sync_inaturalist {
       catch (exception $e) {
         $tracker['errors']++;
         rest_api_sync::log('error', "Error occurred submitting an occurrence\n" . $e->getMessage() . "\n" .
-            json_encode($observation), $tracker);
+            json_encode($iNatRecord), $tracker);
         $msg = pg_escape_string($e->getMessage());
         $createdById = isset($_SESSION['auth_user']) ? $_SESSION['auth_user']->id : 1;
         $sql = <<<QRY
