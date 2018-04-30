@@ -60,12 +60,13 @@ class rest_api_sync_inaturalist {
    *   Server configuration.
    */
   public static function syncServer($serverId, $server) {
-    $page = 1;
+    $page = isset($_GET['start_page']) ? $_GET['start_page'] : 1;
     $timestampAtStart = date('c');
     self::loadControlledTerms($serverId, $server);
     do {
       $syncStatus = self::syncPage($serverId, $server, $page);
       $page++;
+      ob_flush();
     } while ($syncStatus['moreToDo']);
     variable::set("rest_api_sync_{$serverId}_last_run", $timestampAtStart);
   }
@@ -115,7 +116,7 @@ class rest_api_sync_inaturalist {
   public static function syncPage($serverId, array $server, $page) {
     $db = Database::instance();
     $fromDateTime = variable::get("rest_api_sync_{$serverId}_last_run", '1600-01-01T00:00:00+00:00', FALSE);
-    $pageSize = 30;
+    $pageSize = 200;
     $data = rest_api_sync::getDataFromRestUrl(
       "$server[url]/observations?" . http_build_query(array_merge(
         $server['parameters'],
