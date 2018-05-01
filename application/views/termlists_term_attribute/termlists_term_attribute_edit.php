@@ -216,8 +216,7 @@ $(document).ready(function() {
   <li id="li_valid_time"><label class="narrow" for="valid_integer">Time</label><?php echo form::checkbox('valid_time', TRUE, isset($model->valid_time) AND ($model->valid_time == 't'), 'class="vnarrow" '.$enabled ) ?></li>
 </ol>
 </fieldset>
-<fieldset><legend><?php echo $other_data['name']; ?> attribute
-species list allocation</legend>
+<fieldset><legend><?php echo $other_data['name']; ?> attribute term list allocation</legend>
   <ol>
 <?php
 // TODO this query must filter out the taxon_lists_taxa_taxon_list_attributes.deleted flag (in (false or null))
