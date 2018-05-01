@@ -65,11 +65,17 @@ abstract class Attribute_Value_ORM extends ORM {
         case 'I':
           $vf = 'int_value';
           $array->add_rules('int_value', 'integer');
+          if ($attr->allow_ranges === 't') {
+            $array->add_rules('upper_value', 'numeric');
+          }
           break;
 
         case 'F':
           $vf = 'float_value';
           $array->add_rules('float_value', 'numeric');
+          if ($attr->allow_ranges === 't') {
+            $array->add_rules('upper_value', 'numeric');
+          }
           break;
 
         case 'D':
