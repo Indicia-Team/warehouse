@@ -182,6 +182,12 @@ TXT;
       'default' => html::initial_value($values, "$model->object_name:multi_value"),
     ]);
     echo data_entry_helper::checkbox([
+      'fieldname' => "$model->object_name:allow_ranges",
+      'label' => 'Allow ranges',
+      'default' => html::initial_value($values, "$model->object_name:allow_ranges"),
+      'helpText' => 'Allow a range to be specified as a value, e.g. 0.4 - 1.6',
+    ]);
+    echo data_entry_helper::checkbox([
       'fieldname' => "$model->object_name:public",
       'label' => $other_data['publicFieldName'],
       'default' => html::initial_value($values, "$model->object_name:public"),
@@ -502,6 +508,15 @@ $(document).ready(function() {
       $(selector).hide();
     }
   });
+  function changeDataType() {
+    if ($('#data_type').val() === 'I' || $('#data_type').val() === 'F') {
+      $('#ctrl-wrap-<?php echo $model->object_name; ?>-allow_ranges').show();
+    } else {
+      $('#ctrl-wrap-<?php echo $model->object_name; ?>-allow_ranges').hide();
+    }
+  }
+  $('#data_type').change(changeDataType);
+  changeDataType();
 });
 <?php
   }
