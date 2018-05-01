@@ -468,14 +468,17 @@ SQL
   }
 
   /**
-   * Converts the input text into a parameter that can be passed into PostgreSQL's full text search.
+   * Converts the input text into a parameter for PostgreSQL's full text search.
    *
    * @param string $search
+   *   Search text.
    * @param array $options
+   *   Search options.
    *
    * @return string
+   *   Full text search parameter.
    */
-  private static function taxonSearchGetFullTextSearchTerm($search, $options) {
+  private static function taxonSearchGetFullTextSearchTerm($search, array $options) {
     $booleanTokens = array('&', '|');
     $searchWithBooleanLogic = trim(str_replace(
       array(' and ', ' or ', '*'),
@@ -603,12 +606,15 @@ SQL
    *   * headlineColumnSql - the SQL requird to generated the highlighted
    *     output version of the found term (which emboldens parts of the
    *     searched text which caused the hit to occur).
+   *   * simpleOrder - set to TRUE if the query should use a basic sort on
+   *     taxonomic sort order + taxon alphabetic, rather than a more advanced
+   *     sort based on full text word positions etc.
    */
   private static function taxonSearchGetQuerySearchFilterData(array $options) {
     if (!empty($options['searchQuery'])) {
       $searchFilters = array();
       // Cleanup.
-      $search = trim(preg_replace('/\s+/', ' ', str_replace('-', '', $options['searchQuery'])));
+      $search = trim(preg_replace('/\s+/', ' ', str_replace('-', ' ', $options['searchQuery'])));
       $fullTextSearchTerm = self::taxonSearchGetFullTextSearchTerm($search, $options);
       $searchTerm = str_replace(array(' and ', ' or ', ' & ', ' | '), '', $search);
       $searchTermNoWildcards = str_replace('*', ' ', $searchTerm);
@@ -616,7 +622,15 @@ SQL
       if ($options['searchAuthors']) {
         $searchField .= " || ' ' || coalesce(authority, '')";
       }
-      if (preg_match('/\*[^\s]/', strtolower($searchTerm))) {
+      if (!preg_match('/[a-z0-9]/', strtolower($searchTerm))) {
+        // Search contains mo alphanumerics. Do a simple search for the special
+        // character input, e.g. the + symbol used to denote a species not on
+        // the list by some schemes.
+        $likesearchterm = str_replace(array('*', ' '), '%', $searchTerm) . '%';
+        $searchFilters[] = "(cts.simplified=false and searchterm like '$likesearchterm')";
+        $headlineColumnSql = 'cts.original as highlighted';
+      }
+      elseif (preg_match('/\*[^\s]/', strtolower($searchTerm))) {
         // Search term contains a wildcard not at the end of a word, so enable
         // a basic text search which supports this. Use term simplification to
         // reduce misses due to punctuation, spacing, capitalisation etc.
@@ -652,6 +666,7 @@ SQL
         'searchFilter' => '(' . implode(' or ', $searchFilters) . ')',
         'searchTermNoWildcards' => $searchTermNoWildcards,
         'headlineColumnSql' => $headlineColumnSql,
+        'simpleOrder' => !preg_match('/[a-z0-9]/', strtolower($searchTerm)),
       );
     }
     else {
@@ -661,6 +676,7 @@ SQL
         'searchFilter' => 'simplified=false',
         'searchTermNoWildcards' => '',
         'headlineColumnSql' => 'original',
+        'simpleOrder' => TRUE,
       );
     }
   }
@@ -719,7 +735,7 @@ SQL;
     if ($isCount) {
       return '';
     }
-    elseif (empty($searchFilterData['searchTermNoWildcards'])) {
+    elseif ($searchFilterData['simpleOrder'] || empty($searchFilterData['searchTermNoWildcards'])) {
       return <<<SQL
 order by taxonomic_sort_order, original
 SQL;

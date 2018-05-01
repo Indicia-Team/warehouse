@@ -35,7 +35,7 @@ textarea {
 <body>
 <form id="comment-form" method="POST" >
 <?php
-if ((empty($_GET['user_id']) && empty($_GET['email_address'])) || empty($_GET['occurrence_id'] || empty($_GET['auth']))) {
+if ((empty($_GET['user_id']) && empty($_GET['email_address'])) || empty($_GET['occurrence_id']) || empty($_GET['auth'])) {
   echo '<p>Invalid link</p>';
 }
 else {
