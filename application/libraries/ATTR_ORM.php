@@ -57,6 +57,7 @@ abstract class ATTR_ORM extends Valid_ORM {
         'caption_i18n',
         'term_name',
         'term_identifier',
+        'allow_ranges',
       )
     );
     $array->add_rules('caption', 'required');
@@ -80,7 +81,7 @@ abstract class ATTR_ORM extends Valid_ORM {
       $cache = new Cache();
       // Type is the object name with _attribute stripped from the end.
       $type = substr($this->object_name, 0, strlen($this->object_name) - 10);
-      $cache->delete('attrInfo_' . $type . '_' . $this->id);
+      $cache->delete("attrInfo_{$type}_$this->id");
     }
     return $save && $parent_valid;
   }
