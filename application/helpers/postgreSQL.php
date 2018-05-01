@@ -623,8 +623,11 @@ SQL
         $searchField .= " || ' ' || coalesce(authority, '')";
       }
       if (!preg_match('/[a-z0-9]/', strtolower($searchTerm))) {
-        $likesearchterm = preg_replace('[^%\+\?*]', '', str_replace(array('*', ' '), '%', preg_replace('/\(.+\)/', '', $searchTerm))) . '%';
-        $searchFilters[] = "(cts.simplified=true and searchterm like '$likesearchterm')";
+        // Search contains mo alphanumerics. Do a simple search for the special
+        // character input, e.g. the + symbol used to denote a species not on
+        // the list by some schemes.
+        $likesearchterm = str_replace(array('*', ' '), '%', $searchTerm) . '%';
+        $searchFilters[] = "(cts.simplified=false and searchterm like '$likesearchterm')";
         $headlineColumnSql = 'cts.original as highlighted';
       }
       elseif (preg_match('/\*[^\s]/', strtolower($searchTerm))) {
