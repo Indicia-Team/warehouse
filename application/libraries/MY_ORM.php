@@ -1574,11 +1574,11 @@ class ORM extends ORM_Core {
       }
     }
 
-    $fk = false;
+    $fk = FALSE;
     $value=trim($value);
     if (substr($attrId, 0, 3) == 'fk_') {
       // value is a term that needs looking up
-      $fk = true;
+      $fk = TRUE;
       $attrId = substr($attrId, 3);
     }
     // Create a attribute value, loading the existing value id if it exists, or search for the existing record
@@ -1599,7 +1599,7 @@ class ORM extends ORM_Core {
 
     $oldValues = array_merge($attrValueModel->as_array());
     $dataType = $attrDef->data_type;
-    $vf = null;
+    $vf = NULL;
 
     $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
     // For attribute value errors, we need to report e.g smpAttr:attrId[:attrValId] as the error key name, not
@@ -1681,7 +1681,23 @@ class ORM extends ORM_Core {
         $vf = 'int_value';
         break;
     }
-    if ($vf != null) {
+    if ($vf != NULL) {
+      // If a numeric range value provided, split into 2 fields.
+      if (($dataType == 'I' || $dataType === 'F') && $attrDef->allow_ranges === 't'
+          && preg_match('/^(?P<from>-?\d+(\.\d+)?)\s*-\s*(?P<to>-?\d+(\.\d+)?)$/', $value, $match)) {
+        $value = $match['from'];
+        $attrValueModel->upper_value = $match['to'];
+        if ($attrValueModel->upper_value != $match['to']) {
+          $this->errors[$fieldId] = "Invalid range $match[from] - $match[to] for attribute ".$attrDef->caption;
+          kohana::log('debug', "Could not accept value $match[from] - $match[to] into field $vf for attribute $fieldId.");
+          return FALSE;
+        }
+        elseif ((float) $value > (float) $attrValueModel->upper_value) {
+          $this->errors[$fieldId] = "Invalid range $match[from] - $match[to]. Values are the wrong way round for attribute ".$attrDef->caption;
+          kohana::log('debug', "Could not accept value $match[from] - $match[to] into field $vf for attribute $fieldId.");
+          return FALSE;
+        }
+      }
       $attrValueModel->$vf = $value;
       // Test that ORM accepted the new value - it will reject if the wrong data type for example.
       // Use a string compare to get a proper test but with type tolerance.
@@ -1698,7 +1714,7 @@ class ORM extends ORM_Core {
         } else {
           $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
           kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
-          return false;
+          return FALSE;
         }
       }
     }
@@ -1753,12 +1769,14 @@ class ORM extends ORM_Core {
     if (substr($attrId, 0, 3) == 'fk_')
       // an attribute value lookup
       $attrId = substr($attrId, 3);
-    $cacheId = 'attrInfo_'.$attrType.'_'.$attrId;
+    // Cache ID includes 2 - version number, to prevent old cache records being
+    // used after inclusion of allow_ranges field.
+    $cacheId = "attrInfo.2_{$attrType}_{$attrId}";
     $this->cache = Cache::instance();
     $attr = $this->cache->get($cacheId);
     if ($attr===null) {
       $attr = $this->db
-          ->select('caption','data_type','multi_value','termlist_id','validation_rules')
+          ->select('caption', 'data_type', 'multi_value', 'termlist_id', 'validation_rules', 'allow_ranges')
           ->from($attrType.'_attributes')
           ->where(array('id'=>$attrId))
           ->get()->result_array();
