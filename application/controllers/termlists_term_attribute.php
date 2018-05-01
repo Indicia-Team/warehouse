@@ -27,7 +27,7 @@
  * @package Core
  * @subpackage Controllers
  */
-class Termlists_term_attribute_Controller extends Attr_Gridview_Base_Controller {
+class Termlists_term_attribute_Controller extends Attr_Base_Controller {
 
   public function __construct()
   {
