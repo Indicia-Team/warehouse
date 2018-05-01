@@ -27,7 +27,7 @@
  * @package Core
  * @subpackage Controllers
  */
-class Identifier_attribute_Controller extends Attr_Gridview_Base_Controller {
+class Identifier_attribute_Controller extends Attr_Base_Controller {
 
   public function __construct()
   {
