@@ -29,20 +29,21 @@ $disabled_input = html::initial_value($values, 'metaFields:disabled_input');
 $enabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
 ?>
 <?php if ($disabled_input === 'YES') : ?>
-<div class="alert alert-warning">The attribute was created by another user so you don't have permission to change the
-attribute's specification, although you can change the attribute assignments at the bottom of the page. Please contact
-the warehouse owner to request changes.</div>
+  <div class="alert alert-warning">The attribute was created by another user so you don't have permission to change the
+  attribute's specification, although you can change the attribute assignments at the bottom of the page. Please contact
+  the warehouse owner to request changes.</div>
 <?php else : ?>
-<div class="alert alert-info">This page allows you to specify a new or edit an existing custom attribute for
-<?php echo strtolower($other_data['name']); ?> data.</div>
+  <div class="alert alert-info">This page allows you to specify a new or edit an existing custom attribute for
+  <?php echo strtolower($other_data['name']); ?> data.</div>
 <?php endif; ?>
+<?php echo $metadata; ?>
 <form id="custom-attribute-edit"
       action="<?php echo url::site() . "$other_data[controllerpath]/save"; ?>"
-      method="post"><input type="hidden" name="<?php echo $model->object_name; ?>:id"
-      value="<?php echo $id; ?>" />
+      method="post">
+  <input type="hidden" name="<?php echo $model->object_name; ?>:id" value="<?php echo $id; ?>" />
   <input type="hidden" name="metaFields:disabled_input" value="<?php echo $disabled_input; ?>" />
   <fieldset<?php echo $disabled_input === 'YES' ? ' class="ui-state-disabled"' : ''; ?>>
-    <legend><?php echo $other_data['name']; ?> attribute details<?php echo $metadata; ?></legend>
+    <legend><?php echo $other_data['name']; ?> attribute details</legend>
     <?php
     echo data_entry_helper::text_input([
       'fieldname' => "$model->object_name:caption",
@@ -174,7 +175,7 @@ TXT;
       'blankText' => '<Please select>',
       'lookupValues' => $other_data['termlists'],
     ]);
-    echo '<a id="termlist-link" target="_blank" href="">edit in new tab</a>';
+    echo '<a id="termlist-link" target="_blank" href="">edit terms in new tab</a>';
     echo data_entry_helper::checkbox([
       'fieldname' => "$model->object_name:multi_value",
       'label' => 'Allow multiple values',
@@ -203,7 +204,7 @@ TXT;
     }
     ?>
   </fieldset>
-  <fieldset <?php echo $disabled_input === 'YES' ? ' class="ui-state-disabled"' : ''; ?>>
+  <fieldset id="validation-rules"<?php echo $disabled_input === 'YES' ? ' class="ui-state-disabled"' : ''; ?>>
     <legend>Validation rules</legend>
     <?php
     echo data_entry_helper::checkbox([
@@ -213,19 +214,21 @@ TXT;
       'helpText' => 'Note, checking this option will make the attribute GLOBALLY required for all surveys which use it. ' .
         'Consider making it required on a survey dataset basis instead.',
     ]);
-    $valMin = html::specialchars($model->valid_length_min);
-    $valMax = html::specialchars($model->valid_length_max);
-    $ctrls = <<<HTML
-between <input type="text" id="valid_length_min" name="valid_length_min" value="$valMin"/>
-and <input type="text" id="valid_length_max" name="valid_length_max" value="$valMax"/>
-HTML;
     echo data_entry_helper::checkbox([
       'fieldname' => 'valid_length',
       'label' => 'Length',
       'default' => $model->valid_length,
       'helpText' => 'Enforce the minimum and/or maximum length of a text value.',
-      'afterControl' => $ctrls,
     ]);
+    $valMin = html::specialchars($model->valid_length_min);
+    $valMax = html::specialchars($model->valid_length_max);
+    echo <<<HTML
+<div id="valid_length_inputs">
+length between <input type="text" id="valid_length_min" name="valid_length_min" value="$valMin"/>
+and <input type="text" id="valid_length_max" name="valid_length_max" value="$valMax"/> characters
+</div>
+
+HTML;
     echo data_entry_helper::checkbox([
       'fieldname' => 'valid_alpha',
       'label' => 'Alphabetic characters only',
@@ -274,50 +277,58 @@ HTML;
       'default' => $model->valid_url,
       'helpText' => 'Enforce that any value provided is a valid URL format.',
     ]);
-    $val = html::specialchars($model->valid_dec_format);
-    $ctrls = <<<HTML
-<input type="text" id="valid_dec_format" name="valid_dec_format" value="$val"/>
-HTML;
     echo data_entry_helper::checkbox([
       'fieldname' => 'valid_decimal',
       'label' => 'Formatted decimal',
       'default' => $model->valid_decimal,
       'helpText' => 'Validate a decimal format against the provided pattern, e.g. 2 (2 digits) or 2,2 (2 digits before and 2 digits after the decimal point).',
-      'afterControl' => $ctrls,
     ]);
-    $val = html::specialchars($model->valid_regex_format);
-    $ctrls = <<<HTML
-<input type="text" id="valid_regex_format" name="valid_regex_format" value="$val"/>
+    $val = html::specialchars($model->valid_dec_format);
+    echo <<<HTML
+<div id="valid_decimal_inputs">
+Format <input type="text" id="valid_dec_format" name="valid_dec_format" value="$val"/>
+</div>
+
 HTML;
     echo data_entry_helper::checkbox([
       'fieldname' => 'valid_regex',
       'label' => 'Regular expression',
       'default' => $model->valid_regex,
       'helpText' => 'Validate the supplied value against a regular expression, e.g. /^(sunny|cloudy)$/',
-      'afterControl' => $ctrls,
     ]);
-    $val = html::specialchars($model->valid_min_value);
-    $ctrls = <<<HTML
-<input type="text" id="valid_min_value" name="valid_min_value" value="$val"/>
+    $val = html::specialchars($model->valid_regex_format);
+    echo <<<HTML
+<div id="valid_regex_inputs">
+<input type="text" id="valid_regex_format" name="valid_regex_format" value="$val"/>
+</div>
+
 HTML;
     echo data_entry_helper::checkbox([
       'fieldname' => 'valid_min',
       'label' => 'Minimum value',
       'default' => $model->valid_min,
-      'helpText' => 'Ensure the value is at least this',
-      'afterControl' => $ctrls,
+      'helpText' => 'Ensure the value is at least the minimum that you specify',
     ]);
-    $val = html::specialchars($model->valid_max_value);
-    $ctrls = <<<HTML
-<input type="text" id="valid_max_value" name="valid_max_value" value="$val"/>
+    $val = html::specialchars($model->valid_min_value);
+    echo <<<HTML
+<div id="valid_min_inputs">
+Value must be at least <input type="text" id="valid_min_value" name="valid_min_value" value="$val"/>
+</div>
+
 HTML;
     echo data_entry_helper::checkbox([
       'fieldname' => 'valid_max',
       'label' => 'Maximum value',
       'default' => $model->valid_max,
-      'helpText' => 'Ensure the value is at most this',
-      'afterControl' => $ctrls,
+      'helpText' => 'Ensure the value is at most the maximum that you specify',
     ]);
+    $val = html::specialchars($model->valid_max_value);
+    echo <<<HTML
+<div id="valid_max_inputs">
+Value must be at most <input type="text" id="valid_max_value" name="valid_max_value" value="$val"/>
+</div>
+
+HTML;
     echo data_entry_helper::checkbox([
       'fieldname' => 'valid_date_in_past',
       'label' => 'Date in past',
@@ -333,21 +344,22 @@ HTML;
 
     ?>
   </fieldset>
-<?php
-// Output the view that lets this custom attribute associate with websites,
-// surveys, checklists or whatever is appropriate for the attribute type.
-$this->associationsView->other_data = $other_data;
-$this->associationsView->model = $model;
-echo $this->associationsView;
-echo html::form_buttons(!empty($id), FALSE, FALSE);
-data_entry_helper::enable_validation('custom-attribute-edit');
-echo data_entry_helper::dump_javascript();
-?></form>
+  <?php
+  // Output the view that lets this custom attribute associate with websites,
+  // surveys, checklists or whatever is appropriate for the attribute type.
+  $this->associationsView->other_data = $other_data;
+  $this->associationsView->model = $model;
+  echo $this->associationsView;
+  echo html::form_buttons(!empty($id), FALSE, FALSE);
+  data_entry_helper::enable_validation('custom-attribute-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
+</form>
 
 <script type="text/javascript">
 $(document).ready(function() {
   $('#quick_termlist_create').change(function (e) {
-    if ($(e.currentTarget).attr('checked')) {
+    if ($(e.currentTarget).is(':checked')) {
       $('#quick-termlist-terms').show();
       $('#termlist-picker').hide();
     } else {
@@ -455,9 +467,9 @@ function toggleOptions() {
   };
   $.each(allRules, function(i, item) {
     if ($.inArray(item, enable) === -1) {
-      $('#ctrl-wrap-sample_attribute-valid_' + item).hide();
+      $('#ctrl-wrap-valid_' + item).hide();
     } else {
-      $('#ctrl-wrap-sample_attribute-valid_' + item).show();
+      $('#ctrl-wrap-valid_' + item).show();
     }
   });
   showHideTermlistLink();
@@ -470,6 +482,25 @@ $(document).ready(function() {
   $('select#data_type').change(toggleOptions);
   $('#termlist_id').change(function(e) {
     showHideTermlistLink();
+  });
+  // Changing a checkbox for a validation rule may need to show or hide the
+  // related inputs.
+  $('#validation-rules :checkbox').change(function(evt) {
+    var selector = '#' + evt.currentTarget.id + '_inputs';
+    if ($(selector).length>0) {
+      if ($(evt.currentTarget).is(':checked')) {
+        $(selector).slideDown();
+      } else {
+        $(selector).slideUp();
+      }
+    }
+  });
+  // Perform initial setup of inputs linked to rule checkboxes.
+  $.each($('#validation-rules :checkbox'), function() {
+    var selector = '#' + this.id + '_inputs';
+    if ($(selector).length>0 && !$(this).is(':checked')) {
+      $(selector).hide();
+    }
   });
 });
 <?php
