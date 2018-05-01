@@ -31,12 +31,12 @@
 class Occurrence_Model extends ORM {
   protected $requeuedForVerification = FALSE;
 
-  protected $has_many=array(
+  protected $has_many = array(
     'occurrence_attribute_values',
     'determinations',
     'occurrence_media'
   );
-  protected $belongs_to=array(
+  protected $belongs_to = array(
     'determiner' => 'person',
     'sample',
     'taxa_taxon_list',
