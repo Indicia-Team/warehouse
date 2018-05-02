@@ -42,6 +42,8 @@ class Occurrence_attributes_website_Model extends Valid_ORM {
       'occurrence_attribute_id',
       'website_id',
       'restrict_to_survey_id',
+      'restrict_to_taxon_meaning_id',
+      'restrict_to_stage_term_meaning_id',
       'default_text_value',
       'default_float_value',
       'default_int_value',
