@@ -296,7 +296,7 @@ class Sample_Model extends ORM_Tree
   public function __set($key, $value) {
     if (substr($key,-4) == 'geom') {
       if ($value) {
-        $row = $this->db->query("SELECT ST_GeomFromText('$value', " . kohana::config('sref_notations.internal_srid') . ") AS geom")->current();
+        $row = $this->db->query("SELECT ST_MakeValid(ST_GeomFromText('$value', " . kohana::config('sref_notations.internal_srid') . ")) AS geom")->current();
         $value = $row->geom;
       }
     }
