@@ -1,0 +1,110 @@
+<report
+    title="List of occurrence attributes for an input form"
+    description="Lists occurrence attributes and, for existing records, value data for a record input form."
+    featured="true"
+>
+  <query website_filter_field="aw.website_id" count_field="a.*">
+    SELECT #columns#
+    FROM occurrence_attributes_websites aw
+    JOIN occurrence_attributes a on a.id=aw.occurrence_attribute_id
+    LEFT JOIN occurrence_attribute_values av ON av.occurrence_attribute_id=a.id AND av.deleted=false
+      AND av.occurrence_id=#occurrence_id#
+    LEFT JOIN cache_termlists_terms t ON t.id=av.int_value AND a.data_type='L'
+    LEFT JOIN form_structure_blocks fsb on fsb.id=aw.form_structure_block_id
+    LEFT JOIN form_structure_blocks fsbp on fsbp.id=fsb.parent_id
+    LEFT JOIN control_types ct ON ct.id = aw.control_type_id
+    #joins#
+    WHERE aw.deleted=false
+  </query>
+  <order_bys>
+    <order_by>fsbp.weight, fsb.weight, aw.weight, a.caption</order_by>
+  </order_bys>
+  <params>
+    <param name="survey_id" display="Survey ID" datatype="integer">
+      <where>aw.restrict_to_survey_id=#survey_id#</where>
+    </param>
+    <param name="taxa_taxon_list_external_key" display="Taxon external key" datatype="text" default="">
+      <joins>
+        <join>JOIN cache_taxon_paths ctp on aw.restrict_to_taxon_meaning_id=ANY(ctp.path)
+          AND ctp.external_key='#taxa_taxon_list_external_key#'</join>
+      </joins>
+      <wheres>
+        <where value="" operator="equal">aw.restrict_to_taxon_meaning_id is null</where>
+      </wheres>
+    </param>
+    <param name="stage_term_meaning_id" display="Life stage term meaning ID" datatype="integer" default="">
+      <where>aw.restrict_to_stage_term_meaning_id=#stage_term_meaning_id#</where>
+    </param>
+    <param name="occurrence_id" display="Occurrence ID" datatype="integer" default="0" />
+  </params>
+  <columns>
+    <column name="attribute_id" display="ID" sql="a.id" datatype="integer" />
+    <column name="occurrence_id" display="Occurrence ID" sql="av.occurrence_id" datatype="integer" />
+    -- Needs i18n
+    <column name="caption" display="Caption" sql="a.caption" datatype="text" />
+    <column name="data_type" display="Data type" sql="a.data_type" datatype="text" />
+    <column name="termlist_id" display="Termlist ID" sql="a.termlist_id" datatype="integer" />
+    <column name="validation_rules" display="Validation rules" datatype="text"
+      sql="COALESCE(aw.validation_rules::text || E'\n', ''::text) || COALESCE(a.validation_rules::text, ''::text)" />
+    <column name="multi_value" display="Termlist ID" sql="a.multi_value" datatype="boolean" />
+    <column name="allow_ranges" display="Termlist ID" sql="a.allow_ranges" datatype="boolean" />
+    <column name="term_name" display="Term name" sql="a.term_name" datatype="text" />
+    <column name="system_function" display="System function" sql="a.system_function" datatype="text" />
+    <column name="outer_block_weight" display="Outer block weight" sql="fsbp.weight" datatype="integer" />
+    <column name="inner_block_weight" display="Inner block weight" sql="fsb.weight" datatype="integer" />
+    <column name="control_weight" display="Control weight" sql="aw.weight" datatype="integer" />
+    <column name="outer_block_name" display="Outer block name" sql="fsbp.name" datatype="text" />
+    <column name="inner_block_name" display="Inner block name" sql="fsb.name" datatype="text" />
+    <column name="default_value" display="Default value" sql="CASE a.data_type
+            WHEN 'T'::bpchar THEN aw.default_text_value
+            WHEN 'L'::bpchar THEN aw.default_int_value::text
+            WHEN 'I'::bpchar THEN aw.default_int_value::text
+            WHEN 'B'::bpchar THEN aw.default_int_value::text
+            WHEN 'F'::bpchar THEN aw.default_float_value::text
+            WHEN 'D'::bpchar THEN aw.default_date_start_value::text
+            WHEN 'V'::bpchar THEN vague_date_to_raw_string(aw.default_date_start_value, aw.default_date_end_value, aw.default_date_type_value)::text
+            ELSE null::text
+          END" />
+    <column name="inner_block_name" display="Inner block name" sql="fsb.name" datatype="text" />
+    <column name="control_type" display="Control type" sql="ct.control" datatype="text" />
+    <column name="values" display="Values" datatype="text" aggregate="true" sql="json_agg(('{&quot;id&quot;:' || av.id::text || ',' ||
+     '&quot;value&quot;:' || COALESCE(CASE a.data_type
+            WHEN 'T'::bpchar THEN '&quot;' || av.text_value || '&quot;'
+            WHEN 'L'::bpchar THEN '&quot;' || t.term::text || '&quot;'
+            WHEN 'I'::bpchar THEN '&quot;' || av.int_value::text ||
+            CASE
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
+                ELSE ''::text
+            END || '&quot;'
+            WHEN 'B'::bpchar THEN av.int_value::text
+            WHEN 'F'::bpchar THEN '&quot;' || av.float_value::text ||
+            CASE
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
+                ELSE ''::text
+            END || '&quot;'
+            WHEN 'D'::bpchar THEN '&quot;' || av.date_start_value::text || '&quot;'
+            WHEN 'V'::bpchar THEN '&quot;' || indicia.vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text || '&quot;'
+            ELSE null::text
+        END, 'null') || ',' ||
+     '&quot;raw_value&quot;:' || COALESCE(CASE a.data_type
+            WHEN 'T'::bpchar THEN '&quot;' || av.text_value || '&quot;'
+            WHEN 'L'::bpchar THEN av.int_value::text
+            WHEN 'I'::bpchar THEN av.int_value::text
+            WHEN 'B'::bpchar THEN av.int_value::text
+            WHEN 'F'::bpchar THEN av.float_value::text
+            WHEN 'D'::bpchar THEN '&quot;' || av.date_start_value::text || '&quot;'
+            WHEN 'V'::bpchar THEN '&quot;' || vague_date_to_raw_string(av.date_start_value, av.date_end_value, av.date_type_value)::text || '&quot;'
+            ELSE null::text
+        END, 'null') || ',' ||
+     '&quot;upper_value&quot;:' || COALESCE(CASE
+            WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN av.upper_value::text
+            ELSE 'null'
+        END, 'null') ||
+     '}')::json)
+    " />
+
+
+
+
+  </columns>
+</report>
