@@ -118,6 +118,9 @@ class Occurrence_attributes_website_Model extends Valid_ORM {
 
         case 'D':
         case 'V':
+          if (empty(parent::__get('default_date_type_value'))) {
+            return '';
+          }
           $vagueDate = array(
             parent::__get('default_date_start_value'),
             parent::__get('default_date_end_value'),
