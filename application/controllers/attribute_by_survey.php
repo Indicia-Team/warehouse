@@ -226,18 +226,68 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
    * Load additional data required by the edit view.
    */
   protected function prepareOtherViewData(array $values) {
-    $survey = ORM::Factory('survey', $values[$this->type.'_attributes_website:restrict_to_survey_id']);
-    $attr = ORM::Factory($_GET['type'].'_attribute', $values[$this->type.'_attributes_website:'.$this->type.'_attribute_id']);
-    $controlTypes = $this->db->
-        select('id, control')
-        ->from('control_types')
-        ->where('for_data_type', $attr->data_type)
-        ->get();
-    return array(
+    $survey = ORM::Factory('survey', $values[$this->type . '_attributes_website:restrict_to_survey_id']);
+    $attr = ORM::Factory($_GET['type'].'_attribute', $values[$this->type . '_attributes_website:' . $this->type.'_attribute_id']);
+    $controlTypes = $this->db
+      ->select('id, control')
+      ->from('control_types')
+      ->where('for_data_type', $attr->data_type)
+      ->get();
+    $otherData = array(
       'name' => $attr->caption,
       'survey' => $survey->title,
       'controlTypes' => $controlTypes
     );
+    if ($_GET['type'] === 'occurrence' || $_GET['type'] === 'sample') {
+      $sexStageSysFuncs = ['sex', 'stage', 'sex_stage_count'];
+      // OUtput a control for restricting this attribute according to selected
+      // sex/stage term. We don't want this option for the actual sex/stage
+      // attributes though and to do this we need to know the survey ID so
+      // we can retrieve an appropriate list of terms to pick from.
+      if (!empty($values["$_GET[type]_attributes_website:restrict_to_survey_id"])
+          && (
+            $_GET['type'] !== 'occurrence'
+            || !in_array($this->model->occurrence_attribute->system_function, $sexStageSysFuncs)
+          )) {
+        $terms = $this->db
+          ->select('t.id, t.term')
+          ->from('cache_termlists_terms as t')
+          ->join('occurrence_attributes as a', "a.termlist_id", 't.termlist_id')
+          ->join('occurrence_attributes_websites as aw', 'aw.occurrence_attribute_id', 'a.id')
+          ->in('a.system_function', $sexStageSysFuncs)
+          ->where([
+            'a.deleted' => 'f',
+            'aw.deleted' => 'f',
+            'aw.restrict_to_survey_id' => $values["$_GET[type]_attributes_website:restrict_to_survey_id"],
+          ])
+          ->orderby('t.term', 'ASC')
+          ->get();
+        $stageTerms = [];
+        foreach ($terms as $term) {
+          $stageTerms[$term->id] = $term->term;
+        }
+        $otherData['stageTerms'] = $stageTerms;
+      };
+      // If linking to taxa for an existing sample or occurrence attribute, we
+      // need a caption to display.
+      if (!empty($values[$_GET['type'] . '_attributes_website:restrict_to_taxon_meaning_id'])) {
+        $masterListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
+        if ($masterListId) {
+          $taxon = $this->db
+            ->select('taxon')
+            ->from('cache_taxa_taxon_lists')
+            ->where([
+              'taxon_meaning_id' => $values[$_GET['type'] . '_attributes_website:restrict_to_taxon_meaning_id'],
+              'taxon_list_id' => $masterListId,
+              'preferred' => 't',
+            ])
+            ->limit(1)
+            ->get()->current();
+          $otherData['restrictToTaxonCaption'] = $taxon->taxon;
+        }
+      }
+    }
+    return $otherData;
   }
 
   public function save() {
