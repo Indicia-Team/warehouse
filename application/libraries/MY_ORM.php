@@ -1203,7 +1203,7 @@ class ORM extends ORM_Core {
             $typeFilter = $content['value'];
         }
       }
-      $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
+      $fieldPrefix = (array_key_exists('field_prefix', $this->submission)) ? $this->submission['field_prefix'] . ':' : '';
       // as the required fields list is relatively static, we use the cache. This cache entry gets cleared when
       // a custom attribute is saved so it should always be up to date.
       $key = $this->getRequiredFieldsCacheKey($typeFilter);
@@ -1290,6 +1290,14 @@ class ORM extends ORM_Core {
         if ($typeFilter)
           $ttlIds[] = $typeFilter;
         $this->db->in('tlt2.id', $ttlIds);
+      }
+      // For taxon or stage restrictions, the attributes are not loaded into
+      // the entry form unless the correct taxon/stage are chosen. Therefore
+      // we don't enforce the required state of these fields on the server
+      // and instead allow it to be enforced on the client.
+      if ($required && ($this->object_name === 'sample' || $this->object_name === 'occurrence')) {
+        $this->db->where("{$attr_entity}s_websites.restrict_to_taxon_meaning_id IS NULL");
+        $this->db->where("{$attr_entity}s_websites.restrict_to_stage_term_meaning_id IS NULL");
       }
     } elseif ($required) {
       $this->db->like($attr_entity.'s.validation_rules', '%required%');
