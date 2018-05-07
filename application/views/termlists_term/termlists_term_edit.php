@@ -105,19 +105,11 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
             echo data_entry_helper::date_picker(array(
               'label' => $attr['caption'],
               'fieldname' => $name,
-              'default' => $attr['value']
+              'default' => $attr['value'],
             ));
             break;
 
           case 'L':
-
-
-
-// @Todo This seems to load the wrong termlist.
-
-
-
-            var_export($values);
             echo data_entry_helper::select(array(
               'label' => $attr['caption'],
               'fieldname' => $name,
@@ -126,18 +118,20 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
               'blankText' => '<Please select>',
             ));
             break;
+
           case 'B':
             echo data_entry_helper::checkbox(array(
               'label' => $attr['caption'],
               'fieldname' => $name,
-              'default' => $attr['value']
+              'default' => $attr['value'],
             ));
             break;
+
           default:
             echo data_entry_helper::text_input(array(
               'label' => $attr['caption'],
               'fieldname' => $name,
-              'default' => $attr['value']
+              'default' => $attr['value'],
             ));
         }
 
