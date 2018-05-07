@@ -16,13 +16,13 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Occurrence_Attributes_Websites table.
  *
- * @link http://code.google.com/p/indicia/wiki/DataModel
+ * @link @link http://indicia-docs.readthedocs.io/en/latest/developing/data-model.html
  */
 class Occurrence_attributes_website_Model extends Valid_ORM {
   protected $has_one = array(
@@ -118,9 +118,6 @@ class Occurrence_attributes_website_Model extends Valid_ORM {
 
         case 'D':
         case 'V':
-          if (empty(parent::__get('default_date_type_value'))) {
-            return '';
-          }
           $vagueDate = array(
             parent::__get('default_date_start_value'),
             parent::__get('default_date_end_value'),

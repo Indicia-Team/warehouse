@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the termlists_term attributes.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Termlists_term_attribute_Controller extends Attr_Base_Controller {
 
@@ -58,7 +53,7 @@ class Termlists_term_attribute_Controller extends Attr_Base_Controller {
   protected function prepareOtherViewData(array $values) {
     return array(
       'name' => ucfirst($this->prefix),
-      'controllerpath' => $this->controllerpath
+      'controllerpath' => $this->controllerpath,
     );
   }
 

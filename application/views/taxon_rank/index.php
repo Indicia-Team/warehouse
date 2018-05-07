@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of taxon ranks.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,18 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
- 
+?>
+<p>A list of ranks that can be assigned to taxa in the database, e.g. Kingdom, Phylum, Species.
+<?php
 echo $grid;
 ?>
-<form action="<?php echo url::site().'taxon_rank/create'; ?>" method="post">
-<input type="submit" value="New taxon_rank" class="ui-corner-all ui-state-default button" />
+<form action="<?php echo url::site() . 'taxon_rank/create'; ?>" method="post">
+  <input type="submit" value="New taxon rank" class="btn btn-primary" />
 </form>
-<br />
-<?php echo $upload_csv_form ?>
-
+<?php echo $upload_csv_form;

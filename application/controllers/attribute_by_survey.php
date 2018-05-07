@@ -14,128 +14,124 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link  http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing the ability to configure the list of attributes joined to a survey.
- *
- * @package Core
- * @subpackage Controllers
  */
-class Attribute_By_Survey_Controller extends Indicia_Controller
-{
-  private $_survey=null;
-  private $_website_id=null;
-  private $_survey_id=null;
+class Attribute_By_Survey_Controller extends Indicia_Controller {
+  private $_survey = NULL;
+  private $_website_id = NULL;
+  private $_survey_id = NULL;
 
-  public function __construct()
-  {
+  public function __construct() {
     parent::__construct();
     if (!is_numeric($this->uri->last_segment()))
       throw new Exception('Page cannot be accessed without a survey filter');
     if (!isset($_GET['type']))
       throw new Exception('Page cannot be accessed without a type parameter');
-    if ($_GET['type']!='sample' && $_GET['type']!='occurrence' && $_GET['type']!='location')
+    if ($_GET['type'] !== 'sample' && $_GET['type'] !== 'occurrence' && $_GET['type'] !== 'location')
       throw new Exception('Type parameter in URL is invalid');
-    $this->type=$_GET['type'];
+    $this->type = $_GET['type'];
     $this->pagetitle = 'Attributes for a survey';
     $this->get_auth();
     $this->auth_filter = $this->gen_auth_filter;
-    $this->model = ORM::factory($this->type.'_attributes_website');
+    $this->model = ORM::factory($this->type . '_attributes_website');
   }
 
   public function index() {
-    // get the survey id from the segments in the URI
-    $segments=$this->uri->segment_array();
+    // Get the survey id from the segments in the URI.
+    $segments = $this->uri->segment_array();
     $this->_survey_id = $segments[2];
-    $this->pagetitle = 'Attributes for '.$this->getSurvey()->title;
+    $this->pagetitle = 'Attributes for ' . $this->getSurvey()->title;
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $this->page_breadcrumbs[] = $this->pagetitle;
-    $this->template->content=new View('attribute_by_survey/index');
-    $this->template->title=$this->pagetitle;
-    $filter = array('survey_id'=>$this->_survey_id);
-    $top_blocks = ORM::factory('form_structure_block')->
-        where('parent_id',null)->
-        where('type', strtoupper(substr($this->type,0,1)))->
-        where($filter)->
-        orderby('weight', 'ASC')->find_all();
-    $this->template->content->top_blocks=$top_blocks;
+    $this->template->content = new View('attribute_by_survey/index');
+    $this->template->title = $this->pagetitle;
+    $filter = array('survey_id' => $this->_survey_id);
+    $top_blocks = ORM::factory('form_structure_block')
+      ->where('parent_id', NULL)
+      ->where('type', strtoupper(substr($this->type, 0, 1)))
+      ->where($filter)
+      ->orderby('weight', 'ASC')
+      ->find_all();
+    $this->template->content->top_blocks = $top_blocks;
     $this->template->content->filter = $filter;
-    // make a copy of the filter, tweaked for control filtering
-    $controlfilter = array_merge($filter);
-    $controlfilter['restrict_to_survey_id']=$controlfilter['survey_id'];
-    unset($controlfilter['survey_id']);
-    $this->template->content->controlfilter = $controlfilter;
-    // provide a list of publicly available attributes so existing ones can be added
-    $attrs = ORM::factory($this->type.'_attribute')->
-        where(array('public'=>'t','deleted'=>'f'))->
-        orderby('caption')->find_all();
-    $this->template->content->existingAttrs=$attrs;
+    $this->template->content->controlfilter = ['restrict_to_survey_id' => $this->_survey_id];
+    // Provide a list of publicly available attributes so existing ones can be added.
+    $attrs = ORM::factory($this->type . '_attribute')
+      ->where(array('public' => 't', 'deleted' => 'f'))
+      ->orderby('caption')
+      ->find_all();
+    $this->template->content->existingAttrs = $attrs;
   }
 
   public function edit($id) {
-    $segments=$this->uri->segment_array();
-    $m = ORM::factory($_GET['type'].'_attributes_website', $segments[3]);
+    $segments = $this->uri->segment_array();
+    $m = ORM::factory($_GET['type'] . '_attributes_website', $segments[3]);
     $this->_website_id = $m->website_id;
     return parent::edit($id);
   }
 
   /**
    * Handle the layout_update action, which uses $_POST data to find a list of commands
-   * for re-ordering the controls
+   * for re-ordering the controls.
    */
   public function layout_update() {
-    // get the survey id from the segments in the URI
-    $segments=$this->uri->segment_array();
+    // Get the survey id from the segments in the URI.
+    $segments = $this->uri->segment_array();
     $this->_survey_id = $segments[3];
-    $structure = json_decode($_POST['layout_updates'],true);
+    $structure = json_decode($_POST['layout_updates'], TRUE);
     $websiteId = ORM::Factory('survey', $this->_survey_id)->website_id;
-    $this->saveBlockList($structure['blocks'], null, $websiteId);
-    $this->saveControlList($structure['controls'], null, $websiteId);
+    $this->saveBlockList($structure['blocks'], NULL, $websiteId);
+    $this->saveControlList($structure['controls'], NULL, $websiteId);
     $this->session->set_flash('flash_info', "The form layout changes have been saved.");
-    url::redirect('attribute_by_survey/'.$this->_survey_id.'?type='.$this->type);
+    url::redirect("attribute_by_survey/$this->_survey_id?type=$this->type");
   }
 
   private function saveBlockList($list, $blockId, $websiteId) {
     $weight = 0;
     foreach ($list as $block) {
-    $changed = false;
-      if (substr($block['id'], 0, 10)=='new-block-') {
+      $changed = FLSE;
+      if (substr($block['id'], 0, 10) === 'new-block-') {
         $model = ORM::factory('form_structure_block');
         $model->name = $block['name'];
-        $model->survey_id=$this->_survey_id;
-        $model->weight=$weight;
-        $model->type=strtoupper(substr($_GET['type'], 0, 1));
-        $model->parent_id=$blockId;
-        $changed = true;
-      } elseif (substr($block['id'], 0, 6)=='block-') {
-        $id = str_replace('block-','',$block['id']);
+        $model->survey_id = $this->_survey_id;
+        $model->weight = $weight;
+        $model->type = strtoupper(substr($_GET['type'], 0, 1));
+        $model->parent_id = $blockId;
+        $changed = TRUE;
+      }
+      elseif (substr($block['id'], 0, 6) == 'block-') {
+        $id = str_replace('block-', '', $block['id']);
         $model = ORM::factory('form_structure_block', $id);
-        if ($model->weight!=$weight || $model->parent_id!=$blockId || $model->name!=$block['name']) {
-          $model->parent_id=$blockId;
+        if ($model->weight != $weight || $model->parent_id != $blockId || $model->name != $block['name']) {
+          $model->parent_id = $blockId;
           $model->weight = $weight;
           $model->name = $block['name'];
-          $changed = true;
+          $changed = TRUE;
         }
-      } else {
+      }
+      else {
         continue;
       }
       if (isset($block['deleted']) && $block['deleted']) {
-        // deleting, so existing blocks must be removed
-        if (substr($block['id'], 0, 6)=='block-')
-        $model->delete();
-        $id=null;
-      } elseif ($changed) {
+        // Deleting, so existing blocks must be removed.
+        if (substr($block['id'], 0, 6) === 'block-') {
+          $model->delete();
+        }
+        $id = NULL;
+      }
+      elseif ($changed) {
         $model->save();
         $id = $model->id;
       }
-      if (isset($block['blocks']))
-      $this->saveBlockList($block['blocks'], $model->id, $websiteId);
+      if (isset($block['blocks'])) {
+        $this->saveBlockList($block['blocks'], $model->id, $websiteId);
+      }
       $this->saveControlList($block['controls'], $id, $websiteId);
       $weight++;
     }
@@ -144,41 +140,44 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   private function saveControlList($list, $blockId, $websiteId) {
     $weight = 0;
     foreach ($list as $control) {
-      $changed=false;
-      if (substr($control['id'], 0, 8)=='control-') {
-        $ctrlId = str_replace('control-','',$control['id']);
-        $model = ORM::factory($_GET['type'].'_attributes_website', $ctrlId);
-      } elseif (substr($control['id'], 0, 10)=='attribute-') {
-        $attrId = str_replace('attribute-','',$control['id']);
-        // get model for a new record
-        $model = ORM::factory($_GET['type'].'_attributes_website');
-        $attrVar = $this->type.'_attribute_id';
-        // link the model to the existing attribute we have the ID for
+      $changed = FALSE;
+      if (substr($control['id'], 0, 8) === 'control-') {
+        $ctrlId = str_replace('control-', '', $control['id']);
+        $model = ORM::factory($_GET['type'] . '_attributes_website', $ctrlId);
+      }
+      elseif (substr($control['id'], 0, 10) === 'attribute-') {
+        $attrId = str_replace('attribute-', '', $control['id']);
+        // Get model for a new record.
+        $model = ORM::factory($_GET['type'] . '_attributes_website');
+        $attrVar = $this->type . '_attribute_id';
+        // Link the model to the existing attribute we have the ID for.
         $model->$attrVar = $attrId;
         $model->restrict_to_survey_id = $this->_survey_id;
         $model->website_id = $websiteId;
-        $changed = true;
-      } else {
+        $changed = TRUE;
+      }
+      else {
         continue;
       }
-      if ($model->weight!=$weight) {
+      if ($model->weight != $weight) {
         $model->weight = $weight;
-        $changed = true;
+        $changed = TRUE;
       }
-      if ($model->form_structure_block_id!=$blockId) {
-        $model->form_structure_block_id=$blockId;
-        $changed = true;
+      if ($model->form_structure_block_id != $blockId) {
+        $model->form_structure_block_id = $blockId;
+        $changed = TRUE;
       }
       $weight++;
       if (isset($control['deleted']) && $control['deleted']) {
-        // deleting, so existing control must be removed
-        if (substr($control['id'], 0, 8)=='control-')
+        // Deleting, so existing control must be removed.
+        if (substr($control['id'], 0, 8) == 'control-')
         $model->delete();
-        $id=null;
-      } elseif ($changed) {
+        $id = NULL;
+      }
+      elseif ($changed) {
         $model->set_metadata();
         $model->save();
-        if (count($model->getAllErrors())!==0) {
+        if (count($model->getAllErrors()) !== 0) {
           throw new Exception(kohana::debug($model->getAllErrors()));
         }
       }
@@ -191,18 +190,21 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
    */
   protected function get_auth() {
     // If not logged in as a Core admin, restrict access to available websites.
-    if(!$this->auth->logged_in('CoreAdmin')){
+    if (!$this->auth->logged_in('CoreAdmin')) {
       $site_role = (new Site_role_Model('Admin'));
-      $websites=ORM::factory('users_website')->where(
-      array('user_id' => $_SESSION['auth_user']->id,
-            'site_role_id' => $site_role->id))->find_all();
+      $websites = ORM::factory('users_website')
+        ->where(['user_id' => $_SESSION['auth_user']->id, 'site_role_id' => $site_role->id])
+        ->find_all();
       $website_id_values = array();
-      foreach($websites as $website)
+      foreach ($websites as $website) {
         $website_id_values[] = $website->website_id;
-      $website_id_values[] = null;
+      }
+      $website_id_values[] = NULL;
       $this->gen_auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
     }
-    else $this->gen_auth_filter = null;
+    else {
+      $this->gen_auth_filter = NULL;
+    }
   }
 
   /**
@@ -227,7 +229,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
    */
   protected function prepareOtherViewData(array $values) {
     $survey = ORM::Factory('survey', $values[$this->type . '_attributes_website:restrict_to_survey_id']);
-    $attr = ORM::Factory($_GET['type'].'_attribute', $values[$this->type . '_attributes_website:' . $this->type.'_attribute_id']);
+    $attr = ORM::Factory($_GET['type'] . '_attribute', $values[$this->type . '_attributes_website:' . $this->type . '_attribute_id']);
     $controlTypes = $this->db
       ->select('id, control')
       ->from('control_types')
@@ -292,9 +294,22 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
 
   public function save() {
     // Build the validation_rules field from the set of controls that are associated with it.
-    $rules = array();
-    foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past','time','digit','integer') as $rule) {
-      if (array_key_exists('valid_'.$rule, $_POST) && $_POST['valid_'.$rule]==1) {
+    $rules = [];
+    $ruleNames = ([
+      'required',
+      'alpha',
+      'email',
+      'url',
+      'alpha_numeric',
+      'numeric',
+      'standard_text',
+      'date_in_past',
+      'time',
+      'digit',
+      'integer',
+    ]);
+    foreach ($ruleNames as $rule) {
+      if (array_key_exists('valid_' . $rule, $_POST) && $_POST['valid_' . $rule] == 1) {
         array_push($rules, $rule);
       }
     }

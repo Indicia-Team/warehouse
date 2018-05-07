@@ -40,8 +40,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of terms ready for the location types list.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
       'category_terms' => $this->get_termlist_terms('indicia:taxon_designation_categories')
     );
@@ -58,8 +57,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
    * Upload function for a JNCC style designations spreadsheet.
    */
   public function upload_csv() {
-    try
-    {
+    try {
       // We will be using a POST array to send data, and presumably a FILES array for the
       // media.
       // Upload size

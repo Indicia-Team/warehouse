@@ -120,8 +120,7 @@ class Summariser_definition_Controller extends Gridview_Base_Controller {
   	$this->defineEditBreadcrumbs();
   }
 
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
 	$survey = new Survey_Model($values['summariser_definition:survey_id']);
   	$attrsRet = array(''=>'(Each occurrence has count=1)');
 

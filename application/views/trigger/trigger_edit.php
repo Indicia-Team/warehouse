@@ -14,16 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-?><p>This page allows you to specify the details of a trigger, fired when an occurrence is entered which meets certain 
+?><p>This page allows you to specify the details of a trigger, fired when an occurrence is entered which meets certain
 conditions.</p>
-<form class="iform" action="<?php 
+<form class="iform" action="<?php
 echo url::site().'trigger/edit_params';
 if ($this->model->id) echo "/".$this->model->id;
  ?>" method="post">
@@ -63,8 +61,8 @@ echo data_entry_helper::dump_javascript();
 ?>
 </fieldset>
 <fieldset class="button-set">
-<input type="submit" name="submit" value="<?php echo kohana::lang('misc.next'); ?>" class="ui-corner-all ui-state-default button ui-priority-primary" />
-<input type="submit" name="submit" value="<?php echo kohana::lang('misc.cancel'); ?>" class="ui-corner-all ui-state-default button" />
-<input type="submit" name="submit" value="<?php echo kohana::lang('misc.delete'); ?>" onclick="if (!confirm('<?php echo kohana::lang('misc.confirm_delete'); ?>')) {return false;}" class="ui-corner-all ui-state-default button" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.next'); ?>" class="btn btn-primary" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.cancel'); ?>" class="btn btn-default" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.delete'); ?>" onclick="if (!confirm('<?php echo kohana::lang('misc.confirm_delete'); ?>')) {return false;}" class="btn btn-warning" />
 </fieldset>
 </form>

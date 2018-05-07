@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the media files for a taxon
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Taxon_medium_Controller extends Gridview_Base_Controller
 {
@@ -91,10 +86,9 @@ class Taxon_medium_Controller extends Gridview_Base_Controller
   /**
    * Get the list of terms ready for the media types list.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'media_type_terms' => $this->get_termlist_terms('indicia:media_types')
+      'media_type_terms' => $this->get_termlist_terms('indicia:media_types'),
     );
   }
 

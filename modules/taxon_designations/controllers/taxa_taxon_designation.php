@@ -61,16 +61,15 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of designations ready to pick from.
    */
-  protected function prepareOtherViewData(array $values)
-  {
-    $results=$this->db->select('taxon_designations.id, taxon_designations.title')
-        ->from('taxon_designations')
-        ->where(array('deleted'=>'f'))
-        ->orderby (array('taxon_designations.title'=>'ASC'))
-        ->get();
-    $designations=array();
+  protected function prepareOtherViewData(array $values) {
+    $results = $this->db->select('taxon_designations.id, taxon_designations.title')
+      ->from('taxon_designations')
+      ->where(array('deleted' => 'f'))
+      ->orderby(array('taxon_designations.title' => 'ASC'))
+      ->get();
+    $designations = array();
     foreach ($results as $row) {
-      $designations[$row->id]=$row->title;
+      $designations[$row->id] = $row->title;
     }
     // also setup a taxon name
     $this->taxon_name = ORM::Factory('taxon', $values['taxa_taxon_designation:taxon_id'])->caption();

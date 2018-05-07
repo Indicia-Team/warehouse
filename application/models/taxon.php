@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Taxa table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxon_Model extends ORM {
   public $search_field='taxon';
@@ -42,6 +36,7 @@ class Taxon_Model extends ORM {
 
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
+      'attribute',
       'external_key',
       'authority',
       'deleted',
@@ -68,14 +63,14 @@ class Taxon_Model extends ORM {
     );
 
   }
-  
-  /** 
-   * Set default values for a new taxon entry.   
+
+  /**
+   * Set default values for a new taxon entry.
    */
   public function getDefaults() {
     return array(
       'language_id'=>2 // latin
-    );  
+    );
   }
 }
 

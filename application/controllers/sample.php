@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the samples list.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Sample_Controller extends Gridview_Base_Controller
 {
@@ -82,10 +77,9 @@ class Sample_Controller extends Gridview_Base_Controller
   /**
    * Get the list of terms ready for the sample methods list.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'method_terms' => $this->get_termlist_terms('indicia:sample_methods')
+      'method_terms' => $this->get_termlist_terms('indicia:sample_methods'),
     );
   }
 

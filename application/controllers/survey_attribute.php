@@ -14,25 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Controller for survey attributes.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Survey_attribute_Controller extends Attr_Base_Controller {
 
-  public function __construct()
-  {
+  public function __construct() {
     $this->prefix = 'survey';
     parent::__construct();
   }
@@ -41,7 +35,7 @@ class Survey_attribute_Controller extends Attr_Base_Controller {
    * Returns the shared view for all custom attribute edits.
    */
   protected function editViewName() {
-    $this->associationsView=new View('templates/attribute_associations_website');
+    $this->associationsView = new View('templates/attribute_associations_website');
     return 'custom_attribute/custom_attribute_edit';
   }
 
@@ -49,10 +43,9 @@ class Survey_attribute_Controller extends Attr_Base_Controller {
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array_merge(
-      (array)parent::prepareOtherViewData($values),
+      (array) parent::prepareOtherViewData($values),
       array('publicFieldName' => 'Public (available for all survey datasets on this warehouse)')
     );
   }

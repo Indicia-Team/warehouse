@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the termlists_term_attributes table.
- *
- * @package	Core
- * @subpackage Models
  */
 class Termlists_term_attribute_Model extends ATTR_ORM {
 
@@ -36,11 +31,11 @@ class Termlists_term_attribute_Model extends ATTR_ORM {
   );
 
   protected $has_and_belongs_to_many = array('termlists');
-  
+
   /**
-   * After saving, ensures that the join records linking the attribute to a taxon 
+   * After saving, ensures that the join records linking the attribute to a taxon
    * list are created or deleted.
-   * @return boolean Returns true to indicate success.  
+   * @return boolean Returns true to indicate success.
    */
   protected function postSubmit($isInsert) {
     $lists = ORM::factory('termlist')->find_all();
@@ -55,7 +50,7 @@ class Termlists_term_attribute_Model extends ATTR_ORM {
    * Checks the existing data and creates or deletes the join record as and when necessary.
    * @param integer $attr_id Id of the attribute.
    * @param integer $list_id ID of the termlist.
-   * @param boolean $checked True if there should be a link, false if not. 
+   * @param boolean $checked True if there should be a link, false if not.
    */
   private function set_attribute_termlist_record($attr_id, $list_id, $checked)
   {

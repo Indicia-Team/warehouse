@@ -71,7 +71,7 @@ class Identifier_Controller extends Gridview_Base_Controller {
     if (array_key_exists('identifier:id', $_POST)) {
       $websiteId = $r['identifier:website_id'];
       $this->loadAttributes($r, array(
-        'website_id'=>$websiteId,
+        'website_id' => $websiteId,
       ));
     }
     return $r;
@@ -80,13 +80,18 @@ class Identifier_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of terms ready for the type lists.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
       'issue_authority_terms' => $this->get_termlist_terms('indicia:assoc:issue_authority'),
       'issue_scheme_terms' => $this->get_termlist_terms('indicia:assoc:issue_scheme'),
       'identifier_type_terms' => $this->get_termlist_terms('indicia:assoc:identifier_type'),
-      'status_options' => array('M' => 'Manufactured', 'I' => 'Issued', 'A' => 'Attached', 'R' => 'Retired', 'U' => 'Unknown'),
+      'status_options' => array(
+        'M' => 'Manufactured',
+        'I' => 'Issued',
+        'A' => 'Attached',
+        'R' => 'Retired',
+        'U' => 'Unknown',
+      ),
     );
   }
 

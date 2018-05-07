@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the list of websites in agreements.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class User_identifier_Controller extends Gridview_Base_Controller
 {
@@ -152,10 +147,9 @@ class User_identifier_Controller extends Gridview_Base_Controller
   /**
    * Get the list of terms ready for the sample methods list.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'identifier_types' => $this->get_termlist_terms('indicia:user_identifier_types')
+      'identifier_types' => $this->get_termlist_terms('indicia:user_identifier_types'),
     );
   }
 

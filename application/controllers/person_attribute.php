@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the person attributes.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Person_attribute_Controller extends Attr_Base_Controller {
 
@@ -59,10 +54,9 @@ class Person_attribute_Controller extends Attr_Base_Controller {
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array_merge(
-      (array)parent::prepareOtherViewData($values),
+      parent::prepareOtherViewData($values),
       array('publicFieldName' => 'Public (available for all people on this warehouse)')
     );
   }

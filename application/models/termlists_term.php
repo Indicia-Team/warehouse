@@ -14,38 +14,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Models
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Termlists_Terms table.
- *
- * @package Core
- * @subpackage Models
- * @link    http://code.google.com/p/indicia/wiki/DataModel
  */
 class Termlists_term_Model extends Base_Name_Model {
 
-  public $search_field='term';
+  public $search_field = 'term';
 
-  protected $lookup_against='lookup_term';
+  protected $lookup_against = 'lookup_term';
 
   protected $list_id_field = 'termlist_id';
 
-  protected $belongs_to = array(
+  protected $belongs_to = [
     'term', 'termlist', 'meaning',
     'created_by' => 'user',
-    'updated_by' => 'user'
-  );
+    'updated_by' => 'user',
+  ];
 
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
-  protected $has_attributes=TRUE;
-  protected $attrs_submission_name='trmAttributes';
-  public $attrs_field_prefix='trmAttr';
+  protected $has_attributes = TRUE;
+  protected $attrs_submission_name = 'trmAttributes';
+  public $attrs_field_prefix = 'trmAttr';
 
   protected $ORM_Tree_children = 'termlists_terms';
 
@@ -70,15 +64,15 @@ class Termlists_term_Model extends Base_Name_Model {
     $array->add_rules('term_id', 'required');
     $array->add_rules('termlist_id', 'required');
     $array->add_rules('meaning_id', 'required');
+    $array->add_rules('sort_order', 'integer');
     // $array->add_callbacks('deleted', array($this, '__dependents'));
 
-    // Explicitly add those fields for which we don't do validation
+    // Explicitly add those fields for which we don't do validation.
     $this->unvalidatedFields = array(
       'parent_id',
       'preferred',
       'deleted',
-      'sort_order',
-      'source_id'
+      'source_id',
     );
     return parent::validate($array, $save);
   }
@@ -89,7 +83,7 @@ class Termlists_term_Model extends Base_Name_Model {
   public function __dependents(Validation $array, $field) {
     if ($array['deleted'] == 'true') {
       $record = ORM::factory('termlists_term', $array['id']);
-      if (count($record->children)!=0) {
+      if (count($record->children) !== 0) {
         $array->add_error($field, 'has_children');
       }
     }
@@ -100,16 +94,18 @@ class Termlists_term_Model extends Base_Name_Model {
    */
   protected function postSubmit($isInsert) {
     $success = TRUE;
-    if ($this->submission['fields']['preferred']['value']=='t') {
+    if ($this->submission['fields']['preferred']['value'] === 't') {
       try {
         if (isset($this->submission['metaFields']) && array_key_exists('synonyms', $this->submission['metaFields'])) {
-          $arrSyn=$this->parseRelatedNames(
+          $arrSyn = $this->parseRelatedNames(
             $this->submission['metaFields']['synonyms']['value'],
             'set_synonym_sub_array'
           );
         }
-        else $arrSyn=array();
-        $meaning_id=$this->submission['fields']['meaning_id']['value'];
+        else {
+          $arrSyn = array();
+        }
+        $meaning_id = $this->submission['fields']['meaning_id']['value'];
         $existingSyn = $this->getSynonomy('meaning_id', $meaning_id);
 
         // Iterate through existing synonomies, discarding those that have
@@ -118,11 +114,12 @@ class Termlists_term_Model extends Base_Name_Model {
         foreach ($existingSyn as $syn) {
           // Is the term from the db in the list of synonyms?
           if (array_key_exists($syn->term->language->iso, $arrSyn) &&
-              $arrSyn[$syn->term->language->iso] == $syn->term->term)
+              $arrSyn[$syn->term->language->iso] == $syn->term->term) {
             // This one already in db, so can remove from our array
             $arrSyn = array_diff_key($arrSyn, array($syn->term->language->iso => ''));
+          }
           else {
-            // Synonym has been deleted - remove it from the db
+            // Synonym has been deleted - remove it from the db.
             $syn->deleted = 't';
             $syn->save();
           }
@@ -169,9 +166,9 @@ class Termlists_term_Model extends Base_Name_Model {
           }
           $sm->submission = $sub;
           if (!$sm->submit()) {
-            $success=FALSE;
-            foreach ($sm->errors as $key => $value) {
-              $this->errors[$sm->object_name . ':' . $key]=$value;
+            $success = false;
+            foreach($sm->errors as $key => $value) {
+              $this->errors[$sm->object_name . ':' . $key] = $value;
             }
           }
         }

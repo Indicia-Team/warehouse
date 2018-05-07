@@ -27,7 +27,7 @@
  */
 function taxon_designations_extend_ui() {
   return array(array(
-    'view'=>'taxa_taxon_list/taxa_taxon_list_edit', 
+    'view'=>'taxa_taxon_list/taxa_taxon_list_edit',
     'type'=>'tab',
     'controller'=>'taxa_taxon_designation/index',
     'title'=>'Designations'
@@ -38,8 +38,8 @@ function taxon_designations_extend_ui() {
  * Create a menu item for the list of taxon designations.
  */
 function taxon_designations_alter_menu($menu, $auth) {
-  if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin')) 
-    $menu['Admin']['Taxon designations']='taxon_designation';
+  if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin'))
+    $menu['Taxonomy']['Taxon designations'] = 'taxon_designation';
   return $menu;
 }
 
@@ -47,14 +47,16 @@ function taxon_designations_alter_menu($menu, $auth) {
  * Hook to ORM enable the relationship between taxon designations and taxa from the taxon end.
  */
 function taxon_designations_extend_orm() {
-  return array('taxon'=>array(
-    'has_and_belongs_to_many'=>array('taxon_designations')
-  ));
+  return [
+    'taxon' => [
+      'has_and_belongs_to_many' => ['taxon_designations']
+    ],
+  ];
 }
 
 function taxon_designations_extend_data_services() {
   return array(
-    'taxon_designations'=>array('allow_full_access' => 1),
-    'taxa_taxon_designations'=>array()
+    'taxon_designations' => array('allow_full_access' => 1),
+    'taxa_taxon_designations' => [],
   );
 }

@@ -23,7 +23,7 @@
  */
 
 warehouse::loadHelpers(['data_entry_helper']);
-$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+
 $attrModelName = str_replace('s_website', '', $model->object_name);
 $dataType = $model->$attrModelName->data_type;
 switch ($dataType) {
@@ -181,7 +181,7 @@ HTML;
       ]);
     }
     if (in_array('valid_digit', $enable_list)) {
-      echo data_entry_helper::checkbox([
+      echo valid_digit::checkbox([
         'fieldname' => 'valid_digit',
         'label' => 'Digits only',
         'default' => $model->valid_digit,
@@ -301,6 +301,7 @@ HTML;
   <fieldset>
     <legend>Other settings</legend>
     <?php
+    $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
     echo data_entry_helper::outputAttribute(
       array(
         'caption' => 'Default value',
@@ -330,7 +331,7 @@ HTML;
     if ($_GET['type'] === 'location') {
       $terms = array('' => '<Not specified>') + $this->get_termlist_terms('indicia:location_types');
       echo data_entry_helper::select(array(
-        'label' => 'Location type',
+        'label' => 'Location Type',
         'fieldname' => 'location_attributes_website:restrict_to_location_type_id',
         'lookupValues' => $terms,
         'default' => html::initial_value($values, 'location_attributes_website:restrict_to_location_type_id'),
@@ -340,47 +341,15 @@ HTML;
     elseif ($_GET['type'] === 'sample') {
       $terms = array('' => '<Not specified>') + $this->get_termlist_terms('indicia:sample_methods');
       echo data_entry_helper::select(array(
-        'label' => 'Sample method',
+        'label' => 'Sample Method',
         'fieldname' => 'sample_attributes_website:restrict_to_sample_method_id',
         'lookupValues' => $terms,
         'default' => html::initial_value($values, 'sample_attributes_website:restrict_to_sample_method_id'),
         'helpText' => 'If you want this attribute to only apply for samples of a certain method, select the method here.',
       ));
     }
-    if ($_GET['type'] === 'sample' || $_GET['type'] === 'occurrence') {
-      $masterListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
-      if ($masterListId) {
-        echo data_entry_helper::species_autocomplete(array(
-          'label' => 'Restrict to taxon',
-          'fieldname' => "$_GET[type]_attributes_website:restrict_to_taxon_meaning_id",
-          'extraParams' => $readAuth + ['taxon_list_id' => $masterListId],
-          'default' => html::initial_value($values, "$_GET[type]_attributes_website:restrict_to_taxon_meaning_id"),
-          'defaultCaption' => isset($other_data['restrictToTaxonCaption']) ? $other_data['restrictToTaxonCaption'] : '',
-          'valueField' => 'taxon_meaning_id',
-          'helpText' => 'If you want this attribute to only apply for certain branches of the taxonomic hierarchy, choose the taxon here.',
-        ));
-      }
-      else {
-        echo <<<HTML
-<div class="status status-warning">
-Set the cache_builder module's cache_builder_variables.taxon_list_id condiguration to enable linking attributes to taxa.
-</div>
-HTML;
-      }
-      if (!empty($other_data['stageTerms'])) {
-        echo data_entry_helper::select(array(
-          'label' => 'Restrict to sex or life stage',
-          'fieldname' => "$_GET[type]_attributes_website:restrict_to_stage_term_meaning_id",
-          'lookupValues' => $other_data['stageTerms'],
-          'blankText' => '<not restricted>',
-          'default' => html::initial_value($values, "$_GET[type]_attributes_website:restrict_to_stage_term_meaning_id"),
-          'helpText' => 'If you want this attribute to only apply for records for certain life stage or sex terms, select the term here.',
-        ));
-      }
-    }
     echo $metadata;
     echo html::form_buttons(html::initial_value($values, 'custom_attribute:id') !== NULL, FALSE, FALSE);
-    echo data_entry_helper::dump_javascript();
     ?>
   </fieldset>
 </form>

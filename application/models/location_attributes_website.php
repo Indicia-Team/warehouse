@@ -16,13 +16,13 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Location_Attributes_Websites table.
  *
- * @link http://code.google.com/p/indicia/wiki/DataModel
+ * @link http://indicia-docs.readthedocs.io/en/latest/developing/data-model.html
  */
 class Location_Attributes_Website_Model extends Valid_ORM {
 
@@ -50,7 +50,8 @@ class Location_Attributes_Website_Model extends Valid_ORM {
       'default_date_end_value',
       'default_date_type_value',
       'control_type_id',
-      'restrict_to_location_type_id');
+      'restrict_to_location_type_id'
+    );
     return parent::validate($array, $save, array());
   }
 
@@ -116,12 +117,12 @@ class Location_Attributes_Website_Model extends Valid_ORM {
 
         case 'D':
         case 'V':
-        $vagueDate = array(
-          parent::__get('default_date_start_value'),
-          parent::__get('default_date_end_value'),
-          parent::__get('default_date_type_value')
-        );
-        return vague_date::vague_date_to_string($vagueDate);
+          $vagueDate = array(
+            parent::__get('default_date_start_value'),
+            parent::__get('default_date_end_value'),
+            parent::__get('default_date_type_value')
+          );
+          return vague_date::vague_date_to_string($vagueDate);
       }
     }
     else {

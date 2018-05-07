@@ -83,10 +83,9 @@ class Known_subject_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of terms ready for the subject type list.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'subject_type_terms' => $this->get_termlist_terms('indicia:assoc:subject_type')
+      'subject_type_terms' => $this->get_termlist_terms('indicia:assoc:subject_type'),
     );
   }
 

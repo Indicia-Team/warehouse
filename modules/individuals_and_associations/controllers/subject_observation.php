@@ -122,8 +122,7 @@ class Subject_observation_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of terms ready for the subject type list.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
       'subject_type_terms' => $this->get_termlist_terms('indicia:assoc:subject_type'),
       'count_qualifier_terms' => $this->get_termlist_terms('indicia:assoc:count_qualifier'),
@@ -131,7 +130,7 @@ class Subject_observation_Controller extends Gridview_Base_Controller {
     );
   }
 
-  protected function reformatTaxaJoinsForList($values, $singular_table, $id_only=false) {
+  protected function reformatTaxaJoinsForList($values, $singular_table, $id_only = FALSE) {
     // re-format values for joined taxa. These are returned suitable for checkboxes,
     // but we put them in an array suitable for a list type control
     // as array(id = 'value', ... ) or id $id_only is true, array(id1, id2, ...)

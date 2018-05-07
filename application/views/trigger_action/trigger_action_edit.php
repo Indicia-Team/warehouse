@@ -14,15 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-if (isset($_POST))
-  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
+warehouse::loadHelpers(['data_entry_helper']);
 ?>
 <form class="iform" action="<?php echo url::site(); ?>trigger_action/save" method="post">
 <fieldset>
@@ -50,7 +46,7 @@ echo data_entry_helper::textarea(array(
 ));
 ?>
 </fieldset>
-<input type="submit" name="submit" value="<?php echo kohana::lang('misc.save'); ?>" class="ui-corner-all ui-state-default button ui-priority-primary" />
-<input type="submit" name="submit" value="<?php echo kohana::lang('misc.cancel'); ?>" class="ui-corner-all ui-state-default button" />
-<input type="submit" name="submit" value="<?php echo kohana::lang('misc.unsubscribe'); ?>" onclick="if (!confirm('<?php echo kohana::lang('misc.confirm_unsubscribe'); ?>')) {return false;}" class="ui-corner-all ui-state-default button" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.save'); ?>" class="btn btn-primary" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.cancel'); ?>" class="btn btn-warning" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.unsubscribe'); ?>" onclick="if (!confirm('<?php echo kohana::lang('misc.confirm_unsubscribe'); ?>')) {return false;}" class="btn btn-default" />
 </form>

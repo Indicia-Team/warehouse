@@ -16,7 +16,7 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/Indicia-Team/warehouse
+ * @link https://github.com/indicia-team/warehouse
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -25,9 +25,6 @@
  * Controller that implements any scheduled tasks, such as checking triggers against the recent
  * records to look for notifications. This controller does not have a user interface, it is intended
  * to be automated on a schedule.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Scheduled_Tasks_Controller extends Controller {
   private $last_run_date;

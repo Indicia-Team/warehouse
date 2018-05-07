@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Users table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class User_Model extends ORM {
   public $search_field='username';
@@ -79,7 +73,7 @@ class User_Model extends ORM {
       if (!is_numeric($this->submission['fields']['core_role_id']['value']))
         $this->submission['fields']['core_role_id']['value'] = NULL;
 
-    // Set boolean field defaults as not in form submission if not checked. This is not required if the view is 
+    // Set boolean field defaults as not in form submission if not checked. This is not required if the view is
     // switched to the data_entry_helper controls.
     $this->submission['fields']['email_visible']	 = array('value' => (isset($this->submission['fields']['email_visible']) ? 't' : 'f'));
     $this->submission['fields']['view_common_names'] = array('value' => (isset($this->submission['fields']['view_common_names']) ? 't' : 'f'));

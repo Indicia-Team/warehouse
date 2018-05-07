@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @link http://code.google.com/p/indicia/
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller for the trigger page.
- *
- * @package Core
- * @subpackage Controllers
  */
 class Trigger_Controller extends Gridview_Base_Controller {
 
@@ -90,8 +85,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
     return array('triggerFileList' => $files);
   }
 
-  public function record_authorised($id)
-  {
+  public function record_authorised($id) {
     return $this->auth->logged_in('CoreAdmin');
   }
 

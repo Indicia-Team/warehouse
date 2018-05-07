@@ -14,20 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the list of taxon_codes for a taxon meaning.
  * @todo This class has similarities to the Taxon_image_Controller class so might benefit from
  * a shared base class - a base class for entities linked to taxon meanings.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Taxon_code_Controller extends Gridview_Base_Controller {
 
@@ -107,10 +102,13 @@ class Taxon_code_Controller extends Gridview_Base_Controller {
    * Get the list of terms ready for the code types list. We only want child terms as the parent
    * terms are categories such as searchable.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'code_type_terms' => $this->get_termlist_terms('indicia:taxon_code_types', array('parent_id is not'=>null))
+      'code_type_terms' => $this->get_termlist_terms(
+        'indicia:taxon_code_types',
+        array('parent_id is not' => NULL)
+      ),
     );
   }
+
 }

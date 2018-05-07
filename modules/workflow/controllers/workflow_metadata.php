@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Controller class for workflow metadata.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify

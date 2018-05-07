@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Config
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 
@@ -35,12 +33,11 @@
  *  items_per_page - Number of items to display per page
  *  auto_hide      - Automatically hides pagination for single pages
  */
-$config['default'] = array
-(
-  'directory'      => 'pagination',
-  'style'          => 'classic',
-  'uri_segment'    => 3,
-  'query_string'   => '',
+$config['default'] = [
+  'directory' => 'pagination',
+  'style' => 'classic',
+  'uri_segment' => 3,
+  'query_string' => '',
   'items_per_page' => 20,
-  'auto_hide'      => FALSE,
-);
+  'auto_hide' => FALSE,
+];

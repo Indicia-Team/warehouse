@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for user edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,115 +17,121 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
+$id = html::initial_value($values, 'user:id');
 ?>
 <p>This page allows you to specify a users details.</p>
-<form class="cmxform" action="<?php echo url::site().'user/save'; ?>" method="post">
-<?php echo $metadata; ?>
-<input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
-<input type="hidden" name="person_id" id="person_id" value="<?php echo html::specialchars($model->person_id); ?>" />
-<fieldset>
-<legend>User's Details</legend>
-<ol>
-<li>
-<label for="username">Username</label>
-<input id="username" name="username" value="<?php echo html::specialchars($model->username); ?>" />
-<?php echo html::error_message($model->getError('username')); ?>
-</li>
-<li>
-<label for="interests">Interests</label>
-<textarea rows="3" id="interests" name="interests"><?php echo html::specialchars($model->interests); ?></textarea>
-<?php echo html::error_message($model->getError('interests')); ?>
-</li>
-<li>
-<label for="location_name">Location Name</label>
-<textarea rows="2" id="location_name" name="location_name"><?php echo html::specialchars($model->location_name); ?></textarea>
-<?php echo html::error_message($model->getError('location_name')); ?>
-</li>
-<li>
-<label class="wide" for="email_visible">Show Email Address</label>
-<?php echo form::checkbox('email_visible', TRUE, isset($model->email_visible) AND ($model->email_visible == 't') ) ?>
-</li>
-<li>
-<label class="wide" for="view_common_names">Show Common Names</label>
-<?php echo form::checkbox('view_common_names', TRUE, isset($model->view_common_names) AND ($model->view_common_names == 't') ) ?>
-</li>
-<li>
-<label class="wide" for="allow_share_for_reporting">This user allows records to be shared for reporting</label>
-<?php echo form::checkbox('allow_share_for_reporting', TRUE, isset($model->allow_share_for_reporting) AND ($model->allow_share_for_reporting == 't') ) ?>
-</li>
-<li>
-<label class="wide" for="allow_share_for_peer_review">This user allows records to be shared for peer review</label>
-<?php echo form::checkbox('allow_share_for_peer_review', TRUE, isset($model->allow_share_for_peer_review) AND ($model->allow_share_for_peer_review == 't') ) ?>
-</li>
-<li>
-<label class="wide" for="allow_share_for_verification">This user allows records to be shared for verification</label>
-<?php echo form::checkbox('allow_share_for_verification', TRUE, isset($model->allow_share_for_verification) AND ($model->allow_share_for_verification == 't') ) ?>
-</li>
-<li>
-<label class="wide" for="allow_share_for_data_flow">This user allows records to be shared for data flow</label>
-<?php echo form::checkbox('allow_share_for_data_flow', TRUE, isset($model->allow_share_for_data_flow) AND ($model->allow_share_for_data_flow == 't') ) ?>
-</li>
-<li>
-<label class="wide" for="allow_share_for_moderation">This user allows records to be shared for moderation</label>
-<?php echo form::checkbox('allow_share_for_moderation', TRUE, isset($model->allow_share_for_moderation) AND ($model->allow_share_for_moderation == 't') ) ?>
-</li>
-<li>
-<label class="wide" for="allow_share_for_editing">This user allows records to be shared for editing</label>
-<?php echo form::checkbox('allow_share_for_editing', TRUE, isset($model->allow_share_for_editing) AND ($model->allow_share_for_editing == 't') ) ?>
-</li>
-<?php if ($this->auth->logged_in('CoreAdmin')): ?>
-<li>
-<label class="wide" for="core_role_id">Role within Warehouse</label>
-<select class="narrow" id="core_role_id" name="user:core_role_id" >
-  <option>None</option>
-<?php
-  $core_roles = ORM::factory('core_role')->orderby('title','asc')->find_all();
-  foreach ($core_roles as $core_role) {
-    echo '	<option value="'.$core_role->id.'" ';
-    if ($core_role->id==$model->core_role_id) {
-      echo 'selected="selected" ';
-    }
-    echo '>'.$core_role->title.'</option>';
-  }
-?>
-</select>
-<?php echo html::error_message($model->getError('core_role_id')); ?>
-</li>
-<?php
-endif;
-if (isset($password_field) and $password_field != '') { 
-  echo $password_field; 
-  echo html::error_message($model->getError('user:password'));
-} ?>
-</ol>
-</fieldset>
-<fieldset>
-<legend>Website Roles</legend>
-<ol>
-<?php
-  foreach ($model->users_websites as $website) {
-    echo '<li><label class="wide" for="'.$website['name'].'">'.$website['title'].'</label>';
-    echo '  <select class="narrow" id="'.$website['name'].'" name="'.$website['name'].'">';
-    echo '	<option>None</option>';
-    $site_roles = ORM::factory('site_role')->orderby('title','asc')->find_all();
-    foreach ($site_roles as $site_role) {
-      echo '	<option value="'.$site_role->id.'" ';
-      if ($site_role->id==$website['value']) {
-        echo 'selected="selected" ';
+<form id="user-edit" action="<?php echo url::site() . 'user/save'; ?>" method="post">
+  <fieldset>
+    <legend>User's Details<?php echo $metadata; ?></legend>
+    <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
+    <input type="hidden" name="person_id" id="person_id" value="<?php echo html::specialchars($model->person_id); ?>" />
+    <?php
+    echo data_entry_helper::text_input([
+      'label' => 'Username',
+      'fieldname' => 'user:username',
+      'default' => html::initial_value($values, 'user:username'),
+      'validation' => ['required'],
+    ]);
+    echo data_entry_helper::textarea([
+      'label' => 'Interests',
+      'fieldname' => 'user:interests',
+      'default' => html::initial_value($values, 'user:interests'),
+    ]);
+    echo data_entry_helper::textarea([
+      'label' => 'Location name',
+      'fieldname' => 'user:location_name',
+      'default' => html::initial_value($values, 'user:location_name'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Email visible',
+      'fieldname' => 'user:email_visible',
+      'default' => html::initial_value($values, 'user:email_visible'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'View common names',
+      'fieldname' => 'user:view_common_names',
+      'default' => html::initial_value($values, 'user:view_common_names'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'This user allows records to be shared for reporting',
+      'fieldname' => 'user:allow_share_for_reporting',
+      'default' => html::initial_value($values, 'user:allow_share_for_reporting'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'This user allows records to be shared for peer review',
+      'fieldname' => 'user:allow_share_for_peer_review',
+      'default' => html::initial_value($values, 'user:allow_share_for_peer_review'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'This user allows records to be shared for verification',
+      'fieldname' => 'user:allow_share_for_verification',
+      'default' => html::initial_value($values, 'user:allow_share_for_verification'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'This user allows records to be shared for data flow',
+      'fieldname' => 'user:allow_share_for_',
+      'default' => html::initial_value($values, 'user:allow_share_for_data_flow'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'This user allows records to be shared for moderation',
+      'fieldname' => 'user:allow_share_for_moderation',
+      'default' => html::initial_value($values, 'user:allow_share_for_moderation'),
+    ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'This user allows records to be shared for editing',
+      'fieldname' => 'user:allow_share_for_editing',
+      'default' => html::initial_value($values, 'user:allow_share_for_editing'),
+    ]);
+    if ($this->auth->logged_in('CoreAdmin')) {
+      $roles = ORM::factory('core_role')->orderby('title','asc')->find_all();
+      $lookupValues = [];
+      foreach ($roles as $role) {
+        $lookupValues[$role->id] = $role->title;
       }
-      echo '>'.$site_role->title.'</option>';
+      echo data_entry_helper::select([
+        'label' => 'Role within Warehouse',
+        'fieldname' => 'user:core_role_id',
+        'default' => html::initial_value($values, 'user:core_role_id'),
+        'lookupValues' => $lookupValues,
+        'blankText' => '<none>',
+      ]);
     }
-    echo '</select></li>';
-  }
-?>
-</ol>
-</fieldset>
-<?php echo html::form_buttons($model->id!=null); ?>
+
+    if (isset($password_field) and $password_field != '') {
+      echo $password_field;
+      echo html::error_message($model->getError('user:password'));
+    } ?>
+  </fieldset>
+  <fieldset>
+    <legend>Website Roles</legend>
+    <ol>
+      <?php
+      foreach ($model->users_websites as $website) {
+        echo '<li><label class="wide" for="' . $website['name'] . '">' . $website['title'] . '</label>';
+        echo '  <select class="narrow" id="' . $website['name'] . '" name="' . $website['name'] . '">';
+        echo '	<option>None</option>';
+        $site_roles = ORM::factory('site_role')->orderby('title', 'asc')->find_all();
+        foreach ($site_roles as $site_role) {
+          echo '	<option value="' . $site_role->id . '" ';
+          if ($site_role->id == $website['value']) {
+            echo 'selected="selected" ';
+          }
+          echo '>' . $site_role->title . '</option>';
+        }
+        echo '</select></li>';
+      }
+      ?>
+    </ol>
+  </fieldset>
+  <?php
+  echo html::form_buttons($id != NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('user-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>

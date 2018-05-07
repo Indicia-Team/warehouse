@@ -15,16 +15,12 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @author Indicia Team
- * @licensehttp://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Sample_Attributes_Websites table.
- *
- * @package Core
- * @subpackage Models
- * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Sample_attributes_website_Model extends Valid_ORM {
   protected $has_one = array(

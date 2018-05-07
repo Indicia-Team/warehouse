@@ -14,41 +14,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the list of taxon checklists.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Taxon_list_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
     parent::__construct('taxon_list');
     $this->columns = array(
-      'id'=>'',
-      'title'=>'',
-      'description'=>'');
+      'id' => 'ID',
+      'title' => '',
+      'description' => '',
+      'website_title' => 'Owned by website',
+    );
     $this->pagetitle = "Species lists";
     $this->set_website_access('editor');
   }
 
   public function index() {
-    if ($this->uri->total_arguments()>0) {
-      $this->base_filter=array('parent_id' => $this->uri->argument(1));
+    if ($this->uri->total_arguments() > 0) {
+      $this->base_filter = array('parent_id' => $this->uri->argument(1));
     }
     parent::index();
     // pass the parent id into the view, so the create list button can use it to autoset
     // the parent of the new list.
-    if ($this->uri->total_arguments()>0) {
+    if ($this->uri->total_arguments() > 0) {
       $parent_id = $this->uri->argument(1);
-      $this->view->parent_id=$parent_id;
+      $this->view->parent_id = $parent_id;
     }
   }
 
@@ -59,11 +56,11 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    if ($this->uri->method(false)=='create' && array_key_exists('parent_id', $_POST)) {
+    if ($this->uri->method(FALSE) === 'create' && array_key_exists('parent_id', $_POST)) {
       // Parent_id is passed in as POST params for a new record.
       $r['taxon_list:parent_id'] = $_POST['parent_id'];
       $parent = ORM::factory('taxon_list', $_POST['parent_id']);
-      $r['parent_website_id']=$parent->website_id;
+      $r['parent_website_id'] = $parent->website_id;
     }
     return $r;
   }
@@ -71,13 +68,18 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   /**
    * Get a list of the websites that the user is allowed to assign this checklist to.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     $websites = ORM::factory('website');
-    if (!$this->auth->logged_in('CoreAdmin') && $this->auth_filter['field'] === 'website_id')
+    if (!$this->auth->logged_in('CoreAdmin') && $this->auth_filter['field'] === 'website_id') {
       $websites = $websites->in('id', $this->auth_filter['values']);
+    }
+    $list = $websites->where('deleted', 'false')->orderby('title', 'asc')->find_all();
+    $array = [];
+    foreach ($list as $item) {
+      $array[$item->id] = $item->title;
+    }
     return array(
-      'websites' => $websites->where('deleted','false')->orderby('title','asc')->find_all()
+      'websites' => $array,
     );
   }
 

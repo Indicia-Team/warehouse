@@ -48,10 +48,9 @@ class Known_subject_attribute_Controller extends Attr_Base_Controller {
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData(array $values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array_merge(
-      (array)parent::prepareOtherViewData($values),
+      (array) parent::prepareOtherViewData($values),
       array('publicFieldName' => 'Public (available for all known subjects on this warehouse)')
     );
   }

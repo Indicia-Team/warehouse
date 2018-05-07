@@ -14,17 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 echo $grid;
 ?>
 <form action="<?php echo url::site().'website_agreement/create'; ?>">
 <?php if ($this->auth->logged_in('CoreAdmin')): ?>
-<input type="submit" value="New website agreement" class="ui-corner-all ui-state-default button" />
+<input type="submit" value="New website agreement" class="btn btn-primary" />
 <?php endif; ?>
 </form>

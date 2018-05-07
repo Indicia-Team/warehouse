@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the user_trusts table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class User_Trust_Model extends ORM {
   protected $belongs_to = array(
@@ -34,7 +28,7 @@ class User_Trust_Model extends ORM {
     'created_by'=>'user',
     'updated_by'=>'user'
   );
-  
+
   public $search_field='trust';
 
   public function validate(Validation $array, $save = FALSE) {
@@ -42,7 +36,7 @@ class User_Trust_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('user_id', 'required');
     $values = $array->as_array();
-          
+
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
       'survey_id',
@@ -51,5 +45,5 @@ class User_Trust_Model extends ORM {
       'deleted',
     );
     return parent::validate($array, $save);
-  } 
+  }
 }
