@@ -24,36 +24,57 @@
  */
 class Termlists_term_attribute_Controller extends Attr_Base_Controller {
 
-  public function __construct()
-  {
+  public function __construct() {
     $this->prefix = 'termlists_term';
     parent::__construct();
     $this->pagetitle = "Term attributes";
-    // override the default columns for custom attributes, as termlists_term attributes are attached to termlists.
-    $this->columns = array
-    (
-      'id'=>'',
-      'termlist'=>'Term list',
-      'caption'=>'',
-      'data_type'=>'Data type'
+    // Override the default columns for custom attributes, as termlists_term
+    // attributes are attached to termlists.
+    $this->columns = array(
+      'id' => '',
+      'termlist' => 'Term list',
+      'caption' => '',
+      'data_type' => 'Data type',
     );
   }
 
   /**
-   * Returns the view specific to termlists_term attribute edits.
+   * Returns the view specific to taxon attribute edits.
    */
   protected function editViewName() {
-    return 'termlists_term_attribute/termlists_term_attribute_edit';
+    $this->associationsView = new View('templates/attribute_associations_termlist');
+    return 'custom_attribute/custom_attribute_edit';
   }
 
   /**
-   * Returns some addition information required by the edit view, which is not associated with
-   * a particular record.
+   * Returns some addition information required by the edit view, which is not
+   * associated with a particular record.
    */
   protected function prepareOtherViewData(array $values) {
-    return array(
-      'name' => ucfirst($this->prefix),
-      'controllerpath' => $this->controllerpath,
+    $baseData = parent::prepareOtherViewData($values);
+    $qry = $this->db
+      ->select([
+        'tl.id',
+        'tl.title',
+        'tla.id as termlists_termlists_term_attributes_id',
+      ])
+      ->from('termlists as tl')
+      ->join('termlists_termlists_term_attributes as tla', [
+        'tla.termlist_id' => 'tl.id',
+        'tla.deleted' => FALSE,
+      ], NULL, 'LEFT')
+      ->where('tl.deleted', 'f');
+    if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
+      $qry->in('tl.website_id', $this->auth_filter['values']);
+    }
+    $termLists = $qry
+      ->orderby(['tl.title' => 'ASC'])
+      ->get()->result_array(TRUE);
+    return array_merge(
+      $baseData,
+      [
+        'termLists' => $termLists,
+      ]
     );
   }
 
