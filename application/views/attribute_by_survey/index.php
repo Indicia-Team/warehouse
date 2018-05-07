@@ -72,17 +72,17 @@ PNLTOP;
       <a href="" class="block-rename pull-right btn btn-default btn-xs">Rename</a>
     </div>
 PNLCHILD;
-    get_controls($child_block->id, $controlfilter);
+    get_controls($child_block->id, $controlfilter, $this->db);
     echo "</li>\n";
   }
   echo '<li class="block-drop"></li>';
   echo "</ul>";
-  get_controls($block->id, $controlfilter);
+  get_controls($block->id, $controlfilter, $this->db);
   echo "</li>";
 }
 ?><li class="block-drop"></li></ul>
 <?php
-get_controls(NULL, $controlfilter);
+get_controls(NULL, $controlfilter, $this->db);
 
 /**
  * Echos the list of controls inside a block level.
@@ -91,39 +91,99 @@ get_controls(NULL, $controlfilter);
  *   ID of the block, or NULL for top level.
  * @param array
  *   Filter to apply, e.g. to the correct survey.
+ * @param db
+ *   Database object.
  */
-function get_controls($block_id, array $controlfilter) {
+function get_controls($block_id, array $controlfilter, $db) {
+  global $indicia_templates;
+  $masterTaxonListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
   $id = "controls";
   if ($block_id) {
     $id .= '-for-block-' . $block_id;
   }
   echo "<ul id=\"$id\" class=\"control-list\">\n";
-  $child_controls = ORM::factory($_GET['type'] . '_attributes_website')
-    ->where('form_structure_block_id', $block_id)
+  $attr = $_GET['type'] . '_attribute';
+  $attrIdField = $attr . '_id';
+  $query = $db
+    ->select("aw.id, aw.$attrIdField, a.caption, aw.validation_rules as aw_validation_rules, a.validation_rules")
+    ->from("$_GET[type]_attributes_websites as aw")
+    ->join("$_GET[type]_attributes as a", 'a.id', "aw.$_GET[type]_attribute_id")
     ->where($controlfilter)
-    ->where('deleted', 'f')
-    ->orderby('weight', 'ASC')->find_all();
-  foreach ($child_controls as $control) {
+    ->where([
+      'form_structure_block_id' => $block_id,
+      'a.deleted' => 'f',
+      'aw.deleted' => 'f',
+    ])
+    ->orderby('weight', 'ASC');
+  if ($_GET['type'] === 'sample' || $_GET['type'] === 'occurrence') {
+    if ($masterTaxonListId) {
+      $db
+        ->select('t.taxon as restrict_to_taxon, t.authority as restrict_to_taxon_authority')
+        ->join('cache_taxa_taxon_lists as t', [
+          't.taxon_meaning_id' => 'aw.restrict_to_taxon_meaning_id',
+          't.preferred' => TRUE,
+          't.taxon_list_id' => $masterTaxonListId,
+        ], NULL, 'LEFT');
+    }
+    $db
+      ->select('stage.term as restrict_to_stage')
+      ->join('cache_termlists_terms as stage', [
+        'stage.meaning_id' => 'aw.restrict_to_stage_term_meaning_id',
+        'stage.preferred' => TRUE,
+      ], NULL, 'LEFT');
+    if ($_GET['type'] === 'sample') {
+      $db
+        ->select('method.term as restrict_to_sample_method')
+        ->join('cache_termlists_terms as method', [
+          'method.id' => 'aw.restrict_to_sample_method_id',
+        ], NULL, 'LEFT');
+    }
+  }
+  if ($_GET['type'] === 'location') {
+    $db
+      ->select('type.term as restrict_to_location_type')
+      ->join('cache_termlists_terms as type', [
+        'type.id' => 'aw.restrict_to_location_type_id',
+      ], NULL, 'LEFT');
+  }
+  $childControls = $query->get();
+  foreach ($childControls as $control) {
     echo '<li class="control-drop"></li>';
     // Prepare some dynamic property names.
-    $attr = $_GET['type'] . '_attribute';
-    $attrIdField = $attr . '_id';
     $attrId = $control->$attrIdField;
-    $caption = $control->$attr->caption;
+    $caption = $control->caption;
     $siteUrl = url::site();
+    $restrictionList = [];
+    if (!empty($control->restrict_to_taxon)) {
+      $restrictionList[] = $control->restrict_to_taxon .
+        (empty($control->restrict_to_taxon_authority) ? '' : " $control->restrict_to_taxon_authority");
+    }
+    if (!empty($control->restrict_to_stage)) {
+      $restrictionList[] = $control->restrict_to_stage;
+    }
+    if (!empty($control->restrict_to_sample_method)) {
+      $restrictionList[] = $control->restrict_to_sample_method;
+    }
+    if (!empty($control->restrict_to_location_type)) {
+      $restrictionList[] = $control->restrict_to_location_type;
+    }
+    $restrictions = empty($restrictionList) ? '' : ', restricted to ' . implode(', ', $restrictionList);
+    $required = strpos($control->aw_validation_rules, 'required') === FALSE
+      && strpos($control->validation_rules, 'required') === FALSE ? '' : " $indicia_templates[requiredsuffix]";
     echo <<<HTML
 <li id="control-$control->id" class="$attrId draggable-control panel panel-primary clearfix">
-  <span class="handle\">&nbsp;</span>
-  <span class="caption"> $caption (ID {$attrId})</span>
+  <span class="handle">&nbsp;</span>
+  <span class="caption"> $caption (ID {$attrId}{$restrictions})</span>
   <a class="control-delete pull-right btn btn-warning btn-xs">Delete</a>
   <a href="{$siteUrl}attribute_by_survey/edit/$control->id?type=$_GET[type]" class="pull-right btn btn-default btn-xs">Survey settings</a>
   <a href="$siteUrl$_GET[type]_attribute/edit/{$control->$attrIdField}" class="pull-right btn btn-default btn-xs">Global settings</a>
+  $required
 </li>
 HTML;
   }
   // Extra item to allow drop at end of list.
   echo '<li class="control-drop"></li>';
-  echo "</ul>";
+  echo '</ul>Attributes marked ' . $indicia_templates['requiredsuffix'] . ' are required';
 }
 
   ?>
@@ -162,4 +222,5 @@ $attrsData = [];
 foreach ($existingAttrs as $attr) {
   $attrs["id$attr->id"] = $attr->caption;
 }
-data_entry_helper::$javascript .= "indiciaData.existingAttrs = " . json_encode($existingAttrs) . ";\n";
+data_entry_helper::$javascript .= "indiciaData.existingAttrs = " . json_encode($attrs) . ";\n";
+echo data_entry_helper::dump_javascript();
