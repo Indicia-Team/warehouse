@@ -36,7 +36,7 @@ $id = html::initial_value($values, 'title:id');
       'label' => 'Title',
       'fieldname' => 'title:title',
       'default' => html::initial_value($values, 'title:title'),
-      'validation' => ['required']
+      'validation' => ['required'],
     ]);
     ?>
   </fieldset>

@@ -44,9 +44,9 @@ $id = html::initial_value($values, 'website_agreement:id');
     ]);
     echo data_entry_helper::select([
       'label' => 'Providing data for reporting',
-      'helpText' => 'Select the requirements of participants with respect to providing data for reporting. When data is provided '.
-        'by a website, other websites participating in the same agreement will be able to report on this data if they select to receive '.
-        'data for reporting.',
+      'helpText' => 'Select the requirements of participants with respect to providing data for reporting. When data ' .
+        'are provided by a website, other websites participating in the same agreement will be able to report on ' .
+        'these data if they select to receive data for reporting.',
       'fieldname' => 'website_agreement:provide_for_reporting',
       'default' => html::initial_value($values, 'website_agreement:provide_for_reporting'),
       'lookupValues' => [
@@ -58,9 +58,9 @@ $id = html::initial_value($values, 'website_agreement:id');
     ]);
     echo data_entry_helper::select([
       'label' => 'Receive data for reporting',
-      'helpText' => 'Select the requirements of participants with respect to receiving data for reporting. When a website selects '.
-        'to receive data for reporting, reports run on the website can include data from other websites participating in the same '.
-        'agreement if they elect to provide data for reporting.',
+      'helpText' => 'Select the requirements of participants with respect to receiving data for reporting. When a ' .
+        'website selects to receive data for reporting, reports run on the website can include data from other ' .
+        'websites participating in the same agreement if they elect to provide data for reporting.',
       'fieldname' => 'website_agreement:receive_for_reporting',
       'default' => html::initial_value($values, 'website_agreement:receive_for_reporting'),
       'lookupValues' => [
@@ -72,9 +72,9 @@ $id = html::initial_value($values, 'website_agreement:id');
     ]);
     echo data_entry_helper::select([
       'label' => 'Providing data for peer review',
-      'helpText' => 'Select the requirements of participants with respect to providing data for peer review. When data is provided '.
-        'by a website, other websites participating in the same agreement will be able to review this data if they select to receive '.
-        'data for peer review.',
+      'helpText' => 'Select the requirements of participants with respect to providing data for peer review. When ' .
+        'data are provided  by a website, other websites participating in the same agreement will be able to review ' .
+        'these data if they select to receive data for peer review.',
       'fieldname' => 'website_agreement:provide_for_peer_review',
       'default' => html::initial_value($values, 'website_agreement:provide_for_peer_review'),
       'lookupValues' => [
@@ -87,9 +87,9 @@ $id = html::initial_value($values, 'website_agreement:id');
     echo data_entry_helper::select([
       'label' => 'Receive data for peer review',
       'helpText' => 'Select the requirements of participants with respect to receiving data for peer review. When a ' .
-        'website selects  to receive data for peer review, review processes such as record reviewing and commenting run ' .
-        'on the website can include data from other websites participating in the same agreement if they elect to ' .
-        'provide data for peer review.',
+        'website selects  to receive data for peer review, review processes such as record reviewing and commenting ' .
+        'run on the website can include data from other websites participating in the same agreement if they elect ' .
+        'to provide data for peer review.',
       'fieldname' => 'website_agreement:receive_for_peer_review',
       'default' => html::initial_value($values, 'website_agreement:receive_for_peer_review'),
       'lookupValues' => [
@@ -101,9 +101,9 @@ $id = html::initial_value($values, 'website_agreement:id');
     ]);
     echo data_entry_helper::select([
       'label' => 'Providing data for verification',
-      'helpText' => 'Select the requirements of participants with respect to providing data for verification. When data ' .
-        'is provided by a website, other websites participating in the same agreement will be able to verify this data ' .
-        'if they select to receive data for verification.',
+      'helpText' => 'Select the requirements of participants with respect to providing data for verification. When ' .
+        'data are provided by a website, other websites participating in the same agreement will be able to verify ' .
+        'these data if they select to receive data for verification.',
       'fieldname' => 'website_agreement:provide_for_verification',
       'default' => html::initial_value($values, 'website_agreement:provide_for_verification'),
       'lookupValues' => [
@@ -129,9 +129,9 @@ $id = html::initial_value($values, 'website_agreement:id');
     ]);
     echo data_entry_helper::select([
       'label' => 'Providing data for data flow',
-      'helpText' => 'Select the requirements of participants with respect to providing data for data flow. When data is ' .
-        'provided by a website, other websites participating in the same agreement will be able to pass this data on ' .
-        '(for example to a national informaiton portal) if they select to receive data for data flow.',
+      'helpText' => 'Select the requirements of participants with respect to providing data for data flow. When ' .
+        'data are provided by a website, other websites participating in the same agreement will be able to pass this ' .
+        'data on (for example to a national informaiton portal) if they select to receive data for data flow.',
       'fieldname' => 'website_agreement:provide_for_data_flow',
       'default' => html::initial_value($values, 'website_agreement:provide_for_data_flow'),
       'lookupValues' => [
@@ -158,9 +158,9 @@ $id = html::initial_value($values, 'website_agreement:id');
     ]);
     echo data_entry_helper::select([
       'label' => 'Providing data for moderation',
-      'helpText' => 'Select the requirements of participants with respect to providing data for moderation. When data is ' .
-        'provided by a website, other websites participating in the same agreement will be able to moderate this data, ' .
-        'e.g. to check images before publication, if they select to receive data for moderation.',
+      'helpText' => 'Select the requirements of participants with respect to providing data for moderation. When ' .
+        'data are provided by a website, other websites participating in the same agreement will be able to moderate ' .
+        'these data, e.g. to check images before publication, if they select to receive data for moderation.',
       'fieldname' => 'website_agreement:provide_for_moderation',
       'default' => html::initial_value($values, 'website_agreement:provide_for_moderation'),
       'lookupValues' => [
@@ -187,9 +187,9 @@ $id = html::initial_value($values, 'website_agreement:id');
     ]);
     echo data_entry_helper::select([
       'label' => 'Providing data for editing',
-      'helpText' => 'Select the requirements of participants with respect to providing data for editing. When data is ' .
-        'provided by a website, other websites participating in the same agreement will be able to edit this data, e.g. to check ' .
-        'images before publication, if they select to receive data for editing.',
+      'helpText' => 'Select the requirements of participants with respect to providing data for editing. When data ' .
+        'are provided by a website, other websites participating in the same agreement will be able to edit this ' .
+        'data, e.g. to check images before publication, if they select to receive data for editing.',
       'fieldname' => 'website_agreement:provide_for_editing',
       'default' => html::initial_value($values, 'website_agreement:provide_for_editing'),
       'lookupValues' => [
@@ -201,9 +201,10 @@ $id = html::initial_value($values, 'website_agreement:id');
     ]);
     echo data_entry_helper::select([
       'label' => 'Receive data for editing',
-      'helpText' => 'Select the requirements of participants with respect to receiving data for editing. When a website ' .
-        'selects to receive data for modeartion, they can perform editing tasks such as checking images before ' .
-        'publication from other websites participating in the same agreement if they elect to provide data for editing.',
+      'helpText' => 'Select the requirements of participants with respect to receiving data for editing. When a ' .
+        'website selects to receive data for modeartion, they can perform editing tasks such as checking images ' .
+        'before publication from other websites participating in the same agreement if they elect to provide data ' .
+        'for editing.',
       'fieldname' => 'website_agreement:receive_for_editing',
       'default' => html::initial_value($values, 'website_agreement:receive_for_editing'),
       'lookupValues' => [

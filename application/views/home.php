@@ -87,5 +87,5 @@ echo report_helper::report_grid([
     'user_id' => $_SESSION['auth_user']->id,
     'source_types' => '',
     'system_name' => 'Indicia',
-  ]
+  ],
 ]);

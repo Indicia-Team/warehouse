@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the list of indexes.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -18,8 +21,9 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
+
 echo $grid;
 ?>
-<form action="<?php echo url::site().'trigger/create'; ?>">
-<input type="submit" value="New trigger" class="btn btn-primary" />
+<form action="<?php echo url::site() . 'trigger/create'; ?>">
+  <input type="submit" value="New trigger" class="btn btn-primary" />
 </form>

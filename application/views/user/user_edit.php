@@ -89,7 +89,7 @@ $id = html::initial_value($values, 'user:id');
       'default' => html::initial_value($values, 'user:allow_share_for_editing'),
     ]);
     if ($this->auth->logged_in('CoreAdmin')) {
-      $roles = ORM::factory('core_role')->orderby('title','asc')->find_all();
+      $roles = ORM::factory('core_role')->orderby('title', 'asc')->find_all();
       $lookupValues = [];
       foreach ($roles as $role) {
         $lookupValues[$role->id] = $role->title;

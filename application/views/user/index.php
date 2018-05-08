@@ -21,7 +21,6 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link https://github.com/indicia-team/warehouse
  */
-
 ?>
 <div class="alert alert-info alert-dismissable">
   <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>

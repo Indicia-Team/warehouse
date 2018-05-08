@@ -72,9 +72,9 @@ Warehouse instance.</p>
 
     ?>
   </fieldset>
-<?php
-echo html::form_buttons(html::initial_value($values, 'website:id') != NULL);
-data_entry_helper::enable_validation('website-edit');
-echo data_entry_helper::dump_javascript();
-?>
+  <?php
+  echo html::form_buttons(html::initial_value($values, 'website:id') != NULL);
+  data_entry_helper::enable_validation('website-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>
