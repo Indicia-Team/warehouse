@@ -17,10 +17,10 @@
  * @subpackage Channel Islands Grid References
  * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
 
-/** 
+/**
  * Conversion class for channel island grid references.
   * @package Modules
  * @subpackage Channel Island Grid References

@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -88,5 +88,5 @@ class Occurrence_association_Model extends ORM {
     'from_occurrence_id',
     'to_occurrence_id'
   );
-  
+
 }

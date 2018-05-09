@@ -17,16 +17,16 @@
  * @subpackage Plugins
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
- * Adds a tab for the taxon groups that are associated with a taxon list. 
+ * Adds a tab for the taxon groups that are associated with a taxon list.
  * @return array List of user interface extensions.
  */
 function taxon_groups_taxon_lists_extend_ui() {
   return array(array(
-    'view'=>'taxon_list/taxon_list_edit', 
+    'view'=>'taxon_list/taxon_list_edit',
     'type'=>'tab',
     'controller'=>'taxon_groups_taxon_list/index',
     'title'=>'Taxon Groups'

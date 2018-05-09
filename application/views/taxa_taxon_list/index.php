@@ -109,7 +109,7 @@ HTML;
 <?php endif; ?>
 <?php echo $grid; ?>
 <br/>
-<form action="<?php echo url::site() . "taxa_taxon_list/create/.$taxon_list_id"; ?>" method="post">
+<form action="<?php echo url::site() . "taxa_taxon_list/create/$taxon_list_id"; ?>" method="post">
   <?php if (isset($parent_id)) : ?>
     <input type="hidden" value="<?php echo $parent_id; ?>" name="taxa_taxon_list:parent_id"/>
   <?php endif; ?>

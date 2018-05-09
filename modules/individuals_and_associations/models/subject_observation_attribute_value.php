@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author  Indicia Team
  * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @link   https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -30,11 +30,11 @@
  */
 class Subject_observation_attribute_value_Model extends Attribute_Value_ORM {
   public $search_field='text_value';
-  
+
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'subject_observation', 'subject_observation_attribute');
 
   public function validate(Validation $array, $save = FALSE) {
-    self::attribute_validation($array, 'subject_observation');    
+    self::attribute_validation($array, 'subject_observation');
     return parent::validate($array, $save);
   }
 }

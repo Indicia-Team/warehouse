@@ -18,10 +18,10 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
- 
- 
+
+
 echo $grid;
 ?>
 <form action="<?php echo url::site().'taxon_designation/create'; ?>">
@@ -33,7 +33,7 @@ echo $grid;
 <label for="csv_upload" class="auto">Upload a Designations Spreadsheet (CSV) file into this list:</label>
 <input type="file" name="csv_upload" id="csv_upload" size="40" />
 <input type="submit" value="Upload Designations File" />
-<p>This lets you import designations including links for any existing taxon, identified by the external key. 
+<p>This lets you import designations including links for any existing taxon, identified by the external key.
   To use this facility, create a spreadsheet with the following columns, or columns matching the JNCC Conservation Designations spreadsheet:</p>
 <ol>
   <li>designation title</li>

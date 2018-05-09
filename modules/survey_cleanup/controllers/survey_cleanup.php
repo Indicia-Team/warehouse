@@ -17,7 +17,7 @@
  * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -35,7 +35,7 @@ class Survey_cleanup_Controller extends Indicia_Controller {
       $this->view->survey = ORM::Factory('survey', $this->uri->argument(1));
     }
   }
-  
+
   public function cleanup() {
     $this->auto_render=false;
     if (empty($_POST['survey_id']) || empty($_POST['mode'])) {
@@ -83,7 +83,7 @@ class Survey_cleanup_Controller extends Indicia_Controller {
         'join occlist o on o.sample_id=s.id ' .
         'left join occurrences occ on occ.sample_id=s.id '.
         'where occ.id is null');
-    // first any child samples    
+    // first any child samples
     $this->database->query('delete from sample_attribute_values where sample_id in (select id from smplist)');
     $this->database->query('delete from sample_comments where sample_id in (select id from smplist)');
     $this->database->query('delete from sample_images where sample_id in (select id from smplist)');
@@ -107,5 +107,5 @@ class Survey_cleanup_Controller extends Indicia_Controller {
     $this->database->query('drop table parentlist');
     echo "$count occurrences deleted";
   }
-  
+
 }

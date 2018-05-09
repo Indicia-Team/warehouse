@@ -17,7 +17,7 @@
  * @subpackage Config
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 $config['register_for_notification_emails_source_types']=array('T','C','V','A','S','VT','M');
 // Name to appear in the "From" field for the notifications

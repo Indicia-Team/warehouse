@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -31,7 +31,7 @@
 class Known_subject_Model extends ORM_Tree
 {
   protected $ORM_Tree_children = 'known_subjects';
-  
+
   public $search_field='description';
 
   protected $belongs_to = array(
@@ -48,12 +48,12 @@ class Known_subject_Model extends ORM_Tree
     'known_subjects_taxa_taxon_lists',
     'known_subject_attribute_values',
   );
-    
+
   protected $has_and_belongs_to_many = array(
     'taxa_taxon_lists',
     'known_subject_attributes',
   );
-    
+
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   // A public attribute does NOT need to be linked to a website to form part of the submissable data for a known_subject (unlike, say,
@@ -61,7 +61,7 @@ class Known_subject_Model extends ORM_Tree
   public $include_public_attributes = true;
   protected $attrs_submission_name='ksjAttributes';
   protected $attrs_field_prefix='ksjAttr';
-  
+
   public function validate(Validation $array, $save = false) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
@@ -69,7 +69,7 @@ class Known_subject_Model extends ORM_Tree
     $array->add_rules('website_id', 'required', 'digit');
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
-      'parent_id', 
+      'parent_id',
       'description',
       'deleted',
     );
@@ -96,7 +96,7 @@ class Known_subject_Model extends ORM_Tree
   * After submission ensure the identifiers are hooked up properly.
   */
   protected function postSubmit($isInsert)
-  { 
+  {
     $id = $this->submission['fields']['id']['value'];
     // Get the list of identifiers that should point to this known subject
     $keys=array();
@@ -115,15 +115,15 @@ class Known_subject_Model extends ORM_Tree
       $this->db->from('identifiers')
         ->set(array('known_subject_id'=>$id))
         ->in('id', $keys)
-        ->update();    
+        ->update();
     }
     return parent::postSubmit($isInsert);
   }
-  
+
   /**
    * Return the submission structure, which includes defining the taxa_taxon_lists table
    * is a sub-model.
-   * 
+   *
    * @return array Submission structure for a known_subject entry.
    */
   public function get_submission_structure() {
@@ -131,21 +131,21 @@ class Known_subject_Model extends ORM_Tree
     $r['joinsTo'] = array('taxa_taxon_lists');
     $r['metaFields']=array('identifiers');
     return $r;
-  } 
+  }
 
-  /** 
+  /**
    * Gets the list of custom attributes for this model.
-   * @param boolean $required Optional. Set to true to only return required attributes (requires 
+   * @param boolean $required Optional. Set to true to only return required attributes (requires
    * the website and survey identifier to be set).
    * @param int @typeFilter Specify a location type meaning id or a sample method meaning id to
    * filter the returned attributes to those which apply to the given type or method.
-   * @param boolean @hasSurveyRestriction true if this objects attributes can be restricted to 
+   * @param boolean @hasSurveyRestriction true if this objects attributes can be restricted to
    * survey scope.
    */
   protected function getAttributes($required = false, $typeFilter = null, $hasSurveyRestriction = true) {
     return parent::getAttributes($required, $typeFilter, false);
   }
-  
-  
-  
+
+
+
 }

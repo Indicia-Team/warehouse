@@ -17,10 +17,10 @@
  * @subpackage MTBQQQ Grid References
  * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
 
-/** 
+/**
  * Conversion class for MTBQQQ (German grid system) grid references.
  * @package Modules
  * @subpackage MTBQQQ Grid References
@@ -60,9 +60,9 @@ class mtbqqq extends mtb {
     // Loop through the quadrant digits.
     for ($i=5; $i<strlen($sref); $i++) {
       $q = substr($sref, $i, 1);
-      if ($q > 2) 
+      if ($q > 2)
         $northEdge = $northEdge - (SIXMINUTES / pow(2, $i-4)); // divide by 2, 4 or 8
-      if ($q == 2 || $q == 4) 
+      if ($q == 2 || $q == 4)
         $westEdge = $westEdge + (TENMINUTES / pow(2, $i-4)); // divide by 2, 4 or 8
     }
     // we now have the top left of a grid square. Need to know all the edges. Work out the amount we must
@@ -92,7 +92,7 @@ class mtbqqq extends mtb {
     }
     else
       throw new Exception('wkt_to_sref translation only works for POINT or POLYGON wkt.');
-    
+
     $points = explode(',',$points);
     $point = explode(' ',$points[0]);
     $easting = $point[0];
@@ -114,7 +114,7 @@ class mtbqqq extends mtb {
       $q1 = 3;
     if (in_array($y8th, array(3, 4, 7, 8)))
       $q2 = 3;
-    if (in_array($y8th, array(2, 4, 6, 8))) 
+    if (in_array($y8th, array(2, 4, 6, 8)))
       $q3 = 3;
     // Work out each additional shift according to x8th
     if (in_array($x8th, array(5, 6, 7, 8)))
@@ -141,7 +141,7 @@ class mtbqqq extends mtb {
         }
       }
       return substr($ref, 0, $len);
-      
+
     }
   }
 

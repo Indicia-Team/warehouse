@@ -17,7 +17,7 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
@@ -25,15 +25,15 @@ if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <form class="iform" action="<?php echo url::site(); ?>known_subject/save" method="post">
-<?php  
-echo $metadata; 
+<?php
+echo $metadata;
 if (isset($values['known_subject:id'])) : ?>
   <input type="hidden" name="known_subject:id" value="<?php echo html::initial_value($values, 'known_subject:id'); ?>" />
 <?php endif; ?>
 <input type="hidden" name="website_id" value="<?php echo html::initial_value($values, 'website_id'); ?>" />
 <fieldset>
 <legend>Known subject details</legend>
-<?php 
+<?php
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 
 echo data_entry_helper::sub_list(array(
@@ -127,12 +127,12 @@ echo data_entry_helper::textarea(array(
         'default' => $attr['value']
       ));
   endswitch;
-	
+
 endforeach;
  ?>
 </ol>
 </fieldset>
-<?php 
+<?php
 endif;
 echo html::form_buttons(html::initial_value($values, 'known_subject:id')!=null, false, false);
 data_entry_helper::$dumped_resources[] = 'jquery';

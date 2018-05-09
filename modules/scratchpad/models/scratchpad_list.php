@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -34,7 +34,7 @@ class Scratchpad_list_Model extends ORM {
       'website',
       'created_by'=>'user'
   );
-      
+
   protected $has_many = array('scratchpad_list_entries');
 
   public function validate(Validation $array, $save = FALSE) {
