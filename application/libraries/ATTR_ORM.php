@@ -71,6 +71,10 @@ abstract class ATTR_ORM extends Valid_ORM {
       }
     }
     $array->add_rules('system_function', 'length[1,30]');
+    if (!empty($array->multi_value) && !empty($array->allow_ranges) &&
+        $array->multi_value === '1' && $array->allow_ranges === '1') {
+      $array->add_error("$this->object_name:allow_ranges", 'notmultiple');
+    }
     $parent_valid = parent::validate($array, $save);
     // Clean up cached required fields in case validation rules have changed.
     $cache = Cache::instance();
@@ -83,6 +87,7 @@ abstract class ATTR_ORM extends Valid_ORM {
       $type = substr($this->object_name, 0, strlen($this->object_name) - 10);
       $cache->delete("attrInfo_{$type}_$this->id");
     }
+
     return $save && $parent_valid;
   }
 
