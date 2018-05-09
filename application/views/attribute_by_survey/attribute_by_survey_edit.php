@@ -122,7 +122,7 @@ switch ($dataType) {
   action="<?php echo url::site() . "attribute_by_survey/save/1?type=" . $_GET['type']; ?>"
   method="post">
   <fieldset id="validation-rules">
-  <legend><?php echo $other_data['name']; ?> Attribute details</legend>
+  <legend><?php echo $other_data['name']; ?> attribute details<?php echo $metadata; ?></legend>
     <p>Set the validation rules to apply to values submitted for this attribute below.</p>
     <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:id"
       value="<?php echo $values[$this->type . '_attributes_website:id']; ?>" />
@@ -379,7 +379,7 @@ HTML;
         ));
       }
     }
-    echo $metadata;
+    echo data_entry_helper::dump_javascript();
     echo html::form_buttons(html::initial_value($values, 'custom_attribute:id') !== NULL, FALSE, FALSE);
     ?>
   </fieldset>
