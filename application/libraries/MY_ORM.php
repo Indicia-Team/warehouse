@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Core
- * @subpackage Libraries
- * @author    Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link     https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -32,18 +30,22 @@ class ORM extends ORM_Core {
 
   /**
    * Authorised website ID from the service authentication.
-   * @var integer
+   *
+   * @var int
    */
-  public static $authorisedWebsiteId=0;
+  public static $authorisedWebsiteId = 0;
+
   /**
   * Should foreign key lookups be cached? Set to true during import for example.
+  *
   * @var bool
   */
-  public static $cacheFkLookups = false;
+  public static $cacheFkLookups = FALSE;
 
 
   /**
    * Tracks list of all inserted, updated or deleted records in this transaction.
+   *
    * @var array
    */
   public static $changedRecords;
@@ -55,25 +57,34 @@ class ORM extends ORM_Core {
   public $submission = array();
 
   /**
-   * @var array Describes the list of nested models that are present after a submission. E.g. the list of
-   * occurrences in a sample.
+   * Describes the list of nested models that are present after a submission.
+   *
+   * E.g. the list of occurrences in a sample.
+   *
+   * @var array
    */
   private $nestedChildModelIds = array();
   private $nestedParentModelIds = array();
 
   /**
-   * @var string The default field that is searchable is called title. Override this when a different field name is used.
+   * @var string
+   *   The default field that is searchable is called title. Override this when a different field name is used.
    */
   public $search_field='title';
 
   protected $errors = array();
 
   /**
-   * @var boolean Flag that gets set if a unique key violation has occurred on attempting a save.
+   * Flag that gets set if a unique key violation has occurred on save.
+   *
+   * @var bool
    */
-  public $uniqueKeyViolation = false;
+  public $uniqueKeyViolation = FALSE;
 
-  protected $identifiers = array('website_id'=>null,'survey_id'=>null);
+  protected $identifiers = array(
+    'website_id' => NULL,
+    'survey_id' => NULL,
+  );
 
   /**
    * @var array unvalidatedFields allows a list of fields which are not validated in anyway to be declared
@@ -1476,8 +1487,13 @@ class ORM extends ORM_Core {
 
  /**
   * Create the records for any attributes attached to the current submission.
-  * @param bool $isInsert TRUE for when the parent of the attributes is a fresh insert, FALSE for an update.
-  * @return bool TRUE if success.
+  *
+  * @param bool $isInsert
+  *   TRUE for when the parent of the attributes is a fresh insert, FALSE for
+  *   an update.
+  *
+  * @return bool
+  *   TRUE if success.
   */
   protected function createAttributes($isInsert) {
     if ($this->has_attributes) {
@@ -1488,7 +1504,7 @@ class ORM extends ORM_Core {
         // loop to find the custom attributes embedded in the table fields
         $multiValueData=array();
         foreach ($this->submission['fields'] as $field => $content) {
-          if (preg_match('/^'.$this->attrs_field_prefix.':(fk_)?[\d]+(:([\d]+)?(:[^:]*)?)?$/', $field)) {
+          if (preg_match('/^'.$this->attrs_field_prefix.':(fk_)?[\d]+(:([\d]+)?(:[^:|upper]*)?)?$/', $field)) {
             $value = $content['value'];
             // Attribute name is of form tblAttr:attrId:valId:uniqueIdx
             $arr = explode(':', $field);
@@ -1505,6 +1521,10 @@ class ORM extends ORM_Core {
                 $multiValueData["attr:$attrId"]['values']=array_merge($multiValueData["attr:$attrId"]['values'], $value);
               else
                 $multiValueData["attr:$attrId"]['values'][]=$value;
+            }
+            if ($attrDef->allow_ranges === 't' && !empty($this->submission['fields']["$field:upper"])
+                && !empty($this->submission['fields']["$field:upper"]['value'])) {
+              $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
             }
             if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef))
               return false;
