@@ -78,29 +78,38 @@ if (isset($jsFile)) {
     <?php if (isset($menu)) : ?>
     <nav class="navbar navbar-inverse">
       <div class="container-fluid">
-        <ul class="nav navbar-nav">
-        <?php foreach ($menu as $toplevel => $contents) : ?>
-          <?php if (is_array($contents) && count($contents) > 0) : ?>
-          <li class="dropdown">
-            <a class="dropdown-toggle" data-toggle="dropdown"><?php echo $toplevel; ?>
-            <span class="caret"></span></a>
-            <ul class="dropdown-menu">
-              <?php foreach ($contents as $menuitem => $url) : ?>
-              <li><?php echo html::anchor($url, $menuitem); ?></li>
-              <?php endforeach; ?>
-            </ul>
-          </li>
-          <?php elseif (is_string($contents)) : ?>
-          <li>
-            <?php echo html::anchor($contents, $toplevel); ?>
-          </li>
-          <?php else : ?>
-          <li>
-            <a><?php echo $toplevel; ?></a>
-          </li>
-          <?php endif; ?>
-        <?php endforeach; ?>
-        </ul>
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+        </div>
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav">
+          <?php foreach ($menu as $toplevel => $contents) : ?>
+            <?php if (is_array($contents) && count($contents) > 0) : ?>
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown"><?php echo $toplevel; ?>
+              <span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <?php foreach ($contents as $menuitem => $url) : ?>
+                <li><?php echo html::anchor($url, $menuitem); ?></li>
+                <?php endforeach; ?>
+              </ul>
+            </li>
+            <?php elseif (is_string($contents)) : ?>
+            <li>
+              <?php echo html::anchor($contents, $toplevel); ?>
+            </li>
+            <?php else : ?>
+            <li>
+              <a><?php echo $toplevel; ?></a>
+            </li>
+            <?php endif; ?>
+          <?php endforeach; ?>
+          </ul>
+        </div>
       </div>
     </nav>
     <?php endif; ?>
