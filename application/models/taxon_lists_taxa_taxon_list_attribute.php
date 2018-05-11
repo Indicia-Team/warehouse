@@ -22,41 +22,43 @@
 /**
  * Model class for the Taxa_Taxon_List_Attributes table.
  */
-class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM
-{
+class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM {
   protected $has_one = array(
     'taxa_taxon_list_attribute',
     'taxon_list',
   );
 
   protected $belongs_to = array(
-    'created_by'=>'user',
+    'created_by' => 'user',
   );
 
   public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
+    // Uses PHP trim() to remove whitespace from beginning and end of all
+    // fields before validation.
     $array->pre_filter('trim');
     $this->unvalidatedFields = array(
-        'taxa_taxon_list_attribute_id',
-        'taxon_list_id',
-        'default_text_value',
-        'default_float_value',
-        'default_int_value',
-        'default_date_start_value',
-        'default_date_end_value',
-        'default_date_type_value',
-	      'control_type_id');
+      'taxa_taxon_list_attribute_id',
+      'taxon_list_id',
+      'default_text_value',
+      'default_float_value',
+      'default_int_value',
+      'default_date_start_value',
+      'default_date_end_value',
+      'default_date_type_value',
+      'control_type_id',
+      'restrict_to_taxon_meaning_id',
+    );
     return parent::validate($array, $save);
   }
 
   /**
    * Return a displayable caption for the item.
    */
-  public function caption()
-  {
+  public function caption() {
     if ($this->id) {
-      return ($this->taxa_taxon_list_attribute != null ? $this->taxa_taxon_list_attribute->caption : '');
-    } else {
+      return ($this->taxa_taxon_list_attribute != NULL ? $this->taxa_taxon_list_attribute->caption : '');
+    }
+    else {
       return 'Taxon Attribute';
     }
   }
@@ -64,27 +66,29 @@ class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM
   /**
    * Map a virtual field called default_value onto the relevant default value fields, depending on the data type.
    */
-  protected function preSubmit()
-  {
+  protected function preSubmit() {
     if (isset($this->submission['fields']['default_value']['value'])) {
       $attr = ORM::factory('taxa_taxon_list_attribute', $this->submission['fields']['taxa_taxon_list_attribute_id']['value']);
       switch ($attr->data_type) {
         case 'T':
-          $this->submission['fields']['default_text_value']['value']=$this->submission['fields']['default_value']['value'];
+          $this->submission['fields']['default_text_value']['value'] = $this->submission['fields']['default_value']['value'];
           break;
+
         case 'F':
-          $this->submission['fields']['default_float_value']['value']=$this->submission['fields']['default_value']['value'];
+          $this->submission['fields']['default_float_value']['value'] = $this->submission['fields']['default_value']['value'];
           break;
+
         case 'I':
-          case 'L':
-          $this->submission['fields']['default_int_value']['value']=$this->submission['fields']['default_value']['value'];
+        case 'L':
+          $this->submission['fields']['default_int_value']['value'] = $this->submission['fields']['default_value']['value'];
           break;
+
         case 'D':
         case 'V':
           $vagueDate = vague_date::string_to_vague_date($this->submission['fields']['default_value']['value']);
-          $this->submission['fields']['default_date_start_value']['value']=$vagueDate[0];
-          $this->submission['fields']['default_date_end_value']['value']=$vagueDate[1];
-          $this->submission['fields']['default_date_type_value']['value']=$vagueDate[2];
+          $this->submission['fields']['default_date_start_value']['value'] = $vagueDate[0];
+          $this->submission['fields']['default_date_end_value']['value'] = $vagueDate[1];
+          $this->submission['fields']['default_date_type_value']['value'] = $vagueDate[2];
       }
     }
     return parent::presubmit();
@@ -93,27 +97,33 @@ class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM
   /**
    * Create a virtual field called default_value from the relevant default value fields, depending on the data type.
    */
-  public function __get($column)
-  {
-    if ($column=='default_value') {
+  public function __get($column) {
+    if ($column === 'default_value') {
       $attr = ORM::factory('taxa_taxon_list_attribute', $this->taxa_taxon_list_attribute_id);
       switch ($attr->data_type) {
         case 'T':
-        return parent::__get('default_text_value');
+          return parent::__get('default_text_value');
+
         case 'F':
-        return parent::__get('default_float_value');
+          return parent::__get('default_float_value');
+
         case 'I':
         case 'L':
-        return parent::__get('default_int_value');
+          return parent::__get('default_int_value');
+
         case 'D':
         case 'V':
-        $vagueDate = array(parent::__get('default_date_start_value'),
+          $vagueDate = array(
+            parent::__get('default_date_start_value'),
             parent::__get('default_date_end_value'),
-          parent::__get('default_date_type_value'));
-        return vague_date::vague_date_to_string($vagueDate);
+            parent::__get('default_date_type_value')
+          );
+          return vague_date::vague_date_to_string($vagueDate);
       }
-    } else
+    }
+    else {
       return parent::__get($column);
+    }
   }
 
 }
