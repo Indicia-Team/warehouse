@@ -27,6 +27,11 @@
            from person_attribute_values pavAlloc
            where pavAlloc.int_value=square.id AND pavAlloc.person_attribute_id=#user_square_attr_id# AND pavAlloc.deleted=false
            )
+    --To get the most revent owner information, we need to make sure we are only getting the most recent de-allocation
+    AND pavRemovedAlloc.id in
+        (select max(pavMostRecentRemovedAlloc.id)
+         from person_attribute_values pavMostRecentRemovedAlloc
+         where pavMostRecentRemovedAlloc.int_value=square.id AND pavMostRecentRemovedAlloc.deleted=true)
   </query>
   <params>
     <param name='core_square_type_id' display='Core Square Type Id' description='' datatype='integer'/>
@@ -42,5 +47,8 @@
   <columns> 
     <column name='id' sql='square.id' datatype='integer' visible="false" in_count="true"/>  
     <column name='square' display='Square' sql="regexp_replace(square.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' aggregate="true"/>
+    <column name='first_name' sql='p.first_name' display='Last owner first name' datatype='text'/>
+    <column name='surname' sql='p.surname' display='Last owner surname' datatype='text'/>
+    <column name='email' sql='p.email_address' display='Last owner email' datatype='text'/>
   </columns>
 </report>
