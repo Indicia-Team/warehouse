@@ -310,6 +310,8 @@ HTML;
         'id' => 'default_value',
         'termlist_id' => $model->$attrModelName->termlist_id,
         'default' => $model->default_value,
+        'defaultUpper' => $model->default_upper_value,
+        'allow_ranges' => $model->$attrModelName->allow_ranges,
       ),
       array(
         'extraParams' => $readAuth,

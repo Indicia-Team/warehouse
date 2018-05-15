@@ -38,15 +38,17 @@ class Person_attributes_website_Model extends Valid_ORM
 
     $array->pre_filter('trim');
     $this->unvalidatedFields = array(
-        'person_attribute_id',
-        'website_id',
-        'default_text_value',
-        'default_float_value',
-        'default_int_value',
-        'default_date_start_value',
-        'default_date_end_value',
-        'default_date_type_value',
-	      'control_type_id');
+      'person_attribute_id',
+      'website_id',
+      'default_text_value',
+      'default_float_value',
+      'default_int_value',
+      'default_upper_value',
+      'default_date_start_value',
+      'default_date_end_value',
+      'default_date_type_value',
+      'control_type_id',
+    );
     return parent::validate($array, $save);
   }
 

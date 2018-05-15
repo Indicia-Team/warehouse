@@ -38,15 +38,17 @@ class Survey_Attributes_Website_Model extends Valid_ORM
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $this->unvalidatedFields = array(
-        'survey_attribute_id',
-        'website_id',
-        'default_text_value',
-        'default_float_value',
-        'default_int_value',
-        'default_date_start_value',
-        'default_date_end_value',
-        'default_date_type_value',
-        'control_type_id');
+      'survey_attribute_id',
+      'website_id',
+      'default_text_value',
+      'default_float_value',
+      'default_int_value',
+      'default_upper_value',
+      'default_date_start_value',
+      'default_date_end_value',
+      'default_date_type_value',
+      'control_type_id',
+    );
     return parent::validate($array, $save, array());
   }
 

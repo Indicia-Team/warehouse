@@ -42,6 +42,7 @@ class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM {
       'default_text_value',
       'default_float_value',
       'default_int_value',
+      'default_upper_value',
       'default_date_start_value',
       'default_date_end_value',
       'default_date_type_value',

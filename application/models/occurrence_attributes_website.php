@@ -47,6 +47,7 @@ class Occurrence_attributes_website_Model extends Valid_ORM {
       'default_text_value',
       'default_float_value',
       'default_int_value',
+      'default_upper_value',
       'default_date_start_value',
       'default_date_end_value',
       'default_date_type_value',
@@ -70,8 +71,7 @@ class Occurrence_attributes_website_Model extends Valid_ORM {
   /**
    * Map a virtual field called default_value onto the relevant default value fields, depending on the data type.
    */
-  protected function preSubmit()
-  {
+  protected function preSubmit() {
     if (isset($this->submission['fields']['default_value']['value'])) {
       $attr = ORM::factory('occurrence_attribute', $this->submission['fields']['occurrence_attribute_id']['value']);
       switch ($attr->data_type) {
@@ -84,7 +84,7 @@ class Occurrence_attributes_website_Model extends Valid_ORM {
           break;
 
         case 'I':
-          case 'L':
+        case 'L':
           $this->submission['fields']['default_int_value']['value'] = $this->submission['fields']['default_value']['value'];
           break;
 
