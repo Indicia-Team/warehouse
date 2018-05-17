@@ -1307,10 +1307,11 @@ class ORM extends ORM_Core {
       // we don't enforce the required state of these fields on the server
       // and instead allow it to be enforced on the client.
       if ($required && ($this->object_name === 'sample' || $this->object_name === 'occurrence')) {
-        $this->db->where("{$attr_entity}s_websites.restrict_to_taxon_meaning_id IS NULL");
-        $this->db->where("{$attr_entity}s_websites.restrict_to_stage_term_meaning_id IS NULL");
+        $this->db->join("{$attr_entity}_taxon_restrictions AS tr", "tr.{$attr_entity}s_website_id", "{$attr_entity}s_websites.id", 'LEFT');
+        $this->db->where("tr.id IS NULL");
       }
-    } elseif ($required) {
+    }
+    elseif ($required) {
       $this->db->like($attr_entity.'s.validation_rules', '%required%');
     }
     $this->db->orderby($attr_entity.'s.caption', 'ASC');
