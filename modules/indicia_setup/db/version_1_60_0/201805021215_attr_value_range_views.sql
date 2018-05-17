@@ -19,6 +19,7 @@ CREATE OR REPLACE VIEW list_survey_attributes AS
     aw.default_text_value,
     aw.default_int_value,
     aw.default_float_value,
+    aw.default_upper_value,
     aw.default_date_start_value,
     aw.default_date_end_value,
     aw.default_date_type_value,
@@ -41,86 +42,90 @@ CREATE OR REPLACE VIEW list_survey_attributes AS
 DROP VIEW list_sample_attributes;
 
 CREATE OR REPLACE VIEW list_sample_attributes AS
-  SELECT a.id,
-    a.caption,
-    a.caption_i18n,
-    a.term_name,
-    a.term_identifier,
-    fsb2.name AS outer_structure_block,
-    fsb.name AS inner_structure_block,
-    a.data_type,
-    ct.control AS control_type,
-    a.termlist_id,
-    a.multi_value,
-    a.allow_ranges,
-    aw.website_id,
-    aw.restrict_to_survey_id,
-    aw.restrict_to_taxon_meaning_id,
-    aw.restrict_to_stage_term_meaning_id,
-    (((a.id || '|'::text) || a.data_type::text) || '|'::text) || COALESCE(a.termlist_id::text, ''::text) AS signature,
-    aw.default_text_value,
-    aw.default_int_value,
-    aw.default_float_value,
-    aw.default_date_start_value,
-    aw.default_date_end_value,
-    aw.default_date_type_value,
-    COALESCE(aw.validation_rules::text || E'\n', '') || COALESCE(a.validation_rules::text, '') AS validation_rules,
-    a.deleted,
-    aw.deleted AS website_deleted,
-    aw.restrict_to_sample_method_id,
-    a.system_function,
-    fsb2.weight as outer_block_weight,
-    fsb.weight as inner_block_weight,
-    aw.weight as weight
-  FROM sample_attributes a
-  LEFT JOIN sample_attributes_websites aw ON a.id = aw.sample_attribute_id AND aw.deleted = false
-  LEFT JOIN control_types ct ON ct.id = aw.control_type_id
-  LEFT JOIN form_structure_blocks fsb ON fsb.id = aw.form_structure_block_id
-  LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
-  WHERE a.deleted = false
-  ORDER BY fsb2.weight, fsb.weight, aw.weight;
+  SELECT * FROM (
+    SELECT a.id,
+      a.caption,
+      a.caption_i18n,
+      a.term_name,
+      a.term_identifier,
+      fsb2.name AS outer_structure_block,
+      fsb.name AS inner_structure_block,
+      a.data_type,
+      ct.control AS control_type,
+      a.termlist_id,
+      a.multi_value,
+      a.allow_ranges,
+      aw.website_id,
+      aw.restrict_to_survey_id,
+      (((a.id || '|'::text) || a.data_type::text) || '|'::text) || COALESCE(a.termlist_id::text, ''::text) AS signature,
+      aw.default_text_value,
+      aw.default_int_value,
+      aw.default_float_value,
+      aw.default_upper_value,
+      aw.default_date_start_value,
+      aw.default_date_end_value,
+      aw.default_date_type_value,
+      COALESCE(aw.validation_rules::text || E'\n', '') || COALESCE(a.validation_rules::text, '') AS validation_rules,
+      a.deleted,
+      aw.deleted AS website_deleted,
+      aw.restrict_to_sample_method_id,
+      a.system_function,
+      fsb2.weight as outer_block_weight,
+      fsb.weight as inner_block_weight,
+      aw.weight as weight,
+      (SELECT string_agg(restrict_to_taxon_meaning_id::text || '|' || restrict_to_stage_term_meaning_id::text, ';') FROM sample_attribute_taxon_restrictions tr WHERE tr.sample_attributes_website_id=aw.id) as taxon_restrictions
+    FROM sample_attributes a
+    LEFT JOIN sample_attributes_websites aw ON a.id = aw.sample_attribute_id AND aw.deleted = false
+    LEFT JOIN control_types ct ON ct.id = aw.control_type_id
+    LEFT JOIN form_structure_blocks fsb ON fsb.id = aw.form_structure_block_id
+    LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
+    WHERE a.deleted = false
+  ) as sub
+  ORDER BY outer_block_weight, inner_block_weight, weight;
 
 -- list_occurrence_attributes
 DROP VIEW list_occurrence_attributes;
 
 CREATE OR REPLACE VIEW list_occurrence_attributes AS
-  SELECT
-    a.id,
-    a.caption,
-    a.caption_i18n,
-    a.term_name,
-    a.term_identifier,
-    fsb2.name AS outer_structure_block,
-    fsb.name AS inner_structure_block,
-    a.data_type, ct.control AS control_type,
-    a.termlist_id,
-    a.multi_value,
-    a.allow_ranges,
-    aw.website_id,
-    aw.restrict_to_survey_id,
-    aw.restrict_to_taxon_meaning_id,
-    aw.restrict_to_stage_term_meaning_id,
-    (((a.id || '|'::text) || a.data_type::text) || '|'::text) || COALESCE(a.termlist_id::text, ''::text) AS signature,
-    aw.default_text_value,
-    aw.default_int_value,
-    aw.default_float_value,
-    aw.default_date_start_value,
-    aw.default_date_end_value,
-    aw.default_date_type_value,
-    COALESCE(aw.validation_rules::text || E'\n', '') || COALESCE(a.validation_rules::text, '') AS validation_rules,
-    a.deleted,
-    aw.deleted AS website_deleted,
-    a.system_function,
-    fsb2.weight as outer_block_weight,
-    fsb.weight as inner_block_weight,
-    aw.weight as weight
-  FROM occurrence_attributes a
-  LEFT JOIN occurrence_attributes_websites aw ON a.id = aw.occurrence_attribute_id AND aw.deleted = false
-  LEFT JOIN control_types ct ON ct.id = aw.control_type_id
-  LEFT JOIN form_structure_blocks fsb ON fsb.id = aw.form_structure_block_id
-  LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
-  WHERE a.deleted = false
-  ORDER BY fsb2.weight, fsb.weight, aw.weight;
+  SELECT * FROM (
+    SELECT
+      a.id,
+      a.caption,
+      a.caption_i18n,
+      a.term_name,
+      a.term_identifier,
+      fsb2.name AS outer_structure_block,
+      fsb.name AS inner_structure_block,
+      a.data_type, ct.control AS control_type,
+      a.termlist_id,
+      a.multi_value,
+      a.allow_ranges,
+      aw.website_id,
+      aw.restrict_to_survey_id,
+      (((a.id || '|'::text) || a.data_type::text) || '|'::text) || COALESCE(a.termlist_id::text, ''::text) AS signature,
+      aw.default_text_value,
+      aw.default_int_value,
+      aw.default_float_value,
+      aw.default_upper_value,
+      aw.default_date_start_value,
+      aw.default_date_end_value,
+      aw.default_date_type_value,
+      COALESCE(aw.validation_rules::text || E'\n', '') || COALESCE(a.validation_rules::text, '') AS validation_rules,
+      a.deleted,
+      aw.deleted AS website_deleted,
+      a.system_function,
+      fsb2.weight as outer_block_weight,
+      fsb.weight as inner_block_weight,
+      aw.weight as weight,
+      (SELECT string_agg(restrict_to_taxon_meaning_id::text || '|' || restrict_to_stage_term_meaning_id::text, ';') FROM occurrence_attribute_taxon_restrictions tr WHERE tr.occurrence_attributes_website_id=aw.id) as taxon_restrictions
+    FROM occurrence_attributes a
+    LEFT JOIN occurrence_attributes_websites aw ON a.id = aw.occurrence_attribute_id AND aw.deleted = false
+    LEFT JOIN control_types ct ON ct.id = aw.control_type_id
+    LEFT JOIN form_structure_blocks fsb ON fsb.id = aw.form_structure_block_id
+    LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
+    WHERE a.deleted = false
+  ) as sub
+  ORDER BY outer_block_weight, inner_block_weight, weight;
 
 -- list_location_attributes
 DROP VIEW list_location_attributes;
@@ -144,6 +149,7 @@ CREATE OR REPLACE VIEW list_location_attributes AS
     aw.default_text_value,
     aw.default_int_value,
     aw.default_float_value,
+    aw.default_upper_value,
     aw.default_date_start_value,
     aw.default_date_end_value,
     aw.default_date_type_value,
@@ -184,6 +190,7 @@ CREATE OR REPLACE VIEW list_taxa_taxon_list_attributes AS
     tla.default_text_value,
     tla.default_int_value,
     tla.default_float_value,
+    tla.default_upper_value,
     tla.default_date_start_value,
     tla.default_date_end_value,
     tla.default_date_type_value,
@@ -222,6 +229,7 @@ CREATE OR REPLACE VIEW list_termlists_term_attributes AS
     tta.default_text_value,
     tta.default_int_value,
     tta.default_float_value,
+    tta.default_upper_value,
     tta.default_date_start_value,
     tta.default_date_end_value,
     tta.default_date_type_value,
@@ -263,6 +271,7 @@ CREATE OR REPLACE VIEW list_person_attributes AS
     aw.default_text_value,
     aw.default_int_value,
     aw.default_float_value,
+    aw.default_upper_value,
     aw.default_date_start_value,
     aw.default_date_end_value,
     aw.default_date_type_value,
