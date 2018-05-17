@@ -22,7 +22,7 @@
 /**
  * Model class for the Sample_Attributes_Websites table.
  */
-class Sample_attributes_website_Model extends Valid_ORM {
+class Sample_attributes_website_Model extends Base_Attributes_Website_Model {
   protected $has_one = array(
     'sample_attribute',
     'website',
@@ -40,8 +40,6 @@ class Sample_attributes_website_Model extends Valid_ORM {
       'sample_attribute_id',
       'website_id',
       'restrict_to_survey_id',
-      'restrict_to_taxon_meaning_id',
-      'restrict_to_stage_term_meaning_id',
       'default_text_value',
       'default_float_value',
       'default_int_value',
@@ -96,6 +94,25 @@ class Sample_attributes_website_Model extends Valid_ORM {
       }
     }
     return parent::presubmit();
+  }
+
+  /**
+   * Handle saving any taxon restrictions.
+   *
+   * After saving, if the posting form was the warehouse attributes_in_survey
+   * edit form then it may have information about restrictions for this
+   * attribute's use according to the chosen taxa. Ensure this is persisted to
+   * the database.
+   *
+   * @param bool $isInsert
+   *   True if the post is an insert, false for update.
+   *
+   * @return bool
+   *   Return TRUE allowing the transaction to commit.
+   */
+  protected function postSubmit($isInsert) {
+    self::postSubmitSaveTaxonRestrictions($isInsert, 'sample');
+    return TRUE;
   }
 
   /**
