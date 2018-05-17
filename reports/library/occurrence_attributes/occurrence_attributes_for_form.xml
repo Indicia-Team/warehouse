@@ -14,6 +14,7 @@
     LEFT JOIN form_structure_blocks fsb on fsb.id=aw.form_structure_block_id
     LEFT JOIN form_structure_blocks fsbp on fsbp.id=fsb.parent_id
     LEFT JOIN control_types ct ON ct.id = aw.control_type_id
+    LEFT JOIN occurrence_attribute_taxon_restrictions tr ON tr.occurrence_attributes_website_id=aw.id AND tr.deleted=false
     #joins#
     WHERE aw.deleted=false
   </query>
@@ -24,17 +25,21 @@
     <param name="survey_id" display="Survey ID" datatype="integer">
       <where>aw.restrict_to_survey_id=#survey_id#</where>
     </param>
-    <param name="taxa_taxon_list_external_key" display="Taxon external key" datatype="text" default="">
+    <param name="taxa_taxon_list_id" display="Taxa taxon list ID" datatype="integer" default="">
       <joins>
-        <join>JOIN cache_taxon_paths ctp on aw.restrict_to_taxon_meaning_id=ANY(ctp.path)
-          AND ctp.external_key='#taxa_taxon_list_external_key#'</join>
+        <join>
+          JOIN cache_taxon_paths ctp on tr.restrict_to_taxon_meaning_id=ANY(ctp.path)
+          JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
+        </join>
       </joins>
       <wheres>
-        <where value="" operator="equal">aw.restrict_to_taxon_meaning_id is null</where>
+        <where value="" operator="equal">tr.id is null</where>
+        <where>cttlany.id=#taxa_taxon_list_id#</where>
       </wheres>
     </param>
-    <param name="stage_term_meaning_id" display="Life stage term meaning ID" datatype="integer" default="">
-      <where>aw.restrict_to_stage_term_meaning_id=#stage_term_meaning_id#</where>
+    <param name="stage_termlists_term_ids" display="Life stage termlists term IDs" datatype="integer[]" default="">
+      <join>JOIN cache_termlists_terms stage on stage.meaning_id=tr.restrict_to_stage_term_meaning_id</join>>
+      <where>stage.id in (#stage_termlists_term_ids#)</where>
     </param>
     <param name="occurrence_id" display="Occurrence ID" datatype="integer" default="0" />
   </params>
