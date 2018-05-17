@@ -95,7 +95,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
   private function saveBlockList($list, $blockId, $websiteId) {
     $weight = 0;
     foreach ($list as $block) {
-      $changed = FLSE;
+      $changed = FALSE;
       if (substr($block['id'], 0, 10) === 'new-block-') {
         $model = ORM::factory('form_structure_block');
         $model->name = $block['name'];
@@ -238,55 +238,61 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
     $otherData = array(
       'name' => $attr->caption,
       'survey' => $survey->title,
-      'controlTypes' => $controlTypes
+      'controlTypes' => $controlTypes,
     );
     if ($_GET['type'] === 'occurrence' || $_GET['type'] === 'sample') {
-      $sexStageSysFuncs = ['sex', 'stage', 'sex_stage_count'];
-      // OUtput a control for restricting this attribute according to selected
+      $sexStageSysFuncs = ['sex', 'stage', 'sex_stage'];
+      // Output a grid attribute for restricting this attribute according to a
       // sex/stage term. We don't want this option for the actual sex/stage
       // attributes though and to do this we need to know the survey ID so
-      // we can retrieve an appropriate list of terms to pick from.
+      // we can retrieve an appropriate list of attributes to pick from.
       if (!empty($values["$_GET[type]_attributes_website:restrict_to_survey_id"])
           && (
             $_GET['type'] !== 'occurrence'
             || !in_array($this->model->occurrence_attribute->system_function, $sexStageSysFuncs)
           )) {
-        $terms = $this->db
-          ->select('t.id, t.term')
-          ->from('cache_termlists_terms as t')
-          ->join('occurrence_attributes as a', "a.termlist_id", 't.termlist_id')
+        $attrs = $this->db
+          ->select('a.id')
+          ->from('occurrence_attributes as a')
           ->join('occurrence_attributes_websites as aw', 'aw.occurrence_attribute_id', 'a.id')
           ->in('a.system_function', $sexStageSysFuncs)
           ->where([
+            'a.data_type' => 'L',
             'a.deleted' => 'f',
             'aw.deleted' => 'f',
             'aw.restrict_to_survey_id' => $values["$_GET[type]_attributes_website:restrict_to_survey_id"],
           ])
-          ->orderby('t.term', 'ASC')
           ->get();
-        $stageTerms = [];
-        foreach ($terms as $term) {
-          $stageTerms[$term->id] = $term->term;
+        // Convert the sex stage attribute list to a simple array of IDs.
+        $sexStageOccAttrs = [];
+        foreach ($attrs as $attr) {
+          $sexStageOccAttrs[] = $attr->id;
         }
-        $otherData['stageTerms'] = $stageTerms;
-      };
+        $otherData['sexStageOccAttrs'] = $sexStageOccAttrs;
+      }
+      else {
+        // Otherwise, don't want any extra attrs.
+        $otherData['sexStageOccAttrs'] = [];
+      }
       // If linking to taxa for an existing sample or occurrence attribute, we
       // need a caption to display.
-      if (!empty($values[$_GET['type'] . '_attributes_website:restrict_to_taxon_meaning_id'])) {
-        $masterListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
-        if ($masterListId) {
-          $taxon = $this->db
-            ->select('taxon')
-            ->from('cache_taxa_taxon_lists')
-            ->where([
-              'taxon_meaning_id' => $values[$_GET['type'] . '_attributes_website:restrict_to_taxon_meaning_id'],
-              'taxon_list_id' => $masterListId,
-              'preferred' => 't',
-            ])
-            ->limit(1)
-            ->get()->current();
-          $otherData['restrictToTaxonCaption'] = $taxon->taxon;
-        }
+      $masterListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
+      if ($masterListId) {
+        $otherData['taxon_restrictions'] = $this->db
+          ->select('t.id as taxa_taxon_list_id, tr.restrict_to_taxon_meaning_id, tr.restrict_to_stage_term_meaning_id, stage.id as restrict_to_stage_termlists_term_id')
+          ->from('cache_taxa_taxon_lists AS t')
+          ->join("$_GET[type]_attribute_taxon_restrictions AS tr", 'tr.restrict_to_taxon_meaning_id', 't.taxon_meaning_id')
+          ->join('cache_termlists_terms AS stage', [
+            'stage.meaning_id' => 'tr.restrict_to_stage_term_meaning_id',
+            'stage.preferred' => TRUE,
+          ], NULL, 'LEFT')
+          ->where([
+            "tr.$_GET[type]_attributes_website_id" => $values["$_GET[type]_attributes_website:id"],
+            't.preferred' => 't',
+            't.taxon_list_id' => $masterListId,
+            'tr.deleted' => 'f',
+          ])
+          ->get()->result_array(FALSE);
       }
     }
     return $otherData;
