@@ -259,11 +259,11 @@ WITH RECURSIVE q AS (
 UPDATE cache_taxa_taxon_lists u
 SET kingdom_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id, kingdom_taxon=ruHigherConcept.rank_taxon
 FROM cache_taxa_taxon_lists cttl
--- Ensure only changed taxon concepts are updated
-JOIN rankupdate ruThisConcept ON ruThisConcept.rank_external_key = cttl.external_key
 -- Find the correct higher taxon data
 LEFT JOIN rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=cttl.external_key AND ruHigherConcept.rank='Kingdom'
 WHERE cttl.id=u.id
+-- Only change the updated taxa
+AND cttl.external_key IN (SELECT DISTINCT child_external_key FROM rankupdate)
 AND (
   COALESCE(cttl.kingdom_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0)
   OR COALESCE(cttl.kingdom_taxon, '')<>COALESCE(ruHigherConcept.rank_taxon, '')
@@ -272,11 +272,11 @@ AND (
 UPDATE cache_taxa_taxon_lists u
 SET order_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id, order_taxon=ruHigherConcept.rank_taxon
 FROM cache_taxa_taxon_lists cttl
--- Ensure only changed taxon concepts are updated
-JOIN rankupdate ruThisConcept ON ruThisConcept.rank_external_key = cttl.external_key
 -- Find the correct higher taxon data
 LEFT JOIN rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=cttl.external_key AND ruHigherConcept.rank='Order'
 WHERE cttl.id=u.id
+-- Only change the updated taxa
+AND cttl.external_key IN (SELECT DISTINCT child_external_key FROM rankupdate)
 AND (
   COALESCE(cttl.order_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0)
   OR COALESCE(cttl.order_taxon, '')<>COALESCE(ruHigherConcept.rank_taxon, '')
@@ -285,11 +285,11 @@ AND (
 UPDATE cache_taxa_taxon_lists u
 SET family_taxa_taxon_list_id=ruHigherConcept.rank_ttl_id, family_taxon=ruHigherConcept.rank_taxon
 FROM cache_taxa_taxon_lists cttl
--- Ensure only changed taxon concepts are updated
-JOIN rankupdate ruThisConcept ON ruThisConcept.rank_external_key = cttl.external_key
 -- Find the correct higher taxon data
 LEFT join rankupdate ruHigherConcept ON ruHigherConcept.child_external_key=cttl.external_key AND ruHigherConcept.rank='Family'
 WHERE cttl.id=u.id
+-- Only change the updated taxa
+AND cttl.external_key IN (SELECT DISTINCT child_external_key FROM rankupdate)
 AND (
   COALESCE(cttl.family_taxa_taxon_list_id, 0)<>COALESCE(ruHigherConcept.rank_ttl_id, 0)
   OR COALESCE(cttl.family_taxon, '')<>COALESCE(ruHigherConcept.rank_taxon, '')
