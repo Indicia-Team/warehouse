@@ -1178,10 +1178,12 @@ SQL;
       else {
         // Don't want a full count, but because of high risk of an abort early
         // plan causing a full table scan, do a limited count first to see if
-        // more than 1 page of data.
-        $count = $this->recordCount($this->limit);
+        // more than 1 page of data. Set the limit to twice the requested
+        // amount so that we don't get stung if there are just a few records
+        // in the filter which are early in the table data.
+        $count = $this->recordCount($this->limit * 2);
       }
-      if ($count !== FALSE && $count < $this->limit) {
+      if ($count !== FALSE && $count < $this->limit * 2) {
         kohana::log('debug', 'Optimising query plan by changing sort order to o.id+0.');
         return str_replace('.id', '.id+0', $orderBy);
       }
