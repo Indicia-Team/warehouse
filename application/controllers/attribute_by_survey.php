@@ -369,8 +369,9 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
    * Lazy loading of the survey ORM object. Only want to do this once.
    */
   protected function getSurvey() {
-    if ($this->_survey===null)
+    if ($this->_survey === NULL) {
       $this->_survey = ORM::factory('survey', $this->_survey_id);
+    }
     return $this->_survey;
   }
 

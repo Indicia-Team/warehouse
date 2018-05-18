@@ -95,6 +95,111 @@ class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM {
   }
 
   /**
+   * Handle saving any taxon restrictions.
+   *
+   * After saving, if the posting form was the warehouse attributes_in_survey
+   * edit form then it may have information about restrictions for this
+   * attribute's use according to the chosen taxa. Ensure this is persisted to
+   * the database.
+   *
+   * @param bool $isInsert
+   *   True if the post is an insert, false for update.
+   *
+   * @return bool
+   *   Return TRUE allowing the transaction to commit.
+   */
+  protected function postSubmit($isInsert) {
+    if (!empty($_POST['has-taxon-restriction-data'])) {
+      $restrictions = [];
+      $ttlIds = [];
+      // Loop the post data to look for rows in the restrictions species
+      // checklist grid.
+      foreach ($_POST as $key => $value) {
+        if (substr($key, -8) === ':present' && $value !== '0') {
+          // Found a row. Find the part of the fieldname shared with other
+          // attribute controls in the same row.
+          $rowId = preg_replace('/:present$/', '', $key);
+          // Find any posted sex stage attribute keys in the same row.
+          // NB - there won't be any at the moment as the UI doesn't support
+          // stage terms.
+          $sexStageKeys = preg_grep("/^$rowId:ttlAttr:\d+$/", array_keys($_POST));
+          $sexStageVal = 'NULL';
+          // If we have any keys, map the posted term ID to a meaning Id.
+          if (!empty($sexStageKeys) && !empty($_POST[array_values($sexStageKeys)[0]])) {
+            $meaningId = $this->db
+              ->query('SELECT meaning_id FROM cache_termlists_terms WHERE id=' . $_POST[array_values($sexStageKeys)[0]])
+              ->current();
+            $sexStageVal = $meaningId->meaning_id;
+          }
+          $restrictions[$value] = [
+            'taxa_taxon_list_id' => $value,
+            'stage_term_meaning_id' => $sexStageVal,
+          ];
+          $ttlIds[] = $value;
+        }
+      }
+      $tmIdList = [];
+      if (count($ttlIds)) {
+        $tmIds = $this->db
+          ->select('id, taxon_meaning_id')
+          ->from('taxa_taxon_lists')
+          ->in('id', $ttlIds)
+          ->get()->result();
+        foreach ($tmIds as $row) {
+          $restrictions[$row->id]['taxon_meaning_id'] = $row->taxon_meaning_id;
+          $tmIdList[] = $row->taxon_meaning_id;
+        }
+      }
+      if (!$isInsert) {
+        // Delete any old restrictions that are not in the list.
+        $tmIdCommaList = implode(',', $tmIdList);
+        $qry = <<<SQL
+UPDATE taxa_taxon_list_attribute_taxon_restrictions
+SET deleted=true, updated_on=now(), updated_by_id={$_SESSION['auth_user']->id}
+WHERE taxon_lists_taxa_taxon_list_attribute_id=$this->id
+
+SQL;
+        if (!empty($tmIdCommaList)) {
+          $qry .= <<<SQL
+AND restrict_to_taxon_meaning_id NOT IN ($tmIdCommaList);
+SQL;
+        }
+        $this->db->query($qry);
+      }
+      foreach ($restrictions as $restriction) {
+        $qry = <<<SQL
+UPDATE taxa_taxon_list_attribute_taxon_restrictions
+  SET restrict_to_stage_term_meaning_id=$restriction[stage_term_meaning_id],
+    updated_on=now(),
+    updated_by_id={$_SESSION['auth_user']->id}
+WHERE taxon_lists_taxa_taxon_list_attribute_id=$this->id
+AND restrict_to_taxon_meaning_id=$restriction[taxon_meaning_id]
+AND deleted=false;
+
+INSERT INTO taxa_taxon_list_attribute_taxon_restrictions(
+  taxon_lists_taxa_taxon_list_attribute_id,
+  restrict_to_taxon_meaning_id,
+  restrict_to_stage_term_meaning_id,
+  created_on,
+  created_by_id,
+  updated_on,
+  updated_by_id
+)
+SELECT $this->id, $restriction[taxon_meaning_id], $restriction[stage_term_meaning_id], now(), {$_SESSION['auth_user']->id}, now(), {$_SESSION['auth_user']->id}
+WHERE NOT EXISTS(
+  SELECT 1 FROM taxa_taxon_list_attribute_taxon_restrictions
+  WHERE taxon_lists_taxa_taxon_list_attribute_id=$this->id
+  AND restrict_to_taxon_meaning_id=$restriction[taxon_meaning_id]
+  AND deleted=false
+);
+SQL;
+        $this->db->query($qry);
+      }
+    }
+    return TRUE;
+  }
+
+  /**
    * Create a virtual field called default_value from the relevant default value fields, depending on the data type.
    */
   public function __get($column) {

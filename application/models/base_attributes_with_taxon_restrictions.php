@@ -34,7 +34,6 @@ class Base_Attributes_With_Taxon_Restrictions_Model extends Valid_ORM {
    */
   protected function postSubmitSaveTaxonRestrictions($isInsert, $type) {
     $typeAbbr = self::getTypeAbbr($type);
-    $typeAbbr = substr($type, 0, 3);
     if (!empty($_POST['has-taxon-restriction-data'])) {
       $restrictions = [];
       $ttlIds = [];
