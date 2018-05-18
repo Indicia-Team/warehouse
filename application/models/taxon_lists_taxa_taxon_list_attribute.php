@@ -47,7 +47,6 @@ class Taxon_lists_taxa_taxon_list_attribute_Model extends Valid_ORM {
       'default_date_end_value',
       'default_date_type_value',
       'control_type_id',
-      'restrict_to_taxon_meaning_id',
     );
     return parent::validate($array, $save);
   }
