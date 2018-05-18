@@ -350,18 +350,38 @@ HTML;
         'helpText' => 'If you want this attribute to only apply for samples of a certain method, select the method here.',
       ));
     }
+    // Use a species checklist to capture information about taxon restrictions
+    // for this attribute.
     if ($_GET['type'] === 'sample' || $_GET['type'] === 'occurrence') {
       $masterListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
       if ($masterListId) {
-        echo data_entry_helper::species_autocomplete(array(
-          'label' => 'Restrict to taxon',
-          'fieldname' => "$_GET[type]_attributes_website:restrict_to_taxon_meaning_id",
-          'extraParams' => $readAuth + ['taxon_list_id' => $masterListId],
-          'default' => html::initial_value($values, "$_GET[type]_attributes_website:restrict_to_taxon_meaning_id"),
-          'defaultCaption' => isset($other_data['restrictToTaxonCaption']) ? $other_data['restrictToTaxonCaption'] : '',
-          'valueField' => 'taxon_meaning_id',
-          'helpText' => 'If you want this attribute to only apply for certain branches of the taxonomic hierarchy, choose the taxon here.',
-        ));
+        $msg = empty($other_data['sexStageOccAttrs']) ? 'taxa' : 'taxa and sex/stage combinations';
+        echo "<div class=\"alert alert-info\">If this attribute is only available for some $msg, list them below.</div>";
+        echo '<label>Taxon restrictions</label>';
+        echo '<input type="hidden" name="has-taxon-restriction-data" value="1" />';
+        require_once 'client_helpers/prebuilt_forms/includes/language_utils.php';
+        $speciesChecklistOptions = [
+          'lookupListId' => $masterListId,
+          'rowInclusionCheck' => 'alwaysRemovable',
+          'extraParams' => $readAuth,
+          'survey_id' => $values[$this->type . '_attributes_website:restrict_to_survey_id'],
+          'language' => iform_lang_iso_639_2(kohana::config('indicia.default_lang')),
+          'occAttrs' => $other_data['sexStageOccAttrs'],
+        ];
+        if (!empty($other_data['taxon_restrictions'])) {
+          $restrictionsJson = json_encode($other_data['taxon_restrictions']);
+          data_entry_helper::$javascript .= <<<JS
+indiciaFns.loadExistingRestrictions($restrictionsJson);
+
+JS;
+          $speciesChecklistOptions['listId'] = $masterListId;
+          $speciesChecklistOptions['preloadTaxa'] = [];
+          foreach ($other_data['taxon_restrictions'] as $restriction) {
+            $speciesChecklistOptions['preloadTaxa'][] = $restriction['taxa_taxon_list_id'];
+          }
+        }
+        echo data_entry_helper::species_checklist($speciesChecklistOptions);
+        echo '<br/>';
       }
       else {
         echo <<<HTML
@@ -370,42 +390,9 @@ Set the cache_builder module's cache_builder_variables.taxon_list_id condigurati
 </div>
 HTML;
       }
-      if (!empty($other_data['stageTerms'])) {
-        echo data_entry_helper::select(array(
-          'label' => 'Restrict to sex or life stage',
-          'fieldname' => "$_GET[type]_attributes_website:restrict_to_stage_term_meaning_id",
-          'lookupValues' => $other_data['stageTerms'],
-          'blankText' => '<not restricted>',
-          'default' => html::initial_value($values, "$_GET[type]_attributes_website:restrict_to_stage_term_meaning_id"),
-          'helpText' => 'If you want this attribute to only apply for records for certain life stage or sex terms, select the term here.',
-        ));
-      }
     }
     echo data_entry_helper::dump_javascript();
     echo html::form_buttons(html::initial_value($values, 'custom_attribute:id') !== NULL, FALSE, FALSE);
     ?>
   </fieldset>
 </form>
-<script type="text/javascript">
-$(document).ready(function() {
-  // Changing a checkbox for a validation rule may need to show or hide the
-  // related inputs.
-  $('#validation-rules :checkbox').change(function(evt) {
-    var selector = '#' + evt.currentTarget.id + '_inputs';
-    if ($(selector).length>0) {
-      if ($(evt.currentTarget).is(':checked')) {
-        $(selector).slideDown();
-      } else {
-        $(selector).slideUp();
-      }
-    }
-  });
-  // Perform initial setup of inputs linked to rule checkboxes.
-  $.each($('#validation-rules :checkbox'), function() {
-    var selector = '#' + this.id + '_inputs';
-    if ($(selector).length>0 && !$(this).is(':checked')) {
-      $(selector).hide();
-    }
-  });
-});
-</script>
