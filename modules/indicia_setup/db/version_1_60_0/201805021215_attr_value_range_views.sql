@@ -73,7 +73,11 @@ CREATE OR REPLACE VIEW list_sample_attributes AS
       fsb2.weight as outer_block_weight,
       fsb.weight as inner_block_weight,
       aw.weight as weight,
-      (SELECT string_agg(restrict_to_taxon_meaning_id::text || '|' || restrict_to_stage_term_meaning_id::text, ';') FROM sample_attribute_taxon_restrictions tr WHERE tr.sample_attributes_website_id=aw.id) as taxon_restrictions
+      (
+        SELECT string_agg(restrict_to_taxon_meaning_id::text || '|' || COALESCE(restrict_to_stage_term_meaning_id::text, ''), ';')
+        FROM sample_attribute_taxon_restrictions tr
+        WHERE tr.sample_attributes_website_id=aw.id
+      ) as taxon_restrictions
     FROM sample_attributes a
     LEFT JOIN sample_attributes_websites aw ON a.id = aw.sample_attribute_id AND aw.deleted = false
     LEFT JOIN control_types ct ON ct.id = aw.control_type_id
@@ -117,7 +121,11 @@ CREATE OR REPLACE VIEW list_occurrence_attributes AS
       fsb2.weight as outer_block_weight,
       fsb.weight as inner_block_weight,
       aw.weight as weight,
-      (SELECT string_agg(restrict_to_taxon_meaning_id::text || '|' || restrict_to_stage_term_meaning_id::text, ';') FROM occurrence_attribute_taxon_restrictions tr WHERE tr.occurrence_attributes_website_id=aw.id) as taxon_restrictions
+      (
+        SELECT string_agg(restrict_to_taxon_meaning_id::text || '|' || COALESCE(restrict_to_stage_term_meaning_id::text, ''), ';')
+        FROM occurrence_attribute_taxon_restrictions tr
+        WHERE tr.occurrence_attributes_website_id=aw.id
+      ) as taxon_restrictions
     FROM occurrence_attributes a
     LEFT JOIN occurrence_attributes_websites aw ON a.id = aw.occurrence_attribute_id AND aw.deleted = false
     LEFT JOIN control_types ct ON ct.id = aw.control_type_id
