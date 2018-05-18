@@ -38,8 +38,8 @@
       </wheres>
     </param>
     <param name="stage_termlists_term_ids" display="Life stage termlists term IDs" datatype="integer[]" default="">
-      <join>JOIN cache_termlists_terms stage on stage.meaning_id=tr.restrict_to_stage_term_meaning_id</join>>
-      <where>stage.id in (#stage_termlists_term_ids#)</where>
+      <join>LEFT JOIN cache_termlists_terms stage on stage.meaning_id=tr.restrict_to_stage_term_meaning_id</join>>
+      <where>(stage.id IN (#stage_termlists_term_ids#) OR stage.id IS NULL)</where>
     </param>
     <param name="occurrence_id" display="Occurrence ID" datatype="integer" default="0" />
   </params>
