@@ -22,7 +22,7 @@
 /**
  * Base class for the models which represent a link between an attribute and a website.
  */
-class Base_Attributes_Website_Model extends Valid_ORM {
+class Base_Attributes_With_Taxon_Restrictions_Model extends Valid_ORM {
 
   /**
    * Ensure taxon restrictions in the posted form are saved.
@@ -33,6 +33,7 @@ class Base_Attributes_Website_Model extends Valid_ORM {
    *   Attribute type - occurrence or sample.
    */
   protected function postSubmitSaveTaxonRestrictions($isInsert, $type) {
+    $typeAbbr = self::getTypeAbbr($type);
     $typeAbbr = substr($type, 0, 3);
     if (!empty($_POST['has-taxon-restriction-data'])) {
       $restrictions = [];
@@ -118,6 +119,31 @@ WHERE NOT EXISTS(
 SQL;
         $this->db->query($qry);
       }
+    }
+  }
+
+  /**
+   * Converts an attribute type name to a 3 letter abbreviation.
+   *
+   * @param string $type
+   *   Attribute type name, e.g. occurrence or sample.
+   *
+   * @return string
+   *   3 letter abbreviation, e.g. occ or smp.
+   */
+  private function getTypeAbbr($type) {
+    switch ($type) {
+      case 'occurrence':
+        return 'occ';
+
+      case 'sample':
+        return 'smp';
+
+      case 'taxa_taxon_list':
+        return 'ttl';
+
+      default:
+        throw new exception("Unrecognised attribute type: $type");
     }
   }
 
