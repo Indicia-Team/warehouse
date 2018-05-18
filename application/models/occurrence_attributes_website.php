@@ -24,7 +24,7 @@
  *
  * @link @link http://indicia-docs.readthedocs.io/en/latest/developing/data-model.html
  */
-class Occurrence_attributes_website_Model extends Base_Attributes_Website_Model {
+class Occurrence_attributes_website_Model extends Base_Attributes_With_Taxon_Restrictions_Model {
   protected $has_one = array(
     'occurrence_attribute',
     'website',

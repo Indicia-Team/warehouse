@@ -22,7 +22,7 @@
 /**
  * Model class for the Sample_Attributes_Websites table.
  */
-class Sample_attributes_website_Model extends Base_Attributes_Website_Model {
+class Sample_attributes_website_Model extends Base_Attributes_With_Taxon_Restrictions_Model {
   protected $has_one = array(
     'sample_attribute',
     'website',
