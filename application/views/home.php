@@ -73,19 +73,4 @@ if (count($configProblems)) : ?>
     }
     ?>
   </div>
-<?php endif; ?>
-<div id="notifications">
-<h2>Notifications</h2>
-<?php
-//@todo Configure output columns
-//@todo Add acknowledge & acknowledge all buttons
-$readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-echo report_helper::report_grid([
-  'dataSource' => 'library/notifications/notifications_list',
-  'readAuth' => $readAuth,
-  'extraParams' => [
-    'user_id' => $_SESSION['auth_user']->id,
-    'source_types' => '',
-    'system_name' => 'Indicia',
-  ],
-]);
+<?php endif;
