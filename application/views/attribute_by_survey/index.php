@@ -89,12 +89,12 @@ get_controls(NULL, $controlfilter, $this->db);
  *
  * @param string $block_id
  *   ID of the block, or NULL for top level.
- * @param array
+ * @param array$$controlFilter
  *   Filter to apply, e.g. to the correct survey.
  * @param db
  *   Database object.
  */
-function get_controls($block_id, array $controlfilter, $db) {
+function get_controls($block_id, array $controlFilter, $db) {
   global $indicia_templates;
   $masterTaxonListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
   $id = "controls";
@@ -104,49 +104,56 @@ function get_controls($block_id, array $controlfilter, $db) {
   echo "<ul id=\"$id\" class=\"control-list\">\n";
   $attr = $_GET['type'] . '_attribute';
   $attrIdField = $attr . '_id';
-  $query = $db
-    ->select("aw.id, aw.$attrIdField, a.caption, aw.validation_rules as aw_validation_rules, a.validation_rules")
-    ->from("$_GET[type]_attributes_websites as aw")
-    ->join("$_GET[type]_attributes as a", 'a.id', "aw.$_GET[type]_attribute_id")
-    ->where($controlfilter)
-    ->where([
-      'form_structure_block_id' => $block_id,
-      'a.deleted' => 'f',
-      'aw.deleted' => 'f',
-    ])
-    ->orderby('weight', 'ASC');
+  $selectFields = [
+    'aw.id',
+    "aw.$attrIdField",
+    'a.caption',
+    'aw.validation_rules as aw_validation_rules',
+    'a.validation_rules',
+  ];
+  $joins = [
+    "JOIN $_GET[type]_attributes AS a ON a.id=aw.$_GET[type]_attribute_id",
+  ];
+  $wheres = [
+    'form_structure_block_id' . (empty($block_id) ? ' IS NULL' : "=$block_id"),
+    "a.deleted='f'",
+    "aw.deleted='f'",
+  ];
+  foreach ($controlFilter as $field => $value) {
+    $wheres[] = "$field=$value";
+  }
+  $groupBys = [];
   if ($_GET['type'] === 'sample' || $_GET['type'] === 'occurrence') {
     if ($masterTaxonListId) {
-      $db
-        ->select('t.taxon as restrict_to_taxon, t.authority as restrict_to_taxon_authority')
-        ->join('cache_taxa_taxon_lists as t', [
-          't.taxon_meaning_id' => 'aw.restrict_to_taxon_meaning_id',
-          't.preferred' => TRUE,
-          't.taxon_list_id' => $masterTaxonListId,
-        ], NULL, 'LEFT');
+      $selectFields[] = "STRING_AGG(COALESCE(t.taxon || COALESCE(' ' || t.authority, ''), '') || COALESCE(' [' || stage.term || ']', ''), '; ') as restrict_to_taxon";
+      $joins[] = "LEFT JOIN $_GET[type]_attribute_taxon_restrictions AS tr ON tr.$_GET[type]_attributes_website_id=aw.id " .
+          'AND tr.deleted=false';
+      $joins[] = 'LEFT JOIN cache_taxa_taxon_lists as t ON t.taxon_meaning_id=tr.restrict_to_taxon_meaning_id ' .
+          "AND t.preferred=true AND t.taxon_list_id=$masterTaxonListId";
+      $joins[] = 'LEFT JOIN cache_termlists_terms as stage ON stage.meaning_id=tr.restrict_to_stage_term_meaning_id ' .
+          'AND stage.preferred=true';
+      $groupBys = [
+        'aw.id', "aw.$attrIdField", 'a.caption', 'aw.validation_rules', 'a.validation_rules',
+      ];
     }
-    $db
-      ->select('stage.term as restrict_to_stage')
-      ->join('cache_termlists_terms as stage', [
-        'stage.meaning_id' => 'aw.restrict_to_stage_term_meaning_id',
-        'stage.preferred' => TRUE,
-      ], NULL, 'LEFT');
     if ($_GET['type'] === 'sample') {
-      $db
-        ->select('method.term as restrict_to_sample_method')
-        ->join('cache_termlists_terms as method', [
-          'method.id' => 'aw.restrict_to_sample_method_id',
-        ], NULL, 'LEFT');
+      $selectFields[] = 'method.term as restrict_to_sample_method';
+      $groupBys[] = 'method.term';
+      $joins[] = 'LEFT JOIN cache_termlists_terms as method ON method.id=aw.restrict_to_sample_method_id';
     }
   }
   if ($_GET['type'] === 'location') {
-    $db
-      ->select('type.term as restrict_to_location_type')
-      ->join('cache_termlists_terms as type', [
-        'type.id' => 'aw.restrict_to_location_type_id',
-      ], NULL, 'LEFT');
+    $selectFields[] = 'type.term as restrict_to_location_type';
+    $joins[] = 'LEFT JOIN cache_termlists_terms as type ON type.id=aw.restrict_to_location_type_id';
   }
-  $childControls = $query->get();
+  $childControls = $db->query(
+    'SELECT ' . implode(', ', $selectFields) . "\n" .
+    "FROM $_GET[type]_attributes_websites AS aw\n" .
+    implode("\n", $joins) . "\n" .
+    'WHERE ' . implode("\nAND ", $wheres) . "\n" .
+    (empty($groupBys) ? '' : 'GROUP BY ' . implode(', ', $groupBys) . "\n") .
+    'ORDER BY aw.weight ASC'
+  )->result();
   foreach ($childControls as $control) {
     echo '<li class="control-drop"></li>';
     // Prepare some dynamic property names.
@@ -155,11 +162,7 @@ function get_controls($block_id, array $controlfilter, $db) {
     $siteUrl = url::site();
     $restrictionList = [];
     if (!empty($control->restrict_to_taxon)) {
-      $restrictionList[] = $control->restrict_to_taxon .
-        (empty($control->restrict_to_taxon_authority) ? '' : " $control->restrict_to_taxon_authority");
-    }
-    if (!empty($control->restrict_to_stage)) {
-      $restrictionList[] = $control->restrict_to_stage;
+      $restrictionList[] = $control->restrict_to_taxon;
     }
     if (!empty($control->restrict_to_sample_method)) {
       $restrictionList[] = $control->restrict_to_sample_method;
