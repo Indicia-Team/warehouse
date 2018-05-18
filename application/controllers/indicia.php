@@ -79,7 +79,7 @@ class Indicia_Controller extends Template_Controller {
       Router::$controller_path
     );
     if (file_exists($jsFile)) {
-      $this->template->jsFile = str_replace(DOCROOT, '', $jsFile);
+      $this->template->jsFile = str_replace(str_replace('\\', '/', DOCROOT), '', $jsFile);
     }
     $title = kohana::config('indicia.warehouse_title');
     $this->template->warehouseTitle = $title ? $title : 'Indicia Warehouse';
