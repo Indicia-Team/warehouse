@@ -138,7 +138,9 @@ function get_controls($block_id, array $controlFilter, $db) {
     }
     if ($_GET['type'] === 'sample') {
       $selectFields[] = 'method.term as restrict_to_sample_method';
-      $groupBys[] = 'method.term';
+      if ($masterTaxonListId) {
+        $groupBys[] = 'method.term';
+      }
       $joins[] = 'LEFT JOIN cache_termlists_terms as method ON method.id=aw.restrict_to_sample_method_id';
     }
   }
