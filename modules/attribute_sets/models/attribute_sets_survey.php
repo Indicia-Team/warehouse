@@ -22,35 +22,32 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Model class for the attribute_sets_taxa_taxon_list_attribute table.
+ * Model class for the attribute_sets_surveys table.
  *
  * @link https://github.com/indicia-team/warehouse/wiki/DataModel
  */
-class Attribute_sets_taxa_taxon_list_attribute_Model extends ORM {
+class Attribute_sets_survey_Model extends ORM {
 
   protected $belongs_to = array(
     'attribute_set',
-    'taxa_taxon_list_attribute',
+    'survey',
     'created_by' => 'user',
-    'updated_by' => 'user'
+    'updated_by' => 'user',
   );
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('attribute_set_id', 'integer');
     $array->add_rules('attribute_set_id', 'required');
-    $array->add_rules('taxa_taxon_list_attribute_id', 'integer');
-    $array->add_rules('taxa_taxon_list_attribute_id', 'required');
+    $array->add_rules('survey_id', 'integer');
     return parent::validate($array, $save);
   }
-
 
   /**
    * After submission, ensure that any changes are reflected in the core model.
    *
-   * E.g. if an attribute set is linked to a taxa_taxon_list_attribute which is
-   * also linked to an occurrence attribute, then the occurrence attribute will
-   * also be linked to the survey.
+   * E.g. if an attribute set is added to a survey, then the attribute set's
+   * attributes will also be linked to the survey.
    */
   public function postSubmit($isInsert) {
     attribute_sets::updateSetLinks($this->db, $this);
