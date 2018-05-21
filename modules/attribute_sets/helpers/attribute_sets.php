@@ -82,12 +82,13 @@ class attribute_sets {
     // one? Depends on what we are filtering against.
     $rootEntities = empty(self::$rootEntities[$model->object_name]) ?
       ['sample', 'occurrence'] : [self::$rootEntities[$model->object_name]];
+    $userId = self::getUserId();;
     // For each root entity, build a query that inserts the attribute website
     // join records required.
     foreach ($rootEntities as $entity) {
       $qry = <<<SQL
 insert into {$entity}_attributes_websites (website_id, {$entity}_attribute_id, created_on, created_by_id, restrict_to_survey_id)
-select distinct aset.website_id, attla.{$entity}_attribute_id, now(), 1 /*user_id*/, ass.survey_id
+select distinct aset.website_id, attla.{$entity}_attribute_id, now(), $userId, ass.survey_id
 from attribute_sets_surveys ass
 join attribute_sets aset
   on aset.id=ass.attribute_set_id
@@ -157,6 +158,29 @@ SQL;
       $db->query($qry);
       kohana::log('debug', "delete query: $qry");
     }
+  }
+
+  /**
+   * Retrieve the user ID to store in the record metadata.
+   *
+   * @return integer
+   *   User's warehouse user ID.
+   */
+  private static function getUserId() {
+    if (isset($_SESSION['auth_user'])) {
+      $userId = $_SESSION['auth_user']->id;
+    }
+    else {
+      global $remoteUserId;
+      if (isset($remoteUserId)) {
+        $userId = $remoteUserId;
+      }
+      else {
+        $defaultUserId = Kohana::config('indicia.defaultPersonId');
+        $userId = ($defaultUserId ? $defaultUserId : 1);
+      }
+    }
+    return $userId;
   }
 
 }
