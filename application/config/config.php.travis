@@ -146,4 +146,5 @@ $config['modules'] = array
   MODPATH.'milestones',            // milestone achievements against milestones
   MODPATH.'workflow',              // control of record flags through verification workflow
   MODPATH.'phpUnit',               // Required for testing
+  MODPATH.'attribute_sets',
 );
