@@ -46,4 +46,15 @@ class Attribute_set_Model extends ORM {
     return parent::validate($array, $save);
   }
 
+  /**
+   * After submission, ensure that any changes are reflected in the core model.
+   *
+   * E.g. if an attribute set is added to a survey, then the attribute set's
+   * attributes will also be linked to the survey.
+   */
+  public function postSubmit($isInsert) {
+    attribute_sets::updateSetLinks($this->db, $this);
+    return TRUE;
+  }
+
 }

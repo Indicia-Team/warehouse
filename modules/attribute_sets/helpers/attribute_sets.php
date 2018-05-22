@@ -30,10 +30,12 @@
 class attribute_sets {
 
   private static $aliases = [
+    'attribute_set' => 'aset',
     'attribute_sets_survey' => 'ass',
     'attribute_sets_taxa_taxon_list_attribute' => 'asttla',
     'occurrence_attributes_taxa_taxon_list_attribute' => 'attla',
     'sample_attributes_taxa_taxon_list_attribute' => 'attla',
+    'attribute_sets_taxon_restriction' => 'astr',
   ];
 
   private static $rootEntities = [
@@ -55,26 +57,32 @@ class attribute_sets {
    */
   public static function updateSetLinks($db, $model) {
     if ($model->deleted === 't') {
-      self::delete($db, $model);
+      if ($model->object_name !== 'attribute_sets_taxon_restriction') {
+        self::deleteAttributesWebsites($db, $model);
+      }
+      self::deleteAttributesTaxonRestriction($db, $model);
     }
     else {
-      self::insertOrUpdate($db, $model);
+      if ($model->object_name !== 'attribute_sets_taxon_restriction') {
+        self::insertOrUpdateAttributesWebsites($db, $model);
+      }
+      self::insertOrUpdateAttributesTaxonRestriction($db, $model);
     }
   }
 
   /**
-   * Changes required after an update or insert.
+   * Changes required after an update or insert to the attributes_websites.
    *
-   * Creates the occurrence_attributes_websites records required to link the
-   * attributes in the set to the same website/survey combinations that the set
-   * belongs to.
+   * Creates the occurrence_attributes_websites and sample_attributes_websites
+   * records required to link the attributes in the set to the same
+   * website/survey combinations that the set belongs to.
    *
    * @param object $db
    *   Connection object.
    * @param object $model
    *   Instantiated ORM object just inserted or updated.
    */
-  private static function insertOrUpdate($db, $model) {
+  private static function insertOrUpdateAttributesWebsites($db, $model) {
     // Find the alias used im the query for the table we are going to filter
     // against.
     $alias = self::$aliases[$model->object_name];
@@ -82,7 +90,7 @@ class attribute_sets {
     // one? Depends on what we are filtering against.
     $rootEntities = empty(self::$rootEntities[$model->object_name]) ?
       ['sample', 'occurrence'] : [self::$rootEntities[$model->object_name]];
-    $userId = self::getUserId();;
+    $userId = self::getUserId();
     // For each root entity, build a query that inserts the attribute website
     // join records required.
     foreach ($rootEntities as $entity) {
@@ -122,7 +130,7 @@ SQL;
    * @param object $model
    *   Instantiated ORM object just inserted or updated.
    */
-  private static function delete($db, $model) {
+  private static function deleteAttributesWebsites($db, $model) {
     // Find the alias used im the query for the table we are going to filter
     // against.
     $alias = self::$aliases[$model->object_name];
@@ -139,24 +147,122 @@ set deleted=true
 from attribute_sets_surveys ass
 join attribute_sets aset
   on aset.id=ass.attribute_set_id
-  and aset.deleted=false
 join attribute_sets_taxa_taxon_list_attributes asttla
   on asttla.attribute_set_id=ass.attribute_set_id
 join {$entity}_attributes_taxa_taxon_list_attributes attla
   on attla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
-  and attla.deleted=false
 where aw.website_id=aset.website_id
 and coalesce(aw.restrict_to_survey_id, 0)=coalesce(ass.survey_id, 0)
 -- Filter one of the options below
 and $alias.id=$model->id
 -- Reverse the deletion filter for the table we are deleting from
+and aset.deleted=case '$alias' when 'aset' then true else false end
 and ass.deleted=case '$alias' when 'ass' then true else false end
 and asttla.deleted=case '$alias' when 'asttla' then true else false end
 and attla.deleted=case '$alias' when 'attla' then true else false end
 and aw.deleted=false
 SQL;
       $db->query($qry);
-      kohana::log('debug', "delete query: $qry");
+    }
+  }
+
+  /**
+   * Changes required after an update or insert to the taxon_restrictions.
+   *
+   * Creates the occurrence and sample attributes_taxon_restrictions records
+   * required to link the attributes in the set to the same taxon restriction
+   * combinations that the set belongs to.
+   *
+   * @param object $db
+   *   Connection object.
+   * @param object $model
+   *   Instantiated ORM object just inserted or updated.
+   */
+  private static function insertOrUpdateAttributesTaxonRestriction($db, $model) {
+    // Find the alias used im the query for the table we are going to filter
+    // against.
+    $alias = self::$aliases[$model->object_name];
+    // Do we need to process both occurrence and sample attributes, or just
+    // one? Depends on what we are filtering against.
+    $rootEntities = empty(self::$rootEntities[$model->object_name]) ?
+      ['sample', 'occurrence'] : [self::$rootEntities[$model->object_name]];
+    $userId = self::getUserId();
+    // For each root entity, build a query that inserts the attribute website
+    // join records required.
+    foreach ($rootEntities as $entity) {
+      $qry = <<<SQL
+insert into {$entity}_attribute_taxon_restrictions({$entity}_attributes_website_id, restrict_to_taxon_meaning_id, restrict_to_stage_term_meaning_id,
+  created_on, created_by_id, updated_on, updated_by_id)
+select distinct aw.id, astr.restrict_to_taxon_meaning_id, astr.restrict_to_stage_term_meaning_id,
+  now(), $userId, now(), $userId
+from attribute_sets_taxon_restrictions astr
+join attribute_sets_surveys ass
+  on ass.id=astr.attribute_sets_survey_id
+  and ass.deleted=false
+join attribute_sets aset
+  on aset.id=ass.attribute_set_id
+  and aset.deleted=false
+join attribute_sets_taxa_taxon_list_attributes asttla
+  on asttla.attribute_set_id=ass.attribute_set_id
+  and asttla.deleted=false
+join {$entity}_attributes_taxa_taxon_list_attributes attla
+  on attla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
+  and attla.deleted=false
+join {$entity}_attributes_websites aw
+  on aw.website_id=aset.website_id
+  and aw.restrict_to_survey_id=ass.survey_id
+  and aw.deleted=false
+left join {$entity}_attribute_taxon_restrictions atr
+  on atr.{$entity}_attributes_website_id=aw.id
+  and atr.deleted=false
+  and atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
+  and coalesce(atr.restrict_to_stage_term_meaning_id, 0)=coalesce(astr.restrict_to_stage_term_meaning_id, 0)
+where astr.deleted=false
+and $alias.id=$model->id
+and atr.id is null;
+SQL;
+      $db->query($qry);
+    }
+  }
+
+  private static function deleteAttributesTaxonRestriction($db, $model) {
+    // Find the alias used im the query for the table we are going to filter
+    // against.
+    $alias = self::$aliases[$model->object_name];
+    // Do we need to process both occurrence and sample attributes, or just
+    // one? Depends on what we are filtering against.
+    $rootEntities = empty(self::$rootEntities[$model->object_name]) ?
+      ['sample', 'occurrence'] : [self::$rootEntities[$model->object_name]];
+    $userId = self::getUserId();
+    // For each root entity, build a query that inserts the attribute website
+    // join records required.
+    foreach ($rootEntities as $entity) {
+      $qry = <<<SQL
+update {$entity}_attribute_taxon_restrictions atr
+set deleted=true, updated_on=now(), updated_by_id=$userId
+from attribute_sets_taxon_restrictions astr
+join attribute_sets_surveys ass
+  on ass.id=astr.attribute_sets_survey_id
+join attribute_sets aset
+  on aset.id=ass.attribute_set_id
+join attribute_sets_taxa_taxon_list_attributes asttla
+  on asttla.attribute_set_id=ass.attribute_set_id
+join {$entity}_attributes_taxa_taxon_list_attributes attla
+  on attla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
+  and attla.deleted=false
+where atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
+and coalesce(atr.restrict_to_stage_term_meaning_id, 0)=coalesce(astr.restrict_to_stage_term_meaning_id, 0)
+-- Filter one of the options below
+and $alias.id=$model->id
+-- Reverse the deletion filter for the table we are deleting from
+and aset.deleted=case '$alias' when 'aset' then true else false end
+and astr.deleted=case '$alias' when 'atr' then true else false end
+and ass.deleted=case '$alias' when 'ass' then true else false end
+and asttla.deleted=case '$alias' when 'asttla' then true else false end
+and attla.deleted=case '$alias' when 'attla' then true else false end
+and atr.deleted=false
+SQL;
+      $db->query($qry);
     }
   }
 

@@ -44,7 +44,6 @@ class Attribute_sets_taxa_taxon_list_attribute_Model extends ORM {
     return parent::validate($array, $save);
   }
 
-
   /**
    * After submission, ensure that any changes are reflected in the core model.
    *

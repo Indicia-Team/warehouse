@@ -7,11 +7,20 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
 
   protected $auth;
 
+  /**
+   * Retrieve the data set fixture.
+   *
+   * @return obj
+   *   Dataset YAML object.
+   */
   public function getDataSet() {
     $ds1 =  new PHPUnit_Extensions_Database_DataSet_YamlDataSet('modules/phpUnit/config/core_fixture.yaml');
     return $ds1;
   }
 
+  /**
+   * Set up the test suite.
+   */
   public function setup() {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
@@ -21,6 +30,17 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
     $this->auth['write_tokens']['persist_auth'] = TRUE;
   }
 
+  /**
+   * Utility method to get a response from data services.
+   *
+   * @param string $url
+   *   Web service URL.
+   * @param bool $decodeJson
+   *   Should the response be decoded if JSON?
+   *
+   * @return array
+   *   Response data.
+   */
   private function getResponse($url, $decodeJson = TRUE) {
     $session = curl_init();
     curl_setopt($session, CURLOPT_URL, $url);
@@ -88,10 +108,10 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
     $s = submission_builder::build_submission($array, array('model' => 'attribute_sets_survey'));
     $r = data_entry_helper::forward_post_to('attribute_sets_survey', $s, $this->auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting an attribute_sets_survey did not return success response');
-    // Keep so we can delete it later
-    $attributeSetsWebsiteId = $r['success'];
+    // Keep so we can delete it later.
+    $attributeSetsSurveyId = $r['success'];
 
-    // And create a taxon restriction
+    // And create a taxon restriction.
     $array = array(
       'attribute_sets_survey_id' => $r['success'],
       'restrict_to_taxon_meaning_id' => 10001,
@@ -99,7 +119,6 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
     $s = submission_builder::build_submission($array, array('model' => 'attribute_sets_taxon_restriction'));
     $r = data_entry_helper::forward_post_to('attribute_sets_taxon_restriction', $s, $this->auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting an attribute_sets_taxon_restriction did not return success response');
-
 
     // Now create an occurrence_attributes_taxa_taxon_list_attributes record
     // without filling in the occurrence_attribute_id. A trigger should auto
@@ -113,7 +132,9 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
     $s = submission_builder::build_submission($array, array('model' => 'occurrence_attributes_taxa_taxon_list_attribute'));
     $r = data_entry_helper::forward_post_to('occurrence_attributes_taxa_taxon_list_attribute', $s, $this->auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting an occurrence_attributes_taxa_taxon_list_attribute did not return success response');
+    // Retrieve the occurrence_attributes_taxa_taxon_list_attribute that we just posted.
     $oattla = ORM::Factory('occurrence_attributes_taxa_taxon_list_attribute', $r['success']);
+    // This should automagically created occurrence attribute.
     $this->assertTrue(!empty($oattla->occurrence_attribute_id), 'Inserting an occurrence_attribute_taxa_taxon_list_attribute ' .
       'did not trigger creation of occurrence_attribute.');
     $this->assertTrue($oattla->restrict_occurrence_attribute_to_single_value === 't',
@@ -135,7 +156,7 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
     $this->assertTrue($links->count > 0, 'Insert of occurrence_attributes_taxa_taxon_list_attribute did not cause attribute to auto-link to website/survey');
 
     // Check the previously created taxon restriction is copied to the
-    // /occurrence attribute.
+    // occurrence attribute.
     $restrictions = $db->select('count(atr.*)')
       ->from('occurrence_attribute_taxon_restrictions as atr')
       ->join('occurrence_attributes_websites as aw', [
@@ -154,11 +175,12 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
     // Remove the join from the attribute set to the website and check the
     // attribute auto updates.
     $array = array(
-      'id' => $attributeSetsWebsiteId,
+      'id' => $attributeSetsSurveyId,
       'deleted' => 't',
     );
     $s = submission_builder::build_submission($array, array('model' => 'attribute_sets_survey'));
     $r = data_entry_helper::forward_post_to('attribute_sets_survey', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Deleting an attribute_sets_survey did not return success response');
     $links = $db->select('count(*)')
       ->from('occurrence_attributes_websites')
       ->where([
@@ -185,6 +207,47 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
       ])
       ->get()->current();
     $this->assertTrue((integer) $restrictions->count === 0, 'Remove the join from the attribute set to the website did not remove the associated taxon restriction');
+
+    // Re-add the attribute set survey link and make sure the occurrence
+    // attribute link reappears.
+    $array = array(
+      'attribute_set_id' => $attributeSetId,
+      'survey_id' => 1,
+    );
+    $s = submission_builder::build_submission($array, array('model' => 'attribute_sets_survey'));
+    $r = data_entry_helper::forward_post_to('attribute_sets_survey', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Re-submitting an attribute_sets_survey did not return success response');
+    $attributeSetsSurveyId = $r['success'];
+    $links = $db->select('count(*)')
+      ->from('occurrence_attributes_websites')
+      ->where([
+        'occurrence_attribute_id' => $oattla->occurrence_attribute_id,
+        'deleted' => 'f',
+        'website_id' => 1,
+        'restrict_to_survey_id' => 1,
+      ])
+      ->get()->current();
+    $this->assertTrue($links->count > 0, 'Undeleting an attribute_sets_survey did not re-instate attribute auto-link to website/survey');
+
+    // If we delete the attribute set, then the associated occurrence attribute
+    // links should disappear.
+    $array = array(
+      'id' => $attributeSetId,
+      'deleted' => 't',
+    );
+    $s = submission_builder::build_submission($array, array('model' => 'attribute_set'));
+    $r = data_entry_helper::forward_post_to('attribute_set', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Deleting an attribute_sets_survey did not return success response');
+    $links = $db->select('count(*)')
+      ->from('occurrence_attributes_websites')
+      ->where([
+        'occurrence_attribute_id' => $oattla->occurrence_attribute_id,
+        'deleted' => 'f',
+        'website_id' => 1,
+        'restrict_to_survey_id' => 1,
+      ])
+      ->get()->current();
+    $this->assertTrue((integer) $links->count === 0, 'Deleting an attribute_set did not remove the attribute auto-link to website/survey');
   }
 
 }

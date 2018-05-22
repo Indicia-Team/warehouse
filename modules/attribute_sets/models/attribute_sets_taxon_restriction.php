@@ -46,4 +46,16 @@ class Attribute_sets_taxon_restriction_Model extends ORM {
     return parent::validate($array, $save);
   }
 
+  /**
+   * After submission, ensure that any changes are reflected in the core model.
+   *
+   * E.g. if an attribute set is linked to a taxa_taxon_list_attribute which is
+   * also linked to an occurrence attribute, then the occurrence attribute will
+   * also be linked to the survey.
+   */
+  public function postSubmit($isInsert) {
+    attribute_sets::updateSetLinks($this->db, $this);
+    return TRUE;
+  }
+
 }
