@@ -262,14 +262,17 @@ $(document).ready(function documentReady() {
   $('.control-delete').click(function controlDeleteClick(event) {
     var control = $(event.target.parentNode);
     event.preventDefault();
-    // mark the control with a deleted class that will be handled later
+    // Mark the control with a deleted class that will be handled later.
     control.addClass('deleted');
-    // restyle and remove the drag/drop capability of the deleted control
-    control.is('.ui-draggable').draggable('destroy');
-    control.find('.control-drop').removeClass('control-drop');
+    // Restyle and hide drag handles etc.
     control.find('a').css('display', 'none');
     control.find('.handle').css('display', 'none');
     control.find('.caption').css('text-decoration', 'line-through');
+    // Remove the drag/drop capability of the deleted control.
+    if (control.is('.ui-draggable')) {
+      control.draggable('destroy');
+    }
+    control.find('.control-drop').removeClass('control-drop');
     $('#layout-change-form').show();
   });
 
