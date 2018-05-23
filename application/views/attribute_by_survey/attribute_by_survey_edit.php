@@ -356,9 +356,22 @@ HTML;
       $masterListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
       if ($masterListId) {
         $msg = empty($other_data['sexStageOccAttrs']) ? 'taxa' : 'taxa and sex/stage combinations';
-        echo "<div class=\"alert alert-info\">If this attribute is only available for some $msg, list them below.</div>";
-        echo '<label>Taxon restrictions</label>';
-        echo '<input type="hidden" name="has-taxon-restriction-data" value="1" />';
+        echo <<<HTML
+<div class="alert alert-info">
+  <p>If this attribute is only available for some $msg, list them below.</p>
+ <p> Note that any attributes associated with a taxon via a restriction in the list below may be superceded by an attribute
+  of the same type linked lower down the taxon hierarchy. For example, if you link a stage attribute to a high level
+  taxon such as Animalia plus a stage attribute to a lower level taxon such as a genus, then the one linked at the
+  lower level will block the higher level linked attribute from appearing. This allows you to link more specific
+  attributes of the same type further down the taxonomic hierarchy. Note that for these purposes, sex, stage and
+  abundance attributes are treated as the same thing since they often interact. So, if you have a sex and stage
+  attribute linked to a higher level taxon, then if you add a stage attribute to a lower level and want to use the same
+  sex attribute you should re-link the sex attribute at the lower level.</p>
+</div>
+<label>Taxon restrictions</label>
+<input type="hidden" name="has-taxon-restriction-data" value="1" />
+
+HTML;
         require_once 'client_helpers/prebuilt_forms/includes/language_utils.php';
         $speciesChecklistOptions = [
           'lookupListId' => $masterListId,
