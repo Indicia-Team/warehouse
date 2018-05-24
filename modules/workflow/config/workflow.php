@@ -28,9 +28,12 @@ $config['entities'] = array(
   'occurrence' => array(
     'title' => 'Occurrence',
     'event_types' => array(
-      array('code' => 'S', 'title' => 'Set'),
+      array('code' => 'S', 'title' => 'Initially set as workflow record'),
       array('code' => 'V', 'title' => 'Verification'),
       array('code' => 'R', 'title' => 'Rejection'),
+      array('code' => 'U', 'title' => 'Unreleased'),
+      array('code' => 'P', 'title' => 'Pending review'),
+      array('code' => 'F', 'title' => 'Fully released'),
     ),
     'keys' => array(
       array(
@@ -48,9 +51,9 @@ $config['entities'] = array(
       ),
     ),
     'setableColumns' => array(
-      'confidential',
-      'sensitivity_precision',
-      'release_status',
+      'confidential' => ['t', 'f'],
+      'sensitivity_precision' => ['100', '1000', '2000', '10000', '100000'],
+      'release_status' => ['U', 'R', 'P'],
     ),
     'defaults' => array(
       'confidential' => 'f',

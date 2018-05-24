@@ -28,7 +28,7 @@ $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohan
 <?php echo $metadata ?>
 <fieldset>
 <legend>Survey dataset details</legend>
-<?php 
+<?php
 echo data_entry_helper::hidden_text(array(
   'fieldname'=>'survey:id',
   'default'=>html::initial_value($values, 'survey:id')
@@ -47,16 +47,71 @@ echo data_entry_helper::textarea(array(
   'validation' => 'required',
   'helpText' => 'Provide an optional description of your survey to help when browsing survey datasets on the warehouse'
 ));
+?>
+<fieldset>
+  <legend>Enforce required fields</legend>
+  <p>
+    Certain fields are provided by Indicia for every sample and record added to the database. Tick the fields
+    below for fields which you would like to ensure are always populated when records are submitted to this survey
+    dataset.
+  </p>
+  <?php
+  echo data_entry_helper::checkbox([
+    'label' => 'Occurrence comment',
+    'fieldname' => 'occurrence-comment-required',
+    'default' => html::initial_value($values, 'occurrence-comment-required'),
+    'helpText' => 'Is a record comment required when saving an occurrence?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Occurrence sensitivity precision',
+    'fieldname' => 'occurrence-sensitivity_precision-required',
+    'default' => html::initial_value($values, 'occurrence-sensitivity_precision-required'),
+    'helpText' => 'Is an sensitivity precision (blur) required when saving an occurrence? This enforces that records ' .
+      'will be sensitive for this survey dataset.',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample comment',
+    'fieldname' => 'sample-comment-required',
+    'default' => html::initial_value($values, 'sample-comment-required'),
+    'helpText' => 'Is an overall comment required when saving a sample?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample licence',
+    'fieldname' => 'sample-licence_id-required',
+    'default' => html::initial_value($values, 'sample-licence_id-required'),
+    'helpText' => 'Is an explicit record licence (e.g. CC0) required when saving a sample?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample location ID',
+    'fieldname' => 'sample-location_id-required',
+    'default' => html::initial_value($values, 'sample-location_id-required'),
+    'helpText' => 'Is a link to a location record required when saving a sample?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample location name',
+    'fieldname' => 'sample-location_name-required',
+    'default' => html::initial_value($values, 'sample-location_name-required'),
+    'helpText' => 'Is a location name required when saving a sample?',
+  ]);
+  echo data_entry_helper::checkbox([
+    'label' => 'Sample recorder names',
+    'fieldname' => 'sample-recorder_names-required',
+    'default' => html::initial_value($values, 'sample-recorder_names-required'),
+    'helpText' => 'Is the recorder names field value required when saving a sample?',
+  ]);
+  ?>
+</fieldset>
+<?php
 echo data_entry_helper::autocomplete(array(
-		'label' => 'Parent survey',
-		'fieldname' => 'survey:parent_id',
-		'table' => 'survey',
-		'captionField' => 'title',
-		'valueField' => 'id',
-		'extraParams' => $readAuth,
-		'default' => html::initial_value($values, 'survey:parent_id'),
-		'defaultCaption' => html::initial_value($values, 'parent:title'),
-    'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports'
+  'label' => 'Parent survey',
+  'fieldname' => 'survey:parent_id',
+  'table' => 'survey',
+  'captionField' => 'title',
+  'valueField' => 'id',
+  'extraParams' => $readAuth,
+  'default' => html::initial_value($values, 'survey:parent_id'),
+  'defaultCaption' => html::initial_value($values, 'parent:title'),
+  'helpText' => 'Set a parent for your survey to allow grouping of survey datasets in reports'
 ));
 echo data_entry_helper::select(array(
   'label'=>'Website',
@@ -126,12 +181,12 @@ if (array_key_exists('survey:auto_accept_max_difficulty',$values)) {
         'default' => $attr['value']
       ));
   }
-	
+
 }
  ?>
  </ol>
  </fieldset>
-<?php 
+<?php
 endif;
 echo html::form_buttons(html::initial_value($values, 'survey:id')!=null);
 data_entry_helper::$dumped_resources[] = 'jquery';
@@ -141,7 +196,7 @@ data_entry_helper::enable_validation('survey-edit');
 data_entry_helper::link_default_stylesheet();
 data_entry_helper::$javascript .= "
 // ensure the parent lookup does not allow an inappropriate survey to be selected (i.e. self or wrong website)
-function setParentFilter() {  
+function setParentFilter() {
   var filter={\"query\":{}};
   filter.query.notin=['id', [1]];
   filter.query.where=['website_id', $('#survey\\\\:website_id').val()];

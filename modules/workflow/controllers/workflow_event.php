@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * Workflow event controller class.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -35,7 +38,8 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
       'event_type' => 'Type',
       'key' => 'Key',
       'key_value' => 'Key value',
-      'values' => 'Changed values'
+      'label' => 'Label',
+      'values' => 'Changed values',
     );
     $this->pagetitle = 'Workflow module event definition';
   }
@@ -44,8 +48,8 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
     return array(
       array(
         'caption' => 'Edit',
-        'url' => 'workflow_event/edit/{id}'
-      )
+        'url' => 'workflow_event/edit/{id}',
+      ),
     );
   }
 
@@ -66,8 +70,12 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
 
     foreach ($entities as $entity => $entityDef) {
       $entitySelectItems[$entity] = $entityDef['title'];
-      foreach ($entityDef['setableColumns'] as $column) {
-        $jsonMapping[] = '"' . $column . '": {"type":"str","desc":"' . $entity . ' ' . $column . '"}';
+      foreach ($entityDef['setableColumns'] as $column => $values) {
+        $jsonMapping[$column] = [
+          'type' => 'str',
+          'desc' => "Set the $entity.$column field to the chosen value when this event occurs.",
+          'enum' => $values,
+        ];
       }
     }
     // Load workflow groups from configuration file.
@@ -84,16 +92,20 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
       'entities' => $entities,
       'groupSelectItems' => $groups,
       'entitySelectItems' => $entitySelectItems,
-      'jsonSchema' => '{"type":"map", "title":"Columns to set", "mapping": {' . implode(',', $jsonMapping) .
-        '},"desc":"List of columns and the values they are to be set to, when event is triggered."}'
+      'jsonSchema' => json_encode([
+        'type' => 'map',
+        'title' => 'Colunms to set',
+        'mapping' => $jsonMapping,
+        'desc' => 'List of columns and the values they are to be set to, when event is triggered.',
+      ]),
     );
   }
 
   /**
    * Apply page access permissions.
    *
-   * You can only access the list of workflow metadata if CoreAdmin or SiteAdmin for a website that owns one of the
-   * workflow groups.
+   * You can only access the list of workflow metadata if CoreAdmin or
+   * SiteAdmin for a website that owns one of the workflow groups.
    *
    * @return bool
    *   True if acecss granted.

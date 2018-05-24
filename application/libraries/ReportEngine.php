@@ -142,6 +142,23 @@ class ReportEngine {
     return $reports;
   }
 
+  /**
+   * Array sorting function for the list of reports and folders.
+   *
+   * Sorts by the item title.
+   *
+   * @param array $obj1
+   *   First file or folder in the sort.
+   * @param array $obj2
+   *   Second file or folder in the sort.
+   *
+   * @return int
+   *   Sort result.
+   */
+  private static function compareTitles(array $obj1, array $obj2) {
+    return strcasecmp($obj1['title'], $obj2['title']);
+  }
+
   private function internalReportList($root, $path) {
     $files = array();
     $fullPath = "$root$path";
@@ -156,6 +173,7 @@ class ReportEngine {
           ($file !== 'tmp' || $path !== '/')) {
         $folderInfo = array(
           'type' => 'folder',
+          'title' => $file,
           'content' => $this->internalReportList($root, "$path$file/")
         );
         if (file_exists("$fullPath$file/readme.txt")) {
@@ -186,6 +204,7 @@ class ReportEngine {
       }
     }
     closedir($dir);
+    uasort($files, array('ReportEngine', 'compareTitles'));
     return $files;
   }
 
@@ -287,7 +306,7 @@ class ReportEngine {
         $value = $this->providedParams[$param];
         $checked_value = security::checkParam($value, $check['type'], $check['regex']);
         if ($checked_value !== FALSE) {
-          $this->$param = $checked_value;
+          $this->$param = $param === 'orderby' ? pg_escape_identifier($checked_value) : $checked_value;
         }
         else {
           Kohana::log('alert', "Invalid parameter, $param, with value '$value' in request for report, $report.");
@@ -308,10 +327,15 @@ class ReportEngine {
 
   /**
    * Requests the report's metadata including column and parameter information.
-   * @param $report
-   * @param bool $includeUnusedParameters Set to true to force all parameters to be
-   * included, not just those that are in use for the current report call.
+   *
+   * @param str $report
+   *   Name of the report.
+   * @param bool $includeUnusedParameters
+   *   Set to true to force all parameters to be included, not just those that
+   *   are in use for the current report call.
+   *
    * @return array
+   *   Report metadata associative array.
    */
   public function requestMetadata($report, $includeUnusedParameters = FALSE) {
     $this->fetchLocalReport($report);
@@ -319,14 +343,15 @@ class ReportEngine {
     $this->providedParams = array();
     if ($includeUnusedParameters) {
       $params = $this->reportReader->getAllParams();
-    } else {
+    }
+    else {
       $this->reportReader->loadStandardParams($this->providedParams, $this->sharingMode);
       $params = $this->reportReader->getParams();
     }
     $this->prepareColumns();
     $r = array(
       'columns' => $this->columns,
-      'parameters' => $params
+      'parameters' => $params,
     );
     return $r;
   }
@@ -359,9 +384,9 @@ class ReportEngine {
     }
     else {
       // Okay, all the parameters have been provided.
-      $this->mergeCountQuery();
-      $this->mergeQuery();
+      $this->query = $this->buildQuery();
       if ($this->limit === 0 || $this->limit === '0'
+        || (isset($this->recordCountResult) && $this->recordCountResult === 0)
         || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords'] === '0')) {
         // Optimisation for zero limited queries.
         $data = array();
@@ -383,7 +408,7 @@ class ReportEngine {
       }
       $r = array(
         'columns' => $this->columns,
-        'records' => $data
+        'records' => $data,
       );
       if (isset($includedParams) && count($includedParams) > 0) {
         $r['parameterRequest'] = $includedParams;
@@ -392,36 +417,82 @@ class ReportEngine {
     }
   }
 
-  public function record_count() {
-    if (isset($this->countQuery) && $this->countQuery !== NULL) {
-      if (isset($this->recordCountResult)) {
-        return $this->recordCountResult;
-      }
-      // If there is a HAVING clause in the query, then we cannot count aggregate queries in the normal way which is to
-      // strip the group by and count the appropriate fields. We have to run the full grouped query with the HAVING
-      // clause included, then use a subquery to count the rows.
-      if (!empty($this->having)) {
-        $unlimitedQuery = preg_replace('/LIMIT \d+/i', '', $this->query);
-        $this->countQuery = "SELECT count(*) FROM ($unlimitedQuery) AS subquery";
-      }
-      $tm = microtime(TRUE);
-      $r = $this->reportDb->query($this->countQuery)->result_array(FALSE);
-      $tm = microtime(TRUE) - $tm;
-      if ($tm > 5) {
-        kohana::log('alert', "Count query took $tm seconds.");
-        kohana::log('alert', $this->report);
-        kohana::log('alert', $this->countQuery);
-      }
-      // Query could return no rows, in which case return zero. Or multiple if counting several UNIONED queries.
-      $count = 0;
-      foreach ($r as $row)
-        $count += $row['count'];
-      $this->recordCountResult = $count;
-      return $count;
+  /**
+   * Runs a count query.
+   *
+   * Can be limited if we only want to know if there are enough records to fill
+   * the first page of a grid.
+   *
+   * @param int $limit
+   *   Max records to bother counting.
+   *
+   * @return int
+   *   Record count. FALSE if count not possible.
+   */
+  public function recordCount($limit = 0) {
+    if (isset($_REQUEST['knownCount'])) {
+      return $_REQUEST['knownCount'];
+    }
+    elseif (isset($this->recordCountResult)) {
+      return $this->recordCountResult;
+    }
+
+    // Grab the query from the report reader.
+    if ($limit > 0) {
+      $countQuery = $this->reportReader->getCountQueryWithRowData();
     }
     else {
+      $countQuery = $this->reportReader->getCountQuery();
+    }
+    if (empty($countQuery)) {
       return FALSE;
     }
+    $countQuery = $this->mergeQueryWithParams($countQuery, FALSE);
+    $this->reportReader->applyWebsitePermissions(
+      $countQuery, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId
+    );
+    // If there is a HAVING clause in the query, then we cannot count
+    // aggregate queries in the normal way which is to strip the group by and
+    // count the appropriate fields. We have to run the full grouped query
+    // with the HAVING clause included, then use a subquery to count the rows.
+    if (!empty($this->having)) {
+      // If using a filter on an aggregated column we use a HAVING clause, we
+      // need to base our count on the rows in the original query. So, grab the
+      // main query from the report reader without the ORDER BY.
+      $query = $this->buildQuery(FALSE);
+      // Apply any limits on the number of records to bother counting.
+      $limitClause = empty($limit) ? '' : " LIMIT $limit";
+      $innerQuery = preg_replace('/LIMIT \d+/i', '', $query);
+      $countQuery = "SELECT COUNT(*) FROM ($innerQuery$limitClause) AS subquery";
+    }
+    elseif ($limit > 0) {
+      // Apply any limits on the number of records to bother counting.
+      $countQuery = "SELECT COUNT(*) FROM ($countQuery LIMIT $limit) AS subquery";
+    }
+    $tm = microtime(TRUE);
+    $r = $this->reportDb->query($countQuery)->result_array(FALSE);
+    kohana::log('debug', 'Count query: ' . $countQuery);
+    $tm = microtime(TRUE) - $tm;
+    if ($tm > 5) {
+      kohana::log('alert', "Count query took $tm seconds.");
+      kohana::log('alert', $this->report);
+      kohana::log('alert', $countQuery);
+    }
+    // Query could return no rows, in which case return zero. Or multiple if
+    // counting several UNIONED queries.
+    $count = 0;
+    foreach ($r as $row) {
+      $count += $row['count'];
+    }
+    // If the count query was unlimited or successfully found all the records
+    // we can remember it and the result.
+    if ($limit === 0 || $count < $limit) {
+      $this->countQuery = $countQuery;
+      $this->recordCountResult = $count;
+      // Since we've got the count data, we may as well return it.
+      $_REQUEST['wantCount'] = '1';
+    }
+    return $count;
   }
 
   /**
@@ -787,9 +858,9 @@ SQL;
             'updated_on' => $downloaded_on
           )
         );
-    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL' ? 'I' : 'N'))
-      ->update('cache_occurrences',
-          array('downloaded_flag' => ($mode == 'FINAL' ? 'F' : 'I')));
+//    $response = $db->in("id", $idList)->where("downloaded_flag", ($mode == 'FINAL' ? 'I' : 'N'))
+//      ->update('cache_occurrences',
+//          array('downloaded_flag' => ($mode == 'FINAL' ? 'F' : 'I')));
     $db->query('COMMIT;');
   }
 
@@ -841,28 +912,21 @@ SQL;
     }
   }
 
-  private function mergeQuery() {
+  /**
+   * Perform the build of the main report query.
+   */
+  private function buildQuery($includeOrderBy = TRUE) {
     // Grab the query from the report reader.
     $query = $this->reportReader->getQuery();
-    $this->query = $this->mergeQueryWithParams($query);
-    $this->reportReader->applyPrivilegesFilters(
-      $this->query, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId);
+    $query = $this->mergeQueryWithParams($query, $includeOrderBy);
+    $this->reportReader->applyWebsitePermissions(
+      $query, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId
+    );
+    return $query;
   }
 
-  private function mergeCountQuery() {
-    // Grab the query from the report reader.
-    $query = $this->reportReader->getCountQuery();
-    if ($query !== NULL) {
-      $this->countQuery = $this->mergeQueryWithParams($query, TRUE);
-      $this->reportReader->applyPrivilegesFilters(
-        $this->countQuery, $this->websiteIds, $this->providedParams['training'], $this->sharingMode, $this->userId);
-    }
-    else {
-      $this->countQuery = NULL;
-    }
-  }
-
-  private function mergeQueryWithParams($query, $counting = FALSE) {
+  private function mergeQueryWithParams($query, $includeOrderBy = TRUE) {
+    $this->having = [];
     // Replace each parameter in place.
     $paramDefs = $this->reportReader->getParams();
     // Clear the list of standardised parameter joins so we start afresh.
@@ -880,6 +944,8 @@ SQL;
       }
     }
     // Now loop through the joins to insert the values into the query.
+    // Can't guarentee order of providedParams: need to process *attrs param before any custom attribute filters,
+    // specifically need to call mergeAttrListParam before custom attribute filters
     foreach ($this->providedParams as $name => $value) {
       if (isset($paramDefs[$name])) {
         if ($value === '') {
@@ -955,7 +1021,7 @@ SQL;
                 }
               }
             }
-            elseif ($paramDefs[$name]['datatype'] === 'date' && preg_match('/\d{4}$/', $value)) {
+            elseif ($paramDefs[$name]['datatype'] === 'date' && preg_match('/^\d\d?[\/\-]\d\d?[\/\-]\d{4}$/', $value)) {
               // Force ISO date for SQL safety.
               // @todo This needs further work for i18n if non-European.
               $date = DateTime::createFromFormat('d/m/Y', $value);
@@ -971,38 +1037,50 @@ SQL;
               $prequery = str_replace("#$name#", $value, $paramDefs[$name]['preprocess']);
               $output = $this->reportDb->query($prequery)->result_array(FALSE);
               $value = implode(',', $output[0]);
+              if (empty($value)) {
+                if (preg_match('/^(integer|float)/', $paramDefs[$name]['datatype'])) {
+                  $value = "-999999";
+                }
+                else {
+                  $value = "'@@invalid@@filter@@'";
+                }
+              }
             }
             $query = preg_replace("/#$name#/", $value, $query);
           }
         }
       }
-      elseif (isset($this->customAttributes[$name])) {
-        // Request includes a custom attribute column being used as a filter.
-        if ($this->customAttributes[$name]['string']) {
-          $value = "'" . pg_escape_string($value) . "'";
+    }
+    foreach ($this->providedParams as $name => $value) {
+      if (!isset($paramDefs[$name])) {
+        if (isset($this->customAttributes[$name])) {
+          // Request includes a custom attribute column being used as a filter.
+          if ($this->customAttributes[$name]['string']) {
+            $value = "'" . pg_escape_string($value) . "'";
+          }
+          $filter = str_replace('#filtervalue#', $value, $this->customAttributes[$name]['filter']);
+          $query = str_replace('#filters#', "AND $filter\n#filters#", $query);
         }
-        $filter = str_replace('#filtervalue#', $value, $this->customAttributes[$name]['filter']);
-        $query = str_replace('#filters#', "AND $filter\n#filters#", $query);
-      }
-      elseif (isset($this->reportReader->filterableColumns[$name])) {
-        $field = $this->reportReader->filterableColumns[$name]['sql'];
-        $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
-        if (isset($this->reportReader->columns[$name]['aggregate'])
-            && $this->reportReader->columns[$name]['aggregate'] === 'true') {
-          $this->having[] = $filterClause;
+        elseif (isset($this->reportReader->filterableColumns[$name])) {
+          $field = $this->reportReader->filterableColumns[$name]['sql'];
+          $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
+          if (isset($this->reportReader->columns[$name]['aggregate'])
+              && $this->reportReader->columns[$name]['aggregate'] === 'true') {
+            $this->having[] = $filterClause;
+          }
+          else {
+            $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
+          }
         }
-        else {
+        elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches)
+            && array_key_exists($matches['prefix'].'date_start', $this->reportReader->columns)
+            && array_key_exists($matches['prefix'].'date_end', $this->reportReader->columns)
+            && array_key_exists($matches['prefix'].'date_type', $this->reportReader->columns)) {
+          // Special handling for a filter on a vague date added column.
+          $field = $this->reportReader->columns[$matches['prefix'] . 'date_start']['sql'];
+          $filterClause = $this->getFilterClause($field, 'date', $operator, $value);
           $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
         }
-      }
-      elseif (preg_match('/(?P<prefix>.*)date$/', $name, $matches)
-          && array_key_exists($matches['prefix'].'date_start', $this->reportReader->columns)
-          && array_key_exists($matches['prefix'].'date_end', $this->reportReader->columns)
-          && array_key_exists($matches['prefix'].'date_type', $this->reportReader->columns)) {
-        // Special handling for a filter on a vague date added column.
-        $field = $this->reportReader->columns[$matches['prefix'] . 'date_start']['sql'];
-        $filterClause = $this->getFilterClause($field, 'date', $operator, $value);
-        $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
       }
     }
     // Column replacements and additional join to samples for geometry permissions autoswitching.
@@ -1029,7 +1107,7 @@ SQL;
       array('', '', '', $having, '', ''),
     $query);
     // Allow the URL to provide a sort order override.
-    if (!$counting) {
+    if ($includeOrderBy) {
       // Prioritise any URL provided sort order, but still keep any other sort ordering in the report.
       $orderBy = $this->reportReader->getOrderClause();
       if ($orderBy) {
@@ -1051,7 +1129,8 @@ SQL;
         if ($count === 0) {
           $query .= " ORDER BY $orderBy";
         }
-      } else {
+      }
+      else {
         $query = preg_replace("/#order_by#/", "", $query);
       }
       if (isset($this->limit)) {
@@ -1070,8 +1149,21 @@ SQL;
   /**
    * Query plan optimisations.
    *
-   * Forces a switch of query plan to avoid slow queries where the record count is less than the limit, causing a
-   * walk through the entire table.
+   * Forces a switch of query plan to avoid slow queries where the record count
+   * is less than the limit, causing a walk through the entire table.
+   *
+   * If loading the first page of a report grid then the PG query planner may
+   * opt to scan an index as it judges the first page of records matching the
+   * filter will be found in the first part of the index. If this is a mistake
+   * and there aren't enough records to fill the first page the result is a
+   * very slow index scan, loading all the records and filtering them until the
+   * whole table has been checked. To avoid this, when performing a limited
+   * query we use a fairly fast variant on the record count query which only
+   * counts up to the number of records on the page. If we discover there
+   * aren't enought records for the first page, we change the sort order to
+   * confuse the query planner so it can't walk the index. This results in an
+   * indexed filter of the records first, followed by a sort, which is much
+   * faster.
    *
    * @param string $orderBy
    *   Current query order by setting.
@@ -1082,11 +1174,24 @@ SQL;
    * @link http://stackoverflow.com/questions/6037843/extremely-slow-postgresql-query-with-order-and-limit-clauses
    */
   private function optimiseQueryPlan($orderBy) {
-    if (preg_match('/o.id (desc|asc)/i', $orderBy)
-        && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') || isset($_REQUEST['knownCount']))) {
-      // Grab the count now. If less than the limit, we fudge the order by to switch query plan.
-      $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->record_count();
-      if ($count !== FALSE && $count < $this->limit) {
+    // If we are limited to a relatively few number of records.
+    if (!empty($this->limit) && $this->limit < 200) {
+      $count = FALSE;
+      if (preg_match('/o.id (desc|asc)/i', $orderBy)
+          && ((isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '1') || isset($_REQUEST['knownCount']))) {
+        // Grab the count now. If less than the limit, we fudge the order by to
+        // switch query plan.
+        $count = isset($_REQUEST['knownCount']) ? $_REQUEST['knownCount'] : $this->recordCount();
+      }
+      else {
+        // Don't want a full count, but because of high risk of an abort early
+        // plan causing a full table scan, do a limited count first to see if
+        // more than 1 page of data. Set the limit to twice the requested
+        // amount so that we don't get stung if there are just a few records
+        // in the filter which are early in the table data.
+        $count = $this->recordCount($this->limit * 2);
+      }
+      if ($count !== FALSE && $count < $this->limit * 2) {
         kohana::log('debug', 'Optimising query plan by changing sort order to o.id+0.');
         return str_replace('.id', '.id+0', $orderBy);
       }
@@ -1742,33 +1847,42 @@ SQL;
   }
 
   /**
-   * If sorting on the date column (the extra column added by vague date processing) then switch the sort order back
-   * to use date_start.
+   * Ensure sorts against vague date fields work.
+   *
+   * If sorting on the date column (the extra column added by vague date
+   * processing) then switch the sort order back to use date_start.
+   *
+   * @param string $orderBy
+   *   The current order by fields.
+   *
+   * @return string
+   *   Altered order by fields.
    */
-  private function checkOrderByForVagueDate($order_by) {
-    $order_by = trim($order_by);
-    if ($this->getVagueDateProcessing() && !empty($order_by)) {
+  private function checkOrderByForVagueDate($orderBy) {
+    $orderBy = trim($orderBy);
+    if ($this->getVagueDateProcessing() && !empty($orderBy)) {
       $this->prepareColumns();
       $cols = array_keys($this->columns);
       // Find if we have a date_start column to switch date sort fields to.
       for ($i = 0; $i < count($cols); $i++) {
         if (substr(($cols[$i]), -10) == 'date_start') {
-          // Got a date_start field available in the cols, so switch any date sort fields over.
-          $sortfields = explode(',', $order_by);
+          // Got a date_start field available in the cols, so switch any date
+          // sort fields over.
+          $sortfields = explode(',', $orderBy);
           $prefix = substr($cols[$i], 0, strlen($cols[$i]) - 10);
           foreach ($sortfields as &$field) {
             $tokens = explode(' ', $field);
-            if ($tokens[0] === $prefix . 'date') {
+            if (trim($tokens[0], '"') === $prefix . 'date') {
               $tokens[0] = $cols[$i];
               $field = implode(' ', $tokens);
             }
           }
-          $order_by = implode(',', $sortfields);
+          $orderBy = implode(',', $sortfields);
           break;
         }
       }
     }
-    return $order_by;
+    return $orderBy;
   }
 
   private function executeQuery() {

@@ -45,11 +45,13 @@ class Occurrence_Model extends ORM {
     'verified_by' => 'user'
   );
   // Declare that this model has child attributes, and the name of the node in the submission which contains them.
-  protected $has_attributes = true;
+  protected $has_attributes = TRUE;
   protected $attrs_submission_name = 'occAttributes';
   public $attrs_field_prefix = 'occAttr';
   protected $additional_csv_fields = array(
     // Extra lookup options.
+    'occurrence:fk_taxa_taxon_list:genus' => 'Genus (builds binomial name)',
+    'occurrence:fk_taxa_taxon_list:specific' => 'Specific name/epithet (builds binomial name)',
     'occurrence:fk_taxa_taxon_list:external_key' => 'Species or taxon external key',
     'occurrence:fk_taxa_taxon_list:search_code' => 'Species or taxon search code',
     // Allow details of 4 images to be uploaded in CSV files.
@@ -61,6 +63,32 @@ class Occurrence_Model extends ORM {
     'occurrence_medium:caption:3' => 'Media Caption 3',
     'occurrence_medium:path:4' => 'Media Path 4',
     'occurrence_medium:caption:4' => 'Media Caption 4'
+  );
+
+  // During an import it is possible to merge different columns in a CSV row to make a database field
+  public $special_import_field_processing_defn = array(
+      'occurrence:fk_taxa_taxon_list' => array(
+          'template' => '%s %s',
+          'columns' => array('occurrence:fk_taxa_taxon_list:genus', 'occurrence:fk_taxa_taxon_list:specific')
+        )
+      );
+
+  public $import_duplicate_check_combinations = array(
+      array(
+        'description' => 'Occurrence External Key',
+        'fields' => array(
+            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'occurrence:external_key'),
+        ),
+      ),
+      array(
+        'description' => 'Sample and Taxon',
+        'fields' => array(
+            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'occurrence:sample_id', 'notInMappings' => TRUE),
+            array('fieldName' => 'occurrence:taxa_taxon_list_id'),
+        ),
+      ),
   );
 
   /**
@@ -80,24 +108,46 @@ class Occurrence_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     if ($save) {
       $this->logDeterminations($array);
-      $fields = $this->submission['fields'];
-      // If updating an existing record that has been checked by a verifier, without setting a new record status and
-      // without changing the release status (i.e. releasing the record from a silo) then reset the current verification
-      // status.
-      $isChecked = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
-      $settingNewRecordStatus =
-        (!empty($fields['record_status']) && $fields['record_status']['value'] !== 'C') ||
-        (!empty($fields['record_substatus']) && $fields['record_status']['value'] == 4);
-      $releasing = !empty($fields['release_status']);
-      if ($this->id && $isChecked && !$settingNewRecordStatus && !$releasing && $this->wantToUpdateMetadata) {
-        // If we update a processed occurrence but don't set the verification or release state, revert it to
-        // completed/awaiting verification.
-        $array->verified_by_id = NULL;
-        $array->verified_on = NULL;
-        $array->record_status = 'C';
-        $array->record_substatus = NULL;
-        $this->requeuedForVerification = TRUE;
+      $fields = array_merge($this->submission['fields']);
+      $newStatus = empty($fields['record_status']) ? $this->record_status : $fields['record_status']['value'];
+      $newSubstatus = empty($fields['record_substatus']) ? $this->record_substatus : $fields['record_substatus']['value'];
+      $releaseStatusChanging = !empty($fields['release_status']) && $fields['release_status']['value'] !== $this->release_status;
+      $metadataFieldChanging = !empty($fields['metadata']) && $fields['metadata']['value'] !== $this->metadata;
+      $identChanging = !empty($fields['taxa_taxon_list_id']) && $fields['taxa_taxon_list_id']['value'] !== $this->metadata;
+      $isAlreadyReviewed = preg_match('/[RDV]/', $this->record_status) || $this->record_substatus === 3;
+      // Is this post going to change the record status or substatus?
+      if ($newStatus !== $this->record_status || $newSubstatus !== $this->record_substatus) {
+        if ($newStatus === 'V' || $newStatus === 'R') {
+          // If verifying or rejecting, then set the verification metadata.
+          $array->verified_by_id = $this->get_current_user_id();
+          $array->verified_on = date("Ymd H:i:s");
+        }
+        else {
+          // If any status other than verified or rejected we don't want
+          // the verification metadata filled in.
+          $array->verified_by_id = NULL;
+          $array->verified_on = NULL;
+        }
       }
+      elseif ($this->wantToUpdateMetadata && $isAlreadyReviewed) {
+        // We are making a change to a previously reviewed record that doesn't
+        // explicitly set the status. If the change is to the release status
+        // or occurrence metadata field, then we don't do anything, otherwise
+        // we reset the verification data.
+        if ((!$releaseStatusChanging && !$metadataFieldChanging) || $identChanging) {
+          $array->verified_by_id = NULL;
+          $array->verified_on = NULL;
+          $array->record_status = 'C';
+          $array->record_substatus = NULL;
+          $this->requeuedForVerification = TRUE;
+        }
+      }
+    }
+    if (!empty($array->record_status) && !empty($array->record_substatus)
+        && $array->record_status === 'C' && $array->record_substatus != 3) {
+      // Plausible the only valid substatus for C (pending review). Other cases
+      // can occur if record form only posts a status.
+      $array->record_substatus = NULL;
     }
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
@@ -124,7 +174,8 @@ class Occurrence_Model extends ORM {
       'last_verification_check_date',
       'training',
       'sensitivity_precision',
-      'import_guid'
+      'import_guid',
+      'metadata',
     );
     if (array_key_exists('id', $fieldlist)) {
       // Existing data must not be set to download_flag=F (final download) otherwise it
@@ -413,26 +464,6 @@ class Occurrence_Model extends ORM {
       if ($currentUserId !==1 )
         $this->submission['fields']['determiner_id']['value'] = $currentUserId;
     }
-    if (array_key_exists('record_status', $this->submission['fields'])) {
-      $rs = $this->submission['fields']['record_status']['value'];
-      // If we are making it verified in the submitted data, but we don't already have a verifier in
-      // the database.
-      if (($rs == 'V' || $rs == 'R') && !$this->verified_by_id) {
-        $defaultUserId = Kohana::config('indicia.defaultPersonId');
-        // Set the verifier to the logged in user, or the default user ID from config if not logged
-        // into Warehouse, if it is not in the submission
-        if (!array_key_exists('verified_by_id', $this->submission['fields']))
-          $this->submission['fields']['verified_by_id']['value'] = isset($_SESSION['auth_user']) ? $_SESSION['auth_user'] : $defaultUserId;
-        // and store the date of the verification event if not specified.
-        if (!array_key_exists('verified_on', $this->submission['fields']))
-          $this->submission['fields']['verified_on']['value'] = date("Ymd H:i:s");
-      }
-      elseif ($rs === 'C' || $rs === 'I') {
-        // Completed or in progress data not verified.
-        $this->submission['fields']['verified_by_id']['value'] = '';
-        $this->submission['fields']['verified_on']['value'] = '';
-      }
-    }
     parent::preSubmit();
   }
 
@@ -449,7 +480,7 @@ class Occurrence_Model extends ORM {
       $comment = ORM::factory('occurrence_comment');
       $comment->validate(new Validation($data), TRUE);
     }
-    return true;
+    return TRUE;
   }
 
   /**
@@ -538,7 +569,7 @@ class Occurrence_Model extends ORM {
       ),
       'sample:entered_sref_system' => array(
         'display' => 'Spatial ref. system',
-        'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
+        'description' => 'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $srefs)
@@ -562,19 +593,19 @@ class Occurrence_Model extends ORM {
         'default' => 'C'
       )
     );
-    if (!empty($options['activate_global_sample_method']) && $options['activate_global_sample_method'] === 't') {
+    if (!empty($options['activate_global_sample_method']) && ($options['activate_global_sample_method'] === 't' || $options['activate_global_sample_method'] === true)) {
       $retVal['sample:sample_method_id'] = array(
         'display' => 'Sample Method',
-        'description' => 'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a '.
+        'description' => 'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a ' .
         'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $sample_methods)
       );
     }
-    if (!empty($options['activate_parent_sample_method_filter']) && $options['activate_parent_sample_method_filter']==='t') {
+    if (!empty($options['activate_parent_sample_method_filter']) && ($options['activate_parent_sample_method_filter']==='t' || $options['activate_parent_sample_method_filter']=== true)) {
       $retVal['fkFilter:sample:sample_method_id'] = array(
         'display' => 'Parent Sample Method',
-        'description' => 'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked '.
+        'description' => 'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked ' .
         'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $parent_sample_methods)
@@ -583,14 +614,14 @@ class Occurrence_Model extends ORM {
     if (!empty($options['activate_location_location_type_filter']) && $options['activate_location_location_type_filter']==='t') {
       $retVal['fkFilter:location:location_type_id'] = array(
         'display' => 'Location Type',
-        'description' => 'If this import file includes samples which reference locations records, you can restrict the type of locations looked '.
+        'description' => 'If this import file includes samples which reference locations records, you can restrict the type of locations looked ' .
         'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype' => 'lookup',
         'lookup_values' => implode(',', $locationTypes)
       );
     }
 
-    if (!empty($options['occurrence_associations']) && $options['occurrence_associations'] === 't' &&
+    if (!empty($options['occurrence_associations']) && ($options['occurrence_associations'] === 't' || $options['occurrence_associations'] === TRUE) &&
         self::_check_module_active('occurrence_associations')) {
       $retVal['useAssociations'] = array(
         'display' => 'Use associations',
@@ -602,9 +633,9 @@ class Occurrence_Model extends ORM {
         'description' => 'Select the term list which will be used to match the association types.',
         'datatype' => 'lookup',
         'population_call' => 'direct:termlist:id:title'
-//          ,'linked_to' => 'website_id',
-//          'linked_filter_field' => 'website_id',
-//              'filterIncludesNulls'=>true
+        // ,'linked_to' => 'website_id',
+        // 'linked_filter_field' => 'website_id',
+        // 'filterIncludesNulls' => TRUE
       );
       $retVal['occurrence_2:fkFilter:taxa_taxon_list:taxon_list_id'] = array(
         'display' => 'Second species list',

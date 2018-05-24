@@ -1,5 +1,9 @@
 <?php
+
 /**
+ * @file
+ * Plugin methods for the species alerts module.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage Species alerts
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /*
@@ -46,12 +48,12 @@ function species_alerts_scheduled_task($last_run_date, $db) {
       JOIN cache_taxa_taxon_lists cttl on cttl.id=od.taxa_taxon_list_id
       LEFT JOIN index_locations_samples ils on ils.sample_id=od.sample_id
       -- join to find any taxon list that this taxon occurs on
-      LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=od.taxon_meaning_id 
+      LEFT JOIN cache_taxa_taxon_lists cttlall on cttlall.taxon_meaning_id=od.taxon_meaning_id
           OR (cttlall.external_key IS NOT NULL AND od.taxa_taxon_list_external_key IS NOT NULL AND cttlall.external_key=od.taxa_taxon_list_external_key)
       JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=od.website_id and iwwa.receive_for_reporting=true
-      JOIN species_alerts sa ON 
+      JOIN species_alerts sa ON
         (sa.location_id IS NULL OR sa.location_id=ils.location_id)
-        AND 
+        AND
           (sa.taxon_meaning_id = od.taxon_meaning_id
           OR
           sa.external_key = od.taxa_taxon_list_external_key
@@ -63,11 +65,11 @@ function species_alerts_scheduled_task($last_run_date, $db) {
           (sa.alert_on_verify='t' AND od.record_status='V' AND od.cud<>'D'))
         AND
           sa.website_id=iwwa.from_website_id
-        AND 
+        AND
           sa.deleted='f'
-      JOIN users u ON 
+      JOIN users u ON
         u.id=sa.user_id AND u.deleted='f'
-     where od.training='f'
+     WHERE od.training='f' AND od.confidential='f'
      GROUP BY od.id,
       cttl.taxon,
       od.record_status,
@@ -77,7 +79,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
       od.created_on,
       od.updated_on,
       sa.user_id,
-      u.username")->result_array(false);
+      u.username")->result_array(FALSE);
   if (!empty($newOccDataForSpeciesAlert))
     species_alerts_create_notifications($newOccDataForSpeciesAlert);
   else

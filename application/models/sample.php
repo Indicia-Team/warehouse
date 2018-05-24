@@ -30,24 +30,23 @@
  */
 class Sample_Model extends ORM_Tree
 {
-  protected $requeuedForVerification = false;
+  protected $requeuedForVerification = FALSE;
 
   public $search_field = 'id';
 
   protected $ORM_Tree_children = "samples";
   protected $has_many=array('occurrences', 'sample_attribute_values', 'sample_media');
-  protected $belongs_to=array
-  (
+  protected $belongs_to=array(
     'survey',
     'location',
     'licence',
-    'created_by'=>'user',
-    'updated_by'=>'user',
-    'sample_method'=>'termlists_term'
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'sample_method' => 'termlists_term'
   );
 
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
-  protected $has_attributes=true;
+  protected $has_attributes=TRUE;
   protected $attrs_submission_name='smpAttributes';
   public $attrs_field_prefix='smpAttr';
 
@@ -55,18 +54,52 @@ class Sample_Model extends ORM_Tree
   protected $additional_csv_fields=array(
     'survey_id' => 'Survey ID',
     'website_id' => 'Website ID',
-  	// extra lookup options
-  	'sample:fk_location:code' => 'Location Code',
-  	'sample:fk_location:external_key' => 'Location external key',
-  	'sample:fk_parent:external_key' => 'Parent sample external key',
-  	'sample:date:day' => 'Day (Builds date)',
-  	'sample:date:month' => 'Month (Builds date)',
-  	'sample:date:year' => 'Year (Builds date)'
+    // extra lookup options
+    'sample:fk_location:code' => 'Location Code',
+    'sample:fk_location:external_key' => 'Location external key',
+    'sample:fk_parent:external_key' => 'Parent sample external key',
+    'sample:date:day' => 'Day (Builds date)',
+    'sample:date:month' => 'Month (Builds date)',
+    'sample:date:year' => 'Year (Builds date)'
   );
   // define underlying fields which the user would not normally see, e.g. so they can be hidden from selection
   // during a csv import
   protected $hidden_fields=array(
     'geom'
+  );
+
+  // During an import it is possible to merge different columns in a CSV row to make a database field
+  public $special_import_field_processing_defn = array(
+      'sample:date' => array(
+          'template' => '%04d-%02d-%02d',
+          'columns' => array('sample:date:year', 'sample:date:month', 'sample:date:day')
+        )
+      );
+
+  public $import_duplicate_check_combinations = array(
+      array(
+        'description' => 'Sample External Key',
+        'fields' => array(array('fieldName' => 'survey_id', 'notInMappings' => TRUE),
+              array('fieldName' => 'sample:sample_method_id'),
+              array('fieldName' => 'sample:external_key'),
+        )
+      ),
+      array(
+        'description' => 'Grid Ref and Date',
+        'fields' => array(array('fieldName' => 'survey_id', 'notInMappings' => TRUE),
+              array('fieldName' => 'sample:sample_method_id'),
+              array('fieldName' => 'sample:entered_sref'),
+              array('fieldName' => 'sample:date'),
+        )
+      ),
+      array(
+        'description' => 'Location Record and Date',
+        'fields' => array(array('fieldName' => 'survey_id', 'notInMappings' => TRUE),
+              array('fieldName' => 'sample:sample_method_id'),
+              array('fieldName' => 'sample:location_id'),
+              array('fieldName' => 'sample:date'),
+        )
+      ),
   );
 
   /**
@@ -75,8 +108,7 @@ class Sample_Model extends ORM_Tree
   * @todo add a validation rule for valid date types.
   * @todo validate at least a location_name or sref required
   */
-  public function validate(Validation $array, $save = FALSE)
-  {
+  public function validate(Validation $array, $save = FALSE) {
     $orig_values = $array->as_array();
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
@@ -85,15 +117,14 @@ class Sample_Model extends ORM_Tree
         (empty($this->submission['fields']['record_status']) || $this->submission['fields']['record_status']['value']==='C') &&
         $this->wantToUpdateMetadata) {
       // If we update a processed occurrence but don't set the verification state, revert it to completed/awaiting verification.
-      $array->verified_by_id=null;
-      $array->verified_on=null;
+      $array->verified_by_id=NULL;
+      $array->verified_on=NULL;
       $array->record_status='C';
-      $this->requeuedForVerification=true;
+      $this->requeuedForVerification=TRUE;
     }
 
     // Any fields that don't have a validation rule need to be copied into the model manually
-    $this->unvalidatedFields = array
-    (
+    $this->unvalidatedFields = array(
       'date_end',
       'location_name',
       'survey_id',
@@ -113,10 +144,11 @@ class Sample_Model extends ORM_Tree
     );
     $array->add_rules('survey_id', 'required');
     // when deleting a sample, only need the id and the deleted flag, don't need the date or location details, but copy over if they are there.
-    if(array_key_exists('deleted', $orig_values) && $orig_values['deleted']=='t'){
+    if (array_key_exists('deleted', $orig_values) && $orig_values['deleted']=='t') {
       $this->unvalidatedFields = array_merge($this->unvalidatedFields,
           array('date_type','date_start','date_end','location_id','entered_sref','entered_sref_system','geom'));
-    } else {
+    }
+    else {
       $array->add_rules('date_type', 'required', 'length[1,2]');
       $array->add_rules('date_start', 'date_in_past');
       // We need either at least one of the location_id and sref/geom : in some cases may have both
@@ -133,7 +165,8 @@ class Sample_Model extends ORM_Tree
           $array->add_rules('entered_sref', "sref[$system]");
           $array->add_rules('entered_sref_system', 'sref_system');
         }
-      } else {
+      }
+      else {
         // got a location_id so may as well require it to make sure it gets copied across
         $array->add_rules('location_id', 'required');
         // if any of the sref fields are also supplied, need all 3 fields
@@ -209,7 +242,8 @@ class Sample_Model extends ORM_Tree
           $this->submission['fields']['entered_sref']['value'],
           $this->submission['fields']['entered_sref_system']['value']
         );
-      } catch (Exception $e) {
+      }
+      catch (Exception $e) {
         $this->errors['entered_sref'] = $e->getMessage();
       }
     }
@@ -259,12 +293,10 @@ class Sample_Model extends ORM_Tree
   /**
   * Override set handler to translate WKT to PostGIS internal spatial data.
   */
-  public function __set($key, $value)
-  {
-    if (substr($key,-4) == 'geom')
-    {
+  public function __set($key, $value) {
+    if (substr($key,-4) == 'geom') {
       if ($value) {
-        $row = $this->db->query("SELECT ST_GeomFromText('$value', ".kohana::config('sref_notations.internal_srid').") AS geom")->current();
+        $row = $this->db->query("SELECT ST_MakeValid(ST_GeomFromText('$value', " . kohana::config('sref_notations.internal_srid') . ")) AS geom")->current();
         $value = $row->geom;
       }
     }
@@ -274,12 +306,10 @@ class Sample_Model extends ORM_Tree
   /**
   * Override get handler to translate PostGIS internal spatial data to WKT.
   */
-  public function __get($column)
-  {
+  public function __get($column) {
     $value = parent::__get($column);
 
-    if  (substr($column,-4) == 'geom' && $value!==null)
-    {
+    if (substr($column,-4) == 'geom' && $value!==NULL) {
       $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
       $value = $row->wkt;
     }
@@ -290,39 +320,38 @@ class Sample_Model extends ORM_Tree
    * Return a displayable caption for the item.
    * For samples this is a combination of the date and spatial reference.
    */
-  public function caption()
-  {
-    return ('Sample on '.$this->date.' at '.$this->entered_sref);
+  public function caption() {
+    return ('Sample on ' . $this->date . ' at ' . $this->entered_sref);
   }
 
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
-  public function fixed_values_form($options=array()) {
+  public function fixed_values_form($options = array()) {
     $srefs = array();
     $systems = spatial_ref::system_list();
-    foreach ($systems as $code=>$title)
-    	$srefs[] = str_replace(array(',',':'), array('&#44', '&#56'), $code) .
-    				":".
-    				str_replace(array(',',':'), array('&#44', '&#56'), $title);
+    foreach ($systems as $code => $title)
+      $srefs[] = str_replace(array(',', ':'), array('&#44', '&#56'), $code) .
+          ":" .
+          str_replace(array(',', ':'), array('&#44', '&#56'), $title);
 
     $sample_methods = array(":Defined in file");
     $parent_sample_methods = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:sample_methods')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term) {
-    	$sample_method = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
-    						":".
-    						str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
-    	$sample_methods[] = $sample_method;
-    	$parent_sample_methods[] = $sample_method;
+      $sample_method = str_replace(array(',', ':'), array('&#44', '&#56'), $term->id) .
+          ":" .
+          str_replace(array(',', ':'), array('&#44', '&#56'), $term->term);
+      $sample_methods[] = $sample_method;
+      $parent_sample_methods[] = $sample_method;
     }
 
     $location_types = array(":No filter");
     $terms = $this->db->select('id, term')->from('list_termlists_terms')->where('termlist_external_key', 'indicia:location_types')->orderby('term', 'asc')->get()->result();
     foreach ($terms as $term)
-    	$location_types[] = str_replace(array(',',':'), array('&#44', '&#56'), $term->id) .
-    						":".
-    						str_replace(array(',',':'), array('&#44', '&#56'), $term->term);
+      $location_types[] = str_replace(array(',', ':'), array('&#44', '&#56'), $term->id) .
+          ":" .
+          str_replace(array(',', ':'), array('&#44', '&#56'), $term->term);
 
     $retval = array(
       'website_id' => array(
@@ -341,34 +370,34 @@ class Sample_Model extends ORM_Tree
       ),
       'sample:entered_sref_system' => array(
         'display'=>'Spatial Ref. System',
-        'description'=>'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
+        'description'=>'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a ' .
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.',
         'datatype'=>'lookup',
         'lookup_values'=>implode(',', $srefs)
       ),
       'sample:sample_method_id' => array(
         'display'=>'Sample Method',
-        'description'=>'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a '.
+        'description'=>'Select the sample method used for records in this import file. Note, if you have a file with a mix of sample methods then you need a ' .
             'column in the import file which is mapped to the Sample Sample Method field, containing the sample method.',
         'datatype'=>'lookup',
         'lookup_values'=>implode(',', $sample_methods)
       ),
       'fkFilter:location:location_type_id' => array(
         'display'=>'Location Type',
-        'description'=>'If this import file includes samples which reference locations records, you can restrict the type of locations looked '.
-      		'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
+        'description'=>'If this import file includes samples which reference locations records, you can restrict the type of locations looked ' .
+            'up by setting this location type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
         'datatype'=>'lookup',
         'lookup_values'=>implode(',', $location_types)
       )
     );
-    if(!empty($options['activate_parent_sample_method_filter']) && $options['activate_parent_sample_method_filter']==='t')
-    	$retval['fkFilter:sample:sample_method_id'] = array(
-    			'display'=>'Parent Sample Method',
-    			'description'=>'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked '.
-    			'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
-    			'datatype'=>'lookup',
-    			'lookup_values'=>implode(',', $parent_sample_methods)
-    	);
+    if (!empty($options['activate_parent_sample_method_filter']) && $options['activate_parent_sample_method_filter']==='t')
+      $retval['fkFilter:sample:sample_method_id'] = array( // uses format :table:
+          'display'=>'Parent Sample Method',
+          'description'=>'If this import file includes samples which reference parent sample records, you can restrict the type of samples looked ' .
+          'up by setting this sample method type. It is not currently possible to use a column in the file to do this on a sample by sample basis.',
+          'datatype'=>'lookup',
+          'lookup_values'=>implode(',', $parent_sample_methods)
+      );
 
     return $retval;
   }
@@ -381,12 +410,12 @@ class Sample_Model extends ORM_Tree
   public function postSubmit($isInsert) {
     if ($this->group_id) {
       $group = $this->db->select('id')->from('groups')
-          ->where(array('id' => $this->group_id, 'private_records'=>'t', 'deleted'=>'f'))->get()->result_array();
+          ->where(array('id' => $this->group_id, 'private_records' => 't', 'deleted' => 'f'))->get()->result_array();
       if (count($group)) {
         // This sample is associated with a group that does not release its records. So ensure the release_status flag
         // is set.
-        $this->db->update('occurrences', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
-        $this->db->update('cache_occurrences_functional', array('release_status'=>'U'), array('sample_id'=>$this->id, 'release_status'=>'R'));
+        $this->db->update('occurrences', array('release_status' => 'U'), array('sample_id' => $this->id, 'release_status' => 'R'));
+        $this->db->update('cache_occurrences_functional', array('release_status' => 'U'), array('sample_id' => $this->id, 'release_status' => 'R'));
       }
     }
     if ($this->requeuedForVerification && !$isInsert) {
@@ -396,9 +425,9 @@ class Sample_Model extends ORM_Tree
         'auto_generated'=>'t'
       );
       $comment = ORM::factory('sample_comment');
-      $comment->validate(new Validation($data), true);
+      $comment->validate(new Validation($data), TRUE);
     }
-    return true;
+    return TRUE;
   }
 
 }

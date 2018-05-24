@@ -39,7 +39,7 @@
       -- if there are any determinations, we need the current view of the record
       select distinct
         'current name' as type,
-        o.updated_on,
+        d.updated_on,
         'Record was determined as ' || ttl.preferred_taxon as comment,
         null as correspondence_data,
         null as reference,

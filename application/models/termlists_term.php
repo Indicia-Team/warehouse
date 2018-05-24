@@ -14,26 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link    http://code.google.com/p/indicia/
  */
 
 /**
  * Model class for the Termlists_Terms table.
  *
- * @package	Core
+ * @package Core
  * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @link    http://code.google.com/p/indicia/wiki/DataModel
  */
 class Termlists_term_Model extends Base_Name_Model {
 
   public $search_field='term';
 
   protected $lookup_against='lookup_term';
-  
+
   protected $list_id_field = 'termlist_id';
 
   protected $belongs_to = array(
@@ -43,11 +43,27 @@ class Termlists_term_Model extends Base_Name_Model {
   );
 
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
-  protected $has_attributes=true;
+  protected $has_attributes=TRUE;
   protected $attrs_submission_name='trmAttributes';
   public $attrs_field_prefix='trmAttr';
 
   protected $ORM_Tree_children = 'termlists_terms';
+
+  public $import_duplicate_check_combinations = array(
+      array(
+        'description' => 'Termlist And Term',
+        'fields' => array(array('fieldName' => 'termlists_term:termlist_id'),
+              array('fieldName' => 'termlists_term:term_id', 'notInMappings' => TRUE),
+        )
+      ),
+      array(
+        'description' => 'Termlist, Parent Term And Term',
+        'fields' => array(array('fieldName' => 'termlists_term:termlist_id'),
+              array('fieldName' => 'termlists_term:term_id', 'notInMappings' => TRUE),
+              array('fieldName' => 'termlists_term:parent_id')
+        )
+      ),
+  );
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
@@ -66,13 +82,14 @@ class Termlists_term_Model extends Base_Name_Model {
     );
     return parent::validate($array, $save);
   }
+
   /**
    * If we want to delete the record, we need to check that no dependents exist.
    */
-  public function __dependents(Validation $array, $field){
-    if ($array['deleted'] == 'true'){
+  public function __dependents(Validation $array, $field) {
+    if ($array['deleted'] == 'true') {
       $record = ORM::factory('termlists_term', $array['id']);
-      if (count($record->children)!=0){
+      if (count($record->children)!=0) {
         $array->add_error($field, 'has_children');
       }
     }
@@ -81,8 +98,8 @@ class Termlists_term_Model extends Base_Name_Model {
   /**
    * Overrides the post submit function to add in synonomies
    */
-  protected function postSubmit($isInsert){
-    $success = true;
+  protected function postSubmit($isInsert) {
+    $success = TRUE;
     if ($this->submission['fields']['preferred']['value']=='t') {
       try {
         if (isset($this->submission['metaFields']) && array_key_exists('synonyms', $this->submission['metaFields'])) {
@@ -90,7 +107,8 @@ class Termlists_term_Model extends Base_Name_Model {
             $this->submission['metaFields']['synonyms']['value'],
             'set_synonym_sub_array'
           );
-        } else $arrSyn=array();
+        }
+        else $arrSyn=array();
         $meaning_id=$this->submission['fields']['meaning_id']['value'];
         $existingSyn = $this->getSynonomy('meaning_id', $meaning_id);
 
@@ -113,13 +131,13 @@ class Termlists_term_Model extends Base_Name_Model {
         // $arraySyn should now be left only with those synonyms
         // we wish to add to the database
 
-        Kohana::log("info", "Synonyms remaining to add: ".count($arrSyn));
+        Kohana::log("info", "Synonyms remaining to add: " . count($arrSyn));
         $sm = ORM::factory('termlists_term');
         foreach ($arrSyn as $lang => $term) {
           $sm->clear();
           $syn = array();
           // Wrap a new submission
-          Kohana::log("debug", "Wrapping submission for synonym ".$term);
+          Kohana::log("debug", "Wrapping submission for synonym " . $term);
           $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
           // If language not found, use english as the default. Future versions may wish this to be
           // user definable.
@@ -132,7 +150,7 @@ class Termlists_term_Model extends Base_Name_Model {
           }
           // unlike the taxa there are no term based shared data.
           // Now update the record with specifics for this synonym
-          $syn['term:id'] = null;
+          $syn['term:id'] = NULL;
           $syn['term:term'] = $term;
           $syn['term:language_id'] = $lang_id;
           $syn['termlists_term:id'] = '';
@@ -143,7 +161,7 @@ class Termlists_term_Model extends Base_Name_Model {
           $syn['metaFields:synonyms']='';
           $sub = $this->wrap($syn);
           // Don't resubmit the meaning record, again we can't rely on the order of the supermodels in the list
-          foreach($sub['superModels'] as $idx => $supermodel) {
+          foreach ($sub['superModels'] as $idx => $supermodel) {
             if ($supermodel['model']['id']=='meaning') {
               unset($sub['superModels'][$idx]);
               break;
@@ -151,16 +169,17 @@ class Termlists_term_Model extends Base_Name_Model {
           }
           $sm->submission = $sub;
           if (!$sm->submit()) {
-            $success=false;
-            foreach($sm->errors as $key=>$value) {
-              $this->errors[$sm->object_name.':'.$key]=$value;
-            }          
+            $success=FALSE;
+            foreach ($sm->errors as $key => $value) {
+              $this->errors[$sm->object_name . ':' . $key]=$value;
+            }
           }
         }
-      } catch (Exception $e) {
-        $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
+      }
+      catch (Exception $e) {
+        $this->errors['general']='<strong>An error occurred</strong><br/>' . $e->getMessage();
         error_logger::log_error('Exception during postSubmit in termlists_term model.', $e);
-        $success = false;
+        $success = FALSE;
       }
     }
     return $success;
@@ -172,7 +191,8 @@ class Termlists_term_Model extends Base_Name_Model {
   protected function set_synonym_sub_array($tokens, &$array) {
     if (count($tokens) >= 2) {
       $array[trim($tokens[1])] = trim($tokens[0]);
-    } else {
+    }
+    else {
       $array[kohana::config('indicia.default_lang')] = trim($tokens[0]);
     }
   }
@@ -180,11 +200,11 @@ class Termlists_term_Model extends Base_Name_Model {
   /**
    * Return a displayable caption for the item.
    */
-  public function caption()
-  {
+  public function caption() {
     if ($this->id) {
-      return ($this->term_id != null ? $this->term->term : '');
-    } else {
+      return ($this->term_id != NULL ? $this->term->term : '');
+    }
+    else {
       return 'Term in List';
     }
   }
@@ -195,8 +215,7 @@ class Termlists_term_Model extends Base_Name_Model {
    *
    * @return array Submission structure for a termlists_term entry.
    */
-  public function get_submission_structure()
-  {
+  public function get_submission_structure() {
     return array(
       'model'=>$this->object_name,
       'superModels'=>array(
@@ -215,18 +234,25 @@ class Termlists_term_Model extends Base_Name_Model {
       'preferred'=>'t'
     );
   }
-  
+
   /**
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
   public function fixed_values_form() {
     return array(
-      'term:language_id' => array( 
-        'display'=>'Language', 
-        'description'=>'Select the language to import preferred terms for.', 
-        'datatype'=>'lookup',
-        'population_call'=>'direct:language:id:language' 
-      )
+        'termlists_term:termlist_id' => array(
+            'display' => 'Termlist',
+            'description' => 'Select the Termlist for all terms in this import file. Note, if you have a file with a mix of location type then you need a ' .
+                'column in the import file which is mapped to the Termlist field.',
+            'datatype' => 'lookup',
+            'population_call'=>'direct:termlist:id:title'
+        ),
+        'term:language_id' => array(
+            'display'=>'Language',
+            'description'=>'Select the language to import preferred terms for.',
+            'datatype'=>'lookup',
+            'population_call'=>'direct:language:id:language'
+        )
     );
   }
 

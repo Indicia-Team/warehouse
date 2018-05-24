@@ -26,7 +26,8 @@ left join occurrence_comments ocfirstreview on ocfirstreview.id = (
   and ocfirstreview.record_status is not null
 #agreements_join#
 #joins#
-where #sharing_filter#
+where wm.deleted=false
+and #sharing_filter#
 and wm.key='taxa_taxon_list_external_key'
 and cttl.preferred=true
 and cttl.taxon_list_id=#taxon_list_id#
@@ -50,6 +51,7 @@ and cttl.taxon_list_id=#taxon_list_id#
       description="How old can records be before they are not considered recent" />
   </params>
   <columns>
+    <column name="id" sql="cttl.id" visible="false" in_count="true" />
     <column name="taxon" display="Species" sql="cttl.taxon" />
     <column name="occurrence_count" display="Records" aggregate="true" sql="count(o.*)" />
     <column name="overdue" display="Overdue" aggregate="true"

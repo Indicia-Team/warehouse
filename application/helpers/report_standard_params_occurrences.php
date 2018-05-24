@@ -143,7 +143,7 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "st_intersects(o.public_geom, st_makevalid(st_geomfromtext('#searchArea#',900913)))",
+            'sql' => "st_intersects(#sample_geom_field#, st_makevalid(st_geomfromtext('#searchArea#',900913)))",
           ],
         ],
       ],
@@ -216,6 +216,18 @@ class report_standard_params_occurrences {
             'value' => '',
             'operator' => '',
             'sql' => "o.location_id_#typealias# #indexed_location_list_op# (#indexed_location_list#)",
+          ],
+        ],
+      ],
+      'output_sref_systems' => [
+        'datatype' => 'string[]',
+        'display' => 'Output reference systems',
+        'description' => 'Comma separated list of output spatial reference systems to filter to. Allows broad geographic limits to be applied.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "onf.output_sref_system IN (#output_sref_systems#)",
           ],
         ],
       ],
@@ -506,9 +518,13 @@ class report_standard_params_occurrences {
         'display' => 'Release status',
         'description' => 'Release status of the record',
         'lookup_values' =>
-          'R:Released,RM:Released by other recorders plus my own unreleased records;' .
-          'U:Unreleased because part of a project that has not yet released the records,' .
-          'P:Recorder has requested a precheck before release,A:All',
+          'R:Released,' .
+          'RM:Released by other recorders plus my own unreleased records;' .
+          'U:Unreleased because records belong of a project that has not yet released the records,' .
+          'RU:Released plus unreleased because records belong to a project that has not yet released the records,' .
+          'P:Recorder has requested a precheck before release,' .
+          'RP:Released plus records where recorder has requested a precheck before release,' .
+          'A:All',
         'wheres' => [
           [
             'value' => 'R',
@@ -521,9 +537,19 @@ class report_standard_params_occurrences {
             'sql' => "o.release_status='U'",
           ],
           [
+            'value' => 'RU',
+            'operator' => 'equal',
+            'sql' => "o.release_status in ('R','U')",
+          ],
+          [
             'value' => 'P',
             'operator' => 'equal',
             'sql' => "o.release_status='P'",
+          ],
+          [
+            'value' => 'RP',
+            'operator' => 'equal',
+            'sql' => "o.release_status in ('R','P')",
           ],
           [
             'value' => 'RM',
@@ -572,8 +598,8 @@ class report_standard_params_occurrences {
       ],
       'has_photos' => [
         'datatype' => 'boolean',
-        'display' => 'Photo records only',
-        'description' => 'Only include records which have photos?',
+        'display' => 'Photo records filter',
+        'description' => 'Include or exclude records which have photos.',
         'wheres' => [
           [
             'value' => '1',
@@ -584,6 +610,23 @@ class report_standard_params_occurrences {
             'value' => '0',
             'operator' => 'equal',
             'sql' => "o.media_count=0",
+          ],
+        ],
+      ],
+      'zero_abundance' => [
+        'datatype' => 'boolean',
+        'display' => 'Zero abundance filter',
+        'description' => 'Include or exclude zero abundance records.',
+        'wheres' => [
+          [
+            'value' => '1',
+            'operator' => 'equal',
+            'sql' => "o.zero_abundance=true",
+          ],
+          [
+            'value' => '0',
+            'operator' => 'equal',
+            'sql' => "o.zero_abundance=false",
           ],
         ],
       ],
@@ -698,13 +741,13 @@ class report_standard_params_occurrences {
         // Faster than embedding this query in the report.
         'preprocess' =>
           "with recursive q as (
-    select id, external_key
+    select preferred_taxa_taxon_list_id, external_key
     from cache_taxa_taxon_lists t
     where id in (#taxa_taxon_list_list#)
     union all
-    select tc.id, tc.external_key
+    select tc.preferred_taxa_taxon_list_id, tc.external_key
     from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.id
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id
   ) select '''' || array_to_string(array_agg(distinct external_key::varchar), ''',''') || '''' from q",
       ],
       // Version of the above optimised for searching for higher taxa.
@@ -722,13 +765,13 @@ class report_standard_params_occurrences {
         // Faster than embedding this query in the report.
         'preprocess' =>
           "with recursive q as (
-    select id, family_taxa_taxon_list_id
+    select preferred_taxa_taxon_list_id, family_taxa_taxon_list_id
     from cache_taxa_taxon_lists t
     where id in (#higher_taxa_taxon_list_list#)
     union all
-    select tc.id, tc.family_taxa_taxon_list_id
+    select tc.preferred_taxa_taxon_list_id, tc.family_taxa_taxon_list_id
     from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.id and tc.taxon_rank_sort_order<=180
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id and tc.taxon_rank_sort_order<=180
   ) select array_to_string(array_agg(distinct family_taxa_taxon_list_id::varchar), ',') from q",
       ],
       'taxon_meaning_list' => [
@@ -745,13 +788,13 @@ class report_standard_params_occurrences {
         // Faster than embedding this query in the report.
         'preprocess' =>
           "with recursive q as (
-    select id, taxon_meaning_id
+    select preferred_taxa_taxon_list_id, taxon_meaning_id
     from cache_taxa_taxon_lists t
     where taxon_meaning_id in (#taxon_meaning_list#)
     union all
-    select tc.id, tc.taxon_meaning_id
+    select tc.preferred_taxa_taxon_list_id, tc.taxon_meaning_id
     from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.id
+    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id
   ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q",
       ],
       'taxon_designation_list' => [
@@ -778,6 +821,28 @@ class report_standard_params_occurrences {
             'value' => '',
             'operator' => '',
             'sql' => "coalesce(o.identification_difficulty, 0) #identification_difficulty_op# #identification_difficulty#",
+          ],
+        ],
+      ],
+      'taxa_taxon_list_attribute_ids' => [
+        'datatype' => 'integer[]',
+        'display' => 'Taxon attribute IDs',
+        'description' => 'List of taxa_taxon_list_attribute_ids that will be searched for terms when using the ' .
+          'taxa_taxon_list_attribute_terms_ids parameter.',
+      ],
+      'taxa_taxon_list_attribute_termlist_term_ids' => [
+        'datatype' => 'integer[]',
+        'display' => 'Taxon attribute term IDs',
+        'description' => 'List of termlist_term_ids that must be linked to the taxa returned by the report as taxa ' .
+          'taxon list attributes. Use in conjunction with taxa_taxon_list_attribute_ids.',
+        'joins' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => 'join taxa_taxon_list_attribute_values ttl_attribute_terms ' .
+              'on ttl_attribute_terms.taxa_taxon_list_id=o.preferred_taxa_taxon_list_id ' .
+              'and ttl_attribute_terms.taxa_taxon_list_attribute_id in (#taxa_taxon_list_attribute_ids#) ' .
+              'and ttl_attribute_terms.int_value in (#taxa_taxon_list_attribute_termlist_term_ids#)',
           ],
         ],
       ],

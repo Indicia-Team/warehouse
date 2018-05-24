@@ -26,7 +26,7 @@ $enabled = ($disabled_input=='YES') ? 'disabled="disabled"' : '';
 ?>
 <p>
 <?php if ($disabled_input==='YES') : ?>
-The attribute was created by another user so you don't have permission to change the attribute's specification, although you can 
+The attribute was created by another user so you don't have permission to change the attribute's specification, although you can
 change the attribute assignments at the bottom of the page. Please contact the warehouse owner to request changes.
 <?php else : ?>
 This page allows you to specify a new or edit an existing custom attribute for <?php echo strtolower($other_data['name']); ?> data.
@@ -78,7 +78,7 @@ function toggleOptions(data_type)
       disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_digit','valid_integer','valid_time'];
       break;
     case "B": // Boolean
-    case "G": // Geometry 
+    case "G": // Geometry
       enable_list = ['valid_required'];
       disable_list = ['valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value','valid_date_in_past','valid_digit','valid_integer','valid_time'];
       break;
@@ -152,9 +152,6 @@ $(document).ready(function() {
   <li><label class="wide" for="public">Available to other Websites</label>
   <?php echo form::checkbox($model->object_name.':public', TRUE, (html::initial_value($values, $model->object_name.':public') == 't'), 'class="vnarrow" '.$enabled ) ?>
   </li>
-  <li><label class="wide" for="for_verification_check">Used for automated verification checks</label>
-  <?php echo form::checkbox($model->object_name.':for_verification_check', TRUE, (html::initial_value($values, $model->object_name.':for_verification_check') == 't'), 'class="vnarrow" '.$enabled ) ?>
-  </li>
 </ol>
 </fieldset>
 <fieldset
@@ -227,7 +224,7 @@ foreach ($lists as $list) {
   $rec = $this->db->select('id')
       ->from('taxon_lists_taxa_taxon_list_attributes')
       ->where(array(
-        'taxon_list_id'=>$list->id, 
+        'taxon_list_id'=>$list->id,
         'taxa_taxon_list_attribute_id'=>html::initial_value($values,$model->object_name.':id'),
         'deleted'=>'f'
       ))

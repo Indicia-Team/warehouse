@@ -259,21 +259,26 @@ class config_test {
    */
   private static function check_dBase(&$messages, $problems_only) {
     if (!function_exists('dbase_open')) {
+      $description = <<<MSG
+The dBase library is not installed on this web server. This is required to enable upload of SHP files containing
+location boundaries, but does not stop Indicia working. To fix this for servers running PHP 5.2, find your php.ini file
+in the PHP installation folder and find the line <strong>;extension=php_dbase.dll</strong>. Remove the semi-colon from
+the start of the line and save the file, then restart your webserver process. If you compiled PHP yourself, you must
+compile PHP with dbase support by using the --enable-dbase configuration option.
+MSG;
       // Note that this does NOT prevent installation, only give a warning.
       array_push($messages, array(
         'title' => 'dBase Library',
-        'description' => '<p>The dBase library is not installed on this web server. This is required to enable upload of SHP files containing location boundaries, but '.
-            'does not stop Indicia working. To fix this for servers running PHP 5.2, find your php.ini file in the PHP installation folder and ' .
-            'find the line <strong>;extension=php_dbase.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
-            'webserver process. If you compiled PHP yourself, you must compile PHP with dbase support by using the --enable-dbase configuration option.</p>',
-        'success' => true,
-        'warning' => true
+        'description' => "<p>$description</p>",
+        'success' => TRUE,
+        'warning' => TRUE
       ));
-    } elseif (!$problems_only) {
+    }
+    elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'dBase Library',
         'description' => '<p>The dBase library is installed.</p>',
-        'success' => true
+        'success' => TRUE
       ));
     }
   }
@@ -287,21 +292,26 @@ class config_test {
    */
   private static function check_zip(&$messages, $problems_only) {
     if (!function_exists('zip_open')) {
+      $description = <<<MSG
+The zip library is not installed on this web server. This is required to enable upload of SHP files containing location
+boundaries and download of Darwin Core Archive format files, but otherwise does not stop Indicia working. To fix this
+for Windows servers, find your php.ini file in the PHP installation folder and find the line
+<strong>;extension=php_zip.dll</strong>. Remove the semi-colon from the start of the line and save the file, then
+restart your webserver. For Linux systems, you must compile PHP with zip support by using the --enable-zip configuration
+option. Please pass this information to the administrator of your webserver if you are not sure how to do this.
+MSG;
       array_push($messages, array(
         'title' => 'Zip Library',
-        'description' => '<p>The zip library is not installed on this web server. This is required to enable upload of SHP files containing location boundaries, but '.
-            'does not stop Indicia working. To fix this for Windows servers, find your php.ini file in the PHP installation folder and ' .
-            'find the line <strong>;extension=php_zip.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
-            'webserver. For Linux systems, you must compile PHP with zip support by using the --enable-zip configuration option. Please pass this information to the administrator of your webserver if you are not sure how to do this.</p>',
-        'success' => true,
-        'warning' => true
+        'description' => "<p>$description</p>",
+        'success' => TRUE,
+        'warning' => TRUE,
       ));
     }
     elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'Zip Library',
         'description' => '<p>The Zip library is installed.</p>',
-        'success' => true
+        'success' => TRUE,
       ));
     }
   }

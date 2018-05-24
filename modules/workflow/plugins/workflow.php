@@ -87,9 +87,9 @@ function workflow_orm_pre_save_processing($db, $websiteId, $entity, $oldRecord, 
     return $state;
   }
   // Rewind the record if previous workflow rule changes no longer apply (e.g. after redetermination).
-  workflow::applyRewindsIfRequired($db, $entity, $oldRecord, $newRecord);
+  $rewoundRecord = workflow::getRewoundRecord($db, $entity, $oldRecord, $newRecord);
   // Apply any changes in the workflow_events table relevant to the record.
-  $state = workflow::applyWorkflow($db, $websiteId, $entity, $oldRecord, $newRecord);
+  $state = workflow::applyWorkflow($db, $websiteId, $entity, $oldRecord, $rewoundRecord, $newRecord);
   return $state;
 }
 

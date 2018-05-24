@@ -54,12 +54,12 @@ class Survey_Controller extends Gridview_Base_Controller {
     );
     $this->template->content = $this->view;
   }
-  
+
   protected function prepareOtherViewData($values)
-  { 
+  {
     $websites = ORM::factory('website');
     if (!empty($values['survey:parent_id']))
-      // parent list already has a link to a website, so we can't change it 
+      // parent list already has a link to a website, so we can't change it
       $websites = $websites->in('id', ORM::factory('survey', $values['survey:parent_id'])->website_id);
     elseif (!empty($values['survey:website_id']))
       // can't change website for existing survey
@@ -73,9 +73,9 @@ class Survey_Controller extends Gridview_Base_Controller {
       'websites' => $arr
     );
   }
-  
+
   /**
-   * Override the default action columns for a grid - just an edit link - to 
+   * Override the default action columns for a grid - just an edit link - to
    * add a link to the attributes list for othe survey.
    */
   protected function get_action_columns() {
@@ -90,7 +90,7 @@ class Survey_Controller extends Gridview_Base_Controller {
       )
     );
   }
-  
+
     /**
    * Return a list of the tabs to display for this controller's actions.
    */
@@ -116,7 +116,7 @@ class Survey_Controller extends Gridview_Base_Controller {
 
   /**
    * Check access to a survey when editing. The survey's website must be in the list
-   * of websites the user is authorised to administer.   
+   * of websites the user is authorised to administer.
    */
   protected function record_authorised ($id)
   {
@@ -127,14 +127,14 @@ class Survey_Controller extends Gridview_Base_Controller {
     }
     return true;
   }
-  
+
   /**
    * You can only access the list of surveys if at least an editor of one website.
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
   }
-  
+
   /**
    * Retrieves additional values from the model that are required by the edit form.
    * @return array List of additional values required by the form.
@@ -147,12 +147,24 @@ class Survey_Controller extends Gridview_Base_Controller {
     $this->loadAttributes($r, array(
         'website_id'=>array($r['website_id'])
     ));
+    // Convert the JSON in the db for core field additional validation rules
+    // into default values for the UI form.
+    if (!empty($this->model->core_validation_rules)) {
+      $ruleTables = json_decode($this->model->core_validation_rules, TRUE);
+      foreach ($ruleTables as $table => $rules) {
+        foreach ($rules as $field => $rule) {
+          if (strpos($rule, 'required') !== FALSE) {
+            $r["{$table}-{$field}-required"] = '1';
+          }
+        }
+      }
+    }
   	return $r;
   }
-  
+
   /**
    * Load default values either when creating a survey new or reloading after a validation failure.
-   * This adds the custome attributes list to the data available for the view. 
+   * This adds the custome attributes list to the data available for the view.
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
@@ -162,5 +174,28 @@ class Survey_Controller extends Gridview_Base_Controller {
     ));
     return $r;
   }
-  
+
+  /**
+   * Override save method.
+   *
+   * Translate validation rule field checkboxes on edit form into the JSON
+   * core_validation_rules field value.
+   */
+  public function save() {
+    $rules = [];
+    foreach ($_POST as $field => $value) {
+      if (preg_match('/^(?P<table>(occurrence|sample))\-(?P<field>.+)\-(?P<rule>.+)$/', $field, $matches)) {
+        if (!isset($rules[$matches['table']])) {
+          $rules[$matches['table']] = [];
+        }
+        // If checkbox checked, then set the rule.
+        if ($value === '1') {
+          $rules[$matches['table']][$matches['field']] = $matches['rule'];
+        }
+      }
+    }
+    $_POST['survey:core_validation_rules'] = json_encode($rules);
+    parent::save();
+  }
+
 }

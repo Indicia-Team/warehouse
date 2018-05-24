@@ -29,14 +29,14 @@ legend {
 <body>
 <form method="POST">
 <?php
-if (empty($_GET['user_id']) || empty($_GET['warehouse_url'])) {
+if (empty($_GET['user_id'])) {
   echo '<p>Invalid link</p>';
 } else {
   //If there is a POST, then the user has saved, so process this
   if (!empty($_POST)) {
     $response = subscription_settings::build_submission();
     $decodedResponse=json_decode($response);
-    if (isset($decodedResponse->error)) {   
+    if (isset($decodedResponse->error)) {
       ?><h2>A problem seems to have occurred, the response from the server is as follows:</h2><?php
       echo print_r($response,true);
       ?><form><input type=button value="Return To Subscription Settings Screen" onClick="window.location = document.URL;"></form><?php
@@ -74,8 +74,8 @@ class subscription_settings {
     <h1>Notification Email Settings</h1>
     <fieldset><legend>Email digest frequencies</legend>
     Use the following boxes to select how often you would like to receive emails containing details of new notifications. You can select a different frequency depending on the notification type.</br></br><?php
-    
-    
+
+
     $frequencies = $configuration['frequencies'];
     $sourceTypes = $configuration['sourceTypes'];
     $auth=self::getAuth(0-$_GET['user_id'],$configuration['privateKey']);
@@ -92,7 +92,7 @@ class subscription_settings {
       $selectSettings=array(
         'label' => $sourceTypeFullName,
         'lookupValues' =>$frequencies,
-      );    
+      );
       //If there is existing data then set a default for the select drop-downs
       //The ID of an existing database record is tagged onto the end of the fieldname for use in the submission, get this from the notification data, this is stored as an array where the key
       //is the source type and the id is at index 0
@@ -132,10 +132,10 @@ class subscription_settings {
         if (in_array($headerName, $wantCols)) {
           echo '<th>';
           $headerName = str_replace('Id', 'ID', ucwords(str_replace('_', ' ', $headerName)));
-          echo $headerName; 
+          echo $headerName;
           echo "</th>\n";
         }
-      }    
+      }
       ?></tr><?php
       //Create a row for each species alert item related to the user
       foreach ($speciesAlertData as $speciesAlertItem) {
@@ -160,7 +160,7 @@ class subscription_settings {
   //Get an authentication
   private static function getAuth($website_id,$password) {
     $postargs = "website_id=$website_id";
-    $response = self::http_post($_GET['warehouse_url'].'/index.php/services/security/get_read_write_nonces', $postargs);
+    $response = self::http_post(self::get_warehouse_url().'index.php/services/security/get_read_write_nonces', $postargs);
     $nonces = json_decode($response, true);
     return array(
       'read'=>array(
@@ -226,7 +226,7 @@ class subscription_settings {
         $request .= '&'.self::array_to_query_string($options['extraParams'], true);
     }
     if (!isset($response) || $response===false) {
-      $response = self::http_post($_GET['warehouse_url'].'/'.$request, null);
+      $response = self::http_post(self::get_warehouse_url().$request, null);
     }
     $r = json_decode($response, true);
     if (!is_array($r)) {
@@ -269,7 +269,7 @@ class subscription_settings {
         //If the drop-down is set to NONE, and it is a new item rather than a drop-down the user has changed to being NONE from an existing selection, then we can ignore this code as we don't need to take any action.
         //$name[2] is the record id which is taken off the end of the fieldname, if this is missing we know it is a new record
         if (!($_POST[$fieldname]==='NONE'&&empty($name[2]))) {
-          $sourceType=$name[1]; 
+          $sourceType=$name[1];
           $data['id']='user_email_notification_setting';
           //The third part of the fieldname in the notifications settings select lists is the id of the exsiting user_email_notification_setting record. Use this id to save otherwise a new
           //record would be created rather than editing of the old record
@@ -300,21 +300,25 @@ class subscription_settings {
     $response = self::do_submission('save', $submission);
     return $response;
   }
-  
+
   //Take the submission structure and give it to data services
   private static function do_submission($entity, $submission = null, $writeTokens = null) {
     $configuration = self::get_page_configuration();
     $auth=self::getAuth(0-$_GET['user_id'],$configuration['privateKey']);
     $writeTokens=$auth['write'];
-    $request = $_GET['warehouse_url']."/index.php/services/data/$entity";
+    $request = self::get_warehouse_url()."index.php/services/data/$entity";
     $postargs = 'submission='.urlencode(json_encode($submission));
     // passthrough the authentication tokens as POST data. Use parameter writeTokens
     foreach($writeTokens as $token => $value){
       $postargs .= '&'.$token.'='.($value === true ? 'true' : ($value === false ? 'false' : $value));
-    } 
+    }
     $postargs .= '&user_id='.$_GET['user_id'];
     $response = self::http_post($request, $postargs);
     return $response;
+  }
+
+  private static function get_warehouse_url() {
+    return $_SERVER['HTTP_HOST'] . '/' . trim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/') . '/';
   }
 }
 ?>

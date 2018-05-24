@@ -28,7 +28,7 @@
   *  $body - gridview_table object.
   */
 
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+warehouse::loadHelpers(['data_entry_helper']);
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 $colDefs = array();
 if (isset($columns)) {
@@ -52,7 +52,7 @@ foreach ($actions as &$action) {
     $action['url'] = url::base(true).$action['url'];
   }
 }
-if (count($actions)>0) 
+if (count($actions)>0)
   $colDefs[] = array(
     'display' => 'Actions',
     'actions' => $actions

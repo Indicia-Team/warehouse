@@ -1,0 +1,14 @@
+{
+  "extends" : "airbnb/legacy",
+  "rules": {
+    "max-len": [1, 120]
+  },
+  "env": {
+    "jquery": true
+  },
+  "globals": {
+    "indiciaData": true,
+    "indiciaFns": true,
+    "OpenLayers": true
+  }
+}

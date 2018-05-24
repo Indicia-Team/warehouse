@@ -1,6 +1,8 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
 /**
+ * @file
+ * Model for the survey entity.
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -31,17 +33,17 @@
 class Survey_Model extends ORM_Tree {
 
   protected $ORM_Tree_children = "surveys";
-  
+
   protected $has_many = array(
     'sample_media'
   );
-  
+
   protected $belongs_to = array(
       'owner'=>'person',
       'website',
       'created_by'=>'user',
       'updated_by'=>'user');
-  
+
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   protected $attrs_submission_name='srvAttributes';
@@ -57,7 +59,8 @@ class Survey_Model extends ORM_Tree {
       'parent_id',
       'owner_id',
       'auto_accept',
-      'auto_accept_max_difficulty'
+      'auto_accept_max_difficulty',
+      'core_validation_rules',
     );
     return parent::validate($array, $save);
   }

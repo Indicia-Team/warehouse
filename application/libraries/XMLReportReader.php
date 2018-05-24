@@ -33,7 +33,8 @@ class XMLReportReader_Core implements ReportReader
   private $description;
   private $row_class;
   private $query;
-  private $countQuery=null;
+  private $countQueryBase = NULL;
+  private $countFields;
   private $field_sql;
   private $order_by;
   private $params = array();
@@ -121,11 +122,9 @@ class XMLReportReader_Core implements ReportReader
   * (=user's data) depending on the type of data from other websites to include in this report.
   * @param array $colsToInclude Optional list of column names to include in the report output.
   */
-  public function __construct($report, $websiteIds, $sharing='reporting', $colsToInclude = array())
-  {
+  public function __construct($report, $websiteIds, $sharing='reporting', $colsToInclude = array()) {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
-    try
-    {
+    try {
       $a = explode('/', $report);
       $this->name = $a[count($a)-1];
       $reader = new XMLReader();
@@ -199,22 +198,27 @@ class XMLReportReader_Core implements ReportReader
                 // drop a marker in so we can insert custom attr fields later
                 $field_sql .= '#fields#';
                 break;
+
               case 'order_by':
                 $reader->read();
                 $this->order_by[] = $reader->value;
                 break;
+
               case 'param':
                 $this->mergeParam($reader->getAttribute('name'), $reader);
                 break;
+
               case 'column':
                 $this->mergeXmlColumn($reader);
                 break;
+
               case 'table':
-                $this->automagic = true;
+                $this->automagic = TRUE;
                 $this->setTable(
                     $reader->getAttribute('tablename'),
                     $reader->getAttribute('where'));
                 break;
+
               case 'subTable':
                 $this->setSubTable(
                     $reader->getAttribute('tablename'),
@@ -223,18 +227,20 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('join'),
                     $reader->getAttribute('where'));
                 break;
+
               case 'tabColumn':
-                 $this->mergeTabColumn(
-                    $reader->getAttribute('name'),
-                    $reader->getAttribute('func'),
-                    $reader->getAttribute('display'),
-                    $reader->getAttribute('style'),
-                    $reader->getAttribute('feature_style'),
-                    $reader->getAttribute('class'),
-                    $reader->getAttribute('visible'),
-                    false
-                    );
+                $this->mergeTabColumn(
+                  $reader->getAttribute('name'),
+                  $reader->getAttribute('func'),
+                  $reader->getAttribute('display'),
+                  $reader->getAttribute('style'),
+                  $reader->getAttribute('feature_style'),
+                  $reader->getAttribute('class'),
+                  $reader->getAttribute('visible'),
+                  FALSE
+                );
                 break;
+
               case 'attributes':
                 $this->setAttributes(
                     $reader->getAttribute('where'),
@@ -242,37 +248,41 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('hideVagueDateFields'),// determines whether to hide the main vague date fields for attributes.
                     $reader->getAttribute('meaningIdLanguage'));//if not set, lookup lists use term_id. If set, look up lists use meaning_id, with value either 'preferred' or the 3 letter iso language to use.
                 break;
+
               case 'vagueDate': // This switches off vague date processing.
                 $this->vagueDateProcessing = $reader->getAttribute('enableProcessing');
                 break;
+
               case 'download': // This enables download processing.. potentially dangerous as updates DB.
                 $this->setDownload($reader->getAttribute('mode'));
                 break;
+
               case 'mergeTabColumn':
-                 $this->setMergeTabColumn(
-                    $reader->getAttribute('name'),
-                    $reader->getAttribute('tablename'),
-                    $reader->getAttribute('separator'),
-                    $reader->getAttribute('where'),
-                    $reader->getAttribute('display'),
-                    $reader->getAttribute('visible'));
+                $this->setMergeTabColumn(
+                  $reader->getAttribute('name'),
+                  $reader->getAttribute('tablename'),
+                  $reader->getAttribute('separator'),
+                  $reader->getAttribute('where'),
+                  $reader->getAttribute('display'),
+                  $reader->getAttribute('visible')
+                );
                 break;
               }
               break;
+
           case (XMLReader::END_ELEMENT):
-            switch ($reader->name)
-              {
-                case 'subTable':
-                  $this->tableIndex=$this->tables[$this->tableIndex]['parent'];
+            switch ($reader->name) {
+              case 'subTable':
+                $this->tableIndex = $this->tables[$this->tableIndex]['parent'];
                 break;
-              }
-             break;
+            }
+            break;
         }
       }
       $reader->close();
       // Add a token to mark where additional filters can insert in the WHERE clause.
-      if ($this->query && strpos($this->query, '#filters#')===false) {
-        if (strpos($this->query, '#order_by#')!==false)
+      if ($this->query && strpos($this->query, '#filters#') === false) {
+        if (strpos($this->query, '#order_by#') !== false)
           $this->query = str_replace('#order_by#', "#filters#\n#order_by#", $this->query);
         else
           $this->query .= '#filters#';
@@ -283,11 +293,13 @@ class XMLReportReader_Core implements ReportReader
         if ($this->hasAggregates) {
           $this->buildGroupBy();
         }
-      } elseif ($this->query) {
+      }
+      elseif ($this->query) {
         // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
         // otherwise the same.
         if (!empty($field_sql)) {
-          $this->countQuery = str_replace('#field_sql#', ' count(' . $this->count_field . ') ', $this->query);
+          $this->countQueryBase = str_replace('#field_sql#', '#count#', $this->query);
+          $this->countFields = $this->count_field;
           $this->query = str_replace('#field_sql#', $field_sql, $this->query);
         }
         // column SQL is part of the SQL statement, or defined in a field_sql element.
@@ -304,10 +316,10 @@ class XMLReportReader_Core implements ReportReader
   /**
    * Apply the website and sharing related filters to the query.
    */
-  public function applyPrivilegesFilters(&$query, $websiteIds, $training, $sharing, $userId) {
+  public function applyWebsitePermissions(&$query, $websiteIds, $training, $sharing, $userId) {
     if ($websiteIds) {
       if (in_array('', $websiteIds)) {
-        foreach($websiteIds as $key=>$value) {
+        foreach ($websiteIds as $key => $value) {
           if (empty($value))
             unset($websiteIds[$key]);
         }
@@ -402,44 +414,52 @@ class XMLReportReader_Core implements ReportReader
     $sql = array();
     $distinctSql = array();
     $countSql = array();
-    foreach ($this->columns as $col=>$def) {
+    foreach ($this->columns as $col => $def) {
       if (!empty($this->colsToInclude) && !in_array($col, $this->colsToInclude))
         continue;
       if (isset($def['sql'])) {
-        if (!isset($def['on_demand']) || $def['on_demand']!=="true")
-          $sql[] = $def['sql'] . ' as "' . $col . '"';
-        if (isset($def['distincton']) && $def['distincton']=='true') {
+        if (!isset($def['on_demand']) || $def['on_demand'] !== "true")
+          $sql[] = $def['sql'] . ' as ' . pg_escape_identifier($col);
+        if (isset($def['distincton']) && $def['distincton'] == 'true') {
           $distinctSql[] = $def['internal_sql'];
           // in_count lets the xml file exclude distinct on columns from the count query
-          if (!isset($def['in_count']) || $def['in_count']=='true') {
-            $countSql[] = $def['internal_sql'];
-          }
-        } else {
-          // if the column is not distinct on, then it defaults to not in the count
-          if (isset($def['in_count']) && $def['in_count']=='true') {
+          if (!isset($def['in_count']) || $def['in_count'] == 'true') {
             $countSql[] = $def['internal_sql'];
           }
         }
-      } elseif ($col === 'date' && empty($def['sql']) && $this->vagueDateProcessing) {
+        else {
+          // if the column is not distinct on, then it defaults to not in the count
+          if (isset($def['in_count']) && $def['in_count'] == 'true') {
+            $countSql[] = $def['internal_sql'];
+          }
+        }
+      }
+      elseif ($col === 'date' && empty($def['sql']) && $this->vagueDateProcessing) {
         $sql[] = 'null as date';
       }
     }
-    if (count($distinctSql)>0) {
-      $distincton = ' distinct on ('.implode(', ', $distinctSql).') ';
-    } else {
-      $distincton = '';
-    }
-    if (count($countSql)>1) {
-      $this->countQuery = str_replace('#columns#', ' count(distinct coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')) ", $this->query);
-    }
-    elseif (count($countSql)===1) {
-      $this->countQuery = str_replace('#columns#', ' count(distinct ' . $countSql[0] . ') ', $this->query);
+    if (count($distinctSql) > 0) {
+      $distincton = ' distinct on (' . implode(', ', $distinctSql) . ') ';
     }
     else {
-      $this->countQuery = str_replace('#columns#', ' count(' . $this->count_field . ') ', $this->query);
+      $distincton = '';
     }
-    // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to
-    // add custom attribute fields.
+    $this->countQueryBase = str_replace('#columns#', '#count#', $this->query);
+    if (count($countSql) > 1) {
+      // Concatenate the fields so we can get a distinct list.
+      $this->countFields = 'coalesce(' . implode(", '') || coalesce(", $countSql) . ", '')";
+    }
+    elseif (count($countSql) === 1) {
+      $this->countFields = $countSql[0];
+    }
+    else {
+      $this->countFields = $this->count_field;
+    }
+    if (count($countSql) > 0 && !preg_match('/distinct #columns#/i', $this->query)) {
+      $this->countFields = "DISTINCT $this->countFields";
+    }
+    // Merge the distincton back into the query. Note we drop in a #fields# tag
+    // so that the query processor knows where to add custom attribute fields.
     $this->query = str_replace('#columns#', $distincton . implode(",\n", $sql) . '#fields#', $this->query);
   }
 
@@ -451,17 +471,17 @@ class XMLReportReader_Core implements ReportReader
    */
   private function buildGroupBy() {
     $sql = array();
-    foreach ($this->columns as $col=>$def) {
+    foreach ($this->columns as $col => $def) {
       if (isset($def['internal_sql'])
-          && (!isset($def['aggregate']) || $def['aggregate']!='true')
-          && (!isset($def['on_demand']) || $def['on_demand']!='true')) {
+          && (!isset($def['aggregate']) || $def['aggregate'] != 'true')
+          && (!isset($def['on_demand']) || $def['on_demand'] != 'true')) {
         $sql[] = $def['internal_sql'];
       }
     }
     // Add the non-aggregated fields to the end of the query. Leave a token so that the query processor
     // can add more, e.g. if there are custom attribute columns, and also has a suitable place for a HAVING clause.
-    if (count($sql)>0) {
-      if (strpos($this->query, '#group_bys#')===FALSE)
+    if (count($sql) > 0) {
+      if (strpos($this->query, '#group_bys#') === FALSE)
         $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys# #having#';
       else
         $this->query = str_replace('#group_bys#', "GROUP BY " . implode(', ', $sql) . '#group_bys# #having#', $this->query);
@@ -469,26 +489,23 @@ class XMLReportReader_Core implements ReportReader
   }
 
   /**
-  * <p> Returns the title of the report. </p>
-  */
-  public function getTitle()
-  {
+   * Returns the title of the report.
+   */
+  public function getTitle() {
     return $this->title;
   }
 
   /**
-  * <p> Returns the description of the report. </p>
-  */
-  public function getDescription()
-  {
+   * Returns the description of the report.
+   */
+  public function getDescription() {
     return $this->description;
   }
 
   /**
-  * <p> Returns the query specified. </p>
-  */
-  public function getQuery()
-  {
+   * Returns the query specified.
+   */
+  public function getQuery() {
     if ( $this->automagic == false) {
       return $this->query;
     }
@@ -548,9 +565,29 @@ class XMLReportReader_Core implements ReportReader
     return $query;
   }
 
-  public function getCountQuery()
-  {
-    return $this->countQuery;
+  /**
+   * Retrieve the query required to count the records.
+   *
+   * @return string
+   *   SQL statement.
+   */
+  public function getCountQuery() {
+    return str_replace('#count#', "COUNT($this->countFields)", $this->countQueryBase);
+  }
+
+  /**
+   * Retrieve the query required to count the records, but with fields instead.
+   *
+   * SELECT ..., ..., ... instead of SELECT COUNT(...), allowing a limit to be
+   * applied to prevent counting past the first page of a report grid. Used to
+   * facilitate an optimisation to prevent bad abort early query plans being
+   * chosen.
+   *
+   * @return string
+   *   SQL statement.
+   */
+  public function getCountQueryWithRowData() {
+    return str_replace('#count#', $this->countFields, $this->countQueryBase);
   }
 
   /**
@@ -719,6 +756,46 @@ class XMLReportReader_Core implements ReportReader
   }
 
   /**
+   * Retrieves the lookup values for a lookup parameter as a HTML table.
+   *
+   * @param array $param
+   *   Parameter definition.
+   *
+   * @return string
+   *   Table as HTML.
+   */
+  private function getLookupValuesAsTable(array $param) {
+    if (empty($param['lookup_values'])) {
+      return NULL;
+    }
+    $values = explode(',', $param['lookup_values']);
+    $rows = [];
+    foreach ($values as $value) {
+      $tokens = explode(':', $value);
+      if (count($tokens) === 2) {
+        $rows[] = "<tr><th scope=\"row\">$tokens[0]</th><td>$tokens[1]</td></tr>";
+      }
+    }
+    $rows = implode("<br/>    ", $rows);
+    $table = <<<TBL
+<table>
+  <caption>Lookup values</caption>
+  <thead>
+    <tr>
+      <th>Value</th>
+      <th>Caption</th>
+    </tr>
+  </thead>
+  <tbody>
+    $rows
+  </tbody>
+</table>
+
+TBL;
+    return $table;
+  }
+
+  /**
    * Merges a parameter into the list of parameters read for the report. Updates existing
    * ones if there is a name match.
    * @todo Review the handling of $this->surveyParam
@@ -774,6 +851,10 @@ class XMLReportReader_Core implements ReportReader
         'linked_to' => $linked_to,
         'linked_filter_field' => $linked_filter_field
       );
+    }
+    if ($this->params[$name]['datatype'] === 'lookup') {
+      $this->params[$name]['description_extra'] = $this->getLookupValuesAsTable($this->params[$name]);
+      $this->params[$name]['description'];
     }
     // if we have a default value, keep a list
     if (isset($this->params[$name]['default']) && $this->params[$name]['default']!==null) {
@@ -979,8 +1060,8 @@ class XMLReportReader_Core implements ReportReader
           $this->columns[$name]['sql'] : $this->columns[$name]['internal_sql'];
   }
 
-  private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='', $autodef=true)
-  {
+  private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='',
+    $orderby='', $mappable='', $autodef=true) {
     if (array_key_exists($name, $this->columns))
     {
       if ($display != '') $this->columns[$name]['display'] = $display;
@@ -1008,7 +1089,8 @@ class XMLReportReader_Core implements ReportReader
           'img' => $img == '' ? 'false' : $img,
           'orderby' => $orderby,
           'mappable' => empty($mappable) ? 'false' : $mappable,
-          'autodef' => $autodef);
+          'autodef' => $autodef,
+        );
     }
   }
 

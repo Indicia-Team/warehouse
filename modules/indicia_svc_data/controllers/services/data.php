@@ -16,11 +16,10 @@
  *
  * @package Services
  * @subpackage Data
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    http://code.google.com/p/indicia/
+ * @link https://github.com/Indicia-Team/warehouse
  */
-
 
 class Data_Controller extends Data_Service_Base_Controller {
   protected $model;
@@ -58,42 +57,44 @@ class Data_Controller extends Data_Service_Base_Controller {
   //
   // default to no updates allowed - must explicity allow updates.
   protected $allow_updates = array(
-      'determination',
-      'filter',
-      'filters_user',
-      'group',
-      'group_page',
-      'groups_location',
-      'groups_user',
-      'group_invitation',
-      'group_relation',
-      'location',
-      'location_attribute_value',
-      'location_medium',
-      'notification',
-      'occurrence',
-      'occurrence_attribute_value',
-      'occurrence_comment',
-      'occurrence_medium',
-      'person_attribute_value',
-      'person',
-      'sample',
-      'sample_attribute_value',
-      'sample_comment',
-      'sample_medium',
-      'survey',
-      'survey_attribute',
-      'survey_attribute_value',
-      'sample_comment',
-      'survey_medium',
-      'taxa_taxon_list',
-      'taxon_rank',
-      'taxon_relation',
-      'taxon_group',
-      'termlists_term',
-      'user',
-      'user_trust',
-      'users_website'
+    'comment_quick_reply_page_auth',
+    'determination',
+    'filter',
+    'filters_user',
+    'group',
+    'group_page',
+    'groups_location',
+    'groups_user',
+    'group_invitation',
+    'group_relation',
+    'location',
+    'location_attribute_value',
+    'location_medium',
+    'notification',
+    'occurrence',
+    'occurrence_attribute_value',
+    'occurrence_comment',
+    'occurrence_medium',
+    'person_attribute_value',
+    'person',
+    'sample',
+    'sample_attribute_value',
+    'sample_comment',
+    'sample_medium',
+    'species_alert',
+    'survey',
+    'survey_attribute',
+    'survey_attribute_value',
+    'sample_comment',
+    'survey_medium',
+    'taxa_taxon_list',
+    'taxon_rank',
+    'taxon_relation',
+    'taxon_group',
+    'termlists_term',
+    'user',
+    'user_trust',
+    'users_website',
   );
 
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
@@ -101,18 +102,21 @@ class Data_Controller extends Data_Service_Base_Controller {
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
   // So if we wish total access to a given dataset, the entity must appear in the following list.
   protected $allow_full_access = array(
-      'filter',
-      'filters_user',
-      'taxa_taxon_list',
-      'taxon_rank',
-      'taxon_relation',
-      'taxon_group',
-      'taxon_medium',
-      'notification',
-      'user_trust',
-      'cache_taxon_searchterm',
-      'cache_taxa_taxon_list',
-      'verification_rule_datum'
+    'filter',
+    'filters_user',
+    'comment_quick_reply_page_auth',
+    'species_alert',
+    'taxa_taxon_list',
+    'taxa_taxon_list_attribute',
+    'taxon_rank',
+    'taxon_relation',
+    'taxon_group',
+    'taxon_medium',
+    'notification',
+    'user_trust',
+    'cache_taxon_searchterm',
+    'cache_taxa_taxon_list',
+    'verification_rule_datum',
   );
 
   // List of tables that do not use views to expose their data.
@@ -121,15 +125,14 @@ class Data_Controller extends Data_Service_Base_Controller {
     'cache_taxa_taxon_lists',
     'index_websites_website_agreements',
     'verification_rule_data',
-    'users_websites'
+    'users_websites',
   );
 
   /**
   * Provides the /services/data/cache_taxa_taxon_list service.
   * Retrieves details of a single taxon searchterm.
   */
-  public function cache_taxa_taxon_list()
-  {
+  public function cache_taxa_taxon_list() {
     $this->handle_call('cache_taxa_taxon_list');
   }
 
@@ -138,8 +141,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/cache_taxon_searchterm service.
   * Retrieves details of a single taxon searchterm.
   */
-  public function cache_taxon_searchterm()
-  {
+  public function cache_taxon_searchterm() {
     $this->handle_call('cache_taxon_searchterm');
   }
 
@@ -147,8 +149,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/filter service.
   * Retrieves details of a single filter.
   */
-  public function filter()
-  {
+  public function filter() {
     $this->handle_call('filter');
   }
 
@@ -156,8 +157,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/filters_user service.
   * Retrieves details of a single filters_user join record.
   */
-  public function filters_user()
-  {
+  public function filters_user() {
     $this->handle_call('filters_user');
   }
 
@@ -165,8 +165,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/group service.
   * Retrieves details of a single group.
   */
-  public function group()
-  {
+  public function group() {
     $this->handle_call('group');
   }
 
@@ -174,8 +173,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/group_page service.
   * Retrieves details of a single group.
   */
-  public function group_page()
-  {
+  public function group_page() {
     $this->handle_call('group_page');
   }
 
@@ -183,8 +181,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/group_invitation service.
   * Retrieves details of a single group_invitation.
   */
-  public function group_invitation()
-  {
+  public function group_invitation() {
     $this->handle_call('group_invitation');
   }
 
@@ -192,8 +189,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/group_relation service.
   * Retrieves details of a single group_relation.
   */
-  public function group_relation()
-  {
+  public function group_relation() {
     $this->handle_call('group_relation');
   }
 
@@ -201,8 +197,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/groups_location service.
   * Retrieves details of a single groups_location.
   */
-  public function groups_location()
-  {
+  public function groups_location() {
     $this->handle_call('groups_location');
   }
 
@@ -210,8 +205,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/groups_user service.
   * Retrieves details of a single groups_user.
   */
-  public function groups_user()
-  {
+  public function groups_user() {
     $this->handle_call('groups_user');
   }
 
@@ -219,8 +213,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/index_websites_website_agreements service.
   * Retrieves details of a single index_websites_website_agreements record.
   */
-  public function index_websites_website_agreement()
-  {
+  public function index_websites_website_agreement() {
     $this->handle_call('index_websites_website_agreement');
   }
 
@@ -228,8 +221,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/language service.
   * Retrieves details of a single language.
   */
-  public function language()
-  {
+  public function language() {
     $this->handle_call('language');
   }
 
@@ -237,8 +229,7 @@ class Data_Controller extends Data_Service_Base_Controller {
    * Provides the /services/data/licence service.
    * Retrieves details of a single location.
    */
-  public function licence()
-  {
+  public function licence() {
     $this->handle_call('licence');
   }
 
@@ -246,8 +237,7 @@ class Data_Controller extends Data_Service_Base_Controller {
    * Provides the /services/data/licences_website service.
    * Retrieves details of a single location.
    */
-  public function licences_website()
-  {
+  public function licences_website() {
     $this->handle_call('licences_website');
   }
 
@@ -256,8 +246,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/location service.
   * Retrieves details of a single location.
   */
-  public function location()
-  {
+  public function location() {
     $this->handle_call('location');
   }
 
@@ -265,8 +254,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/location_attribute service.
   * Retrieves details of location attributes.
   */
-  public function location_attribute()
-  {
+  public function location_attribute() {
     $this->handle_call('location_attribute');
   }
 
@@ -274,8 +262,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/location_attribute_value service.
   * Retrieves details of location attribute values.
   */
-  public function location_attribute_value()
-  {
+  public function location_attribute_value() {
     $this->handle_call('location_attribute_value');
   }
 
@@ -284,8 +271,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Retrieves details of location media.
   * @deprecated
   */
-  public function location_image()
-  {
+  public function location_image() {
     $this->handle_call('location_medium');
   }
 
@@ -293,8 +279,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/location_medium service.
   * Retrieves details of location media.
   */
-  public function location_medium()
-  {
+  public function location_medium() {
     $this->handle_call('location_medium');
   }
 
@@ -303,8 +288,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Retrieves details of sample media.
   * @deprecated
   */
-  public function sample_image()
-  {
+  public function sample_image() {
     $this->handle_call('sample_medium');
   }
 
@@ -312,8 +296,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/sample_medium service.
   * Retrieves details of sample media.
   */
-  public function sample_medium()
-  {
+  public function sample_medium() {
     $this->handle_call('sample_medium');
   }
 
@@ -321,8 +304,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/occurrence service.
   * Retrieves details of notifications.
   */
-  public function notification()
-  {
+  public function notification() {
     $this->handle_call('notification');
   }
 
@@ -330,8 +312,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/occurrence service.
   * Retrieves details of occurrences.
   */
-  public function occurrence()
-  {
+  public function occurrence() {
     $this->handle_call('occurrence');
   }
 
@@ -339,8 +320,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/occurrence_attribute service.
   * Retrieves details of occurrence attributes.
   */
-  public function occurrence_attribute()
-  {
+  public function occurrence_attribute() {
     $this->handle_call('occurrence_attribute');
   }
 
@@ -348,9 +328,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/occurrence_attribute_value service.
   * Retrieves details of occurrence attribute values.
   */
-  public function occurrence_attribute_value()
-  {
-  $this->handle_call('occurrence_attribute_value');
+  public function occurrence_attribute_value() {
+    $this->handle_call('occurrence_attribute_value');
   }
 
  /**
@@ -358,35 +337,31 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Retrieves details of occurrence media. This is an alias for occurrence_medium,
   * for backwards compatibility.
   */
-  public function occurrence_image()
-  {
-  $this->handle_call('occurrence_medium');
+  public function occurrence_image() {
+    $this->handle_call('occurrence_medium');
   }
 
   /**
   * Provides the /service/data/occurrence_medium service.
   * Retrieves details of occurrence media.
   */
-  public function occurrence_medium()
-  {
-  $this->handle_call('occurrence_medium');
+  public function occurrence_medium() {
+    $this->handle_call('occurrence_medium');
   }
 
   /**
   * Provides the /service/data/determination service.
   * Retrieves details of occurrence attributes.
   */
-  public function determination()
-  {
-  $this->handle_call('determination');
+  public function determination() {
+    $this->handle_call('determination');
   }
 
   /**
   * Provides the /services/data/person service.
   * Retrieves details of a single person.
   */
-  public function person()
-  {
+  public function person() {
     $this->handle_call('person');
   }
 
@@ -395,9 +370,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/person_attribute service.
   * Retrieves details of person attributes.
   */
-  public function person_attribute()
-  {
-  $this->handle_call('person_attribute');
+  public function person_attribute() {
+    $this->handle_call('person_attribute');
   }
 
 
@@ -405,17 +379,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/person_attribute_value service.
   * Retrieves details of person attribute values.
   */
-  public function person_attribute_value()
-  {
-  $this->handle_call('person_attribute_value');
+  public function person_attribute_value() {
+    $this->handle_call('person_attribute_value');
   }
 
   /**
   * Provides the /services/data/sample service.
   * Retrieves details of a sample.
   */
-  public function sample()
-  {
+  public function sample() {
     $this->handle_call('sample');
   }
 
@@ -423,18 +395,16 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/sample_attribute service.
   * Retrieves details of sample attributes.
   */
-  public function sample_attribute()
-  {
-  $this->handle_call('sample_attribute');
+  public function sample_attribute() {
+    $this->handle_call('sample_attribute');
   }
 
   /**
   * Provides the /service/data/sample_attribute_value service.
   * Retrieves details of sample attribute values.
   */
-  public function sample_attribute_value()
-  {
-  $this->handle_call('sample_attribute_value');
+  public function sample_attribute_value() {
+    $this->handle_call('sample_attribute_value');
   }
 
 
@@ -442,8 +412,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /services/data/survey service.
   * Retrieves details of a single survey.
   */
-  public function survey()
-  {
+  public function survey() {
     $this->handle_call('survey');
   }
 
@@ -451,8 +420,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   * Provides the /service/data/survey_attribute service.
   * Retrieves details of location attributes.
   */
-  public function survey_attribute()
-  {
+  public function survey_attribute() {
     $this->handle_call('survey_attribute');
   }
 
@@ -574,7 +542,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   public function taxa_taxon_list_attribute()
   {
-  $this->handle_call('taxa_taxon_list_attribute');
+    $this->handle_call('taxa_taxon_list_attribute');
   }
 
   /**
@@ -678,6 +646,11 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function user_trust()
   {
     $this->handle_call('user_trust');
+  }
+  
+  public function comment_quick_reply_page_auth()
+  {
+    $this->handle_call('comment_quick_reply_page_auth');
   }
 
   /**
@@ -873,7 +846,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     $decoded = json_decode($value);
     // Strings which contain commas but not valid JSON are almost certainly mistakes.
     if ($decoded === null && strpos($value, ',') !== false) {
-      ValidationError('Validation error', 2003, 'Invalid format for array parameter.');
+      throw new ValidationError('Validation error', 2003, 'Invalid format for array parameter.');
     }
     return $decoded === null ? $value : $decoded;
   }

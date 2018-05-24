@@ -48,7 +48,7 @@ class Verification_template_Model extends ORM {
       );
     return parent::validate($array, $save);
   }
-  
+
   /**
    * Handle the situation where the 2 external key lists are handed in as a textarea, joined by "\n\r"
    */
@@ -95,7 +95,7 @@ class Verification_template_Model extends ORM {
         $this->submission['fields']['template_statuses']['value'][] = 'R5';
       }
     }
-    
+
     return parent::presubmit();
   }
 

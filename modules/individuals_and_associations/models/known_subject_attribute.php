@@ -33,7 +33,7 @@ class Known_subject_attribute_Model extends ATTR_ORM {
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'termlist');
 
   // The known_subject attributes are website wide
-  protected $has_survey_restriction = false;
+  protected $hasSurveyRestriction = false;
 
   protected $has_many = array(
     'known_subject_attribute_values',

@@ -53,6 +53,14 @@
     <param name="workflow_overdue" display="Overdue records only" default="" datatype="boolean">
       <where>get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval</where>
     </param>
+    <param name="workflow_overdue_notification" display="Workflow overdue notification status" datatype="lookup"
+       default="" lookup_values="yes:Notification exists,no:Notification doesn't exist">
+      <joins>
+        <join value="yes" operator="equal">JOIN notifications n on n.linked_id=o.id AND n.source_type='VT'</join>
+        <join value="no" operator="equal">LEFT JOIN notifications n on n.linked_id=o.id AND n.source_type='VT'</join>
+      </joins>
+      <where value="no" operator="equal">n.id IS NULL</where>
+    </param>
   </params>
   <columns>
     <column name='occurrence_id' sql='o.id' on_demand="true" datatype="integer" />
@@ -97,22 +105,18 @@ end" datatype="text" />
 end" />
     <column name='fc' visible='false' feature_style="fillColor"
       sql="case
-  when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval then '#d7191c'
-  when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt;= '-12 hours'::interval then '#fdae61'
-  when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &lt; '-12 hours'::interval then '#2c7bb6'
-  else '#abd9e9'
+  when o.record_status='R' then '#d7191c'
+  when o.record_status='C' then '#abd9e9'
+  when o.record_status='C' and o.record_substatus=4 then '#fdae61'
+  else '#008837'
 end" />
     <column name='sc' visible='false' feature_style="strokeColor"
           sql="case
-  when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt; '0 hours'::interval then '#d7191c'
-  when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &gt;= '-12 hours'::interval then '#fdae61'
-  when get_workflow_overdue_by(o.record_status, o.record_substatus, o.query, o.created_on, wm.verification_delay_hours) &lt; '-12 hours'::interval then '#2c7bb6'
-  else '#abd9e9'
+  when o.record_status='R' then '#a10003'
+  when o.record_status='C' then '#5095ad'
+  when o.record_status='C' and o.record_substatus=4 then '#bf5e00'
+  else '#7fa1ad'
 end" />
-  <column name='fo' visible='false' feature_style="fillOpacity"
-          sql="case
-  when get_workflow_overdue_by(o.record_status, o.record_substatus, o.created_on, wm.verification_delay_hours) &gt;= '-12 hours'::interval then 0.5
-  else 0.5
-end" />
+  <column name='fo' visible='false' feature_style="fillOpacity" sql="0.5" aggregate="true" />
   </columns>
 </report>
