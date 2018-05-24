@@ -3,7 +3,7 @@
     description="Report suitable for downloading data, compatible with the standard report filter parameters. Sensitive data returned at full precision so use with caution, e.g. for LRC record download."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
-         standard_params="true" count_field="o.*">
+         standard_params="occurrences" count_field="o.*">
   SELECT #columns#
   FROM cache_occurrences_functional o
   JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
@@ -30,7 +30,7 @@
     <param name='occattrs' display='Occurrence attribute list' datatype='occattrs' default=''
            description='Comma separated list of occurrence attribute IDs to include as columns in the report' />
     <param name='uploadFolder' display='Image upload folder' description='Image upload folder on the warehouse including the trailing slash' datatype='string' default='' />
-    <param name='warehouse_id' display='Warehouse unique ID' default='iBRC' 
+    <param name='warehouse_id' display='Warehouse unique ID' default='iBRC'
         description='Unique identifier code for the warehouse which can be prepended to occurrence IDs to make a globally unique record key'/>
   </params>
   <columns>
@@ -39,10 +39,10 @@
     <column name='external_key' display='External Key' sql="o.external_key" datatype="text" />
     <column name='source' display='Source' sql="snf.website_title || ' | ' || snf.survey_title || coalesce(' | ' || snf.group_title, '')" datatype="text" />
     <column name='sample_id' sql='o.sample_id' datatype='integer' />
-    <column name='taxon' display='Species' 
+    <column name='taxon' display='Species'
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
       sql="cttl.preferred_taxon" datatype='species' />
-    <column name='common' display='Common name' 
+    <column name='common' display='Common name'
       template="&lt;div class='zero-{zero_abundance}'&gt;{common}&lt;/div&gt;"
       sql="cttl.default_common_name" datatype='text' />
     <column name='taxon_group' display='Taxon group' sql='cttl.taxon_group' datatype='text' />
@@ -55,8 +55,8 @@
     <column name="entered_sref" display="Original map ref" sql="s.entered_sref" datatype="text" />
     <column name='lat' display='Latitude' sql="substring(st_astext(st_transform(st_centroid(o.public_geom), 4326)) from E'POINT\\(.+ (.+)\\)')" datatype="text" />
     <column name='long' display='Longitude' sql="substring(st_astext(st_transform(st_centroid(o.public_geom), 4326)) from E'POINT\\((.+) ')" datatype="text" />
-    <column name='projection' display='Projection' 
-        sql="case s.entered_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(s.entered_sref_system) end" 
+    <column name='projection' display='Projection'
+        sql="case s.entered_sref_system when '4326' then 'WGS84' when '27700' then 'OSGB36' else upper(s.entered_sref_system) end"
         datatype="text" />
     <column name="precision" display="Precision" datatype="float"
             sql="get_sref_precision(s.entered_sref, s.entered_sref_system, null)" />
@@ -86,7 +86,7 @@
     <column name='images' display='Images' sql="case when onf.media is null then null else '#uploadFolder#' || replace(onf.media, ',', ', #uploadFolder#') end"/>
     <column name='input_date' sql='o.created_on' display='Input on date' datatype='date' />
     <column name='last_edit_date' sql='o.updated_on' display='Last edited on date' datatype='date' />
-    <column name='record_status' display='Verification status 1' 
+    <column name='record_status' display='Verification status 1'
         sql="CASE o.record_status
         WHEN 'V' THEN 'Accepted'
         WHEN 'C' THEN 'Unconfirmed'
@@ -113,7 +113,7 @@
     <!-- the following can only be filled in for sure if we have an exact match with the recorder, since we only know the record created by ID.-->
     <column name='recorder_person_id' sql="case when snf.recorders = p.surname || ', ' || p.first_name or snf.recorders = p.first_name || ' ' || p.surname then cast(p.id as varchar(20)) else 'unknown' end" />
     <column name='determiner_person_id' sql="case when snf.recorders = onf.attr_det_last_name || ', ' || onf.attr_det_first_name
-        or snf.recorders = onf.attr_det_first_name || ' ' || onf.attr_det_last_name 
+        or snf.recorders = onf.attr_det_first_name || ' ' || onf.attr_det_last_name
         or snf.recorders = onf.attr_det_full_name then cast(p.id as varchar(20)) else 'unknown' end" />
     <column name='sensitivity_precision' display='Sensitivity blur' sql='onf.sensitivity_precision' datatype='integer' />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
