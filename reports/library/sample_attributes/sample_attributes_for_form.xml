@@ -8,7 +8,7 @@
     FROM sample_attributes_websites aw
     JOIN sample_attributes a on a.id=aw.sample_attribute_id
     JOIN sample_attribute_taxon_restrictions tr ON tr.sample_attributes_website_id=aw.id AND tr.deleted=false
-    JOIN cache_taxon_paths ctp on tr.restrict_to_taxon_meaning_id=ANY(ctp.path)
+    JOIN cache_taxon_paths ctp on ctp.path @> ARRAY[tr.restrict_to_taxon_meaning_id]
     JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
       AND cttlany.id=#taxa_taxon_list_id#
     JOIN cache_taxa_taxon_lists cttlattrlink ON cttlattrlink.taxon_meaning_id=tr.restrict_to_taxon_meaning_id
