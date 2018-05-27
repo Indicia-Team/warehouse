@@ -170,11 +170,13 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
       $weight++;
       if (isset($control['deleted']) && $control['deleted']) {
         // Deleting, so existing control must be removed.
-        if (substr($control['id'], 0, 8) == 'control-')
-        $model->delete();
+        if (substr($control['id'], 0, 8) == 'control-') {
+          $model->deleted = 't';
+          $changed = TRUE;
+        }
         $id = NULL;
       }
-      elseif ($changed) {
+      if ($changed) {
         $model->set_metadata();
         $model->save();
         if (count($model->getAllErrors()) !== 0) {
