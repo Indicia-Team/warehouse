@@ -67,7 +67,7 @@ from surveys su
 where su.website_id=$new[website_id]
 and s.created_by_id=$new[user_id]
 and su.id=s.survey_id
-and licence_id is null;
+and s.licence_id is null;
 SQL;
       $this->db->query($sql);
       $sql = <<<SQL
@@ -90,6 +90,39 @@ and o.created_by_id=$new[user_id]
 and coalesce(onf.licence_code, '')<>l.code
 and o.licence_id=l.id
 and l.id=$new[licence_id]
+SQL;
+      $this->db->query($sql);
+    }
+    // Same again, for media licences.
+    if (!empty($new['media_licence_id']) && empty($this->media_licence_id)) {
+      $sql = <<<SQL
+update sample_media u
+set licence_id=$new[licence_id]
+from samples s
+inner join surveys su on su.id=s.survey_id and su.website_id=$new[website_id]
+where u.created_by_id=$new[user_id]
+and u.sample_id=s.id
+and u.licence_id is null;
+SQL;
+      $this->db->query($sql);
+      $sql = <<<SQL
+update occurrence_media u
+set licence_id=$new[licence_id]
+from occurrences o
+where o.website_id=$new[website_id]
+where u.created_by_id=$new[user_id]
+and u.occurrence_id=o.id
+and u.licence_id is null;
+SQL;
+      $this->db->query($sql);
+      $sql = <<<SQL
+update location_media u
+set licence_id=$new[licence_id]
+from locations l
+inner join locations_websites lw on lw.location_id=l.id and lw.website_id=$new[website_id] and lw.deleted=false
+where u.created_by_id=$new[user_id]
+and u.location_id=l.id
+and u.licence_id is null;
 SQL;
       $this->db->query($sql);
     }
