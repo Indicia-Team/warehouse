@@ -222,56 +222,67 @@ class Service_Base_Controller extends Controller {
   }
 
   /**
-   * Return an error XML or json document to the client
-   * @param string Id of the transaction calling the service. Optional.
-   * Returned to the calling code.
+   * Return an error XML or json document to the client.
+   *
+   * @param string
+   *   Id of the transaction calling the service. Optional. Returned to the
+   *   calling code.
    */
-  protected function handle_error($e, $transaction_id = null)
-  {
-    if($e instanceof ValidationError || $e instanceof InvalidArgumentException)
+  protected function handle_error($e, $transaction_id = NULL) {
+    if ($e instanceof ValidationError || $e instanceof InvalidArgumentException) {
       $statusCode = 400;
-    elseif($e instanceof AuthenticationError || $e instanceof AuthorisationError)
-      $statusCode = 403; // not 401 as not using browser or official digest authentication
-    elseif($e instanceof EntityAccessError)
+    }
+    elseif ($e instanceof AuthenticationError || $e instanceof AuthorisationError) {
+      // Not 401 as not using browser or official digest authentication.
+      $statusCode = 403;
+    }
+    elseif ($e instanceof EntityAccessError) {
       $statusCode = 404;
-    else
+    }
+    else {
       $statusCode = 500;
-    $message=kohana::lang('general_errors.'.$e->getMessage());
+    }
+    // Give a chance to localise the message.
+    $message = kohana::lang('general_errors.' . $e->getMessage());
+    if (substr($message, 0, 15) === 'general_errors.') {
+      $message = $e->getMessage();
+    }
     $mode = $this->get_output_mode();
-    // Set the HTTP response code only if configured to do so and not JSONP. JSONP will need
-    // to check the response error instead.
-    if (kohana::config('indicia.http_status_responses')===true && empty($_GET['callback']))
-      header(' ', true, $statusCode);
-    if ($mode=='xml') {
+    // Set the HTTP response code only if configured to do so and not JSONP.
+    // JSONP will need to check the response error instead.
+    if (kohana::config('indicia.http_status_responses') === TRUE && empty($_GET['callback'])) {
+      header(' ', TRUE, $statusCode);
+    }
+    if ($mode === 'xml') {
       $view = new View("services/error");
       $view->message = $message;
       $view->code = $e->getCode();
-      $view->render(true);
-    } else {
+      $view->render(TRUE);
+    }
+    else {
       header("Content-Type: application/json");
       $response = array(
-        'error'=>$message,
-        'code'=>$e->getCode()
+        'error' => $message,
+        'code' => $e->getCode(),
       );
       if ($transaction_id) {
-      	$response['transaction_id'] = $transaction_id;
+        $response['transaction_id'] = $transaction_id;
       }
       if ($e instanceof ArrayException) {
         $response['errors'] = $e->errors();
-      } elseif (!$e instanceof ServiceError) {
-        $response['file']=$e->getFile();
-        $response['line']=$e->getLine();
-        $response['trace']=array();
+      }
+      elseif (!$e instanceof ServiceError) {
+        $response['file'] = $e->getFile();
+        $response['line'] = $e->getLine();
+        $response['trace'] = array();
       }
       $a = json_encode($response);
-      if (array_key_exists('callback', $_GET))
-      {
-        $a = $_GET['callback']."(".$a.")";
+      if (array_key_exists('callback', $_GET)) {
+        $a = "$_GET[callback]($a)";
       }
       echo $a;
     }
   }
-
 
   /**
    * Retrieve the output mode for a RESTful request from the GET or POST data.
