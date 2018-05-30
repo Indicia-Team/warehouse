@@ -70,6 +70,18 @@ and su.id=s.survey_id
 and s.licence_id is null;
 SQL;
       $this->db->query($sql);
+      <<<SQL
+update cache_samples_nonfunctional snf
+set licence_code=l.code
+from licences l, cache_samples_functional s
+where s.id=snf.id
+and s.website_id=$new[website_id]
+and s.created_by_id=$new[user_id]
+and coalesce(snf.licence_code, '')<>l.code
+and s.licence_id=l.id
+and l.id=$new[licence_id]
+SQL;
+      $this->db->query($sql);
       $sql = <<<SQL
 update cache_occurrences_functional o
 set licence_id=l.id
@@ -97,7 +109,7 @@ SQL;
     if (!empty($new['media_licence_id']) && empty($this->media_licence_id)) {
       $sql = <<<SQL
 update sample_media u
-set licence_id=$new[licence_id]
+set licence_id=$new[media_licence_id]
 from samples s
 inner join surveys su on su.id=s.survey_id and su.website_id=$new[website_id]
 where u.created_by_id=$new[user_id]
@@ -107,17 +119,17 @@ SQL;
       $this->db->query($sql);
       $sql = <<<SQL
 update occurrence_media u
-set licence_id=$new[licence_id]
+set licence_id=$new[media_licence_id]
 from occurrences o
 where o.website_id=$new[website_id]
-where u.created_by_id=$new[user_id]
+and u.created_by_id=$new[user_id]
 and u.occurrence_id=o.id
 and u.licence_id is null;
 SQL;
       $this->db->query($sql);
       $sql = <<<SQL
 update location_media u
-set licence_id=$new[licence_id]
+set licence_id=$new[media_licence_id]
 from locations l
 inner join locations_websites lw on lw.location_id=l.id and lw.website_id=$new[website_id] and lw.deleted=false
 where u.created_by_id=$new[user_id]
