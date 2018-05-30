@@ -1,35 +1,88 @@
-<fieldset><legend><?php echo $other_data['name']; ?> Attribute
-Website/Survey Allocation</legend>
-<?php
-if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
-  $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
-  echo '<input type="hidden" name="restricted-to-websites" value="'.implode(',', $this->auth_filter['values']).'"/>';
-} else
-  $websites = ORM::factory('website')->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
-foreach ($websites as $website) {
-  $webrec = ORM::factory($other_data['webrec_entity'])->where(array($other_data['webrec_key'] => $model->id,
-                            'website_id' => $website->id,
-                            'restrict_to_survey_id IS' => null,
-                            'deleted' => 'f'))->find();
-  
-  echo '<div class="ui-corner-all ui-widget"><div class="ui-corner-all ui-widget-header">'.$website->title.'</div><ol><li><label for="website_'.$website->id.'" class="wide" >'.$website->title.': non survey specific</label>';
-  echo form::checkbox('website_'.$website->id, TRUE, $webrec->loaded, 'class="vnarrow"');
-  echo "</li>";
-  $surveys = ORM::factory('survey')->where(array('website_id'=>$website->id, 'deleted'=>'f'))->orderby('title','asc')->find_all();
-  foreach ($surveys as $survey) {
-    $webrec = ORM::factory($other_data['webrec_entity'])->where(array($other_data['webrec_key'] => $model->id,
-                            'website_id' => $website->id,
-                            'restrict_to_survey_id' => $survey->id,
-                            'deleted'=>'f'))->find();
-    echo '<li><label for="website_'.$website->id.'_'.$survey->id.'" class="wide" >'.$website->title.':'.$survey->title.'</label>';
-    echo form::checkbox('website_'.$website->id.'_'.$survey->id, TRUE, $webrec->loaded, 'class="vnarrow"');
-    if ($webrec->loaded) {
-      echo '<a target="_blank" href="'.url::site().'attribute_by_survey/edit/'.$webrec->id.'?type='.strtolower($other_data['name']).'">edit survey specific settings in new tab</a>';
+<fieldset>
+  <legend><?php echo $other_data['name']; ?> attribute website/survey allocation</legend>
+  <?php
+  $baseEntityName = strtolower($other_data['name']);
+  $surveyCheckboxList = [];
+  $siteUrl = url::site();
+  // Loop through all the website and survey combinations possible.
+  foreach ($other_data['websiteSurveyLinks'] as $idx => $linkOption) {
+    if (!isset($linkOption->selected)) {
+      $linkOption->selected = 'f';
     }
-    echo "</li>";
-  }
-  echo '</ol></div>';
+    if (!isset($linkOption->selected_all_surveys)) {
+      $linkOption->selected_all_surveys = 'f';
+    }
+    // If this combination is for a survey (i.e. not a survey-less website),
+    // build the survey checkbox for the form.
+    if (!empty($linkOption->survey_id)) {
+      $fieldname = "website_{$linkOption->website_id}_{$linkOption->survey_id}";
+      // If a join to the survey exists for this attribute, create a link to
+      // the join edit page.
+      if ($linkOption->selected === 't') {
+        $surveySettingsEditLink = <<<HTML
+<a target="_blank" class="btn btn-primary btn-xs" href="{$siteUrl}attribute_by_survey/edit/$linkOption->website_join_id?type=$baseEntityName">
+  edit survey specific settings in new tab
+</a>
+HTML;
+      }
+      else {
+        $surveySettingsEditLink = '';
+      }
+      // Check the checkbox either if loading existing data, or a posted form
+      // is being reloaded after a validation failure where the box was
+      // checked.
+      if (empty($_POST)) {
+        $checked = $linkOption->selected === 't' ? ' checked="checked"' : '';
+      }
+      else {
+        $checked = !empty($_POST[$fieldname]) ? ' checked="checked"' : '';
+      }
+      // Create a checkbox for this survey.
+      $surveyCheckboxList[] = <<<HTML
+<div class="checkbox">
+  <label>
+    <input type="checkbox" name="$fieldname" value="1"$checked>
+    $linkOption->survey_title
+  </label>
+  $surveySettingsEditLink
+</div>
 
-}
-?>
+HTML;
+    }
+    // If at the end of the list, or the next item in the list is for a
+    // different website, we need to output the website's panel.
+    if ($idx === count($other_data['websiteSurveyLinks']) - 1 ||
+        $linkOption->website_id !== $other_data['websiteSurveyLinks'][$idx + 1]->website_id) {
+      $surveyCheckboxes = implode("\n", $surveyCheckboxList);
+      $fieldname = "website_$linkOption->website_id";
+      // Check the checkbox either if loading existing data, or a posted form
+      // is being reloaded after a validation failure where the box was
+      // checked.
+      if (empty($_POST)) {
+        $checked = $linkOption->selected_all_surveys === 't' ? ' checked="checked"' : '';
+      }
+      else {
+        $checked = !empty($_POST[$fieldname]) ? ' checked="checked"' : '';
+      }
+      // Output the panel for the website, including the list of survey
+      // checkboxes and one for all surveys.
+      echo <<<HTML
+<div class="panel panel-info">
+  <div class="panel-heading">$linkOption->website_title</div>
+  <div class="panel-body">
+    <div class="checkbox">
+      <label>
+        <input type="checkbox" id="website_" name="$fieldname" value="1"$checked>
+        $linkOption->website_title: all surveys
+      </label>
+    </div>
+    $surveyCheckboxes
+  </div>
+</div>
+
+HTML;
+      $surveyCheckboxList = [];
+    }
+  }
+  ?>
 </fieldset>

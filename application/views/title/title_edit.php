@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the title edit form page.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,29 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
+warehouse::loadHelpers(['data_entry_helper']);
+$id = html::initial_value($values, 'title:id');
 ?>
-<p>This page allows you to specify the details of a persons title.</p>
-<form class="cmxform" action="<?php echo url::site().'title/save'; ?>" method="post">
-<?php echo $metadata ?>
-<fieldset>
-<legend>Title details</legend>
-<input type="hidden" name="title:id" value="<?php echo html::initial_value($values, 'title:id'); ?>" />
-<ol>
-<li>
-<label for="title">Title</label>
-<input class="narrow" id="title" name="title:title" value="<?php echo html::initial_value($values, 'title:title'); ?>" />
-<?php echo html::error_message($model->getError('title:title')); ?>
-</li>
-</ol>
-</fieldset>
-<?php 
-echo html::form_buttons(html::initial_value($values, 'title:id')!=null);
-?>
+<p>This page allows you to specify the details of a person's title.</p>
+<form id="title-edit" action="<?php echo url::site(); ?>title/save" method="post">
+  <?php echo $metadata ?>
+  <fieldset>
+  <legend>Title details</legend>
+    <input type="hidden" name="title:id" value="<?php echo $id; ?>" />
+    <?php
+    echo data_entry_helper::text_input([
+      'label' => 'Title',
+      'fieldname' => 'title:title',
+      'default' => html::initial_value($values, 'title:title'),
+      'validation' => ['required'],
+    ]);
+    ?>
+  </fieldset>
+  <?php
+  echo html::form_buttons($id != NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('title-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>

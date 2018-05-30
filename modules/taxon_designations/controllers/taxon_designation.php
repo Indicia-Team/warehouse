@@ -17,7 +17,7 @@
  * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -40,26 +40,24 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of terms ready for the location types list.
    */
-  protected function prepareOtherViewData($values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array(
       'category_terms' => $this->get_termlist_terms('indicia:taxon_designation_categories')
     );
   }
-  
+
   /**
    * As the designations list is global, need to be admin to change it.
    */
   protected function page_authorised() {
     return $this->auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin');
   }
-  
-  /** 
+
+  /**
    * Upload function for a JNCC style designations spreadsheet.
    */
   public function upload_csv() {
-    try
-    {
+    try {
       // We will be using a POST array to send data, and presumably a FILES array for the
       // media.
       // Upload size
@@ -73,7 +71,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       }
       elseif ($_FILES->validate())
       {
-        if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true') 
+        if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true')
           $finalName = strtolower($_FILES['csv_upload']['name']);
         else
           $finalName = time().strtolower($_FILES['csv_upload']['name']);
@@ -92,9 +90,9 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       $this->handle_error($e);
     }
   }
-  
+
   /**
-   * Controller method for the import_progress path. Displays the upload template with 
+   * Controller method for the import_progress path. Displays the upload template with
    * progress bar and status message, which then initiates the actual import.
    */
   public function import_progress() {
@@ -103,7 +101,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       $this->template->title = 'Uploading designations';
     }
   }
-  
+
   /**
    * AJAX callback to handle upload of a single chunk of designations spreadsheet.
    */
@@ -125,7 +123,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       // skip rows to allow for the last file position
       fseek($handle, $filepos);
       if ($filepos==0) {
-        // first row, so load the column headings. Force lowercase so we can case insensitive search later. 
+        // first row, so load the column headings. Force lowercase so we can case insensitive search later.
         $headings = array_map('strtolower',fgetcsv($handle, 1000, ","));
         // Also work out the termlist_id for the cateogories
         $r = $this->db
@@ -187,7 +185,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
             'created_on'=>date("Ymd H:i:s"),
             'created_by_id'=>$_SESSION['auth_user']->id,
             'updated_on'=>date("Ymd H:i:s"),
-            'updated_by_id'=>$_SESSION['auth_user']->id   
+            'updated_by_id'=>$_SESSION['auth_user']->id
           ));
           $r = $this->db
             ->select('id')
@@ -215,7 +213,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         if (empty($startDate))
           $startDate=null;
         foreach ($r as $taxon) {
-          // Insert a link from each matched taxon to the designation, if not already present. 
+          // Insert a link from each matched taxon to the designation, if not already present.
           $r = $this->db
             ->select('id')
             ->from('taxa_taxon_designations')
@@ -231,7 +229,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
               'created_on'=>date("Ymd H:i:s"),
               'created_by_id'=>$_SESSION['auth_user']->id,
               'updated_on'=>date("Ymd H:i:s"),
-              'updated_by_id'=>$_SESSION['auth_user']->id   
+              'updated_by_id'=>$_SESSION['auth_user']->id
             ));
           } else {
             $this->db->update('taxa_taxon_designations', array(
@@ -241,8 +239,8 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
                 'source'=>$source,
                 'geographical_constraint'=>$geographicConstraint,
                 'updated_on'=>date("Ymd H:i:s"),
-                'updated_by_id'=>$_SESSION['auth_user']->id   
-              ), 
+                'updated_by_id'=>$_SESSION['auth_user']->id
+              ),
               array('id'=>$r[0]['id'])
             );
             kohana::log('debug', 'updated');
@@ -255,7 +253,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
     echo $r;
     fclose($handle);
   }
-  
+
   /**
    * Controller method for the upload_complate path, called at the end of upload.
    * Displays a message about the number of designations uploaded, cleans the cache
@@ -267,21 +265,21 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
     $cache->delete(basename($_GET['uploaded_csv']).'metadata');
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     unlink($csvTempFile);
-    url::redirect('taxon_designation/index'); 
+    url::redirect('taxon_designation/index');
   }
-  
-  /** 
+
+  /**
    * Finds a field value if it exists in the data for a CSV row.
    * @param type $data
    * @param array $names List of the possible column titles that this value can match against.
-   * @param type $obj 
+   * @param type $obj
    */
   private function findValue($data, $names, $obj) {
     foreach ($names as $name) {
       $idx = array_search($name, $obj['headings']);
       if ($idx!==false) break;
     }
-    if ($idx===false) 
+    if ($idx===false)
       return null;
     else
       return $data[$idx];

@@ -27,7 +27,7 @@
  * @package Core
  * @subpackage Controllers
  */
-class Identifier_attribute_Controller extends Attr_Gridview_Base_Controller {
+class Identifier_attribute_Controller extends Attr_Base_Controller {
 
   public function __construct()
   {
@@ -35,7 +35,7 @@ class Identifier_attribute_Controller extends Attr_Gridview_Base_Controller {
     parent::__construct();
     if (array_key_exists('survey', $this->columns)) unset($this->columns['survey']);
   }
-  
+
   /**
    * Returns the shared view for all custom attribute edits.
    */
@@ -48,10 +48,9 @@ class Identifier_attribute_Controller extends Attr_Gridview_Base_Controller {
    * Returns some addition information required by the edit view, which is not associated with
    * a particular record.
    */
-  protected function prepareOtherViewData($values)
-  {
+  protected function prepareOtherViewData(array $values) {
     return array_merge(
-      (array)parent::prepareOtherViewData($values),
+      (array) parent::prepareOtherViewData($values),
       array('publicFieldName' => 'Public (available for all identifiers on this warehouse)')
     );
   }

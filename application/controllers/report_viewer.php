@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing access to the list of reports and report running.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Report_viewer_Controller extends Indicia_Controller
 {
@@ -55,7 +50,7 @@ class Report_viewer_Controller extends Indicia_Controller
     $this->template->content = $view;
     $this->page_breadcrumbs[] = $this->template->title;
   }
-  
+
   public function load() {
     $view = new View('report/view');
     $this->template->title = 'Report Output';

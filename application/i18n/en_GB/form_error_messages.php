@@ -234,4 +234,28 @@ $lang = [
   'to_occurrence_id' => [
     'required' => 'The association to_occurrence_id must be supplied.',
   ],
+  'survey_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'sample_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'occurrence_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'location_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'taxa_taxon_list_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
+  'person_attribute:allow_ranges' => [
+    'notmultiple' => 'Multi-value attributes which allow ranges are not currently supported. Please untick Allow ' .
+      'multiple values or Allow ranges.',
+  ],
 ];

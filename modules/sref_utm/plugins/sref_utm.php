@@ -17,7 +17,7 @@
  * @subpackage Plugins
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -32,7 +32,7 @@ function sref_utm_sref_systems() {
        * Because there are many possible datum shifts available for this projection
        * by default PostGIS does none. I have applied the mean shift by updating the
        * spatial_ref_sys table as follows:
-       *   update spatial_ref_sys 
+       *   update spatial_ref_sys
        *   set proj4text = '+proj=utm +zone=30 +ellps=intl +units=m +no_defs +towgs84=-87,-98,-121'
        *   where srid = 23030;
        * The datum shift was taken from http://earth-info.nga.mil/GandG/coordsys/onlinedatum/CountryEuropeTable.html

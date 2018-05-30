@@ -17,7 +17,7 @@
  * @subpackage Summary builder
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 // following assumes that any update to locations/samples/occurrences leads to a change in the updated_on fields
@@ -82,7 +82,7 @@ SELECT distinct location_id, user_id, taxa_taxon_list_id, year
 // don't need to worry about deletion of subsamples, as these are bubbled
 // down to the occurrences, also it is only really the supersamples that impact
 // the calculations.
-// Other non-delete updates to the samples are not actually important: 
+// Other non-delete updates to the samples are not actually important:
 $config['get_deleted_samples_query'] = "
   SELECT p.date_start, p.created_by_id as user_id, p.location_id
 	FROM samples p
@@ -104,7 +104,7 @@ $config['get_created_samples_query'] = "
 LIMIT #limit#";
 
 // first part returns samples that have been deleted since the equivalent summary_created_on was created
-//   Only need to pick up deleted parent samples, as deleting the subsample automatically deletes the 
+//   Only need to pick up deleted parent samples, as deleting the subsample automatically deletes the
 //   occurrences, which are picked up in the items check. Presence of the (potentially empty) parent sample
 //   is what impacts calculations.
 $config['get_missed_deleted_samples_query'] = "
@@ -120,7 +120,7 @@ $config['get_missed_deleted_samples_query'] = "
 		AND p.survey_id = #survey_id#
 		AND p.deleted = 't'
 LIMIT #limit#";
-// Other non-delete updates to the samples are not actually important: 
+// Other non-delete updates to the samples are not actually important:
 // second part returns samples that have been created since the equivalent summary_created_on was created,
 //   or which have no entries at all. In this case at least one sample for the year must have occurrences
 //   in order for data to be present, otherwise no point in doing it - this sample would always show up.
@@ -173,9 +173,9 @@ $config['get_taxa_query'] = "
 // changes to samples handled elsewhere.
 // also pick up if the sample/parent has been deleted, occurrence left alone.
 // not checking if dates or locations have changed on samples, or change of taxon on occurrence:
-//   cant do at moment - but also not possible through UKBMS front end. 
+//   cant do at moment - but also not possible through UKBMS front end.
 $config['get_changed_occurrences_query'] = "
-  SELECT o.taxa_taxon_list_id, p.date_start, p.created_by_id, p.location_id  
+  SELECT o.taxa_taxon_list_id, p.date_start, p.created_by_id, p.location_id
 	FROM occurrences o
 	JOIN samples s ON s.id = o.sample_id
 	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id IS NOT NULL
@@ -183,7 +183,7 @@ $config['get_changed_occurrences_query'] = "
 	LIMIT #limit#";
 
 $config['get_missed_changed_occurrences_query'] = "
-  SELECT distinct o.taxa_taxon_list_id, p.date_start, p.created_by_id, p.location_id  
+  SELECT distinct o.taxa_taxon_list_id, p.date_start, p.created_by_id, p.location_id
 	FROM occurrences o
 	JOIN samples s ON s.id = o.sample_id AND s.deleted = 'f'
 	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.deleted = 'f' AND p.location_id IS NOT NULL
@@ -194,7 +194,7 @@ $config['get_missed_changed_occurrences_query'] = "
 	LIMIT #limit#";
 
 $config['get_missed_deleted_occurrences_query'] = "
-  SELECT o.taxa_taxon_list_id, p.date_start, p.created_by_id, p.location_id  
+  SELECT o.taxa_taxon_list_id, p.date_start, p.created_by_id, p.location_id
 	FROM occurrences o
 	JOIN samples s ON s.id = o.sample_id
 	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id IS NOT NULL
@@ -254,7 +254,7 @@ $config['get_YearTaxonLocationUser_query'] = "
 $config['get_YearTaxonLocationUser_Attr_query'] = "
   SELECT oav.int_value AS count, p.id AS sample_id, p.date_start, 't' as present
 	FROM occurrences o
-	JOIN occurrence_attribute_values oav ON oav.occurrence_id = o.id AND oav.deleted = 'f' AND oav.occurrence_attribute_id = #attr_id# 
+	JOIN occurrence_attribute_values oav ON oav.occurrence_id = o.id AND oav.deleted = 'f' AND oav.occurrence_attribute_id = #attr_id#
 	JOIN samples s ON s.id = o.sample_id AND s.deleted = 'f'
 	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id = #location_id# AND p.created_by_id = #user_id# AND p.deleted = 'f' AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
 	WHERE o.taxa_taxon_list_id = #taxon_id#
@@ -288,7 +288,7 @@ $config['get_YearTaxonLocation_query'] = "
 $config['get_YearTaxonLocation_Attr_query'] = "
   SELECT oav.int_value AS count, p.id AS sample_id, p.date_start, 't' as present
 	FROM occurrences o
-	JOIN occurrence_attribute_values oav ON oav.occurrence_id = o.id AND oav.deleted = 'f' AND oav.occurrence_attribute_id = #attr_id# 
+	JOIN occurrence_attribute_values oav ON oav.occurrence_id = o.id AND oav.deleted = 'f' AND oav.occurrence_attribute_id = #attr_id#
 	JOIN samples s ON s.id = o.sample_id AND s.deleted = 'f'
 	JOIN samples p ON s.parent_id = p.id AND p.survey_id = #survey_id# AND p.location_id = #location_id# AND p.deleted = 'f' AND p.date_end>='#year#-01-01' AND p.date_start<='#year#-12-31'
 	WHERE o.taxa_taxon_list_id = #taxon_id#
@@ -320,6 +320,6 @@ $config['get_YearTaxon_query'] = "
 		AND date_end>='#year#-01-01'
 		AND date_start<='#year#-12-31'
 		AND taxa_taxon_list_id = #taxon_id#
-		AND location_id IS NOT NULL 
+		AND location_id IS NOT NULL
   GROUP BY date_start
   ";

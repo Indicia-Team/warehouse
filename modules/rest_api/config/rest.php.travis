@@ -17,7 +17,7 @@
  * @subpackage Cache builder
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -43,7 +43,7 @@ $config['allow_auth_tokens_in_url'] = FALSE;
  */
 $config['dataset_name_attr_id'] = 99;
 
-// The following configuration is a temporary definition of the projects available for 
+// The following configuration is a temporary definition of the projects available for
 // each website.
 // @todo Move this configuration into a database table.
 $config['clients']=array(

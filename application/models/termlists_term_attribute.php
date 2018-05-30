@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the termlists_term_attributes table.
- *
- * @package	Core
- * @subpackage Models
  */
 class Termlists_term_attribute_Model extends ATTR_ORM {
 
@@ -36,31 +31,38 @@ class Termlists_term_attribute_Model extends ATTR_ORM {
   );
 
   protected $has_and_belongs_to_many = array('termlists');
-  
+
   /**
-   * After saving, ensures that the join records linking the attribute to a taxon 
-   * list are created or deleted.
-   * @return boolean Returns true to indicate success.  
+   * Save joins from attribute to termlists.
+   *
+   * After saving, ensures that the join records linking the attribute to a
+   * term list are created or deleted.
+   *
+   * @return bool
+   *   Returns true to indicate success.
    */
   protected function postSubmit($isInsert) {
     $lists = ORM::factory('termlist')->find_all();
     foreach ($lists as $list) {
-      $this->set_attribute_termlist_record($this->id, $list->id, isset($_POST['termlist_'.$list->id]));
+      $this->set_attribute_termlist_record($this->id, $list->id, isset($_POST["termlist_$list->id"]));
     }
-    return true;
+    return TRUE;
   }
 
   /**
    * Internal function to ensure that an attribute is linked to a termlist or alternatively is unlinked from the list.
    * Checks the existing data and creates or deletes the join record as and when necessary.
-   * @param integer $attr_id Id of the attribute.
-   * @param integer $list_id ID of the termlist.
-   * @param boolean $checked True if there should be a link, false if not. 
+   *
+   * @param int $attr_id
+   *   Id of the attribute.
+   * @param int $list_id
+   *   ID of the termlist.
+   * @param bool $checked
+   *   True if there should be a link, false if not.
    */
-  private function set_attribute_termlist_record($attr_id, $list_id, $checked)
-  {
+  private function set_attribute_termlist_record($attr_id, $list_id, $checked) {
     $attributes_termlist = ORM::factory('termlists_termlists_term_attribute',
-        array($this->object_name.'_id' => $attr_id, 'termlist_id' => $list_id)
+      array($this->object_name.'_id' => $attr_id, 'termlist_id' => $list_id)
     );
     if ($attributes_termlist->loaded) {
       // existing record

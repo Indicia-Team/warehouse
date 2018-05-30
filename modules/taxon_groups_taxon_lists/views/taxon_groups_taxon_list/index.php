@@ -18,7 +18,7 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 ?>
@@ -33,7 +33,7 @@ $('.grid-action-delete').click(function(a) {
       $(a.target.parentNode.parentNode).remove();
     }
   });
-  
+
   return false;
 });
 
@@ -77,5 +77,5 @@ if (request::is_ajax()) {
   data_entry_helper::$dumped_resources[] = 'jquery';
 }
 data_entry_helper::link_default_stylesheet();
-echo data_entry_helper::dump_javascript(true); 
+echo data_entry_helper::dump_javascript(true);
 ?>

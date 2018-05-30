@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the upload a CSV file forms added below lists of data.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,25 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
+$returnPath = url::site() . "$controllerpath/importer/$returnPage";
 ?>
-<form enctype="multipart/form-data" class="linear-form" method="post" action="<?php echo url::site().$controllerpath.'/importer/'.$returnPage; ?>">
-<?php
-if ($staticFields != null) {
-  foreach ($staticFields as $a => $b) {
-    print form::hidden($a, $b);
+<form enctype="multipart/form-data" class="form-inline" method="post" action="<?php echo $returnPath; ?>">
+  <?php
+  if ($staticFields != NULL) {
+    foreach ($staticFields as $a => $b) {
+      print form::hidden($a, $b);
+    }
   }
-}
-?>
-<fieldset>
-<label for="csv_upload" class="auto wide">Upload a CSV file into this list:</label>
-<input type="file" name="csv_upload" id="csv_upload" size="40" />
-<input type="submit" value="Upload CSV File" />
-</fieldset>
+  ?>
+  <label for="csv_upload">Upload a CSV file into this list:</label>
+  <input type="file" name="csv_upload" id="csv_upload" class="form-control" />
+  <input type="submit" value="Upload CSV File" class="btn btn-default" />
 </form>

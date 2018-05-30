@@ -88,6 +88,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     'sample_comment',
     'survey_medium',
     'taxa_taxon_list',
+    'taxa_taxon_list_attribute',
     'taxon_rank',
     'taxon_relation',
     'taxon_group',
@@ -647,7 +648,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('user_trust');
   }
-  
+
   public function comment_quick_reply_page_auth()
   {
     $this->handle_call('comment_quick_reply_page_auth');
@@ -820,6 +821,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $model = ORM::factory($this->entity);
       $model->submission = $s;
       $result = $model->submit();
+      kohana::log('debug', "Model submit: $model->object_name $model->id");
       $id = $model->id;
     }
     if ($result)

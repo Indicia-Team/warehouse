@@ -5,4 +5,3 @@ COMMENT ON COLUMN occurrence_comments.correspondence_data IS
 ALTER TABLE occurrence_comments ADD COLUMN reference text;
 COMMENT ON COLUMN occurrence_comments.reference IS
   'Description of reference used, link to web address, journal or book name etc.';
-

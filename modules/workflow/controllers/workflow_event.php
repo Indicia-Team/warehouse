@@ -62,7 +62,7 @@ class Workflow_event_Controller extends Gridview_Base_Controller {
    * @return array
    *   Associative array of any additional data to expose to the edit view.
    */
-  protected function prepareOtherViewData($values) {
+  protected function prepareOtherViewData(array $values) {
     $config = kohana::config('workflow');
     $entitySelectItems = array();
     $jsonMapping = array();

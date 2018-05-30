@@ -14,29 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the groups table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Group_Model extends ORM {
 
   protected $has_one = array('filter');
-      
+
   protected $has_and_belongs_to_many = array('users', 'locations');
-  
+
   protected $has_many = array('group_invitations', 'group_pages');
-  
-  /** 
+
+  /**
    * @var boolean Flag indicating if the group's private records status is changing, indicating we need to update the release status of records.
    */
   protected $wantToUpdateReleaseStatus=false;
@@ -50,11 +44,11 @@ class Group_Model extends ORM {
         'filter_id', 'joining_method', 'deleted', 'implicit_record_inclusion', 'view_full_precision',
         'logo_path', 'licence_id');
     // has the private records flag changed?
-    $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) && 
+    $this->wantToUpdateReleaseStatus = isset($this->submission['fields']['private_records']) &&
         $this->submission['fields']['private_records']!==$this->private_records;
     return parent::validate($array, $save);
   }
-  
+
   /**
    * If changing the private records setting, then must update the group's records release_status.
    */
@@ -72,25 +66,25 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     $this->processIndexGroupsTaxonGroups();
     return true;
   }
-  
+
   /**
    * Method to populate the indexed locations that this group intersects with. Makes it easy to do things like
    * suggest groups based on geographic region.
-   */ 
+   */
   private function processIndexGroupsLocations() {
     $filter = json_decode($this->filter->definition, true);
     $exist = $this->db->select('id', 'location_id')
         ->from('index_groups_locations')
         ->where('group_id', $this->id)
         ->get();
-        
+
     $location_ids = array();
     // backwards compatibility
     if (!empty($filter['indexed_location_id']) && empty($filter['indexed_location_list']))
       $filter['indexed_location_list'] = $filter['location_id']; // backwards compatibility
     if (!empty($filter['location_id']) && empty($filter['location_list']))
       $filter['location_list'] = $filter['location_id']; // backwards compatibility
-    
+
     if (!empty($filter['indexed_location_list'])) {
       // Got an indexed location as the filter boundary definition, so we can use that as it is.
       $location_ids = explode(',', $filter['indexed_location_list']);
@@ -141,25 +135,25 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     // Any remaining in our list now need to be added.
     foreach ($location_ids as $location_id) {
       $this->db->insert('index_groups_locations', array(
-          'group_id'=>$this->id, 
+          'group_id'=>$this->id,
           'location_id'=>$location_id
       ));
     }
   }
-  
+
   /**
    * Method to populate the indexed taxon groups that this group intersects with. Makes it easy to do things like
    * suggest groups based on species being recorded.
-   */ 
+   */
   private function processIndexGroupsTaxonGroups() {
     $filter = json_decode($this->filter->definition, true);
     $exist = $this->db->select('id', 'taxon_group_id')
         ->from('index_groups_taxon_groups')
         ->where('group_id', $this->id)
         ->get();
-        
+
     $taxon_group_ids = array();
-    
+
     if (!empty($filter['taxon_group_list'])) {
       // Got a list of taxon groups linked to the group's filter, so these can be used to define the context of the group.
       $taxon_group_ids = explode(',', $filter['taxon_group_list']);
@@ -191,7 +185,7 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
     // Any remaining in our list now need to be added.
     foreach ($taxon_group_ids as $taxon_group_id) {
       $this->db->insert('index_groups_taxon_groups', array(
-          'group_id'=>$this->id, 
+          'group_id'=>$this->id,
           'taxon_group_id'=>$taxon_group_id
       ));
     }

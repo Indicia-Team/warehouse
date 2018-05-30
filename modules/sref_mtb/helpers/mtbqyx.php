@@ -17,10 +17,10 @@
  * @subpackage MTBQQQ Grid References
  * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link  http://code.google.com/p/indicia/
+ * @link  https://github.com/indicia-team/warehouse/
  */
 
-/** 
+/**
  * Conversion class for MTBQQQ (German grid system) grid references.
  * @package Modules
  * @subpackage MTBQQQ Grid References
@@ -69,9 +69,9 @@ class mtbqyx extends mtb {
       $xSize = TENMINUTES / 2;
       $ySize = SIXMINUTES / 2;
       // shift edges into correct quadrant
-      if ($q > 2) 
-        $northEdge -= $ySize; 
-      if ($q == 2 || $q == 4) 
+      if ($q > 2)
+        $northEdge -= $ySize;
+      if ($q == 2 || $q == 4)
         $westEdge += $xSize;
     }
     if (strlen($sref) >= 8) {
@@ -105,7 +105,7 @@ class mtbqyx extends mtb {
     }
     else
       throw new Exception('wkt_to_sref translation only works for POINT or POLYGON wkt.');
-    
+
     $points = explode(',',$points);
     $point = explode(' ',$points[0]);
     $easting = $point[0];
@@ -123,7 +123,7 @@ class mtbqyx extends mtb {
     $q = $x10th > 5 ? 2 : 1;
     $q += $y6th > 3 ? 2 : 0;
     // Find the xy coordinate within the quadrant.
-    $x = ($x10th - 1) % 5 + 1; 
+    $x = ($x10th - 1) % 5 + 1;
     $y = ($y6th - 1) % 3 + 1;
 
     if ($gridYTop < 1 || $gridXLeft < 1 || $gridYTop > 99 || $gridXLeft > 99)
@@ -142,7 +142,7 @@ class mtbqyx extends mtb {
         }
       }
       return substr($ref, 0, $len);
-      
+
     }
   }
 

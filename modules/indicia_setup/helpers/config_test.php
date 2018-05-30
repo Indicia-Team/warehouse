@@ -47,7 +47,6 @@ class config_test {
       self::check_postgres($result, $problems_only);
       self::check_curl($result, $problems_only);
       self::check_gd2($result, $problems_only);
-      self::check_dBase($result, $problems_only);
       self::check_zip($result, $problems_only);
       self::check_dir_permissions($result, $problems_only);
       self::check_email($result, $problems_only);
@@ -71,8 +70,8 @@ class config_test {
     if (!$config) {
       $problem = array(
         'title' => 'Database configuration',
-        'description' => '<p>Database configuration options need to be set allowing the Indicia Warehouse to access your ' .
-            'database. Indicia will then install the required database tables for you.</p>',
+        'description' => 'Database configuration options need to be set allowing the Indicia Warehouse to access your ' .
+            'database. Indicia will then install the required database tables for you.',
         'success' => false
       );
       $other_problems=false;
@@ -81,16 +80,22 @@ class config_test {
       }
       if (!$other_problems) {
         // No other problems, so can proceed to install the database.
-        $problem['action'] = array('title'=>'Configure database', 'link'=>'config_db');
-      }	else {
-        $problem['description'] .= '<p>Fix the other issues listed on this page before proceeding to configure and install the database.</p>';
+        $problem['action'] = array(
+          'title' => 'Configure database',
+          'link' => 'config_db'
+        );
+      }
+      else {
+        $problem['description'] .= 'Fix the other issues listed on this page before proceeding to configure and ' .
+          'install the database.';
       }
       array_push($messages, $problem);
-    } elseif (!$problems_only) {
+    }
+    elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'Database configuration',
-        'description' => '<p>The Indicia Warehouse database has been configured and installed.</p>',
-        'success' => true
+        'description' => 'The Indicia Warehouse database has been configured and installed.',
+        'success' => TRUE
       ));
     }
   }
@@ -98,18 +103,19 @@ class config_test {
   /**
    * Ensure that the email configuration file has been setup.
    *
-   * @param array $messages List of messages that any information should be appended to.
-   * @param boolean $problems_only Set to true to report only the problems, not the successful
-   * checks. False reports both failures and successes.
+   * @param array $messages
+   *   List of messages that any information should be appended to.
+   * @param bool $problems_only
+   *   Set to true to report only the problems, not the successful checks. False reports both failures and successes.
    */
   private static function check_email(&$messages, $problems_only) {
     if (array_key_exists('skip_email', $_SESSION)) {
       if (!$problems_only) {
         array_push($messages, array(
           'title' => 'Email configuration',
-          'description' => '<p>Email configuration has been skipped so the server may not be able to send ' .
-              'forgotten password reminder emails.</p>',
-          'success' => true
+          'description' => 'Email configuration has been skipped so the server may not be able to send ' .
+              'forgotten password reminder emails.',
+          'success' => TRUE
         ));
       }
     } else {
@@ -117,27 +123,33 @@ class config_test {
       if (!array_key_exists('forgotten_passwd_title', $email_config)) {
         array_push($messages, array(
           'title' => 'Email configuration',
-          'description' => '<p>Email configuration options need to be set up to allow the Indicia Warehouse to send emails to users ' .
-              'who forget their passwords.</p>',
-          'success' => false,
-          'action' => array('title'=>'Configure email', 'link'=>'config_email')
+          'description' => 'Email configuration options need to be set up to allow the Indicia Warehouse to send emails to users ' .
+              'who forget their passwords.',
+          'success' => FALSE,
+          'action' => array(
+            'title' => 'Configure email',
+            'link' => 'config_email')
+
         ));
       }
       else if (!array_key_exists('test_result', $email_config) ||
           $email_config['test_result'] != 'pass') {
         array_push($messages, array(
           'title' => 'Email configuration',
-          'description' => '<p>Email configuration has not been tested. The Indicia Warehouse might not be able to send emails to users ' .
-              'who forget their passwords.</p>',
+          'description' => 'Email configuration has not been tested. The Indicia Warehouse might not be able to send emails to users ' .
+              'who forget their passwords.',
           'success' => false,
-          'action' => array('title'=>'Configure email', 'link'=>'config_email')
+          'action' => array(
+            'title' => 'Configure email',
+            'link' => 'config_email'
+          )
         ));
       }
       elseif (!$problems_only) {
         array_push($messages, array(
           'title' => 'Email configuration',
-          'description' => '<p>Configuration of server side emails completed.</p>',
-          'success' => true
+          'description' => 'Configuration of server side emails completed.',
+          'success' => TRUE
         ));
       }
     }
@@ -161,14 +173,14 @@ class config_test {
     if (PHP_VERSION_ID<50200) {
       array_push($messages, array(
         'title' => 'PHP Version',
-        'description' => '<p>Your PHP version is '.phpversion().' which does not support JSON communication with the online recording websites. '.
-            'Please upgrade the PHP installation on this web server to at least version 5.2.</p>',
+        'description' => 'Your PHP version is '.phpversion().' which does not support JSON communication with the online recording websites. '.
+            'Please upgrade the PHP installation on this web server to at least version 5.2.',
         'success' => false
       ));
     } elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'PHP Version',
-        'description' => '<p>PHP version is '.phpversion().'.</p>',
+        'description' => 'PHP version is '.phpversion(),
         'success' => true
       ));
     }
@@ -211,15 +223,15 @@ class config_test {
     if (!function_exists('curl_exec')) {
       array_push($messages, array(
         'title' => 'cUrl Library',
-        'description' => '<p>The cUrl library is not installed on this web server. To fix this, find your php.ini file in the PHP installation folder and ' .
+        'description' => 'The cUrl library is not installed on this web server. To fix this, find your php.ini file in the PHP installation folder and ' .
             'find the line <strong>;extension=php_curl.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
-            'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.</p>',
+            'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.',
         'success' => false
       ));
     } elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'cUrl Library',
-        'description' => '<p>The cUrl library is installed.</p>',
+        'description' => 'The cUrl library is installed.',
         'success' => true
       ));
     }
@@ -236,49 +248,16 @@ class config_test {
     if (!function_exists('gd_info')) {
       array_push($messages, array(
         'title' => 'gd2 Library',
-        'description' => '<p>The gd2 library is not installed on this web server. To fix this, find your php.ini file in the PHP installation folder and ' .
+        'description' => 'The gd2 library is not installed on this web server. To fix this, find your php.ini file in the PHP installation folder and ' .
             'find the line <strong>;extension=php_gd2.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
-            'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.</p>',
+            'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.',
         'success' => false
       ));
     } elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'gd2 Library',
-        'description' => '<p>The gd2 library is installed.</p>',
+        'description' => 'The gd2 library is installed.',
         'success' => true
-      ));
-    }
-  }
-
-  /**
-   * Ensure that the dBase library is installed.
-   *
-   * @param array $messages List of messages that any information should be appended to.
-   * @param boolean $problems_only Set to true to report only the problems, not the successful
-   * checks. False reports both failures and successes.
-   */
-  private static function check_dBase(&$messages, $problems_only) {
-    if (!function_exists('dbase_open')) {
-      $description = <<<MSG
-The dBase library is not installed on this web server. This is required to enable upload of SHP files containing
-location boundaries, but does not stop Indicia working. To fix this for servers running PHP 5.2, find your php.ini file
-in the PHP installation folder and find the line <strong>;extension=php_dbase.dll</strong>. Remove the semi-colon from
-the start of the line and save the file, then restart your webserver process. If you compiled PHP yourself, you must
-compile PHP with dbase support by using the --enable-dbase configuration option.
-MSG;
-      // Note that this does NOT prevent installation, only give a warning.
-      array_push($messages, array(
-        'title' => 'dBase Library',
-        'description' => "<p>$description</p>",
-        'success' => TRUE,
-        'warning' => TRUE
-      ));
-    }
-    elseif (!$problems_only) {
-      array_push($messages, array(
-        'title' => 'dBase Library',
-        'description' => '<p>The dBase library is installed.</p>',
-        'success' => TRUE
       ));
     }
   }
@@ -343,49 +322,50 @@ MSG;
       if (!$problems_only) {
         array_push($messages, array(
           'title' => 'Directory Access',
-          'description' => '<p>Non-essential problems with the directory access permissions have been acknowledged by you.</p>',
+          'description' => 'Non-essential problems with the directory access permissions have been acknowledged by you.',
           'success' => true
         ));
       }
-    } else {
-      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'image upload',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/upload',
+    }
+    else {
+      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'image upload',
+          dirname(dirname(dirname(dirname(__file__)))) . '/upload',
           'images to be uploaded',
           'images cannot be uploaded');
       self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers',
+          dirname(dirname(dirname(dirname(__file__)))) . '/client_helpers',
           'the settings for the data entry helper classes to be stored',
           'the settings for the data entry helper classes cannot be stored');
       self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'data upload',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers/upload',
+          dirname(dirname(dirname(dirname(__file__)))) . '/client_helpers/upload',
           'data to be uploaded',
           'data cannot be uploaded');
       self::check_dir_permission($readonly, $good_dirs, $bad_dirs, 'reports',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/reports',
+          dirname(dirname(dirname(dirname(__file__)))) . '/reports',
           'the report templates to be accessed',
           'the reports templates cannot be aceessed');
       self::check_dir_permission($readonly, $good_dirs, $bad_dirs, 'trigger templates',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/reports/trigger_templates',
+          dirname(dirname(dirname(dirname(__file__)))) . '/reports/trigger_templates',
           'the trigger and notification templates to be accessed',
           'the trigger and notification templates cannot be accessed');
       self::check_dir_permission($readonly, $good_dirs, $bad_dirs, 'database update folders',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db',
+          dirname(dirname(dirname(dirname(__file__)))) . '/modules/indicia_setup/db',
           'the database upgrades to be accessed',
           'the database upgrades cannot be accessed');
 
-      if (count($good_dirs)>0 && !$problems_only) {
+      if (count($good_dirs) > 0 && !$problems_only) {
         array_push($messages, array(
           'title' => 'Correct Directory Access',
-          'description' => '<p>'.implode('</p><p>', $good_dirs).'</p>',
+          'description' => implode('<br/>', $good_dirs),
           'success' => true
         ));
       }
-      if (count($bad_dirs)>0) {
+      if (count($bad_dirs) > 0) {
         array_push($messages, array(
           'title' => 'Directory Access',
-          'description' => '<p>'.implode('</p><p>', $bad_dirs).'</p>',
-          'success' => false,
-          'action' => array('title'=>'Acknowledge', 'link'=>'ack_permissions')
+          'description' => '<ul><li>' . implode('</li><li>', $bad_dirs) . '</li></ul>',
+          'success' => FALSE,
+          'action' => array('title' => 'Acknowledge', 'link' => 'ack_permissions')
         ));
       }
     }
@@ -395,13 +375,19 @@ MSG;
    * Test the access rights to a specific directory. Appends pass and fail messages to the $good_dirs and
    * $bad_dirs arrays.
    *
-   * @param boolean $readonly Set to true to check that a directory is readable but not writeable. Set to false to
-   * check a directory can be written.
-   * @param array $good_dirs The array which pass messages will be appended to.
-   * @param array $bad_dirs The array which fail messages will be appended to.
-   * @param string $folder_name The natural language description of the tested folder.
-   * @param string $pass A natural language description of the pass state.
-   * @param string $fail A natural language description of the fail state.
+   * @param boolean $readonly
+   *   Set to true to check that a directory is readable but not writeable. Set to false to
+   *   check a directory can be written.
+   * @param array $good_dirs
+   *   The array which pass messages will be appended to.
+   * @param array $bad_dirs
+   *    The array which fail messages will be appended to.
+   * @param string $folder_name
+   *   The natural language description of the tested folder.
+   * @param string $pass
+   *   A natural language description of the pass state.
+   * @param string $fail
+   *   A natural language description of the fail state.
    */
   private static function check_dir_permission($readonly, &$good_dirs, &$bad_dirs, $folder_name, $dir, $pass, $fail) {
     $access_str = $readonly ? 'readable' : 'writeable';

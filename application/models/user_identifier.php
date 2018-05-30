@@ -14,19 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Model class for the Triggers table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class User_Identifier_Model extends ORM {
 
@@ -35,7 +29,7 @@ class User_Identifier_Model extends ORM {
     'created_by'=>'user',
     'updated_by'=>'user'
   );
-  
+
   public $search_field='identifier';
 
   public function validate(Validation $array, $save = FALSE) {
@@ -47,5 +41,5 @@ class User_Identifier_Model extends ORM {
     $values = $array->as_array();
     return parent::validate($array, $save);
   }
-  
+
 }

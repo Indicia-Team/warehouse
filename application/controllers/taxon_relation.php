@@ -14,56 +14,48 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package  Core
- * @subpackage Controllers
- * @author  Indicia Team
- * @license  http://www.gnu.org/licenses/gpl.html GPL
- * @link   http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the relationships for a taxon
- *
- * @package  Core
- * @subpackage Controllers
  */
-class Taxon_relation_Controller extends Gridview_Base_Controller
-{
-  public function __construct()
-  {
+class Taxon_relation_Controller extends Gridview_Base_Controller {
+
+  public function __construct() {
     parent::__construct('taxon_relation');
     $this->columns = array(
-      'my_taxon'=>'',
-      'term'=>'',
-      'other_taxon'=>''
+      'my_taxon' => '',
+      'term' => '',
+      'other_taxon' => '',
     );
     $this->pagetitle = "Relationships";
   }
-  
- /**
-  * Override the default index functionality to filter by sample_id.
-  */
-  public function index()
-  { 
-    if ($this->uri->total_arguments()>0) {
+
+  /**
+   * Override the default index functionality to filter by sample_id.
+   */
+  public function index() {
+    if ($this->uri->total_arguments() > 0) {
       $taxa_taxon_list_id = $this->uri->argument(1);
       $ttl = ORM::factory('taxa_taxon_list', $taxa_taxon_list_id);
-      $this->base_filter=array('my_taxon_meaning_id' => $ttl->taxon_meaning_id);
+      $this->base_filter = array('my_taxon_meaning_id' => $ttl->taxon_meaning_id);
     }
     parent::index();
     // pass the sample id into the view, so the create button can use it to autoset
     // the sample of the new image.
-    if ($this->uri->total_arguments()>0) {
-      $this->view->taxa_taxon_list_id=$taxa_taxon_list_id;
+    if ($this->uri->total_arguments() > 0) {
+      $this->view->taxa_taxon_list_id = $taxa_taxon_list_id;
     }
   }
 
   /**
   * Override the default page functionality to filter by taxon_id.
   */
-  public function page($page_no, $filter=null)
-  {
-    $taxa_taxon_list_id=$filter;
+  public function page($page_no, $filter = NULL) {
+    $taxa_taxon_list_id = $filter;
     // At this point, $taxa_taxon_list_id has a value - the framework will trap the other case.
     // No further filtering of the gridview required as the very fact you can access the parent taxon
     // means you can access all the relationships for it.
@@ -79,12 +71,13 @@ class Taxon_relation_Controller extends Gridview_Base_Controller
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    if ($this->uri->method(false)=='create') {
+    if ($this->uri->method(FALSE) === 'create') {
       // taxa_taxon_list id is passed as first argument in URL when creating. But the relationship
       // gets linked by meaning, so fetch the meaning_id.
       $ttl = ORM::Factory('taxa_taxon_list', $this->uri->argument(1));
       $t = ORM::Factory('taxon', $ttl->taxon_id);
       $r['taxa_taxon_list:id'] = $this->uri->argument(1);
+      $r['taxa_taxon_list:taxon_list_id'] = $ttl->taxon_list_id;
       $r['taxon_relation:from_taxon_meaning_id'] = $ttl->taxon_meaning_id;
       $r['taxon_relation:to_taxon_meaning_id'] = '';
       $r['taxon_relation:taxon_relation_type_id'] = '';
@@ -96,7 +89,10 @@ class Taxon_relation_Controller extends Gridview_Base_Controller
   }
 
   /**
-   *  Setup the default values to use when loading this controller to edit an existing relation.
+   * Get values for the edit form from the model.
+   *
+   * Setup the default values to use when loading this controller to edit an
+   * existing relation.
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
@@ -104,9 +100,10 @@ class Taxon_relation_Controller extends Gridview_Base_Controller
     // preferred taxa in taxon list, so when you save it knows where to go back to.
     $ttl = ORM::Factory('taxa_taxon_list')->where(array(
       'taxon_meaning_id' => $this->model->from_taxon_meaning_id,
-      'preferred' => 'true'
+      'preferred' => 'true',
     ))->find();
-    $r['taxa_taxon_list:id'] = $ttl->id; // use this as default.
+    $r['taxa_taxon_list:id'] = $ttl->id;
+    $r['taxa_taxon_list:taxon_list_id'] = $ttl->taxon_list_id;
     $t = ORM::Factory('taxon', $ttl->taxon_id);
     $r['taxon:from_taxon'] = $t->taxon;
     $ttl = ORM::Factory('taxa_taxon_list')->where(array(

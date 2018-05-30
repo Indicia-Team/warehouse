@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the messages displayed by log in processes.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,21 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
-echo $message;
-
-?>
-<?php if ( ! empty($link_to_logout) )
-{ ?>
-  <br />You may <a href="<?php echo url::site(); ?>logout">click here to logout</a>.
-<?php } ?>
-<?php if ( ! empty($link_to_home) )
-{ ?>
-  <br />You may <a href="<?php echo url::site(); ?>">click here to return to the home page</a>.
-<?php } ?>
+echo "$message<br/>";
+if (!empty($link_to_logout)) {
+  echo '<a href="' . url::site() . 'logout" class="btn btn-default">Logout</a> ';
+}
+if (!empty($link_to_home)) {
+  echo '<a href="' . url::site() . '" class="btn btn-default">Return to the home page</a>';
+}

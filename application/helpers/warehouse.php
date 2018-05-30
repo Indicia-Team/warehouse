@@ -42,8 +42,7 @@ class warehouse {
     foreach ($helpers as $helper) {
       require_once DOCROOT . "client_helpers/$helper.php";
     }
-    // Enable when switch made to Bootstrap theme
-    // require_once DOCROOT . 'client_helpers/templates.bootstrap-3.php';
+    require_once DOCROOT . 'client_helpers/templates.bootstrap-3.php';
     // No need to re-link to jQuery as included in tempalate.
     helper_base::$dumped_resources[] = 'jquery';
     helper_base::$dumped_resources[] = 'jquery_ui';

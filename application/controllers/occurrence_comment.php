@@ -14,43 +14,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Controllers
- * @author  Indicia Team
+ * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
- * Controller providing CRUD access to the images for an occurrence comment
- *
- * @package  Core
- * @subpackage Controllers
+ * Controller providing CRUD access to the images for an occurrence comment.
  */
-class Occurrence_comment_Controller extends Gridview_Base_Controller
-{
-  public function __construct()
-  {
+class Occurrence_comment_Controller extends Gridview_Base_Controller {
+
+  public function __construct() {
     parent::__construct('occurrence_comment');
     $this->columns = array(
-      'comment' => '', 'updated_on' => 'Updated on'
+      'id' => '',
+      'comment' => '',
+      'updated_on' => 'Updated on',
     );
     $this->pagetitle = "Occurrence Comments";
   }
 
   /**
-  * Override the default index functionality to filter by occurrence_id.
-  */
-  public function index()
-  {
-    if ($this->uri->total_arguments()>0) {
-      $this->base_filter=array('occurrence_id' => $this->uri->argument(1));
+   * Override the default index functionality to filter by occurrence_id.
+   */
+  public function index() {
+    if ($this->uri->total_arguments() > 0) {
+      $this->base_filter = array('occurrence_id' => $this->uri->argument(1));
     }
     parent::index();
-    // pass the occurrence id into the view, so the create button can use it to autoset
+    // Pass the occurrence id into the view, so the create button can use it to autoset
     // the occurrence of the new comment.
-    if ($this->uri->total_arguments()>0) {
-      $this->view->occurrence_id=$this->uri->argument(1);
+    if ($this->uri->total_arguments() > 0) {
+      $this->view->occurrence_id = $this->uri->argument(1);
     }
   }
 
@@ -59,8 +54,8 @@ class Occurrence_comment_Controller extends Gridview_Base_Controller
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    if ($this->uri->method(false)=='create') {
-      // occurrence id is passed as first argument in URL when creating. 
+    if ($this->uri->method(FALSE) === 'create') {
+      // Occurrence id is passed as first argument in URL when creating.
       $r['occurrence:id'] = $this->uri->argument(1);
       $r['occurrence_comment:occurrence_id'] = $this->uri->argument(1);
     }
@@ -73,8 +68,9 @@ class Occurrence_comment_Controller extends Gridview_Base_Controller
    */
   protected function get_return_page() {
     if (array_key_exists('occurrence_comment:occurrence_id', $_POST)) {
-      return "occurrence/edit/".$_POST['occurrence_comment:occurrence_id']."?tab=images";
-    } else {
+      return "occurrence/edit/" . $_POST['occurrence_comment:occurrence_id'] . "?tab=images";
+    }
+    else {
       return $this->model->object_name;
     }
   }
@@ -85,14 +81,15 @@ class Occurrence_comment_Controller extends Gridview_Base_Controller
   protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('occurrence', 'Occurrences');
     if ($this->model->id) {
-      // editing an existing item, so our argument is the occurrence_image_id
+      // Editing an existing item, so our argument is the occurrence_image_id.
       $occurrence_id = $this->model->occurrence_id;
-    } else {
-      // creating a new one so our argument is the occurrence id
+    }
+    else {
+      // Creating a new one so our argument is the occurrence id.
       $occurrence_id = $this->uri->argument(1);
     }
     $occurrenceTitle = ORM::Factory('occurrence', $occurrence_id)->caption();
-    $this->page_breadcrumbs[] = html::anchor('occurrence/edit/'.$occurrence_id.'?tab=Comments', $occurrenceTitle);
+    $this->page_breadcrumbs[] = html::anchor('occurrence/edit/' . $occurrence_id . '?tab=Comments', $occurrenceTitle);
     $this->page_breadcrumbs[] = $this->model->caption();
   }
 

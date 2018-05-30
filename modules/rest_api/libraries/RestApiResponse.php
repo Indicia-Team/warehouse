@@ -18,7 +18,7 @@
  * @subpackage REST API
  * @author  Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link    http://code.google.com/p/indicia/
+ * @link    https://github.com/indicia-team/warehouse/
  */
 
 class RestApiResponse {
@@ -150,7 +150,7 @@ HTML;
           echo '<tbody>';
           foreach ($resourceDef['params'] as $name => $paramDef) {
             echo "<tr><th scope=\"row\">$name</th>";
-            $datatype = preg_match('/\[\]$/', $paramDef['datatype']) ? 
+            $datatype = preg_match('/\[\]$/', $paramDef['datatype']) ?
                 'Single or JSON array of ' . substr($paramDef['datatype'], 0, -2) : $paramDef['datatype'];
             echo "<td>$datatype</td>";
             if ($name === 'format') {
@@ -507,7 +507,7 @@ ROW;
       $columns = array_keys((array)$data[0]);
     }
     echo '<tbody>';
-    
+
     foreach ($data as $row) {
       $this->preProcessRow($row, $options, $columns);
       echo '<tr>';

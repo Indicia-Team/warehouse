@@ -8,6 +8,7 @@
       <directory>./application/tests/helpers</directory>
     </testsuite>
     <testsuite name="Module tests">
+      <directory>./modules/attribute_sets/tests</directory>
       <directory>./modules/data_cleaner/tests</directory>
       <directory>./modules/indicia_svc_data/tests</directory>
       <directory>./modules/indicia_svc_security/tests</directory>

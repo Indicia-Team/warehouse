@@ -14,18 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
 /**
  * Controller providing CRUD access to the samples list.
- *
- * @package	Core
- * @subpackage Controllers
  */
 class Sample_Controller extends Gridview_Base_Controller
 {
@@ -57,9 +52,9 @@ class Sample_Controller extends Gridview_Base_Controller
       $location = ORM::factory('location', $this->model->location_id);
       $r['location:name'] = $location->name;
     }
-    return $r;      
+    return $r;
   }
-  
+
   /**
    * Load default values either when creating a sample new or reloading after a validation failure.
    * This adds the custom attributes list to the data available for the view.
@@ -69,7 +64,7 @@ class Sample_Controller extends Gridview_Base_Controller
     if (array_key_exists('sample:survey_id', $_POST)) {
       $r['sample:survey_id'] = $_POST['sample:survey_id'];
       $r['website_id'] = ORM::factory('survey', $r['sample:survey_id'])->website_id;
-      $r['sample:sample_method_id'] = (array_key_exists('sample:sample_method_id', $_POST)) ? $_POST['sample:sample_method_id'] : null;  
+      $r['sample:sample_method_id'] = (array_key_exists('sample:sample_method_id', $_POST)) ? $_POST['sample:sample_method_id'] : null;
       $this->loadAttributes($r, array(
         'website_id'=>array($r['website_id']),
         'restrict_to_survey_id'=>array(null, $r['sample:survey_id']),
@@ -80,13 +75,12 @@ class Sample_Controller extends Gridview_Base_Controller
   }
 
   /**
-   * Get the list of terms ready for the sample methods list. 
+   * Get the list of terms ready for the sample methods list.
    */
-  protected function prepareOtherViewData($values)
-  {    
+  protected function prepareOtherViewData(array $values) {
     return array(
-      'method_terms' => $this->get_termlist_terms('indicia:sample_methods')    
-    );   
+      'method_terms' => $this->get_termlist_terms('indicia:sample_methods'),
+    );
   }
 
   /**

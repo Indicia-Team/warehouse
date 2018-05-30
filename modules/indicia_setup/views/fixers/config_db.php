@@ -1,6 +1,6 @@
 <?php
 if ($error!=null) {
-  echo html::page_error('Database configuration problem', $error);
+  echo html::page_notice('Database configuration problem', $error, 'danger');
 }
 ?>
 <p><?php echo $description; ?></p>

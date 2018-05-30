@@ -1,6 +1,9 @@
 <?php
 
 /**
+ * @file
+ * View template for the taxon group edit form.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,33 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse
  */
 
-?><p>This page allows you to specify the details of a taxon group.</p>
-<form class="cmxform" action="<?php echo url::site().'taxon_group/save'; ?>" method="post">
-<?php echo $metadata ?>
-<fieldset>
-<input type="hidden" name="taxon_group:id" value="<?php echo html::initial_value($values, 'taxon_group:id'); ?>" />
-<legend>Taxon Group details</legend>
-<ol>
-<li>
-<label for="title">Title</label>
-<input id="title" name="taxon_group:title" value="<?php echo html::initial_value($values, 'taxon_group:title'); ?>" />
-<?php echo html::error_message($model->getError('taxon_group:title')); ?>
-</li>
-<li>
-<label for="title">External key</label>
-<input id="title" name="taxon_group:external_key" value="<?php echo html::initial_value($values, 'taxon_group:external_key'); ?>" />
-<?php echo html::error_message($model->getError('taxon_group:external_key')); ?>
-</li>
-</ol>
-</fieldset>
-<?php 
-echo html::form_buttons(html::initial_value($values, 'taxon_group:id')!=null);
+warehouse::loadHelpers(['data_entry_helper']);
+$id = html::initial_value($values, 'taxon_group:id');
 ?>
+<p>This page allows you to specify the details of a taxon group.</p>
+<form id="taxon-group-edit" action="<?php echo url::site() . 'taxon_group/save'; ?>" method="post">
+  <input type="hidden" name="taxon_group:id" value="<?php echo $id; ?>" />
+  <fieldset>
+    <legend>Taxon Group details<?php echo $metadata ?></legend>
+    <?php
+    echo data_entry_helper::text_input([
+      'label' => 'Title',
+      'fieldname' => 'taxon_group:title',
+      'default' => html::initial_value($values, 'taxon_group:title'),
+      'validation' => ['required'],
+    ]);
+    echo data_entry_helper::text_input([
+      'label' => 'External key',
+      'fieldname' => 'taxon_group:external_key',
+      'default' => html::initial_value($values, 'taxon_group:external_key'),
+    ]);
+    ?>
+    <?php echo html::error_message($model->getError('taxon_group:external_key')); ?>
+  </fieldset>
+  <?php
+  echo html::form_buttons($id !== NULL, FALSE, FALSE);
+  data_entry_helper::enable_validation('taxon-group-edit');
+  echo data_entry_helper::dump_javascript();
+  ?>
 </form>

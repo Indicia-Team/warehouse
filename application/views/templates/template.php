@@ -1,5 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html>
 <?php
 
 /**
@@ -19,11 +18,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Views
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
 // During setup, the indicia config file does not exist.
@@ -45,12 +42,15 @@ $siteTitle = html::specialchars($warehouseTitle);
 <?php
 echo html::stylesheet(
   array(
-    'media/css/site',
-    'media/css/forms',
+    'vendor/bootstrap/css/bootstrap.min.css',
+    'vendor/bootstrap/css/bootstrap-theme.min.css',
+    'media/css/warehouse',
     'media/js/fancybox/source/jquery.fancybox.css',
+    'media/css/jquery-ui.min',
     'media/css/jquery.autocomplete',
-    'media/themes/' . $theme . '/jquery-ui.custom',
-    'media/css/menus',
+    "media/themes/$theme/jquery-ui.theme.min",
+    'media/css/default_site.css',
+    'media/css/theme-bootstrap-3.css',
   ),
   array('screen')
 );
@@ -61,8 +61,8 @@ echo html::script(
     'media/js/jquery.url.js',
     'media/js/fancybox/source/jquery.fancybox.pack.js',
     'media/js/hasharray.js',
-    'media/js/superfish.js',
-    'media/js/jquery-ui.custom.min.js'
+    'media/js/jquery-ui.min.js',
+    'vendor/bootstrap/js/bootstrap.min.js',
   ), FALSE
 );
 if (isset($jsFile)) {
@@ -70,112 +70,78 @@ if (isset($jsFile)) {
 }
 ?>
 <script type="text/javascript">
-/*<![CDATA[*/
-  jQuery(document).ready(function() {
-    jQuery('ul.sf-menu').superfish();
-    // Implement hover over highlighting on buttons, even for AJAX loaded content by using live events
-    $('.ui-state-default').live('mouseover', function() {
-      $(this).addClass('ui-state-hover');
-    });
-    $('.ui-state-default').live('mouseout', function() {
-      $(this).removeClass('ui-state-hover');
-    });
-    // Hack to get fancybox working as a jQuery live, because some of our images load from AJAX calls,
-    // e.g. on the species checklist taxa tab. So we temporarily create a dummy link to our image and click it.
-    $('a.fancybox').live('click', function() {
-      jQuery("body").after('<a id="link_fancybox" style="display: hidden;" href="'+jQuery(this).attr('href')+'"></a>');
-      jQuery('#link_fancybox').fancybox();
-      jQuery('#link_fancybox').click();
-      jQuery('#link_fancybox').remove();
-      return false;
-    });
-  });
-/*]]>*/
+// @todo Do we need a delegate event to hook up FancyBox after any Ajax calls?
 </script>
 </head>
 <body>
-
-<div id="wrapper" class="ui-widget">
-
-    <!-- BEGIN: banner -->
-    <div id="banner"><img id="logo" src="<?php echo url::base();?>media/images/indicia_logo.png" width="248" height="100" alt="Indicia"/></div>
-    <!-- END: banner -->
-
-    <!-- BEGIN: main menu (jquery/superfish) -->
+  <div id="banner"><a href="<?php echo url::site(); ?>"><img id="logo" src="<?php echo url::base();?>media/images/indicia-logo.png" width="255" height="100" alt="Indicia"/></a></div>
     <?php if (isset($menu)) : ?>
-    <div id="menu">
-    <ul class="sf-menu ui-helper-reset ui-helper-clearfix ui-widget-header">
-
-    <?php foreach ($menu as $toplevel => $submenu) : ?>
-
-        <!-- BEGIN: print the top level menu items -->
-        <li class="ui-state-default">
-        <?php
-        if (count($submenu) == 0) {
-          // No submenu, so treat as link to the home page.
-          echo html::anchor('home', $toplevel);
-        }
-        else {
-          echo '<a href="#">' . $toplevel . '</a>';
-        } ?>
-
-            <!-- BEGIN: print the sub menu items -->
-            <?php if (count($submenu) > 0) : ?>
-                <ul>
-                <?php foreach ($submenu as $menuitem => $url) : ?>
-                    <li class="ui-state-default"><?php echo html::anchor($url, $menuitem); ?></li>
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+        </div>
+        <div class="collapse navbar-collapse" id="main-navbar">
+          <ul class="nav navbar-nav">
+          <?php foreach ($menu as $toplevel => $contents) : ?>
+            <?php if (is_array($contents) && count($contents) > 0) : ?>
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown"><?php echo $toplevel; ?>
+              <span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <?php foreach ($contents as $menuitem => $url) : ?>
+                <li><?php echo html::anchor($url, $menuitem); ?></li>
                 <?php endforeach; ?>
-                </ul>
+              </ul>
+            </li>
+            <?php elseif (is_string($contents)) : ?>
+            <li>
+              <?php echo html::anchor($contents, $toplevel); ?>
+            </li>
+            <?php else : ?>
+            <li>
+              <a><?php echo $toplevel; ?></a>
+            </li>
             <?php endif; ?>
-            <!-- END: print the sub menu items -->
+          <?php endforeach; ?>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <?php endif; ?>
 
-        </li>
-        <!-- END: print the top level menu items -->
-
-    <?php endforeach; ?>
-
-    </ul>
+  <div class="container">
+    <div id="breadcrumbs">
+      <?php echo $this->get_breadcrumbs(); ?>
+    </div>
+    <h1><?php echo $title; ?></h1>
+    <?php
+    $info = $this->session->get('flash_info', NULL);
+    if ($info) : ?>
+      <div class="alert alert-info">
+        <?php echo $info; ?>
+      </div>
+    <?php
+    endif;
+    $error = $this->session->get('flash_error', NULL);
+    if ($error) : ?>
+    <div class="alert alert-danger">
+      <?php echo $error; ?>
     </div>
     <?php endif; ?>
-    <!-- END: main menu (jquery/superfish) -->
-
-    <!-- BEGIN: page level content -->
-    <div id="content">
-    <div id="breadcrumbs">
-<?php echo $this->get_breadcrumbs(); ?>
-</div>
-        <h1><?php echo $title; ?></h1>
-<?php
-$info = $this->session->get('flash_info', NULL);
-if ($info) : ?>
-        <div class="ui-widget-content ui-corner-all ui-state-highlight page-notice" >
-        <?php echo $info; ?>
-        </div>
-<?php
-endif;
-$error = $this->session->get('flash_error', NULL);
-if ($error) :
-?>
-        <div class="ui-widget-content ui-corner-all ui-state-error page-notice">
-        <?php echo $error; ?>
-        </div>
-<?php endif; ?>
-        <?php echo $content; ?>
-
-    </div>
-    <!-- END: page level content -->
-
-    <!-- BEGIN: footer -->
-    <div id="footer">
+    <?php echo $content; ?>
+  </div><!-- /.container -->
+  <footer id="footer" class="container">
     <?php
     echo $siteTitle . ' | ' . Kohana::lang('misc.indicia_version') . ' ' . kohana::config('version.version');
     if (kohana::config('upgrade.continuous_upgrade')) {
       echo " (dev)";
     } ?>
-    </div>
-    <!-- END: footer -->
-
-</div>
+  </footer>
 
 </body>
 </html>

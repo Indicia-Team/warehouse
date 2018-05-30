@@ -19,7 +19,7 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link http://code.google.com/p/indicia/
+ * @link https://github.com/indicia-team/warehouse
  */
 
  /*
@@ -30,8 +30,8 @@
   *  $body - gridview_table object.
   */
 
-warehouse::loadHelpers(['data_entry_helper']);
-$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+warehouse::loadHelpers(['report_helper']);
+$readAuth = report_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 $colDefs = array();
 if (isset($columns)) {
   foreach ($columns as $fieldname => $title) {
@@ -62,6 +62,7 @@ if (count($actions) > 0) {
 }
 $options = array(
   'id' => $id,
+  'class' => 'report-grid table',
   'readAuth' => $readAuth,
   'extraParams' => array(),
   'itemsPerPage' => kohana::config('pagination.default.items_per_page'),
@@ -82,6 +83,5 @@ else {
   $options['includeAllColumns'] = FALSE;
   $options['columns'] = $colDefs;
 }
-echo data_entry_helper::report_grid($options);
-data_entry_helper::link_default_stylesheet();
-echo data_entry_helper::dump_javascript();
+echo report_helper::report_grid($options);
+echo report_helper::dump_javascript();

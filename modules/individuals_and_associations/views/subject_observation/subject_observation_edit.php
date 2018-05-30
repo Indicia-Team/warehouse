@@ -17,7 +17,7 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
@@ -26,14 +26,14 @@ if (isset($_POST))
   data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <?php $tabs = false;
-if (!empty($values['subject_observation:id']) 
+if (!empty($values['subject_observation:id'])
   && is_numeric($values['subject_observation:id'])
-  && $values['subject_observation:id'] > 0) : // edit so show tabs 
+  && $values['subject_observation:id'] > 0) : // edit so show tabs
   $tabs = true;
 ?>
 <div id="tabs">
 <?php
-data_entry_helper::enable_tabs(array('divId'=>'tabs')); 
+data_entry_helper::enable_tabs(array('divId'=>'tabs'));
 echo data_entry_helper::tab_header(array('tabs'=>array(
   '#details'=>'Subject Observation',
   '#occurrences'=>'Occurrences',
@@ -44,8 +44,8 @@ echo data_entry_helper::tab_header(array('tabs'=>array(
 <form class="iform" action="<?php echo url::site(); ?>subject_observation/save" method="post">
 <?php // echo '$values: '.print_r($values, true).'<br />'; // for debug ?>
 <?php // echo '$other_data: '.print_r($other_data, true); // for debug ?>
-<?php  
-echo $metadata; 
+<?php
+echo $metadata;
 if (isset($values['subject_observation:id'])) : ?>
   <input type="hidden" name="subject_observation:id" value="<?php echo html::initial_value($values, 'subject_observation:id'); ?>" />
 <?php endif; ?>
@@ -57,7 +57,7 @@ if (isset($values['subject_observation:id'])) : ?>
 ID <?php echo html::initial_value($values, 'sample:id');?></a><br />
 <input type="hidden" name="subject_observation:sample_id" value="<?php echo html::initial_value($values, 'subject_observation:sample_id'); ?>" />
 <input type="hidden" name="subject_observation:website_id" value="<?php echo html::initial_value($values, 'subject_observation:website_id'); ?>" />
-<?php 
+<?php
 echo data_entry_helper::text_input(array(
   'label' => 'Survey',
   'fieldname' => 'survey:title',
@@ -80,7 +80,7 @@ echo data_entry_helper::text_input(array(
 </fieldset>
 <fieldset>
 <legend>Subject observation details</legend>
-<?php 
+<?php
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 echo data_entry_helper::listbox(array(
   'label' => 'Occurrences',
@@ -165,12 +165,12 @@ echo data_entry_helper::textarea(array(
         'default' => $attr['value']
       ));
   endswitch;
-	
+
 endforeach;
  ?>
 </ol>
 </fieldset>
-<?php 
+<?php
 endif;
 echo html::form_buttons(html::initial_value($values, 'subject_observation:id')!=null, false, false);
 data_entry_helper::$dumped_resources[] = 'jquery';

@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package    Core
- * @subpackage Libraries
- * @author    Indicia Team
- * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link     http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -32,18 +30,22 @@ class ORM extends ORM_Core {
 
   /**
    * Authorised website ID from the service authentication.
-   * @var integer
+   *
+   * @var int
    */
-  public static $authorisedWebsiteId=0;
+  public static $authorisedWebsiteId = 0;
+
   /**
   * Should foreign key lookups be cached? Set to true during import for example.
+  *
   * @var bool
   */
-  public static $cacheFkLookups = false;
+  public static $cacheFkLookups = FALSE;
 
 
   /**
    * Tracks list of all inserted, updated or deleted records in this transaction.
+   *
    * @var array
    */
   public static $changedRecords;
@@ -55,25 +57,34 @@ class ORM extends ORM_Core {
   public $submission = array();
 
   /**
-   * @var array Describes the list of nested models that are present after a submission. E.g. the list of
-   * occurrences in a sample.
+   * Describes the list of nested models that are present after a submission.
+   *
+   * E.g. the list of occurrences in a sample.
+   *
+   * @var array
    */
   private $nestedChildModelIds = array();
   private $nestedParentModelIds = array();
 
   /**
-   * @var string The default field that is searchable is called title. Override this when a different field name is used.
+   * @var string
+   *   The default field that is searchable is called title. Override this when a different field name is used.
    */
   public $search_field='title';
 
   protected $errors = array();
 
   /**
-   * @var boolean Flag that gets set if a unique key violation has occurred on attempting a save.
+   * Flag that gets set if a unique key violation has occurred on save.
+   *
+   * @var bool
    */
-  public $uniqueKeyViolation = false;
+  public $uniqueKeyViolation = FALSE;
 
-  protected $identifiers = array('website_id'=>null,'survey_id'=>null);
+  protected $identifiers = array(
+    'website_id' => NULL,
+    'survey_id' => NULL,
+  );
 
   /**
    * @var array unvalidatedFields allows a list of fields which are not validated in anyway to be declared
@@ -1203,7 +1214,7 @@ class ORM extends ORM_Core {
             $typeFilter = $content['value'];
         }
       }
-      $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
+      $fieldPrefix = (array_key_exists('field_prefix', $this->submission)) ? $this->submission['field_prefix'] . ':' : '';
       // as the required fields list is relatively static, we use the cache. This cache entry gets cleared when
       // a custom attribute is saved so it should always be up to date.
       $key = $this->getRequiredFieldsCacheKey($typeFilter);
@@ -1291,7 +1302,16 @@ class ORM extends ORM_Core {
           $ttlIds[] = $typeFilter;
         $this->db->in('tlt2.id', $ttlIds);
       }
-    } elseif ($required) {
+      // For taxon or stage restrictions, the attributes are not loaded into
+      // the entry form unless the correct taxon/stage are chosen. Therefore
+      // we don't enforce the required state of these fields on the server
+      // and instead allow it to be enforced on the client.
+      if ($required && ($this->object_name === 'sample' || $this->object_name === 'occurrence')) {
+        $this->db->join("{$attr_entity}_taxon_restrictions AS tr", "tr.{$attr_entity}s_website_id", "{$attr_entity}s_websites.id", 'LEFT');
+        $this->db->where("tr.id IS NULL");
+      }
+    }
+    elseif ($required) {
       $this->db->like($attr_entity.'s.validation_rules', '%required%');
     }
     $this->db->orderby($attr_entity.'s.caption', 'ASC');
@@ -1468,8 +1488,13 @@ class ORM extends ORM_Core {
 
  /**
   * Create the records for any attributes attached to the current submission.
-  * @param bool $isInsert TRUE for when the parent of the attributes is a fresh insert, FALSE for an update.
-  * @return bool TRUE if success.
+  *
+  * @param bool $isInsert
+  *   TRUE for when the parent of the attributes is a fresh insert, FALSE for
+  *   an update.
+  *
+  * @return bool
+  *   TRUE if success.
   */
   protected function createAttributes($isInsert) {
     if ($this->has_attributes) {
@@ -1480,7 +1505,7 @@ class ORM extends ORM_Core {
         // loop to find the custom attributes embedded in the table fields
         $multiValueData=array();
         foreach ($this->submission['fields'] as $field => $content) {
-          if (preg_match('/^'.$this->attrs_field_prefix.':(fk_)?[\d]+(:([\d]+)?(:[^:]*)?)?$/', $field)) {
+          if (preg_match('/^'.$this->attrs_field_prefix.':(fk_)?[\d]+(:([\d]+)?(:[^:|upper]*)?)?$/', $field)) {
             $value = $content['value'];
             // Attribute name is of form tblAttr:attrId:valId:uniqueIdx
             $arr = explode(':', $field);
@@ -1497,6 +1522,10 @@ class ORM extends ORM_Core {
                 $multiValueData["attr:$attrId"]['values']=array_merge($multiValueData["attr:$attrId"]['values'], $value);
               else
                 $multiValueData["attr:$attrId"]['values'][]=$value;
+            }
+            if ($attrDef->allow_ranges === 't' && !empty($this->submission['fields']["$field:upper"])
+                && !empty($this->submission['fields']["$field:upper"]['value'])) {
+              $value .= ' - ' . $this->submission['fields']["$field:upper"]['value'];
             }
             if (!$this->createAttributeRecord($attrId, $valueId, $value, $attrDef))
               return false;
@@ -1574,11 +1603,11 @@ class ORM extends ORM_Core {
       }
     }
 
-    $fk = false;
+    $fk = FALSE;
     $value=trim($value);
     if (substr($attrId, 0, 3) == 'fk_') {
       // value is a term that needs looking up
-      $fk = true;
+      $fk = TRUE;
       $attrId = substr($attrId, 3);
     }
     // Create a attribute value, loading the existing value id if it exists, or search for the existing record
@@ -1599,7 +1628,7 @@ class ORM extends ORM_Core {
 
     $oldValues = array_merge($attrValueModel->as_array());
     $dataType = $attrDef->data_type;
-    $vf = null;
+    $vf = NULL;
 
     $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
     // For attribute value errors, we need to report e.g smpAttr:attrId[:attrValId] as the error key name, not
@@ -1681,7 +1710,23 @@ class ORM extends ORM_Core {
         $vf = 'int_value';
         break;
     }
-    if ($vf != null) {
+    if ($vf != NULL) {
+      // If a numeric range value provided, split into 2 fields.
+      if (($dataType == 'I' || $dataType === 'F') && $attrDef->allow_ranges === 't'
+          && preg_match('/^(?P<from>-?\d+(\.\d+)?)\s*-\s*(?P<to>-?\d+(\.\d+)?)$/', $value, $match)) {
+        $value = $match['from'];
+        $attrValueModel->upper_value = $match['to'];
+        if ($attrValueModel->upper_value != $match['to']) {
+          $this->errors[$fieldId] = "Invalid range $match[from] - $match[to] for attribute ".$attrDef->caption;
+          kohana::log('debug', "Could not accept value $match[from] - $match[to] into field $vf for attribute $fieldId.");
+          return FALSE;
+        }
+        elseif ((float) $value > (float) $attrValueModel->upper_value) {
+          $this->errors[$fieldId] = "Invalid range $match[from] - $match[to]. Values are the wrong way round for attribute ".$attrDef->caption;
+          kohana::log('debug', "Could not accept value $match[from] - $match[to] into field $vf for attribute $fieldId.");
+          return FALSE;
+        }
+      }
       $attrValueModel->$vf = $value;
       // Test that ORM accepted the new value - it will reject if the wrong data type for example.
       // Use a string compare to get a proper test but with type tolerance.
@@ -1698,7 +1743,7 @@ class ORM extends ORM_Core {
         } else {
           $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
           kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
-          return false;
+          return FALSE;
         }
       }
     }
@@ -1753,12 +1798,14 @@ class ORM extends ORM_Core {
     if (substr($attrId, 0, 3) == 'fk_')
       // an attribute value lookup
       $attrId = substr($attrId, 3);
-    $cacheId = 'attrInfo_'.$attrType.'_'.$attrId;
+    // Cache ID includes 2 - version number, to prevent old cache records being
+    // used after inclusion of allow_ranges field.
+    $cacheId = "attrInfo.2_{$attrType}_{$attrId}";
     $this->cache = Cache::instance();
     $attr = $this->cache->get($cacheId);
     if ($attr===null) {
       $attr = $this->db
-          ->select('caption','data_type','multi_value','termlist_id','validation_rules')
+          ->select('caption', 'data_type', 'multi_value', 'termlist_id', 'validation_rules', 'allow_ranges')
           ->from($attrType.'_attributes')
           ->where(array('id'=>$attrId))
           ->get()->result_array();

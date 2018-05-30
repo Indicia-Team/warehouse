@@ -17,7 +17,7 @@
  * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 ?>
 <script type="text/javascript">
@@ -47,9 +47,9 @@ uploadChunk = function() {
       }
     },
     error: function(jqXHR, textStatus, errorThrown) {
-      alert('error'); 
+      alert('error');
     }
-  });  
+  });
 };
 
 var total=0, filepos=0;

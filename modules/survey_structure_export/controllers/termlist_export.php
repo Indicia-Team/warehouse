@@ -17,7 +17,7 @@
  * @subpackage Controllers
  * @author    Indicia Team
  * @license    http://www.gnu.org/licenses/gpl.html GPL
- * @link     http://code.google.com/p/indicia/
+ * @link     https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -29,17 +29,17 @@ class Termlist_export_Controller extends Indicia_Controller {
    * @var array Holds a list of log messages describing the results of an import.
    */
   private $log=array();
-  
+
   /**
    * @var integer The user's ID.
    */
   private $userId;
-  
+
   /**
    * @var integer The ID of the website we are importing into.
    */
   private $website_id;
-  
+
   /**
    * @const SQL_FETCH_ALL_TERMS Query definition which retrieves all the terms for a termlist ID
    * in preparation for export.
@@ -74,9 +74,9 @@ order by t.sort_order, t.term) as list";
   public function __construct() {
     parent::__construct();
   }
-  
+
   /**
-   * Controller action for the export tab content. Displays the view containing a block of 
+   * Controller action for the export tab content. Displays the view containing a block of
    * exportable content as well as a textarea into which exports from elsewhere can be pasted.
    */
   public function index() {
@@ -87,11 +87,11 @@ order by t.sort_order, t.term) as list";
     $this->view->export = json_encode($export);
     $this->template->content = $this->view;
   }
- 
+
   /**
    * Controller action called when Save clicked. Perform the import when text has been pasted into the import text area.
    */
-  public function save() {    
+  public function save() {
     $termlistId = $_POST['termlist_id'];
     $termlist = $this->db
         ->select('website_id, title')
@@ -198,10 +198,10 @@ order by t.sort_order, t.term) as list";
       }
     }
   }
-  
+
   /**
    * Retrieves the data for a list of terms in a given termlist.
-   * 
+   *
    * @param integer $termlistId The ID of the termlist to retrieve terms for.
    * @return array A version of the data which has been changed into structured
    * arrays of the data from the tables.
@@ -210,5 +210,5 @@ order by t.sort_order, t.term) as list";
     $r = $this->db->query(str_replace('{where}', "t.termlist_id=$termlistId", self::SQL_FETCH_ALL_TERMS))->result_array(FALSE);
     return $r[0];
   }
-  
+
 }

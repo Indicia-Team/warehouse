@@ -18,7 +18,7 @@
  * @subpackage Models
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @link 	https://github.com/indicia-team/warehouse/
  */
 
 /**
@@ -88,5 +88,5 @@ class Taxon_association_Model extends ORM {
     'from_taxon_id',
     'to_taxon_id'
   );
-  
+
 }
