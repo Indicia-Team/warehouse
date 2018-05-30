@@ -24,7 +24,7 @@
  *
  * @link http://indicia-docs.readthedocs.io/en/latest/developing/data-model.html
  */
-class Location_Medium_Model extends ORM {
+class Location_Medium_Model extends Base_licensed_medium_Model {
   public $search_field = 'caption';
 
   protected $belongs_to = array(
