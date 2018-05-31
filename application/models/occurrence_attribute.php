@@ -31,7 +31,9 @@ class Occurrence_Attribute_Model extends ATTR_ORM {
   protected $belongs_to = array(
     'created_by' => 'user',
     'updated_by' => 'user',
-    'termlist',
+    'termlist_id' => 'termlist',
+    'source_id' => 'termlists_term',
+    'reporting_category_id' => 'termlists_term',
   );
 
   protected $has_many = array(

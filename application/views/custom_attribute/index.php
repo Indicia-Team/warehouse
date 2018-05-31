@@ -26,3 +26,4 @@ echo $grid ?>
 <a href="<?php echo url::site() . $this->prefix . '_attribute/create'; ?>" class="btn btn-primary">
   New <?php echo inflector::singular($this->pagetitle); ?>
 </a>
+<?php echo $upload_csv_form;

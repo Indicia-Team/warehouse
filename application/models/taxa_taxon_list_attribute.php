@@ -24,7 +24,13 @@
  */
 class Taxa_Taxon_List_Attribute_Model extends ATTR_ORM {
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'termlist');
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'termlist_id' => 'termlist',
+    'source_id' => 'termlists_term',
+    'reporting_category_id' => 'termlists_term',
+  );
 
   protected $has_many = array(
     'taxa_taxon_list_attribute_values',

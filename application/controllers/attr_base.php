@@ -76,6 +76,7 @@ abstract class Attr_Base_Controller extends Gridview_Base_Controller {
       'webrec_entity' => $this->prefix . '_attributes_website',
       'webrec_key' => $this->prefix . '_attribute_id',
       'publicFieldName' => 'Available to other Websites',
+      'reporting_category_terms' => $this->get_termlist_terms("indicia:attr_reporting_category_$this->prefix"),
       'source_terms' => $this->get_termlist_terms('indicia:attribute_sources'),
       'termlists' => $termlistArray,
     );

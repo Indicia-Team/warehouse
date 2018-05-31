@@ -124,6 +124,17 @@ TXT;
         'itemTemplate' => 'sys_func_item',
       ]);
     }
+    if (array_key_exists('reporting_category_id', $this->model->as_array()) && !empty($other_data['reporting_category_terms'])) {
+      echo data_entry_helper::select([
+        'fieldname' => "$model->object_name:reporting_category_id",
+        'label' => 'Attribute output reporting category',
+        'helpText' => 'Group the attribute by this category in output reports',
+        'default' => html::initial_value($values, "$model->object_name:reporting_category_id"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'blankText' => '-none-',
+        'lookupValues' => $other_data['reporting_category_terms'],
+      ]);
+    }
     if (array_key_exists('source_id', $this->model->as_array()) && !empty($other_data['source_terms'])) {
       echo data_entry_helper::select([
         'fieldname' => "$model->object_name:source_id",

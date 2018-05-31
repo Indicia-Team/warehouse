@@ -29,12 +29,14 @@ CREATE OR REPLACE VIEW list_survey_attributes AS
     a.public,
     fsb2.weight as outer_block_weight,
     fsb.weight as inner_block_weight,
-    aw.weight as weight
+    aw.weight as weight,
+    rc.term as reporting_category
   FROM survey_attributes a
   LEFT JOIN survey_attributes_websites aw ON a.id = aw.survey_attribute_id AND aw.deleted = false
   LEFT JOIN control_types ct ON ct.id = aw.control_type_id
   LEFT JOIN form_structure_blocks fsb ON fsb.id = aw.form_structure_block_id
   LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE a.deleted = false
   ORDER BY fsb2.weight, fsb.weight, aw.weight;
 
@@ -77,12 +79,14 @@ CREATE OR REPLACE VIEW list_sample_attributes AS
         SELECT string_agg(restrict_to_taxon_meaning_id::text || '|' || COALESCE(restrict_to_stage_term_meaning_id::text, ''), ';')
         FROM sample_attribute_taxon_restrictions tr
         WHERE tr.sample_attributes_website_id=aw.id
-      ) as taxon_restrictions
+      ) as taxon_restrictions,
+      rc.term as reporting_category
     FROM sample_attributes a
     LEFT JOIN sample_attributes_websites aw ON a.id = aw.sample_attribute_id AND aw.deleted = false
     LEFT JOIN control_types ct ON ct.id = aw.control_type_id
     LEFT JOIN form_structure_blocks fsb ON fsb.id = aw.form_structure_block_id
     LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
+    LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
     WHERE a.deleted = false
   ) as sub
   ORDER BY outer_block_weight, inner_block_weight, weight;
@@ -125,12 +129,14 @@ CREATE OR REPLACE VIEW list_occurrence_attributes AS
         SELECT string_agg(restrict_to_taxon_meaning_id::text || '|' || COALESCE(restrict_to_stage_term_meaning_id::text, ''), ';')
         FROM occurrence_attribute_taxon_restrictions tr
         WHERE tr.occurrence_attributes_website_id=aw.id
-      ) as taxon_restrictions
+      ) as taxon_restrictions,
+      rc.term as reporting_category
     FROM occurrence_attributes a
     LEFT JOIN occurrence_attributes_websites aw ON a.id = aw.occurrence_attribute_id AND aw.deleted = false
     LEFT JOIN control_types ct ON ct.id = aw.control_type_id
     LEFT JOIN form_structure_blocks fsb ON fsb.id = aw.form_structure_block_id
     LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
+    LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
     WHERE a.deleted = false
   ) as sub
   ORDER BY outer_block_weight, inner_block_weight, weight;
@@ -168,12 +174,14 @@ CREATE OR REPLACE VIEW list_location_attributes AS
     a.system_function,
     fsb2.weight as outer_block_weight,
     fsb.weight as inner_block_weight,
-    aw.weight as weight
+    aw.weight as weight,
+    rc.term as reporting_category
   FROM location_attributes a
   LEFT JOIN location_attributes_websites aw ON a.id = aw.location_attribute_id AND aw.deleted = false
   LEFT JOIN control_types ct ON ct.id = aw.control_type_id
   LEFT JOIN form_structure_blocks fsb ON fsb.id = aw.form_structure_block_id
   LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE a.deleted = false
   ORDER BY fsb2.weight, fsb.weight, aw.weight;
 
@@ -207,12 +215,14 @@ CREATE OR REPLACE VIEW list_taxa_taxon_list_attributes AS
     tla.deleted AS taxon_list_deleted,
     fsb2.weight as outer_block_weight,
     fsb.weight as inner_block_weight,
-    tla.weight as weight
+    tla.weight as weight,
+    rc.term as reporting_category
   FROM taxa_taxon_list_attributes a
     LEFT JOIN taxon_lists_taxa_taxon_list_attributes tla ON tla.taxa_taxon_list_attribute_id=a.id AND tla.deleted=false
     LEFT JOIN control_types ct ON ct.id = tla.control_type_id
     LEFT JOIN form_structure_blocks fsb ON fsb.id = tla.form_structure_block_id
     LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
+    LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE a.deleted=false
   ORDER BY fsb2.weight, fsb.weight, tla.weight;
 
@@ -248,13 +258,15 @@ CREATE OR REPLACE VIEW list_termlists_term_attributes AS
     tl.website_id,
     fsb2.weight as outer_block_weight,
     fsb.weight as inner_block_weight,
-    tta.weight as weight
+    tta.weight as weight,
+    rc.term as reporting_category
   FROM termlists_term_attributes a
   LEFT JOIN termlists_termlists_term_attributes tta ON tta.termlists_term_attribute_id = a.id AND tta.deleted = false
   LEFT JOIN termlists tl ON tl.id = tta.termlist_id AND tl.deleted = false
   LEFT JOIN control_types ct ON ct.id = tta.control_type_id
   LEFT JOIN form_structure_blocks fsb ON fsb.id = tta.form_structure_block_id
   LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE a.deleted = false
   ORDER BY fsb2.weight, fsb.weight, tta.weight;
 
@@ -289,12 +301,14 @@ CREATE OR REPLACE VIEW list_person_attributes AS
     a.public,
     fsb2.weight as outer_block_weight,
     fsb.weight as inner_block_weight,
-    aw.weight as weight
+    aw.weight as weight,
+    rc.term as reporting_category
   FROM person_attributes a
   LEFT JOIN person_attributes_websites aw ON a.id = aw.person_attribute_id AND aw.deleted = false
   LEFT JOIN control_types ct ON ct.id = aw.control_type_id
   LEFT JOIN form_structure_blocks fsb ON fsb.id = aw.form_structure_block_id
   LEFT JOIN form_structure_blocks fsb2 ON fsb2.id = fsb.parent_id
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE a.deleted = false
   ORDER BY fsb2.weight, fsb.weight, aw.weight;
 
@@ -354,7 +368,8 @@ CREATE OR REPLACE VIEW list_survey_attribute_values AS
     END as upper_value,
     a.termlist_id,
     l.iso,
-    s.website_id
+    s.website_id,
+    rc.term as reporting_category
   FROM surveys s
   JOIN survey_attribute_values av ON av.survey_id = s.id AND av.deleted = false
   JOIN survey_attributes a ON a.id = av.survey_attribute_id AND a.deleted = false
@@ -362,6 +377,7 @@ CREATE OR REPLACE VIEW list_survey_attribute_values AS
     JOIN terms t ON t.id = tt.term_id
     JOIN languages l ON l.id = t.language_id
   ) ON tt.id = av.int_value AND a.data_type = 'L'::bpchar
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE s.deleted = false
   ORDER BY a.id;
 
@@ -421,7 +437,8 @@ CREATE OR REPLACE VIEW list_sample_attribute_values AS
     END as upper_value,
     a.termlist_id,
     l.iso,
-    aw.website_id
+    aw.website_id,
+    rc.term as reporting_category
   FROM samples s
   JOIN surveys su ON su.id = s.survey_id AND su.deleted = false
   JOIN sample_attributes_websites aw ON aw.website_id = su.website_id AND (aw.restrict_to_survey_id = su.id OR aw.restrict_to_survey_id IS NULL) AND aw.deleted = false
@@ -431,6 +448,7 @@ CREATE OR REPLACE VIEW list_sample_attribute_values AS
     JOIN terms t ON t.id = tt.term_id
     JOIN languages l ON l.id = t.language_id
   ) ON tt.id = av.int_value AND a.data_type = 'L'::bpchar
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE s.deleted = false
   ORDER BY a.id;
 
@@ -489,7 +507,8 @@ CREATE OR REPLACE VIEW list_occurrence_attribute_values AS
     END as upper_value,
     a.termlist_id,
     l.iso,
-    aw.website_id
+    aw.website_id,
+    rc.term as reporting_category
   FROM occurrences o
   JOIN samples s ON s.id = o.sample_id AND s.deleted = false
   JOIN surveys su ON su.id = s.survey_id AND su.deleted = false
@@ -500,6 +519,7 @@ CREATE OR REPLACE VIEW list_occurrence_attribute_values AS
     JOIN terms t ON t.id = tt.term_id
     JOIN languages l ON l.id = t.language_id
   ) ON tt.id = av.int_value AND a.data_type = 'L'::bpchar
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE o.deleted = false
   ORDER BY a.id;
 
@@ -560,7 +580,8 @@ CREATE OR REPLACE VIEW list_location_attribute_values AS
     a.termlist_id,
     lg.iso,
     lw.website_id,
-    l.location_type_id
+    l.location_type_id,
+    rc.term as reporting_category
   FROM locations l
   JOIN locations_websites lw ON lw.location_id = l.id AND lw.deleted = false
   JOIN location_attribute_values av ON av.location_id = l.id AND av.deleted = false
@@ -569,6 +590,7 @@ CREATE OR REPLACE VIEW list_location_attribute_values AS
     JOIN terms t ON t.id = tt.term_id
     JOIN languages lg ON lg.id = t.language_id
   ) ON tt.id = av.int_value AND a.data_type = 'L'::bpchar
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE l.deleted = false
   ORDER BY a.id;
 
@@ -600,9 +622,11 @@ CREATE OR REPLACE VIEW list_taxa_taxon_list_attribute_values AS
     NULL::unknown AS upper_value,
     a.termlist_id,
     NULL::unknown AS iso,
-    tlttla.taxon_list_id
+    tlttla.taxon_list_id,
+    rc.term as reporting_category
   FROM taxa_taxon_list_attributes a
   JOIN taxon_lists_taxa_taxon_list_attributes tlttla ON tlttla.taxa_taxon_list_attribute_id = a.id AND tlttla.deleted = false
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE a.deleted = false
 UNION
   SELECT
@@ -660,7 +684,8 @@ UNION
     END as upper_value,
     a.termlist_id,
     l.iso,
-    tlttla.taxon_list_id
+    tlttla.taxon_list_id,
+    rc.term as reporting_category
   FROM taxa_taxon_lists ttl
   JOIN taxon_lists_taxa_taxon_list_attributes tlttla ON tlttla.taxon_list_id = ttl.taxon_list_id AND tlttla.deleted = false
   JOIN taxa_taxon_list_attributes a ON a.id = tlttla.taxa_taxon_list_attribute_id AND a.deleted = false
@@ -669,6 +694,7 @@ UNION
     JOIN terms t ON t.id = tt.term_id AND t.deleted = false
     JOIN languages l ON l.id = t.language_id AND l.deleted = false
     ) ON tt.id = av.int_value AND a.data_type = 'L'::bpchar AND tt.deleted = false
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE ttl.deleted = false;
 
 -- list_termlists_term_attribute_values
@@ -727,7 +753,8 @@ CREATE OR REPLACE VIEW list_termlists_term_attribute_values AS
     END as upper_value,
     a.termlist_id as lookup_termlist_id,
     l.iso,
-    tl.website_id
+    tl.website_id,
+    rc.term as reporting_category
   FROM termlists_terms tlt
   JOIN termlists_term_attribute_values av ON av.termlists_term_id = tlt.id AND av.deleted = false
   JOIN termlists_term_attributes a ON a.id = av.termlists_term_attribute_id AND a.deleted = false
@@ -736,6 +763,7 @@ CREATE OR REPLACE VIEW list_termlists_term_attribute_values AS
     JOIN terms t ON t.id = tt.term_id
     JOIN languages l ON l.id = t.language_id
   ) ON tt.id = av.int_value AND a.data_type = 'L'::bpchar
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE tlt.deleted = false
   ORDER BY a.id;
 
@@ -795,7 +823,8 @@ CREATE OR REPLACE VIEW list_person_attribute_values AS
     END as upper_value,
     a.termlist_id,
     l.iso,
-    aw.website_id
+    aw.website_id,
+    rc.term as reporting_category
   FROM people p
   LEFT JOIN person_attribute_values av ON av.person_id = p.id AND av.deleted = false
   LEFT JOIN (users u
@@ -805,6 +834,7 @@ CREATE OR REPLACE VIEW list_person_attribute_values AS
   LEFT JOIN (termlists_terms tt
   JOIN terms t ON t.id = tt.term_id
   JOIN languages l ON l.id = t.language_id) ON tt.id = av.int_value AND a.data_type = 'L'::bpchar
+  LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE p.deleted = false
   ORDER BY a.id;
 

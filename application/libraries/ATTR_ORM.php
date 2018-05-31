@@ -53,7 +53,6 @@ abstract class ATTR_ORM extends Valid_ORM {
         'multi_value',
         'deleted',
         'description',
-        'source_id',
         'caption_i18n',
         'term_name',
         'term_identifier',
@@ -62,6 +61,8 @@ abstract class ATTR_ORM extends Valid_ORM {
     );
     $array->add_rules('caption', 'required');
     $array->add_rules('data_type', 'required');
+    $array->add_rules('source_id', 'integer');
+    $array->add_rules('reporting_category_id', 'integer');
     if (array_key_exists('data_type', $array->as_array()) && $array['data_type'] == 'L') {
       if (empty($array['termlist_id'])) {
         $array->add_rules('termlist_id', 'required');

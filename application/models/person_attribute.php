@@ -24,7 +24,13 @@
  */
 class Person_Attribute_Model extends ATTR_ORM {
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'termlist');
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'termlist_id' => 'termlist',
+    'source_id' => 'termlists_term',
+    'reporting_category_id' => 'termlists_term',
+  );
 
   // The person attributes are defined per website, not per survey
   protected $hasSurveyRestriction = false;

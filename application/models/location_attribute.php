@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -19,16 +19,24 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
+defined('SYSPATH') or die('No direct script access.');
+
 /**
  * Model class for the Location_Attributes table.
  */
 class Location_Attribute_Model extends ATTR_ORM {
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'termlist');
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user',
+    'termlist_id' => 'termlist',
+    'source_id' => 'termlists_term',
+    'reporting_category_id' => 'termlists_term',
+  );
 
   protected $has_many = array(
     'location_attributes_values',
-    );
+  );
 
   protected $has_and_belongs_to_many = array('websites');
 
