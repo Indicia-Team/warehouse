@@ -63,8 +63,29 @@ class WorkQueue {
    *   * priority - value from 1 (high priority) to 3 (low priority).
    */
   public function enqueue($db, array $fields) {
+    // Set the metadata
     $fields['created_on'] = date("Ymd H:i:s");
-    $db->insert('work_queue', $fields);
+    // Slightly convoluted build of the INSERT query so we can do a NOT EXISTS
+    // to avoid duplicates in the queue.
+    $setValues = [];
+    $existsCheckSql =
+      'task=' . pg_escape_literal($fields['task']) .
+      'AND entity' . (empty($fields['entity']) ? ' IS NULL' : '=' . pg_escape_literal($fields['entity'])) .
+      'AND record_id' . (empty($fields['record_id']) ? ' IS NULL' : '=' . pg_escape_literal($fields['record_id'])) .
+      'AND params' . (empty($fields['params']) ? ' IS NULL' : '=' . pg_escape_literal($fields['params']));
+    foreach ($fields as $value) {
+      $setValues[] = pg_escape_literal($value);
+    }
+    $setFieldList = implode(', ', array_keys($fields));
+    $setValueList = implode(', ', $setValues);
+    $sql = <<<SQL
+INSERT INTO work_queue ($setFieldList)
+SELECT $setValueList
+WHERE NOT EXISTS(
+  SELECT 1 FROM work_queue WHERE $existsCheckSql
+)
+SQL;
+    $db->query($sql);
   }
 
   /**

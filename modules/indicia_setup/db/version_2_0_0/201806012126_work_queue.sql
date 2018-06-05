@@ -1,7 +1,7 @@
 CREATE TABLE work_queue
 (
   id serial NOT NULL,
-  task character varying, -- Name of the task to be performed.
+  task character varying NOT NULL, -- Name of the task to be performed.
   entity character varying, -- Name of the database entity associated with the task where relevant.
   record_id integer, -- ID of the record associated with the task where relevant.
   params json, -- Additional parameters to pass to the function performing the task.
@@ -23,11 +23,14 @@ COMMENT ON COLUMN work_queue.task IS 'Name of the task to be performed.';
 COMMENT ON COLUMN work_queue.entity IS 'Name of the database entity associated with the task where relevant.';
 COMMENT ON COLUMN work_queue.record_id IS 'ID of the record associated with the task where relevant.';
 COMMENT ON COLUMN work_queue.params IS 'Additional Parameters to pass to the function performing the task.';
-COMMENT ON COLUMN work_queue.cost_estimate IS 'Indication of the estimated cost of the operation from 1 to 100. Cheap/fast operations can be assigned a cost < 10, expensive/slow operations can be assigned a cost of > 50. Used to aid load management.';
+COMMENT ON COLUMN work_queue.cost_estimate IS 'Indication of the estimated cost of the operation from 1 to 100. '
+  'Cheap/fast operations can be assigned a cost < 10, expensive/slow operations can be assigned a cost of > 50. Used '
+  'to aid load management.';
 COMMENT ON COLUMN work_queue.priority IS 'Lower values are given a higher priority.';
 COMMENT ON COLUMN work_queue.created_on IS 'Date/time the task was queued.';
 COMMENT ON COLUMN work_queue.claimed_on IS 'Date/time that a worker claimed the task for processing.';
-COMMENT ON COLUMN work_queue.claimed_by IS 'Unique ID of the worker claiming the item. Allows workers to ensure they only work on items they claim.';
+COMMENT ON COLUMN work_queue.claimed_by IS 'Unique ID of the worker claiming the item. Allows workers to ensure they '
+  'only work on items they claim.';
 COMMENT ON COLUMN work_queue.error_detail IS 'If the task processing resulted in an error, then details are logged here.';
 
 CREATE INDEX ix_work_queue_priority
@@ -42,3 +45,4 @@ CREATE INDEX ix_work_queue_claimed_by
   ON work_queue
   USING btree
   (claimed_by_on);
+CREATE UNIQUE INDEX ix_work_queue_unique_task ON work_queue (task, COALESCE(entity, ''), COALESCE(record_id, 0), COALESCE((params::text), '')) WHERE (claimed_by is null);
