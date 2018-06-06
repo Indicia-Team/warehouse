@@ -63,7 +63,7 @@ class WorkQueue {
    *   * priority - value from 1 (high priority) to 3 (low priority).
    */
   public function enqueue($db, array $fields) {
-    // Set the metadata
+    // Set the metadata.
     $fields['created_on'] = date("Ymd H:i:s");
     // Slightly convoluted build of the INSERT query so we can do a NOT EXISTS
     // to avoid duplicates in the queue.
