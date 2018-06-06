@@ -25,13 +25,13 @@
  defined('SYSPATH') or die('No direct script access.');
 
 /**
-  * Queue worker to update cache_occurrences_nonfunctional.attrs_json.
-
-  * Class called when a task_cache_builder_attrs_occurrences task encountered
-  * in the work queue. Updates task_cache_builder_attrs_occurrences.attrs_json
-  * with a json attribute for easy reporting on attribute values.
-  */
- class task_cache_builder_attrs_occurrences {
+ * Queue worker to update cache_occurrences_nonfunctional.attrs_json.
+ *
+ * Class called when a task_cache_builder_attrs_occurrences task encountered
+ * in the work queue. Updates task_cache_builder_attrs_occurrences.attrs_json
+ * with a json attribute for easy reporting on attribute values.
+ */
+class task_cache_builder_attrs_occurrences {
 
   /**
    * Fairly fast, so processing large batches is OK.
@@ -59,7 +59,7 @@ SELECT occurrence_id, ('{' || string_agg(
   to_json(f)::text || ':' ||
   CASE multi_value WHEN true THEN to_json(v)::text ELSE to_json(v[1])::text END
 , ',') || '}')::json AS attrs
-INTO temporary occattrs
+INTO temporary attrs
 FROM (
   SELECT occurrence_id, a.multi_value,
     'occ:' || occurrence_attribute_id::text as f,
@@ -86,13 +86,14 @@ FROM (
         WHEN 'D'::bpchar THEN '"' || av.date_start_value::text || '"'
         WHEN 'V'::bpchar THEN '"' || (av.date_start_value::text || ' - '::text) || av.date_end_value::text || '"'
         ELSE NULL::text
-      END ORDER BY t.sort_order, t.term
+      END ORDER BY tlt.sort_order, t.term
     ) as v
   FROM work_queue q
   LEFT JOIN occurrence_attribute_values av ON av.occurrence_id=q.record_id AND av.deleted=false
     AND COALESCE(av.int_value::text, av.text_value::text, av.float_value::text, av.date_start_value::text) IS NOT NULL
   LEFT JOIN occurrence_attributes a ON a.id=av.occurrence_attribute_id AND a.deleted=false
-  LEFT JOIN cache_termlists_terms t on t.id=av.int_value AND a.data_type='L'
+  LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
+  LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
   WHERE q.entity='occurrences' AND q.task='task_cache_builder_attrs_occurrences' AND claimed_by='$procId'
   GROUP BY occurrence_id, occurrence_attribute_id, a.multi_value
 
@@ -100,13 +101,17 @@ FROM (
 
   SELECT occurrence_id, a.multi_value,
     'occ:' || occurrence_attribute_id::text || ':fra' as f,
-    array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(ti18n.sort_order, t.sort_order), COALESCE(ti18n.term, t.term)) as v
+    array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(tlti18n.sort_order, tlt.sort_order), COALESCE(ti18n.term, t.term)) as v
   FROM work_queue q
   JOIN occurrence_attribute_values av ON av.occurrence_id=q.record_id AND av.deleted=false
     AND COALESCE(av.int_value::text, av.text_value::text, av.float_value::text, av.date_start_value::text) IS NOT NULL
   JOIN occurrence_attributes a ON a.id=av.occurrence_attribute_id AND a.deleted=false
-  JOIN cache_termlists_terms t on t.id=av.int_value AND a.data_type='L'
-  LEFT JOIN cache_termlists_terms ti18n on ti18n.meaning_id=t.meaning_id AND ti18n.termlist_id=t.termlist_id AND ti18n.language_iso='fra'
+  LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND tlt.deleted=false
+  LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
+  LEFT JOIN termlists_terms tlti18n on tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
+  LEFT JOIN (terms ti18n
+    JOIN languages l on l.id=ti18n.language_id AND l.deleted=false AND l.iso='fra'
+  ) ON ti18n.id=tlti18n.term_id AND ti18n.deleted=false
   WHERE q.entity='occurrences' AND q.task='task_cache_builder_attrs_occurrences' AND claimed_by='$procId'
   AND a.data_type='L'
   GROUP BY occurrence_id, occurrence_attribute_id, a.multi_value
@@ -114,9 +119,11 @@ FROM (
 GROUP BY occurrence_id;
 
 UPDATE cache_occurrences_nonfunctional u
-SET attrs_json=oa.attrs
-FROM occattrs oa
-WHERE oa.occurrence_id=u.id;
+SET attrs_json=a.attrs
+FROM attrs a
+WHERE a.occurrence_id=u.id;
+
+DROP TABLE attrs;
 
 SQL;
     $db->query($sql);
