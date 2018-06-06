@@ -2,7 +2,7 @@
 
 /**
  * @file
- * A helper class for detecting various tip messages related to getting started.
+ * A helper class for detecting various messages related to the server status.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -25,12 +25,12 @@
  defined('SYSPATH') or die('No direct script access.');
 
 /**
- * Helper class to provide tips for getting started with the warehouse.
+ * Helper class to provide info on server status.
  */
-class gettingStarted {
+class serverStatus {
 
   /**
-   * Main access function to retrieve a list of tips.
+   * Main access function to retrieve a list of tips useful on initial setup.
    *
    * @param object $db
    *   Kohana database object.
@@ -40,16 +40,33 @@ class gettingStarted {
    * @return array
    *   List of tips.
    */
-  public static function getTips($db, $authFilter) {
-    $tips = array();
-    self::checkScheduledTasks($db, $tips);
-    self::checkWorkQueue($db, $tips);
-    self::checkWebsite($db, $authFilter, $tips);
-    self::checkSurvey($db, $authFilter, $tips);
-    self::checkTaxonList($db, $authFilter, $tips);
-    self::checkMasterTaxonList($authFilter, $tips);
+  public static function getGettingStartedTips($db, $authFilter) {
+    $messages = [];
+    self::checkScheduledTasksHasBeenSetup($db, $messages);
+    self::checkWebsite($db, $authFilter, $messages);
+    self::checkSurvey($db, $authFilter, $messages);
+    self::checkTaxonList($db, $authFilter, $messages);
+    self::checkMasterTaxonList($authFilter, $messages);
     // @todo Implement a check that the user has set up a species checklist and added some species.
-    return $tips;
+    return $messages;
+  }
+
+  /**
+   * Main access function to retrieve a list of server status warnings.
+   *
+   * @param object $db
+   *   Kohana database object.
+   * @param array|null $authFilter
+   *   User's website access filter, if not core admin.
+   *
+   * @return array
+   *   List of tips.
+   */
+  public static function getStatusWarnings($db, $authFilter) {
+    $messages = [];
+    self::checkScheduledTasks($db, $messages);
+    self::checkWorkQueue($db, $messages);
+    return $messages;
   }
 
   /**
@@ -57,10 +74,38 @@ class gettingStarted {
    *
    * @param object $db
    *   Kohana database object.
-   * @param array $tips
+   * @param array $messages
    *   List of tips, which will be amended if any tips identified by this function.
    */
-  private static function checkScheduledTasks($db, array &$tips) {
+  private static function checkScheduledTasksHasBeenSetup($db, array &$messages) {
+    $query = $db
+      ->select('count(*)')
+      ->from('system')
+      ->where('last_scheduled_task_check is not null')
+      ->get()->current();
+    if ($query->count === '12') {
+      $description = <<<DESC
+The Indicia warehouse requires the scheduled tasks functionality to be configured in order for background tasks such
+as indexing to be perfomed. See
+<a href="http://indicia-docs.readthedocs.io/en/latest/administrating/warehouse/scheduled-tasks.html"> the scheduled
+tasks documentation</a>.
+DESC;
+      $messages[] = array(
+        'title' => 'Scheduled tasks',
+        'description' => $description,
+      );
+    }
+  }
+
+  /**
+   * Retrieve tips relating to the operation of scheduled tasks.
+   *
+   * @param object $db
+   *   Kohana database object.
+   * @param array $messages
+   *   List of tips, which will be amended if any tips identified by this function.
+   */
+  private static function checkScheduledTasks($db, array &$messages) {
     $query = $db
       ->select(array(
         "sum(case when last_scheduled_task_check > now()-'1 day'::interval then 1 else 0 end) as new",
@@ -97,14 +142,15 @@ the scheduled tasks documentation</a>.
 DESC;
     }
     if (!empty($description)) {
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Scheduled tasks',
         'description' => $description,
+        'severity' => 'warning',
       );
     }
   }
 
-  private static function checkWorkQueue($db, array &$tips) {
+  private static function checkWorkQueue($db, array &$messages) {
     $qState = $db
       ->select([
         'sum(case when priority=1 then 1 else 0 end) as p1',
@@ -116,33 +162,34 @@ DESC;
       ->from('work_queue')
       ->get()->current();
     if ($qState->p1 > 2000) {
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Priority 1 entries in work queue',
         'description' => 'More than 2000 priority 1 entries in the work_queue table. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
       );
     }
     if ($qState->p1late > 0) {
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Priority 1 entries in work queue processing slowly',
         'description' => 'Priority 1 entries in the work_queue table are not being processed within half an hour. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
       );
     }
     if ($qState->p2 > 10000) {
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Priority 2 entries in work queue',
         'description' => 'More than 2000 priority 2 entries in the work_queue table. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
       );
     }
     if ($qState->p3 > 20000) {
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Priority 3 entries in work queue',
         'description' => 'More than 20000 priority 3 entries in the work_queue table. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
       );
     }
     if ($qState->errors > 0) {
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Errors in work queue',
         'description' => 'There are errors in the work_queue table which need to be checked and fixed.',
+        'severity' => 'danger',
       );
     }
   }
@@ -154,10 +201,10 @@ DESC;
    *   Kohana database object.
    * @param array|null $authFilter
    *   User's website access filter, if not core admin.
-   * @param array $tips
+   * @param array $messages
    *   List of tips, which will be amended if any tips identified by this function.
    */
-  private static function checkWebsite($db, $authFilter, array &$tips) {
+  private static function checkWebsite($db, $authFilter, array &$messages) {
     if (!empty($authFilter) && $authFilter['field'] === 'website_id') {
       // User is already allocated to some websites, so no need to prompt them to set them up.
       return;
@@ -168,7 +215,7 @@ DESC;
       ->where('id<>1')
       ->get()->current();
     if ($query->count == 0) {
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Website registration',
         'description' => 'Before submitting records to this warehouse you need to register a website or app that ' .
           'the records will come from. See ' .
@@ -185,10 +232,10 @@ DESC;
    *   Kohana database object.
    * @param array|null $authFilter
    *   User's website access filter, if not core admin.
-   * @param array $tips
+   * @param array $messages
    *   List of tips, which will be amended if any tips identified by this function.
    */
-  private static function checkSurvey($db, $authFilter, array &$tips) {
+  private static function checkSurvey($db, $authFilter, array &$messages) {
     $db
       ->select('count(id) as count')
       ->from('surveys')
@@ -198,7 +245,7 @@ DESC;
     }
     $query = $db->get()->current();
     if ($query->count == 0) {
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Survey dataset registration',
         'description' => 'Before submitting records to this warehouse you need to register a survey dataset to add ' .
           'the records to. See ' .
@@ -215,10 +262,10 @@ DESC;
    *   Kohana database object.
    * @param array|null $authFilter
    *   User's website access filter, if not core admin.
-   * @param array $tips
+   * @param array $messages
    *   List of tips, which will be amended if any tips identified by this function.
    */
-  private static function checkTaxonList($db, $authFilter, array &$tips) {
+  private static function checkTaxonList($db, $authFilter, array &$messages) {
     $websites = [NULL];
     if (!empty($authFilter) && $authFilter['field'] === 'website_id') {
       $websites = array_merge($websites, $authFilter['values']);
@@ -234,7 +281,7 @@ Before submitting records to this warehouse you need to create a species list to
 <a href="http://indicia-docs.readthedocs.io/en/latest/site-building/warehouse/taxon-lists.html">the documentation for
 setting up a species list.</a>.
 TXT;
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Species list creation',
         'description' => $description,
       );
@@ -246,10 +293,10 @@ TXT;
    *
    * @param array|null $authFilter
    *   User's website access filter, if not core admin.
-   * @param array $tips
+   * @param array $messages
    *   List of tips, which will be amended if any tips identified by this function.
    */
-  private static function checkMasterTaxonList($authFilter, array &$tips) {
+  private static function checkMasterTaxonList($authFilter, array &$messages) {
     $masterTaxonListId = kohana::config('cache_builder_variables.master_list_id', FALSE, FALSE);
     if (!$masterTaxonListId && empty($authFilter)) {
       $url = url::base();
@@ -263,7 +310,7 @@ should add this list's ID to the cache builder module's warehouse configuration.
   given for \$config['master_list_id'] to your list's ID and save the file.</li>
 </ul>
 TXT;
-      $tips[] = array(
+      $messages[] = array(
         'title' => 'Master species checklist',
         'description' => $description,
       );
