@@ -172,14 +172,56 @@ class Termlists_term_Model extends Base_Name_Model {
             }
           }
         }
+        if (!$isInsert) {
+          $this->enqueueCustomAttributeJsonUpdate($meaning_id);
+        }
       }
       catch (Exception $e) {
-        $this->errors['general']='<strong>An error occurred</strong><br/>' . $e->getMessage();
+        $this->errors['general'] = '<strong>An error occurred</strong><br/>' . $e->getMessage();
         error_logger::log_error('Exception during postSubmit in termlists_term model.', $e);
         $success = FALSE;
       }
     }
     return $success;
+  }
+
+  /**
+   * Work queue task additions after a term change.
+   *
+   * Term changes may need to be reflected in the cache table attrs_json fields
+   * for both occurrences and samples, so create the work queue entries
+   * required to perform the updates in the background.
+   *
+   * @param integer $meaning_id
+   *   Term meaning ID being changed.
+   */
+  private function enqueueCustomAttributeJsonUpdate($meaning_id) {
+    $sql = <<<SQL
+INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
+SELECT DISTINCT 'task_cache_builder_attrs_occurrences', 'occurrences', o.id, 2, 60, now()
+FROM occurrences o
+JOIN occurrence_attribute_values av ON av.occurrence_id=o.id AND av.deleted=false
+JOIN occurrence_attributes a ON a.id=av.occurrence_attribute_id AND a.deleted=false AND a.data_type='L'
+JOIN cache_termlists_terms t on t.id=av.int_value AND t.meaning_id=$meaning_id
+LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_occurrences'
+  AND q.entity='occurrences' AND q.record_id=o.id AND q.params IS NULL
+WHERE o.deleted=false
+AND q.id IS NULL;
+SQL;
+    $this->db->query($sql);
+    $sql = <<<SQL
+INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
+SELECT DISTINCT 'task_cache_builder_attrs_samples', 'samples', s.id, 2, 60, now()
+FROM samples s
+JOIN sample_attribute_values av ON av.sample_id=s.id AND av.deleted=false
+JOIN sample_attributes a ON a.id=av.sample_attribute_id AND a.deleted=false AND a.data_type='L'
+JOIN cache_termlists_terms t on t.id=av.int_value AND t.meaning_id=$meaning_id
+LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_samples'
+  AND q.entity='samples' AND q.record_id=s.id AND q.params IS NULL
+WHERE s.deleted=false
+AND q.id IS NULL;
+SQL;
+    $this->db->query($sql);
   }
 
   /**
