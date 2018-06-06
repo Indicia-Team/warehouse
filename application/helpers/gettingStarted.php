@@ -43,6 +43,7 @@ class gettingStarted {
   public static function getTips($db, $authFilter) {
     $tips = array();
     self::checkScheduledTasks($db, $tips);
+    self::checkWorkQueue($db, $tips);
     self::checkWebsite($db, $authFilter, $tips);
     self::checkSurvey($db, $authFilter, $tips);
     self::checkTaxonList($db, $authFilter, $tips);
@@ -99,6 +100,49 @@ DESC;
       $tips[] = array(
         'title' => 'Scheduled tasks',
         'description' => $description,
+      );
+    }
+  }
+
+  private static function checkWorkQueue($db, array &$tips) {
+    $qState = $db
+      ->select([
+        'sum(case when priority=1 then 1 else 0 end) as p1',
+        "sum(case when priority=1 and created_on<now() - '30 minutes'::interval then 1 else 0 end) as p1late",
+        'sum(case when priority=2 then 1 else 0 end) as p2',
+        'sum(case when priority=3 then 1 else 0 end) as p3',
+        'sum(case when error_detail is null then 0 else 1 end) as errors',
+      ])
+      ->from('work_queue')
+      ->get()->current();
+    if ($qState->p1 > 2000) {
+      $tips[] = array(
+        'title' => 'Priority 1 entries in work queue',
+        'description' => 'More than 2000 priority 1 entries in the work_queue table. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
+      );
+    }
+    if ($qState->p1late > 0) {
+      $tips[] = array(
+        'title' => 'Priority 1 entries in work queue processing slowly',
+        'description' => 'Priority 1 entries in the work_queue table are not being processed within half an hour. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
+      );
+    }
+    if ($qState->p2 > 10000) {
+      $tips[] = array(
+        'title' => 'Priority 2 entries in work queue',
+        'description' => 'More than 2000 priority 2 entries in the work_queue table. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
+      );
+    }
+    if ($qState->p3 > 20000) {
+      $tips[] = array(
+        'title' => 'Priority 3 entries in work queue',
+        'description' => 'More than 20000 priority 3 entries in the work_queue table. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
+      );
+    }
+    if ($qState->errors > 0) {
+      $tips[] = array(
+        'title' => 'Errors in work queue',
+        'description' => 'There are errors in the work_queue table which need to be checked and fixed.',
       );
     }
   }
