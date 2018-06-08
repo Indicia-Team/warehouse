@@ -29,14 +29,22 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
+<<<<<<< HEAD
 $config['version'] = '2.0.0';
 
+=======
+$config['version'] = '1.59.11';
+>>>>>>> hotfix-dwc_typo
 /**
  * Version release date.
  *
  * @var string
  */
+<<<<<<< HEAD
 $config['release_date'] = '2018-05-30';
+=======
+$config['release_date'] = '2018-06-08';
+>>>>>>> hotfix-dwc_typo
 
 /**
  * Link to the code repository downloads page.
