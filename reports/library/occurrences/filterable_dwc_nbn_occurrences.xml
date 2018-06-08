@@ -47,7 +47,7 @@
            Typically the URL of a record details page with an incomplete record ID parameter." />
   </params>
   <columns>
-    <column name="occurrencedID"
+    <column name="occurrenceID"
             sql="'#occurrence_id_prefix#' || o.id::text"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/occurrenceID" />
