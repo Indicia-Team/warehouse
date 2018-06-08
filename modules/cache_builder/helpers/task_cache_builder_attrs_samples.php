@@ -31,7 +31,7 @@
   * the work queue. Updates cache_samples_nonfunctional.attrs_json with a
   * json attribute for easy reporting on attribute values.
   */
-class task_cache_buiilder_attrs_samples {
+class task_cache_builder_attrs_samples {
 
   /**
    * Fairly fast, so processing large batches is OK.

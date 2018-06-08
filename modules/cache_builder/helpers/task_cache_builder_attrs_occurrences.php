@@ -53,6 +53,35 @@ class task_cache_builder_attrs_occurrences {
    *   tasks to perform.
    */
   public static function process($db, $taskType, $procId) {
+    // Work out the SQL required to get the i18n for lookup term values.
+    $langs = kohana::config('cache_builder.attrs_cache_languages');
+    $langTermSql = '';
+    if ($langs !== NULL) {
+      foreach ($langs as $lang) {
+        $langTermSql .= <<<SQL
+
+  UNION
+
+  SELECT occurrence_id, a.multi_value,
+    'occ:' || occurrence_attribute_id::text || ':$lang' as f,
+    array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(tlti18n.sort_order, tlt.sort_order), COALESCE(ti18n.term, t.term)) as v
+  FROM work_queue q
+  JOIN occurrence_attribute_values av ON av.occurrence_id=q.record_id AND av.deleted=false
+    AND COALESCE(av.int_value::text, av.text_value::text, av.float_value::text, av.date_start_value::text) IS NOT NULL
+  JOIN occurrence_attributes a ON a.id=av.occurrence_attribute_id AND a.deleted=false
+  LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND tlt.deleted=false
+  LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
+  LEFT JOIN termlists_terms tlti18n on tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
+  LEFT JOIN (terms ti18n
+    JOIN languages l on l.id=ti18n.language_id AND l.deleted=false AND l.iso='$lang'
+  ) ON ti18n.id=tlti18n.term_id AND ti18n.deleted=false
+  WHERE q.entity='occurrences' AND q.task='task_cache_builder_attrs_occurrences' AND claimed_by='$procId'
+  AND a.data_type='L'
+  GROUP BY occurrence_id, occurrence_attribute_id, a.multi_value
+
+SQL;
+      }
+    }
     $sql = <<<SQL
 
 SELECT occurrence_id, ('{' || string_agg(
@@ -96,25 +125,7 @@ FROM (
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
   WHERE q.entity='occurrences' AND q.task='task_cache_builder_attrs_occurrences' AND claimed_by='$procId'
   GROUP BY occurrence_id, occurrence_attribute_id, a.multi_value
-
-  UNION
-
-  SELECT occurrence_id, a.multi_value,
-    'occ:' || occurrence_attribute_id::text || ':fra' as f,
-    array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(tlti18n.sort_order, tlt.sort_order), COALESCE(ti18n.term, t.term)) as v
-  FROM work_queue q
-  JOIN occurrence_attribute_values av ON av.occurrence_id=q.record_id AND av.deleted=false
-    AND COALESCE(av.int_value::text, av.text_value::text, av.float_value::text, av.date_start_value::text) IS NOT NULL
-  JOIN occurrence_attributes a ON a.id=av.occurrence_attribute_id AND a.deleted=false
-  LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND tlt.deleted=false
-  LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
-  LEFT JOIN termlists_terms tlti18n on tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
-  LEFT JOIN (terms ti18n
-    JOIN languages l on l.id=ti18n.language_id AND l.deleted=false AND l.iso='fra'
-  ) ON ti18n.id=tlti18n.term_id AND ti18n.deleted=false
-  WHERE q.entity='occurrences' AND q.task='task_cache_builder_attrs_occurrences' AND claimed_by='$procId'
-  AND a.data_type='L'
-  GROUP BY occurrence_id, occurrence_attribute_id, a.multi_value
+  $langTermSql
 ) AS subquery
 GROUP BY occurrence_id;
 
