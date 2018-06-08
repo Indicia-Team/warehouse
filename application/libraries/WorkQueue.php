@@ -106,7 +106,8 @@ SQL;
 
     foreach ($taskTypesToDo as $taskType) {
       $helper = $taskType->task;
-      $totalDone = 0;
+      $doneCount = 0;
+      $errorCount = 0;
       // Loop to claim batches of tasks for this task type. Only actually
       // iterate more than once for priority 1 tasks.
       do {
@@ -119,12 +120,15 @@ SQL;
         try {
           call_user_func("$helper::process", $db, $taskType, $procId);
           $this->expire($taskType, $procId);
-        } catch (Throwable $e) {
-          $this->fail($taskType, $procId, $e);
         }
-        $totalDone += $claimedCount;
-      } while ($taskType->priority === 1 && $totalDone < $taskType->count);
-      echo "Work queue - $taskType->task ($taskType->entity): $totalDone done<br/>";
+        catch (Throwable $e) {
+          $this->fail($taskType, $procId, $e);
+          $errorCount++;
+        }
+        $doneCount += $claimedCount;
+      } while ($taskType->priority === 1 && $doneCount < $taskType->count);
+      $errors = $errorCount === 0 ? '' : " with $errorCount error(s).";
+      echo "Work queue - $taskType->task ($taskType->entity): $doneCount done$errors<br/>";
     }
   }
 
@@ -287,12 +291,13 @@ SQL;
    */
   private function fail($taskType, $procId, $e) {
     $this->db->update('work_queue', [
-      'error_detail' => $e->__toString()
+      'error_detail' => $e->__toString(),
     ], [
       'claimed_by' => $procId,
       'task' => $taskType->task,
       'entity' => $taskType->entity,
     ]);
+    error_logger::log_error("Failure in work queue task batch claimed by $procId", $e);
   }
 
 }
