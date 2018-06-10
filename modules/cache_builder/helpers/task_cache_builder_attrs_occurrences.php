@@ -96,22 +96,17 @@ FROM (
       CASE a.data_type
         WHEN 'T' THEN av.text_value
         WHEN 'L' THEN t.term
-        WHEN 'I' THEN CASE WHEN a.allow_ranges = true AND av.upper_value IS NOT NULL THEN '"' ELSE '' END || av.int_value::text ||
+        WHEN 'I' THEN av.int_value::text ||
           CASE
-            WHEN a.data_type IN ('I', 'F') AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
+            WHEN a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
             ELSE ''::text
-          END || CASE WHEN a.allow_ranges = true AND av.upper_value IS NOT NULL THEN '"' ELSE '' END
-        WHEN 'F' THEN CASE WHEN a.allow_ranges = true AND av.upper_value IS NOT NULL THEN '"' ELSE '' END || av.float_value::text ||
+          END
+        WHEN 'F' THEN av.float_value::text ||
           CASE
-            WHEN a.data_type IN ('I', 'F') AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
+            WHEN a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
             ELSE ''::text
-          END || CASE WHEN a.allow_ranges = true AND av.upper_value IS NOT NULL THEN '"' ELSE '' END
+          END
         WHEN 'B'::bpchar THEN av.int_value::text
-        WHEN 'I' THEN CASE WHEN a.allow_ranges = true AND av.upper_value IS NOT NULL THEN '"' ELSE '' END || av.float_value::text ||
-          CASE
-            WHEN a.data_type IN ('I', 'F') AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-            ELSE ''::text
-          END || CASE WHEN a.data_type IN ('I', 'F') AND a.allow_ranges = true AND av.upper_value IS NOT NULL THEN '"' ELSE '' END
         WHEN 'D'::bpchar THEN '"' || av.date_start_value::text || '"'
         WHEN 'V'::bpchar THEN '"' || (av.date_start_value::text || ' - '::text) || av.date_end_value::text || '"'
         ELSE NULL::text
