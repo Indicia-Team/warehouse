@@ -699,23 +699,33 @@ class ORM extends ORM_Core {
    */
   private function preProcess() {
     // Initialise the variable which tracks the records we are about to submit.
-    self::$changedRecords = array('update'=>array(),'insert'=>array(),'delete'=>array());
+    self::$changedRecords = [
+      'update' => [],
+      'insert' => [],
+      'delete' => [],
+    ];
   }
 
   /**
    * Handles any index rebuild requirements as a result of new or updated records, e.g. in
    * samples or occurrences. Also handles joining of occurrence_associations to the
-   * correct records
+   * correct records.
    */
   private function postProcess() {
     if (class_exists('cache_builder')) {
-      if (!empty(self::$changedRecords['insert']['occurrence']))
+      $occurrences = [];
+      if (!empty(self::$changedRecords['insert']['occurrence'])) {
         cache_builder::insert($this->db, 'occurrences', self::$changedRecords['insert']['occurrence']);
-      if (!empty(self::$changedRecords['update']['occurrence']))
+        $occurrences = self::$changedRecords['insert']['occurrence'];
+      }
+      if (!empty(self::$changedRecords['update']['occurrence'])) {
         cache_builder::update($this->db, 'occurrences', self::$changedRecords['update']['occurrence']);
-      if (!empty(self::$changedRecords['delete']['occurrence']))
+        $occurrences += self::$changedRecords['update']['occurrence'];
+      }
+      if (!empty(self::$changedRecords['delete']['occurrence'])) {
         cache_builder::delete($this->db, 'occurrences', self::$changedRecords['delete']['occurrence']);
-      $samples=array();
+      }
+      $samples = [];
       if (!empty(self::$changedRecords['insert']['sample'])) {
         $samples = self::$changedRecords['insert']['sample'];
         cache_builder::insert($this->db, 'samples', self::$changedRecords['insert']['sample']);
@@ -724,41 +734,66 @@ class ORM extends ORM_Core {
         $samples += self::$changedRecords['update']['sample'];
         cache_builder::update($this->db, 'samples', self::$changedRecords['update']['sample']);
       }
-      if (!empty(self::$changedRecords['delete']['sample']))
+      if (!empty(self::$changedRecords['delete']['sample'])) {
         cache_builder::delete($this->db, 'samples', self::$changedRecords['delete']['sample']);
+      }
+      if (!empty($occurrences)) {
+        $this->queueAttributeCacheBuild('occurrences', $occurrences);
+      }
       if (!empty($samples)) {
+        $this->queueAttributeCacheBuild('samples', $samples);
+        // @todo Map squares could be added to work queue.
         postgreSQL::insertMapSquaresForSamples($samples, 1000, $this->db);
         postgreSQL::insertMapSquaresForSamples($samples, 2000, $this->db);
         postgreSQL::insertMapSquaresForSamples($samples, 10000, $this->db);
-      } else {
-        // might be directly inserting an occurrence. No need to do this if inserting a sample, as the above code does the
-        // occurrences in bulk.
-        $occurrences=array();
-        if (!empty(self::$changedRecords['insert']['occurrence']))
-          $occurrences = self::$changedRecords['insert']['occurrence'];
-        if (!empty(self::$changedRecords['update']['occurrence']))
-          $occurrences += self::$changedRecords['update']['occurrence'];
-        if (!empty($occurrences)) {
-          postgreSQL::insertMapSquaresForOccurrences($occurrences, 1000, $this->db);
-          postgreSQL::insertMapSquaresForOccurrences($occurrences, 2000, $this->db);
-          postgreSQL::insertMapSquaresForOccurrences($occurrences, 10000, $this->db);
-        }
+      }
+      elseif (!empty($occurrences)) {
+        // No need to do occurrence map square update if inserting a sample, as
+        // the above code does the occurrences in bulk.
+        postgreSQL::insertMapSquaresForOccurrences($occurrences, 1000, $this->db);
+        postgreSQL::insertMapSquaresForOccurrences($occurrences, 2000, $this->db);
+        postgreSQL::insertMapSquaresForOccurrences($occurrences, 10000, $this->db);
       }
     }
     if (!empty(self::$changedRecords['insert']['occurrence_association']) ||
         !empty(self::$changedRecords['update']['occurrence_association'])) {
-      // We've got some associations between occurrences that could not have the to_occurrence_id
-      // foreign key filled in yet, since the occurrence referred to did not exist at the time of
-      // saving
-      foreach(Occurrence_association_Model::$to_occurrence_id_pointers as $associationId => $pointer) {
-        if (!empty($this->dynamicRowIdReferences["occurrence:$pointer"]))
+      // We've got some associations between occurrences that could not have
+      // the to_occurrence_id foreign key filled in yet, since the occurrence
+      // referred to did not exist at the time of saving.
+      foreach (Occurrence_association_Model::$to_occurrence_id_pointers as $associationId => $pointer) {
+        if (!empty($this->dynamicRowIdReferences["occurrence:$pointer"])) {
           $this->db->from('occurrence_associations')
-              ->set('to_occurrence_id', $this->dynamicRowIdReferences["occurrence:$pointer"])
-              ->where('id', $associationId)
-              ->update();
+            ->set('to_occurrence_id', $this->dynamicRowIdReferences["occurrence:$pointer"])
+            ->where('id', $associationId)
+            ->update();
+        }
       }
-      // reset important if doing an import with multiple submissions.
+      // Reset important if doing an import with multiple submissions.
       Occurrence_association_Model::$to_occurrence_id_pointers = array();
+    }
+  }
+
+  /**
+   * Enqueue tasks to update cache table attribute JSON.
+   *
+   * Updating the attrs_json is handled via a background work queue to ensure
+   * the user gets a good response when saving data.
+   *
+   * @param string $entity
+   *   Table name, occurrences or samples.
+   * @param array $records
+   *   List of record IDs to queue.
+   */
+  private function queueAttributeCacheBuild($entity, $records) {
+    $q = new WorkQueue();
+    foreach ($records as $id) {
+      $q->enqueue($this->db, [
+        'task' => "task_cache_builder_attrs_$entity",
+        'entity' => $entity,
+        'record_id' => $id,
+        'cost_estimate' => 30,
+        'priority' => 2,
+      ]);
     }
   }
 

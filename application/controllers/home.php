@@ -34,7 +34,8 @@ class Home_Controller extends Indicia_Controller {
     $view->app_version = kohana::config('version.version');
     $this->set_website_access('admin');
     $view->configProblems = config_test::check_config(TRUE, TRUE);
-    $view->gettingStartedTips = gettingStarted::getTips($this->db, $this->auth_filter);
+    $view->gettingStartedTips = serverStatus::getGettingStartedTips($this->db, $this->auth_filter);
+    $view->statusWarnings = serverStatus::getStatusWarnings($this->db, $this->auth_filter);
     $this->template->content = $view;
   }
 

@@ -76,6 +76,7 @@ class login {
         && $uri->segment(1) != 'logout'
         && $uri->segment(1) != 'new_password'
         && $uri->segment(1) != 'forgotten_password') {
+      $_SESSION['requested_page'] = $uri->string();
       url::redirect('login');
     }
     // If we are logged in, but the password was blank, force a change of password (allow logging out only).
