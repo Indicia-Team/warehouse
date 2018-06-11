@@ -9,7 +9,8 @@
     FROM cache_occurrences_functional o
     JOIN cache_occurrences_nonfunctional onf ON onf.id=o.id
     JOIN cache_taxa_taxon_lists cttl ON cttl.id=o.taxa_taxon_list_id
-    JOIN cache_taxon_searchterms cts ON cts.taxa_taxon_list_id=o.taxa_taxon_list_id AND cts.simplified=false
+    JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id AND ttl.deleted=false
+    JOIN taxa t ON t.id=ttl.taxon_id AND t.deleted=false
     JOIN cache_samples_nonfunctional snf ON snf.id=o.sample_id
     LEFT JOIN (sample_attribute_values vdatasetID
       JOIN sample_attributes adatasetID ON adatasetID.id=vdatasetID.sample_attribute_id AND adatasetID.term_name='datasetID'
@@ -67,10 +68,7 @@
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/scientificName" />
     <column name="taxonID"
-            sql="CASE cttl.language_iso
-              WHEN 'lat' THEN cts.search_code
-              ELSE cttl.external_key
-            END"
+            sql="t.search_code"
             datatype="text"
             term="http://rs.tdwg.org/dwc/terms/taxonID" />
     <column name="lifeStage"
