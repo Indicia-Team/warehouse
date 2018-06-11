@@ -12,7 +12,7 @@ CREATE TABLE work_queue
   claimed_by character varying, -- Unique ID of the worker claiming the item. Allows workers to ensure they only work on items they claim.
   error_detail character varying, -- If the task processing resulted in an error, then details are logged here.
   CONSTRAINT pk_work_queue PRIMARY KEY (id),
-  CONSTRAINT chk_cost_estimate_range CHECK (cost_estimate between 1 and 100);
+  CONSTRAINT chk_cost_estimate_range CHECK (cost_estimate between 1 and 100)
 )
 WITH (
   OIDS=FALSE
