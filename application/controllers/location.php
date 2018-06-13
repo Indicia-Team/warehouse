@@ -420,7 +420,7 @@ class Location_Controller extends Gridview_Base_Controller {
             'deleted' => array('value' => 'f'),
             'public' => array('value' => ($_POST['website_id'] === 'all' ? 't' : 'f')),
           );
-          if (array_key_exists('boundary', $_POST)) {
+          if ($_POST['geometries'] === 'boundary') {
             // Centroid is calculated in Location_Model::preSubmit.
             $fields['boundary_geom'] = array('value' => $this->wkt);
             if (isset($_POST['use_sref_system']) && $_POST['use_sref_system'] && isset($_POST['srid']) && $_POST['srid'] != '') {
