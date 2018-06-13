@@ -284,30 +284,29 @@ class Location_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * TODO create an AJAX call to give details of what will be done before it is done:
-   * ie how many will be created, how many will be updated.
-   * /
-  public function upload_shp_check() {
-  }
-
-  /**
-   * Controller action that performs the import of data in an uploaded Shapefile.
-   * TODO Sort out how large geometries are displayed in the locations indicia page, and also other non
-   * WGS84/OSGB srids.
-   * TODO Add identification of record by external code as alternative to name.
+   * Import data from a SHP file.
+   *
+   * Controller action that performs the import of data in an uploaded
+   * Shapefile.
+   *
+   * @todo Sort out how large geometries are displayed in the locations
+   * indicia page, and also other non WGS84/OSGB srids.
+   * @todo Add identification of record by external code as alternative
+   * to name.
    */
   public function upload_shp2() {
     $zipTempFile = $_POST['uploaded_zip'];
     $basefile = $_POST['extracted_basefile'];
-    // At this point do I need to extract the zipfile again? will assume at the moment that it is
-    // already extracted: TODO make sure the extracted files still exist.
+    // At this point do I need to extract the zipfile again? will assume at the
+    // moment that it is already extracted: TODO make sure the extracted files
+    // still exist.
     ini_set('auto_detect_line_endings', 1);
     $view = new View('location/upload_shp2');
     $view->update = [];
     $view->create = [];
     $view->errors = [];
     $view->location_id = [];
-    // create the file pointer, plus one for errors
+    // Create the file pointer, plus one for errors.
     $count = 0;
     $this->template->title = "Confirm Shapefile upload for $this->pagetitle";
     $dBaseTable = new Table("$basefile.dbf");
@@ -336,8 +335,8 @@ class Location_Controller extends Gridview_Base_Controller {
           // Convert to internal srid. First convert +/-90 to a value just off,
           // as Google Maps doesn't cope with the poles!
           $this->wkt = str_replace(
-            array(' 90,', ' -90,', ' 90)', ' -90)'),
-            array(' 89.99999999,', ' -89.99999999,', ' 89.99999999)', ' -89.99999999)'),
+            [' 90,', ' -90,', ' 90)', ' -90)'],
+            [' 89.99999999,', ' -89.99999999,', ' 89.99999999)', ' -89.99999999)'],
             $this->wkt
           );
           try {
@@ -351,7 +350,8 @@ class Location_Controller extends Gridview_Base_Controller {
         }
 
         if (array_key_exists('use_parent', $_POST)) {
-          // Ensure parent already exists and is unique  - no account of website taken...
+          // Ensure parent already exists and is unique  - no account of
+          // website taken...
           $parent = $this->getDbaseRecordFieldValue($record, $_POST['parent']);
           $parentSelector = $_POST['parent_link_field'];
           $parent_locations = $this->findLocations(array($parentSelector => $parent));
@@ -381,8 +381,9 @@ class Location_Controller extends Gridview_Base_Controller {
         }
         else {
           $my_locations_args = array('name' => $locationName);
-          if (array_key_exists('type', $_POST))
+          if (array_key_exists('type', $_POST)) {
             $my_locations_args['location_type_id'] = $_POST['type'];
+          }
           $my_locations = $this->findLocations($my_locations_args);
           if (count($my_locations) > 1) {
             throw new Exception('Found more than one location where name = ' . $locationName);
@@ -397,11 +398,12 @@ class Location_Controller extends Gridview_Base_Controller {
         }
 
         if ($myLocation->loaded) {
-          // update existing record
+          // Update existing record.
           if ($_POST['geometries'] === 'boundary') {
             $myLocation->__set('boundary_geom', $this->wkt);
             $myLocation->setCentroid(isset($_POST['use_sref_system']) && $_POST['use_sref_system'] && isset($_POST['srid']) && $_POST['srid'] != '' ? $_POST['srid'] : '4326');
-          } else {
+          }
+          else {
             $myLocation->__set('centroid_geom', $this->wkt);
             $myLocation->__set('centroid_sref', $this->firstPoint);
             $myLocation->__set('centroid_sref_system', $_POST['srid']);
@@ -416,7 +418,7 @@ class Location_Controller extends Gridview_Base_Controller {
           $fields = array(
             'name' => array('value' => $locationName),
             'deleted' => array('value' => 'f'),
-            'public' => array('value' => ($_POST['website_id'] === 'all' ? 't' : 'f'))
+            'public' => array('value' => ($_POST['website_id'] === 'all' ? 't' : 'f')),
           );
           if (array_key_exists('boundary', $_POST)) {
             // Centroid is calculated in Location_Model::preSubmit.
