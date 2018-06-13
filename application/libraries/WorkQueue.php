@@ -111,23 +111,29 @@ SQL;
       // Loop to claim batches of tasks for this task type. Only actually
       // iterate more than once for priority 1 tasks.
       do {
-        // Claim an appropriate number of records to do in a batch, depending on
-        // the helper class.
-        $claimedCount = $this->claim($taskType, $helper::BATCH_SIZE, $procId);
-        if ($claimedCount === 0) {
-          break;
-        }
         try {
-          call_user_func("$helper::process", $db, $taskType, $procId);
-          $this->expire($taskType, $procId);
+          // Claim an appropriate number of records to do in a batch, depending on
+          // the helper class.
+          if (!class_exists($helper)) {
+            $this->failClassMissing($taskType);
+            $errorCount++;
+          }
+          else {
+            $claimedCount = $this->claim($taskType, $helper::BATCH_SIZE, $procId);
+            if ($claimedCount === 0) {
+              break;
+            }
+            call_user_func("$helper::process", $db, $taskType, $procId);
+            $this->expire($taskType, $procId);
+            $doneCount += $claimedCount;
+          }
         }
         catch (Throwable $e) {
           $this->fail($taskType, $procId, $e);
           $errorCount++;
         }
-        $doneCount += $claimedCount;
       } while ($taskType->priority === 1 && $doneCount < $taskType->count);
-      $errors = $errorCount === 0 ? '' : " with $errorCount error(s).";
+      $errors = $errorCount === 0 ? '' : " with $errorCount batch failure(s).";
       echo "Work queue - $taskType->task ($taskType->entity): $doneCount done$errors<br/>";
     }
   }
@@ -220,6 +226,7 @@ WHERE ((priority=1 AND cost_estimate<=$maxCostByPriority[1])
 OR (priority=2 AND cost_estimate<=$maxCostByPriority[2])
 OR (priority=3 AND cost_estimate<=$maxCostByPriority[3]))
 AND claimed_by IS NULL
+AND error_detail IS NULL
 GROUP BY task, entity
 ORDER BY min(priority), min(created_on), task, entity
 SQL;
@@ -244,18 +251,22 @@ SQL;
    *   Number of records claimed.
    */
   private function claim($taskType, $batchSize, $procId) {
+    // Use an atomic query to ensure we only claim tasks where they are not
+    // already claimed.
     $sql = <<<SQL
 UPDATE work_queue
 SET claimed_by='$procId', claimed_on=now()
 WHERE id IN (
   SELECT id FROM work_queue
   WHERE claimed_by IS NULL
+  AND error_detail IS NULL
   AND task='$taskType->task'
   AND COALESCE(entity, '')='$taskType->entity'
   LIMIT $batchSize
 );
 SQL;
     $this->db->query($sql);
+    // Now return the count we actually claimed.
     $sql = <<<SQL
 SELECT COUNT(id) FROM work_queue
 WHERE claimed_by='$procId'
@@ -298,6 +309,21 @@ SQL;
       'entity' => $taskType->entity,
     ]);
     error_logger::log_error("Failure in work queue task batch claimed by $procId", $e);
+  }
+
+  /**
+   * If the helper class does not exist, set the error on the work queue.
+   *
+   * @param object $taskType
+   *   Task type database row object, defining the task and entity to process.
+   */
+  private function failClassMissing($taskType) {
+    $this->db->update('work_queue', [
+      'error_detail' => "Worker class $taskType->task missing.",
+    ], [
+      'task' => $taskType->task,
+    ]);
+    error_logger::log_error("Failure in work queue task batch because $taskType->task missing", $e);
   }
 
 }
