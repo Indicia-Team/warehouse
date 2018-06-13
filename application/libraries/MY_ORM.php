@@ -737,11 +737,7 @@ class ORM extends ORM_Core {
       if (!empty(self::$changedRecords['delete']['sample'])) {
         cache_builder::delete($this->db, 'samples', self::$changedRecords['delete']['sample']);
       }
-      if (!empty($occurrences)) {
-        $this->queueAttributeCacheBuild('occurrences', $occurrences);
-      }
       if (!empty($samples)) {
-        $this->queueAttributeCacheBuild('samples', $samples);
         // @todo Map squares could be added to work queue.
         postgreSQL::insertMapSquaresForSamples($samples, 1000, $this->db);
         postgreSQL::insertMapSquaresForSamples($samples, 2000, $this->db);
@@ -771,28 +767,39 @@ class ORM extends ORM_Core {
       // Reset important if doing an import with multiple submissions.
       Occurrence_association_Model::$to_occurrence_id_pointers = array();
     }
+    $queueEntries = [];
+    foreach (Kohana::config('config.modules') as $path) {
+      $plugin = basename($path);
+      if (function_exists($plugin . '_orm_work_queue')) {
+        $queueEntries = array_merge_recursive($queueEntries, call_user_func($plugin . '_orm_work_queue'));
+      }
+    }
+    foreach ($queueEntries as $entity => $cfg) {
+      foreach ($cfg['ops'] as $op) {
+        if (!empty(self::$changedRecords[$op][$entity])) {
+          $this->queueWork($entity, $op, $cfg, self::$changedRecords[$op][$entity]);
+        }
+      }
+    }
   }
 
   /**
-   * Enqueue tasks to update cache table attribute JSON.
-   *
-   * Updating the attrs_json is handled via a background work queue to ensure
-   * the user gets a good response when saving data.
-   *
    * @param string $entity
    *   Table name, occurrences or samples.
+   * @param string $op
+   * @param array $cfg
    * @param array $records
    *   List of record IDs to queue.
    */
-  private function queueAttributeCacheBuild($entity, $records) {
+  private function queueWork($entity, $op, $cfg, $records) {
     $q = new WorkQueue();
     foreach ($records as $id) {
       $q->enqueue($this->db, [
-        'task' => "task_cache_builder_attrs_$entity",
+        'task' => $cfg['task'],
         'entity' => $entity,
         'record_id' => $id,
-        'cost_estimate' => 30,
-        'priority' => 2,
+        'cost_estimate' => $cfg['cost_estimate'],
+        'priority' => $cfg['priority'],
       ]);
     }
   }

@@ -81,3 +81,29 @@ function cache_builder_alter_menu(array $menu, $auth) {
   }
   return $menu;
 }
+
+/**
+ * Hook into the work queue system for CRUD operations.
+ *
+ * Adds work queue entries for insert or update of samples and occurrences
+ * which populate the attrs_json fields in the cache tables.
+ *
+ * @return array
+ *   List of tables to queue tasks for with configuration.
+ */
+function cache_builder_orm_work_queue() {
+  return [
+    'sample' => [
+      'ops' => ['insert', 'update'],
+      'task' => 'task_cache_builder_attrs_sample',
+      'cost_estimate' => 30,
+      'priority' => 2,
+    ],
+    'occurrence' => [
+      'ops' => ['insert', 'update'],
+      'task' => 'task_cache_builder_attrs_occurrence',
+      'cost_estimate' => 30,
+      'priority' => 2,
+    ],
+  ];
+}
