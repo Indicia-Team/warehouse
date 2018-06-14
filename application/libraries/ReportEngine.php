@@ -1607,6 +1607,11 @@ SQL;
     // the end.
     $fields = [];
     $groupBys = [];
+    $rootTableAliases = [
+      'sample' => 'snf',
+      'occurrence' => 'onf',
+      'taxa_taxon_list' => 'cttl'
+    ];
     foreach ($attrs as $attr) {
       // Don't duplicate any attributes as the SQL distinct does not force
       // distinct when loading from a view.
@@ -1618,20 +1623,19 @@ SQL;
       // column alias, depending on how it was requested.
       $uniqueId = $usingCaptions ? preg_replace('/\W/', '_', strtolower($attr->caption)) : $attr->id;
 
-      if (($this->reportReader->loadStandardParamsSet === 'occurrences' || $this->reportReader->loadStandardParamsSet === 'samples')
-          && !empty($this->providedParams['useJsonAttributes']) && $this->providedParams['useJsonAttributes'] === '1') {
+      if (!empty($this->providedParams['useJsonAttributes']) && $this->providedParams['useJsonAttributes'] === '1') {
         $alias = "attr_{$entity}{$idx}_$uniqueId";
         $this->attrColumns[$alias] = [
           'display' => $attr->caption,
           'datatype' => $this->handleCustomAttributeAs($attr, TRUE),
         ];
         // Add a field to the query to extract the value from JSON.
-        $fields[] = "onf.attrs_json->>'occ:$attr->id' as $alias";
+        $fields[] = "$rootTableAliases[$entity].attrs_json->>'$attr->id' as $alias";
         // Also add a group by to use if this is an aggregate query.
-        $groupBys[] = "onf.attrs_json->>'occ:$attr->id'";
+        $groupBys[] = "$rootTableAliases[$entity].attrs_json->>'$attr->id'";
         // Store the info required if we need to filter on this field.
         $this->customAttributes[$alias] = array(
-          'field' => "onf.attrs_json->>'occ:$attr->id'::" . $this->handleCustomAttributeAs($attr, TRUE),
+          'field' => "$rootTableAliases[$entity].attrs_json->>'$attr->id'::" . $this->handleCustomAttributeAs($attr, TRUE),
           'datatype' => $this->handleCustomAttributeAs($attr, TRUE),
         );
       }

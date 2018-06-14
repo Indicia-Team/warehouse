@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Queue worker to update cache_samples_nonfunctiona.attrs_json.
+ * Queue worker to update cache_samples_nonfunctional.attrs_json.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -24,13 +24,13 @@
 
  defined('SYSPATH') or die('No direct script access.');
 
- /**
-  * Queue worker to update cache_samples_nonfunctional.attrs_json.
-
-  * Class called when a task_cache_builder_attrs_samples task encountered in
-  * the work queue. Updates cache_samples_nonfunctional.attrs_json with a
-  * json attribute for easy reporting on attribute values.
-  */
+/**
+ * Queue worker to update cache_samples_nonfunctional.attrs_json.
+ *
+ * Class called when a task_cache_builder_attrs_sample task encountered
+ * in the work queue. Updates cache_samples_nonfunctional.attrs_json with a
+ * json attribute for easy reporting on attribute values.
+ */
 class task_cache_builder_attrs_sample {
 
   /**
@@ -53,6 +53,35 @@ class task_cache_builder_attrs_sample {
    *   tasks to perform.
    */
   public static function process($db, $taskType, $procId) {
+    // Work out the SQL required to get the i18n for lookup term values.
+    $langs = kohana::config('cache_builder_variables.attrs_cache_languages');
+    $langTermSql = '';
+    if ($langs !== NULL) {
+      foreach ($langs as $lang) {
+        $langTermSql .= <<<SQL
+
+  UNION
+
+  SELECT av.sample_id, a.multi_value,
+    av.sample_attribute_id::text || ':$lang' as f,
+    array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(tlti18n.sort_order, tlt.sort_order), COALESCE(ti18n.term, t.term)) as v
+  FROM work_queue q
+  JOIN sample_attribute_values av ON av.sample_id=q.record_id AND av.deleted=false
+    AND COALESCE(av.int_value::text, av.text_value::text, av.float_value::text, av.date_start_value::text) IS NOT NULL
+  JOIN sample_attributes a ON a.id=av.sample_attribute_id AND a.deleted=false
+  LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND tlt.deleted=false
+  LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
+  LEFT JOIN termlists_terms tlti18n on tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
+  LEFT JOIN (terms ti18n
+    JOIN languages l on l.id=ti18n.language_id AND l.deleted=false AND l.iso='$lang'
+  ) ON ti18n.id=tlti18n.term_id AND ti18n.deleted=false
+  WHERE q.entity='sample' AND q.task='task_cache_builder_attrs_sample' AND claimed_by='$procId'
+  AND a.data_type='L'
+  GROUP BY sample_id, sample_attribute_id, a.multi_value
+
+SQL;
+      }
+    }
     $sql = <<<SQL
 
 SELECT sample_id, ('{' || string_agg(
@@ -62,7 +91,7 @@ SELECT sample_id, ('{' || string_agg(
 INTO temporary attrs
 FROM (
   SELECT sample_id, a.multi_value,
-    'occ:' || sample_attribute_id::text as f,
+    sample_attribute_id::text as f,
     array_agg(
       CASE a.data_type
         WHEN 'T' THEN av.text_value
@@ -89,27 +118,9 @@ FROM (
   LEFT JOIN sample_attributes a ON a.id=av.sample_attribute_id AND a.deleted=false
   LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND a.data_type='L' AND tlt.deleted=false
   LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
-  WHERE q.entity='samples' AND q.task='task_cache_builder_attrs_samples' AND claimed_by='$procId'
+  WHERE q.entity='sample' AND q.task='task_cache_builder_attrs_sample' AND claimed_by='$procId'
   GROUP BY sample_id, sample_attribute_id, a.multi_value
-
-  UNION
-
-  SELECT sample_id, a.multi_value,
-    'occ:' || sample_attribute_id::text || ':fra' as f,
-    array_agg(COALESCE(ti18n.term, t.term) ORDER BY COALESCE(tlti18n.sort_order, tlt.sort_order), COALESCE(ti18n.term, t.term)) as v
-  FROM work_queue q
-  JOIN sample_attribute_values av ON av.sample_id=q.record_id AND av.deleted=false
-    AND COALESCE(av.int_value::text, av.text_value::text, av.float_value::text, av.date_start_value::text) IS NOT NULL
-  JOIN sample_attributes a ON a.id=av.sample_attribute_id AND a.deleted=false
-  LEFT JOIN termlists_terms tlt ON tlt.id=av.int_value AND tlt.deleted=false
-  LEFT JOIN terms t ON t.id=tlt.term_id AND t.deleted=false
-  LEFT JOIN termlists_terms tlti18n on tlti18n.meaning_id=tlt.meaning_id AND tlti18n.termlist_id=tlt.termlist_id and tlti18n.deleted=false
-  LEFT JOIN (terms ti18n
-    JOIN languages l on l.id=ti18n.language_id AND l.deleted=false AND l.iso='fra'
-  ) ON ti18n.id=tlti18n.term_id AND ti18n.deleted=false
-  WHERE q.entity='samples' AND q.task='task_cache_builder_attrs_samples' AND claimed_by='$procId'
-  AND a.data_type='L'
-  GROUP BY sample_id, sample_attribute_id, a.multi_value
+  $langTermSql
 ) AS subquery
 GROUP BY sample_id;
 

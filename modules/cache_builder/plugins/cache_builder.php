@@ -105,5 +105,11 @@ function cache_builder_orm_work_queue() {
       'cost_estimate' => 30,
       'priority' => 2,
     ],
+    'taxa_taxon_list' => [
+      'ops' => ['insert', 'update'],
+      'task' => 'task_cache_builder_attrs_taxa_taxon_list',
+      'cost_estimate' => 30,
+      'priority' => 2,
+    ],
   ];
 }
