@@ -73,7 +73,7 @@
           ->where('termlist_external_key', 'indicia:location_types')
           ->orderby('term', 'asc')
           ->get()->result();
-        echo '<option value="" >&lt;Not applicable&gt;</option>';
+        echo '<option value="" >&lt;Nothing&gt;</option>';
         foreach ($terms as $term) {
           echo '<option value="' . $term->id . '" >' . $term->term . '</option>';
         }

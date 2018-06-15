@@ -172,7 +172,6 @@ class Location_Controller extends Gridview_Base_Controller {
     $_FILES = Validation::factory($_FILES)->add_rules(
         'zip_upload', 'upload::valid', 'upload::required', 'upload::type[zip]', "upload::size[$sizelimit]"
     );
-
     if ($_FILES->validate()) {
       // Move the file to the standard upload directory.
       $zipTempFile = upload::save('zip_upload');
@@ -195,7 +194,7 @@ class Location_Controller extends Gridview_Base_Controller {
         $this->setError('Upload file problem', 'Could not extract Zip archive file contents.');
         return;
       }
-      $entry = '';
+      $dbfEntry = '';
       $dbf = 0;
       $shp = 0;
       for ($i = 0; $i < $zip->numFiles; $i++) {
@@ -205,7 +204,9 @@ class Location_Controller extends Gridview_Base_Controller {
           continue;
         }
         if (strcasecmp(pathinfo($file, PATHINFO_EXTENSION), 'dbf') === 0) {
-          $entry = $file;
+          $dbfEntry = $file;
+          $_SESSION['extracted_basefile'] = $directory .
+            pathinfo($file, PATHINFO_DIRNAME) . DIRECTORY_SEPARATOR . pathinfo($file, PATHINFO_FILENAME);
           $dbf++;
         }
         if (strcasecmp(pathinfo($file, PATHINFO_EXTENSION), 'shp') === 0) {
@@ -229,19 +230,18 @@ class Location_Controller extends Gridview_Base_Controller {
         $this->setError('Upload file problem', 'Zip archive file contains more than one file with a .dbf extension.');
         return;
       }
-      if (basename($entry, '.dbf') != basename($shpentry, '.shp')) {
+      if (basename($dbfEntry, '.dbf') != basename($shpentry, '.shp')) {
         $this->setError('Upload file problem', '.dbf and .shp files in Zip archive have different names.');
         return;
       }
-      $_SESSION['extracted_basefile'] = $directory . basename($entry, '.dbf');
       $zip->close();
       $this->template->title = "Choose details in " . $shpentry . " for " . $this->pagetitle;
       try {
-        $table = new Table($directory . $entry);
+        $table = new Table("$_SESSION[extracted_basefile].dbf");
         $view->columns = $table->getColumns();
       }
       catch (Exception $e) {
-        $this->setError('Upload file problem', "Could not open $entry from Zip archive. The error was: " . $e->getMessage());
+        $this->setError('Upload file problem', "Could not open $dbfEntry from Zip archive. The error was: " . $e->getMessage());
         error_logger::log_error('Error when uploading SHP file', $e);
         return;
       }
@@ -309,7 +309,17 @@ class Location_Controller extends Gridview_Base_Controller {
     // Create the file pointer, plus one for errors.
     $count = 0;
     $this->template->title = "Confirm Shapefile upload for $this->pagetitle";
-    $dBaseTable = new Table("$basefile.dbf");
+    try {
+      if (!file_exists("$basefile.dbf")) {
+        throw new Exception('dbf file not found in root of uploaded ZIP file.');
+      }
+      $dBaseTable = new Table("$basefile.dbf");
+    }
+    catch (Exception $e) {
+      $this->setError('Upload file problem', "Could not open $basefile. The error was: " . $e->getMessage());
+      error_logger::log_error('Error when uploading SHP file', $e);
+      return;
+    }
     if (!array_key_exists('name', $_POST)) {
       $this->setError('Upload problem', 'Name column in .dbf file must be specified.');
       return;
