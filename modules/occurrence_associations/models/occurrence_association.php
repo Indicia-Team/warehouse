@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -14,33 +14,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Occurrence assocations
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the occurrence_associations table.
- *
- * @package	Occurrence assocations
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+
+ * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Occurrence_association_Model extends ORM {
 
-  protected $to_occurrence_id_pointer = false;
+  public $search_field = 'id';
+
+  protected $to_occurrence_id_pointer = FALSE;
 
   public static $to_occurrence_id_pointers = array();
 
-  protected $has_one = array(
-    'from_occurrence'=>'occurrence',
-    'to_occurrence'=>'occurrence',
-    'association_type'=>'termlists_term',
-    'part'=>'termlists_term',
-    'position'=>'termlists_term',
-    'impact'=>'termlists_term',
+  protected $has_one = [
+    'from_occurrence' => 'occurrence',
+    'to_occurrence' => 'occurrence',
+    'association_type' => 'termlists_term',
+    'part' => 'termlists_term',
+    'position' => 'termlists_term',
+    'impact' => 'termlists_term',
+  ];
+
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user',
   );
 
   public function validate(Validation $array, $save = FALSE) {
@@ -48,27 +53,34 @@ class Occurrence_association_Model extends ORM {
     $array->add_rules('association_type_id', 'required');
     $array->add_rules('from_occurrence_id', 'required');
     $array->add_rules('to_occurrence_id', 'required');
-    $this->unvalidatedFields = array('part_id', 'position_id', 'impact_id', 'deleted');
+    $this->unvalidatedFields = [
+      'part_id',
+      'position_id',
+      'impact_id',
+      'deleted',
+    ];
     return parent::validate($array, $save);
   }
 
   /**
-   * Override set handler to trap pointers in to_occurrence_id to occurrences that don't yet
-   * exist, because they come later in the submission. These values come in the form
-   * ||pointer||. We have to temporarily null out the field, then store the pointer for
-   * later.
+   * Field set handler.
+   *
+   * Override set handler to trap pointers in to_occurrence_id to occurrences
+   * that don't yet exist, because they come later in the submission. These
+   * values come in the form ||pointer||. We have to temporarily null out the
+   * field, then store the pointer for later.
    */
-  public function __set($key, $value)
-  {
-    if (substr($key,-16) === 'to_occurrence_id' && preg_match('/^\|\|.+\|\|$/', $value))
-    {
+  public function __set($key, $value) {
+    if (substr($key, -16) === 'to_occurrence_id' && preg_match('/^\|\|.+\|\|$/', $value)) {
       $this->to_occurrence_id_pointer = str_replace('||', '', $value);
-      $value = null;
+      $value = NULL;
     }
     parent::__set($key, $value);
   }
 
   /**
+   * Post submission handler.
+   *
    * After submission, if we stored a pointer to a to_occurrence_id that does not yet exist,
    * then store it in a static array with the occurrence_association_id so we can fill it in at
    * the end of the submission.
@@ -79,14 +91,14 @@ class Occurrence_association_Model extends ORM {
       $this->to_occurrence_id_pointer = FALSE;
       kohana::log('debug', 'Pointers: ' . var_export(self::$to_occurrence_id_pointers, TRUE));
     }
-    return true;
+    return TRUE;
   }
 
-  // define underlying fields which the user would not normally see, e.g. so they can be hidden from selection
-  // during a csv import
-  protected $hidden_fields=array(
+  // Define underlying fields which the user would not normally see, e.g. so
+  // they can be hidden from selection during a csv import.
+  protected $hidden_fields = [
     'from_occurrence_id',
-    'to_occurrence_id'
-  );
+    'to_occurrence_id',
+  ];
 
 }
