@@ -57,6 +57,7 @@ class Occurrence_association_Model extends ORM {
       'part_id',
       'position_id',
       'impact_id',
+      'comment',
       'deleted',
     ];
     return parent::validate($array, $save);

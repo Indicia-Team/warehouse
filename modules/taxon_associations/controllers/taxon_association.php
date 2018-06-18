@@ -20,20 +20,20 @@
  */
 
 /**
- * Controller for occurrence associations.
+ * Controller for taxon associations.
  */
-class Occurrence_association_Controller extends Gridview_Base_Controller {
+class Taxon_association_Controller extends Gridview_Base_Controller {
 
   /**
    * Constructor, initiates grid columns.
    */
   public function __construct() {
-    parent::__construct('occurrence_association', NULL, NULL, 'occurrence_association');
+    parent::__construct('taxon_association', NULL, NULL, 'taxon_association');
     $this->columns = array(
       'id' => '',
-      'from_occurrence' => '',
+      'from_taxon' => '',
       'association_type' => '',
-      'to_occurrence' => '',
+      'to_taxon' => '',
     );
     $this->pagetitle = "Associations";
   }
@@ -42,17 +42,16 @@ class Occurrence_association_Controller extends Gridview_Base_Controller {
    * Controller method for the index action.
    *
    * @param integer $filter
-   *   ID of the occurrence we are viewing to filter to.
+   *   ID of the taxon we are viewing to filter to.
    */
   public function index($filter = NULL) {
     if (!$filter) {
-      throw new exception('Associations index view needs to filter to an occurrence.');
+      throw new exception('Associations index view needs to filter to an taxon.');
     }
     // Filter the list to the occurrence we are viewing.
-    $occ = ORM::Factory('occurrence', $filter);
-    $this->base_filter['occurrence_id'] = $filter;
+    $this->base_filter['taxa_taxon_list_id'] = $filter;
     parent::index($filter);
-    $this->view->occurrence_id = $filter;
+    $this->view->taxa_taxon_list_id = $filter;
   }
 
   /**
@@ -64,41 +63,39 @@ class Occurrence_association_Controller extends Gridview_Base_Controller {
    *   Additional information for the view.
    */
   protected function prepareOtherViewData(array $values) {
-    $oaId = $this->uri->argument(1);
+    $taId = $this->uri->argument(1);
     // Find basic info about the occurrence association.
     $sql = <<<SQL
-SELECT DISTINCT ofrom.id, ofrom.survey_id, ofrom.website_id,
+SELECT DISTINCT cttlfrom.id, cttlfrom.taxon_list_id,
   cttlfrom.preferred_taxon as from_taxon, cttlto.preferred_taxon as to_taxon
-FROM occurrence_associations oa
-JOIN cache_occurrences_functional ofrom ON ofrom.id=oa.from_occurrence_id
-JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.id=ofrom.taxa_taxon_list_id
-JOIN cache_occurrences_functional oto ON oto.id=oa.to_occurrence_id
-JOIN cache_taxa_taxon_lists cttlto ON cttlto.id=oto.taxa_taxon_list_id
-WHERE oa.id=$oaId;
+FROM taxon_associations ta
+JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.taxon_meaning_id=ta.from_taxon_meaning_id
+JOIN cache_taxa_taxon_lists cttlto ON cttlto.taxon_meaning_id=ta.to_taxon_meaning_id
+WHERE ta.id=$taId;
 SQL;
     $ids = $this->db->query($sql)->current();
     $otherData = [
       'from_taxon' => $ids->from_taxon,
       'to_taxon' => $ids->to_taxon,
     ];
-    // Store the occurrence ID we are viewing the association from, e.g. to use
+    // Store the taxa_taxon_list ID we are viewing the association from, e.g. to use
     // when building breadcrumbs.
-    $this->occurrence_id = $ids->id;
+    $this->taxa_taxon_list_id = $ids->id;
     // Since the warehouse does not stipulate which termlists to use for the
     // associations metadata fields, find the termlists already in use for this
-    // survey and use the terms from those for the edit form.
+    // list and use the terms from those for the edit form.
     $sql = <<<SQL
 SELECT string_agg(distinct ttype.termlist_id::text, ',') AS association_type_termlist_ids,
   string_agg(distinct tpart.termlist_id::text, ',') AS part_termlist_termlist_ids,
   string_agg(distinct tposition.termlist_id::text, ',') AS position_termlist_ids,
   string_agg(distinct timpact.termlist_id::text, ',') AS impact_termlist_ids
-FROM cache_occurrences_functional o2
-JOIN occurrence_associations oa2 ON oa2.from_occurrence_id=o2.id
-LEFT JOIN cache_termlists_terms ttype ON ttype.id=oa2.association_type_id
-LEFT JOIN cache_termlists_terms tpart ON tpart.id=oa2.part_id
-LEFT JOIN cache_termlists_terms tposition ON tposition.id=oa2.position_id
-LEFT JOIN cache_termlists_terms timpact ON timpact.id=oa2.impact_id
-WHERE o2.website_id=$ids->website_id AND o2.survey_id=$ids->survey_id
+FROM cache_taxa_taxon_lists cttl
+JOIN taxon_associations ta ON ta.from_taxon_meaning_id=cttl.taxon_meaning_id
+LEFT JOIN cache_termlists_terms ttype ON ttype.id=ta.association_type_id
+LEFT JOIN cache_termlists_terms tpart ON tpart.id=ta.part_id
+LEFT JOIN cache_termlists_terms tposition ON tposition.id=ta.position_id
+LEFT JOIN cache_termlists_terms timpact ON timpact.id=ta.impact_id
+WHERE cttl.taxon_list_id=$ids->taxon_list_id;
 SQL;
     $termlists = $this->db->query($sql)->current();
     $termDataToFetch = [
@@ -122,8 +119,20 @@ SQL;
    * Set the edit page breadcrumbs to link back through the occurrences.
    */
   protected function defineEditBreadcrumbs() {
-    $this->page_breadcrumbs[] = html::anchor('occurrence', 'Occurrences');
-    $this->page_breadcrumbs[] = html::anchor('occurrence/edit/' . $this->occurrence_id . '?tab=associations', "Occurrence $this->occurrence_id");
+    $taId = $taId = $this->uri->argument(1);
+    $sql = <<<SQL
+SELECT DISTINCT cttlfrom.id, cttlfrom.taxon, tl.id as taxon_list_id, tl.title as taxon_list_title, cttlfrom.preferred
+FROM taxon_associations ta
+JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.taxon_meaning_id=ta.from_taxon_meaning_id
+JOIN taxon_lists tl ON tl.id=cttlfrom.taxon_list_id
+WHERE ta.id=$taId
+ORDER BY cttlfrom.preferred DESC
+LIMIT 1;
+SQL;
+    $info = $this->db->query($sql)->current();
+    $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
+    $this->page_breadcrumbs[] = html::anchor("taxon_list/edit/$info->taxon_list_id?tab=associations", $info->taxon_list_title);
+    $this->page_breadcrumbs[] = html::anchor("taxa_taxon_list/edit/$info->id?tab=associations", $info->taxon);
     $this->page_breadcrumbs[] = $this->model->caption();
   }
 
@@ -134,8 +143,16 @@ SQL;
    *   Path to the page to return to.
    */
   protected function get_return_page() {
-    $oa = ORM::Factory('occurrence_association', $_POST['occurrence_association:id']);
-    return "occurrence/edit/$oa->from_occurrence_id?tab=Associations";
+    $sql = <<<SQL
+SELECT DISTINCT cttlfrom.id, cttlfrom.preferred
+FROM taxon_associations ta
+JOIN cache_taxa_taxon_lists cttlfrom ON cttlfrom.taxon_meaning_id=ta.from_taxon_meaning_id
+WHERE ta.id={$_POST['taxon_association:id']}
+ORDER BY cttlfrom.preferred DESC
+LIMIT 1;
+SQL;
+    $ids = $this->db->query($sql)->current();
+    return "taxa_taxon_list/edit/$ids->id?tab=Associations";
   }
 
 }

@@ -30,6 +30,8 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class Taxon_association_Model extends ORM {
 
+  public $search_field = 'id';
+
   protected $to_taxon_meaning_id_pointer = FALSE;
 
   public static $to_taxon_meaning_id_pointers = array();
@@ -43,6 +45,11 @@ class Taxon_association_Model extends ORM {
     'impact' => 'termlists_term',
   );
 
+  protected $belongs_to = array(
+    'created_by' => 'user',
+    'updated_by' => 'user',
+  );
+
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('association_type_id', 'required');
@@ -52,6 +59,7 @@ class Taxon_association_Model extends ORM {
       'part_id',
       'position_id',
       'impact_id',
+      'comment',
       'deleted',
     ];
     return parent::validate($array, $save);
