@@ -24,6 +24,7 @@
 
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'occurrence_medium:id');
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify the details of an occurrence media file.</p>
 <form  action="<?php echo url::site() . 'occurrence_medium/save'; ?>" method="post"
