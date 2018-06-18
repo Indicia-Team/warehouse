@@ -1,5 +1,9 @@
 <?php
+
 /**
+ * @file
+ * Plugin for the occurreance associations module.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,24 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Taxon Designations
- * @subpackage Plugins
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
- * Hook to ORM enable the relationship between occurrences and associations
+ * Hook to ORM enable the relationship between occurrences and associations.
  */
 function occurrence_associations_extend_orm() {
-  return array('occurrence'=>array(
-    'has_and_belongs_to_many'=>array('occurrence_associations')
-  ));
+  return [
+    'occurrence' => [
+      'has_and_belongs_to_many' => ['occurrence_associations'],
+    ],
+  ];
 }
 
 function occurrence_associations_extend_data_services() {
   return array(
-    'occurrence_associations'=>array()
+    'occurrence_associations' => [],
   );
+}
+
+function occurrence_associations_extend_ui() {
+  return [
+    [
+      'view' => 'occurrence/occurrence_edit',
+      'type' => 'tab',
+      'controller' => 'occurrence_association',
+      'title' => 'Associations',
+      'allowForNew' => FALSE,
+    ],
+  ];
 }

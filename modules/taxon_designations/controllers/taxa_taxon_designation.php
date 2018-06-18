@@ -52,10 +52,12 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
   }
 
   public function index($filter = null) {
-    $ttl = ORM::Factory('taxa_taxon_list', $filter);
+    if (!$filter) {
+      throw new exception('Taxa taxon designations index view needs to filter to a taxon.');
+    }
     $this->base_filter['taxa_taxon_list_id'] = $filter;
     parent::index($filter);
-    $this->view->taxa_taxon_list_id = $ttl->id;
+    $this->view->taxa_taxon_list_id = $filter;
   }
 
   /**
@@ -71,18 +73,20 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
     foreach ($results as $row) {
       $designations[$row->id] = $row->title;
     }
-    // also setup a taxon name
+    // Also setup a taxon name.
     $this->taxon_name = ORM::Factory('taxon', $values['taxa_taxon_designation:taxon_id'])->caption();
-    if ($this->uri->method(false)=='create')
-      // Taxa taxon list id is passed as first argument in URL when creating
-      $ttl_id=$this->uri->argument(1);
-    else
+    if ($this->uri->method(FALSE) === 'create') {
+      // Taxa taxon list id is passed as first argument in URL when creating.
+      $ttl_id = $this->uri->argument(1);
+    }
+    else {
       $ttl_id = $_GET['taxa_taxon_list_id'];
+    }
     $this->taxon_list_id = ORM::Factory('taxa_taxon_list', $ttl_id)->taxon_list_id;
     return array(
       'designations' => $designations,
       'taxon_name' => $this->taxon_name,
-      'taxon_list_id' => $this->taxon_list_id
+      'taxon_list_id' => $this->taxon_list_id,
     );
   }
 
