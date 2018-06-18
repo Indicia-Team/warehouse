@@ -24,6 +24,7 @@
 
 warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'taxon_medium:id');
+$readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
 <p>This page allows you to specify the details of an taxon media file.</p>
 <form action="<?php echo url::site() . 'taxon_medium/save'; ?>" method="post"

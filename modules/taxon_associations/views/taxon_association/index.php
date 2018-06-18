@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Plugin for the occurreance associations module.
+ * Taxon associations index view.
  *
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -19,34 +19,11 @@
  *
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link https://github.com/indicia-team/warehouse/
+ * @link http://code.google.com/p/indicia/
  */
 
-/**
- * Hook to ORM enable the relationship between occurrences and associations.
- */
-function occurrence_associations_extend_orm() {
-  return [
-    'occurrence' => [
-      'has_and_belongs_to_many' => ['occurrence_associations'],
-    ],
-  ];
-}
-
-function occurrence_associations_extend_data_services() {
-  return array(
-    'occurrence_associations' => [],
-  );
-}
-
-function occurrence_associations_extend_ui() {
-  return [
-    [
-      'view' => 'occurrence/occurrence_edit',
-      'type' => 'tab',
-      'controller' => 'occurrence_association',
-      'title' => 'Associations',
-      'allowForNew' => FALSE,
-    ],
-  ];
-}
+echo $grid;
+?>
+<form action="<?php echo url::site() . "taxon_association/create/$taxa_taxon_list_id"; ?>" method="post">
+  <input type="submit" value="New association" class="btn btn-primary" />
+</form>

@@ -1,5 +1,9 @@
 <?php
+
 /**
+ * @file
+ * Plugin methods for the taxon associations module.
+ *
  * Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -13,24 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Taxon Designations
- * @subpackage Plugins
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
- * Hook to ORM enable the relationship between taxon_meanings and associations
+ * Hook to ORM enable the relationship between taxon_meanings and associations.
  */
 function taxon_associations_extend_orm() {
-  return array('taxon_meaning'=>array(
-    'has_and_belongs_to_many'=>array('taxon_associations')
-  ));
+  return [
+    'taxon_meaning' => [
+      'has_and_belongs_to_many' => ['taxon_associations'],
+    ],
+  ];
 }
 
 function taxon_associations_extend_data_services() {
   return array(
-    'taxon_associations'=>array()
+    'taxon_associations' => [],
   );
+}
+
+/**
+ * Extend the UI to include a tab on taxa for the associations.
+ *
+ * @return array
+ *   UI extensions.
+ */
+function taxon_associations_extend_ui() {
+  return [
+    [
+      'view' => 'taxa_taxon_list/taxa_taxon_list_edit',
+      'type' => 'tab',
+      'controller' => 'taxon_association',
+      'title' => 'Associations',
+      'allowForNew' => FALSE,
+    ],
+  ];
 }
