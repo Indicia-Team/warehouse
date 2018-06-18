@@ -24,7 +24,7 @@ defined('SYSPATH') or die('No direct script access.');
 /**
  * Model class for the occurrence_associations table.
 
- * @link http://code.google.com/p/indicia/wiki/DataModel
+ * @link https://github.com/indicia-team/warehouse/wiki/DataModel
  */
 class Occurrence_association_Model extends ORM {
 
@@ -81,9 +81,10 @@ class Occurrence_association_Model extends ORM {
   /**
    * Post submission handler.
    *
-   * After submission, if we stored a pointer to a to_occurrence_id that does not yet exist,
-   * then store it in a static array with the occurrence_association_id so we can fill it in at
-   * the end of the submission.
+   * After submission, if we stored a pointer to a to_occurrence_id that does
+   * not yet exist, then store it in a static array with the
+   * occurrence_association_id so we can fill it in at the end of the
+   * submission.
    */
   public function postSubmit($isInsert) {
     if ($this->to_occurrence_id_pointer) {

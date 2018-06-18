@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -14,33 +14,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Taxon assocations
- * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
+
+defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Model class for the taxon_associations table.
  *
- * @package	Taxon assocations
+ * @package Taxon assocations
  * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @link https://github.com/indicia-team/warehouse/wiki/DataModel
  */
 class Taxon_association_Model extends ORM {
 
-  protected $to_taxon_meaning_id_pointer = false;
+  protected $to_taxon_meaning_id_pointer = FALSE;
 
   public static $to_taxon_meaning_id_pointers = array();
 
   protected $has_one = array(
-    'from_taxon_meaning'=>'taxon_meaning',
-    'to_taxon_meaning'=>'taxon_meaning',
-    'association_type'=>'termlists_term',
-    'part'=>'termlists_term',
-    'position'=>'termlists_term',
-    'impact'=>'termlists_term',
+    'from_taxon_meaning' => 'taxon_meaning',
+    'to_taxon_meaning' => 'taxon_meaning',
+    'association_type' => 'termlists_term',
+    'part' => 'termlists_term',
+    'position' => 'termlists_term',
+    'impact' => 'termlists_term',
   );
 
   public function validate(Validation $array, $save = FALSE) {
@@ -48,30 +48,38 @@ class Taxon_association_Model extends ORM {
     $array->add_rules('association_type_id', 'required');
     $array->add_rules('from_taxon_meaning_id', 'required');
     $array->add_rules('to_taxon_meaning_id', 'required');
-    $this->unvalidatedFields = array('part_id', 'position_id', 'impact_id', 'deleted');
+    $this->unvalidatedFields = [
+      'part_id',
+      'position_id',
+      'impact_id',
+      'deleted',
+    ];
     return parent::validate($array, $save);
   }
 
   /**
-   * Override set handler to trap pointers in to_taxon_meaning_id to taxon_meanings that don't yet
-   * exist, because they come later in the submission. These values come in the form
-   * ||pointer||. We have to temporarily null out the field, then store the pointer for
-   * later.
+   * Field set handler.
+   *
+   * Override set handler to trap pointers in to_taxon_meaning_id to
+   * taxon_meanings that don't yet exist, because they come later in the
+   * submission. These values come in the form ||pointer||. We have to
+   * temporarily null out the field, then store the pointer for later.
    */
-  public function __set($key, $value)
-  {
-    if (substr($key,-16) === 'to_taxon_meaning_id' && preg_match('/^||.+||$/', $value))
-    {
+  public function __set($key, $value) {
+    if (substr($key, -16) === 'to_taxon_meaning_id' && preg_match('/^||.+||$/', $value)) {
       $this->to_taxon_meaning_id_pointer = str_replace('||', '', $value);
-      $value = null;
+      $value = NULL;
     }
     parent::__set($key, $value);
   }
 
   /**
-   * After submission, if we stored a pointer to a to_taxon_meaning_id that does not yet exist,
-   * then store it in a static array with the taxon_meaning_association_id so we can fill it in at
-   * the end of the submission.
+   * Post submission handler.
+   *
+   * After submission, if we stored a pointer to a to_taxon_meaning_id
+   * that does not yet exist, then store it in a static array with the
+   * taxon_meaning_association_id so we can fill it in at the end of the
+   * submission.
    */
   public function postSubmit($isInsert) {
     if ($this->to_taxon_meaning_id_pointer) {
@@ -79,7 +87,7 @@ class Taxon_association_Model extends ORM {
       $this->to_taxon_meaning_id_pointer = FALSE;
       kohana::log('debug', 'Pointers: ' . var_export(self::$to_taxon_meaning_id_pointers, TRUE));
     }
-    return true;
+    return TRUE;
   }
 
   // define underlying fields which the user would not normally see, e.g. so they can be hidden from selection
