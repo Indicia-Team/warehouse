@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -13,24 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Taxon Designations
- * @subpackage Plugins
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	https://github.com/indicia-team/warehouse/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link https://github.com/indicia-team/warehouse/
  */
 
 /**
  * Adds a tab for viewing designations for the selected taxon.
  * @todo Complete this tab
- * @return <type>
+ * @return array
  */
 function taxon_designations_extend_ui() {
   return array(array(
-    'view'=>'taxa_taxon_list/taxa_taxon_list_edit',
-    'type'=>'tab',
-    'controller'=>'taxa_taxon_designation/index',
-    'title'=>'Designations'
+    'view' => 'taxa_taxon_list/taxa_taxon_list_edit',
+    'type' => 'tab',
+    'controller' => 'taxa_taxon_designation/index',
+    'title' => 'Designations',
   ));
 }
 
