@@ -64,6 +64,11 @@ $id = html::initial_value($values, 'taxon_association:id');
         'lookupValues' => $other_data['impact_terms'],
       ]);
     }
+    echo data_entry_helper::textarea([
+      'label' => 'Comment',
+      'fieldname' => 'taxon_association:comment',
+      'default' => html::initial_value($values, 'taxon_association:comment'),
+    ]);
     ?>
   </fieldset>
   <?php

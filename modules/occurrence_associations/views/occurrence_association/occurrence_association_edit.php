@@ -64,6 +64,11 @@ $id = html::initial_value($values, 'occurrence_association:id');
         'lookupValues' => $other_data['impact_terms'],
       ]);
     }
+    echo data_entry_helper::textarea([
+      'label' => 'Comment',
+      'fieldname' => 'occurrence_association:comment',
+      'default' => html::initial_value($values, 'occurrence_association:comment'),
+    ]);
     ?>
   </fieldset>
   <?php
