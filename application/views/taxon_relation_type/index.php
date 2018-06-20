@@ -22,8 +22,10 @@
  * @link https://github.com/indicia-team/warehouse
  */
 
-echo $grid;
 ?>
+<div class="alert alert-info">Use this page to configure the types of relationships that may occur between taxon names
+  as a result of taxonomic changes, e.g. lumping and splitting.</div>
+<?php echo $grid; ?>
 <form action="<?php echo url::site() . 'taxon_relation_type/create'; ?>" method="post">
   <input type="submit" value="New Taxon Relation Type" class="btn btn-primary" />
 </form>
