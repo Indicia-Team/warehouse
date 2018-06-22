@@ -132,26 +132,40 @@ CTRL;
 }
 
   /**
-  * Output a thumbnail or other size of an image, with a link to the full sized image suitable
-  * for the fancybox jQuery plugin.
-  * @param string $filename Name of a file within the upload folder.
-  * @param string $size Name of the file size, normally thumb or med depending on the image handling config.
-  * @return string HTML to insert into the page, with the anchored image element.
-  */
-  public static function sized_image($filename, $size='thumb') {
+   * Outputs an image.
+   *
+   * Output a thumbnail or other size of an image, with a link to the full
+   * sized image suitable for the fancybox jQuery plugin.
+   *
+   * @param string $filename
+   *   Name of a file within the upload folder.
+   * @param string $size
+   *   Name of the file size, normally thumb or med depending on the image
+   *   handling config.
+   *
+   * @return string
+   *   HTML to insert into the page, with the anchored image element.
+   */
+  public static function sized_image($filename, $size = 'thumb') {
+    helper_base::add_resource('fancybox');
     $img_config = kohana::config('indicia.image_handling');
-    // Dynamically build the HTML sizing attrs for the thumbnail from the config. We may not know
-    // both dimensions.
+    // Dynamically build the HTML sizing attrs for the thumbnail from the
+    // config. We may not know both dimensions.
     $sizing = '';
     if ($img_config && array_key_exists($size, $img_config)) {
-      if (array_key_exists('width', $img_config['thumb']))
-        $sizing = ' width="'.$img_config[$size]['width'].'"';
-      if (array_key_exists('height', $img_config[$size]))
+      if (array_key_exists('width', $img_config['thumb'])) {
+        $sizing = ' width="' . $img_config[$size]['width'] . '"';
+      }
+      if (array_key_exists('height', $img_config[$size])) {
         $sizing .= ' height="'.$img_config[$size]['height'].'"';
-
+      }
     }
-    return '<a href="'.url::base()."upload/$filename\" class=\"fancybox\">".
-        '<img src="'.url::base()."upload/$size-$filename\"$sizing /></a>";
+    $base = url::base();
+    return <<<HTML
+<a href="{$base}upload/$filename" class="fancybox">
+  <img src="{$base}upload/$size-$filename"$sizing />
+</a>
+HTML;
   }
 
 }

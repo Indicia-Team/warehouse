@@ -70,6 +70,7 @@ $config['termlists_terms']['update'] = "update cache_termlists_terms ctlt
       preferred_language_iso=lpref.iso,
       preferred_language=lpref.language,
       meaning_id=tltpref.meaning_id,
+      preferred_image_path=tltpref.image_path,
       cache_updated_on=now()
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id
@@ -85,7 +86,7 @@ $config['termlists_terms']['insert'] = "insert into cache_termlists_terms (
       id, preferred, termlist_id, termlist_title, website_id,
       preferred_termlists_term_id, parent_id, sort_order,
       term, language_iso, language, preferred_term, preferred_language_iso, preferred_language, meaning_id,
-      cache_created_on, cache_updated_on
+      preferred_image_path, cache_created_on, cache_updated_on
     )
     select distinct on (tlt.id) tlt.id, tlt.preferred,
       tl.id as termlist_id, tl.title as termlist_title, tl.website_id,
@@ -94,7 +95,7 @@ $config['termlists_terms']['insert'] = "insert into cache_termlists_terms (
       l.iso as language_iso, l.language,
       tpref.term as preferred_term,
       lpref.iso as preferred_language_iso, lpref.language as preferred_language, tltpref.meaning_id,
-      now(), now()
+      tltpref.image_path, now(), now()
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id
     #join_needs_update#

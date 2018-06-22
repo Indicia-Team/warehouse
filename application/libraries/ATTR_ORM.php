@@ -54,9 +54,12 @@ abstract class ATTR_ORM extends Valid_ORM {
         'deleted',
         'description',
         'caption_i18n',
+        'description_i18n',
         'term_name',
         'term_identifier',
         'allow_ranges',
+        'unit',
+        'image_path',
       )
     );
     $array->add_rules('caption', 'required');
@@ -290,7 +293,7 @@ abstract class ATTR_ORM extends Valid_ORM {
    * Override set handler to store caption translations as JSON.
    */
   public function __set($key, $value) {
-    if ($key === 'caption_i18n' && !empty($value)) {
+    if (($key === 'caption_i18n' || $key === 'description_i18n') && !empty($value)) {
       $list = explode("\n", $value);
       $obj = [];
       foreach ($list as $item) {
@@ -315,7 +318,7 @@ abstract class ATTR_ORM extends Valid_ORM {
    */
   public function __get($column) {
     $value = parent::__get($column);
-    if ($column === 'caption_i18n' && $value !== NULL) {
+    if (($column === 'caption_i18n' || $column === 'description_i18n') && $value !== NULL) {
       $obj = json_decode($value, TRUE);
       if (!empty($obj)) {
         $list = [];

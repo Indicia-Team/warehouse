@@ -27,7 +27,7 @@ warehouse::loadHelpers(['data_entry_helper']);
 $id = html::initial_value($values, 'termlists_term:id');
 $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 ?>
-<form id="termlists-term-edit" action="<?php echo url::site() . 'termlists_term/save' ?>" method="post">
+<form id="termlists-term-edit" enctype="multipart/form-data" action="<?php echo url::site() . 'termlists_term/save' ?>" method="post">
   <fieldset>
     <legend>Term Details<?php echo $metadata ?></legend>
     <input type="hidden" name="termlists_term:id" value="<?php echo $id; ?>" />
@@ -50,6 +50,23 @@ $readAuth = data_entry_helper::get_read_auth(0 - $_SESSION['auth_user']->id, koh
       'valueField' => 'id',
       'captionField' => 'language',
       'extraParams' => $readAuth,
+    ]);
+    $helpText = <<<TXT
+If an image is required to explain the term, select it here. The image can be displayed alongside the input control
+n the data entry form.
+TXT;
+    echo data_entry_helper::image_upload(array(
+      'fieldname' => "image_upload",
+      'label' => 'Image',
+      'helpText' => $helpText,
+      'existingFilePreset' => 'med',
+    ));
+    if (html::initial_value($values, "termlists_term:image_path")) {
+      echo html::sized_image(html::initial_value($values, "termlists_term:image_path")) . '</br>';
+    }
+    echo data_entry_helper::hidden_text([
+      'fieldname' => "termlists_term:image_path",
+      'default' => html::initial_value($values, "termlists_term:image_path"),
     ]);
     $parentId = html::initial_value($values, 'termlists_term:parent_id');
     if ($parentId) {

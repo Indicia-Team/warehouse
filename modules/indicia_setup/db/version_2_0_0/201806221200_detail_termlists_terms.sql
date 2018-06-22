@@ -15,7 +15,8 @@ SELECT tlt.id,
     tlt.updated_by_id,
     u.username AS updated_by,
     l.iso,
-    tl.external_key AS termlist_external_key
+    tl.external_key AS termlist_external_key,
+    tltpref.image_path AS preferred_image_path
    FROM termlists_terms tlt
      JOIN termlists tl ON tl.id = tlt.termlist_id AND tl.deleted = false
      JOIN terms t ON t.id = tlt.term_id AND t.deleted = false
@@ -24,7 +25,7 @@ SELECT tlt.id,
      JOIN users u ON u.id = tlt.updated_by_id
      JOIN termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.termlist_id=tlt.termlist_id and tltpref.preferred=true
      LEFT JOIN termlists_terms tltppref ON tltppref.id = tltpref.parent_id AND tltppref.deleted=false
-     LEFT JOIN (termlists_terms tltp 
+     LEFT JOIN (termlists_terms tltp
        JOIN terms tp ON tp.id = tltp.term_id AND tp.deleted=false
      ) ON tltp.meaning_id=tltppref.meaning_id AND tltp.termlist_id=tltppref.termlist_id AND tltp.deleted=false
        AND tp.language_id=t.language_id
