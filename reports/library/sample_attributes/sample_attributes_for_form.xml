@@ -41,8 +41,11 @@
   <columns>
     <column name="attribute_id" display="ID" sql="a.id" datatype="integer" />
     <column name="sample_id" display="Sample ID" sql="av.sample_id" datatype="integer" />
-    -- Needs i18n
     <column name="caption" display="Caption" sql="a.caption" datatype="text" />
+    <column name="caption_i18n" display="Caption i18n" sql="a.caption_i18n::text" datatype="text" />
+    <column name="description" display="Description" sql="a.description" datatype="text" />
+    <column name="description_i18n" display="Description i18n" sql="a.description_i18n::text" datatype="text" />
+    <column name="image_path" display="Image" sql="a.image_path" datatype="text" />
     <column name="data_type" display="Data type" sql="a.data_type" datatype="text" />
     <column name="termlist_id" display="Termlist ID" sql="a.termlist_id" datatype="integer" />
     <column name="validation_rules" display="Validation rules" datatype="text"
