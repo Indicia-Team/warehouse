@@ -38,6 +38,7 @@ $enabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
 <?php endif; ?>
 <?php echo $metadata; ?>
 <form id="custom-attribute-edit"
+      enctype="multipart/form-data"
       action="<?php echo url::site() . "$other_data[controllerpath]/save"; ?>"
       method="post">
   <input type="hidden" name="<?php echo $model->object_name; ?>:id" value="<?php echo $id; ?>" />
@@ -55,9 +56,9 @@ $enabled = ($disabled_input === 'YES') ? 'disabled="disabled"' : '';
     if (array_key_exists('caption_i18n', $this->model->as_array())) {
       $defaultLang = kohana::config('indicia.default_lang');
       $helpText = <<<TXT
-If you need to specify the localise the attribute caption into different languages for use in report outputs, specify
-the caption above using language code $defaultLang and enter additional translations here. Enter one per line, followed
-by a pipe (|) character then the ISO language code. E.g.<br/>
+If you need to localise the attribute caption into different languages for use in report outputs, specify the caption
+above using language code $defaultLang and enter additional translations here. Enter one per line, followed by a pipe
+(|) character then the ISO language code. E.g.<br/>
 Compter|fra<br/>
 Anzahl|deu<br/>
 TXT;
@@ -67,6 +68,15 @@ TXT;
         'default' => html::initial_value($values, "$model->object_name:caption_i18n"),
         'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
         'helpText' => $helpText,
+      ]);
+    }
+    if (array_key_exists('unit', $this->model->as_array())) {
+      echo data_entry_helper::text_input([
+        'fieldname' => "$model->object_name:unit",
+        'label' => 'Unit',
+        'default' => html::initial_value($values, "$model->object_name:unit"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'helpText' => 'Specify the unit or unit abbreviation where appropriage (e.g. mm).',
       ]);
     }
     if (array_key_exists('term_name', $this->model->as_array())) {
@@ -103,6 +113,42 @@ TXT;
         'label' => 'Description',
         'default' => html::initial_value($values, "$model->object_name:description"),
         'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+      ]);
+    }
+    if (array_key_exists('description_i18n', $this->model->as_array())) {
+      $defaultLang = kohana::config('indicia.default_lang');
+      $helpText = <<<TXT
+If you need to localise the attribute description into different languages for use in report outputs, specify the
+description above using language code $defaultLang and enter additional translations here. Enter one per line, followed
+by a pipe (|) character then the ISO language code. E.g.<br/>
+Comte d'organismes|fra<br/>
+Anzahl der Organismen|deu<br/>
+TXT;
+      echo data_entry_helper::textarea([
+        'fieldname' => "$model->object_name:description_i18n",
+        'label' => 'Description in other languages',
+        'default' => html::initial_value($values, "$model->object_name:description_i18n"),
+        'disabled' => $disabled_input === 'YES' ? 'disabled' : '',
+        'helpText' => $helpText,
+      ]);
+    }
+    if (array_key_exists('image_path', $this->model->as_array())) {
+      $helpText = <<<TXT
+If an image is required to explain the attribute, select it here. The image can be displayed alongside the input control
+on the data entry form.
+TXT;
+      echo data_entry_helper::image_upload(array(
+        'fieldname' => "image_upload",
+        'label' => 'Image',
+        'helpText' => $helpText,
+        'existingFilePreset' => 'med',
+      ));
+      if (html::initial_value($values, "$model->object_name:image_path")) {
+        echo html::sized_image(html::initial_value($values, "$model->object_name:image_path")) . '</br>';
+      }
+      echo data_entry_helper::hidden_text([
+        'fieldname' => "$model->object_name:image_path",
+        'default' => html::initial_value($values, "$model->object_name:image_path"),
       ]);
     }
     if (method_exists($this->model, 'get_system_functions')) {
