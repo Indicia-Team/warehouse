@@ -73,6 +73,7 @@ class Termlists_term_Model extends Base_Name_Model {
       'preferred',
       'deleted',
       'source_id',
+      'image_path',
     );
     return parent::validate($array, $save);
   }
@@ -192,11 +193,15 @@ class Termlists_term_Model extends Base_Name_Model {
    * for both occurrences and samples, so create the work queue entries
    * required to perform the updates in the background.
    *
-   * @param integer $meaning_id
+   * @param int $meaning_id
    *   Term meaning ID being changed.
    */
   private function enqueueCustomAttributeJsonUpdate($meaning_id) {
+    // The comments at the top of these insert statements prevent the kohana
+    // DB layer from treating these as inserts and looking for lastval(),
+    // which causes errors when the work_queue task already exists.
     $sql = <<<SQL
+-- insert if not already exists
 INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
 SELECT DISTINCT 'task_cache_builder_attrs_occurrences', 'occurrences', o.id, 2, 60, now()
 FROM occurrences o
@@ -210,6 +215,7 @@ AND q.id IS NULL;
 SQL;
     $this->db->query($sql);
     $sql = <<<SQL
+-- insert if not already exists
 INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
 SELECT DISTINCT 'task_cache_builder_attrs_samples', 'samples', s.id, 2, 60, now()
 FROM samples s
