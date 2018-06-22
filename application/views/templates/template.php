@@ -70,7 +70,9 @@ if (isset($jsFile)) {
 }
 ?>
 <script type="text/javascript">
-// @todo Do we need a delegate event to hook up FancyBox after any Ajax calls?
+$(document).ready(function() {
+  $('a.fancybox').fancybox({ afterLoad: indiciaFns.afterFancyboxLoad });
+});
 </script>
 </head>
 <body>
