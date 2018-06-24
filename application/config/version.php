@@ -29,8 +29,12 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
+<<<<<<< HEAD
 $config['version'] = '2.0.0';
 
+=======
+$config['version'] = '1.60.2';
+>>>>>>> hotfix-branches
 /**
  * Version release date.
  *
