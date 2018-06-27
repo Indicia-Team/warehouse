@@ -14,35 +14,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
- * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link http://code.google.com/p/indicia/
  */
 
 /**
  * Helper class for testing the system configuration.
- *
- * @package	Core
- * @subpackage helpers
  */
 class config_test {
 
   /**
    * Check the system configuration.
    *
-   * @param boolean $problems_only
+   * @param bool $problems_only
    *   If true then only reports on problems, not successful checks. Defaults to false.
    *
-   * @param boolean $force
+   * @param bool $force
    *   If true then forces a check even if the system configuration has been completed.
    */
   public static function check_config($problems_only = FALSE, $force = FALSE) {
     $result = array();
-    $hasConfig = !empty(kohana::config_load('indicia', FALSE));
-    // If the Indicia config is present, then everything has passed, so we can skip the tests unless it is being forced.
-    if ($force || !$hasConfig) {
+    $config = kohana::config_load('indicia', FALSE);
+    // If the Indicia config is present, then everything has passed, so we can
+    // skip the tests unless it is being forced.
+    if ($force || empty($config)) {
       self::check_php_version($result, $problems_only);
       self::check_postgres($result, $problems_only);
       self::check_curl($result, $problems_only);
@@ -60,29 +56,31 @@ class config_test {
    * Ensure that the PHP version running on the server is at least 5.2, which supports
    * JSON properly.
    *
-   * @param array $messages List of messages that any information should be appended to.
-   * @param boolean $problems_only Set to true to report only the problems, not the successful
-   * checks. False reports both failures and successes.
+   * @param array $messages
+   *   List of messages that any information should be appended to.
+   * @param bool $problems_only
+   *   Set to true to report only the problems, not the successful checks.
+   *   False reports both failures and successes.
    */
   public static function check_db(&$messages, $problems_only) {
     // The Indicia config file is only created after a successful db creation.
-    $config=kohana::config_load('indicia', false);
+    $config = kohana::config_load('indicia', FALSE);
     if (!$config) {
       $problem = array(
         'title' => 'Database configuration',
         'description' => 'Database configuration options need to be set allowing the Indicia Warehouse to access your ' .
             'database. Indicia will then install the required database tables for you.',
-        'success' => false
+        'success' => FALSE,
       );
-      $other_problems=false;
-      for ($i=0; $i<count($messages); $i++) {
-        $other_problems = $other_problems || ($messages[$i]['success']==false);
+      $other_problems = FALSE;
+      for ($i = 0; $i < count($messages); $i++) {
+        $other_problems = $other_problems || ($messages[$i]['success'] == FALSE);
       }
       if (!$other_problems) {
         // No other problems, so can proceed to install the database.
         $problem['action'] = array(
           'title' => 'Configure database',
-          'link' => 'config_db'
+          'link' => 'config_db',
         );
       }
       else {
@@ -95,7 +93,7 @@ class config_test {
       array_push($messages, array(
         'title' => 'Database configuration',
         'description' => 'The Indicia Warehouse database has been configured and installed.',
-        'success' => TRUE
+        'success' => TRUE,
       ));
     }
   }
@@ -115,7 +113,7 @@ class config_test {
           'title' => 'Email configuration',
           'description' => 'Email configuration has been skipped so the server may not be able to send ' .
               'forgotten password reminder emails.',
-          'success' => TRUE
+          'success' => TRUE,
         ));
       }
     } else {
@@ -128,8 +126,8 @@ class config_test {
           'success' => FALSE,
           'action' => array(
             'title' => 'Configure email',
-            'link' => 'config_email')
-
+            'link' => 'config_email'
+          ),
         ));
       }
       else if (!array_key_exists('test_result', $email_config) ||
@@ -138,10 +136,10 @@ class config_test {
           'title' => 'Email configuration',
           'description' => 'Email configuration has not been tested. The Indicia Warehouse might not be able to send emails to users ' .
               'who forget their passwords.',
-          'success' => false,
+          'success' => FALSE,
           'action' => array(
             'title' => 'Configure email',
-            'link' => 'config_email'
+            'link' => 'config_email',
           )
         ));
       }
@@ -149,7 +147,7 @@ class config_test {
         array_push($messages, array(
           'title' => 'Email configuration',
           'description' => 'Configuration of server side emails completed.',
-          'success' => TRUE
+          'success' => TRUE,
         ));
       }
     }
@@ -159,9 +157,11 @@ class config_test {
    * Ensure that the PHP version running on the server is at least 5.2, which supports
    * JSON properly.
    *
-   * @param array $messages List of messages that any information should be appended to.
-   * @param boolean $problems_only Set to true to report only the problems, not the successful
-   * checks. False reports both failures and successes.
+   * @param array $messages
+   *   List of messages that any information should be appended to.
+   * @param bool $problems_only
+   *   Set to true to report only the problems, not the successful checks.
+   *   False reports both failures and successes.
    */
   private static function check_php_version(&$messages, $problems_only) {
     // PHP_VERSION_ID is available as of PHP 5.2.7, if our
@@ -170,18 +170,20 @@ class config_test {
         $version = PHP_VERSION;
         define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
     }
-    if (PHP_VERSION_ID<50200) {
+    if (PHP_VERSION_ID < 50200) {
       array_push($messages, array(
         'title' => 'PHP Version',
-        'description' => 'Your PHP version is '.phpversion().' which does not support JSON communication with the online recording websites. '.
-            'Please upgrade the PHP installation on this web server to at least version 5.2.',
-        'success' => false
+        'description' => 'Your PHP version is ' . phpversion() . ' which does not support JSON communication with ' .
+          'the online recording websites. Please upgrade the PHP installation on this web server to at least version ' .
+          '5.2.',
+        'success' => FALSE,
       ));
-    } elseif (!$problems_only) {
+    }
+    elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'PHP Version',
-        'description' => 'PHP version is '.phpversion(),
-        'success' => true
+        'description' => 'PHP version is ' . phpversion(),
+        'success' => TRUE,
       ));
     }
   }
@@ -189,24 +191,27 @@ class config_test {
   /**
    * Ensure that the PHP PostgreSQL extensions are available.
    *
-   * @param array $messages List of messages that any information should be appended to.
-   * @param boolean $problems_only Set to true to report only the problems, not the successful
-   * checks. False reports both failures and successes.
+   * @param array $messages
+   *   List of messages that any information should be appended to.
+   * @param bool $problems_only
+   *   Set to true to report only the problems, not the successful checks.
+   *   False reports both failures and successes.
    */
   private static function check_postgres(&$messages, $problems_only) {
-    if(!function_exists('pg_version')) {
+    if (!function_exists('pg_version')) {
       array_push($messages, array(
         'title' => 'PostgreSQL PHP Extensions',
         'description' => 'The PostgreSQL extensions are not available on this installation of PHP. To fix this, find your php.ini file in the PHP installation folder and ' .
             'find the line <strong>;extension=php_pgsql.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
             'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.',
-        'success' => false
+        'success' => FALSE,
       ));
-    } elseif (!$problems_only) {
+    }
+    elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'PostgreSQL PHP Extensions',
         'description' => 'The PostgreSQL extensions for PHP are available on this PHP installation.',
-        'success' => true
+        'success' => TRUE,
       ));
     }
 
@@ -215,9 +220,11 @@ class config_test {
   /**
    * Ensure that the cUrl library is installed.
    *
-   * @param array $messages List of messages that any information should be appended to.
-   * @param boolean $problems_only Set to true to report only the problems, not the successful
-   * checks. False reports both failures and successes.
+   * @param array $messages
+   *   List of messages that any information should be appended to.
+   * @param boolean $problems_only
+   *   Set to true to report only the problems, not the successful checks.
+   *   False reports both failures and successes.
    */
   private static function check_curl(&$messages, $problems_only) {
     if (!function_exists('curl_exec')) {
@@ -226,13 +233,14 @@ class config_test {
         'description' => 'The cUrl library is not installed on this web server. To fix this, find your php.ini file in the PHP installation folder and ' .
             'find the line <strong>;extension=php_curl.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
             'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.',
-        'success' => false
+        'success' => FALSE,
       ));
-    } elseif (!$problems_only) {
+    }
+    elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'cUrl Library',
         'description' => 'The cUrl library is installed.',
-        'success' => true
+        'success' => TRUE,
       ));
     }
   }
@@ -251,13 +259,14 @@ class config_test {
         'description' => 'The gd2 library is not installed on this web server. To fix this, find your php.ini file in the PHP installation folder and ' .
             'find the line <strong>;extension=php_gd2.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
             'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.',
-        'success' => false
+        'success' => FALSE,
       ));
-    } elseif (!$problems_only) {
+    }
+    elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'gd2 Library',
         'description' => 'The gd2 library is installed.',
-        'success' => true
+        'success' => TRUE,
       ));
     }
   }
@@ -300,16 +309,18 @@ MSG;
    * permissions. Public so that it can be accessed individually by the ack_permissions
    * page.
    *
-   * @param array $messages List of messages that any information should be appended to.
-   * @param boolean $problems_only Set to true to report only the problems, not the successful
-   * checks. False reports both failures and successes.
+   * @param array $messages
+   *   List of messages that any information should be appended to.
+   * @param bool $problems_only
+   *   Set to true to report only the problems, not the successful checks.
+   *   False reports both failures and successes.
    */
   public static function check_dir_permissions(&$messages, $problems_only) {
     // list of messages about each directory we need access to.
-    $good_dirs=array();
-    $bad_dirs=array();
-    $readonly=true;
-    $writeable=false;
+    $good_dirs = array();
+    $bad_dirs = array();
+    $readonly = TRUE;
+    $writeable = FALSE;
     self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__ )))) . '/application/config',
           'the installation settings to be stored correctly',
@@ -323,7 +334,7 @@ MSG;
         array_push($messages, array(
           'title' => 'Directory Access',
           'description' => 'Non-essential problems with the directory access permissions have been acknowledged by you.',
-          'success' => true
+          'success' => TRUE,
         ));
       }
     }
@@ -336,7 +347,7 @@ MSG;
           dirname(dirname(dirname(dirname(__file__)))) . '/client_helpers',
           'the settings for the data entry helper classes to be stored',
           'the settings for the data entry helper classes cannot be stored');
-      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'data upload',
+      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'data upload',
           dirname(dirname(dirname(dirname(__file__)))) . '/client_helpers/upload',
           'data to be uploaded',
           'data cannot be uploaded');
@@ -357,7 +368,7 @@ MSG;
         array_push($messages, array(
           'title' => 'Correct Directory Access',
           'description' => implode('<br/>', $good_dirs),
-          'success' => true
+          'success' => TRUE,
         ));
       }
       if (count($bad_dirs) > 0) {
@@ -365,7 +376,7 @@ MSG;
           'title' => 'Directory Access',
           'description' => '<ul><li>' . implode('</li><li>', $bad_dirs) . '</li></ul>',
           'success' => FALSE,
-          'action' => array('title' => 'Acknowledge', 'link' => 'ack_permissions')
+          'action' => array('title' => 'Acknowledge', 'link' => 'ack_permissions'),
         ));
       }
     }
@@ -375,13 +386,13 @@ MSG;
    * Test the access rights to a specific directory. Appends pass and fail messages to the $good_dirs and
    * $bad_dirs arrays.
    *
-   * @param boolean $readonly
+   * @param bool $readonly
    *   Set to true to check that a directory is readable but not writeable. Set to false to
    *   check a directory can be written.
    * @param array $good_dirs
    *   The array which pass messages will be appended to.
    * @param array $bad_dirs
-   *    The array which fail messages will be appended to.
+   *   The array which fail messages will be appended to.
    * @param string $folder_name
    *   The natural language description of the tested folder.
    * @param string $pass
@@ -392,17 +403,21 @@ MSG;
   private static function check_dir_permission($readonly, &$good_dirs, &$bad_dirs, $folder_name, $dir, $pass, $fail) {
     $access_str = $readonly ? 'readable' : 'writeable';
     $dir = realpath($dir);
-    if (!is_readable($dir))
+    if (!is_readable($dir)) {
       array_push($bad_dirs,
           "The $folder_name directory at $dir isn't readable by PHP scripts. This means that $fail.");
-    elseif ($readonly && is_writeable($dir))
+    }
+    elseif ($readonly && is_writeable($dir)) {
       array_push($bad_dirs, "The $folder_name directory at $dir is writeable. It should be readonly otherwise " .
             "it presents an unnecessary security risk.");
-    elseif (!$readonly && !is_writeable($dir))
+    }
+    elseif (!$readonly && !is_writeable($dir)) {
       array_push($bad_dirs,
           "The $folder_name directory at $dir isn't writeable by PHP scripts. This means that $fail.");
-    else
+    }
+    else {
       array_push($good_dirs, "The $folder_name directory is $access_str to allow $pass.");
+    }
   }
 
 }
