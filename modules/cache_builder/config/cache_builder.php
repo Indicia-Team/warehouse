@@ -770,12 +770,22 @@ WHERE s.id=s_update.id
 ";
 
 $config['samples']['update']['functional_media'] = "
-UPDATE cache_samples_functional u
-SET media_count=(SELECT COUNT(sm.*)
-FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
-FROM samples s
+SELECT o.id, COUNT(om.*) AS count
+INTO TEMPORARY media_counts
+FROM cache_samples_functional s
 #join_needs_update#
-WHERE s.id=u.id
+JOIN sample_media m ON m.sample_id=s.id AND m.deleted=false
+GROUP BY s.id;
+
+CREAT INDEX ix_temp ON media_counts;
+
+UPDATE cache_samples_functional s
+SET media_count=m.count
+FROM media_counts m
+WHERE m.id=s.id
+AND m.count<>s.media_count;
+
+DROP TABLE media_counts;
 ";
 
 $config['samples']['update']['functional_sensitive'] = "
@@ -955,14 +965,7 @@ WHERE s.deleted=false
 AND cs.id IS NULL
 ";
 
-$config['samples']['insert']['functional_media'] = "
-UPDATE cache_samples_functional u
-SET media_count=(SELECT COUNT(sm.*)
-FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
-FROM samples s
-#join_needs_update#
-WHERE s.id=u.id
-";
+$config['samples']['insert']['functional_media'] = $config['samples']['update']['functional_media'];
 
 $config['samples']['insert']['functional_sensitive'] = "
 UPDATE cache_samples_functional
@@ -1413,13 +1416,22 @@ WHERE cache_occurrences_functional.id=o.id
 ";
 
 $config['occurrences']['update']['functional_media'] = "
-UPDATE cache_occurrences_functional u
-SET media_count=(SELECT COUNT(om.*)
-FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
-FROM occurrences o
+SELECT o.id, COUNT(om.*) AS count
+INTO TEMPORARY media_counts
+FROM cache_occurrences_functional o
 #join_needs_update#
-WHERE o.id=u.id
-";
+JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
+GROUP BY o.id;
+
+CREAT INDEX ix_temp ON media_counts;
+
+UPDATE cache_occurrences_functional o
+SET media_count=m.count
+FROM media_counts m
+WHERE m.id=o.id
+AND m.count<>o.media_count;
+
+DROP TABLE media_counts;";
 
 $config['occurrences']['update']['functional_sensitive'] = "
 UPDATE cache_samples_functional cs
@@ -1659,14 +1671,7 @@ WHERE o.deleted=false
 AND co.id IS NULL
 ";
 
-$config['occurrences']['insert']['functional_media'] = "
-UPDATE cache_occurrences_functional u
-SET media_count=(SELECT COUNT(om.*)
-FROM occurrence_media om WHERE om.occurrence_id=u.id AND om.deleted=false)
-FROM occurrences o
-#join_needs_update#
-WHERE o.id=u.id
-";
+$config['occurrences']['insert']['functional_media'] = $config['occurrences']['update']['functional_media'];
 
 $config['occurrences']['insert']['functional_sensitive'] = "
 UPDATE cache_samples_functional cs
