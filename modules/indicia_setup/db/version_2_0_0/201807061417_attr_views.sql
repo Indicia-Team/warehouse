@@ -659,9 +659,11 @@ CREATE OR REPLACE VIEW list_taxa_taxon_list_attribute_values AS
     a.termlist_id,
     NULL::unknown AS iso,
     tlttla.taxon_list_id,
+    tl.website_id,
     rc.term as reporting_category
   FROM taxa_taxon_list_attributes a
   JOIN taxon_lists_taxa_taxon_list_attributes tlttla ON tlttla.taxa_taxon_list_attribute_id = a.id AND tlttla.deleted = false
+  JOIN taxon_lists tl on tl.id=tlttla.taxon_list_id AND tl.deleted=false
   LEFT JOIN cache_termlists_terms rc on rc.id=a.reporting_category_id
   WHERE a.deleted = false
 UNION
@@ -724,9 +726,11 @@ UNION
     a.termlist_id,
     l.iso,
     tlttla.taxon_list_id,
+    tl.website_id,
     rc.term as reporting_category
   FROM taxa_taxon_lists ttl
   JOIN taxon_lists_taxa_taxon_list_attributes tlttla ON tlttla.taxon_list_id = ttl.taxon_list_id AND tlttla.deleted = false
+  JOIN taxon_lists tl on tl.id=tlttla.taxon_list_id AND tl.deleted=false
   JOIN taxa_taxon_list_attributes a ON a.id = tlttla.taxa_taxon_list_attribute_id AND a.deleted = false
   LEFT JOIN taxa_taxon_list_attribute_values av ON av.taxa_taxon_list_attribute_id = a.id AND av.taxa_taxon_list_id = ttl.id AND av.deleted = false
   LEFT JOIN (termlists_terms tt
