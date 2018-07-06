@@ -777,7 +777,7 @@ FROM cache_samples_functional s
 JOIN sample_media m ON m.sample_id=s.id AND m.deleted=false
 GROUP BY s.id;
 
-CREAT INDEX ix_temp ON media_counts;
+CREATE INDEX ix_temp ON media_counts;
 
 UPDATE cache_samples_functional s
 SET media_count=m.count
@@ -1423,7 +1423,7 @@ FROM cache_occurrences_functional o
 JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
 GROUP BY o.id;
 
-CREAT INDEX ix_temp ON media_counts;
+CREATE INDEX ix_temp ON media_counts;
 
 UPDATE cache_occurrences_functional o
 SET media_count=m.count
