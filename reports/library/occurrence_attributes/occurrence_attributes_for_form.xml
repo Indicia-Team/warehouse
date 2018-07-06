@@ -6,7 +6,7 @@
   <query website_filter_field="aw.website_id" count_field="a.*">
     SELECT #columns#
     FROM occurrence_attributes_websites aw
-    JOIN occurrence_attributes a on a.id=aw.occurrence_attribute_id
+    JOIN occurrence_attributes a on a.id=aw.occurrence_attribute_id and a.deleted=false
     JOIN occurrence_attribute_taxon_restrictions tr ON tr.occurrence_attributes_website_id=aw.id AND tr.deleted=false
     JOIN cache_taxon_paths ctp on ctp.path @> ARRAY[tr.restrict_to_taxon_meaning_id]
     JOIN cache_taxa_taxon_lists cttlany ON cttlany.external_key=ctp.external_key
