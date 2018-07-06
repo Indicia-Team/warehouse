@@ -770,7 +770,7 @@ WHERE s.id=s_update.id
 ";
 
 $config['samples']['update']['functional_media'] = "
-SELECT o.id, COUNT(om.*) AS count
+SELECT o.id, COUNT(m.*) AS count
 INTO TEMPORARY media_counts
 FROM cache_samples_functional s
 #join_needs_update#
@@ -1416,7 +1416,7 @@ WHERE cache_occurrences_functional.id=o.id
 ";
 
 $config['occurrences']['update']['functional_media'] = "
-SELECT o.id, COUNT(om.*) AS count
+SELECT o.id, COUNT(m.*) AS count
 INTO TEMPORARY media_counts
 FROM cache_occurrences_functional o
 #join_needs_update#
