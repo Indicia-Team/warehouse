@@ -58,7 +58,8 @@ class Taxa_taxon_list_attribute_Controller extends Attr_Base_Controller {
       ->join('taxon_lists_taxa_taxon_list_attributes as tla', [
         'tla.taxon_list_id' => 'tl.id',
         'tla.deleted' => FALSE,
-        'tla.taxa_taxon_list_attribute_id' => $values['taxa_taxon_list_attribute:id'],
+        // If no existing record, deliberately join to nothing.
+        'tla.taxa_taxon_list_attribute_id' => empty($values['taxa_taxon_list_attribute:id']) ? -1 : $values['taxa_taxon_list_attribute:id'],
       ], NULL, 'LEFT')
       ->where('tl.deleted', 'f');
     if (!is_null($this->auth_filter) && $this->auth_filter['field'] === 'website_id') {
