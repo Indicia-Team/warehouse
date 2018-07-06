@@ -231,6 +231,11 @@ CREATE OR REPLACE VIEW list_taxa_taxon_list_attributes AS
     fsb2.weight as outer_block_weight,
     fsb.weight as inner_block_weight,
     tla.weight as weight,
+    (
+      SELECT string_agg(restrict_to_taxon_meaning_id::text || '|' || COALESCE(restrict_to_stage_term_meaning_id::text, ''), ';')
+      FROM taxa_taxon_list_attribute_taxon_restrictions tr
+      WHERE tr.taxon_lists_taxa_taxon_list_attribute_id=tla.id
+    ) as taxon_restrictions,
     rc.term as reporting_category
   FROM taxa_taxon_list_attributes a
     LEFT JOIN taxon_lists_taxa_taxon_list_attributes tla ON tla.taxa_taxon_list_attribute_id=a.id AND tla.deleted=false
