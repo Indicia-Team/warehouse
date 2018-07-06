@@ -4,7 +4,7 @@ CREATE OR REPLACE VIEW detail_taxa_taxon_lists AS
      ttl.description AS description_in_list, t.description AS general_description, ttl.parent_id, tp.taxon AS parent,
      ti.path AS image_path, ti.caption AS image_caption, ttl.created_by_id, c.username AS created_by, ttl.updated_by_id,
      u.username AS updated_by, t.external_key, ttl.allow_data_entry, tp.authority as preferred_authority,
-     t.attribute as taxon_attribute, t.language_id as language_id, t.taxon_group_id, t.search_code
+     t.attribute as taxon_attribute, t.language_id as language_id, t.taxon_group_id, t.search_code, t.taxon_rank_id
    FROM taxa_taxon_lists ttl
    JOIN taxon_lists tl ON tl.id = ttl.taxon_list_id
    JOIN taxa t ON t.id = ttl.taxon_id AND t.deleted = false
