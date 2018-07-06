@@ -85,7 +85,9 @@ WHERE NOT EXISTS(
   SELECT 1 FROM work_queue WHERE $existsCheckSql
 )
 SQL;
-    $db->query($sql);
+    // Avoid any kohana overhead when running the query and prevent out query
+    // result 'damaging' things as this is in postSubmit.
+    $db->justRunQuery($sql);
   }
 
   /**
