@@ -26,7 +26,7 @@
         description="Because some website owners don't like league tables, this allows them to be excluded by providing a comma separated list of IDs" datatype="integer[]">
       <where>o.website_id not in (#website_exclusions#)</where>
     </param>
-    <param name="user_exclusions" display="List of user IDs to exclude" 
+    <param name="user_exclusions" display="List of user IDs to exclude"
         description="Allows special case user IDs to be excluded by providing a comma separated list of warehouse user IDs." datatype="integer[]" default="1" >
       <where>o.created_by_id not in (#user_exclusions#)</where>
     </param>
@@ -36,7 +36,7 @@
             <order_by>taxa DESC</order_by>
       </order_bys>
       <columns>
-            <column name="id" visible="false" display="User ID" sql="u.id" datatype="integer" in_count="true"/>
+            <column name="id" visible="false" display="User ID" sql="o.created_by_id" datatype="integer" in_count="true"/>
             <column name="name" display="Name" sql="p.surname || case when p.first_name is null or p.first_name='' or p.first_name=p.surname then '' else ', ' || p.first_name end" datatype="text" />
             <column name="me" visible="false" sql="case cast(u.id as character varying) when '#currentUser#' then 'me' else 'other' end" datatype="text|" />
             <column name="taxa" display="No. of Species" sql="count(DISTINCT o.taxon_meaning_id)" datatype="integer" aggregate="true" />
