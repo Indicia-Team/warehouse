@@ -770,22 +770,12 @@ WHERE s.id=s_update.id
 ";
 
 $config['samples']['update']['functional_media'] = "
-SELECT o.id, COUNT(m.*) AS count
-INTO TEMPORARY media_counts
-FROM cache_samples_functional s
+UPDATE cache_samples_functional u
+SET media_count=(SELECT COUNT(sm.*)
+FROM sample_media sm WHERE sm.sample_id=u.id AND sm.deleted=false)
+FROM samples s
 #join_needs_update#
-JOIN sample_media m ON m.sample_id=s.id AND m.deleted=false
-GROUP BY s.id;
-
-CREATE INDEX ix_temp ON media_counts(id);
-
-UPDATE cache_samples_functional s
-SET media_count=m.count
-FROM media_counts m
-WHERE m.id=s.id
-AND m.count<>s.media_count;
-
-DROP TABLE media_counts;
+WHERE s.id=u.id
 ";
 
 $config['samples']['update']['functional_sensitive'] = "
@@ -1416,22 +1406,13 @@ WHERE cache_occurrences_functional.id=o.id
 ";
 
 $config['occurrences']['update']['functional_media'] = "
-SELECT o.id, COUNT(m.*) AS count
-INTO TEMPORARY media_counts
-FROM cache_occurrences_functional o
+UPDATE cache_occurrences_functional u
+SET media_count=(SELECT COUNT(om.*)
+FROM occurrence_media om WHERE om.occurrence_id=o.id AND om.deleted=false)
+FROM occurrences o
 #join_needs_update#
-JOIN occurrence_media m ON m.occurrence_id=o.id AND m.deleted=false
-GROUP BY o.id;
-
-CREATE INDEX ix_temp ON media_counts(id);
-
-UPDATE cache_occurrences_functional o
-SET media_count=m.count
-FROM media_counts m
-WHERE m.id=o.id
-AND m.count<>o.media_count;
-
-DROP TABLE media_counts;";
+WHERE o.id=u.id
+";
 
 $config['occurrences']['update']['functional_sensitive'] = "
 UPDATE cache_samples_functional cs
