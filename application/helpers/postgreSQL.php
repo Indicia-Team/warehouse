@@ -617,7 +617,7 @@ SQL
       $searchFilters = array();
       // Cleanup.
       $search = trim(preg_replace('/\s+/', ' ', str_replace('-', ' ', $options['searchQuery'])));
-      $fullTextSearchTerm = self::taxonSearchGetFullTextSearchTerm($search, $options);
+      $fullTextSearchTerm = pg_escape_string(self::taxonSearchGetFullTextSearchTerm($search, $options));
       $searchTerm = str_replace(array(' and ', ' or ', ' & ', ' | '), '', $search);
       $searchTermNoWildcards = str_replace('*', ' ', $searchTerm);
       $searchField = 'original';
@@ -636,9 +636,15 @@ SQL
         // Search term contains a wildcard not at the end of a word, so enable
         // a basic text search which supports this. Use term simplification to
         // reduce misses due to punctuation, spacing, capitalisation etc.
-        $likesearchterm = preg_replace('[^a-zA-Z0-9%\+\?*]', '', str_replace(array('*', ' '), '%', str_replace('ae', 'e', preg_replace('/\(.+\)/', '', strtolower($searchTerm))))) . '%';
-        $searchFilters[] = "(cts.simplified=true and searchterm like '$likesearchterm')";
-        $highlightRegex = '(' . preg_replace(array(
+        $likesearchterm = pg_escape_string(
+          preg_replace(
+            '/[^a-zA-Z0-9%\+\?*]/',
+            '',
+            str_replace(array('*', ' '), '%', str_replace('ae', 'e', preg_replace('/\(.+\)/', '', strtolower($searchTerm))))
+          ) . '%'
+        );
+        $searchFilters[] = "(cts.simplified=true and searchterm like /***/ '$likesearchterm')";
+        $highlightRegex = pg_escape_string('(' . preg_replace(array(
           // wildcard * at the beginning is removed so leading characters not highlighted
           '/^\*/',
           // any other * or space will be replaced by a regex wildcard to match anything
@@ -650,8 +656,8 @@ SQL
           '',
           '.+',
           '$1( )?( \(.+\) )?'
-        ), $searchTerm) . ')';
-        $headlineColumnSql = "regexp_replace(original,  '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
+        ), $searchTerm) . ')');
+        $headlineColumnSql = "regexp_replace(original, '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
       }
       else {
         // No wildcard in a word, so we can use full text search - this must
@@ -743,18 +749,19 @@ order by taxonomic_sort_order, original
 SQL;
     }
     else {
+      $escapedTerm = pg_escape_string($searchFilterData['searchTermNoWildcards']);
       return <<<SQL
 order by
 -- abbreviation hits come first if enabled
 cts.name_type='A' DESC,
 -- prefer matches in correct epithet order
-searchterm ilike '%' || replace('$searchFilterData[searchTermNoWildcards]', ' ', '%') || '%' DESC,
+searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%' DESC,
 -- prefer matches with searched phrase near start of term, by discarding the characters from the search term onwards and counting the rest
-length(regexp_replace(searchterm, replace('$searchFilterData[searchTermNoWildcards]', ' ', '.*') || '.*', '','i')),
+length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*') || '.*', '','i')),
 -- prefer matches where the full search term is close together, by counting the characters in the area covered by the search term
 case
-  when searchterm ilike '%' || replace('$searchFilterData[searchTermNoWildcards]', ' ', '%') || '%'
-    then length((regexp_matches(searchterm, replace('$searchFilterData[searchTermNoWildcards]', ' ', '.*'), 'i'))[1])
+  when searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%'
+    then length((regexp_matches(searchterm, replace('$escapedTerm', ' ', '.*'), 'i'))[1])
   else 9999 end,
 cts.preferred desc,
 -- finally alpha sort
