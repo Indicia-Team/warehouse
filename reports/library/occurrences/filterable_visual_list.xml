@@ -1,6 +1,6 @@
 <report
     title="Visualise records using standard filters"
-    description="Report designed for visualising a flow of records, e.g. on a home page. 
+    description="Report designed for visualising a flow of records, e.g. on a home page.
     Compatible with standard parameters and includes basic species details plus media and map data."
 >
   <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
@@ -11,7 +11,7 @@
   JOIN map_squares msq on msq.id=o.map_sq_#precision#_id
   #agreements_join#
   #joins#
-  WHERE #sharing_filter# 
+  WHERE #sharing_filter#
   #idlist#
   </query>
   <order_bys>
@@ -41,10 +41,14 @@
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='certainty' display='Certainty' sql='o.certainty' visible="false" />
     <column name='images' display='Images' sql='o.images' img='true' />
-    <column name='pass' visible='false' sql="CASE WHEN o.data_cleaner_info='pass' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' WHEN not w.verification_checks_enabled THEN '&lt;div title=&quot;This record is not included in the automated verification check system.&quot;/&gt;-&lt;/div&gt;' END" />
+    <column name='pass' visible='false' sql="CASE
+      WHEN false and o.data_cleaner_result='t' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;Passes all auto-checks.&quot;&gt;&lt;/div&gt;'
+      WHEN true and w.verification_checks_enabled='f' THEN '&lt;div class=&quot;auto-check-disabled-icon&quot; title=&quot;Auto-check disabled.&quot;&gt;-&lt;/div&gt;'
+      WHEN w.verification_checks_enabled='t' AND o.data_cleaner_result IS NULL THEN '&lt;div class=&quot;pending-icon&quot; title=&quot;Pending auto-check.&quot;&gt;...&lt;/div&gt;'
+    END" />
     <column name='fails' display='Check' template="{pass}{fails}"
-        sql="case when o.data_cleaner_info is not null and o.data_cleaner_info&lt;&gt;'pass' then 
-            replace(replace(replace(replace(o.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;') 
+        sql="case when o.data_cleaner_info is not null and o.data_cleaner_info&lt;&gt;'pass' then
+            replace(replace(replace(replace(o.data_cleaner_info, '[', '&lt;div class=&quot;fail-icon '), ']', '&quot; '), '{', 'title=&quot;'), '}', '&quot;&gt;&lt;/div&gt;')
         end"
     />
     <column name="geom" visible="false" mappable="true" sql="st_astext(msq.geom)" in_count="true" />

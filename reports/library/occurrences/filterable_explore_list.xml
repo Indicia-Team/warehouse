@@ -73,9 +73,9 @@
     else o.input_form
 end" datatype="text" />
     <column name='pass' visible='false' sql="CASE
-      WHEN o.data_cleaner_result='t' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;Passes all auto-checks.&quot;/&gt;&lt;/div&gt;'
-      WHEN w.verification_checks_enabled='f' THEN '&lt;div class=&quot;auto-check-disabled-icon&quot; title=&quot;Auto-check disabled.&quot;/&gt;-&lt;/div&gt;'
-      WHEN w.verification_checks_enabled='t' AND o.data_cleaner_result IS NULL THEN '&lt;div class=&quot;pending-icon&quot; title=&quot;Pending auto-check.&quot;/&gt;-&lt;/div&gt;'
+      WHEN false and o.data_cleaner_result='t' THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;Passes all auto-checks.&quot;&gt;&lt;/div&gt;'
+      WHEN true and w.verification_checks_enabled='f' THEN '&lt;div class=&quot;auto-check-disabled-icon&quot; title=&quot;Auto-check disabled.&quot;&gt;-&lt;/div&gt;'
+      WHEN w.verification_checks_enabled='t' AND o.data_cleaner_result IS NULL THEN '&lt;div class=&quot;pending-icon&quot; title=&quot;Pending auto-check.&quot;&gt;...&lt;/div&gt;'
     END" />
     <column name='fails' display='Auto check' template="{pass}{fails}"
         sql="case when o.data_cleaner_result='f' then
