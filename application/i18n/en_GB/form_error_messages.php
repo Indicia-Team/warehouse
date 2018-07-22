@@ -17,6 +17,9 @@ $lang = [
     'required' => 'The spatial reference must be supplied.',
     'sref' => 'The spatial reference is not recognised.',
   ],
+  'code' => [
+    'length' => 'The code must be a maximum of 20 characters.',
+  ],
   'comment' => [
     'required' => 'Please provide a comment.',
   ],
