@@ -14,7 +14,7 @@
   <params>
       <param name="location_type_id" display="Location Type" description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
         population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=" >
-          <where>l.location_type_id=#location_type_id#</where>
+          <where>l.location_type_id in (#location_type_id#)</where>
       </param>
       <param name="simplifyFeatureTo" datatype="integer" default="1" />
       <param name="bounds" display="Bounds WKT" description="Well known text for the bounding box to load" datatype="text" default="">

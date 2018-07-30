@@ -11,7 +11,7 @@
   left join locations l on l.id=s.location_id and l.deleted=false
   left join (index_locations_samples ils
     join locations locality on locality.id=ils.location_id and locality.location_type_id=#locality_type_id#
-  ) on ils.sample_id=s.id 
+  ) on ils.sample_id=s.id
   left join (users u
     join people p on p.id=u.person_id and p.deleted=false
   ) on u.id=s.created_by_id and u.id&lt;&gt;1 and u.deleted=false
@@ -34,12 +34,15 @@
     <column name='recorder' display='Key facts:Recorder' sql='srecv.text_value' />
     <column name='entered_sref' display='Key facts:Map ref.' sql='coalesce(s.entered_sref, l.centroid_sref)' />
     <column name='location_name' display='Key facts:Site Name' sql="COALESCE(l.name, s.location_name)" />
-    <column name='date' display='Key facts:Date' sql='s.date_start' />
+    <column name='date_start' sql='s.date_start' visible='false' />
+    <column name='date_end' sql='s.date_end' visible='false' />
+    <column name='date_type' sql='s.date_type' visible='false' />
+    <column name='date' display='Key facts:Date' datatype="date" />
     <column name='sample_id' display='Sample:ID' sql='s.id' />
     <column name='email' visible='false' sql='p.email_address' />
     <column name='verifier' display='Sample:Verified by' sql="pv.surname || ', ' || pv.first_name" />
-    <column name='created_on' display='Sample:Submitted on' sql='s.created_on' />
-    <column name='updated_on' display='Sample:Last updated on' sql='s.updated_on' />
+    <column name='created_on' display='Sample:Submitted on' sql="to_char(s.created_on,'DD/MM/YYYY HH24:MI')" />
+    <column name='updated_on' display='Sample:Last updated on' sql="to_char(s.updated_on,'DD/MM/YYYY HH24:MI')" />
     <column name='sample_comment' display='Sample:Comment' sql='s.comment' />
     <column name='survey_title' display='Sample:Survey' sql='su.title' />
     <column name='wkt' visible="false" sql='st_astext(coalesce(s.geom, l.centroid_geom))' />

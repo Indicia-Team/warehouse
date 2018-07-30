@@ -106,10 +106,13 @@ where co.created_by_id<>1 and co.created_by_id<>oc.created_by_id and co.confiden
 and oc2.id is null -- ignore comment if accompanied by a verification from same person
 -- a record you commented on then verified or a comment on a record you've previously commented on
 union
-select distinct 'C' as source_type, co.id, ocprev.created_by_id as notify_user_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref,
-        co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.record_substatus, co.cache_updated_on as updated_on, oc.created_by_id as occurrence_comment_created_by_id,
+
+select distinct 'C' as source_type, co.id, ocprev.created_by_id as notify_user_id, cttl.taxon, co.date_start, co.date_end, co.date_type, snf.public_entered_sref,
+        co.verified_on, oc.comment, oc.auto_generated, oc.generated_by, co.record_status, co.record_substatus, co.updated_on as updated_on, oc.created_by_id as occurrence_comment_created_by_id,
         'oc_id:' || oc.id::varchar as source_detail, 'f' as record_owner
-from cache_occurrences co
+from cache_occurrences_functional co
+join cache_samples_nonfunctional snf on snf.id=co.sample_id
+join cache_taxa_taxon_lists cttl on cttl.id=co.taxa_taxon_list_id
 join occurrence_comments ocprev on ocprev.occurrence_id=co.id and ocprev.deleted=false and ocprev.created_by_id<>co.created_by_id and ocprev.created_by_id<>1
 join occurrence_comments oc on oc.occurrence_id=co.id and oc.deleted=false and oc.created_on>'$last_run_date'
   and oc.created_by_id<>ocprev.created_by_id and oc.id>ocprev.id
@@ -118,6 +121,7 @@ where co.created_by_id<>1 and oc.created_by_id<>1
 and (ocprev.record_status is not null or ocprev.query='t' or (co.confidential=false and oc.confidential=false))
 -- only notify if not the commenter or record owner
 and ocprev.created_by_id<>oc.created_by_id and ocprev.created_by_id<>co.created_by_id;
+
 
 select rn.*, u.username
 from records_to_notify rn
@@ -615,7 +619,7 @@ SQL
       $searchFilters = array();
       // Cleanup.
       $search = trim(preg_replace('/\s+/', ' ', str_replace('-', ' ', $options['searchQuery'])));
-      $fullTextSearchTerm = self::taxonSearchGetFullTextSearchTerm($search, $options);
+      $fullTextSearchTerm = pg_escape_string(self::taxonSearchGetFullTextSearchTerm($search, $options));
       $searchTerm = str_replace(array(' and ', ' or ', ' & ', ' | '), '', $search);
       $searchTermNoWildcards = str_replace('*', ' ', $searchTerm);
       $searchField = 'original';
@@ -634,9 +638,15 @@ SQL
         // Search term contains a wildcard not at the end of a word, so enable
         // a basic text search which supports this. Use term simplification to
         // reduce misses due to punctuation, spacing, capitalisation etc.
-        $likesearchterm = preg_replace('[^a-zA-Z0-9%\+\?*]', '', str_replace(array('*', ' '), '%', str_replace('ae', 'e', preg_replace('/\(.+\)/', '', strtolower($searchTerm))))) . '%';
-        $searchFilters[] = "(cts.simplified=true and searchterm like '$likesearchterm')";
-        $highlightRegex = '(' . preg_replace(array(
+        $likesearchterm = pg_escape_string(
+          preg_replace(
+            '/[^a-zA-Z0-9%\+\?*]/',
+            '',
+            str_replace(array('*', ' '), '%', str_replace('ae', 'e', preg_replace('/\(.+\)/', '', strtolower($searchTerm))))
+          ) . '%'
+        );
+        $searchFilters[] = "(cts.simplified=true and searchterm like /***/ '$likesearchterm')";
+        $highlightRegex = pg_escape_string('(' . preg_replace(array(
           // wildcard * at the beginning is removed so leading characters not highlighted
           '/^\*/',
           // any other * or space will be replaced by a regex wildcard to match anything
@@ -648,8 +658,8 @@ SQL
           '',
           '.+',
           '$1( )?( \(.+\) )?'
-        ), $searchTerm) . ')';
-        $headlineColumnSql = "regexp_replace(original,  '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
+        ), $searchTerm) . ')');
+        $headlineColumnSql = "regexp_replace(original, '$highlightRegex', E'<b>\\\\1</b>', 'i') as highlighted";
       }
       else {
         // No wildcard in a word, so we can use full text search - this must
@@ -741,18 +751,19 @@ order by taxonomic_sort_order, original
 SQL;
     }
     else {
+      $escapedTerm = pg_escape_string($searchFilterData['searchTermNoWildcards']);
       return <<<SQL
 order by
 -- abbreviation hits come first if enabled
 cts.name_type='A' DESC,
 -- prefer matches in correct epithet order
-searchterm ilike '%' || replace('$searchFilterData[searchTermNoWildcards]', ' ', '%') || '%' DESC,
+searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%' DESC,
 -- prefer matches with searched phrase near start of term, by discarding the characters from the search term onwards and counting the rest
-length(regexp_replace(searchterm, replace('$searchFilterData[searchTermNoWildcards]', ' ', '.*') || '.*', '','i')),
+length(regexp_replace(searchterm, replace('$escapedTerm', ' ', '.*') || '.*', '','i')),
 -- prefer matches where the full search term is close together, by counting the characters in the area covered by the search term
 case
-  when searchterm ilike '%' || replace('$searchFilterData[searchTermNoWildcards]', ' ', '%') || '%'
-    then length((regexp_matches(searchterm, replace('$searchFilterData[searchTermNoWildcards]', ' ', '.*'), 'i'))[1])
+  when searchterm ilike '%' || replace('$escapedTerm', ' ', '%') || '%'
+    then length((regexp_matches(searchterm, replace('$escapedTerm', ' ', '.*'), 'i'))[1])
   else 9999 end,
 cts.preferred desc,
 -- finally alpha sort

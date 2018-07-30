@@ -41,14 +41,17 @@
     <column name='location_name' display='Key facts:Site Name'
             sql="case when o.location_name=s.location_name then o.location_name else o.location_name || COALESCE(' - ' || s.location_name, '') end" />
     <column name="localities" display="Key facts:Locality" sql="array_to_string(array_agg(locality.name), '|')" aggregate="true" />
-    <column name='date' display='Key facts:Date' sql='s.date_start' />
+    <column name='date_start' sql='o.date_start' visible='false' />
+    <column name='date_end' sql='o.date_end' visible='false' />
+    <column name='date_type' sql='o.date_type' visible='false' />
+    <column name='date' display='Key facts:Date' datatype="date" />
     <column name='occurrence_id' display='Record:ID' sql='o.id' />
     <column name='email' visible='false' sql='p.email_address' />
     <column name='verifier' display='Record:Verified by' sql='onf.verifier' />
     <column name='preferred_taxon' display='Record:Preferred species name' sql='CASE cttl.preferred_taxon WHEN cttl.taxon THEN null ELSE cttl.preferred_taxon END' />
     <column name='occurrence_comment' display='Record:Comment' sql='onf.comment' />
-    <column name='created_on' display='Record:Submitted on' sql='o.created_on' />
-    <column name='updated_on' display='Record:Last updated on' sql='o.updated_on' />
+    <column name='created_on' display='Record:Submitted on' sql="to_char(o.created_on,'DD/MM/YYYY HH24:MI')" />
+    <column name='updated_on' display='Record:Last updated on' sql="to_char(o.updated_on,'DD/MM/YYYY HH24:MI')" />
     <column name='sample_id' display='Record:Sample ID' visible="false" sql='s.id' />
     <column name='sample_comment' display='Record:Sample comment' sql='s.comment' />
     <column name='survey_title' display='Record:Survey' sql='snf.survey_title' />

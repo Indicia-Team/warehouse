@@ -5,35 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Post a comment</title>
 <style>
-body { font-family: Verdana, Geneva, sans-serif; }
-form {
-  max-width: 1200px;
-  margin: auto;
-}
-td, th {
-  border: solid silver 1px;
-  padding: 0.2em 0.8em;
-}
-form label {
-  width: 400px !important;
-}
-fieldset {
-  margin: 1em 0;
-}
-.fieldset-auto-width {
-  display: inline-block;
-}
-legend {
-  font-weight: bold;
-}
-textarea {
-    width: 100%;
-    min-height: 150px;
-}
+body { font-family: Verdana, Geneva, sans-serif; max-width: 1200px; margin: auto; }
+td, th { border: solid silver 1px; padding: 0.2em 0.8em; }
+form label { width: 400px !important; }
+fieldset { margin: 1em 0; }
+.fieldset-auto-width { display: inline-block; }
+legend { font-weight: bold; }
+textarea { width: 100%; min-height: 150px; }
 </style>
 </head>
 <body>
-<form id="comment-form" method="POST" >
 <?php
 if ((empty($_GET['user_id']) && empty($_GET['email_address'])) || empty($_GET['occurrence_id']) || empty($_GET['auth'])) {
   echo '<p>Invalid link</p>';
@@ -99,13 +80,24 @@ else {
           'caching' => FALSE,
           'extraParams' => $auth['read'] + array('view' => 'cache', 'id' => $_GET['occurrence_id']),
         ));
-        echo '<h1>Record details and comments</h1>';
-        if ($occurrenceDetails[0]['query'] !== 'Q') {
-          echo '<em style="color:red">This record no longer has a queried status and therefore doesn\'t require you to make a comment at this present time.</em><br>';
+        if (count($occurrenceDetails) === 0) {
+          echo '<em style="color:red">The record associated with this link cannot be found.</em><br>';
         }
-        echo occcurrenceCommentQuickReplyPage::displayOccurrenceDetails($configuration, $occurrenceDetails);
-        echo occcurrenceCommentQuickReplyPage::displayExistingOccurrenceComments($configuration, $occurrenceDetails[0]['query']);?>
-        </form><?php
+        else {
+          $thisRecord = $occurrenceDetails[0];
+          echo '<h1>Record details and comments</h1>';
+          if ($thisRecord['confidential'] === 't') {
+            echo '<em style="color:red">This record is marked as confidential so the details are unavailable. You can still comment using the form below.</em><br>';
+          }
+          else {
+            if ($thisRecord['query'] !== 'Q') {
+              echo '<em style="color:red">This record no longer has a queried status and therefore doesn\'t require you to make a comment at this present time.</em><br>';
+            }
+            echo occcurrenceCommentQuickReplyPage::displayOccurrenceDetails($configuration, $thisRecord);
+            echo occcurrenceCommentQuickReplyPage::displayExistingOccurrenceComments($configuration);
+          }
+          echo occcurrenceCommentQuickReplyPage::commentForm($thisRecord['query']);
+        }
       }
     }
   }
@@ -146,7 +138,7 @@ class OcccurrenceCommentQuickReplyPage {
   /**
    * Display the details of the occurrence.
    */
-  public static function displayOccurrenceDetails($configuration, $occurrenceDetails) {
+  public static function displayOccurrenceDetails($configuration, $thisRecord) {
     echo "<style>\n";
     include $configuration['cssPath'];
     echo "</style>\n";
@@ -154,25 +146,25 @@ class OcccurrenceCommentQuickReplyPage {
     ?>
     <fieldset class="fieldset-auto-width"><legend>Details</legend>
     <?php
-    echo "<p>Species: " . $occurrenceDetails[0]['taxon'] . "</p>";
+    echo "<p>Species: " . $thisRecord['taxon'] . "</p>";
     $vagueDate = self::vagueDateToString(array(
-      $occurrenceDetails[0]['date_start'],
-      $occurrenceDetails[0]['date_end'],
-      $occurrenceDetails[0]['date_type'],
+      $thisRecord['date_start'],
+      $thisRecord['date_end'],
+      $thisRecord['date_type'],
     ));
     echo '<p>Date: ' . $vagueDate . "</p>";
     // Needs blurred output as don't know user's rights.
-    if (!empty($occurrenceDetails[0]['public_entered_sref'])) {
-      $srefData = $occurrenceDetails[0]['public_entered_sref'] . ' (' . $occurrenceDetails[0]['entered_sref_system'] . ')';
+    if (!empty($thisRecord['public_entered_sref'])) {
+      $srefData = $thisRecord['public_entered_sref'] . ' (' . $thisRecord['entered_sref_system'] . ')';
     }
     else {
       // Note: Get population data not returning output_sref_system at moment,
       // hence added check for this in case this changes.
-      if (!empty($occurrenceDetails[0]['output_sref_system'])) {
-        $srefData = $occurrenceDetails[0]['output_sref'] . ' (' . $occurrenceDetails[0]['output_sref_system'] . ')';
+      if (!empty($thisRecord['output_sref_system'])) {
+        $srefData = "$thisRecord[output_sref] ($thisRecord[output_sref_system])";
       }
       else {
-        $srefData = $occurrenceDetails[0]['output_sref'];
+        $srefData = $thisRecord['output_sref'];
       }
     }
     echo "<p>Spatial reference: " . $srefData . "</p>";
@@ -182,7 +174,7 @@ class OcccurrenceCommentQuickReplyPage {
   /**
    * Display details of the occurrence from the database.
    */
-  public static function displayExistingOccurrenceComments($configuration, $recordQueriedFlag) {
+  public static function displayExistingOccurrenceComments($configuration) {
     $configuration = self::getPageConfiguration();
     $auth = self::getAuth($configuration['privateKey']);
     $r = '<div>';
@@ -217,25 +209,40 @@ class OcccurrenceCommentQuickReplyPage {
       }
     }
     $r .= '</div>';
+    echo '<div class="detail-panel" id="detail-panel-comments"><h3>Comments</h3>' . $r . '</div>';
+  }
+
+  /**
+   * Returns the HTML for the comment form,
+   *
+   * @param string $recordQueriedFlag
+   *   Query status flag for the record.
+   *
+   * @return string
+   *   HTML for the form.
+   */
+  public static function commentForm($recordQueriedFlag) {
     // Only allow commenting for queried records.
     if ($recordQueriedFlag === 'Q') {
-      $r .= '<fieldset><legend>Add new comment</legend>';
-      $r .= '<textarea id="comment-text" name="comment-text"></textarea><br/>';
-      $r .= "<input type='button' class='default-button' value='Save'
-      onclick='
-        if (document.getElementById(\"comment-text\").value) {
-          var r = confirm(\"Are you sure you want to save the comment?\");
-          if (r == true) {
-            document.getElementById(\"comment-form\").submit();
-          }
-        } else {
-          alert(\"Please enter a comment before saving\");
+      return <<<HTML
+<form id="comment-form" method="POST" >
+  <fieldset>
+    <legend>Add new comment</legend>
+    <textarea id="comment-text" name="comment-text"></textarea><br/>
+    <input type='button' class='default-button' value='Save' onclick="
+      if (document.getElementById('comment-text').value) {
+        var r = confirm('Are you sure you want to save the comment?');
+        if (r == true) {
+          document.getElementById('comment-form').submit();
         }
-      '>";
-      $r .= '</fieldset>';
+      } else {
+        alert('Please enter a comment before saving');
+      }">
+  </fieldset>
+</form>
+HTML;
     }
-    $r .= '</div>';
-    echo '<div class="detail-panel" id="detail-panel-comments"><h3>Comments</h3>' . $r . '</div>';
+    return '';
   }
 
   /**
