@@ -23,7 +23,7 @@
  * Define the database ID used to identify this system in the network.
  */
 $config['user_id'] = 'MHN';
-$config['taxon_list_id'] = 1;
+$config['taxon_list_id'] = 13;
 
 $config['servers'] = [
   'NAT' => [
