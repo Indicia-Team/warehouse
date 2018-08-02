@@ -103,8 +103,11 @@ $config['clients']=array(
         // optional, which resources are available? Default is all.
         'resources' => array('taxon-observations', 'annotations', 'reports'),
         'resource_options' => array(
-          'reports' => array('raw_data', 'featured')
-        )
+          'reports' => array('raw_data', 'featured'),
+        ),
+        // Set the following to TRUE for Indicia to automatically feed through
+        // pages of data. Useful when the client is a dumb poller for the data.
+        'autofeed' => FALSE,
       )
     )
   )

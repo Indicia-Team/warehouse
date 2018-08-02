@@ -22,6 +22,8 @@
  */
 
 DEFINE("REST_API_DEFAULT_PAGE_SIZE", 100);
+DEFINE("AUTOFEED_DEFAULT_PAGE_SIZE", 10000);
+
 
 if (!function_exists('http_response_code')) {
 
@@ -748,7 +750,8 @@ class Rest_Controller extends Controller {
     $report = $this->loadReport('rest_api/filterable_taxon_observations', $params);
     if (empty($report['content']['records'])) {
       $this->apiResponse->fail('No Content', 204);
-    } elseif (count($report['content']['records'])>1) {
+    }
+    elseif (count($report['content']['records'])>1) {
       kohana::log('error', 'Internal error. Request for single record returned multiple');
       $this->apiResponse->fail('Internal Server Error', 500);
     } else {
@@ -1013,26 +1016,47 @@ class Rest_Controller extends Controller {
   }
 
   /**
+   * Returns true if the selected project is in Autofeed mode.
+   *
+   * @return bool
+   *   Autofeed mode setting.
+   */
+  private function getAutofeedMode() {
+    return !empty($this->projects[$this->request['proj_id']]['autofeed'])
+      || (isset($_GET['autofeed']) && $_GET['autofeed'] === 't');
+  }
+
+  /**
    * Uses the segments in the URL to find a report file and run it, with the
    * expectation of producing report data output.
+   *
    * @param array $segments
    */
   private function getReportOutput($segments) {
     $reportFile = $this->getReportFileNameFromSegments($segments);
     $report = $this->loadReport($reportFile, $_GET);
     if (isset($report['content']['records'])) {
-      $pagination = $this->getPagination($report['count']);
-      $this->apiResponse->succeed(
-        array(
-          'count' => $report['count'],
-          'paging' => $pagination,
+      if ($this->getAutofeedMode()) {
+        // Autofeed mode - no need for pagination info.
+        $this->apiResponse->succeed([
           'data' => $report['content']['records']
-        ),
-        array(
-          'columns' => $report['content']['columns']
-        )
-      );
-    } elseif (isset($report['content']['parameterRequest'])) {
+        ], [], TRUE);
+      }
+      else {
+        $pagination = $this->getPagination($report['count']);
+        $this->apiResponse->succeed(
+          [
+            'count' => $report['count'],
+            'paging' => $pagination,
+            'data' => $report['content']['records'],
+          ],
+          [
+            'columns' => $report['content']['columns'],
+          ]
+        );
+      }
+    }
+    elseif (isset($report['content']['parameterRequest'])) {
       // @todo: handle param requests
       $this->apiResponse->fail('Bad request (parameters missing)', 400, "Missing parameters");
     }
@@ -1345,6 +1369,38 @@ class Rest_Controller extends Controller {
    * @return array Report response structure
    */
   private function loadReport($report, $params) {
+    // Don't need to count records when autofeeding.
+    if ($this->getAutofeedMode()) {
+      // Fudge to prevent the overhead of a count query.
+      $_REQUEST['wantCount'] = '0';
+      // Set max number of records to process.
+      $params['limit'] = AUTOFEED_DEFAULT_PAGE_SIZE;
+      // Find our state data for this feed.
+      $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", ['mode' => 'notStarted'], FALSE);
+      if ($afSettings['mode'] === 'notStarted') {
+        // First use of this autofeed, so we need to store the timepoint to
+        // ensure we capture all changes after the initial sweep up of records
+        // is done. Switch state to initial loading.
+        $afSettings = [
+          'mode' => 'initialLoad',
+          'last_date' => date('c'),
+          'last_id' => 0,
+        ];
+        variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
+      }
+      elseif ($afSettings['mode'] === 'initialLoad') {
+        // Part way through initial loading. Use the last loaded ID as a start
+        // point for next block of records.
+        $params['last_id'] = $afSettings['last_id'];
+      }
+      elseif ($afSettings['mode'] === 'updates') {
+        // Doing updates of changes only as initial load done. Use the last
+        // date of a run to filter for changed records.
+        $params['last_date'] = $afSettings['last_date'];
+        $afSettings['last_date'] = date('c');
+        variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
+      }
+    }
     if (!empty($this->resourceOptions['cached'])) {
       $cache = new Cache();
       $keys = array_merge($params);
@@ -1386,7 +1442,8 @@ class Rest_Controller extends Controller {
     // load the filter associated with the project ID
     if (isset($this->clientSystemId)) {
       $filter = $this->loadFilterForProject($this->request['proj_id']);
-    } elseif (isset($this->clientUserId)) {
+    }
+    elseif (isset($this->clientUserId)) {
       // When authenticating a user, you can use one of the permissions filters for the
       // user to gain access to a wider pool of records, e.g. for a verifier to access
       // all records they have rights to.
@@ -1448,8 +1505,9 @@ class Rest_Controller extends Controller {
    * @return array Filter definition.
    */
   private function loadFilterForProject($id) {
-    if (!isset($this->projects[$id]))
-      $this->apiResponse->fail('Bad request', 400, 'Invalid project requested');
+    if (!isset($this->projects[$id])) {
+      $this->apiResponse->fail('Bad request', 400, "Invalid project requested");
+    }
     if (isset($this->projects[$id]['filter_id'])) {
       $filterId = $this->projects[$id]['filter_id'];
       $filters = $this->db->select('definition')->from('filters')->where(array('id'=>$filterId, 'deleted'=>'f'))

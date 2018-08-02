@@ -269,21 +269,24 @@ HTML;
    * * attachHref
    * * columnsToUnset - an array of columns to remove from tabular output
    */
-  public function succeed($data, $options = array()) {
+  public function succeed($data, $options = array(), $autofeed = FALSE) {
     $format = $this->getResponseFormat();
     switch ($format) {
       case 'html':
         header('Content-Type: text/html');
         $this->succeedHtml($data, $options);
         break;
+
       case 'csv':
         header('Content-Type: text/csv');
         $this->succeedCsv($data, $options);
         break;
+
       case 'json':
         header('Content-Type: application/json');
-        $this->succeedJson($data, $options);
+        $this->succeedJson($data, $options, $autofeed);
         break;
+
       default:
         throw new RestApiAbort("Invalid format $format", 400);
     }
@@ -628,37 +631,63 @@ ROW;
    * @param array $data
    * @param array $options
    */
-  private function succeedJson($data, $options) {
-    // We strip empty stuff from JSON responses
-    $options['notEmpty'] = true;
-    // Force preprocessing for the rows we iterate through
-    $options['preprocess'] = true;
+  private function succeedJson($data, $options, $autofeed) {
+    // We strip empty stuff from JSON responses.
+    $options['notEmpty'] = TRUE;
+    // Force preprocessing for the rows we iterate through.
+    $options['preprocess'] = TRUE;
     // If data returned from db in a pg object, need to iterate it and output 1 row at a time to avoid loading into
     // memory. So we create a JSON string for the rest of the output using a stub for the data, then split it at the
     // stub. We can then output everything up to the stub, followed by the data one row at a time, followed by the
     // second part after the stub.
     if (is_array($data) && isset($data['data']) && is_object($data['data'])) {
       $dbObject = $data['data'];
-      $data['data'] = array('|#data#|');
-      $parts = explode('"|#data#|"', json_encode($data));
-      echo $parts[0];
-      // output 1 row at a time instead of json encoding the lot or imploding as it could be big.
-      foreach ($dbObject as $idx=>$row) {
+      if ($autofeed) {
+        echo '[';
+      }
+      else {
+        $data['data'] = array('|#data#|');
+        $parts = explode('"|#data#|"', json_encode($data));
+        echo $parts[0];
+      }
+      // Output 1 row at a time instead of json encoding the lot or imploding
+      // as it could be big.
+      foreach ($dbObject as $idx => $row) {
         $this->preProcessRow($row, $options);
         echo json_encode($row);
-        if ($idx < $dbObject->count()-1) {
+        if ($idx < $dbObject->count() - 1) {
           echo ',';
         }
+        else {
+          $lastId = $row['id'];
+        }
       }
-      echo $parts[1];
-    } else {
-      // Preprocess any row data
+      if ($autofeed) {
+        echo ']';
+        $afSettings = (array) variable::get("rest-autofeed-$_GET[proj_id]", [], FALSE);
+        if ($afSettings['mode'] === 'initialLoad' && isset($lastId) && $dbObject->count() >= AUTOFEED_DEFAULT_PAGE_SIZE) {
+          $afSettings['last_id'] = $lastId;
+          variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
+        }
+        elseif ($afSettings['mode'] === 'initialLoad') {
+          $afSettings['mode'] = 'updates';
+          unset($afSettings['last_id']);
+          variable::set("rest-autofeed-$_GET[proj_id]", $afSettings);
+        }
+      }
+      else {
+        echo $parts[1];
+      }
+    }
+    else {
+      // Preprocess any row data.
       if (is_array($data) && isset($data['data'])) {
         foreach ($data['data'] as &$row) {
           $this->preProcessRow($row, $options);
         }
-      } elseif (is_object($data)) {
-        // A single row from a db result object is being returned
+      }
+      elseif (is_object($data)) {
+        // A single row from a db result object is being returned.
         $this->preProcessRow($data, $options);
       }
       echo json_encode($data);
@@ -668,7 +697,9 @@ ROW;
   /**
    * Method to determine the required format for the response, either json or html.
    * The format can be specified in a format query parameter in the URL, or in the accept header of the request.
-   * @return string Format, either json or html
+   *
+   * @return string
+   *   Format, either json or html
    */
   private function getResponseFormat() {
     // Allow a format query string parameter to override the Accept header.
