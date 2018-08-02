@@ -420,6 +420,10 @@ class ReportEngine {
     elseif (isset($this->recordCountResult)) {
       return $this->recordCountResult;
     }
+    elseif (isset($_REQUEST['wantCount']) && $_REQUEST['wantCount'] === '0') {
+      // Disable record counting as not wanted.
+      return 0;
+    }
 
     // Grab the query from the report reader.
     if ($limit > 0) {
