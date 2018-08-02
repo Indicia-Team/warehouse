@@ -22,8 +22,7 @@
  * The report reader encapsulates logic for reading reports from a number of sources, and opens up * report
  * methods in a transparent way to the report controller.
  */
-class XMLReportReader_Core implements ReportReader
-{
+class XMLReportReader_Core implements ReportReader {
   public $columns = array();
   public $defaultParamValues = array();
   private $name;
@@ -48,10 +47,10 @@ class XMLReportReader_Core implements ReportReader
   private $colsToInclude = array();
 
   /**
-   * @var boolean Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
+   * @var bool Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
    * sql for the columns list.
    */
-  private $hasColumnsSql = false;
+  private $hasColumnsSql = FALSE;
 
   /**
    * @var array List of column definitions that have data type and sql defined so therefore allow filtering.
@@ -59,7 +58,7 @@ class XMLReportReader_Core implements ReportReader
   public $filterableColumns = array();
 
   /**
-   * @var boolean Track if this report supports the standard set of parameters. If so, names the entity.
+   * @var bool Track if this report supports the standard set of parameters. If so, names the entity.
    */
   public $loadStandardParamsSet = false;
 
@@ -476,13 +475,16 @@ class XMLReportReader_Core implements ReportReader
         $sql[] = $def['internal_sql'];
       }
     }
-    // Add the non-aggregated fields to the end of the query. Leave a token so that the query processor
-    // can add more, e.g. if there are custom attribute columns, and also has a suitable place for a HAVING clause.
+    // Add the non-aggregated fields to the end of the query. Leave a token so
+    // that the query processor can add more, e.g. if there are custom
+    // attribute columns, and also has a suitable place for a HAVING clause.
     if (count($sql) > 0) {
-      if (strpos($this->query, '#group_bys#') === FALSE)
+      if (strpos($this->query, '#group_bys#') === FALSE) {
         $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys# #having#';
-      else
+      }
+      else {
         $this->query = str_replace('#group_bys#', "GROUP BY " . implode(', ', $sql) . '#group_bys# #having#', $this->query);
+      }
     }
   }
 
@@ -504,58 +506,61 @@ class XMLReportReader_Core implements ReportReader
    * Returns the query specified.
    */
   public function getQuery() {
-    if ( $this->automagic == false) {
+    if ($this->automagic == FALSE) {
       return $this->query;
     }
     $query = "SELECT ";
-    $j=0;
-    for($i = 0; $i < count($this->tables); $i++){
-    // In download mode make sure that the occurrences id is in the list
-
-      foreach($this->tables[$i]['columns'] as $column){
-        if ($j != 0) $query .= ",";
+    $j = 0;
+    for ($i = 0; $i < count($this->tables); $i++) {
+      // In download mode make sure that the occurrences id is in the list.
+      foreach ($this->tables[$i]['columns'] as $column) {
+        if ($j != 0) {
+          $query .= ",";
+        }
         if ($column['func']=='') {
-          $query .= " lt".$i.".".$column['name']." AS lt".$i."_".$column['name'];
-        } else {
-          $query .= " ".preg_replace("/#parent#/", "lt".$this->tables[$i]['parent'], preg_replace("/#this#/", "lt".$i, $column['func']))." AS lt".$i."_".$column['name'];
+          $query .= " lt" . $i . "." . $column['name'] . " AS lt" . $i . "_" . $column['name'];
+        }
+        else {
+          $query .= " " . preg_replace("/#parent#/", "lt" . $this->tables[$i]['parent'], preg_replace("/#this#/", "lt".$i, $column['func']))." AS lt".$i."_".$column['name'];
         }
         $j++;
       }
     }
-    // table list
+    // Table list.
     $query .= " FROM ";
-    for($i = 0; $i < count($this->tables); $i++){
+    for ($i = 0; $i < count($this->tables); $i++) {
       if ($i == 0) {
-          $query .= $this->tables[$i]['tablename']." lt".$i;
-      } else {
-          if ($this->tables[$i]['join'] != null) {
-            $query .= " LEFT OUTER JOIN ";
-             } else {
-            $query .= " INNER JOIN ";
-          }
-          $query .= $this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
-          if($this->tables[$i]['where'] != null) {
-            $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
-         }
-          $query .= ") ";
+        $query .= $this->tables[$i]['tablename'] . " lt$i";
+      }
+      else {
+        if ($this->tables[$i]['join'] != NULL) {
+          $query .= " LEFT OUTER JOIN ";
+        } else {
+          $query .= " INNER JOIN ";
+        }
+        $query .= $this->tables[$i]['tablename'] . " lt" . $i . " ON (" . $this->tables[$i]['tableKey'] . " = " . $this->tables[$i]['parentKey'];
+        if ($this->tables[$i]['where'] != NULL) {
+          $query .= " AND " . preg_replace("/#this#/", "lt$i", $this->tables[$i]['where']);
+        }
+        $query .= ") ";
       }
     }
-    // where list
-    $previous=false;
-    if($this->tables[0]['where'] != null) {
-      $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
-      $previous = true;
+    // Where list.
+    $previous = FALSE;
+    if ($this->tables[0]['where'] != NULL) {
+      $query .= " WHERE " . preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
+      $previous = TRUE;
     }
     // when in download mode set a where clause
     // only down load records which are complete or verified, and have not been downloaded before.
     // for the final download, only download thhose records which have gone through an initial download, and hence assumed been error checked.
-    if($this->download != 'OFF'){
-      for($i = 0; $i < count($this->tables); $i++){
+    if ($this->download != 'OFF') {
+      for ($i = 0; $i < count($this->tables); $i++) {
         if ($this->tables[$i]['tablename'] == "occurrences") {
-          $query .= ($previous ? " AND " : " WHERE ").
-            " (lt".$i.".record_status in ('C'::bpchar, 'V'::bpchar) OR '".$this->download."'::text = 'OFF'::text) ".
-              " AND (lt".$i.".downloaded_flag in ('N'::bpchar, 'I'::bpchar) OR '".$this->download."'::text != 'INITIAL'::text) ".
-              " AND (lt".$i.".downloaded_flag = 'I'::bpchar OR ('".$this->download."'::text != 'CONFIRM'::text AND '".$this->download."'::text != 'FINAL'::text))";
+          $query .= ($previous ? " AND " : " WHERE ") .
+            " (lt$i.record_status in ('C'::bpchar, 'V'::bpchar) OR '" . $this->download . "'::text = 'OFF'::text) " .
+              " AND (lt$i.downloaded_flag in ('N'::bpchar, 'I'::bpchar) OR '" . $this->download . "'::text != 'INITIAL'::text) " .
+              " AND (lt$i.downloaded_flag = 'I'::bpchar OR ('" . $this->download . "'::text != 'CONFIRM'::text AND '" . $this->download . "'::text != 'FINAL'::text))";
           break;
         }
       }
