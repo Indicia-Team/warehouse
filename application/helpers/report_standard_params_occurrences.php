@@ -776,24 +776,14 @@ class report_standard_params_occurrences {
         'datatype' => 'integer[]',
         'display' => "Taxon meaning IDs",
         'description' => 'Comma separated list of taxon meaning IDs',
-        'wheres' => [
+        'joins' => [
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxon_meaning_id in (#taxon_meaning_list#)",
+            'sql' =>
+              "join cache_taxon_paths ctp on o.taxon_meaning_id=ctp.taxon_meaning_id and ctp.path && ARRAY[#taxon_meaning_list#]",
           ],
         ],
-        // Faster than embedding this query in the report.
-        'preprocess' =>
-          "with recursive q as (
-    select preferred_taxa_taxon_list_id, taxon_meaning_id
-    from cache_taxa_taxon_lists t
-    where taxon_meaning_id in (#taxon_meaning_list#)
-    union all
-    select tc.preferred_taxa_taxon_list_id, tc.taxon_meaning_id
-    from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id
-  ) select array_to_string(array_agg(distinct taxon_meaning_id::varchar), ',') from q",
       ],
       'taxon_designation_list' => [
         'datatype' => 'integer[]',
