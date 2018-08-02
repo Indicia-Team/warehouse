@@ -1,0 +1,79 @@
+<report
+    title="Autofeed occurrences for Elasticsearch (standard filters)"
+    description="A list of occurrences designed for feeding into Elasticsearch or a similar JSON store."
+    featured="true"
+>
+  <query website_filter_field="o.website_id" samples_id_field="o.sample_id"
+         standard_params="occurrences" count_field="o.*">
+    select #columns#
+    from cache_occurrences_functional o
+    join cache_occurrences_nonfunctional onf on onf.id=o.id
+    join cache_samples_nonfunctional snf on snf.id=o.sample_id
+    join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+    #agreements_join#
+    #joins#
+    WHERE #sharing_filter#
+  </query>
+  <order_bys>
+    <order_by>o.id</order_by>
+  </order_bys>
+  <params>
+    <!-- last_date and last_id parameters required for autofeed to work. -->
+    <param name="last_date" display="Last update date" datatype="date" default="">
+      <where>o.updated_on > '#last_date#'</where>
+    </param>
+    <param name="last_id" display="Last ID" datatype="integer" default="">
+      <where>o.id > '#last_id#'</where>
+    </param>
+  </params>
+  <columns>
+    <!-- Tracking field called "id" is required for autofeed to work. -->
+    <column name="id" sql="o.id" datatype="integer" />
+    <column name="created_by_id" sql="o.created_by_id" datatype="integer" />
+    <column name="survey_id" sql="o.survey_id" datatype="integer" />
+    <column name="website_id" sql="o.website_id" datatype="integer" />
+    <column name="group_id" sql="o.group_id" datatype="integer" />
+    <column name="website_title" sql="snf.website_title" datatype="text" />
+    <column name="survey_title" sql="snf.survey_title" datatype="text" />
+    <column name="group_title" sql="snf.group_title" datatype="text" />
+    <column name="recorders" sql="snf.recorders" datatype="text" />
+    <column name="taxon_key" sql="o.taxa_taxon_list_external_key" datatype="text" />
+    <column name="date_start" sql="o.date_start" datatype="date" />
+    <column name="date_end" sql="o.date_end" datatype="date" />
+    <column name="day_of_year" sql="case date_type when 'D' then extract(doy from date_start) else null end" datatype="integer" />
+    <column name="week_of_year" sql="case
+            when coalesce(date_part('year', date_start), 0)=coalesce(date_part('year', date_end), 0)
+              and coalesce(floor(extract(doy from date_start)/7+1), 0)=coalesce(floor(extract(doy from date_end)/7+1), 0) then coalesce(floor(extract(doy from date_start)/7+1), 0)
+            else null
+          end" datatype="integer" />
+    <column name="month_of_year" sql="case
+            when coalesce(date_part('year', date_start), 0)=coalesce(date_part('year', date_end), 0)
+              and coalesce(date_part('month', date_start), 0)=coalesce(date_part('month', date_end), 0) then coalesce(date_part('month', date_start), 0)
+            else null
+          end" datatype="integer" />
+    <column name="geom" sql="st_astext(st_transform(o.public_geom, 4326))" datatype="text" />
+    <column name="point_x" sql="round(st_x(st_transform(st_centroid(o.public_geom), 4326)))" datatype="integer" />
+    <column name="point_y" sql="round(st_y(st_transform(st_centroid(o.public_geom), 4326)))" datatype="integer" />
+    <column name="output_sref" sql="onf.output_sref" datatype="text" />
+    <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
+    <column name="location_name" sql="o.location_name" datatype="text" />
+    <column name="record_status" sql="o.record_status" datatype="text" />
+    <column name="record_substatus" sql="o.record_substatus" datatype="text" />
+    <column name="query" sql="o.query" datatype="text" />
+    <column name="sensitive" sql="o.sensitive" datatype="boolean" />
+    <column name="data_cleaner_info" sql="onf.data_cleaner_info" datatype="text" />
+    <column name="comment" sql="onf.comment" datatype="text" />
+    <column name="sample_comment" sql="snf.comment" datatype="text" />
+    <column name="licence_code" sql="onf.licence_code" datatype="text" />
+    <column name="attr_sex_stage" sql="onf.attr_sex_stage" datatype="text" />
+    <column name="attr_stage" sql="onf.attr_stage" datatype="text" />
+    <column name="attr_sex" sql="onf.attr_sex" datatype="text" />
+    <column name="attr_sex_stage_count" sql="onf.attr_sex_stage_count" datatype="text" />
+    <column name="attr_certainty" sql="onf.attr_certainty" datatype="text" />
+    <column name="attr_det_name" sql="coalesce(onf.attr_det_full_name, coalesce(onf.attr_det_first_name, '') || ' ' || onf.attr_det_last_name)" datatype="text" />
+    <column name="attr_biotope" sql="snf.attr_biotope" datatype="text" />
+    <column name="attr_sample_method" sql="snf.attr_sample_method" datatype="text" />
+    <column name="media" sql="snf.media" datatype="text" />
+    <column name="updated_on" sql="greatest(o.updated_on, cttl.cache_updated_on)" datatype="date" />
+  </columns>
+</report>
