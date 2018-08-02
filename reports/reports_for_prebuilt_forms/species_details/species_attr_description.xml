@@ -1,0 +1,74 @@
+<report
+    title="A description of a taxon based on attached attributes"
+    description="Uses the category (and parent category) of attached attribute values to build a text description"
+>
+  <query website_filter_field="">
+SELECT #columns#
+FROM (
+  SELECT catsort, category, subcatsort, subcategory, caption, STRING_AGG(distinct value, ', ') AS values
+  from (
+    SELECT
+      cat_l.sort_order as catsort,
+      COALESCE(cat_l.term, cat.term) as category,
+      subcat_l.sort_order as subcatsort,
+      COALESCE(subcat_l.term, subcat.term) as subcategory,
+      CASE '#include_captions#' WHEN '1' THEN
+          trim(regexp_replace(a.caption, '^' || COALESCE(subcat_l.term, subcat.term), '')) || ': '
+      ELSE '' END as caption,
+      CASE a.data_type
+          WHEN 'T'::bpchar THEN av.text_value
+          WHEN 'L'::bpchar THEN t.term::text
+          WHEN 'I'::bpchar THEN av.int_value::text ||
+          CASE
+              WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
+              ELSE ''::text
+          END
+          WHEN 'B'::bpchar THEN av.int_value::text
+          WHEN 'F'::bpchar THEN av.float_value::text ||
+          CASE
+              WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
+              ELSE ''::text
+          END
+          WHEN 'D'::bpchar THEN av.date_start_value::text
+          WHEN 'V'::bpchar THEN indicia.vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
+          ELSE NULL::text
+      END ||
+      COALESCE(a.unit, '') AS value
+    FROM cache_termlists_terms subcat
+    LEFT JOIN cache_termlists_terms subcat_l on subcat_l.preferred_termlists_term_id=subcat.preferred_termlists_term_id and subcat_l.language_iso='deu'
+    LEFT JOIN cache_termlists_terms cat ON cat.id=subcat.parent_id
+    LEFT JOIN cache_termlists_terms cat_l on cat_l.preferred_termlists_term_id=cat.preferred_termlists_term_id and cat_l.language_iso='deu'
+    JOIN taxa_taxon_list_attributes a ON a.reporting_category_id=subcat.id AND a.deleted=false
+    JOIN taxa_taxon_list_attribute_values av ON av.taxa_taxon_list_attribute_id=a.id AND av.deleted=false
+    LEFT JOIN cache_termlists_terms t ON t.id=av.int_value AND a.data_type='L'
+    JOIN cache_taxa_taxon_lists cttl on cttl.id=av.taxa_taxon_list_id
+    JOIN cache_taxa_taxon_lists cttlany on cttlany.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+    JOIN taxon_lists_taxa_taxon_list_attributes tlttla ON tlttla.taxa_taxon_list_attribute_id=a.id AND tlttla.taxon_list_id=1 AND tlttla.deleted=false
+    WHERE 1=1
+    #filters#
+  ) AS sub1
+  GROUP BY catsort, category, subcatsort, subcategory, caption
+) AS sub2
+  </query>
+  <order_bys>
+    <order_by>catsort, category, subcatsort, subcategory</order_by>
+  </order_bys>
+  <params>
+    <param name="taxa_taxon_list_id" display="Taxa taxon list ID" datatype="integer" default=""
+      description="Taxa taxon list ID of the record to load" >
+      <where>cttlany.id=#taxa_taxon_list_id#</where>
+    </param>
+    <param name="taxon_meaning_id" display="Taxon meaning ID" datatype="integer" default=""
+      description="Taxon meaning ID of the record to load" >
+      <where>cttlany.taxon_meaning_id=#taxon_meaning_id#</where>
+    </param>
+    <param name="include_captions" datatype="boolean" default="1" />
+  </params>
+  <columns>
+    <column name="catsort" sql="catsort" />
+    <column name="category" sql="category" />
+    <column name="subcatsort" sql="subcatsort" />
+    <column name="subcategory" sql="subcategory" />
+    <column name="values" aggregate="true" sql="STRING_AGG(caption || values, '; ')" />
+  </columns>
+</report>
