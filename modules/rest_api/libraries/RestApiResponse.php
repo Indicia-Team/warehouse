@@ -292,7 +292,6 @@ HTML;
     }
   }
 
-
   /**
    * Returns an HTML error response code, logs a message and aborts the script.
    *
@@ -658,7 +657,7 @@ ROW;
         if ($idx < $dbObject->count() - 1) {
           echo ',';
         }
-        else {
+        elseif ($autofeed) {
           $lastId = $row['id'];
         }
       }
