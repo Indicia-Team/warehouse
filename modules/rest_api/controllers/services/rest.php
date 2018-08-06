@@ -1022,7 +1022,10 @@ class Rest_Controller extends Controller {
    *   Autofeed mode setting.
    */
   private function getAutofeedMode() {
-    return !empty($this->projects[$this->request['proj_id']]['autofeed'])
+    return
+      // Using a configured project which specified autofeed mode.
+      (!empty($this->request['proj_id']) && !empty($this->projects[$this->request['proj_id']]['autofeed']))
+      // Or the request explicitly sets autofeed mode.
       || (isset($_GET['autofeed']) && $_GET['autofeed'] === 't');
   }
 

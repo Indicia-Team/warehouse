@@ -152,7 +152,7 @@ class Rest_ControllerTest extends Indicia_DatabaseTestCase {
     $response = $this->callService('reports/library/occurrences/filterable_explore_list.xml', array());
     $this->assertEquals(200, $response['httpCode'], 'oAuth2 request to the filterable_explore_list report failed.');
 
-      // Now try a bad access token
+    // Now try a bad access token
     self::$oAuthAccessToken = '---';
     $response = $this->callService('taxon-observations', array('edited_date_from' => '2015-01-01'));
     $this->assertEquals(401, $response['httpCode'], 'Invalid token oAuth2 request to taxon-observations should fail.');
