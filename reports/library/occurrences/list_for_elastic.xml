@@ -52,8 +52,8 @@
             else null
           end" datatype="integer" />
     <column name="geom" sql="st_astext(st_transform(o.public_geom, 4326))" datatype="text" />
-    <column name="point_x" sql="round(st_x(st_transform(st_centroid(o.public_geom), 4326)))" datatype="integer" />
-    <column name="point_y" sql="round(st_y(st_transform(st_centroid(o.public_geom), 4326)))" datatype="integer" />
+    <column name="point_x" sql="st_x(st_transform(st_centroid(o.public_geom), 4326))" datatype="float" />
+    <column name="point_y" sql="st_y(st_transform(st_centroid(o.public_geom), 4326))" datatype="float" />
     <column name="output_sref" sql="onf.output_sref" datatype="text" />
     <column name="output_sref_system" sql="onf.output_sref_system" datatype="text" />
     <column name="location_name" sql="o.location_name" datatype="text" />
