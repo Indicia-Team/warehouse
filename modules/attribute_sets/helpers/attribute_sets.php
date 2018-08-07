@@ -211,6 +211,7 @@ join {$entity}_attributes_taxa_taxon_list_attributes attla
 join {$entity}_attributes_websites aw
   on aw.website_id=aset.website_id
   and aw.restrict_to_survey_id=ass.survey_id
+  and aw.occurrence_attribute_id=attla.occurrence_attribute_id
   and aw.deleted=false
 left join {$entity}_attribute_taxon_restrictions atr
   on atr.{$entity}_attributes_website_id=aw.id
