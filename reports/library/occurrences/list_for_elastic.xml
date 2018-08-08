@@ -20,10 +20,10 @@
   <params>
     <!-- last_date and last_id parameters required for autofeed to work. -->
     <param name="last_date" display="Last update date" datatype="date" default="">
-      <where>o.updated_on > '#last_date#'</where>
+      <where>o.updated_on &gt; '#last_date#'</where>
     </param>
     <param name="last_id" display="Last ID" datatype="integer" default="">
-      <where>o.id > '#last_id#'</where>
+      <where>o.id &gt; #last_id#</where>
     </param>
   </params>
   <columns>
