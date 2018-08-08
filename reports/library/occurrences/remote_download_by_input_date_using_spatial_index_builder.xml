@@ -22,10 +22,10 @@
   </order_bys>
   <params>
     <param name="date_from" display="Date From" datatype="date" description="Filter by record added or updated date">
-      <where>('#date_from#'='Click here' OR o.cache_updated_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
+      <where>('#date_from#'='Click here' OR o.updated_on &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))</where>
     </param>
     <param name="date_to" display="Date To" datatype="date" description="Filter by record added or updated date">
-      <where>('#date_to#'='Click here' OR o.cache_updated_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
+      <where>('#date_to#'='Click here' OR o.updated_on &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))</where>
     </param>
     <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup'
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected'>
