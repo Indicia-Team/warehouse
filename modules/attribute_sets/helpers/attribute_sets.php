@@ -110,6 +110,7 @@ join {$entity}_attributes_taxa_taxon_list_attributes attla
 left join {$entity}_attributes_websites aw
   on aw.website_id=aset.website_id
   and aw.restrict_to_survey_id=ass.survey_id
+  and aw.{$entity}_attribute_id=attla.{$entity}_attribute_id
   and aw.deleted=false
 where ass.deleted=false
 and $alias.id=$model->id
@@ -211,7 +212,7 @@ join {$entity}_attributes_taxa_taxon_list_attributes attla
 join {$entity}_attributes_websites aw
   on aw.website_id=aset.website_id
   and aw.restrict_to_survey_id=ass.survey_id
-  and aw.occurrence_attribute_id=attla.occurrence_attribute_id
+  and aw.{$entity}_attribute_id=attla.{$entity}_attribute_id
   and aw.deleted=false
 left join {$entity}_attribute_taxon_restrictions atr
   on atr.{$entity}_attributes_website_id=aw.id
@@ -235,7 +236,7 @@ SQL;
     $rootEntities = empty(self::$rootEntities[$model->object_name]) ?
       ['sample', 'occurrence'] : [self::$rootEntities[$model->object_name]];
     $userId = self::getUserId();
-    // For each root entity, build a query that inserts the attribute website
+    // For each root entity, build a query that deletes the attribute website
     // join records required.
     foreach ($rootEntities as $entity) {
       $qry = <<<SQL
