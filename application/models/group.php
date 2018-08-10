@@ -132,20 +132,51 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
       if (array_key_exists('location_types', $config)) {
         $types = "'" . implode("','", $config['location_types']) . "'";
         if (!empty($filter['location_list'])) {
-          $rows = $this->db->query('select l.id from locations l ' .
-            'join locations search on ' .
-            '  st_intersects(st_buffer(coalesce(search.boundary_geom, search.centroid_geom), 0), st_buffer(coalesce(l.boundary_geom, l.centroid_geom), 0)) ' .
-            '  and not st_touches(st_buffer(coalesce(search.boundary_geom, search.centroid_geom), 0), st_buffer(coalesce(l.boundary_geom, l.centroid_geom), 0)) ' .
-            'join cache_termlists_terms t on t.id=l.location_type_id ' .
-            "where search.id in ($filter[location_list]) and t.preferred_term in ($types)")->result();
+          $sql = <<<SQL
+SELECT l.id FROM locations l
+JOIN locations search ON (
+    st_intersects(search.boundary_geom, l.boundary_geom)
+    AND NOT st_touches(search.boundary_geom, l.boundary_geom)
+  OR (
+    search.boundary_geom IS NULL
+    AND st_intersects(search.centroid_geom, l.boundary_geom)
+    AND NOT st_touches(search.centroid_geom, l.boundary_geom)
+  )
+  OR (
+    l.boundary_geom IS NULL
+    AND st_intersects(search.boundary_geom, l.centroid_geom)
+    AND NOT st_touches(search.boundary_geom, l.centroid_geom)
+  )
+  OR (
+    l.boundary_geom IS NULL AND search.boundary_geom IS NULL
+    AND st_intersects(search.centroid_geom, l.centroid_geom)
+    AND NOT st_touches(search.centroid_geom, l.centroid_geom)
+  )
+)
+JOIN cache_termlists_terms t ON t.id=l.location_type_id AND t.preferred_term IN ($types)
+WHERE search.id IN ($filter[location_list])
+SQL;
+          $rows = $this->db->query($sql)->result();
         }
         else {
           $srid = kohana::config('sref_notations.internal_srid');
-          $rows = $this->db->query('select l.id from locations l ' .
-            "join cache_termlists_terms t on t.id=l.location_type_id and t.preferred_term in ($types) " .
-            "where st_intersects(st_buffer(st_geomfromtext('$filter[searchArea]', $srid), 0), st_buffer(coalesce(l.boundary_geom, l.centroid_geom), 0)) " .
-            "and not st_touches(st_buffer(st_geomfromtext('$filter[searchArea]', $srid), 0), st_buffer(coalesce(l.boundary_geom, l.centroid_geom), 0)) "
-            )->result();
+          // Note that splitting WHERE clause to combine hits on boundary or
+          // centroid (if no boundary) is much faster than a single coalesce
+          // filter, since it allows geom indexes to be used.
+          $sql = <<<SQL
+SELECT DISTINCT l.id
+FROM locations l
+JOIN cache_termlists_terms t ON t.id=l.location_type_id AND t.term IN ($types)
+WHERE (
+  st_intersects(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
+  AND NOT st_touches(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
+) OR (
+  l.boundary_geom IS NULL
+  AND st_intersects(st_geomfromtext('$filter[searchArea]', $srid), l.centroid_geom)
+  AND NOT st_touches(st_geomfromtext('$filter[searchArea]', $srid), l.centroid_geom)
+);
+SQL;
+          $rows = $this->db->query($sql)->result();
         }
         foreach ($rows as $row) {
           $location_ids[] = $row->id;
