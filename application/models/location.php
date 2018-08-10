@@ -14,8 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Models
  * @author Indicia Team
  * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link http://code.google.com/p/indicia/
@@ -24,8 +22,6 @@
 /**
  * Model class for the Locations table.
  *
- * @package Core
- * @subpackage Models
  * @link http://code.google.com/p/indicia/wiki/DataModel
  */
 class Location_Model extends ORM_Tree {
@@ -41,59 +37,59 @@ class Location_Model extends ORM_Tree {
   protected $belongs_to = array('created_by' => 'user', 'updated_by' => 'user', 'location_type' => 'termlists_term');
 
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
-  protected $has_attributes=TRUE;
-  protected $attrs_submission_name='locAttributes';
-  public $attrs_field_prefix='locAttr';
+  protected $has_attributes = TRUE;
+  protected $attrs_submission_name = 'locAttributes';
+  public $attrs_field_prefix = 'locAttr';
 
   // Declare additional fields required when posting via CSV.
-  protected $additional_csv_fields=array(
-      // extra lookup options
-      'location:fk_parent:code' => 'Parent location Code',
-      'location:fk_parent:external_key' => 'Parent location External key',
+  protected $additional_csv_fields = array(
+    // extra lookup options
+    'location:fk_parent:code' => 'Parent location Code',
+    'location:fk_parent:external_key' => 'Parent location External key',
   );
 
   public $import_duplicate_check_combinations = array(
-      array(
-        'description' => 'Location External Key',
-        'fields' => array(
-            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
-            array('fieldName' => 'location:location_type_id'),
-            array('fieldName' => 'location:external_key'),
-        ),
+    array(
+      'description' => 'Location External Key',
+      'fields' => array(
+          array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+          array('fieldName' => 'location:location_type_id'),
+          array('fieldName' => 'location:external_key'),
       ),
-      array(
-        'description' => 'Location Name',
-        'fields' => array(
-            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
-            array('fieldName' => 'location:location_type_id'),
-            array('fieldName' => 'location:name'),
-        ),
+    ),
+    array(
+      'description' => 'Location Name',
+      'fields' => array(
+          array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+          array('fieldName' => 'location:location_type_id'),
+          array('fieldName' => 'location:name'),
       ),
-      array(
-        'description' => 'Location Code',
-        'fields' => array(
-            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
-            array('fieldName' => 'location:location_type_id'),
-            array('fieldName' => 'location:code'),
-        ),
+    ),
+    array(
+      'description' => 'Location Code',
+      'fields' => array(
+          array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+          array('fieldName' => 'location:location_type_id'),
+          array('fieldName' => 'location:code'),
       ),
-      array(
-        'description' => 'Location Grid Ref',
-        'fields' => array(
-            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
-            array('fieldName' => 'location:location_type_id'),
-            array('fieldName' => 'location:centroid_sref'),
-        ),
+    ),
+    array(
+      'description' => 'Location Grid Ref',
+      'fields' => array(
+          array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+          array('fieldName' => 'location:location_type_id'),
+          array('fieldName' => 'location:centroid_sref'),
       ),
-      array(
-        'description' => 'Location Parent and Code',
-        'fields' => array(
-            array('fieldName' => 'website_id', 'notInMappings' => TRUE),
-            array('fieldName' => 'location:location_type_id'),
-            array('fieldName' => 'location:parent_id'),
-            array('fieldName' => 'location:code'),
-        ),
+    ),
+    array(
+      'description' => 'Location Parent and Code',
+      'fields' => array(
+          array('fieldName' => 'website_id', 'notInMappings' => TRUE),
+          array('fieldName' => 'location:location_type_id'),
+          array('fieldName' => 'location:parent_id'),
+          array('fieldName' => 'location:code'),
       ),
+    ),
   );
 
   public function validate(Validation $array, $save = FALSE) {
@@ -120,12 +116,27 @@ class Location_Model extends ORM_Tree {
   }
 
   /**
-   * Override set handler to translate WKT to PostGIS internal spatial data.
+   * Ensure saved boundaries won't break intersection queries.
+   *
+   * * Applies st_MakeValid to ensure geometries are valid.
+   * * Multicollections don't support geo functions such as ST_Intersction
+   *   so we either convert to a Multipolygon or Multilinestring (using)
+   *   ST_CollectionHomogenize) or we apply a very small buffer so it
+   *   converts to a Multipolygon.
    */
   public function __set($key, $value) {
-    if (substr($key,-5) == '_geom') {
+    if (substr($key, -5) === '_geom') {
       if ($value) {
-        $row = $this->db->query("SELECT ST_MakeValid(ST_GeomFromText('$value', " . kohana::config('sref_notations.internal_srid') . ")) AS geom")->current();
+        $srid = kohana::config('sref_notations.internal_srid');
+        $qry = <<<SQL
+SELECT CASE
+  WHEN ST_GeometryType(ST_CollectionHomogenize(ST_MakeValid(ST_GeomFromText('$value', $srid)))) = 'ST_GeometryCollection' THEN
+    ST_Buffer(ST_MakeValid(ST_GeomFromText('$value', $srid)), 0.00001, 'quad_segs=2')
+  ELSE
+    ST_CollectionHomogenize(ST_MakeValid(ST_GeomFromText('$value', $srid)))
+END AS geom
+SQL;
+        $row = $this->db->query($qry)->current();
         $value = $row->geom;
       }
     }
@@ -138,7 +149,7 @@ class Location_Model extends ORM_Tree {
   public function __get($column) {
     $value = parent::__get($column);
 
-    if (substr($column,-5) == '_geom' && !empty($value)) {
+    if (substr($column, -5) === '_geom' && !empty($value)) {
       $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
       $value = $row->wkt;
     }
@@ -149,7 +160,8 @@ class Location_Model extends ORM_Tree {
    * Return the submission structure, which includes defining the locations_websites table
    * is a sub-model.
    *
-   * @return array Submission structure for a location entry.
+   * @return array
+   *   Submission structure for a location entry.
    */
   public function get_submission_structure() {
     return array(
