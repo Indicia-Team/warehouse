@@ -42,7 +42,7 @@ jQuery(document).ready(function docReady($) {
       var row = $(presenceInput).closest('tr');
       $(row).find('.scOccAttrCell option').removeAttr('selected');
       if (this.restrict_to_stage_termlists_term_id !== '') {
-        $(row).find('.scOccAttrCell option[value=' + this.restrict_to_stage_termlists_term_id + ']').attr('selected', 'selected');
+        $(row).find('.scOccAttrCell option[value=' + this.restrict_to_stage_termlists_term_id + ']').prop('selected', true);
       }
     });
   }
