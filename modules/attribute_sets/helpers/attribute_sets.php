@@ -95,6 +95,7 @@ class attribute_sets {
     // join records required.
     foreach ($rootEntities as $entity) {
       $qry = <<<SQL
+-- dummy comment to prevent Kohana reading insert_id (which breaks if nothing inserted)
 insert into {$entity}_attributes_websites (website_id, {$entity}_attribute_id, created_on, created_by_id, restrict_to_survey_id)
 select distinct aset.website_id, attla.{$entity}_attribute_id, now(), $userId, ass.survey_id
 from attribute_sets_surveys ass
@@ -192,6 +193,7 @@ SQL;
     // join records required.
     foreach ($rootEntities as $entity) {
       $qry = <<<SQL
+-- dummy comment to prevent Kohana reading insert_id (which breaks if nothing inserted)
 insert into {$entity}_attribute_taxon_restrictions({$entity}_attributes_website_id, restrict_to_taxon_meaning_id, restrict_to_stage_term_meaning_id,
   created_on, created_by_id, updated_on, updated_by_id)
 select distinct aw.id, astr.restrict_to_taxon_meaning_id, astr.restrict_to_stage_term_meaning_id,
