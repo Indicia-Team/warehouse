@@ -583,7 +583,7 @@ class Occurrence_Model extends ORM {
         'display' => 'Record status',
         'description' => 'Select the initial status for imported species records',
         'datatype' => 'lookup',
-        'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
+        'lookup_values' => 'C:Unconfirmed - not reviewed,V:Accepted,I:Data entry still in progress',
         'default' => 'C'
       )
     );
