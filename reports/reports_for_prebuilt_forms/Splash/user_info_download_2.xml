@@ -16,6 +16,7 @@ an event filter to return users associated with a particular event."
     LEFT JOIN person_attribute_values pavCountry ON pavCountry.person_id=u.person_id AND pavCountry.person_attribute_id=#country_attr_id# AND pavCountry.deleted=false 
     LEFT JOIN person_attribute_values pavPC ON pavPC.person_id=u.person_id AND pavPC.person_attribute_id=#post_code_attr_id# AND pavPC.deleted=false 
     LEFT JOIN person_attribute_values pav18 ON pav18.person_id=u.person_id AND pav18.person_attribute_id=#over_18_attr_id# AND pav18.deleted=false 
+    LEFT JOIN person_attribute_values pavMentor ON pavMentor.person_id=u.person_id AND pavMentor.person_attribute_id=#mentor_attr_id# AND pavMentor.deleted=false 
     LEFT JOIN person_attribute_values reqSurvForms ON reqSurvForms.person_id=u.person_id AND reqSurvForms.person_attribute_id=#request_survey_forms_attr_id# AND reqSurvForms.deleted=false 
     LEFT JOIN person_attribute_values pavDataAccess ON pavDataAccess.person_id=u.person_id AND pavDataAccess.person_attribute_id=#data_access_attr_id# AND pavDataAccess.deleted=false 
       
@@ -92,6 +93,7 @@ an event filter to return users associated with a particular event."
     <param name="country_attr_id" display="Country attribute id" description="Person attribute id that holds the user country." datatype="text"/>
     <param name="post_code_attr_id" display="Post code attribute id" description="Person attribute id that holds the user post code." datatype="text"/>
     <param name="over_18_attr_id" display="Over 18 attribute id" description="Person attribute id that holds whether a user is over 18." datatype="text"/>
+    <param name="mentor_attr_id" display="Mentor attribute id" description="Person attribute id that holds whether a user is a mentor." datatype="text"/>
     <param name="request_survey_forms_attr_id" display="Requested survey forms attribute ID?" description="Person attribute id that holds whether a user requested the survey forms." datatype="text"/>
     <param name="data_access_attr_id" display="Data Access Policy attribute id" description="Person attribute id that holds whether a user has agreed to the data access policy." datatype="text"/>
     <param name="allocation_date_start" display="User allocated square on or after this date" description="Only return users who were allocated a square on or after this date." datatype="date" emptyvalue=""/>
@@ -109,7 +111,8 @@ an event filter to return users associated with a particular event."
     <column name='country' display='Country' sql='pavCountry.text_value' datatype='text' />
     <column name='post_code' display='Post Code' sql='pavPC.text_value' datatype='text' />
     <column name='over_18' display='Over 18?' sql="case pav18.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
-    <column name='request_survey_forms' display='Requested Survey Forms?' sql="case reqSurvForms.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
+    <column name='mentor' display='Mentor?' sql="case pavMentor.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
+    <column name='request_survey_forms' display='Requested Survey Forms?' sql="case reqSurvForms.text_value  when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='data_access' display='Data Access Policy Agreed?' sql="case pavDataAccess.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='registration_date' display='Registration date' sql='uw.created_on' datatype='text' />  
     <column name='count' sql='count(distinct(sqr.id))' display='Number of allocated squares' datatype='integer' aggregate="true"/>
