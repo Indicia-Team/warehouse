@@ -98,6 +98,7 @@ an event filter to return users associated with a particular event."
     <param name="data_access_attr_id" display="Data Access Policy attribute id" description="Person attribute id that holds whether a user has agreed to the data access policy." datatype="text"/>
     <param name="allocation_date_start" display="User allocated square on or after this date" description="Only return users who were allocated a square on or after this date." datatype="date" emptyvalue=""/>
     <param name="allocation_date_end" display="User allocated square before this date" description="Only return users who were allocated a square before this date." datatype="date" emptyvalue=""/>
+    <param name="square_admin_page_link" display="Link to square administration page" description="Link to page which administrators use to manage squares." datatype="text" emptyvalue=""/>
   </params>
   <columns> 
     <column name='first_name' display='First name' sql='p.first_name' datatype='text' /> 
@@ -119,7 +120,9 @@ an event filter to return users associated with a particular event."
     <column name='allocated_squares' sql="string_agg(distinct(case when 
           ((sqrPavDated.created_on &gt;= CAST(COALESCE('#allocation_date_start#','1500-01-01') as date) OR '#allocation_date_start#'='')
           AND (sqrPavDated.created_on &lt;= CAST(COALESCE('#allocation_date_end#','1500-01-01') as date) OR '#allocation_date_end#'=''))
-        then sqr.name else '&lt;b style=&quot;color:red&quot;&gt;' || sqr.name || '&lt;/b&gt;' END), ',')" display='Squares allocated' datatype='text' aggregate="true"/>
+          THEN '&lt;a href=&quot;' || '#square_admin_page_link#' || '?location_id=' || sqr.id || '&quot;&gt;' || sqr.name || '&lt;/a&gt;' 
+          ELSE '&lt;b style=&quot;color:red&quot;&gt;' || '&lt;a href=&quot;' || '#square_admin_page_link#' || '?location_id=' || sqr.id || '&quot;&gt;' || sqr.name || '&lt;/a&gt;'   || '&lt;/b&gt;' END), ', ')" 
+        display='Squares allocated' datatype='text' aggregate="true"/>
     <column name='allocated_events' sql="string_agg(distinct(event.name), ',')" display='Events' datatype='text' aggregate="true"/>
   </columns>
 </report>
