@@ -20,9 +20,12 @@
     <param name="ignore_square_dates_before" display="Ignore Square Dates Before" description="Ignore any squares created before this date.
 Useful if old squares are left on the system but are not currently active." datatype="date"/>
     <param name="limit_survey_ids" display="Limit Survey IDs" description="Comma separated list of survey ids to limit the results to." datatype="text"/>
+    <param name="square_admin_page_link" display="Link to square administration page" description="Link to page which administrators use to manage squares." datatype="text" emptyvalue=""/>
   </params>
   <columns> 
     <column name='id' sql='distinct(square.id)' datatype='integer' visible='false' in_count="true"/>
-    <column name='centroid_sref' display='Square' sql="regexp_replace(square.centroid_sref, ',[^ ]', ', ', 'g')" datatype='text' in_count="true"/>
+    <column name='centroid_sref' display='Square' sql="
+      '&lt;a href=&quot;' || '#square_admin_page_link#' || '?location_id=' || square.id || '&quot;&gt;' || regexp_replace(square.centroid_sref, ',[^ ]', ', ', 'g') || '&lt;/a&gt;'
+    " datatype='text' in_count="true"/>
   </columns>
 </report>
