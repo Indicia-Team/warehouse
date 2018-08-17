@@ -65,7 +65,7 @@ an event filter to return users associated with a particular event."
             )))  
   </query>
   <order_bys>
-    <order_by>p.surname ASC</order_by>
+    <order_by>person_surname ASC</order_by>
   </order_bys>
   <params>
     <param name='event_id' display='Event' description='Select an event to see people signed up up for that event.' datatype='lookup'
@@ -99,11 +99,14 @@ an event filter to return users associated with a particular event."
     <param name="allocation_date_start" display="User allocated square on or after this date" description="Only return users who were allocated a square on or after this date." datatype="date" emptyvalue=""/>
     <param name="allocation_date_end" display="User allocated square before this date" description="Only return users who were allocated a square before this date." datatype="date" emptyvalue=""/>
     <param name="square_admin_page_link" display="Link to square administration page" description="Link to page which administrators use to manage squares." datatype="text" emptyvalue=""/>
+    <param name="user_admin_page_link" display="Link to user administration page" description="Link to page which administrators use to manage users." datatype="text" emptyvalue=""/>
   </params>
   <columns> 
-    <column name='first_name' display='First name' sql='p.first_name' datatype='text' /> 
-    <column name='surname' display='Surname' sql='p.surname' datatype='text' />        
-    <column name='email_address' display='Email address' sql='p.email_address' datatype='text' />  
+    <column name='person_surname' display='Surname' sql="p.surname" datatype='text'/>       
+    <column name='person_full_name' display='Full name' 
+        sql="'&lt;a href=&quot;' || '#user_admin_page_link#' || '?dynamic-the_user_id=' || u.id || '&quot;&gt;' || p.first_name || ' ' || p.surname || '&lt;/a&gt;'" 
+    datatype='text'/> 
+    <column name='email_address' display='Email address' sql='p.email_address' datatype='text' />
     <column name='address' display='Address' sql='pavAddr.text_value' datatype='text' />
     <column name='address_line_2' display='Address Line 2' sql='pavAddr2.text_value' datatype='text' /> 
     <column name='address_line_3' display='Address Line 3' sql='pavAddr3.text_value' datatype='text' /> 
@@ -111,7 +114,7 @@ an event filter to return users associated with a particular event."
     <column name='county' display='County' sql='pavCounty.text_value' datatype='text' />
     <column name='country' display='Country' sql='pavCountry.text_value' datatype='text' />
     <column name='post_code' display='Post Code' sql='pavPC.text_value' datatype='text' />
-    <column name='over_18' display='Over 18?' sql="case pav18.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
+    <column name='over_18' display='18 or over?' sql="case pav18.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='mentor' display='Mentor?' sql="case pavMentor.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='request_survey_forms' display='Requested Survey Forms?' sql="case reqSurvForms.text_value  when '1' then 'Yes' else 'No' End" datatype='text' />
     <column name='data_access' display='Data Access Policy Agreed?' sql="case pavDataAccess.text_value when '1' then 'Yes' else 'No' End" datatype='text' />
