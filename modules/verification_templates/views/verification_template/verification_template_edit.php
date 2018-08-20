@@ -66,6 +66,7 @@ echo data_entry_helper::checkbox_group(array(
     'R4' => 'Not accepted as unable to verify (R4)',
     'R5' => 'Not accepted as incorrect (R5)',
     'DT' => 'Redetermined',
+    'Q' => 'Queried',
   ),
   'helpText' => 'Choose which verification status changes this template will available for. ' .
     'Note that a template available for "V" will also be available for "V1" and "V2", and similar for "R" and "R4"/"R5".',
