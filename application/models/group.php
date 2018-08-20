@@ -130,7 +130,15 @@ where s.deleted=false and s.id=o.sample_id and s.group_id=$this->id";
       // go any further.
       $config = kohana::config_load('spatial_index_builder', FALSE);
       if (array_key_exists('location_types', $config)) {
-        $types = "'" . implode("','", $config['location_types']) . "'";
+        $locationTypeNames = "'" . implode("','", $config['location_types']) . "'";
+        $locationTypeRows = $this->db->query(
+          "select id from cache_termlists_terms where termlist_title='Location types' and term in ($locationTypeNames)"
+          )->result();
+        $locationTypeIds = [];
+        foreach ($locationTypeRows as $type) {
+          $locationTypeIds[] = $type->id;
+        }
+        $types = implode($locationTypeIds);
         if (!empty($filter['location_list'])) {
           $sql = <<<SQL
 SELECT l.id FROM locations l
@@ -153,8 +161,8 @@ JOIN locations search ON (
     AND NOT st_touches(search.centroid_geom, l.centroid_geom)
   )
 )
-JOIN cache_termlists_terms t ON t.id=l.location_type_id AND t.preferred_term IN ($types)
 WHERE search.id IN ($filter[location_list])
+AND l.location_type_id in ($types);
 SQL;
           $rows = $this->db->query($sql)->result();
         }
@@ -166,7 +174,6 @@ SQL;
           $sql = <<<SQL
 SELECT DISTINCT l.id
 FROM locations l
-JOIN cache_termlists_terms t ON t.id=l.location_type_id AND t.term IN ($types)
 WHERE (
   st_intersects(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
   AND NOT st_touches(st_geomfromtext('$filter[searchArea]', $srid), l.boundary_geom)
@@ -174,7 +181,8 @@ WHERE (
   l.boundary_geom IS NULL
   AND st_intersects(st_geomfromtext('$filter[searchArea]', $srid), l.centroid_geom)
   AND NOT st_touches(st_geomfromtext('$filter[searchArea]', $srid), l.centroid_geom)
-);
+)
+AND l.location_type_id in ($types);
 SQL;
           $rows = $this->db->query($sql)->result();
         }
