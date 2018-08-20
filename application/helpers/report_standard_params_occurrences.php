@@ -753,24 +753,15 @@ class report_standard_params_occurrences {
         'datatype' => 'integer[]',
         'display' => "Higher taxa taxon list IDs",
         'description' => 'Comma separated list of preferred IDs. Optimised for searches at family level or higher',
-        'wheres' => [
+        'joins' => [
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.family_taxa_taxon_list_id in (#higher_taxa_taxon_list_list#)",
+            'sql' =>
+              "join cache_taxon_paths ctp on ctp.external_key=o.taxa_taxon_list_external_key\n" .
+              "join cache_taxa_taxon_lists cttlpath on ctp.path && ARRAY[cttlpath.taxon_meaning_id] and cttlpath.id IN (#higher_taxa_taxon_list_list#)",
           ],
         ],
-        // Faster than embedding this query in the report.
-        'preprocess' =>
-          "with recursive q as (
-    select preferred_taxa_taxon_list_id, family_taxa_taxon_list_id
-    from cache_taxa_taxon_lists t
-    where id in (#higher_taxa_taxon_list_list#)
-    union all
-    select tc.preferred_taxa_taxon_list_id, tc.family_taxa_taxon_list_id
-    from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id and tc.taxon_rank_sort_order<=180
-  ) select array_to_string(array_agg(distinct family_taxa_taxon_list_id::varchar), ',') from q",
       ],
       'taxon_meaning_list' => [
         'datatype' => 'integer[]',
