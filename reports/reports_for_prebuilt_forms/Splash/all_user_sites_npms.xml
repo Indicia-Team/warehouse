@@ -23,6 +23,13 @@
     <param name="location_id" display="Location Id" description="A location id user if we only want to return results for a single location." datatype="integer" default=''>
       <where>l.id=#location_id#</where>
     </param>
+    <param name="location_id" display="Location Id" description="A location id user if we only want to return results for a single location." datatype="integer" default=''>
+      <where>l.id=#location_id#</where>
+    </param>
+    --Note am using the name the_user_id as just using user_id seems to pickup the current user's id automatically which isn't what we want at all
+    <param name="the_user_id" display="User Id" description="A user id used if we only want to return results for a single user." datatype="integer" default='' emptyvalue=''>
+      <where>u.id=#the_user_id#</where>
+    </param>
   </params>
   <columns>
     <column name="id" sql="pav.id" unique="true" in_count="integer" type="hidden" visible="false"/>
