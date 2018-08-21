@@ -121,13 +121,14 @@ and (ocprev.record_status is not null or ocprev.query='t' or (co.confidential=fa
 and ocprev.created_by_id<>oc.created_by_id and ocprev.created_by_id<>co.created_by_id;
 
 
-select rn.*, u.username
+select rn.*, case u.id when 1 then u.username else coalesce(p.first_name || ' ', '') || p.surname end as username
 from records_to_notify rn
 join occurrences o on o.id=rn.id
 left join notifications n on n.linked_id=o.id
           and n.source_type=rn.source_type
           and n.source_detail=rn.source_detail
 join users u on u.id=coalesce(rn.occurrence_comment_created_by_id, o.verified_by_id)
+join people p on p.id=u.person_id
 where n.id is null;
 SQL
     )->result();
