@@ -26,8 +26,8 @@ echo $grid;
 </form>
 <p>Verification rules can be created by uploading files that are compatible with the NBN Record Cleaner.
 For more information on creating these files, see
-<a href="http://www.nbn.org.uk/Tools-Resources/Recording-Resources/NBN-Record-Cleaner/Creating-verification-rules.aspx">
-NBN Record Cleaner - creating verification rules</a>. You can either use the online file servers
+<a href="https://nbn.org.uk/tools-and-resources/nbn-toolbox/nbn-record-cleaner/">
+NBN Record Cleaner on the NBN website.</a>. You can either use the online file servers
 as used by NBN Record Cleaner to obtain rules or zip your files into a batch to upload. Alternatively you can create
 a CSV file containing one column per property in a rule file and one row per rule to upload. Column titles
 must exactly match the name of the section, followed by a colon, then the name of the attribute, e.g.
