@@ -140,9 +140,7 @@ $(document).ready(function() {
   <footer id="footer" class="container">
     <?php
     echo $siteTitle . ' | ' . Kohana::lang('misc.indicia_version') . ' ' . kohana::config('version.version');
-    if (kohana::config('upgrade.continuous_upgrade')) {
-      echo " (dev)";
-    } ?>
+    ?>
   </footer>
 
 </body>
