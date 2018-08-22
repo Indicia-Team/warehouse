@@ -1,6 +1,6 @@
 <report
-    title="Splash Visits"
-    description="Display a list of visits (parent samples for splash)."
+    title="Splash All Visits"
+    description="Display a list of visits suitable for adminstrators to view all data."
 >
   <query website_filter_field="sv.website_id">
   SELECT #columns#
@@ -22,9 +22,6 @@
     <param name="current_user" display="Current User ID" description="Current user's warehouse ID. Allows a column to be output indicating that the user owns the record." datatype="text" />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
-    <param name="my_own_data" display="My data only?" datatype="checkbox">
-      <where value="1">s.created_by_id=#current_user#</where>
-    </param>
   </params>
   <columns>
     <column name='id' display='ID' sql='s.id' datatype='integer' in_count="true"/>
