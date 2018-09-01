@@ -713,6 +713,18 @@ class report_standard_params_occurrences {
           ],
         ],
       ],
+      'import_guid_list' => [
+        'datatype' => 'string[]',
+        'display' => "Import  GUIDs",
+        'description' => 'Comma separated list of GUIDs of occurrence imports to limit to.',
+        'wheres' => [
+          [
+            'value' => '',
+            'operator' => '',
+            'sql' => "o.import_guid IN (#import_guid_list#)",
+          ],
+        ],
+      ],
       'taxon_group_list' => [
         'datatype' => 'integer[]',
         'display' => "Taxon Group IDs",
