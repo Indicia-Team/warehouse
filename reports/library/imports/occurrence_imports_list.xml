@@ -1,0 +1,26 @@
+<report
+    title="List of occurrence imports"
+    description="Lists each import event and the count of records added by it."
+>
+  <query>
+    SELECT #columns#
+    FROM occurrences o
+    JOIN users u ON u.id=o.created_by_id
+    JOIN people p ON p.id=u.person_id
+    WHERE o.import_guid IS NOT NULL
+  </query>
+  <order_bys>
+    <order_by>min(o.created_on)</order_by>
+  </order_bys>
+  <params>
+    <param name="currentUser" display="User ID" datatype="integer">
+      <where>u.id=#currentUser#</where>
+    </param>
+  </params>
+  <columns>
+    <column name="import_guid" sql="import_guid" in_count="true" />
+    <column name="date_time" display="Date time" sql="min(o.created_on)" aggregate="true" />
+    <column name="imported_by" display="Imported by" sql="p.surname || coalesce(', ' || p.first_name, '')" />
+    <column name="records" display="# Records" sql="count(o.*)" aggregate="true" />
+  </columns>
+</report>
