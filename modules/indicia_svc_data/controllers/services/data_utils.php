@@ -200,32 +200,6 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     }
   }
 
-  private function getOccurrenceTableVerificationUpdateValues($db, $status, $substatus, $decisionSource) {
-    $r = [];
-    $verifier = $this->getVerifierName($db);
-    // Field updates for the occurrences table.
-    $r['occurrences'] = array(
-      'record_status' => $status,
-      'verified_by_id' => $this->user_id,
-      'verified_on' => date('Y-m-d H:i:s'),
-      'updated_by_id' => $this->user_id,
-      'updated_on' => date('Y-m-d H:i:s'),
-      'record_substatus' => $substatus,
-      'record_decision_source' => $decisionSource,
-    );
-    // Field updates for the cache_occurrences_functional table.
-    $r['cache_occurrences_functional'] = array(
-      'record_status' => $status,
-      'verified_on' => date('Y-m-d H:i:s'),
-      'updated_on' => date('Y-m-d H:i:s'),
-      'record_substatus' => $substatus,
-      'query' => NULL
-    );
-    // Field updates for the cache_occurrences_nonfunctional table.
-    $r['cache_occurrences_nonfunctional'] = array('verifier' => $verifier);
-    return $r;
-  }
-
   /**
    * Provides the services/data_utils/single_verify_sample service. This takes a sample:id, sample:record_status, user_id (the verifier)
    * and optional sample_comment:comment in the $_POST data and updates the sample. This is provided as a more optimised
@@ -338,6 +312,101 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       echo $e->getMessage();
       error_logger::log_error('Exception during bulk verify of samples', $e);
     }
+  }
+
+  public function bulk_delete_occurrences() {
+    header('Content-Type: application/json');
+    if (empty($_POST['import_guid'])) {
+      $this->fail('Bad request', 400, 'Missing import_guid parameter');
+    }
+    elseif (empty($_POST['user_id'])) {
+      $this->fail('Bad request', 400, 'Missing user_id parameter');
+    }
+    elseif (!preg_match('/^\d+$', $_POST['import_guid'])) {
+      $this->fail('Bad request', 400, 'Incorrect import_guid format');
+    }
+    elseif (!preg_match('/^\d+$', $_POST['user_id'])) {
+      $this->fail('Bad request', 400, 'Incorrect user_id format');
+    }
+    else {
+      $this->authenticate('write');
+      $db = new Database();
+      // The following query picks up occurrences from the import, plus the
+      // associated samples unless the samples now have other occurrences
+      // subsequently added to them.
+      $qry = <<<SQL
+select o.id, case when o2.id is null then o.sample_id else null end as sample_id
+from occurrences o
+left join occurrences o2 on coalesce(o2.import_guid, '')<>coalesce(o.import_guid, '') and o2.sample_id=o.sample_id and o2.deleted=false
+into temporary to_delete
+where o.import_guid='$_POST[import_guid]' and o.created_by_id=$_POST[user_id]
+and o.deleted=false
+and o.website_id=$this->website_id;
+
+UPDATE occurrences SET deleted=true, updated_on=now(), updated_by_id=$_POST[user_id]
+WHERE id IN (SELECT id FROM to_delete;
+
+UPDATE samples SET deleted=true, updated_on=now(), updated_by_id=$_POST[user_id]
+WHERE id IN (SELECT sample_id FROM to_delete;
+
+DELETE FROM cache_occurrences_functional WHERE id IN (SELECT id FROM to_delete);
+DELETE FROM cache_occurrences_nonfunctional WHERE id IN (SELECT id FROM to_delete);
+DELETE FROM cache_samples_functional WHERE id IN (SELECT sample_id FROM to_delete);
+DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT sample_id FROM to_delete);
+
+SELECT COUNT(distinct o.id) AS occurrences, COUNT(distinct sample_id) AS samples FROM to_delete;
+SQL;
+      $db->query($qry);
+      $count = $db->select('COUNT(distinct o.id) AS occurrences, COUNT(distinct sample_id) AS samples')
+        ->from('to_delete')
+        ->get()->current();
+      $response = array(
+        'code' => 200,
+        'status' => 'OK',
+        'message' => "$count[occurrences] occurrences and $count[samples] samples deleted",
+      );
+      echo json_encode($response);
+    }
+  }
+
+  private function fail($message, $code, $text) {
+    $protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
+    header($protocol . ' ' . $code . ' ' . $message);
+    $response = array(
+      'code' => $code,
+      'status' => $message,
+      'message' => $text,
+    );
+    echo json_encode($response);
+  }
+
+  /**
+   * Retrieves the values that must change for each entity after a verification.
+   */
+  private function getOccurrenceTableVerificationUpdateValues($db, $status, $substatus, $decisionSource) {
+    $r = [];
+    $verifier = $this->getVerifierName($db);
+    // Field updates for the occurrences table.
+    $r['occurrences'] = array(
+      'record_status' => $status,
+      'verified_by_id' => $this->user_id,
+      'verified_on' => date('Y-m-d H:i:s'),
+      'updated_by_id' => $this->user_id,
+      'updated_on' => date('Y-m-d H:i:s'),
+      'record_substatus' => $substatus,
+      'record_decision_source' => $decisionSource,
+    );
+    // Field updates for the cache_occurrences_functional table.
+    $r['cache_occurrences_functional'] = array(
+      'record_status' => $status,
+      'verified_on' => date('Y-m-d H:i:s'),
+      'updated_on' => date('Y-m-d H:i:s'),
+      'record_substatus' => $substatus,
+      'query' => NULL
+    );
+    // Field updates for the cache_occurrences_nonfunctional table.
+    $r['cache_occurrences_nonfunctional'] = array('verifier' => $verifier);
+    return $r;
   }
 
   /**
