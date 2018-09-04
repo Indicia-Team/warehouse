@@ -7,7 +7,8 @@
     FROM occurrences o
     JOIN users u ON u.id=o.created_by_id
     JOIN people p ON p.id=u.person_id
-    WHERE o.import_guid IS NOT NULL
+    WHERE o.deleted=false
+    AND o.import_guid IS NOT NULL
   </query>
   <order_bys>
     <order_by>min(o.created_on)</order_by>
