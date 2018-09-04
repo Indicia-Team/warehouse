@@ -314,6 +314,23 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     }
   }
 
+  /**
+   * Web service endpoint index.php/services/data_utils/bulk_delete_occurrences.
+   *
+   * Allows bulk deletion of occurrence data. Currently only supports deletion
+   * of entire imports. When calling this service, the following must be
+   * provided in the POST data:
+   * * write authentication tokens
+   * * import_guid - the GUID of the import to delete
+   * * user_id - ID of the user. Records are only deleted if they belong to the
+   *   user.
+   * * trial - optional. Set a value such as 't' to do a trial run.
+   *
+   * The response is an HTTP response containing the following:
+   * * action - either delete or none (for trial runs)
+   * * affected - a list of entities with the count of affected records.
+   *
+   */
   public function bulk_delete_occurrences() {
     header('Content-Type: application/json');
     if (empty($_POST['import_guid'])) {
@@ -322,48 +339,58 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
     elseif (empty($_POST['user_id'])) {
       $this->fail('Bad request', 400, 'Missing user_id parameter');
     }
-    elseif (!preg_match('/^\d+$', $_POST['import_guid'])) {
+    elseif (!preg_match('/^\d+$/', $_POST['import_guid'])) {
       $this->fail('Bad request', 400, 'Incorrect import_guid format');
     }
-    elseif (!preg_match('/^\d+$', $_POST['user_id'])) {
+    elseif (!preg_match('/^\d+$/', $_POST['user_id'])) {
       $this->fail('Bad request', 400, 'Incorrect user_id format');
     }
     else {
       $this->authenticate('write');
       $db = new Database();
-      // The following query picks up occurrences from the import, plus the
-      // associated samples unless the samples now have other occurrences
-      // subsequently added to them.
-      $qry = <<<SQL
-select o.id, case when o2.id is null then o.sample_id else null end as sample_id
-from occurrences o
-left join occurrences o2 on coalesce(o2.import_guid, '')<>coalesce(o.import_guid, '') and o2.sample_id=o.sample_id and o2.deleted=false
-into temporary to_delete
-where o.import_guid='$_POST[import_guid]' and o.created_by_id=$_POST[user_id]
-and o.deleted=false
-and o.website_id=$this->website_id;
-
+      $deletionSql = '';
+      if (empty($_POST['trial'])) {
+        $deletionSql = <<<SQL
 UPDATE occurrences SET deleted=true, updated_on=now(), updated_by_id=$_POST[user_id]
-WHERE id IN (SELECT id FROM to_delete;
+WHERE id IN (SELECT id FROM to_delete);
 
 UPDATE samples SET deleted=true, updated_on=now(), updated_by_id=$_POST[user_id]
-WHERE id IN (SELECT sample_id FROM to_delete;
+WHERE id IN (SELECT sample_id FROM to_delete);
 
 DELETE FROM cache_occurrences_functional WHERE id IN (SELECT id FROM to_delete);
 DELETE FROM cache_occurrences_nonfunctional WHERE id IN (SELECT id FROM to_delete);
 DELETE FROM cache_samples_functional WHERE id IN (SELECT sample_id FROM to_delete);
 DELETE FROM cache_samples_nonfunctional WHERE id IN (SELECT sample_id FROM to_delete);
+SQL;
+      }
+      // The following query picks up occurrences from the import, plus the
+      // associated samples unless the samples now have other occurrences
+      // subsequently added to them.
+      $qry = <<<SQL
+SELECT o.id, CASE WHEN o2.id IS NULL THEN o.sample_id ELSE NULL END AS sample_id
+INTO temporary to_delete
+FROM occurrences o
+LEFT JOIN occurrences o2 ON coalesce(o2.import_guid, '')<>coalesce(o.import_guid, '') AND o2.sample_id=o.sample_id and o2.deleted=false
+WHERE o.import_guid='$_POST[import_guid]' AND o.created_by_id=$_POST[user_id]
+AND o.deleted=false
+and o.website_id=$this->website_id;
 
-SELECT COUNT(distinct o.id) AS occurrences, COUNT(distinct sample_id) AS samples FROM to_delete;
+$deletionSql;
+
+SELECT COUNT(distinct id) AS occurrences, COUNT(distinct sample_id) AS samples FROM to_delete;
 SQL;
       $db->query($qry);
-      $count = $db->select('COUNT(distinct o.id) AS occurrences, COUNT(distinct sample_id) AS samples')
+      $count = $db->select('COUNT(distinct id) AS occurrences, COUNT(distinct sample_id) AS samples')
         ->from('to_delete')
         ->get()->current();
       $response = array(
         'code' => 200,
         'status' => 'OK',
-        'message' => "$count[occurrences] occurrences and $count[samples] samples deleted",
+        'action' => empty($_POST['trial']) ? 'delete' : 'none',
+        'affected' => [
+          'occurrences' => $count->occurrences,
+          'samples' => $count->samples,
+        ]
       );
       echo json_encode($response);
     }
