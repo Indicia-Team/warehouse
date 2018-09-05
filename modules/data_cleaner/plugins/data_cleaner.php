@@ -96,17 +96,17 @@ function data_cleaner_cleanout_old_messages(array $rules, $db) {
         where oc.occurrence_id=o.id and o.record_status not in ('I','V','R','D')
         and oc.generated_by='$rule[plugin]'";
       $db->query($query);
-      // Cleanup the notifications generated previously for verifications
-      // and auto-checks.
-      $query = "delete
-        from notifications
-        using occdelta o
-        where source='Verifications and comments' and source_type in ('V','A')
-        and linked_id = o.id
-        and o.record_status not in ('I','V','R','D')";
-      $db->query($query);
       $modulesDone[] = $rule['plugin'];
     }
+    // Cleanup the notifications generated previously for verifications and
+    // auto-checks.
+    $query = "delete
+      from notifications
+      using occdelta o
+      where source='Verifications and comments' and source_type in ('V','A')
+      and linked_id = o.id
+      and o.record_status not in ('I','V','R','D')";
+    $db->query($query);
   }
 }
 
