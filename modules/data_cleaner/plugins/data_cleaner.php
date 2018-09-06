@@ -195,27 +195,32 @@ where occdelta.id=o.id and occdelta.record_status not in ('I','V','R','D')";
  */
 function data_cleaner_set_cache_fields($db) {
   if (in_array(MODPATH . 'cache_builder', Kohana::config('config.modules'))) {
-    $query = "UPDATE cache_occurrences_nonfunctional co
-SET data_cleaner_info=
+    $query = <<<SQL
+SELECT o.id,
   CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE
-    COALESCE((SELECT array_to_string(array_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}'),' ')
-      FROM occurrence_comments oc
-      WHERE oc.occurrence_id=o.id
+    COALESCE(string_agg(distinct '[' || oc.generated_by || ']{' || oc.comment || '}', ' '), 'pass')
+  END AS data_cleaner_info,
+  CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE COUNT(oc.id)=0 END AS data_cleaner_result
+INTO TEMPORARY data_cleaner_results
+FROM occdelta o
+JOIN occurrences occ on occ.id=o.id
+LEFT JOIN occurrence_comments oc ON oc.occurrence_id=o.id
          AND oc.implies_manual_check_required=true
-         AND oc.deleted=false), 'pass') END
-FROM occdelta o
-JOIN occurrences occ on occ.id=o.id
-WHERE co.id=o.id";
-    $db->query($query);
-    $query = "UPDATE cache_occurrences_functional co
-SET data_cleaner_result=CASE WHEN occ.last_verification_check_date IS NULL THEN NULL ELSE dc.id IS NULL END
-FROM occdelta o
-JOIN occurrences occ on occ.id=o.id
-LEFT JOIN occurrence_comments dc
-    ON dc.occurrence_id=o.id
-    AND dc.implies_manual_check_required=true
-    AND dc.deleted=false
-WHERE co.id=o.id";
+         AND oc.deleted=false
+GROUP BY o.id, occ.last_verification_check_date;
+
+UPDATE cache_occurrences_functional o
+SET data_cleaner_result = dcr.data_cleaner_result
+FROM data_cleaner_results dcr
+WHERE dcr.id=o.id;
+
+UPDATE cache_occurrences_nonfunctional o
+SET data_cleaner_info = dcr.data_cleaner_info
+FROM data_cleaner_results dcr
+WHERE dcr.id=o.id;
+
+DROP TABLE data_cleaner_results;
+SQL;
     $db->query($query);
   }
 }
