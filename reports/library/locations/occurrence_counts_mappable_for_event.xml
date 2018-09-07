@@ -5,25 +5,21 @@
     bioblitzes.">
   <query website_filter_field="o.website_id">
     SELECT #columns#
-    FROM locations l1 
+    FROM locations l1
     JOIN (
-    SELECT l.id, count(o.id) as count
-    FROM locations l
-    JOIN (index_locations_samples ils
-      JOIN samples s on s.id=ils.sample_id
-      JOIN surveys su on su.id=s.survey_id
-      JOIN cache_occurrences_functional o ON o.website_id=su.website_id AND o.survey_id=su.id AND o.sample_id=ils.sample_id
-      AND o.record_status&lt;&gt;'R'
-      #filters#
-    ) ON ils.location_id=l.id
-    #agreements_join#
-    #joins#
-    WHERE #sharing_filter# 
-    AND l.deleted=false
-    AND l.location_type_id=#location_type_id#
-    AND l.public=true
-    AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)
-    GROUP BY l.id, l.name
+      SELECT l.id, count(o.id) as count
+      FROM locations l
+      JOIN cache_occurrences_functional o ON o.location_ids @> ARRAY[l.id]
+        AND o.record_status&lt;&gt;'R'
+        #filters#
+      #agreements_join#
+      #joins#
+      WHERE #sharing_filter#
+      AND l.deleted=false
+      AND l.location_type_id=#location_type_id#
+      AND l.public=true
+      AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)
+      GROUP BY l.id, l.name
     ) as l2 ON l2.id=l1.id
   </query>
   <params>
@@ -36,7 +32,7 @@
     </param>
     <param name="date_to" display="Date To" datatype="date">
       <where>o.date_start&lt;='#date_to#'</where>
-    </param>     
+    </param>
     <param name="location_type_id" display="Location Type" description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
         population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id="/>
     </params>
@@ -55,4 +51,4 @@
         <column name="sw" visible="false" feature_style="strokeWidth" sql="2" />
         <column name="fs" visible="false" feature_style="fontSize" sql="case when count>1000 then 8 else 9 end" />
   </columns>
-</report>  
+</report>
