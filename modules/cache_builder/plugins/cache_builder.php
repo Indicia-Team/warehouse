@@ -93,19 +93,22 @@ function cache_builder_alter_menu(array $menu, $auth) {
  */
 function cache_builder_orm_work_queue() {
   return [
-    'sample' => [
+    [
+      'entity' => 'sample',
       'ops' => ['insert', 'update'],
       'task' => 'task_cache_builder_attrs_sample',
       'cost_estimate' => 30,
       'priority' => 2,
     ],
-    'occurrence' => [
+    [
+      'entity' => 'occurrence',
       'ops' => ['insert', 'update'],
       'task' => 'task_cache_builder_attrs_occurrence',
       'cost_estimate' => 30,
       'priority' => 2,
     ],
-    'taxa_taxon_list' => [
+    [
+      'entity' => 'taxa_taxon_list',
       'ops' => ['insert', 'update'],
       'task' => 'task_cache_builder_attrs_taxa_taxon_list',
       'cost_estimate' => 30,
