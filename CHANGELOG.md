@@ -2,6 +2,7 @@ Version 2.0.0
 
 * Overhaul the warehouse UI with a new Bootstrap 3 based theme and more logical menus.
 * Move cient_helpers and media code to use jQuery 3+.
+* Support for prioritised load aware background task scheduling via a work queue.
 * Removed the following:
   * index_locations_samples table
   * fields named location_id_* from cache_occurrences_functional
@@ -27,5 +28,20 @@ Version 2.0.0
   * reports/library/occurrences/verification_list_3_mapping_using_spatial_index_builder.xml
   * reports/library/occurrences/verification_list_3_using_spatial_index_builder.xml
 
-* Attribute JSON
-* Support for dynamic attributes
+* Other unused reports removed:
+  * reports/library/locations/filterable_occurrence_counts_mappable_2.xml
+  * reports/library/locations/filterable_species_counts_mappable_2.xml
+
+* Attribute values for taxa, samples and occurrences are now stored in the relevant
+  reporting cache tables in a JSON document (attrs_json field). This means that reports
+  can output custom attribute values for a record without additional joins for each
+  attribute. To enable this functionality, the report needs a parameter of type taxattrs,
+  smpattrs or occattrs (allowing attributes to include to be dynamically declared in a
+  parameter). Then provide a parameter useJsonAttributes set to a value of '1' to enable
+  the new method of accessing attribute values. This has the potential to improve
+  performance significantly for reports which include many different attribute values in
+  the output.
+
+* Support for dynamic attributes, i.e custom sample or occurrence attributes which are
+  linked to a taxon. They can then be included on a recording form only when entering a
+  taxon that is, or is a descendant of, the linked taxon.
