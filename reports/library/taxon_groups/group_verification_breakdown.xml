@@ -10,7 +10,7 @@
   </query>
   <order_bys>
     <order_by>COUNT(distinct o.id) desc</order_by>
-  </order_bys>    
+  </order_bys>
   <params>
     <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'>
@@ -26,7 +26,7 @@
       <where>o.input_form='#input_form#'</where>
     </param>
     <param name="location_id" default="" description="ID of location to return records for. This must be an indexed location using the Spatial Index Builder.">
-      <join>join index_locations_samples ils on ils.sample_id=o.sample_id and ils.location_id=#location_id#</join>
+      <where>o.location_ids @> ARRAY[#location_id#]</join>
     </param>
     <param name="currentUser" default="" description="ID of user to report on.">
       <where>o.created_by_id=#currentUser#</where>

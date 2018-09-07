@@ -192,6 +192,9 @@ class Upgrade_Model extends Model {
         // Reset last run script - if there are more version folders then we
         // start at the top.
         $last_run_script = '';
+        if ($app_name === 'Indicia' && method_exists($this, $version_folder)) {
+          $this->$version_folder();
+        }
       }
     }
     kohana::log('debug', "Upgrade of $app_name completed to $new_version");
@@ -379,6 +382,34 @@ class Upgrade_Model extends Model {
     // delete any that remain in $existing, since they are no longer supported
     foreach ($existing as $idx => $record) {
       $this->db->delete('spatial_systems', array('id'=>$record['id']));
+    }
+  }
+
+  /**
+   * Method called for v2 upgrade.
+   *
+   * Removes location_id_* columns from cache tables as replaced by
+   * location_ids[].
+   */
+  private function version_2_0_0() {
+    if (in_array(MODPATH . 'cache_builder', kohana::config('config.modules'))) {
+      $baseTables = ['samples', 'occurrences'];
+      foreach ($baseTables as $baseTable) {
+        $qry = <<<SQL
+select column_name from information_schema.columns
+where table_schema='indicia'
+and table_name='cache_{$baseTable}_functional'
+and column_name like 'location\_id\_%'
+SQL;
+        $columns = $this->db->query($qry)->result();
+        foreach ($columns as $column) {
+          $qry = <<<SQL
+ALTER TABLE cache_{$baseTable}_functional
+DROP COLUMN $column->column_name
+SQL;
+          $this->db->query($qry);
+        }
+      }
     }
   }
 

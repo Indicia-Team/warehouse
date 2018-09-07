@@ -13,17 +13,17 @@
     LEFT JOIN location_attribute_values lav ON lav.location_id=parentSamp.location_id AND lav.location_attribute_id=#private_location_attr_id#
     LEFT JOIN location_attributes la ON la.id=lav.location_attribute_id
     LEFT JOIN sample_attribute_values savstart on savstart.sample_id=parentSamp.id and savstart.deleted=false and savstart.sample_attribute_id=#start_time_sample_attribute_id#
-    LEFT JOIN sample_attribute_values savend on savend.sample_id=parentSamp.id and savend.deleted=false and savend.sample_attribute_id=#end_time_sample_attribute_id#    
+    LEFT JOIN sample_attribute_values savend on savend.sample_id=parentSamp.id and savend.deleted=false and savend.sample_attribute_id=#end_time_sample_attribute_id#
     LEFT JOIN occurrence_attribute_values oavadults on oavadults.occurrence_id=o.id and oavadults.deleted=false and oavadults.occurrence_attribute_id=#adults_occurrence_attribute_id#
     LEFT JOIN occurrence_attribute_values oavcalves on oavcalves.occurrence_id=o.id and oavcalves.deleted=false and oavcalves.occurrence_attribute_id=#calves_occurrence_attribute_id#
     JOIN taxa_taxon_lists ttl on ttl.id = o.taxa_taxon_list_id
     JOIN surveys sv on sv.id=parentSamp.survey_id
-    JOIN websites w on w.id=o.website_id   
+    JOIN websites w on w.id=o.website_id
     #agreements_join#
     #joins#
   WHERE #sharing_filter#
-  AND 
-  (l.created_by_id=#current_user# 
+  AND
+  (l.created_by_id=#current_user#
      OR
     ((((la.id=#private_location_attr_id# AND lav.int_value=0)
           OR
@@ -35,7 +35,7 @@
        OR
      ('#hide_all_other_users_private_sites#' = '-1')
     )
-  )    
+  )
   </query>
   <order_bys>
     <order_by>o.id DESC</order_by>
@@ -65,26 +65,26 @@
     <param name="my_own_data" display="My data only?" datatype="checkbox" emptyvalue="">
       <where value="1">o.created_by_id=#current_user#</where>
     </param>
-    <param name='region_id' display='Region' description='Provide a region to display records for' datatype='lookup' 
+    <param name='region_id' display='Region' description='Provide a region to display records for' datatype='lookup'
         population_call='report:reports_for_prebuilt_forms/Shorewatch/regions_list:id:name' emptyvalue="">
-      <join>JOIN index_locations_samples rfilter ON rfilter.sample_id=o.sample_id and rfilter.location_id=#region_id#</join>
+      <where>o.location_ids @> ARRAY[#region_id#]</where>
     </param>
-    <param name='location_id' display='Site' description='Provide the location to display records for' datatype='lookup' 
+    <param name='location_id' display='Site' description='Provide the location to display records for' datatype='lookup'
       population_call='report:reports_for_prebuilt_forms/Shorewatch/shorewatch_sites_list:id:name' emptyvalue="">
-      <join>JOIN index_locations_samples lfilter ON lfilter.sample_id=o.sample_id and lfilter.location_id=#location_id#</join>
+      <where>o.location_ids @> ARRAY[#location_id#]</where>
     </param>
     <param name='location_name' display='Other Site' description='Provide an Other Site location to display records for' datatype='text' emptyvalue="">
       <where>o.location_name like '%#location_name#%'</where>
     </param>
     <param name='my_sites_person_attr_id' display='My Sites Person Attribute Id' description='Id of the my sites person attribute' datatype='integer' default=''/>
     <param name="my_own_locality" display="My sites only?" datatype="checkbox" emptyvalue="">
-      <where value="1">l.created_by_id=#current_user# OR pav.id IS NOT NULL</where>  
+      <where value="1">l.created_by_id=#current_user# OR pav.id IS NOT NULL</where>
     </param>
     <param name="my_own_data" display="My data only?" datatype="checkbox" emptyvalue="">
       <where value="1">o.created_by_id=#current_user#</where>
     </param>
     <param name="high_certainty_only" display="Verified and High Certainty Sightings Only" datatype="checkbox" emptyvalue="" default=''>
-      <where value="1">(o.record_status = 'V' OR (o.record_status not in ('R', 'T') AND o.certainty='C'))</where>  
+      <where value="1">(o.record_status = 'V' OR (o.record_status not in ('R', 'T') AND o.certainty='C'))</where>
     </param>
     <param name="private_location_attr_id" display="Private Location Attribute ID" description="The location attribute ID used to store whether a site is private" datatype="integer" default=""/>
     <param name="hide_all_other_users_private_sites" display="Hide all other users private sites" description="Hide all private sites in the sites list that are not 'my sites' for the supplied user." datatype="integer" default="" emptyvalue="-1"/>
@@ -106,12 +106,12 @@
     <column name='date' display='Date' datatype='date' />
     <column name='start_time' display='Start time' sql='savstart.text_value' datatype='text' />
     <column name='end_time' display='End time' sql='savend.text_value' datatype='text' />
-    <column name='taxon' display='Species' 
+    <column name='taxon' display='Species'
       template="&lt;div class='zero-{zero_abundance}'&gt;{taxon}&lt;/div&gt;"
-      sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />  
+      sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || COALESCE(' | ' || o.default_common_name, '') END" datatype='text' />
     <column name='adults' display='No. of adults' sql='oavadults.int_value' datatype='integer' />
     <column name='calves' display='No. of calves' sql='oavcalves.int_value' datatype='integer' />
-    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN (TRIM(o.recorders) !~ ' ' AND LENGTH(o.recorders)>30) THEN 'Recorder' ELSE o.recorders END" 
+    <column name='recorder' display='Recorder' sql="CASE WHEN w.id IN (#website_ids#) THEN '' ELSE w.title || '-&gt; ' END || CASE WHEN (TRIM(o.recorders) !~ ' ' AND LENGTH(o.recorders)>30) THEN 'Recorder' ELSE o.recorders END"
         datatype="text" />
     <column name='record_status' display='State' sql='o.record_status' visible="false" />
     <column name='belongs_to_user' display='Belongs to User' sql="CASE CAST(o.created_by_id AS character varying) WHEN '#currentUser#' THEN true ELSE false END" visible="false" />
@@ -119,7 +119,7 @@
     <column name='images' display='Images' sql='o.images' img='true' />
     <column name='geom' visible='false' mappable="true" sql='st_astext(o.public_geom)' />
     <column name='fo' visible='false' feature_style="fillOpacity" sql='round(length(o.public_entered_sref) / 24.0, 2)' />
-    <column name='sc' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then 
+    <column name='sc' visible='false' feature_style="strokeColor" sql="case o.record_status when 'C' then
       case o.certainty when 'C' then 'green' when 'L' then 'orange' when 'U' then 'red' else 'blue' end
     when 'V' then 'green'
     when 'D' then 'orange'

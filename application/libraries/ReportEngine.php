@@ -1873,49 +1873,9 @@ SQL;
   }
 
   /**
-   * Identifies if a single uniquely indexed location type can be used for this location list filter.
-   *
-   * When filtering against a location type that is indexed by the spatial index builder, if the
-   * location type has a unique index there will be a location_id_* column pointing to the id
-   * in cache_occurrences_functional. This switches from the standard join method to a direct
-   * filter on this field as its much faster.
-   *
-   * @param int|string $id
-   *   Location ID or comma separated list of IDs.
-   *
-   * @return string|null
-   *   The name of the single uniquely indexed location type relevant to the location list. Otherwise NULL.
-   */
-  private function locationIdUniquelyIndexedType($id) {
-    if (preg_match('/^\d+(,\d+)*$/', preg_replace('/\s+/', '', $id))) {
-      $config = kohana::config_load('spatial_index_builder', FALSE);
-      if (array_key_exists('unique', $config) && !empty($config['unique'])) {
-        $uniqueTerms = "'" . implode("', '", $config['unique']) . "'";
-        $r = $this->reportDb->select(array('DISTINCT t.term', "t.term IN ($uniqueTerms) as unique_indexed"))
-          ->from('locations l')
-          ->join('cache_termlists_terms as t', array('t.id' => 'l.location_type_id'))
-          ->in('l.id', $id)
-          ->get()->result_array();
-        // There must be a single location type and it must be one of the uniquely indexed ones to enable
-        // this type of filtering.
-        if (count($r) === 1 && $r[0]->unique_indexed === 't') {
-          return $r[0]->term;
-        }
-      }
-    }
-    return NULL;
-  }
-
-  /**
    * Add any joins defined by a used parameter to the query.
    */
   private function addParamJoins($query, $paramDef, $value) {
-    if ($value && isset($paramDef['custom']) && $paramDef['custom'] === 'unique_location_index') {
-      // Special case for this parameter when the location is a unique indexed location type,
-      // since we can use a more effective where clause instead of the join.
-      if ($this->locationIdUniquelyIndexedType($value))
-        return $query;
-    }
     $joins = array();
     foreach ($paramDef['joins'] as $joinDef) {
       if ((!empty($joinDef['operator']) && (($joinDef['operator'] === 'equal' && $joinDef['value'] === $value) ||
@@ -1952,25 +1912,24 @@ SQL;
    * @todo: Consider caching of the preprocess output.
    */
   private function addParamWheres($query, $paramName, $paramDef, $value) {
-    if ($value && isset($paramDef['custom']) && $paramDef['custom'] === 'unique_location_index') {
-      // Special case for this parameter when the location is a unique indexed location type,
-      // since we can use a more effective where clause instead of the join.
-      $typeTerm = $this->locationIdUniquelyIndexedType($value);
-      if ($typeTerm) {
-        foreach ($paramDef['wheres'] as &$whereDef) {
-          $whereDef['sql'] = str_replace('#typealias#', strtolower(str_replace(' ', '_', $typeTerm)), $whereDef['sql']);
+    foreach ($paramDef['wheres'] as $whereDef) {
+      if (empty($whereDef['param_op'])) {
+        if (
+            // Parameter filter applied if value matches the filter's specified value.
+            (!empty($whereDef['operator']) && (($whereDef['operator'] === 'equal' && $whereDef['value'] === $value)
+            // Parameter filter applied if value doesn't match the filter's specified value.
+            || ($whereDef['operator'] === 'notequal' && $whereDef['value'] !== $value)))
+            // Operator not provided, so default is to join if param not empty
+            // (NULL string passed for empty integers).
+            || (empty($whereDef['operator']) && !empty($value) && $value !== "NULL")) {
+          // Join SQL can contain the parameter value as well.
+          $query = str_replace('#filters#', "AND $whereDef[sql]\n#filters#", $query);
         }
       }
-      else {
-        return $query;
-      }
-    }
-    foreach ($paramDef['wheres'] as $whereDef) {
-      if ((!empty($whereDef['operator']) && (($whereDef['operator'] === 'equal' && $whereDef['value'] === $value) ||
-          ($whereDef['operator'] === 'notequal' && $whereDef['value'] !== $value)))
-          // operator not provided, so default is to join if param not empty (NULL string passed for empty integers)
-          || (empty($whereDef['operator']) && !empty($value) && $value !== "NULL")) {
-        // Join SQL can contain the parameter value as well.
+      elseif (!empty($this->providedParams["{$paramName}_op"])
+          && $this->providedParams["{$paramName}_op"] === $whereDef['param_op']
+          && $value !== '') {
+        // Wheres can be specified separarely per operation (IN, NOT IN etc).
         $query = str_replace('#filters#', "AND $whereDef[sql]\n#filters#", $query);
       }
     }

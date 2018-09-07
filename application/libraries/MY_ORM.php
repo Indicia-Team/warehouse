@@ -769,17 +769,28 @@ class ORM extends ORM_Core {
       // Reset important if doing an import with multiple submissions.
       Occurrence_association_Model::$to_occurrence_id_pointers = array();
     }
-    $queueEntries = [];
-    foreach (Kohana::config('config.modules') as $path) {
-      $plugin = basename($path);
-      if (function_exists($plugin . '_orm_work_queue')) {
-        $queueEntries = array_merge_recursive($queueEntries, call_user_func($plugin . '_orm_work_queue'));
+    $this->createWorkQueueEntries();
+  }
+
+  /**
+   * Uses the changedRecords after an ORM save event to add tasks to the queue.
+   */
+  private function createWorkQueueEntries() {
+    $queueHelpers = $this->cache->get('work-queue-helpers');
+    if ($queueHelpers === NULL) {
+      $queueHelpers = [];
+      foreach (Kohana::config('config.modules') as $path) {
+        $plugin = basename($path);
+        if (function_exists($plugin . '_orm_work_queue')) {
+          $queueHelpers = array_merge($queueHelpers, call_user_func($plugin . '_orm_work_queue'));
+        }
       }
+      $this->cache->set('work-queue-helpers', $queueHelpers);
     }
-    foreach ($queueEntries as $entity => $cfg) {
+    foreach ($queueHelpers as $cfg) {
       foreach ($cfg['ops'] as $op) {
-        if (!empty(self::$changedRecords[$op][$entity])) {
-          $this->queueWork($entity, $cfg, self::$changedRecords[$op][$entity]);
+        if (!empty(self::$changedRecords[$op][$cfg['entity']])) {
+          $this->queueWork($cfg, self::$changedRecords[$op][$cfg['entity']]);
         }
       }
     }
@@ -788,20 +799,18 @@ class ORM extends ORM_Core {
   /**
    * Queues an item of work for later processing.
    *
-   * @param string $entity
-   *   Table name, e.g. occurrences or samples.
    * @param array $cfg
-   *   Configuration array containing the task name, cost_estimate and priority
-   *   of the work item.
+   *   Configuration array containing the entity, task name, cost_estimate and
+   *   priority of the work item.
    * @param array $records
    *   List of record IDs to queue.
    */
-  private function queueWork($entity, $cfg, $records) {
+  private function queueWork(array $cfg, array $records) {
     $q = new WorkQueue();
     foreach ($records as $id) {
       $q->enqueue($this->db, [
         'task' => $cfg['task'],
-        'entity' => $entity,
+        'entity' => $cfg['entity'],
         'record_id' => $id,
         'cost_estimate' => $cfg['cost_estimate'],
         'priority' => $cfg['priority'],

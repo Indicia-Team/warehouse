@@ -198,22 +198,15 @@ class report_standard_params_occurrences {
       'indexed_location_list' => [
         'datatype' => 'integer[]',
         'display' => 'Location IDs (indexed)',
-        'custom' => 'unique_location_index',
         'description' => 'Comma separated list of location IDs, for locations that are indexed using the spatial index builder',
-        'joins' => [
-          // Join will be skipped if using a uniquely indexed location type.
-          [
-            'value' => '',
-            'operator' => '',
-            'sql' => "JOIN index_locations_samples #alias:ilsfilt# on #alias:ilsfilt#.sample_id=o.sample_id and #alias:ilsfilt#.location_id #indexed_location_list_op# (#indexed_location_list#)",
-          ],
-        ],
         'wheres' => [
-          // Where will be used only if using a uniquely indexed location type.
           [
-            'value' => '',
-            'operator' => '',
-            'sql' => "o.location_id_#typealias# #indexed_location_list_op# (#indexed_location_list#)",
+            'param_op' => 'in',
+            'sql' => "o.location_ids @> ARRAY[#indexed_location_list#]",
+          ],
+          [
+            'param_op' => 'not in',
+            'sql' => "(NOT (o.location_ids @> ARRAY[#indexed_location_list#]) OR o.location_ids IS NULL)",
           ],
         ],
       ],
@@ -467,15 +460,14 @@ class report_standard_params_occurrences {
             'value' => 'T',
             'operator' => 'equal',
             'sql' =>
-            "LEFT JOIN index_locations_samples #alias:ilstrust# on #alias:ilstrust#.sample_id=o.sample_id
-  JOIN user_trusts #alias:ut# on (#alias:ut#.survey_id=o.survey_id
+            "JOIN user_trusts #alias:ut# on (#alias:ut#.survey_id=o.survey_id
       OR #alias:ut#.taxon_group_id=o.taxon_group_id
-      OR (#alias:ut#.location_id=#alias:ilstrust#.location_id or #alias:ut#.location_id is null)
+      OR (o.location_ids @> ARRAY[#alias:ut#.location_id] OR #alias:ut#.location_id IS NULL)
     )
     AND #alias:ut#.deleted=false
     AND ((o.survey_id = #alias:ut#.survey_id) or (#alias:ut#.survey_id is null and (#alias:ut#.taxon_group_id is not null or #alias:ut#.location_id is not null)))
     AND ((o.taxon_group_id = #alias:ut#.taxon_group_id) or (#alias:ut#.taxon_group_id is null and (#alias:ut#.survey_id is not null or #alias:ut#.location_id is not null)))
-    AND ((#alias:ilstrust#.location_id = #alias:ut#.location_id) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
+    AND ((o.location_ids @> ARRAY[#alias:ut#.location_id]) OR (#alias:ut#.location_id IS NULL and (#alias:ut#.survey_id is not null or #alias:ut#.taxon_group_id is not null)))
     AND o.created_by_id = #alias:ut#.user_id",
           ],
         ],

@@ -3,38 +3,34 @@
 <report title="Record counts league using standard params" description="A filtered league table of record counts by location. Requires the spatial index builder.">
   <query website_filter_field="o.website_id" standard_params="occurrences">
     SELECT #columns#
-    FROM locations l1     
+    FROM locations l1
     JOIN (
-    SELECT l.id, count(o.id) as count
-    FROM locations l
-    LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
-    JOIN (index_locations_samples ils
-      JOIN samples s on s.id=ils.sample_id
-      JOIN surveys su on su.id=s.survey_id
-      JOIN cache_occurrences_functional o ON o.website_id=su.website_id and o.survey_id=su.id and o.sample_id=ils.sample_id
+      SELECT l.id, count(distinct o.id) as count
+      FROM locations l
+      LEFT JOIN locations_websites lw on lw.location_id=l.id and lw.deleted=false and lw.website_id in (#website_ids#)
+      JOIN cache_occurrences_functional o ON o.location_ids @> ARRAY[l.id] AND o.zero_abundance='f'
       #agreements_join#
       #joins#
-      AND #sharing_filter# 
+      WHERE l.deleted=false
+      AND l.location_type_id=#location_type_id#
+      AND (l.public=true OR lw.id IS NOT NULL)
+      AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)
+      AND #sharing_filter#
       #filters#
-      
-    ) ON ils.location_id=l.id    
-    WHERE l.deleted=false
-    AND l.location_type_id=#location_type_id#
-    AND (l.public=true or lw.id IS NOT NULL)
-    AND (l.code NOT LIKE ('%+%') OR l.code IS NULL)
-    GROUP BY l.id, l.name
+      #idlist#
+      GROUP BY l.id, l.name
     ) as l2 ON l2.id=l1.id
   </query>
   <order_bys>
     <order_by>count DESC</order_by>
   </order_bys>
-  <params>    
+  <params>
     <param name="location_type_id" display="Location Type" description="Select the location type, or leave blank to not filter by location type." datatype="lookup"
         population_call="report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id="/>
-    </params>
+  </params>
   <columns>
         <column name="id" visible="false" sql="l1.id" />
         <column name="name" display="Site Name" sql="l1.name" />
         <column name="value" display="No. of Species"  sql="count"/>
   </columns>
-</report>  
+</report>

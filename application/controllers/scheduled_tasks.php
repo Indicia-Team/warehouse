@@ -672,7 +672,8 @@ class Scheduled_Tasks_Controller extends Controller {
     if (array_key_exists('data_cleaner', $sortedPlugins)) {
       $sortedPlugins = array('data_cleaner' => $sortedPlugins['data_cleaner']) + $sortedPlugins;
     }
-    // Make sure the cache_builder and spatial_index_builders run first as some other modules depend on the cache_occurrences and index_locations_samples tables
+    // Make sure the cache_builder and spatial_index_builders run first as some
+    // other modules depend on the cache_occurrences_* tables.
     if (array_key_exists('spatial_index_builder', $sortedPlugins)) {
       $sortedPlugins = array('spatial_index_builder' => $sortedPlugins['spatial_index_builder']) + $sortedPlugins;
     }

@@ -7,13 +7,12 @@
     FROM user_trusts ut
       LEFT JOIN surveys s on ut.survey_id = s.id
       LEFT JOIN taxon_groups tg on ut.taxon_group_id = tg.id
-      LEFT JOIN index_locations_samples ils on (ils.location_id=ut.location_id or ut.location_id is null)
       LEFT JOIN locations l on ut.location_id = l.id
       JOIN users u on ut.user_id = u.id
       JOIN people p on p.id=u.person_id and p.deleted=false
       JOIN users uc on uc.id=ut.created_by_id and uc.deleted=false
       JOIN people pc on pc.id=uc.person_id and pc.deleted=false
-    WHERE 
+    WHERE
       ut.user_id = '#user_id#'
         AND (ut.survey_id = '#survey_id#' or (ut.survey_id is null and (ut.taxon_group_id is not null or ut.location_id is not null)))
         AND (ut.taxon_group_id = '#taxon_group_id#' or (ut.taxon_group_id is null and (ut.survey_id is not null or ut.location_id is not null)))
