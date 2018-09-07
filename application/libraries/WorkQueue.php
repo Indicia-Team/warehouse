@@ -98,9 +98,6 @@ SQL;
    */
   public function process($db) {
     $this->db = $db;
-    // Get a unique ID for this process run, so we can tag tasks we are doing
-    // in the work_queue table and know they are ours.
-    $procId = uniqid();
     // Use the current server CPU load to roughly guess the top cost estimate
     // to allow for tasks of each priority.
     $maxCostByPriority = $this->findMaxCostPriority();
@@ -113,6 +110,9 @@ SQL;
       // Loop to claim batches of tasks for this task type. Only actually
       // iterate more than once for priority 1 tasks.
       do {
+        // Get a unique ID for this process run, so we can tag tasks we are doing
+        // in the work_queue table and know they are ours.
+        $procId = uniqid();
         try {
           // Claim an appropriate number of records to do in a batch, depending on
           // the helper class.
