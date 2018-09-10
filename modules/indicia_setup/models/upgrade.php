@@ -270,7 +270,8 @@ class Upgrade_Model extends Model {
 
     if ((($handle = @opendir($full_upgrade_folder))) != FALSE) {
       while (($file = readdir($handle)) != FALSE) {
-        if (!preg_match("/^\d{12}.*\.sql$/", $file)) {
+        // File name must start with at least the date in ISO numerical format.
+        if (!preg_match("/^\d{8}.*\.sql$/", $file)) {
           continue;
         }
         $file_name[] = $file;
