@@ -74,6 +74,7 @@ class Termlists_term_Model extends Base_Name_Model {
       'deleted',
       'source_id',
       'image_path',
+      'allow_data_entry',
     );
     return parent::validate($array, $save);
   }
@@ -107,8 +108,15 @@ class Termlists_term_Model extends Base_Name_Model {
           $arrSyn = array();
         }
         $meaning_id = $this->submission['fields']['meaning_id']['value'];
+        if (isset($this->submission['fields']['allow_data_entry'])
+            && ($this->submission['fields']['allow_data_entry']['value'] === '1'
+            || $this->submission['fields']['allow_data_entry']['value'] === 't')) {
+          $allow_data_entry = 't';
+        }
+        else {
+          $allow_data_entry = 'f';
+        }
         $existingSyn = $this->getSynonomy('meaning_id', $meaning_id);
-
         // Iterate through existing synonomies, discarding those that have
         // been deleted and removing existing ones from the list to add
         // Not sure this is correct way of doing it as it would appear that you can only have one synonym per language....
@@ -116,6 +124,10 @@ class Termlists_term_Model extends Base_Name_Model {
           // Is the term from the db in the list of synonyms?
           if (array_key_exists($syn->term->language->iso, $arrSyn) &&
               $arrSyn[$syn->term->language->iso] == $syn->term->term) {
+            if ($syn->allow_data_entry !== $allow_data_entry) {
+              $syn->allow_data_entry = $allow_data_entry;
+              $syn->save();
+            }
             // This one already in db, so can remove from our array
             $arrSyn = array_diff_key($arrSyn, array($syn->term->language->iso => ''));
           }
@@ -134,29 +146,32 @@ class Termlists_term_Model extends Base_Name_Model {
         foreach ($arrSyn as $lang => $term) {
           $sm->clear();
           $syn = array();
-          // Wrap a new submission
+          // Wrap a new submission.
           Kohana::log("debug", "Wrapping submission for synonym " . $term);
           $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
-          // If language not found, use english as the default. Future versions may wish this to be
-          // user definable.
+          // If language not found, use english as the default. Future versions
+          // may wish this to be user definable.
           $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
-          // copy the original post array to pick up the common things, first the taxa_taxon_list data
+          // Copy the original post array to pick up the common things, first
+          // the taxa_taxon_list data.
           foreach (array('parent', 'sort_order', 'termlist_id') as $field) {
             if (isset($this->submission['fields'][$field])) {
-              $syn["termlists_term:$field"]=is_array($this->submission['fields'][$field]) ? $this->submission['fields'][$field]['value'] : $this->submission['fields'][$field];
+              $syn["termlists_term:$field"] = is_array($this->submission['fields'][$field]) ? $this->submission['fields'][$field]['value'] : $this->submission['fields'][$field];
             }
           }
-          // unlike the taxa there are no term based shared data.
+          // Unlike the taxa there are no term based shared data.
           // Now update the record with specifics for this synonym
           $syn['term:id'] = NULL;
           $syn['term:term'] = $term;
           $syn['term:language_id'] = $lang_id;
           $syn['termlists_term:id'] = '';
           $syn['termlists_term:preferred'] = 'f';
-          // meaning Id cannot be copied from the submission, since for new data it is generated when saved
+          // Meaning Id cannot be copied from the submission, since for new
+          // data it is generated when saved.
           $syn['termlists_term:meaning_id'] = $meaning_id;
-          // Prevent a recursion by not posting synonyms with a synonym
-          $syn['metaFields:synonyms']='';
+          $syn['termlists_term:allow_data_entry'] = $allow_data_entry;
+          // Prevent a recursion by not posting synonyms with a synonym.
+          $syn['metaFields:synonyms'] = '';
           $sub = $this->wrap($syn);
           // Don't resubmit the meaning record, again we can't rely on the order of the supermodels in the list
           foreach ($sub['superModels'] as $idx => $supermodel) {
@@ -276,7 +291,8 @@ SQL;
    */
   public function getDefaults() {
     return array(
-      'preferred'=>'t'
+      'preferred' => 't',
+      'termlists_term:allow_data_entry' => 't',
     );
   }
 

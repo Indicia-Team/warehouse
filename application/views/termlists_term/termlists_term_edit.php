@@ -103,6 +103,12 @@ TXT;
       'default' => html::initial_value($values, 'termlists_term:source_id'),
       'extraParams' => $readAuth + ['termlist_external_key' => 'indicia:term_sources'],
     ]);
+    echo data_entry_helper::checkbox([
+      'label' => 'Allow data entry',
+      'fieldname' => 'termlists_term:allow_data_entry',
+      'default' => html::initial_value($values, 'termlists_term:allow_data_entry'),
+      'helpText' => 'Uncheck this box to leave the term in the database but hide it from data entry forms for new records.',
+    ]);
     ?>
   </fieldset>
   <fieldset>

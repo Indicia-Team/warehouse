@@ -76,7 +76,8 @@
     <column name="default_value_caption" display="Default value caption" sql="tdefault.term" datatype="text" />
     <column name="inner_block_name" display="Inner block name" sql="fsb.name" datatype="text" />
     <column name="control_type" display="Control type" sql="ct.control" datatype="text" />
-    <column name="values" display="Values" datatype="text" aggregate="true" sql="json_agg(('{&quot;id&quot;:' || av.id::text || ',' ||
+    <column name="values" display="Values" datatype="text" aggregate="true" sql="CASE WHEN COUNT(av.id)=0 THEN '[]' ELSE
+     json_agg(('{&quot;id&quot;:' || av.id::text || ',' ||
      '&quot;value&quot;:' || COALESCE(CASE a.data_type
             WHEN 'T'::bpchar THEN '&quot;' || av.text_value || '&quot;'
             WHEN 'L'::bpchar THEN '&quot;' || t.term::text || '&quot;'
@@ -109,8 +110,9 @@
             WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN av.upper_value::text
             ELSE 'null'
         END, 'null') ||
-     '}')::json)
+     '}')::json) END
     " />
-    <column name="attr_taxon_rank_sort_order" display="Attribute link rank sort order" sql="cttlattrlink.taxon_rank_sort_order" />
+    <column name="attr_taxon_rank_sort_order" display="Attribute link rank sort order" aggregate="true"
+      sql="max(cttlattrlink.taxon_rank_sort_order)" />
   </columns>
 </report>
