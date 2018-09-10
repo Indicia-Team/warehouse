@@ -36,17 +36,24 @@ class FolderFilter {
   }
 
   /**
-   * Checks if a folder's file name is for a version between the range of versions
-   * we are applying.
-   * @param string $folder Folder name
+   * Chacks a folder verion number.
+   *
+   * Checks if a folder's file name is for a version between the range of
+   * versions we are applying.
+   *
+   * @param string $folder
+   *   Folder name.
+   *
    * @return bool
+   *   True if the folder version number is the current version or higher.
    */
   private function isCurrentVersionOrAbove($folder) {
-    // convert the folder name to a version string
+    // Convert the folder name to a version string.
     preg_match('/^version_(\d+)_(\d+)_(\d+)/', $folder, $matches);
     array_shift($matches);
     $this_version = implode('.', $matches);
-    // use a natural string comparison as it works nicely with 1.10.0 being higher than 1.2.0
+    // Use a natural string comparison as it works nicely with 1.10.0 being
+    // higher than 1.2.0.
     return strnatcasecmp($this_version, $this->minVersion) >=0
         && strnatcasecmp($this_version, $this->maxVersion) <= 0;
   }
@@ -263,7 +270,7 @@ class Upgrade_Model extends Model {
 
     if ((($handle = @opendir($full_upgrade_folder))) != FALSE) {
       while (($file = readdir($handle)) != FALSE) {
-        if (!preg_match("/^20.*\.sql$/", $file)) {
+        if (!preg_match("/^\d{12}.*\.sql$/", $file)) {
           continue;
         }
         $file_name[] = $file;
