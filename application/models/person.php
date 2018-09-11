@@ -30,11 +30,11 @@
  */
 class Person_Model extends ORM {
   public $search_field='surname';
-  
+
   protected $has_one = array('user');
   protected $has_many = array('person_attribute_values');
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'title');
-  
+
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   // A public attribute does NOT need to be linked to a website to form part of the submissable data for a person (unlike, say,
@@ -51,11 +51,11 @@ class Person_Model extends ORM {
     $array->add_rules('initials', 'length[1,6]');
     $array->add_rules('address', 'length[1,200]');
     // If this person is new, then setting id to -1 causes uniqueness check to include all existing records.
-    $id = array_key_exists('id', $array->as_array()) ? $array['id'] : -1; 
-    $array->add_rules('email_address', 'email', 'length[1,100]', 'unique[people,email_address,'.$id.']');    
-    $array->add_rules('website_url', 'length[1,1000]', 'url[lax]');  
+    $id = array_key_exists('id', $array->as_array()) ? $array['id'] : -1;
+    $array->add_rules('email_address', 'email', 'length[1,100]', 'unique[people,email_address,'.$id.']');
+    $array->add_rules('website_url', 'length[1,1000]', 'url[lax]');
     $array->add_rules('external_key', 'length[1,50]');
-    
+
     // Any fields that don't have a validation rule need to be copied into the model manually
     if (isset($array['title_id'])) $this->title_id = (is_numeric ($array['title_id']) ? $array['title_id'] : NULL);
     $this->unvalidatedFields = array('deleted');
@@ -68,7 +68,7 @@ class Person_Model extends ORM {
     // the admin user
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $array->add_rules('email_address', 'required', 'email', 'length[1,50]', 'unique[people,email_address,'.$array->id.']');
+    $array->add_rules('email_address', 'required', 'email', 'length[100]', "unique[people,email_address,$array->id]");
 
     return parent::validate($array, $save);
   }
@@ -91,17 +91,17 @@ class Person_Model extends ORM {
   {
     return ($this->first_name.' '.$this->surname);
   }
-  
+
   /**
-   * Indicates if this model type can create new instances from data supplied in its caption format. 
+   * Indicates if this model type can create new instances from data supplied in its caption format.
    * @return boolean, override to true if your model supports this.
    */
   protected function canCreateFromCaption() {
     return true;
   }
-  
+
   /**
-   * Overridden if this model type can create new instances from data supplied in its caption format. 
+   * Overridden if this model type can create new instances from data supplied in its caption format.
    * @return integer, the id of the first matching record with the supplied caption or 0 if no match.
    */
   protected function findByCaption($caption) {
@@ -119,9 +119,9 @@ class Person_Model extends ORM {
     }
     return $id;
   }
-  
+
   /**
-   * Overridden if this model type can create new instances from data supplied in its caption format. 
+   * Overridden if this model type can create new instances from data supplied in its caption format.
    * Does nothing if not overridden.
    * @return boolean, override to true if your model supports this.
    */
@@ -134,7 +134,7 @@ class Person_Model extends ORM {
 
   /**
    * User the caption value to provide values for all required fields so that a record can be
-   * created from data supplied in its caption format. 
+   * created from data supplied in its caption format.
    * @return boolean, true if able to infer field values, false if not.
    */
   protected function deriveFieldsFromCaption() {
@@ -142,13 +142,13 @@ class Person_Model extends ORM {
     Kohana::log('debug', 'Commencing person deriveFieldsFromCaption. '.
       print_r($this->submission['fields'], true));
       // check we have exactly one caption
-    if (sizeof($this->submission['fields']['caption'])!==1 
+    if (sizeof($this->submission['fields']['caption'])!==1
       || empty($this->submission['fields']['caption']['value']))
       return true;
     // set model fields
     $names = explode(' ', trim($this->submission['fields']['caption']['value']));
     $count = sizeof($names);
-    if ($count>0 && empty($this->submission['fields']['first_name']) 
+    if ($count>0 && empty($this->submission['fields']['first_name'])
       && empty($this->submission['fields']['surname'])) {
       $this->submission['fields']['first_name'] = array();
       $this->submission['fields']['surname'] = array();
@@ -160,15 +160,15 @@ class Person_Model extends ORM {
       $this->submission['fields']['first_name']['value'] = $first_name;
       $this->submission['fields']['surname']['value'] = $surname;
     }
-    
+
     unset($this->submission['fields']['caption']);
     Kohana::log('debug', 'Leaving person deriveFieldsFromCaption. '.print_r($this->submission['fields'], true));
     return true;
   }
-  
-  /** 
+
+  /**
    * Gets the list of custom attributes for this model.
-   * @param boolean $required Optional. Set to true to only return required attributes (requires 
+   * @param boolean $required Optional. Set to true to only return required attributes (requires
    * the website and survey identifier to be set).
    * @param int @typeFilter Not used
    * @param boolean @hasSurveyRestriction Not used
@@ -176,14 +176,14 @@ class Person_Model extends ORM {
   protected function getAttributes($required = false, $typeFilter = null, $hasSurveyRestriction = true) {
     $this->db->select('person_attributes.id', 'person_attributes.caption', 'person_attributes.data_type');
     $this->db->from('person_attributes');
-    
+
     if ($required && $this->id!==0) {
       // extra joins to link to the person websites so we can find which fields are required
       $this->db->join('person_attributes_websites','person_attributes_websites.person_attribute_id', 'person_attributes.id', 'left');
       $this->db->join('users_websites', 'users_websites.website_id', 'person_attributes_websites.website_id', 'left');
       $this->db->join('users', 'users.id', 'users_websites.user_id', 'left');
       $this->db->in('users.person_id', array(null, $this->id));
-      // note we concatenate the validation rules to check both global and website specific rules for requiredness. 
+      // note we concatenate the validation rules to check both global and website specific rules for requiredness.
       $this->db->where("(person_attributes_websites.validation_rules like '%required%' or person_attributes.validation_rules like '%required%')");
       $this->db->in('person_attributes_websites.deleted', array('f', null));
       $this->db->in('users.deleted', array('f', null));
@@ -194,7 +194,7 @@ class Person_Model extends ORM {
     $this->db->where('person_attributes.deleted', 'f');
     return $this->db->get()->result_array(true);
   }
-  
+
   /**
    * Override implementation of a method which retrieves the cache key required to store the list
    * of required fields. For people each combination of website IDs defines a cache entry.
