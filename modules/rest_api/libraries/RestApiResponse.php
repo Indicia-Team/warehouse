@@ -24,20 +24,32 @@
 class RestApiResponse {
 
   /**
-   * A template to define the header of any HTML pages output. Replace {css} with the
-   * path to the CSS file to load.
+   * A template to define the header of any HTML pages output. Replace
+   * {{ base }} with the root path of the warehouse.
    * @var string
    */
-  private $html_header = <<<'HTML'
+  private $htmlHeader = <<<'HTML'
 <!DOCTYPE HTML>
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Indicia RESTful API</title>
-  <link href="{css}" rel="stylesheet" type="text/css" />
+  <title>Indicia RESTful API</title>
+  <link href="{{ base }}vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+  <link href="{{ base }}vendor/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" type="text/css" />
+  <link href="{{ base }}modules/rest_api/media/css/rest_api.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
+  <div class="container">
+HTML;
+
+  private $htmlFooter = <<<'HTML'
+  </div>
+  <script src="{{ base }}media/js/jquery.js"></script>
+  <script src="{{ base }}vendor/bootstrap/js/bootstrap.min.js"></script>
+  <script src=""></script>
+</body>
+</html>
 HTML;
 
   /**
@@ -80,9 +92,8 @@ HTML;
    * @param array $resourceConfig Configuration for the list of available resources and the methods they support.
    */
   private function indexHtml($resourceConfig) {
-    // Output an HTML page header
-    $css = url::base() . "modules/rest_api/media/css/rest_api.css";
-    echo str_replace('{css}', $css, $this->html_header);
+    // Output an HTML page header.
+    echo str_replace('{{ base }}', url::base(), $this->htmlHeader);
     $lang = array(
       'title' => kohana::lang("rest_api.title"),
       'intro' => kohana::lang("rest_api.introduction"),
@@ -96,20 +107,41 @@ HTML;
         ? kohana::lang("rest_api.allowAuthTokensInUrl") : kohana::lang("rest_api.dontAllowAuthTokensInUrl");
     foreach (Kohana::config('rest.authentication_methods') as $method => $cfg) {
       $methodNotes = [];
-      if (!in_array('allow_http', $cfg))
+      if (!in_array('allow_http', $cfg)) {
         $methodNotes[] = kohana::lang("rest_api.onlyAllowHttps") .
             ' (' . str_replace('http:', 'https:', url::base()) . 'index.php/services/rest).';
+      }
       if (isset($cfg['resource_options'])) {
         foreach ($cfg['resource_options'] as $resource => $options) {
           if (!empty($options)) {
             $note = kohana::lang('rest_api.resourceOptionInfo', '<em>' . $resource . '</em>') . ':';
-            $optionTexts = array();
+            $optionTexts = [];
             foreach ($options as $option => $value) {
               $optionTexts[] = '<li>' . kohana::lang("rest_api.resourceOptionInfo-$option") . '</li>';
-          }
+            }
             $methodNotes[] = "<p>$note</p><ul>" . implode('', $optionTexts) . '</ul>';
           }
         }
+      }
+      $authOptionNotes = [];
+      if (preg_match('/^(direct|hmac)/', $method)) {
+        if (kohana::lang("rest_api.{$method}HelpHeader") !== "rest_api.{$method}HelpHeader") {
+          $authOptionNotes[] = '<li>' . kohana::lang("rest_api.{$method}HelpHeader") . '</li>';
+        }
+        else {
+          $authOptionNotes[] = '<li>' . kohana::lang("rest_api.genericHelpHeader") . '</li>';
+        }
+      }
+      if (Kohana::config('rest.allow_auth_tokens_in_url') && preg_match('/^direct/', $method)) {
+        if (kohana::lang("rest_api.{$method}HelpUrl") !== "rest_api.{$method}HelpUrl") {
+          $authOptionNotes[] = '<li>' . kohana::lang("rest_api.{$method}HelpUrl") . '</li>';
+        }
+        else {
+          $authOptionNotes[] = '<li>' . kohana::lang("rest_api.genericHelpUrl") . '</li>';
+        }
+      }
+      if (!empty($authOptionNotes)) {
+        $methodNotes[] = '<p>' . kohana::lang('rest_api.authMethodsHelpHeader') . '</p><ul>' . implode('', $authOptionNotes) . '</ul>';
       }
       $authRows .= '<tr><th scope="row">' . kohana::lang("rest_api.$method") . '</th>';
       $authRows .= '<td>' . kohana::lang("rest_api.{$method}Help") . ' ' . implode(' ', $methodNotes) . '</td></tr>';
@@ -119,7 +151,7 @@ HTML;
 <p>$lang[intro]</p>
 <h2>$lang[authentication]</h2>
 <p>$lang[authIntro]</p>
-<table><caption>$lang[authMethods]</caption>
+<table class="table"><caption>$lang[authMethods]</caption>
 <tbody>$authRows</tbody>
 <tfoot><tr><td colspan="2">* $extraInfo</td></tr></tfoot>
 </table>
@@ -145,7 +177,7 @@ HTML;
             ))
           );
           // output the documentation for parameters.
-          echo '<table><caption>Parameters</caption>';
+          echo '<table class="table table-bordered table-responsive"><caption>Parameters</caption>';
           echo '<thead><th scope="col">Name</th><th scope="col">Data type</th><th scope="col">Description</th></thead>';
           echo '<tbody>';
           foreach ($resourceDef['params'] as $name => $paramDef) {
@@ -171,7 +203,7 @@ HTML;
         }
       }
     }
-    echo '</body></html>';
+    echo str_replace('{{ base }}', url::base(), $this->htmlFooter);
   }
 
   /**
@@ -310,10 +342,9 @@ HTML;
     $format = $this->getResponseFormat();
     if ($format === 'html') {
       header('Content-Type: text/html');
-      $css = url::base() . "modules/rest_api/media/css/rest_api.css";
-      echo str_replace('{css}', $css, $this->html_header);
+      echo str_replace('{{ base }}', url::base(), $this->htmlHeader);
       $this->outputArrayAsHtml($response);
-      echo '</body></html>';
+      echo str_replace('{{ base }}', url::base(), $this->htmlFooter);
     } else {
       header('Content-Type: application/json');
       echo json_encode($response);
@@ -332,18 +363,20 @@ HTML;
   public function getUrlWithCurrentParams($url) {
     $url = url::base() . "index.php/services/rest/$url";
     $query = array();
-    if (!empty($_REQUEST['proj_id']))
-      $query['proj_id'] = $_REQUEST['proj_id'];
-    if (!empty($params['format']))
-      $query['format'] = $_REQUEST['format'];
-    if (!empty($params['user']))
-      $query['user'] = $_REQUEST['user'];
-    if (!empty($params['secret']))
-      $query['secret'] = $_REQUEST['secret'];
-    if (!empty($query))
-      return $url . '?' . http_build_query($query);
-    else
-      return $url;
+    $paramsToCopy = [
+      'proj_id',
+      'format',
+      'user',
+      'user_id',
+      'website_id',
+      'secret',
+    ];
+    foreach ($paramsToCopy as $param) {
+      if (!empty($_REQUEST[$param])) {
+        $query[$param] = $_REQUEST[$param];
+      }
+    }
+    return $url . (empty($query) ? '' : '?' . http_build_query($query));
   }
 
   /**
@@ -352,8 +385,7 @@ HTML;
    * @param array $options
    */
   private function succeedHtml($data, $options) {
-    $css = url::base() . "modules/rest_api/media/css/rest_api.css";
-    echo str_replace('{css}', $css, $this->html_header);
+    echo str_replace('{{ base }}', url::base(), $this->htmlHeader);
     if (!empty($this->responseTitle)) {
       echo '<h1>' . $this->responseTitle . '</h1>';
     }
@@ -378,7 +410,7 @@ HTML;
       // We are returning a single row from the database.
       $this->outputResultAsHtml(array($data), $options);
     }
-    echo '</body></html>';
+    echo str_replace('{{ base }}', url::base(), $this->htmlFooter);
   }
 
   /**
@@ -388,7 +420,7 @@ HTML;
   private function getIndexAsHtml($data) {
     $r = '';
     if (!empty($data)) {
-      $r = '<table><caption>Index</caption>';
+      $r = '<table class="table table-bordered table-responsive"><caption>Index</caption>';
       $r .= '<thead><tr><th>Entry</th><th>Title</th><th>Description</th></tr></thead>';
       $r .= '<tbody>';
       foreach ($data as $key => $row) {
@@ -425,7 +457,7 @@ ROW;
   private function outputArrayAsHtml($array, $options = array()) {
     if (count($array)) {
       $id = isset($options['tableId']) ? " id=\"$options[tableId]\"" : '';
-      echo "<table$id>";
+      echo "<table class=\"table table-bordered table-responsive\"$id>";
       // If the data has a suitable field to generate a table caption then do so.
       $labelValues = array_intersect_key($array, array('title' => '', 'display' => '', 'caption' => ''));
       if (count($labelValues)>0 && !is_array($array[array_keys($labelValues)[0]])) {
@@ -464,6 +496,8 @@ ROW;
             if (count($parts)>1) {
               parse_str($parts[1], $params);
               unset($params['user']);
+              unset($params['user_id']);
+              unset($params['website_id']);
               unset($params['secret']);
               if (count($params)) {
                 $displayUrl .= '?' . http_build_query($params);
@@ -486,7 +520,7 @@ ROW;
    * the output.
    */
   private function outputResultAsHtml($data, $options) {
-    echo '<table>';
+    echo '<table class="table table-bordered table-responsive">';
     if (isset($options['columns'])) {
       // Ensure href and foriegn key column titles are added if we are including either of them. That's because these
       // are dynamically added to the data for each row as we go.
@@ -756,7 +790,7 @@ ROW;
       $attachResource = $options['attachHref'][0];
       $attachId = $options['attachHref'][1];
       $row['href'] = "$attachResource/$row[$attachId]";
-      $row['href'] = $this->getUrlWithCurrentParams($row['href']);
+      //$row['href'] = $this->getUrlWithCurrentParams($row['href']);
       if (!in_array('href', $columns)) {
         $columns[] = 'href';
       }

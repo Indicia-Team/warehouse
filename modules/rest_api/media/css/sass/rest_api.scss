@@ -7,41 +7,13 @@ $gap: 1em;
 
 body {
   font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
-  padding: $gap;
-  * {
-    margin: 0;
-    padding: 0;
-  }
-}
-
-h1 {
-  font-size: 1.7em;
-}
-h2 {
-  font-size: 1.5em;
-}
-h3 {
-  font-size: 1.2em;
 }
 
 h1, h2, h3 {
-  margin-top: $gap;
   color: $heading-colour;
 }
 
-h4 {
-  margin-top: $gap;
-}
-
-li {
-  margin-left: 2em;
-}
-
 table {
-  border-collapse: collapse;
-  margin-top: $gap;
-  min-width: 50%;
-
   caption {
     padding: $gap/4;
     background-color: $heading-background-colour;
@@ -49,7 +21,6 @@ table {
     border-bottom: none;
     font-weight: bold;
   }
-
   th {
     &[scope=col] {
       background-color: $heading-background-colour;
@@ -67,12 +38,5 @@ table {
         padding-left: 32px;
       }
     }
-  }
-
-  td, th {
-    border: 1px solid silver;
-    padding: $gap/4 $gap/2;
-    text-align: left;
-    vertical-align: top;
   }
 }
