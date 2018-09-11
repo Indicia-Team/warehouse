@@ -1218,8 +1218,8 @@ class Rest_Controller extends Controller {
       // reformat the info that the report supports standard paramenters into REST structure
       $metadata['params']['info'] =
         'Supports the standard set of parameters for ' . $metadata['standard_params'];
-      $metadata['params']['helpLink'] = 'http://indicia-docs.readthedocs.io/en/latest/' .
-        'developing/reporting/report-file-format.html?highlight=quality#standard-report-parameters';
+      $metadata['params']['helpLink'] =
+        'https://indicia-docs.readthedocs.io/en/latest/developing/reporting/standard-parameters.html';
       unset($metadata['standard_params']);
     }
     $metadata['columns'] = array(
