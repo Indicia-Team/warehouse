@@ -31,7 +31,7 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
-$config['version'] = '1.60.18';
+$config['version'] = '1.60.19';
 /**
  * Version release date.
  *
