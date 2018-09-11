@@ -96,20 +96,41 @@ HTML;
         ? kohana::lang("rest_api.allowAuthTokensInUrl") : kohana::lang("rest_api.dontAllowAuthTokensInUrl");
     foreach (Kohana::config('rest.authentication_methods') as $method => $cfg) {
       $methodNotes = [];
-      if (!in_array('allow_http', $cfg))
+      if (!in_array('allow_http', $cfg)) {
         $methodNotes[] = kohana::lang("rest_api.onlyAllowHttps") .
             ' (' . str_replace('http:', 'https:', url::base()) . 'index.php/services/rest).';
+      }
       if (isset($cfg['resource_options'])) {
         foreach ($cfg['resource_options'] as $resource => $options) {
           if (!empty($options)) {
             $note = kohana::lang('rest_api.resourceOptionInfo', '<em>' . $resource . '</em>') . ':';
-            $optionTexts = array();
+            $optionTexts = [];
             foreach ($options as $option => $value) {
               $optionTexts[] = '<li>' . kohana::lang("rest_api.resourceOptionInfo-$option") . '</li>';
-          }
+            }
             $methodNotes[] = "<p>$note</p><ul>" . implode('', $optionTexts) . '</ul>';
           }
         }
+      }
+      $authOptionNotes = [];
+      if (preg_match('/^(direct|hmac)/', $method)) {
+        if (kohana::lang("rest_api.{$method}HelpHeader") !== "rest_api.{$method}HelpHeader") {
+          $authOptionNotes[] = '<li>' . kohana::lang("rest_api.{$method}HelpHeader") . '</li>';
+        }
+        else {
+          $authOptionNotes[] = '<li>' . kohana::lang("rest_api.genericHelpHeader") . '</li>';
+        }
+      }
+      if (Kohana::config('rest.allow_auth_tokens_in_url') && preg_match('/^direct/', $method)) {
+        if (kohana::lang("rest_api.{$method}HelpUrl") !== "rest_api.{$method}HelpUrl") {
+          $authOptionNotes[] = '<li>' . kohana::lang("rest_api.{$method}HelpUrl") . '</li>';
+        }
+        else {
+          $authOptionNotes[] = '<li>' . kohana::lang("rest_api.genericHelpUrl") . '</li>';
+        }
+      }
+      if (!empty($authOptionNotes)) {
+        $methodNotes[] = '<p>' . kohana::lang('rest_api.authMethodsHelpHeader') . '</p><ul>' . implode('', $authOptionNotes) . '</ul>';
       }
       $authRows .= '<tr><th scope="row">' . kohana::lang("rest_api.$method") . '</th>';
       $authRows .= '<td>' . kohana::lang("rest_api.{$method}Help") . ' ' . implode(' ', $methodNotes) . '</td></tr>';

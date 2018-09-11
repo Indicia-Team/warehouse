@@ -1,7 +1,6 @@
 <?php
 
-  $lang = array
-  (
+  $lang = [
     'title' => 'Indicia RESTful API',
     'introduction' => 'Provides RESTful access to data in the Indicia warehouse database.',
     'authenticationTitle' => 'Authentication',
@@ -14,14 +13,26 @@
     'oauth2UserHelp' => 'Use oAuth2 password flow to authenticate as a warehouse user',
     'hmacClient' => 'HMAC as client system',
     'hmacClientHelp' => 'Use HMAC to authenticate as a configured client system.',
+    'hmacClientHelpHeader' => 'Set the authorisation header to <em>USER:[client system ID]:HMAC:[hmac]</em>',
     'hmacWebsite' => 'HMAC as website',
     'hmacWebsiteHelp' => 'Use HMAC to authenticate as a website registered on the warehouse.',
+    'hmacWebsiteHelpHeader' => 'Set the authorisation header to <em>WEBSITE_ID:[website ID]:HMAC:[hmac]</em>',
     'directUser' => 'Direct authentication as warehouse user',
     'directUserHelp' => 'Directly pass the username and password of a warehouse user account.',
+    'directClientHelpHeader' => 'Set the authorisation header to <em>USER_ID:[user ID]:WEBSITE_ID:[website id]:SECRET:[user warehouse password]</em>',
+    'directClientHelpUrl' => 'Add the following to the URL: <em>?user_id=[user ID]&website_id=[website ID]&secret=[user warehouse password]</em>',
     'directClient' => 'Direct authentication as client system',
     'directClientHelp' => 'Directly pass the ID and secret of a configured client system.',
+    'directClientHelpHeader' => 'Set the authorisation header to <em>USER:[client system ID]:SECRET:[secret]</em>',
+    'directClientHelpUrl' => 'Add the following to the URL: <em>?user=[client system ID]&secret=[secret]</em>',
     'directWebsite' => 'Direct authentication as website',
     'directWebsiteHelp' => 'Directly pass the ID and password of a website registered on the warehouse.',
+    'directWebsiteHelpHeader' => 'Set the authorisation header to <em>WEBSITE_ID:[website ID]:SECRET:[password]</em>',
+    'directWebsiteHelpUrl' => 'Add the following to the URL: <em>?website_id=[website ID]&secret=[password]</em>',
+    'genericHelpHeader' => 'Specify an authorisation header with a list of token name/value pairs, using colons as a ' .
+      'separator, for example <em>TOKEN1:value1:TOKEN2:value2</em>.',
+    'genericHelpUrl' => 'Add the tokens to the URL as parameters, using lowercase token names',
+    'authMethodsHelpHeader' => 'Provide the authentication tokens using one of the following methods:',
     'allowAuthTokensInUrl' => 'Tokens required for authorisation can be passed in the URL as query parameters or in ' .
         'the Authorization header of the request.',
     'dontAllowAuthTokensInUrl' => 'Tokens required for authorisation must be passed in the Authorization header of ' .
@@ -138,8 +149,8 @@
           'available in the report.',
       'cached' => 'Set to true to enable server side caching of the report output. Repeated requests with for the ' .
           'same report and parameters will be fast but data will not be fully up to date.',
-      '{report parameter}' => 'Supply report parameter values for filtering as defined by the report /params resource.'
+      '{report parameter}' => 'Supply report parameter values for filtering as defined by the report /params resource.',
     ),
-    'reports/{report_path}.xml/params' => array(),
-    'reports/{report_path}.xml/columns' => array()
-  );
+    'reports/{report_path}.xml/params' => [],
+    'reports/{report_path}.xml/columns' => [],
+  ];
