@@ -160,7 +160,7 @@ DESC;
           'sum(case when priority=3 then 1 else 0 end) as p3',
           'sum(case when error_detail is null then 0 else 1 end) as errors',
         ])
-        ->from('work_queues')
+        ->from('work_queue')
         ->get()->current();
       if ($qState->p1 > 2000) {
         $messages[] = array(
