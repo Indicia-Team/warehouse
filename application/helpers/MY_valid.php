@@ -75,23 +75,33 @@ class Valid extends valid_Core {
   }
 
   /**
-   * Validates that a value is unique across a table column, NULLs are ignored.
-   * When checking a new record, just count all records in DB. When Updating, count all
-   * records excluding the one we are updating.
+   * Unique validation rule (case insensitive).
    *
-   * @param	string	column Value
-   * @param   array   table name, table column, id of current record
-   * @return  boolean
+   * Validates that a value is unique across a table column, NULLs are ignored.
+   * When checking a new record, just count all records in DB. When Updating,
+   * count all records excluding the one we are updating.
+   *
+   * @param string $column_value
+   *   Column value to test.
+   * @param array $args
+   *   Table name, table column, ID of current record.
+   *
+   * @return bool
+   *   TRUE if valid.
    */
-  public static function unique($column_value, $args){
+  public static function unique($column_value, array $args) {
     $db = new Database();
-    if ($args[2] == ''){
-      $number_of_records = $db->count_records($args[0], array($args[1] => $column_value, 'deleted'=>'f'));
-    } else {
-      $number_of_records = $db->count_records($args[0], array($args[1] => $column_value, 'id !=' => $args[2], 'deleted'=>'f'));
-    }
-
-    return ($number_of_records == 0);
+    $idFilter = empty($args[2]) ? '' : "AND id<>$args[2]";
+    $qry = <<<SQL
+SELECT 1 AS hit
+FROM $args[0]
+WHERE deleted=false
+AND LOWER($args[1]) = LOWER('$column_value')
+$idFilter
+LIMIT 1
+SQL;
+    $found = $db->query($qry)->count();
+    return ($found === 0);
   }
 
   /**
