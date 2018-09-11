@@ -203,7 +203,7 @@ class Scheduled_Tasks_Controller extends Controller {
             'updated_by_id' => 1,
             'updated_on' => date('Y-m-d H:i:s'),
             'occurrence_id' => $record[$occIDCol],
-            'generated_by' => 'notificatons',
+            'generated_by' => 'notifications',
           ));
         }
         else {
@@ -246,7 +246,7 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     $data['headings'] = array_diff_key($data['headings'], array_flip($colsToRemove));
     // Keep a list of users to notify.
-    $userNotificatons = [];
+    $userNotifications = [];
     // For each record, attach it to any user that needs to be notified.
     foreach ($data['data'] as $websiteId => &$records) {
       foreach ($records as &$record) {
