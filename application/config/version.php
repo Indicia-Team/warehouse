@@ -29,14 +29,18 @@ defined('SYSPATH') or die('No direct script access.');
  *
  * @var string
  */
+<<<<<<< HEAD
 $config['version'] = '2.0.0';
 
+=======
+$config['version'] = '1.60.18';
+>>>>>>> hotfix-query_answers
 /**
  * Version release date.
  *
  * @var string
  */
-$config['release_date'] = '2018-09-03';
+$config['release_date'] = '2018-09-11';
 
 /**
  * Link to the code repository downloads page.

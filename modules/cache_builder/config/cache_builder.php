@@ -1396,7 +1396,8 @@ LEFT JOIN (occurrence_attribute_values oav
 LEFT JOIN occurrence_comments oc1 ON oc1.occurrence_id=o.id AND oc1.deleted=false AND oc1.auto_generated=false
     AND oc1.query=true AND (o.verified_on IS NULL OR oc1.created_on>o.verified_on)
 LEFT JOIN occurrence_comments oc2 ON oc2.occurrence_id=o.id AND oc2.deleted=false AND oc2.auto_generated=false
-    AND oc2.query=false AND (o.verified_on IS NULL OR oc2.created_on>o.verified_on) AND oc2.id>oc1.id
+    AND oc2.query=false AND oc2.generated_by IS NULL
+    AND (o.verified_on IS NULL OR oc2.created_on>o.verified_on) AND oc2.id>oc1.id
 LEFT JOIN occurrence_comments dc
     ON dc.occurrence_id=o.id
     AND dc.implies_manual_check_required=true
