@@ -551,7 +551,8 @@ class Occurrence_Model extends ORM {
         'description' => 'Select the website to import records into.',
         'datatype' => 'lookup',
         'population_call' => 'direct:website:id:title' ,
-        'filterIncludesNulls' => TRUE
+        'filterIncludesNulls' => TRUE,
+        'validation' => ['required'],
       ),
       'survey_id' => array(
         'display' => 'Survey',
@@ -559,7 +560,8 @@ class Occurrence_Model extends ORM {
         'datatype' => 'lookup',
         'population_call' => 'direct:survey:id:title',
         'linked_to' => 'website_id',
-        'linked_filter_field' => 'website_id'
+        'linked_filter_field' => 'website_id',
+        'validation' => ['required'],
       ),
       'sample:entered_sref_system' => array(
         'display' => 'Spatial ref. system',
