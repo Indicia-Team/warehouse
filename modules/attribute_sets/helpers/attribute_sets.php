@@ -44,6 +44,49 @@ class attribute_sets {
   ];
 
   /**
+   * Determines if linked sample or occurrence attribute needed.
+   *
+   * Checks a taxa_taxon_list_attribute which is being linked to an occurrence
+   * or sample attribute to see if this is really required. There can be
+   * several attributes to define the confidence ranges for a taxon (e.g. 80%
+   * or 95%) and if so, then we only want to create an occurrence or sample
+   * attribute for one of them as we are capturing an exact value with the
+   * field record data.
+   */
+  public static function isLinkedAttributeRequired($ttlAttrModel) {
+    kohana::log('debug', "checking $ttlAttrModel->caption");
+    if ($ttlAttrModel->allow_ranges === 't'
+        && preg_match('/ \(\d+%\)$/', $ttlAttrModel->caption)
+        && !preg_match('/ \(95%\)$/', $ttlAttrModel->caption)) {
+      kohana::log('debug', "Not required: $ttlAttrModel->caption");
+      return FALSE;
+    }
+    return TRUE;
+  }
+
+  /**
+   * Clean up attribute captions with percentiles.
+   *
+   * When linking a taxa taxon list range attribute with a confidence
+   * percentile, we want to exclude the percentile from the generated
+   * occurrence or sample attribute.
+   *
+   * @param bool $allowRanges
+   *   TRUE if ranges allowed, enabling the removal of percentile data.
+   * @param string $text
+   *   The caption or caption_i18n data to manipulate.
+   *
+   * @return string
+   *   Cleaned up caption.
+   */
+  public static function removePercentiles($allowRanges, $text) {
+    if ($allowRanges) {
+      return preg_replace('/ \(\d+%\)/', '', $text);
+    }
+    return $text;
+  }
+
+  /**
    * Changes required after a change to attribute set data.
    *
    * When one of the entities that defines the configuration of an attribute

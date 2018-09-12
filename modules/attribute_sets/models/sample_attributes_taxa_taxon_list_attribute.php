@@ -28,9 +28,12 @@ defined('SYSPATH') or die('No direct script access.');
  */
 class Sample_attributes_taxa_taxon_list_attribute_Model extends ORM {
 
-  protected $belongs_to = array(
+  protected $has_one = [
     'sample_attribute',
     'taxa_taxon_list_attribute',
+  ];
+
+  protected $belongs_to = array(
     'created_by' => 'user',
     'updated_by' => 'user',
   );
@@ -49,6 +52,52 @@ class Sample_attributes_taxa_taxon_list_attribute_Model extends ORM {
     return parent::validate($array, $save);
   }
 
+  private function getValue($field) {
+    return array_key_exists($field, $this->submission['fields']) ?
+      $this->submission['fields'][$field]['value'] : $this->$field;
+  }
+
+  public function preSubmit() {
+    // If submitting a link from a taxon attribute to an occcurrence
+    // attribute, then create the missing sample attribute, or update the
+    // existing one.
+    $oa = ORM::factory('sample_attribute');
+    $ttla = ORM::factory('taxa_taxon_list_attribute', $this->getValue('taxa_taxon_list_attribute_id'));
+    if (attribute_sets::isLinkedAttributeRequired($ttla)) {
+      $s = [
+        'caption' => attribute_sets::removePercentiles($ttla->allow_ranges === 't', $ttla->caption),
+        'data_type' => $ttla->data_type,
+        'validation_rules' => $ttla->validation_rules,
+        'termlist_id' => $ttla->termlist_id,
+        'multi_value' => $this->getValue('restrict_sample_attribute_to_single_value') === 't'
+          ? 'f' : $ttla->multi_value,
+        'public' => $ttla->public,
+        'system_function' => $ttla->system_function,
+        'source_id' => $ttla->source_id,
+        'caption_i18n' => attribute_sets::removePercentiles($ttla->allow_ranges === 't', $ttla->caption_i18n),
+        'term_name' => $ttla->term_name,
+        'term_identifier' => $ttla->term_identifier,
+        'allow_ranges' => $this->getValue('restrict_sample_attribute_to_single_value') === 't'
+          ? 'f' : $ttla->allow_ranges,
+      ];
+      // Force an update if it already exists.
+      if (!empty($this->getValue('sample_attribute_id'))) {
+        $s['id'] = $this->getValue('sample_attribute_id');
+      }
+      $oa->set_submission_data($s);
+      $oa->submit();
+      $this->submission['fields']['sample_attribute_id']['value'] = $oa->id;
+    }
+    return parent::preSubmit();
+  }
+
+  /**
+   * After submission, ensure that any changes are reflected in the core model.
+   *
+   * E.g. if a taxa_taxon_list_attribute which is in an attribute set is also
+   * linked to a sample attribute, then the sample attribute will also be
+   * linked to the survey.
+   */
   public function postSubmit($isInsert) {
     attribute_sets::updateSetLinks($this->db, $this);
     return TRUE;
