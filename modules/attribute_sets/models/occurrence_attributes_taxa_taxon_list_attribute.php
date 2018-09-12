@@ -59,13 +59,13 @@ class Occurrence_attributes_taxa_taxon_list_attribute_Model extends ORM {
 
   public function preSubmit() {
     // If submitting a link from a taxon attribute to an occcurrence
-    // attribute with no occurrence attribute, then create the missing
-    // occurrence attribute.
-    if (empty($this->getValue('occurrence_attribute_id'))) {
-      $oa = ORM::factory('occurrence_attribute');
-      $ttla = ORM::factory('taxa_taxon_list_attribute', $this->getValue('taxa_taxon_list_attribute_id'));
+    // attribute, then create the missing occurrence attribute, or update the
+    // existing one.
+    $oa = ORM::factory('occurrence_attribute');
+    $ttla = ORM::factory('taxa_taxon_list_attribute', $this->getValue('taxa_taxon_list_attribute_id'));
+    if (attribute_sets::isLinkedAttributeRequired($ttla)) {
       $s = [
-        'caption' => $ttla->caption,
+        'caption' => attribute_sets::removePercentiles($ttla->allow_ranges === 't', $ttla->caption),
         'data_type' => $ttla->data_type,
         'validation_rules' => $ttla->validation_rules,
         'termlist_id' => $ttla->termlist_id,
@@ -74,12 +74,16 @@ class Occurrence_attributes_taxa_taxon_list_attribute_Model extends ORM {
         'public' => $ttla->public,
         'system_function' => $ttla->system_function,
         'source_id' => $ttla->source_id,
-        'caption_i18n' => $ttla->caption_i18n,
+        'caption_i18n' => attribute_sets::removePercentiles($ttla->allow_ranges === 't', $ttla->caption_i18n),
         'term_name' => $ttla->term_name,
         'term_identifier' => $ttla->term_identifier,
         'allow_ranges' => $this->getValue('restrict_occurrence_attribute_to_single_value') === 't'
           ? 'f' : $ttla->allow_ranges,
       ];
+      // Force an update if it already exists.
+      if (!empty($this->getValue('occurrence_attribute_id'))) {
+        $s['id'] = $this->getValue('occurrence_attribute_id');
+      }
       $oa->set_submission_data($s);
       $oa->submit();
       $this->submission['fields']['occurrence_attribute_id']['value'] = $oa->id;
