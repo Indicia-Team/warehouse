@@ -184,6 +184,9 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       taxon_meaning_id=ttlpref.taxon_meaning_id,
       taxon_group_id = tpref.taxon_group_id,
       taxon_group = tg.title,
+      taxon_rank_id = tr.id,
+      taxon_rank = tr.rank,
+      taxon_rank_sort_order = tr.sort_order,
       cache_updated_on=now(),
       allow_data_entry=ttl.allow_data_entry,
       marine_flag=t.marine_flag
@@ -200,6 +203,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     join languages l on l.id=t.language_id and l.deleted=false
     join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
     join taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
+    left join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false
     join languages lpref on lpref.id=tpref.language_id and lpref.deleted=false
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id and tcommon.deleted=false
     where cttl.id=ttl.id";
@@ -210,6 +214,7 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
       taxon, authority, language_iso, language, preferred_taxon, preferred_authority,
       preferred_language_iso, preferred_language, default_common_name, search_name, external_key,
       taxon_meaning_id, taxon_group_id, taxon_group,
+      taxon_rank_id, taxon_rank, taxon_rank_sort_order,
       cache_created_on, cache_updated_on, allow_data_entry, marine_flag
     )
     select distinct on (ttl.id) ttl.id, ttl.preferred,
@@ -222,6 +227,7 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
       tcommon.taxon as default_common_name,
       regexp_replace(regexp_replace(regexp_replace(lower(t.taxon), E'\\\\(.+\\\\)', '', 'g'), 'ae', 'e', 'g'), E'[^a-z0-9\\\\?\\\\+]', '', 'g'),
       tpref.external_key, ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
+      tr.id, tr.rank, tr.sort_order,
       now(), now(), ttl.allow_data_entry, t.marine_flag
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id and ttl.deleted=false
@@ -237,6 +243,7 @@ $config['taxa_taxon_lists']['insert'] = "insert into cache_taxa_taxon_lists (
     join languages l on l.id=t.language_id and l.deleted=false and l.deleted=false
     join taxa tpref on tpref.id=ttlpref.taxon_id and tpref.deleted=false
     join taxon_groups tg on tg.id=tpref.taxon_group_id and tg.deleted=false
+    left join taxon_ranks tr on tr.id=t.taxon_rank_id and tr.deleted=false
     join languages lpref on lpref.id=tpref.language_id and lpref.deleted=false
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id and tcommon.deleted=false
     where cttl.id is null and tl.deleted=false";
@@ -492,6 +499,7 @@ $config['taxon_searchterms']['update']['simplified terms'] = "update cache_taxon
         ), E'[^a-z0-9\\\\?\\\\+]', '', 'g')),
       parent_id=cttl.parent_id,
       preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id,
+      taxon_rank_sort_order=cttl.taxon_rank_sort_order,
       marine_flag=cttl.marine_flag,
       external_key=cttl.external_key,
       authority=cttl.authority,
