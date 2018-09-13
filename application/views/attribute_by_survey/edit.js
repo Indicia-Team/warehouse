@@ -23,6 +23,7 @@ jQuery(document).ready(function docReady($) {
   // Force the sex stage restriction controls to not be required and set a
   // useful default.
   $('.scOccAttrCell :input').removeAttr('data-rule-required');
+  $('.scOccAttrCell :input').removeAttr('required');
   $('.scOccAttrCell .input-group-addon').remove();
   $.each($('.scOccAttrCell select'), function processBlankVal() {
     var blankOption = $(this).find('option[value=""]');
