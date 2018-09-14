@@ -101,7 +101,7 @@ class attribute_sets {
   public static function updateSetLinks($db, $model) {
     if ($model->deleted === 't') {
       if ($model->object_name !== 'attribute_sets_taxon_restriction') {
-        self::deleteAttributesWebsites($db, $model);
+        self::deleteFieldAttributesWebsites($db, $model);
       }
       self::deleteAttributesTaxonRestriction($db, $model);
     }
@@ -261,7 +261,7 @@ SQL;
    * @param object $model
    *   Instantiated ORM object just inserted or updated.
    */
-  private static function deleteAttributesWebsites($db, $model) {
+  private static function deleteFieldAttributesWebsites($db, $model) {
     // Find the alias used im the query for the table we are going to filter
     // against.
     $alias = self::$aliases[$model->object_name];
@@ -271,8 +271,6 @@ SQL;
       ['sample', 'occurrence'] : [self::$rootEntities[$model->object_name]];
     // For each root entity, build a query that inserts the attribute website
     // join records required.
-
-    // ERRROR IN THE FOLLOWING - deletions are over-zealous
     foreach ($rootEntities as $entity) {
       $qry = <<<SQL
 update {$entity}_attributes_websites aw
@@ -284,33 +282,32 @@ join attribute_sets_taxa_taxon_list_attributes asttla
   on asttla.attribute_set_id=ass.attribute_set_id
 join {$entity}_attributes_taxa_taxon_list_attributes attla
   on attla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
-left join ({$entity}_attributes_taxa_taxon_list_attributes attla2
-  join attribute_sets_taxa_taxon_list_attributes asttla2
-    on asttla2.taxa_taxon_list_attribute_id=attla2.taxa_taxon_list_attribute_id
-    and asttla2.deleted=false
-  join attribute_sets aset2
-    on aset2.id=asttla2.attribute_set_id
-    and aset2.deleted=false
-  join attribute_sets_surveys ass2
-    on ass2.attribute_set_id=aset2.id
-    and ass2.deleted=false
-) on attla2.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
-  and attla2.deleted=false
-  and attla2.id<>attla.id
-  and ass2.survey_id=ass.survey_id
-where aw.website_id=aset.website_id
-and coalesce(aw.restrict_to_survey_id, 0)=ass.survey_id
+where (ass.deleted or aset.deleted or asttla.deleted or attla.deleted)
+and aw.website_id=aset.website_id
 and aw.{$entity}_attribute_id=attla.{$entity}_attribute_id
--- Not linked to a different set
-and attla2.id is null
--- Filter one of the options below
+and aw.restrict_to_survey_id=ass.survey_id
 and $alias.id=$model->id
--- Reverse the deletion filter for the table we are deleting from
-and aset.deleted=case '$alias' when 'aset' then true else false end
-and ass.deleted=case '$alias' when 'ass' then true else false end
-and asttla.deleted=case '$alias' when 'asttla' then true else false end
-and attla.deleted=case '$alias' when 'attla' then true else false end
 and aw.deleted=false
+and aw.id not in (
+  -- This is the list of stuff which should definitely be kept because it is
+  -- still linked via another set.
+  select aw.id
+  from {$entity}_attributes_websites aw,
+    attribute_sets_surveys ass
+    join attribute_sets aset
+      on aset.id=ass.attribute_set_id
+      and aset.deleted=false
+    join attribute_sets_taxa_taxon_list_attributes asttla
+      on asttla.attribute_set_id=ass.attribute_set_id
+      and asttla.deleted=false
+    join {$entity}_attributes_taxa_taxon_list_attributes attla
+      on attla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
+      and attla.deleted=false
+  where ass.deleted=false
+  and aw.website_id=aset.website_id
+  and aw.{$entity}_attribute_id=attla.{$entity}_attribute_id
+  and aw.restrict_to_survey_id=ass.survey_id
+);
 SQL;
       $db->query($qry);
     }
@@ -338,7 +335,8 @@ SQL;
       ['sample', 'occurrence'] : [self::$rootEntities[$model->object_name]];
     $userId = self::getUserId();
     // For each root entity, build a query that inserts the attribute website
-    // join records required.
+    // join records required. These are the records that are implied by the
+    // attribute set taxon restrictions which don't already exists.
     foreach ($rootEntities as $entity) {
       $qry = <<<SQL
 -- dummy comment to prevent Kohana reading insert_id (which breaks if nothing inserted)
@@ -401,18 +399,43 @@ join attribute_sets_taxa_taxon_list_attributes asttla
   on asttla.attribute_set_id=ass.attribute_set_id
 join {$entity}_attributes_taxa_taxon_list_attributes attla
   on attla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
-  and attla.deleted=false
-where atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
-and coalesce(atr.restrict_to_stage_term_meaning_id, 0)=coalesce(astr.restrict_to_stage_term_meaning_id, 0)
--- Filter one of the options below
+join {$entity}_attributes_websites aw
+  on aw.website_id=aset.website_id
+  and aw.restrict_to_survey_id=ass.survey_id
+  and aw.{$entity}_attribute_id=attla.{$entity}_attribute_id
+where (astr.deleted or ass.deleted or aset.deleted or asttla.deleted or attla.deleted or aw.deleted)
 and $alias.id=$model->id
--- Reverse the deletion filter for the table we are deleting from
-and aset.deleted=case '$alias' when 'aset' then true else false end
-and astr.deleted=case '$alias' when 'atr' then true else false end
-and ass.deleted=case '$alias' when 'ass' then true else false end
-and asttla.deleted=case '$alias' when 'asttla' then true else false end
-and attla.deleted=case '$alias' when 'attla' then true else false end
+and atr.{$entity}_attributes_website_id=atr.id
+and atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
+and atr.restrict_to_stage_term_meaning_id=astr.restrict_to_stage_term_meaning_id
 and atr.deleted=false
+and atr.id not in (
+  -- Exclude deletions for any restriction that is still valid because of
+  -- another attribute set.
+  select atr.id
+  from {$entity}_attribute_taxon_restrictions, attribute_sets_taxon_restrictions astr
+  join attribute_sets_surveys ass
+    on ass.id=astr.attribute_sets_survey_id
+    and ass.deleted=false
+  join attribute_sets aset
+    on aset.id=ass.attribute_set_id
+    and aset.deleted=false
+  join attribute_sets_taxa_taxon_list_attributes asttla
+    on asttla.attribute_set_id=ass.attribute_set_id
+    and asttla.deleted=false
+  join {$entity}_attributes_taxa_taxon_list_attributes attla
+    on attla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
+    and attla.deleted=false
+  join {$entity}_attributes_websites aw
+    on aw.website_id=aset.website_id
+    and aw.restrict_to_survey_id=ass.survey_id
+    and aw.{$entity}_attribute_id=attla.{$entity}_attribute_id
+    and aw.deleted=false
+  where astr.deleted=false
+  and atr.{$entity}_attributes_website_id=atr.id
+  and atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
+  and atr.restrict_to_stage_term_meaning_id=astr.restrict_to_stage_term_meaning_id
+);
 SQL;
       $db->query($qry);
     }
