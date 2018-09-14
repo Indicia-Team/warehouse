@@ -120,6 +120,38 @@ class Attribute_setTest extends Indicia_DatabaseTestCase {
     $r = data_entry_helper::forward_post_to('attribute_sets_taxon_restriction', $s, $this->auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting an attribute_sets_taxon_restriction did not return success response');
 
+    // Link the attribute set to the test taxon list.
+    $array = array(
+      'id' => $attributeSetId,
+      'taxon_list_id' => 1,
+    );
+    $s = submission_builder::build_submission($array, array('model' => 'id'));
+    $r = data_entry_helper::forward_post_to('attribute_set', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting an attribute_set to update the taxon_list_id did not return success response');
+
+    // Check the attribute was linked to the list.
+    $links = $db->select('id')
+      ->from('taxon_lists_taxa_taxon_list_attributes')
+      ->where([
+        'taxon_list_id' => 1,
+        'taxa_taxon_list_attribute_id' => $ttlAttributeId,
+        'deleted' => 'f',
+      ])
+      ->get()->as_array(FALSE);
+    $this->assertEquals(1, count($links), 'The link from a taxon attribute to the taxon list was not created correctly.');
+    $taxonListsTaxaTaxonListAttributeId = $links[0]['id'];
+
+    // Check the taxon attribute's restrictions were set.
+    $links = $db->select('count(*)')
+      ->from('taxa_taxon_list_attribute_taxon_restrictions')
+      ->where([
+        'taxon_lists_taxa_taxon_list_attribute_id' => $taxonListsTaxaTaxonListAttributeId,
+        'restrict_to_taxon_meaning_id' => 10001,
+        'deleted' => 'f',
+      ])
+      ->get()->current();
+    $this->assertEquals(1, $links->count, 'The taxon attribute restrictions were not automatically created properly');
+
     // Now create an occurrence_attributes_taxa_taxon_list_attributes record
     // without filling in the occurrence_attribute_id. A trigger should auto
     // create the occurrence attribute using the taxon attribute as a template
