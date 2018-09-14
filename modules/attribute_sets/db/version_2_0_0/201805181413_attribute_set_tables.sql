@@ -75,7 +75,7 @@ CREATE TABLE attribute_sets_surveys
 (
   id serial NOT NULL,
   attribute_set_id integer NOT NULL,
-  survey_id integer,
+  survey_id integer NOT NULL,
   created_on timestamp without time zone NOT NULL,
   created_by_id integer NOT NULL,
   updated_on timestamp without time zone NOT NULL,
