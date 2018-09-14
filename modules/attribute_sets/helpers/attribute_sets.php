@@ -107,10 +107,96 @@ class attribute_sets {
     }
     else {
       if ($model->object_name !== 'attribute_sets_taxon_restriction') {
-        self::insertOrUpdateAttributesWebsites($db, $model);
+        self::insertOrUpdateFieldAttributesWebsites($db, $model);
       }
-      self::insertOrUpdateAttributesTaxonRestriction($db, $model);
+      self::insertOrUpdateFieldAttributesTaxonRestriction($db, $model);
+      if ($model->object_name === 'attribute_set'
+          || $model->object_name === 'attribute_sets_taxa_taxon_list_attribute') {
+        self::insertMissingTaxonListsAttributes($db, $model);
+      }
+      if (!preg_match('/^(sample|occurrence)/', $model->object_name)) {
+        self::insertOrUpdateTaxonAttributesTaxonRestriction($db, $model);
+      }
     }
+  }
+
+  /**
+   * Create missing links between taxon lists and taxon attributes.
+   *
+   * Creates the taxon_lists_taxa_taxon_list_attributes records required to
+   * link the attributes in the set to the same taxon list that the set
+   * belongs to.
+   *
+   * @param object $db
+   *   Connection object.
+   * @param object $model
+   *   Instantiated ORM object just inserted or updated.
+   */
+  private static function insertMissingTaxonListsAttributes($db, $model) {
+    $alias = self::$aliases[$model->object_name];
+    $userId = self::getUserId();
+    $qry = <<<SQL
+-- Dummy query to prevent ORM trying to get the insert result when there might be none.
+INSERT INTO taxon_lists_taxa_taxon_list_attributes
+    (taxon_list_id, taxa_taxon_list_attribute_id, created_on, created_by_id)
+  SELECT aset.taxon_list_id, asttla.taxa_taxon_list_attribute_id, now(), $userId
+  FROM attribute_sets aset
+  JOIN attribute_sets_taxa_taxon_list_attributes asttla
+    ON asttla.attribute_set_id=aset.id
+    AND asttla.deleted=false
+  LEFT JOIN taxon_lists_taxa_taxon_list_attributes tlttla
+    ON tlttla.taxon_list_id=aset.taxon_list_id
+    AND tlttla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
+    AND tlttla.deleted=false
+  WHERE aset.deleted=false
+  AND aset.taxon_list_id IS NOT NULL
+  AND tlttla.id IS NULL
+  AND $alias.id=$model->id;
+SQL;
+    $db->query($qry);
+  }
+
+  /**
+   * Create missing taxon attribute restrictions.
+   *
+   * Creates the taxa_taxon_list_attribute_taxon_restrictions records required
+   * to restrict the attributes in the set to the taxonomic branches that the
+   * set is linked to.
+   *
+   * @param object $db
+   *   Connection object.
+   * @param object $model
+   *   Instantiated ORM object just inserted or updated.
+   */
+  private static function insertOrUpdateTaxonAttributesTaxonRestriction($db, $model) {
+    $alias = self::$aliases[$model->object_name];
+    $userId = self::getUserId();
+    $qry = <<<SQL
+INSERT INTO taxa_taxon_list_attribute_taxon_restrictions
+    (taxon_lists_taxa_taxon_list_attribute_id, restrict_to_taxon_meaning_id, restrict_to_stage_term_meaning_id,
+     created_on, created_by_id, updated_on, updated_by_id)
+  SELECT DISTINCT tlttla.id as taxon_lists_taxa_taxon_list_attribute_id, astr.restrict_to_taxon_meaning_id, astr.restrict_to_stage_term_meaning_id,
+    now(), $userId, now(), $userId
+FROM taxon_lists_taxa_taxon_list_attributes tlttla
+JOIN attribute_sets_taxa_taxon_list_attributes asttla
+  ON asttla.taxa_taxon_list_attribute_id=tlttla.taxa_taxon_list_attribute_id
+  AND asttla.deleted=false
+JOIN attribute_sets aset
+  ON aset.id=asttla.attribute_set_id
+  AND aset.deleted=false
+JOIN attribute_sets_surveys ass
+  ON ass.attribute_set_id=asttla.attribute_set_id
+  AND ass.deleted=false
+JOIN attribute_sets_taxon_restrictions astr
+  ON astr.attribute_sets_survey_id=ass.id
+  AND astr.deleted=false
+LEFT JOIN taxa_taxon_list_attribute_taxon_restrictions ttlatr
+  ON ttlatr.taxon_lists_taxa_taxon_list_attribute_id = tlttla.id
+  AND ttlatr.deleted=false
+WHERE ttlatr.id IS NULL
+AND $alias.id=$model->id;
+SQL;
+    $db->query($qry);
   }
 
   /**
@@ -125,7 +211,7 @@ class attribute_sets {
    * @param object $model
    *   Instantiated ORM object just inserted or updated.
    */
-  private static function insertOrUpdateAttributesWebsites($db, $model) {
+  private static function insertOrUpdateFieldAttributesWebsites($db, $model) {
     // Find the alias used im the query for the table we are going to filter
     // against.
     $alias = self::$aliases[$model->object_name];
@@ -168,7 +254,7 @@ SQL;
    * Changes required after a delete.
    *
    * Deletes the occurrence_attributes_websites records which are no longer
-   * required because of an update to an attribute set..
+   * required because of an update to an attribute set.
    *
    * @param object $db
    *   Connection object.
@@ -185,6 +271,8 @@ SQL;
       ['sample', 'occurrence'] : [self::$rootEntities[$model->object_name]];
     // For each root entity, build a query that inserts the attribute website
     // join records required.
+
+    // ERRROR IN THE FOLLOWING - deletions are over-zealous
     foreach ($rootEntities as $entity) {
       $qry = <<<SQL
 update {$entity}_attributes_websites aw
@@ -196,8 +284,25 @@ join attribute_sets_taxa_taxon_list_attributes asttla
   on asttla.attribute_set_id=ass.attribute_set_id
 join {$entity}_attributes_taxa_taxon_list_attributes attla
   on attla.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
+left join ({$entity}_attributes_taxa_taxon_list_attributes attla2
+  join attribute_sets_taxa_taxon_list_attributes asttla2
+    on asttla2.taxa_taxon_list_attribute_id=attla2.taxa_taxon_list_attribute_id
+    and asttla2.deleted=false
+  join attribute_sets aset2
+    on aset2.id=asttla2.attribute_set_id
+    and aset2.deleted=false
+  join attribute_sets_surveys ass2
+    on ass2.attribute_set_id=aset2.id
+    and ass2.deleted=false
+) on attla2.taxa_taxon_list_attribute_id=asttla.taxa_taxon_list_attribute_id
+  and attla2.deleted=false
+  and attla2.id<>attla.id
+  and ass2.survey_id=ass.survey_id
 where aw.website_id=aset.website_id
-and coalesce(aw.restrict_to_survey_id, 0)=coalesce(ass.survey_id, 0)
+and coalesce(aw.restrict_to_survey_id, 0)=ass.survey_id
+and aw.{$entity}_attribute_id=attla.{$entity}_attribute_id
+-- Not linked to a different set
+and attla2.id is null
 -- Filter one of the options below
 and $alias.id=$model->id
 -- Reverse the deletion filter for the table we are deleting from
@@ -223,7 +328,7 @@ SQL;
    * @param object $model
    *   Instantiated ORM object just inserted or updated.
    */
-  private static function insertOrUpdateAttributesTaxonRestriction($db, $model) {
+  private static function insertOrUpdateFieldAttributesTaxonRestriction($db, $model) {
     // Find the alias used im the query for the table we are going to filter
     // against.
     $alias = self::$aliases[$model->object_name];
