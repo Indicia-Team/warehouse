@@ -42,6 +42,7 @@ class Attribute_set_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
     $array->add_rules('website_id', 'integer');
+    $array->add_rules('taxon_list_id', 'integer');
     $this->unvalidatedFields = array('description');
     return parent::validate($array, $save);
   }
