@@ -1,14 +1,30 @@
 <?php
+
 /**
- * INDICIA
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @author Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
  * @link http://code.google.com/p/indicia/
- * @package Indicia
  */
 
 /**
  * Filter helper class to find folders in a db folder that are named version_x_x_x
  * and therefore contain scripts to run for that version.
+ *
  * @param string $folder
+ *
  * @return boolean
  */
 class FolderFilter {
@@ -130,7 +146,7 @@ class Upgrade_Model extends Model {
       ->current()->approx_count > 1000;
     // Run the core upgrade.
     $last_run_script = $system->getLastRunScript('Indicia');
-    $this->apply_update_scripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version, $new_version, $last_run_script);
+    $this->applyUpdateScripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version, $new_version, $last_run_script);
     $this->setNewVersion($new_version, 'Indicia');
     // Need to look for any module with a db folder, then read its system
     // version and apply the updates.
@@ -141,7 +157,7 @@ class Upgrade_Model extends Model {
         if (file_exists("$path/db/")) {
           $old_version = $system->getVersion(basename($path));
           $last_run_script = $system->getLastRunScript(basename($path));
-          $this->apply_update_scripts("$path/", basename($path), $old_version, $new_version, $last_run_script);
+          $this->applyUpdateScripts("$path/", basename($path), $old_version, $new_version, $last_run_script);
         }
         else {
           // Update the system table to reflect version of all modules without
@@ -170,8 +186,13 @@ class Upgrade_Model extends Model {
     return $folders;
   }
 
-  private function apply_update_scripts($base_dir, $app_name, $old_version, $new_version, $last_run_script) {
+  private function applyUpdateScripts($base_dir, $app_name, $old_version, $new_version, $last_run_script) {
     $db_versions = $this->get_db_versions($base_dir, $old_version, $new_version);
+    // If we are starting a new folder (i.e. the last folder of db scripts has
+    // already been fully applied) then make sure we start at the beginning.
+    if (count($db_versions) > 0 && reset($db_versions) !== 'version_' . str_replace('.', '_', $old_version)) {
+      $last_run_script = '';
+    }
     foreach ($db_versions as $version_folder) {
       kohana::log('debug', "upgrading $app_name database to $version_folder");
       if (file_exists($base_dir . "db/" . $version_folder)) {
