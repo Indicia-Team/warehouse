@@ -25,31 +25,3 @@ COMMENT ON COLUMN cache_taxon_paths.taxon_meaning_id IS 'Taxon meaning ID of thi
 COMMENT ON COLUMN cache_taxon_paths.taxon_list_id IS 'Taxon list this taxon belongs to.';
 COMMENT ON COLUMN cache_taxon_paths.external_key IS 'External key of the preferred name with this path. Allows easy cross reference with other lists that share the same preferred name.';
 COMMENT ON COLUMN cache_taxon_paths.path IS 'Array of taxon_meaning_ids for the taxon''s materialised path. This is a list of pointers to the ancestors of this taxa from the top of the taxonomic tree downwards.';
-
-
--- Index: ix_taxon_path_external_key
-
--- DROP INDEX ix_taxon_path_external_key;
-
-CREATE INDEX ix_taxon_path_external_key
-  ON cache_taxon_paths
-  USING btree
-  (external_key COLLATE pg_catalog."default");
-
--- Index: ix_taxon_path_taxon_list_id
-
--- DROP INDEX ix_taxon_path_taxon_list_id;
-
-CREATE INDEX ix_taxon_path_taxon_list_id
-  ON cache_taxon_paths
-  USING btree
-  (taxon_list_id);
-
--- Index: ix_taxon_path_path
-
--- DROP INDEX ix_taxon_path_path;
-
-CREATE INDEX ix_taxon_path_path
-  ON cache_taxon_paths
-  USING gin
-  (path);

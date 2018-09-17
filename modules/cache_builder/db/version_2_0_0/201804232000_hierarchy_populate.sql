@@ -29,3 +29,29 @@ SELECT DISTINCT ON (cttl.taxon_meaning_id, cttl.taxon_list_id) cttl.taxon_meanin
 FROM cache_taxa_taxon_lists cttl
 JOIN ttl_path tp ON tp.child_pref_ttl_id=cttl.id;
 
+-- Index: ix_taxon_path_external_key
+
+-- DROP INDEX ix_taxon_path_external_key;
+
+CREATE INDEX ix_taxon_path_external_key
+  ON cache_taxon_paths
+  USING btree
+  (external_key COLLATE pg_catalog."default");
+
+-- Index: ix_taxon_path_taxon_list_id
+
+-- DROP INDEX ix_taxon_path_taxon_list_id;
+
+CREATE INDEX ix_taxon_path_taxon_list_id
+  ON cache_taxon_paths
+  USING btree
+  (taxon_list_id);
+
+-- Index: ix_taxon_path_path
+
+-- DROP INDEX ix_taxon_path_path;
+
+CREATE INDEX ix_taxon_path_path
+  ON cache_taxon_paths
+  USING gin
+  (path);
