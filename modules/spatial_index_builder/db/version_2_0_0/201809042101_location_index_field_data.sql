@@ -29,6 +29,7 @@ DROP INDEX ix_cache_occurrences_functional_verified_on;
 DROP TRIGGER delete_quick_reply_auth_trigger ON cache_occurrences_functional;
 DROP INDEX ix_cache_samples_functional_created_by_id;
 DROP INDEX ix_cache_samples_functional_location_id;
+DROP INDEX ix_cache_samples_functional_location_ids;
 DROP INDEX ix_cache_samples_functional_map_sq_10km_id;
 DROP INDEX ix_cache_samples_functional_map_sq_1km_id;
 DROP INDEX ix_cache_samples_functional_map_sq_2km_id;
