@@ -36,8 +36,8 @@ WHERE indrelid in (
     WHERE relname in ('cache_occurrences_functional', 'cache_samples_functional')
 );
 
-REINDEX cache_occurrences_functional;
-REINDEX cache_samples_functional;
+REINDEX TABLE cache_occurrences_functional;
+REINDEX TABLE cache_samples_functional;
 
 -- Table no longer required.
 DROP TABLE index_locations_samples;
