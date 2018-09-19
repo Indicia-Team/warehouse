@@ -1,5 +1,12 @@
 -- #slow script#
 
+-- Clear out, just in case the warehouse has been left live during the update.
+DELETE FROM work_queue WHERE task IN (
+  'task_cache_builder_attrs_occurrence',
+  'task_cache_builder_attrs_sample',
+  'task_cache_builder_attrs_taxa_taxon_list'
+);
+
 INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
 SELECT DISTINCT 'task_cache_builder_attrs_occurrence', 'occurrence', id, 2, 60, now()
 FROM occurrences
