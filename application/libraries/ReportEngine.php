@@ -1795,10 +1795,14 @@ SQL;
       }
     }
     // Insert all the fields into the right places in the SQL.
-    $list = implode(",\n", $fields);
-    $query = str_replace('#fields#', ",\n$list#fields#", $query);
-    $list = implode(",\n", $groupBys);
-    $query = str_replace('#group_bys#', ",\n$list#group_bys#", $query);
+    if (!empty($fields)) {
+      $list = implode(",\n", $fields);
+      $query = str_replace('#fields#', ",\n$list#fields#", $query);
+    }
+    if (!empty($groupBys)) {
+      $list = implode(",\n", $groupBys);
+      $query = str_replace('#group_bys#', ",\n$list#group_bys#", $query);
+    }
   }
 
   /**
