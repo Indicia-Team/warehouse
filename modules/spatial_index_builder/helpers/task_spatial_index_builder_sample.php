@@ -59,7 +59,7 @@ AND task='task_spatial_index_builder_sample';
 SELECT DISTINCT s.id as sample_id, CASE WHEN count(l.id)=0 THEN NULL ELSE array_agg(l.id) END as location_ids
 INTO TEMPORARY changed_samples
 FROM cache_samples_functional s
-LEFT JOIN locations ON st_intersects(l.boundary_geom, s.public_geom)
+LEFT JOIN locations l ON st_intersects(l.boundary_geom, s.public_geom)
   AND NOT st_touches(l.boundary_geom, s.public_geom)
   AND l.deleted=false
   $locationTypeFilters
