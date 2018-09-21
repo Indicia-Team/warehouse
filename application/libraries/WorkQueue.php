@@ -193,15 +193,12 @@ SQL;
   private function getServerLoad() {
     $load = [];
     if (strncasecmp(PHP_OS, 'WIN', 3) == 0) {
-      $wmi = new COM("Winmgmts://");
-      $server = $wmi->execquery("SELECT LoadPercentage FROM Win32_Processor");
-      $cpu_num = 0;
-      $load_total = 0;
-      foreach ($server as $cpu) {
-        $cpu_num++;
-        $load_total += $cpu->loadpercentage;
+      exec('wmic cpu get loadPercentage', $output);
+      foreach ($output as $line) {
+        if ($line && preg_match("/^[0-9]+\$/", $line)) {
+          $load[] = $line;
+        }
       }
-      $load[] = round($load_total / $cpu_num);
     }
     else {
       $load = sys_getloadavg();
