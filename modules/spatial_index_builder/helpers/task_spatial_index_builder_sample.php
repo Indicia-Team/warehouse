@@ -73,7 +73,7 @@ UPDATE cache_samples_functional u
 FROM changed_samples cs
 WHERE cs.sample_id=u.id
 AND (
-  (u.location_ids is null<>cs.location_ids is null)
+  ((u.location_ids is null)<>(cs.location_ids is null))
   OR u.location_ids <@ cs.location_ids = false OR u.location_ids @> cs.location_ids = false
 );
 
@@ -82,7 +82,7 @@ SET location_ids = s.location_ids
 FROM cache_samples_functional s
 JOIN changed_samples cs on cs.sample_id=s.id
 WHERE o.sample_id=s.id AND o.survey_id=s.survey_id AND o.website_id=s.website_id
-AND (o.location_ids <> s.location_ids OR o.location_ids IS NULL<>s.location_ids IS NULL);
+AND (o.location_ids <> s.location_ids OR (o.location_ids IS NULL)<>(s.location_ids IS NULL));
 SQL;
     $db->query($qry);
   }
