@@ -50,7 +50,7 @@ function species_alerts_scheduled_task($last_run_date, $db) {
           OR (cttlall.external_key IS NOT NULL AND od.taxa_taxon_list_external_key IS NOT NULL AND cttlall.external_key=od.taxa_taxon_list_external_key)
       JOIN index_websites_website_agreements iwwa on iwwa.to_website_id=od.website_id and iwwa.receive_for_reporting=true
       JOIN species_alerts sa ON
-        (sa.location_id IS NULL OR snf.location_ids @> ARRAY[sa.location_id])
+        (sa.location_id IS NULL OR od.location_ids @> ARRAY[sa.location_id])
         AND
           (sa.taxon_meaning_id = od.taxon_meaning_id
           OR
