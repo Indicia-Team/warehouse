@@ -151,47 +151,90 @@ DESC;
   }
 
   private static function checkWorkQueue($db, array &$messages) {
+    $maxP1 = 2000;
+    $maxP1Late = 0;
+    $maxP2 = 10000;
+    $maxP3 = 20000;
+    $maxErrors = 0;
     try {
-      $qState = $db
-        ->select([
-          'sum(case when priority=1 then 1 else 0 end) as p1',
-          "sum(case when priority=1 and created_on<now() - '30 minutes'::interval then 1 else 0 end) as p1late",
-          'sum(case when priority=2 then 1 else 0 end) as p2',
-          'sum(case when priority=3 then 1 else 0 end) as p3',
-          'sum(case when error_detail is null then 0 else 1 end) as errors',
-        ])
-        ->from('work_queue')
-        ->get()->current();
-      if ($qState->p1 > 2000) {
-        $messages[] = array(
-          'title' => 'Priority 1 entries in work queue',
-          'description' => 'More than 2000 priority 1 entries in the work_queue table. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
-        );
-      }
-      if ($qState->p1late > 0) {
-        $messages[] = array(
-          'title' => 'Priority 1 entries in work queue processing slowly',
-          'description' => 'Priority 1 entries in the work_queue table are not being processed within half an hour. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
-        );
-      }
-      if ($qState->p2 > 10000) {
-        $messages[] = array(
-          'title' => 'Priority 2 entries in work queue',
-          'description' => 'More than 2000 priority 2 entries in the work_queue table. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
-        );
-      }
-      if ($qState->p3 > 20000) {
-        $messages[] = array(
-          'title' => 'Priority 3 entries in work queue',
-          'description' => 'More than 20000 priority 3 entries in the work_queue table. This may indicate a problem, poor performance, or the server catching up after a significant data upload.',
-        );
-      }
-      if ($qState->errors > 0) {
-        $messages[] = array(
-          'title' => 'Errors in work queue',
-          'description' => 'There are errors in the work_queue table which need to be checked and fixed.',
-          'severity' => 'danger',
-        );
+      $sql = <<<SQL
+SELECT 'p1' as stat, count(*) FROM (
+  SELECT id FROM work_queue WHERE priority=1 LIMIT $maxP1+1
+  ) as sub
+UNION
+SELECT 'p1late', count(*) FROM (
+  SELECT id FROM work_queue WHERE priority=1 AND created_on<now() - '30 minutes'::interval LIMIT $maxP1Late+1
+  ) as sub
+UNION
+SELECT 'p2', count(*) FROM (
+  SELECT id FROM work_queue WHERE priority=2 LIMIT $maxP2+1
+  ) AS sub
+UNION
+SELECT 'p3', count(*) FROM (
+  SELECT id FROM work_queue WHERE priority=3 LIMIT $maxP3+1
+  ) AS sub
+UNION
+(SELECT 'errors', CASE WHEN error_detail IS NOT NULL THEN 1 ELSE 0 END
+  FROM work_queue
+  ORDER BY error_detail LIMIT $maxErrors+1);
+SQL;
+      $stats = $db->query($sql)->result();
+      foreach ($stats as $statRow) {
+        switch ($statRow->stat) {
+          case 'p1':
+            if (true or $statRow->count > $maxP1) {
+              $messages[] = array(
+                'title' => kohana::lang('general_errors.workQueueTooFull', 1),
+                'description' =>
+                  kohana::lang('general_errors.workQueueTooFullDescription', $maxP1, 1) . ' ' .
+                  kohana::lang('general_errors.workQueueTooFullExplain'),
+              );
+            }
+            break;
+
+          case 'p1late':
+            if (true or $statRow->count > $maxP1Late) {
+              $messages[] = array(
+                'title' => kohana::lang('general_errors.workQueueSlow', 1),
+                'description' =>
+                  kohana::lang('general_errors.workQueueTooFullDescription', $maxP1, 1) . ' ' .
+                  kohana::lang('general_errors.workQueueTooFullExplain'),
+              );
+            }
+            break;
+
+          case 'p2':
+            if (true or $statRow->count > $maxP2) {
+              $messages[] = array(
+                'title' => kohana::lang('general_errors.workQueueTooFull', 2),
+                'description' =>
+                  kohana::lang('general_errors.workQueueTooFullDescription', $maxP2, 2) . ' ' .
+                  kohana::lang('general_errors.workQueueTooFullExplain'),
+              );
+            }
+            break;
+
+          case 'p3':
+            if (true or $statRow->count > $maxP3) {
+              $messages[] = array(
+                'title' => kohana::lang('general_errors.workQueueTooFull', 3),
+                'description' =>
+                  kohana::lang('general_errors.workQueueTooFullDescription', $maxP3, 3) . ' ' .
+                  kohana::lang('general_errors.workQueueTooFullExplain'),
+              );
+            }
+            break;
+
+          case 'errors':
+            if (true or $statRow->count > $maxErrors) {
+              $messages[] = array(
+                'title' => kohana::lang('general_errors.workQueueErrors'),
+                'description' => kohana::lang('general_errors.workQueueErrorsDescription'),
+                'severity' => 'danger',
+              );
+            }
+            break;
+        }
       }
     }
     catch (Kohana_Database_Exception $e) {

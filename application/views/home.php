@@ -65,16 +65,28 @@ TIP;
 }
 if (count($statusWarnings)) {
   echo '<h2>Server status</h2>';
+  $messages = ['danger' => [], 'warning' => [], 'other' => []];
   foreach ($statusWarnings as $msg) {
     $severity = empty($msg['severity']) ? 'info' : $msg['severity'];
-    echo <<<MSG
+    $icon = $severity === 'danger' ? 'exclamation' : $severity;
+    $msg = <<<MSG
 <div class="alert alert-$severity alert-dismissible">
-  <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+  <div class="glyphicon glyphicon-$icon-sign">
+  </div><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
   <strong>$msg[title] - </strong>$msg[description]
 </div>
 
 MSG;
+    if ($severity === 'danger' || $severity === 'warning') {
+      $messages[$severity][] = $msg;
+    }
+    else {
+      $messages['other'][] = $msg;
+    }
   }
+  echo implode('', $messages['danger']);
+  echo implode('', $messages['warning']);
+  echo implode('', $messages['other']);
 }
 if (count($configProblems)) : ?>
   <h2>Configuration</h2>
