@@ -182,7 +182,7 @@ SQL;
       foreach ($stats as $statRow) {
         switch ($statRow->stat) {
           case 'p1':
-            if (true or $statRow->count > $maxP1) {
+            if ($statRow->count > $maxP1) {
               $messages[] = array(
                 'title' => kohana::lang('general_errors.workQueueTooFull', 1),
                 'description' =>
@@ -193,7 +193,7 @@ SQL;
             break;
 
           case 'p1late':
-            if (true or $statRow->count > $maxP1Late) {
+            if ($statRow->count > $maxP1Late) {
               $messages[] = array(
                 'title' => kohana::lang('general_errors.workQueueSlow', 1),
                 'description' =>
@@ -204,7 +204,7 @@ SQL;
             break;
 
           case 'p2':
-            if (true or $statRow->count > $maxP2) {
+            if ($statRow->count > $maxP2) {
               $messages[] = array(
                 'title' => kohana::lang('general_errors.workQueueTooFull', 2),
                 'description' =>
@@ -215,7 +215,7 @@ SQL;
             break;
 
           case 'p3':
-            if (true or $statRow->count > $maxP3) {
+            if ($statRow->count > $maxP3) {
               $messages[] = array(
                 'title' => kohana::lang('general_errors.workQueueTooFull', 3),
                 'description' =>
@@ -226,7 +226,7 @@ SQL;
             break;
 
           case 'errors':
-            if (true or $statRow->count > $maxErrors) {
+            if ($statRow->count > $maxErrors) {
               $messages[] = array(
                 'title' => kohana::lang('general_errors.workQueueErrors'),
                 'description' => kohana::lang('general_errors.workQueueErrorsDescription'),
