@@ -63,7 +63,7 @@ SET location_ids = s.location_ids
 FROM occlist ol, cache_samples_functional s
 WHERE s.id=o.sample_id
 AND o.id=ol.record_id
-AND (o.location_ids <> s.location_ids OR o.location_ids IS NULL<>s.location_ids IS NULL);
+AND (o.location_ids <> s.location_ids OR (o.location_ids IS NULL)<>(s.location_ids IS NULL));
 SQL;
     $db->query($qry);
   }
