@@ -110,9 +110,9 @@ SQL;
       // Loop to claim batches of tasks for this task type. Only actually
       // iterate more than once for priority 1 tasks.
       do {
-        // Get a unique ID for this process run, so we can tag tasks we are doing
-        // in the work_queue table and know they are ours.
-        $procId = uniqid();
+        // Get a unique ID for this process run, so we can tag tasks we are
+        // doing in the work_queue table and know they are ours.
+        $procId = uniqid('', TRUE);
         try {
           // Claim an appropriate number of records to do in a batch, depending on
           // the helper class.
@@ -203,7 +203,7 @@ SQL;
     else {
       $load = sys_getloadavg();
     }
-    return array_sum($load) / count($load);
+    return count($load) ? array_sum($load) / count($load) : 0;
   }
 
   /**
