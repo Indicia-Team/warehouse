@@ -20,11 +20,15 @@
     LEFT JOIN form_structure_blocks fsb on fsb.id=tla.form_structure_block_id
     LEFT JOIN form_structure_blocks fsbp on fsbp.id=fsb.parent_id
     LEFT JOIN control_types ct ON ct.id = tla.control_type_id
+    LEFT JOIN cache_termlists_terms l2cat on l2cat.id=a.reporting_category_id
+    LEFT JOIN cache_termlists_terms l2cati18n on l2cati18n.meaning_id=l2cat.meaning_id
+    LEFT JOIN cache_termlists_terms l1cat on l1cat.id=l2cat.parent_id
+    LEFT JOIN cache_termlists_terms l1cati18n on l1cati18n.meaning_id=l1cat.meaning_id
     #joins#
     WHERE tla.deleted=false
   </query>
   <order_bys>
-    <order_by>fsbp.weight, fsb.weight, tla.weight, a.caption</order_by>
+    <order_by>l1cat.sort_order, COALESCE(l1cati18n.term, l1cat.term), l2cat.sort_order, COALESCE(l2cati18n.term, l2cat.term), fsbp.weight, fsb.weight, tla.weight, a.caption</order_by>
   </order_bys>
   <params>
     <param name="taxon_list_id" display="Survey ID" datatype="integer">
@@ -37,12 +41,17 @@
       <where>(stage.id IN (#stage_termlists_term_ids#) OR stage.id IS NULL)</where>
     </param>
     <param name="taxa_taxon_list_id" display="taxa_taxon_list ID" datatype="integer" default="0" />
+    <param name="language" display="Preferred language" datatype="text" default="eng" />
   </params>
   <columns>
     <column name="attribute_id" display="ID" sql="a.id" datatype="integer" />
     <column name="taxa_taxon_list_id" display="taxa_taxon_list ID" sql="av.taxa_taxon_list_id" datatype="integer" />
     <column name="caption" display="Caption" sql="a.caption" datatype="text" />
     <column name="caption_i18n" display="Caption i18n" sql="a.caption_i18n::text" datatype="text" />
+    <column name="l1_category" display="Level 1 Category" sql="COALESCE(l1cati18n.term, l1cat.term)" datatype="text" />
+    <column name="l1_category_order" sql="l1cat.sort_order" />
+    <column name="l2_category_order" sql="l2cat.sort_order" />
+    <column name="l2_category" display="Level 2 Category" sql="COALESCE(l2cati18n.term, l2cat.term)" datatype="text" />
     <column name="description" display="Description" sql="a.description" datatype="text" />
     <column name="description_i18n" display="Description i18n" sql="a.description_i18n::text" datatype="text" />
     <column name="image_path" display="Image" sql="a.image_path" datatype="text" />
