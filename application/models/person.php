@@ -62,7 +62,7 @@ class Person_Model extends ORM {
     // the admin user
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $array->add_rules('email_address', 'required', 'email', 'length[100]', "unique[people,email_address,$array->id]");
+    $array->add_rules('email_address', 'required', 'email', 'length[1,100]', "unique[people,email_address,$array->id]");
 
     return parent::validate($array, $save);
   }

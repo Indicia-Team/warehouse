@@ -35,6 +35,7 @@ class Language_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
+    // Force exactly 3 characters.
     $array->add_rules('iso', 'required', 'length[3]');
     $array->add_rules('language','required', 'length[1,100]');
     $this->unvalidatedFields = array('deleted');
