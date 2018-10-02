@@ -172,6 +172,7 @@ SQL;
     $alias = self::$aliases[$model->object_name];
     $userId = self::getUserId();
     $qry = <<<SQL
+-- Dummy comment to prevent Kohana faiing on a zero row insert.
 INSERT INTO taxa_taxon_list_attribute_taxon_restrictions
     (taxon_lists_taxa_taxon_list_attribute_id, restrict_to_taxon_meaning_id, restrict_to_stage_term_meaning_id,
      created_on, created_by_id, updated_on, updated_by_id)
@@ -192,6 +193,8 @@ JOIN attribute_sets_taxon_restrictions astr
   AND astr.deleted=false
 LEFT JOIN taxa_taxon_list_attribute_taxon_restrictions ttlatr
   ON ttlatr.taxon_lists_taxa_taxon_list_attribute_id = tlttla.id
+  AND ttlatr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
+  AND COALESCE(ttlatr.restrict_to_stage_term_meaning_id, 0)=COALESCE(astr.restrict_to_stage_term_meaning_id, 0)
   AND ttlatr.deleted=false
 WHERE ttlatr.id IS NULL
 AND $alias.id=$model->id;
