@@ -81,9 +81,37 @@ class Person_Model extends ORM {
    * Return a displayable caption for the item.
    * For People, this should be a combination of the Firstname and Surname.
    */
-  public function caption()
-  {
+  public function caption() {
     return ($this->first_name.' '.$this->surname);
+  }
+
+  /**
+   * Creates a new unique username.
+   *
+   * Generates a username that could be used for a user linked to this person.
+   *
+   * @return string
+   *   Username.
+   */
+  public function newUsername() {
+    $minLen = 7;
+    // Start any uniqueness suffix at 2 deliberately.
+    $inc = 2;
+    if ($this->first_name === '') {
+      $baseUsername = $this->surname;
+    }
+    else {
+      $baseUsername = "$this->first_name $this->surname";
+    }
+    $baseUsername = strtolower(preg_replace("/[^A-Za-z]/", "_", $baseUsername));
+    // Ensure 7 characters long.
+    $username = str_pad($baseUsername, $minLen, '_');
+    // Check for uniqueness.
+    while ($this->db->query("SELECT 1 FROM users WHERE LOWER(username)='$username'")->count() > 0) {
+      $username = str_pad($baseUsername, $minLen - strlen($inc), '_') . $inc;
+      $inc++;
+    }
+    return $username;
   }
 
   /**

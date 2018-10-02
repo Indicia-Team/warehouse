@@ -112,7 +112,7 @@ class User_Controller extends Gridview_Base_Controller {
         $this->setView('user/user_edit', 'User',
           array('password_field' => $this->password_fields($login_config['default_password'], $login_config['default_password'])));
         $this->template->content->model->person_id = $id;
-        $this->template->content->model->username = $this->new_username($person);
+        $this->template->content->model->username = $person->newUsername();
         foreach ($websites as $website) {
           $this->model->users_websites[$website->id] = [
             'id' => $website->id,
@@ -125,36 +125,6 @@ class User_Controller extends Gridview_Base_Controller {
     }
     $this->template->content->values = $values;
     $this->defineEditBreadcrumbs();
-  }
-
-  protected function new_username($person) {
-    $minlen = 5;
-    $inc = 1;
-    if ($person->first_name == '') {
-      $base_username = $person->surname;
-    }
-    else {
-      $base_username = $person->first_name . '_' . $person->surname;
-    }
-    $base_username = strtolower(preg_replace("/[^A-Za-z]/", "_", $base_username));
-    if (strlen($base_username) < $minlen) {
-      $username = sprintf($base_username . '%0' . ($minlen - strlen($base_username)) . 'd', $inc++);
-    }
-    else {
-      // Numbers bolted on start at 2 on purpose.
-      $inc++;
-      $username = $base_username;
-    }
-    // Check for uniqueness.
-    while (ORM::factory('user', array('username' => $username))->loaded) {
-      if (strlen($base_username) < $minlen) {
-        $username = sprintf($base_username . '%0' . ($minlen - strlen($base_username)) . 'd', $inc++);
-      }
-      else {
-        $username = sprintf($base_username . '%d', $inc++);
-      }
-    }
-    return $username;
   }
 
   protected function show_submit_fail() {
