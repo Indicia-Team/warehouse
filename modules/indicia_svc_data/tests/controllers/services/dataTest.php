@@ -403,6 +403,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'group:joining_method' => 'P',
       'group:code' => 'ABC123',
       'group:website_id' => 1,
+      // Set to test group type term.
+      'group:group_type_id' => 6,
     );
     $s = submission_builder::build_submission($groupData, array('model' => 'group'));
     $r = data_entry_helper::forward_post_to('group', $s, $this->auth['write_tokens']);
