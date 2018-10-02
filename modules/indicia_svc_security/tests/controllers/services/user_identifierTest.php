@@ -239,6 +239,36 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->db->query('delete from people where id=' . $person_id);
   }
 
+  function testGetUserIDUnique() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Identifier_Test::testGetUserIDUnique");
+    $response = $this->callGetUserIdService($this->auth, [
+      ['type' => 'email', 'identifier' => 'testunique@test.com'],
+    ], 19997, 'testunique', 'name');
+    $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
+    $obj = json_decode($response['output']);
+    $userId1 = $obj->userId;
+    $user1 = ORM::factory('user', $userId1);
+    $response = $this->callGetUserIdService($this->auth, [
+      ['type' => 'email', 'identifier' => 'testunique1@test.com'],
+    ], 19998, 'testunique', 'name');
+    $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
+    $obj = json_decode($response['output']);
+    $userId2 = $obj->userId;
+    $user2 = ORM::factory('user', $userId2);
+    $this->assertNotEquals($user2->username, $user1->username, 'get_user_id failed to generate unique usernames');
+    // Deliberately mess up the case of a username, as this can cause problems.
+    $user1->username = strtoupper($user1->username);
+    $user1->save();
+    $response = $this->callGetUserIdService($this->auth, [
+      ['type' => 'email', 'identifier' => 'testunique2@test.com'],
+    ], 19999, 'testunique', 'name');
+    $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
+    $obj = json_decode($response['output']);
+    $userId3 = $obj->userId;
+    $user3 = ORM::factory('user', $userId2);
+    $this->assertNotEquals($user3->username, $user1->username, 'get_user_id failed to generate unique usernames');
+  }
+
   /**
    * A substantial test designed to test a real world scenario of usage.
    */
