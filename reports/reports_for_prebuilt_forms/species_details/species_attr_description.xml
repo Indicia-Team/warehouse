@@ -13,22 +13,32 @@ FROM (
       subcat_l.sort_order as subcatsort,
       COALESCE(subcat_l.term, subcat.term) as subcategory,
       CASE '#include_captions#' WHEN '1' THEN
-          trim(regexp_replace(a.caption, '^' || COALESCE(subcat_l.term, subcat.term), '')) || ': '
+          trim(regexp_replace(regexp_replace(a.caption, ' \(95%\)$', ''), '^' || COALESCE(subcat_l.term, subcat.term), '')) || ': '
       ELSE '' END as caption,
       CASE a.data_type
-          WHEN 'T'::bpchar THEN av.text_value
+          WHEN 'T'::bpchar THEN
+            CASE
+              WHEN av.text_value LIKE '#%' THEN '&lt;span style="width: 30px; height: 15px; display: inline-block; background-color: ' || av.text_value || '"&gt; &lt;/span&gt;'
+              ELSE av.text_value
+            END
           WHEN 'L'::bpchar THEN t.term::text
-          WHEN 'I'::bpchar THEN av.int_value::text ||
-          CASE
-              WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-              ELSE ''::text
-          END
+          WHEN 'I'::bpchar THEN
+            CASE
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true AND a80v.id IS NOT NULL THEN
+                  '(' || a80v.int_value::text || ') ' || av.int_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text) || COALESCE(' (' || a80v.upper_value::text || ')', '')
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN
+                  av.int_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text)
+                ELSE av.int_value::text
+            END
           WHEN 'B'::bpchar THEN av.int_value::text
-          WHEN 'F'::bpchar THEN av.float_value::text ||
-          CASE
-              WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
-              ELSE ''::text
-          END
+          WHEN 'F'::bpchar THEN
+            CASE
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true AND a80v.id IS NOT NULL THEN
+                  '(' || a80v.float_value::text || ') ' || av.float_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text) || COALESCE(' (' || a80v.upper_value::text || ')', '')
+                WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN
+                  av.float_value::text || COALESCE(' - '::text || av.upper_value::text, ''::text)
+                ELSE av.float_value::text
+            END
           WHEN 'D'::bpchar THEN av.date_start_value::text
           WHEN 'V'::bpchar THEN indicia.vague_date_to_string(av.date_start_value, av.date_end_value, av.date_type_value)::text
           ELSE NULL::text
@@ -42,9 +52,20 @@ FROM (
     JOIN taxa_taxon_list_attribute_values av ON av.taxa_taxon_list_attribute_id=a.id AND av.deleted=false
     LEFT JOIN cache_termlists_terms t ON t.id=av.int_value AND a.data_type='L'
     JOIN cache_taxa_taxon_lists cttl on cttl.id=av.taxa_taxon_list_id
-    JOIN cache_taxa_taxon_lists cttlany on cttlany.preferred_taxa_taxon_list_id=cttl.preferred_taxa_taxon_list_id
+    JOIN cache_taxon_paths ctp ON ctp.path @> ARRAY[cttl.taxon_meaning_id]
+    JOIN cache_taxa_taxon_lists cttlany on cttlany.taxon_meaning_id=ctp.taxon_meaning_id
     JOIN taxon_lists_taxa_taxon_list_attributes tlttla ON tlttla.taxa_taxon_list_attribute_id=a.id AND tlttla.taxon_list_id=1 AND tlttla.deleted=false
+    LEFT JOIN taxa_taxon_list_attributes a80
+      ON a.caption like '% (95\%)'
+      AND a80.caption = replace(a.caption, ' (95%)', ' (80%)')
+      AND a80.deleted = false
+    LEFT JOIN taxa_taxon_list_attribute_values a80v
+      ON a80v.taxa_taxon_list_attribute_id=a80.id
+      AND a80v.deleted=false
+      AND a80v.taxa_taxon_list_id = av.taxa_taxon_list_id
     WHERE 1=1
+    AND a.caption NOT LIKE '% (80\%)'
+    AND (a80v.id IS NOT NULL OR a.caption NOT LIKE '% (95\%)')
     #filters#
   ) AS sub1
   GROUP BY catsort, category, subcatsort, subcategory, caption
