@@ -394,6 +394,31 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals($filter->website_id, $filterData['filter:website_id']);
   }
 
+  public function testCreateGroup() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateGroup");
+    // Post a group.
+    $groupData = array(
+      'group:title' => 'Test',
+      'group:description' => 'Test descrtiption',
+      'group:joining_method' => 'P',
+      'group:code' => 'ABC123',
+      'group:website_id' => 1,
+    );
+    $s = submission_builder::build_submission($groupData, array('model' => 'group'));
+    $r = data_entry_helper::forward_post_to('group', $s, $this->auth['write_tokens']);
+
+    Kohana::log('debug', "Submission response to group save " . print_r($r, TRUE));
+    $this->assertTrue(isset($r['success']), 'Submitting a new group did not work');
+
+    $groupId = $r['success'];
+    $group = ORM::factory('filter', $groupId);
+    $this->assertEquals($group->title, $groupData['group:title']);
+    $this->assertEquals($group->description, $groupData['group:description']);
+    $this->assertEquals($group->joining_method, $groupData['group:joining_method']);
+    $this->assertEquals($group->code, $groupData['group:code']);
+    $this->assertEquals($group->website_id, $filterData['group:website_id']);
+  }
+
   public function testCreateSample() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateSample");
     // Post a location with an attribute value.
