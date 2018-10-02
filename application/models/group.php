@@ -192,4 +192,65 @@ SQL;
     }
   }
 
+  /**
+   * Process taxon groups for a recording group.
+   *
+   * Method to populate the indexed taxon groups that this group intersects
+   * with. Makes it easy to do things like suggest groups based on species
+   * being recorded.
+   */
+  private function processIndexGroupsTaxonGroups() {
+    $filter = json_decode($this->filter->definition, TRUE);
+    $exist = $this->db->select('id', 'taxon_group_id')
+      ->from('index_groups_taxon_groups')
+      ->where('group_id', $this->id)
+      ->get();
+
+    $taxon_group_ids = array();
+
+    if (!empty($filter['taxon_group_list'])) {
+      // Got a list of taxon groups linked to the group's filter, so these can
+      // be used to define the context of the group.
+      $taxon_group_ids = explode(',', $filter['taxon_group_list']);
+    }
+    elseif (!empty($filter['taxa_taxon_list_list']) || !empty($filter['higher_taxa_taxon_list_list']) || !empty($filter['taxon_meaning_list'])) {
+      // Handle other types of species based filter, e.g. higher or lower
+      // taxa taxon_list id.
+      $groups = $this->db->select('DISTINCT taxon_group_id')
+        ->from('cache_taxa_taxon_lists');
+      if (!empty($filter['taxa_taxon_list_list'])) {
+        $groups->in('id', explode(',', $filter['taxa_taxon_list_list']));
+      }
+      if (!empty($filter['higher_taxa_taxon_list_list'])) {
+        $groups->in('id', explode(',', $filter['higher_taxa_taxon_list_list']));
+      }
+      if (!empty($filter['taxon_meaning_list'])) {
+        $groups->in('taxon_meaning_id', explode(',', $filter['taxon_meaning_list']));
+      }
+      $groups = $groups->get();
+      foreach ($groups as $record) {
+        $taxon_group_ids[] = $record->taxon_group_id;
+      }
+    }
+    // Go through the existing index entries for this group. Remove any that
+    // are not needed now.
+    foreach ($exist as $record) {
+      if (in_array($record->taxon_group_id, $taxon_group_ids)) {
+        // Got a correct one already. Remove the location ID from the list we
+        // want to add later.
+        unset($taxon_group_ids[$record->taxon_group_id]);
+      } else {
+        // Got one we didn't actually want.
+        $this->db->delete('index_groups_taxon_groups', array('id' => $record->id));
+      }
+    }
+    // Any remaining in our list now need to be added.
+    foreach ($taxon_group_ids as $taxon_group_id) {
+      $this->db->insert('index_groups_taxon_groups', array(
+        'group_id' => $this->id,
+        'taxon_group_id' => $taxon_group_id,
+      ));
+    }
+  }
+
 }
