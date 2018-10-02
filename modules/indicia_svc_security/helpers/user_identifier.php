@@ -298,7 +298,7 @@ SQL;
     $person = ORM::factory('person')->where(array('email_address'=>$email, 'deleted'=>'f'))->find();
     if ($person->loaded
         && ((!empty($person->first_name) && $person->first_name != '?'
-        && !empty($_REQUEST['first_name']) && strtolower(trim($_REQUEST['first_name']))!==strtolower(trim($person->first_name)))
+        && !empty($_REQUEST['first_name']) && strtolower(trim($_REQUEST['first_name'])) !== strtolower(trim($person->first_name)))
         || strtolower(trim($person->surname)) !== strtolower(trim($_REQUEST['surname']))))
       throw new exception("The system attempted to use your user account details to register you as a user of the ".
           "central records database, but a different person with email address $email already exists. Please contact your ".
@@ -308,29 +308,22 @@ SQL;
       'surname' => $_REQUEST['surname'],
       'email_address'=>$email
     );
-    if ($person->loaded)
-      $data['id']=$person->id;
+    if ($person->loaded) {
+      $data['id'] = $person->id;
+    }
     $person->validate(new Validation($data), true);
     self::checkErrors($person);
     $user = ORM::factory('user');
-    // ensure a unique username that fits in the 7-30 char limit
-    $unique=0;
-    $uname = str_pad($person->first_name.'_'. $person->surname, 7, '_');
-    do {
-      $rolling = $unique===0 ? '' : '_'.$unique;
-      $username = substr($uname, 0, 30-strlen($rolling)).$rolling;
-      $unique++;
-    } while ($userPersonObj->db->select('id')->from('users')->where(array('username'=>$username))->get()->count()>0);
     $data = array(
-      'person_id'=>$person->id,
-      'email_visible'=>'f',
-      'username'=>$username,
-      // User will not actually have warehouse access, so password fairly irrelevant
+      'person_id' => $person->id,
+      'email_visible' => 'f',
+      'username' => $person->newUsername(),
+      // User will not actually have warehouse access, so password fairly irrelevant.
       'password' => 'P4ssw0rd',
     );
     $user->validate(new Validation($data), true);
     self::checkErrors($user);
-    $userPersonObj->person_id=$person->id;
+    $userPersonObj->person_id = $person->id;
     return $user->id;
   }
 

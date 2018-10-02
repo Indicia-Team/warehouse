@@ -146,7 +146,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $response = $this->callGetUserIdService($this->auth, array(
       array('type' => 'email', 'identifier' => 'test@test.com'),
       array('type' => 'twitter', 'identifier' => 'dummytwitteraccount')
-    ), 9998, '?', 'autotest');
+    ), 9998, 'test', 'autotest');
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $output = json_decode($response['output']);
     // Response should definitely include a user id.
@@ -154,7 +154,7 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
 
     $uid1 = $output->userId;
     // There should now be a user that matches the response.
-    $user = ORM::factory('user')->where(array('username' => '?_autotest'))->find();
+    $user = ORM::factory('user')->where(array('username' => 'test_autotest'))->find();
 
     Kohana::log('debug', "New user " . print_r((new ArrayObject($user))->offsetGet("\0*\0object"), TRUE));
     $this->assertNotEquals(0, $user->id, 'A user record was not found in the database');
@@ -265,7 +265,10 @@ class Controllers_Services_Identifier_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals(1, $response['result'], 'The request to the user_identifier/get_user_id service failed.');
     $obj = json_decode($response['output']);
     $userId3 = $obj->userId;
-    $user3 = ORM::factory('user', $userId2);
+    $user3 = ORM::factory('user', $userId3);
+    echo "\n$user1->username\n";
+    echo "$user2->username\n";
+    echo "$user3->username\n";
     $this->assertNotEquals($user3->username, $user1->username, 'get_user_id failed to generate unique usernames');
   }
 
