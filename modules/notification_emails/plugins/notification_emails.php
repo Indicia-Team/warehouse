@@ -517,6 +517,7 @@ function send_out_user_email(
   $swift = email::connect();
   // Use a transaction to allow us to prevent the email sending and marking of
   // notification as done getting out of step.
+  $db->begin();
   try {
     // Get the user's email address from the people table.
     $userResults = $db
