@@ -413,12 +413,14 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($r['success']), 'Submitting a new group did not work');
 
     $groupId = $r['success'];
+    Kohana::log('debug', "Group ID $groupId loaded");
     $group = ORM::factory('filter', $groupId);
-    $this->assertEquals($group->title, $groupData['group:title']);
-    $this->assertEquals($group->description, $groupData['group:description']);
-    $this->assertEquals($group->joining_method, $groupData['group:joining_method']);
-    $this->assertEquals($group->code, $groupData['group:code']);
-    $this->assertEquals($group->website_id, $filterData['group:website_id']);
+    Kohana::log('debug', var_export($group->as_array()));
+    $this->assertEquals($groupData['group:title'], $group->title);
+    $this->assertEquals($groupData['group:description'], $group->description);
+    $this->assertEquals($groupData['group:joining_method'], $group->joining_method);
+    $this->assertEquals($groupData['group:code'], $group->code);
+    $this->assertEquals($filterData['group:website_id'], $group->website_id);
   }
 
   public function testCreateSample() {
