@@ -45,7 +45,7 @@ class spatial_index_builder {
     $cache = Cache::instance();
     $filters = $cache->get('spatial-index-location-type-filters');
     if (!$filters) {
-      $config = kohana::config_load('spatial_index_builder', FALSE);
+      $config = kohana::config_load('spatial_index_builder');
       $surveyRestriction = '';
       if (array_key_exists('location_types', $config)) {
         $idQuery = $db->query("select id, term from cache_termlists_terms where preferred_term in ('" .
