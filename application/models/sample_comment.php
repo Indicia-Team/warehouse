@@ -55,7 +55,7 @@ class Sample_comment_model extends ORM {
     if (strlen($this->comment) > 30) {
       return substr($this->comment, 0, 30) . '...';
     }
-    else {}
+    else {
       return $this->comment;
     }
   }
