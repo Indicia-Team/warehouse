@@ -413,12 +413,12 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($r['success']), 'Submitting a new group did not work');
 
     $groupId = $r['success'];
-    $group = ORM::factory('filter', $groupId);
-    $this->assertEquals($group->title, $groupData['group:title']);
-    $this->assertEquals($group->description, $groupData['group:description']);
-    $this->assertEquals($group->joining_method, $groupData['group:joining_method']);
-    $this->assertEquals($group->code, $groupData['group:code']);
-    $this->assertEquals($group->website_id, $filterData['group:website_id']);
+    $group = ORM::factory('group', $groupId);
+    $this->assertEquals($groupData['group:title'], $group->title);
+    $this->assertEquals($groupData['group:description'], $group->description);
+    $this->assertEquals($groupData['group:joining_method'], $group->joining_method);
+    $this->assertEquals($groupData['group:code'], $group->code);
+    $this->assertEquals($groupData['group:website_id'], $group->website_id);
   }
 
   public function testCreateSample() {
@@ -477,6 +477,29 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertTrue(isset($r['error']), 'Submitting a sample wth bad vague date did not fail');
   }
 
+  public function testCreateSampleComment() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateSampleComment");
+    // Post a location with an attribute value.
+    $array = array(
+      'sample:survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'sample_comment:comment' => 'This is a test comment',
+    );
+    $s = submission_builder::build_submission($array, [
+      'model' => 'sample',
+      'subModels' => [
+        'sample_comment' => ['fk' => 'sample_id'],
+      ],
+    ]);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+    $sc = ORM::factory('sample_comment', ['sample_id' => $r['success']]);
+    $this->assertTrue($sc->loaded, 'Record not found after submitting a comment');
+    $this->assertEquals('This is a test comment', $sc->comment, 'Sample comment saved but incorrect comment saved');
+  }
+
   public function testCreateOccurrence() {
     Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateOccurrence");
     $array = array(
@@ -498,6 +521,42 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
 
     Kohana::log('debug', "Submission response to sample 1 save " . print_r($r, TRUE));
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
+  }
+
+  public function testCreateOccurrenceComment() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateOccurrenceComment");
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU123456',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+    ];
+    $s = submission_builder::build_submission($array, array('model' => 'sample'));
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $smpId = $r['success'];
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'occurrence:sample_id' => $smpId,
+      'occurrence:taxa_taxon_list_id' => 1,
+      // Deliberately test some special characters.
+      'occurrence_comment:comment' => 'This is a test occurrence comment ëēœû',
+    ];
+    $structure = [
+      'model' => 'occurrence',
+      'subModels' => [
+        'occurrence_comment' => [
+          'fk' => 'occurrence_id',
+        ],
+      ],
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('occurrence', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting an occurrence with comment did not return success response');
+    $oc = ORM::factory('occurrence_comment', ['occurrence_id' => $r['success']]);
+    $this->assertTrue($oc->loaded, 'Comment not found after submitting a sample with occurrence and comment');
+    $this->assertEquals('This is a test occurrence comment ëēœû', $oc->comment, 'Sample comment saved but incorrect comment saved');
   }
 
   private function getSampleAsCsv($id, $regexExpected) {
