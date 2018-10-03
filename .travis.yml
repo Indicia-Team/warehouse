@@ -50,11 +50,12 @@ install:
 
 before_script:
     # Special configuration required for PostgreSQL 10.
-  - if [[ ${POSTGRESQL_VERSION:10:4} == "-10-" ]]; then
+  - |
+    if [ ${POSTGRESQL_VERSION:10:4} == "-10-" ]; then
       # Use default port
-      sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf;
+      sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
       # Use 9.6 auth config:
-      sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf;
+      sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
     fi
   - sudo service postgresql restart
   # Create database
