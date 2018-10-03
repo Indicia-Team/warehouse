@@ -36,10 +36,10 @@ class ORM extends ORM_Core {
   public static $authorisedWebsiteId = 0;
 
   /**
-  * Should foreign key lookups be cached? Set to true during import for example.
-  *
-  * @var bool
-  */
+   * Should foreign key lookups be cached? Set to true during import for example.
+   *
+   * @var bool
+   */
   public static $cacheFkLookups = FALSE;
 
 
@@ -67,10 +67,13 @@ class ORM extends ORM_Core {
   private $nestedParentModelIds = array();
 
   /**
+   * Default search field name.
+   *
    * @var string
-   *   The default field that is searchable is called title. Override this when a different field name is used.
+   *   The default field that is searchable is called title. Override this when
+   *    a different field name is used.
    */
-  public $search_field='title';
+  public $search_field = 'title';
 
   protected $errors = array();
 
