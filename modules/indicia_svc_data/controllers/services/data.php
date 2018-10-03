@@ -784,7 +784,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       {
         $this->handle_request();
       }
-      kohana::log('debug', 'Sending reponse size '.count($this->response));
+      kohana::log('debug', 'Sending reponse size ' . strlen($this->response));
       $this->send_response();
     }
     catch (Exception $e)
