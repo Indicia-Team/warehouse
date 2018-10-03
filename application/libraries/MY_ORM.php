@@ -36,10 +36,10 @@ class ORM extends ORM_Core {
   public static $authorisedWebsiteId = 0;
 
   /**
-  * Should foreign key lookups be cached? Set to true during import for example.
-  *
-  * @var bool
-  */
+   * Should foreign key lookups be cached? Set to true during import for example.
+   *
+   * @var bool
+   */
   public static $cacheFkLookups = FALSE;
 
 
@@ -67,10 +67,13 @@ class ORM extends ORM_Core {
   private $nestedParentModelIds = array();
 
   /**
+   * Default search field name.
+   *
    * @var string
-   *   The default field that is searchable is called title. Override this when a different field name is used.
+   *   The default field that is searchable is called title. Override this when
+   *    a different field name is used.
    */
-  public $search_field='title';
+  public $search_field = 'title';
 
   protected $errors = array();
 
@@ -890,21 +893,21 @@ class ORM extends ORM_Core {
   /**
    * Actually validate and submit the inner submission.
    *
-   * @return int Id of the submitted record, or NULL if this failed.
-   * @throws Exception On access denied to the website of an existing record.
+   * @return int
+   *   Id of the submitted record, or NULL if this failed.
+   *
+   * @throws Exception
+   *   On access denied to the website of an existing record.
    */
   protected function validateAndSubmit() {
     $return = NULL;
-    $collapseVals = create_function('$arr',
-        'if (is_array($arr)) {
-           return $arr["value"];
-         } else {
-           return $arr;
-         }');
-    // Flatten the array to one that can be validated
-    $vArray = array_map($collapseVals, $this->submission['fields']);
-    if (!empty($vArray['website_id']) && !empty(self::$authorisedWebsiteId) && $vArray['website_id']!==self::$authorisedWebsiteId)
+    // Flatten the array to one that can be validated.
+    $vArray = array_map(function ($arr) {
+      return is_array($arr) ? $arr["value"] : $arr;
+    }, $this->submission['fields']);
+    if (!empty($vArray['website_id']) && !empty(self::$authorisedWebsiteId) && $vArray['website_id'] !== self::$authorisedWebsiteId) {
       throw new Exception('Access to write to this website denied.', 2001);
+    }
     // If we're editing an existing record, merge with the existing data.
     // NB id is 0, not null, when creating a new user
     if (array_key_exists('id', $vArray) && $vArray['id'] != NULL && $vArray['id'] != 0) {
