@@ -3,9 +3,9 @@ dist: precise
 language: php
 
 php:
-  - '5.6'
   - '7.0'
   - '7.1'
+  - '7.2'
 #  - hhvm
 
 services:
@@ -23,7 +23,8 @@ before_install:
   # Reinstall PostgreSQL - see https://github.com/travis-ci/travis-ci/issues/7048#issuecomment-267731971
   - sudo apt-get autoremove postgis*
   - sudo apt-get autoremove postgresql*
-  - sudo apt-get install postgresql-9.3-postgis-2.1
+  - sudo apt install postgresql-10
+  - sudo apt-get install postgresql-10-postgis-2.4
   # Install Apache.
   - sudo apt-get install apache2 libapache2-mod-fastcgi
   # Enable php-fpm.
