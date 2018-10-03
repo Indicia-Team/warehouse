@@ -49,6 +49,7 @@ install:
   - chmod +x .travis/postgres_setup.sh
 
 before_script:
+    # Special configuration required for PostgreSQL 10.
   - if [[ ${POSTGRESQL_VERSION:10:4} == "-10-" ]]; then
       # Use default port
       sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf;
