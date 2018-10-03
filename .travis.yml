@@ -68,12 +68,12 @@ before_script:
   - sudo mv phpunit-5.7.phar /usr/local/bin/phpunit
 
 script:
-  - /usr/local/bin/phpunit --configuration phpunit-config-test.xml
-  - /usr/local/bin/phpunit --configuration phpunit-setup-check-test.xml
-  - /usr/local/bin/phpunit --configuration phpunit-home-test.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-config-test.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-setup-check-test.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-home-test.xml
   # Repeat to upgrade modules
-  - /usr/local/bin/phpunit --configuration phpunit-home-test.xml
-  - /usr/local/bin/phpunit --configuration phpunit-tests.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-home-test.xml
+  - /usr/local/bin/phpunit --stderr --configuration phpunit-tests.xml
 
 after_script:
   - cat application/logs/*
