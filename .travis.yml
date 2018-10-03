@@ -1,4 +1,4 @@
-dist: precise
+dist: trusty
 
 language: php
 
@@ -23,7 +23,6 @@ before_install:
   # Reinstall PostgreSQL - see https://github.com/travis-ci/travis-ci/issues/7048#issuecomment-267731971
   - sudo apt-get autoremove postgis*
   - sudo apt-get autoremove postgresql*
-  - sudo apt install postgresql-10
   - sudo apt-get install postgresql-10-postgis-2.4
   # Install Apache.
   - sudo apt-get install apache2 libapache2-mod-fastcgi
