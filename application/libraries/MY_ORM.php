@@ -890,21 +890,21 @@ class ORM extends ORM_Core {
   /**
    * Actually validate and submit the inner submission.
    *
-   * @return int Id of the submitted record, or NULL if this failed.
-   * @throws Exception On access denied to the website of an existing record.
+   * @return int
+   *   Id of the submitted record, or NULL if this failed.
+   *
+   * @throws Exception
+   *   On access denied to the website of an existing record.
    */
   protected function validateAndSubmit() {
     $return = NULL;
-    $collapseVals = create_function('$arr',
-        'if (is_array($arr)) {
-           return $arr["value"];
-         } else {
-           return $arr;
-         }');
-    // Flatten the array to one that can be validated
-    $vArray = array_map($collapseVals, $this->submission['fields']);
-    if (!empty($vArray['website_id']) && !empty(self::$authorisedWebsiteId) && $vArray['website_id']!==self::$authorisedWebsiteId)
+    // Flatten the array to one that can be validated.
+    $vArray = array_map(function ($arr) {
+      return is_array($arr) ? $arr["value"] : $arr;
+    }, $this->submission['fields']);
+    if (!empty($vArray['website_id']) && !empty(self::$authorisedWebsiteId) && $vArray['website_id'] !== self::$authorisedWebsiteId) {
       throw new Exception('Access to write to this website denied.', 2001);
+    }
     // If we're editing an existing record, merge with the existing data.
     // NB id is 0, not null, when creating a new user
     if (array_key_exists('id', $vArray) && $vArray['id'] != NULL && $vArray['id'] != 0) {
