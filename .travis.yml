@@ -7,7 +7,10 @@ php:
   - '7.0'
   - '7.1'
   - '7.2'
-#  - hhvm
+
+env:
+  - POSTGRESQL_VERSION=postgresql-9.3-postgis-2.1
+  - POSTGRESQL_VERSION=postgresql-10-postgis-2.4
 
 services:
   - postgresql
@@ -24,7 +27,7 @@ before_install:
   # Reinstall PostgreSQL - see https://github.com/travis-ci/travis-ci/issues/7048#issuecomment-267731971
   - sudo apt-get autoremove postgis*
   - sudo apt-get autoremove postgresql*
-  - sudo apt-get install postgresql-10-postgis-2.4
+  - sudo apt-get install $POSTGRESQL_VERSION
   # Install Apache.
   - sudo apt-get install apache2 libapache2-mod-fastcgi
   # See https://www.marcus-povey.co.uk/2016/02/16/travisci-with-php-7-on-apache-php-fpm/
