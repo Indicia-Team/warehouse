@@ -49,10 +49,13 @@ install:
   - chmod +x .travis/postgres_setup.sh
 
 before_script:
-  # Use default port
-  - if [[ ${POSTGRESQL_VERSION:10:4} == "-10-" ]]; then sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
-  # Use 9.6 auth config:
-  - if [[ ${POSTGRESQL_VERSION:10:4} == "-10-" ]]; then sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
+  - if [[ ${POSTGRESQL_VERSION:10:4} == "-10-" ]]; then
+      # Use default port
+      sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf;
+      # Use 9.6 auth config:
+      sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf;
+    fi
+  - if [[ ${POSTGRESQL_VERSION:10:4} == "-10-" ]]; then fi
   - sudo service postgresql restart
   # Create database
   - psql -c 'create database indicia;' -U postgres -d postgres
