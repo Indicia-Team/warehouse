@@ -195,7 +195,7 @@ class Import_Controller extends Service_Base_Controller {
     if (isset($metadata['importMergeFields'])) {
       $metadata['importMergeFields'] = json_decode($metadata['importMergeFields'], TRUE);
     }
-    
+
     // the metadata can also hold auth tokens and user_id, though they do not need decoding.
     self::internal_cache_upload_metadata($metadata);
     echo "OK";
@@ -361,7 +361,7 @@ class Import_Controller extends Service_Base_Controller {
         }
       }
 
-      while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
+      while (($data = fgetcsv($handle, 10000, ",")) !== FALSE && ($limit === FALSE || $count < $limit)) {
         if (!array_filter($data)) { // skip empty rows
           continue;
         }
@@ -788,8 +788,8 @@ class Import_Controller extends Service_Base_Controller {
               // No attributes for terms.
             }
           }
-          else if ($modelName === 'taxon' && isset($metadata['mappings']) && 
-              isset($metadata['mappings']['lookupSelect' . $model->object_name]) && 
+          else if ($modelName === 'taxon' && isset($metadata['mappings']) &&
+              isset($metadata['mappings']['lookupSelect' . $model->object_name]) &&
               $metadata['mappings']['lookupSelect' . $model->object_name] !== '') {
             // same for taxa_taxon_lists, and their taxon supermodel: have to look up using complex query to get the link between the taxon_list and the taxon
             // This has attributes. No website join. The taxon and taxon_list_id have to be provided at this point.
