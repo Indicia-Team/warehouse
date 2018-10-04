@@ -88,14 +88,21 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   /**
    * Bulk verification service end-point.
    *
-   * Provides the services/data_utils/bulk_verify service. This takes a report plus params (json object) in the $_POST
-   * data and verifies all the records returned by the report according to the filter. Pass ignore=true to allow this to
-   * ignore any verification check rule failures (use with care!).
+   * Provides the services/data_utils/bulk_verify service. This takes a report
+   * plus params (json object) in the $_POST data and verifies all the records
+   * returned by the report according to the filter.
+   *
+   * Additional parameters:
+   * * dryrun - set to true to return the count of records that would be
+   *   updated without performing the update.
+   * * ignore - set to true to allow this to ignore any verification check rule
+   *   failures (use with care!).
+   * *
    */
   public function bulk_verify() {
-    // @todo Integrate this method with workflow.
     $db = new Database();
     $this->authenticate('write');
+    $dryRun = isset($_POST['dryrun']) && $_POST['dryrun'] === 'true';
     $report = $_POST['report'];
     $params = json_decode($_POST['params'], TRUE);
     $params['sharing'] = 'verification';
@@ -117,25 +124,28 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
       }
       foreach ($data['content']['records'] as $record) {
         if (($record['record_status'] !== 'V' || $record['record_substatus'] !== $substatus) &&
-          (!empty($record['pass'])||$_POST['ignore'] === 'true')) {
+          (!empty($record['pass']) || $_POST['ignore'] === 'true')) {
           $ids[$record['occurrence_id']] = $record['occurrence_id'];
           $db->insert('occurrence_comments', array(
-              'occurrence_id' => $record['occurrence_id'],
-              'comment' => "This record is $status",
-              'created_by_id' => $this->user_id,
-              'created_on' => date('Y-m-d H:i:s'),
-              'updated_by_id' => $this->user_id,
-              'updated_on' => date('Y-m-d H:i:s'),
-              'record_status' => 'V',
-              'record_substatus' => $substatus
+            'occurrence_id' => $record['occurrence_id'],
+            'comment' => "This record is $status",
+            'created_by_id' => $this->user_id,
+            'created_on' => date('Y-m-d H:i:s'),
+            'updated_by_id' => $this->user_id,
+            'updated_on' => date('Y-m-d H:i:s'),
+            'record_status' => 'V',
+            'record_substatus' => $substatus,
           ));
         }
       }
-      // Field updates for the occurrences table and related cache tables.
-      $updates = $this->getOccurrenceTableVerificationUpdateValues($db, 'V', $substatus, 'H');
+      if (!$dryRun) {
+        // Field updates for the occurrences table and related cache tables.
+        $updates = $this->getOccurrenceTableVerificationUpdateValues($db, 'V', $substatus, 'H');
+        // Check for any workflow updates. Any workflow records will need an
+        // individual update.
+        $this->applyWorkflowToOccurrenceUpdates($db, array_keys($ids), $updates);
+      }
       echo count($ids);
-      // Check for any workflow updates. Any workflow records will need an individual update.
-      $this->applyWorkflowToOccurrenceUpdates($db, array_keys($ids), $updates);
     }
     catch (Exception $e) {
       error_logger::log_error('Exception during bulk verify', $e);
