@@ -51,20 +51,25 @@ class task_spatial_index_builder_location {
 DROP TABLE IF EXISTS loclist;
 DROP TABLE IF EXISTS changed_location_hits;
 
-SELECT record_id INTO temporary loclist
-FROM work_queue
-WHERE claimed_by='$procId'
-AND entity='location'
-AND task='task_spatial_index_builder_location';
+SELECT DISTINCT w.record_id INTO temporary loclist
+FROM work_queue w
+JOIN locations l ON l.id = w.record_id
+  AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
+WHERE w.claimed_by='$procId'
+AND w.entity='location'
+AND w.task='task_spatial_index_builder_location';
 
 SELECT s.id as sample_id, array_agg(l.id) as location_ids
 INTO TEMPORARY changed_location_hits
-FROM cache_samples_functional s
-JOIN locations l ON st_intersects(l.boundary_geom, s.public_geom)
-  AND NOT st_touches(l.boundary_geom, s.public_geom)
+FROM loclist ll
+JOIN locations l
+  ON l.id=ll.record_id
   AND l.deleted=false
-  $locationTypeFilters
-JOIN loclist ll on ll.record_id=l.id
+  AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
+JOIN cache_samples_functional s
+  ON st_intersects(l.boundary_geom, s.public_geom)
+  AND NOT st_touches(l.boundary_geom, s.public_geom)
+  $locationTypeFilters[surveyFilters]
 GROUP BY s.id;
 
 -- Samples - remove any old hits for locations that have changed.

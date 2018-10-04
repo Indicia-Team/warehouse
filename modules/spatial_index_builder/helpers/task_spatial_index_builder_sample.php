@@ -58,13 +58,14 @@ AND task='task_spatial_index_builder_sample';
 
 SELECT DISTINCT s.id as sample_id, CASE WHEN count(l.id)=0 THEN NULL ELSE array_agg(l.id) END as location_ids
 INTO TEMPORARY changed_samples
-FROM cache_samples_functional s
+FROM smplist sl
+JOIN cache_samples_functional s ON s.id=sl.record_id
 LEFT JOIN locations l ON st_intersects(l.boundary_geom, s.public_geom)
   AND NOT st_touches(l.boundary_geom, s.public_geom)
   AND l.deleted=false
-  $locationTypeFilters
+  AND l.location_type_id IN ($locationTypeFilters[allLocationTypeIds])
+  $locationTypeFilters[surveyFilters]
   /* type filters, e.g. and (l.location_type_id<>#id or s.survey_id in (#surveys)) */
-JOIN smplist sl on sl.record_id=s.id
 GROUP BY s.id;
 
 -- Samples - for updated samples, copy over the changes if there are any
@@ -86,4 +87,5 @@ AND (o.location_ids <> s.location_ids OR (o.location_ids IS NULL)<>(s.location_i
 SQL;
     $db->query($qry);
   }
+
 }

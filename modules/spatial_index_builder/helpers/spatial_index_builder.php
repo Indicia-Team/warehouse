@@ -43,35 +43,36 @@ class spatial_index_builder {
    */
   public static function getLocationTypeFilters($db) {
     $cache = Cache::instance();
-    $filters = $cache->get('spatial-index-location-type-filters');
+    $filters = $cache->get('spatial-index-location-type-filter-info');
     if (!$filters) {
       $config = kohana::config_load('spatial_index_builder');
       $surveyRestriction = '';
-      if (array_key_exists('location_types', $config)) {
-        $idQuery = $db->query("select id, term from cache_termlists_terms where preferred_term in ('" .
-          implode("','", $config['location_types']) . "')")
-          ->result();
-        $idsByTerm = array();
-        foreach ($idQuery as $row) {
-          $idsByTerm[$row->term] = $row->id;
-        }
-        $filterArr = ['and l.location_type_id in (' . implode(',', $idsByTerm) . ')'];
-        if (array_key_exists('survey_restrictions', $config)) {
-          foreach ($config['survey_restrictions'] as $type => $surveyIds) {
-            $surveys = implode(', ', $surveyIds);
-            if (!isset($idsByTerm[$type])) {
-              throw new exception('Configured survey restriction incorrect in spatial index builder');
-            }
-            $id = $idsByTerm[$type];
-            $filterArr[] = "and (l.location_type_id<>$id or s.survey_id in ($surveys))\n";
+      if (!array_key_exists('location_types', $config)) {
+        throw new Exception('Spatial index builder configuration location_types missing');
+      }
+      $idQuery = $db->query("select id, term from cache_termlists_terms where preferred_term in ('" .
+        implode("','", $config['location_types']) . "')")
+        ->result();
+      $allLocationTypeIds = [];
+      foreach ($idQuery as $row) {
+        $allLocationTypeIds[$row->term] = $row->id;
+      }
+      $surveyFilters = [];
+      if (array_key_exists('survey_restrictions', $config)) {
+        foreach ($config['survey_restrictions'] as $type => $surveyIds) {
+          $surveys = implode(', ', $surveyIds);
+          if (!isset($allLocationTypeIds[$type])) {
+            throw new exception('Configured survey restriction incorrect in spatial index builder');
           }
+          $id = $allLocationTypeIds[$type];
+          $surveyFilters[] = "AND (l.location_type_id<>$id OR s.survey_id IN ($surveys))\n";
         }
-        $filters = implode("\n", $filterArr);
       }
-      else {
-        $filters = '';
-      }
-      $cache->set('spatial-index-location-type-filters', $filters);
+      $filters = [
+        'allLocationTypeIds' => implode(', ', $allLocationTypeIds),
+        'surveyFilters' => implode("\n", $surveyFilters),
+      ];
+      $cache->set('spatial-index-location-type-filter-info', $filters);
     }
     return $filters;
   }
