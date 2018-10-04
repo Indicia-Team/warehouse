@@ -437,7 +437,7 @@ and atr.id not in (
   where astr.deleted=false
   and atr.{$entity}_attributes_website_id=atr.id
   and atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
-  and atr.restrict_to_stage_term_meaning_id=astr.restrict_to_stage_term_meaning_id
+  and coalesce(atr.restrict_to_stage_term_meaning_id, 0)=coalesce(astr.restrict_to_stage_term_meaning_id, 0)
 );
 SQL;
       $db->query($qry);
