@@ -408,9 +408,9 @@ join {$entity}_attributes_websites aw
   and aw.{$entity}_attribute_id=attla.{$entity}_attribute_id
 where (astr.deleted or ass.deleted or aset.deleted or asttla.deleted or attla.deleted or aw.deleted)
 and $alias.id=$model->id
-and atr.{$entity}_attributes_website_id=atr.id
+and atr.{$entity}_attributes_website_id=aw.id
 and atr.restrict_to_taxon_meaning_id=astr.restrict_to_taxon_meaning_id
-and atr.restrict_to_stage_term_meaning_id=astr.restrict_to_stage_term_meaning_id
+and coalesce(atr.restrict_to_stage_term_meaning_id, 0)=coalesce(astr.restrict_to_stage_term_meaning_id, 0)
 and atr.deleted=false
 and atr.id not in (
   -- Exclude deletions for any restriction that is still valid because of
