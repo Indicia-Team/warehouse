@@ -83,7 +83,7 @@ class serverStatus {
       ->from('system')
       ->where('last_scheduled_task_check is not null')
       ->get()->current();
-    if ($query->count === '12') {
+    if ($query->count === '0') {
       $description = <<<DESC
 The Indicia warehouse requires the scheduled tasks functionality to be configured in order for background tasks such
 as indexing to be perfomed. See
