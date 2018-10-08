@@ -42,6 +42,9 @@ abstract class Attr_Base_Controller extends Gridview_Base_Controller {
       'caption' => '',
       'data_type' => 'Data type',
     );
+    if (method_exists($this->model, 'get_system_functions')) {
+      $this->columns['function'] = '';
+    }
     $this->set_website_access('admin');
   }
 
