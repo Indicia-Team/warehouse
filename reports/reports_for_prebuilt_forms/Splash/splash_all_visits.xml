@@ -27,7 +27,7 @@
     <column name='id' display='ID' sql='s.id' datatype='integer' in_count="true"/>
     <column name='survey' display='Survey' sql='sv.title' datatype='text'/>
     <column name='entered_sref' display='Square Grid Ref' sql="regexp_replace(s.entered_sref, ',[^ ]', ', ', 'g')" datatype='text' />
-    <column name='date' display='Date' datatype='date' sql='s.updated_on'/>
+    <column name='date' sql='s.date_start' display='Date' />
     <column name='first_name' display='First Name' datatype='text' sql='p.first_name'/>
     <column name='surname' display='Surname' datatype='text' sql='p.surname'/>
     <column name='email_address' display='Email' datatype='text' sql='p.email_address'/>
