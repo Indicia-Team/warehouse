@@ -28,7 +28,7 @@
     <column name='id' display='ID' sql='s.id' datatype='integer' in_count="true"/>
     <column name='survey' display='Survey' sql='sv.title' datatype='text'/>
     <column name='entered_sref' display='Square Grid Ref' sql="regexp_replace(s.entered_sref, ',[^ ]', ', ', 'g')" datatype='text' />
-    <column name='date' display='Date' datatype='date' sql='s.updated_on'/>
+    <column name='date' sql='s.date_start' display='Date' />
     <column name='geom' visible='false' mappable="true" sql='st_astext(s.geom)' />
     <column name='input_form' visible="false" sql="case when s.input_form is null then '#default_input_form#' else s.input_form end" />
   </columns>
