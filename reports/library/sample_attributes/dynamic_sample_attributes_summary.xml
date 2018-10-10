@@ -1,6 +1,8 @@
 <report
     title="List of all dynamic sample attributes"
-    description="Lists sample attributes that are dynamically linked to any taxon."
+    description="Lists sample attributes that are dynamically linked so that they will only appear for records of a
+      particular branch of taxa"
+    featured="true"
 >
   <query website_filter_field="aw.website_id" count_field="a.*">
     SELECT #columns#
@@ -42,7 +44,7 @@
     <order_by>a.caption</order_by>
   </order_bys>
   <params>
-    <param name="survey_id" display="Survey ID" datatype="integer" default="">
+    <param name="survey_id" display="Survey ID" datatype="lookup" population_call='direct:survey:id:title'>
       <where>aw.restrict_to_survey_id=#survey_id#</where>
     </param>
     <param name="master_checklist_id" display="Taxon list ID of the master checklist" datatype="integer" />
