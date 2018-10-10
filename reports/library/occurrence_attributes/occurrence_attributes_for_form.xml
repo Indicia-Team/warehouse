@@ -1,7 +1,6 @@
 <report
     title="List of occurrence attributes for dynamic input form section"
     description="Lists occurrence attributes and, for existing records, value data for part of an input form dynamically loaded for a selected taxon."
-    featured="true"
 >
   <query website_filter_field="aw.website_id" count_field="a.*">
     SELECT #columns#
