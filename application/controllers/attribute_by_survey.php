@@ -257,12 +257,14 @@ class Attribute_By_Survey_Controller extends Indicia_Controller {
           ->select('a.id')
           ->from('occurrence_attributes as a')
           ->join('occurrence_attributes_websites as aw', 'aw.occurrence_attribute_id', 'a.id')
+          ->join('occurrence_attribute_taxon_restrictions as atr', 'atr.occurrence_attributes_website_id', 'aw.id', 'LEFT')
           ->in('a.system_function', $sexStageSysFuncs)
           ->where([
             'a.data_type' => 'L',
             'a.deleted' => 'f',
             'aw.deleted' => 'f',
             'aw.restrict_to_survey_id' => $values["$_GET[type]_attributes_website:restrict_to_survey_id"],
+            'atr.id' => NULL,
           ])
           ->get();
         // Convert the sex stage attribute list to a simple array of IDs.
