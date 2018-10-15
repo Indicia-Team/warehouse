@@ -69,18 +69,16 @@ class Trigger_Controller extends Gridview_Base_Controller {
   }
 
   /**
-  * Provide the list of trigger templates to the edit view
-  */
-  protected function prepareOtherViewData(array $values) {
-    $files = Array();
-    $templateDir = Kohana::config('indicia.localReportDir').'/trigger_templates/';
-    $dh = opendir($templateDir);
-    while ($file = readdir($dh))  {
-      if ($file != '..' && $file != '.' && is_file($templateDir.$file))
-      {
-        $file = str_replace('.xml', '', $file);
-        $files["trigger_templates/$file"] = $file;
-      }
+   * Provide the list of trigger templates to the edit view.
+   */
+  protected function prepareOtherViewData($values) {
+    // Get full list of reports including those from custom modules.
+    $reportEngine = new ReportEngine();
+    $reports = $reportEngine->reportList();
+    $files = array();
+    // Create a list of just the trigger templates.
+    foreach ($reports['trigger_templates']['content'] as $report) {
+      $files[$report['path']] = $report['title'];
     }
     return array('triggerFileList' => $files);
   }
