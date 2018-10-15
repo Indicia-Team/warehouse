@@ -22,10 +22,10 @@
     LEFT JOIN control_types ct ON ct.id = aw.control_type_id
     LEFT JOIN cache_termlists_terms l2cat on l2cat.id=a.reporting_category_id
     LEFT JOIN cache_termlists_terms l2cati18n on l2cati18n.meaning_id=l2cat.meaning_id
-      AND l2cati18n.language='#language#'
+      AND l2cati18n.language_iso='#language#'
     LEFT JOIN cache_termlists_terms l1cat on l1cat.id=l2cat.parent_id and l1cat.preferred=true
     LEFT JOIN cache_termlists_terms l1cati18n on l1cati18n.meaning_id=l1cat.meaning_id
-      AND l1cati18n.language='#language#'
+      AND l1cati18n.language_iso='#language#'
     #joins#
     WHERE aw.deleted=false
   </query>
