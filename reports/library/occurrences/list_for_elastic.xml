@@ -8,6 +8,7 @@
     select #columns#
     from cache_occurrences_functional o
     join cache_occurrences_nonfunctional onf on onf.id=o.id
+    join occurrences occ on occ.id=o.id and occ.deleted=false
     join cache_samples_nonfunctional snf on snf.id=o.sample_id
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
     #agreements_join#
@@ -59,6 +60,9 @@
     <column name="location_name" sql="o.location_name" datatype="text" />
     <column name="record_status" sql="o.record_status" datatype="text" />
     <column name="record_substatus" sql="o.record_substatus" datatype="text" />
+    <column name="verified_on" sql="o.verified_on" datatype="date" />
+    <column name="verified_by_id" sql="occ.verified_by_id" datatype="text" />
+    <column name="verifier" sql="onf.verifier" datatype="text" />
     <column name="query" sql="o.query" datatype="text" />
     <column name="sensitive" sql="o.sensitive" datatype="boolean" />
     <column name="data_cleaner_info" sql="onf.data_cleaner_info" datatype="text" />
