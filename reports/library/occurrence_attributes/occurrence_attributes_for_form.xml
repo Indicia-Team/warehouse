@@ -89,8 +89,8 @@
     <column name="values" display="Values" datatype="text" aggregate="true" sql="CASE WHEN COUNT(av.id)=0 THEN '[]' ELSE
      json_agg(('{&quot;id&quot;:' || av.id::text || ',' ||
      '&quot;value&quot;:' || COALESCE(CASE a.data_type
-            WHEN 'T'::bpchar THEN '&quot;' || av.text_value || '&quot;'
-            WHEN 'L'::bpchar THEN '&quot;' || t.term::text || '&quot;'
+            WHEN 'T'::bpchar THEN to_json(av.text_value)::text
+            WHEN 'L'::bpchar THEN to_json(t.term)::text
             WHEN 'I'::bpchar THEN '&quot;' || av.int_value::text ||
             CASE
                 WHEN (a.data_type = ANY (ARRAY['I'::bpchar, 'F'::bpchar])) AND a.allow_ranges = true THEN COALESCE(' - '::text || av.upper_value::text, ''::text)
@@ -107,7 +107,7 @@
             ELSE null::text
         END, 'null') || ',' ||
      '&quot;raw_value&quot;:' || COALESCE(CASE a.data_type
-            WHEN 'T'::bpchar THEN '&quot;' || av.text_value || '&quot;'
+            WHEN 'T'::bpchar THEN to_json(av.text_value)::text
             WHEN 'L'::bpchar THEN av.int_value::text
             WHEN 'I'::bpchar THEN av.int_value::text
             WHEN 'B'::bpchar THEN av.int_value::text
