@@ -559,12 +559,51 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEquals('This is a test occurrence comment ëēœû', $oc->comment, 'Sample comment saved but incorrect comment saved');
   }
 
+  public function testCreateTermlistTerm() {
+    Kohana::log('debug', "Running unit test, Controllers_Services_Data_Test::testCreateTermlistTerm");
+    $array = [
+      'website_id' => 1,
+      'term:term' => 'Added term',
+      'term:language_id' => 1,
+      'termlists_term:termlist_id' => 1,
+      'termlists_term:preferred' => 't',
+      'termlists_term:sort_order' => 123,
+    ];
+    $s = submission_builder::build_submission($array, [
+      'model' => 'termlists_term',
+      'superModels' => [
+        'meaning' => ['fk' => 'meaning_id'],
+        'term' => ['fk' => 'term_id'],
+      ],
+    ]);
+    $r = data_entry_helper::forward_post_to('termlists_term', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a termlists_term did not return success response');
+    $termlistsTermId = $r['success'];
+    $termlistsTerm = ORM::Factory('termlists_term', $termlistsTermId);
+    $this->assertEquals('Added term', $termlistsTerm->term->term);
+    $this->assertEquals(123, $termlistsTerm->sort_order);
+    $array['sort_order'] = NULL;
+    $array['termlists_term:id'] = $termlistsTermId;
+    $array['term:id'] = $termlistsTerm->term->id;
+    $s = submission_builder::build_submission($array, [
+      'model' => 'termlists_term',
+      'superModels' => [
+        'meaning' => ['fk' => 'meaning_id'],
+        'term' => ['fk' => 'term_id'],
+      ],
+    ]);
+    $r = data_entry_helper::forward_post_to('termlists_term', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Updating a termlists_term did not return success response');
+    $termlistsTerm->reload();
+    $this->assertEmpty($termlistsTerm->sort_order);
+  }
+
   private function getSampleAsCsv($id, $regexExpected) {
     $params = array(
       'mode' => 'csv',
       'view' => 'detail',
-      'auth_token'=>$this->auth['read']['auth_token'],
-      'nonce'=>$this->auth['read']['nonce']
+      'auth_token' => $this->auth['read']['auth_token'],
+      'nonce' => $this->auth['read']['nonce'],
     );
     $url = data_entry_helper::$base_url . "index.php/services/data/sample/$id?" .   http_build_query($params, '', '&');
     $response = self::getResponse($url, false);
