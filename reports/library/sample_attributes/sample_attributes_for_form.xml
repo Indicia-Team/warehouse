@@ -61,8 +61,8 @@
     <column name="termlist_id" display="Termlist ID" sql="a.termlist_id" datatype="integer" />
     <column name="validation_rules" display="Validation rules" datatype="text"
       sql="COALESCE(aw.validation_rules::text || E'\n', ''::text) || COALESCE(a.validation_rules::text, ''::text)" />
-    <column name="multi_value" display="Termlist ID" sql="a.multi_value" datatype="boolean" />
-    <column name="allow_ranges" display="Termlist ID" sql="a.allow_ranges" datatype="boolean" />
+    <column name="multi_value" display="Multi value" sql="a.multi_value" datatype="boolean" />
+    <column name="allow_ranges" display="Allow ranges" sql="a.allow_ranges" datatype="boolean" />
     <column name="term_name" display="Term name" sql="a.term_name" datatype="text" />
     <column name="system_function" display="System function" sql="a.system_function" datatype="text" />
     <column name="outer_block_weight" display="Outer block weight" sql="fsbp.weight" datatype="integer" />
