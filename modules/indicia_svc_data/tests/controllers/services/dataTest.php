@@ -595,7 +595,6 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $r = data_entry_helper::forward_post_to('termlists_term', $s, $this->auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Updating a termlists_term did not return success response');
     $termlistsTerm->reload();
-    var_export($termlistsTerm->as_array());
     $this->assertEmpty($termlistsTerm->sort_order);
   }
 
