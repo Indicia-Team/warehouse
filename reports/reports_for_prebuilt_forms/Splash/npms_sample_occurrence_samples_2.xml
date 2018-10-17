@@ -4,56 +4,30 @@
         their Indicia User ID. A second sample may be linked to a first sample, the id of which is stored in a custom attribute. The id
         of that custom attribute is passed as a parameter to the report. Second version of the report only returns data for squares you
         are assigned to.">
-  <query>
-    WITH samples1 AS (
-      SELECT distinct s.id as sample_id1,
-        s.created_by_id as created_by_id1,
-        COALESCE(
-        case 
-        when lavPlotName.text_value IS null 
-          then '&lt;i&gt;' || 'Plot at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
-        else 
-          '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
-        end
-        , s.location_name, s.entered_sref) as location_name,
-        s.date_start,
-        s.date_end,
-        s.date_type
-      FROM samples s
-      JOIN locations plot ON plot.id = s.location_id AND plot.deleted=false
+  <query website_filter_field="csf.website_id">
+    SELECT #columns# 
+      FROM cache_samples_functional csf
+      JOIN cache_samples_nonfunctional csnf on csnf.id = csf.id
+      JOIN locations plot ON plot.id = csf.location_id AND plot.deleted=false
       LEFT JOIN location_attribute_values lavPlotName on lavPlotName.location_attribute_id=#plot_number_attr_id# AND lavPlotName.location_id=plot.id AND lavPlotName.deleted=false
       JOIN termlists_terms ttPlotType on ttPlotType.id = plot.location_type_id
       JOIN terms termPlotType on termPlotType.id = ttPlotType.term_id
-      JOIN sample_attribute_values sav ON sav.sample_id = s.id AND sav.sample_attribute_id = #s1AttrID# AND sav.int_value = 0
+      --JOIN sample_attribute_values savLinkToSurveyOne ON savLinkToSurveyOne.sample_id = csf.id AND savLinkToSurveyOne.sample_attribute_id = #s1AttrID# AND savLinkToSurveyOne.int_value = 0
+      LEFT JOIN sample_attribute_values savLinkToSurveyOne ON savLinkToSurveyOne.sample_id = csf.id AND savLinkToSurveyOne.sample_attribute_id = #s1AttrID# 
+          AND savLinkToSurveyOne.int_value != 0 AND savLinkToSurveyOne.deleted=false
       JOIN users u on u.id=#iUserID# AND u.deleted=false
       JOIN person_attribute_values pav on pav.person_id=u.person_id AND pav.person_attribute_id=#person_square_attr_id# 
         AND pav.int_value=plot.parent_id AND pav.created_by_id != pav.updated_by_id AND pav.deleted=false
-      #joins#
-      WHERE s.survey_id = #survey_id# AND s.deleted = FALSE
-    ), samples2 AS (
-      SELECT distinct s.id AS sample_id2,
-        s.created_by_id as created_by_id2,
-        sav.int_value AS sample_id1
-      FROM samples s
-      JOIN locations plot ON plot.id = s.location_id AND plot.deleted=false
-      JOIN sample_attribute_values sav ON sav.sample_id = s.id AND sav.sample_attribute_id = #s1AttrID# AND sav.int_value != 0
-      JOIN users u on u.id=#iUserID# AND u.deleted=false
-      JOIN person_attribute_values pav on pav.person_id=u.person_id AND pav.person_attribute_id=#person_square_attr_id# 
-        AND pav.int_value=plot.parent_id AND pav.created_by_id != pav.updated_by_id AND pav.deleted=false
-      WHERE s.survey_id = #survey_id# AND s.deleted = FALSE
-    ) 
-    SELECT s1.*,
-      s2.sample_id2,
-      s2.created_by_id2,
-      CASE WHEN sample_id2 IS null THEN true ELSE false END AS done1,
-      CASE WHEN sample_id2 IS null THEN false ELSE true END AS done2
-    FROM samples1 s1
-    LEFT JOIN samples2 s2 ON s2.sample_id1 = s1.sample_id1
-    #order_by#
+      LEFT JOIN sample_attribute_values savLinkToSurveyTwo on savLinkToSurveyTwo.int_value = csf.id AND savLinkToSurveyTwo.sample_attribute_id = #s1AttrID# 
+          AND savLinkToSurveyTwo.int_value != 0 AND savLinkToSurveyTwo.deleted=false
+      WHERE 
+      #website_filter#
+      AND csf.survey_id = #survey_id#
+      #order_by#
   </query>
-    <order_bys>
-      <order_by>s1.sample_id1 DESC</order_by>
-    </order_bys>
+  <order_bys>
+    <order_by>sample_1_id desc, csf.id desc</order_by>
+  </order_bys>
   <params>
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
@@ -63,11 +37,25 @@
     <param name='person_square_attr_id' description='Id of the person attribute that holds user squares' datatype='integer'/>
   </params>
   <columns>
-    <column name='sample_id1' display='ID' />
-    <column name='created_by_id1' display='Created BY ID Sample 1' visible='false'/>
-    <column name='location_name' display='Plot' />
-    <column name='date' display='Date' />
-    <column name='sample_id2' visible='false' />
-    <column name='created_by_id2' display='Created BY ID Sample 2' visible='false'/>
+    <column name='sample_id' sql='csf.id' display='ID' visible='false' in_count="true"/>
+    <column name='sample_1_id' sql="coalesce(savLinkToSurveyOne.int_value,csf.id)" display='ID' datatype="text"/>
+    <column name='created_by_id' sql='csf.created_by_id' display='Created BY ID Sample' visible='false'/>
+    <column name='location_name'
+    sql="
+    COALESCE(
+        case 
+        when lavPlotName.text_value IS null 
+          then '&lt;i&gt;' || 'Plot at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+        else 
+          '&lt;i&gt;' || 'Plot ' || lavPlotName.text_value || ' at ' || plot.centroid_sref || ' ('||  termPlotType.term || ') ' || '&lt;/i&gt;' 
+        end
+        , csf.location_name, csnf.public_entered_sref)
+    " display='Plot' />
+    <column name='show_add_sample_2' sql='case when savLinkToSurveyOne.id IS NULL AND savLinkToSurveyTwo.id IS NULL THEN true ELSE false END' visible='false'/>
+    <column name='date_start' sql='csf.date_start' visible="false"/>
+    <column name='date_end' sql='csf.date_end' visible="false"/>
+    <column name='date_type' sql='csf.date_type' visible="false"/>
+    <column name='date' display='Date' datatype="date"/>
+    <column name='survey_number' sql="'Survey ' || case when savLinkToSurveyOne.int_value IS NOT NULL THEN '2 ' ELSE '1' END" display=' '/>
   </columns>
 </report>
