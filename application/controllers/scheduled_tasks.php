@@ -97,7 +97,13 @@ class Scheduled_Tasks_Controller extends Controller {
       $params = json_decode($trigger->params_json, TRUE);
       $params['date'] = $this->last_run_date;
       $reportEngine = new ReportEngine();
-      $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
+      try {
+        $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
+      }
+      catch (Exception $e) {
+        self::msg($trigger->name . ": " . $e, 'error');
+        continue;
+      }
       if (!isset($data['content']['records'])) {
         kohana::log('error', 'Error in trigger file ' . $trigger->trigger_template_file . '.xml');
         continue;
