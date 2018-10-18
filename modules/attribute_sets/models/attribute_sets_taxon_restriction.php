@@ -31,7 +31,7 @@ class Attribute_sets_taxon_restriction_Model extends ORM {
   protected $belongs_to = array(
     'attribute_sets_survey',
     'restrict_to_taxon_meaning' => 'taxon_meaning',
-    'restrict_to_state_term_meaning' => 'meaning',
+    'restrict_to_stage_term_meaning' => 'meaning',
     'created_by' => 'user',
     'updated_by' => 'user',
   );
@@ -42,7 +42,7 @@ class Attribute_sets_taxon_restriction_Model extends ORM {
     $array->add_rules('attribute_sets_survey_id', 'required');
     $array->add_rules('restrict_to_taxon_meaning_id', 'integer');
     $array->add_rules('restrict_to_taxon_meaning_id', 'required');
-    $array->add_rules('restrict_to_state_term_meaning', 'integer');
+    $array->add_rules('restrict_to_stage_term_meaning_id', 'integer');
     return parent::validate($array, $save);
   }
 
