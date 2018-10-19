@@ -11,7 +11,7 @@
     join occurrences occ on occ.id=o.id and occ.deleted=false
     join cache_samples_nonfunctional snf on snf.id=o.sample_id
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-    join locations l on o.location_ids @> ARRAY[l.id] AND l.deleted=false
+    join locations l on o.location_ids @&gt; ARRAY[l.id] AND l.deleted=false
     #agreements_join#
     #joins#
     WHERE #sharing_filter#
