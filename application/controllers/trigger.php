@@ -80,6 +80,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
     foreach ($reports['trigger_templates']['content'] as $report) {
       $files[$report['path']] = $report['title'];
     }
+
     return array('triggerFileList' => $files);
   }
 

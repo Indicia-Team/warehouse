@@ -126,7 +126,7 @@ class Scheduled_Tasks_Controller extends Controller {
         $data = $reportEngine->requestReport($trigger->trigger_template_file . '.xml', 'local', 'xml', $params);
       }
       catch (Exception $e) {
-        error_logger::log_error('Running trigger report', $e);
+        self::msg($trigger->name . ": " . $e, 'error');
         continue;
       }
       if (!isset($data['content']['records'])) {
