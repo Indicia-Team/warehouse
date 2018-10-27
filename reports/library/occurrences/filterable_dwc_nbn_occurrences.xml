@@ -181,7 +181,7 @@ END"
           WHEN 'V1' THEN 'Accepted - correct'
           WHEN 'V2' THEN 'Accepted - considered correct'
           WHEN 'C' THEN 'Unconfirmed - not reviewed'
-          WHEN 'C3' THEN 'Unconfirmed – plausible'
+          WHEN 'C3' THEN 'Unconfirmed - plausible'
           ELSE null
           END"
           datatype="text"
