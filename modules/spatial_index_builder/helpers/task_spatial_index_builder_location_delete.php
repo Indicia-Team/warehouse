@@ -29,7 +29,7 @@
  */
 class task_spatial_index_builder_location_delete {
 
-  public const BATCH_SIZE = 100;
+  const BATCH_SIZE = 100;
 
   /**
    * Perform the processing for a task batch found in the queue.

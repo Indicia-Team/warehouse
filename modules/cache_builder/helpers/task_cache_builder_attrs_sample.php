@@ -36,7 +36,7 @@ class task_cache_builder_attrs_sample {
   /**
    * Fairly fast, so processing large batches is OK.
    */
-  public const BATCH_SIZE = 50000;
+  const BATCH_SIZE = 50000;
 
   /**
    * Perform the processing for a task batch found in the queue.

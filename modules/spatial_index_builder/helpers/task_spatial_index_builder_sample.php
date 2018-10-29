@@ -29,7 +29,7 @@
  */
 class task_spatial_index_builder_sample {
 
-  public const BATCH_SIZE = 5000;
+  const BATCH_SIZE = 5000;
 
   /**
    * Perform the processing for a task batch found in the queue.
