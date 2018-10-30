@@ -1791,13 +1791,13 @@ class ORM extends ORM_Core {
       // Use a string compare to get a proper test but with type tolerance.
       // A wkt geometry gets translated to a proper geom so this will look different - just check it is not empty.
       // A float may loose precision or trailing 0 - just check for small percentage difference
-      if (strcmp($attrValueModel->$vf, $value)===0 ||
-          ($dataType === 'G' && !empty($attrValueModel->$vf) ||
-          ($dataType === 'F' && $attrValueModel->$vf === (float) $value))) {
+      if (strcmp((string) $attrValueModel->$vf, (string) $value) === 0 ||
+          ($dataType === 'G' && !empty($attrValueModel->$vf))) {
         kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId.");
       }
       else {
-        if ( $dataType === 'F' && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
+        if ( $dataType === 'F' && preg_match('/^\d+(\.\d+)?$/', $value)
+            && abs($attrValueModel->$vf - $value) < 0.00001 * $attrValueModel->$vf ) {
           kohana::log('alert', "Lost precision accepting value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
         } else {
           $this->errors[$fieldId] = "Invalid value $value for attribute ".$attrDef->caption;
@@ -1822,6 +1822,7 @@ class ORM extends ORM_Core {
       $attrValueModel->wantToUpdateMetadata=FALSE;
     try {
       $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()), TRUE);
+      kohana::log('debug', 'Value: ' . var_export($attrValueModel->as_array(), true));
     } catch (Exception $e) {
       $v=FALSE;
       $this->errors[$fieldId]=$e->getMessage();
