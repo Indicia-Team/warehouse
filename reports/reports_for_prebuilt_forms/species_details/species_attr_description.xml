@@ -5,7 +5,7 @@
   <query website_filter_field="">
 SELECT #columns#
 FROM (
-  SELECT catsort, category, subcatsort, subcategory, caption, STRING_AGG(distinct value, ', ') AS values
+  SELECT catsort, category, subcatsort, subcategory, caption, raw_caption, weight, STRING_AGG(distinct value, ', ') AS values
   from (
     SELECT
       cat_l.sort_order as catsort,
@@ -15,6 +15,8 @@ FROM (
       CASE '#include_captions#' WHEN '1' THEN
           trim(regexp_replace(regexp_replace(a.caption, ' \(95%\)$', ''), '^' || COALESCE(subcat_l.term, subcat.term), '')) || ': '
       ELSE '' END as caption,
+      a.caption as raw_caption,
+      tlttla.weight,
       CASE a.data_type
           WHEN 'T'::bpchar THEN
             CASE
@@ -68,7 +70,7 @@ FROM (
     AND (a80v.id IS NOT NULL OR a.caption NOT LIKE '% (95\%)')
     #filters#
   ) AS sub1
-  GROUP BY catsort, category, subcatsort, subcategory, caption
+  GROUP BY catsort, category, subcatsort, subcategory, weight, raw_caption, caption
 ) AS sub2
   </query>
   <order_bys>
@@ -90,6 +92,6 @@ FROM (
     <column name="category" sql="category" />
     <column name="subcatsort" sql="subcatsort" />
     <column name="subcategory" sql="subcategory" />
-    <column name="values" aggregate="true" sql="STRING_AGG(caption || values, '; ')" />
+    <column name="values" aggregate="true" sql="STRING_AGG(caption || values, '; ' order by weight, raw_caption)" />
   </columns>
 </report>
