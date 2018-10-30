@@ -43,7 +43,6 @@ class Sample_Attribute_Model extends ATTR_ORM {
   protected $has_and_belongs_to_many = array('websites');
 
   public function validate(Validation $array, $save = FALSE) {
-    $array->add_rules('derived_from_taxa_taxon_list_attribute_id', 'integer');
     $this->unvalidatedFields = array('applies_to_location');
     return parent::validate($array, $save);
   }
