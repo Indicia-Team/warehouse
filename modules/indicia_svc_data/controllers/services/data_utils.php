@@ -88,16 +88,21 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   /**
    * Bulk verification service end-point.
    *
-   * Provides the services/data_utils/bulk_verify service. This takes a report
-   * plus params (json object) in the $_POST data and verifies all the records
-   * returned by the report according to the filter.
+   * Provides the services/data_utils/bulk_verify service. This takes the
+   * following POST parametenrs:
    *
-   * Additional parameters:
-   * * dryrun - set to true to return the count of records that would be
-   *   updated without performing the update.
+   * * report - path to the report file that lists the occurrences to verify,
+   *   excluding the .xml suffix.
+   * * params - JSON object containing the report filter parameters to limit
+   *   the records to.
+   * * record_status - the record status code to set records to.
+   * * record_substatus - the record substatus code to set records to.
    * * ignore - set to true to allow this to ignore any verification check rule
    *   failures (use with care!).
-   * *
+   * * dryrun - set to true to return the count of records that would be
+   *   updated without performing the update.
+   *
+   * Verifies all the records returned by the report according to the filter.
    */
   public function bulk_verify() {
     $db = new Database();
