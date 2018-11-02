@@ -111,6 +111,25 @@ SQL;
     $this->assertTrue(isset($r['success']), 'Submitting a sample did not return success response');
 
     $occId = $r['success'];
+    // First, do a dry run.
+    $r = helper_base::http_post(
+      helper_base::$base_url . 'index.php/services/data_utils/bulk_verify',
+      array_merge([
+        'report' => 'library/occurrences/filterable_explore_list',
+        'params' => json_encode([
+          'occurrence_id' => $occId,
+        ]),
+        'occurrence:record_status' => 'V',
+        'user_id' => 1,
+        'dryrun' => 'true',
+      ], $this->auth['write_tokens'])
+    );
+    // Check the dry run reports the correct record count and does no update.
+    $this->assertEquals('1', $r['output']);
+    $occ = ORM::factory('occurrence', $occId);
+    $this->assertEquals('C', $occ->record_status, 'Saved status should not be changed for verification dry run.');
+
+    // Now, do a live run.
     $r = helper_base::http_post(
       helper_base::$base_url . 'index.php/services/data_utils/bulk_verify',
       array_merge([
@@ -122,13 +141,13 @@ SQL;
         'user_id' => 1,
       ], $this->auth['write_tokens'])
     );
-    var_export($r);
+    $this->assertEquals('1', $r['output']);
     $occ = ORM::factory('occurrence', $occId);
     $this->assertEquals('V', $occ->record_status, 'Saved status incorrect for verification');
     $comment = ORM::factory('occurrence_comment', ['occurrence_id' => $occId]);
     $this->assertEquals('This record is accepted', $comment->comment, 'Saved comment incorrect for verification');
     $this->assertEquals('V', $comment->record_status, 'Saved comment status incorrect for verification');
-    // Now test the cache has been updated
+    // Now test the cache has been updated.
     $sql = <<<SQL
 SELECT o.record_status, o.record_substatus, o.verified_on, onf.verifier
 FROM cache_occurrences_functional o
