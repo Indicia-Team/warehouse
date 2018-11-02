@@ -88,9 +88,19 @@ class Data_utils_Controller extends Data_Service_Base_Controller {
   /**
    * Bulk verification service end-point.
    *
-   * Provides the services/data_utils/bulk_verify service. This takes a report plus params (json object) in the $_POST
-   * data and verifies all the records returned by the report according to the filter. Pass ignore=true to allow this to
-   * ignore any verification check rule failures (use with care!).
+   * Provides the services/data_utils/bulk_verify service. This takes the
+   * following POST parametenrs:
+   *
+   * * report - path to the report file that lists the occurrences to verify,
+   *   excluding the .xml suffix.
+   * * params - JSON object containing the report filter parameters to limit
+   *   the records to.
+   * * record_status - the record status code to set records to.
+   * * record_substatus - the record substatus code to set records to.
+   * * ignore - set to true to allow this to ignore any verification check rule
+   *   failures (use with care!).
+   *
+   * Verifies all the records returned by the report according to the filter.
    */
   public function bulk_verify() {
     // @todo Integrate this method with workflow.
