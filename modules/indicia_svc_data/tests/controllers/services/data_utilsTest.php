@@ -72,7 +72,20 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
     $comment = ORM::factory('occurrence_comment', ['occurrence_id' => $occId]);
     $this->assertEquals('Automated test verification', $comment->comment, 'Saved comment incorrect for verification');
     $this->assertEquals('V', $comment->record_status, 'Saved comment status incorrect for verification');
-
+    // Now test the cache has been updated
+    $sql = <<<SQL
+SELECT o.record_status, o.record_substatus, o.verified_on, onf.verifier
+FROM cache_occurrences_functional o
+JOIN cache_occurrences_nonfunctional onf on onf.id=o.id
+WHERE o.id=$occId
+SQL;
+    $db = new Database();
+    $c = $db->query($sql)->result_array(FALSE);
+    $this->assertEquals(1, count($c), 'Wrong number of cached occurrences found.');
+    $this->assertEquals('V', $c[0]['record_status']);
+    $this->assertEquals(NULL, $c[0]['record_substatus']);
+    $this->assertEquals('admin, core', $c[0]['verifier']);
+    $this->assertNotEquals(NULL, $c[0]['verified_on']);
   }
 
 }
