@@ -12,6 +12,20 @@ class Controllers_Services_Data_Utils_Test extends Indicia_DatabaseTestCase {
     return $ds1;
   }
 
+
+  /**
+   * Ensure report user has permissions.
+   *
+   * Since the Bulk verify test uses the Report Engine, ensure that the report
+   * user has permissions to select from the tables.
+   */
+  public static function setUpBeforeClass() {
+    $db = new Database();
+    $db->query('GRANT USAGE ON SCHEMA indicia TO indicia_report_user;');
+    $db->query('ALTER DEFAULT PRIVILEGES IN SCHEMA indicia GRANT SELECT ON TABLES TO indicia_report_user;');
+    $db->query('GRANT SELECT ON ALL TABLES IN SCHEMA indicia TO indicia_report_user;');
+  }
+
   public function setup() {
     // Calling parent::setUp() will build the database fixture.
     parent::setUp();
