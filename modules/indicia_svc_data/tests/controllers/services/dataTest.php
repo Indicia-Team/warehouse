@@ -490,9 +490,6 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'occurrence_attribute:public' => 'f',
       'occurrence_attribute:validation_rules' => 'required',
     );
-    //  'occurrence_attributes_website:website_id' => 1,
-    //  'occurrence_attributes_website:restrict_to_survey_id' => 1,
-    //);
     $attr->set_submission_data($array);
     $attr->submit();
     // Link our attribute to the survey.
@@ -532,15 +529,19 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
     $this->assertArrayHasKey('success', $r);
     $occId = $r['success'];
+    $occ = ORM::factory('occurrence', $occId);
     // Now, we should be able to submit a partial update.
     $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:id' => $occ->sample_id,
       'occurrence:id' => $occId,
       'occurrence:comment' => 'This has been partially updated',
     ];
     $s = submission_builder::build_submission($array, $structure);
     $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
     $this->assertArrayHasKey('success', $r, 'Partial update of an existing occurrence failed.');
-    $occ = ORM::factory('occurrence', $occId);
+    $occ->reload();
     $this->assertEquals('This has been partially updated', $occ->comment);
     $this->assertEquals(1, $occ->taxa_taxon_list_id);
     // Clean up.
