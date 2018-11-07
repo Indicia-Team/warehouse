@@ -905,7 +905,8 @@ class ORM extends ORM_Core {
     $vArray = array_map(function ($arr) {
       return is_array($arr) ? $arr["value"] : $arr;
     }, $this->submission['fields']);
-    if (!empty($vArray['website_id']) && !empty(self::$authorisedWebsiteId) && $vArray['website_id'] !== self::$authorisedWebsiteId) {
+    if (!empty($vArray['website_id']) && !empty(self::$authorisedWebsiteId) &&
+        $vArray['website_id'] !== self::$authorisedWebsiteId) {
       throw new Exception('Access to write to this website denied.', 2001);
     }
     // If we're editing an existing record, merge with the existing data.
@@ -915,15 +916,18 @@ class ORM extends ORM_Core {
       $thisValues = $this->as_array();
       unset($thisValues['updated_by_id']);
       unset($thisValues['updated_on']);
-      // don't overwrite existing website_ids otherwise things like shared verification portals end up
-      // grabbing records to their own website ID.
-      if (!empty($thisValues['website_id']) && !empty($vArray['website_id']))
+      // Don't overwrite existing website_ids otherwise things like shared
+      // verification portals end up grabbing records to their own website ID.
+      if (!empty($thisValues['website_id']) && !empty($vArray['website_id'])) {
         unset($vArray['website_id']);
-      // If there are no changed fields between the current and new record, skip the metadata update.
-      // We have the problem that array objects appear as strings in $thisValues "{x,y}" but as PHP arrays in $vArray
-      // The function array_intersect_assoc can't handle this
-      // The easiest thing here is pretend the current value of any array column doesn't match.
-      // These array columns are used so rarely that this less optimised solution is not important
+      }
+      // If there are no changed fields between the current and new record,
+      // skip the metadata update. We have the problem that array objects
+      // appear as strings in $thisValues "{x,y}" but as PHP arrays in $vArray.
+      // The function array_intersect_assoc can't handle this.
+      // The easiest thing here is pretend the current value of any array
+      // column doesn't match. These array columns are used so rarely that this
+      // less optimised solution is not important.
       $exactMatches = array();
       foreach ($thisValues as $column => $value) {
         if (array_key_exists($column, $vArray) &&
@@ -934,49 +938,52 @@ class ORM extends ORM_Core {
       }
       // Allow for different ways of submitting bool. Don't want to trigger metadata updates if submitting 'on' instead of true
       // for example.
-      foreach ($vArray as $key=>$value) {
+      foreach ($vArray as $key => $value) {
         if (isset($this->$key)
-            && (($this->$key==='t' && ($value==='on' || $value===1))
-            ||  ($this->$key==='f' && ($value==='off' || $value===0))))
+            && (($this->$key === 't' && ($value === 'on' || $value === 1))
+            ||  ($this->$key === 'f' && ($value === 'off' || $value === 0)))) {
           $exactMatches[$key] = $this->$key;
+        }
       }
       $fieldsWithValuesInSubmission = array_intersect_key($thisValues, $vArray);
-      $this->wantToUpdateMetadata = count($exactMatches)!==count($fieldsWithValuesInSubmission);
+      $this->wantToUpdateMetadata = count($exactMatches) !== count($fieldsWithValuesInSubmission);
       $vArray = array_merge($thisValues, $vArray);
-      $this->existing=TRUE;
+      $this->existing = TRUE;
     }
-    Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
+    Kohana::log("debug", "About to validate the following array in model $this->object_name");
     Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
     try {
-      if (array_key_exists('deleted', $vArray) && $vArray['deleted']=='t') {
+      if (array_key_exists('deleted', $vArray) && $vArray['deleted'] == 't') {
         // For a record deletion, we don't want to validate and save anything. Just mark delete it.
-        $this->deleted='t';
+        $this->deleted = 't';
         $this->set_metadata();
-        $v=$this->save();
-      } else {
-        // Create a new record by calling the validate method
-        $v=$this->validate(new Validation($vArray), TRUE);
+        $v = $this->save();
       }
-    } catch (Exception $e) {
-      $v=FALSE;
-      $this->errors['general']=$e->getMessage();
+      else {
+        // Create a new record by calling the validate method.
+        $v = $this->validate(new Validation($vArray), TRUE);
+      }
+    }
+    catch (Exception $e) {
+      $v = FALSE;
+      $this->errors['general'] = $e->getMessage();
       error_logger::log_error('Exception during validation', $e);
     }
     if ($v) {
       // Record has successfully validated so return the id.
-      Kohana::log("debug", "Record ".$this->id." has validated successfully");
+      Kohana::log("debug", "Record $this->id has validated successfully");
       $return = $this->id;
-    } else {
+    }
+    else {
       // Errors.
       Kohana::log("debug", "Record did not validate");
-      // Log more detailed information on why
+      // Log more detailed information on why.
       foreach ($this->errors as $f => $e) {
-        Kohana::log("debug", "Field ".$f.": ".$e);
+        Kohana::log("debug", "Field $f: $e");
       }
     }
     return $return;
   }
-
 
   /**
    * When a field is present in the model that is an fkField, this means it contains a lookup

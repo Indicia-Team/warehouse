@@ -598,6 +598,84 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $this->assertEmpty($termlistsTerm->sort_order);
   }
 
+  /**
+   * Test updating existing occurrence data with required values.
+   *
+   * If an existing occurrence has a value for a required attribute, it should
+   * be possible to submit an update to that occurrence with a change to a
+   * value that does not include re-submitting all the existing required
+   * values.
+   */
+  public function testUpdateOccurrenceWithAttr() {
+    // First, create an attribute using ORM.
+    $attr = ORM::factory('occurrence_attribute');
+    $array = array(
+      'occurrence_attribute:caption' => 'Test required attribute',
+      'occurrence_attribute:data_type' => 'T',
+      'occurrence_attribute:public' => 'f',
+      'occurrence_attribute:validation_rules' => 'required',
+    );
+    $attr->set_submission_data($array);
+    $attr->submit();
+    // Link our attribute to the survey.
+    $aw = ORM::factory('occurrence_attributes_website');
+    $array = array(
+      'occurrence_attributes_website:website_id' => 1,
+      'occurrence_attributes_website:restrict_to_survey_id' => 1,
+      'occurrence_attributes_website:occurrence_attribute_id' => $attr->id,
+    );
+    $aw->set_submission_data($array);
+    $aw->submit();
+
+    // Now, submitting an occurrence without the attribute filled in should
+    // fail.
+    $array = array(
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:entered_sref' => 'SU1234',
+      'sample:entered_sref_system' => 'osgb',
+      'sample:date' => '02/09/2017',
+      'occurrence:taxa_taxon_list_id' => 1,
+    );
+    $structure = array(
+      'model' => 'sample',
+      'subModels' => array(
+        'occurrence' => array('fk' => 'sample_id')
+      ),
+    );
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    // Check an error exists on the attribute field.
+    $this->assertArrayHasKey('errors', $r);
+    $this->assertArrayHasKey("occAttr:$attr->id", $r['errors']);
+    // Resubmit with the attribute filled in .
+    $array["occAttr:$attr->id"] = 'A value';
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $this->assertArrayHasKey('success', $r);
+    $occId = $r['success'];
+    $occ = ORM::factory('occurrence', $occId);
+    // Now, we should be able to submit a partial update.
+    $array = [
+      'website_id' => 1,
+      'survey_id' => 1,
+      'sample:id' => $occ->sample_id,
+      'occurrence:id' => $occId,
+      'occurrence:comment' => 'This has been partially updated',
+    ];
+    $s = submission_builder::build_submission($array, $structure);
+    $r = data_entry_helper::forward_post_to('sample', $s, $this->auth['write_tokens']);
+    $this->assertArrayHasKey('success', $r, 'Partial update of an existing occurrence failed.');
+    $occ->reload();
+    $this->assertEquals('This has been partially updated', $occ->comment);
+    $this->assertEquals(1, $occ->taxa_taxon_list_id);
+    // Clean up.
+    $db = new Database();
+    $db->query("delete from occurrence_attribute_values where occurrence_attribute_id=$attr->id");
+    $aw->delete();
+    $attr->delete();
+  }
+
   private function getSampleAsCsv($id, $regexExpected) {
     $params = array(
       'mode' => 'csv',
@@ -605,8 +683,8 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
       'auth_token' => $this->auth['read']['auth_token'],
       'nonce' => $this->auth['read']['nonce'],
     );
-    $url = data_entry_helper::$base_url . "index.php/services/data/sample/$id?" .   http_build_query($params, '', '&');
-    $response = self::getResponse($url, false);
+    $url = data_entry_helper::$base_url . "index.php/services/data/sample/$id?" . http_build_query($params, '', '&');
+    $response = self::getResponse($url, FALSE);
     $this->assertFalse(isset($response['error']), "testRequestDataGetRecordByDirectId returned error. See log for details");
     // spoof the CSV data as a file, so we can use fgetcsv which understands line breaks in content
     $fp = fopen("php://temp", 'r+');
