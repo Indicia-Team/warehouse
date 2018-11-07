@@ -217,29 +217,35 @@ class Termlists_term_Model extends Base_Name_Model {
     // which causes errors when the work_queue task already exists.
     $sql = <<<SQL
 -- insert if not already exists
-INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
-SELECT DISTINCT 'task_cache_builder_attrs_occurrences', 'occurrences', o.id, 2, 60, now()
-FROM occurrences o
-JOIN occurrence_attribute_values av ON av.occurrence_id=o.id AND av.deleted=false
-JOIN occurrence_attributes a ON a.id=av.occurrence_attribute_id AND a.deleted=false AND a.data_type='L'
-JOIN cache_termlists_terms t on t.id=av.int_value AND t.meaning_id=$meaning_id
+SELECT DISTINCT 'task_cache_builder_attrs_occurrences', 'occurrences', av.occurrence_id, 2, 60, now()
+FROM cache_termlists_terms t
+JOIN occurrence_attribute_values av
+  ON av.int_value=t.id
+  AND av.deleted=false
+JOIN occurrence_attributes a
+  ON a.id=av.occurrence_attribute_id
+  AND a.data_type='L'
+  AND a.deleted=false
 LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_occurrences'
-  AND q.entity='occurrences' AND q.record_id=o.id AND q.params IS NULL
-WHERE o.deleted=false
+  AND q.entity='occurrences' AND q.record_id=av.occurrence_id AND q.params IS NULL
+WHERE t.meaning_id=$meaning_id
 AND q.id IS NULL;
 SQL;
     $this->db->query($sql);
     $sql = <<<SQL
 -- insert if not already exists
-INSERT INTO work_queue (task, entity, record_id, priority, cost_estimate, created_on)
-SELECT DISTINCT 'task_cache_builder_attrs_samples', 'samples', s.id, 2, 60, now()
-FROM samples s
-JOIN sample_attribute_values av ON av.sample_id=s.id AND av.deleted=false
-JOIN sample_attributes a ON a.id=av.sample_attribute_id AND a.deleted=false AND a.data_type='L'
-JOIN cache_termlists_terms t on t.id=av.int_value AND t.meaning_id=$meaning_id
+SELECT DISTINCT 'task_cache_builder_attrs_samples', 'samples', av.sample_id, 2, 60, now()
+FROM cache_termlists_terms t
+JOIN sample_attribute_values av
+  ON av.int_value=t.id
+  AND av.deleted=false
+JOIN sample_attributes a
+  ON a.id=av.sample_attribute_id
+  AND a.data_type='L'
+  AND a.deleted=false
 LEFT JOIN work_queue q ON q.task='task_cache_builder_attrs_samples'
-  AND q.entity='samples' AND q.record_id=s.id AND q.params IS NULL
-WHERE s.deleted=false
+  AND q.entity='samples' AND q.record_id=av.sample_id AND q.params IS NULL
+WHERE t.meaning_id=$meaning_id
 AND q.id IS NULL;
 SQL;
     $this->db->query($sql);
