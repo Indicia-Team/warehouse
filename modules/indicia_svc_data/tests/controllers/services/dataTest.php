@@ -501,7 +501,9 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     );
     $aw->set_submission_data($array);
     $aw->submit();
-
+    // Clear the cache to ensure that our required field is used.
+    $cache = Cache::instance();
+    $cache->delete_tag('required-fields');
     // Now, submitting an occurrence without the attribute filled in should
     // fail.
     $array = array(
@@ -549,6 +551,9 @@ class Controllers_Services_Data_Test extends Indicia_DatabaseTestCase {
     $db->query("delete from occurrence_attribute_values where occurrence_attribute_id=$attr->id");
     $aw->delete();
     $attr->delete();
+    // Remove the required field from the cache so it doesn't impact other tests.
+    $cache = Cache::instance();
+    $cache->delete_tag('required-fields');
   }
 
   private function getSampleAsCsv($id, $regexExpected) {
