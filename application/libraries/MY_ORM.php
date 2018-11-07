@@ -835,8 +835,8 @@ class ORM extends ORM_Core {
    */
   public function inner_submit(){
     $this->wantToUpdateMetadata = TRUE;
-    $isInsert = $this->id===0
-        && (!isset($this->submission['fields']['id']) || !$this->submission['fields']['id']);
+    $isInsert = $this->id === 0
+        && (empty($this->submission['fields']['id']) || empty($this->submission['fields']['id']['value']));
     $this->handleCaptionSubmission();
     $return = $this->populateFkLookups();
     $this->populateIdentifiers();
