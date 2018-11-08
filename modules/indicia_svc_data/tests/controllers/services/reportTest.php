@@ -218,7 +218,7 @@ class Controllers_Services_Report_Test extends Indicia_DatabaseTestCase {
    *
    * @var array
    *
-   * @todo Add tests for higher_taxa_taxon_list which needs hierarchical taxon data.
+   * @todo Add tests for taxa_taxon_list which needs hierarchical taxon data.
    * @todo Add tests for taxon_designation_list.
    */
   private $standardParamTests = [
