@@ -354,12 +354,13 @@ TXT;
       $url = url::base();
       $description = <<<TXT
 Although not essential, if you have a single species checklist which contains a full taxonomic hierarchy, then you
-should add this list's ID to the cache builder module's warehouse configuration. To do this:
+should add this list's ID to Indicia's warehouse configuration. To do this:
 <ul>
   <li>Go to <a href="{$url}index.php/taxon_list">the species lists page</a> and find the ID of your full list.</li>
-  <li>In the warehouse file system, copy the file modules/cache_builder/config/cache_builder_variables.php.example to
-  modules/cache_builder/config/cache_builder_variables.php then edit the file with a text editor. Change the value
-  given for \$config['master_list_id'] to your list's ID and save the file.</li>
+  <li>In the warehouse file system, edit the file application/config/indicia.php with a text editor. Append the
+  following to the text, replacing &lt;id&gt; with your list's ID:<br/>
+  \$config['master_list_id'] = &lt;id&gt;;
+  <li>Save the file.</li>
 </ul>
 TXT;
       $messages[] = array(

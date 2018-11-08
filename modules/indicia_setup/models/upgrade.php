@@ -303,6 +303,7 @@ class Upgrade_Model extends Model {
       throw new Exception("Cant open dir " . $full_upgrade_folder);
     }
     sort($file_name);
+    $masterListId = warehouse::getMasterTaxonListId();
     try {
       foreach($file_name as $name) {
         if (strcmp($name, $last_run_script)>0 || empty($last_run_script)) {
@@ -314,6 +315,8 @@ class Upgrade_Model extends Model {
           if (!utf8::is_ascii($_db_file)) {
             $_db_file = utf8::strip_non_ascii($_db_file);
           }
+          // Let upgrade scripts know if there is a master taxon list ID.
+          $_db_file = str_replace('#master_list_id#', $masterListId, $_db_file);
           if (substr($_db_file, 0, 18) === '-- #postgres user#')
             $this->scriptsForPgUser .= $_db_file . "\n\n";
           elseif (substr($_db_file, 0, 16) === '-- #slow script#' && $this->couldBeSlow)
