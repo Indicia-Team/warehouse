@@ -398,8 +398,8 @@ JS;
       }
       else {
         echo <<<HTML
-<div class="status status-warning">
-Set the cache_builder module's cache_builder_variables.taxon_list_id condiguration to enable linking attributes to taxa.
+<div class="alert alert-warning">
+Set the taxon_list_id configuration in application/config/indicia.php to enable linking attributes to taxa.
 </div>
 HTML;
       }
