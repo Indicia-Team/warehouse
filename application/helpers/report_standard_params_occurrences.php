@@ -44,6 +44,7 @@ class report_standard_params_occurrences {
       ['survey_id', 'survey_list'],
       ['indexed_location_id', 'indexed_location_list'],
       ['input_form', 'input_form_list', TRUE],
+      ['higher_taxa_taxon_list_list', 'taxa_taxon_list_list'],
     ];
   }
 
@@ -266,7 +267,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "('#input_date_from#'='Click here' OR o.created_on >= '#input_date_from#'::timestamp)",
+            // Use filter on both created_on and updated_on, as the latter is
+            // indexed.
+            'sql' => "o.created_on >= '#input_date_from#'::timestamp AND o.updated_on >= '#input_date_from#'::timestamp",
           ],
         ],
       ],
@@ -291,7 +294,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.created_on>now()-'#input_date_age#'::interval",
+            // Use filter on both created_on and updated_on, as the latter is
+            // indexed.
+            'sql' => "o.created_on>now()-'#input_date_age#'::interval AND o.updated_on>now()-'#input_date_age#'::interval",
           ],
         ],
       ],
@@ -731,41 +736,16 @@ class report_standard_params_occurrences {
       ],
       'taxa_taxon_list_list' => [
         'datatype' => 'integer[]',
-        'display' => "Taxa taxon list IDs",
-        'description' => 'Comma separated list of preferred IDs',
+        'display' => "Higher taxa taxon list IDs",
+        'description' => 'Comma separated list of preferred IDs.',
         'wheres' => [
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.taxa_taxon_list_external_key in (#taxa_taxon_list_list#)",
+            'sql' => "o.taxon_path @> ARRAY[#taxa_taxon_list_list#]",
           ],
         ],
-        // Faster than embedding this query in the report.
-        'preprocess' =>
-          "with recursive q as (
-    select preferred_taxa_taxon_list_id, external_key
-    from cache_taxa_taxon_lists t
-    where id in (#taxa_taxon_list_list#)
-    union all
-    select tc.preferred_taxa_taxon_list_id, tc.external_key
-    from q
-    join cache_taxa_taxon_lists tc on tc.parent_id = q.preferred_taxa_taxon_list_id
-  ) select '''' || array_to_string(array_agg(distinct external_key::varchar), ''',''') || '''' from q",
-      ],
-      // Version of the above optimised for searching for higher taxa.
-      'higher_taxa_taxon_list_list' => [
-        'datatype' => 'integer[]',
-        'display' => "Higher taxa taxon list IDs",
-        'description' => 'Comma separated list of preferred IDs. Optimised for searches at family level or higher',
-        'joins' => [
-          [
-            'value' => '',
-            'operator' => '',
-            'sql' =>
-              "join cache_taxon_paths ctp on ctp.external_key=o.taxa_taxon_list_external_key\n" .
-              "join cache_taxa_taxon_lists cttlpath on ctp.path && ARRAY[cttlpath.taxon_meaning_id] and cttlpath.id IN (#higher_taxa_taxon_list_list#)",
-          ],
-        ],
+        'preprocess' => 'select taxon_meaning_id from cache_taxa_taxon_lists where id=#taxa_taxon_list_list#',
       ],
       'taxon_meaning_list' => [
         'datatype' => 'integer[]',
@@ -847,7 +827,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "('#input_date_from#'='Click here' OR o.cache_created_on >= '#input_date_from#'::timestamp)",
+            // Use filter on both created_on and updated_on, as the latter is
+            // indexed.
+            'sql' => "o.cache_created_on >= '#input_date_from#'::timestamp AND o.cache_updated_on >= '#input_date_from#'::timestamp",
           ],
         ],
       ],
@@ -867,7 +849,9 @@ class report_standard_params_occurrences {
           [
             'value' => '',
             'operator' => '',
-            'sql' => "o.cache_created_on>now()-'#input_date_age#'::interval",
+            // Use filter on both created_on and updated_on, as the latter is
+            // indexed.
+            'sql' => "o.cache_created_on>now()-'#input_date_age#'::interval AND o.cache_updated_on>now()-'#input_date_age#'::interval",
           ],
         ],
       ],
